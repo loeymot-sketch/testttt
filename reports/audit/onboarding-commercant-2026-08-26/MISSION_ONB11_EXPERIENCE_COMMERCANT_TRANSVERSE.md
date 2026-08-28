@@ -71,6 +71,66 @@ vocabulaire, cohérence, accessibilité, première heure. Il est la conscience U
 - La mémoire « 92 % anglais » date d'une mesure d'export : re-mesurer avant de citer un chiffre.
 - `:8000` = autre worktree ; ta session = **:8811**.
 
+
+### 8.9 Le journal d'activité écrivait des clés, pas des mots
+
+Corrigé le 2026-08-28. Trouvé en prolongeant un audit adverse sur les fichiers de
+langue.
+
+`OrderService.php:2650` écrit dans `action_logs`, à chaque changement de statut :
+
+```
+'Nouveau statut: %s'   avec   trans('all.order.status.' . $status)
+```
+
+Or **`all.order.status` était un tableau vide** — y compris en français. `trans()`
+rend la clé quand elle manque. Mesure en lecture sur la base en service :
+
+> **469 entrées** de la forme « Nouveau statut: all.order.status.16 ».
+
+Le journal d'activité est ce que le commerçant lit pour savoir **qui a changé quoi**.
+Le rendre illisible revient à ne pas en avoir — et personne ne s'en apercevait, parce
+qu'*un journal qu'on ne lit pas ne se plaint jamais*.
+
+**Ce qui rend ce défaut instructif.** Le côté caisse l'avait déjà rencontré et
+**contourné** : `PosOrdersTrackerComponent.vue:1620` documente noir sur blanc que
+« `all.order.status.X` n'existe QUE côté PHP », et se rabat sur des libellés en dur.
+Le contournement a résolu l'écran qui gênait et laissé la cause intacte — si bien que
+le journal a continué d'écrire des clés pendant des mois, à quelques lignes d'un
+commentaire qui expliquait exactement pourquoi.
+
+Les neuf statuts sont désormais nommés dans les trois langues servies, avec les
+**mêmes mots** que ceux que le caissier lit à l'écran : deux mots pour un même état
+serait pire que pas de mot du tout.
+
+### 8.10 Le cliquet de traduction, et sa dette assumée
+
+Le garde-fou posé la veille ne comparait que `auth.php`, et seulement les clés
+**racine**. Un audit adverse l'a relevé : les sous-clés lui échappaient — et c'est
+précisément une sous-clé (`order.status`) qui manquait.
+
+Élargi, il a immédiatement trouvé, en plus des statuts :
+
+- **huit clés de `all.php`** absentes en anglais (`label.fee_percent`,
+  `label.serial_number`, `message.kds_reopen_success`…) ;
+- **trois libellés de paiement** absents en anglais ET en arabe, dont « À régler au
+  comptoir » — le routage Plan B de la borne vers la caisse — et « Remboursé ».
+
+**Puis il est allé trop loin dans l'autre sens**, et c'est le point délicat. Sa
+première version exigeait `validation.attributes.*` en anglais. Or Laravel s'y rabat
+sur le nom du champ, qui se lit correctement en anglais (« The email field is
+required »). Le banc réclamait un travail sans effet — et *un banc qui crie pour rien
+finit ignoré*, ce qui est la même faute que trop peu couvrir, en sens inverse.
+
+Le périmètre est donc **assumé et écrit** : les fichiers dont une clé absente atteint
+vraiment un humain sous forme brute.
+
+Reste l'arabe : **88 clés de retard** dans `all.php`. Les traduire en masse à
+l'aveugle donnerait 88 phrases que personne n'a relues, avec l'air d'être fini. Le
+banc devient donc un **cliquet** : zéro pour l'anglais, désormais complet ; 88 pour
+l'arabe, mesuré et plafonné. Chaque lot relu abaisse ce nombre. **On ne le relève
+jamais.**
+
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
 Audit adverse en lecture seule le 2026-08-28. ⚠️ **Cet auditeur s'est retracte
