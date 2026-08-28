@@ -93,7 +93,7 @@ class RoleService
             if (!in_array($role->id, $this->roleArray)) {
                 $role->delete();
             } else {
-                throw new Exception("This role not deletable", 422);
+                throw new Exception(trans('all.message.role_non_supprimable'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

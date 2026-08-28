@@ -479,9 +479,15 @@ class RouteServiceProvider extends ServiceProvider
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
 
+            // [ONB-11 2026-08-28] Le message etait en anglais, et surtout il ne DISAIT
+            // pas le delai — `retry_after` etait calcule juste en dessous et jamais
+            // montre. Un commercant qui se trompe de mot de passe dix fois au comptoir
+            // un vendredi soir lisait « Too many login attempts. Please try again
+            // later. » sans savoir s'il devait attendre une minute ou rappeler
+            // quelqu'un. On traduit, et on donne la minute.
             $tooMany = function () use ($decayMinutes) {
                 return response()->json([
-                    'message' => 'Too many login attempts. Please try again later.',
+                    'message' => trans('auth.trop_de_tentatives', ['minutes' => $decayMinutes]),
                     'retry_after' => $decayMinutes * 60,
                 ], 429);
             };

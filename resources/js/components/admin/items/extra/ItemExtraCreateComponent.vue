@@ -62,6 +62,24 @@
                             <input v-model="props.form.group_label" type="text" id="group_label"
                                 class="db-field-control" placeholder="ex: Sauce, Supplément, Garniture" maxlength="50" />
                             <small class="text-slate-400 text-xs">Utilisé pour grouper visuellement sur la borne</small>
+
+                            <!-- [ONB-03 2026-08-28 · PIÈGE RENDU VISIBLE]
+                                 `kioskExtrasPartition.js:39-44` : quand le Groupe est
+                                 VIDE, la borne retombe sur le NOM. Tout extra dont le
+                                 nom contient « sauce » est alors traité comme une sauce
+                                 et ÉCARTÉ de toutes les listes
+                                 (`kioskExtrasPartition.js:111`, `continue` avant tout
+                                 `push`). Un supplément payant « Sauce burger maison »
+                                 à 1 € n'était donc jamais proposé, jamais vendu, et
+                                 rien ne le disait.
+
+                                 On ne change pas la règle — la retirer ferait
+                                 réapparaître les vraies sauces en double, à côté de
+                                 l'étape Sauce dédiée. On rend le piège VISIBLE et on
+                                 donne la sortie : renseigner le Groupe suffit. -->
+                            <p v-if="pieceSauceInvisible" class="db-field-alert mt-1">
+                                {{ $t('label.extra_sauce_piege') }}
+                            </p>
                         </div>
 
                         <!-- Visibilité par surface -->
@@ -138,6 +156,17 @@ export default {
         };
     },
     computed: {
+
+        /**
+         * Le nom contient « sauce » ET le Groupe est vide : la borne va écarter cet
+         * extra de toutes ses listes. Le commerçant doit le savoir AVANT d'enregistrer.
+         */
+        pieceSauceInvisible: function () {
+            const nom = String(this.props?.form?.name || '').toLowerCase();
+            const groupe = String(this.props?.form?.group_label || '').trim();
+
+            return groupe === '' && nom.includes('sauce');
+        },
         addButton: function () {
             return { title: this.$t('button.add_extra') };
         }

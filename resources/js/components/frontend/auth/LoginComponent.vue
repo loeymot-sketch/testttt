@@ -181,8 +181,17 @@ export default {
                     } else if (typeof data === 'string') {
                         this.errors = { validation: data };
                     } else {
+                        // [ONB-11 2026-08-28] Le repli etait « Network error — check API
+                        // URL and x-api-key. » : de l'anglais, et du vocabulaire de
+                        // developpeur, sur le TOUT PREMIER ecran du produit. On demandait
+                        // a un restaurateur de verifier une « API URL » et une
+                        // « x-api-key ». `err.message` d'axios n'est pas meilleur : il
+                        // vaut « Network Error », en anglais lui aussi.
+                        //
+                        // Le message du SERVEUR passe toujours en premier quand il existe :
+                        // lui sait ce qui a echoue.
                         this.errors = {
-                            validation: data?.message || err.message || 'Network error — check API URL and x-api-key.',
+                            validation: data?.message || this.$t('message.login_unreachable'),
                         };
                     }
                 })
@@ -220,8 +229,23 @@ export default {
                 return;
             }
 
-            this.form.email = demo[fields[0]] || '';
-            this.form.password = demo[fields[1]] || '';
+            const email = demo[fields[0]];
+            const motDePasse = demo[fields[1]];
+
+            // [ONB-12 2026-08-27 · retenu à la fusion du 2026-08-28] Le même défaut a
+            // été trouvé deux fois, par deux voies indépendantes — SEC E-006 sur la
+            // ligne servie, ONB-12 sur la voie onboarding. La structure retenue est
+            // celle de la ligne servie, déjà en service ; on lui ajoute la garde PAR
+            // COMPTE d'ONB-12, qui couvre un cas que le repli `|| ''` laissait passer :
+            // si la configuration d'exécution fournit un bloc démo INCOMPLET, remplir
+            // l'adresse et laisser le mot de passe vide produit un échec de connexion
+            // que personne ne sait expliquer. Ne rien remplir est un échec visible.
+            if (!email || !motDePasse) {
+                return;
+            }
+
+            this.form.email = email;
+            this.form.password = motDePasse;
         }
     }
 }

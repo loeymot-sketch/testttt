@@ -36,7 +36,24 @@ class PermissionController extends AdminController
     public function index(Role $role)
     {
         try {
-            $permissions     = Permission::get();
+            // [ONB-06 2026-08-28 · P0] `Permission::get()` listait TOUTES les gardes.
+            // Quatre permissions existent sous `sanctum` ET sous `web`
+            // (`availability_toggle`, `ingredients_manage`, `kitchen-display-system`,
+            // `pos-flyer-print`) : deux semoirs les creent en bouclant
+            // `foreach (['sanctum','web'] as $guard)`. L'ecran affichait donc quatre
+            // paires de lignes RIGOUREUSEMENT IDENTIQUES — meme libelle, rien pour les
+            // distinguer.
+            //
+            // Cocher la mauvaise jumelle sur un role `sanctum` faisait lever
+            // `GuardDoesNotMatch` par Spatie — APRES que `syncPermissions()` ait deja
+            // detache toutes les permissions. Le role finissait a ZERO : mesure sur la
+            // base reelle, « POS Operator » passait de 10 permissions a 0, et tous les
+            // caissiers perdaient l'acces a la caisse.
+            //
+            // On ne montre plus que ce qui est attribuable a CE role.
+            $permissions     = Permission::query()
+                ->where('guard_name', $role->guard_name)
+                ->get();
             $rolePermissions = Permission::join(
                 "role_has_permissions",
                 "role_has_permissions.permission_id",

@@ -711,6 +711,45 @@ class PermissionTableSeeder extends Seeder
         ];
 
         $permissions = AppLibrary::associativeToNumericArrayBuilder($permissions);
-        Permission::insert($permissions);
+
+        // [ONB-06 F-05 2026-08-27] Ce seeder n'etait pas rejouable, et sa hierarchie
+        // reposait sur une coincidence.
+        //
+        // Avant : `Permission::insert($permissions)` — une insertion en masse qui
+        // echoue sur la contrainte UNIQUE (name, guard_name) des qu'une seule
+        // permission existe deja. Trois tests en dependaient et etaient ROUGES dans le
+        // depot : RolePermissionSeederTest, sur les trois roles metier.
+        //
+        // Le defaut de fond est plus subtil que l'echec : `parent` n'est pas un
+        // identifiant, c'est l'INDEX SEQUENTIEL calcule par le constructeur de tableau
+        // (AppLibrary::associativeToNumericArrayBuilder, l.77-102). Ca ne fonctionnait
+        // que sur une table VIDE, ou l'auto-incrementation produit justement 1..N. Sur
+        // une base deja peuplee, les indices et les identifiants divergent et la
+        // hierarchie parent/enfant se retrouve fausse — silencieusement.
+        //
+        // On corrige les deux : chaque ligne est creee ou mise a jour sur sa cle
+        // naturelle (name + guard_name), et `parent` est traduit de l'index vers
+        // l'identifiant REEL de la ligne parente. Les identifiants existants ne bougent
+        // pas, ce qui compte : `model_has_permissions` les reference.
+        $identifiantParIndex = [];
+
+        foreach ($permissions as $index => $attributs) {
+            $indexParent = (int) ($attributs['parent'] ?? 0);
+            unset($attributs['parent']);
+
+            $ligne = Permission::updateOrCreate(
+                [
+                    'name'       => $attributs['name'],
+                    'guard_name' => $attributs['guard_name'],
+                ],
+                $attributs + [
+                    'parent' => $indexParent === 0
+                        ? 0
+                        : ($identifiantParIndex[$indexParent] ?? 0),
+                ]
+            );
+
+            $identifiantParIndex[$index] = $ligne->id;
+        }
     }
 }

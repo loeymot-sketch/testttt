@@ -178,7 +178,7 @@ class ComposerProfileService
 
         if (! $fresh) {
             throw ValidationException::withMessages([
-                'steps' => 'Composer profile not found.',
+                'steps' => trans('all.message.wizard_introuvable'),
             ]);
         }
 
@@ -188,7 +188,7 @@ class ComposerProfileService
 
         if ($activeSteps->isEmpty()) {
             throw ValidationException::withMessages([
-                'steps' => 'Composer profile cannot be published without active steps.',
+                'steps' => trans('all.message.wizard_sans_etape'),
             ]);
         }
 
