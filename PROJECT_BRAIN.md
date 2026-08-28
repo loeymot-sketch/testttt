@@ -47,6 +47,223 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-08-26 — LE « TAMPER » NF525 EST UN FAUX POSITIF. PROUVÉ. AUCUNE ALTÉRATION.**
+>
+> Contrôle post-déploiement demandé par le propriétaire (« deploy et vérifie si tout est bon »).
+> Tout est en ligne et sain — sauf que `fiscal:verify-chain --all` annonce toujours
+> **`TAMPER audit_logs.id=1`**. Cette alarme traînait depuis des semaines sans explication.
+> Elle en a une maintenant, et **la chaîne est intacte**.
+>
+> 🪤 **`verifyChain` S'ARRÊTE À LA PREMIÈRE LIGNE FAUTIVE.** Il annonce « id=1 » et ne dit RIEN
+> des 1 208 suivantes. Lire sa sortie comme « une seule ligne est en cause » est une erreur —
+> je l'ai commise avant de balayer. Balayage complet en lecture seule (1 209 lignes) :
+> · **chaînage INTACT** — 0 lien `prev_hash` rompu, 0 trou d'id ⇒ **aucune ligne retirée ni
+>   insérée**. C'est ÇA, la propriété qui compte pour NF525 ;
+> · mais **711 lignes sur 1 209 (59 %)** ne se reproduisaient avec aucun secret « connu » —
+>   bien plus que ce que l'alarme laissait croire ;
+> · **les 711 se reproduisent TOUTES avec `FISCAL_AUDIT_SECRET_BRANCH_1` du `.env`.
+>   Irréductibles : 0.** Falsification : aucune.
+>
+> **CAUSE EXACTE** — `AuditLogService::secretFor()` (~l.322) appelle **`env('FISCAL_AUDIT_SECRET_BRANCH_'.$id)`**.
+> Sous `php artisan config:cache`, Laravel **ne charge pas le `.env`** : `env()` rend `null`, et la
+> signature bascule silencieusement sur le secret GLOBAL `config('fiscal.audit_secret')`
+> (`config/fiscal.php:31`, une chaîne — la variante par branche n'y est jamais déclarée).
+> Le secret qui signe une ligne dépend donc de l'ÉTAT DU CACHE DE CONFIG du processus qui
+> l'écrit. D'où **14 plages qui alternent** dans le temps, avec des bascules à quelques minutes
+> d'intervalle autour des déploiements (`config:clear` → `config:cache`) — un motif impossible
+> à expliquer par une rotation de clé, et qui m'a mis sur la piste.
+> Le rattrapage `candidateVerificationBranches` de 2026-08-08 ne pouvait pas y arriver : ses
+> deux candidats repassent par le MÊME `secretFor()` cassé.
+>
+> ⛔ **NON CORRIGÉ, VOLONTAIREMENT.** `AuditLogService.php` est zone gelée §7 et NF525 est porte
+> humaine §10. Et le correctif « évident » est un piège : déclarer `audit_secret` en TABLEAU dans
+> `config/fiscal.php` (seul endroit où `env()` est légitime au moment de la mise en cache) ferait
+> **lever une `RuntimeException`** pour toute branche absente du tableau — `secretFor()` teste
+> `is_array` puis `is_string`, sans repli. Ça casserait la signature ailleurs. Décision owner + tests.
+>
+> ⚠️ **Effet de bord de MON déploiement, à savoir** : j'ai rejoué `config:clear` + `config:cache`.
+> Les lignes écrites désormais sont signées avec le secret GLOBAL. Elles se vérifient bien — mais
+> les 711 historiques resteront refusées tant que le code n'acceptera pas les deux secrets.
+>
+> **Ce qui est vérifié bon par ailleurs** : dépôts locaux et VPS alignés (`ec04c926`, arbre 0 ligne,
+> 0 commit de retard) · 5 surfaces de production **200** (borne, login, caisse, KDS, OSS) · bundles
+> RÉELLEMENT SERVIS porteurs du travail · borne 0 erreur JS, 0 libellé i18n brut · carte prod
+> M 6,90 / L 8,90 / **XL 10,90**, ordre 1-2-3 · site `tacos.html` 200 annonçant « Tacos XL 10,90 » ·
+> porte SEO **16/16** contre la production, parité des 39 prix · file d'attente `[0] OK`,
+> `lecayenne-worker` RUNNING.
+
+> **2026-08-26 — MODIFIER UN PRODUIT DU PANIER SANS TOUT RECOMPOSER. DÉPLOYÉ, BORNE ET SITE.**
+>
+> `/goal` du propriétaire : « s'il veut modifier un produit du panier, ça ouvre le récap, et à
+> côté de chaque chose il pourra le modifier, et ça ouvre directement la page dédiée — s'il veut
+> changer la viande, s'il veut changer la formule », borne ET site. Avec une condition qu'il a
+> posée lui-même : **« tu ne déploieras jamais qu'avec les tests d'abus »**.
+>
+> ✅ **La condition est remplie, donc c'est parti en production.** Borne : VPS `29f8856d` →
+> **`1516a9b9`** (avance rapide, `npx mix --production` en `ubuntu`, caches reconstruits).
+> Site : `1ba9126` → **`3420dcd`** poussé sur `main`, Vercel a construit.
+>
+> **CE QUI EXISTAIT DÉJÀ, et qu'il ne fallait pas réécrire** : `P-MEGA-05` donnait au panier
+> borne un snapshot, la restauration des sélections, le remplacement en place et une annulation
+> non destructive. Et le **site avait déjà** un « Modifier » par ligne de récap (`wizard-v2.jsx`
+> l.828, contraste 5,18:1 documenté). Il manquait, des deux côtés, le POINT D'ARRIVÉE.
+>
+> **BORNE** (sous `LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25`, SHA
+> `f445b1a8…` → `fcbe3755…`, baseline mise à jour, sentinelle FrozenZone verte) :
+> · le récap porte un « Modifier » par section, qui émet le **TYPE** d'étape — jamais un index :
+>   les étapes actives dépendent du produit, un burger n'a pas d'étape pain ;
+> · `goToStepType()` résout le type contre `activeSteps` ; un type inconnu/vide **ne déplace rien** ;
+> · `openOnRecapIfEditing()` n'ouvre sur le récap qu'EN ÉDITION. Posé aux **DEUX** points
+>   d'hydratation : le panier passe par `fetchItemById`, et ne le brancher que sur la prop `item`
+>   aurait laissé la fonctionnalité **morte en production tout en passant les tests** ;
+> · la ligne du panier portait un crayon gris de 16 px dans un cercle de 34 (sous le minimum
+>   tactile, et rien n'annonçait qu'on POUVAIT modifier) → bouton « Modifier » de 44 px.
+>
+> **SITE** : `WizardFlow` accepte `editState`, repart de la composition du client et ouvre sur le
+> récap ; la ligne du panier propose « Modifier » ; le retour **REMPLACE** la ligne — une
+> duplication ici, c'est un client qui paie deux fois. Index purgé à chaque fermeture, sinon il
+> détournerait l'ajout suivant. `.jsx` recompilés (le site sert du compilé depuis le 08/08).
+>
+> **VÉRIFICATIONS** · 12 tests d'ABUS verts (`kioskModifierAbus.spec.js`) : ligne jamais perdue
+> ni dupliquée, bonne ligne remplacée, validation APRÈS annulation qui ajoute au lieu d'écraser,
+> deux « Modifier » d'affilée, index négatif, snapshot en copie profonde, quantité bornée 1–20,
+> devis invalidé. · 11 tests de contrat. · **Parcours réel mesuré à 1080×1920** : récap atteint,
+> boutons rendus 106×44 px, clic viandes → « QUELLE VIANDE ? », 0 erreur JS. · Vitest complet
+> **3 667 verts / 446 fichiers**. · Portes du site vertes (parité 38 prix, CSS critique, chaque
+> `.js` correspond à son `.jsx`, aucun secret).
+>
+> 🪤 **LA PORTE DE ZONE GELÉE SE FRANCHIT EN DEUX COMMITS, PAS AVEC `--no-verify`.**
+> Le hook lit le message du commit **PRÉCÉDENT** (`git log -1`) pour y trouver un `LOCK_*.md`.
+> On commite donc le LOCK + le non-gelé d'abord, le fichier gelé ensuite. `--no-verify` est
+> interdit par §3quater et n'a pas été utilisé.
+>
+> 🪤 **LES TESTS D'ABUS DU SITE ONT TROUVÉ DEUX DÉFAUTS QUE LE PARCOURS NORMAL NE MONTRAIT PAS.**
+> Ils sont la raison d'être de la condition du propriétaire, et ils l'ont justifiée le jour même
+> (`tests-e2e/panier-modifier-abus-2026-08-26.regression.js`, **14 verts**) :
+> · **le prix regonflait à chaque réouverture.** Je passais au wizard la LIGNE DU PANIER, dont
+>   `price` est le total **déjà composé** ; or `computeWizardTotal` repart de `item.price`. Un
+>   tacos à 9,80 € rouvert puis validé sans rien changer repartait à **10,70 €** — le client
+>   payait son cheddar une seconde fois, à chaque passage. On repart désormais de l'article du
+>   CATALOGUE (`menu.findItem`) ; produit retiré de la carte ⇒ on ne rouvre rien plutôt que faux.
+> · **la quantité disparaissait.** Elle vit sur la LIGNE, pas dans la composition : un « ×3 »
+>   rouvert pour corriger une sauce revenait à « ×1 », deux articles perdus sans un mot.
+> · au passage, renoncer ramène AU PANIER — le client en venait ; le refermer sur le menu lui
+>   laissait croire qu'il avait perdu sa commande.
+>
+> **PREUVE EN PRODUCTION** · Borne : `https://…/js/app.js` **réellement servi** (2 386 884 o)
+> contient `goToStepType`, `openOnRecapIfEditing`, `kiosk-summary-edit` ; `/kiosk/idle` **200,
+> 0 erreur JS, aucun libellé i18n brut**. · Site : bundle servi porteur du correctif, porte SEO
+> **16/16 contre la production**, parité des 39 prix.
+>
+> ⚠️ **LIMITE ASSUMÉE, à ne pas surinterpréter** : le parcours complet n'a PAS été rejoué sur la
+> borne de production. Y entrer exige `?machine_key=<KIOSK_AUTO_LOGIN_SECRET>` et la lecture de
+> ce secret a été refusée ; je ne l'ai pas contournée. La preuve est donc **en deux temps** :
+> parcours réel mesuré à 1080×1920 sur le MÊME commit avant déploiement, + production prouvée
+> servir exactement ce code. Ce n'est pas une preuve directe.
+>
+> 🔴 **CE QUI RESTE** : la **contresignature owner du LOCK** (case ☐) — porte humaine §10 pour
+> toute zone gelée, je ne signe pas à sa place. Le stepper reste volontairement non cliquable :
+> y sauter librement permettrait d'atteindre une étape jamais visitée en contournant les
+> validations, donc de composer un produit incomplet.
+>
+> 🐛 **Défaut d'outillage relevé, NON corrigé (hors voie)** : `tools/seo/deployer.sh` porte un
+> message de commit **figé en dur** d'un déploiement de juillet, contenant des backticks non
+> échappés dans une chaîne entre guillemets — le shell les exécute (`const: command not found`).
+> Et son `git commit … || exit 1` **abandonne avant le push** dès que l'arbre est déjà propre.
+> Résultat : le script est inutilisable une fois le travail commité à la main. Publication faite
+> par `git push origin main` après ses portes de contrôle (toutes vertes).
+
+> **2026-08-25 (nuit) — BORNE : LA CATÉGORIE ENTIÈRE TIENT À L'ÉCRAN, QUEL QU'EN SOIT LE NOMBRE**
+>
+> HEAD prod **`b44f2c28`** (== origin), avance rapide, arbre du VPS **0 ligne avant ET après**
+> `npx mix --production` (lancé en `ubuntu`). Owner, après avoir vu la borne en service :
+> « il y a plusieurs sandwichs, on ne voit que les 3 premiers, c'est pas adapté pour visualiser
+> toute la catégorie ». **Il avait raison, et c'était la réserve que j'avais posée la veille en
+> livrant sans la traiter** — je l'avais annoncée puis laissée.
+>
+> **CAUSE** : les hauteurs étaient choisies par PALIERS. Au-delà de 3 produits la carte gardait la
+> même taille, donc Sandwichs (5), Burgers (6), Frites (6) et Boissons (15) demandaient de faire
+> défiler pour seulement DÉCOUVRIR la carte. Sur une borne, ce qu'on ne voit pas n'existe pas.
+> **CORRECTIF** : la hauteur se CALCULE — hauteur utile (mesurée : **1592 px sur 1920**) moins les
+> intervalles, divisée par `--kiosk-produits` exposé au CSS par le composant.
+> Mesuré après : **Bols 2/2 · Tacos 3/3 · Desserts 3/3 · Sandwichs 5/5 · Burgers 6/6 ·
+> Boissons 15/15**, tout visible sans un geste.
+>
+> **DEUX CONSÉQUENCES QUE SEULE LA MESURE A MONTRÉES**
+> · À 6 produits la carte tombe à **246 px** : une photo EMPILÉE au-dessus du texte ne laisse alors
+>   de place ni à l'une ni à l'autre → au-delà de 3, la photo passe à GAUCHE et prend toute la
+>   hauteur (`--dense`).
+> · À 15 produits la carte fait **96 px** : nom + pastilles de régime + description + prix n'y
+>   tiennent pas, et c'est **le PRIX qui passait sous le bord**, coupé net par `overflow: hidden`.
+>   Un produit sans prix affiché sur une borne n'est pas acceptable → au-delà de 9 articles on ne
+>   garde que le nom et le prix (`--minimal`).
+>
+> 🪤 **TROIS PIÈGES PAYÉS, TOUS TROUVÉS À LA MESURE ET AUCUN À LA LECTURE**
+> 1. **`min-height` est un PLANCHER, pas un plafond** : le contenu repoussait la carte à 602 px
+>    pour une cible de 514, et 3 produits débordaient. Il faut une hauteur FERME (`height`) —
+>    qui permet en prime aux enfants en `%` de se résoudre.
+> 2. **`82,9vh` pile (la mesure exacte) faisait dépasser la dernière carte de 2 px** : les arrondis
+>    sous-pixels s'accumulent. On garde 1 % de marge → `82vh`.
+> 3. **Le bouton `+` s'ancrait à la PHOTO** (seul ancêtre positionné) : la photo couchée, il se
+>    posait en plein milieu du visuel. `position: static` sur la photo le rend à la carte.
+>
+> Zones gelées : **0 ligne**. Vitest complet **3 644 verts / 444 fichiers**. Bundle servi vérifié
+> par son CONTENU (`kiosk-product-grid--dense`, `--minimal`, `--kiosk-produits` présents dans
+> `/js/app.js?id=ef35ad82…`), 6 surfaces en 200.
+
+> **2026-08-25 (soir) — SITE PUBLIC : IL ANNONÇAIT DEUX PRIX QUE LA CAISSE NE PRATIQUE PAS**
+>
+> Owner : « deploy tout ». Le backend était déjà entièrement en ligne ; le morceau restant était
+> le site public. `tools/seo/comparer-prix.py` — l'outil que le projet s'est donné exactement pour
+> ça — a sorti **`ECART|…|2`** contre la production :
+>
+> | produit | site | caisse | depuis |
+> |---|---|---|---|
+> | Galette Cayenne | 7,00 € | **7,40 €** | le 2026-08-20, PAS de mon fait |
+> | Tacos L | 7,90 € | **8,90 €** | mon changement du 2026-08-24 |
+>
+> ⛔ **CORRECTION MAJEURE DE §3bis — `/Users/1millnonstop/Downloads/web` N'EST PAS LA SOURCE DU
+> SITE.** CLAUDE.md le désigne comme « mirror canonical web standalone ». Mesuré : son
+> `data/menu.js` fait **42 301 o**, celui que sert `www.lecayenne.fr` en fait **58 342 o**. La vraie
+> source est **`/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`** (dépôt
+> `loeymot-sketch/Site-lecayenne`, `.vercel/project.json` → projet `site-lecayenne`), dont le
+> `data/menu.js` fait 58 342 o — l'octet près. Mon commit de la veille dans `/Downloads/web`
+> (`4d1dfcb`) était donc **mort-né** : il n'atteindra jamais un client. C'est le piège consigné le
+> 2026-08-07b, toujours vivant sept semaines plus tard.
+>
+> **LA CORRECTION GALETTE EXISTAIT ET N'AVAIT JAMAIS ÉTÉ SERVIE.** Commit `e556f59` du 20/08,
+> poussé sur `origin/main`, 21 prix corrigés sur 5 pages — et la production servait toujours
+> 7,00 €. Pire : il n'avait corrigé QUE les pages HTML, pas `data/menu.js` ni
+> `tools/seo/catalogue-extrait.json`. **Régénérer les pages aurait donc réécrit 7,00 € partout et
+> annulé la correction en silence.** Rattrapé de justesse en inspectant l'extraction avant de
+> lancer le générateur.
+>
+> 🪤 **LE JSON-LD ÉTAIT JUSTE, LA META DESCRIPTION MENTAIT.** Après le premier déploiement, les
+> données structurées de `tacos.html` servaient bien 8,90 € (elles lisent le catalogue) pendant
+> que la meta description annonçait encore « Tacos L 7,90 € » à Google. Cause : `generer.py`
+> **retapait les prix du tacos à la main** dans sa prose, sa FAQ, son titre et sa description —
+> précisément ce que son propre en-tête interdit (« les prix […] jamais retapés »). Et la porte de
+> parité ne pouvait pas le voir : **elle compare les prix de `carte.html` au catalogue, pas la
+> prose des pages.** Les quatre endroits lisent désormais le catalogue, formules comprises.
+> ⚠️ **La porte de parité reste aveugle à toute prose écrite en dur** — elle l'était pour le tacos,
+> elle l'est encore pour les autres pages. À élargir un jour.
+>
+> **PUBLIÉ** (dépôt Site-lecayenne, `main` : `e556f59..56f0383..1ba9126`) : Tacos L 8,90 €,
+> **NOUVEAU Tacos XL 10,90 €** (3 viandes comprises, 4ᵉ à 2,50 €, `has_crudites:false` selon la
+> règle tacos du 05/08), Galette Cayenne 7,40 €, fiche `plat/tacos-xl.html` générée, sitemap à
+> **41 URL**, 24 fiches + `carte.html` + `llms.txt` + JSON-LD régénérés.
+> Sur demande explicite du propriétaire, le lot emporte AUSSI les **11 commits de
+> `app-stores/capacitor-2026-08-19`** (fondation App Store/Google Play, permissions Android,
+> connexion Apple/Google, RGPD, iOS) et le travail non commité sur la roue. 🔴 **Je n'ai relu ni
+> ces 11 commits ni ces 206 lignes — je le dis plutôt que de le laisser croire.**
+>
+> **VÉRIFIÉ SUR LE CONTENU SERVI** (un push ne prouve rien — cf. l'échec silencieux de deux jours
+> du 05/08) : `comparer-prix.py` passe de `ECART|…|2` à **`OK|39`**, la meta description servie
+> porte « M 6,90 €, L 8,90 €, XL 10,90 € », le JSON-LD sert 6,90/8,90/10,90 et
+> `plat/tacos-xl.html` répond **200**. Portes : parité SEO **18/18**, CSS critique conforme,
+> chaque `.js` compilé correspond à son `.jsx`, aucun secret.
+
+
 > **2026-08-25 — AUDIT SUPERVISEUR CAISSE DÉPLOYÉ. 4 P0 fermés, 5 P1 restants. NON CONVERGÉ.**
 >
 > Prod **`760ae546a` → `9d80f9ea9`**, avance rapide, 23 commits, **aucun `--force`**.
