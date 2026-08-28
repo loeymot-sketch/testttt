@@ -270,7 +270,7 @@
                   </h3>
                   <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                     <span v-for="(extra, index) in orderItem.item_extras" :key="index" class="text-heading">
-                      {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
+                      {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
                     </span>
                   </p>
                 </span>
@@ -524,7 +524,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -712,7 +712,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -888,7 +888,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1060,7 +1060,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ kdsExtraDisplayName(extra) }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>

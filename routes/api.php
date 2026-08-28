@@ -1265,7 +1265,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // au pont local caisse pour une impression SILENCIEUSE (le cloud Linux ne joint pas l'USB). Lecture seule.
         Route::get('/orders/{order}/escpos', [\App\Http\Controllers\Admin\Pos\PosTicketBytesController::class, 'show'])->name('orders.escpos-bytes');
         // [CUSTOMER-DISPLAY 2026-06-28] Refresh the SAGA pole display (total / welcome). Best-effort, no fiscal.
-        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])->name('customer-display.update');
+        // [AUDIT-SUPERVISEUR 2026-08-25] Seau dedie : poussee a cadence fixe, non fiscale et
+        // sans ecriture en base — elle n'a rien a faire dans le seau des mutations de la caisse,
+        // ou elle se disputait le plafond avec l'encaissement. Voir RouteServiceProvider.
+        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])
+            ->middleware('throttle:customer-display')
+            // Sans ce retrait, les deux seaux s'EMPILENT et le plus strict gagne : la route
+            // resterait plafonnee a 120/min et le seau dedie ne servirait a rien. Verifie sur
+            // `route:list -v` : un seul limiteur doit apparaitre.
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('customer-display.update');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
