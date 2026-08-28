@@ -31,7 +31,15 @@ const {
   resetKioskToken,
   getKioskApiToken,
   PAYMENT_CARD,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const REPORT_ROOT = path.resolve(
   __dirname,
@@ -277,7 +285,7 @@ test.describe('Wave P Round 3 — Cross-System E2E Flows', () => {
 
   test.afterAll(() => {
     crossSystemSweep();
-    try { cleanupKioskAuditOrders('AUDIT-KIOSK-WAVE-E'); } catch (_) {}
+    try { cleanupKioskAuditOrders(PREFIXE_AUDIT); } catch (_) {}
     try { resetKioskToken(); } catch (_) {}
     persist();
   });
@@ -317,10 +325,26 @@ test.describe('Wave P Round 3 — Cross-System E2E Flows', () => {
     // Helper's auto payment-confirm omits amount_cents which the endpoint
     // now requires (per kiosk URL-9 spec pattern). We skip auto-confirm
     // and replay the kiosk spec's manual confirm with amount_cents.
+    // [FIX 2026-08-25] Articles résolus à l'exécution, plus d'identifiants figés.
+    //
+    // Le banc commandait les items 24 (« Galette Cayenne ») et 35 avec la variation 130. La
+    // Galette exige une composition — le devis répondait 422 « Sélectionnez au moins 1 Viande 1 »
+    // et le parcours mourait avant son sujet.
+    //
+    // Or le sujet de ce cas est la LATENCE inter-surfaces (borne → KDS → OSS), pas la
+    // composition : aucune assertion ne porte sur les variations. On garde donc une commande à
+    // DEUX LIGNES — c'est ce qui compte pour la propagation — mais avec deux articles réellement
+    // commandables, résolus contre l'état du menu.
+    const ligne1 = resolveSimpleOrderableItem({ branchId: 1 });
+    const ligne2 = resolveSimpleOrderableItem({ branchId: 1, excludeIds: [ligne1.id] });
+    // eslint-disable-next-line no-console
+    console.log(`[Wave P cross] articles résolus : #${ligne1.id} « ${ligne1.name} » + #${ligne2.id} « ${ligne2.name} »`);
+
     const order = await placeKioskOrder(kioskPage, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [
-        { item_id: 24, quantity: 1, item_variations: [], item_extras: [], item_addons: [] },
-        { item_id: 35, quantity: 1, item_variations: [{ id: 130, quantity: 1 }], item_extras: [], item_addons: [] },
+        { item_id: ligne1.id, quantity: 1, item_variations: [], item_extras: [], item_addons: [] },
+        { item_id: ligne2.id, quantity: 1, item_variations: [], item_extras: [], item_addons: [] },
       ],
       paymentMethod: PAYMENT_CARD,
       orderType: 10, // TAKEAWAY (V1 dine-in disabled)

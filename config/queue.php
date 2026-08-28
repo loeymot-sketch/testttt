@@ -95,4 +95,29 @@ return [
         'table' => 'failed_jobs',
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Files surveillées par les sondes de santé
+    |--------------------------------------------------------------------------
+    |
+    | [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — P0 du 2026-08-25]
+    |
+    | Les trois sondes de santé du projet comptaient `default` + `high`, écrits en dur. Or
+    | `App\Jobs\SendFcmNotificationJob` publie sur `notifications`. Résultat mesuré ce jour-là :
+    | 1 490 travaux empilés, `attempts=0` (jamais tentés), pendant que les trois surfaces
+    | affichaient « file OK ». Un faux vert.
+    |
+    | Cette liste est désormais la source unique. `tests/Feature/Health/FilesSurveilleesTest.php`
+    | DÉCOUVRE les `onQueue('…')` du code et échoue si l'un d'eux manque ici.
+    |
+    | ⚠️ Surveiller n'est pas traiter : le worker (`scripts/deploy/supervisor.conf.template`)
+    | n'écoute toujours QUE `high,default`. Le débloquer enverrait 1 490 notifications d'un coup
+    | sur des commandes vieilles de plusieurs semaines — décision propriétaire, voir
+    | `reports/audit/P0_FILE_NOTIFICATIONS_ORPHELINE_2026-08-25.md`.
+    |
+    */
+
+    'monitored_queues' => ['default', 'high', 'notifications'],
+
 ];

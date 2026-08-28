@@ -7,7 +7,7 @@
             <Datepicker uid="orderStatisticsDate" name="orderStatisticsDate" hideInputIcon autoApply :enableTimePicker="false" utc="false" @update:modelValue="handleDate"
                 v-model="date" range :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
                 <template #yearly="{ label, range, presetDateRange }">
-                    <span @click="presetDateRange(range)">{{ label }}</span>
+                    <button type="button" class="dashboard-date-preset w-full px-3 py-2 text-left rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="presetDateRange(range)">{{ label }}</button>
                 </template>
             </Datepicker>
         </div>
@@ -159,19 +159,20 @@ export default {
             canceled_order: null,
             returned_order: null,
             rejected_order: null,
+            // [REPLAN_7 2026-08-24] `slot` sur CHAQUE préréglage — sinon vue-datepicker rend
+            // sa propre `<div class="dp__preset_range">`, ni focalisable ni activable au
+            // clavier. Sans ce marqueur, le `<template #yearly>` accessible juste au-dessus
+            // ne s'appliquait qu'à l'unique entrée démo du template vendeur : 4 préréglages
+            // sur 5 restaient des div muettes, et la sentinelle source ne pouvait pas le voir.
             presetRanges: [
-                { label: 'Aujourd’hui', range: [new Date(), new Date()] },
-                { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+                { label: 'Aujourd’hui', range: [new Date(), new Date()], slot: 'yearly' },
+                { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())], slot: 'yearly' },
                 {
                     label: 'Mois dernier',
                     range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
-                },
-                { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
-                {
-                    label: 'Cette année',
-                    range: [startOfYear(new Date()), endOfYear(new Date())],
                     slot: 'yearly',
                 },
+                { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())], slot: 'yearly' },
             ]
         };
     },

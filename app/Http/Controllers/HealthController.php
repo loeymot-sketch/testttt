@@ -166,11 +166,18 @@ class HealthController extends Controller
 
     private function checkQueue(): array
     {
+        // [GOAL CONSOLIDATION 2026-08-25] Rapporter CHAQUE file surveillée, pas deux d'entre elles.
+        // Voir reports/audit/P0_FILE_NOTIFICATIONS_ORPHELINE_2026-08-25.md.
         try {
-            $defaultSize = Queue::size('default');
-            $highSize = Queue::size('high');
+            $tailles = [];
+            $total = 0;
+            foreach ((array) config('queue.monitored_queues', ['default', 'high']) as $file) {
+                $n = (int) Queue::size((string) $file);
+                $tailles[(string) $file . '_size'] = $n;
+                $total += $n;
+            }
 
-            return ['status' => 'ok', 'default_size' => $defaultSize, 'high_size' => $highSize];
+            return array_merge(['status' => 'ok', 'total_size' => $total], $tailles);
         } catch (\Throwable $e) {
             return $this->panne($e);
         }

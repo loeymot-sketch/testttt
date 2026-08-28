@@ -42,19 +42,24 @@ const {
   placeKioskOrder,
   cleanupKioskAuditOrders,
   PAYMENT_CASH,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SHOTS_DIR = path.resolve(
   __dirname,
   '../../reports/test-e2e/critical-focus-2026-05-18/zone-3-KDS-KIOSK/screenshots'
 );
 
-// Item id=362 "Boisson Seule" 2.00€ TTC: status=5 ACTIVE, is_available=1,
-// item_type=5 (sellable), NO wizard profile → composes without required
-// selections. Verified 2026-05-18 (Frites Seules id=361 now carries a
-// custom profile requiring Sauce minimum 1, blocking the prior Wave D
-// canonical path).
-const FRITES_SEULES_ID = 362;
+// [FIX 2026-08-25] L'identifiant 362 était figé et n'existe PLUS en base (vérifié : 0 ligne).
+// Le nom visé, « Boisson Seule », existe toujours mais sous un autre id — un banc ne doit pas
+// parier sur un identifiant, il doit décrire son besoin. On demande donc au helper partagé un
+// article commandable sans assistant, en PRÉFÉRANT « Boisson Seule » s'il l'est.
+let FRITES_SEULES_ID = Number(process.env.ZONE3_ITEM_ID || 0);
 const ZONE3_PREFIX = 'AUDIT-ZONE3-2026-05-18';
 const ORDER_TYPE_TAKEAWAY = 10;
 // app/Enums/OrderStatus.php — verified 2026-05-18
@@ -134,6 +139,13 @@ test.describe('Zone 3 — Kiosk → KDS convergence chronological journey', () =
   test.beforeAll(() => {
     cleanupKioskAuditOrders(ZONE3_PREFIX);
     resetKioskToken();
+
+    if (!FRITES_SEULES_ID) {
+      const article = resolveSimpleOrderableItem({ branchId: 1, preferName: 'Boisson Seule' });
+      FRITES_SEULES_ID = article.id;
+      // eslint-disable-next-line no-console
+      console.log(`[Zone 3] article résolu : #${article.id} « ${article.name} » @ ${article.price}`);
+    }
   });
 
   test.afterAll(() => {
@@ -199,6 +211,7 @@ test.describe('Zone 3 — Kiosk → KDS convergence chronological journey', () =
       ];
 
       const placed = await placeKioskOrder(kioskPage, {
+        tokenPrefix: PREFIXE_AUDIT,
         items: itemsPayload,
         paymentMethod: PAYMENT_CASH,
         orderType: ORDER_TYPE_TAKEAWAY,
@@ -251,6 +264,7 @@ test.describe('Zone 3 — Kiosk → KDS convergence chronological journey', () =
       resetKioskToken();
 
       const placed = await placeKioskOrder(kioskPage, {
+        tokenPrefix: PREFIXE_AUDIT,
         items: [{
           item_id: FRITES_SEULES_ID, quantity: 1,
           item_variations: [], item_extras: [], item_addons: [],
@@ -357,6 +371,7 @@ test.describe('Zone 3 — Kiosk → KDS convergence chronological journey', () =
       await kioskPage.waitForTimeout(2500);
       resetKioskToken();
       const placed = await placeKioskOrder(kioskPage, {
+        tokenPrefix: PREFIXE_AUDIT,
         items: [{
           item_id: FRITES_SEULES_ID, quantity: 1,
           item_variations: [], item_extras: [], item_addons: [],

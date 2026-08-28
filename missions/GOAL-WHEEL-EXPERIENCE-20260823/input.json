@@ -1,0 +1,30 @@
+{
+  "task_id": "GOAL-WHEEL-EXPERIENCE-20260823",
+  "delegation": "foodking-complex-implementer (codex-extension-fallback)",
+  "plan_file": "plans/PLAN_GOAL-WHEEL-EXPERIENCE-20260823_2026-08-23.md",
+  "objective": "Improve the public Wheel journey while retaining the tablet companion as a read-only regression boundary, without changing any server-owned prize, claim, access, stock, loyalty or branch semantics.",
+  "allowlist": [
+    "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/roue.html",
+    "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/tests-e2e/",
+    "resources/views/admin/wheel/borne.blade.php",
+    "tests/Feature/Wheel/WheelKioskScreenTest.php"
+  ],
+  "forbidden": [
+    "Do not edit app/Services/Wheel, controllers, routes, config/wheel.php, migrations, or any order/payment/loyalty/stock/fiscal code.",
+    "Do not touch dirty files in the public-site repository other than roue.html or a focused Wheel E2E file.",
+    "Do not generate, predict or replace a prize on the client; only execute the segment_index supplied by the server."
+  ],
+  "invariants": [
+    "wheel-result-server-authoritative",
+    "no-client-prize-or-price-logic",
+    "no-branch-or-order-semantics-change",
+    "motion-accessibility-and-reduced-motion",
+    "human-ux-signoff-before-close"
+  ],
+  "acceptance": [
+    "The spin only stops on the server response segment_index and remains single-submit while pending.",
+    "Entry, spin, reward, claim and recovery have visible loading/error/retry states and usable keyboard/live-region semantics.",
+    "The public page remains performant and intelligible with reduced motion; the tablet companion's existing feature contract remains green.",
+    "Focused public-site E2E, scoped PHPUnit and public-site build are green; gate GATE-WHEEL-EXPERIENCE-UX-SIGNOFF-2026-08-23 stays pending for human close approval."
+  ]
+}

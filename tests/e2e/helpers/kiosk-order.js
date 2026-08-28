@@ -32,7 +32,7 @@
  *       second.status === 409 expected (IdempotencyKeyMiddleware payload conflict)
  *
  *   cleanupKioskAuditOrders(prefix = 'AUDIT-KIOSK-WAVE-E')
- *     → JSON summary of rows deleted (orders / order_items / domain_events / ...)
+ *     → JSON summary of canonical cancellations / preserved terminal rows
  *
  *   resetKioskToken()
  *     → void  (clears the module-level token cache)
@@ -102,6 +102,8 @@ let cachedTokenForMachineId = null;
 function resetKioskToken() {
   cachedToken = null;
   cachedTokenForMachineId = null;
+  // On NE réarme PAS `_serveurDejaVerifie` : l'identité du serveur ne change pas parce qu'un
+  // jeton est jeté, et la réarmer réintroduirait la latence que ce correctif supprime.
 }
 
 /**
@@ -145,6 +147,218 @@ function parseArtisanJson(output) {
  */
 function phpString(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/**
+ * Mutating E2E helpers require two independent signals: an explicit operator
+ * opt-in and a database name that is unambiguously dedicated to tests.
+ * APP_ENV is deliberately ignored because a misconfigured test process can
+ * still point at a non-test database.
+ */
+function isDedicatedE2EWriteScope(
+  databaseName,
+  explicitOptIn = process.env.FOODKING_E2E_DEDICATED_DB,
+) {
+  // [REPLAN_8 2026-08-24] Segment ENTIER, pas sous-chaîne. L'ancien `/(test|e2e|playwright)/i`
+  // acceptait `protest`, `contest_prod`, `foodking_greatest`, `lecayenne_latest` — vérifié en
+  // exécutant la fonction exportée. Le commentaire promettait « unambiguously dedicated to
+  // tests » ; la regexp ne le tenait pas. Les bases réellement utilisées ici passent toujours :
+  // foodking_e2e, foodking_test, foodking_dash_e2e, foodking_e2e_stress,
+  // foodking_kiosk_p1_test, foodking_va_sys_final_test, playwright_db.
+  const nom = String(databaseName || '');
+  const segmentDeTest = /(^|[^a-z0-9])(test|tests|testing|e2e|playwright)([^a-z0-9]|$)/i.test(nom);
+  return explicitOptIn === '1' && segmentDeTest;
+}
+
+function assertDedicatedE2EWriteScope(
+  databaseName,
+  explicitOptIn = process.env.FOODKING_E2E_DEDICATED_DB,
+) {
+  if (!isDedicatedE2EWriteScope(databaseName, explicitOptIn)) {
+    throw new Error(
+      'E2E database writes require FOODKING_E2E_DEDICATED_DB=1 and a '
+      + `test/e2e/playwright database name (database=${String(databaseName || 'unknown')}).`,
+    );
+  }
+  return true;
+}
+
+function assertCurrentE2EWriteScope() {
+  const identity = parseArtisanJson(artisan(`
+    echo json_encode(['database' => (string) DB::connection()->getDatabaseName()]);
+  `));
+  assertDedicatedE2EWriteScope(identity.database);
+  return identity.database;
+}
+
+/**
+ * [REPLAN_8 2026-08-24] La garde de base ne prouvait QUE l'identité de la base vue par le
+ * processus CLI (`php artisan tinker`). Or toutes les écritures partent du serveur HTTP visé par
+ * `PLAYWRIGHT_BASE_URL`, et `playwright.config.js` a `reuseExistingServer: true` : Playwright
+ * adopte silencieusement un serveur démarré par quelqu'un d'autre, avec l'environnement de
+ * quelqu'un d'autre. Un serveur pointant sur la base de production passait donc la garde.
+ *
+ * Un jeton Sanctum a la forme `{id}|{secret}`. On vérifie que la ligne
+ * `personal_access_tokens` que le SERVEUR vient d'écrire est visible depuis la base vérifiée en
+ * CLI. Si les deux processus ne partagent pas la même base, la ligne est absente et on s'arrête
+ * AVANT la première commande — c'est-à-dire avant toute écriture métier ou fiscale.
+ *
+ * Résidu assumé et documenté : la création du jeton elle-même reste écrite avant le contrôle.
+ * Une preuve entièrement pré-écriture demanderait un point d'entrée serveur exposant l'identité
+ * de sa base — c'est du code produit, hors périmètre de ce cycle, et remonté au propriétaire.
+ *
+ * @param {string} token jeton Sanctum en clair renvoyé par /api/auth/kiosk-login
+ * @returns {void} lève si le serveur n'écrit pas dans la base vérifiée
+ */
+let _serveurDejaVerifie = false;
+
+function assertServerSharesVerifiedDatabase(token) {
+  // [CORRECTIF 2026-08-25] Une seule vérification par processus.
+  //
+  // Ce contrôle coûte un aller-retour `php artisan` (~1-2 s) et il était exécuté à CHAQUE
+  // émission de jeton — donc systématiquement ENTRE l'émission et le premier usage. Or une
+  // borne n'a qu'un jeton : ce délai élargissait la fenêtre pendant laquelle l'auto-login du
+  // SPA révoque le jeton du banc, transformant un garde de sûreté en fabrique de 401.
+  //
+  // La propriété qu'on protège — « le serveur écrit-il dans la base vérifiée ? » — ne change
+  // pas d'une émission à l'autre au sein d'un même run : le serveur et sa configuration sont
+  // fixes. Une vérification unique, faite avant la toute première commande, la garantit
+  // pleinement, sans payer la latence à chaque fois.
+  if (_serveurDejaVerifie) return;
+
+  const rawId = String(token || '').split('|')[0];
+  if (!/^\d+$/.test(rawId)) {
+    throw new Error(
+      'Impossible de vérifier que le serveur HTTP partage la base de test : '
+      + "le jeton kiosk n'a pas la forme Sanctum `{id}|{secret}` attendue.",
+    );
+  }
+  const vu = parseArtisanJson(artisan(`
+    echo json_encode([
+      'database' => (string) DB::connection()->getDatabaseName(),
+      'token_visible' => DB::table('personal_access_tokens')->where('id', ${rawId})->exists(),
+      'max_id' => (int) (DB::table('personal_access_tokens')->max('id') ?? 0),
+    ]);
+  `));
+
+  // [CORRECTIF 2026-08-25] La première version exigeait que la LIGNE du jeton soit encore
+  // présente. C'était un FAUX POSITIF : la borne se reconnecte pendant le parcours et Sanctum
+  // révoque à la reconnexion (CLAUDE.md §9), donc un jeton parfaitement légitime disparaît
+  // entre son émission et ce contrôle. Mesuré : jeton #10711 émis puis supprimé, #10713 créé
+  // dans la foulée — le garde bloquait un run sain.
+  //
+  // Le discriminant robuste n'est pas la présence de la ligne mais l'AVANCEMENT du compteur :
+  // si le serveur écrivait dans une AUTRE base, l'auto-incrément vu par le CLI n'aurait jamais
+  // atteint l'identifiant que le serveur vient d'attribuer. Une révocation, elle, ne fait pas
+  // reculer `max(id)`. On accepte donc « ligne visible » OU « compteur au moins à cet id ».
+  const idEmis = Number(rawId);
+  const compteurAtteint = Number(vu.max_id || 0) >= idEmis;
+  if (vu.token_visible || compteurAtteint) {
+    _serveurDejaVerifie = true;
+    return;
+  }
+  if (!vu.token_visible && !compteurAtteint) {
+    throw new Error(
+      'ARRÊT : le serveur HTTP visé par PLAYWRIGHT_BASE_URL n\'écrit PAS dans la base vérifiée '
+      + `(${String(vu.database)}). Il vient d'attribuer le jeton kiosk #${idEmis}, or le plus grand `
+      + `identifiant de jetons visible depuis cette base est ${vu.max_id} : le compteur n'y est `
+      + "jamais passé. Une révocation légitime est exclue (elle ne fait pas reculer le compteur). "
+      + 'Un serveur réutilisé (playwright.config.js reuseExistingServer) pointe probablement sur '
+      + 'une autre base. Arrêté avant toute écriture de commande.',
+    );
+  }
+}
+
+/**
+ * Résout un article RÉELLEMENT commandable sans assistant, pour la branche visée.
+ *
+ * [FIX 2026-08-25] Pourquoi ce helper existe.
+ *
+ * Dix des onze specs consommatrices étaient rouges, avec dix causes différentes qui se
+ * ramenaient toutes à la même racine : un identifiant d'article FIGÉ dans le banc, et un menu
+ * qui a bougé depuis. Relevé en base : les items 361, 362 et 485 n'existent plus ; le
+ * Coca-Cola 33cl (id 52) que le banc d'idempotence code en dur est l'UNIQUE produit en
+ * rupture de la branche 1 — la pastille de santé affichait d'ailleurs « 1 en rupture », c'est
+ * le même fait vu d'une autre surface. D'autres bancs tombaient sur « Sélectionnez au moins
+ * 1 Viande 1 » : l'article choisi exige un assistant.
+ *
+ * Un banc ne devrait jamais dépendre d'un identifiant : il doit décrire ce dont il a BESOIN.
+ * Ici : actif, disponible sur la branche, sans variation, et sans étape d'assistant
+ * obligatoire — donc commandable avec un payload simple.
+ *
+ * @param {object} [options]
+ * @param {number} [options.branchId=1] branche visée
+ * @param {string} [options.preferName] nom exact préféré, s'il est commandable
+ * @param {number[]} [options.excludeIds] identifiants à écarter (commande multi-lignes)
+ * @returns {{id: number, name: string, price: string}} article commandable
+ */
+function resolveSimpleOrderableItem({ branchId = 1, preferName = null, excludeIds = [] } = {}) {
+  const prefere = preferName ? phpString(preferName) : null;
+  const exclus = (Array.isArray(excludeIds) ? excludeIds : [])
+    .map((n) => Number(n))
+    .filter((n) => Number.isInteger(n) && n > 0);
+  const resultat = parseArtisanJson(artisan(`
+    $branchId = ${Number(branchId)};
+    // [CORRECTIF 2026-08-25] DB::table() CONTOURNE les SoftDeletes du modele Item.
+    // Mesure : les articles 4 a 8 (Sauce supplementaire, Fromage supplementaire...) portent
+    // deleted_at renseigne DEPUIS le 2026-05-28 tout en gardant status = 5. Le resolveur les
+    // proposait donc comme commandables, et le devis les refusait en 422 Article X introuvable
+    // — FrontendOrderService interroge Item::whereIn(...), qui applique bien le scope de
+    // suppression douce. On l'applique ici aussi.
+    $base = DB::table('items')
+      ->whereNull('items.deleted_at')
+      ->where('items.status', 5)
+      ${exclus.length ? `->whereNotIn('items.id', [${exclus.join(',')}])` : ''}
+      ->whereNotExists(function ($q) {
+        $q->select(DB::raw(1))->from('item_variations')
+          ->whereColumn('item_variations.item_id', 'items.id');
+      })
+      ->whereNotExists(function ($q) {
+        $q->select(DB::raw(1))
+          ->from('item_wizard_profiles')
+          ->join('item_wizard_steps', 'item_wizard_steps.profile_id', '=', 'item_wizard_profiles.id')
+          ->whereColumn('item_wizard_profiles.item_id', 'items.id')
+          ->where('item_wizard_steps.min_select', '>', 0);
+      })
+      ->whereNotExists(function ($q) use ($branchId) {
+        $q->select(DB::raw(1))->from('item_branch_availability')
+          ->whereColumn('item_branch_availability.item_id', 'items.id')
+          ->where('item_branch_availability.branch_id', $branchId)
+          ->where('item_branch_availability.is_available', 0);
+      });
+
+    // [CORRECTIF 2026-08-25] Preferer un article REELLEMENT route vers une station de cuisine.
+    //
+    // Le tableau KDS filtre par station (filterOrdersByStation). Les articles 1 a 3
+    // (Menu, Frites Seules, Boisson Seule) portent kds_station = 'none' : une commande qui ne
+    // contient qu'eux n'apparait sur AUCUNE station, donc jamais sur le board. Les bancs
+    // borne -> KDS echouaient alors sur une carte absente, alors que la commande etait bien en
+    // statut ACCEPT et parfaitement visible cote requete. On privilegie donc un article ayant
+    // une vraie station, avec repli sur n'importe quel article commandable.
+    $avecStation = (clone $base)
+      ->whereNotNull('items.kds_station')
+      ->where('items.kds_station', '!=', 'none')
+      ->orderBy('items.id');
+
+    $choisi = null;
+    ${prefere ? `$choisi = (clone $base)->where('items.name', '${prefere}')->first(['id','name','price']);` : ''}
+    if (! $choisi) {
+      $choisi = (clone $avecStation)->first(['id','name','price']);
+    }
+    if (! $choisi) {
+      $choisi = $base->orderBy('items.id')->first(['id','name','price']);
+    }
+    echo json_encode(['item' => $choisi]);
+  `));
+
+  const item = resultat && resultat.item;
+  if (!item || !item.id) {
+    throw new Error(
+      `Aucun article commandable sans assistant sur la branche ${branchId} : actif, disponible, `
+      + 'sans variation et sans étape obligatoire. Le menu de cette base est-il seedé ?',
+    );
+  }
+  return { id: Number(item.id), name: String(item.name), price: String(item.price) };
 }
 
 /**
@@ -208,7 +422,36 @@ function lookupKioskMachine(machineId) {
  *   key the cache + resolve a branch — the actual auth uses username/password.
  * @returns {Promise<string>} bearer token (without the `Bearer ` prefix)
  */
+/**
+ * Clé API attendue par `ApiKeyMiddleware` sur le chemin Node.
+ *
+ * Ordre : variable d'environnement explicite, puis `.env` du dépôt (même source que
+ * `config('app.api_key')`). On échoue avec un message qui NOMME le problème plutôt que de
+ * laisser le serveur répondre un 400 « Clé API invalide » que l'appelant interprétera comme
+ * un identifiant borne erroné — c'est exactement le contresens qui a coûté ce diagnostic.
+ *
+ * @returns {string}
+ */
+function resolveApiKeyForNodePath() {
+  const direct = process.env.MIX_API_KEY || process.env.API_KEY;
+  if (direct) return String(direct).trim();
+  try {
+    // eslint-disable-next-line global-require
+    const fs = require('fs');
+    const envPath = path.resolve(__dirname, '../../..', '.env');
+    const brut = fs.readFileSync(envPath, 'utf8');
+    const m = brut.match(/^\s*(?:MIX_API_KEY|API_KEY)\s*=\s*(.+)$/m);
+    if (m) return m[1].trim().replace(/^["']|["']$/g, '');
+  } catch (_) { /* pas de .env lisible : on tombe dans l'erreur explicite ci-dessous */ }
+  throw new Error(
+    "Chemin Node de getKioskApiToken : aucune clé API trouvée. ApiKeyMiddleware refuse toute "
+    + "requête sans en-tête `x-api-key` (HTTP 400). Définis MIX_API_KEY ou API_KEY, ou rends "
+    + "le .env du dépôt lisible.",
+  );
+}
+
 async function getKioskApiToken(page, machineId = null) {
+  assertCurrentE2EWriteScope();
   const targetMachineId = machineId == null ? DEFAULT_KIOSK_MACHINE_ID : Number(machineId);
   if (cachedToken && cachedTokenForMachineId === targetMachineId) {
     return cachedToken;
@@ -239,6 +482,7 @@ async function getKioskApiToken(page, machineId = null) {
         `Kiosk login failed (HTTP ${result.status}): ${JSON.stringify(result.data).slice(0, 400)}`,
       );
     }
+    assertServerSharesVerifiedDatabase(result.data.token);
     cachedToken = result.data.token;
     cachedTokenForMachineId = targetMachineId;
     return cachedToken;
@@ -251,6 +495,17 @@ async function getKioskApiToken(page, machineId = null) {
   const body = JSON.stringify(credentials);
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000';
   const url = new URL('/api/auth/kiosk-login', baseUrl);
+
+  // [FIX 2026-08-25] Le chemin Node n'a JAMAIS porté `x-api-key`, alors que
+  // `ApiKeyMiddleware::handle` refuse en 400 « Clé API invalide » toute requête sans cet
+  // en-tête. Seul le chemin navigateur fonctionnait, parce que l'axios de la page l'injecte
+  // (voir le commentaire du chemin in-browser plus haut). Les bancs qui choisissent
+  // délibérément le repli Node — Wave D le fait pour échapper à la course de l'auto-login de
+  // la borne — mouraient donc à l'émission du jeton, pour une raison sans rapport avec le
+  // parcours testé. La clé n'est pas un secret (le middleware le documente : elle est publiée
+  // dans un meta HTML et des bundles JS publics) ; on la lit depuis l'environnement, jamais
+  // en dur.
+  const apiKey = resolveApiKeyForNodePath();
   const result = await new Promise((resolve, reject) => {
     const req = http.request(
       {
@@ -262,6 +517,7 @@ async function getKioskApiToken(page, machineId = null) {
           'Content-Type': 'application/json',
           Accept: 'application/json',
           'Content-Length': Buffer.byteLength(body),
+          'x-api-key': apiKey,
         },
       },
       (res) => {
@@ -286,6 +542,7 @@ async function getKioskApiToken(page, machineId = null) {
       `Kiosk login failed (HTTP ${result.status}): ${JSON.stringify(result.data).slice(0, 400)}`,
     );
   }
+  assertServerSharesVerifiedDatabase(result.data.token);
   cachedToken = result.data.token;
   cachedTokenForMachineId = targetMachineId;
   return cachedToken;
@@ -344,7 +601,7 @@ function resolveBranchId(branchId, machineId) {
  * @returns {Promise<{
  *   orderId: number,
  *   orderSerialNo: string,
- *   queueNumber: number|null,
+ *   queueNumber: string|null,
  *   idempotencyKey: string,
  *   totalAmount: number,
  *   replayed: boolean,
@@ -354,6 +611,7 @@ function resolveBranchId(branchId, machineId) {
  * }>}
  */
 async function placeKioskOrder(page, options) {
+  assertCurrentE2EWriteScope();
   if (!page || typeof page.evaluate !== 'function') {
     throw new Error('placeKioskOrder requires a Playwright page (for in-browser axios).');
   }
@@ -366,6 +624,7 @@ async function placeKioskOrder(page, options) {
     source = SOURCE_KIOSK,
     machineId = DEFAULT_KIOSK_MACHINE_ID,
     skipPaymentConfirm = false,
+    tokenPrefix = KIOSK_AUDIT_PREFIX,
   } = options || {};
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -381,7 +640,11 @@ async function placeKioskOrder(page, options) {
   const resolvedBranchId = resolveBranchId(branchId, machineId);
   const idemKey = idempotencyKey || uuidV4();
   const runStamp = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-  const orderToken = `${KIOSK_AUDIT_PREFIX}-${runStamp}`;
+  // [GOAL CONSOLIDATION T-4.2.1] Le préfixe doit être validé ICI, à l'écriture, et pas
+  // seulement au nettoyage : un préfixe non conforme produirait des lignes qu'aucun
+  // `cleanupKioskAuditOrders` ne pourrait ensuite reprendre (il refuse les mêmes formes).
+  assertPrefixeAuditValide(tokenPrefix, 'placeKioskOrder');
+  const orderToken = `${tokenPrefix}-${runStamp}`;
 
   const evalResult = await page.evaluate(async ({
     bearer,
@@ -530,7 +793,10 @@ async function placeKioskOrder(page, options) {
   return {
     orderId: Number(order?.id ?? order?.order_id ?? 0),
     orderSerialNo: String(order?.order_serial_no ?? ''),
-    queueNumber: order?.queue_number == null ? null : Number(order.queue_number),
+    // Queue numbers are opaque display identifiers (current format: "A0045"),
+    // never numeric counters. Number("A0045") produced NaN and silently broke
+    // identity assertions across KDS/OSS/POS audit evidence.
+    queueNumber: order?.queue_number == null ? null : String(order.queue_number),
     idempotencyKey: idemKey,
     totalAmount: Number(order?.total ?? quote?.total_ttc ?? 0),
     replayed: Boolean(replayed),
@@ -594,89 +860,194 @@ async function placeKioskOrderTwiceDifferentPayload(page, payload1, payload2) {
 }
 
 /**
- * Best-effort cleanup of kiosk audit orders + related rows. Mirrors the
- * sync-journey-trace.js cleanupTraceAudit shape but scoped to the Wave E
- * prefix (orders.token LIKE '<prefix>%' OR orders.order_serial_no LIKE
- * '<prefix>%'). Cache::flush() at the end keeps the kiosk menu cache from
- * leaking pre-cleanup state into a re-run.
+ * Canonically neutralize active kiosk audit orders without deleting any
+ * fiscal or lifecycle evidence. The signature is intentionally unchanged
+ * because this helper is shared by historical audit specs.
+ *
+ * Safety contract:
+ *   - refuse every write outside a dedicated test/E2E database;
+ *   - select only rows carrying the exact caller prefix;
+ *   - transition cancelable rows through OrderService::changeStatus so stock,
+ *     audit, state-machine and after-commit dispatch rules stay authoritative;
+ *   - preserve terminal/non-cancelable rows and every child/audit/event row;
+ *   - fail explicitly if a cancelable row cannot be neutralized.
  *
  * @param {string} [prefix='AUDIT-KIOSK-WAVE-E']
- * @returns {{ orders: number, order_items: number, domain_events: number }}
+ * @returns {{ matched: number, canceled: number, preserved: number, failed: Array }}
  */
+/**
+ * [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — T-4.2.1]
+ *
+ * Règles communes au préfixe d'audit, appliquées AUSSI BIEN à l'écriture qu'au nettoyage.
+ * Un préfixe trop court balaierait trop large ; `%`, `_` et `\\` sont des métacaractères
+ * `LIKE` et transformeraient un nettoyage ciblé en purge.
+ */
+function assertPrefixeAuditValide(prefixe, appelant) {
+  const net = String(prefixe == null ? '' : prefixe);
+  if (net.trim().length < 8 || /[%_\\]/.test(net)) {
+    throw new Error(
+      `${appelant}: préfixe d'audit refusé — il doit faire au moins 8 caractères et ne contenir `
+      + `aucun métacaractère LIKE (%, _, \\). Reçu : ${JSON.stringify(prefixe)}.`,
+    );
+  }
+  return net;
+}
+
+/**
+ * [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — T-4.2.1]
+ *
+ * Dérive un préfixe d'audit PROPRE À UNE SPEC à partir de son nom de fichier.
+ *
+ * POURQUOI : le 2026-08-25, huit specs écrivaient toutes sous `AUDIT-KIOSK-WAVE-E`. Chacune
+ * nettoyait ensuite par `LIKE 'AUDIT-KIOSK-WAVE-E%'` — donc emportait les commandes VIVANTES
+ * des sept autres. En séquentiel ça passe ; en parallèle, une spec voit ses lignes disparaître
+ * sous elle, et l'échec ressemble à un défaut produit alors que c'est une collision de harnais.
+ *
+ * Exemple : 'test-e2e-kiosk-kds-sync-2026-05-11-wave-D.spec.js' → 'AUDIT-E2E-KIOSK-KDS-SYNC-WAVE-D'
+ *
+ * @param {string} cheminSpec chemin ou nom de fichier de la spec (typiquement `__filename`)
+ * @returns {string} préfixe stable, disjoint, et conforme à assertPrefixeAuditValide
+ */
+function prefixeAuditPourSpec(cheminSpec) {
+  const base = String(cheminSpec || '')
+    .split(/[\\/]/)
+    .pop()
+    .replace(/\.spec\.js$/i, '');
+
+  const noyau = base
+    .toUpperCase()
+    .replace(/\b20\d{2}-\d{2}-\d{2}\b/g, '')   // les dates n'ajoutent aucune distinction utile
+    .replace(/^TEST-/, '')
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 44);
+
+  const prefixe = `AUDIT-${noyau}`;
+  // Un nom de spec trop court ne doit pas produire un préfixe trop large.
+  return assertPrefixeAuditValide(prefixe.length >= 8 ? prefixe : `${prefixe}-SPEC`, 'prefixeAuditPourSpec');
+}
+
 function cleanupKioskAuditOrders(prefix = KIOSK_AUDIT_PREFIX) {
-  const escaped = phpString(prefix);
-  return parseArtisanJson(artisan(`
-    $prefix = '${escaped}';
-    $orderIds = DB::table('orders')
-      ->where('token', 'like', $prefix . '%')
-      ->orWhere('order_serial_no', 'like', $prefix . '%')
-      ->pluck('id');
-    $orderItems = 0;
-    $domainEvents = 0;
-    $transitions = 0;
-    $stockMovements = 0;
-    $auditLogs = 0;
-    $transactions = 0;
-    if ($orderIds->isNotEmpty()) {
-      if (Schema::hasTable('transactions')) {
-        $transactions = DB::table('transactions')->whereIn('order_id', $orderIds)->delete();
-      }
-      if (Schema::hasTable('order_status_transitions')) {
-        $transitions = DB::table('order_status_transitions')->whereIn('order_id', $orderIds)->delete();
-      }
-      if (Schema::hasTable('stock_movements')) {
-        // [WAVE-D HEAL 2026-08-16] stock_movements is append-only (Foundation
-        // F-6 P0 / NF525-aligned — DB trigger SIGNAL 45000 on DELETE). An
-        // order placed against a stock-tracked item (e.g. "Frites Seules")
-        // creates a real movement row that can NEVER be deleted — that's
-        // correct, intentional behavior, not a bug. Before this heal, this
-        // unconditional ->delete() THREW and aborted the whole cleanup
-        // script, silently skipping every line below it (order_items,
-        // audit_logs, orders itself never got cleaned up either). We now
-        // catch it, report 0 deleted (append-only ledger rows legitimately
-        // survive order cleanup), and let the rest of the teardown proceed.
-        try {
-          $stockMovements = DB::table('stock_movements')->whereIn('reference_id', $orderIds)->delete();
-        } catch (\\Throwable $e) {
-          $stockMovements = 0;
-        }
-      }
-      if (Schema::hasTable('domain_events')) {
-        $eventQuery = DB::table('domain_events')->whereIn('aggregate_id', $orderIds);
-        if (Schema::hasColumn('domain_events', 'aggregate_type')) {
-          $eventQuery->whereIn('aggregate_type', ['order', App\\Models\\Order::class, App\\Models\\FrontendOrder::class]);
-        }
-        $domainEvents = $eventQuery->delete();
-      }
-      if (Schema::hasTable('audit_logs')) {
-        $auditLogs = DB::table('audit_logs')
-          ->where('resource', 'order')
-          ->whereIn('resource_id', $orderIds)
-          ->delete();
-      }
-      if (Schema::hasTable('order_items')) {
-        $orderItems = DB::table('order_items')->whereIn('order_id', $orderIds)->delete();
-      }
-      DB::table('orders')->whereIn('id', $orderIds)->update(['fiscal_sequence_no' => null]);
-      DB::table('orders')->whereIn('id', $orderIds)->delete();
-    }
-    if (Schema::hasTable('idempotency_keys')) {
-      DB::table('idempotency_keys')->where('request_path', 'like', '%frontend/order%')
-        ->where('created_at', '<', now())
-        ->where('response_body', 'like', '%' . $prefix . '%')
-        ->delete();
-    }
-    Cache::flush();
+  // [REPLAN_8 2026-08-24] La garde est désormais la PREMIÈRE instruction : elle précédait un
+  // aller-retour artisan, ce qui rendait la formule « appelée au début » littéralement fausse et
+  // laissait toute ligne ajoutée avant elle hors garde.
+  assertCurrentE2EWriteScope();
+
+  // [REPLAN_8 2026-08-24] Un préfixe vide ou trop court donnerait `LIKE '%'` et annulerait TOUTES
+  // les commandes annulables de la branche. Les onze appelants passent des constantes littérales,
+  // mais rien ne l'imposait : on l'impose ici. `%` et `_` sont des jokers LIKE : les interdire
+  // évite un balayage bien plus large que le préfixe annoncé.
+  const prefixeNet = String(prefix == null ? '' : prefix);
+  if (prefixeNet.trim().length < 8 || /[%_\\]/.test(prefixeNet)) {
+    throw new Error(
+      'cleanupKioskAuditOrders exige un préfixe littéral d\'au moins 8 caractères, sans joker '
+      + `LIKE (%, _, \\). Reçu : ${JSON.stringify(prefix)}.`,
+    );
+  }
+
+  const escaped = phpString(prefixeNet);
+  const username = phpString(DEFAULT_KIOSK_USERNAME);
+  const scope = parseArtisanJson(artisan(`
+    $machine = App\\Models\\KioskMachine::query()
+      ->where('username', '${username}')
+      ->first();
     echo json_encode([
-      'orders' => $orderIds->count(),
-      'order_items' => (int) $orderItems,
-      'domain_events' => (int) $domainEvents,
-      'transitions' => (int) $transitions,
-      'stock_movements' => (int) $stockMovements,
-      'audit_logs' => (int) $auditLogs,
-      'transactions' => (int) $transactions,
+      'database' => (string) DB::connection()->getDatabaseName(),
+      'machine_id' => $machine ? (int) $machine->id : null,
+      'kiosk_username' => '${username}',
+      'branch_id' => $machine ? (int) $machine->branch_id : 0,
     ]);
   `));
+  assertDedicatedE2EWriteScope(scope.database);
+  const branchId = Number(scope.branch_id || 0);
+  if (!Number.isInteger(branchId) || branchId <= 0 || !scope.machine_id) {
+    throw new Error(
+      `cleanupKioskAuditOrders requires an existing branch-scoped kiosk machine: ${JSON.stringify(scope)}`,
+    );
+  }
+  const result = parseArtisanJson(artisan(`
+    $prefix = '${escaped}';
+    $branchId = ${branchId};
+
+    $orders = App\\Models\\Order::withoutGlobalScopes()
+      ->where('branch_id', $branchId)
+      ->where(function ($query) use ($prefix) {
+        $query->where('token', 'like', $prefix . '%')
+          ->orWhere('order_serial_no', 'like', $prefix . '%');
+      })
+      ->orderBy('id')
+      ->get();
+    $canceled = 0;
+    $preserved = 0;
+    $failed = [];
+
+    foreach ($orders as $order) {
+      $target = App\\Enums\\OrderStatus::CANCELED;
+      if ((int) $order->status === $target) {
+        $preserved++;
+        continue;
+      }
+      $canCancel = (new App\\Rules\\ValidStatusTransition((int) $order->status))
+        ->passes('status', $target);
+      if (! $canCancel) {
+        $preserved++;
+        continue;
+      }
+
+      try {
+        $request = App\\Http\\Requests\\OrderStatusRequest::create('/', 'POST', [
+          'status' => $target,
+          'reason' => 'Nettoyage canonique d une commande E2E préfixée',
+        ]);
+        $request->setContainer(app());
+        app(App\\Services\\OrderService::class)->changeStatus($order, $request, false);
+        $canceled++;
+      } catch (Throwable $error) {
+        $failed[] = [
+          'order_id' => (int) $order->id,
+          'status' => (int) $order->status,
+          'error' => $error->getMessage(),
+        ];
+      }
+    }
+
+    $remaining = App\\Models\\Order::withoutGlobalScopes()
+      ->where('branch_id', $branchId)
+      ->where(function ($query) use ($prefix) {
+        $query->where('token', 'like', $prefix . '%')
+          ->orWhere('order_serial_no', 'like', $prefix . '%');
+      })
+      ->whereIn('status', [
+        App\\Enums\\OrderStatus::PENDING,
+        App\\Enums\\OrderStatus::ACCEPT,
+        App\\Enums\\OrderStatus::PREPARING,
+        App\\Enums\\OrderStatus::PREPARED,
+        App\\Enums\\OrderStatus::OUT_FOR_DELIVERY,
+      ])
+      ->orderBy('id')
+      ->pluck('id')
+      ->map(fn ($id) => (int) $id)
+      ->values();
+
+    echo json_encode([
+      'database' => (string) DB::connection()->getDatabaseName(),
+      'branch_id' => $branchId,
+      'matched' => $orders->count(),
+      'canceled' => $canceled,
+      'preserved' => $preserved,
+      'failed' => $failed,
+      'remaining_active_order_ids' => $remaining,
+    ]);
+  `));
+  if ((Array.isArray(result.failed) && result.failed.length > 0)
+    || (Array.isArray(result.remaining_active_order_ids) && result.remaining_active_order_ids.length > 0)) {
+    throw new Error('Canonical kiosk cleanup failed: ' + JSON.stringify({
+      failed: result.failed,
+      remaining_active_order_ids: result.remaining_active_order_ids,
+    }));
+  }
+  return result;
 }
 
 module.exports = {
@@ -698,6 +1069,11 @@ module.exports = {
   placeKioskOrderTwiceDifferentPayload,
   // Cleanup.
   cleanupKioskAuditOrders,
+  prefixeAuditPourSpec,
+  assertPrefixeAuditValide,
+  isDedicatedE2EWriteScope,
+  assertDedicatedE2EWriteScope,
+  resolveSimpleOrderableItem,
   // Util re-exports for spec convenience.
   uuidV4,
 };

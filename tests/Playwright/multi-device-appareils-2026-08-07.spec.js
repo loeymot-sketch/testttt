@@ -46,8 +46,16 @@ test('deux appareils restent connectés en même temps et sont listés', async (
     const pageTablette = await tablette.newPage();
 
     const errors = [];
+    const echecsReseau = [];
     for (const p of [pageCaisse, pageTablette]) {
         p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+        // On capture aussi l'URL EXACTE de chaque requête échouée : le message
+        // console (« Failed to load resource ») ne la porte pas, et sans elle on
+        // ne peut pas distinguer une régression produit d'une sonde matérielle.
+        p.on('requestfailed', (r) => {
+            const erreur = r.failure()?.errorText || '';
+            if (/ERR_CONNECTION_REFUSED/.test(erreur)) echecsReseau.push(r.url());
+        });
     }
 
     await signIn(pageCaisse, baseURL, 'Caisse comptoir');
@@ -59,18 +67,46 @@ test('deux appareils restent connectés en même temps et sont listés', async (
     await pageCaisse.goto(`${baseURL}/admin/profile/devices`, { waitUntil: 'networkidle' });
     expect(pageCaisse.url()).not.toContain('/login');
 
-    await pageCaisse.waitForSelector('table tbody tr', { timeout: 15000 });
-    const lignes = await pageCaisse.locator('table tbody tr').count();
+    // [REPLAN_6 2026-08-24] Cibler EXACTEMENT la table « Appareils connectés ».
+    // `locator('table')` attrapait aussi les 6 tables injectées par la debugbar
+    // (APP_DEBUG local) : violation strict-mode sur innerText ET comptage de
+    // lignes faussement satisfait par des lignes de debug. Le scope ci-dessous
+    // rend l'assertion PLUS stricte, jamais plus permissive.
+    const tableAppareils = pageCaisse.locator('.table-responsive table.table');
+    await expect(tableAppareils).toHaveCount(1);
+
+    await tableAppareils.locator('tbody tr').first().waitFor({ timeout: 15000 });
+    const lignes = await tableAppareils.locator('tbody tr').count();
     expect(lignes).toBeGreaterThanOrEqual(2);
 
-    const contenu = await pageCaisse.locator('table').innerText();
+    const contenu = await tableAppareils.innerText();
     expect(contenu).toContain('Caisse comptoir');
     expect(contenu).toContain('Tablette salle');
 
     await pageCaisse.screenshot({ path: path.join(SHOTS, 'appareils-connectes.png'), fullPage: true });
 
-    // Aucune erreur console (mandat de vérification visuelle du projet).
-    const bruit = errors.filter((e) => !/favicon|ResizeObserver/i.test(e));
+    // [REPLAN_6 2026-08-24] Sondes des PONTS D'IMPRESSION matériels : la caisse
+    // interroge 127.0.0.1:9100/health (SAGA comptoir) et la cuisine 9101/health.
+    // Sans pont physique branché (POS_SIMULATION_HARDWARE), ces sondes sont
+    // refusées PAR CONSTRUCTION et l'application retombe sur window.print.
+    // Elles sont les SEULES connexions refusées tolérées, et uniquement sur ces
+    // URL exactes — toute autre connexion refusée reste un échec dur.
+    const PONT_IMPRESSION = /^http:\/\/127\.0\.0\.1:(9100|9101)\/health\b/;
+    const refusInattendus = echecsReseau.filter((u) => !PONT_IMPRESSION.test(u));
+    expect(refusInattendus, `connexions refusées inattendues: ${refusInattendus.join(' | ')}`).toHaveLength(0);
+
+    // Aucune erreur console (mandat de vérification visuelle du projet). La ligne
+    // générique émise par une sonde de pont déjà innocentée ci-dessus est retirée
+    // — et seulement elle, une par échec réseau prouvé sur l'allowlist.
+    let refusInnocentes = echecsReseau.length - refusInattendus.length;
+    const bruit = errors.filter((e) => {
+        if (/favicon|ResizeObserver/i.test(e)) return false;
+        if (refusInnocentes > 0 && /Failed to load resource: net::ERR_CONNECTION_REFUSED/.test(e)) {
+            refusInnocentes -= 1;
+            return false;
+        }
+        return true;
+    });
     expect(bruit, `erreurs console: ${bruit.join(' | ')}`).toHaveLength(0);
 
     await browser.close();

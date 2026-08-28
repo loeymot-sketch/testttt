@@ -30,9 +30,12 @@ import {
     clearQueue,
     enqueueOrder,
     listPending,
+    listQuarantined,
     markFailed,
     markSynced,
     MAX_ENTRIES,
+    MAX_REPLAY_ATTEMPTS,
+    MAX_SIGNED_QUOTE_AGE_MS,
     purgeExpired,
     TTL_MS,
     __unsafeGetCacheForTests,
@@ -53,6 +56,17 @@ function setOnline(value) {
     });
 }
 
+function signedPayload(itemId = 1) {
+    return {
+        items: JSON.stringify([{ item_id: itemId, quantity: 1 }]),
+        quote_token: '123e4567-e89b-42d3-a456-426614174000',
+        quote_signature: 'a'.repeat(64),
+        pos_payment_method: 1,
+        pos_received_amount: 20,
+        total: 10,
+    };
+}
+
 describe('posOfflineQueue — enqueue + persist', () => {
     beforeEach(async () => {
         await clearQueue();
@@ -61,13 +75,15 @@ describe('posOfflineQueue — enqueue + persist', () => {
         vi.restoreAllMocks();
     });
 
-    it('enqueues an order and exposes it via listPending()', async () => {
+    it('quarantines an unsigned legacy order instead of exposing it for replay', async () => {
         const entry = await enqueueOrder({ items: [{ item_id: 7, quantity: 1 }], total_cents: 590 });
         expect(entry).toBeTruthy();
         expect(entry.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
-        const pending = await listPending();
-        expect(pending.length).toBe(1);
-        expect(pending[0].payload.total_cents).toBe(590);
+        expect(await listPending()).toHaveLength(0);
+        const quarantined = await listQuarantined();
+        expect(quarantined).toHaveLength(1);
+        expect(quarantined[0].quarantineReason).toBe('legacy_unsigned');
+        expect(quarantined[0].payload.total_cents).toBe(590);
     });
 
     it('persists entries with a stable idempotency-key (UUIDv4 shape)', async () => {
@@ -107,27 +123,30 @@ describe('posOfflineQueue — TTL + capacity', () => {
         vi.restoreAllMocks();
     });
 
-    it('purgeExpired() drops entries older than TTL_MS (30 min)', async () => {
-        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+    it('purgeExpired() ne supprime plus rien : les entrées périmées sont conservées en quarantaine (30 min)', async () => {
+        await enqueueOrder(signedPayload(1));
         expect((await listPending()).length).toBe(1);
-        advanceClock(TTL_MS + 1000);
+        advanceClock(Math.min(TTL_MS, MAX_SIGNED_QUOTE_AGE_MS) + 1000);
         const dropped = await purgeExpired();
-        expect(dropped).toBe(1);
+        expect(dropped).toBe(0);
         expect((await listPending()).length).toBe(0);
+        const quarantined = await listQuarantined();
+        expect(quarantined).toHaveLength(1);
+        expect(quarantined[0].quarantineReason).toBe('expired_quote');
     });
 
     it('caps the queue at MAX_ENTRIES (reject-new policy, oldest preserved)', async () => {
         for (let i = 0; i < MAX_ENTRIES; i += 1) {
-            await enqueueOrder({ items: [{ item_id: i, quantity: 1 }] });
+            await enqueueOrder(signedPayload(i));
         }
         expect((await listPending()).length).toBe(MAX_ENTRIES);
-        const rejected = await enqueueOrder({ items: [{ item_id: 999, quantity: 1 }] });
+        const rejected = await enqueueOrder(signedPayload(999));
         expect(rejected).toBeNull();
         // Oldest entry (item_id=0) MUST still be present.
         const pending = await listPending();
         expect(pending.length).toBe(MAX_ENTRIES);
-        expect(pending.some((e) => e.payload.items[0].item_id === 0)).toBe(true);
-        expect(pending.some((e) => e.payload.items[0].item_id === 999)).toBe(false);
+        expect(pending.some((e) => JSON.parse(e.payload.items)[0].item_id === 0)).toBe(true);
+        expect(pending.some((e) => JSON.parse(e.payload.items)[0].item_id === 999)).toBe(false);
     });
 });
 
@@ -139,23 +158,24 @@ describe('posOfflineQueue — sync semantics (idempotency-key + conflict)', () =
     });
 
     it('markSynced() removes the entry from the queue', async () => {
-        const entry = await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const entry = await enqueueOrder(signedPayload(1));
         expect((await listPending()).length).toBe(1);
         await markSynced(entry.idempotencyKey);
         expect((await listPending()).length).toBe(0);
     });
 
     it('markFailed() retains the entry on HTTP 409 conflict and bumps attempts', async () => {
-        const entry = await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const entry = await enqueueOrder(signedPayload(1));
         await markFailed(entry.idempotencyKey, { status: 409 });
-        const pending = await listPending();
-        expect(pending.length).toBe(1);
-        expect(pending[0].attempts).toBeGreaterThanOrEqual(2);
-        expect(pending[0].lastFailedAt).toBeTruthy();
+        expect(await listPending()).toHaveLength(0);
+        const quarantined = await listQuarantined();
+        expect(quarantined).toHaveLength(1);
+        expect(quarantined[0].attempts).toBe(1);
+        expect(quarantined[0].quarantineReason).toBe('terminal_http_409');
     });
 
     it('markFailed() retains the entry on network error (no status)', async () => {
-        const entry = await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const entry = await enqueueOrder(signedPayload(1));
         await markFailed(entry.idempotencyKey, null);
         expect((await listPending()).length).toBe(1);
     });
@@ -183,14 +203,14 @@ describe('usePosOfflineState — composable reactive state', () => {
     it('exposes queueDepth that increments on enqueueOrder', async () => {
         const state = usePosOfflineState();
         expect(state.queueDepth.value).toBe(0);
-        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        await enqueueOrder(signedPayload(1));
         await state.refresh();
         expect(state.queueDepth.value).toBe(1);
     });
 
     it('tryFlush() calls the postFn with X-Idempotency-Key header per entry', async () => {
-        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
-        await enqueueOrder({ items: [{ item_id: 2, quantity: 1 }] });
+        await enqueueOrder(signedPayload(1));
+        await enqueueOrder(signedPayload(2));
         const state = usePosOfflineState();
         await state.refresh();
         const postFn = vi.fn(async () => ({ status: 201 }));
@@ -206,7 +226,7 @@ describe('usePosOfflineState — composable reactive state', () => {
 
     it('online event triggers an auto-flush of the queue', async () => {
         setOnline(false);
-        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        await enqueueOrder(signedPayload(1));
         const state = usePosOfflineState();
         const postFn = vi.fn(async () => ({ status: 201 }));
         state.bindAutoFlush(postFn);
@@ -228,14 +248,14 @@ describe('posOfflineQueue — RED-team gap coverage', () => {
     });
 
     it('markSynced() on unknown key returns false and leaves the queue untouched', async () => {
-        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        await enqueueOrder(signedPayload(1));
         const result = await markSynced('00000000-0000-4000-8000-000000000000');
         expect(result).toBe(false);
         expect((await listPending()).length).toBe(1);
     });
 
     it('markFailed() on unknown key returns false and leaves the queue untouched', async () => {
-        const entry = await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const entry = await enqueueOrder(signedPayload(1));
         const result = await markFailed('00000000-0000-4000-8000-000000000000', { status: 409 });
         expect(result).toBe(false);
         const pending = await listPending();
@@ -266,5 +286,15 @@ describe('posOfflineQueue — RED-team gap coverage', () => {
         await clearQueue();
         expect(__unsafeGetCacheForTests().length).toBe(0);
         expect((await listPending()).length).toBe(0);
+        expect((await listQuarantined()).length).toBe(0);
+    });
+
+    it('moves a signed entry to quarantine after the bounded retry limit', async () => {
+        const entry = await enqueueOrder(signedPayload(7));
+        for (let i = 0; i < MAX_REPLAY_ATTEMPTS; i += 1) {
+            await markFailed(entry.idempotencyKey, null);
+        }
+        expect(await listPending()).toHaveLength(0);
+        expect((await listQuarantined())[0].quarantineReason).toBe('attempt_limit');
     });
 });

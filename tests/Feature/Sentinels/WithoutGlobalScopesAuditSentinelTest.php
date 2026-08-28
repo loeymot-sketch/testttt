@@ -42,7 +42,9 @@ use Tests\TestCase;
  *     Replaced with `withoutGlobalScope(BranchScope::class)->withTrashed()`.
  *
  * Post-heal allowlist (Category A — KEEP plural):
- *   - app/Console/Commands/EnsureAdminLoginCommand.php (4 sites: 56,63,70,99)
+ *   - app/Console/Commands/EnsureAdminLoginCommand.php (4 sites: 82,89,96,125)
+ *     [2026-08-25] Décalés de +26 lignes par l'ajout de la garde de production
+ *     (GOAL CONSOLIDATION T-5.3.1). Les appels eux-mêmes sont inchangés.
  *       — admin restore command, finds soft-deleted admin to restore + verifies
  *         no email-conflict among trashed rows
  *   - app/Console/Commands/EnsurePosOperatorLoginCommand.php (1 site: 55)
@@ -91,7 +93,7 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
      * @var array<string,array<int,int>> file path (relative to app/) → line numbers
      */
     private const ALLOWLIST = [
-        'Console/Commands/EnsureAdminLoginCommand.php' => [56, 63, 70, 99],
+        'Console/Commands/EnsureAdminLoginCommand.php' => [82, 89, 96, 125],
         'Console/Commands/EnsurePosOperatorLoginCommand.php' => [55],
         'Console/Commands/EnsureChefLoginCommand.php' => [53],
         // [2026-08-01] EnsureNewSaucesCommand — commande console data-repair cross-branch by

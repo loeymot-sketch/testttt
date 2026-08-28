@@ -1,4 +1,11 @@
-[D1] EXECUTE_DELEGATION: foodking-complex-implementer
+[CURRENT] TASK_ID: CAISSE-SUPERVISOR-CONTROL-20260823
+[CURRENT] EXECUTE_DELEGATION: codex-extension
+[CURRENT] EXECUTION_RESULT: PASS — implementation and scoped validation completed 2026-08-23
+[CURRENT] VALIDATION_SUMMARY: PHPUnit 39 passed; Vitest 89 passed; Wave E 1 passed; kiosk multi-product 1 passed; production build passed; browser keyboard QA passed
+[CURRENT] INVARIANTS: backend pricing SSOT preserved; canonical OrderStatus/service transitions; exact branch_id; dispatch sentinels passed; frozen files unchanged; OrderService/FrontendOrderService symmetry N/A
+[CURRENT] KNOWN_EXTERNAL_GATES: pos:lint:pricing requires existing signoffs/frozen-zone approval; historical idempotency fixture references unavailable Coca-Cola 33cl
+
+[HISTORICAL 2026-05-04] [D1] EXECUTE_DELEGATION: foodking-complex-implementer
 [post-execute] task: unknown
 [post-execute] timestamp: 20260504_155706
 [post-execute] timestamped log: reports/test_unknown_20260504_155706.log

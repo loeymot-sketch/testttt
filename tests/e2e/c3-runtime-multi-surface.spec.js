@@ -244,7 +244,13 @@ async function kdsChangeStatus(page, orderId, expectedStatus, nextStatus) {
     const response = await window.axios.post(`admin/kds-order/change-status/${orderId}`, {
       expected_status: expectedStatus,
       status: nextStatus,
-    });
+    },
+          // [GOAL CONSOLIDATION 2026-08-25] En-tête OBLIGATOIRE : `config/idempotency.php`
+          // liste la route `kds-order/change-status/{id}` dans required_routes (un double
+          // bump enverrait deux notifications client). Sans l'en-tête → 422, et l'échec
+          // ressemble trompeusement à un défaut de synchro cuisine.
+          { headers: { 'X-Idempotency-Key': `idem-kds-${Date.now()}-${Math.random().toString(16).slice(2)}` } }
+        );
     return { ok: response.status >= 200 && response.status < 300, status: response.status };
   }, { orderId, expectedStatus, nextStatus });
   expect(result.ok).toBe(true);

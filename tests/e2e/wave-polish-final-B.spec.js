@@ -56,7 +56,14 @@ const {
   PAYMENT_CARD,
   PAYMENT_CASH,
   KIOSK_AUDIT_PREFIX,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
 const SCREENSHOT_DIR = 'tests/e2e/__screenshots__/wave-polish-final-B';
@@ -367,7 +374,7 @@ test.describe('Wave Polish Final B — cross-surface sync proof', () => {
 
     // Step 1.1 — open the unified stock dashboard. The route is registered
     // at /admin/stock/rupture in resources/js/router/modules/stockRoutes.js.
-    // The product also accepts /admin/stock-rupture-dashboard as a legacy
+    // The product also accepts /admin/stock/rupture as a legacy
     // alias — we prefer the canonical path.
     await page.goto('/admin/stock/rupture', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-testid="stock-management-v2"]')).toBeVisible({ timeout: 30_000 });
@@ -561,6 +568,7 @@ test.describe('Wave Polish Final B — cross-surface sync proof', () => {
     // pattern mirrored from tests/e2e/rush-sync-flow.spec.js:573).
     const tKioskCreate = Date.now();
     const orderResult = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [{ item_id: SIMPLE_ITEM_ID, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }],
       paymentMethod: PAYMENT_CARD,
       orderType: 10, // TAKEAWAY — dine-in disabled in V1 (see OrderRequest.php:220)
@@ -827,6 +835,7 @@ test.describe('Wave Polish Final B — cross-surface sync proof', () => {
     // Trigger a kiosk order from the kiosk context (uses its own token).
     const tFire = Date.now();
     const order = await placeKioskOrder(kioskPage, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [{ item_id: SIMPLE_ITEM_ID, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }],
       paymentMethod: PAYMENT_CARD,
       orderType: 10,

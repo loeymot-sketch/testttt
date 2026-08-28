@@ -5,16 +5,18 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `none` |
+| **PHASE** | `AUDIT` — Claude PASS #2 le 2026-08-24 ; canal GPT final INDISPONIBLE (binaire Codex ENOENT + HTTP 400 modèle). Clôture suspendue à une décision humaine sur le canal manquant. |
 | **MASTER_TASK_ID** | |
-| **TASK_ID** | |
-| **PLAN_FILE** | |
-| **REPORT_FILE** | |
-| **AUDIT_SOURCE** | |
-| **PARENT_CYCLE** | |
-| **SUBSYSTEMS_TOUCHED** | |
-| **INVARIANTS_AT_RISK** | |
-| **GATE_CONDITIONS** | |
+| **TASK_ID** | `CAISSE-SUPERVISOR-CONTROL-20260823` |
+| **PLAN_FILE** | `plans/PLAN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
+| **REPORT_FILE** | `reports/execution/RUN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
+| **AUDIT_SOURCE** | `Reprise superviseur Claude Code 2026-08-24 : VALIDATE terminée (41 backend, 3609 Vitest, E2E + parcours obligatoires verts, diff gelé vide). Trois audits adverses indépendants ont rendu REWORK ; 11 findings remédiés, 2 écartés après vérification. Nouvel AUDIT_VERDICT: PASS — reports/audit/CLAUDE_AUDIT_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-24.md` |
+| **CONTINUATION_HANDOFF** | `missions/CAISSE-SUPERVISOR-CONTROL-20260823/CLAUDE_CODE_HANDOFF.md` |
+| **PARENT_CYCLE** | `GOAL-WHEEL-EXPERIENCE-20260823 parked at human UX gate; not approved or closed` |
+| **SUBSYSTEMS_TOUCHED** | `POS system health/offline/a11y, dashboard SLA/date presets, kiosk idle/product keyboard activation, Playwright critical sync harness and safe E2E cleanup` |
+| **INVARIANTS_AT_RISK** | `branch_id fiscal health exactness; fail-closed observability; no unsigned offline order replay` |
+| **GATE_CONDITIONS** | `Gate UX Roue toujours PENDING_HUMAN_GATE (hors scope, non auto-approuvable). Escalades ouvertes au propriétaire : garde de production absente sur foodking:ensure-admin ; BROADCAST_DRIVER non-pusher renvoyant ok en dur dans HealthzController ; requête SLA sans borne basse dans DashboardService ; disposition de la page caisse (grille de vente sous la ligne de flottaison en 1366x768).` |
+| **GATE_FILE** | `None for this cycle; Wheel gate preserved separately at docs/gates/GATE_WHEEL_EXPERIENCE_UX_SIGNOFF_2026-08-23.md` |
 
 > **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
 > Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`

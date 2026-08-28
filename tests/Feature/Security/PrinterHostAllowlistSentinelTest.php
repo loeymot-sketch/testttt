@@ -98,9 +98,10 @@ class PrinterHostAllowlistSentinelTest extends TestCase
      */
     public function test_accepts_rfc1918_with_allowlist(): void
     {
-        // [ONB-10 2026-08-27] Meme cause que PrinterControllerTest : la regle exige
-        // desormais une plage de ports dans l'entree. Sans elle, ce test qui verifie
-        // qu'une plage AUTORISEE est ACCEPTEE recevait un 422.
+        // [FIX 2026-08-25] Format host+port exigé depuis le durcissement de `SafeRemoteHost` :
+        // un CIDR nu ouvrirait les 65535 ports d'un sous-réseau privé. Ce cas VÉRIFIE justement
+        // qu'une entrée d'allowlist bien formée autorise l'imprimante — il doit donc utiliser le
+        // format que le produit attend, pas celui d'avant.
         config(['security.safe_remote_host_allowlist' => ['192.168.1.0/24:9100-9103']]);
 
         $response = $this->actingAs($this->user, 'sanctum')->postJson(

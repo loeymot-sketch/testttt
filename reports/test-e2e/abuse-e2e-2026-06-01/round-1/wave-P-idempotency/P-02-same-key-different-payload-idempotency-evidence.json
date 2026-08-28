@@ -1,11 +1,11 @@
 {
   "scenario": "P-02-same-key-different-payload",
-  "capturedAt": "2026-06-03T17:15:24.176Z",
+  "capturedAt": "2026-08-25T11:54:17.880Z",
   "invariant": "same key + different payload ⇒ 409 conflict, no second order",
-  "idemKey": "51cecddd-4464-4312-a976-d481bc3b6fe1",
+  "idemKey": "259b7255-78d7-4c26-845e-4b03d1ba9ea5",
   "first": {
     "status": 201,
-    "orderId": 4159,
+    "orderId": 6908,
     "replayed": false,
     "conflict": false
   },
@@ -21,8 +21,8 @@
     }
   },
   "dbCount": {
-    "before": 1,
-    "after": 2,
+    "before": 95,
+    "after": 96,
     "delta": 1
   }
 }

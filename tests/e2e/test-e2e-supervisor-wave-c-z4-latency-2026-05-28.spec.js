@@ -45,7 +45,12 @@ const {
   resetKioskToken,
   getKioskApiToken,
   PAYMENT_CASH,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 // API key read once from .env (MIX_API_KEY) — required for X-API-KEY header
 // on all Node-side requests to /api/* endpoints.
@@ -468,6 +473,7 @@ async function placeKioskOrderForLatency(kioskPage, iter, paymentMethod = PAYMEN
     item_addons: [],
   }];
   return placeKioskOrder(kioskPage, {
+    tokenPrefix: PREFIXE_AUDIT,
     items,
     paymentMethod,
     orderType: ORDER_TYPE_TAKEAWAY,

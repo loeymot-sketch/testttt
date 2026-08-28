@@ -58,7 +58,14 @@ const {
   PAYMENT_CARD,
   PAYMENT_CASH,
   ORDER_TYPE_KIOSK,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 // V1 dine-in is disabled (pos_dine_in_enabled=false) per memory
 // feedback_v1_dine_in_disabled_2026-05-06. Kiosk API orders MUST use
@@ -194,6 +201,7 @@ async function postKioskOrderWithRetry(kioskPage, itemId, seq, rateLimitIncident
   // (TPE Amount Echo Verification, May 2026). The helper hasn't been updated.
   // We do the payment-confirm ourselves below with the correct payload shape.
   const attempt = async () => placeKioskOrder(kioskPage, {
+    tokenPrefix: PREFIXE_AUDIT,
     items,
     paymentMethod: PAYMENT_CARD,
     idempotencyKey: idemKey,
@@ -416,7 +424,7 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
     //   - AUDIT-RUSH-B-%        (API path, this spec)
     //   - AUDIT-KIOSK-WAVE-E-%  (helpers/kiosk-order.js hardcoded prefix
     //                            used by placeKioskOrder, see round-1 B-007)
-    cleanupOrphanTestOrders(['AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
+    cleanupOrphanTestOrders([`${PREFIXE_AUDIT}-`, 'AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
     clearFoodKingRateLimits();
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     fs.mkdirSync(REPORTS_DIR, { recursive: true });
@@ -1401,7 +1409,7 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
       // [test-e2e fix A-015 round-4 2026-05-11] scoped sweep — never touch
       // a parallel Wave A's AUDIT-RUSH-A-% rows.
       try {
-        cleanupOrphanTestOrders(['AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
+        cleanupOrphanTestOrders([`${PREFIXE_AUDIT}-`, 'AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn(`[WAVE-B] cleanupOrphanTestOrders failed: ${e.message}`);

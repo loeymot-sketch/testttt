@@ -1,9 +1,11 @@
 /**
  * posOfflineQueue — POS Caisse offline replay queue (V1, server-authoritative).
  * ---------------------------------------------------------------------------
- * Path A: queue pending orders in IndexedDB while network is down, replay on
- * reconnect via tryFlush() with stable X-Idempotency-Key per entry. Server
- * decides accept (2xx → markSynced) or conflict (409 → markFailed, retained).
+ * Safety contract (2026-08-23): legacy V1 entries never contained the signed
+ * server quote required by the current POS endpoint. They remain stored as an
+ * operator-visible audit trace, but are quarantined and can never be replayed.
+ * Only an explicitly versioned payload carrying a fresh server quote may enter
+ * the replay lane; retries are bounded and terminal 4xx errors quarantine it.
  *
  * NF525 (CLAUDE.md §8): NEVER allocate fiscal_sequence_no locally — server is
  * SSOT. We queue only item_id / quantity / option_ids / total_cents. Server
@@ -23,6 +25,9 @@ import { clearQueueEntries, getQueueEntry, setQueueEntry } from './posOfflineQue
 const QUEUE_KEY = 'pos:offline-queue:v1';
 export const TTL_MS = 30 * 60 * 1000; // 30 min — owner D1 decision
 export const MAX_ENTRIES = 50;         // reject-new at cap (preserve earliest cash sales)
+export const MAX_REPLAY_ATTEMPTS = 3;
+export const MAX_SIGNED_QUOTE_AGE_MS = 4 * 60 * 1000; // server quote TTL is 5 min
+export const SIGNED_REPLAY_VERSION = 2;
 
 const FORBIDDEN_FIELDS = [
     'card_number', 'cvv', 'pan',
@@ -49,6 +54,31 @@ function sanitize(payload) {
     return clean;
 }
 
+function isSignedPayload(payload) {
+    return !!(
+        payload
+        && typeof payload.quote_token === 'string'
+        && /^[0-9a-f-]{36}$/i.test(payload.quote_token)
+        && typeof payload.quote_signature === 'string'
+        && /^[0-9a-f]{64}$/i.test(payload.quote_signature)
+        && payload.items
+    );
+}
+
+function quarantineReason(entry, now = Date.now()) {
+    if (!entry || entry.replayVersion !== SIGNED_REPLAY_VERSION || !isSignedPayload(entry.payload)) {
+        return 'legacy_unsigned';
+    }
+    if (entry.terminalFailure) return entry.terminalFailure;
+    if ((Number(entry.attempts) || 0) >= MAX_REPLAY_ATTEMPTS) return 'attempt_limit';
+    if (now - Number(entry.savedAt || 0) > MAX_SIGNED_QUOTE_AGE_MS) return 'expired_quote';
+    return null;
+}
+
+function isReplayable(entry, now = Date.now()) {
+    return quarantineReason(entry, now) === null;
+}
+
 function ensureLoaded() {
     if (!_bootPromise) {
         _bootPromise = getQueueEntry(QUEUE_KEY)
@@ -66,12 +96,15 @@ async function persist() {
 export async function enqueueOrder(rawPayload) {
     await ensureLoaded();
     if (_cache.length >= MAX_ENTRIES) return null;
+    const clean = sanitize(rawPayload);
     const entry = {
         idempotencyKey: uuidv4(),
-        payload: sanitize(rawPayload),
+        payload: clean,
         savedAt: Date.now(),
-        attempts: 1,
+        attempts: 0,
         lastFailedAt: null,
+        terminalFailure: null,
+        replayVersion: isSignedPayload(clean) ? SIGNED_REPLAY_VERSION : 1,
     };
     _cache.push(entry);
     await persist();
@@ -80,10 +113,19 @@ export async function enqueueOrder(rawPayload) {
 
 export async function listPending() {
     await ensureLoaded();
-    return _cache.map((e) => ({ ...e }));
+    const now = Date.now();
+    return _cache.filter((entry) => isReplayable(entry, now)).map((e) => ({ ...e }));
 }
 
-export function getQueueDepth() { return _cache.length; }
+export async function listQuarantined() {
+    await ensureLoaded();
+    const now = Date.now();
+    return _cache
+        .map((entry) => ({ ...entry, quarantineReason: quarantineReason(entry, now) }))
+        .filter((entry) => entry.quarantineReason !== null);
+}
+
+export function getQueueDepth() { return _cache.filter((entry) => isReplayable(entry)).length; }
 
 export async function markSynced(idempotencyKey) {
     await ensureLoaded();
@@ -93,14 +135,23 @@ export async function markSynced(idempotencyKey) {
     return _cache.length !== before;
 }
 
-/** Bump attempts + lastFailedAt. Entry retained until markSynced() or purgeExpired(). */
+/** Bump attempts + lastFailedAt. Terminal failures and exhausted retries stay quarantined. */
 export async function markFailed(idempotencyKey, _error = null) {
     await ensureLoaded();
     let touched = false;
     _cache = _cache.map((e) => {
         if (e.idempotencyKey !== idempotencyKey) return e;
         touched = true;
-        return { ...e, attempts: e.attempts + 1, lastFailedAt: Date.now() };
+        const status = Number(_error?.status || _error?.response?.status || 0);
+        const terminal = status >= 400 && status < 500 && ![408, 429].includes(status)
+            ? `terminal_http_${status}`
+            : null;
+        return {
+            ...e,
+            attempts: (Number(e.attempts) || 0) + 1,
+            lastFailedAt: Date.now(),
+            terminalFailure: terminal || e.terminalFailure || null,
+        };
     });
     if (touched) await persist();
     return touched;
@@ -108,12 +159,9 @@ export async function markFailed(idempotencyKey, _error = null) {
 
 export async function purgeExpired() {
     await ensureLoaded();
-    const cutoff = Date.now() - TTL_MS;
-    const before = _cache.length;
-    _cache = _cache.filter((e) => e.savedAt >= cutoff);
-    const dropped = before - _cache.length;
-    if (dropped > 0) await persist();
-    return dropped;
+    // Backwards-compatible no-op. Expired entries are quarantined and retained
+    // until an explicit, gated operator retention action exists.
+    return 0;
 }
 
 export async function clearQueue() {
@@ -124,4 +172,9 @@ export async function clearQueue() {
 
 export function __unsafeGetCacheForTests() {
     return _cache.map((e) => ({ ...e }));
+}
+
+export function __unsafeResetMemoryForTests() {
+    _cache = [];
+    _bootPromise = null;
 }

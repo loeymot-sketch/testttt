@@ -30,10 +30,12 @@ class PrinterControllerTest extends TestCase
         // for THIS test class only. Production .env stays closed by default.
         // The dedicated security sentinel (PrinterHostAllowlistSentinelTest)
         // verifies the blocklist with a *cleared* allowlist.
-        // [ONB-10 2026-08-27] Format mis a jour : la regle SafeRemoteHost a ete DURCIE
-        // pour exiger une plage de PORTS dans chaque entree — une entree sans port
-        // ouvrirait les 65535. Le durcissement n'avait pas mis a jour ce setUp, et les
-        // trois tests de cette classe echouaient depuis, en 422, dans le depot.
+        // [FIX 2026-08-25] Format host+port obligatoire depuis le durcissement de
+        // `App\Rules\SafeRemoteHost` : une entrée en CIDR nu est désormais REFUSÉE, parce
+        // qu'elle ouvrirait les 65535 ports d'une plage privée entière — pour une imprimante
+        // ESC/POS on n'a besoin que de 9100-9103. Les tests portaient encore l'ancien format et
+        // recevaient donc un 422 dont le message disait exactement quoi faire ; personne n'y
+        // avait donné suite. On aligne sur le format attendu, sans élargir la portée.
         config(['security.safe_remote_host_allowlist' => [
             '127.0.0.0/8:9100-9103',
             '192.168.0.0/16:9100-9103',

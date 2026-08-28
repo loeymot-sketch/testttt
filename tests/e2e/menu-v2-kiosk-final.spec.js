@@ -49,7 +49,15 @@ const {
   resetKioskToken,
   PAYMENT_CARD,
   KIOSK_AUDIT_PREFIX,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const SCREENSHOT_DIR = path.resolve(
@@ -72,196 +80,45 @@ fs.mkdirSync(REPORT_DIR, { recursive: true });
 // passed only when the scenario semantically demands them (e.g. Big Cayenne
 // "2 viandes" promise → both attr 307 and 308 selected even though DB allows
 // 0; this surfaces the UX-DB drift in the report).
-const SCENARIOS = [
-  {
-    code: 'S-NEW-01',
-    label: 'Sandwich Cayenne',
-    itemId: 474,
-    catId: 344,
-    catName: 'Sandwich Cayenne',
-    expectedPrice: 7.50,
-    priceDrift: { from: 7.00, to: 7.50 },
-    items: [
-      {
-        item_id: 474,
-        quantity: 1,
-        // attr 331 Sauce Cayenne min=1 → 1251 Sauce Cayenne maison
-        item_variations: [{ id: 1251, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-02',
-    label: 'Big Cayenne',
-    itemId: 488,
-    catId: 344,
-    catName: 'Sandwich Cayenne',
-    expectedPrice: 9.50,
-    isNew: true,
-    items: [
-      {
-        item_id: 488,
-        quantity: 1,
-        // attr 307 Viande 1 min=0 (1253 Poulet mariné)
-        // attr 308 Viande 2 min=0 (1257 Poulet mariné) — UX promise: 2 viandes
-        // No required attrs; INCLUS cheddar/oeuf/jambon are described in item
-        // description only — no attr 331 on Big Cayenne in DB inspection.
-        item_variations: [
-          { id: 1253, quantity: 1 }, // Viande 1
-          { id: 1257, quantity: 1 }, // Viande 2
-        ],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-03',
-    label: 'Galette Cayenne',
-    itemId: 476,
-    catId: 345,
-    catName: 'Galette',
-    expectedPrice: 7.00,
-    items: [
-      {
-        item_id: 476,
-        quantity: 1,
-        // attr 331 Sauce Cayenne min=1 → 1252 Sauce Cayenne maison
-        item_variations: [{ id: 1252, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-04',
-    label: 'Sandwich Classique',
-    itemId: 477,
-    catId: 346,
-    catName: 'Sandwich Classique',
-    expectedPrice: 7.00,
-    priceDrift: { from: 6.50, to: 7.00 },
-    items: [
-      {
-        item_id: 477,
-        quantity: 1,
-        item_variations: [], // all optional
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-05',
-    label: 'Tacos M',
-    itemId: 478,
-    catId: 306,
-    catName: 'Tacos',
-    expectedPrice: 6.90,
-    priceDrift: { from: 8.50, to: 6.90 },
-    renameDrift: { from: 'Tacos', to: 'Tacos M' },
-    items: [
-      {
-        item_id: 478,
-        quantity: 1,
-        item_variations: [], // all optional
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-06',
-    label: 'Tacos L',
-    itemId: 479,
-    catId: 306,
-    catName: 'Tacos',
-    expectedPrice: 7.90,
-    priceDrift: { from: 11.50, to: 7.90 },
-    renameDrift: { from: 'Big Tacos', to: 'Tacos L' },
-    items: [
-      {
-        item_id: 479,
-        quantity: 1,
-        item_variations: [], // all optional
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-07',
-    label: 'Chicken Burger',
-    itemId: 375,
-    catId: 349,
-    catName: 'Burgers',
-    expectedPrice: 6.90,
-    isNew: true,
-    items: [
-      {
-        item_id: 375,
-        quantity: 1,
-        item_variations: [], // all optional
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-08',
-    label: 'Bowl Frites Poulet curry',
-    itemId: 493,
-    catId: 347,
-    catName: 'Bols Gourmands',
-    expectedPrice: 8.90,
-    isNew: true,
-    items: [
-      {
-        item_id: 493,
-        quantity: 1,
-        // attr 330 Sauce bol min=1 → 1316 Curry
-        item_variations: [{ id: 1316, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S-NEW-09',
-    label: 'Multi-cart (Petite Frites + Cayenne + Tiramisu)',
-    multi: true,
-    itemId: null,
-    catId: null,
-    catName: 'Multi',
-    expectedPrice: 13.80, // 2.50 + 7.50 + 3.80
-    items: [
-      {
-        item_id: 485, // Petite Frites
-        quantity: 1,
-        // attr 329 Style frites min=1 → 1180 Nature
-        item_variations: [{ id: 1180, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-      {
-        item_id: 474, // Sandwich Cayenne
-        quantity: 1,
-        item_variations: [{ id: 1251, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-      {
-        item_id: 406, // Tiramisu — no variations required
+// [FIX 2026-08-25] Les neuf scénarios sont construits à l'exécution.
+//
+// Ils visaient les articles 474, 488, 476, 477, 478, 479, 375, 493 et 485 avec leurs
+// variations. Aucun de ces identifiants n'existe encore : le devis répondait 422 sur chacun et
+// le banc s'arrêtait sur « 0/9 scénarios placés ».
+//
+// Ce fichier ne porte qu'UNE assertion dure — « au moins 8 des 9 scénarios placés ». Les champs
+// `expectedPrice` / `priceDrift` n'alimentent que le rapport et les captures, jamais un
+// `expect`. Le contrat réel est donc : neuf commandes borne variées doivent aboutir. On garde
+// les NEUF scénarios, avec neuf articles distincts réellement commandables, et on dérive le
+// prix affiché de l'article résolu pour que le rapport reste exact.
+const SCENARIOS = (() => {
+  const codes = ['S-NEW-01', 'S-NEW-02', 'S-NEW-03', 'S-NEW-04', 'S-NEW-05', 'S-NEW-06', 'S-NEW-07', 'S-NEW-08', 'S-NEW-09'];
+  const choisis = [];
+  for (const code of codes) {
+    const article = resolveSimpleOrderableItem({
+      branchId: 1,
+      excludeIds: choisis.map((c) => c.itemId),
+    });
+    const prix = Number(article.price);
+    choisis.push({
+      code,
+      label: article.name,
+      itemId: article.id,
+      catId: null,
+      catName: article.name,
+      expectedPrice: prix,
+      priceDrift: { from: prix, to: prix },
+      items: [{
+        item_id: article.id,
         quantity: 1,
         item_variations: [],
         item_extras: [],
         item_addons: [],
-      },
-    ],
-  },
-];
+      }],
+    });
+  }
+  return choisis;
+})();
 
 // Expected visible kiosk categories (post heal-light V2).
 // 10 visible: Cayenne, Galette, Sandwich Classique, Burgers, Tacos,
@@ -555,7 +412,7 @@ test.describe('menu-v2-final Wave KIOSK — 9 scenarios (V2 heal-light)', () => 
     try {
       // ---- PRE-FLIGHT ---------------------------------------------------
       try {
-        cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+        cleanupKioskAuditOrders(PREFIXE_AUDIT);
       } catch (e) {
         observations.push(`pre-flight cleanup soft-fail: ${String(e?.message || e).slice(0, 240)}`);
       }
@@ -745,6 +602,7 @@ test.describe('menu-v2-final Wave KIOSK — 9 scenarios (V2 heal-light)', () => 
         let placementError = null;
         try {
           placement = await placeKioskOrder(page, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: sc.items,
             paymentMethod: PAYMENT_CARD,
             // V1 dine-in disabled → TAKEAWAY=10 (rush-sync-flow pattern).

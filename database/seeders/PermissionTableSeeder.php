@@ -751,5 +751,13 @@ class PermissionTableSeeder extends Seeder
 
             $identifiantParIndex[$index] = $ligne->id;
         }
+
+        // [FIX 2026-08-25 · retenu à la fusion du 2026-08-28] Spatie met les permissions
+        // en cache. Sans invalidation ici, `RolePermissionTableSeeder`, qui s'exécute
+        // juste après, peut se voir refuser une permission qui VIENT d'être écrite —
+        // un rôle seedé se retrouve alors amputé, en silence, jusqu'au prochain vidage
+        // de cache. Les deux voies avaient rendu ce seeder rejouable ; une seule avait
+        // vu que rejouable ne suffit pas si le lecteur suivant lit un cache périmé.
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

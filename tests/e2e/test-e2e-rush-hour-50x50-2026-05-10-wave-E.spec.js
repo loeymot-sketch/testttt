@@ -76,7 +76,14 @@ const {
   placeKioskOrder,
   getKioskApiToken,
   PAYMENT_CARD,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SCREENSHOT_DIR = path.resolve(__dirname, '__screenshots__/test-e2e-rush-hour-50x50-E');
 // [test-e2e fix E-003 round-3 cluster-9 2026-05-11] advance wizard to extras + bump REPORTS_DIR
@@ -380,7 +387,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
   test.setTimeout(HARD_CAP_MS);
 
   test.beforeAll(() => {
-    cleanupOrphanTestOrders([`${TOKEN_PREFIX_POS}-`, `${TOKEN_PREFIX_KIOSK}-`, 'AUDIT-KIOSK-WAVE-E-']);
+    cleanupOrphanTestOrders([`${PREFIXE_AUDIT}-`, `${TOKEN_PREFIX_POS}-`, `${TOKEN_PREFIX_KIOSK}-`, 'AUDIT-KIOSK-WAVE-E-']);
     clearFoodKingRateLimits();
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     ensureReportDir();
@@ -401,7 +408,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
       setExtraAvailability(RUPTURE_EXTRA.id, BRANCH_ID, true);
     } catch (_e) { /* ignore */ }
     try {
-      cleanupOrphanTestOrders([`${TOKEN_PREFIX_POS}-`, `${TOKEN_PREFIX_KIOSK}-`, 'AUDIT-KIOSK-WAVE-E-']);
+      cleanupOrphanTestOrders([`${PREFIXE_AUDIT}-`, `${TOKEN_PREFIX_POS}-`, `${TOKEN_PREFIX_KIOSK}-`, 'AUDIT-KIOSK-WAVE-E-']);
     } catch (_e) { /* ignore */ }
   });
 
@@ -465,7 +472,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
       // ============================================================
       // STATE 01 — admin baseline (stock-rupture dashboard, both targets available)
       // ============================================================
-      await adminPage.goto('/admin/stock-rupture-dashboard', { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await adminPage.goto('/admin/stock/rupture', { waitUntil: 'domcontentloaded' }).catch(() => {});
       await adminPage.waitForTimeout(2500);
       await adminRec.snap('01-E-pre-rupture-baseline-admin');
       observations.push('state01: admin stock-rupture dashboard captured (baseline)');
@@ -1274,6 +1281,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
       let kioskBypassResp = null;
       try {
         kioskBypassResp = await placeKioskOrder(kioskPage, {
+          tokenPrefix: PREFIXE_AUDIT,
           items: [{
             item_id: RUPTURE_ITEM.id,
             quantity: 1,
@@ -1367,6 +1375,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
         let err = null;
         try {
           result = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: [{
               item_id: item.id,
               quantity: 1,
@@ -1386,6 +1395,7 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
             await sleep(13000);
             try {
               result = await placeKioskOrder(kioskPage, {
+                tokenPrefix: PREFIXE_AUDIT,
                 items: [{
                   item_id: item.id,
                   quantity: 1,

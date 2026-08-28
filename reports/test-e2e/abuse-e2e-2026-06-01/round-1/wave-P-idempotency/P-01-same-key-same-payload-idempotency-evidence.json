@@ -1,24 +1,24 @@
 {
   "scenario": "P-01-same-key-same-payload",
-  "capturedAt": "2026-06-03T17:15:22.481Z",
+  "capturedAt": "2026-08-25T11:54:15.362Z",
   "invariant": "same key + same payload ⇒ replay, exactly ONE order written",
-  "idemKey": "c8da0295-7be4-4906-a706-43213a62cf9f",
+  "idemKey": "79ad134c-be58-4248-8f6b-8e0582a703d6",
   "r1": {
     "status": 201,
-    "orderId": 4158,
+    "orderId": 6907,
     "replayed": false,
     "conflict": false
   },
   "r2": {
     "status": 201,
-    "orderId": 4158,
+    "orderId": 6907,
     "replayed": true,
     "conflict": false
   },
   "sameOrderId": true,
   "dbCount": {
-    "before": 0,
-    "after": 1,
+    "before": 94,
+    "after": 95,
     "delta": 1
   }
 }
