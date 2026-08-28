@@ -31,6 +31,17 @@ class SimpleItemResource extends JsonResource
             "item_category_id" => $this->item_category_id,
             "tax_id"           => $this->tax_id,
             "is_featured"      => $this->is_featured,
+            // [ONB-02 2026-08-28] Le rang d'affichage MANQUAIT.
+            //
+            // Sans lui, le formulaire ne pouvait pas renvoyer la valeur reelle et
+            // postait une constante : corriger une faute de frappe dans le nom d'un
+            // produit remettait son rang a 1, defaisant l'ordre de la carte que le
+            // commercant avait etabli. La borne trie la-dessus.
+            //
+            // Il manquait aussi a `CatalogStudioComponent::nextItemOrder`, qui lit
+            // `it.order` pour placer un nouveau produit A LA FIN : la clef etant
+            // absente, `max` restait 0 et la methode rendait toujours 1.
+            "order"            => $this->order,
             "is_upsell"        => $this->is_upsell ?? 10,
             "flat_price"     => AppLibrary::flatAmountFormat($this->price),
             "convert_price"  => AppLibrary::convertAmountFormat($this->price),

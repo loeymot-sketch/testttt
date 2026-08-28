@@ -482,6 +482,8 @@ export default {
                 // le suivant — une declaration FAUSSE, plus couteuse qu'une absente.
                 allergen_flags: [],
                 kds_station: "none",
+                            // Creation : aucun rang encore.
+                order: 1,
             };
             if (this.image) {
                 this.image = "";
@@ -527,7 +529,14 @@ export default {
                 fd.append('is_upsell', this.props.form.is_upsell ?? askEnum.NO);
                 fd.append('description', this.props.form.description);
                 fd.append('caution', this.props.form.caution);
-                fd.append('order', 1);
+                // [ONB-02 2026-08-28] Etait `fd.append('order', 1)` — une CONSTANTE,
+                // en creation COMME en modification. Corriger une faute de frappe
+                // dans le nom d'un produit defaisait donc l'ordre de la carte, que
+                // la borne utilise pour trier. Le commercant ne voyait rien.
+                //
+                // On renvoie le rang REEL, hydrate depuis la ressource. `?? 1` ne
+                // sert qu'a la creation, ou aucun rang n'existe encore.
+                fd.append('order', this.props.form.order ?? 1);
                 fd.append('status', this.props.form.status);
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Append channels[] entries.
                 // Empty array → skip → server keeps existing value (legacy
@@ -585,6 +594,8 @@ export default {
                         channels: [],
                         allergen_flags: [],
                         kds_station: "none",
+                                            // Creation : aucun rang encore.
+                        order: 1,
                     };
                     this.image = "";
                     this.errors = {};

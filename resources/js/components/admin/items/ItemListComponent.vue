@@ -623,6 +623,12 @@ export default {
                  */
                 allergen_flags: Array.isArray(item.allergen_flags) ? item.allergen_flags : [],
                 kds_station: item.kds_station || 'none',
+                /*
+                 * [ONB-02 2026-08-28] Meme raison que les allergenes ci-dessus, et
+                 * meme defaut : sans cette ligne le formulaire postait une constante
+                 * et remettait le rang a 1 a chaque enregistrement.
+                 */
+                order: item.order ?? 1,
             };
         },
         destroy: function (id) {
