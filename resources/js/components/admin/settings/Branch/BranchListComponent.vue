@@ -198,9 +198,14 @@ export default {
                 status: branch.status,
                 // [ONB-01 T-1.2.1 2026-08-27] sans ces trois lignes, ouvrir une
                 // filiale existante puis enregistrer EFFACERAIT son identité fiscale
+                // [ONB-01 2026-08-28] Cette garde etait INERTE : `BranchResource` ne
+                // renvoyait aucune de ces cles, donc `branch.siret` valait toujours
+                // `undefined` et le `?? ""` ecrasait l'identite fiscale a chaque
+                // enregistrement. La ressource les rend desormais.
                 siret: branch.siret ?? "",
                 vat_intra: branch.vat_intra ?? "",
                 legal_footer: branch.legal_footer ?? "",
+                register_id: branch.register_id ?? "",
             };
             this.loading.isActive = false;
         },
