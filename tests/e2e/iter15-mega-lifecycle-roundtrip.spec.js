@@ -112,7 +112,13 @@ async function kdsAdvanceStatus(chefPage, orderId, expectedStatus, nextStatus) {
         id: orderId,
         expected_status: expectedStatus,
         status: nextStatus,
-      });
+      },
+          // [GOAL CONSOLIDATION 2026-08-25] En-tête OBLIGATOIRE : `config/idempotency.php`
+          // liste la route `kds-order/change-status/{id}` dans required_routes (un double
+          // bump enverrait deux notifications client). Sans l'en-tête → 422, et l'échec
+          // ressemble trompeusement à un défaut de synchro cuisine.
+          { headers: { 'X-Idempotency-Key': `idem-kds-${Date.now()}-${Math.random().toString(16).slice(2)}` } }
+        );
       // Echo realtime channels also emit this event; mirror the component's
       // window dispatch so any listeners (POS tracker) refresh in lockstep.
       window.dispatchEvent(new CustomEvent('realtime-order-update', {

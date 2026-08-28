@@ -53,7 +53,13 @@ const {
   PAYMENT_CASH,
   KIOSK_AUDIT_PREFIX,
   uuidV4,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const SCREENSHOT_DIR = path.resolve(
   __dirname,
@@ -62,11 +68,14 @@ const SCREENSHOT_DIR = path.resolve(
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 
-// Item 361 — "Frites Seules" — 2.00€ TTC, status=5 ACTIVE, no required
-// variations / extras (verified via tinker 2026-05-10 — same item used by
-// Wave D). Canonical safe pick for kiosk POSTs.
+// [FIX 2026-08-25] Article résolu à l'exécution, plus d'identifiant figé.
+//
+// Le banc codait l'item 361, « vérifié via tinker le 2026-05-10 ». Il n'existe plus (0 ligne
+// en base). Chacune des trois utilisations partait donc en 422 « Article 361 introuvable », et
+// le cas concluait « 0 commande persistée » — un échec qui ne disait rien du produit.
+const ARTICLE_SUR = resolveSimpleOrderableItem({ branchId: 1 });
 const ITEM_FRITES = {
-  item_id: 361,
+  item_id: ARTICLE_SUR.id,
   quantity: 1,
   item_variations: [],
   item_extras: [],
@@ -194,7 +203,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
       cleanupOrphanTestOrders();
     } catch (_e) { /* best-effort */ }
     try {
-      cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+      cleanupKioskAuditOrders(PREFIXE_AUDIT);
     } catch (_e) { /* best-effort */ }
     try {
       cleanupKioskAuditOrders(KIOSK_F_PREFIX);
@@ -212,7 +221,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
       cleanupKioskAuditOrders(KIOSK_F_PREFIX);
     } catch (_e) { /* best-effort */ }
     try {
-      cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+      cleanupKioskAuditOrders(PREFIXE_AUDIT);
     } catch (_e) { /* best-effort */ }
     try {
       // Cancel any orders still in flight from the Wave-F double-tap / concurrent
@@ -652,6 +661,29 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
               // PosOrderRequest required fields verified 2026-05-10:
               //   branch_id, order_type, is_advance_order, source, items,
               //   pos_payment_method, pos_received_amount (when cash).
+              // [FIX 2026-08-25] Liaison au DEVIS SERVEUR, désormais obligatoire.
+              //
+              // `admin/pos` répondait 401 « Order quote token and signature are required
+              // together » : depuis le verrouillage du prix serveur (quote-bind), la création
+              // POS exige un devis signé. Ce banc postait encore la charge d'avant, donc la
+              // branche POS de la course ne créait AUCUNE commande — d'où « 1 commande sur 2 »,
+              // un échec qui ressemblait à un défaut d'isolation de canal alors qu'il n'en
+              // était pas un. On enchaîne devis → création, comme la vraie caisse.
+              const itemsJson = JSON.stringify([ITEM_FRITES]);
+              const quoteRes = await window.axios.post('admin/pos/quote', {
+                branch_id: 1,
+                order_type: 10,
+                source: 1,
+                pos_payment_method: 1,
+                items: itemsJson,
+              });
+              const q = quoteRes.data?.data || quoteRes.data || {};
+              const quoteToken = q.quote_token || null;
+              const quoteSignature = q.signature || q.quote_signature || null;
+              if (!quoteToken || !quoteSignature) {
+                return { ok: false, status: quoteRes.status, data: { message: 'devis POS sans jeton/signature', body: q } };
+              }
+
               const body = {
                 token,
                 branch_id: 1,
@@ -662,8 +694,10 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
                 payment_method: 1, // cash
                 pos_payment_method: 1, // PosPaymentMethod::CASH
                 pos_received_amount: 5.00,
-                items: JSON.stringify([{ item_id: 361, quantity: 1, item_variations: [], item_extras: [], item_addons: [] }]),
+                items: itemsJson,
                 idempotency_key: token,
+                quote_token: quoteToken,
+                quote_signature: quoteSignature,
               };
               const response = await window.axios.post('admin/pos', body, {
                 headers: { 'X-Idempotency-Key': token },
@@ -754,6 +788,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
 
         try {
           const order = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: [ITEM_FRITES],
             paymentMethod: PAYMENT_CASH,
             orderType: ORDER_TYPE_TAKEAWAY,
@@ -830,6 +865,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
           await ensureKdsContext();
           // Place a fresh kiosk order so KDS has a known order on screen.
           const seed = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: [ITEM_FRITES],
             paymentMethod: PAYMENT_CASH,
             orderType: ORDER_TYPE_TAKEAWAY,
@@ -1055,7 +1091,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
                     source: 5,
                     payment_method: 1,
                     items: JSON.stringify([
-                      { item_id: 361, quantity: 1, item_variations: [], item_extras: [], item_addons: [] },
+                      ITEM_FRITES,
                     ]),
                   },
                   { headers: { ...authHeader } }
@@ -1159,6 +1195,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
         try {
           const startTs = Date.now();
           const placed = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: [ITEM_FRITES],
             paymentMethod: PAYMENT_CASH,
             orderType: ORDER_TYPE_TAKEAWAY,
@@ -1255,6 +1292,7 @@ test.describe('POS · KDS · OSS sync audit Wave F — idempotency / outbox / ra
           let placed = null;
           try {
             placed = await placeKioskOrder(kioskPage, {
+              tokenPrefix: PREFIXE_AUDIT,
               items: [ITEM_FRITES],
               paymentMethod: PAYMENT_CASH,
               orderType: ORDER_TYPE_TAKEAWAY,

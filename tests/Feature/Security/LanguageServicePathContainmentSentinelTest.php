@@ -3,6 +3,7 @@
 namespace Tests\Feature\Security;
 
 use App\Http\Requests\LanguageFileTextGetRequest;
+use App\Http\Requests\LanguageFileTextStoreRequest;
 use App\Services\LanguageService;
 use Exception;
 use Illuminate\Http\Request;
@@ -164,7 +165,11 @@ class LanguageServicePathContainmentSentinelTest extends TestCase
      */
     public function test_fileTextStore_with_php_input_stream_throws_422_exception(): void
     {
-        $request = new Request();
+        // [ONB-13 2026-08-28] Le type attendu est passé de `Request` à
+        // `LanguageFileTextStoreRequest` : l'écriture est désormais validée en plus
+        // d'être confinée. La sous-classe n'ajoute que des règles ; l'assertion de ce
+        // banc — le confinement du CHEMIN — est inchangée.
+        $request = new LanguageFileTextStoreRequest();
         $request->merge([
             'x_language_file_path' => 'php://input',
             'x_language_file_name' => 'shell.php',

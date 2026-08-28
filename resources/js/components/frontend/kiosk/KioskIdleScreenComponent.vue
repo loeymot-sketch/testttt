@@ -112,14 +112,15 @@
       </div>
 
       <!-- ===== EYEBROW ===== -->
-      <div class="cay-eyebrow">
+      <div v-if="products.length" class="cay-eyebrow">
         <span class="cay-eyebrow-dot"></span>
         <span class="cay-eyebrow-text">{{ text('kiosk.idle_screen.eyebrow', 'Nos incontournables') }}</span>
         <span class="cay-eyebrow-dot"></span>
       </div>
 
       <!-- ===== HERO PRODUCT STAGE — carrousel ===== -->
-      <div class="cay-hero">
+      <!-- [ONB-12 2026-08-28] `v-if` : sans produit déclaré, pas de vitrine. -->
+      <div class="cay-hero" v-if="products.length">
         <div class="cay-hero-glow"></div>
         <div class="cay-hero-card">
           <div
@@ -159,10 +160,11 @@
             ></span>
           </div>
 
-          <!-- stamp 100% Halal -->
-          <div class="cay-stamp">
+          <!-- [ONB-12 2026-08-28] Affirmation déclarée par le commerçant, jamais
+               supposée. Réglage `kiosk_halal_stamp`, éteint par défaut. -->
+          <div class="cay-stamp" v-if="tamponHalal">
             <span class="cay-stamp-num">100%</span>
-            <span class="cay-stamp-lab">Halal</span>
+            <span class="cay-stamp-lab">{{ $t('kiosk.badges.halal') }}</span>
           </div>
         </div>
       </div>
@@ -205,6 +207,8 @@
           class="kiosk-order-type-card kiosk-order-type-card--dine-in"
           data-testid="kiosk-order-type-dine-in"
           @click.stop="selectOrderTypeAndStart(orderTypes.KIOSK)"
+          @keydown.enter.stop.prevent="activerAuClavier($event, orderTypes.KIOSK)"
+          @keydown.space.stop.prevent="activerAuClavier($event, orderTypes.KIOSK)"
           @touchstart.stop
         >
           <span class="kiosk-order-type-icon" aria-hidden="true">
@@ -224,6 +228,8 @@
           class="kiosk-order-type-card kiosk-order-type-card--takeaway"
           data-testid="kiosk-order-type-takeaway"
           @click.stop="selectOrderTypeAndStart(orderTypes.TAKEAWAY)"
+          @keydown.enter.stop.prevent="activerAuClavier($event, orderTypes.TAKEAWAY)"
+          @keydown.space.stop.prevent="activerAuClavier($event, orderTypes.TAKEAWAY)"
           @touchstart.stop
         >
           <!-- indicateur tactile « touchez pour commander » (décoratif) -->
@@ -264,6 +270,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 // [PHASE-37] Multi-language support
 // [ADR-007 / iter15-P1a] `setLocale` retiré : kiosk runtime FR-immutable.
 // Seul `getCurrentLocale` reste utilisé pour l'affichage `aria-pressed`.
@@ -310,17 +317,41 @@ export default {
       // poids réseau vs PNG, ~8 Mo → ~2,9 Mo sur l'écran d'accueil). Le PNG
       // reste sur disque : `onAttractImgError` y retombe si le navigateur ne
       // décode pas le WebP (repli automatique, 0 régression).
-      brandLogo: ATTRACT_BASE + 'logo.webp',
-      products: [
-        { name: 'Le Terminator', img: ATTRACT_BASE + 'terminator.webp' },
-        { name: 'Double Cheese', img: ATTRACT_BASE + 'double-cheese.webp' },
-        { name: 'Le Cayenne',    img: ATTRACT_BASE + 'cayenne.webp' },
-        { name: 'Grill Burger',  img: ATTRACT_BASE + 'grill-burger.webp' },
-        { name: 'Le Suprême',    img: ATTRACT_BASE + 'supreme.webp' },
-        { name: 'Menu Maxi',     img: ATTRACT_BASE + 'menu-maxi.webp' },
-        { name: 'Bol de riz',    img: ATTRACT_BASE + 'bol-riz.webp' },
-        { name: 'Bol de frites', img: ATTRACT_BASE + 'bol-frites.webp' },
-      ],
+      // [ONB-12 2026-08-28 — corrigé le même jour après audit adverse]
+      //
+      // Cette ligne valait `ATTRACT_BASE + 'logo.webp'` : la marque déposée
+      // « LE CAYENNE ® », mascotte et baseline comprises, en dur et en haut de
+      // l'écran client. C'était **l'élément le plus grand de la borne**, et il
+      // survivait au commit censé sortir Le Cayenne de cet écran.
+      //
+      // Pire : mon propre cliquet annonçait « 0 marqueur » parce que sa regex
+      // cherchait `cayenne.webp` et pas `logo.webp`. Une sentinelle au mauvais
+      // périmètre rassure sans protéger — c'est le motif que je documente depuis
+      // des jours, et je venais de le reproduire.
+      //
+      // Le logo vient désormais des réglages. À défaut, `v-else` affiche le NOM
+      // du commerçant, ce qui n'était jusqu'ici jamais atteignable : `brandLogo`
+      // étant toujours vrai, ce repli était du code mort.
+      brandLogo: null,
+      // [ONB-12 2026-08-28] La vitrine vient de la CARTE DU COMMERÇANT.
+      //
+      // Huit produits de Le Cayenne étaient écrits ici en dur, avec leurs photos.
+      // Un nouveau commerçant ouvrait sa borne sur des burgers qu'il ne vend pas,
+      // et n'avait aucun écran pour les changer.
+      //
+      // La liste est désormais chargée depuis `frontend/item/featured-items` : les
+      // produits que le commerçant a lui-même mis en avant. Elle démarre VIDE, et
+      // le carrousel ne s'affiche pas tant qu'elle l'est — mieux vaut un écran
+      // sobre que la vitrine d'un autre établissement.
+      //
+      // Ce n'est pas une perte pour l'installation existante : elle a 40 produits
+      // mis en avant, tous avec photo (vérifié en lecture le 2026-08-28). Sa borne
+      // montrera sa carte réelle au lieu d'un instantané figé de huit articles.
+      products: [],
+      // Le tampon « 100 % Halal » était écrit en dur dans le gabarit — une
+      // affirmation sur la nourriture, portée par tout établissement qui installe
+      // le produit. Elle devient un réglage, éteint par défaut.
+      tamponHalal: false,
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
         fr: 'FR',
@@ -341,11 +372,43 @@ export default {
     },
     headlines() {
       const lc = (k, fb) => this.text(k, fb);
+
+      /*
+       * [ONB-01 2026-08-28] La borne affichait le nom d'un AUTRE établissement.
+       *
+       * « Le Cayenne » était CONCATÉNÉ EN DUR après le titre d'accueil réglable :
+       * même en réglant son titre, le commerçant voyait le nom du premier
+       * établissement s'y ajouter. Or `this.restaurantName` est renseigné vingt-cinq
+       * lignes plus bas (`data.company_name || data.site_name`) — la donnée était là.
+       *
+       * Pour une « publication vierge », c'est le défaut le plus visible qui soit :
+       * le premier écran que voit un client porte le nom de quelqu'un d'autre.
+       */
+      // Le nom vient d'un réglage LIBRE et entre dans une chaîne HTML : on
+      // l'échappe ici. Le composant assainit les titres plus bas via DOMPurify,
+      // mais une injection ne doit pas dépendre de l'ordre dans lequel deux
+      // protections se rencontrent.
+      const nom = String(this.restaurantName || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      const etablissement = nom ? ' <span class="cay-accent">' + nom + '</span>' : '';
+
       return [
-        (this.welcomeTitle || lc('kiosk.idle_screen.default_title', 'Bienvenue chez')) +
-          ' <span class="cay-accent">Le Cayenne</span>',
-        lc('kiosk.idle_screen.line_compose', "Composez votre tacos<br>comme vous l'aimez"),
-        '<span class="cay-accent">Halal</span> · Frais · Préparé minute',
+        (this.welcomeTitle || lc('kiosk.idle_screen.default_title', 'Bienvenue chez')) + etablissement,
+        lc('kiosk.idle_screen.line_compose', "Composez votre carte<br>comme vous l'aimez"),
+        /*
+         * Cette ligne AFFIRMAIT « Halal », sans clé ni repli. Un nouveau commerçant
+         * n'est pas forcément halal, et une borne ne doit pas faire à sa place une
+         * déclaration qu'il n'a peut-être pas le droit de faire. Le repli est
+         * désormais neutre, et la ligne passe par une clé — donc modifiable.
+         *
+         * La rendre éditable depuis le Dashboard relève des réglages borne :
+         * fiche de renvoi ONB-10, pas correctif silencieux ici.
+         */
+        lc('kiosk.idle_screen.line_claims', 'Frais · Préparé minute'),
         lc('kiosk.idle_screen.line_taste', 'Un goût qui<br>vous ressemble'),
       ];
     },
@@ -388,6 +451,7 @@ export default {
   mounted() {
     this.applyLocalizedDefaults();
     this.loadSettings();
+    this.chargerLaVitrine();
     this.startDotAnimation();
     this.startCarousel();
     this.computeStageScale();
@@ -454,6 +518,20 @@ export default {
       const s = Math.min(w / 1080, h / 1920);
       this.stageScale = (isFinite(s) && s > 0) ? s : 1;
     },
+    /**
+     * [REPLAN_8 2026-08-24] Activation clavier des tuiles de type de commande.
+     *
+     * `.prevent` sur `keydown.space` déplace l'activation du keyup natif vers le keydown :
+     * un bouton natif NE répète PAS sur Espace maintenu, mais un handler keydown, si. Sans
+     * garde, un doigt posé sur la barre d'espace sur la borne émettrait `start-order` à chaque
+     * répétition du clavier — donc plusieurs départs de commande. `$event.repeat` distingue la
+     * première frappe des répétitions automatiques ; on ignore les secondes.
+     */
+    activerAuClavier(evenement, typeCommande) {
+        if (evenement && evenement.repeat) return;
+        this.selectOrderTypeAndStart(typeCommande);
+    },
+
     selectOrderTypeAndStart(orderType) {
       // Navigation + reset panier + setOrderType : uniquement via le parent
       // `KioskAppComponent.startOrder` pour éviter un double `router.push`
@@ -498,11 +576,66 @@ export default {
     },
     startCarousel() {
       this.heroTimer = setInterval(() => {
+        // `% 0` donne NaN : sans ce garde, une carte vide cassait l'index et
+        // figeait l'écran sur une diapositive inexistante.
+        if (!this.products.length) return;
         this.heroIdx = (this.heroIdx + 1) % this.products.length;
       }, 3800);
       this.lineTimer = setInterval(() => {
         this.lineIdx = (this.lineIdx + 1) % this.headlines.length;
       }, 3400);
+    },
+    /**
+     * [ONB-12 2026-08-28] Charge la vitrine depuis la carte du commerçant.
+     *
+     * Source : `frontend/item/featured-items`, c'est-à-dire les produits que le
+     * commerçant a lui-même cochés « mis en avant ». On ne garde que ceux qui ont
+     * une photo — une diapositive sans image est un rectangle vide — et on
+     * plafonne à huit pour que la rotation reste lisible.
+     *
+     * En cas d'échec, on laisse la liste vide : le `v-if` retire la vitrine, et
+     * l'écran garde son logo, son accueil et son invite. Aucune reprise sur la
+     * carte d'un autre établissement.
+     */
+    /**
+     * [ONB-12 2026-08-28 — ajouté après audit adverse] Retient une VRAIE photo.
+     *
+     * La version précédente filtrait sur `i.thumb`, en croyant écarter les
+     * produits sans image. Elle n'écartait rien : `Item::getThumbAttribute()`
+     * renvoie **toujours** une chaîne, et retombe sur `item-default.svg` — un
+     * carré gris 200×200 avec un « + ». Ce substitut s'affichait donc plein
+     * cadre (900×884), agrandi et animé, sur l'écran client.
+     *
+     * On préfère `cover` (pleine taille) à `thumb` (320×320, parfois 168×180),
+     * parce que le cadre fait 900 px de large : une vignette y est étirée de 3×.
+     * Et on écarte explicitement les trois substituts connus — mieux vaut une
+     * diapositive de moins qu'un rectangle gris qui tourne en vitrine.
+     */
+    imageUtilisable(article) {
+      const SUBSTITUTS = ['item-default.svg', 'item/cover.png', 'item/thumb.png'];
+      const estReelle = (url) => typeof url === 'string'
+        && url.length > 0
+        && !SUBSTITUTS.some((sub) => url.includes(sub));
+
+      if (estReelle(article?.cover)) return article.cover;
+      if (estReelle(article?.thumb)) return article.thumb;
+
+      return null;
+    },
+    async chargerLaVitrine() {
+      try {
+        const res = await axios.get('frontend/item/featured-items');
+        const items = res?.data?.data || res?.data || [];
+
+        this.products = (Array.isArray(items) ? items : [])
+          .map((i) => ({ name: i?.name, img: this.imageUtilisable(i) }))
+          .filter((p) => p.name && p.img)
+          .slice(0, 8);
+
+        this.heroIdx = 0;
+      } catch (_) {
+        this.products = [];
+      }
     },
     async loadSettings() {
       try {
@@ -519,6 +652,14 @@ export default {
         this.restaurantName = data.company_name || data.site_name || this.$t('kiosk.idle_screen.default_restaurant_name');
         this.restaurantLogo = data.logo_full_path || data.theme_logo || null;
 
+        // [ONB-12 2026-08-28] Le bandeau de marque de l'écran d'accueil suit le
+        // même réglage que le reste : c'est le logo du commerçant, ou rien.
+        // [ONB-12 2026-08-28] Trois crans, du plus specifique au plus general :
+        //   1. le logo DEDIE a l'accueil borne (fond orange plein cadre)
+        //   2. a defaut, le logo general de l'etablissement
+        //   3. a defaut, rien — et `v-else` affiche le NOM en toutes lettres
+        this.brandLogo = data.kiosk_attract_logo || data.logo_full_path || data.theme_logo || null;
+
         // [KIOSK-12-1] Kiosk idle video — null means animated gradient fallback
         this.videoSrc = data.kiosk_idle_video || null;
 
@@ -526,6 +667,9 @@ export default {
         if (data.kiosk_welcome_title)    this.welcomeTitle    = data.kiosk_welcome_title;
         if (data.kiosk_welcome_subtitle) this.welcomeSubtitle = data.kiosk_welcome_subtitle;
         if (data.kiosk_tap_hint)         this.tapHint         = data.kiosk_tap_hint;
+
+        // [ONB-12 2026-08-28] Le tampon n'apparaît que s'il est déclaré.
+        this.tamponHalal = Boolean(Number(data.kiosk_halal_stamp ?? 0));
 
         // [PHASE-37] Load enabled languages from settings
         if (data.kiosk_languages_enabled) {

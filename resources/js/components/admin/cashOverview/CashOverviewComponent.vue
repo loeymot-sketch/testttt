@@ -365,9 +365,17 @@
                         class="text-base text-gray-700 max-w-md mx-auto mb-4"
                         data-testid="cash-overview-empty-copy"
                     >
-                        {{ $t('label.cash_overview_empty_copy') }}
+                        {{ unFiltreEstActif ? $t('label.cash_overview_empty_copy') : $t('label.cash_overview_empty_vierge') }}
                     </p>
+                    <!--
+                        [ONB 2026-08-28] Ce bouton n'etait qu'a moitie honnete :
+                        `clearFilters()` remet `from = to = aujourd'hui,
+                        source = '', mode = ''`, c'est-a-dire l'etat PAR DEFAUT.
+                        Sans filtre actif il ne faisait donc RIEN, tout en
+                        affirmant qu'il y avait quelque chose a reinitialiser.
+                    -->
                     <button
+                        v-if="unFiltreEstActif"
                         type="button"
                         class="db-btn py-2 px-4 text-white bg-primary"
                         data-testid="cash-overview-empty-reset"
@@ -464,6 +472,24 @@ export default {
         };
     },
     computed: {
+
+        /**
+         * [ONB 2026-08-28] Un filtre est-il REELLEMENT pose ?
+         *
+         * L'etat par defaut est « aujourd'hui, toutes sources, tous modes ».
+         * Un journal vide dans cet etat ne veut pas dire « votre filtre est
+         * trop etroit », il veut dire « aucune vente n'a encore ete
+         * encaissee » — la situation NORMALE d'un commercant qui vient de
+         * terminer son installation.
+         */
+        unFiltreEstActif() {
+            const aujourdHui = new Date().toISOString().slice(0, 10);
+        
+            return Boolean(this.filters.source)
+                || Boolean(this.filters.mode)
+                || Boolean(this.filters.from && this.filters.from !== aujourdHui)
+                || Boolean(this.filters.to && this.filters.to !== aujourdHui);
+        },
         // Render fixed source order : caisse / borne / livreur, populating
         // zero-count buckets so the dashboard layout stays stable.
         /**

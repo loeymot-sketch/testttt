@@ -15,7 +15,7 @@
 ## 2. STATUT MATÉRIEL (état courant — choix assumé, PAS un bug)
 - Le **TPE tourne en mode SIMULÉ / ALTERNATIF** (`POS_SIMULATION_HARDWARE`) **jusqu'à** ce que le vrai terminal principal à la CAISSE soit fonctionnel. Choix temporaire **assumé** — ne JAMAIS le traiter comme un défaut à réparer.
 - La simulation bypasse **le MATÉRIEL seulement** (tiroir-caisse / TPE), **JAMAIS** le pricing / la composition / le fiscal (vérifié : `PaymentService.php`, `config/pos.php:37`).
-- État fichiers : `.env:93 POS_SIMULATION_HARDWARE=true` (dev) ; `.env.example:373=false` (template prod). Boot-guard prod refuse `true` en `APP_ENV=production` (`AppServiceProvider.php:158+`).
+- État fichiers : `.env:93 POS_SIMULATION_HARDWARE=true` (dev) ; `.env.example:373=false` (template prod). Boot-guard prod refuse `true` en `APP_ENV=production` (`AppServiceProvider.php:190+`, garde `POS_SIMULATION_HARDWARE` à `:197`).
 - Paiement kiosk = **Plan B** : routé à l'encaissement comptoir (`config/kiosk.php payment_route_all_to_counter`).
 
 ## 3. RÈGLES DURES (non-négociables)

@@ -79,7 +79,15 @@ const {
   uuidV4,
   KIOSK_AUDIT_PREFIX,
   PAYMENT_CASH,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 
@@ -115,12 +123,21 @@ function persistIdempotencyEvidence(scenario, evidence) {
   }
 }
 
-// Simple no-variation item so the order payload is valid without a wizard.
-// Coca-Cola 33cl id=52 (same fixture wave-polish-final-B.spec.js:81 uses) —
-// no variations/extras/addons required. Overridable via env if the seed shifts.
-// UNCERTAIN: item_id 52 is seed-dependent; if the seed changes this id, switch
-// the env or use the kioskMenu store discovery pattern (_bug-kiosk-valider-2026-05-21.spec.js:89).
-const SIMPLE_ITEM_ID = Number(process.env.WAVE_P_ITEM_ID || 52);
+// [FIX 2026-08-25] Article résolu à l'exécution, plus d'identifiant figé.
+//
+// Le banc codait `item_id = 52` (Coca-Cola 33cl). Ce produit existe toujours mais il est
+// l'UNIQUE article en RUPTURE de la branche 1 — vérifié en base : `item_branch_availability`
+// le marque `is_available = 0`, motif `stock_rupture`. Le devis répondait donc 422
+// « n'est plus disponible » AVANT d'atteindre le sujet du test, qui est la déduplication.
+// La pastille de santé caisse affichait « 1 en rupture » : c'est le même fait, vu ailleurs.
+//
+// Le commentaire d'origine annonçait déjà le remède (« use the kioskMenu store discovery
+// pattern ») sans qu'il soit appliqué. On demande maintenant au helper partagé un article
+// qui satisfait le BESOIN du banc — actif, disponible sur la branche, sans variation et sans
+// étape d'assistant obligatoire — au lieu de parier sur un identifiant.
+//
+// `WAVE_P_ITEM_ID` reste honoré pour forcer un article précis en investigation.
+let SIMPLE_ITEM_ID = Number(process.env.WAVE_P_ITEM_ID || 0);
 
 // OrderType::TAKEAWAY = 10 (app/Enums/OrderType.php:8). Kiosk orders in V1 Le
 // Cayenne must be TAKEAWAY — order_type=25 (KIOSK) is rejected 422 server-side
@@ -286,13 +303,21 @@ test.describe('Wave P — Idempotency / duplicate-submit (double-charge preventi
     clearFoodKingRateLimits();
     resetKioskToken();
     // Start from a clean slate for our scoped prefix so before/after counts are honest.
-    cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+    cleanupKioskAuditOrders(PREFIXE_AUDIT);
+
+    // [FIX 2026-08-25] Article résolu ici, contre l'état RÉEL du menu.
+    if (!SIMPLE_ITEM_ID) {
+      const article = resolveSimpleOrderableItem({ branchId: 1 });
+      SIMPLE_ITEM_ID = article.id;
+      // eslint-disable-next-line no-console
+      console.log(`[Wave P] article commandable résolu : #${article.id} « ${article.name} » @ ${article.price}`);
+    }
   });
 
   test.afterAll(() => {
     // Sweep every order this wave created (and its idempotency records / children)
     // so no AUDIT-KIOSK row leaks into the live KDS pile or skews fiscal counts.
-    const summary = cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+    const summary = cleanupKioskAuditOrders(PREFIXE_AUDIT);
     console.log('[Wave P] cleanup summary:', JSON.stringify(summary));
   });
 

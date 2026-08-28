@@ -154,6 +154,22 @@ Après chaque fix appliqué :
 3. NF525 chain `php artisan fiscal:verify-chain --all`
 4. Status report : GREEN | YELLOW | RED + counts exact
 
+### Instrument avant produit (ajouté 2026-08-25, GOAL CONSOLIDATION)
+
+Avant de déclarer un défaut produit constaté par navigateur, répondre à :
+**« Ai-je prouvé que mon instrument mesure quelque chose ? »**
+
+Trois pièges ont réellement produit de faux signalements (détail + sentinelle :
+`docs/PLAYWRIGHT_MCP_OPS.md §7`, `tests/js/e2eInstrumentsDeMesureFiables.spec.js`) :
+- `test.use({ reducedMotion })` est **inerte** dans ce dépôt → utiliser `page.emulateMedia()`.
+- `keyboard.press('F1'..'F12')` est **inerte** sans affichage → prouver en test de composant.
+- Chercher un produit qui **n'existe pas au menu** ne prouve rien sur la recherche.
+  ⛔ Avant tout signalement sur la recherche ou le catalogue :
+  `SELECT name FROM items WHERE deleted_at IS NULL AND status = 5`. Ne jamais deviner un nom
+  de produit (cf. §3bis SSOT).
+
+Un signalement non reproduit par un **second moyen indépendant** reste un artefact.
+
 ### Anti-pattern : composer dump-autoload on live dev
 - ⛔ JAMAIS `composer dump-autoload` sur dev server en cours d'exécution (casse autoload stale state)
 - ✅ Alternative : `php artisan cache:clear` + `php artisan config:clear` + static analysis
@@ -382,7 +398,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 - Aucun env flag pour bypass — toujours actif
 
 ### Production boot guards (concrete enforcement)
-- `app/Providers/AppServiceProvider.php:78-145` REFUSE TO BOOT en
+- `app/Providers/AppServiceProvider.php:190-370` REFUSE TO BOOT en
   production si :
   - `POS_SIMULATION_HARDWARE != false` (NF525 cash-trail bypass)
   - `IDEMPOTENCY_MIDDLEWARE_ENABLED != true` (duplicate POST protection)
@@ -394,7 +410,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 - L'abstract invariant ("forbidden") est doublé par une `RuntimeException`
   au boot — pas de silent override possible.
 - **Note (verified 2026-05-21)**: the cache-driver forbidden list at
-  `AppServiceProvider.php:215` covers `array`/`null` only — `file` and
+  `AppServiceProvider.php:366` covers `array`/`null` only — `file` and
   `database` PASS the guard. Block comment says "redis or memcached"
   but the implementation is narrower than the stated intent. Tracked
   as **V1.0.X cloud-prep backlog item UNI-03** (defer to cloud cutover

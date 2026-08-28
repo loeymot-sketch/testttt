@@ -63,7 +63,7 @@
                                 @update:modelValue="handleDate" v-model="props.form.date" range
                                 :preset-ranges="presetRanges">
                                 <template #yearly="{ label, range, presetDateRange }">
-                                    <span @click="presetDateRange(range)">{{ label }}</span>
+                                    <button type="button" class="dashboard-date-preset w-full px-3 py-2 text-left rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="presetDateRange(range)">{{ label }}</button>
                                 </template>
                             </Datepicker>
                         </div>
@@ -122,7 +122,16 @@
                             <td class="db-table-body-td">{{ $t('label.total') }}</td>
                             <td></td>
                             <td></td>
-                            <td class="db-table-body-td"> {{ subTotal(itemsReports) }}</td>
+                            <!--
+                                [ONB-07 2026-08-28] Le total du PÉRIMÈTRE, pas de la page.
+                                `subTotal(itemsReports)` réduisait le tableau de la page
+                                courante (10 lignes) sous le même libellé que l'export,
+                                qui totalise tout le catalogue. Le serveur renvoie
+                                désormais le total du même périmètre filtré.
+                            -->
+                            <td class="db-table-body-td" data-testid="items-report-total">
+                                {{ totalUnitesVendues }}
+                            </td>
                         </tr>
                     </tfoot>
                 </table>
@@ -183,19 +192,19 @@ export default {
     setup() {
         const date = ref();
 
-        const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+        const // [REPLAN_8 2026-08-24] `slot` sur CHAQUE préréglage — sinon vue-datepicker rend
+ // sa propre `<div class="dp__preset_range">`, ni focalisable ni activable au clavier.
+ // Le `<template #yearly>` accessible ne s'appliquait qu'à l'unique entrée démo du
+ // template vendeur : 4 préréglages sur 5 restaient des div muettes.
+ presetRanges = ref([
+            { label: 'Aujourd’hui', range: [new Date(), new Date()], slot: 'yearly' },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())], slot: 'yearly' },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
-            },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
-            {
-                label: 'This year (slot)',
-                range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())], slot: 'yearly' },
         ]);
 
         return {
@@ -266,6 +275,22 @@ export default {
         });
     },
     computed: {
+
+        /**
+         * [ONB-07 2026-08-28] Le total renvoyé par le serveur, sur le périmètre
+         * filtré complet.
+         *
+         * Repli sur la somme de la page si le serveur ne l'envoie pas : mieux vaut
+         * un nombre incomplet que la case vide qui suivrait un `undefined`. Le repli
+         * est le comportement historique, il ne peut donc pas être une régression.
+         */
+        totalUnitesVendues() {
+            const duServeur = this.pagination?.total_unites_vendues;
+        
+            return Number.isFinite(duServeur)
+                ? duServeur
+                : this.subTotal(this.itemsReports);
+        },
         itemsReports: function () {
             return this.$store.getters['itemsReport/lists'];
         },

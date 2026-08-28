@@ -113,8 +113,21 @@ class PosDineInServerGateTest extends TestCase
             ->postJson('/api/admin/pos', $this->dineInPayload());
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('Dine-in is disabled',
-            $response->json('message') . ' ' . json_encode($response->json('errors')));
+
+        // [ONB-05 2026-08-28] La formulation a CHANGE deliberement : le message
+        // partait en anglais vers le CLIENT sur une interface francaise (ADR-007).
+        // On n'epingle plus la phrase — une formulation se retouche — mais le
+        // comportement : le refus porte bien sur `order_type`, et il passe par les
+        // fichiers de langue au lieu d'etre ecrit en dur.
+        $response->assertJsonValidationErrors(['order_type']);
+
+        app()->setLocale('fr');
+        $this->assertStringContainsString(
+            'sur place',
+            mb_strtolower(trans('all.message.sur_place_desactive')),
+            "Le refus doit exister en francais : c'est ce que lira le commercant."
+        );
+        app()->setLocale('en');
     }
 
     public function test_dine_in_requires_table_when_flag_on(): void

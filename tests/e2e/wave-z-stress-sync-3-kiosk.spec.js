@@ -62,7 +62,12 @@ const {
   resetKioskToken,
   PAYMENT_CASH,
   PAYMENT_CARD,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
 
@@ -322,6 +327,7 @@ async function runKioskContext(browser, contextId, ordersToPlace, item) {
     const idemKey = `${STRESS_PREFIX}c${contextId}-${Date.now()}-${i}`;
     try {
       const result = await placeKioskOrder(page, {
+        tokenPrefix: PREFIXE_AUDIT,
         items: [{ item_id: item.id, quantity: 1 }],
         paymentMethod: PAYMENT_CASH,
         idempotencyKey: idemKey,
@@ -373,6 +379,7 @@ async function runNetworkResilienceSubtest(browser, item) {
   const baseline = [];
   for (let i = 0; i < 5; i += 1) {
     const r = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [{ item_id: item.id, quantity: 1 }],
       paymentMethod: PAYMENT_CASH,
       idempotencyKey: `${STRESS_PREFIX}netres-base-${Date.now()}-${i}`,
@@ -399,6 +406,7 @@ async function runNetworkResilienceSubtest(browser, item) {
   let resilientOk = null;
   try {
     resilientOk = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [{ item_id: item.id, quantity: 1 }],
       paymentMethod: PAYMENT_CASH,
       idempotencyKey: `${STRESS_PREFIX}netres-blocked-${Date.now()}`,

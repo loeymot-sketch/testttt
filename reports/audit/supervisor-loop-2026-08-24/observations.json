@@ -1,0 +1,406 @@
+[
+  {
+    "surface": "S01-admin-dashboard",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "longueur_texte": 7648,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S01-admin-dashboard.png"
+  },
+  {
+    "surface": "S02-pos-caisse",
+    "url": "http://127.0.0.1:8766/admin/pos",
+    "longueur_texte": 3309,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S02-pos-caisse.png"
+  },
+  {
+    "surface": "S03-kds",
+    "url": "http://127.0.0.1:8766/admin/kitchen-display-system",
+    "longueur_texte": 1178,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S03-kds.png"
+  },
+  {
+    "surface": "S04-oss",
+    "url": "http://127.0.0.1:8766/admin/order-status-screen",
+    "longueur_texte": 870,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S04-oss.png"
+  },
+  {
+    "surface": "S05-catalogue",
+    "url": "http://127.0.0.1:8766/admin/items",
+    "longueur_texte": 2907,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S05-catalogue.png"
+  },
+  {
+    "surface": "S06-stock-rupture",
+    "url": "http://127.0.0.1:8766/admin/stock/rupture",
+    "longueur_texte": 1966,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S06-stock-rupture.png"
+  },
+  {
+    "surface": "S07-commandes-caisse",
+    "url": "http://127.0.0.1:8766/admin/pos-orders",
+    "longueur_texte": 2506,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S07-commandes-caisse.png"
+  },
+  {
+    "surface": "S08-appareils",
+    "url": "http://127.0.0.1:8766/admin/profile/devices",
+    "longueur_texte": 2852,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S08-appareils.png"
+  },
+  {
+    "surface": "S09-cockpit-sla",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "longueur_texte": 7061,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S09-cockpit-sla.png",
+    "appels_sla": 0,
+    "doublons_sla_simultanes": 0
+  },
+  {
+    "surface": "S10-sante-pos",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "longueur_texte": 7670,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S10-sante-pos.png",
+    "sante_pos": {
+      "overall": "degraded",
+      "checks": {
+        "sync": {
+          "status": "warn",
+          "message": "Traitement en retard — mise à jour par rafraîchissement. Préviens le support si ça persiste."
+        },
+        "fiscal": {
+          "status": "ok",
+          "message": "Chaîne fiscale intègre."
+        },
+        "stock": {
+          "status": "info",
+          "count": 1,
+          "message": "1 produit en rupture"
+        },
+        "aging": {
+          "status": "ok",
+          "count": 0,
+          "threshold_min": 15,
+          "message": "Aucune commande en retard."
+        }
+      },
+      "stale_events": 268,
+      "queue_pending": 186,
+      "timestamp": "2026-08-24T06:39:21+02:00"
+    }
+  },
+  {
+    "surface": "S11a-borne-idle",
+    "url": "http://127.0.0.1:8766/kiosk/idle",
+    "longueur_texte": 444,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [
+      {
+        "url": "http://127.0.0.1:8766/api/login",
+        "status": 401
+      }
+    ],
+    "console_erreurs": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S11a-borne-idle.png"
+  },
+  {
+    "surface": "S11b-borne-apres-entree",
+    "url": "http://127.0.0.1:8766/kiosk/categories?cat=1",
+    "longueur_texte": 905,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [
+      {
+        "url": "http://127.0.0.1:8766/api/login",
+        "status": 401
+      }
+    ],
+    "console_erreurs": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S11b-borne-apres-entree.png",
+    "element_focalise": "kiosk-order-type-takeaway",
+    "url_apres_entree": "http://127.0.0.1:8766/kiosk/categories?cat=1"
+  },
+  {
+    "surface": "S12a-borne-catalogue",
+    "url": "http://127.0.0.1:8766/kiosk/categories?cat=1",
+    "longueur_texte": 905,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S12a-borne-catalogue.png",
+    "carte_produit_visible": true,
+    "carte_focusable": false
+  },
+  {
+    "surface": "S12b-borne-apres-entree-produit",
+    "url": "http://127.0.0.1:8766/kiosk/categories?cat=1",
+    "longueur_texte": 905,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S12b-borne-apres-entree-produit.png",
+    "url_apres_activation": "http://127.0.0.1:8766/kiosk/categories?cat=1"
+  },
+  {
+    "surface": "S13-kds-chef",
+    "url": "http://127.0.0.1:8766/admin/kitchen-display-system",
+    "longueur_texte": 1336,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S13-kds-chef.png"
+  },
+  {
+    "surface": "S14-pastille-sante",
+    "url": "http://127.0.0.1:8766/admin/pos-orders-tracker",
+    "longueur_texte": 2678,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S14-pastille-sante.png",
+    "pastille_presente": true,
+    "pastille_texte": "Temps réel dégradé Traitement en retard — mise à jour par rafraîchissement. Préviens le support si ça persiste. Vérifié à l’instant 🍽️ 1 en rupture",
+    "pastille_aria": null,
+    "banniere_offline_visible": false,
+    "badge_quarantaine_visible": false
+  },
+  {
+    "surface": "S15-cockpit-sla-visible",
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "longueur_texte": 7077,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S15-cockpit-sla-visible.png",
+    "cockpit_present": true,
+    "cockpit_texte": "SUPERVISION CUISINE Délais de préparation Actualisé à l’instant 331 hors délai 331 urgentes 74 j 7 h plus ancienne Ticket #A0140 · 1006264497 Client passage 74 j 7 h en préparation Ticket #A0142 · 1006264500 Client passage 74 j 7 h en préparation Ticket #A0143 · 1006264501 Client passage 74 j 7 h en préparation Ticket #A0144 · 1006264503 Client passage 74 j 7 h en préparation Ticket #A0145 · 1006264504 Client passage 74 j 7 h en préparation Ticket #A0146 · 1006264505 Client passage 74 j 7 h en préparation + 325 autre(s) alerte(s), classées par ancienneté. 331 préparations hors délai, dont 331 ",
+    "etat_chargement": false,
+    "etat_erreur": false,
+    "etat_vide": false,
+    "avertissement_perime": false,
+    "lignes_alertes": 6,
+    "fraicheur": "Actualisé à l’instant"
+  },
+  {
+    "surface": "S16-preregles-periode",
+    "url": "http://127.0.0.1:8766/admin/pos-orders",
+    "longueur_texte": 2692,
+    "ecran_vide": false,
+    "fuite_i18n": null,
+    "integrite_cassee": null,
+    "litteral_non_resolu": false,
+    "reseau_innocente": [
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9100/health",
+      "http://127.0.0.1:9101/health"
+    ],
+    "reseau_inattendu": [],
+    "http_inattendu": [],
+    "console_erreurs": [
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+      "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    ],
+    "capture": "reports/audit/supervisor-loop-2026-08-24/screenshots/S16-preregles-periode.png",
+    "nb_presets": 4,
+    "nb_presets_boutons": 4,
+    "nb_presets_muets": 0,
+    "libelles": [
+      "Aujourd’hui",
+      "Ce mois",
+      "Mois dernier",
+      "Cette année"
+    ],
+    "premier_focalise": true,
+    "valeur_avant": "",
+    "valeur_apres": "08/24/2026  -  08/24/2026"
+  }
+]

@@ -8,7 +8,7 @@
                 <div class="catalog-control-plane__title-row">
                     <h2>{{ $t('label.catalog_subtitle') }}</h2>
                     <span class="catalog-control-plane__sync">
-                        <i class="lab lab-refresh"></i>
+                        <i class="lab lab-reset"></i>
                         {{ $t('label.catalog_pos_kiosk') }}
                     </span>
                 </div>
@@ -40,15 +40,15 @@
                     {{ $t('label.catalog_action_products') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-category"></i>
+                    <i class="lab lab-item-categories"></i>
                     {{ $t('label.catalog_action_categories') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.offers.list' }">
-                    <i class="lab lab-discount"></i>
+                    <i class="lab lab-discount-shape"></i>
                     {{ $t('label.catalog_action_offers') }}
                 </router-link>
                 <button type="button" class="catalog-control-plane__action" @click.prevent="focusAvailability">
-                    <i class="lab lab-toggle-on"></i>
+                    <i class="lab lab-tick-square"></i>
                     {{ $t('label.catalog_action_availability') }}
                 </button>
             </div>
@@ -116,7 +116,7 @@
                             }}</label>
 
                             <vue-select class="db-field-control f-b-custom-select" id="tax_id"
-                                v-model="props.search.tax_id" :options="taxes" label-by="name" value-by="id"
+                                v-model="props.search.tax_id" :options="taxesLibellees" label-by="libelle" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />
                         </div>
@@ -252,7 +252,7 @@
                                             :aria-label="$t('label.configure_wizard')"
                                             data-testid="item-list-configure-wizard-button"
                                         >
-                                            <i class="lab lab-cog"></i>
+                                            <i class="lab lab-settings"></i>
                                             <span class="db-tooltip">{{ $t('label.configure_wizard') }}</span>
                                         </router-link>
                                     </span>
@@ -265,7 +265,7 @@
                                             @click.prevent="duplicate(item)"
                                             v-if="permissionChecker('items_create')"
                                         >
-                                            <i class="lab lab-copy"></i>
+                                            <i class="lab lab-document-text"></i>
                                             <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
                                         </button>
                                     </span>
@@ -311,6 +311,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import ItemCreateComponent from "./ItemCreateComponent";
 import alertService from "../../../services/alertService";
 import statusEnum from "../../../enums/modules/statusEnum";
+import { libelleTaxe } from "../../../services/libelleTaxe";
 import askEnum from "../../../enums/modules/askEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
@@ -405,6 +406,8 @@ export default {
                     // append when the array is empty, so the server keeps the
                     // legacy NULL = visible-everywhere semantics.)
                     channels: [],
+                    allergen_flags: [],
+                    kds_station: 'none',
                 },
                 search: {
                     paginate: 1,
@@ -465,6 +468,15 @@ export default {
         },
         taxes: function () {
             return this.$store.getters['tax/lists'];
+        },
+        // [ONB-10 2026-08-27] Même motif que le formulaire produit : deux taxes
+        // actives s'appellent « VAT » (5 % et 10 %) et deux « GST ». Filtrer sur
+        // l'une des deux sans savoir laquelle ne veut rien dire.
+        taxesLibellees: function () {
+            return (this.taxes || []).map((taxe) => ({
+                ...taxe,
+                libelle: libelleTaxe(taxe),
+            }));
         },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'
@@ -601,6 +613,22 @@ export default {
                 channels: Array.isArray(item.channels)
                     ? item.channels.filter((c) => ['kiosk', 'pos', 'web'].indexOf(c) !== -1)
                     : [],
+                /*
+                 * [ONB 2026-08-28] Hydratés depuis `SimpleItemResource`, qui les
+                 * expose depuis le même correctif. Sans cette ligne, le formulaire
+                 * afficherait des cases vides et les renverrait telles quelles :
+                 * corriger une faute dans le NOM d'un produit effacerait ses
+                 * allergènes déclarés — le défaut exact corrigé le même jour sur
+                 * `siret`, sur les réglages de borne et sur `channels`.
+                 */
+                allergen_flags: Array.isArray(item.allergen_flags) ? item.allergen_flags : [],
+                kds_station: item.kds_station || 'none',
+                /*
+                 * [ONB-02 2026-08-28] Meme raison que les allergenes ci-dessus, et
+                 * meme defaut : sans cette ligne le formulaire postait une constante
+                 * et remettait le rang a 1 a chaque enregistrement.
+                 */
+                order: item.order ?? 1,
             };
         },
         destroy: function (id) {

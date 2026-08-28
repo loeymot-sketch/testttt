@@ -24,13 +24,32 @@ function webServerProbeUrl() {
   }
 }
 
+function defaultWebServerCommand() {
+  try {
+    const u = new URL(baseURL);
+    const hostname = u.hostname === 'localhost' ? '127.0.0.1' : u.hostname;
+    // Le serveur automatique est strictement local. Une cible staging/prod doit
+    // utiliser PLAYWRIGHT_NO_WEB_SERVER=1 ou une commande explicite.
+    if (hostname !== '127.0.0.1' || u.protocol !== 'http:') return null;
+    const port = u.port || '8000';
+    if (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
+      throw new Error(`Port Playwright local invalide: ${port}`);
+    }
+    return `php artisan serve --host=${hostname} --port=${port}`;
+  } catch (error) {
+    if (process.env.PLAYWRIGHT_BASE_URL) throw error;
+    return 'php artisan serve --host=127.0.0.1 --port=8000';
+  }
+}
+
 function buildWebServer() {
   if (process.env.PLAYWRIGHT_NO_WEB_SERVER === '1') {
     return undefined;
   }
+  const command = process.env.PLAYWRIGHT_WEB_SERVER_CMD || defaultWebServerCommand();
+  if (!command) return undefined;
   return {
-    command:
-      process.env.PLAYWRIGHT_WEB_SERVER_CMD || 'php artisan serve --host=127.0.0.1 --port=8000',
+    command,
     url: webServerProbeUrl(),
     reuseExistingServer: true,
     timeout: 180_000,

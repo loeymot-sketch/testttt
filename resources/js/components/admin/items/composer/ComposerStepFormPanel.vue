@@ -147,6 +147,18 @@
             <span v-if="Number(draft.min_select) === 0 && Number(draft.max_select) === 1">
                 {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
             </span>
+            <!-- [ONB-03 2026-08-28] `max = 0` ne veut PAS dire « exactement 0 ». Cote
+                 serveur `PricingService.php:625` fait `if ($max > 0 && ...)` et la
+                 borne `KioskWizardComponent.vue:921` fait pareil : **zero signifie
+                 SANS PLAFOND**. L'ecran affichait « = Obligatoire, le client doit
+                 choisir exactement 0 articles. » — le commercant croyait fermer une
+                 etape, il venait de l'ouvrir sans limite sur ses supplements payants.
+                 Meme piege que celui corrige sur l'ecran des attributs le meme jour. -->
+            <span v-else-if="Number(draft.max_select) === 0">
+                {{ Number(draft.min_select) === 0
+                    ? t('label.composer.min_max_summary_unlimited', '= Facultatif, le client peut en choisir autant qu\'il veut.')
+                    : t('label.composer.min_max_summary_at_least', '= Obligatoire, au moins {n}, sans maximum.').replace('{n}', draft.min_select) }}
+            </span>
             <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
                 {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', draft.min_select) }}
             </span>

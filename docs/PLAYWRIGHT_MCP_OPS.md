@@ -203,3 +203,58 @@ Le Human coche et signe. Le resultat est note dans
 ---
 
 *Note operationnelle. Pas de prose. Pas d'exceptions non documentees.*
+
+---
+
+## 7. Pièges de mesure — ne pas corriger le produit pour un défaut d'instrument
+
+> Ajouté le 2026-08-25 (GOAL `CONSOLIDATION_V1_PRODUCTION_20260825`, T-4.3.2).
+> Ces trois pièges ont réellement produit de faux signalements pendant le cycle
+> `CAISSE-SUPERVISOR-CONTROL-20260823`. Sentinelle : `tests/js/e2eInstrumentsDeMesureFiables.spec.js`.
+
+Le pire défaut d'un audit n'est pas de rater un bug : c'est d'en inventer un. Un instrument qui
+ne mesure rien renvoie « échec », et l'échec ressemble à un défaut produit. On corrige alors du
+code sain — et on casse ce qui marchait.
+
+### Piège 1 — `test.use({ reducedMotion: 'reduce' })` est INERTE ici
+
+**Symptôme** : captures instables, boîtes englobantes qui bougent d'une exécution à l'autre,
+« le produit a des animations qui cassent le rendu ».
+
+**Réalité mesurée** : sonde isolée — la requête média `(prefers-reduced-motion: reduce)` restait
+`matches: false` malgré la directive. Le mouvement n'a jamais été neutralisé.
+
+**Remède vérifié** :
+```js
+await page.emulateMedia({ reducedMotion: 'reduce' });   // prouvé : animationName === 'none'
+```
+
+### Piège 2 — `keyboard.press('F1'..'F12')` est INERTE sans affichage
+
+**Symptôme** : « les raccourcis F1–F12 de la caisse sont morts ».
+
+**Réalité** : ils fonctionnent. L'appui ne remonte simplement pas jusqu'à la page en mode sans
+affichage. La conclusion a été tirée, puis rétractée.
+
+**Remède** : prouver les raccourcis de fonction par un **test de composant**, jamais par un
+navigateur sans affichage. Si une spec doit malgré tout appuyer sur une touche F, elle doit
+documenter dans le fichier que le résultat n'est pas probant.
+
+### Piège 3 — mesurer contre des données qui n'existent pas
+
+**Symptôme** : « la recherche produit ne tolère ni la casse ni les correspondances partielles ».
+
+**Réalité** : elle est insensible aux accents, à la casse, et accepte les sous-chaînes. Les termes
+de test employés (`poulet`, `creme`) **n'existent pas au menu** — la recherche n'avait rien à
+trouver.
+
+**Remède** : avant tout signalement sur la recherche ou le catalogue, vérifier la source
+(`SELECT name FROM items WHERE deleted_at IS NULL AND status = 5`). Ne jamais deviner un nom de
+produit — CLAUDE.md §3bis l'interdit explicitement.
+
+### Règle générale
+
+Avant de déclarer un défaut produit constaté par navigateur, répondre à une question :
+**« Ai-je prouvé que mon instrument mesure quelque chose ? »**
+Si la réponse n'est pas un fait observé, le signalement est un artefact tant qu'il n'est pas
+reproduit par un second moyen indépendant.

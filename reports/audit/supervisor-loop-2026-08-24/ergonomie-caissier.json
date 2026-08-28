@@ -1,0 +1,109 @@
+[
+  {
+    "sujet": "E1-delai-avant-utilisable",
+    "ms_avant_premiere_categorie": 5350,
+    "domContentLoaded": 4045,
+    "chargementComplet": 0,
+    "premierRendu": 4028,
+    "nb_categories": 10,
+    "seuil_metier_ms": 3000,
+    "verdict": "À AMÉLIORER"
+  },
+  {
+    "sujet": "E2-parcours-vente",
+    "gestes_categorie_vers_produit": 1,
+    "ms_ouverture_categorie": 1273,
+    "tuiles_apres_categorie": 5,
+    "ms_ajout_produit": 1832,
+    "popup_produit_ouverte": 1,
+    "total_panier_affiche": "Total\n0,00 €",
+    "gestes_totaux_jusqu_au_panier": 2
+  },
+  {
+    "sujet": "E3-navigation-clavier",
+    "arrets_testes": 40,
+    "arrets_reels": 39,
+    "arrets_sur_element_invisible": 0,
+    "arrets_sans_nom_accessible": 1,
+    "exemples_sans_nom": [
+      "A"
+    ],
+    "arrets_sans_anneau_de_focus": 22,
+    "exemples_sans_anneau": [
+      "Tableau de bord",
+      "POS",
+      "Produits & Stock",
+      "Conso & Stock",
+      "Ajustement stock"
+    ],
+    "tabulations_avant_premiere_categorie": null
+  },
+  {
+    "sujet": "E4-touches-fonction",
+    "categories_affichees": [
+      "Sandwichs",
+      "Galette",
+      "Burgers",
+      "Tacos",
+      "Bols",
+      "Frites",
+      "Desserts",
+      "Boissons",
+      "Menu enfant",
+      "E2E_PLAYWRIGHT_STUDIO_CATEGORY"
+    ],
+    "touches": {
+      "F1": {
+        "url_changee": false,
+        "modale_ouverte": 0,
+        "tuiles_produit_visibles": 0,
+        "focus": "INPUT"
+      },
+      "F2": {
+        "url_changee": false,
+        "modale_ouverte": 0,
+        "tuiles_produit_visibles": 5,
+        "focus": "INPUT"
+      },
+      "F3": {
+        "url_changee": false,
+        "modale_ouverte": 0,
+        "tuiles_produit_visibles": 3,
+        "focus": "INPUT"
+      }
+    }
+  },
+  {
+    "sujet": "E5-recherche",
+    "champ_trouve": true,
+    "tuiles_avant": 0,
+    "tuiles_apres_tacos": 58,
+    "ms_avant_filtrage": 925,
+    "insensible_a_la_casse": false,
+    "tolere_saisie_partielle": false,
+    "tuiles_sur_faute_de_frappe": 0,
+    "tolere_faute_de_frappe": false,
+    "grille_categories_encore_visible": 0,
+    "resultats_recherche_depuis_une_categorie": 0,
+    "recherche_couvre_tout_le_menu": false,
+    "extrait_ecran": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 224,70 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau De B"
+  },
+  {
+    "sujet": "E6-panne-de-sonde",
+    "pastille_presente": true,
+    "texte": "Contrôle indisponible Aucun contrôle récent Réessayer",
+    "ton": "warn",
+    "bouton_relance": 1,
+    "relance_activable": 1,
+    "attendu": "état non-vert, message compréhensible, action de relance offerte"
+  },
+  {
+    "sujet": "E7-atteignabilite-grille-1366x768",
+    "haut_premiere_tuile": 792,
+    "bas_premiere_tuile": 943,
+    "hauteur_fenetre": 768,
+    "hauteur_page": 768,
+    "defilement_necessaire": 175,
+    "visible_sans_defiler": false
+  }
+]

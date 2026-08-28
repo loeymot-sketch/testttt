@@ -13,6 +13,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\LanguageFileTextGetRequest;
+use App\Http\Requests\LanguageFileTextStoreRequest;
 
 
 class LanguageService
@@ -117,7 +118,7 @@ class LanguageService
                 }
                 $language->delete();
             } else {
-                throw new Exception("Default language not deletable", 422);
+                throw new Exception(trans('all.message.langue_par_defaut'), 422);
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -202,6 +203,63 @@ class LanguageService
      *
      * @throws \RuntimeException
      */
+    /**
+     * [ONB-13 2026-08-28] Rend un littéral ÉCHAPPÉ par le langage du fichier cible,
+     * guillemets compris — jamais une concaténation à la main.
+     *
+     * `var_export` et `json_encode` produisent l'un et l'autre une chaîne close et
+     * échappée par les règles du langage : c'est ce qui neutralise la sortie de chaîne
+     * (`"`), l'échappement (`\`) et, côté PHP, l'interpolation (`$`, `${`). Écrire
+     * `"{$value}"` à la main, comme le faisait ce service, revient à faire ce travail
+     * soi-même et à l'oublier.
+     *
+     * Les deux extensions possibles sont déjà bornées par `validateLangFilePath()`.
+     */
+    /**
+     * [ONB-13 2026-08-28] Toutes les formes sous lesquelles la valeur courante peut
+     * figurer dans le fichier, de la plus specifique a la plus large.
+     *
+     * L'ordre compte : la forme ECHAPPEE d'abord, parce que c'est celle que nous
+     * ecrivons aujourd'hui ; les formes brutes ensuite, parce que les fichiers
+     * anterieurs au correctif les contiennent encore.
+     *
+     * @return string[]
+     */
+    private function aiguillesPossibles(string $resolvedPath, string $key): array
+    {
+        $echappee = $this->litteralPourFichier($resolvedPath, $key);
+
+        $aiguilles = [
+            $echappee,              // forme actuelle : var_export / json_encode
+            "'" . $key . "'",       // forme historique, apostrophes
+            '"' . $key . '"',       // forme historique, guillemets
+        ];
+
+        return array_values(array_unique($aiguilles));
+    }
+
+    private function litteralPourFichier(string $resolvedPath, mixed $value): string
+    {
+        $texte = is_scalar($value) ? (string) $value : '';
+
+        $estJson = strtolower((string) pathinfo($resolvedPath, PATHINFO_EXTENSION)) === 'json';
+
+        if ($estJson) {
+            $encode = json_encode($texte, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            // `json_encode` ne rend `false` que sur de l'UTF-8 invalide ; on refuse
+            // plutôt que d'écrire un fichier de langue cassé.
+            if ($encode === false) {
+                throw new \RuntimeException('Traduction non encodable en JSON');
+            }
+
+            return $encode;
+        }
+
+        // PHP : littéral entre apostrophes, échappé par le langage lui-même.
+        return var_export($texte, true);
+    }
+
     private function validateLangFilePath(?string $path): string
     {
         if (!is_string($path) || $path === '') {
@@ -285,7 +343,7 @@ class LanguageService
     /**
      * @throws Exception
      */
-    public function fileTextStore(Request $request): void
+    public function fileTextStore(LanguageFileTextStoreRequest $request): void
     {
         try {
             // [GOAL-L2-HEAL-01 2026-05-24] Phase L7-2-F-03 P0: validate path
@@ -298,10 +356,36 @@ class LanguageService
             foreach ($request->all() as $key => $value) {
                 if ($key != 'x_language_file_path' && $key != 'x_language_file_name') {
                     $key = str_replace('_', ' ', $key);
-                    if (strpos($fileContent, "'" . $key . "'") !== false) {
-                        $fileContent = str_replace("'" . $key . "'", "\"{$value}\"", $fileContent);
-                    } elseif (strpos($fileContent, "\"{$key}\"") !== false) {
-                        $fileContent = str_replace("\"{$key}\"", "\"{$value}\"", $fileContent);
+                    // [ONB-13 2026-08-28] La valeur était réinjectée VERBATIM entre
+                    // guillemets doubles : `"{$value}"`. Un guillemet dans la valeur
+                    // sortait de la chaîne, et un `$` y était interpolé — dans un
+                    // fichier `<?php return [...]` que le traducteur inclut à chaque
+                    // requête traduite. Le chemin était confiné et l'accès gardé par
+                    // `permission:settings` ; le contenu, lui, ne l'était pas.
+                    // On écrit désormais un littéral échappé par le langage cible.
+                    $litteral = $this->litteralPourFichier($resolvedPath, $value);
+
+                    // [ONB-13 2026-08-28 · REGRESSION CORRIGEE] L'aiguille cherchait la
+                    // valeur courante SANS ECHAPPEMENT — `'L'addition'` — alors que le
+                    // correctif d'echappement ecrit desormais `'L\'addition'`. Des le
+                    // deuxieme enregistrement, aucune branche ne correspondait : le
+                    // fichier etait reecrit a l'identique et le controleur repondait
+                    // succes. Toute traduction portant une apostrophe devenait
+                    // SILENCIEUSEMENT immodifiable — 27 dans `lang/fr/all.php`.
+                    //
+                    // Trouve par un agent adverse lance sur mon propre travail. Mon banc
+                    // ne pouvait pas le voir : il n'ecrivait qu'UNE passe, jamais un
+                    // aller-retour.
+                    //
+                    // On cherche donc la valeur sous TOUTES les formes qu'elle a pu
+                    // prendre dans le fichier : brute entre apostrophes ou guillemets
+                    // (l'ecriture historique), et echappee par le langage cible
+                    // (l'ecriture actuelle).
+                    foreach ($this->aiguillesPossibles($resolvedPath, $key) as $aiguille) {
+                        if (strpos($fileContent, $aiguille) !== false) {
+                            $fileContent = str_replace($aiguille, $litteral, $fileContent);
+                            break;
+                        }
                     }
                 }
             }

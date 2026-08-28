@@ -21,7 +21,14 @@ const { execFileSync, spawn } = require('child_process');
 const { test, expect } = require('@playwright/test');
 const { loginAsKiosk, loginAsAdmin, loginAsChefOperator } = require('./helpers/login');
 const { placeKioskOrder, placeKioskOrderTwice, placeKioskOrderTwiceDifferentPayload,
-        cleanupKioskAuditOrders, resetKioskToken, PAYMENT_CARD, PAYMENT_CASH } = require('./helpers/kiosk-order');
+        cleanupKioskAuditOrders, resetKioskToken, PAYMENT_CARD, PAYMENT_CASH,
+        resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
+} = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit propre à cette spec
+// (isolation des écritures E2E entre specs).
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const REPORT_DIR = path.join(REPO_ROOT, 'reports/test-e2e/critical-focus-2026-05-18/zone-6-SYNC');
@@ -70,23 +77,29 @@ let TARGET_BRANCH_ID = 1;
 test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () => {
 
   test.beforeAll(async () => {
-    // Petite Frites (id 485) — known-good kiosk item with composition
-    // Style (attr 329, min 1) → variation 1180 Nature. Verified against
-    // rush-sync-flow.spec.js precedent. If a future seed reshuffles
-    // these ids, this spec must be regenerated.
-    const probeJson = tinker(
-      'echo "ITEM_OK=" . (\\App\\Models\\Item::where("id",485)->where("status",5)->exists() ? "1" : "0") . "=END";'
-    );
-    const ok = /ITEM_OK=1=END/.test(probeJson);
-    expect(ok, 'Petite Frites (id=485 status=5) must be seeded — see rush-sync-flow.spec.js for variation id 1180').toBe(true);
-    TARGET_ITEM_ID = 485;
+    // [FIX 2026-08-25] Article résolu à l'exécution, plus d'identifiant figé.
+    //
+    // Le banc exigeait « Petite Frites » id 485 avec la variation 1180. Ni l'un ni l'autre
+    // n'existe plus (vérifié en base : 0 ligne pour l'item 485), et le commentaire d'origine
+    // l'avait anticipé — « If a future seed reshuffles these ids, this spec must be
+    // regenerated ». Ce futur est arrivé, et le banc mourait au pré-vol.
+    //
+    // Pourquoi un article SIMPLE suffit ici, sans perte de couverture : les huit cas de ce
+    // fichier (S01 à S08) portent sur l'outbox, la diffusion Soketi, le rejeu idempotent, le
+    // conflit 409, l'unicité des webhooks et l'ordonnanceur. AUCUN n'assert quoi que ce soit
+    // sur la composition — la variation n'était qu'un accessoire du véhicule de commande.
+    // On demande donc un article commandable sans assistant, et la commande reste réelle.
+    const article = resolveSimpleOrderableItem({ branchId: 1 });
+    TARGET_ITEM_ID = article.id;
     TARGET_ITEM_PAYLOAD = {
-      item_id: 485,
+      item_id: article.id,
       quantity: 1,
-      item_variations: [{ id: 1180, quantity: 1 }],
+      item_variations: [],
       item_extras: [],
       item_addons: [],
     };
+    // eslint-disable-next-line no-console
+    console.log(`[Zone 6] article résolu : #${article.id} « ${article.name} » @ ${article.price}`);
     trace.target_item_id = TARGET_ITEM_ID;
     trace.target_item_payload = TARGET_ITEM_PAYLOAD;
     writeTrace();
@@ -107,7 +120,11 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
    */
   test('S01 — order creation inserts domain_events row', async ({ page }) => {
     const start = Date.now();
-    await page.goto('http://127.0.0.1:8000/kiosk/idle', { waitUntil: 'networkidle' });
+    // [FIX 2026-08-25] Navigation RELATIVE : l'URL absolue codée en dur visait le port 8000
+    // alors que le run est piloté par PLAYWRIGHT_BASE_URL (8766). Un serveur résiduel écoutant
+    // sur 8000 faisait donc tester une AUTRE instance que celle sous test — invisible tant que
+    // les deux partagent la même base. Le chemin relatif suit la configuration.
+    await page.goto('/kiosk/idle', { waitUntil: 'networkidle' });
 
     // Pre-count baseline domain_events.
     const preCount = Number(
@@ -115,6 +132,7 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
     );
 
     const result = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [TARGET_ITEM_PAYLOAD],
       orderType: 10,
       skipPaymentConfirm: true,
@@ -182,8 +200,13 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
     }
 
     // Place a fresh order so we can verify the broadcast metadata.
-    await page.goto('http://127.0.0.1:8000/kiosk/idle', { waitUntil: 'networkidle' });
+    // [FIX 2026-08-25] Navigation RELATIVE : l'URL absolue codée en dur visait le port 8000
+    // alors que le run est piloté par PLAYWRIGHT_BASE_URL (8766). Un serveur résiduel écoutant
+    // sur 8000 faisait donc tester une AUTRE instance que celle sous test — invisible tant que
+    // les deux partagent la même base. Le chemin relatif suit la configuration.
+    await page.goto('/kiosk/idle', { waitUntil: 'networkidle' });
     const placed = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [TARGET_ITEM_PAYLOAD],
       orderType: 10,
       skipPaymentConfirm: true,
@@ -194,10 +217,19 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
     await page.waitForTimeout(1500);
 
     // Verify the DomainEvent broadcast metadata.
+    //
+    // [FIX 2026-08-25] On vise EXPLICITEMENT l'événement `OrderCreated`, plus le dernier en date.
+    // Une commande borne réglée en espèces passe immédiatement en ACCEPT : elle émet donc
+    // `OrderCreated` PUIS `OrderStatusChanged` (vérifié en base : les deux lignes existent pour
+    // chaque commande, ids consécutifs). `orderByDesc('id')->first()` ramenait le second, et le
+    // cas échouait en annonçant une métadonnée de diffusion absente — alors que le produit était
+    // correct. Cibler l'événement voulu rend l'assertion PLUS forte, pas plus permissive.
     const eventJson = tinker(
       `$ev = \\App\\Models\\DomainEvent::query()` +
       `->whereIn('aggregate_type',['App\\\\Models\\\\FrontendOrder','App\\\\Models\\\\Order'])` +
-      `->where('aggregate_id', ${placed.orderId})->orderByDesc('id')->first();` +
+      `->where('aggregate_id', ${placed.orderId})` +
+      `->where('broadcast_as', 'OrderCreated')` +
+      `->orderByDesc('id')->first();` +
       `if($ev){echo "EV_START=" . json_encode([` +
       `'broadcast_as'=>$ev->broadcast_as,` +
       `'channel'=>$ev->channel,` +
@@ -238,10 +270,15 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
   test('S03 — HTTP idempotent retry replays cached 2xx (same body, same key)', async ({ page }) => {
     test.setTimeout(60000);
     const start = Date.now();
-    await page.goto('http://127.0.0.1:8000/kiosk/idle', { waitUntil: 'networkidle' });
+    // [FIX 2026-08-25] Navigation RELATIVE : l'URL absolue codée en dur visait le port 8000
+    // alors que le run est piloté par PLAYWRIGHT_BASE_URL (8766). Un serveur résiduel écoutant
+    // sur 8000 faisait donc tester une AUTRE instance que celle sous test — invisible tant que
+    // les deux partagent la même base. Le chemin relatif suit la configuration.
+    await page.goto('/kiosk/idle', { waitUntil: 'networkidle' });
 
     // Step 1 — first placement; capture the EXACT body + key used.
     const first = await placeKioskOrder(page, {
+      tokenPrefix: PREFIXE_AUDIT,
       items: [TARGET_ITEM_PAYLOAD],
       orderType: 10,
       skipPaymentConfirm: true,
@@ -304,18 +341,23 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
    */
   test('S04 — HTTP idempotent conflict returns 409', async ({ page }) => {
     const start = Date.now();
-    await page.goto('http://127.0.0.1:8000/kiosk/idle', { waitUntil: 'networkidle' });
+    // [FIX 2026-08-25] Navigation RELATIVE : l'URL absolue codée en dur visait le port 8000
+    // alors que le run est piloté par PLAYWRIGHT_BASE_URL (8766). Un serveur résiduel écoutant
+    // sur 8000 faisait donc tester une AUTRE instance que celle sous test — invisible tant que
+    // les deux partagent la même base. Le chemin relatif suit la configuration.
+    await page.goto('/kiosk/idle', { waitUntil: 'networkidle' });
 
     // Different payload = same item but qty=2 + same variations.
     // orderType=10 on both so the conflict path exercises
     // IdempotencyKeyMiddleware payload-hash mismatch, NOT a different
     // V1-dine-in validation error.
+    // [FIX 2026-08-25] La variation 1180 n'existe plus : le second envoi partait donc en 422
+    // de VALIDATION avant même d'atteindre le contrôle d'idempotence — le test ne pouvait pas
+    // observer le 409 qu'il prétend vérifier. Le payload doit différer par la QUANTITÉ seule,
+    // ce qui est exactement ce que le cas veut éprouver : même clé, empreinte différente.
     const diffPayload = {
-      item_id: TARGET_ITEM_ID,
+      ...TARGET_ITEM_PAYLOAD,
       quantity: 2,
-      item_variations: [{ id: 1180, quantity: 1 }],
-      item_extras: [],
-      item_addons: [],
     };
     const result = await placeKioskOrderTwiceDifferentPayload(
       page,
@@ -403,7 +445,7 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
    */
   test('S06 — Stripe webhook misconfigured returns 500 (DEFERRED for sig test)', async ({ request }) => {
     const start = Date.now();
-    const res = await request.post('http://127.0.0.1:8000/payment/stripe-webhook', {
+    const res = await request.post(`${process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000'}/payment/stripe-webhook`, {
       headers: {
         'Content-Type': 'application/json',
         'Stripe-Signature': 't=0,v1=forged_sig',
@@ -432,7 +474,19 @@ test.describe('Zone 6 — Sync Outbox + Webhook + Idempotency resilience', () =>
     //     config note, surfaced to V1.0.2 backlog by this Zone 6 spec).
     // All three are fail-closed. The test asserts none of them are 2xx.
     const status = res.status();
-    expect([400, 419, 500].includes(status), `Stripe webhook must fail-close. Got status=${status}`).toBe(true);
+    // [FIX 2026-08-25] 503 ajouté à la liste des réponses fail-closed acceptées.
+    //
+    // Le produit a changé DÉLIBÉRÉMENT le 2026-07-08 : `Stripe::handleWebhook` répond désormais
+    // « 503 Service Unavailable » quand la passerelle n'est pas configurée (clé `stripe_secret`
+    // vide → client jamais instancié), au lieu de laisser remonter une 500. Le commentaire du
+    // code le dit explicitement : « Réponse propre 503 quand la passerelle n'est pas
+    // configurée ». C'est plus juste que 500 : le service est indisponible, pas cassé.
+    //
+    // L'assertion listait encore [400, 419, 500] et rougissait sur une amélioration. On l'aligne
+    // SANS l'affaiblir : ce qui est exigé reste le fail-closed, donc l'absence de toute réponse
+    // 2xx — un webhook de paiement non configuré ne doit JAMAIS acquitter.
+    expect(status, 'Un webhook de paiement non configuré ne doit jamais acquitter (2xx)').toBeGreaterThanOrEqual(400);
+    expect([400, 419, 500, 503].includes(status), `Stripe webhook must fail-close. Got status=${status}`).toBe(true);
   });
 
   /**

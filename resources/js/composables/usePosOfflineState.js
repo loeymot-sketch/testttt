@@ -16,6 +16,7 @@ import {
     enqueueOrder as _enqueueOrder,
     getQueueDepth,
     listPending,
+    listQuarantined,
     markFailed,
     markSynced,
 } from '../helpers/posOfflineQueue';
@@ -24,6 +25,8 @@ export function usePosOfflineState() {
     const initialOnline = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
     const isOnline = ref(initialOnline);
     const queueDepth = ref(getQueueDepth());
+    const quarantineDepth = ref(0);
+    const quarantinedEntries = ref([]);
     const isFlushing = ref(false);
 
     let _boundPostFn = null;
@@ -31,8 +34,10 @@ export function usePosOfflineState() {
     let _onOffline = null;
 
     async function refresh() {
-        const pending = await listPending();
+        const [pending, quarantined] = await Promise.all([listPending(), listQuarantined()]);
         queueDepth.value = pending.length;
+        quarantineDepth.value = quarantined.length;
+        quarantinedEntries.value = quarantined;
         return pending;
     }
 
@@ -43,6 +48,7 @@ export function usePosOfflineState() {
         isFlushing.value = true;
         let synced = 0;
         let failed = 0;
+        let quarantined = 0;
         try {
             for (const entry of await listPending()) {
                 const config = { headers: { 'X-Idempotency-Key': entry.idempotencyKey } };
@@ -56,10 +62,11 @@ export function usePosOfflineState() {
                 }
             }
             await refresh();
+            quarantined = quarantineDepth.value;
         } finally {
             isFlushing.value = false;
         }
-        return { synced, failed, skipped: false };
+        return { synced, failed, quarantined, skipped: false };
     }
 
     // Eager state listeners: isOnline must reflect navigator.onLine even when
@@ -96,6 +103,8 @@ export function usePosOfflineState() {
     return {
         isOnline,
         queueDepth,
+        quarantineDepth,
+        quarantinedEntries,
         isFlushing,
         enqueueOrder: _enqueueOrder,
         refresh,

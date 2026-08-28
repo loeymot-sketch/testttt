@@ -8,16 +8,50 @@
                 <p class="catalog-studio__subtitle">{{ $t("studio.subtitle") }}</p>
             </div>
             <div class="catalog-studio__header-actions">
+                <!--
+                    [ONB-04 2026-08-28] Les deux outils d'assistance, enfin atteignables.
+                    Livrés respectivement le 27 et le 28, ni l'un ni l'autre n'avait de
+                    lien : `grep admin.items.import` hors routeur rendait zéro résultat.
+                    Une fonction sans porte n'est pas livrée.
+                -->
+                <router-link v-if="canCreateItem" :to="{ name: 'admin.items.assistant' }"
+                    class="db-btn py-2 bg-slate-700 text-white"
+                    data-testid="catalog-studio-assistant">
+                    <i class="lab lab-messages-line"></i>
+                    <span>{{ $t("label.assistant_mission_title") }}</span>
+                </router-link>
+                <router-link v-if="canCreateItem" :to="{ name: 'admin.items.import' }"
+                    class="db-btn py-2 bg-slate-500 text-white"
+                    data-testid="catalog-studio-import-carte">
+                    <i class="lab lab-line-import"></i>
+                    <span>{{ $t("label.menu_import_title") }}</span>
+                </router-link>
+                <!--
+                    [ONB-05 2026-08-28] La page TVA n'avait AUCUN lien.
+                    `grep admin.settings.tax` hors routeur rendait une seule ligne, dans
+                    le menu Réglages, gardée par `!isSettingHidden('tax')` — et `tax`
+                    est masqué. Il fallait connaître l'URL.
+                    Sans taux de TVA, `PricingService` facture à 0 % : c'est le trou
+                    qu'ONB-02 a passé la nuit à fermer. On pose l'accès ici, là où le
+                    commerçant pense au prix, avec la MÊME permission que la route.
+                    Le dé-masquage du menu reste à ONB-05 (gate G-CACHE).
+                -->
+                <router-link v-if="canCreateCategory" :to="{ name: 'admin.settings.tax' }"
+                    class="db-btn py-2 bg-slate-500 text-white"
+                    data-testid="catalog-studio-taxes">
+                    <i class="lab lab-taxes"></i>
+                    <span>{{ $t("label.tax") }}</span>
+                </router-link>
                 <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item_category") }}</span>
                 </button>
                 <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-700 text-white"
                     data-testid="catalog-studio-add-product"
                     @click="onAddProductClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item") }}</span>
                 </button>
             </div>
@@ -40,12 +74,12 @@
                     data-testid="catalog-studio-category-wizard-entry">
                     <div>
                         <strong>{{ selectedCategoryName }}</strong>
-                        <small>{{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}</small>
+                        <small>{{ t("studio.category_wizard_hint", "⚠️ Ce parcours est enregistré mais n'est PAS encore appliqué à la borne ni à la caisse.") }}</small>
                     </div>
                     <button type="button" class="db-btn py-2 bg-rose-700 text-white"
                         data-testid="catalog-studio-category-wizard-button"
                         @click="openCategoryComposerDrawer">
-                        <i class="lab lab-cog"></i>
+                        <i class="lab lab-settings"></i>
                         <span>{{ t("studio.category_wizard_button", "Wizard de la catégorie") }}</span>
                     </button>
                 </div>
@@ -69,13 +103,13 @@
                             :title="$t('label.delete')" :aria-label="$t('label.delete')"
                             :data-testid="`catalog-studio-category-delete-${category.id}`"
                             @click="destroyCategory(category)">
-                            <i class="lab lab-delete-line"></i>
+                            <i class="lab lab-trash-line-2"></i>
                         </button>
                     </div>
                 </div>
 
                 <router-link class="catalog-studio__settings-link" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-setting-line"></i>
+                    <i class="lab lab-settings"></i>
                     <span>{{ $t("studio.advanced_settings") }}</span>
                 </router-link>
 
@@ -93,7 +127,7 @@
                     <input v-model.trim="searchTerm" type="text" class="db-field-control" :placeholder="$t('label.search_by_menu_item')" />
                     <router-link class="catalog-studio__stock-link" :to="{ name: 'admin.stock.rupture' }"
                         data-testid="catalog-studio-stock-link">
-                        <i class="lab lab-toggle-on"></i>
+                        <i class="lab lab-tick-square"></i>
                         <span>{{ $t("studio.stock_link") }}</span>
                     </router-link>
                 </div>
@@ -136,8 +170,14 @@
                             </div>
                         </div>
                         <div class="catalog-studio__product-actions">
+                            <!-- [ONB-03 2026-08-28] `wizardPerItemDemoEnabled` ajouté : le
+                                 bouton ne regardait que la permission, alors que le routeur
+                                 REDIRIGE vers le catalogue quand le drapeau est éteint — et
+                                 il l'est par défaut. Un bouton visible qui ne mène nulle
+                                 part est pire qu'un bouton absent : le commerçant croit
+                                 avoir raté quelque chose. -->
                             <button
-                                v-if="canComposeCatalog"
+                                v-if="canComposeCatalog && wizardPerItemDemoEnabled"
                                 type="button"
                                 class="db-table-action view"
                                 :title="t('studio.product_composer_button', 'Composer / wizard')"
@@ -145,18 +185,18 @@
                                 :data-testid="`catalog-studio-product-wizard-${item.id}`"
                                 @click="openComposerDrawer(item)"
                             >
-                                <i class="lab lab-cog"></i>
+                                <i class="lab lab-settings"></i>
                             </button>
                             <router-link v-if="canViewItem" :to="{ name: 'admin.item.show', params: { id: item.id } }"
                                 class="db-table-action view" :title="$t('label.view')"
                                 :data-testid="`catalog-studio-product-view-${item.id}`">
-                                <i class="lab lab-view-line"></i>
+                                <i class="lab lab-view"></i>
                             </router-link>
                             <button v-if="canDeleteItem" type="button" class="db-table-action delete"
                                 :title="$t('label.delete')" :aria-label="$t('label.delete')"
                                 :data-testid="`catalog-studio-product-delete-${item.id}`"
                                 @click="destroyItem(item)">
-                                <i class="lab lab-delete-line"></i>
+                                <i class="lab lab-trash-line-2"></i>
                             </button>
                         </div>
                     </article>
@@ -176,14 +216,14 @@
                         <p class="catalog-studio__composer-eyebrow">{{ $t("studio.composer_drawer_eyebrow") }}</p>
                         <h3>{{ composerDrawerTitle }}</h3>
                         <small v-if="composerDrawer.entityType === 'category'" class="catalog-studio__composer-help">
-                            {{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}
+                            {{ t("studio.category_wizard_hint", "⚠️ Ce parcours est enregistré mais n'est PAS encore appliqué à la borne ni à la caisse.") }}
                         </small>
                     </div>
                     <div class="catalog-studio__composer-actions">
                         <router-link class="db-btn py-2 bg-rose-700 text-white"
                             :to="composerDrawerRoute"
                             :data-testid="'catalog-studio-composer-open-full'">
-                            <i class="lab lab-export"></i>
+                            <i class="lab lab-file-export"></i>
                             <span>{{ $t("studio.open_full_page") }}</span>
                         </router-link>
                         <button type="button" class="db-btn py-2" data-testid="catalog-studio-composer-close"
@@ -256,10 +296,13 @@ export default {
                 order_column: "id",
                 order_type: "desc",
             },
+            // [ONB-06/ROUGE 2026-08-27] `status` ajoute : sans lui, les 47 taxes
+            // INACTIVES de la base etaient chargees au meme titre que les 6 actives.
             taxesSearch: {
                 paginate: 0,
                 order_column: "id",
                 order_type: "asc",
+                status: statusEnum.ACTIVE,
             },
         };
     },
@@ -279,6 +322,18 @@ export default {
         canComposeCatalog() {
             return appService.permissionChecker("catalog.compose");
         },
+        // [ONB-03 2026-08-28] Le drapeau manquait ICI, et seulement ici. Cinq autres
+        // endroits le vérifient déjà — MenuComponent, ItemCreateComponent,
+        // ProductComposerSummaryComponent, ItemListComponent et le routeur lui-même
+        // (itemRoutes.js:15, qui redirige vers le catalogue quand il est éteint).
+        // Le bouton engrenage du Studio, lui, ne regardait que la permission ; or
+        // `catalog.compose` est donnée à l'Admin dès l'installation, et le drapeau
+        // vaut FALSE par défaut. Sur une installation neuve, cliquer l'engrenage
+        // ouvrait donc un panneau qui affichait… le catalogue lui-même, sans un mot.
+        wizardPerItemDemoEnabled() {
+            return typeof window !== 'undefined'
+                && window.foodkingConfig?.features?.wizard_per_item_demo === true;
+        },
         canEditCategory() {
             return appService.permissionChecker("settings");
         },
@@ -297,9 +352,24 @@ export default {
         taxes() {
             return this.$store.getters["tax/lists"] || [];
         },
+        // [ONB-06/ROUGE 2026-08-27] Ce getter mettait en echec la regle `tax_id
+        // required` posee cote backend, et c'etait le chemin le plus rapide du produit.
+        //
+        // Avant : `this.taxes[0]` — la taxe d'identifiant le plus bas. Sur toute
+        // installation issue du socle, l'id 1 est « No-VAT » a 0 %, ACTIF. Donc chaque
+        // article cree en creation rapide naissait a 0 % de TVA, sans que le commercant
+        // ait rien choisi ni rien vu — et la validation passait, puisque c'est bien une
+        // taxe reelle, active, d'identifiant non nul.
+        //
+        // Desormais : on ne propose par defaut qu'un taux STRICTEMENT POSITIF. S'il n'y
+        // en a aucun, on renvoie null et le backend refuse — mieux vaut un refus
+        // explicite qu'une vente hors taxe silencieuse. Un article exonere reste
+        // possible : il faut alors choisir le taux 0 % a la main, et c'est une decision.
         defaultTaxId() {
-            const firstTax = this.taxes[0];
-            return firstTax ? Number(firstTax.id) : null;
+            const taxable = this.taxes.find(
+                (t) => t && Number(t.tax_rate) > 0
+            );
+            return taxable ? Number(taxable.id) : null;
         },
         nextItemOrder() {
             // [STUDIO-FIX-P0] ItemRequest.php requires `order` (numeric). Compute next slot
@@ -496,8 +566,14 @@ export default {
             return fd;
         },
         editCategory(category) {
-            // Édition complète vit dans la page Réglages (champs avancés). On y route en
-            // ouvrant la modale d'édition via le state Vuex partagé.
+            // Édition complète vit dans la page Réglages (champs avancés). On y route
+            // avec `?edit=<id>`.
+            //
+            // [ONB-02 2026-08-28] Le commentaire d'origine affirmait ouvrir la modale
+            // « via le state Vuex partagé ». C'était FAUX : l'écran cible ne lisait
+            // pas ce paramètre, et le commerçant était éjecté sur une liste paginée
+            // sans que rien ne s'ouvre. `ItemCateogryListComponent::ouvrirDepuisLUrl()`
+            // le lit désormais.
             this.$router.push({
                 name: "admin.settings.itemCategory.list",
                 query: { edit: String(category.id) },
@@ -564,7 +640,12 @@ export default {
             }).then(() => {
                 this.categoryQuickForm.name = "";
                 this.showCategoryQuickForm = false;
-                alertService.successFlip(null, this.$t("menu.item_categories"));
+                // [ONB-02 2026-08-28] Etait `successFlip(null, ...)`, qui annonce une
+                // SUPPRESSION. Au tout premier geste du parcours — creer sa premiere
+                // categorie — le produit disait au commercant que ce qu'il venait de
+                // creer avait ete supprime. `false` = creation (voir le piege de
+                // signature documente dans alertService.successFlip).
+                alertService.successFlip(false, this.$t("menu.item_categories"));
                 this.refreshData();
             }).catch((err) => {
                 const msg = err?.response?.data?.message || this.$t("error.something_wrong");
@@ -588,7 +669,10 @@ export default {
             }).then(() => {
                 this.productQuickForm = { name: "", price: "", description: "", image: null, categoryId: null };
                 this.showProductQuickForm = false;
-                alertService.successFlip(null, this.$t("menu.items"));
+                // [ONB-02 2026-08-28] Etait `null`, qui annonce une SUPPRESSION.
+                // Creer son premier produit affichait « Articles : suppression
+                // effectuee. » — `false` = creation.
+                alertService.successFlip(false, this.$t("menu.items"));
                 this.refreshData();
             }).catch((err) => {
                 const errors = err?.response?.data?.errors;
@@ -691,7 +775,16 @@ export default {
 
 .catalog-studio__category-row {
     display: grid;
-    grid-template-columns: 1fr auto;
+    /* [ONB-02 2026-08-28 · DEBORDEMENT VU A L'ECRAN] `1fr` vaut `minmax(auto, 1fr)`
+       en CSS grid, et ce minimum `auto` est le MIN-CONTENT. Un nom de categorie en
+       un seul long mot — « E2E Cat 1786616399744 » sur la base de travail —
+       elargissait donc la piste au-dela du conteneur et POUSSAIT la colonne des
+       boutons HORS de la carte : le crayon et la corbeille flottaient par-dessus la
+       colonne des produits.
+       `minmax(0, 1fr)` autorise la piste a retrecir ; `min-width: 0` et la coupure
+       de mot font le reste. Trouve en REGARDANT la capture, pas en lisant le code —
+       la CSS semblait correcte. */
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px;
     align-items: stretch;
 }
@@ -712,6 +805,14 @@ export default {
     display: grid;
     gap: 2px;
     width: 100%;
+    min-width: 0;
+}
+
+.catalog-studio__category strong,
+.catalog-studio__category small {
+    /* Un nom sans espace ne doit pas elargir sa carte : on le coupe. */
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .catalog-studio__category strong {

@@ -25,6 +25,11 @@
             </div>
         </header>
 
+        <!-- [ONB-08 2026-08-28] Le refus d'un seuil doit se lire. Élément AUTONOME,
+             hors de la chaîne v-if/v-else-if ci-dessous : l'y glisser orphelinait le
+             bloc de chargement et faisait cohabiter deux états à l'écran. -->
+        <p v-if="seuilErreur" class="usv-state usv-state--error" data-testid="usv-seuil-erreur">{{ seuilErreur }}</p>
+
         <!-- Loading (premier chargement) -->
         <div v-if="loading && !overview" class="usv-state usv-state--loading" data-testid="usv-loading">
             {{ $t('admin.unified_stock.loading') }}
@@ -129,6 +134,18 @@
                     <h2 class="usv-section-title">
                         {{ $t('admin.unified_stock.raw_title') }}
                         <span class="usv-count">({{ rawMaterials.length }})</span>
+                        <!--
+                            [ONB-08 2026-08-28] La porte vers la DECLARATION des matieres.
+                            Cet ecran-ci est en lecture seule (son docblock le dit), mais
+                            il est celui ou le commercant regarde ses matieres : c'est
+                            donc d'ici qu'il doit pouvoir en ajouter une.
+                            Sans lien, l'ecran de declaration ne serait atteignable qu'en
+                            tapant son URL — le defaut qu'on vient de corriger trois fois.
+                        -->
+                        <router-link :to="{ name: 'admin.stock.raw-materials' }"
+                            class="usv-link" data-testid="usv-raw-declare">
+                            {{ $t('label.raw_materials_manage') }}
+                        </router-link>
                     </h2>
                     <div class="usv-table usv-table--raw" role="table">
                         <div class="usv-thead" role="row">
@@ -141,7 +158,7 @@
                             <span role="columnheader">{{ $t('admin.unified_stock.col_status') }}</span>
                         </div>
                         <p v-if="rawMaterials.length === 0" class="usv-empty-inline" data-testid="usv-raw-empty">
-                            {{ $t('admin.unified_stock.no_match') }}
+                            {{ unFiltreEstActif ? $t('admin.unified_stock.no_match') : $t('admin.unified_stock.raw_vierge') }}
                         </p>
                         <div
                             v-for="row in rawMaterials"
@@ -181,7 +198,7 @@
                             <span role="columnheader">{{ $t('admin.unified_stock.col_status') }}</span>
                         </div>
                         <p v-if="resoldProducts.length === 0" class="usv-empty-inline" data-testid="usv-resold-empty">
-                            {{ $t('admin.unified_stock.no_match') }}
+                            {{ unFiltreEstActif ? $t('admin.unified_stock.no_match') : $t('admin.unified_stock.resold_vierge') }}
                         </p>
                         <div
                             v-for="row in resoldProducts"
@@ -193,7 +210,26 @@
                             <span class="usv-cell usv-cell--name" role="cell" :data-label="$t('admin.unified_stock.col_name')">{{ row.name }}</span>
                             <span class="usv-cell" role="cell" :data-label="$t('admin.unified_stock.col_unit_stock')">{{ row.on_hand }}</span>
                             <span class="usv-cell" role="cell" :data-label="$t('admin.unified_stock.col_recent')">{{ row.recent_consumption }}</span>
-                            <span class="usv-cell" role="cell" :data-label="$t('admin.unified_stock.col_threshold')">{{ row.threshold_low != null ? row.threshold_low : '—' }}</span>
+                            <!-- [ONB-08 2026-08-28] LE CHAMP QUI MANQUAIT.
+                                 Cette colonne affichait « — » sur toutes les lignes, et
+                                 pour cause : `stock_levels.threshold_low` etait LU par le
+                                 tableau de bord des ruptures et par l'alerte de stock bas,
+                                 et ECRIT par personne. 55 lignes en base, 0 seuil. La
+                                 section « alertes stock bas » ne pouvait donc
+                                 structurellement rien afficher. -->
+                            <span class="usv-cell" role="cell" :data-label="$t('admin.unified_stock.col_threshold')">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    class="usv-seuil"
+                                    :value="row.threshold_low"
+                                    :disabled="seuilEnCours === row.stock_level_id"
+                                    :data-testid="'usv-seuil-' + row.id"
+                                    :aria-label="$t('admin.unified_stock.col_threshold') + ' — ' + row.name"
+                                    placeholder="—"
+                                    @change="enregistrerLeSeuil(row, $event.target.value)"
+                                />
+                            </span>
                             <span class="usv-cell" role="cell" :data-label="$t('admin.unified_stock.col_status')">
                                 <span class="usv-pill" :class="'usv-pill--' + row.status">{{ statusLabel(row.status) }}</span>
                             </span>
@@ -216,6 +252,10 @@ export default {
     name: 'UnifiedStockViewComponent',
     data() {
         return {
+            // [ONB-08 2026-08-28] Ligne en cours d'enregistrement : on grise le champ
+            // pour qu'un double envoi ne parte pas sur une valeur intermediaire.
+            seuilEnCours: null,
+            seuilErreur: '',
             loading: false,
             error: false,
             overview: null,
@@ -239,6 +279,22 @@ export default {
         hasMissingCost() {
             return (this.totals.missing_cost_count || 0) > 0;
         },
+        /**
+         * [ONB-11 2026-08-28] Un filtre est-il REELLEMENT pose ?
+         *
+         * L'etat par defaut est « recherche vide, tous les statuts ». Un rayon vide
+         * dans cet etat ne veut pas dire « votre filtre est trop etroit », il veut
+         * dire « vous n'avez rien declare » — ce qui est la situation NORMALE d'une
+         * installation qui demarre.
+         *
+         * Sans cette distinction, `isEmpty()` ci-dessous exige que les DEUX rayons
+         * soient vides : une seule boisson revendue suffisait a faire afficher
+         * « Aucun element ne correspond au filtre » au rayon des matieres, alors
+         * qu'aucun filtre n'etait pose.
+         */
+        unFiltreEstActif() {
+            return (this.searchQuery || '').trim() !== '' || this.statusFilter !== 'all';
+        },
         isEmpty() {
             if (!this.overview) {
                 return false;
@@ -261,6 +317,39 @@ export default {
         this.load();
     },
     methods: {
+        /**
+         * [ONB-08 2026-08-28] Enregistre le seuil d'alerte d'une ligne de stock.
+         *
+         * Champ vide = pas de surveillance. Un seuil qu'on ne peut plus retirer ne
+         * serait pas un reglage, et `null` est la valeur qu'un formulaire perd le
+         * plus facilement en route.
+         */
+        async enregistrerLeSeuil(ligne, valeur) {
+            const id = ligne?.stock_level_id;
+            if (!id) return;
+    
+            const brut = String(valeur ?? '').trim();
+            const seuil = brut === '' ? null : Number(brut);
+    
+            this.seuilEnCours = id;
+            this.seuilErreur = '';
+            try {
+                const res = await axios.put(`admin/stock/levels/${id}/seuil`, { threshold_low: seuil });
+                const donnees = res?.data?.data ?? {};
+                ligne.threshold_low = donnees.threshold_low ?? null;
+                ligne.status = donnees.en_alerte ? 'low' : (ligne.on_hand <= 0 ? 'out' : 'ok');
+            } catch (e) {
+                const messages = e?.response?.data?.errors?.threshold_low;
+                // Le refus doit etre VISIBLE : un enregistrement qui echoue en
+                // silence laisse le patron croire son seuil pose. C'est l'invariant
+                // que ce chantier applique partout ailleurs.
+                this.seuilErreur = messages
+                    ? messages[0]
+                    : this.$t('admin.unified_stock.seuil_refuse');
+            } finally {
+                this.seuilEnCours = null;
+            }
+        },
         async load() {
             this.loading = true;
             this.error = false;

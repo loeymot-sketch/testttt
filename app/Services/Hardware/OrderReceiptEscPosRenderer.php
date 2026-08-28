@@ -66,9 +66,16 @@ final class OrderReceiptEscPosRenderer
         // celle-ci débordait le papier 58mm → ré-enroulement). Toutes les lignes sont
         // word-wrappées à la largeur pour ne JAMAIS être coupées par l'imprimante.
         $b .= EscPosCommandBuilder::alignCenter();
-        $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
-        $b .= EscPosCommandBuilder::textWrap(optional($branch)->name ?: 'LE CAYENNE', $w);
-        $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        // [ONB-01 2026-08-28] Le repli valait `'LE CAYENNE'` en dur. Un ticket est
+        // un document fiscal : il ne doit jamais porter le nom d'un autre
+        // etablissement. On prend le nom de la branche, sinon le repli configure,
+        // sinon RIEN — un en-tete absent se corrige, un en-tete faux trompe.
+        $enTete = (string) (optional($branch)->name ?: config('printing.receipt.name', ''));
+        if (trim($enTete) !== '') {
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
+            $b .= EscPosCommandBuilder::textWrap($enTete, $w);
+            $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
+        }
         // [TICKET-ADRESSE 2026-07-03] Adresse = branche si renseignée, SINON défaut config
         // (`printing.receipt.address`) → design pro (nom/adresse/tél) même sans adresse en base.
         $address = (string) (optional($branch)->address ?: config('printing.receipt.address', ''));
@@ -76,8 +83,9 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::textWrap($address, $w);
         }
         // [TICKET-PHONE 2026-07-03] Téléphone = branche si renseigné, SINON défaut config
-        // (`printing.receipt.phone`, ex. 03 65 67 82 91) → le n° apparaît TOUJOURS sur le
-        // ticket même quand la branche V1 n'a pas de téléphone en base.
+        // (`printing.receipt.phone`). [ONB-01 2026-08-28] Ce defaut valait le numero
+        // de Le Cayenne : il est desormais VIDE, et la ligne est simplement omise
+        // quand l'etablissement n'a pas renseigne le sien.
         $phone = (string) (optional($branch)->phone ?: config('printing.receipt.phone', ''));
         if (trim($phone) !== '') {
             $b .= EscPosCommandBuilder::textWrap('Tél : '.$this->formatPhone($phone), $w);
@@ -85,7 +93,30 @@ final class OrderReceiptEscPosRenderer
         if (optional($branch)->email) {
             $b .= EscPosCommandBuilder::textWrap('E-mail : '.$branch->email, $w);
         }
-        $website = (string) config('printing.receipt.website', '');
+        // [ONB-05 2026-08-28] Le site web allait DIRECTEMENT a la configuration, dont
+        // le defaut vaut `lecayenne.fr` (`config/printing.php:83`). Les deux lignes
+        // au-dessus — adresse et telephone — font pourtant « etablissement d'abord,
+        // configuration ensuite ». Le champ « Site web » que le commercant remplit
+        // dans Reglages > Entreprise n'etait relu par personne, et son client
+        // repartait avec un ticket portant l'adresse web d'un AUTRE restaurant.
+        //
+        // Meme defaut que celui corrige pour la borne le 2026-08-28 (`ef2cc618c`,
+        // telephone + adresse), reste en place ici. On aligne le site web sur le
+        // meme ordre de priorite.
+        // ⚠️ Le rendu d'un ticket ne doit dependre d'AUCUNE table. Ce service tourne
+        // dans des contextes ou `settings` n'existe pas — 41 bancs de rendu l'ont
+        // montre des ma premiere version, qui appelait `Settings::group()` a nu et
+        // levait `no such table: settings`. Un ticket doit sortir meme si la base de
+        // reglages est absente ou en panne : c'est un document fiscal, pas un ecran.
+        $siteCommercant = rescue(
+            static fn (): string => (string) (
+                \Smartisan\Settings\Facades\Settings::group('company')->all()['company_website'] ?? ''
+            ),
+            '',
+            false
+        );
+
+        $website = (string) ($siteCommercant ?: config('printing.receipt.website', ''));
         if ($website !== '') {
             $b .= EscPosCommandBuilder::textWrap('Web : '.$website, $w);
         }

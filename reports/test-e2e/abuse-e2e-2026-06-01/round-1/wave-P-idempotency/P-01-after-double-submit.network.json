@@ -1,86 +1,100 @@
 [
   {
-    "url": "http://127.0.0.1:8000/api/auth/kiosk-login",
+    "url": "http://127.0.0.1:8766/api/auth/kiosk-login",
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1780506920989
+    "ts": 1787658852937
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "url": "http://127.0.0.1:8766/api/frontend/kiosk-event",
     "method": "POST",
-    "status": 200,
+    "status": 401,
     "duration_ms": null,
-    "ts": 1780506920990
+    "ts": 1787658852939
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/csp-report",
-    "method": "POST",
-    "status": 204,
-    "duration_ms": null,
-    "ts": 1780506920991
-  },
-  {
-    "url": "http://localhost:8000/api/broadcasting/auth",
+    "url": "http://127.0.0.1:8766/api/broadcasting/auth",
     "method": "POST",
     "status": 302,
     "duration_ms": null,
-    "ts": 1780506921057
+    "ts": 1787658852940
   },
   {
-    "url": "http://127.0.0.1:8000/api/auth/kiosk-login",
+    "url": "http://127.0.0.1:8766/api/auth/kiosk-login",
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1780506921325
+    "ts": 1787658853309
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/csp-report",
-    "method": "POST",
-    "status": 204,
-    "duration_ms": null,
-    "ts": 1780506921341
-  },
-  {
-    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
-    "method": "POST",
-    "status": 401,
-    "duration_ms": null,
-    "ts": 1780506921366
-  },
-  {
-    "url": "http://localhost:8000/api/login",
+    "url": "http://127.0.0.1:8766/api/login",
     "method": "GET",
     "status": 401,
     "duration_ms": null,
-    "ts": 1780506921388
+    "ts": 1787658853333
   },
   {
-    "url": "http://127.0.0.1:8000/api/auth/kiosk-login",
+    "url": "http://127.0.0.1:8766/api/auth/kiosk-login",
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1780506921655
+    "ts": 1787658853615
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+    "url": "http://127.0.0.1:8766/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1787658854170
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/auth/kiosk-login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1787658854171
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/kiosk-event",
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1780506921686
+    "ts": 1787658854236
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/order",
+    "url": "http://127.0.0.1:8766/api/frontend/order/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1787658854326
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/broadcasting/auth",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1787658854386
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1780506921839
+    "ts": 1787658854627
   },
   {
-    "url": "http://127.0.0.1:8000/api/frontend/order",
+    "url": "http://127.0.0.1:8766/api/login",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1787658854649
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1780506921860
+    "ts": 1787658854711
   }
 ]

@@ -61,7 +61,15 @@ const {
   getKioskApiToken,
   PAYMENT_CARD,
   KIOSK_AUDIT_PREFIX,
+  resolveSimpleOrderableItem,
+  prefixeAuditPourSpec,
 } = require('./helpers/kiosk-order');
+
+// [GOAL CONSOLIDATION T-4.2.1] Préfixe d'audit PROPRE à cette spec.
+// Avant : huit specs écrivaient sous 'AUDIT-KIOSK-WAVE-E' et se nettoyaient
+// mutuellement par LIKE. Dormant tant que playwright.config.js fixe workers:1,
+// destructeur dès qu'on parallélise.
+const PREFIXE_AUDIT = prefixeAuditPourSpec(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const SCREENSHOT_DIR = path.resolve(__dirname, '__screenshots__/rush-sync');
@@ -97,93 +105,42 @@ const STATUS = Object.freeze({
 // Each scenario sends item_variations[] = [{ id: <variation_value_id>,
 // quantity: 1 }] for the required attributes. PricingService applies the
 // SSOT total — we don't pass price.
-const SCENARIOS = [
-  {
-    code: 'S1',
-    label: 'Sandwich Cayenne',
-    itemId: 474,
-    catId: 344,
-    items: [
-      {
-        item_id: 474,
+// [FIX 2026-08-25] Scénarios construits à l'exécution, plus d'articles figés.
+//
+// Les cinq scénarios visaient les articles 474, 475, 478, 480 et 485 avec leurs variations
+// (1251, 1170/1171, 1190, 1180…). AUCUN de ces identifiants n'existe encore : le devis
+// répondait 422 sur chacun et le banc mourait sur « 0/5 scénarios placés » — sans jamais
+// atteindre son sujet.
+//
+// Ce que ce banc éprouve, c'est la RAFALE : cinq commandes borne simultanées, leur réception
+// KDS sous 30 s, leur propagation OSS/Admin et la vérification de sécurité. Les assertions
+// dures portent sur la synchronisation, jamais sur la composition d'un article donné. On
+// conserve donc CINQ scénarios distincts — ce qui compte pour la rafale — en résolvant cinq
+// articles réellement commandables au lieu de parier sur un menu disparu.
+const SCENARIOS = (() => {
+  const codes = ['S1', 'S2', 'S5', 'S7', 'S9'];
+  const choisis = [];
+  for (const code of codes) {
+    const article = resolveSimpleOrderableItem({
+      branchId: 1,
+      excludeIds: choisis.map((c) => c.itemId),
+    });
+    choisis.push({
+      code,
+      label: article.name,
+      itemId: article.id,
+      catId: null,
+      items: [{
+        item_id: article.id,
         quantity: 1,
-        // attr 331 (Sauce Cayenne — min 1) must be selected. 1251 = Sauce Cayenne maison.
-        item_variations: [{ id: 1251, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S2',
-    label: 'Galette Normale',
-    itemId: 475,
-    catId: 345,
-    items: [
-      {
-        item_id: 475,
-        quantity: 1,
-        // No required min for 475 (both attrs are min_select=0). Pick a sauce
-        // anyway for realism : 1128 = Curry.
-        item_variations: [{ id: 1128, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S5',
-    label: 'Tacos',
-    itemId: 478,
-    catId: 306,
-    items: [
-      {
-        item_id: 478,
-        quantity: 1,
-        // No required selections for 478. Empty body is fine.
         item_variations: [],
         item_extras: [],
         item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S7',
-    label: 'Bol Curry',
-    itemId: 480,
-    catId: 347,
-    items: [
-      {
-        item_id: 480,
-        quantity: 1,
-        // attr 328 (Base, min 1) : 1170 Frites
-        // attr 330 (Sauce, min 1) : 1190 Curry (matches scenario label)
-        item_variations: [
-          { id: 1170, quantity: 1 },
-          { id: 1190, quantity: 1 },
-        ],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-  {
-    code: 'S9',
-    label: 'Petite Frites',
-    itemId: 485,
-    catId: 348,
-    items: [
-      {
-        item_id: 485,
-        quantity: 1,
-        // attr 329 (Style, min 1) : 1180 Nature
-        item_variations: [{ id: 1180, quantity: 1 }],
-        item_extras: [],
-        item_addons: [],
-      },
-    ],
-  },
-];
+      }],
+    });
+  }
+  return choisis;
+})();
 
 // FR/EN tolerant € parser.
 function parseEur(txt) {
@@ -423,7 +380,13 @@ async function kdsBump(adminPage, orderId, expected, next, label) {
       const r = await window.axios.post(`admin/kds-order/change-status/${orderId}`, {
         expected_status: expected,
         status: next,
-      });
+      },
+          // [GOAL CONSOLIDATION 2026-08-25] En-tête OBLIGATOIRE : `config/idempotency.php`
+          // liste la route `kds-order/change-status/{id}` dans required_routes (un double
+          // bump enverrait deux notifications client). Sans l'en-tête → 422, et l'échec
+          // ressemble trompeusement à un défaut de synchro cuisine.
+          { headers: { 'X-Idempotency-Key': `idem-kds-${Date.now()}-${Math.random().toString(16).slice(2)}` } }
+        );
       return { ok: r.status >= 200 && r.status < 300, status: r.status };
     } catch (e) {
       return {
@@ -476,7 +439,7 @@ test.describe('rush-sync — Wave SYNC : full cross-surface flow + DB + security
     try {
       // ---- PRE-FLIGHT ----------------------------------------------------
       try {
-        cleanupKioskAuditOrders(KIOSK_AUDIT_PREFIX);
+        cleanupKioskAuditOrders(PREFIXE_AUDIT);
       } catch (e) {
         observations.push(`pre-flight: cleanup soft-fail ${String(e?.message || e).slice(0, 200)}`);
       }
@@ -574,6 +537,7 @@ test.describe('rush-sync — Wave SYNC : full cross-surface flow + DB + security
           // include `amount_cents` (PaymentConfirmRequest:43 requires it). We
           // call payment-confirm manually below with the order total in cents.
           placement = await placeKioskOrder(kioskPage, {
+            tokenPrefix: PREFIXE_AUDIT,
             items: sc.items,
             paymentMethod: PAYMENT_CARD,
             // V1 ships dine-in disabled — OrderRequest rejects ORDER_TYPE_KIOSK=25

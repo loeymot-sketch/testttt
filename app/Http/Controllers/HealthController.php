@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
@@ -77,7 +78,49 @@ class HealthController extends Controller
     }
 
     /**
-     * When HEALTH_IPS_ALLOWED is non-empty, only listed IPs may call the full health report.
+     * [ONB-13 2026-08-28] Une panne se dit, ses coordonnees ne se publient pas.
+     *
+     * Les quatre sondes renvoyaient `$e->getMessage()` tel quel sur une route
+     * PUBLIQUE (`routes/api.php:148`). Un message PDO porte l'hote, le nom de la
+     * base et l'utilisateur SQL : le jour ou la base tombe — c'est-a-dire le jour ou
+     * quelqu'un regarde — l'endpoint publiait les coordonnees de connexion.
+     *
+     * On garde le statut `error` : savoir QU'UN sous-systeme est tombe est le but de
+     * la sonde. Le detail va au journal, ou l'exploitant le lira, avec la classe
+     * d'exception qui suffit presque toujours a orienter le diagnostic.
+     *
+     * @return array{status: string, message: string}
+     */
+    private function panne(\Throwable $e): array
+    {
+        Log::error('[health] sonde en echec', [
+            'exception' => get_class($e),
+            'message'   => $e->getMessage(),
+        ]);
+
+        return [
+            'status'  => 'error',
+            // Volontairement sans detail : c'est une reponse publique.
+            'message' => 'indisponible',
+        ];
+    }
+
+    /**
+     * Filtre IP du rapport complet.
+     *
+     * ⚠️ [ONB-13 2026-08-28] CETTE GARDE EST INERTE PAR DEFAUT, et son ancien
+     * docblock promettait le contraire (« only listed IPs may call the full health
+     * report »). Quand `HEALTH_IPS_ALLOWED` est vide — sa valeur par defaut dans
+     * `config/app.php:127` ET dans `.env.example` — elle laisse tout passer.
+     *
+     * On la conserve telle quelle : fermer une sonde de vivacite casse les
+     * deploiements et la supervision, et un correctif « securise » qui casse le
+     * deploiement se fait desactiver la semaine suivante. La protection reelle est
+     * desormais ailleurs : le rapport ne contient plus rien de confidentiel
+     * (voir `panne()`).
+     *
+     * Remplir la variable reste utile en production, mais ce n'est plus ce qui
+     * empeche une fuite.
      */
     private function assertFullHealthIpAllowed(): void
     {
@@ -102,7 +145,7 @@ class HealthController extends Controller
 
             return ['status' => 'ok'];
         } catch (\Throwable $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            return $this->panne($e);
         }
     }
 
@@ -117,19 +160,26 @@ class HealthController extends Controller
 
             return ['status' => $ok ? 'ok' : 'error'];
         } catch (\Throwable $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            return $this->panne($e);
         }
     }
 
     private function checkQueue(): array
     {
+        // [GOAL CONSOLIDATION 2026-08-25] Rapporter CHAQUE file surveillée, pas deux d'entre elles.
+        // Voir reports/audit/P0_FILE_NOTIFICATIONS_ORPHELINE_2026-08-25.md.
         try {
-            $defaultSize = Queue::size('default');
-            $highSize = Queue::size('high');
+            $tailles = [];
+            $total = 0;
+            foreach ((array) config('queue.monitored_queues', ['default', 'high']) as $file) {
+                $n = (int) Queue::size((string) $file);
+                $tailles[(string) $file . '_size'] = $n;
+                $total += $n;
+            }
 
-            return ['status' => 'ok', 'default_size' => $defaultSize, 'high_size' => $highSize];
+            return array_merge(['status' => 'ok', 'total_size' => $total], $tailles);
         } catch (\Throwable $e) {
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            return $this->panne($e);
         }
     }
 
@@ -247,7 +297,7 @@ class HealthController extends Controller
             // 503 — that would block deployments. Degrade silently here:
             // the operator will see the error in subsystems but the gate
             // stays open. Aligned with checkDb / checkRedis convention.
-            return ['status' => 'error', 'message' => $e->getMessage()];
+            return $this->panne($e);
         }
     }
 

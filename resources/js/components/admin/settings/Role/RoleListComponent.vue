@@ -11,8 +11,15 @@
         <ul v-if="roles.length > 0">
             <li v-for="role in roles" :key="role.role"
                 class="flex flex-col items-center justify-between gap-4 sm:flex-row sm:justify-between py-3 px-4 border-b last:border-none border-solid border-slate-200">
-                <span class="font-medium capitalize text-center sm:text-left text-sm text-slate-500">
-                    {{ role.name }}
+                <!-- [ONB-06 T-2.1.3 2026-08-27] Les roles etaient affiches tels qu'ils sont
+                     stockes : « POS Operator », « Waiter », « Delivery Boy », « Stuff ». Un
+                     patron francais decide qui a le droit de rembourser une commande en
+                     lisant ca. On traduit A L'AFFICHAGE, sur le nom stocke comme cle, avec
+                     repli sur ce nom : renommer en base casserait les verifications de role
+                     ecrites en dur dans le code (hasRole('Admin')...).
+                     `capitalize` retire : il mettait une majuscule a chaque mot. -->
+                <span class="font-medium text-center sm:text-left text-sm text-slate-500">
+                    {{ libelleRole(role.name) }}
                     <span class="block font-normal whitespace-nowrap">({{ role.users_count }}) {{ $t('label.members')
                     }}</span>
                 </span>
@@ -104,6 +111,21 @@ export default {
         this.list();
     },
     methods: {
+        /**
+         * Le libelle metier d'un role. La cle est le nom STOCKE — on ne renomme rien en
+         * base : `hasRole('Admin')` et consorts sont ecrits en dur un peu partout, et un
+         * renommage les casserait tous en silence. Repli sur le nom stocke si la
+         * traduction manque, pour qu'un role cree par le commercant s'affiche tel quel.
+         */
+        libelleRole: function (nom) {
+            if (!nom) {
+                return '';
+            }
+            const cle = 'role.' + String(nom).replace(/[.]/g, '_');
+            const traduit = this.$t(cle);
+
+            return traduit === cle ? nom : traduit;
+        },
         list: function (page = 1) {
             this.loading.isActive = true;
             this.props.search.page = page;

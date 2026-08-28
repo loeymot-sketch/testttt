@@ -53,7 +53,7 @@
                                 @update:modelValue="handleDate" v-model="props.form.date" range
                                 :preset-ranges="presetRanges">
                                 <template #yearly="{ label, range, presetDateRange }">
-                                    <span @click="presetDateRange(range)">{{ label }}</span>
+                                    <button type="button" class="dashboard-date-preset w-full px-3 py-2 text-left rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="presetDateRange(range)">{{ label }}</button>
                                 </template>
                             </Datepicker>
                         </div>
@@ -123,10 +123,21 @@
                             <i class="lab-total-orders text-[#6E7191] text-2xl lab-font-size-24"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-sm capitalize tracking-wide mb-1">
+                            <!-- [ONB-07 T-1.1.1 2026-08-27] Chaque chiffre porte desormais sa
+                                 definition. Constat verifie en base : le 25/08, cette carte
+                                 affichait « 0,00 € » de revenus au-dessus d'une liste de 28
+                                 commandes totalisant 65,20 €. Les DEUX chiffres etaient justes —
+                                 24 de ces commandes etaient annulees et aucune n'etait encaissee —
+                                 mais rien a l'ecran ne disait qu'ils repondent a deux questions
+                                 differentes. Un commercant en conclut que le logiciel ment.
+                                 On ne touche AUCUN calcul : « revenus » est volontairement
+                                 encaisse-seulement depuis trois correctifs successifs, pour
+                                 concorder avec la cloture Z signee. On rend la regle visible. -->
+                            <h3 class="font-medium text-sm tracking-wide mb-1">
                                 {{ $t('label.total_orders') }}
                             </h3>
                             <h4 class="font-bold text-lg text-[#6E7191]"> {{ salesReportOverview.total_orders }} </h4>
+                            <p class="text-xs text-slate-500 mt-1">{{ $t('message.def_total_orders') }}</p>
                         </div>
                     </div>
                 </div>
@@ -136,10 +147,11 @@
                             <i class="lab-total-sale text-[#6E7191] text-2xl lab-font-size-24"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-sm capitalize tracking-wide mb-1">{{
+                            <h3 class="font-medium text-sm tracking-wide mb-1">{{
                                 $t('label.total_earnings') }}
                             </h3>
                             <h4 class="font-bold text-lg text-[#6E7191]">{{ salesReportOverview.total_earnings }}</h4>
+                            <p class="text-xs text-slate-500 mt-1">{{ $t('message.def_total_earnings') }}</p>
                         </div>
                     </div>
                 </div>
@@ -149,11 +161,12 @@
                             <i class="lab-fill-ticket-discount text-[#6E7191] text-2xl lab-font-size-24"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-sm capitalize tracking-wide mb-1">{{
+                            <h3 class="font-medium text-sm tracking-wide mb-1">{{
                                 $t('label.total_discounts')
                             }}
                             </h3>
                             <h4 class="font-bold text-lg text-[#6E7191]">{{ salesReportOverview.total_discounts }}</h4>
+                            <p class="text-xs text-slate-500 mt-1">{{ $t('message.def_sur_encaisse') }}</p>
                         </div>
                     </div>
                 </div>
@@ -163,12 +176,13 @@
                             <i class="lab-fill-moneys text-[#6E7191] text-2xl lab-font-size-24"></i>
                         </div>
                         <div>
-                            <h3 class="font-medium text-sm capitalize tracking-wide mb-1">
+                            <h3 class="font-medium text-sm tracking-wide mb-1">
                                 {{ $t('label.total_delivery_charges') }}
                             </h3>
                             <h4 class="font-bold text-lg text-[#6E7191]">{{ salesReportOverview.total_delivery_charges
                             }}
                             </h4>
+                            <p class="text-xs text-slate-500 mt-1">{{ $t('message.def_sur_encaisse') }}</p>
                         </div>
                     </div>
                 </div>
@@ -291,19 +305,20 @@ export default {
     setup() {
         const date = ref();
 
-        const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+        const // [REPLAN_7 2026-08-24] `slot` sur CHAQUE préréglage — sinon vue-datepicker rend
+ // sa propre `<div class="dp__preset_range">`, ni focalisable ni activable au
+ // clavier. Sans ce marqueur, le `<template #yearly>` accessible juste au-dessus
+ // ne s'appliquait qu'à l'unique entrée démo du template vendeur : 4 préréglages
+ // sur 5 restaient des div muettes, et la sentinelle source ne pouvait pas le voir.
+ presetRanges = ref([
+            { label: 'Aujourd’hui', range: [new Date(), new Date()], slot: 'yearly' },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())], slot: 'yearly' },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
-            },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
-            {
-                label: 'This year (slot)',
-                range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())], slot: 'yearly' },
         ]);
 
         return {

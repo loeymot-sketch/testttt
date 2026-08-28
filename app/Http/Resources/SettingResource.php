@@ -107,6 +107,24 @@ class SettingResource extends JsonResource
             'kiosk_welcome_subtitle'               => $this->info['kiosk_welcome_subtitle'] ?? 'Commandez en quelques touches',
             'kiosk_tap_hint'                       => $this->info['kiosk_tap_hint'] ?? 'Touchez l\'écran pour commander',
 
+            // [ONB-12 2026-08-28] Le tampon « 100 % Halal » de l'ecran d'accueil.
+            //
+            // Il etait ECRIT EN DUR dans le gabarit. C'est une affirmation sur la
+            // nourriture servie — verifiable, engageante, et propre a chaque
+            // etablissement. Un nouveau commercant la portait sans l'avoir declaree,
+            // et sans aucun moyen de la retirer.
+            //
+            // Defaut a 0 : on n'affirme rien tant que le commercant ne l'a pas dit.
+            // La migration 2026_08_28_120000 declare la valeur des installations
+            // existantes pour ne rien leur retirer en silence.
+            'kiosk_halal_stamp'                    => (int) (bool) ($this->info['kiosk_halal_stamp'] ?? 0),
+            // [ONB-12 2026-08-28] Logo DEDIE a l'ecran d'accueil de la borne.
+            // Le logo general des reglages est concu pour un fond clair ; l'attract
+            // est orange plein cadre. Sans reglage separe, l'un des deux ecrans est
+            // toujours moche. Vide par defaut : on retombe alors sur le logo general,
+            // puis sur le NOM du commercant en toutes lettres.
+            'kiosk_attract_logo'=> $this->info['kiosk_attract_logo'] ?? null,
+
             // [PHASE-37] Kiosk multi-language settings
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),
             'kiosk_default_language'               => $this->info['kiosk_default_language'] ?? 'fr',

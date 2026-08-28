@@ -77,6 +77,13 @@ class ItemResource extends JsonResource
             "price"            => $this->price,
             "item_type"        => $this->item_type,
             "is_featured"      => $this->is_featured,
+            // [ONB-02 2026-08-28] Le rang manquait ICI AUSSI.
+            //
+            // La liste passe par `SimpleItemResource`, la fiche par celle-ci : les
+            // deux hydratent le meme formulaire. Corriger l'une et laisser l'autre
+            // aurait reproduit le defaut sur un chemin sur deux — c'est le motif
+            // « jumeau oublie », rencontre quatre fois cette semaine.
+            "order"            => $this->order,
             // [GAP-27-1] Expose is_upsell so admin UI can read/write it (Ask::NO=10 default)
             "is_upsell"        => $this->is_upsell ?? 10,
             // [v1-0-1-h5 Z5-P1-01 2026-05-17] Expose channels so the admin

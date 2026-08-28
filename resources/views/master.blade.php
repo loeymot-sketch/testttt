@@ -114,6 +114,43 @@
         (config:cache OK : on utilise config() et non env() directement)
     --}}
     @php
+        // [ONB-01 2026-08-28] Identité imprimée sur le ticket de la BORNE. Résolue une
+        // fois ici, sur la filiale par défaut, pour que la borne cesse d'imprimer
+        // l'adresse et le téléphone inscrits dans `config/printing.php`. Le repli sur
+        // la configuration reste, il n'était simplement jamais précédé de rien.
+        // Lecture par clé primaire, mise en défaut silencieuse : ce shell sert TOUTES
+        // les pages du SPA, il ne doit jamais tomber à cause d'une lecture d'agrément.
+        // [ONB-01 2026-08-28 · DEUX DEFAUTS CORRIGES, trouves par un agent adverse]
+        //
+        // 1. `withoutGlobalScopes()` a ete RETIRE. Je l'avais mis en croyant neutraliser
+        //    `BranchScope` — mais `Branch` ne l'enregistre pas (le modele est meme
+        //    listE comme exempte dans CLAUDE.md §9). Le seul scope qu'il retirait etait
+        //    `SoftDeletingScope` : une filiale SUPPRIMEE etait donc ressuscitee, et son
+        //    adresse partait sur le ticket client. Chemin atteignable : sans
+        //    `site_default_branch`, le repli `?: 1` vise la filiale 1, que rien
+        //    n'empeche de supprimer quand le reglage est nul.
+        //    Sans le retrait, une filiale supprimee n'est pas trouvee et le repli
+        //    config s'applique — ce qui est le comportement voulu.
+        //
+        // 2. La lecture est MISE EN CACHE 5 minutes. Elle est faite en tete du shell,
+        //    donc a chaque chargement complet de page du SPA — administration, caisse,
+        //    KDS, ecran client — alors que ces valeurs ne servent qu'au ticket de la
+        //    borne. Le meme fichier met deja en cache son autre requete `Branch`, avec
+        //    un commentaire explicite ; je n'avais pas suivi la discipline du fichier.
+        $borneFiliale = null;
+        try {
+            $borneFilialeId = (int) (\Smartisan\Settings\Facades\Settings::group('site')->get('site_default_branch') ?: 1);
+            $borneFiliale = \Illuminate\Support\Facades\Cache::remember(
+                'borne.identite.filiale.' . $borneFilialeId,
+                300,
+                fn () => \App\Models\Branch::query()
+                    ->select(['id', 'phone', 'address'])
+                    ->find($borneFilialeId)
+            );
+        } catch (\Throwable $e) {
+            $borneFiliale = null;
+        }
+
         // [2026-05-18 PR-B P0 kiosk-creds-leak heal] Gate the SPA auto-login
         // payload by (a) path filter `/kiosk*` (legacy), (b) request IP in
         // the configured allowlist OR `APP_ENV=local` (dev bypass).
@@ -155,6 +192,22 @@
             purchasing: {
                 openaiEnabled: @json((bool) config('services.openai.enabled', false)),
             },
+            // [ONB-02 C1 2026-08-28] Taxe proposee par defaut a la creation d'un
+            // article.
+            //
+            // `config/menu.php:80` porte `default_tax_id` depuis toujours, et il
+            // n'etait lu QUE par les semoirs — jamais a l'execution. Le commercant
+            // devait donc choisir parmi six taxes, dont deux GST etrangeres et un
+            // « No-VAT 0 % » qui detaxerait sa carte, pour creer son premier
+            // produit.
+            //
+            // L'API reste STRICTE (`tax_id => required`) : un article sans taxe
+            // etait facture a 0 % en silence, et refuser vaut mieux que detaxer sans
+            // le dire. Ce reglage n'assouplit rien — il evite au commercant d'avoir
+            // a deviner.
+            catalogue: {
+                defaultTaxId: @json((int) config('menu.settings.default_tax_id', 0)),
+            },
             // [BOLS/2-VIANDES 2026-06-24] La caisse v5 (PosComponent) charge
             // public/js/pos-wizard.js mais n'exposait PAS ce flag (contrairement
             // à admin-pos-v4.blade.php) → pos-wizard.js tombait sur le builder
@@ -195,8 +248,17 @@
                 titleSize: @json((int) config('printing.borne_ticket.title_size', 0x11)),
                 // [TICKET-PHONE 2026-07-03] Téléphone + adresse imprimés sur le ticket borne (le
                 // pont bridge.js les affiche en en-tête, design pro). Fallback config si branche vide.
-                phone: @json((string) config('printing.receipt.phone', '')),
-                address: @json((string) config('printing.receipt.address', '')),
+                //
+                // [ONB-01 2026-08-28] Le commentaire ci-dessus annonçait « Fallback config si
+                // branche vide » — mais le code ne lisait QUE la configuration et ne consultait
+                // jamais la filiale. Un nouveau commerçant remplissait son adresse et son
+                // téléphone dans Filiales, et sa borne continuait d'imprimer ceux du Cayenne
+                // (défauts : « 03 65 67 82 91 » et l'adresse d'Hénin-Beaumont,
+                // config/printing.php). Le ticket de CAISSE, lui, faisait déjà correctement le
+                // repli : `optional($branch)->address ?: config(...)`
+                // (OrderReceiptEscPosRenderer.php:74). On aligne la borne sur la caisse.
+                phone: @json((string) (optional($borneFiliale)->phone ?: config('printing.receipt.phone', ''))),
+                address: @json((string) (optional($borneFiliale)->address ?: config('printing.receipt.address', ''))),
                 // [TICKET-BORNE-COMPACT 2026-07-03] Avance papier COURTE (8) + coupe PARTIELLE :
                 // ticket compact qui ne tombe pas (reste accroché) — fini le grand espace blanc.
                 feedLines: @json((int) config('printing.cut.kiosk_client_feed_lines', 8)),

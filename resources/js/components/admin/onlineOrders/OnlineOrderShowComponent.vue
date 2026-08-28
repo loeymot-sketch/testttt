@@ -61,7 +61,7 @@
                     <button v-if="order.payment_status === enums.paymentStatusEnum.UNPAID && order.payment_method === enums.paymentTypeEnum.CASH_ON_DELIVERY" 
                         type="button" @click="confirmCashPayment()"
                         class="flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-[#FF9F43]">
-                        <i class="lab lab-wallet"></i>
+                        <i class="lab lab-cash"></i>
                         <span class="text-sm capitalize text-white">Encaisser & Valider (Kiosk)</span>
                     </button>
 

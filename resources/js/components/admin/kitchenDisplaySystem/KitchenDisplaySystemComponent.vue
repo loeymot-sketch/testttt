@@ -310,6 +310,12 @@
               <option value="bar">{{ $t('label.kds_bar') }}</option>
               <option value="cuisine_chaude">{{ $t('label.kds_cuisine_chaude') }}</option>
               <option value="cuisine_froide">{{ $t('label.kds_cuisine_froide') }}</option>
+              <!-- [ONB-08 2026-08-28] Option MANQUANTE. `normalizeKdsStation` declare
+                   quatre postes dont `none`, et 7 boissons vendables le portent. Sans
+                   cette entree, un cuisinier qui basculait sur « Bar » ne pouvait plus
+                   les revoir qu'en repassant sur « Toutes » — et une commande composee
+                   uniquement de ces articles disparaissait de toute vue filtree. -->
+              <option value="none">{{ $t('label.kds_sans_poste') }}</option>
             </select>
             <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer">
               <input type="checkbox" v-model="groupByTable" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
@@ -1772,7 +1778,7 @@ export default {
     if (sf == null && uid > 0) {
       try {
         const leg = localStorage.getItem("kds.station_filter");
-        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide") {
+        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide" || leg === "none") {
           sf = leg;
           localStorage.setItem(sKey, leg);
         }
@@ -1787,7 +1793,7 @@ export default {
         sf = null;
       }
     }
-    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
+    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide" || sf === "none") {
       this.stationFilter = sf;
     }
     const gb = localStorage.getItem("kds.group_by_table");
