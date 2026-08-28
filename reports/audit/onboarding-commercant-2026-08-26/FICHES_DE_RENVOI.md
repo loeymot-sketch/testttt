@@ -348,3 +348,55 @@ partagée, mais **ne les prends pas pour la réalité du terrain**.
 
 **Pour ONB-12** : c'est la même famille que les cinq filiales fictives et les 26 taxes
 `AUDIT-*`. Un nouveau commerçant qui installe ce logiciel ne doit voir aucune des trois.
+
+---
+
+# Fiche · ONB-01 → ONB-05 / ONB-10 — La borne porte encore l'identité de Le Cayenne
+
+**Émise le 2026-08-28** par la session ONB · **Voie émettrice** : ONB-01 (identité
+établissement) · **Voie destinataire** : réglages borne (`KioskSetup`, §2.2)
+
+## Ce qui a été corrigé ici, et ce qui ne l'a pas été
+
+`KioskIdleScreenComponent.vue` n'est PAS une zone gelée (§7 ne gèle que
+`KioskWizard`, `KioskApp`, `KioskUpsell`). J'y ai corrigé la **rotation d'accueil** :
+
+- le nom du restaurant était **concaténé en dur** après le titre réglable — même en
+  réglant son titre d'accueil, un nouveau commerçant voyait « Le Cayenne » s'y
+  ajouter. Il vient désormais de `restaurantName` (`company_name || site_name`),
+  échappé avant d'entrer dans du HTML ;
+- la ligne « **Halal** · Frais · Préparé minute » n'avait **ni clé ni repli** : la
+  borne faisait à la place du commerçant une déclaration réglementée. Elle passe par
+  `kiosk.idle_screen.line_claims`, repli neutre.
+
+## Ce qui reste, et pourquoi je ne l'ai pas fait
+
+| # | Où | Quoi |
+|---|---|---|
+| 1 | `KioskIdleScreenComponent.vue:162-165` | Un tampon **« 100 % Halal »** dans le gabarit (`<div class="cay-stamp">`) |
+| 2 | `KioskIdleScreenComponent.vue:315-323` | **Huit produits de Le Cayenne en dur** : `Le Terminator`, `Double Cheese`, `Le Cayenne`, `Grill Burger`, `Le Suprême`, `Menu Maxi`, `Bol de riz`, `Bol de frites` — avec leurs images (`terminator.webp`, `cayenne.webp`…). **La borne d'un nouveau commerçant cycle sur les produits d'un autre restaurant.** |
+
+Deux raisons de ne pas trancher depuis cette voie :
+
+1. **Ce sont des réglages borne** (`KioskSetup`), qui appartiennent à une autre voie
+   selon §2.2. Y ajouter des clés depuis ici créerait exactement le genre de
+   collision que le protocole existe pour éviter.
+2. **Retirer le tampon serait une régression pour Le Cayenne**, qui y a droit. La
+   bonne forme n'est pas la suppression, c'est le **réglage avec la valeur actuelle
+   par défaut** — « sortir la marque du CODE vers la DONNÉE » (§0.2 du programme).
+
+## Forme recommandée
+
+- `kiosk_halal_badge` (booléen, défaut **vrai** — aucune régression pour Le Cayenne)
+  dans le groupe `kiosk_setup`, avec sa case dans l'écran Configuration borne.
+- Le carrousel d'attente : alimenté par les produits **mis en avant** du catalogue
+  (`is_featured`), avec repli sur le jeu actuel si aucun n'est marqué. Le commerçant
+  choisit alors ce que sa borne montre en le marquant dans son catalogue — sans
+  nouvel écran à apprendre.
+
+## En attendant
+
+Un **cliquet** est posé : `tests/js/laBorneNAfficheQueCeQueLeCommercantADeclare.spec.js`
+compte les identités « Le Cayenne » restantes et **échoue si le nombre augmente**.
+Il dit aussi explicitement ce qu'il ne couvre pas — sans quoi un banc vert sur la
+seule rotation laisserait croire le problème réglé.

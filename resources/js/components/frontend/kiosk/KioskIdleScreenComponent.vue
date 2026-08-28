@@ -341,11 +341,43 @@ export default {
     },
     headlines() {
       const lc = (k, fb) => this.text(k, fb);
+
+      /*
+       * [ONB-01 2026-08-28] La borne affichait le nom d'un AUTRE établissement.
+       *
+       * « Le Cayenne » était CONCATÉNÉ EN DUR après le titre d'accueil réglable :
+       * même en réglant son titre, le commerçant voyait le nom du premier
+       * établissement s'y ajouter. Or `this.restaurantName` est renseigné vingt-cinq
+       * lignes plus bas (`data.company_name || data.site_name`) — la donnée était là.
+       *
+       * Pour une « publication vierge », c'est le défaut le plus visible qui soit :
+       * le premier écran que voit un client porte le nom de quelqu'un d'autre.
+       */
+      // Le nom vient d'un réglage LIBRE et entre dans une chaîne HTML : on
+      // l'échappe ici. Le composant assainit les titres plus bas via DOMPurify,
+      // mais une injection ne doit pas dépendre de l'ordre dans lequel deux
+      // protections se rencontrent.
+      const nom = String(this.restaurantName || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      const etablissement = nom ? ' <span class="cay-accent">' + nom + '</span>' : '';
+
       return [
-        (this.welcomeTitle || lc('kiosk.idle_screen.default_title', 'Bienvenue chez')) +
-          ' <span class="cay-accent">Le Cayenne</span>',
-        lc('kiosk.idle_screen.line_compose', "Composez votre tacos<br>comme vous l'aimez"),
-        '<span class="cay-accent">Halal</span> · Frais · Préparé minute',
+        (this.welcomeTitle || lc('kiosk.idle_screen.default_title', 'Bienvenue chez')) + etablissement,
+        lc('kiosk.idle_screen.line_compose', "Composez votre carte<br>comme vous l'aimez"),
+        /*
+         * Cette ligne AFFIRMAIT « Halal », sans clé ni repli. Un nouveau commerçant
+         * n'est pas forcément halal, et une borne ne doit pas faire à sa place une
+         * déclaration qu'il n'a peut-être pas le droit de faire. Le repli est
+         * désormais neutre, et la ligne passe par une clé — donc modifiable.
+         *
+         * La rendre éditable depuis le Dashboard relève des réglages borne :
+         * fiche de renvoi ONB-10, pas correctif silencieux ici.
+         */
+        lc('kiosk.idle_screen.line_claims', 'Frais · Préparé minute'),
         lc('kiosk.idle_screen.line_taste', 'Un goût qui<br>vous ressemble'),
       ];
     },
