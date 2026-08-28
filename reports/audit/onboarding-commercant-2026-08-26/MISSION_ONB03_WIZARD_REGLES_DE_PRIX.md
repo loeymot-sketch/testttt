@@ -84,8 +84,51 @@ au ratio 0,76 ») sont codées pour Le Cayenne dans `config/menu.php` et `config
 - `:8000` = autre worktree ; ta session = **:8803**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-04 (schéma de règle consommé par l'extraction IA) · ONB-02 (prix unitaires du catalogue, `ItemRequest`) · ONB-05 (visibilité, drapeau dans le menu) · ONB-12 (templates génériques, seeders) · session BORNE (LOCK `KioskWizardComponent.vue`) · voie CAISSE (`pos_wizard_composer_aware`) · État final : —
+### 8.1 ÉTAT : **BLOQUÉ** — le correctif exige une zone gelée
+
+Cette mission demande que les étapes de personnalisation portent une sémantique de
+prix : **choix unique / inclus N gratuits / supplément payant**. Le blocage n'est pas
+une question de temps : le chemin passe par `PricingService`, **zone gelée §7**, qui
+ne peut être modifiée qu'avec un `LOCK_*.md` contresigné par le propriétaire.
+
+### 8.2 Ce qui a été établi, et qui change la question
+
+Un constat vérifié ligne par ligne pendant cette session, et **absent du rapport
+d'origine** :
+
+> **Le wizard de catégorie n'est lu par personne.**
+>
+> `createForCategory()` écrit `item_id => null`, une contrainte SQL XOR l'impose, et
+> les **cinq** lecteurs de production interrogent tous `whereIn('item_id', …)`. Les
+> deux méthodes capables de résoudre une catégorie — `resolveForItem()` et
+> `getEffectiveWizardProfile()` — n'ont **aucun appelant**.
+
+Or c'est le seul parcours qu'un nouveau commerçant peut ouvrir, puisque l'édition par
+article est derrière `FEATURE_WIZARD_PER_ITEM_DEMO=false`. Il règle donc un parcours
+qui n'est appliqué nulle part, et l'écran le lui confirmait : « Ce wizard s'applique à
+TOUS les produits de cette catégorie. »
+
+**Cette phrase a été retirée** (commit `696b3e592`) et remplacée par un avertissement
+honnête. Retirer une affirmation fausse n'est pas une décision d'architecture — et
+c'est ce que le dossier d'arbitrage recommande à défaut de décision : **un bouton qui
+ment coûte plus cher qu'un bouton absent.**
+
+### 8.3 Le dossier d'arbitrage
+
+`docs/gates/GATE_WIZARD_CATEGORIE_JAMAIS_LU_2026-08-28.md` — monté pendant cette
+session, avec trois options chiffrées.
+
+Point délicat que le dossier soulève : le gate de mai
+(`GATE_CV1-V1-PIVOT-WIZARD-CATEGORY-OWNER_2026-05-04.md`) a **approuvé la « Voie A »**
+(résolution à la lecture) tout en déclarant « I1 pricing SSOT : non touché ». Les deux
+sont incompatibles — l'option approuvée exige précisément de modifier
+`PricingService`. C'est cette contradiction qu'il faut trancher, pas seulement le
+principe.
+
+### 8.4 Ce qu'une session peut faire sans la signature
+
+Rien sur le fond. Tout ce qui pouvait l'être l'a été : l'affirmation fausse retirée,
+le dossier monté, la contradiction du gate de mai nommée.
+
+**État final ONB-03 : BLOQUÉ, propriétaire. Le blocage est documenté, le dossier est prêt, et l'écran ne ment plus en attendant.**

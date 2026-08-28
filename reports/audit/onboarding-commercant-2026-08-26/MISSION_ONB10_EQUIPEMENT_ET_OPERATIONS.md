@@ -86,8 +86,58 @@ imprimantes : DNS accepté, USB sans hôte accepté, suppression 204, `test-prin
 - `:8000` = autre worktree ; ta session = **:8810**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-05 (réglage typé allowlist host:port, PIN obligatoire, entrées de menu Outbox/Postes, réservation d'État du système) · voie KDS+OSS (préférences KDS côté serveur, personnalisation OSS) · ONB-02 (enum `KdsStation` partagé, validation) · ONB-12 (identités `kiosk-lecayenne`, `RECEIPT_*`, ponts « Le Cayenne ») · ONB-09 (G-NOTIF) · ONB-13 (`/api/health` exposé, oracle TCP) · État final : —
+Audit adverse en lecture seule le 2026-08-28. **Deux instruments cites par cette
+mission n'existent pas** : `config/queue.php (monitored_queues)` ne se trouve que
+dans les documents ONB-10 eux-memes, et `docs/RUNBOOK_WORKER_CAISSE.md` est absent.
+Les §3 et §4 s'appuyaient donc sur deux references mortes.
+
+### 8.1 Corrige
+
+**L'ecran proposait une largeur de ticket que le serveur refusait, sans un mot.**
+`PrintersComponent.vue:134` propose « 42 (80 mm SAGA) » — en NOMMANT le modele —
+quand `PrinterRequest.php:57` n'acceptait que `[32, 48]`. Et ce champ etait le seul
+de son formulaire **sans affichage d'erreur** : le refus etait invisible. Le
+commercant choisissait la largeur de son imprimante reelle, cliquait, et rien ne se
+passait.
+
+Banc : `LEcranNeProposePasCeQueLeServeurRefuseTest` (5). Il ne fige pas « 42 » — il
+lit les `<option>` du gabarit et les soumet une par une, donc il mord dans les deux
+sens.
+
+⚠️ **Ma premiere version de ce banc ne mordait pas** : `assertNotSame(422, …)` etait
+satisfait par un 404, celui de ma propre faute d'URL. Une assertion negative est
+presque toujours trop faible — elle est satisfaite par tous les echecs sauf un.
+
+### 8.2 Encore vrai — par ordre de cout le premier jour
+
+| Sev. | Constat | Preuve |
+|---|---|---|
+| **P1** | **L'imprimante reelle reste indeclarable.** Le seul champ qui compte — son adresse — est refuse pour toute adresse locale ou LAN par `SafeRemoteHost`, et la seule echappatoire est une variable d'environnement vide par defaut. Aucun chemin d'ecriture `.env` dans `app/` | `PrinterRequest.php:53-58`, `config/security.php:94` |
+| **P1** | **La borne declaree n'est pas celle qui se connecte** : l'identite vient de `env(KIOSK_MACHINE_USERNAME/PASSWORD)`, avec un repli en dur `kiosk-lecayenne`. Aucun lien d'installation par borne n'existe | `config/kiosk.php:265-277` |
+| **P1** | **19 des 20 reglages d'impression sont `env()` seulement.** Changer d'imprimante exige `PRINT_DRIVER`, souvent `RECEIPT_WIDTH_CHARS`, parfois la page de code, plus une entree d'allowlist : **quatre variables et un `config:clear`, sans un champ a l'ecran** | relevé sur `config('printing.` |
+| **P1** | **La config ECRASE le reglage du commercant** : `EscPosTicketBytesService:74` fait `$cfgWidth ?: $printer->width_chars` — la variable d'environnement prime sur la largeur choisie pour CETTE imprimante. Meme famille que le minimum de la roue | **NON corrige volontairement** : la precedence est un choix d'exploitant documente sur place (mesure terrain sur la SK1-31), et l'inverser sans mesurer casserait l'impression en cours |
+| **P2** | **Le PIN admin de la borne n'est lu par PERSONNE.** La regle est `nullable`, le libelle annonce « Par defaut : 1234 », et aucun code ne consomme le reglage. **Un reglage qui promet une protection inexistante** | `KioskSetupRequest.php:22` |
+| **P2** | **La file `notifications` grossit a chaque vente sans consommateur ni sonde.** Producteurs : chaque commande creee et chaque changement de statut. Worker : `--queue=high,default`. Compteur de sante : `default + high` — **la file est hors du calcul**. L'ecran du commercant ne montera jamais a cause d'elle : il n'est pas silencieux, il est **aveugle** | `SendFcmNotificationJob:67`, `HealthzController:227-228` |
+| P2 | **Deux vocabulaires pour la meme cuisine** : `cuisine_chaude` cote articles, `kitchen_hot` cote imprimantes | migration `add_kds_station_to_items` vs `PrinterRequest:59` |
+| P2 | Outbox sans entree de menu ; alertes de sante sans action attachee | `SyncOverviewController:626-651` |
+
+### 8.3 Le mode simulation
+
+Il **se dit**, depuis le 2026-08-27 — mais **a un seul endroit** : le formulaire
+d'edition d'un TPE. Jamais dans le tableau, jamais en caisse, ou `PaymentComponent`
+affiche le mot brut « simulation » devant le caissier. Et le drapeau qui decide
+vraiment, `POS_SIMULATION_HARDWARE`, n'est affiche nulle part : **un commercant dont
+le `.env` le porte encaisse sans tiroir ouvert, et aucun ecran ne le lui dit.**
+
+### 8.4 Ce qui reste
+
+1. **Un reglage typé host:port pour l'imprimante**, ou l'imprimante du restaurant n'est jamais declarable.
+2. **Ajouter `notifications` au worker ET a la sonde** — sinon l'incident n'aura aucun temoin.
+3. **Le PIN de la borne** : le cabler ou le retirer de l'ecran, jamais le laisser tel quel.
+4. **Porter la mention « simulation » en caisse**, pas seulement au fond d'un formulaire.
+5. **Identite par borne** (G-BORNE-ID) : installer une deuxieme borne reste un travail de developpeur.
+6. **Trancher la precedence config / reglage** sur la largeur — apres mesure, pas avant.
+7. **Unifier les deux vocabulaires de cuisine** avant qu'un commercant ne regle 45 articles un par un.
+
+**Etat final ONB-10 : le defaut le moins cher et le plus visible est corrige (largeur proposee puis refusee en silence). Les trois P1 restants demandent du neuf — adresse d'imprimante, identite de borne, reglages typés — et deux references de la mission elle-meme etaient mortes.**

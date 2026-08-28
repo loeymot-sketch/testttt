@@ -72,8 +72,46 @@ vocabulaire, cohérence, accessibilité, première heure. Il est la conscience U
 - `:8000` = autre worktree ; ta session = **:8811**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi (à émettre en W1, top 10) : ONB-01 (« Filiales », toasts), ONB-02 (toasts, messages prix, aide concepts), ONB-06 (permissions FR, « Stuff »), ONB-07 (vocabulaire widgets), ONB-10 (message SMTP, colonnes hors cadre, aide modale borne, PIN affiché), ONB-05 (ordre du menu), ONB-12 (checklist) · État final : —
+Audit adverse en lecture seule le 2026-08-28. ⚠️ **Cet auditeur s'est retracte
+lui-meme** sur trois chiffres qu'il avait fabriques, et a signale avoir lance
+`npm run i18n:audit` malgre sa consigne de lecture seule — **cinq CSV suivis
+modifies, restaures depuis**. Les chiffres ci-dessous sont ceux de sa version
+corrigee, recomputee.
+
+### 8.1 Corrige
+
+| Defaut | Preuve |
+|---|---|
+| **Troisieme etat vide accusant un filtre absent.** `UnifiedStockViewComponent` : `isEmpty()` exige que les DEUX rayons soient vides — une seule boisson revendue suffisait a faire afficher « Aucun element ne correspond au filtre » au rayon des matieres, avec recherche vide et statut « tous » | Chaque rayon choisit desormais sa phrase selon qu'un filtre est REELLEMENT pose |
+| **Trois valeurs francaises mutilees** : « Your Adresse », « Table Nom », et « **N°** schedule found » — ou la machine a pris la negation anglaise « No » pour l'abreviation francaise de « numero » | `fr.json` |
+| **Mon propre cliquet francais ne les voyait pas** : son vocabulaire (`Successfully`, `Ajoutered`…) attrapait la premiere vague et laissait passer la suivante, **en donnant l'impression que le probleme etait traite** | Elargi prudemment : deux formes precises plutot qu'une liste large, parce qu'un filtre trop gourmand produit du bruit — c'est-a-dire un banc qu'on ignore |
+
+Rappel des deux premieres occurrences du meme motif, corrigees plus tot cette nuit :
+liste d'ingredients (« Aucun ingredient trouve pour ce filtre » sur l'onglet par
+defaut, qui n'envoie aucun parametre) et journal de caisse (bouton « Reinitialiser
+les filtres » qui reecrivait l'etat par defaut, donc ne faisait rien).
+
+### 8.2 Encore vrai
+
+| Sev. | Constat | Preuve |
+|---|---|---|
+| P2 | `StockRuptureDashboardComponent:108-111` : meme motif, rendu **dans le rail de categories** | — |
+| P2 | `AvailabilityTogglePanel:138` : **aucune branche « vraiment vide » n'existe** — `filteredItems` rend la liste entiere quand la recherche est vide | — |
+| P2 | Tutoiement residuel dans le module roue (`reglages`, `validation`, `lot`, `acces`) et `errors/419.blade.php:28` (« Ecran expire — recharge-le ») | l'interface vouvoie partout ailleurs |
+| P2 | Cinq cles composer au tutoiement dans `fr.json` | — |
+| P3 | Motifs de formulaire heterogenes (tiroir / page / modale / Blade) | non instruit |
+| P3 | Aucune aide contextuelle, aucune checklist de demarrage | — |
+
+**Implementation de reference** confirmee par l'audit : `RawMaterialAdjustComponent:55-61`
+branche sur la collection brute d'abord, filtree ensuite. Meme forme dans
+`ParkedOrdersComponent` et `PosComponent`. Le motif juste existe deja dans le depot.
+
+### 8.3 Ce qui reste
+
+1. **Les deux etats vides restants** (`StockRuptureDashboard`, `AvailabilityTogglePanel`) — le second n'a meme pas de branche vide.
+2. **Le tutoiement du module roue** et de la page d'erreur 419.
+3. **Un balayage systematique des cles referencees mais absentes** : j'en ai trouve **six** ce soir par hasard (`legal_footer`, `siret_placeholder`, `register_id_placeholder`, `unit`, `stock`, `edit`) — toutes en posant d'autres correctifs. Un banc dedie vaudrait mieux que la chance.
+4. **Vocabulaire** : « Filiales » pour un mono-restaurant, roles techniques affiches bruts (renvoi ONB-06).
+
+**Etat final ONB-11 : la troisieme occurrence du motif « etat vide qui accuse un filtre absent » est corrigee, et trois valeurs mutilees avec elle. Le fait le plus utile de cette mission est negatif : mon propre cliquet etait trop etroit, et un cliquet trop etroit fait croire que le probleme est traite.**

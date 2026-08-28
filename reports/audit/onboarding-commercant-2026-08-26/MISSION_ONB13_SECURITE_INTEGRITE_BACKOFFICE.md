@@ -79,8 +79,75 @@ et les propriétaires branchent.
 - `:8000` = autre worktree ; ta session = **:8813**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi (livraison des FormRequests + tests) : ONB-08 (`RawMaterialAdjust`, `PurchasingScan`, `setMaxDailyQty`, `run`) · ONB-09 / voie CAISSE (`PromoFlyer`, `Wheel/*`, `UberPhotoCapture`) · ONB-05 (`NotificationAlert`, page Journal, retrait Licence/passerelles, `type=password`) · ONB-10 (`/api/health`, oracle TCP, jetons de bornes) · ONB-06 (événement de changement de rôle, `users.phone`) · ONB-02 (`kds_station`, 413) · ONB-01 (G-READ sur `company`/`site`) · ONB-14 (CI MySQL) · État final : —
+Audit adverse en lecture seule le 2026-08-28. Il a **corrige deux chiffres de cette
+mission** et **requalifie** un constat.
+
+### 8.1 Corrige
+
+**`/api/health` publiait les coordonnees de la base, sans authentification.**
+
+Les quatre sondes renvoyaient `$e->getMessage()` **brut** sur une route publique
+(`routes/api.php:148`). Un message PDO porte l'hote, le nom de la base et
+l'utilisateur SQL : le jour ou la base tombe — c'est-a-dire le jour ou quelqu'un
+regarde — l'endpoint les publiait.
+
+Et la garde censee proteger ce rapport **sort par le haut quand sa liste d'IP est
+vide**, ce qu'elle est par defaut dans `config/app.php:127` ET `.env.example`. Son
+docblock promettait pourtant « only listed IPs may call the full health report ».
+
+**On ne ferme PAS l'endpoint** : une sonde de vivacite doit rester joignable, sinon on
+casse les deploiements et la supervision — et un correctif « securise » qui casse le
+deploiement se fait desactiver la semaine suivante. On coupe la fuite : le detail part
+au journal avec sa classe d'exception, le client recoit « indisponible », le statut
+`error` reste visible. Le docblock cesse de promettre ce qu'il n'offre pas.
+
+### 8.2 Requalifie
+
+**La « cle de licence » n'est pas un secret.** `LicenseRequest:54` ecrit bien
+`MIX_API_KEY` dans le `.env` et `LicenseResource:28` la relit — mais
+`config/app.php:77` en fait la cle d'API publiee dans `public/js/app.js` et une balise
+`<meta>`. Le defaut n'est donc pas une fuite : c'est **un ecran mal nomme**, qui
+presente comme « licence » un reglage technique. Le corriger reste utile ; le
+qualifier de fuite aurait fait perdre du temps sur la mauvaise piste.
+
+### 8.3 Chiffres corriges
+
+| La mission disait | Mesure |
+|---|---|
+| « 9 controleurs sans FormRequest » | **32 points d'ecriture dans 25 controleurs** — sous-comptage d'un facteur 3,5 |
+| `RETURN_TRUE_BASELINE = 62` | **64** |
+
+Nuance qui compte : **aucun de ces 32 n'est sans validation** — ils valident en ligne.
+La classe de faille est l'absence de couche `authorize()` reutilisable, et surtout que
+**le cliquet ne mesure pas le perimetre qu'il annonce** : il ne lit que
+`app/Http/Requests`, donc il ne voit **aucune** de ces 32 lignes. Une sentinelle
+aveugle a ce qu'elle pretend garder.
+
+### 8.4 Encore vrai
+
+| Sev. | Constat | Preuve |
+|---|---|---|
+| **P1** | **Aucun journal « qui a changé quel réglage ».** Aucune table, aucun ecrivain. La seule trace nominative du back-office est un `Log::info` pour UNE famille de reglages, dans un fichier qui tourne. Un commercant dont la TVA change un mardi soir n'a aucun moyen de savoir qui l'a changee | `grep settings_audit` = 0 |
+| **P1** | `HealthController:105` renvoyait le message PDO brut — **corrige §8.1**, mais la garde IP reste `fail-open` par conception assumee | — |
+| P2 | **Lecture des reglages ouverte** : cinq controleurs en `->only('update')`, plus `BranchController`. `site_google_map_key` (facturee a l'usage) et `site_app_debug` sont lisibles par la caisse | `SiteResource:57,59` |
+| P2 | **IDOR sur `EmployeeController`** : cinq methodes recoivent un `User` lie par la route **sans verifier sa branche**, et l'edition **reassigne** la branche. Dormant en mono-branche, bloquant avant tout multi-succursales | `EmployeeController:53,90,99,108` |
+| P2 | **Balayage IDOR incomplet** : **7 controleurs sur ~50** verifient la branche. A traiter comme surface ouverte tant que l'inventaire n'est pas fait | — |
+| P2 | **Autorisation conditionnee a l'environnement** : `StockRuptureDashboardController:227-229` n'applique son `abort_unless` qu'en production — **le banc de test ne prouve donc rien sur la production** | le constructeur gate deja : la ligne est a retirer |
+| P2 | `setMaxDailyQty` : `Request` nu **et aucun appelant ecran**. Le correctif le moins cher est la suppression de la route, pas une FormRequest pour un ecran qui n'existe pas | `AvailabilityController:118-124` |
+
+⚠️ **Fermes depuis, verifies** : secrets de passerelle et de mail masques
+(`estSecret()` + `MASQUE`), service-account FCM sur disque prive, `LicenseController`
+gate en lecture, `InterrupteurController` gate en lecture.
+
+### 8.5 Ce qui reste
+
+1. **Le journal des reglages** (G-JOURNAL) — le seul constat dont l'impact est certain, quotidien et non hypothetique. Table dediee, **jamais** `audit_logs` (gelé, NF525).
+2. **Elargir le cliquet FormRequest** aux validations en ligne des controleurs : il annonce un perimetre qu'il ne mesure pas.
+3. **Fermer la lecture des reglages** — cinq lignes, une par controleur (G-READ).
+4. **Finir le balayage IDOR** : 7 sur ~50 avant de conclure quoi que ce soit.
+5. **`EmployeeController`** : verifier la branche de la cible sur les cinq methodes.
+6. **Retirer l'autorisation conditionnee a l'environnement.**
+7. **Trancher `setMaxDailyQty`** : lui donner un ecran, ou retirer la route.
+
+**Etat final ONB-13 : la fuite la plus concrete est fermee (coordonnees de base publiees sans authentification). Un constat est requalifie — la « cle de licence » n'est pas un secret, c'est un ecran mal nomme. Deux chiffres de la mission sont corriges, dont un sous-comptage d'un facteur 3,5. Le manque le plus lourd reste entier : personne ne sait qui a change quel reglage.**

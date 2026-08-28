@@ -68,8 +68,47 @@ journée sur une installation vierge, deux fois à l'identique, et renvoie chaqu
 - `:8000` = autre worktree ; `:8766` = arbre principal ; ta session = **:8814**, base **`foodking_onb14`**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Cycle | Étape | Action | Preuve | Verdict | Renvoi |
-|---|---|---|---|---|---|---|
-| | 0 | W0 | | | | |
 
-Registre des renvois : `REGISTRE_RENVOIS_ONB14.md` · Fiches émises : (par cycle) · État final : —
+### 8.1 ÉTAT : **BLOQUÉ** — dépend d'ONB-12, lui-même bloqué par G0
+
+Cette mission demande un parcours de bout en bout — **installation vierge** → identité
+→ catalogue → wizard → équipe → équipement → commande borne → KDS → encaissement → Z →
+rapports, deux cycles identiques.
+
+Son premier mot est « installation vierge », et c'est précisément ce qu'ONB-12 ne peut
+pas produire tant que **G0** n'est pas signé. Lancer la convergence sur une base qui
+contient le menu, les rôles et les résidus de tests de Le Cayenne ne prouverait pas ce
+que cette mission existe pour prouver.
+
+`§14` du programme interdit de la différer en la vidant de sa substance : mieux vaut
+la dire bloquée que la déclarer verte sur un parcours qui n'est pas le sien.
+
+### 8.2 Ce qui est déjà prouvé, et qui servira le jour venu
+
+Le parcours n'est pas prouvé **de bout en bout**, mais plusieurs de ses maillons le
+sont désormais individuellement, avec des bancs qui mordent :
+
+| Étape | Preuve |
+|---|---|
+| Identité fiscale enregistrable, relue, **non effacée** au second enregistrement, et complète (N° de caisse) | `IdentiteFiscaleSurvitAUnSecondEnregistrementTest`, `leFormulaireFilialePorteLIdentiteFiscaleComplete.spec.js` |
+| Catalogue depuis zéro : import aller-retour, catégories, allergènes, canaux | `LaCarteExporteeSeReimporteTest`, `LesCategoriesExporteesSeReimportentTest`, `UnCommercantPeutDeclarerSesAllergenesTest` |
+| Ingrédients déclarables | `UnCommercantPeutDeclarerSesIngredientsTest` |
+| Équipe : téléphone obligatoire dit comme tel, pas de boucle de redirection | `UnChampObligatoireEnBaseLEstAussiDansLaRegleTest`, `aucuneBoucleDeRedirectionSurUnRoleSansDroit.spec.js` |
+| Équipement : l'écran ne propose plus une largeur que le serveur refuse | `LEcranNeProposePasCeQueLeServeurRefuseTest` |
+| Réception de factures : conversion d'unités juste, refus lisible | `UneFactureEnKilosNeCreditePasDesGrammesTest`, `LeRefusDeReceptionEstLisibleParLeCommercantTest` |
+| Rapports : écran et export s'accordent, prédicat appelé et non recopié | `LEcranEtLExportDonnentLeMemeTotalTest`, `LesChiffresDesRapportsSontJustesTest` |
+
+### 8.3 Ce qui manque encore au parcours, indépendamment de G0
+
+- **Les horaires d'ouverture n'existent nulle part** — ni table, ni route, ni écran
+  (ONB-01). Un établissement ne peut pas déclarer quand il ouvre.
+- **Les frais de livraison ne sont configurables nulle part**, alors que
+  `DeliveryFeeService` les lit.
+- **L'imprimante réelle reste indéclarable** (adresse LAN refusée) et **la borne
+  déclarée n'est pas celle qui se connecte** (ONB-10).
+- **Le wizard de catégorie n'est appliqué nulle part** (ONB-03, gelé).
+
+Ces quatre-là bloqueraient la convergence même avec G0 signé. Les nommer maintenant
+évite de découvrir le mur en fin de parcours.
+
+**État final ONB-14 : BLOQUÉ, en cascade. Sept maillons du parcours sont désormais prouvés individuellement ; quatre manques structurels sont identifiés à l'avance, dont deux exigent du neuf et un une signature.**

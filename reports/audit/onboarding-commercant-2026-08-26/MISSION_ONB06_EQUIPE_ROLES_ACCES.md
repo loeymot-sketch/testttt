@@ -87,8 +87,59 @@ auto-rétrogradation ⇒ 422 « La permission est refusée. » ; e-mail dupliqu�
 - `:8000` = autre worktree ; ta session = **:8806**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-05 (dé-cacher Rôles ; « État du système » réservé à `settings`) · ONB-10 (jetons de bornes non révoqués à la suppression — Z7 P1) · ONB-13 (journal des changements de rôle, IDOR `employee/{id}`) · ONB-11 (« Filiales », « Stuff », vocabulaire) · ONB-12 (rôles socle, comptes par défaut `@lecayenne.fr`) · État final : —
+Audit adverse en lecture seule le 2026-08-28, chaque verdict adosse a un
+`fichier:ligne`. Il a **refute** un constat et trouve deux P1 absents du rapport.
+
+### 8.1 Corrige
+
+| Defaut | Ce que ca coutait | Preuve |
+|---|---|---|
+| **Un compte sans permission tournait en BOUCLE de redirection.** `handlePermissionDenied` se rabattait toujours sur `admin.dashboard`, route qui exige la permission `dashboard` : la garde se redeclenchait sur sa propre cible. `RolePermissionTableSeeder` n'appelle `givePermissionTo` ni pour **Delivery Boy** ni pour **Customer**, et le Livreur atterrit sur `delivery-boys` | **Un livreur qui se connectait ne voyait jamais d'ecran** | `tests/js/aucuneBoucleDeRedirectionSurUnRoleSansDroit.spec.js` (4) |
+| **Le telephone declare facultatif sur une colonne NOT NULL**, dans SIX FormRequest (Administrator, Chef, Customer, DeliveryBoy, Employee, Waiter) | Le patron embauche son premier employe, laisse le champ vide — rien ne disait qu'il etait obligatoire — et lit « erreur de base de donnees ». Assainir un message ne remplace pas une regle juste | `UnChampObligatoireEnBaseLEstAussiDansLaRegleTest` (14) |
+
+Le correctif de la boucle est **general** : donner des droits au Livreur traiterait le
+symptome, mais la boucle reviendrait le jour ou quelqu'un cree un role vide depuis
+l'ecran des roles — ce que le produit permet.
+
+Les six formulaires portent desormais l'asterisque : rendre la regle stricte sans le
+dire deplacerait seulement le probleme.
+
+### 8.2 Refute
+
+**« Un admin desactive garde un jeton valide »** — FAUX. `app/Http/Kernel.php:63,91`
+enregistre `EnsureUserStatusActive` dans le groupe `api` : il relit `users.status` a
+CHAQUE requete, supprime le jeton et rend 401. Le compte tombe a l'appel suivant.
+
+### 8.3 Encore vrai
+
+| Sev. | Constat | Preuve |
+|---|---|---|
+| **P1** | **Une cle de permission orpheline, invisible du banc cense la voir.** Le lien « Etat du systeme » — files, sauvegardes, planificateur — est montre a TOUT LE MONDE : `permissionUrlForSidebarPath('observability/system')` ne trouve aucune correspondance et retombe sur la chaine brute, que le repli permissif accepte | `BackendMenuComponent.vue:203-224` |
+| **P1** | **Le banc anti-orphelines est au mauvais perimetre** : `AucuneCleDePermissionOrphelineTest:51-68` n'extrait que les litteraux `permissionUrl: '...'`. Or les cles de la barre laterale sont DERIVEES des `menu.url` en base, jamais ecrites en dur. Il verrouille le cas deja corrige et rate le seul cas ouvert | idem |
+| P2 | Page « Role & Autorisations » cachee (`v1-hidden-modules.js:44`) : creer un role « Gerant » exige de taper une URL | gate G-CACHE |
+| P2 | **Deux permissions MORTES** : `pos-reopen-z` (aucun point d'appel, mais le semoir l'accorde au Responsable, et le libelle promet « Rouvrir une cloture Z ») et `push-notifications_edit` (pas de methode `update`) | Un droit fiscal affiche qui ne commande rien est pire que pas de droit |
+| P2 | « Stuff » et « POS Operator » affiches bruts dans la LISTE et le filtre des employes — `rolesLibelles()` n'est appele qu'a la creation | `EmployeeListComponent.vue:74,115` |
+| P3 | `docs/AUTHZ_MATRIX.md` : 4 mois et ~15 permissions de retard | dernier commit 2026-04-18 |
+
+### 8.4 Chiffres mesures
+
+- **84 permissions** livrees par les semoirs ; **75** portes `permission:` en route ou controleur ; **0** orpheline cote routeur et boutons, **1** cote barre laterale.
+- **7 permissions sans porte declarative**, dont **5 sont bien appliquees** par `$user->can()` (les trois paliers de remise, `pos-destroy-paid`, l'ecart de caisse) et **2 sont mortes**.
+- **8 roles** livres, tous generiques : **rien de Cayenne n'est herite** — seules deux `landing_url` pointent vers un ecran que le role n'a pas le droit d'ouvrir.
+- **3 types de personnel sur 6** sont atteignables depuis le menu ; Serveur, Livreur et Client existent mais seulement par URL directe.
+
+Garde-fous verifies et **sains** : `callerMayGrantRole` interdit d'accorder plus que ce
+qu'on detient ; on ne peut pas modifier son propre role ; « Tenant Admin » est interdit
+a la creation.
+
+### 8.5 Ce qui reste
+
+1. **Mapper `observability/system`** vers `settings` — le lien files/sauvegardes/planificateur est visible du caissier.
+2. **Elargir le banc anti-orphelines aux `menu.url` de la base** : sinon il restera vert en ratant precisement le cas ouvert.
+3. **De-cacher la page Roles** (G-CACHE).
+4. **Trancher les deux permissions mortes** — `pos-reopen-z` d'abord (G-FISCAL-PERM).
+5. **Traduire les roles dans la liste des employes** (3 emplacements).
+6. **Confronter ou retirer `docs/AUTHZ_MATRIX.md`.**
+
+**Etat final ONB-06 : deux P1 corriges — dont un qui empechait purement et simplement un livreur d'utiliser le produit. Un constat refute. Restent une cle de permission orpheline, un banc au mauvais perimetre qui la rate, et deux permissions mortes dont une promet un pouvoir fiscal.**

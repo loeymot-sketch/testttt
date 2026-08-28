@@ -74,8 +74,69 @@ commerciale possible **sans jamais** sortir le prix du backend. Persona Nadia (m
 - `:8000` = autre worktree ; ta session = **:8809**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-05 (dé-cacher, réglages typés des 3 drapeaux) · ONB-10 (G-NOTIF, worker) · ONB-13 (FormRequests `PromoFlyer`/`Wheel`, `accept_legacy_plaintext`, secret QR) · ONB-12 (textes Cayenne roue/ticket) · ONB-11 (vocabulaire « offre »/« coupon »/« promo ») · voie CAISSE (ticket promo) · État final : —
+Audit adverse en lecture seule le 2026-08-28.
+
+### 8.1 Corrige
+
+**Le minimum de commande de la roue etait saisi puis ignore.**
+`WheelSettingsService::minOrder()` n'avait qu'UN appelant ; **cinq** autres lisaient
+`config('wheel.min_order_amount')` en direct — dont `WheelController:332`, qui
+l'APPLIQUE au client. L'exploitant reglait « minimum 15 € », un ecran affichait 15 €,
+et la roue appliquait la valeur du fichier. Les replis divergeaient meme : 10 cote
+service, 0 cote lecteurs directs.
+
+Le principe est ecrit dans le meme fichier, trois cents lignes plus haut — docblock de
+`WheelService::segments()`. Ecrit, applique aux segments, pas au minimum. Troisieme fois.
+
+**Verifie par l'audit** : il ne reste que trois occurrences (la definition, la valeur
+de depart, un commentaire), et les six lecteurs metier passent par `minOrder()`.
+
+**Et le banc a ete corrige apres sa remarque** : son volet textuel listait trois
+fichiers EN DUR, donc un nouveau lecteur direct dans un quatrieme serait passe
+inapercu — or c'est exactement ainsi que le defaut est ne. Il balaie desormais tout
+`app/` avec une liste blanche nommee, et cela a ete prouve en injectant une lecture
+dans un quatrieme fichier.
+
+### 8.2 Refute
+
+**« La planification hebdomadaire des coupons n'existe pas (G-DATA) »** — FAUX, elle
+existe. `Coupon.php:112-119`, `CouponRequest.php:66-67`,
+`CouponCreateComponent.vue:163-166` : `valid_days_of_week` et `valid_hours_start/end`
+sont saisis, valides, stockes et opposes via `isUsableNow()`, cable depuis
+`CouponService.php:526`. « -10 % le mardi » est faisable ; le blocage est ailleurs.
+
+### 8.3 Encore vrai — dont un P0 non liste au rapport d'origine
+
+| Sev. | Constat | Preuve |
+|---|---|---|
+| **P0** | **Le drapeau `pos.coupon_codes_enabled` n'agit PAS en caisse.** `posOrderStore` appelle un garde qui ne lit QUE `pos.manual_discount_enabled` ; le drapeau dedie n'apparait nulle part dans `OrderService.php`. Or `config/pos.php:241-270` promet le contraire. **Le mettre a vrai ne debloque rien** : il faut ouvrir les remises libres | `OrderService.php:3700-3707` |
+| P1 | Coupon accepte au DEVIS, refuse au COMMIT : le garde n'existe pas dans `OrderQuoteService` | le refus tombe apres l'annonce du prix |
+| P1 | Coupons et Offres toujours caches du menu | `v1-hidden-modules.js:13-14` |
+| P2 | Creer une OFFRE est impossible : 403 en dur, verrouille par une sentinelle | `OfferController.php:36-43` — **justifie** tant que `PricingService` ne les applique pas |
+| P2 | La roue pointe vers **lecayenne.fr** : le QR du comptoir d'un nouveau commercant mene chez un autre | `config/wheel.php:55`, aucun ecran ne l'ecrit |
+| P2 | `settings.mail` cache, alors que l'envoi aux abonnes et l'e-mail de lot en dependent | `v1-hidden-modules.js:23` |
+
+### 8.4 Le motif « reglage saisi puis ignore », ailleurs dans la roue
+
+Il se reproduit — en version **absente** plutot qu'**ignoree**, ce qui est moins grave :
+probabilite et quantite sont reglables, mais **plafond journalier par lot, plafond
+global, duree de validite, fenetre de reclamation et cle de campagne** viennent du
+fichier seul. L'ecran n'affiche aucun champ pour eux : **il ne ment pas, il est muet**.
+La difference compte.
+
+⚠️ Nuance a connaitre : vider un champ de probabilite ecrit `''`, que `prizeOverrides()`
+ignore — retour a la valeur du fichier ; alors qu'un lien vide vaut « retire ». **Deux
+semantiques du vide dans le meme formulaire.**
+
+### 8.5 Ce qui reste
+
+1. **Faire lire `pos.coupon_codes_enabled` par la caisse** — sinon le drapeau cree pour ca ne sert a rien.
+2. **De-cacher Coupons** (une ligne) et **mettre le drapeau au catalogue des interrupteurs**.
+3. **Appliquer le garde des remises au devis** — que le refus tombe avant l'annonce du prix (G-PRIX-COUPON).
+4. **Rendre `wheel.public_url` reglable** — le QR d'un nouveau commercant mene chez Le Cayenne.
+5. **De-cacher `settings.mail`.**
+6. **Ouvrir les plafonds de la roue** a l'ecran.
+7. **Arbitrer G-OFFRES** — le seul blocage justifie de cette liste.
+
+**Etat final ONB-09 : le reglage qui mentait est corrige et son banc elargi apres critique. Un P0 absent du rapport d'origine est mis au jour — un drapeau qui promet d'activer les coupons en caisse et ne commande rien. Un constat refute (la planification hebdomadaire existe).**

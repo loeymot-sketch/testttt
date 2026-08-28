@@ -75,8 +75,50 @@ Le Cayenne devient un jeu de données reproductible à l'identique (prix compris
 - `:8000` = autre worktree ; ta session = **:8812**, base **`foodking_onb12`**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | G0 vérifié ? | | | | |
 
-Fiches de renvoi : BORNE (`KioskIdleScreenComponent.vue`, `config/kiosk.php:266-283`) · CAISSE (`config/printing.php:83,109,185`, ponts, afficheur) · ONB-01 (identité par défaut du socle) · ONB-02 (`TaxTableSeeder`, `config/menu_images.php`) · ONB-03 (inclusions `config/menu.php` → règles) · ONB-06 (rôles socle, comptes `config/app.php:123,129`) · ONB-10 (`kiosk-lecayenne`, `EnsureKioskMachineCommand`) · ONB-11 (spécification de la checklist) · ONB-14 (parcours sur base vierge) · État final : —
+### 8.1 ÉTAT : **BLOQUÉ** — G0 n'est pas signé
+
+`plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md §0.2` pose le gate **G0** :
+réécrire la phrase de `CONSTITUTION.md §1` — « V1 = LOGICIEL PERSONNEL du restaurant
+Le Cayenne. PAS un SaaS. » — en « V1 = logiciel d'un établissement, installé chez lui,
+entièrement paramétrable depuis son Dashboard ».
+
+**Vérifié : G0 est absent de `CONSTITUTION.md` sur toutes les branches.** Seul le
+propriétaire peut le signer ; aucun agent, aucun test ne peut le remplacer.
+
+Sans lui, l'index l'écrit noir sur blanc : « aucun GOAL ne touche `CONSTITUTION.md` »
+et « aucun ne remonte multi-marque comme P0/P1 bloquant ». Or cette mission EST le
+chantier de dé-cayennisation.
+
+### 8.2 Ce que les autres missions ont récolté pour elle
+
+Le travail de paramétrage — utile à Le Cayenne aussi, donc autorisé sans G0 — a avancé
+ailleurs, et cette mission en hérite :
+
+- **La borne ne porte plus le nom d'un autre établissement** dans sa rotation
+  d'accueil, et ne déclare plus « Halal » à la place du commerçant (ONB-01,
+  `cb3315ad9`). ⚠️ Restent en dur : un tampon « 100 % Halal » et **huit produits de
+  Le Cayenne** dans le carrousel — fiche de renvoi émise.
+- **`RawMaterial` a un CRUD** : un nouveau commerçant peut enfin déclarer ses
+  ingrédients au lieu de recevoir ceux de Le Cayenne (ONB-08, `dc195f005`).
+- **Les allergènes sont saisissables**, donc les « guessed mappings » du seed
+  cessent d'être une fatalité (ONB-02, `696b3e592`).
+- **Le QR du comptoir de la roue mène toujours chez lecayenne.fr** — non corrigé,
+  consigné par ONB-09.
+
+### 8.3 Inventaire hérité, à ne pas refaire
+
+- **12 bornes sur 13 en base sont des résidus de tests de charge** (`KM-STRESS-*`,
+  `KM-SOAK-*`) : origine confirmée dans le code. Même famille que les cinq filiales
+  fictives et les 26 taxes `AUDIT-*`. **Un nouveau commerçant ne doit voir aucune des
+  trois.**
+- Les rôles livrés sont **génériques** : rien de Cayenne n'est hérité de ce côté-là
+  (vérifié par l'audit ONB-06).
+
+### 8.4 Ce qu'il faudrait, dans l'ordre
+
+1. **La signature de G0.** Tout le reste en dépend.
+2. Puis : seeders génériques, checklist « Premier démarrage », sortie des libellés
+   « cayenne » vers la donnée, archivage des commandes `menu:*`.
+
+**État final ONB-12 : BLOQUÉ, propriétaire. Le blocage est constitutionnel, pas technique. Le travail de paramétrage qui n'exige pas G0 a avancé dans les autres missions et est recensé ici.**
