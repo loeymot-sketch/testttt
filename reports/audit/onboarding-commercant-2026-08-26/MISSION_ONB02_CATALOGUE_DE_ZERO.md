@@ -92,8 +92,39 @@ inexistante, prix négatif ; course de doublon 201/422 ; onglet Composition « F
 - `:8000` = autre worktree ; ta session = **:8802**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
+
+| Date | Vague | Constat §2.3 | Action | Preuve (banc qui MORD) | Verdict | Commit |
 |---|---|---|---|---|---|---|
-| | W0 | | | | | |
+| 2026-08-27 | W2 | P1 `kds_station` inconnue → `SQLSTATE[01000] Data truncated` | `ItemRequest:127` aligné sur l'ENUM : `in:bar,cuisine_chaude,cuisine_froide,none` | `OnbDeuxLesBordsDuCatalogueTiennentTest::test_P1_une_station_de_cuisine_inconnue_est_refusee_en_francais` — vérifie AUSSI l'absence de `SQLSTATE` dans le corps | **FIXÉ** | antérieur |
+| 2026-08-27 | W2 | P1 fiscal · Studio → `tax_id = 1` « No-VAT 0 % » | `defaultTaxId()` ne retient qu'un taux **strictement positif**, `null` sinon → le serveur refuse | `…::test_P1_fiscal_le_studio_ne_propose_jamais_un_taux_a_zero` + `…::test_P1_fiscal_un_article_sans_taxe_est_refuse_par_le_serveur` | **FIXÉ** | antérieur |
+| 2026-08-28 | W2 | P1 canal inconnu accepté (201, article 241) | Rejoué sur **les deux encodages** : JSON et `multipart` (celui du bouton « Enregistrer ») | `…::test_P1_un_canal_de_vente_inconnu_est_refuse` + `…_par_le_chemin_du_formulaire` + contrôle positif sur les 3 canaux légitimes | **VÉRIFIÉ — non reproductible** | `696b3e592` |
+| 2026-08-28 | W3 | P2 toasts anglais (« Catégories Deleted Successfully. ») | 6 valeurs FR corrigées ; cliquet posé sur tout le fichier de langue | `tests/js/leFrancaisResteDuFrancais.spec.js` (3 bancs) — rougit sur chacune des 6 | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W3 | §2.6 « import Excel non mesuré aux bords » | Aller-retour export→import prouvé, **et son jumeau catégories** qui ne l'avait jamais été | `LaCarteExporteeSeReimporteTest` (6) + `LesCategoriesExporteesSeReimportentTest` (4) | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W3 | *(hors §2.3 — trouvé en route)* Import de catégories **entièrement muet** | En-têtes exportés non reconnus + `SkipsOnFailure` + `response('', 202)` vide → 0 catégorie créée, succès à l'écran. Trait partagé `AccepteLesEnTetesExportes` pour que les deux jumeaux cessent de diverger | `LesCategoriesExporteesSeReimportentTest` — les 4 rougissent quand on retire le trait | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W3 | *(hors §2.3)* Ligne déjà présente comptée comme erreur | `deja_presents` séparés des `echecs` ; `Rule::unique` → fermeture **strictement équivalente** (même requête `DB::table()`, même verdict), seul le message change | `…::test_une_ligne_deja_presente_nest_pas_comptee_comme_une_erreur` | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W4 | §1 périmètre « allergènes, station KDS » — **jamais saisissables** | Chaîne vérifiée maillon par maillon : colonne, pivot, validation, observateur, POS/KDS, **filtre allergènes de la borne** — tout existait sauf l'écran et la route. Ajoutés. | `UnCommercantPeutDeclarerSesAllergenesTest` (7) + `tests/js/leFormulaireProduitEnvoieLesAllergenes.spec.js` (5) | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W4 | *(hors §2.3)* Retirer un allergène **impossible** | `projectFlags()` traitait `[]` comme « on ne m'a rien dit » et restaurait depuis le pivot. `null` et `[]` désormais distingués | `…::test_un_commercant_peut_RETIRER_un_allergene_declare_par_erreur` — rouge quand on neutralise la branche | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W4 | *(hors §2.3)* `ItemCategoryResource` omettait les 2 réglages borne | Corriger une faute dans le NOM d'une catégorie éteignait la formule par défaut ET ajoutait une étape sauce au parcours client | `UneRessourceNOubliePasCeQueLEcranRenvoieTest` (8) | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W4 | *(hors §2.3)* `SimpleItemResource` omettait `channels` | Les 3 cases revenaient décochées ; en cocher une RETIRAIT les autres → l'article disparaissait d'une surface de vente | idem | **FIXÉ** | `696b3e592` |
+| 2026-08-28 | W5 | G-TAX (§6) · 47 taxes parasites | **Pas d'archivage** (gate non tranché) — mais le trou par lequel elles nuisaient est fermé : supprimer une taxe encore référencée est refusé, en nommant le nombre de produits ; `FOREIGN_KEY_CHECKS` n'est plus jamais désactivé | `LesChiffresDesRapportsSontJustesTest` + garde dans `TaxService::destroy` | **PARTIEL — gate ouvert** | `696b3e592` |
+
+**Constats nouveaux (hors §2.3, trouvés pendant la mission)**
+1. L'import de catégories était **le jumeau muet** de l'import d'articles : la correction de 2026-08-28 n'avait été appliquée qu'à un seul des deux. → trait partagé.
+2. `AllergenService::projectFlags()` rendait le **retrait** d'un allergène impossible (`[]` confondu avec « inconnu »). Aggravant : `LeCayenneAllergenSeeder` pose des correspondances qu'il qualifie lui-même de « guessed mappings », que la borne présente comme des faits à un client allergique.
+3. Trois ressources omettaient un champ que l'écran renvoie (`siret`, réglages borne, `channels`) — **même mécanique trois fois en une journée**, désormais verrouillée par un banc unique.
+4. Le Studio affirmait « Ce wizard s'applique à TOUS les produits de cette catégorie » : **faux**, vérifié ligne à ligne (`item_id => null` écrit, cinq lecteurs interrogent `whereIn('item_id', …)`, deux méthodes sans appelant). Affirmation retirée ; le fond exige `PricingService` → **fiche de renvoi ONB-03** + dossier `docs/gates/GATE_WIZARD_CATEGORIE_JAMAIS_LU_2026-08-28.md`.
+
+**Décisions prises**
+- L'import reste en **création seule**. Le transformer en mise à jour écraserait une carte de production depuis un tableur : c'est une décision de produit, pas une correction de défaut. Les lignes déjà présentes sont désormais dites comme telles, au lieu d'être comptées en erreurs.
+- Aucune taxe supprimée ni archivée : G-TAX et G-DEFAULT-TAX restent au propriétaire.
+
+**Fiches de renvoi émises**
+- **ONB-03** — le wizard de catégorie n'est lu par personne ; le correctif exige `PricingService` (zone gelée §7). Dossier d'arbitrage monté, trois options chiffrées, recommandation « Voie A ».
+- **ONB-05** — dé-cacher Catégories / Attributs / Taxes (inchangé).
+- **ONB-08** — la conversion d'unités d'achat (kg→g) a été corrigée dans cette session car elle bloquait la mesure du stock ; **frontière dimensionnel/compté** documentée.
+- **ONB-11** — les 6 messages franglais ont été traités ici plutôt que renvoyés (fichier de langue partagé, §2.2 append-coordination respectée).
+- **ONB-12** — `TaxTableSeeder` et `menu_images` génériques : inchangé.
+
+**État final ONB-02 : les 3 constats P1 de §2.3 sont CLOS et verrouillés ; 2 P2 clos ; l'import est prouvé aux deux bords et dans les deux sens ; allergènes et station KDS deviennent saisissables. Restent ouverts : les 5 gates §6 (propriétaire) et le regroupement en hub (G-HUB).**
 
 Constats nouveaux : — · Décisions : — · Fichiers touchés : — · Fiches de renvoi : ONB-05 (dé-cacher Catégories/Attributs/Taxes, renommer « Articles »/« Catalogue »), ONB-03 (composer, drapeau par article), ONB-08 (stock, `kds_station=none`), ONB-10 (vocabulaire des stations partagé avec imprimantes), ONB-12 (`TaxTableSeeder`, `menu_images` génériques), ONB-11 (toasts anglais) · État final : —

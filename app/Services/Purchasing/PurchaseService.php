@@ -214,14 +214,40 @@ class PurchaseService
      * quand l'analyse ne sait pas lire l'unite. La ranger ici evite qu'une hesitation
      * de l'OCR ne bloque un document complet.
      */
+    /**
+     * [ONB-08 2026-08-28 · correction d'un defaut de ce garde-fou] Ecritures
+     * equivalentes d'une meme unite.
+     *
+     * La premiere version comparait des chaines brutes passees a `mb_strtolower`,
+     * qui NE DEPOUILLE PAS LES ACCENTS. « piece » passait, « pièce » non. « unité »,
+     * « boîte », « kilo », « litre » — l'ecriture que produit un OCR sur une facture
+     * francaise — tombaient dans la branche « conversion inconnue » et faisaient
+     * echouer la RECEPTION ENTIERE, l'exception traversant `DB::transaction`.
+     *
+     * Corriger une corruption silencieuse en fabriquant un blocage bruyant sur des
+     * donnees legitimes est un mauvais echange : ca arrete le travail du commercant.
+     *
+     * ⚠️ « carton », « colis », « caisse » ne sont VOLONTAIREMENT pas ici : un carton
+     * contient N pieces, pas une. Les traiter comme un denombrement crediterait 2 la
+     * ou il faut 24. Ils restent inconnus, donc refuses avec un message.
+     */
+    private const ECRITURES_EQUIVALENTES = [
+        'kilo' => 'kg', 'kilos' => 'kg', 'kilogramme' => 'kg', 'kilogrammes' => 'kg', 'kgs' => 'kg',
+        'gramme' => 'g', 'grammes' => 'g', 'gr' => 'g', 'grs' => 'g',
+        'litre' => 'l', 'litres' => 'l', 'lt' => 'l', 'ltr' => 'l',
+        'millilitre' => 'ml', 'millilitres' => 'ml',
+        'centilitre' => 'cl', 'centilitres' => 'cl',
+        'pieces' => 'piece', 'pce' => 'piece', 'pces' => 'piece', 'pcs' => 'piece', 'pc' => 'piece',
+        'unite' => 'piece', 'unites' => 'piece', 'u' => 'piece', 'p' => 'piece',
+        'tranches' => 'tranche',
+        'portions' => 'portion',
+        'sachets' => 'sachet',
+        'boites' => 'boite',
+        'lots' => 'lot',
+    ];
+
     private const UNITES_DE_DENOMBREMENT = [
-        'piece', 'pieces', 'pce', 'pcs', 'p',
-        'tranche', 'tranches',
-        'unite', 'unites', 'u',
-        'portion', 'portions',
-        'sachet', 'sachets',
-        'boite', 'boites',
-        'lot', 'lots',
+        'piece', 'tranche', 'portion', 'sachet', 'boite', 'lot',
     ];
 
     /**
@@ -234,10 +260,10 @@ class PurchaseService
     {
         $qty = (float) $line->qty;
 
-        $uniteFacture = mb_strtolower(trim((string) ($line->unit ?? '')));
-        $uniteMatiere = mb_strtolower(trim((string) (RawMaterial::query()
+        $uniteFacture = $this->normaliserUnite((string) ($line->unit ?? ''));
+        $uniteMatiere = $this->normaliserUnite((string) (RawMaterial::query()
             ->whereKey($rawMaterialId)
-            ->value('unit') ?? '')));
+            ->value('unit') ?? ''));
 
         // Unite absente d'un cote ou de l'autre, ou identique : rien a convertir.
         if ($uniteFacture === '' || $uniteMatiere === '' || $uniteFacture === $uniteMatiere) {
@@ -259,17 +285,59 @@ class PurchaseService
         if ($facteur === null) {
             $nom = (string) (RawMaterial::query()->whereKey($rawMaterialId)->value('name') ?? '#' . $rawMaterialId);
 
-            throw new \InvalidArgumentException(
-                "La ligne « {$nom} » est facturee en « {$uniteFacture} » alors que cette "
-                . "matiere se compte en « {$uniteMatiere} » : ces deux unites ne mesurent "
-                . "pas la meme chose, et aucune conversion ne peut etre devinee. "
-                . "Corrigez l'unite de la ligne, ou celle de la matiere, puis revalidez. "
-                . "La reception entiere est retenue tant que ce n'est pas fait — mieux vaut "
-                . 'un document en attente qu\'un stock fausse sans que rien ne le signale.'
+            /*
+             * [ONB-08 2026-08-28] `HttpException(422)` et non `InvalidArgumentException`.
+             *
+             * `Handler::render` (`app/Exceptions/Handler.php:130`) rend un `HttpException`
+             * en **422 avec son message**. Une `InvalidArgumentException` n'est ni celle-la
+             * ni une `QueryException` : elle filait vers `parent::render` → **HTTP 500**, et
+             * l'ecran affichait « Server Error » en anglais. Le message ci-dessous, qui nomme
+             * la matiere ET les deux unites, n'etait lu par personne.
+             *
+             * C'est aussi l'idiome deja en place dans ce domaine :
+             * `PurchasingScanController::apply()` fait `abort_if($x, 422, '...')`.
+             */
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                422,
+                "La ligne « {$nom} » est facturée en « {$uniteFacture} » alors que cette "
+                . "matière se compte en « {$uniteMatiere} » : ces deux unités ne mesurent "
+                . "pas la même chose, et aucune conversion ne peut être devinée. "
+                . "Corrigez l'unité de la ligne, ou celle de la matière, puis revalidez. "
+                . "La réception entière est retenue tant que ce n'est pas fait — mieux vaut "
+                . "un document en attente qu'un stock faussé sans que rien ne le signale."
             );
         }
 
         return $qty * $facteur;
+    }
+
+    /**
+     * Ramene une unite ecrite librement a son ecriture canonique.
+     *
+     * `raw_materials.unit` est une colonne `string(16)` LIBRE, sans validation ni
+     * ecran d'edition, et `purchase_lines.unit` vient d'un OCR. Comparer ces deux
+     * champs bruts revenait a exiger que deux sources non contraintes s'accordent
+     * au caractere pres.
+     */
+    private function normaliserUnite(string $brute): string
+    {
+        $u = mb_strtolower(trim($brute));
+
+        // Les accents d'abord : `mb_strtolower` ne les touche pas, et c'est
+        // exactement ce qui faisait echouer « pièce » la ou « piece » passait.
+        $u = strtr($u, [
+            'à' => 'a', 'â' => 'a', 'ä' => 'a',
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'î' => 'i', 'ï' => 'i',
+            'ô' => 'o', 'ö' => 'o',
+            'û' => 'u', 'ü' => 'u', 'ù' => 'u',
+            'ç' => 'c',
+        ]);
+
+        // « kg. » · « pcs » · espaces internes multiples.
+        $u = trim(preg_replace('/[\s.]+/u', '', $u) ?? $u);
+
+        return self::ECRITURES_EQUIVALENTES[$u] ?? $u;
     }
 
     private function weightedAverageCost(float $oldStock, ?float $oldAvg, float $qty, float $unitPrice): float

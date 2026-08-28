@@ -125,40 +125,119 @@ class LesChiffresDesRapportsSontJustesTest extends TestCase
         }
     }
 
-    public function test_le_predicat_de_chiffre_d_affaires_est_APPELE_et_non_recopie(): void
+    /**
+     * [ONB-07 2026-08-28 · réécrit après audit adverse]
+     *
+     * ⚠️ LA VERSION PRÉCÉDENTE DE CE BANC NE MORDAIT PAS. Elle faisait
+     * `assertStringContainsString('Order::isRealizedRevenueRow', $source)` sur le
+     * fichier `DashboardService.php` — or cette chaîne y apparaît trois fois, dont
+     * deux dans les COMMENTAIRES posés par le commit correctif lui-même. Remettre la
+     * copie manuelle du prédicat laissait le banc vert.
+     *
+     * On mesure désormais le NOMBRE, pas le texte.
+     *
+     * Le jeu d'essai contient une commande que le prédicat REJETTE — une vente Uber
+     * payée. Sans elle, la copie manuelle (qui omettait justement l'exclusion Uber)
+     * et l'appel au prédicat donneraient le même total, et le banc serait vert dans
+     * les deux cas. Un garde ne mord que si son jeu d'essai contient une ligne qu'il
+     * refuse.
+     */
+    public function test_le_pdf_de_cloture_ne_compte_pas_le_canal_uber(): void
     {
-        // La cause des constats 2 et 3 : une règle recopiée ne suit pas les
-        // corrections de l'original. Trois copies existaient ; celle du PDF de
-        // clôture avait perdu l'exclusion Uber en chemin.
-        $source = file_get_contents(app_path('Services/DashboardService.php'));
+        // Ce que le commerçant a réellement encaissé lui-même.
+        $this->commande([
+            'status'         => OrderStatus::DELIVERED,
+            'payment_status' => PaymentStatus::PAID,
+            'total'          => 100,
+            'total_tax'      => 10,
+            'source_surface' => null,
+        ]);
 
-        $this->assertStringContainsString(
-            'Order::isRealizedRevenueRow',
-            $source,
-            "Le PDF de clôture doit APPELER le prédicat partagé, pas le recopier.\n"
-            . 'Une copie ne suit pas les corrections de son original.'
+        // LA LIGNE QUI DISTINGUE. Uber facture séparément : la compter ici la
+        // déclarerait DEUX FOIS. C'est le document remis au comptable et archivé
+        // six ans.
+        $this->commande([
+            'status'         => OrderStatus::DELIVERED,
+            'payment_status' => PaymentStatus::PAID,
+            'total'          => 500,
+            'total_tax'      => 50,
+            'source_surface' => 'uber_eats',
+        ]);
+
+        // Et une commande payée puis ANNULÉE : le prédicat la rejette aussi.
+        $this->commande([
+            'status'         => OrderStatus::CANCELED,
+            'payment_status' => PaymentStatus::PAID,
+            'total'          => 300,
+            'total_tax'      => 30,
+            'source_surface' => null,
+        ]);
+
+        $synthese = app(\App\Services\DashboardService::class)->eodSynthesis();
+
+        $this->assertEqualsWithDelta(
+            100.0,
+            (float) $synthese['total_ca'],
+            0.001,
+            "Le PDF « Clôture du jour » doit compter 100 € — pas 600 € (avec Uber),\n"
+            . "ni 400 € (avec l'annulée). Mesuré sur la base réelle le 14/08 :\n"
+            . '413,38 € annoncés contre 154,65 € au Z signé.'
         );
 
-        $this->assertStringNotContainsString(
-            '$isLivePaidSale = (int) $o->payment_status === PaymentStatus::PAID',
-            $source,
-            "Le prédicat recopié est revenu dans DashboardService : il omettait\n"
-            . "l'exclusion Uber et surévaluait le PDF remis au comptable."
+        $this->assertEqualsWithDelta(
+            10.0,
+            (float) $synthese['total_tva'],
+            0.001,
+            'La TVA suit le même prédicat : la surévaluer, c\'est la déclarer deux fois.'
         );
     }
 
-    public function test_le_denominateur_du_ticket_moyen_exclut_uber_comme_le_numerateur(): void
+    /**
+     * [ONB-07 2026-08-28 · réécrit après audit adverse]
+     *
+     * ⚠️ La version précédente cherchait `daily_paid_orders … source_surface` dans le
+     * texte source. Le commentaire explicatif contient les deux mots : le banc était
+     * vert même sans la clause.
+     *
+     * Ici on compare le NOMBRE affiché. Le numérateur passe par `realizedRevenue()`,
+     * qui exclut Uber ; si le dénominateur ne l'exclut pas, on divise un chiffre
+     * d'affaires SANS Uber par un nombre de commandes AVEC Uber.
+     */
+    public function test_le_ticket_moyen_divise_par_le_meme_perimetre_que_son_numerateur(): void
     {
-        // Le numérateur passe par `realizedRevenue()`, qui exclut Uber. Le
-        // dénominateur ne l'excluait pas : on divisait un CA sans Uber par un
-        // nombre de commandes avec Uber.
-        $source = file_get_contents(app_path('Services/DashboardService.php'));
+        foreach ([20, 20] as $montant) {
+            $this->commande([
+                'status'         => OrderStatus::DELIVERED,
+                'payment_status' => PaymentStatus::PAID,
+                'total'          => $montant,
+                'source_surface' => null,
+            ]);
+        }
 
-        $this->assertMatchesRegularExpression(
-            "/daily_paid_orders[\s\S]{0,2000}source_surface/",
-            $source,
-            "Le dénominateur du ticket moyen n'exclut pas le canal Uber, alors que\n"
-            . "son numérateur l'exclut. Mesuré : 9,10 € affiché contre 22,09 € réels."
+        // La ligne qui distingue : payée, donc au dénominateur si on ne l'exclut pas,
+        // mais absente du numérateur.
+        $this->commande([
+            'status'         => OrderStatus::DELIVERED,
+            'payment_status' => PaymentStatus::PAID,
+            'total'          => 100,
+            'source_surface' => 'uber_eats',
+        ]);
+
+        $rapport = app(\App\Services\DashboardService::class)->realtimeReport();
+
+        // 40 € encaissés par le commerçant, 2 commandes à lui → 20 €.
+        // Sans l'exclusion au dénominateur : 40 ÷ 3 = 13,33 € — deux nombres
+        // différents, donc le jeu d'essai distingue bien les deux implémentations.
+        $ticket = (float) preg_replace('/[^0-9.,]/u', '', (string) $rapport['average_ticket']);
+        $ticket = (float) str_replace(',', '.', (string) $ticket);
+
+        $this->assertEqualsWithDelta(
+            20.0,
+            $ticket,
+            0.01,
+            "Ticket moyen attendu 20,00 € (40 € ÷ 2 commandes du commerçant).\n"
+            . "Sans l'exclusion Uber au dénominateur : 13,33 €. Mesuré au 14/08 sur la\n"
+            . 'base réelle : 9,10 € affiché contre 22,09 € réels, soit 59 % de moins.'
         );
     }
 }

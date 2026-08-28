@@ -97,7 +97,7 @@ class UneFactureEnKilosNeCreditePasDesGrammesTest extends TestCase
         // LE POINT LE PLUS IMPORTANT. Deviner est ce qui a corrompu ce stock : on
         // refuse, en nommant la matière et les deux unités, pour que le commerçant
         // sache quoi corriger.
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         $this->expectExceptionMessageMatches('/Poulet/');  // le nom doit figurer dans le refus
 
         $this->convertir('carton', 4.0, 'g');
@@ -137,13 +137,67 @@ class UneFactureEnKilosNeCreditePasDesGrammesTest extends TestCase
         $this->assertSame(2.0, $this->convertir('sachet', 2.0, 'boite'));
     }
 
+    /**
+     * [ONB-08 2026-08-28 · défaut trouvé par l'audit adverse dans MON correctif]
+     *
+     * `mb_strtolower` NE DÉPOUILLE PAS LES ACCENTS. « piece » passait, « pièce » non.
+     * « unité », « boîte », « kilo », « litre » — l'écriture que produit un OCR sur
+     * une facture française — ne correspondaient à aucune de mes listes, tombaient
+     * dans la branche « conversion inconnue », et faisaient échouer la RÉCEPTION
+     * ENTIÈRE (l'exception traverse `DB::transaction`).
+     *
+     * J'avais remplacé une corruption silencieuse par un blocage bruyant sur des
+     * données parfaitement légitimes. C'est un mauvais échange : ça arrête le travail.
+     *
+     * @dataProvider ecrituresFrancaisesCourantes
+     */
+    public function test_une_facture_ecrite_en_francais_normal_ne_bloque_pas(
+        string $uniteFacture,
+        string $uniteMatiere,
+        float $attendu
+    ): void {
+        $this->assertSame(
+            $attendu,
+            $this->convertir($uniteFacture, 3.0, $uniteMatiere),
+            "« {$uniteFacture} » vers « {$uniteMatiere} » doit être compris : c'est\n"
+            . "l'écriture normale d'une facture française."
+        );
+    }
+
+    /** @return array<string, array{0:string, 1:string, 2:float}> */
+    public function ecrituresFrancaisesCourantes(): array
+    {
+        return [
+            'pièce accentuée vers piece'   => ['pièce', 'piece', 3.0],
+            'unité vers pièce'             => ['unité', 'pièce', 3.0],
+            'boîte vers sachet'            => ['boîte', 'sachet', 3.0],
+            'kilo écrit en toutes lettres' => ['kilo', 'g', 3000.0],
+            'kilos pluriel'                => ['kilos', 'grammes', 3000.0],
+            'litre vers millilitres'       => ['litre', 'millilitres', 3000.0],
+            'grammes vers kilogrammes'     => ['grammes', 'kilo', 0.003],
+            'abréviation pcs'              => ['pcs', 'unités', 3.0],
+            'point final « kg. »'          => ['kg.', 'g', 3000.0],
+        ];
+    }
+
+    public function test_un_carton_reste_inconnu_car_il_contient_N_pieces(): void
+    {
+        // ⚠️ « carton », « colis », « caisse » sont VOLONTAIREMENT hors des unités de
+        // dénombrement : un carton contient N pièces, pas une. Les y ranger
+        // créditerait 2 là où il en faut 24 — exactement la classe de défaut que ce
+        // garde-fou existe pour empêcher.
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+        $this->convertir('carton', 2.0, 'piece');
+    }
+
     public function test_un_poids_vers_un_compte_reste_refuse(): void
     {
         // Mélanger les deux familles reste un refus : « 3 kg » ne devient pas
         // « 3 pièces ». C'est la dixième ligne de la base, et elle doit bien être
         // corrigée à la main — c'est la seule que ce garde-fou bloque encore.
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/ne mesurent pas la meme chose/');
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectExceptionMessageMatches('/ne mesurent pas la même chose/u');
 
         $this->convertir('kg', 3.0, 'piece');
     }

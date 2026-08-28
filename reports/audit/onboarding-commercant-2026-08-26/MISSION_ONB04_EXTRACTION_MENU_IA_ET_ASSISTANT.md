@@ -71,8 +71,30 @@ Le propriétaire veut qu'un nouveau commerçant mette sa carte « avec un extrac
 - `:8000` = autre worktree ; ta session = **:8804**.
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
-| Date/heure | Vague | Tâche | Action | Preuve | Verdict | Commit |
-|---|---|---|---|---|---|---|
-| | W0 | | | | | |
 
-Fiches de renvoi : ONB-02 (prévisualisation d'import, taxe par défaut, `ItemRequest` messages) · ONB-03 (schéma de règle, `applyTemplate`) · ONB-05 (menu, réglage `assistant.enabled`) · ONB-13 (journal unifié, idempotence, upload) · ONB-12 (fixtures génériques sans produit Cayenne) · État final : —
+### 8.1 Ce qui est LIVRÉ et prouvé
+
+| Date | Livrable | Fichiers | Preuve | Verdict |
+|---|---|---|---|---|
+| 2026-08-27 | Contrat d'extraction + bouchon déterministe | `app/Services/Menu/Vision/{MenuExtractionContract,MockMenuExtractionService}.php` | `ExtractionCarteBouchonTest` (8) | **LIVRÉ** |
+| 2026-08-27 | Choix bouchon / réel isolé hors `AppServiceProvider` (qui porte les gardes NF525) | `app/Providers/AssistantServiceProvider.php` | idem | **LIVRÉ** |
+| 2026-08-27 | Lecture → proposition → validation humaine → application | `MenuExtractionController`, `app/Services/Menu/MenuDraftApplier.php`, routes `POST admin/assistant/menu/{lecture,application}` | `LectureDeCartePuisApplicationTest`, `ApplicationDUneCarteProposeeTest` | **LIVRÉ** |
+| 2026-08-27 | Écran de validation | `resources/js/components/admin/assistant/MenuImportComponent.vue` | — | **LIVRÉ** |
+| 2026-08-28 | **L'écran était ENTIÈREMENT MORT** : ses 3 appels redoublaient le préfixe `/api` déjà posé par `axios-setup.js:75`, et la route des taxes n'existe pas sous `admin/taxes` mais sous `admin/setting/tax`. Le `catch` vidait la liste en silence, le menu TVA restait vide, le bouton « Créer ces produits » restait grisé sans un mot. | `MenuImportComponent.vue` | `tests/js/lesUrlDesEcransExistent.spec.js` (3) — lit les routes RÉELLES via `php artisan route:list --json` | **FIXÉ** |
+| 2026-08-28 | Doublon interne à une lecture rangé en « déjà dans votre carte » → **le second produit était perdu** en affirmant qu'il existait déjà | `MenuDraftApplier`, `MenuExtractionController::resume()` | `UnDoublonNEstPasUnArticleDejaLaTest` (4) | **FIXÉ** |
+| 2026-08-28 | Catégories créées AVANT les articles → une catégorie dont tous les articles échouaient survivait **vide** sur la borne | `MenuDraftApplier` (création paresseuse) | idem | **FIXÉ** |
+| 2026-08-28 | Banc **tautologique** du « double verrou » : il affirmait « deux verrous, jamais un » alors que les DEUX branches renvoient le bouchon — vert avec un verrou, zéro verrou, ou n'importe quelle condition | `ExtractionCarteBouchonTest` | Remplacé par la vérité mesurable + un garde qui ÉCHOUE le jour où une implémentation réelle apparaît (prouvé en déposant une implémentation factice) | **FIXÉ** |
+
+### 8.2 Ce qui MANQUE — dit franchement
+
+**Le chatbot de missions locales n'existe pas.** Mesuré : `grep -rln "chatbot\|missions locales\|mission_locale" app/ resources/js/` → **zéro fichier**.
+
+C'est une demande explicite du mandat (§0.1 : « chatbot de missions locales sur le profil ») et du périmètre de ce GOAL (« assistant de missions locales — *ajoute une sauce à tous les tacos* »). Il ne peut pas être présenté comme livré.
+
+Point important : **il ne dépend PAS du gate G-IA.** La doctrine du programme est « la machine propose, l'humain valide, le système applique ». Un interpréteur DÉTERMINISTE — grammaire déclarée, aucun appel sortant, plan affiché avant écriture, refus explicite quand il ne comprend pas — remplit la demande sans arbitrage propriétaire, et reste la bonne fondation le jour où un modèle prendra le relais de l'étape « comprendre la phrase ».
+
+### 8.3 Ce qui reste au propriétaire (ne pas trancher ici)
+
+- **G-IA** — fournisseur, clé, et surtout **plafond de dépense** : le projet n'a aujourd'hui aucun compteur de coût, et `assistant.budget.plafond_mensuel_euros` vaut 0 par défaut, ce qui est délibéré. Tant que ce n'est pas tranché, `MockMenuExtractionService` reste la seule implémentation, et un garde le vérifie désormais.
+
+**État final ONB-04 : la chaîne extraction → validation → application est LIVRÉE, éprouvée et corrigée de quatre défauts (dont un écran entièrement mort et une perte silencieuse de produit). Le chatbot de missions locales reste À CONSTRUIRE — sans gate.**
