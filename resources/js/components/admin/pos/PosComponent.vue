@@ -1123,29 +1123,81 @@
                 <!-- [W4-E5 SCHEDULED 2026-07-20] Programmer la commande (optionnel) : datetime
                      cible envoyée comme scheduled_at (Y-m-d H:i:s). Vide = ASAP. La cuisine ne
                      la verra qu'à T-lead (KitchenReleaseRule). FR hardcodé — précédent assumé
-                     dans ce fichier (champs livraison inline l.874/882/901), V1 FR-only ADR-007. -->
-                <div class="mt-2 flex items-center gap-2">
+                     dans ce fichier (champs livraison inline l.874/882/901), V1 FR-only ADR-007.
+
+                     [GOAL WIZARD-CAISSE 2026-08-28 · owner] L'HEURE D'ABORD, la date seulement
+                     si on la demande. Un `datetime-local` unique obligeait le caissier à
+                     traverser jour/mois/année pour saisir « 19:30 » alors que, mot du
+                     propriétaire, « 99,9 % ça va être toujours aujourd'hui ». On expose donc
+                     un champ heure seul + des raccourcis (+15/+30/+1 h), et la date reste
+                     repliée derrière un bouton. Le jour retenu est TOUJOURS affiché en clair
+                     (« aujourd'hui »/« demain »/date) : rien n'est deviné en silence. -->
+                <div class="mt-2 flex flex-wrap items-center gap-2">
                     <label
-                        for="pos-scheduled-at"
+                        for="pos-scheduled-time"
                         class="text-sm text-heading whitespace-nowrap"
                         title="Commande programmée : heure de retrait souhaitée (vide = tout de suite)"
                     >⏰ Programmer</label>
                     <input
-                        id="pos-scheduled-at"
-                        type="datetime-local"
-                        v-model="scheduledAtLocal"
-                        :min="scheduledAtMinLocal"
-                        data-testid="pos-scheduled-at"
-                        class="flex-1 h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                        id="pos-scheduled-time"
+                        type="time"
+                        v-model="scheduledTimeLocal"
+                        step="300"
+                        data-testid="pos-scheduled-time"
+                        class="w-28 h-10 text-base font-semibold tracking-wide rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
                     />
+
+                    <!-- Raccourcis : le cas courant en caisse est « dans 20 minutes », pas une
+                         heure absolue. Chaque bouton part de MAINTENANT, arrondi aux 5 min. -->
                     <button
-                        v-if="scheduledAtLocal"
+                        v-for="mins in scheduledQuickOffsets"
+                        :key="'sched-' + mins"
+                        type="button"
+                        :data-testid="'pos-scheduled-plus-' + mins"
+                        class="h-10 px-2.5 text-xs font-semibold rounded-lg border border-[#D9DBE9] text-heading hover:border-primary hover:text-primary"
+                        :aria-label="'Programmer dans ' + mins + ' minutes'"
+                        @click="scheduleIn(mins)"
+                    >+{{ mins >= 60 ? (mins / 60) + ' h' : mins + ' min' }}</button>
+
+                    <!-- Jour retenu, toujours visible dès qu'une heure est posée. -->
+                    <button
+                        v-if="scheduledTimeLocal"
+                        type="button"
+                        data-testid="pos-scheduled-date-toggle"
+                        class="h-10 px-3 text-xs font-semibold rounded-lg border border-[#D9DBE9] text-heading hover:border-primary hover:text-primary"
+                        :aria-expanded="scheduledDatePickerOpen ? 'true' : 'false'"
+                        aria-controls="pos-scheduled-date"
+                        :title="'Commande prévue le ' + scheduledDateLocal + '. Cliquez pour changer de jour.'"
+                        @click="scheduledDatePickerOpen = !scheduledDatePickerOpen"
+                    >📅 {{ scheduledDayLabel }} {{ scheduledDatePickerOpen ? '▲' : '▾' }}</button>
+
+                    <button
+                        v-if="scheduledTimeLocal"
                         type="button"
                         data-testid="pos-scheduled-at-clear"
                         aria-label="Annuler la programmation (repasser en tout de suite)"
                         class="h-10 px-3 text-xs rounded-lg border border-[#D9DBE9] text-heading hover:bg-gray-50"
-                        @click="scheduledAtLocal = ''"
+                        @click="clearScheduled()"
                     >✕</button>
+                </div>
+
+                <!-- Date : repliée par défaut, jamais sur le chemin critique. -->
+                <div v-if="scheduledDatePickerOpen" class="mt-2 flex items-center gap-2">
+                    <label for="pos-scheduled-date" class="text-xs text-heading whitespace-nowrap">Jour</label>
+                    <input
+                        id="pos-scheduled-date"
+                        type="date"
+                        v-model="scheduledDateLocal"
+                        :min="scheduledDateMinLocal"
+                        data-testid="pos-scheduled-date"
+                        class="h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                    />
+                    <button
+                        type="button"
+                        data-testid="pos-scheduled-date-today"
+                        class="h-10 px-3 text-xs rounded-lg border border-[#D9DBE9] text-heading hover:bg-gray-50"
+                        @click="scheduledDateLocal = scheduledDateMinLocal"
+                    >Aujourd'hui</button>
                 </div>
 
                 <!-- [P4] Inline delivery form — no separate modal, no map tab -->
@@ -1324,15 +1376,33 @@
                 </button>
                 <div class="pos-v5-cart-item__body">
                     <h3 class="pos-v5-cart-item__name">
-                        <span>{{ cart.name }}</span>
+                        <span class="pos-v5-cart-item__name-text">{{ cart.name }}</span>
                         <button
                             type="button"
                             class="pos-v5-cart-item__edit"
+                            data-testid="pos-cart-edit"
                             @click.prevent="editCartLine(index)"
                             :title="$t('button.edit') || 'Modifier'"
                             :aria-label="$t('button.edit')"
                         >
                             <span aria-hidden="true">✎</span>
+                        </button>
+                        <!--
+                          [GOAL WIZARD-CAISSE 2026-08-28 · owner] « Dupliquer » : rouvre
+                          le wizard pré-rempli avec CETTE composition, en mode ajout. Le
+                          « + » d'à côté augmente la quantité d'une même ligne — les deux
+                          exemplaires y sont forcément identiques. Ici on veut « le même,
+                          mais avec une autre sauce » sans tout ressaisir.
+                        -->
+                        <button
+                            type="button"
+                            class="pos-v5-cart-item__edit pos-v5-cart-item__duplicate"
+                            data-testid="pos-cart-duplicate"
+                            @click.prevent="duplicateCartLine(index)"
+                            title="Dupliquer cet article (même personnalisation, à ajuster)"
+                            :aria-label="'Dupliquer ' + cart.name"
+                        >
+                            <span aria-hidden="true">⧉</span>
                         </button>
                     </h3>
 
@@ -2247,6 +2317,12 @@ export default {
             // appliquée (voir `discountPanelOpen`), pour qu'une remise active ne
             // puisse jamais devenir invisible.
             discountPanelManual: false,
+            // [GOAL WIZARD-CAISSE 2026-08-28 · owner] Sélecteur de JOUR de la commande
+            // programmée : replié par défaut. L'heure est le champ principal ; la
+            // date ne s'ouvre que si le caissier la demande explicitement.
+            // Purement présentationnel — l'état de la programmation reste
+            // `checkoutProps.form.scheduled_at`, seul et unique.
+            scheduledDatePickerOpen: false,
             // Kiosk cash orders notification
             kioskCashOrders: [],
             kioskCashLoading: false,
@@ -2405,7 +2481,8 @@ export default {
                     // datetime cible "Y-m-d H:i:s", null = ASAP. Flotte tel quel jusqu'au
                     // backend via le spread currentFormSnapshot de PaymentComponent (frozen,
                     // intouché) et via le payload phoneOrderSubmit. Saisi via le computed
-                    // scheduledAtLocal (conversion datetime-local ⇄ format serveur).
+                    // les computed scheduledTimeLocal / scheduledDateLocal (saisie
+                    // heure-d'abord, cf. GOAL WIZARD-CAISSE 2026-08-28).
                     scheduled_at: null,
                     source: sourceEnum.POS,
                     address_id: null,
@@ -2583,33 +2660,61 @@ export default {
                 && (p.name === 'availability_toggle' || p.name === 'items_edit')
                 && p.access === true);
         },
-        // [W4-E5 SCHEDULED 2026-07-20] Pont datetime-local ⇄ format serveur.
-        // Le <input type="datetime-local"> parle "YYYY-MM-DDTHH:MM" ; le backend
-        // (PosOrderRequest) exige "Y-m-d H:i:s". Getter/setter sur
-        // checkoutProps.form.scheduled_at : le champ se vide donc tout seul au
-        // resetPaymentForm (scheduled_at → null) après chaque commande.
-        scheduledAtLocal: {
+        /*
+         * [GOAL WIZARD-CAISSE 2026-08-28 · owner] Programmation heure-d'abord.
+         *
+         * `scheduled_at` reste l'unique état (« Y-m-d H:i:s » ou null) : heure et
+         * date n'en sont que deux vues. Aucun état parallèle à resynchroniser,
+         * donc `resetPaymentForm` continue de tout vider seul après encaissement.
+         */
+        // Borne min UX du sélecteur de jour (date locale). Simple garde anti-passé :
+        // la borne AUTORITATIVE (now + lead cuisine + max 7 j) est validée côté
+        // serveur (PosOrderRequest, message FR explicite).
+        scheduledDateMinLocal: function () {
+            return this._posLocalDateIso(new Date());
+        },
+        scheduledDateLocal: {
             get: function () {
                 const v = this.checkoutProps.form.scheduled_at;
-                return v ? String(v).slice(0, 16).replace(' ', 'T') : '';
+                return v ? String(v).slice(0, 10) : '';
+            },
+            set: function (val) {
+                if (!val) return;
+                const time = this.scheduledTimeLocal || '12:00';
+                this.checkoutProps.form.scheduled_at = `${val} ${time}:00`;
+            },
+        },
+        scheduledTimeLocal: {
+            get: function () {
+                const v = this.checkoutProps.form.scheduled_at;
+                return v ? String(v).slice(11, 16) : '';
             },
             set: function (val) {
                 if (!val) {
                     this.checkoutProps.form.scheduled_at = null;
                     return;
                 }
-                let v = String(val).replace('T', ' ');
-                if (v.length === 16) v += ':00'; // datetime-local sans secondes (cas standard)
-                this.checkoutProps.form.scheduled_at = v;
+                // Jour déjà posé → on le respecte. Sinon aujourd'hui, ou DEMAIN si
+                // l'heure saisie est déjà passée : sans ce basculement, taper
+                // « 00:30 » à 23 h produit une cible au passé que le serveur rejette
+                // (PosOrderRequest) sans que le caissier comprenne pourquoi. Le jour
+                // retenu est affiché juste à côté — rien n'est deviné en silence.
+                const day = this.scheduledDateLocal || this._posResolveScheduledDay(val);
+                this.checkoutProps.form.scheduled_at = `${day} ${val}:00`;
             },
         },
-        // Borne min UX du picker (heure locale, arrondie à la minute). Simple
-        // garde anti-passé : la borne AUTORITATIVE (now + lead cuisine + max 7 j)
-        // est validée côté serveur (PosOrderRequest, message FR explicite).
-        scheduledAtMinLocal: function () {
-            const d = new Date(Date.now() + 60000);
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        /** Décalages proposés en un clic (minutes). */
+        scheduledQuickOffsets: function () {
+            return [15, 30, 60];
+        },
+        /** « aujourd'hui » / « demain » / « 01/09/2026 » — jamais une date muette. */
+        scheduledDayLabel: function () {
+            const iso = this.scheduledDateLocal;
+            if (!iso) return '';
+            if (iso === this._posLocalDateIso(new Date())) return "aujourd'hui";
+            if (iso === this._posLocalDateIso(new Date(Date.now() + 86400000))) return 'demain';
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y}`;
         },
         // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
         // for the X2 shortcut panels' empty/idle state. Bound to
@@ -5439,13 +5544,68 @@ export default {
                 })
                 .join(', ');
         },
-        editCartLine: function (index) {
+        /** 'YYYY-MM-DD' du fuseau LOCAL (toISOString() renverrait la veille en UTC+X). */
+        _posLocalDateIso: function (date) {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        },
+        /**
+         * Jour implicite pour une heure « HH:MM » : aujourd'hui, ou demain si cette
+         * heure est déjà passée. Cf. commentaire du setter scheduledTimeLocal.
+         */
+        _posResolveScheduledDay: function (hhmm) {
+            const now = new Date();
+            const parts = String(hhmm).split(':');
+            const h = parseInt(parts[0], 10) || 0;
+            const m = parseInt(parts[1], 10) || 0;
+            const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+            if (target.getTime() <= now.getTime()) {
+                target.setDate(target.getDate() + 1);
+            }
+            return this._posLocalDateIso(target);
+        },
+        /** Raccourci « dans N minutes », arrondi aux 5 min supérieures. */
+        scheduleIn: function (minutes) {
+            const t = new Date(Date.now() + minutes * 60000);
+            t.setSeconds(0, 0);
+            const rest = t.getMinutes() % 5;
+            if (rest !== 0) t.setMinutes(t.getMinutes() + (5 - rest));
+            const pad = (n) => String(n).padStart(2, '0');
+            this.checkoutProps.form.scheduled_at =
+                `${this._posLocalDateIso(t)} ${pad(t.getHours())}:${pad(t.getMinutes())}:00`;
+        },
+        /** Repasse en « tout de suite » et referme le sélecteur de jour. */
+        clearScheduled: function () {
+            this.checkoutProps.form.scheduled_at = null;
+            this.scheduledDatePickerOpen = false;
+        },
+        /**
+         * [GOAL WIZARD-CAISSE 2026-08-28 · owner] Duplique une ligne du panier :
+         * rouvre le wizard PRÉ-REMPLI avec la composition existante, mais en mode
+         * AJOUT — la ligne d'origine est conservée telle quelle et la validation
+         * crée une seconde ligne.
+         *
+         * Cas d'usage donné par le propriétaire : « deux fois le même sandwich,
+         * juste la sauce qui change ». Le « + » du panier ne convenait pas : il
+         * incrémente la quantité d'UNE ligne, donc les deux exemplaires partagent
+         * forcément la même composition.
+         *
+         * Aucune mécanique nouvelle : `openEditFromCart(line, null)` recharge la
+         * composition puis laisse `editingCartIndex` à null, et `addToCart()`
+         * bascule alors sur son chemin d'ajout (cf. ItemComponent.addToCart).
+         */
+        duplicateCartLine: function (index) {
+            this.editCartLine(index, { duplicate: true });
+        },
+        editCartLine: function (index, options) {
             const line = this.carts[index];
             if (!line) return;
+            const duplicate = !!(options && options.duplicate);
             const doEdit = () => {
                 const host = this.$refs.posItemComponent;
                 if (host && typeof host.openEditFromCart === 'function') {
-                    host.openEditFromCart(line, index);
+                    // index null ⇒ le wizard ajoutera une ligne au lieu de remplacer.
+                    host.openEditFromCart(line, duplicate ? null : index);
                     return true;
                 }
                 return false;

@@ -281,7 +281,14 @@ async function auditerPanier(page, etiquette) {
                 (el, i) => ajouter(el, 'entete', `type-commande[${i}] ${(el.innerText || '').replace(/\s+/g, ' ').trim()}`));
             ajouter(tete.querySelector('[data-testid="pos-customer-name"]'), 'entete', 'champ-nom-client');
             ajouter(tete.querySelector('[data-testid="pos-customer-phone"]'), 'entete', 'champ-telephone');
-            ajouter(tete.querySelector('[data-testid="pos-scheduled-at"]'), 'entete', 'champ-programmer');
+            // [GOAL WIZARD-CAISSE 2026-08-28] Le champ unique `pos-scheduled-at`
+            // (datetime-local) a été remplacé par une rangée heure-d'abord :
+            // heure + raccourcis + bouton jour. On teste le recouvrement de TOUS
+            // ces contrôles, pas seulement du premier.
+            ajouter(tete.querySelector('[data-testid="pos-scheduled-time"]'), 'entete', 'champ-programmer-heure');
+            [15, 30, 60].forEach((m) => ajouter(
+                tete.querySelector(`[data-testid="pos-scheduled-plus-${m}"]`), 'entete', `programmer-+${m}min`));
+            ajouter(tete.querySelector('[data-testid="pos-scheduled-date-toggle"]'), 'entete', 'programmer-jour');
         }
         if (corps) {
             corps.querySelectorAll('.pos-v5-cart-item').forEach((ligne, i) => {

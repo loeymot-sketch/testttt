@@ -9,6 +9,7 @@ use App\Models\KioskMachine;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,6 +40,11 @@ class NormalItemResource extends JsonResource
         $choiceAvailability = $branchId !== null
             ? app(ChoiceAvailabilityResolver::class)->snapshotForItem($this->resource, $branchId, (string) ($surface ?: 'kiosk'))
             : ['variations' => [], 'extras' => [], 'addons' => []];
+        // [GOAL WIZARD-CAISSE 2026-08-28 · owner] Même ordre canonique de sauces
+        // qu'en caisse (cf. ItemResource) — la borne et la caisse doivent lister
+        // les sauces identiquement, sinon le personnel et le client ne voient pas
+        // la même carte.
+        $filteredVariations = SauceCatalog::sortVariations($filteredVariations);
         $filteredVariations = $filteredVariations->each(function ($variation) use ($choiceAvailability) {
             $availability = $choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null];
             $variation->setAttribute('is_available', $availability['is_available']);

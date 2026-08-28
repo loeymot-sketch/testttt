@@ -430,7 +430,12 @@
             sauceExtraPrice:   {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_sauce_extra_price') ?? 0.50) }},
             viandeSupplPrice:  {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_viande_suppl_price') ?? 2.50) }},
             fritesGrandePrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_grande_price') ?? 1.00) }},
-            fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
+            fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }},
+            /* [GOAL WIZARD-CAISSE 2026-08-28 · owner] Catalogue sauces (ordre + couleur)
+               servi depuis config/pos_sauces.php — SSOT unique partagée avec le tri
+               backend (SauceCatalog::sortVariations). Le wizard ne redéclare AUCUNE
+               couleur en dur : ajouter une sauce = éditer le seul fichier de config. */
+            sauceStyles: @json(\App\Support\Menu\SauceCatalog::frontPayload())
         };
     </script>
     {{-- [W5-PERF A2 2026-07-06] filemtime au lieu de time() — voir <head> : fin des ~300 Ko

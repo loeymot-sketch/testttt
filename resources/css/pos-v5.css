@@ -1164,6 +1164,33 @@
     color: #fff;
 }
 
+/* [GOAL WIZARD-CAISSE 2026-08-28 · owner] « Dupliquer » vit à côté de « Modifier ».
+   Teinte DIFFÉRENTE, sinon deux pastilles rouges identiques côte à côte se
+   confondent et le caissier remplace la ligne en croyant la copier.
+   Contraste #3B4A7A sur #E7EAF6 ≈ 6.9:1 — au-delà du 4.5:1 exigé (WCAG 2.1 AA),
+   même critère que celui appliqué au bouton Modifier juste au-dessus. */
+.pos-v5-cart-item__duplicate {
+    background: #E7EAF6;
+    color: #3B4A7A;
+    font-size: 15px;
+}
+.pos-v5-cart-item__duplicate:hover {
+    background: #3B4A7A;
+    color: #fff;
+}
+
+/* Les deux pastilles sont des cibles tactiles : elles ne doivent jamais être
+   écrasées par un nom d'article long — c'est le NOM qui se tronque. */
+.pos-v5-cart-item__edit {
+    flex: 0 0 auto;
+}
+.pos-v5-cart-item__name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .pos-v5-cart-item__detail {
     margin: 0;
     font-size: var(--pos-v5-text-caption);
