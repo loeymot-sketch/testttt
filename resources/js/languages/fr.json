@@ -1327,7 +1327,7 @@
         "time": "Heure",
         "order_number": "N° commande",
         "cash_overview_capped_notice": "Plus de 500 transactions sur la période — affichez seulement les plus récentes. Réduisez la plage de dates pour tout voir.",
-        "cash_overview_empty_copy": "Aucune transaction trouvée pour les filtres actuels. Modifie la période ou réinitialise les filtres.",
+        "cash_overview_empty_copy": "Aucune transaction trouvée pour les filtres actuels. Modifiez la période ou réinitialisez les filtres.",
         "or": "Ou",
         "optional": "Optionnel",
         "order_confirmed": "Commande confirmée",

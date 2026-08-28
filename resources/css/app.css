@@ -156,7 +156,14 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .db-header-profile-title { @apply font-medium capitalize text-sm leading-none mb-1 }
     .db-header-profile-name { @apply capitalize text-sm leading-none text-heading }
     .db-header-profile-dropdown { @apply absolute top-11 sm:top-12 right-0 z-20 px-2 py-2.5 rounded-lg border border-solid border-slate-200 bg-white shadow-lg }
-    .db-header-profile-dropdown-menu { @apply flex items-center justify-start gap-2.5 w-full whitespace-nowrap pl-3 pr-8 py-1.5 text-sm rounded-md capitalize transition text-gray-600 hover:bg-gray-100 }
+    /* [AUDIT-SUPERVISEUR 2026-08-26 · AB-017] `capitalize` met une majuscule à CHAQUE mot :
+       c'est la casse de titre anglo-saxonne, et elle produisait « Tableau De Bord »,
+       « Attribut D'articles », « Modifier Le Profil » sur toutes les pages d'un produit dont
+       la locale est immuable. En français, seule la première lettre se capitalise.
+       Vérifié avant retrait : les 102 libellés de menu sont DÉJÀ correctement écrits à la
+       source (« Tableau de bord », « Changer le mot de passe »), et AUCUN ne commence par une
+       minuscule — aucun ne dépendait donc de cette transformation pour être lisible. */
+    .db-header-profile-dropdown-menu { @apply flex items-center justify-start gap-2.5 w-full whitespace-nowrap pl-3 pr-8 py-1.5 text-sm rounded-md transition text-gray-600 hover:bg-gray-100 }
 
     /* SIDEBAR */
     .db-sidebar { @apply fixed top-0 ltr:left-0 rtl:right-0 z-[39] w-[260px] p-4 h-dvh ltr:-translate-x-[100%] rtl:translate-x-full ltr:lg:translate-x-0 rtl:lg:-translate-x-0 lg:top-16 lg:h-[calc(100vh_-_64px)] overflow-y-auto thin-scrolling ltr:shadow-db-sidebar-right rtl:shadow-db-sidebar-left transition bg-white }
@@ -167,14 +174,14 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .db-sidebar-nav-item.active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-item.router-link-active .db-sidebar-nav-menu { @apply text-primary bg-primary/5 }
     .db-sidebar-nav-menu.router-link-active { @apply text-primary bg-primary/5 }
-    .db-sidebar-nav-menu { @apply capitalize w-full flex items-center justify-start text-left rounded-lg gap-3 py-2.5 px-3 transition hover:bg-gray-100 }
+    .db-sidebar-nav-menu { @apply w-full flex items-center justify-start text-left rounded-lg gap-3 py-2.5 px-3 transition hover:bg-gray-100 }
     .db-sidebar-nav-menu i { @apply text-sm }
     .db-sidebar-nav-menu span { @apply text-base flex-auto ltr:text-left rtl:text-right }
     .db-sidebar-nav-dropdown { @apply h-0 overflow-hidden transition }
     .db-sidebar-nav-menu.downarrow { @apply after:content-['\f054'] after:font-awesome after:font-bold after:text-[10px] after:transition }
     .db-sidebar-nav-item.active .downarrow { @apply after:rotate-90 }
     .db-sidebar-nav-dropdown-list { @apply mx-5 my-2 flex flex-col border-l-2 border-gray-100 }
-    .db-sidebar-nav-dropdown-menu { @apply pl-5 pr-2 py-2 rounded-lg text-sm leading-4 capitalize transition hover:bg-gray-100 hover:text-primary }
+    .db-sidebar-nav-dropdown-menu { @apply pl-5 pr-2 py-2 rounded-lg text-sm leading-4 transition hover:bg-gray-100 hover:text-primary }
 
     .db-message-list .active { @apply !bg-primary/5 }
     .db-message-list .active h4 { @apply text-primary }
@@ -387,7 +394,9 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .db-breadcrumb { @apply flex flex-col flex-wrap gap-y-2 gap-x-5 items-center justify-center sm:flex-row sm:justify-between pt-[14px] }
     .db-breadcrumb-title { @apply capitalize text-xl font-semibold }
     .db-breadcrumb-list { @apply flex flex-wrap items-center justify-center sm:justify-end }
-    .db-breadcrumb-item { @apply capitalize text-[22px] text-slate-400 }
+    /* [AB-017] Même raison que la navigation : « Tableau De Bord / Encaissement » n'est
+       pas du français. Les libellés sources sont déjà correctement écrits. */
+    .db-breadcrumb-item { @apply text-[22px] text-slate-400 }
     .db-breadcrumb-link { @apply transition text-slate-600 hover:text-primary after:content-['/'] after:px-1.5 after:text-paragraph }
 
     /* TABS */
