@@ -291,6 +291,7 @@
         "cancel_last_line_error": "Impossible d'annuler la dernière ligne.",
         "parked_search_placeholder": "Rechercher par n° / nom / client",
         "parked_search_no_match": "Aucune commande parkée ne correspond.",
+        "reprint_ticket": "Réimprimer le ticket",
         "reprint_ticket_hint": "Imprime à nouveau le ticket caisse + cuisine pour cette commande (duplicata).",
         "reprint_error": "Impossible de réimprimer cette commande.",
         "kds_reprint_sent": "Ticket cuisine réimprimé (N°{queue}).",

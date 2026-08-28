@@ -322,7 +322,16 @@
                             -->
                             <div class="pos-tracker-card-customer" v-if="customerLabel(order) || customerPhone(order)">
                                 <i class="fa-solid fa-user" aria-hidden="true"></i>
-                                <span>{{ customerLabel(order) }}</span>
+                                <!--
+                                  [AUDIT-SUPERVISEUR 2026-08-26 · AB-015] « Karim Bensa... »
+                                  Ce nom est coupé par `text-overflow: ellipsis` et ne portait
+                                  AUCUN title : le nom entier n'existait qu'indirectement, dans
+                                  l'infobulle du lien téléphone voisin — donc inatteignable sur
+                                  une caisse tactile, où il n'y a pas de survol.
+                                  La donnée est déjà côté client ; il suffisait de la nommer.
+                                  C'est le nom que le caissier lit pour appeler le client.
+                                -->
+                                <span :title="customerLabel(order)">{{ customerLabel(order) }}</span>
                                 <a
                                     v-if="customerPhone(order)"
                                     class="pos-tracker-card-phone"
@@ -517,11 +526,25 @@
                                       [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint.
                                       Loads full order then mounts ReceiptComponent inside this view.
                                     -->
+                                    <!--
+                                      [AUDIT-SUPERVISEUR 2026-08-26 · AB-009] DEUX CARRÉS DE 30 PX,
+                                      CÔTE À CÔTE, DONT L'UN ANNULE LA COMMANDE.
+                                      Ces boutons n'avaient qu'un `title` pour se distinguer — le
+                                      mécanisme le plus faible, et INATTEIGNABLE sur une caisse
+                                      tactile : il n'y a pas de survol au doigt. Rien à l'écran ne
+                                      séparait « imprimer » de « annuler ».
+                                      On ajoute un nom accessible EXPLICITE (plus de repli sur
+                                      `title`) et, sur l'action destructrice, un libellé VISIBLE —
+                                      le patron du bouton « Rembourser » quelques lignes plus bas.
+                                      Le numéro de commande entre dans le nom : trois boutons
+                                      « Annuler » identiques au lecteur d'écran ne valent pas mieux.
+                                    -->
                                     <button
                                         type="button"
                                         class="pos-tracker-card-btn"
                                         :disabled="reprintBusyId === order.id"
                                         :title="$t('pos.reprint_ticket_hint')"
+                                        :aria-label="`${$t('pos.reprint_ticket')} — ${order.order_serial_no || order.id}`"
                                         :data-testid="`tracker-reprint-${order.id}`"
                                         @click="requestReprint(order)"
                                     >
@@ -551,10 +574,12 @@
                                         type="button"
                                         class="pos-tracker-card-btn pos-tracker-card-btn--danger"
                                         :title="$t('pos.cancel_order_hint')"
+                                        :aria-label="`${$t('label.cancel')} — ${order.order_serial_no || order.id}`"
                                         :data-testid="`tracker-cancel-${order.id}`"
                                         @click="openCancelDialog(order)"
                                     >
                                         <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ $t('label.cancel') }}</span>
                                     </button>
                                     <button
                                         v-else-if="col.id !== 'delivered' && cancelBlockedReason(order) === 'sealed' && canRefundSealed"
