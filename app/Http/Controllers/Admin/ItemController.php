@@ -100,8 +100,14 @@ class ItemController extends AdminController
         }
 
         try {
-            $paginator = $this->itemService->simpleList($request);
-            $meta = $this->itemService->availabilityCounts($branchId);
+            // [ONB-11 2026-08-28] `false` = back-office : le commerçant voit AUSSI ses
+            // articles désactivés. Sans ce paramètre, il ne pouvait plus jamais en
+            // réactiver un — l'écran offrait un filtre « Inactif » qui ne rendait rien.
+            $paginator = $this->itemService->simpleList($request, false);
+            // [ONB-11 2026-08-28] La requête est transmise : les tuiles comptent
+            // désormais la SÉLECTION affichée, pas toute la carte. Sans elle, filtrer
+            // sur « Burgers » donnait « 5 Produits » à côté de « 57 Actifs ».
+            $meta = $this->itemService->availabilityCounts($branchId, $request);
 
             return SimpleItemResource::collection($paginator)->additional([
                 'meta' => $meta,
@@ -215,11 +221,59 @@ class ItemController extends AdminController
         }
     }
 
+    /**
+     * [ONB-02 2026-08-28] L'import annoncait un succes sans jamais dire ce qu'il
+     * avait fait.
+     *
+     * L'instance d'import etait construite EN LIGNE dans l'appel a `Excel::import()`,
+     * donc jetee aussitot : les echecs collectes par `SkipsFailures` n'etaient jamais
+     * lus. Et une ligne dont la categorie n'existait pas etait sautee en silence par
+     * Maatwebsite. Le controleur repondait `202` vide dans tous les cas.
+     *
+     * Consequence pour le commercant : il deposait son fichier de 45 lignes, l'ecran
+     * fermait la fenetre et affichait une bulle verte, et il pouvait avoir 0, 12 ou 45
+     * produits crees — sans aucun moyen de savoir lequel, ni quelle ligne corriger.
+     * C'est exactement la soiree que cette mission promet de lui sauver.
+     *
+     * On garde l'instance, on lit ses echecs, et on rend un compte rendu.
+     */
+    /** Une phrase que le commercant peut lire, plutot que deux listes a recouper. */
+    private function resumeImport(int $creees, int $echecs): string
+    {
+        if ($creees === 0 && $echecs === 0) {
+            return "Votre fichier ne contenait aucune ligne exploitable.";
+        }
+
+        $phrase = $creees > 0
+            ? $creees . ' produit' . ($creees > 1 ? 's ajoutes.' : ' ajoute.')
+            : 'Aucun produit ajoute.';
+
+        if ($echecs > 0) {
+            $phrase .= ' ' . $echecs . ' ligne' . ($echecs > 1 ? 's' : '')
+                . ' a corriger : voir le detail ci-dessous.';
+        }
+
+        return $phrase;
+    }
+
     public function import(ItemImportRequest $request)
     {
         try {
-            Excel::import(new ItemImport($request->file('file')), $request->file('file'));
-            return response('', 202);
+            $import = new ItemImport($request->file('file'));
+            Excel::import($import, $request->file('file'));
+
+            $echecs = collect($import->failures())->map(fn ($echec) => [
+                'ligne'   => $echec->row(),
+                'colonne' => $echec->attribute(),
+                'raison'  => implode(' ', $echec->errors()),
+            ])->values()->all();
+
+            return response()->json([
+                'status'  => true,
+                'creees'  => $import->creees,
+                'echecs'  => $echecs,
+                'message' => $this->resumeImport($import->creees, count($echecs)),
+            ], 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

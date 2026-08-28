@@ -114,7 +114,15 @@ class ItemService
         }
     }
 
-    public function simpleList(PaginateRequest $request)
+    /**
+     * @param  bool  $cataloguePublic  VRAI (défaut) = surface client : seuls les
+     *   articles ACTIFS sortent. FAUX = back-office : le commerçant voit aussi ce
+     *   qu'il a désactivé, sinon il ne peut plus jamais le réactiver.
+     *
+     *   Le défaut est la valeur SÛRE : un appelant qui oublie le paramètre filtre,
+     *   il n'expose pas. C'est le sens dans lequel un oubli doit pencher.
+     */
+    public function simpleList(PaginateRequest $request, bool $cataloguePublic = true)
     {
         try {
             $requests = $request->all();
@@ -123,33 +131,33 @@ class ItemService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            $query = Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->itemFilter)) {
-                        if ($key == 'except') {
-                            $explodes = explode('|', $request);
-                            if (count($explodes)) {
-                                foreach ($explodes as $explode) {
-                                    $query->where('id', '!=', $explode);
-                                }
-                            }
-                        } else {
-                            if ($key == 'item_category_id') {
-                                $query->where($key, $request);
-                            } else {
-                                $query->where($key, 'like', '%'.$request.'%');
-                            }
-                        }
-                    }
-                }
-            });
+            $query = Item::with('media', 'category', 'offer')
+                ->where(fn ($q) => $this->appliquerFiltresCatalogue($q, $requests));
 
             // [SELF-AUDIT R6 P3 2026-07-05 — fuite d'articles INACTIFS sur le catalogue PUBLIC] simpleList
             // sert /api/frontend/item (borne/web/mobile, x-api-key public). Le filtre par requête laissait
             // un `?status=10` (ou l'absence de filtre) exposer les articles INACTIFS (désactivés par
             // l'admin) — nom/prix/media. On force la visibilité ACTIVE côté serveur (les surfaces
-            // featured/popular le font déjà). L'admin utilise list() (visibilité complète), pas simpleList.
-            $query->where('status', \App\Enums\Status::ACTIVE);
+            // featured/popular le font déjà).
+            //
+            // [ONB-11 2026-08-28 — LA PHRASE SUIVANTE ÉTAIT FAUSSE] Le commentaire d'origine
+            // se terminait par « L'admin utilise list() (visibilité complète), pas simpleList ».
+            // C'était l'hypothèse qui rendait ce filtre inoffensif, et elle ne tenait pas :
+            // `Admin\ItemController::index()` appelle bien `simpleList()` (ligne 103). Le filtre
+            // s'appliquait donc AUSSI au back-office.
+            //
+            // Conséquence pour le commerçant : un article désactivé — pour l'hiver, une rupture,
+            // un essai — disparaissait de sa liste ET du filtre « Inactif » que l'écran lui
+            // propose pourtant (`ItemListComponent.vue:154`). Aucun écran ne le rattrapait ; seul
+            // l'export Excel le contenait encore, parce que lui passe par `list()`
+            // (`ItemExport.php:28`). Le seul moyen de le récupérer était de le recréer à la main.
+            //
+            // Deux correctifs justes s'annulaient : fermer la fuite publique était nécessaire, et
+            // l'a été correctement ; c'est le PÉRIMÈTRE qui était trop large. On le restreint à
+            // la surface publique, sans rien rouvrir.
+            if ($cataloguePublic) {
+                $query->where('status', \App\Enums\Status::ACTIVE);
+            }
 
             // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
             // Gate visibility only when the caller declares a surface; legacy
@@ -214,9 +222,70 @@ class ItemService
      * ItemBranchAvailability is admin-bypass (branch_id=0); we still resolve
      * to a concrete branchId from the caller so the count is deterministic.
      */
-    public function availabilityCounts(?int $branchId): array
+    /**
+     * [ONB-11 2026-08-28] Les filtres du catalogue, en un seul endroit.
+     *
+     * Ils vivaient EN LIGNE dans `simpleList()`. `availabilityCounts()`, qui alimente
+     * les tuiles « Actifs » et « Indisponibles » posées AU-DESSUS de cette même liste,
+     * n'en appliquait aucun : elle comptait toute la carte.
+     *
+     * Le commerçant filtrait sur « Burgers » et lisait, sur la même barre :
+     * « 5 Produits » à côté de « 57 Actifs ». Pire, la tuile 57 est un bouton
+     * (`ItemListComponent.vue:27`) : il cliquait sur 57 et la liste lui en montrait 5.
+     * Deux chiffres pour la même chose, sans moyen de trancher depuis l'écran.
+     *
+     * @param  array<string, mixed>  $requests
+     * @param  list<string>  $exclure  Clés de filtre à NE PAS appliquer.
+     */
+    private function appliquerFiltresCatalogue($query, array $requests, array $exclure = [])
+    {
+        foreach ($requests as $key => $valeur) {
+            if (! in_array($key, $this->itemFilter) || in_array($key, $exclure, true)) {
+                continue;
+            }
+
+            if ($key == 'except') {
+                $explodes = explode('|', $valeur);
+                if (count($explodes)) {
+                    foreach ($explodes as $explode) {
+                        $query->where('id', '!=', $explode);
+                    }
+                }
+
+                continue;
+            }
+
+            if ($key == 'item_category_id') {
+                $query->where($key, $valeur);
+
+                continue;
+            }
+
+            $query->where($key, 'like', '%'.$valeur.'%');
+        }
+
+        return $query;
+    }
+
+    /**
+     * @param  \Illuminate\Http\Request|null  $request  Quand il est fourni, les tuiles
+     *   comptent la SÉLECTION EN COURS et non la carte entière — sinon l'écran affiche
+     *   deux chiffres différents pour la même chose.
+     *
+     *   Le filtre `status` est délibérément EXCLU : ces tuiles SONT la répartition par
+     *   statut. Les filtrer par statut serait circulaire — « Actifs » vaudrait toujours
+     *   le total, ou zéro.
+     */
+    public function availabilityCounts(?int $branchId, $request = null): array
     {
         $activeQuery = Item::query()->where('status', \App\Enums\Status::ACTIVE);
+
+        if ($request !== null) {
+            $filtres = $request->all();
+            $activeQuery->where(
+                fn ($q) => $this->appliquerFiltresCatalogue($q, $filtres, ['status'])
+            );
+        }
         $totalActive = (int) (clone $activeQuery)->count();
 
         if ($branchId === null || $branchId < 1) {

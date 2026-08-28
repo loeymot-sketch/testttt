@@ -22,10 +22,15 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
 {
     use Importable, SkipsFailures;
 
+    /** Nombre de lignes reellement transformees en article. */
+    public int $creees = 0;
+
     public function model(array $row)
     {
         $category_id = $this->getCategoryId($this->sanitizeInput($row['category']));
         if ($category_id) {
+            $this->creees++;
+
             return new Item([
                 'name' => $this->sanitizeInput($row['name'] ?? ''),
                 'item_category_id' => $category_id,
@@ -50,7 +55,33 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
                 'max:190',
                 Rule::unique("items", "name")->whereNull('deleted_at')
             ],
-            'category' => ['required', 'string'],
+            // [ONB-02 2026-08-28] La regle ne verifiait que la PRESENCE du nom.
+            // Quand la categorie n'existait pas, `getCategoryId()` renvoyait null,
+            // `model()` ne retournait rien, et Maatwebsite sautait la ligne EN
+            // SILENCE (`ModelManager::toModels()` fait `Collection::wrap(null)`).
+            // Le commercant deposait 45 lignes, lisait « succes », et pouvait avoir
+            // 0 produit cree sans un seul message.
+            //
+            // En passant par la validation, la ligne tombe dans `failures()` — que le
+            // controleur lit desormais — avec un message qui NOMME les categories
+            // existantes. Plus de saut muet.
+            'category' => [
+                'required',
+                'string',
+                function ($attribut, $valeur, $echec) {
+                    if ($this->categorieExiste($valeur)) {
+                        return;
+                    }
+
+                    $connues = \App\Models\ItemCategory::query()
+                        ->pluck('name')->sort()->take(12)->implode(' · ');
+
+                    $echec(
+                        "La categorie « {$valeur} » n'existe pas. Creez-la d'abord, ou "
+                        . "utilisez une categorie existante : {$connues}"
+                    );
+                },
+            ],
             // [ONB-02 / agent ROUGE 2026-08-27] L'import Excel n'appelle JAMAIS
             // ItemRequest : rendre `tax_id` obligatoire là-bas ne fermait donc rien
             // ici. Une colonne « tax » vide produisait un article à tax_id NULL, que
@@ -94,6 +125,12 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
             . "enregistrée. Créez-la d'abord dans Réglages → Taxes, ou utilisez un des "
             . "taux existants : {$connus}."
         );
+    }
+
+    /** La categorie est-elle resoluble ? Meme recherche que `getCategoryId()`. */
+    private function categorieExiste($categoryName): bool
+    {
+        return $this->getCategoryId($this->sanitizeInput((string) $categoryName)) !== null;
     }
 
     private function getCategoryId($categoryName): int|null
