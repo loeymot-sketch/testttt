@@ -126,14 +126,38 @@ vente carte en règlement unique n'écrit aucune ligne `order_payments`.
 
 ## D. Sécurité
 
-### D1. Le téléphone contourne une permission
+### D1. Le téléphone n'a pas d'identité — question de conception, pas contournement
 
-`routes/web.php:97` (`POST /m/api/toggle`) ne passe que par `EnsureMobileStockPin` —
-aucun `can()` dans ce middleware ni dans `MobileStockController` — et appelle le
-**même** `AvailabilityService` que la route gardée par
+**⚠️ Constat reformulé le 2026-08-28 après vérification. Ma première rédaction disait
+« le téléphone contourne une permission », ce qui laissait croire à un correctif
+simple. C'est faux, et la nuance change tout.**
+
+Le fait est exact : `routes/web.php:97` (`POST /m/api/toggle`) ne passe que par
+`EnsureMobileStockPin`, sans aucun `can()`, et appelle le **même**
+`AvailabilityService` que la route gardée par
 `permission:items_edit|availability_toggle`.
 
-Le droit retiré dans le Dashboard ne s'applique pas au téléphone.
+Mais **il n'y a aucun utilisateur authentifié sur `/m`**. Le groupe ne porte que
+`installed` + la garde PIN ; `grep "auth()\|Auth::\|user()"` sur
+`MobileStockController` rend **zéro**. La surface est déverrouillée par un **code PIN
+partagé**, pas par un compte.
+
+Il n'y a donc **personne à qui demander une permission** : ajouter un `can()`
+fermerait l'écran entièrement, pour tout le monde.
+
+Le dispositif est par ailleurs délibéré et documenté — `EnsureMobileStockPin` se
+déclare « miroir de `EnsureDailyBookPin` », se referme immédiatement si le PIN est
+retiré de la configuration (y compris sur les sessions en cours), et le
+déverrouillage est limité en débit (`throttle:mobile-stock-pin`).
+
+**La vraie question, et elle est pour le propriétaire** : un canal à PIN partagé,
+sans identité individuelle, doit-il pouvoir basculer la disponibilité des produits —
+la même action que le Dashboard réserve à deux permissions nommées ? C'est un
+arbitrage entre la commodité du terrain (un téléphone en cuisine, pas de connexion à
+taper) et la traçabilité (qui a mis ce produit en rupture ?).
+
+Je ne le tranche pas : fermer la surface casserait un usage réel, et l'ouvrir
+davantage n'est pas à moi de le décider.
 
 ### D2. Deux permissions cochables ne gardent rien
 
