@@ -1617,41 +1617,89 @@
  * L'etat CHOISI garde son rouge plein : au milieu de teintes pastel, il doit continuer de
  * sauter aux yeux — c'est lui qui dit ce qui part en cuisine.
  */
+/*
+ * [PROPRIETAIRE 2026-08-28] « je veux la meme taille que les crudites — l'autre, c'est en
+ * face, la meme taille ».
+ *
+ * Les crudites, dans la colonne d'a cote, sont empilees et pleines largeur
+ * (`display:block; width:100%; padding:10px 12px`). Les sauces s'alignent dessus : les deux
+ * colonnes se repondent au lieu de se contredire.
+ */
 .sauce-chips-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
     gap: 8px;
     padding: 4px 0;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .sauce-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex: 1 1 auto;
-    min-width: 120px;
-    padding: 12px 18px;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 10px 12px;
     border: 2px solid #D9DBE9;
     border-radius: 20px;
     background: white;
     font-size: 15px;
     font-weight: 600;
+    line-height: 1.25;
     color: #1B1B3A;
     font-family: 'Rubik', sans-serif;
     cursor: pointer;
     transition: all 0.15s;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
 }
 
-.sauce-chip:nth-child(8n+1) { background: #FFE8D6; border-color: #F0BF97; }
-.sauce-chip:nth-child(8n+2) { background: #DFEFE4; border-color: #A8D2B6; }
-.sauce-chip:nth-child(8n+3) { background: #DEEAF7; border-color: #A6C3E3; }
-.sauce-chip:nth-child(8n+4) { background: #F7E2EE; border-color: #E0AECB; }
-.sauce-chip:nth-child(8n+5) { background: #FFF0C9; border-color: #EBD08C; }
-.sauce-chip:nth-child(8n+6) { background: #E8E0F5; border-color: #C0B0E0; }
-.sauce-chip:nth-child(8n+7) { background: #D9EEEB; border-color: #9FCFC9; }
-.sauce-chip:nth-child(8n+8) { background: #FBE0DA; border-color: #EAB2A5; }
+/*
+ * [PROPRIETAIRE 2026-08-28] CHAQUE SAUCE PORTE SA PROPRE COULEUR.
+ *
+ * Le premier essai faisait tourner huit teintes par POSITION. Refuse, et a juste titre :
+ * « pourquoi t'as mis le curry en rouge ? je voudrais mieux mettre selon les couleurs de
+ * chaque chose — ce qui est blanche ca reste blanc, harissa c'est rouge, algerienne c'est
+ * orange ». Une teinte arbitraire n'apprend rien ; une teinte juste se reconnait sans lire.
+ *
+ * Les familles, du plus clair au plus fonce :
+ *   blanches   — blanche, mayonnaise, fromagere      (creme)
+ *   jaunes     — curry, moutarde                     (curry = jaune, pas rouge)
+ *   oranges    — algerienne, andalouse, americaine, samourai
+ *   rouges     — harissa, ketchup, hannibal, spicy, piquante
+ *   bruns      — barbecue, burger
+ *   neutre     — sans sauce, et toute sauce inconnue de cette liste
+ *
+ * Une sauce absente d'ici garde le fond blanc par defaut : mieux vaut sobre que faux.
+ */
+.sauce-chip.sauce--blanche,
+.sauce-chip.sauce--sauce-blanche { background: #FFFFFF; border-color: #D9DBE9; }
+.sauce-chip.sauce--mayonnaise    { background: #FFFCEF; border-color: #E8DFB8; }
+.sauce-chip.sauce--fromagere-maison,
+.sauce-chip.sauce--fromagere     { background: #FFF6D6; border-color: #E6CE86; }
+
+.sauce-chip.sauce--curry         { background: #FFE59B; border-color: #E0BA46; }
+.sauce-chip.sauce--moutarde      { background: #FFE07A; border-color: #DDB531; }
+
+.sauce-chip.sauce--algerienne    { background: #FFD3A6; border-color: #E9A25C; }
+.sauce-chip.sauce--andalouse     { background: #FFC9AE; border-color: #E79466; }
+.sauce-chip.sauce--americaine    { background: #FFC2A8; border-color: #E68B60; }
+.sauce-chip.sauce--samourai      { background: #FFB398; border-color: #E2764F; }
+
+.sauce-chip.sauce--harissa       { background: #FF9C9C; border-color: #D95050; }
+.sauce-chip.sauce--ketchup       { background: #FFA3A0; border-color: #DC5A55; }
+.sauce-chip.sauce--hannibal      { background: #FF9090; border-color: #D34848; }
+.sauce-chip.sauce--spicy-maison,
+.sauce-chip.sauce--piquante      { background: #FF8C8C; border-color: #CF4242; }
+
+.sauce-chip.sauce--barbecue      { background: #DEBFA1; border-color: #B98F63; }
+.sauce-chip.sauce--burger        { background: #E5CBB2; border-color: #C09A74; }
+
+.sauce-chip.sauce--sans-sauce    { background: #EDEDF2; border-color: #C6C6D0; color: #5A5A6E; }
+
 
 .sauce-chip:hover {
     border-color: #E93C3C;

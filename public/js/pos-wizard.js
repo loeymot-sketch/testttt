@@ -3073,7 +3073,29 @@
                 var sel = selections.sauces && selections.sauces[key] ? ' selected' : '';
                 var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
                 var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
-                sh += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
+                /*
+                 * [PROPRIETAIRE 2026-08-28] LA COULEUR D'UNE SAUCE EST CELLE DE LA SAUCE.
+                 *
+                 * Premier essai : huit teintes qui tournaient par POSITION. Le proprietaire
+                 * l'a refuse, et il avait raison : « pourquoi t'as mis le curry en rouge ?
+                 * je voudrais mieux mettre selon les couleurs de chaque chose — ce qui est
+                 * blanche ca reste blanc, harissa c'est rouge, algerienne c'est orange ».
+                 *
+                 * Une teinte arbitraire n'apprend rien ; une teinte JUSTE se reconnait sans
+                 * lire. On pose donc sur la pastille un nom exploitable, tire du libelle,
+                 * pour que la feuille de style puisse donner a chaque sauce SA couleur.
+                 *
+                 * Les accents et la casse sautent : « Algerienne » et « algérienne » doivent
+                 * tomber sur la meme regle. Une sauce inconnue de la carte n'a pas de regle
+                 * et garde le fond neutre — mieux vaut sobre que faux.
+                 */
+                var nomSauce = String(sauce.name || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+                sh += '<button type="button" class="sauce-chip sauce--' + nomSauce + sel + '" data-type="sauce" data-id="' + key + '">';
                 sh += sauce.name + badge;
                 sh += '</button>';
             });
