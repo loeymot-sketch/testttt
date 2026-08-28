@@ -116,15 +116,85 @@ describe("la rotation d'accueil de la borne ne nomme plus un autre établissemen
             .replace(/\/\/[^\n]*/g, '')
             .replace(/<!--[\s\S]*?-->/g, '');
 
-        const marqueurs = (s.match(/Le Cayenne|cayenne\.webp|Halal/g) || []);
+        // [ONB-12 2026-08-28] Le cliquet est passé de 3 à 0 : la vitrine et le
+        // tampon sont sortis vers la donnée. Ce qui subsiste (`tamponHalal`) est un
+        // nom de variable française, pas une affirmation affichée — d'où le filtre
+        // sur les identifiants, sans quoi le cliquet mesurerait le vocabulaire du
+        // code au lieu de ce que le client lit.
+        const marqueurs = (s.match(/Le Cayenne|cayenne\.webp|>\s*Halal\s*</g) || []);
 
         expect(
             marqueurs.length,
-            "Une identité « Le Cayenne » de plus est apparue dans la borne.\n"
-            + `Connues et documentées : 3 (tampon Halal ×1, produit « Le Cayenne » ×1,\n`
-            + `image cayenne.webp ×1). Trouvées : ${marqueurs.length} → ${marqueurs.join(', ')}\n`
-            + 'Sortir la marque vers la donnée, ne pas en ajouter.',
-        ).toBeLessThanOrEqual(3);
+            "Une identité « Le Cayenne » est réapparue dans la borne.\n"
+            + `Attendu : 0. Trouvé : ${marqueurs.length} → ${marqueurs.join(', ')}\n`
+            + 'Sortir la marque vers la donnée, ne jamais la réécrire en dur.',
+        ).toBe(0);
+    });
+
+    it('la vitrine vient de la carte du commerçant, pas d\'une liste écrite en dur', () => {
+        const s = source();
+
+        // LE DÉFAUT : huit produits de Le Cayenne étaient écrits ici avec leurs
+        // photos. Un nouveau commerçant ouvrait sa borne sur des burgers qu'il ne
+        // vend pas, et aucun écran ne permettait de les changer.
+        expect(
+            s,
+            'La vitrine est chargée depuis les produits que le commerçant a lui-même\n'
+            + 'mis en avant. Si cet appel disparaît, la borne redevient muette ou pire,\n'
+            + "réaffiche une liste écrite en dur.",
+        ).toContain("axios.get('frontend/item/featured-items')");
+
+        expect(
+            s,
+            'La liste doit démarrer VIDE : une valeur de repli codée en dur ferait\n'
+            + "réapparaître la carte d'un autre établissement.",
+        ).toMatch(/products:\s*\[\s*\]/);
+    });
+
+    it("sans produit déclaré, la borne n'affiche pas de vitrine du tout", () => {
+        const s = source();
+
+        // Le choix assumé : mieux vaut un écran sobre — logo, accueil, invite —
+        // que la vitrine d'un autre établissement. Le `v-if` porte ce choix.
+        const hero = s.slice(s.indexOf('cay-hero"'), s.indexOf('cay-hero-glow'));
+
+        expect(
+            hero,
+            "Le bloc vitrine s'affiche même sans produit : il rendrait un cadre vide.",
+        ).toContain('v-if="products.length"');
+
+        // Et la rotation ne doit pas diviser par zéro — `% 0` donne NaN et fige
+        // l'index sur une diapositive qui n'existe pas.
+        const rotation = s.slice(s.indexOf('startCarousel()'), s.indexOf('async chargerLaVitrine'));
+
+        expect(
+            rotation,
+            'La rotation calcule `% this.products.length` sans garde : sur une carte\n'
+            + "vide elle produit NaN.",
+        ).toMatch(/if \(!this\.products\.length\) return;/);
+    });
+
+    it("le tampon « 100 % Halal » n'est affiché que s'il est déclaré", () => {
+        const s = source();
+
+        // C'est une affirmation sur la nourriture servie — vérifiable, engageante,
+        // et propre à chaque établissement. Elle était écrite en dur : tout
+        // commerçant installant le produit la portait sans l'avoir dite.
+        expect(
+            s,
+            "Le tampon s'affiche sans condition : il affirme à la place du commerçant.",
+        ).toContain('class="cay-stamp" v-if="tamponHalal"');
+
+        expect(
+            s,
+            'Le réglage doit être lu depuis les paramètres, et éteint par défaut.',
+        ).toContain("data.kiosk_halal_stamp ?? 0");
+
+        expect(
+            s,
+            'La valeur initiale doit être `false` : on n\'affirme rien tant que le\n'
+            + "commerçant ne l'a pas déclaré.",
+        ).toMatch(/tamponHalal:\s*false/);
     });
 
     it("le nom réglable est échappé avant d'entrer dans du HTML", () => {

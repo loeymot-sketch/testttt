@@ -119,7 +119,8 @@
       </div>
 
       <!-- ===== HERO PRODUCT STAGE — carrousel ===== -->
-      <div class="cay-hero">
+      <!-- [ONB-12 2026-08-28] `v-if` : sans produit déclaré, pas de vitrine. -->
+      <div class="cay-hero" v-if="products.length">
         <div class="cay-hero-glow"></div>
         <div class="cay-hero-card">
           <div
@@ -159,10 +160,11 @@
             ></span>
           </div>
 
-          <!-- stamp 100% Halal -->
-          <div class="cay-stamp">
+          <!-- [ONB-12 2026-08-28] Affirmation déclarée par le commerçant, jamais
+               supposée. Réglage `kiosk_halal_stamp`, éteint par défaut. -->
+          <div class="cay-stamp" v-if="tamponHalal">
             <span class="cay-stamp-num">100%</span>
-            <span class="cay-stamp-lab">Halal</span>
+            <span class="cay-stamp-lab">{{ $t('kiosk.badges.halal') }}</span>
           </div>
         </div>
       </div>
@@ -264,6 +266,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 // [PHASE-37] Multi-language support
 // [ADR-007 / iter15-P1a] `setLocale` retiré : kiosk runtime FR-immutable.
 // Seul `getCurrentLocale` reste utilisé pour l'affichage `aria-pressed`.
@@ -311,16 +314,25 @@ export default {
       // reste sur disque : `onAttractImgError` y retombe si le navigateur ne
       // décode pas le WebP (repli automatique, 0 régression).
       brandLogo: ATTRACT_BASE + 'logo.webp',
-      products: [
-        { name: 'Le Terminator', img: ATTRACT_BASE + 'terminator.webp' },
-        { name: 'Double Cheese', img: ATTRACT_BASE + 'double-cheese.webp' },
-        { name: 'Le Cayenne',    img: ATTRACT_BASE + 'cayenne.webp' },
-        { name: 'Grill Burger',  img: ATTRACT_BASE + 'grill-burger.webp' },
-        { name: 'Le Suprême',    img: ATTRACT_BASE + 'supreme.webp' },
-        { name: 'Menu Maxi',     img: ATTRACT_BASE + 'menu-maxi.webp' },
-        { name: 'Bol de riz',    img: ATTRACT_BASE + 'bol-riz.webp' },
-        { name: 'Bol de frites', img: ATTRACT_BASE + 'bol-frites.webp' },
-      ],
+      // [ONB-12 2026-08-28] La vitrine vient de la CARTE DU COMMERÇANT.
+      //
+      // Huit produits de Le Cayenne étaient écrits ici en dur, avec leurs photos.
+      // Un nouveau commerçant ouvrait sa borne sur des burgers qu'il ne vend pas,
+      // et n'avait aucun écran pour les changer.
+      //
+      // La liste est désormais chargée depuis `frontend/item/featured-items` : les
+      // produits que le commerçant a lui-même mis en avant. Elle démarre VIDE, et
+      // le carrousel ne s'affiche pas tant qu'elle l'est — mieux vaut un écran
+      // sobre que la vitrine d'un autre établissement.
+      //
+      // Ce n'est pas une perte pour l'installation existante : elle a 40 produits
+      // mis en avant, tous avec photo (vérifié en lecture le 2026-08-28). Sa borne
+      // montrera sa carte réelle au lieu d'un instantané figé de huit articles.
+      products: [],
+      // Le tampon « 100 % Halal » était écrit en dur dans le gabarit — une
+      // affirmation sur la nourriture, portée par tout établissement qui installe
+      // le produit. Elle devient un réglage, éteint par défaut.
+      tamponHalal: false,
       enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
       languageLabels: {
         fr: 'FR',
@@ -420,6 +432,7 @@ export default {
   mounted() {
     this.applyLocalizedDefaults();
     this.loadSettings();
+    this.chargerLaVitrine();
     this.startDotAnimation();
     this.startCarousel();
     this.computeStageScale();
@@ -530,11 +543,41 @@ export default {
     },
     startCarousel() {
       this.heroTimer = setInterval(() => {
+        // `% 0` donne NaN : sans ce garde, une carte vide cassait l'index et
+        // figeait l'écran sur une diapositive inexistante.
+        if (!this.products.length) return;
         this.heroIdx = (this.heroIdx + 1) % this.products.length;
       }, 3800);
       this.lineTimer = setInterval(() => {
         this.lineIdx = (this.lineIdx + 1) % this.headlines.length;
       }, 3400);
+    },
+    /**
+     * [ONB-12 2026-08-28] Charge la vitrine depuis la carte du commerçant.
+     *
+     * Source : `frontend/item/featured-items`, c'est-à-dire les produits que le
+     * commerçant a lui-même cochés « mis en avant ». On ne garde que ceux qui ont
+     * une photo — une diapositive sans image est un rectangle vide — et on
+     * plafonne à huit pour que la rotation reste lisible.
+     *
+     * En cas d'échec, on laisse la liste vide : le `v-if` retire la vitrine, et
+     * l'écran garde son logo, son accueil et son invite. Aucune reprise sur la
+     * carte d'un autre établissement.
+     */
+    async chargerLaVitrine() {
+      try {
+        const res = await axios.get('frontend/item/featured-items');
+        const items = res?.data?.data || res?.data || [];
+
+        this.products = (Array.isArray(items) ? items : [])
+          .filter((i) => i && i.thumb && i.name)
+          .slice(0, 8)
+          .map((i) => ({ name: i.name, img: i.thumb }));
+
+        this.heroIdx = 0;
+      } catch (_) {
+        this.products = [];
+      }
     },
     async loadSettings() {
       try {
@@ -558,6 +601,9 @@ export default {
         if (data.kiosk_welcome_title)    this.welcomeTitle    = data.kiosk_welcome_title;
         if (data.kiosk_welcome_subtitle) this.welcomeSubtitle = data.kiosk_welcome_subtitle;
         if (data.kiosk_tap_hint)         this.tapHint         = data.kiosk_tap_hint;
+
+        // [ONB-12 2026-08-28] Le tampon n'apparaît que s'il est déclaré.
+        this.tamponHalal = Boolean(Number(data.kiosk_halal_stamp ?? 0));
 
         // [PHASE-37] Load enabled languages from settings
         if (data.kiosk_languages_enabled) {
