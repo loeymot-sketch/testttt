@@ -281,7 +281,7 @@
                               correctif de symptôme.
                             -->
                             <li class="flex gap-1" v-if="normalizedExtras(item).length > 0">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
                                     <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
                                         {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span><span
@@ -290,7 +290,7 @@
                                 </p>
                             </li>
                             <li class="flex gap-1" v-else-if="unnamedExtrasCount(item) > 0">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs text-[#6E7191]">{{ $t('label.unnamed_extras', { count: unnamedExtrasCount(item) }) }}</p>
                             </li>
                             <!--
@@ -303,7 +303,7 @@
                               Même normaliseur que le ticket, donc même vérité.
                             -->
                             <li class="flex gap-1" v-if="normalizedAddons(item).length > 0">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.addons') }}:</h3>
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.addons') }}:</h3>
                                 <p class="text-xs" data-testid="pos-order-show-addons">
                                     <span v-for="(addon, index) in normalizedAddons(item)" :key="index">
                                         {{ addon.name }}<span v-if="addon.quantity > 1"> ×{{ addon.quantity }}</span><span
@@ -312,7 +312,7 @@
                                 </p>
                             </li>
                             <li class="flex gap-1" v-if="hasInstruction(item)">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{
                                     $t('label.instruction')
                                 }}:</h3>
                                 <p class="text-xs">{{ item.instruction }}</p>

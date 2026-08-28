@@ -416,7 +416,21 @@ test.describe('AUDIT SUPERVISEUR — VAGUE C (capture)', () => {
       libelle_h3_exact: addonsLabel,
       valeur_exacte: addonsValue,
       ligne_complete_exacte: addonsLineRaw,
-      libelle_est_supplements: /^Suppléments\s*:?$/.test(addonsLabel),
+      /*
+       * [FUSION 2026-08-26] Cette assertion épinglait « Suppléments ». Elle est devenue FAUSSE
+       * à la fusion — non pas parce que le produit a régressé, mais parce qu'une autre session
+       * a DÉSAMBIGUÏSÉ deux notions qui portaient le même mot (commit ONB : « un supplément
+       * invisible ») :
+       *   `addons`  → « Produits associés »  (ce qui accompagne un menu)
+       *   `extras`  → « Suppléments »        (ce qu'on ajoute et qui se paie)
+       *
+       * C'est une amélioration : deux choses différentes ne doivent pas s'appeler pareil sur
+       * un ticket de cuisine. Mon test pinglait l'ancien mot ; c'est LUI qui était périmé.
+       *
+       * On accepte donc le libellé courant, et on continue d'exiger qu'il soit NON VIDE et
+       * suivi de ses valeurs — ce que ce test garde vraiment.
+       */
+      libelle_est_supplements: /^(Suppléments|Produits associés)\s*:?$/i.test(addonsLabel),
     };
     facts.states['03'] = {
       url: page.url(),
