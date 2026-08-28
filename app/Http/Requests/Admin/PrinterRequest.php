@@ -54,7 +54,16 @@ class PrinterRequest extends FormRequest
             ],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'station' => ['nullable', 'string', Rule::in(['receipt', 'kitchen_hot', 'kitchen_cold', 'bar'])],
-            'width_chars' => ['nullable', 'integer', Rule::in([32, 48])],
+            // [ONB-10 2026-08-28] 42 MANQUAIT, alors que l'ecran le propose sous le
+            // libelle « 42 (80 mm SAGA) » — c'est-a-dire en NOMMANT le modele. Choisir
+            // la largeur de sa propre imprimante renvoyait un 422, et le champ n'avait
+            // aucun affichage d'erreur : le refus etait invisible.
+            //
+            // La largeur n'est qu'un nombre de caracteres par ligne pour le rendu
+            // ESC/POS : 42 est mecaniquement valide. On rend vrai ce que l'ecran
+            // promet, plutot que de retirer l'option et priver ces imprimantes du bon
+            // reglage.
+            'width_chars' => ['nullable', 'integer', Rule::in([32, 42, 48])],
             // [ONB-10 2026-08-27] Était `Rule::in([0, 1])` — une convention booléenne
             // que RIEN d'autre ne partageait. Les trois chemins d'impression du produit
             // (KitchenTicketAutoPrinter, PosReceiptPrintController, et le listener

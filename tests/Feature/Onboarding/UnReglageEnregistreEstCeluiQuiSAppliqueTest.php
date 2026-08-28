@@ -45,42 +45,79 @@ class UnReglageEnregistreEstCeluiQuiSAppliqueTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Les fichiers qui doivent passer par la porte unique, avec le nombre de lectures
-     * directes que chacun avait.
+     * ⚠️ VERSION 2 — la premiere listait TROIS fichiers en dur.
      *
-     * @return array<string, array{0:string, 1:int}>
+     * Un audit adverse l'a releve : un nouveau lecteur direct de
+     * `config('wheel.min_order_amount')` dans un QUATRIEME fichier n'aurait pas ete
+     * vu. Or c'est exactement ainsi que le defaut est ne — un lecteur ajoute d'un
+     * cote et pas de l'autre.
+     *
+     * On balaie donc tout `app/`, avec une liste blanche NOMMEE. Le banc devient un
+     * cliquet : toute nouvelle lecture directe le fait rougir, ou qu'elle soit.
      */
-    public function fichiersQuiLisaientLaConfigEnDirect(): array
+    public function test_aucune_lecture_directe_de_la_config_ne_subsiste_nulle_part(): void
     {
-        return [
-            'roue publique · affichage et application' => ['app/Http/Controllers/Frontend/WheelController.php', 3],
-            'écran de contrôle caisse'                 => ['app/Http/Controllers/Admin/Wheel/WheelCounterController.php', 1],
-            'service de la roue'                       => ['app/Services/Wheel/WheelService.php', 1],
-        ];
+        $racine = app_path();
+        $fautifs = [];
+
+        $iterateur = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($racine));
+
+        foreach ($iterateur as $fichier) {
+            if (! $fichier->isFile() || $fichier->getExtension() !== 'php') {
+                continue;
+            }
+
+            $source = file_get_contents($fichier->getPathname());
+
+            if ($source === false || ! str_contains($source, "config('wheel.min_order_amount'")) {
+                continue;
+            }
+
+            $relatif = 'app/' . ltrim(str_replace($racine, '', $fichier->getPathname()), '/');
+
+            if (in_array($relatif, self::LECTURES_LEGITIMES, true)) {
+                continue;
+            }
+
+            $fautifs[] = $relatif;
+        }
+
+        sort($fautifs);
+
+        $this->assertSame(
+            [],
+            $fautifs,
+            "Ces fichiers lisent le minimum dans le FICHIER de configuration au lieu de\n"
+            . "passer par `WheelSettingsService::minOrder()`. L'exploitant regle « minimum\n"
+            . "15 € » et cette surface applique autre chose — un reglage qui ment coute\n"
+            . "plus cher qu'un reglage absent.\n"
+            . implode("\n", $fautifs)
+        );
     }
 
     /**
-     * @dataProvider fichiersQuiLisaientLaConfigEnDirect
+     * Les seules lectures directes admises, chacune pour une raison ecrite.
+     *
+     * `WheelSettingsService` est la porte : il a le droit de lire le fichier, c'est
+     * meme son role — poser la valeur de depart quand l'exploitant n'a rien enregistre.
      */
-    public function test_aucune_lecture_directe_de_la_config_ne_subsiste(string $fichier, int $lecturesAvant): void
+    private const LECTURES_LEGITIMES = [
+        'app/Services/Wheel/WheelSettingsService.php',
+    ];
+
+    /**
+     * Contrôle de perimetre : sans lui, le balayage ci-dessus serait vert le jour ou
+     * la chaine cherchee change de forme (guillemets doubles, constante extraite),
+     * et il ne mesurerait plus rien.
+     */
+    public function test_le_balayage_mord_bien_sur_la_porte_elle_meme(): void
     {
-        $source = file_get_contents(base_path($fichier));
-
-        $this->assertNotFalse($source, "{$fichier} est introuvable.");
-
-        $this->assertStringNotContainsString(
-            "config('wheel.min_order_amount'",
-            $source,
-            "{$fichier} lit encore le minimum dans le FICHIER de configuration.\n"
-            . "Ce fichier en avait {$lecturesAvant}. L'exploitant règle « minimum 15 € »,\n"
-            . "et cette surface continue d'appliquer la valeur du fichier — un réglage\n"
-            . "qui ment coûte plus cher qu'un réglage absent."
-        );
+        $porte = file_get_contents(app_path('Services/Wheel/WheelSettingsService.php'));
 
         $this->assertStringContainsString(
-            'minOrder()',
-            $source,
-            "{$fichier} doit passer par `WheelSettingsService::minOrder()`, la porte unique."
+            "config('wheel.min_order_amount'",
+            $porte,
+            "La forme cherchee par le balayage n'existe plus : il ne mesure plus rien."
         );
     }
 

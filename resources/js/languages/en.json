@@ -154,6 +154,8 @@
             "filter_low": "Low",
             "to_buy_title": "🛒 To buy",
             "to_buy_empty": "Nothing to reorder right now.",
+            "raw_vierge": "You have not declared any raw material yet. Declare them to track stock and receive deliveries.",
+            "resold_vierge": "No resold product yet. Drinks and goods bought then resold as-is will appear here.",
             "raw_title": "Raw materials",
             "resold_title": "Resold products / Drinks",
             "col_name": "Name",

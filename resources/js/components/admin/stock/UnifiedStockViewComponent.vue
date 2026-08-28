@@ -153,7 +153,7 @@
                             <span role="columnheader">{{ $t('admin.unified_stock.col_status') }}</span>
                         </div>
                         <p v-if="rawMaterials.length === 0" class="usv-empty-inline" data-testid="usv-raw-empty">
-                            {{ $t('admin.unified_stock.no_match') }}
+                            {{ unFiltreEstActif ? $t('admin.unified_stock.no_match') : $t('admin.unified_stock.raw_vierge') }}
                         </p>
                         <div
                             v-for="row in rawMaterials"
@@ -193,7 +193,7 @@
                             <span role="columnheader">{{ $t('admin.unified_stock.col_status') }}</span>
                         </div>
                         <p v-if="resoldProducts.length === 0" class="usv-empty-inline" data-testid="usv-resold-empty">
-                            {{ $t('admin.unified_stock.no_match') }}
+                            {{ unFiltreEstActif ? $t('admin.unified_stock.no_match') : $t('admin.unified_stock.resold_vierge') }}
                         </p>
                         <div
                             v-for="row in resoldProducts"
@@ -250,6 +250,22 @@ export default {
         },
         hasMissingCost() {
             return (this.totals.missing_cost_count || 0) > 0;
+        },
+        /**
+         * [ONB-11 2026-08-28] Un filtre est-il REELLEMENT pose ?
+         *
+         * L'etat par defaut est « recherche vide, tous les statuts ». Un rayon vide
+         * dans cet etat ne veut pas dire « votre filtre est trop etroit », il veut
+         * dire « vous n'avez rien declare » — ce qui est la situation NORMALE d'une
+         * installation qui demarre.
+         *
+         * Sans cette distinction, `isEmpty()` ci-dessous exige que les DEUX rayons
+         * soient vides : une seule boisson revendue suffisait a faire afficher
+         * « Aucun element ne correspond au filtre » au rayon des matieres, alors
+         * qu'aucun filtre n'etait pose.
+         */
+        unFiltreEstActif() {
+            return (this.searchQuery || '').trim() !== '' || this.statusFilter !== 'all';
         },
         isEmpty() {
             if (!this.overview) {

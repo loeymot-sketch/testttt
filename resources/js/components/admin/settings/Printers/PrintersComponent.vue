@@ -134,6 +134,14 @@
                                 <option :value="42">42 (80 mm SAGA)</option>
                                 <option :value="48">48 (80 mm)</option>
                             </select>
+                            <!--
+                                [ONB-10 2026-08-28] Ce champ n'affichait AUCUNE erreur,
+                                alors que tous ses voisins en ont une. Le serveur
+                                refusait « 42 » et le commercant ne voyait rien : il
+                                cliquait, et rien ne se passait.
+                            -->
+                            <small class="db-field-alert" v-if="errors.width_chars"
+                                data-testid="printer-width-error">{{ errors.width_chars[0] }}</small>
                         </div>
 
                         <div class="form-col-12">

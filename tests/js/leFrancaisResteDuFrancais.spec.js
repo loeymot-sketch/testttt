@@ -39,8 +39,38 @@ describe('le français reste du français', () => {
         ].join('|'),
     );
 
-    /** Les mutilations produites par la substitution mot-à-mot. */
-    const MUTILATIONS = /Ajoutered|Mettre à jourd|Supprimerd|Créered/;
+    /**
+     * Les mutilations produites par la substitution mot-à-mot.
+     *
+     * ⚠️ VERSION 2. La première liste ne contenait que les résidus de conjugaison
+     * (`Ajoutered`, `Mettre à jourd`). Un audit adverse a trouvé trois valeurs qu'elle
+     * laissait passer :
+     *
+     *     label.your_address        « Your Adresse »
+     *     label.table_name          « Table Nom »
+     *     message.no_schedule_found « N° schedule found. »
+     *
+     * La dernière est révélatrice : « **No** schedule found » est devenu « **N°**
+     * schedule found » — la machine a pris la négation anglaise pour l'abréviation
+     * française de « numéro ».
+     *
+     * Un cliquet au vocabulaire trop étroit attrape la première vague et laisse
+     * passer la suivante, en donnant l'impression que le problème est traité.
+     *
+     * On vise donc DEUX formes précises plutôt qu'une liste large — le dépôt contient
+     * légitimement des mots anglais (« Uber Eats », « SumUp », « KDS », « Wizard »),
+     * et un filtre trop gourmand produit du bruit, c'est-à-dire un banc qu'on ignore.
+     */
+    const MUTILATIONS = new RegExp(
+        [
+            // Résidus de conjugaison substituée.
+            'Ajoutered', 'Mettre à jourd', 'Supprimerd', 'Créered',
+            // Un mot anglais très courant collé à un mot français dans la même valeur.
+            '\\bYour\\b', '\\bschedule\\b', '\\bfound\\b',
+            // « No » traduit comme le « N° » de numéro.
+            'N° (?:schedule|data|result|order|item)\\b',
+        ].join('|'),
+    );
 
     const feuilles = (noeud, chemin = '') => {
         if (noeud && typeof noeud === 'object') {
@@ -66,6 +96,12 @@ describe('le français reste du français', () => {
         const photo = toutes.find(([c]) => c === 'message.photo_update');
         expect(photo, 'message.photo_update a disparu du fichier.').toBeDefined();
         expect(photo[1]).toBe('Photo mise à jour.');
+
+        // Second témoin, sur la vague trouvée par l'audit : sans lui, l'élargissement
+        // du vocabulaire ci-dessous pourrait être annulé sans que rien ne le dise.
+        const adresse = toutes.find(([c]) => c === 'label.your_address');
+        expect(adresse, 'label.your_address a disparu du fichier.').toBeDefined();
+        expect(adresse[1]).toBe('Votre adresse');
     });
 
     it("aucune valeur française ne contient de vocabulaire anglais de confirmation", () => {
