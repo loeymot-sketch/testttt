@@ -174,6 +174,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import statusEnum from "../../../enums/modules/statusEnum";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
+import { rolesLibelles } from "../../../services/libelleRole";
 
 export default {
     name: "EmployeeCreateComponent",
@@ -210,7 +211,15 @@ export default {
             return this.$store.getters.authBranchId;
         },
         roles: function () {
-            return this.$store.getters["role/lists"];
+            // [ONB-06 2026-08-28] Le menu deroulant liait `label-by="name"` sur le nom
+            // TECHNIQUE : un restaurateur francais devait choisir entre « Branch
+            // Manager », « POS Operator » et « Stuff » — dont un est une faute de
+            // frappe historique (« Stuff » pour « Staff »). C'est le geste d'ouverture
+            // du produit : donner un role a son premier salarie.
+            //
+            // L'ecran « Role & Autorisations » traduisait deja ces memes roles ; celui-ci
+            // ne le faisait pas. Deux ecrans, deux vocabulaires.
+            return rolesLibelles(this.$store.getters["role/lists"], this.$t.bind(this));
         },
     },
     mounted() {

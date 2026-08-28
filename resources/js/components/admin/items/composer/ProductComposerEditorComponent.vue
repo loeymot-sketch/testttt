@@ -948,8 +948,21 @@ export default {
             }
         },
         categoryPublishWarning() {
-            const count = this.item?.product_count || this.item?.products_count || this.item?.items_count || 'N';
-            return `Cette opération va remplacer les wizards personnalisés de ${count} produits dans cette catégorie. Continuer ?`;
+            // [ONB-03 2026-08-28] Le repli valait litteralement `'N'` : la boite de
+            // dialogue lisait « ... de N produits ... », toujours, parce qu'AUCUN des
+            // trois champs testes n'existe dans `ItemCategoryResource`
+            // (`app/Http/Resources/ItemCategoryResource.php:18-33`). Au moment precis
+            // ou on lui demande de confirmer, le commercant lisait un compteur casse.
+            //
+            // Sans compteur fiable, on ne l'invente pas : on pose une phrase qui ne
+            // ment sur rien.
+            const count = Number(
+                this.item?.product_count ?? this.item?.products_count ?? this.item?.items_count ?? NaN,
+            );
+
+            return Number.isFinite(count) && count > 0
+                ? this.$t('label.composer.publish_confirm_n', { n: count })
+                : this.$t('label.composer.publish_confirm');
         },
         confirmCategoryPublish() {
             if (typeof window === 'undefined' || typeof window.confirm !== 'function') {

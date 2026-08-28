@@ -231,6 +231,15 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
+        'wizard_introuvable' => "Ce parcours de personnalisation est introuvable. Rechargez la page ; s'il a été supprimé, recréez-le.",
+        'wizard_sans_etape' => "Impossible de publier : ce parcours n'a aucune étape active. Activez au moins une étape avant de publier.",
+        'role_non_supprimable' => "Ce rôle fait partie du socle de l'application : il ne peut pas être supprimé. Vous pouvez en revanche modifier ses autorisations.",
+        'role_propre_non_modifiable' => "Vous ne pouvez pas modifier les autorisations de votre propre rôle — c'est une protection contre l'élévation de privilèges. Demandez à un autre administrateur de le faire.",
+        // [ONB-05 2026-08-28] Le commercant desactive un mode de commande depuis son
+        // ecran, et c'est son CLIENT qui recevait la phrase — en anglais.
+        'type_de_commande_desactive' => "Ce mode de commande n'est pas disponible en ce moment. Choisissez-en un autre, ou contactez le restaurant.",
+        'sur_place_desactive' => "Le service sur place n'est pas activé pour cet établissement.",
         // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
         // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
         'langue_par_defaut' => "Cette langue est la langue par défaut : désignez-en une autre comme langue par défaut avant de la supprimer.",

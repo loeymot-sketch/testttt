@@ -235,6 +235,15 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
+        'wizard_introuvable' => "This customisation flow could not be found. Reload the page; if it was deleted, create it again.",
+        'wizard_sans_etape' => "Cannot publish: this flow has no active step. Activate at least one step before publishing.",
+        'role_non_supprimable' => "This role is part of the application core and cannot be deleted. You can still change its permissions.",
+        'role_propre_non_modifiable' => "You cannot change the permissions of your own role — this guards against privilege escalation. Ask another administrator to do it.",
+        // [ONB-05 2026-08-28] Le commercant desactive un mode de commande depuis son
+        // ecran, et c'est son CLIENT qui recevait la phrase — en anglais.
+        'type_de_commande_desactive' => "This order type is not available right now. Choose another one, or contact the restaurant.",
+        'sur_place_desactive' => "Dine-in is not enabled for this branch.",
         // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
         // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
         'langue_par_defaut' => "This is the default language: set another one as default before deleting it.",

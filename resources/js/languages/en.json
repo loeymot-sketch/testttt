@@ -546,6 +546,7 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "extra_sauce_piege": "\u26a0\ufe0f The name contains \"sauce\" and the Group field is empty: the kiosk will treat it as a sauce and will NOT show it among the extras. Fill in the Group (for example \"Extra\") so it can be sold.",
         "menu_import_choose": "Choose a photo\u2026",
         "menu_import_no_file": "No photo chosen",
         "import_line": "Row {n}",
@@ -622,6 +623,10 @@
         "usage": "Usage",
         "type_a_message": "Type a message",
         "composer": {
+            "min_max_summary_unlimited": "= Optional, the customer can pick as many as they want.",
+            "min_max_summary_at_least": "= Required, at least {n}, no maximum.",
+            "publish_confirm_n": "This will replace the customisation of {n} products in this category. Continue?",
+            "publish_confirm": "This will replace the customisation of the products in this category. Continue?",
             "product_context": "Product",
             "choose_template": "Choose a template",
             "add_page": "Add page",
