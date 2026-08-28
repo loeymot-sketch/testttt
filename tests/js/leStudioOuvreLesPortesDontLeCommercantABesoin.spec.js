@@ -95,4 +95,40 @@ describe('le Studio ouvre les portes dont le commerçant a besoin', () => {
             + `vide. ${fantomes.join(', ')}`,
         ).toEqual([]);
     });
+
+    it("l'écran des rôles a enfin une porte, sur l'écran de l'équipe", () => {
+        // [ONB-06 2026-08-28] `v1-hidden-modules.js` masque `settings.role`, ce qui
+        // condamne son unique entrée externe (le menu Réglages). Un balayage par
+        // CHEMIN rendait zéro résultat : la route, l'écran et la permission
+        // existent, et il fallait connaître l'URL.
+        //
+        // Le commerçant qui recrute ne pouvait donc ni lire ni ajuster ce qu'un
+        // « Caissier » a le droit de faire — alors qu'il vient d'attribuer ce rôle
+        // à quelqu'un, sur cet écran même.
+        const s = lire('resources/js/components/admin/employees/EmployeeListComponent.vue');
+
+        expect(
+            s,
+            "L'écran de l'équipe n'ouvre pas les rôles : le commerçant qui recrute\n"
+            + "ne peut pas voir ce que le rôle qu'il attribue autorise.",
+        ).toContain("data-testid=\"employees-roles\"");
+
+        expect(s).toContain("{ name: 'admin.settings.role' }");
+
+        // ET LE POINT DÉLICAT : la permission du LIEN doit être celle de la ROUTE.
+        // `settingRoutes.js:467` porte `permissionUrl: "settings"`. Garder le lien
+        // par une autre permission produirait soit un lien mort — visible, puis
+        // refusé par la garde — soit un écran invisible à qui y a pourtant droit.
+        const bloc = s.slice(
+            s.indexOf('employees-roles') - 400,
+            s.indexOf('employees-roles') + 200,
+        );
+
+        expect(
+            bloc,
+            "Le lien vers les rôles n'est pas gardé par `settings`, la permission que\n"
+            + 'porte la route. Un lien et sa cible gardés différemment font toujours\n'
+            + "une porte qui ment — dans un sens ou dans l'autre.",
+        ).toContain("permissionChecker('settings')");
+    });
 });
