@@ -425,10 +425,27 @@ class DashboardService
         }
     }
 
+    /**
+     * [AUDIT-COMPTA 2026-08-29] « Total articles menu » compte le MENU, pas les lignes.
+     *
+     * Mesuré à l'écran le 2026-08-29 : le tableau de bord annonçait **123** quand le
+     * catalogue, deux clics plus loin, affichait **59 produits** — le même fait, deux
+     * nombres. `Item::count()` comptait toute la table : les 59 articles actifs, les 64
+     * désactivés, et 17 fiches de test. Un commerçant lit « mon menu a 123 articles »
+     * alors qu'il en sert 59.
+     *
+     * Les compteurs d'argent voisins avaient déjà reçu ce traitement — `totalSales`
+     * (DASH-NET-01) et `totalOrders` (DASH-01), tous deux le 2026-06-01. Celui-ci avait été
+     * oublié dans la passe.
+     *
+     * On aligne donc sur la définition du catalogue (`ItemService.php:159` et `:281`,
+     * `where('status', Status::ACTIVE)`) : même fait, même source. Le bandeau catalogue
+     * ferme d'ailleurs son arithmétique — 58 actifs + 1 indisponible = 59 produits.
+     */
     public function totalMenuItems()
     {
         try {
-            return Item::count();
+            return Item::query()->where('status', \App\Enums\Status::ACTIVE)->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
