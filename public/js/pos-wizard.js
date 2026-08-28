@@ -3372,7 +3372,25 @@
                     var sel = selections.sauceFrites && selections.sauceFrites[key] ? ' selected' : '';
                     var sfIdx = selections.sauceFritesOrder ? selections.sauceFritesOrder.indexOf(key) : -1;
                     var badge = sfIdx === 0 ? ' <span class="chip-free">✓</span>' : (sfIdx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
-                    h += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce_frite" data-id="' + key + '">';
+                    /*
+                     * [PROPRIETAIRE 2026-08-28] LE BLOC « SAUCE POUR FRITES » AUSSI.
+                     *
+                     * L'assistant rend les sauces par DEUX chemins : celui du sandwich, et
+                     * celui-ci, pour les frites. Ils partagent la meme grille — le second
+                     * avait donc pris la nouvelle taille, mais AUCUNE couleur : ses pastilles
+                     * restaient blanches juste sous des pastilles colorees. D'ou le « non pas
+                     * encore ! » du proprietaire, parfaitement fonde.
+                     *
+                     * Meme calcul que plus haut, et volontairement identique : la couleur
+                     * d'une sauce ne depend pas de ce qu'on trempe dedans.
+                     */
+                    var nomSauceFrite = String(sauce.name || '')
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    h += '<button type="button" class="sauce-chip sauce--' + nomSauceFrite + sel + '" data-type="sauce_frite" data-id="' + key + '">';
                     h += sauce.name + badge;
                     h += '</button>';
                 });
