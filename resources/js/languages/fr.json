@@ -1318,6 +1318,7 @@
         "mail_username": "Nom d'utilisateur email",
         "mark_done": "Marquer comme terminé",
         "maximum_discount": "Remise maximale",
+        "maximum_discount_hint": "Laissez 0 pour ne poser AUCUN plafond : la remise s'appliquera en entier, quel que soit le montant de la commande.",
         "members": "Membres",
         "menu": "Menu",
         "message": "Message",

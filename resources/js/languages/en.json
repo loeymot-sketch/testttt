@@ -919,6 +919,7 @@
         "discount_type": "Discount Type",
         "minimum_order": "Minimum Order Amount",
         "maximum_discount": "Maximum Discount",
+        "maximum_discount_hint": "Leave 0 for NO cap: the discount applies in full, whatever the order total.",
         "otp_digit_limit": "Otp Digit Limit",
         "otp_expire_time": "Otp Expire Time",
         "limit_per_user": "Limit Per User",
