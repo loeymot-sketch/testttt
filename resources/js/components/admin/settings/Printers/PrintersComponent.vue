@@ -35,8 +35,8 @@
                             <!-- [ONB-10 2026-08-27] 5 = App\Enums\Status::ACTIVE. Cet écran testait
                                  `=== 1` et affichait donc « Archivé », en gris, pour les deux
                                  imprimantes bien actives du Cayenne. -->
-                            <span :class="Number(printer.status) === 5 ? 'text-green-600' : 'text-gray-400'">
-                                {{ Number(printer.status) === 5 ? $t('label.active') : $t('label.archived') }}
+                            <span :class="imprimanteActive(printer.status) ? 'text-green-600' : 'text-gray-400'">
+                                {{ imprimanteActive(printer.status) ? $t('label.active') : $t('label.archived') }}
                             </span>
                         </td>
                         <td class="db-table-body-td">
@@ -185,6 +185,7 @@
 import axios from 'axios';
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
+import { statutImprimante, imprimanteActive } from '../../../../services/statutImprimante';
 
 /**
  * [AUDIT-A P1-2 2026-08-06] Gestion des IMPRIMANTES — le CRUD + test-print API
@@ -216,6 +217,11 @@ export default {
         this.fetch();
     },
     methods: {
+        // Le gabarit ne voit pas les imports de module : on expose la normalisation
+        // en méthode, sinon `imprimanteActive` y vaut `undefined` au rendu.
+        imprimanteActive,
+        statutImprimante,
+
         stationLabel(station) {
             const map = {
                 receipt: this.$t('label.station_receipt'),
@@ -248,7 +254,11 @@ export default {
             this.form = {
                 name: printer.name, station: printer.station, type: printer.type || 'escpos_tcp',
                 host: printer.host, port: Number(printer.port) || 9100,
-                width_chars: Number(printer.width_chars) || 48, status: Number(printer.status) || 5,
+                width_chars: Number(printer.width_chars) || 48,
+                // [ONB-10 2026-08-28] Normalisé : une valeur héritée (1, posée par le
+                // défaut de schéma) ne correspondait à aucun bouton radio, et le
+                // formulaire s'ouvrait vide.
+                status: statutImprimante(printer.status),
             };
             this.errors = {};
             this.modalActive = true;
