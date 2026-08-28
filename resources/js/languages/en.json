@@ -426,6 +426,16 @@
         "print_browser_manual": "Print via browser"
     },
     "menu": {
+        "cash_sessions_report": "Cash Session Report",
+        "composer": "Composer",
+        "create": "New product",
+        "delivery_cash_view": "Delivery Cash",
+        "floorplan": "Floor plan",
+        "menu_import_title": "Import my menu",
+        "observability_outbox": "Event outbox",
+        "observability_system": "System status",
+        "payment_terminals": "Payment Terminals",
+        "wizard_advanced_launcher": "Advanced wizard",
         "historique": "History",
         "encaissement": "Collection",
         "roue": "The wheel",
@@ -536,6 +546,8 @@
         "raw_material_adjust": "Stock adjustment"
     },
     "label": {
+        "menu_import_choose": "Choose a photo\u2026",
+        "menu_import_no_file": "No photo chosen",
         "import_line": "Row {n}",
         "select": "\u2014 Select \u2014",
         "menu_import_title": "Import my menu from a photo",

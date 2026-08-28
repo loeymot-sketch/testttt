@@ -12,14 +12,28 @@
                     <label class="db-field-title" for="photo_carte">
                         {{ $t("label.menu_import_photo") }}
                     </label>
+                    <!-- [ONB-04 2026-08-28 · VU A L'ECRAN] Le champ de fichier natif
+                         affiche « Choose File / No file chosen » en ANGLAIS : ce texte
+                         vient du navigateur, pas de la page, et aucune traduction ne
+                         peut l'atteindre. On masque le champ natif et on le pilote par
+                         un label — il reste lie par son `for`, donc utilisable au
+                         clavier et annonce par un lecteur d'ecran. -->
                     <input
                         id="photo_carte"
                         ref="fichier"
                         type="file"
-                        class="db-field-control"
+                        class="import-carte__champ-natif"
                         :accept="formatsAcceptes"
                         @change="choisirPhoto"
                     />
+                    <div class="import-carte__depot">
+                        <label for="photo_carte" class="db-btn py-2 bg-gray-200 cursor-pointer">
+                            {{ $t("label.menu_import_choose") }}
+                        </label>
+                        <span class="import-carte__nom">
+                            {{ photo ? photo.name : $t("label.menu_import_no_file") }}
+                        </span>
+                    </div>
                     <small class="db-field-hint">{{ $t("label.menu_import_formats") }}</small>
                     <p v-if="erreurPhoto" class="db-field-alert">{{ erreurPhoto }}</p>
                 </div>
@@ -350,3 +364,41 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+/* Masque le champ natif SANS le retirer de l'arbre d'accessibilite : il reste
+   focalisable au clavier et le label le declenche. `display: none` le rendrait
+   inatteignable au clavier. */
+.import-carte__champ-natif {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.import-carte__depot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.import-carte__nom {
+    color: #475569;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+/* Le label doit montrer le focus du champ qu'il pilote, sinon un utilisateur au
+   clavier ne sait pas ou il est. */
+.import-carte__champ-natif:focus-visible + .import-carte__depot label {
+    outline: 2px solid #F4501E;
+    outline-offset: 2px;
+}
+</style>

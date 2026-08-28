@@ -427,6 +427,16 @@
         "print_browser_manual": "Imprimer via le navigateur"
     },
     "menu": {
+        "composer": "Composeur",
+        "create": "Nouveau produit",
+        "delivered_order_details": "D\u00e9tail de la commande livr\u00e9e",
+        "delivery_cash_view": "Caisse livreur",
+        "floorplan": "Plan de salle",
+        "menu_import_title": "Importer ma carte",
+        "observability_outbox": "File d'\u00e9v\u00e9nements",
+        "observability_system": "\u00c9tat du syst\u00e8me",
+        "order_details": "D\u00e9tail de la commande",
+        "wizard_advanced_launcher": "Assistant avanc\u00e9",
         "historique": "Historique",
         "encaissement": "Encaissement",
         "roue": "La roue",
@@ -531,6 +541,8 @@
         "raw_material_adjust": "Ajustement stock"
     },
     "label": {
+        "menu_import_choose": "Choisir une photo\u2026",
+        "menu_import_no_file": "Aucune photo choisie",
         "import_line": "Ligne {n}",
         "select": "\u2014 S\u00e9lectionner \u2014",
         "menu_import_title": "Importer ma carte depuis une photo",
