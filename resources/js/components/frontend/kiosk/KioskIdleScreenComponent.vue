@@ -450,8 +450,16 @@ export default {
   },
   mounted() {
     this.applyLocalizedDefaults();
-    this.loadSettings();
-    this.chargerLaVitrine();
+    /*
+     * [PROPRIETAIRE 2026-08-28] L'ORDRE COMPTE, ET IL N'ETAIT PAS TENU.
+     *
+     * `loadSettings()` est asynchrone. Appele sans `await`, il rendait la main
+     * AVANT d'avoir rempli `settingsRaw` — et `chargerLaVitrine()` lisait donc une
+     * declaration encore vide, retombant a chaque fois sur les « mis en avant ».
+     * Le correctif aurait ete silencieusement inoperant : la borne aurait continue
+     * d'afficher les mauvais produits, sans qu'aucun test ne rougisse.
+     */
+    this.loadSettings().then(() => this.chargerLaVitrine());
     this.startDotAnimation();
     this.startCarousel();
     this.computeStageScale();
@@ -622,7 +630,55 @@ export default {
 
       return null;
     },
+    /**
+     * [PROPRIETAIRE 2026-08-28] LA VITRINE DECLAREE PASSE AVANT LES « MIS EN AVANT ».
+     *
+     * Constat du proprietaire sur sa borne : « avant y avait les sandwiches, c'etait
+     * bien cadre ; la c'est trop grand et ca affiche d'autres produits que je voulais
+     * pas afficher, ce ne sont pas nos meilleures ventes ». Les deux reproches sont
+     * justes, et ils ont deux causes differentes :
+     *
+     *   LE CADRAGE — les visuels d'accueil livres sont DETOURES et cadres pour un hero
+     *   de 900 px. `featured-items` rend des photos produit brutes : dans le meme
+     *   cadre, elles paraissent enormes.
+     *
+     *   LA SELECTION — `is_featured` alimente la section « mis en avant » du SITE
+     *   PUBLIC. Ce n'est pas une description de la vitrine de la borne. En production
+     *   il designait Tacos M, Big Tacos, Big Cayenne… la ou le proprietaire montrait
+     *   ses sandwiches.
+     *
+     * La vitrine lit donc d'abord `kiosk_attract_showcase`, sa propre declaration.
+     * Vide, on retombe sur `featured-items` : un nouveau commercant garde exactement
+     * ce qu'ONB-12 lui a donne, et ne verra jamais la carte d'un autre etablissement.
+     */
+    vitrineDeclaree() {
+      const brut = this.settingsRaw?.kiosk_attract_showcase;
+      if (!brut) return [];
+
+      let liste = brut;
+      if (typeof brut === 'string') {
+        try {
+          liste = JSON.parse(brut);
+        } catch (_) {
+          return [];
+        }
+      }
+      if (!Array.isArray(liste)) return [];
+
+      return liste
+        .map((p) => ({ name: p?.name, img: p?.img }))
+        .filter((p) => p.name && p.img)
+        .slice(0, 8);
+    },
     async chargerLaVitrine() {
+      // La declaration du commercant prime. Elle n'exige aucun appel reseau.
+      const declaree = this.vitrineDeclaree();
+      if (declaree.length) {
+        this.products = declaree;
+        this.heroIdx = 0;
+        return;
+      }
+
       try {
         const res = await axios.get('frontend/item/featured-items');
         const items = res?.data?.data || res?.data || [];

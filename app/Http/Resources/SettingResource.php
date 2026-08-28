@@ -124,6 +124,28 @@ class SettingResource extends JsonResource
             // toujours moche. Vide par defaut : on retombe alors sur le logo general,
             // puis sur le NOM du commercant en toutes lettres.
             'kiosk_attract_logo'=> $this->info['kiosk_attract_logo'] ?? null,
+            /*
+             * [PROPRIETAIRE 2026-08-28] LA VITRINE DE L'ECRAN D'ACCUEIL, DECLAREE.
+             *
+             * Ce que le proprietaire a constate sur SA borne : « avant y avait les
+             * sandwiches, c'etait bien cadre ; la c'est trop grand et ca affiche
+             * d'autres produits que je voulais pas, ce ne sont pas nos meilleures
+             * ventes ».
+             *
+             * Il avait raison sur les deux points. ONB-12 a remplace une selection
+             * choisie a la main — huit produits avec des visuels DETOURES, cadres
+             * pour le hero de 900 px — par un appel a `featured-items`. Ce drapeau
+             * `is_featured` alimente AUSSI la section « mis en avant » du site
+             * public : il ne decrit pas la vitrine de la borne, et le corriger
+             * changerait le site en meme temps.
+             *
+             * La vitrine a donc sa PROPRE declaration. Vide par defaut : on retombe
+             * alors sur `featured-items`, et un nouveau commercant garde exactement
+             * le comportement qu'ONB-12 lui a donne. Rien n'est repris a personne.
+             *
+             * Forme : [{ "name": "Le Terminator", "img": "/images/…/terminator.webp" }]
+             */
+            'kiosk_attract_showcase' => $this->info['kiosk_attract_showcase'] ?? null,
 
             // [PHASE-37] Kiosk multi-language settings
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),

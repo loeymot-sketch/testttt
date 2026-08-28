@@ -1595,22 +1595,47 @@
 }
 
 /* --- C1: Sauces en chips compacts --- */
+/*
+ * [PROPRIETAIRE 2026-08-28] « les choix, on a dit de lui mettre plus grand pour occuper
+ * tout l'espace quand y en a, ainsi que mettre des couleurs — comme ca c'est plus facile
+ * a choisir pour le caissier ».
+ *
+ * CE QUI ETAIT LA : douze sauces en pastilles BLANCHES identiques, texte de 12 px, marges
+ * de 5 px, serrees en haut a droite d'un panneau a moitie vide. Rien ne les distinguait
+ * sinon un mot a relire a chaque commande. Les crudites, juste a cote, sont deja colorees
+ * (vert = ajoute, rouge = retire) — c'est ce modele-la que le proprietaire voulait etendre.
+ *
+ * PLUS GRAND : la pastille passe de 5/12 px de marge a 12/18, et son texte de 12 a 15 px.
+ * `flex: 1 1 auto` avec une largeur minimale les fait GRANDIR pour remplir chaque ligne au
+ * lieu de se tasser a gauche — c'est le « occuper tout l'espace quand y en a ».
+ *
+ * COLOREES : la teinte suit la POSITION, donc elle est STABLE — une sauce garde sa couleur
+ * tant que la carte ne bouge pas, et la memoire du geste s'installe (« l'algerienne, c'est
+ * l'orange, en premier »). Huit teintes qui tournent, assez pales pour que le texte sombre
+ * reste lisible sur chacune.
+ *
+ * L'etat CHOISI garde son rouge plein : au milieu de teintes pastel, il doit continuer de
+ * sauter aux yeux — c'est lui qui dit ce qui part en cuisine.
+ */
 .sauce-chips-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     padding: 4px 0;
 }
 
 .sauce-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px 12px;
-    border: 1.5px solid #D9DBE9;
+    justify-content: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 120px;
+    padding: 12px 18px;
+    border: 2px solid #D9DBE9;
     border-radius: 20px;
     background: white;
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 600;
     color: #1B1B3A;
     font-family: 'Rubik', sans-serif;
@@ -1619,15 +1644,25 @@
     white-space: nowrap;
 }
 
+.sauce-chip:nth-child(8n+1) { background: #FFE8D6; border-color: #F0BF97; }
+.sauce-chip:nth-child(8n+2) { background: #DFEFE4; border-color: #A8D2B6; }
+.sauce-chip:nth-child(8n+3) { background: #DEEAF7; border-color: #A6C3E3; }
+.sauce-chip:nth-child(8n+4) { background: #F7E2EE; border-color: #E0AECB; }
+.sauce-chip:nth-child(8n+5) { background: #FFF0C9; border-color: #EBD08C; }
+.sauce-chip:nth-child(8n+6) { background: #E8E0F5; border-color: #C0B0E0; }
+.sauce-chip:nth-child(8n+7) { background: #D9EEEB; border-color: #9FCFC9; }
+.sauce-chip:nth-child(8n+8) { background: #FBE0DA; border-color: #EAB2A5; }
+
 .sauce-chip:hover {
     border-color: #E93C3C;
     background: #FFF5F5;
 }
 
 .sauce-chip.selected {
-    background: #E93C3C;
-    border-color: #E93C3C;
+    background: #E93C3C !important;
+    border-color: #E93C3C !important;
     color: white;
+    box-shadow: 0 2px 10px rgba(233, 60, 60, 0.28);
 }
 
 .sauce-chip .chip-free {
