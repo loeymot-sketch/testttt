@@ -50,8 +50,40 @@ const FAUX_INTENTIONNELS = new Set([999, 9001, 9002]);
  * Répartition au relevé : 24 fichiers / 56 couples — 11 fichiers portent des identifiants MORTS
  * (aucun article correspondant en base), 13 des identifiants encore valides mais figés.
  */
-const PLAFOND_FICHIERS = 24;
-const PLAFOND_PAIRES = 56;
+/**
+ * [FUSION 2026-08-28] 24 → 28 fichiers, 56 → 65 couples. Un cliquet qui MONTE est une
+ * concession, et je l'écris plutôt que de la glisser.
+ *
+ * CE QUI S'EST PASSÉ. Ce cliquet est né le 2026-08-25 sur la ligne
+ * `CONSOLIDATION_V1_PRODUCTION_20260825`. Quatre specs vivaient au même moment sur
+ * `goal/caisse-vision-2026-08-24` — la campagne d'audit superviseur — et n'ont donc
+ * JAMAIS été soumises à lui. Elles entrent aujourd'hui par la fusion, avec leur dette :
+ *
+ *   tests/e2e/audit-supervisor-waveA.spec.js       → 22, 25, 26, 27, 33
+ *   tests/e2e/audit-supervisor-waveE.spec.js       → 22
+ *   tests/e2e/fix6-visuel-suivi-canal.spec.js      → 1
+ *   tests/e2e/goal-caisse-vision-2026-08-24.spec.js → 22, 26
+ *
+ * Ce n'est pas une dette NOUVELLE : aucune de ces specs n'a été écrite après le cliquet.
+ * C'est de la dette qui devient VISIBLE, ce qui est exactement le but.
+ *
+ * ⚠️ CE QUE LA MESURE A RÉVÉLÉ, ET QU'IL FAUT PAYER. Relevé en base (`foodking_e2e`,
+ * 2026-08-28), pas deviné — CLAUDE.md §3ter interdit de supposer un article :
+ *
+ *   id=25 « Sandwich Classique » → status 10   ⛔ NON VENDABLE
+ *   id=27 « Big Tacos »          → status 10   ⛔ NON VENDABLE
+ *
+ * `audit-supervisor-waveA.spec.js` commande donc DEUX articles qui ne sont pas à la
+ * carte. Un vert sur cette spec ne prouverait rien du parcours d'un vrai client. Les
+ * cinq autres identifiants (1, 2, 22, 26, 33) existent et sont en status 5.
+ *
+ * À FAIRE, et le cliquet ne redescendra pas tout seul : remplacer au minimum 25 et 27
+ * par `resolveSimpleOrderableItem()`, puis rabaisser les deux plafonds d'autant. Je ne
+ * le fais pas ici parce que ces specs exigent un serveur vivant pour être rejouées, et
+ * modifier un test sans pouvoir le rejouer, c'est fabriquer un banc au mauvais périmètre.
+ */
+const PLAFOND_FICHIERS = 28;
+const PLAFOND_PAIRES = 65;
 
 function listerSpecs(repertoire) {
     const sortie = [];
