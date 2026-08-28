@@ -46,6 +46,79 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
         }
     }
 
+    /**
+     * [ONB-02 2026-08-28] Accepter le fichier que l'application vient d'exporter.
+     *
+     * `ItemExport::headings()` ecrit des en-tetes TRADUITS
+     * (`trans('all.label.name')` -> « Nom », « Categorie », « Prix »...), et
+     * `WithHeadingRow` les slugge : `nom`, `categorie`, `prix`. L'import, lui,
+     * cherchait `name`, `category`, `price`. AUCUNE colonne ne correspondait.
+     *
+     * Le commercant exportait sa carte, corrigeait deux prix, reimportait le meme
+     * fichier : toutes les lignes echouaient sur `name required`, `SkipsOnFailure`
+     * les avalait, et l'ecran annoncait un succes. Le SEUL moyen d'editer sa carte
+     * en masse etait un aller-retour qui ne revenait jamais.
+     *
+     * (Le defaut ne frappait pas que le francais : `all.label.item_category_id` donne
+     * « Item Category Id » en anglais, sluggue `item_category_id`, quand l'import
+     * attend `category` — deux colonnes ne bouclaient donc pas meme en anglais.)
+     *
+     * Les alias sont DERIVES des memes cles de traduction que l'export utilise :
+     * si quelqu'un reformule un libelle, les deux bouts bougent ensemble. Une table
+     * ecrite a la main aurait derive au premier changement.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    public function prepareForValidation($row, $index)
+    {
+        foreach (self::aliasDesColonnes() as $alias => $canonique) {
+            if (! array_key_exists($canonique, $row) && array_key_exists($alias, $row)) {
+                $row[$canonique] = $row[$alias];
+            }
+        }
+
+        return $row;
+    }
+
+    /**
+     * Alias d'en-tete -> nom de colonne attendu, pour toutes les langues installees.
+     *
+     * @return array<string, string>
+     */
+    private static function aliasDesColonnes(): array
+    {
+        // Cle de traduction utilisee par ItemExport::headings() -> colonne attendue ici.
+        $correspondances = [
+            'all.label.name'             => 'name',
+            'all.label.item_category_id' => 'category',
+            'all.label.price'            => 'price',
+            'all.label.item_type'        => 'item_type',
+            'all.label.tax_id'           => 'tax',
+            'all.label.status'           => 'status',
+            'all.label.featured'         => 'featured',
+            'all.label.caution'          => 'caution',
+            'all.label.description'      => 'description',
+        ];
+
+        $alias = [];
+
+        foreach (['fr', 'en', 'ar', 'bn', 'de'] as $langue) {
+            foreach ($correspondances as $cle => $colonne) {
+                $libelle = trans($cle, [], $langue);
+
+                if (! is_string($libelle) || $libelle === '' || $libelle === $cle) {
+                    continue;
+                }
+
+                // Meme sluggage que celui applique par WithHeadingRow.
+                $alias[\Illuminate\Support\Str::slug($libelle, '_')] = $colonne;
+            }
+        }
+
+        return $alias;
+    }
+
     public function rules(): array
     {
         return [
@@ -89,12 +162,35 @@ class ItemImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFail
             // s'était pas bouché, il s'était déplacé — c'est un agent adverse qui l'a
             // trouvé, pas moi.
             'tax' => ['required', 'numeric'],
-            'item_type' => ['required'],
+            // [ONB-02 2026-08-28] `EnumAppLibrary` retombait SILENCIEUSEMENT sur une
+            // valeur par defaut quand elle ne reconnaissait pas la saisie : « Actif »
+            // devenait INACTIF, « Vegetarien » devenait VEG quoi qu'il arrive. Les 45
+            // produits etaient crees invisibles, et l'ecran disait « reussi ».
+            // On refuse desormais, en NOMMANT les valeurs acceptees — sinon
+            // « valeur invalide » ne dit pas au commercant quoi ecrire a la place.
+            'item_type' => ['required', function ($attribut, $valeur, $echec) {
+                if (EnumAppLibrary::itemType($valeur) === null) {
+                    $echec("« {$valeur} » n'est pas un type de produit reconnu. Valeurs "
+                        . 'acceptees : ' . implode(' · ', EnumAppLibrary::valeursAcceptees('itemType')));
+                }
+            }],
             'price' => ['required', new IniAmount()],
-            'featured' => ['required'],
+            'featured' => ['required', function ($attribut, $valeur, $echec) {
+                if (EnumAppLibrary::itemFeature($valeur) === null) {
+                    $echec("« {$valeur} » n'est pas une reponse reconnue. Valeurs "
+                        . 'acceptees : ' . implode(' · ', EnumAppLibrary::valeursAcceptees('ask')));
+                }
+            }],
             'description' => ['nullable', 'string', 'max:5000'],
             'caution' => ['nullable', 'string', 'max:5000'],
-            'status' => ['required', 'max:24'],
+            'status' => ['required', 'max:24', function ($attribut, $valeur, $echec) {
+                if (EnumAppLibrary::itemStatus($valeur) === null) {
+                    $echec("« {$valeur} » n'est pas un statut reconnu. Sans cette "
+                        . 'correction le produit serait cree INACTIF, donc invisible a la '
+                        . 'borne comme a la caisse. Valeurs acceptees : '
+                        . implode(' · ', EnumAppLibrary::valeursAcceptees('statuse')));
+                }
+            }],
         ];
     }
 
