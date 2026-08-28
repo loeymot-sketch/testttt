@@ -93,10 +93,75 @@ describe('ONB-01 · jours de la semaine', () => {
             'utf8',
         );
 
-        expect(source).toContain('dayEnum.key');
+        /**
+         * [ONB-01 2026-08-28 · ASSERTION RESSERRÉE] `toContain('dayEnum.key')` était
+         * trop lâche : elle passait aussi sur `{{ dayEnum.key }}` tout court, qui
+         * afficherait « day_monday » en toutes lettres au commerçant. Le banc aurait
+         * donc été vert sur un écran affichant la clé brute — soit un défaut PIRE que
+         * l'anglais qu'il devait corriger.
+         *
+         * On exige maintenant la forme exacte : la clé passée à `$t`.
+         * Trouvé par un agent adverse lancé sur mon propre travail.
+         */
+        expect(
+            source,
+            "la clé doit passer par \$t() — affichée telle quelle, elle donnerait "
+            + "« day_monday » à l'écran",
+        ).toMatch(/\$t\(\s*["']label\.["']\s*\+\s*dayEnum\.key/);
+
+        expect(
+            /\{\{\s*dayEnum\.key\s*\}\}/.test(source),
+            "l'écran afficherait la clé de traduction brute (« day_monday »)",
+        ).toBe(false);
+
         expect(
             source.includes('{{ dayEnum.name }}'),
             "l'écran est repassé sur le nom anglais brut",
         ).toBe(false);
+    });
+
+    /**
+     * [ONB-01 2026-08-28] Vérification de l'API, pas de ma mémoire de l'API.
+     *
+     * L'écran appelle `$t("label." + key, dayEnum.name)`. En vue-i18n **v8**, un
+     * second argument de type chaîne désignait la LOCALE — l'appel aurait cherché une
+     * langue nommée « Monday », échoué, et serait retombé sur l'anglais : le défaut
+     * d'origine intact sous un correctif d'apparence. En **v9**, la même position est
+     * le message par défaut.
+     *
+     * Le projet est en 9.14.5, donc la forme est bonne — mais c'est exactement le
+     * genre de fait qu'on croit savoir. On l'exerce.
+     */
+    it('le second argument de $t est bien un repli, pas une locale', async () => {
+        const { createI18n } = await import('vue-i18n');
+
+        const i18n = createI18n({
+            legacy: false,
+            locale: 'fr',
+            fallbackLocale: 'en',
+            messages: {
+                fr: { label: { day_monday: 'Lundi' } },
+                en: { label: { day_monday: 'Monday' } },
+            },
+        });
+
+        const t = i18n.global.t;
+
+        expect(
+            t('label.' + 'day_monday', 'Monday'),
+            'une clé présente en français doit rendre le français, pas le repli',
+        ).toBe('Lundi');
+
+        // ⚠️ Ce cas doit porter sur une clé absente des DEUX langues. Une clé présente
+        // en anglais serait rendue par la `fallbackLocale`, pas par le second argument :
+        // le test passerait sans rien prouver. C'est le piège dans lequel la première
+        // version de ce banc était tombée — la trace `[intlify] Fall back to translate`
+        // l'a dit tout haut.
+        expect(
+            t('label.' + 'day_inexistant', 'Repli attendu'),
+            "second argument traité comme une LOCALE : ce serait la v8, et l'appel "
+            + "`$t('label.' + key, dayEnum.name)` de l'écran chercherait une langue "
+            + 'nommée « Monday » au lieu de rendre un repli',
+        ).toBe('Repli attendu');
     });
 });

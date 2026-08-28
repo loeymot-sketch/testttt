@@ -188,6 +188,7 @@
 <script>
 import appService from '../../../services/appService';
 import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
+import { preRemplissageComptage } from '../../../services/preRemplissageComptage';
 
 /**
  * [GOAL_CAYENNE_FINITION_2026-08-13 / §6 Vague 5] axios est global (bootstrap
@@ -267,7 +268,7 @@ export default {
             // Zéro est aussi le bon point de départ métier : on saisit ici ce qu'on a
             // COMPTÉ sur l'étagère, et un comptage physique n'est jamais négatif.
             this.form = {
-                target_on_hand: Math.max(0, this.roundQty(material.on_hand)),
+                target_on_hand: preRemplissageComptage(material.on_hand),
                 reason: '',
                 note: '',
             };

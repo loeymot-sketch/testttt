@@ -101,6 +101,42 @@ class TotalDuPdfDeVentesNetteLesRemboursementsTest extends TestCase
         return $branche;
     }
 
+    /**
+     * [ONB-07 2026-08-28 · JEU DE DONNÉES CORRIGÉ] Le précédent ne distinguait rien.
+     *
+     * `semerDeuxVentesEtUnMiroir()` donne 30 + 20 − 30. Avec la garde
+     * `isRealizedRevenueRow()` le Total vaut 20 ; SANS la garde il vaut… 20 aussi,
+     * parce que les trois lignes sont « réalisées » et que la somme brute est la même.
+     * Vérifié en retirant la branche du gabarit : le banc restait VERT.
+     *
+     * Ce qui fait mordre la garde, c'est une ligne qu'elle REJETTE. Le prédicat écarte
+     * une vente à statut terminal (annulée / refusée) qui reste marquée payée, dès lors
+     * qu'elle n'est pas la contre-écriture d'un parent. On en sème une à 100 € :
+     *
+     *   · avec la garde   → 30 + 20 − 30            = 20 €
+     *   · sans la garde   → 30 + 20 − 30 + 100      = 120 €
+     *
+     * Le document imprimerait 120 € de chiffre d'affaires dont 100 € n'ont jamais été
+     * encaissés. C'est CE chiffre-là qui partirait chez le comptable.
+     */
+    private function semerAussiUneVenteAnnuleeMaisPayee(): Branch
+    {
+        $branche = $this->semerDeuxVentesEtUnMiroir();
+
+        Order::factory()->create([
+            'branch_id'        => $branche->id,
+            'order_type'       => OrderType::KIOSK,
+            'order_datetime'   => Carbon::now('Europe/Paris')->setTime(12, 0),
+            'is_advance_order' => Ask::NO,
+            'status'           => OrderStatus::CANCELED,
+            'payment_status'   => PaymentStatus::PAID,
+            'total'            => 100,
+            'source'           => Source::WEB,
+        ]);
+
+        return $branche;
+    }
+
     private function admin(): User
     {
         $admin = User::factory()->create(['branch_id' => 0]);
@@ -109,6 +145,144 @@ class TotalDuPdfDeVentesNetteLesRemboursementsTest extends TestCase
         $admin->givePermissionTo(['sales-report', 'pos-orders']);
 
         return $admin;
+    }
+
+    /**
+     * Rend le VRAI gabarit du document, avec le jeu de données que le contrôleur lui
+     * passe, et renvoie la ligne « Total ».
+     *
+     * [ONB-07 2026-08-28 · ANGLE MORT CORRIGÉ] `totalDuDocument()` ci-dessous
+     * RÉIMPLÉMENTE la somme du gabarit en PHP. Elle vérifie donc sa propre copie :
+     * si quelqu'un retirait le `if (isRealizedRevenueRow(...))` de
+     * `pdf/sales_report.blade.php`, ce banc resterait vert et le Total imprimé
+     * repartirait en surestimation — exactement le défaut qu'il est censé garder.
+     *
+     * Ce banc-ci rend le gabarit. C'est le seul endroit de la suite où le DOCUMENT
+     * lui-même est exercé : les deux sentinelles existantes couvrent le prédicat et
+     * l'écran, jamais le rendu.
+     *
+     * Trouvé par un agent adverse lancé sur mon propre travail.
+     */
+    private function ligneTotalDuDocumentRendu(): string
+    {
+        $requete = new PaginateRequest();
+        $requete->merge(['paginate' => 0]);
+
+        $html = view('pdf.sales_report', [
+            'company'    => app(\App\Services\CompanyService::class)->list(),
+            'theme_logo' => null,
+            'orders'     => app(OrderService::class)->list($requete, false),
+            'copyright'  => null,
+        ])->render();
+
+        $this->assertMatchesRegularExpression(
+            '/<tr class="total">/',
+            $html,
+            'Le gabarit ne contient plus de ligne « Total » : adapter ce banc.'
+        );
+
+        preg_match('/<tr class="total">(.*?)<\/tr>/s', $html, $m);
+
+        return $m[1] ?? '';
+    }
+
+    public function test_le_document_rendu_imprime_le_total_nette(): void
+    {
+        $this->semerAussiUneVenteAnnuleeMaisPayee();
+        $this->actingAs($this->admin(), 'sanctum');
+
+        $ligne = $this->ligneTotalDuDocumentRendu();
+
+        $attendu = \App\Libraries\AppLibrary::reportCurrencyAmountFormat(20);
+        // 120 € = ce qu'imprimerait le document si la branche de nettage du gabarit
+        // disparaissait : les 100 € d'une vente annulée mais restée marquée payée
+        // viendraient gonfler le chiffre d'affaires.
+        $surestime = \App\Libraries\AppLibrary::reportCurrencyAmountFormat(120);
+
+        $this->assertStringContainsString(
+            $attendu,
+            $ligne,
+            "Le Total IMPRIMÉ doit valoir {$attendu} : 30 € + 20 € de ventes, moins\n"
+            . "un remboursement de 30 €, et SANS les 100 € de la vente annulée.\n"
+            . "Ligne rendue : {$ligne}"
+        );
+
+        $this->assertStringNotContainsString(
+            $surestime,
+            $ligne,
+            "Le Total imprimé vaut {$surestime} : la branche de nettage du gabarit\n"
+            . "ne s'applique plus, et une vente ANNULÉE mais restée marquée payée est\n"
+            . "comptée dans le chiffre d'affaires. C'est le montant que le commerçant\n"
+            . "remettrait à son comptable."
+        );
+    }
+
+    public function test_le_document_liste_bien_la_contre_ecriture_en_ligne(): void
+    {
+        // Le mandat du 2026-06-01 dit « liste les mouvements ET nette le total ». Si le
+        // document cessait de LISTER la contre-écriture, sa colonne ne s'additionnerait
+        // plus jusqu'au Total — un comptable ne pourrait pas le vérifier à la main.
+        $this->semerAussiUneVenteAnnuleeMaisPayee();
+        $this->actingAs($this->admin(), 'sanctum');
+
+        $requete = new PaginateRequest();
+        $requete->merge(['paginate' => 0]);
+
+        $html = view('pdf.sales_report', [
+            'company'    => app(\App\Services\CompanyService::class)->list(),
+            'theme_logo' => null,
+            'orders'     => app(OrderService::class)->list($requete, false),
+            'copyright'  => null,
+        ])->render();
+
+        $this->assertStringContainsString(
+            \App\Libraries\AppLibrary::reportCurrencyAmountFormat(-30),
+            $html,
+            "La ligne de remboursement de −30 € n'apparaît pas dans le document : la\n"
+            . 'colonne ne s\'additionne plus jusqu\'au Total.'
+        );
+    }
+
+    /**
+     * [ONB-07 2026-08-28] La route sort bien un PDF, de bout en bout.
+     *
+     * Les deux bancs ci-dessus couvrent chacun un maillon : le GABARIT (rendu réel) et
+     * le DRAPEAU du contrôleur (assertion textuelle sur `list($request, false)`). Ni
+     * l'un ni l'autre ne traverse la route. Celui-ci le fait — il ne lit pas le total
+     * dans le binaire dompdf, ce qui serait fragile, mais il attrape ce qu'aucun autre
+     * ne verrait : une route cassée, une permission manquante, une exception avalée par
+     * le `catch` qui renvoie un 422 au lieu du document.
+     */
+    public function test_la_route_du_pdf_sort_un_document_et_non_une_erreur(): void
+    {
+        $this->semerAussiUneVenteAnnuleeMaisPayee();
+
+        $reponse = $this->actingAs($this->admin(), 'sanctum')
+            ->get('/api/admin/sales-report/pdf');
+
+        // `status()` n'existe pas sur une StreamedResponse : on interroge la réponse
+        // Symfony sous-jacente.
+        $code = $reponse->baseResponse->getStatusCode();
+
+        $this->assertSame(
+            200,
+            $code,
+            "La route du PDF ne rend pas de document (code {$code}). Le contrôleur\n"
+            . "enveloppe tout dans un try/catch qui renvoie 422 avec le message\n"
+            . "d'exception — un commerçant verrait un échec sans savoir pourquoi."
+        );
+
+        $this->assertSame(
+            'application/pdf',
+            $reponse->baseResponse->headers->get('Content-Type'),
+            "La réponse n'est pas un PDF."
+        );
+
+        $this->assertStringStartsWith(
+            '%PDF',
+            $reponse->streamedContent(),
+            "Le corps ne commence pas par l'en-tête PDF : le document est vide ou corrompu."
+        );
     }
 
     /** Reproduit le calcul du gabarit PDF sur le jeu qu'il reçoit réellement. */

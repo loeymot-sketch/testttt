@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { preRemplissageComptage } from '../../resources/js/services/preRemplissageComptage';
 
 /**
  * [ONB-08 2026-08-28] Le formulaire d'ajustement pré-remplissait une valeur qu'il refuse.
@@ -33,7 +34,7 @@ describe('ONB-08 · ajustement de stock', () => {
     );
 
     it('le pré-remplissage ne peut jamais être négatif', () => {
-        expect(source).toContain('Math.max(0, this.roundQty(material.on_hand))');
+        expect(source).toContain('preRemplissageComptage(material.on_hand)');
         expect(
             source.includes('target_on_hand: this.roundQty(material.on_hand)'),
             'le pré-remplissage est repassé sur le stock courant, qui peut être négatif',
@@ -52,16 +53,45 @@ describe('ONB-08 · ajustement de stock', () => {
     });
 
     /**
-     * Reproduction de la règle elle-même, hors composant : c'est le comportement qui
-     * compte, pas la façon dont il est écrit.
+     * [ONB-08 2026-08-28 · TAUTOLOGIE CORRIGÉE] Ce cas RECOPIAIT la règle.
+     *
+     * Il définissait `const preRemplissage = (onHand) => Math.max(0, ...)` dans le
+     * test lui-même, puis vérifiait que cette copie se comportait comme elle est
+     * écrite. Une tautologie : il serait resté vert si le composant avait perdu la
+     * règle entièrement. Je l'avais écrit en connaissance de cause — « reproduction
+     * de la règle hors composant » — ce qui ne le rend pas moins creux.
+     *
+     * La règle vit maintenant dans `services/preRemplissageComptage.js` et le
+     * composant l'appelle. Le banc importe la VRAIE fonction.
+     * Trouvé par un agent adverse lancé sur mon propre travail.
      */
     it('la règle rend 0 pour un stock négatif et la valeur pour un stock positif', () => {
-        const preRemplissage = (onHand) => Math.max(0, Math.round(onHand * 1000) / 1000);
+        expect(preRemplissageComptage(-9600)).toBe(0);
+        expect(preRemplissageComptage(-0.001)).toBe(0);
+        expect(preRemplissageComptage(0)).toBe(0);
+        expect(preRemplissageComptage(12.5)).toBe(12.5);
+        expect(preRemplissageComptage(1500)).toBe(1500);
+    });
 
-        expect(preRemplissage(-9600)).toBe(0);
-        expect(preRemplissage(-0.001)).toBe(0);
-        expect(preRemplissage(0)).toBe(0);
-        expect(preRemplissage(12.5)).toBe(12.5);
-        expect(preRemplissage(1500)).toBe(1500);
+    it("arrondit au millième, l'unité de stock la plus fine du produit", () => {
+        expect(preRemplissageComptage(12.3456)).toBe(12.346);
+        expect(preRemplissageComptage('1500')).toBe(1500);
+    });
+
+    it('une valeur illisible donne 0, jamais NaN dans le champ', () => {
+        // `NaN` dans un `v-model.number` laisse le champ vide et fait échouer la
+        // garde avec un message qui ne dit rien au commerçant.
+        expect(preRemplissageComptage(null)).toBe(0);
+        expect(preRemplissageComptage(undefined)).toBe(0);
+        expect(preRemplissageComptage('bonjour')).toBe(0);
+    });
+
+    it('le composant appelle la règle extraite, il ne la recopie pas', () => {
+        expect(source).toContain('preRemplissageComptage(material.on_hand)');
+        expect(
+            source.includes('Math.max(0, this.roundQty(material.on_hand))'),
+            'la règle est revenue en ligne dans le composant : le banc ci-dessus '
+            + 'cesserait alors de porter sur ce que l\'écran fait vraiment',
+        ).toBe(false);
     });
 });

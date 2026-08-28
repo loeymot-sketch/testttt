@@ -41,9 +41,86 @@ describe('ONB-05 · liste de masquage du menu Réglages', () => {
             .map((m) => [m[1], m[2]]),
     );
 
+    /**
+     * [ONB-05 2026-08-28 · PÉRIMÈTRE CORRIGÉ] Le SECOND mécanisme de masquage.
+     *
+     * Toutes les assertions ci-dessous filtraient sur `startsWith('settings.')` :
+     * elles ne voyaient donc que 14 des 23 clés. Les 9 autres — `customers`,
+     * `coupons`, `offers`, `creditBalanceReport`, `deliveryBoys`, `onlineOrders`,
+     * `tableOrders`, `waiters`, `diningTables` — ne passent pas par
+     * `isSettingHidden()` mais par `HIDDEN_KEY_TO_MENU_URL` dans
+     * `BackendMenuComponent.vue`, qui les convertit en URL de menu puis les retire
+     * de `visibleMenus`. Un fantôme parmi ces neuf serait passé entre les mailles,
+     * exactement comme les quatre que ce banc a été écrit pour attraper.
+     *
+     * Neuvième fois dans cette session qu'une sentinelle verte gardait la moitié
+     * d'une porte. Trouvé par un agent adverse lancé sur mon propre travail.
+     */
+    const menuPrincipal = fs.readFileSync(
+        path.join(
+            process.cwd(),
+            'resources/js/components/layouts/backend/BackendMenuComponent.vue',
+        ),
+        'utf8',
+    );
+
+    const blocUrls = menuPrincipal.match(
+        /const HIDDEN_KEY_TO_MENU_URL = Object\.freeze\(\{([\s\S]*?)\}\);/,
+    );
+
+    const tableUrls = Object.fromEntries(
+        [...(blocUrls ? blocUrls[1] : '').matchAll(/([A-Za-z0-9_]+):\s*'([a-z0-9-]+)'/g)]
+            .map((m) => [m[1], m[2]]),
+    );
+
     it("l'extraction mord — sinon ce banc serait vert en ne mesurant rien", () => {
         expect(clesConsommees.size).toBeGreaterThan(10);
         expect(Object.keys(table).length).toBeGreaterThan(10);
+        // Le second mécanisme aussi : si la lecture du bloc échoue, `tableUrls` est
+        // vide et toutes les assertions qui s'appuient dessus deviennent creuses.
+        expect(
+            Object.keys(tableUrls).length,
+            'HIDDEN_KEY_TO_MENU_URL n\'a pas pu être lu dans BackendMenuComponent.vue '
+            + '— les assertions sur les 9 clés hors « settings. » ne mesureraient rien.',
+        ).toBeGreaterThan(5);
+    });
+
+    it('AUCUNE clé de masquage n\'échappe aux deux mécanismes', () => {
+        // C'est l'assertion qui manquait : elle couvre les 23 clés, pas 14.
+        const orphelines = V1_HIDDEN_MENU_MODULES.filter(
+            (cle) => !table[cle] && !tableUrls[cle],
+        );
+
+        expect(
+            orphelines,
+            'Ces clés ne sont converties par AUCUN des deux mécanismes de masquage '
+            + '(isSettingHidden dans MenuComponent.vue, HIDDEN_KEY_TO_MENU_URL dans '
+            + 'BackendMenuComponent.vue) : elles ne cachent donc rien nulle part. '
+            + `${orphelines.join(', ')}`,
+        ).toEqual([]);
+    });
+
+    it('les neuf clés de menu principal pointent chacune vers une URL', () => {
+        const sansUrl = V1_HIDDEN_MENU_MODULES
+            .filter((cle) => !cle.startsWith('settings.'))
+            .filter((cle) => !tableUrls[cle]);
+
+        expect(
+            sansUrl,
+            'Ces clés ne sont pas dans HIDDEN_KEY_TO_MENU_URL : `hiddenMenuUrls` les '
+            + 'écarte par son `.filter(Boolean)` et le menu les affiche quand même. '
+            + `${sansUrl.join(', ')}`,
+        ).toEqual([]);
+    });
+
+    it('les deux mécanismes ne se recouvrent pas', () => {
+        // Une clé traitée des deux côtés signalerait une décision dupliquée, donc
+        // deux endroits à changer pour un seul arbitrage produit.
+        const doublons = V1_HIDDEN_MENU_MODULES.filter(
+            (cle) => table[cle] && tableUrls[cle],
+        );
+
+        expect(doublons, `Clés masquées deux fois : ${doublons.join(', ')}`).toEqual([]);
     });
 
     it('chaque clé de masquage a une conversion vers une clé locale', () => {
