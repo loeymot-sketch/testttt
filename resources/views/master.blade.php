@@ -192,6 +192,22 @@
             purchasing: {
                 openaiEnabled: @json((bool) config('services.openai.enabled', false)),
             },
+            // [ONB-02 C1 2026-08-28] Taxe proposee par defaut a la creation d'un
+            // article.
+            //
+            // `config/menu.php:80` porte `default_tax_id` depuis toujours, et il
+            // n'etait lu QUE par les semoirs — jamais a l'execution. Le commercant
+            // devait donc choisir parmi six taxes, dont deux GST etrangeres et un
+            // « No-VAT 0 % » qui detaxerait sa carte, pour creer son premier
+            // produit.
+            //
+            // L'API reste STRICTE (`tax_id => required`) : un article sans taxe
+            // etait facture a 0 % en silence, et refuser vaut mieux que detaxer sans
+            // le dire. Ce reglage n'assouplit rien — il evite au commercant d'avoir
+            // a deviner.
+            catalogue: {
+                defaultTaxId: @json((int) config('menu.settings.default_tax_id', 0)),
+            },
             // [BOLS/2-VIANDES 2026-06-24] La caisse v5 (PosComponent) charge
             // public/js/pos-wizard.js mais n'exposait PAS ce flag (contrairement
             // à admin-pos-v4.blade.php) → pos-wizard.js tombait sur le builder

@@ -322,6 +322,28 @@ import appService from "../../../services/appService";
 // (`shared/axios-setup.js:75`) : les URL s'ecrivent SANS prefixe.
 import axios from "axios";
 
+/**
+ * [ONB-02 C1 2026-08-28] Taxe proposee a la creation d'un article.
+ *
+ * Le critere C1 de la mission demande qu'« un article neuf naisse avec la TVA
+ * restauration ». L'API, elle, EXIGE une taxe depuis le 2026-08-27 : sans elle,
+ * `PricingService` facturait a 0 % en silence.
+ *
+ * Les deux se concilient — severite a l'API, confort a l'ecran. On propose le
+ * defaut configure ; le commercant peut en changer, mais il n'a plus a deviner
+ * parmi six taxes dont deux GST etrangeres et un « No-VAT 0 % ».
+ *
+ * `0` (config absente) rend `null` : mieux vaut un champ vide qu'une taxe
+ * inventee sur un champ fiscal.
+ */
+function taxeParDefaut() {
+    const id = Number(
+        (typeof window !== 'undefined' && window.foodkingConfig?.catalogue?.defaultTaxId) || 0,
+    );
+
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
+
 export default {
     name: "ItemCreateComponent",
     components: { SmSidebarModalCreateComponent, LoadingComponent },
@@ -473,7 +495,7 @@ export default {
                 is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
-                tax_id: null,
+                tax_id: taxeParDefaut(),
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
@@ -502,7 +524,7 @@ export default {
                 is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
-                tax_id: null,
+                tax_id: taxeParDefaut(),
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
@@ -588,7 +610,7 @@ export default {
                         is_upsell: askEnum.NO,
                         item_type: itemTypeEnum.VEG,
                         item_category_id: null,
-                        tax_id: null,
+                        tax_id: taxeParDefaut(),
                         status: statusEnum.ACTIVE,
                         // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                         channels: [],
