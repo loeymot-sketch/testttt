@@ -85,7 +85,24 @@
                             </ul>
                             <div class="enc-ticket-bottom">
                                 <span class="enc-amount">{{ formatPrice(orderAmount(order)) }}</span>
-                                <button class="enc-collect-btn" @click.prevent="openEncaissement(order)">
+                                <!--
+                                  [AUDIT-SUPERVISEUR 2026-08-26 · D-007] TROIS BOUTONS
+                                  IDENTIQUES POUR TROIS MONTANTS DIFFÉRENTS.
+                                  Au lecteur d'écran comme au clavier, la file d'encaissement
+                                  annonçait « Encaisser, bouton » trois fois de suite — pour
+                                  11,10 €, 8,30 € et 14,60 €. C'est le geste qui PREND l'argent
+                                  du client : son nom ne doit pas être ambigu.
+                                  Le même dépôt fait déjà l'inverse ailleurs (le bouton de
+                                  réimpression de l'historique porte title ET aria-label).
+                                  Un data-testid aussi : sans lui, aucun test ne peut viser
+                                  UNE commande en particulier dans cette file.
+                                -->
+                                <button
+                                    class="enc-collect-btn"
+                                    :aria-label="`${$t('label.encaisser')} ${order.order_serial_no || order.id} — ${formatPrice(orderAmount(order))}`"
+                                    :data-testid="`enc-collect-${order.id}`"
+                                    @click.prevent="openEncaissement(order)"
+                                >
                                     {{ $t('label.encaisser') }}
                                 </button>
                             </div>
