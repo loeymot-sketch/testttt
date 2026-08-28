@@ -69,46 +69,77 @@ journée sur une installation vierge, deux fois à l'identique, et renvoie chaqu
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
-### 8.1 ÉTAT : **BLOQUÉ** — dépend d'ONB-12, lui-même bloqué par G0
+### 8.1 ÉTAT : **LIVRÉ EN PARTIE** — le parcours tient, quatre manques restent nommés
 
-Cette mission demande un parcours de bout en bout — **installation vierge** → identité
-→ catalogue → wizard → équipe → équipement → commande borne → KDS → encaissement → Z →
-rapports, deux cycles identiques.
+Cette mission a d'abord été classée « bloquée, en cascade derrière G0 ». **C'était une
+erreur de lecture, corrigée le 2026-08-28.**
 
-Son premier mot est « installation vierge », et c'est précisément ce qu'ONB-12 ne peut
-pas produire tant que **G0** n'est pas signé. Lancer la convergence sur une base qui
-contient le menu, les rôles et les résidus de tests de Le Cayenne ne prouverait pas ce
-que cette mission existe pour prouver.
+G0 porte sur la formulation de `CONSTITUTION.md §1` et sur le droit de remonter
+« multi-marque » comme bloquant. Il ne dit rien de la capacité d'un banc à partir d'une
+base vide. Or `RefreshDatabase` **donne** exactement l'installation vierge que la
+mission réclame : sans le menu, sans les rôles, sans les résidus de tests de Le Cayenne.
 
-`§14` du programme interdit de la différer en la vidant de sa substance : mieux vaut
-la dire bloquée que la déclarer verte sur un parcours qui n'est pas le sien.
+Autrement dit : le seul environnement où « l'installation vierge » existe aujourd'hui,
+c'est le banc. S'en priver au nom d'un gate qui ne le couvre pas, c'était confondre le
+blocage d'une mission avec le blocage de tout son contenu.
 
-### 8.2 Ce qui est déjà prouvé, et qui servira le jour venu
+### 8.2 Le parcours, et ce qu'il a coûté de vrai
 
-Le parcours n'est pas prouvé **de bout en bout**, mais plusieurs de ses maillons le
-sont désormais individuellement, avec des bancs qui mordent :
+`tests/Feature/Onboarding/LaJourneeDunNouveauCommercantTest.php` enchaîne **sept
+maillons dans l'ordre réel**, chacun repartant de ce que le précédent a produit :
 
-| Étape | Preuve |
-|---|---|
-| Identité fiscale enregistrable, relue, **non effacée** au second enregistrement, et complète (N° de caisse) | `IdentiteFiscaleSurvitAUnSecondEnregistrementTest`, `leFormulaireFilialePorteLIdentiteFiscaleComplete.spec.js` |
-| Catalogue depuis zéro : import aller-retour, catégories, allergènes, canaux | `LaCarteExporteeSeReimporteTest`, `LesCategoriesExporteesSeReimportentTest`, `UnCommercantPeutDeclarerSesAllergenesTest` |
-| Ingrédients déclarables | `UnCommercantPeutDeclarerSesIngredientsTest` |
-| Équipe : téléphone obligatoire dit comme tel, pas de boucle de redirection | `UnChampObligatoireEnBaseLEstAussiDansLaRegleTest`, `aucuneBoucleDeRedirectionSurUnRoleSansDroit.spec.js` |
-| Équipement : l'écran ne propose plus une largeur que le serveur refuse | `LEcranNeProposePasCeQueLeServeurRefuseTest` |
-| Réception de factures : conversion d'unités juste, refus lisible | `UneFactureEnKilosNeCreditePasDesGrammesTest`, `LeRefusDeReceptionEstLisibleParLeCommercantTest` |
-| Rapports : écran et export s'accordent, prédicat appelé et non recopié | `LEcranEtLExportDonnentLeMemeTotalTest`, `LesChiffresDesRapportsSontJustesTest` |
+| # | Étape | Ce qui est vérifié |
+|---|---|---|
+| 1 | Identité fiscale | SIRET, TVA, n° de caisse — et ils survivent à un second enregistrement |
+| 2 | Taxe | taux strictement positif, sinon facturation à 0 % en silence |
+| 3 | Catégorie + produit | allergènes (champ ET pivot), canaux, poste de cuisine |
+| 4 | Matière première | avec son seuil d'alerte, qui n'avait aucun chemin d'écriture |
+| 5 | Embauche | téléphone obligatoire dit comme tel, sans trace SQL |
+| 6 | Imprimante | à la largeur 42 que l'écran nomme |
+| 7 | Mission locale | « ajoutez la sauce Algérienne à tous les tacos » — propose avant d'écrire |
 
-### 8.3 Ce qui manque encore au parcours, indépendamment de G0
+Puis la seule vérification qui compte pour le patron : **son produit est vendable à la
+borne**, actif, taxé, avec ses allergènes et l'option que le chatbot a posée.
 
-- **Les horaires d'ouverture n'existent nulle part** — ni table, ni route, ni écran
-  (ONB-01). Un établissement ne peut pas déclarer quand il ouvre.
-- **Les frais de livraison ne sont configurables nulle part**, alors que
-  `DeliveryFeeService` les lit.
-- **L'imprimante réelle reste indéclarable** (adresse LAN refusée) et **la borne
-  déclarée n'est pas celle qui se connecte** (ONB-10).
-- **Le wizard de catégorie n'est appliqué nulle part** (ONB-03, gelé).
+**Un maillon prouvé isolément ne dit rien de la chaîne.** C'est toute la différence
+entre « chaque écran marche » et « on peut ouvrir », et le parcours l'a démontré en
+trouvant deux défauts que onze missions d'audit isolé n'avaient pas vus :
 
-Ces quatre-là bloqueraient la convergence même avec G0 signé. Les nommer maintenant
-évite de découvrir le mur en fin de parcours.
+1. **Deux clés d'authentification manquaient en `en`, trois en `ar`.** Émises par
+   **huit** règles — toutes les créations de compte et le changement de mot de passe.
+   Laravel ne se rabat pas sur le français : il rend la clé. Le patron lisait
+   `auth.password_confirmation_mismatch` dans son formulaire d'embauche. Et ce n'est
+   pas théorique : le middleware déduit la langue de l'en-tête `Accept-Language` du
+   navigateur et déclare `fr`, `en`, `ar` servies.
 
-**État final ONB-14 : BLOQUÉ, en cascade. Sept maillons du parcours sont désormais prouvés individuellement ; quatre manques structurels sont identifiés à l'avance, dont deux exigent du neuf et un une signature.**
+2. **`PrinterRequest` déclarait `branch_id` nullable** alors que la colonne porte une
+   clé étrangère et que `resolveBranchId()` renvoie la valeur saisie dès que l'acteur
+   est l'admin. Le patron recevait `SQLSTATE[23000]: FOREIGN KEY constraint failed`.
+   **Jumeau exact du défaut `phone`** : obligatoire en base, facultatif dans la règle.
+
+### 8.3 Ce que le parcours NE couvre pas, et le dit
+
+Un banc vert sur sept maillons laisserait croire le parcours complet. Il ne l'est pas.
+`test_les_quatre_manques_structurels_sont_toujours_la` les surveille et **échoue le jour
+où l'un est comblé**, pour qu'on relise le parcours au lieu de l'oublier :
+
+- **Les horaires d'ouverture n'existent nulle part** — ni table, ni route, ni écran.
+- **Les frais de livraison** sont lus par `DeliveryFeeService` et réglables nulle part.
+- **L'adresse d'une imprimante réelle reste indéclarable** (toute adresse LAN refusée).
+- **Le wizard de catégorie n'est appliqué nulle part** (ONB-03, zone gelée).
+
+Ces quatre-là bloqueraient la convergence **même avec G0 signé**. Deux exigent du neuf,
+un exige une signature.
+
+### 8.4 Un garde-fou, né d'une erreur de la session
+
+Le parcours vérifie que **toute URL visée est enregistrée** avant de mesurer sa réponse.
+En écrivant ce banc j'ai visé `api/admin/branch/show` — la vraie route est
+`api/admin/setting/branch/show`. Un `assertNotSame(422, …)` aurait été **satisfait par
+le 404** qui en résulte. C'est arrivé la nuit précédente sur le banc des imprimantes, et
+personne ne l'aurait vu.
+
+La leçon est générale et vaut au-delà de cette mission : **une assertion négative est
+presque toujours trop faible — elle est satisfaite par tous les échecs sauf un.**
+
+**État final ONB-14 : parcours de bout en bout LIVRÉ et vert (47 assertions), deux défauts réels trouvés et corrigés en le parcourant, quatre manques structurels nommés et surveillés. Le second cycle « deux journées identiques » et la chaîne commande→KDS→Z restent à couvrir.**

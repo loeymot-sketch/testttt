@@ -869,6 +869,8 @@
         "kiosk_welcome_title": "Titre de bienvenue",
         "kiosk_welcome_subtitle": "Sous-titre",
         "kiosk_tap_hint": "Indication tactile",
+        "kiosk_halal_stamp": "Mention \u00ab 100 % Halal \u00bb sur la borne",
+        "kiosk_halal_stamp_hint": "Affiche le tampon sur l'\u00e9cran d'accueil. \u00c0 ne cocher que si c'est exact.",
         "loyalty_points_per_euro": "Points par €",
         "loyalty_points_for_1_euro_discount": "Points pour 1€ de réduction",
         "loyalty_min_redeem_points": "Minimum pour utiliser",

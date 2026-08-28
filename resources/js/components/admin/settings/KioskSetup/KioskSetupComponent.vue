@@ -72,6 +72,27 @@
                             <small class="db-field-alert" v-if="errors.kiosk_tap_hint">{{ errors.kiosk_tap_hint[0] }}</small>
                         </div>
 
+                        <!-- [ONB-12 2026-08-28] L'ECRAN QUI MANQUAIT.
+                             Le tampon « 100 % Halal » etait ecrit en dur dans la borne :
+                             tout commercant installant le produit portait sur son ecran
+                             client une affirmation sur sa nourriture qu'il n'avait jamais
+                             faite, et qu'aucun ecran ne permettait de retirer. -->
+                        <div class="form-col-12">
+                            <label class="db-field-title" for="kiosk_halal_stamp">
+                                {{ $t('label.kiosk_halal_stamp') }}
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    v-model="form.kiosk_halal_stamp"
+                                    type="checkbox"
+                                    id="kiosk_halal_stamp"
+                                    data-testid="kiosk-halal-stamp"
+                                />
+                                <span class="text-sm">{{ $t('label.kiosk_halal_stamp_hint') }}</span>
+                            </div>
+                            <small class="db-field-alert" v-if="errors.kiosk_halal_stamp">{{ errors.kiosk_halal_stamp[0] }}</small>
+                        </div>
+
                         <div class="form-col-12 sm:form-col-4">
                             <label for="kiosk_admin_pin" class="db-field-title">
                                 {{ $t('label.kiosk_admin_pin') }}
@@ -117,6 +138,7 @@ export default {
                 kiosk_welcome_subtitle: '',
                 kiosk_tap_hint:         '',
                 kiosk_admin_pin:        '',
+                kiosk_halal_stamp:      false,
             },
             errors: {}
         };
@@ -134,6 +156,9 @@ export default {
                     // PIN is never returned in plain text (kiosk_admin_pin_set is a boolean)
                     // Leave empty — only update if admin types a new PIN
                     kiosk_admin_pin:        '',
+                    // Le choix enregistre doit revenir a l'ecran, sinon rouvrir la
+                    // page et enregistrer autre chose l'effacerait en silence.
+                    kiosk_halal_stamp:      Boolean(Number(d.kiosk_halal_stamp ?? 0)),
                 };
                 this.loading.isActive = false;
             }).catch(() => {
@@ -150,6 +175,7 @@ export default {
                 // Only include kiosk_admin_pin if admin typed a new value (don't overwrite with empty)
                 const payload = { ...this.form };
                 if (!payload.kiosk_admin_pin) delete payload.kiosk_admin_pin;
+                payload.kiosk_halal_stamp = payload.kiosk_halal_stamp ? 1 : 0;
                 this.$store.dispatch('kioskSetup/save', payload).then((res) => {
                     this.loading.isActive = false;
                     alertService.successFlip(res.config.method === 'put' ?? 0, this.$t('menu.kiosk_setup'));

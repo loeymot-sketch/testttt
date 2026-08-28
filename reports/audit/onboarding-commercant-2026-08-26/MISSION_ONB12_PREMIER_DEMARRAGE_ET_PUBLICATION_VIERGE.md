@@ -76,49 +76,78 @@ Le Cayenne devient un jeu de données reproductible à l'identique (prix compris
 
 ## 8. JOURNAL DE MISSION (rempli par la session)
 
-### 8.1 ÉTAT : **BLOQUÉ** — G0 n'est pas signé
+### 8.1 ÉTAT : **AVANCÉ HORS GATE** — le paramétrage est fait, la constitution reste au propriétaire
 
-`plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md §0.2` pose le gate **G0** :
-réécrire la phrase de `CONSTITUTION.md §1` — « V1 = LOGICIEL PERSONNEL du restaurant
-Le Cayenne. PAS un SaaS. » — en « V1 = logiciel d'un établissement, installé chez lui,
-entièrement paramétrable depuis son Dashboard ».
+`plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md §0.2` pose **G0** : réécrire la
+phrase de `CONSTITUTION.md §1` — « V1 = LOGICIEL PERSONNEL du restaurant Le Cayenne.
+PAS un SaaS. » — en « V1 = logiciel d'un établissement, entièrement paramétrable ».
 
 **Vérifié : G0 est absent de `CONSTITUTION.md` sur toutes les branches.** Seul le
-propriétaire peut le signer ; aucun agent, aucun test ne peut le remplacer.
+propriétaire peut le signer.
 
-Sans lui, l'index l'écrit noir sur blanc : « aucun GOAL ne touche `CONSTITUTION.md` »
-et « aucun ne remonte multi-marque comme P0/P1 bloquant ». Or cette mission EST le
-chantier de dé-cayennisation.
+Mais **§0.2 autorise explicitement le paramétrage sans G0** — il sert aussi
+l'établissement actuel. C'est ce périmètre qui a avancé le 2026-08-28, et il n'était pas
+mince.
 
-### 8.2 Ce que les autres missions ont récolté pour elle
+### 8.2 La borne ne montre plus la carte d'un autre établissement
 
-Le travail de paramétrage — utile à Le Cayenne aussi, donc autorisé sans G0 — a avancé
-ailleurs, et cette mission en hérite :
+**Huit produits de Le Cayenne étaient écrits en dur** dans `KioskIdleScreenComponent.vue`,
+avec leurs photos. Un nouveau commerçant ouvrait sa borne sur des burgers qu'il ne vend
+pas, et aucun écran ne permettait de les changer.
 
-- **La borne ne porte plus le nom d'un autre établissement** dans sa rotation
-  d'accueil, et ne déclare plus « Halal » à la place du commerçant (ONB-01,
-  `cb3315ad9`). ⚠️ Restent en dur : un tampon « 100 % Halal » et **huit produits de
-  Le Cayenne** dans le carrousel — fiche de renvoi émise.
-- **`RawMaterial` a un CRUD** : un nouveau commerçant peut enfin déclarer ses
-  ingrédients au lieu de recevoir ceux de Le Cayenne (ONB-08, `dc195f005`).
-- **Les allergènes sont saisissables**, donc les « guessed mappings » du seed
-  cessent d'être une fatalité (ONB-02, `696b3e592`).
-- **Le QR du comptoir de la roue mène toujours chez lecayenne.fr** — non corrigé,
-  consigné par ONB-09.
+La vitrine vient désormais de `frontend/item/featured-items` : les produits que le
+commerçant a **lui-même** mis en avant. Elle démarre vide, et le carrousel disparaît tant
+qu'elle l'est — **mieux vaut un écran sobre que la vitrine d'un autre établissement**.
 
-### 8.3 Inventaire hérité, à ne pas refaire
+Ce n'est pas une perte pour l'installation existante : elle a **40 produits mis en avant,
+tous avec photo** (vérifié en lecture). Sa borne montrera sa carte réelle au lieu d'un
+instantané figé de huit articles.
 
+### 8.3 La borne n'affirme plus rien à la place du commerçant
+
+Le tampon **« 100 % Halal »** était écrit en dur dans le gabarit. C'est une affirmation
+sur la nourriture servie — vérifiable, engageante, propre à chaque établissement. Tout
+commerçant installant le produit la portait **sans l'avoir dite**, et sans moyen de la
+retirer.
+
+Elle devient le réglage `kiosk_halal_stamp`, **éteint par défaut**, avec sa case dans
+l'écran de réglage borne.
+
+**Le point délicat, et il méritait de la prudence :** éteindre par défaut retirerait le
+tampon, sans prévenir, à un établissement qui l'affiche aujourd'hui et pour qui il est
+vrai. La migration **déclare** donc sa réalité au lieu de la nier — tampon posé si
+l'installation a déjà une carte, éteint si elle est vierge. Le critère est écrit dans la
+migration plutôt que deviné plus tard, et le banc le vérifie **dans les deux sens** :
+sans cela, on ne saurait pas si la migration décide ou si elle écrit toujours la même
+chose.
+
+Un troisième cas est couvert : une migration de valeur par défaut écrase volontiers le
+choix qu'elle prétend initialiser. Celle-ci ne réécrit pas un réglage déjà posé.
+
+### 8.4 Et surtout : l'écran, pas seulement la donnée
+
+Rendre le tampon configurable ne servirait à rien sans écran pour le décider. C'est le
+motif que cette semaine a fait apparaître **cinq fois** — allergènes, poste de cuisine,
+matières premières, seuils d'alerte, horaires : *une chaîne complète sauf l'endroit où un
+humain saisit la vérité*.
+
+`LeCommercantPeutDeclarerOuRetirerSonTamponTest` refuse de laisser le tampon devenir le
+sixième. Il vérifie les quatre maillons dans l'ordre où le commerçant les rencontre : la
+règle accepte, la base conserve, **la relecture renvoie**, la borne lit. Le troisième est
+celui qu'on oublie — sans lui l'écran rouvre sur « non déclaré » et le prochain
+enregistrement efface le choix. C'est le défaut exact corrigé sur l'identité fiscale.
+
+Le sens inverse est couvert aussi : **une affirmation qu'on ne peut plus retirer n'est
+pas un réglage, c'est un piège.**
+
+### 8.5 Ce qui reste, et qui exige la signature
+
+- **G0 lui-même.** Tant qu'il n'est pas signé, aucun GOAL ne touche `CONSTITUTION.md` et
+  aucun ne remonte multi-marque comme bloquant.
+- Seeders génériques, checklist « Premier démarrage », archivage des commandes `menu:*`.
 - **12 bornes sur 13 en base sont des résidus de tests de charge** (`KM-STRESS-*`,
-  `KM-SOAK-*`) : origine confirmée dans le code. Même famille que les cinq filiales
-  fictives et les 26 taxes `AUDIT-*`. **Un nouveau commerçant ne doit voir aucune des
-  trois.**
-- Les rôles livrés sont **génériques** : rien de Cayenne n'est hérité de ce côté-là
-  (vérifié par l'audit ONB-06).
+  `KM-SOAK-*`), même famille que les cinq filiales fictives et les 26 taxes `AUDIT-*`.
+  Un nouveau commerçant ne doit voir aucune des trois. Nettoyage = décision propriétaire.
+- **Le QR du comptoir de la roue mène toujours chez lecayenne.fr** (`wheel.public_url`).
 
-### 8.4 Ce qu'il faudrait, dans l'ordre
-
-1. **La signature de G0.** Tout le reste en dépend.
-2. Puis : seeders génériques, checklist « Premier démarrage », sortie des libellés
-   « cayenne » vers la donnée, archivage des commandes `menu:*`.
-
-**État final ONB-12 : BLOQUÉ, propriétaire. Le blocage est constitutionnel, pas technique. Le travail de paramétrage qui n'exige pas G0 a avancé dans les autres missions et est recensé ici.**
+**État final ONB-12 : le paramétrage autorisé par §0.2 est LIVRÉ — vitrine dérivée de la carte, affirmation halal devenue donnée déclarée avec son écran, migration qui préserve l'existant. Le volet constitutionnel reste BLOQUÉ, propriétaire.**
