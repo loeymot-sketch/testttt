@@ -532,8 +532,14 @@ export default {
             return fd;
         },
         editCategory(category) {
-            // Édition complète vit dans la page Réglages (champs avancés). On y route en
-            // ouvrant la modale d'édition via le state Vuex partagé.
+            // Édition complète vit dans la page Réglages (champs avancés). On y route
+            // avec `?edit=<id>`.
+            //
+            // [ONB-02 2026-08-28] Le commentaire d'origine affirmait ouvrir la modale
+            // « via le state Vuex partagé ». C'était FAUX : l'écran cible ne lisait
+            // pas ce paramètre, et le commerçant était éjecté sur une liste paginée
+            // sans que rien ne s'ouvre. `ItemCateogryListComponent::ouvrirDepuisLUrl()`
+            // le lit désormais.
             this.$router.push({
                 name: "admin.settings.itemCategory.list",
                 query: { edit: String(category.id) },
