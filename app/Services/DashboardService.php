@@ -383,10 +383,41 @@ class DashboardService
     private function scopePeriod($query, string $period)
     {
         if ($period === 'today') {
-            $query->where('business_date', now()->toDateString());
+            $this->scopeJourMetier($query, now()->toDateString());
         }
 
         return $query;
+    }
+
+    /**
+     * [AUDIT-COMPTA 2026-08-29] LE repère de « aujourd'hui », défini UNE fois.
+     *
+     * Deux tuiles du tableau de bord affichaient le chiffre d'affaires du jour avec deux
+     * repères de date différents : « Ventes du jour » sur `business_date`, « Chiffre
+     * d'Affaires du Jour » sur `order_datetime`. Mesuré sur la base réelle au 28/05/2026 :
+     * **1 494,00 €** contre **1 598,90 €** — 104,90 € d'écart, sur le même écran, pour ce
+     * qu'un exploitant lit comme le même fait.
+     *
+     * Deux défauts distincts se cumulaient :
+     *
+     * 1. `where('business_date', ...)` fait DISPARAÎTRE les commandes dont la date métier
+     *    est nulle — 167 sur 3252 en base, jusqu'à 21 sur 162 certains jours. Un chiffre
+     *    d'affaires amputé ressemble à une journée creuse : c'est une fausse alerte
+     *    d'exploitation, et c'est le chiffre qui déclenche une action.
+     * 2. Les deux tuiles ne partageaient aucune définition, donc rien ne les forçait à
+     *    rester d'accord.
+     *
+     * Le repli garde l'intention d'origine, qui est la bonne : le jour FISCAL, parce que le
+     * service du soir va jusqu'à 00h30 et ne doit pas être coupé en deux (cf. `config/kds.php`).
+     * Quand la date métier existe, elle fait foi ; quand elle manque, on retombe sur
+     * l'horodatage plutôt que de perdre la commande.
+     *
+     * `DATE()` et `COALESCE()` se comportent de la même façon sous MySQL et SQLite — les
+     * bancs tournent sur SQLite en mémoire.
+     */
+    private function scopeJourMetier($query, string $jour)
+    {
+        return $query->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jour]);
     }
 
     public function totalSales(string $period = 'all')
@@ -425,10 +456,27 @@ class DashboardService
         }
     }
 
+    /**
+     * [AUDIT-COMPTA 2026-08-29] « Total articles menu » compte le MENU, pas les lignes.
+     *
+     * Mesuré à l'écran le 2026-08-29 : le tableau de bord annonçait **123** quand le
+     * catalogue, deux clics plus loin, affichait **59 produits** — le même fait, deux
+     * nombres. `Item::count()` comptait toute la table : les 59 articles actifs, les 64
+     * désactivés, et 17 fiches de test. Un commerçant lit « mon menu a 123 articles »
+     * alors qu'il en sert 59.
+     *
+     * Les compteurs d'argent voisins avaient déjà reçu ce traitement — `totalSales`
+     * (DASH-NET-01) et `totalOrders` (DASH-01), tous deux le 2026-06-01. Celui-ci avait été
+     * oublié dans la passe.
+     *
+     * On aligne donc sur la définition du catalogue (`ItemService.php:159` et `:281`,
+     * `where('status', Status::ACTIVE)`) : même fait, même source. Le bandeau catalogue
+     * ferme d'ailleurs son arithmétique — 58 actifs + 1 indisponible = 59 produits.
+     */
     public function totalMenuItems()
     {
         try {
-            return Item::count();
+            return Item::query()->where('status', \App\Enums\Status::ACTIVE)->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -444,18 +492,23 @@ class DashboardService
             $startParis = Carbon::today($appTz);
             $endParisExclusive = Carbon::tomorrow($appTz);
 
+            // [AUDIT-COMPTA 2026-08-29] Même repère que la tuile « Ventes du jour ».
+            // Les deux affichaient le chiffre d'affaires du jour sur deux axes de date
+            // différents : 1 494,00 EUR contre 1 598,90 EUR le 28/05/2026, sur le même
+            // écran. Elles partagent désormais `scopeJourMetier` — une seule définition,
+            // donc plus de divergence possible.
+            $jourMetier = Carbon::today($appTz)->toDateString();
+
             // Total CA du jour — net réalisé (DASH-NET-01: excl annulées-payées, remboursements nettés)
             $daily_sales = $this->orderQuery()
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->realizedRevenue()
                 ->sum('total');
 
             // Nombre de commandes (volume placé — toutes, payées ou non ; hors contre-écritures de remboursement)
             $daily_orders = $this->orderQuery()
                 ->whereNull('parent_order_id')
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->count();
 
             // [GOAL-2026-05-30 H03-6] Ticket moyen = CA payé / commandes PAYÉES (même base que
@@ -463,8 +516,7 @@ class DashboardService
             // → faussé, surtout depuis W-D1 (beaucoup d'orders restent PENDING_COUNTER au moment du
             // rapport car la cuisine prépare avant l'encaissement). daily_orders reste le volume placé.
             $daily_paid_orders = $this->orderQuery()
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->where('payment_status', PaymentStatus::PAID)
                 // [REFUND-02 2026-07-15] Exclure les statuts terminaux (annulée/refusée/retournée)
                 // du DÉNOMINATEUR du ticket moyen — le numérateur daily_sales utilise déjà
