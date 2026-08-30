@@ -1,0 +1,8 @@
+[general]
+enabled = yes
+pretty = no
+
+[foodking]
+type = user
+read_only = no
+password = ARI_RANDOM_PASSWORD

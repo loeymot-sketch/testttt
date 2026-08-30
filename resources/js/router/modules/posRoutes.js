@@ -22,6 +22,18 @@ export default [
         },
     },
     {
+        path: "/admin/pos/voice-assistant",
+        component: PosComponent,
+        name: "admin.pos.voice-assistant",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos",
+            voiceAssistant: true,
+            breadcrumb: "Assistant téléphone",
+        },
+    },
+    {
         path: "/admin/pos/floorplan",
         component: FloorplanComponent,
         name: "admin.pos.floorplan",

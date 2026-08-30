@@ -336,6 +336,15 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
     Route::post('/change-image', [ProfileController::class, 'changeImage']);
 });
 
+// Passerelle locale Free Pro/Asterisk : authentification HMAC dédiée, aucune
+// session utilisateur et aucune filiale acceptée depuis le JSON.
+Route::prefix('voice-order/gateway')->name('voiceOrder.gateway.')
+    ->middleware(['installed', 'throttle:voice-order-gateway'])
+    ->group(function () {
+        Route::post('/events', [\App\Http\Controllers\VoiceOrderGatewayController::class, 'event'])->name('events');
+        Route::post('/authorize-media', [\App\Http\Controllers\VoiceOrderGatewayController::class, 'authorizeMedia'])->name('authorizeMedia');
+    });
+
 // [BLUE 2026-05-08 / B3-S5 P1] Throttle séparé pour /menu/availability/toggle :
 // pendant rush, caissier toggle item OOS + submit commande peut hitter 429
 // self-DoS s'il partage le bucket admin-mutation (30/min) avec POST /admin/pos.
@@ -376,6 +385,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 // before localization so blocked kiosk requests don't consume admin-mutation
 // throttle quota.
 Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization', 'throttle:admin-mutation'])->group(function () {
+    Route::prefix('voice-order')->name('voiceOrder.')
+        ->middleware(['permission:pos', 'throttle:voice-order-admin'])
+        ->group(function () {
+            Route::get('/snapshot', [\App\Http\Controllers\Admin\VoiceOrderAssistantController::class, 'snapshot'])->name('snapshot');
+            Route::get('/calls/{callId}', [\App\Http\Controllers\Admin\VoiceOrderAssistantController::class, 'show'])->name('show');
+            Route::post('/calls/{callId}/consent', [\App\Http\Controllers\Admin\VoiceOrderAssistantController::class, 'consent'])->name('consent');
+            Route::post('/calls/{callId}/extract', [\App\Http\Controllers\Admin\VoiceOrderAssistantController::class, 'extract'])->name('extract');
+            Route::post('/calls/{callId}/link-order', [\App\Http\Controllers\Admin\VoiceOrderAssistantController::class, 'linkOrder'])->name('linkOrder');
+        });
+
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
@@ -925,6 +944,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
+            Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);

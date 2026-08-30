@@ -1,0 +1,15 @@
+[from-free-pro]
+; Mode V1 : Asterisk remet l'appel à l'application ARI qui fait sonner PJSIP/100.
+exten => FREE_SIP_USERNAME,1,NoOp(FoodKing inbound Free Pro)
+ same => n,Stasis(foodking-voice)
+ same => n,Hangup()
+
+; Repli manuel à activer si le gateway est indisponible : le téléphone continue
+; de fonctionner sans transcription. Ne pas exécuter Stasis dans ce contexte.
+[from-free-pro-bypass]
+exten => FREE_SIP_USERNAME,1,Dial(PJSIP/100,35)
+ same => n,Hangup()
+
+[restaurant-internal]
+exten => _X.,1,Dial(PJSIP/${EXTEN}@free-pro-endpoint,60)
+ same => n,Hangup()

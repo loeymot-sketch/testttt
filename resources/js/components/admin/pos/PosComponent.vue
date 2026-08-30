@@ -102,6 +102,17 @@
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
+    <VoiceOrderAssistantPanel
+        v-if="voiceAssistantMode"
+        :branch-id="cashSessionBranchId"
+        :user-id="voiceOrderUserId"
+        :link-state="voiceOrderLinkState"
+        @select-call="onVoiceOrderCallSelected"
+        @apply-caller="applyVoiceOrderCaller"
+        @review-item="reviewVoiceOrderItem"
+        @retry-link="retryPendingVoiceOrderLink"
+    />
+
     <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]">
         <header class="pos-v5-operator-bar pos-v4-operator-bar" role="banner">
             <div class="pos-v5-operator-bar__brand">
@@ -197,6 +208,18 @@
                         >
                             <template #icon>💶</template>
                             <span class="hidden lg:inline">{{ $t('menu.encaissement') }}</span>
+                        </PosV5Button>
+                        <PosV5Button
+                            variant="ghost"
+                            size="md"
+                            as="router-link"
+                            :to="{ name: voiceAssistantRouteName }"
+                            data-testid="pos-voice-assistant-open"
+                            title="Assistant commandes téléphone"
+                            aria-label="Assistant commandes téléphone"
+                        >
+                            <template #icon>🎧</template>
+                            <span class="hidden lg:inline">Assistant</span>
                         </PosV5Button>
                         <!--
                           [POS-V5] Bouton suivi commandes — variant tracker.
@@ -2234,6 +2257,7 @@ import { applyCaisseZoom, clearCaisseZoom, resolveCaisseZoom } from "../../../he
 // panier (« Salade, Tomate, Oignon » → « STO »), et récupération de la boisson
 // que `menu_extras` n'expose pas. Voir helpers/posCartCompactDisplay.js.
 import { compactCompositionSegments, compactBundledExtras, compactBundledName } from "../../../helpers/posCartCompactDisplay";
+import VoiceOrderAssistantPanel from "./VoiceOrderAssistantPanel.vue";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2271,6 +2295,7 @@ export default {
         PosLoyaltyIdentifyModal,
         // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Rupture produits (86).
         AvailabilityTogglePanel,
+        VoiceOrderAssistantPanel,
     },
     // Composition-API bridge for network state, quarantine and signed replay.
     setup() {
@@ -2351,6 +2376,11 @@ export default {
             webAccepting: {},
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
+            // Copilot téléphone V1 : le call_id est seulement un contexte de saisie.
+            // La commande reste créée exclusivement par phoneOrderSubmit.
+            voiceOrderSelectedCallId: null,
+            voiceOrderLinkState: { pending: false, error: null, attempts: 0 },
+            _voiceOrderLinkTimer: null,
             // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
             // state for kiosk-cash (counter-collect) orders. Mirrors the
             // PosOrdersTrackerComponent cancelDialog pattern so any
@@ -2603,6 +2633,26 @@ export default {
         }
     },
     computed: {
+        voiceAssistantMode: function () {
+            return this.$route?.meta?.voiceAssistant === true;
+        },
+        voiceAssistantRouteName: function () {
+            return String(this.$route?.name || '').includes('.v4')
+                ? 'admin.pos.v4.voice-assistant'
+                : 'admin.pos.voice-assistant';
+        },
+        voiceOrderUserId: function () {
+            const candidates = [
+                this.$store.getters.authInfo,
+                this.$store.getters['auth/authInfo'],
+                this.$store.state?.auth?.authInfo,
+            ];
+            for (const candidate of candidates) {
+                const id = parseInt(candidate?.id, 10);
+                if (Number.isFinite(id) && id > 0) return id;
+            }
+            return null;
+        },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
         },
@@ -3161,6 +3211,10 @@ export default {
             clearTimeout(this._resetConfirmTimer);
             this._resetConfirmTimer = null;
         }
+        if (this._voiceOrderLinkTimer) {
+            clearTimeout(this._voiceOrderLinkTimer);
+            this._voiceOrderLinkTimer = null;
+        }
         // [T-B ALERTE-WEB 2026-08-16] Annule les bips web programmés en attente.
         if (this._webOrderAlertTimers) {
             this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
@@ -3251,6 +3305,9 @@ export default {
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
         // [CUSTOMER-DISPLAY 2026-06-28] Écran client en veille au démarrage (accueil).
         this.pushCustomerDisplay(this.grandTotal);
+        if (this.voiceAssistantMode) {
+            this.scheduleVoiceOrderLinkRetry(1800);
+        }
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });
         }, 150);
@@ -3451,6 +3508,118 @@ export default {
 
     },
     methods: {
+        onVoiceOrderCallSelected(call) {
+            this.voiceOrderSelectedCallId = call?.order_id ? null : (call?.call_id || null);
+        },
+        applyVoiceOrderCaller(caller) {
+            if (!caller || !caller.call_id) return;
+            this.voiceOrderSelectedCallId = caller.order_id ? null : caller.call_id;
+            this.checkoutProps.form.pos_customer_name = String(caller.caller_name || '').trim();
+            this.checkoutProps.form.pos_customer_phone = String(caller.caller_number || '').trim();
+        },
+        async reviewVoiceOrderItem(line) {
+            const itemId = parseInt(line?.item_id, 10);
+            const branchId = parseInt(this.cashSessionBranchId, 10);
+            if (!Number.isFinite(itemId) || itemId <= 0 || !Number.isFinite(branchId) || branchId <= 0) {
+                return alertService.error('Produit ou filiale introuvable.');
+            }
+            try {
+                const response = await this.$store.dispatch('item/details', {
+                    id: itemId,
+                    surface: 'pos',
+                    branch_id: branchId,
+                });
+                const item = response?.data?.data;
+                if (!item || item.is_available === false || item.is_available === 0) {
+                    return alertService.error('Ce produit n’est plus disponible.');
+                }
+                this.$refs.posItemComponent?.variationModalShow(item);
+            } catch (error) {
+                alertService.error(error?.response?.data?.message || 'Impossible d’ouvrir ce produit.');
+            }
+        },
+        voiceOrderPendingLinkKey(branchId = this.cashSessionBranchId, userId = this.voiceOrderUserId) {
+            const branch = parseInt(branchId, 10);
+            const user = parseInt(userId, 10);
+            if (!Number.isFinite(branch) || branch <= 0 || !Number.isFinite(user) || user <= 0) return null;
+            return `voice_order_pending_link:v1:b${branch}:u${user}`;
+        },
+        persistPendingVoiceOrderLink(callId, orderId) {
+            const branchId = parseInt(this.cashSessionBranchId, 10);
+            const userId = parseInt(this.voiceOrderUserId, 10);
+            const key = this.voiceOrderPendingLinkKey(branchId, userId);
+            if (!key || !callId || !orderId) return;
+            const now = Date.now();
+            const record = {
+                call_id: String(callId),
+                order_id: parseInt(orderId, 10),
+                branch_id: branchId,
+                user_id: userId,
+                created_at: now,
+                expires_at: now + (24 * 60 * 60 * 1000),
+                attempts: 0,
+            };
+            localStorage.setItem(key, JSON.stringify(record));
+            this.voiceOrderLinkState = { pending: true, error: null, attempts: 0 };
+        },
+        loadPendingVoiceOrderLink() {
+            const branchId = parseInt(this.cashSessionBranchId, 10);
+            const userId = parseInt(this.voiceOrderUserId, 10);
+            const key = this.voiceOrderPendingLinkKey(branchId, userId);
+            if (!key) return null;
+            try {
+                const record = JSON.parse(localStorage.getItem(key) || 'null');
+                if (!record) return null;
+                const validScope = Number(record.branch_id) === branchId && Number(record.user_id) === userId;
+                const validShape = record.call_id && Number(record.order_id) > 0 && Number(record.expires_at) > Date.now();
+                if (!validScope || !validShape) {
+                    localStorage.removeItem(key);
+                    this.voiceOrderLinkState = { pending: false, error: null, attempts: 0 };
+                    return null;
+                }
+                return record;
+            } catch (_) {
+                localStorage.removeItem(key);
+                return null;
+            }
+        },
+        scheduleVoiceOrderLinkRetry(delay = 2500) {
+            if (!this.voiceAssistantMode || this._destroyed) return;
+            if (this._voiceOrderLinkTimer) clearTimeout(this._voiceOrderLinkTimer);
+            this._voiceOrderLinkTimer = setTimeout(() => this.retryPendingVoiceOrderLink(), delay);
+        },
+        async retryPendingVoiceOrderLink() {
+            const record = this.loadPendingVoiceOrderLink();
+            if (!record) {
+                this.voiceOrderLinkState = { pending: false, error: null, attempts: 0 };
+                return;
+            }
+            const key = this.voiceOrderPendingLinkKey(record.branch_id, record.user_id);
+            const attempts = Math.max(0, Number(record.attempts) || 0);
+            this.voiceOrderLinkState = { pending: true, error: null, attempts };
+            try {
+                await axios.post(`/admin/voice-order/calls/${encodeURIComponent(record.call_id)}/link-order`, {
+                    order_id: record.order_id,
+                });
+                localStorage.removeItem(key);
+                if (this.voiceOrderSelectedCallId === record.call_id) {
+                    this.voiceOrderSelectedCallId = null;
+                }
+                this.voiceOrderLinkState = { pending: false, error: null, attempts: attempts + 1 };
+            } catch (error) {
+                const nextAttempts = attempts + 1;
+                record.attempts = nextAttempts;
+                localStorage.setItem(key, JSON.stringify(record));
+                this.voiceOrderLinkState = {
+                    pending: true,
+                    error: error?.response?.data?.message || 'Lien temporairement indisponible',
+                    attempts: nextAttempts,
+                };
+                if (![403, 409, 422].includes(error?.response?.status)) {
+                    this.scheduleVoiceOrderLinkRetry(Math.min(60000, 1500 * (2 ** Math.min(nextAttempts, 5))));
+                }
+            }
+        },
         /**
          * [P1-4 AUDIT CAISSIER 2026-08-01] Composition d'une ligne « À encaisser au comptoir ».
          *
@@ -5793,7 +5962,12 @@ export default {
                     idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
                 };
 
-                await this.$store.dispatch('posOrder/save', payload);
+                const orderResponse = await this.$store.dispatch('posOrder/save', payload);
+                const createdOrderId = parseInt(orderResponse?.data?.data?.id, 10);
+                if (this.voiceOrderSelectedCallId && Number.isFinite(createdOrderId) && createdOrderId > 0) {
+                    this.persistPendingVoiceOrderLink(this.voiceOrderSelectedCallId, createdOrderId);
+                    this.scheduleVoiceOrderLinkRetry(100);
+                }
 
                 // Succès : vider le panier + rafraîchir la file « à encaisser » (la commande y apparaît).
                 alertService.success(this.$t('label.pos_phone_order_success'));

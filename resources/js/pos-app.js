@@ -93,6 +93,12 @@ const router = createRouter({
             meta: { isFrontend: false, auth: true, permissionUrl: 'pos' },
         },
         {
+            path: '/admin/pos-v4/voice-assistant',
+            component: PosComponent,
+            name: 'admin.pos.v4.voice-assistant',
+            meta: { isFrontend: false, auth: true, permissionUrl: 'pos', voiceAssistant: true },
+        },
+        {
             path: '/admin/pos-v4/floorplan',
             component: FloorplanComponent,
             name: 'admin.pos.v4.floorplan',
