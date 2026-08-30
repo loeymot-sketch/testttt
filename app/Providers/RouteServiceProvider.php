@@ -185,6 +185,21 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($this->throttleKeyParAppareil($request));
         });
 
+        // Assistant téléphonique : le gateway HMAC a son propre seau anonyme,
+        // tandis que le polling caisse est isolé par appareil authentifié.
+        RateLimiter::for('voice-order-gateway', function (Request $request) {
+            $gateway = trim((string) $request->header('X-Voice-Gateway-Id', 'unknown'));
+
+            return [
+                Limit::perMinute(300)->by('voice-gateway:'.$gateway.'|'.$request->ip()),
+                Limit::perMinute(600)->by('voice-gateway-global'),
+            ];
+        });
+
+        RateLimiter::for('voice-order-admin', function (Request $request) {
+            return Limit::perMinute(180)->by('voice-admin:'.$this->throttleKeyParAppareil($request));
+        });
+
         // [Wave Y RATE-LIMIT 2026-05-21] env-configurable admin-mutation ceiling.
         // Default 60/min (doubled from prior hardcoded 30/min) — still tight
         // enough for brute-force protection against admin-CRUD abuse but
