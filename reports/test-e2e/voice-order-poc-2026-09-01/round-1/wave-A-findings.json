@@ -1,0 +1,42 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 6,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-A/04-cart-with-item.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "PRE-EXISTING, NOT CAUSED BY THIS BRANCH — see scope proof below. Wave A spec (tests/Playwright/test-e2e-A-2026-09-01.spec.js:284) failed: cart at state 04 rendered line 'Sauce supplementaire | Ketchup | 1,00 EUR' with 'Sous-total 1,00 EUR / Total 1,00 EUR', but the SAME order (scoped by the id returned by POST /admin/pos, never assumed to be the first row) shows '0,50 EUR' in the a-encaisser queue. Backend is authoritative and agrees with the queue: order id=3 total=0.500000, subtotal=0.500000, delivery_charge=0.000000, one order_item item_id=4 qty=1 price=0.500000. Catalog data: Item 4 'Sauce supplementaire' price=0.500000; its chosen variation 'Ketchup' price=0.000000 under attribute 'Sauce (1ere Gratuite)'. So 0,50 EUR is the correct price and the CART DISPLAY doubled the item's own unit price (2 x 0,50), it did not add the sauce (the sauce is genuinely 0.00). Operational impact: the cashier reads 1,00 EUR on screen and would quote that to the customer, while the system creates and will collect 0,50 EUR. Quoted price != charged price. Corroborated independently in an unrelated capture: test-e2e-B/02-voice-assistant-disabled-state.png shows the same order in the queue as 'N0A0032 Tel 0,50 EUR'.",
+      "fix_hint": "OUT OF SCOPE for the voice-order branch — do not fix here. Scope proof: `git diff ef0d7b0f1 HEAD` (branch base -> HEAD) touches 37 files, all voice-order-specific plus .env.example / RouteServiceProvider.php / routes/api.php / pos-app.js / posRoutes.js / PosComponent.vue; `git diff ef0d7b0f1 HEAD -- public/js/pos-wizard.js resources/js/components/admin/pos/ItemComponent.vue app/Services/Pricing/PricingService.php` is EMPTY (0 entries), and every changed line in PosComponent.vue was checked with `grep -iE 'price|total|subtotal|montant|prix|remise|discount'` -> zero pricing lines added or removed. The cart-pricing code path is therefore byte-identical to the base branch. Prime suspect for the real root cause is the cart line-duplication / re-edit path introduced on the BASE branch by commit 6a2264085 / 476ebfc94 ('carte de sauces canonique, tuiles colorees, horaire heure-d-abord, duplication de ligne'); investigate the cart line price computation there (the '(1ere Gratuite)' first-free rule appears to be applied by the backend but not by the cart display). Owner must triage this separately against the base branch.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-A/05-channel-telephone.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "The repository's own capture-coverage guard printed during the run: \"[COUVERTURE] << 05-channel-telephone >> a EXACTEMENT le meme DOM que << 04-cart-with-item >>. Ces deux etats n'en font qu'un : la scene n'a pas bouge entre les deux appels.\" The spec clicks label[for=takeway] between the two snaps, but takeaway was already the active order_type, so the click was a no-op and state 05 demonstrates nothing state 04 did not already show. The name/phone .fill() calls set DOM properties, not serialized attributes, so they do not differentiate the snapshot either.",
+      "fix_hint": "tests/Playwright/test-e2e-A-2026-09-01.spec.js around line 215: to make state 05 evidentially distinct, either switch to the non-default channel (label[for=delivery]) and back, or capture state 05 only after asserting a visible DOM delta (e.g. the customer name/phone rendered into the ticket area). Test-only change; no product impact.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 0,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 1,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "IMPORTANT SCOPE QUALIFIER: the single P0 (A-001) is a PRE-EXISTING defect of the base branch pos/category-first-caisse-2026-06-23, proven not to originate from the voice-order work (see A-001 fix_hint for the diff-based proof). It is recorded at P0 because of its real operational severity for the owner (quoted price != charged price), NOT as a blocker attributable to this branch. For the voice-order feature itself Wave A is otherwise clean: all 6 states captured, the existing phone-order CTA was present/enabled/not renamed, the order was created successfully, the cart reset correctly, customer name and phone were cleared after submit (no leak to the next order), and the spec's assertNoVoiceLeak() confirmed no voice-order UI intrudes on the ordinary caisse flow. This findings file was written by the orchestrator, not by an independent adversarial reviewer: the Wave A adversarial agent and the Wave B round-2 re-capture agent were both terminated mid-run by a weekly API rate limit (HTTP 429), so this audit did NOT reach the skill's two-consecutive-GREEN-rounds convergence bar and must not be reported as converged."
+}

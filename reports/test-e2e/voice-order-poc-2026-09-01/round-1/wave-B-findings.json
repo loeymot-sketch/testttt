@@ -1,0 +1,74 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 4,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-B/02-voice-assistant-disabled-state.png",
+      "category": "forbidden_active_state_flash",
+      "severity": "P1",
+      "evidence": "VoiceOrderAssistantPanel.vue data() defaults `enabled: true` (line 166) and `online: true` (line 174); mounted() (line 203-205) calls poll() which only overwrites `this.enabled = data.enabled !== false` after the first `GET /admin/voice-order/snapshot` response lands (line 219). The route that mounts this component, /admin/pos/voice-assistant, is registered in resources/js/router/modules/posRoutes.js:24-35 (and the v4 alias in resources/js/pos-app.js:96-99) with meta `{ auth: true, permissionUrl: 'pos', voiceAssistant: true }` only -- there is no VOICE_ORDER_ENABLED / backend-config gate anywhere in the route meta or in PosComponent.vue's `voiceAssistantMode` computed (PosComponent.vue:2637-2639, which checks only `this.$route?.meta?.voiceAssistant === true`). Consequently, on every real navigation to this route in production with VOICE_ORDER_ENABLED=false, the component briefly renders the v-else 'enabled' template branch (VoiceOrderAssistantPanel.vue:19-149: health chip text 'Synchronisé', calls list empty-state text literally 'En attente d'un appel' -- 'waiting for a call', which reads as actively listening) until the snapshot XHR resolves and flips `enabled` to false. This is exactly the phrase class the spec's own FORBIDDEN_ACTIVE_PHRASES guard (tests/Playwright/test-e2e-B-2026-09-01.spec.js:24-31) exists to catch, but the guard is only asserted against `panel.innerText()` after `disabledBlock` becomes visible (spec lines 132-153) -- i.e. after the flash has already resolved. The spec's own inline comment at lines 129-131 states outright: 'This assertion also proves the transient default ... resolves to the safe disabled state -- Playwright auto-retries past that flash.' That is a claim about eventual consistency, not about the first paint being safe. GStack's self-report characterized this as 'not directly screenshot-provable' and implied it was low-risk because it self-corrects fast; verification shows it IS reachable on every real page load in production (no backend gate on the frontend route) and directly contradicts the audit plan's explicit requirement that the disabled-state UI 'must never claim the assistant is listening or active.'",
+      "fix_hint": "Either (a) gate `voiceAssistantMode` / the route itself on a backend-supplied VOICE_ORDER_ENABLED flag (e.g. inject it into the initial page bootstrap data and check it before ever mounting VoiceOrderAssistantPanel with enabled:true as a default), or (b) change VoiceOrderAssistantPanel.vue's data() defaults to `enabled: null` (unknown) and render a neutral loading/skeleton state until the first snapshot response lands, instead of defaulting to the full 'enabled' UI. Backend controller already sends the correct disabled payload (app/Http/Controllers/Admin/VoiceOrderAssistantController.php:24-37) -- the frontend just doesn't wait for it before painting an optimistic 'enabled' UI.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-B/04-tablet-viewport-1024x600.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "At the 1024x600 tablet viewport, the cart panel's '+30 min' and '+1 h' quick-time-add buttons (visible fully labeled in states 01 and 03 at 1280px width) are vertically clipped: pixel-crop inspection of 04-tablet-viewport-1024x600.png in the region x=690-1024, y=330-480 shows only the top rounded-corner border arc of two buttons, with their text labels ('+30 min', '+1 h') completely invisible, immediately followed by the 'Sous-total / 0,00 EUR' row. The buttons are functionally illegible/unusable at exactly the POS/kiosk tablet viewport this state was designed to validate. The spec's only responsive-breakage check (tests/Playwright/test-e2e-B-2026-09-01.spec.js:192-195) measures `document.documentElement.scrollWidth - clientWidth` (horizontal overflow only, threshold <=2px) and would never detect this vertical clipping -- it is a real gap in the audit's own instrumentation, matching exactly the 'responsive breakage the desktop capture wouldn't show' risk the audit plan called out for this state.",
+      "fix_hint": "Cart/ticket panel needs either a scrollable inner container (overflow-y:auto with visible scroll affordance) or the totals footer needs to stop being pinned/sized in a way that eats into the Programmer button row at short viewport heights (<=600px). Not caused by the voice-order branch's own code (VoiceOrderAssistantPanel.vue/PosComponent.vue voice-assistant additions) -- this is the pre-existing shared cart panel layout -- but it is demonstrably broken in this exact artifact and this exact viewport is the one Wave B was asked to prove clean.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-B/02-voice-assistant-disabled-state.png",
+      "category": "ui_render_failure",
+      "severity": "P2",
+      "evidence": "The health/sync-status chip (`<div class=\"voice-assistant__health voice-assistant__health--off\"><span aria-hidden=\"true\"></span>Desactive</div>`, VoiceOrderAssistantPanel.vue template line 8-10) is present in the DOM of both 02-voice-assistant-disabled-state.dom.html and 04-tablet-viewport-1024x600.dom.html (confirmed via grep -- correct classes, correct 'Desactive' text, matching data-v scoped attribute, no inline style/hidden attribute), but renders zero visible pixels in either screenshot. Pixel-diff scan of the region where the header's `justify-content:space-between` should place it (x=550-808, y=85-175 in the 1280-wide screenshot) against a same-region background sample shows 0 pixels differing by more than a delta of 15 across a full grid scan -- i.e. no dot, no text, nothing rendered, in a region with ample free space (the headline text ends well before x=580). Reproduced identically in state 04 at 1024px width. This is not a contrast issue (computed ratio for the color would be borderline-but-passing at ~4.2-4.5:1) -- it is a complete non-render, likely a flex-layout or scoped-CSS interaction bug in `.voice-assistant__header` (VoiceOrderAssistantPanel.vue style block, lines ~325-330).",
+      "fix_hint": "Inspect `.voice-assistant__header` / `.voice-assistant__health` in a live browser devtools (computed styles + box model) -- likely candidate is the flex row's second child collapsing to zero size, or an inherited `overflow:hidden` on `.voice-assistant` (line 324) clipping content that flex is trying to push past the container's effective content box. Does not compromise the primary required message ('Assistant desactive en securite.' + supporting text) which renders correctly and independently, so this is a secondary/decorative indicator failure, not a safety-messaging failure.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-B/02-voice-assistant-disabled-state.png",
+      "category": "route_isolation",
+      "severity": "P2",
+      "evidence": "Confirmed by direct code read: PosComponent.vue:105-114 mounts `<VoiceOrderAssistantPanel v-if=\"voiceAssistantMode\" ... />` as a sibling immediately before `<div class=\"pos-v4-main\" ...>` at line 116, which carries no matching `v-if`/`v-else` to hide it when the voice-assistant route is active. Screenshots 02 and 04 both show the full, functional caisse (item search, category tiles, 'PRET A LIVRER' / 'A ENCAISSER' queues, and the entire cart/ticket panel including 'Encaissement', 'Ouvrir tiroir' toolbar buttons) rendered directly beneath the disabled-assistant banner -- not a dedicated, isolated 'full panel' as the audit plan's Wave B state-2 description specifies ('navigate to /admin/pos/voice-assistant, full panel showing the disabled-safe message'). Functionally this is benign (no overlap, no broken interaction -- the same PosComponent instance renders identically regardless of route, and having the working caisse visible arguably reinforces the 'manual caisse still works' message) but it is a real deviation from the stated design intent and means the route provides zero actual isolation of the assistant surface.",
+      "fix_hint": "Add `v-if=\"!voiceAssistantMode\"` (or equivalent) to the `pos-v4-main` wrapper at PosComponent.vue:116 if a dedicated isolated panel is actually wanted, or update the audit plan's Wave B description to reflect the intentional banner-over-caisse design if this is accepted as-is.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "tests/Playwright/test-e2e-B-2026-09-01.spec.js",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "The spec's own comment at lines 129-131 explicitly documents that the 'never claims active/listening' guarantee (asserted at lines 142-153 against `panel.innerText()`) is only checked AFTER `disabledBlock` becomes visible via Playwright's auto-retrying `toBeVisible()` -- i.e. the assertion structurally cannot observe or fail on the transient enabled:true first-paint frame described in finding B-001. This mirrors the exact 'instrument doesn't measure what it claims' failure pattern this project has already been burned by (test.use({reducedMotion}) being inert, F-key presses being inert without a rendered surface) -- a green run here does not prove the flash is safe, and GStack's self-report leaned on this same non-proof ('self-corrects fast enough that Playwright's auto-retry never caught it as a failure') as if it were reassuring rather than a gap. Separately, the spec's only tablet-viewport responsive check (lines 192-195) tests horizontal overflow only (`scrollWidth - clientWidth`), which is structurally blind to the vertical button-clipping defect found in B-002.",
+      "fix_hint": "Add a frame-level assertion for the flash window -- e.g. intercept/delay the `/admin/voice-order/snapshot` response via route mocking and assert the DOM at that exact moment does not render `.voice-assistant__grid` / does not contain any FORBIDDEN_ACTIVE_PHRASES match, instead of relying on eventual-consistency via auto-retry. For B-002's class of defect, add a vertical-clipping check (e.g. assert each visible button's bounding box height matches its natural/expected height, or that no interactive element's bounding box is intersected by a later DOM sibling with a higher effective z-index/position).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 3,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 2,
+    "open_P2": 3,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER"
+}
