@@ -163,7 +163,12 @@ export default {
     emits: ['select-call', 'apply-caller', 'review-item', 'retry-link'],
     data() {
         return {
-            enabled: true,
+            // [test-e2e fix B-001 round-2 2026-09-01] Fail-safe first paint: the route that
+            // mounts this panel has no frontend gate on the backend VOICE_ORDER_ENABLED flag,
+            // so before the first GET /admin/voice-order/snapshot response lands the component
+            // must render the disabled-safe branch, never the "enabled/listening" UI. Only a
+            // real snapshot response (poll(), line ~219) may flip these to true.
+            enabled: false,
             disabledMessage: '',
             activeCalls: [],
             recentCalls: [],
@@ -171,7 +176,7 @@ export default {
             selectedCall: null,
             loadedPersistedId: null,
             busy: false,
-            online: true,
+            online: false,
             pollTimer: null,
             pollDelay: 750,
             destroyed: false,

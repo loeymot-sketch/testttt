@@ -102,8 +102,12 @@
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
+    <!-- [test-e2e fix B-003 round-2 2026-09-01] Same width reservation as .pos-v4-main below:
+         without it this panel spans the full row and its right edge (incl. the health chip)
+         renders UNDERNEATH the `fixed` cart panel (pos-v4-cart-panel), 0 visible pixels. -->
     <VoiceOrderAssistantPanel
         v-if="voiceAssistantMode"
+        class="md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]"
         :branch-id="cashSessionBranchId"
         :user-id="voiceOrderUserId"
         :link-state="voiceOrderLinkState"
