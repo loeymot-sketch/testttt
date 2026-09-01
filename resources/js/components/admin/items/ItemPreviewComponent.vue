@@ -260,7 +260,7 @@ export default {
         },
     },
     mounted() {
-        this.selectedBranchId = this.branches[0]?.id ?? null;
+        this.selectedBranchId = this.defaultBranchId();
         if (this.selectedBranchId && this.item?.id) {
             this.refreshAll();
         }
@@ -273,6 +273,31 @@ export default {
         },
     },
     methods: {
+        /**
+         * Succursale sur laquelle l'aperçu s'ouvre.
+         *
+         * [CHEF 2026-09-01] Avant : `this.branches[0]?.id`. Or `BranchService::list()`
+         * trie par défaut en `id desc` — la liste arrive donc 10, 9, 8, 7, 2, 1, et
+         * « Le Cayenne (principal) », qui porte l'id 1, se retrouve EN DERNIER.
+         * L'aperçu s'ouvrait ainsi sur « Collier and Sons Branch », une succursale
+         * héritée du jeu de test où aucun produit n'est publié, et annonçait
+         * « Article non disponible » pour un produit parfaitement en vente.
+         * Vérifié côté service : `MenuProjectionService::forChannel('pos'|'kiosk', 1)`
+         * rend 12 catégories / 46 articles et contient bien le produit — le défaut
+         * n'était jamais dans la projection, seulement dans la succursale interrogée.
+         *
+         * On ouvre donc sur une succursale ACTIVE. Ce n'est pas une heuristique :
+         * `Status::ACTIVE = 5`, et seule la principale porte ce statut ; les cinq
+         * autres sont à `status = 1`, une valeur qui ne correspond à aucun statut du
+         * domaine — reliquat de peuplement. Si un jour plusieurs succursales sont
+         * réellement actives, la première active reste un défaut correct, et le
+         * sélecteur laisse l'utilisateur en changer.
+         */
+        defaultBranchId() {
+            const list = this.branches || [];
+            const active = list.find((b) => Number(b.status) === 5);
+            return (active || list[0])?.id ?? null;
+        },
         async refreshAll() {
             if (!this.selectedBranchId || !this.item?.id) return;
             this.loading = true;
