@@ -35,7 +35,7 @@ class ItemCategoryRequest extends FormRequest
                 // [CAT-DATA-02 heal 2026-06-01] ItemCategory uses SoftDeletes — scope uniqueness
                 // to non-deleted rows (mirrors ItemRequest:47) so a soft-deleted category's name
                 // is reusable instead of permanently blocked.
-                Rule::unique("item_categories", "name")->whereNull('deleted_at')->ignore($this->route('itemCategory.id'))
+                Rule::unique("item_categories", "name")->whereNull('deleted_at')->ignore($currentCategoryId)
             ],
             'parent_id'          => array_values(array_filter([
                 'nullable',

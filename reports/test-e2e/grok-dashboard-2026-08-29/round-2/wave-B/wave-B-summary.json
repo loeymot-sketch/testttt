@@ -1,0 +1,32 @@
+{
+  "wave": "B-admin-cockpit",
+  "base_url": "http://127.0.0.1:8766",
+  "mix_js_network": [
+    {
+      "url": "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/js/admin-shell.2649746a.js",
+      "status": 200
+    }
+  ],
+  "consigne_journal_serveur": true,
+  "chaque_bascule_est_tracee": false,
+  "states": [
+    {
+      "name": "admin-cockpit",
+      "url": "http://127.0.0.1:8766/admin/observability/system",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.network.json",
+      "notes": "element screenshot of [data-testid=system-health]. Consigne=true ChaqueBascule=false lead=Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525."
+    }
+  ],
+  "blockers": []
+}

@@ -1,0 +1,1047 @@
+[
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982741542
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982741542
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787982742532
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742538
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742538
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742539
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742659
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742660
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742660
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742660
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742660
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742660
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742820
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742820
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161714W154ZNQ2HE48YRPV4' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742866
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161714W154ZNQ2HE48YRPV4",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742866
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982742867
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161715X3P886CZQG6EQH91W' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742946
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161715X3P886CZQG6EQH91W",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742947
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982742947
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161716PX16XWQM5C5TVEK06' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742993
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161716PX16XWQM5C5TVEK06",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982742993
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982742993
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16171V04N0P26GD046ZFB8E' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982743639
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16171V04N0P26GD046ZFB8E",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982743639
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982743640
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744026
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744026
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744026
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744026
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172BJC8NCBXZ81MQG5RQB' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744250
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172BJC8NCBXZ81MQG5RQB",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744250
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744250
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172CB1FPG7J56WTT4FX3B' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744306
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172CB1FPG7J56WTT4FX3B",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744306
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744306
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787982744425
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172DYBGFXMX4749K45AER' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744576
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172DYBGFXMX4749K45AER",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744576
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744576
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172EQ37GX2SPTXGK47KTD' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744630
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172EQ37GX2SPTXGK47KTD",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744630
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744630
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172GET1JK1MP37JVVZDTQ' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744684
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172GET1JK1MP37JVVZDTQ",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744684
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744685
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172JQ3Q0QFKHGRWEMP6WT' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744752
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172JQ3Q0QFKHGRWEMP6WT",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744752
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744752
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172N7SRYP8NQ5VHRZR5ES' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744813
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172N7SRYP8NQ5VHRZR5ES",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982744813
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982744813
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172Q09ND2THZZJE8KDFSH' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745103
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172Q09ND2THZZJE8KDFSH",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745103
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745103
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172Z8PB9G444FKFR9WNBR' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745171
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16172Z8PB9G444FKFR9WNBR",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745171
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745171
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M1617311EEBW3PD2BGT67G62' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745228
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M1617311EEBW3PD2BGT67G62",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745228
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745228
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161732PKJBMCSJ4W7NN6ZCV' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745277
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161732PKJBMCSJ4W7NN6ZCV",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745277
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745277
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161734SZYSVM0H1R41VB1VG' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745341
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161734SZYSVM0H1R41VB1VG",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745341
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745341
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161736EW4C7TSRCX4NFZ1V4' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745427
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161736EW4C7TSRCX4NFZ1V4",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745427
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982745427
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745900
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982745900
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787982750962
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787982750963
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751118
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751118
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751118
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751118
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751119
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751119
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751119
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751120
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751120
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751120
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751120
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751120
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751362
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751362
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751362
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751362
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751558
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982751559
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752182
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752182
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179WY2XR7MCPRVN3YXDPE' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752350
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179WY2XR7MCPRVN3YXDPE",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752351
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982752351
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179XPXVA2NWMBNPCPGGZ6' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752400
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179XPXVA2NWMBNPCPGGZ6",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752400
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982752400
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179YNKHXBEJ0YTPNFFPKN' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752417
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M16179YNKHXBEJ0YTPNFFPKN",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752417
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982752417
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M1617A0RX2SE5MM7BBKVT5SV' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752432
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M1617A0RX2SE5MM7BBKVT5SV",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787982752432
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "ts": 1787982752432
+  }
+]

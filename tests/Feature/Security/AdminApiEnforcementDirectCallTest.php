@@ -255,10 +255,11 @@ class AdminApiEnforcementDirectCallTest extends TestCase
         $admin = User::factory()->create(['branch_id' => $this->branch->id]);
         $admin->givePermissionTo('settings');
         $role = Role::where('name', 'POS Operator')->where('guard_name', 'sanctum')->firstOrFail();
+        $pos = Permission::where('name', 'pos')->where('guard_name', 'sanctum')->firstOrFail();
 
         $response = $this->actingAs($admin, 'sanctum')
             ->putJson('/api/admin/setting/permission/' . $role->id, [
-                'permissions' => [],
+                'permissions' => [$pos->id],
             ]);
 
         $this->assertContains(

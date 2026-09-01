@@ -9,7 +9,7 @@
                 Source : <code class="bg-gray-100 px-1 rounded">audit_logs</code> (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
             </p>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto max-h-80 overflow-y-auto">
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>

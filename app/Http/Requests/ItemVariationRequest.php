@@ -35,8 +35,9 @@ class ItemVariationRequest extends FormRequest
                 // Sans le scope attribut, un même nom de viande légitime sous deux groupes distincts
                 // (« Viande 1 » ET « Viande 2 » d'un tacos) était refusé 422 → 66 variations jumelles
                 // live (6 produits tacos) inéditables via l'endpoint dédié. Miroir du besoin extras.
-                Rule::unique("item_variations", "name")->whereNull('deleted_at')->ignore($this->route('itemVariation.id'))
-                    ->where('item_id', $this->route('item.id'))
+                Rule::unique("item_variations", "name")->whereNull('deleted_at')
+                    ->ignore(optional($this->route('itemVariation'))->id)
+                    ->where('item_id', optional($this->route('item'))->id)
                     ->where('item_attribute_id', (int) $this->input('item_attribute_id'))
             ],
             'item_attribute_id' => ['required', 'numeric'],

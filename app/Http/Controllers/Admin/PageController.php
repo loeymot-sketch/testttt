@@ -23,7 +23,7 @@ class PageController extends AdminController
     {
         parent::__construct();
         $this->pageService = $page;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy', 'show');
+        $this->middleware(['permission:settings'])->only('index', 'store', 'update', 'destroy', 'show');
     }
 
     public function index(PaginateRequest $request)

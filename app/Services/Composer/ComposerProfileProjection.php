@@ -34,7 +34,7 @@ final class ComposerProfileProjection
                 : null);
 
         $steps = $profile->steps
-            ->filter(fn (ItemWizardStep $step): bool => $this->stepVisibleOn($step, $surface))
+            ->filter(fn (ItemWizardStep $step): bool => (bool) $step->is_active && $this->stepVisibleOn($step, $surface))
             ->values()
             ->map(fn (ItemWizardStep $step): array => [
                 'id' => (int) $step->id,
@@ -110,10 +110,16 @@ final class ComposerProfileProjection
         }
 
         if ($sourceType === 'extra_group') {
+            if ($sourceRef === '') {
+                // Step « Suppléments » sans source_ref : on lie au step_key
+                // (aliases supplement), pas à TOUS les extras.
+                $sourceRef = mb_strtolower(trim((string) $step->step_key));
+            }
+
             return $item->extras
                 ->filter(fn ($extra): bool => (int) $extra->status === Status::ACTIVE
                     && $extra->isVisibleOn($surface)
-                    && ($sourceRef === '' || mb_strtolower((string) $extra->group_label) === $sourceRef))
+                    && $this->matchesExtraGroup($extra, $sourceRef))
                 ->map(function ($extra) use ($choiceAvailability): array {
                     $availability = $choiceAvailability !== null
                         ? ($choiceAvailability['extras'][(int) $extra->id] ?? ['is_available' => true, 'unavailable_reason' => null])
@@ -138,9 +144,19 @@ final class ComposerProfileProjection
             if ($role === null && in_array($sourceRef, ItemAddon::ROLES, true)) {
                 $role = $sourceRef;
             }
+            $wantedAddonId = ($role === null && $sourceRef !== '' && ctype_digit($sourceRef))
+                ? (int) $sourceRef
+                : null;
+            if ($role === null && $wantedAddonId === null) {
+                // Avant : source_ref vide = toutes les boissons ET les frites.
+                return [];
+            }
 
             return $item->addons
-                ->filter(function ($addon) use ($role, $surface): bool {
+                ->filter(function ($addon) use ($role, $wantedAddonId, $surface): bool {
+                    if ($wantedAddonId !== null && (int) $addon->id !== $wantedAddonId) {
+                        return false;
+                    }
                     if ($role !== null && $addon->role !== $role) {
                         return false;
                     }
@@ -183,11 +199,56 @@ final class ComposerProfileProjection
         }
 
         if ($sourceRef === '') {
+            // Avant : page viande sans source_ref listait aussi les sauces.
+            return false;
+        }
+
+        if ((string) $attribute->id === $sourceRef) {
             return true;
         }
 
-        return (string) $attribute->id === $sourceRef
-            || mb_strtolower((string) $attribute->name) === $sourceRef;
+        $name = mb_strtolower(trim((string) $attribute->name));
+        if ($name === $sourceRef) {
+            return true;
+        }
+
+        // « viande » doit attraper « Viande 1 » / « Viande 2 », pas « Sauce ».
+        if (str_starts_with($name, $sourceRef)) {
+            $rest = substr($name, strlen($sourceRef));
+
+            return $rest === '' || preg_match('/^[\s_\-\d(]/u', $rest) === 1;
+        }
+
+        return preg_match(
+            '/(?:^|[\s_\-])'.preg_quote($sourceRef, '/').'(?:$|[\s_\-\d(])/u',
+            $name
+        ) === 1;
+    }
+
+    /**
+     * Avant : le picker admin groupe les extras sans étiquette sous id « default ».
+     * La caisse comparait à group_label === 'default' et la page restait vide.
+     */
+    private function matchesExtraGroup($extra, string $sourceRef): bool
+    {
+        if ($sourceRef === '') {
+            // Avant : extra sans groupe ouvrait TOUS les extras de l'article.
+            return false;
+        }
+
+        $label = mb_strtolower(trim((string) ($extra->group_label ?? '')));
+
+        if ($sourceRef === 'default' && ($label === '' || $label === 'default')) {
+            return true;
+        }
+
+        if ($label === $sourceRef) {
+            return true;
+        }
+
+        $aliases = ComposerTemplateService::EXTRA_GROUP_ALIASES[$sourceRef] ?? [];
+
+        return in_array($label === '' ? 'default' : $label, $aliases, true);
     }
 
     private function choiceAvailabilityResolver(): ChoiceAvailabilityResolver

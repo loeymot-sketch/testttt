@@ -88,15 +88,11 @@ const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
 ]);
 
 // [CV1-WIZARD-COMPOSABLE-001 T-WC-PERM-01] Vérifie si l'utilisateur dispose d'une
-// permission donnée (via son URL Spatie, ex: 'items'). Renvoie true quand
-// l'entrée est inconnue côté store pour préserver le comportement historique
-// (le backend reste l'autorité finale via 403 sur l'API).
-// [GOAL-OPS-SWAP W1 2026-08-12] La résolution vit désormais dans UN seul
-// module, partagé avec la barre latérale (BackendMenuComponent.vue) : la même
-// question posée à deux endroits finissait par recevoir deux réponses.
-// Le repli permissif ci-dessus est CONSERVÉ tel quel ; seul le désaccord de clé
-// est corrigé (`ingredients_manage`/`catalog.compose` ont `url` NULL en base,
-// `items_create` porte `url='items/create'`). Voir shared/permission-match.js.
+// permission donnée (via son URL Spatie, ex: 'items').
+// [GOAL-OPS-SWAP W1 2026-08-12] Résolution UNIQUE (permission-match.js),
+// partagée avec la barre latérale. 2026-08-29 : table hydratée + clé
+// inconnue = refus (plus de lien cockpit fantôme). Liste encore vide =
+// démarrage à froid, on laisse passer.
 const userHasPermission = (permissionUrl) =>
     hasPermissionAccess(store.getters.authPermission || [], permissionUrl);
 

@@ -1,0 +1,82 @@
+[
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1788039170688
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "loc": {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788039170830
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Request header field cache-control is not allowed by Access-Control-Allow-Headers in preflight response.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788039171472
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788039171472
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1788039172604
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "loc": {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788039172769
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1788039173340
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1788039175289
+  }
+]

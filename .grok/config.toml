@@ -1,0 +1,12 @@
+# Grok-only project MCP. Does not edit Cursor/Claude MCP files.
+# Playwright MCP requires Node >= 20. This repo's default nvm 18 fails handshake.
+
+[mcp_servers.playwright]
+command = "/Users/1millnonstop/.nvm/versions/node/v22.23.2/bin/npx"
+args = ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--caps", "vision"]
+enabled = true
+startup_timeout_sec = 90
+
+[mcp_servers.playwright.env]
+PATH = "/Users/1millnonstop/.nvm/versions/node/v22.23.2/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+PLAYWRIGHT_BASE_URL = "http://127.0.0.1:8000"

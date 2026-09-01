@@ -196,6 +196,9 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // ce qui est affiché est atteignable.
     'cash-overview': 'cash-sessions-report',
     'delivery-boy-cash-sessions': 'delivery-boys',
+    // Cockpit global : API Admin-only. Sans mapping, fail-open sidebar.
+    'observability/system': 'settings',
+    'observability/outbox': 'settings',
 });
 
 function permissionUrlForSidebarPath(menuUrl) {
@@ -206,6 +209,9 @@ function permissionUrlForSidebarPath(menuUrl) {
         return MENU_URL_TO_PERMISSION_URL[menuUrl];
     }
     if (menuUrl.startsWith('settings/')) {
+        return 'settings';
+    }
+    if (menuUrl.startsWith('observability/')) {
         return 'settings';
     }
     if (menuUrl.startsWith('stock/')) {

@@ -79,6 +79,9 @@ function primeAxios() {
         if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
+        if (url === 'admin/composer/categories/42/available-sources') {
+            return Promise.resolve({ data: { data: sources } });
+        }
         return Promise.reject(new Error(`unexpected GET ${url}`));
     });
     axios.post.mockResolvedValue({ data: { data: categoryProfile } });
@@ -154,5 +157,11 @@ describe('ProductComposerEditorComponent category contract', () => {
 
         expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/profile', undefined);
         expect(axios.get).toHaveBeenCalledWith('admin/composer/items/7/available-sources');
+    });
+
+    it('loads category available sources instead of an empty picker', async () => {
+        await mountEditor({ entityType: 'category', entityId: 42 });
+
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/categories/42/available-sources');
     });
 });

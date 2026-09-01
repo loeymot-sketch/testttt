@@ -36,6 +36,9 @@ describe("catalog studio routing", () => {
         expect(source).toContain("data-testid=\"catalog-studio-page\"");
         expect(source).toContain("data-testid=\"catalog-studio-products-grid\"");
         expect(source).toContain("admin.items.composer");
+        expect(source).toContain("catalogProducts");
+        expect(source).toContain("customerFacingProducts");
+        expect(source).toContain("isInternalCategoryId");
     });
 
     it("[P0] sends required `order` field on product create", () => {

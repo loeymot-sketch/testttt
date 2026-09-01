@@ -1,0 +1,69 @@
+{
+  "url": "http://127.0.0.1:8766/admin/observability/system",
+  "title": "Le Cayenne",
+  "verdict": "Des points demandent votre attention.\n\nfile d'attente : 1490 messages\ndernière sauvegarde il y a 24 jours\nplanificateur muet depuis 5215 min",
+  "mesure": "mesuré 25/08/2026 16:56:00",
+  "erreur": null,
+  "queueBlock": "FILE D'ATTENTE\n\n1490 en attente\n\nMessages en attente de traitement.",
+  "queuePending": 1490,
+  "backup": "DERNIÈRE SAUVEGARDE\n\nil y a 24 jours\n\npre-8axes-2026-08-05.sql.gz\n\nUne sauvegarde par jour à 3 h, restaurée à 5 h pour vérifier qu'elle s'ouvre vraiment. Conservation 6 ans.",
+  "scheduler": "TÂCHES AUTOMATIQUES\n\nmuettes depuis 5215 min\n\nS'il s'arrête, les sauvegardes, les relances et le contrôle de la chaîne fiscale s'arrêtent avec lui, sans aucune erreur visible.",
+  "controles": [
+    {
+      "cle": "db",
+      "text": "BASE DE DONNÉES\n\nen service\n\nLà où sont les commandes et la carte."
+    },
+    {
+      "cle": "redis",
+      "text": "CACHE\n\nen service\n\nAccélère l'affichage ; sa panne ralentit tout."
+    },
+    {
+      "cle": "websocket",
+      "text": "TEMPS RÉEL\n\nen service\n\nCe qui pousse les commandes vers la cuisine."
+    },
+    {
+      "cle": "fiscal_chain",
+      "text": "CHAÎNE FISCALE\n\nen service\n\nIntégrité NF525 des écritures."
+    },
+    {
+      "cle": "queue_pending",
+      "text": "FILE D'ATTENTE\n\n1490 en attente\n\nMessages en attente de traitement."
+    }
+  ],
+  "impossibleDeLire": [],
+  "interrupteurs": [
+    {
+      "testid": "interrupteur-bouton-split_payment",
+      "pressed": "true",
+      "label": "Activé"
+    },
+    {
+      "testid": "interrupteur-bouton-wheel",
+      "pressed": "false",
+      "label": "Désactivé"
+    },
+    {
+      "testid": "interrupteur-bouton-remise_manuelle",
+      "pressed": "false",
+      "label": "Désactivé"
+    },
+    {
+      "testid": "interrupteur-bouton-fidelite",
+      "pressed": "true",
+      "label": "Activé"
+    },
+    {
+      "testid": "interrupteur-bouton-kiosk_promo",
+      "pressed": "false",
+      "label": "Désactivé"
+    },
+    {
+      "testid": "interrupteur-bouton-impression_ticket_client_auto",
+      "pressed": "false",
+      "label": "Désactivé"
+    }
+  ],
+  "bodySnippet": "Français\nAnglais\nFrançais\nBonjour\nAdmin Le Cayenne\nAdmin Le Cayenne\n\nadmin@lecayenne.fr\n\n+330600000000\n\n250,90 €\nModifier Le Profil\nChanger Le Mot De Passe\nAppareils Connectés\nDéconnexion\nTableau De Bord\nPOS\nProduits & Stock\nConso & Stock\nAjustement Stock\nCatalogue\nAttribut D’articles\nIngrédients\nScan Facture\nCommandes Caisse\nHistorique\nEncaissement\nVue Caisse Unifiée\nCaisse Livreur\nTicket Promo\nRéglages Ticket Promo\nCommande Uber (Photo)\nLa Roue\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client\nCOMMUNICATIONS\nNotification Pushs\nMessages\nAbonnés\nUTILISATEURS\nAdministrateurs\nEmployés\nChefs\nCOMPTES\nTransactions\nRAPPORTS\nRapport Des Ventes\nRapport Articles\nCONFIGURATION\nParamètres\nÉtat Du Système\nÉtat du système\n\nCe que le logiciel sait de lui-même, en un coup d'œil.\n\nmesuré 25/08/2026 16:56:00\nActualiser\n\nDes points demandent votre attention.\n\nfile d'attente : 1490 messages\ndernière sauvegarde il y a 24 jours\nplanificateur muet depuis 5215 min\n\nBASE DE DONNÉES\n\nen service\n\nLà où sont les commandes et la carte.\n\nCACHE\n\nen service\n\nAccélère l'affichage ; sa panne ralentit tout.\n\nTEMPS RÉEL\n\nen service\n\nCe qui pousse les commandes vers la cuisine.\n\nCHAÎNE FISCALE\n\nen service\n\nIntégrité NF525 des écritures.\n\nFILE D'ATTENTE\n\n1490 en attente\n\nMessages en attente de traitement.\n\nDERNIÈRE SAUVEGARDE\n\nil y a 24 jours\n\npre-8axes-2026-08-05.sql.gz\n\nUne sauvegarde par jour à 3 h, restaurée à 5 h pour vérifier qu'elle s'ouvre vraiment. Conservation 6 ans.\n\nTÂCHES AUTOMATIQUES\n\nmuettes depuis 5215 min\n\nS'il s'arrête, les sauvegardes, les relances et le contrôle de la chaîne fiscale s'arrêtent avec lui, sans aucune erreur visible.\n\nINTERRUPTEURS\n\nPrise en compte immédiate, sans mise en ligne. Chaque bascule est tracée.\n\nPaiement en plusieurs fois\n\nPermet d'encaisser une commande en plusieurs règlements (espèces + carte, ou deux cartes).\n\nDésactivé, la caisse n’accepte plus qu’un seul moyen de paiement par commande.\n\nActivé\n\nRoue promotionnelle\n\nLe jeu de la roue proposé au client après sa commande.\n\nDésactivée, la roue disparaît ; les lots déjà gagnés restent valables.\n\nDésactivé\n\nRemise manuelle en caisse\n\nAutorise le caissier à appliquer une remise libre sur une commande.\n\nDésactivée, le bouton remise disparaît de la caisse ; les remises déjà appliquées restent valables (F1 : le Z reste fiscalement correct sur base remisée).\n\nDésactivé\n\nProgramme fidélité (dépense de points)\n\nPermet à un client de dépenser ses points fidélité pour obtenir une réduction.\n\nDésactivé, les points cessent d’être dépensables ; ils continuent de s’accumuler et restent visibles au client.\n\nActivé\n\nCodes promo sur la borne\n\nAffiche le champ code promo dans le parcours de commande borne.\n\nDésactivé, le champ disparaît de la borne ; les codes restent utilisables aux autres canaux (caisse, web).\n\nDésactivé\n\nImpression automatique du ticket client\n\nÀ l'encaissement, imprime automatiquement le ticket client sans clic du caissier.\n\nDésactivée (défaut), le ticket reste imprimable à la demande via le bouton dédié — rien ne se perd, juste plus de clic requis.\n\nDésactivé\nRequest\nTimeline\nViews\n1\nQueries\n8\nModels\n1\n32.43ms\n3MB\n9.x\nGET {any}",
+  "healthStatus": 200,
+  "finalUrl": "http://127.0.0.1:8766/admin/observability/system"
+}

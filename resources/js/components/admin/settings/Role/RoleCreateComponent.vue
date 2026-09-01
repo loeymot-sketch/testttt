@@ -63,7 +63,7 @@ export default {
     methods: {
         reset: function () {
             appService.modalHide();
-            this.$store.dispatch('analytic/reset').then().catch();
+            this.$store.dispatch('role/reset').then().catch();
             this.errors = {};
             this.$props.props.form = {
                 name: "",

@@ -5,20 +5,20 @@
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `AUDIT` — Claude PASS #2 le 2026-08-24 ; canal GPT final INDISPONIBLE (binaire Codex ENOENT + HTTP 400 modèle). Clôture suspendue à une décision humaine sur le canal manquant. |
+| **PHASE** | `CLOSED` — double audit PASS ; V1 livrée désactivée, activation réelle toujours gelée par gate humaine. |
 | **MASTER_TASK_ID** | |
-| **TASK_ID** | `CAISSE-SUPERVISOR-CONTROL-20260823` |
-| **PLAN_FILE** | `plans/PLAN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
-| **REPORT_FILE** | `reports/execution/RUN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
-| **AUDIT_SOURCE** | `Reprise superviseur Claude Code 2026-08-24 : VALIDATE terminée (41 backend, 3609 Vitest, E2E + parcours obligatoires verts, diff gelé vide). Trois audits adverses indépendants ont rendu REWORK ; 11 findings remédiés, 2 écartés après vérification. Nouvel AUDIT_VERDICT: PASS — reports/audit/CLAUDE_AUDIT_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-24.md` |
-| **CONTINUATION_HANDOFF** | `missions/CAISSE-SUPERVISOR-CONTROL-20260823/CLAUDE_CODE_HANDOFF.md` |
-| **PARENT_CYCLE** | `GOAL-WHEEL-EXPERIENCE-20260823 parked at human UX gate; not approved or closed` |
-| **SUBSYSTEMS_TOUCHED** | `POS system health/offline/a11y, dashboard SLA/date presets, kiosk idle/product keyboard activation, Playwright critical sync harness and safe E2E cleanup` |
-| **INVARIANTS_AT_RISK** | `branch_id fiscal health exactness; fail-closed observability; no unsigned offline order replay` |
-| **GATE_CONDITIONS** | `Gate UX Roue toujours PENDING_HUMAN_GATE (hors scope, non auto-approuvable). Escalades ouvertes au propriétaire : garde de production absente sur foodking:ensure-admin ; BROADCAST_DRIVER non-pusher renvoyant ok en dur dans HealthzController ; requête SLA sans borne basse dans DashboardService ; disposition de la page caisse (grille de vente sous la ligne de flottaison en 1366x768).` |
-| **GATE_FILE** | `None for this cycle; Wheel gate preserved separately at docs/gates/GATE_WHEEL_EXPERIENCE_UX_SIGNOFF_2026-08-23.md` |
+| **TASK_ID** | `VOICE-ORDER-ASSIST-V1-20260830` |
+| **PLAN_FILE** | `plans/PLAN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
+| **REPORT_FILE** | `reports/execution/RUN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
+| **AUDIT_SOURCE** | `claude-terminal claude-opus-4-7/high — PASS, TERMINAL_AUDIT_OK: 1` |
+| **CONTINUATION_HANDOFF** | `missions/VOICE-ORDER-ASSIST-V1-20260830/execute_brief.md` |
+| **PARENT_CYCLE** | `None. Previous CAISSE-SUPERVISOR-CONTROL-20260823 remains suspended at GPT final channel decision; its plan/report/handoff are preserved and must not be rewritten.` |
+| **SUBSYSTEMS_TOUCHED** | `Free Pro/Asterisk voice gateway, Deepgram STT, voice transcript cache/ActionLog, catalog-bounded order draft, POS assistant panel, existing phone-order UI handoff` |
+| **INVARIANTS_AT_RISK** | `backend pricing SSOT; branch_id isolation; PII transcript retention; frozen wizard invocation without edit` |
+| **GATE_CONDITIONS** | `No schema/auth/frozen/payment/status gate planned. Implementation may proceed, but production activation is blocked until caller-notice wording + real Free Pro call receive human-verification sign-off.` |
+| **GATE_FILE** | `None for disabled implementation/validation. Deferred production activation checklist: docs/gates/GATE_VOICE-ORDER-ASSIST-V1-20260830_REAL_CALL_2026-08-30.md. Stop now only if implementation requires migration, auth middleware change, frozen edit or out-of-scope branch logic.` |
 
-> **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
+> **ACTIVE_PRIMARY** : `VOICE-ORDER-ASSIST-V1-20260830` (cycle standard non-`CV1-MXX`; l'ancienne section Masterplay ci-dessous reste une référence historique, pas un second cycle actif).
 > Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`
 
 ---

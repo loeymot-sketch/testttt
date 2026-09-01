@@ -340,6 +340,7 @@ label.audit_fingerprint
 label.auto_update
 label.availability
 label.availability_changed
+label.basic_delivery_charge
 label.best_sellers
 label.bkash_app_key
 label.bkash_app_secret
@@ -369,6 +370,7 @@ label.cc_source_kiosk
 label.channel_kiosk
 label.channel_pos
 label.channel_web
+label.charge_per_kilo
 label.cleaning
 label.clickatell_apikey
 label.clickatell_status
@@ -419,6 +421,7 @@ label.encaisser_mode_mixte
 label.encaisser_mode_mixte_sub
 label.encaisser_mode_mobile
 label.encaisser_mode_ticket
+label.enter_card_last_4_digits
 label.enter_payment_note
 label.enter_transaction_id
 label.equilibre
@@ -430,6 +433,7 @@ label.flutterwave_mode
 label.flutterwave_public_key
 label.flutterwave_secret_key
 label.flutterwave_status
+label.free_delivery_kilometer
 label.good_afternoon
 label.good_evening
 label.good_morning
@@ -575,6 +579,8 @@ label.senangpay_merchant_id
 label.senangpay_mode
 label.senangpay_secret_key
 label.senangpay_status
+label.session_still_open_many
+label.session_still_open_one
 label.sign
 label.single
 label.skrill_merchant_api_password
@@ -634,6 +640,7 @@ menu.delivered_order_details
 menu.deliveryBoys
 menu.delivery_boy_app
 menu.delivery_cash_sessions
+menu.delivery_charge
 menu.delivery_setup
 menu.item
 menu.label
@@ -656,6 +663,7 @@ menu.users
 menu.view
 message.accept_our_term_and_privacy
 message.address_field_required
+message.cart_line_updated
 message.delivery_boy_add
 message.image_delete
 message.image_upload
@@ -681,6 +689,12 @@ pos.loyalty.redeem.errors.order_already_finalized
 pos.loyalty.redeem.errors.points_not_multiple
 pos.park_discard_confirm
 pos.park_discard_confirm_aria
+pos.tracker.active_orders
+pos.tracker.active_orders_one
+pos.tracker.more_items
+pos.tracker.more_items_one
+pos.tracker.ready_short
+pos.tracker.ready_short_one
 studio.daily_quota_hint
 studio.stock_parallel_hint
 studio.stock_parallel_title

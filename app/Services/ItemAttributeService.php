@@ -108,6 +108,37 @@ class ItemAttributeService
     public function destroy(ItemAttribute $itemAttribute)
     {
         try {
+            // Avant : la corbeille d'un attribut (Viande, Sauce…) répondait OK
+            // même s'il restait des variantes ou des étapes du composeur.
+            // Résultat : le wizard tacos n'avait plus de viandes, sans message.
+            $variationCount = \App\Models\ItemVariation::query()
+                ->where('item_attribute_id', $itemAttribute->id)
+                ->count();
+            if ($variationCount > 0) {
+                throw new Exception(
+                    "Impossible de supprimer cet attribut : {$variationCount} variante(s) (viandes, sauces, tailles…) l'utilisent encore. Déplacez ou supprimez-les d'abord.",
+                    422
+                );
+            }
+
+            $nameRef = mb_strtolower((string) $itemAttribute->name);
+            $stepCount = ItemWizardStep::query()
+                ->where('source_type', 'item_attribute')
+                ->where(function ($query) use ($itemAttribute, $nameRef): void {
+                    $query->where('source_item_attribute_id', $itemAttribute->id);
+                    if ($nameRef !== '') {
+                        $query->orWhereRaw('LOWER(source_ref) = ?', [$nameRef])
+                            ->orWhere('source_ref', (string) $itemAttribute->id);
+                    }
+                })
+                ->count();
+            if ($stepCount > 0) {
+                throw new Exception(
+                    "Impossible de supprimer cet attribut : {$stepCount} étape(s) du composeur produit s'en servent encore.",
+                    422
+                );
+            }
+
             DB::transaction(function () use ($itemAttribute) {
                 $itemAttribute->delete();
             });

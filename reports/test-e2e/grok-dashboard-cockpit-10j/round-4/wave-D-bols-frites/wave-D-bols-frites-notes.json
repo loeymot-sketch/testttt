@@ -1,0 +1,1313 @@
+{
+  "wave": "D-bols-frites-from-dashboard-round-4",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "dashboard_to_catalogue": true,
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "flags_flipped": false,
+  "categories": [
+    {
+      "testid": "catalog-studio-category-row-1",
+      "id": "1",
+      "name": "Sandwichs",
+      "count_text": "5 articles",
+      "product_count": 5,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-21",
+      "id": "21",
+      "name": "Tacos Signature",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-66",
+      "id": "66",
+      "name": "Uber (technique)",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-2",
+      "id": "2",
+      "name": "Galette",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-3",
+      "id": "3",
+      "name": "Sandwich Classique",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-4",
+      "id": "4",
+      "name": "Burgers",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-5",
+      "id": "5",
+      "name": "Tacos",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-6",
+      "id": "6",
+      "name": "Bols",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-7",
+      "id": "7",
+      "name": "Frites",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-8",
+      "id": "8",
+      "name": "Suppléments",
+      "count_text": "10 articles",
+      "product_count": 10,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-9",
+      "id": "9",
+      "name": "Desserts",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-10",
+      "id": "10",
+      "name": "Boissons",
+      "count_text": "15 articles",
+      "product_count": 15,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-11",
+      "id": "11",
+      "name": "Menu enfant",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-27",
+      "id": "27",
+      "name": "Technique (interne — upsell)",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    }
+  ],
+  "bols_category": {
+    "testid": "catalog-studio-category-row-6",
+    "id": "6",
+    "name": "Bols",
+    "count_text": "2 articles",
+    "product_count": 2,
+    "empty": false
+  },
+  "frites_category": {
+    "testid": "catalog-studio-category-row-7",
+    "id": "7",
+    "name": "Frites",
+    "count_text": "6 articles",
+    "product_count": 6,
+    "empty": false
+  },
+  "bols_rail": {
+    "url": "http://127.0.0.1:8766/admin/items/studio",
+    "title": "Le Cayenne",
+    "active_category": "Bols 2 articles",
+    "wizard_entry_visible": true,
+    "wizard_button_present": true,
+    "wizard_button_visible": true,
+    "wizard_button_text": "Wizard De La Catégorie",
+    "wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "empty_state": null,
+    "product_count": 2,
+    "products": [
+      {
+        "name": "Bol Riz",
+        "category": "Bols",
+        "meta": "7,90 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/bol-riz.webp?v=1787786786",
+        "photo_alt": "Bol Riz",
+        "has_photo": true
+      },
+      {
+        "name": "Bol Frites",
+        "category": "Bols",
+        "meta": "7,90 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/bol-frites.webp?v=1787786786",
+        "photo_alt": "Bol Frites",
+        "has_photo": true
+      }
+    ],
+    "body_snippet": "PILOTAGE CATALOGUE Catalogue Catégories, articles, parcours et stock Ajouter Une Catégorie D’articles Ajouter Un Article Catégories 14 Toutes les catégories 55 articles Bols Ce wizard s'applique à TOUS les produits de cette catégorie. Wizard De La Catégorie Sandwichs 5 articles Tacos Signature 0 articles Uber (technique) 0 articles Galette 3 articles Sandwich Classique 0 articles Burgers 6 articles Tacos 3 articles Bols 2 articles Frites 6 articles Suppléments 10 articles Desserts 3 articles Boissons 15 articles Menu enfant 2 articles Technique (interne — upsell) 3 articles Paramètres avancés Tableau de stock Bol Riz Bols 7,90 € Actif Bol Frites Bols 7,90 € Actif",
+    "raw_labels": []
+  },
+  "frites_rail": {
+    "url": "http://127.0.0.1:8766/admin/items/studio",
+    "title": "Le Cayenne",
+    "active_category": "Frites 6 articles",
+    "wizard_entry_visible": true,
+    "wizard_button_present": true,
+    "wizard_button_visible": true,
+    "wizard_button_text": "Wizard De La Catégorie",
+    "wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "empty_state": null,
+    "product_count": 6,
+    "products": [
+      {
+        "name": "Grande Frites Cheddar + Oignons frits",
+        "category": "Frites",
+        "meta": "6,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1787786786",
+        "photo_alt": "Grande Frites Cheddar + Oignons frits",
+        "has_photo": true
+      },
+      {
+        "name": "Grande Frites Cheddar fondu",
+        "category": "Frites",
+        "meta": "5,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar.webp?v=1787786786",
+        "photo_alt": "Grande Frites Cheddar fondu",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites Cheddar + Oignons frits",
+        "category": "Frites",
+        "meta": "4,50 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1787786786",
+        "photo_alt": "Petite Frites Cheddar + Oignons frits",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites Cheddar fondu",
+        "category": "Frites",
+        "meta": "3,50 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar.webp?v=1787786786",
+        "photo_alt": "Petite Frites Cheddar fondu",
+        "has_photo": true
+      },
+      {
+        "name": "Grande Frites",
+        "category": "Frites",
+        "meta": "4,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites.webp?v=1787786786",
+        "photo_alt": "Grande Frites",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites",
+        "category": "Frites",
+        "meta": "2,50 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/frites.webp?v=1787786786",
+        "photo_alt": "Petite Frites",
+        "has_photo": true
+      }
+    ],
+    "body_snippet": "PILOTAGE CATALOGUE Catalogue Catégories, articles, parcours et stock Ajouter Une Catégorie D’articles Ajouter Un Article Catégories 14 Toutes les catégories 55 articles Frites Ce wizard s'applique à TOUS les produits de cette catégorie. Wizard De La Catégorie Sandwichs 5 articles Tacos Signature 0 articles Uber (technique) 0 articles Galette 3 articles Sandwich Classique 0 articles Burgers 6 articles Tacos 3 articles Bols 2 articles Frites 6 articles Suppléments 10 articles Desserts 3 articles Boissons 15 articles Menu enfant 2 articles Technique (interne — upsell) 3 articles Paramètres avancés Tableau de stock Grande Frites Cheddar + Oignons frits Frites 6,00 € Actif Grande Frites Cheddar fondu Frites 5,00 € Actif Petite Frites Cheddar + Oignons frits Frites 4,50 € Actif Petite Frites Cheddar fondu Frites 3,50 € Actif Grande Frites Frites 4,00 € Actif Petite Frites Frites 2,50 € Actif",
+    "raw_labels": []
+  },
+  "bols_wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/6/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "frites_wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/7/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "bols_composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Bols",
+    "overlay_help": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "iframe_src": "/admin/categories/6/composer",
+    "overlay_text": "WIZARD PRODUIT Wizard de la catégorie : Bols Ce wizard s'applique à TOUS les produits de cette catégorie. Ouvrir En Pleine Page Fermer",
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/6/composer",
+      "title": "Le Cayenne",
+      "composer_name": "Wizard de la catégorie : Bols",
+      "composer_category": "Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.",
+      "publish_state": "Brouillon",
+      "draft_not_till": "La caisse lit encore la version publiee. Ceci est un brouillon.",
+      "empty_state": "",
+      "load_error": "",
+      "step_count": 5,
+      "step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "steps": [
+        {
+          "testid": "composer-step-row-149",
+          "index": 0,
+          "label": "Choisis ton pain",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-150",
+          "index": 1,
+          "label": "Choisis ta viande",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis ta viande item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-151",
+          "index": 2,
+          "label": "Choisis ta sauce",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "inactive_chip": false,
+          "text": "Choisis ta sauce item_attribute 1 / 1 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-152",
+          "index": 3,
+          "label": "Choisis tes garnitures",
+          "source_line": "extra_group",
+          "chips": [
+            "0 / 6",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis tes garnitures extra_group 0 / 6 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-153",
+          "index": 4,
+          "label": "Suppléments",
+          "source_line": "supplement_bol",
+          "chips": [
+            "0 / 5",
+            "POS",
+            "Kiosk"
+          ],
+          "inactive_chip": false,
+          "text": "Suppléments supplement_bol 0 / 5 POS Kiosk"
+        }
+      ],
+      "vue_steps": [
+        {
+          "id": 149,
+          "step_key": "pain",
+          "label": "Choisis ton pain",
+          "source_type": "item_attribute",
+          "source_ref": "",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 150,
+          "step_key": "viande",
+          "label": "Choisis ta viande",
+          "source_type": "item_attribute",
+          "source_ref": "",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 151,
+          "step_key": "sauce",
+          "label": "Choisis ta sauce",
+          "source_type": "item_attribute",
+          "source_ref": "Sauce bol",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 152,
+          "step_key": "garnitures",
+          "label": "Choisis tes garnitures",
+          "source_type": "extra_group",
+          "source_ref": "",
+          "min_select": 0,
+          "max_select": 6,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 153,
+          "step_key": "supplements",
+          "label": "Suppléments",
+          "source_type": "extra_group",
+          "source_ref": "supplement_bol",
+          "min_select": 0,
+          "max_select": 5,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      ],
+      "vue_step_keys": [
+        "pain",
+        "viande",
+        "sauce",
+        "garnitures",
+        "supplements"
+      ],
+      "vue_meta": {
+        "found": true,
+        "branch_id_scope": null,
+        "is_published": false,
+        "branches": [
+          {
+            "id": 10,
+            "name": "Collier and Sons Branch"
+          },
+          {
+            "id": 9,
+            "name": "Skiles-Johns Branch"
+          },
+          {
+            "id": 8,
+            "name": "Brekke, Kub and Reichert Branch"
+          },
+          {
+            "id": 7,
+            "name": "Shields Inc Branch"
+          },
+          {
+            "id": 2,
+            "name": "Stiedemann and Sons Branch"
+          },
+          {
+            "id": 1,
+            "name": "Le Cayenne (principal)"
+          }
+        ],
+        "preview_branches": [
+          {
+            "id": 1,
+            "name": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "branch_scope": {
+        "value": "Toutes les branches",
+        "label": "Toutes les branches",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "Toutes les branches",
+            "label": "Toutes les branches"
+          },
+          {
+            "value": "10",
+            "label": "Collier and Sons Branch"
+          },
+          {
+            "value": "9",
+            "label": "Skiles-Johns Branch"
+          },
+          {
+            "value": "8",
+            "label": "Brekke, Kub and Reichert Branch"
+          },
+          {
+            "value": "7",
+            "label": "Shields Inc Branch"
+          },
+          {
+            "value": "2",
+            "label": "Stiedemann and Sons Branch"
+          },
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_branch": {
+        "value": "1",
+        "label": "Le Cayenne (principal)",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_empty": null,
+      "live_preview_visible": true,
+      "preview_pos_step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "preview_kiosk_step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "body_has_collier": true,
+      "body_has_le_cayenne": true,
+      "body_has_sauce_bol": true,
+      "body_has_supplement_bol": true,
+      "source_ref": {
+        "value": "",
+        "label": "Aucune source — page vide en caisse",
+        "empty_value": true,
+        "options": [
+          {
+            "value": "",
+            "label": "Aucune source — page vide en caisse"
+          },
+          {
+            "value": "8",
+            "label": "Sauce bol"
+          },
+          {
+            "value": "1",
+            "label": "Viande 1"
+          }
+        ]
+      },
+      "source_type": {
+        "value": "item_attribute",
+        "label": "Attribut produit",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "item_attribute",
+            "label": "Attribut produit"
+          },
+          {
+            "value": "extra_group",
+            "label": "Groupe extras"
+          },
+          {
+            "value": "addon",
+            "label": "Addon catalogue"
+          }
+        ]
+      },
+      "source_empty_message": null,
+      "current_step_label_input": "Choisis ton pain",
+      "photo": {
+        "tag": "IMG",
+        "is_img": true,
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-bols-gourmands.webp?v=1787786786",
+        "alt": "Bols",
+        "fallback_text": null
+      },
+      "raw_labels": [],
+      "body_has_source_ref_human": true,
+      "body_has_toutes_les_options": false,
+      "publish_button_visible": false,
+      "body_snippet": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 250,90 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau de bord POS Produits & Stock Conso & Stock Ajustement stock Catalogue Attribut d’articles Ingrédients Scan Facture Commandes caisse Historique Encaissement Vue caisse unifiée Caisse livreur Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client COMMUNICATIONS Notification pushs Messages Abonnés UTILISATEURS Administrateurs Employés Chefs COMPTES Transactions RAPPORTS Rapport des ventes Rapport articles CONFIGURATION Paramètres État du système WIZARD DE LA CATÉGORIE Wizard de la catégorie : Bols Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse. Portee branche Toutes les branches Collier and Sons Branch Skiles-Johns Branch Brekke, Kub and Reichert Branch Shields Inc Branch Stiedemann and Sons Branch Le Cayenne (principal) Retour À La Catégorie Choisir Un Template Ajouter Une Page PAGES 5 Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive Choisis ta viande item_attribute 1 / 1 POS Kiosk Inactive Choisis ta sauce item_attribute 1 / 1 POS Kiosk Choisis tes garnitures extra_group 0 / 6 POS Kiosk Inactive Suppléments supplement_bol 0 / 5 POS Kiosk Edition de la page Attribut produit Brouillon La caisse lit encore la version publiee. Ceci est un brouillon. Nom de la page D'où viennent les choix ? Détermine la base : ‘Attribut produit’ = tes attributs (viandes, sauces…). ‘Groupe d'extras’ = tes extras. ‘Add-on’ = tes add-ons catalogue. Attribut produit Groupe extras Addon catalogue Limiter à un groupe précis (optionnel) Vide = aucun choix en caisse (sauf extras : le nom de la page sert de groupe). Choisis un groupe précis. Aucune source — page vide en caisse Sauce bol Viande 1 Minimum Combien d'articles le client doit minimum choisir. 0 = optionnel, 1+ = obligatoire. 1 Maximum Combien d'articles le client peut maximum choisir. 1 = Obligatoire, le client doit choisir exactement articles. Visible sur Sur quels canaux cette"
+    }
+  },
+  "frites_composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Frites",
+    "overlay_help": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "iframe_src": "/admin/categories/7/composer",
+    "overlay_text": "WIZARD PRODUIT Wizard de la catégorie : Frites Ce wizard s'applique à TOUS les produits de cette catégorie. Ouvrir En Pleine Page Fermer",
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/7/composer",
+      "title": "Le Cayenne",
+      "composer_name": "Wizard de la catégorie : Frites",
+      "composer_category": "Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.",
+      "publish_state": "Brouillon",
+      "draft_not_till": "",
+      "empty_state": "Comment fonctionne le wizard ? Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix. Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête. Sinon : ajoute une page manuelle pour configurer ton propre parcours. Choisir un template Ajouter une page manuellement",
+      "load_error": "",
+      "step_count": 0,
+      "step_labels": [],
+      "steps": [],
+      "vue_steps": [],
+      "vue_step_keys": [],
+      "vue_meta": {
+        "found": false,
+        "branch_id_scope": null,
+        "is_published": null,
+        "branches": []
+      },
+      "branch_scope": {
+        "value": "Toutes les branches",
+        "label": "Toutes les branches",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "Toutes les branches",
+            "label": "Toutes les branches"
+          },
+          {
+            "value": "10",
+            "label": "Collier and Sons Branch"
+          },
+          {
+            "value": "9",
+            "label": "Skiles-Johns Branch"
+          },
+          {
+            "value": "8",
+            "label": "Brekke, Kub and Reichert Branch"
+          },
+          {
+            "value": "7",
+            "label": "Shields Inc Branch"
+          },
+          {
+            "value": "2",
+            "label": "Stiedemann and Sons Branch"
+          },
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_branch": {
+        "value": "1",
+        "label": "Le Cayenne (principal)",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_empty": null,
+      "live_preview_visible": true,
+      "preview_pos_step_labels": [],
+      "preview_kiosk_step_labels": [],
+      "body_has_collier": true,
+      "body_has_le_cayenne": true,
+      "body_has_sauce_bol": false,
+      "body_has_supplement_bol": false,
+      "source_ref": null,
+      "source_type": null,
+      "source_empty_message": null,
+      "current_step_label_input": null,
+      "photo": {
+        "tag": "IMG",
+        "is_img": true,
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-frites.webp?v=1787786786",
+        "alt": "Frites",
+        "fallback_text": null
+      },
+      "raw_labels": [],
+      "body_has_source_ref_human": false,
+      "body_has_toutes_les_options": false,
+      "publish_button_visible": false,
+      "body_snippet": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 250,90 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau de bord POS Produits & Stock Conso & Stock Ajustement stock Catalogue Attribut d’articles Ingrédients Scan Facture Commandes caisse Historique Encaissement Vue caisse unifiée Caisse livreur Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client COMMUNICATIONS Notification pushs Messages Abonnés UTILISATEURS Administrateurs Employés Chefs COMPTES Transactions RAPPORTS Rapport des ventes Rapport articles CONFIGURATION Paramètres État du système WIZARD DE LA CATÉGORIE Wizard de la catégorie : Frites Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse. Portee branche Toutes les branches Collier and Sons Branch Skiles-Johns Branch Brekke, Kub and Reichert Branch Shields Inc Branch Stiedemann and Sons Branch Le Cayenne (principal) Retour À La Catégorie Choisir Un Template Ajouter Une Page PAGES 0 Ajoutez une page pour commencer. Edition de la page Ajoutez une page pour commencer. Brouillon Comment fonctionne le wizard ? Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix. Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête. Sinon : ajoute une page manuelle pour configurer ton propre parcours. Choisir un template Ajouter une page manuellement Apercu live Rafraichi apres modification. 500ms Aperçu Kiosk + POS Comparez ce que la borne et la caisse afficheront pour cette branche. Filiale Le Cayenne (principal) Rafraîchir Caisse (POS) Indisponible Article non disponible sur la caisse pour cette succursale. Parcours d'achat client Aucune étape — le client achète directement le produit. Borne Indisponible Article non disponible sur la borne pour cette succursale. Parcours d'achat client Aucune étape — le client achète directement le produit. Filiale Le Cayenne (principal) Sauvegarder Le Brouillon Différence"
+    }
+  },
+  "bols_step_inspections": {
+    "count": 5,
+    "inspections": [
+      {
+        "index": 0,
+        "row": {
+          "testid": "composer-step-row-149",
+          "index": 0,
+          "label": "Choisis ton pain",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        "current_step_label_input": "Choisis ton pain",
+        "source_type": {
+          "value": "item_attribute",
+          "label": "Attribut produit",
+          "empty_value": false,
+          "options": [
+            {
+              "value": "item_attribute",
+              "label": "Attribut produit"
+            },
+            {
+              "value": "extra_group",
+              "label": "Groupe extras"
+            },
+            {
+              "value": "addon",
+              "label": "Addon catalogue"
+            }
+          ]
+        },
+        "source_ref": {
+          "value": "",
+          "label": "Aucune source — page vide en caisse",
+          "empty_value": true
+        },
+        "vue_step": {
+          "id": 149,
+          "step_key": "pain",
+          "label": "Choisis ton pain",
+          "source_type": "item_attribute",
+          "source_ref": "",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      },
+      {
+        "index": 1,
+        "row": {
+          "testid": "composer-step-row-150",
+          "index": 1,
+          "label": "Choisis ta viande",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis ta viande item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        "current_step_label_input": "Choisis ton pain",
+        "source_type": {
+          "value": "item_attribute",
+          "label": "Attribut produit",
+          "empty_value": false,
+          "options": [
+            {
+              "value": "item_attribute",
+              "label": "Attribut produit"
+            },
+            {
+              "value": "extra_group",
+              "label": "Groupe extras"
+            },
+            {
+              "value": "addon",
+              "label": "Addon catalogue"
+            }
+          ]
+        },
+        "source_ref": {
+          "value": "",
+          "label": "Aucune source — page vide en caisse",
+          "empty_value": true
+        },
+        "vue_step": {
+          "id": 150,
+          "step_key": "viande",
+          "label": "Choisis ta viande",
+          "source_type": "item_attribute",
+          "source_ref": "",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      },
+      {
+        "index": 2,
+        "row": {
+          "testid": "composer-step-row-151",
+          "index": 2,
+          "label": "Choisis ta sauce",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "inactive_chip": false,
+          "text": "Choisis ta sauce item_attribute 1 / 1 POS Kiosk"
+        },
+        "current_step_label_input": "Choisis ton pain",
+        "source_type": {
+          "value": "item_attribute",
+          "label": "Attribut produit",
+          "empty_value": false,
+          "options": [
+            {
+              "value": "item_attribute",
+              "label": "Attribut produit"
+            },
+            {
+              "value": "extra_group",
+              "label": "Groupe extras"
+            },
+            {
+              "value": "addon",
+              "label": "Addon catalogue"
+            }
+          ]
+        },
+        "source_ref": {
+          "value": "",
+          "label": "Aucune source — page vide en caisse",
+          "empty_value": true
+        },
+        "vue_step": {
+          "id": 151,
+          "step_key": "sauce",
+          "label": "Choisis ta sauce",
+          "source_type": "item_attribute",
+          "source_ref": "Sauce bol",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      },
+      {
+        "index": 3,
+        "row": {
+          "testid": "composer-step-row-152",
+          "index": 3,
+          "label": "Choisis tes garnitures",
+          "source_line": "extra_group",
+          "chips": [
+            "0 / 6",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "inactive_chip": true,
+          "text": "Choisis tes garnitures extra_group 0 / 6 POS Kiosk Inactive"
+        },
+        "current_step_label_input": "Choisis ton pain",
+        "source_type": {
+          "value": "item_attribute",
+          "label": "Attribut produit",
+          "empty_value": false,
+          "options": [
+            {
+              "value": "item_attribute",
+              "label": "Attribut produit"
+            },
+            {
+              "value": "extra_group",
+              "label": "Groupe extras"
+            },
+            {
+              "value": "addon",
+              "label": "Addon catalogue"
+            }
+          ]
+        },
+        "source_ref": {
+          "value": "",
+          "label": "Aucune source — page vide en caisse",
+          "empty_value": true
+        },
+        "vue_step": {
+          "id": 152,
+          "step_key": "garnitures",
+          "label": "Choisis tes garnitures",
+          "source_type": "extra_group",
+          "source_ref": "",
+          "min_select": 0,
+          "max_select": 6,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      },
+      {
+        "index": 4,
+        "row": {
+          "testid": "composer-step-row-153",
+          "index": 4,
+          "label": "Suppléments",
+          "source_line": "supplement_bol",
+          "chips": [
+            "0 / 5",
+            "POS",
+            "Kiosk"
+          ],
+          "inactive_chip": false,
+          "text": "Suppléments supplement_bol 0 / 5 POS Kiosk"
+        },
+        "current_step_label_input": "Choisis ton pain",
+        "source_type": {
+          "value": "item_attribute",
+          "label": "Attribut produit",
+          "empty_value": false,
+          "options": [
+            {
+              "value": "item_attribute",
+              "label": "Attribut produit"
+            },
+            {
+              "value": "extra_group",
+              "label": "Groupe extras"
+            },
+            {
+              "value": "addon",
+              "label": "Addon catalogue"
+            }
+          ]
+        },
+        "source_ref": {
+          "value": "",
+          "label": "Aucune source — page vide en caisse",
+          "empty_value": true
+        },
+        "vue_step": {
+          "id": 153,
+          "step_key": "supplements",
+          "label": "Suppléments",
+          "source_type": "extra_group",
+          "source_ref": "supplement_bol",
+          "min_select": 0,
+          "max_select": 5,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      }
+    ]
+  },
+  "frites_step_inspections": {
+    "count": 0,
+    "inspections": []
+  },
+  "bols_api_profile": {
+    "url": "http://127.0.0.1:8766/api/admin/composer/categories/6/profile",
+    "category_id": "6",
+    "is_published": false,
+    "template": "sandwich",
+    "branch_id_scope": null,
+    "step_count": 5,
+    "steps": [
+      {
+        "index": 0,
+        "id": 149,
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 1,
+        "id": 150,
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 2,
+        "id": 151,
+        "step_key": "sauce",
+        "label": "Choisis ta sauce",
+        "source_type": "item_attribute",
+        "source_ref": "Sauce bol",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 3,
+        "id": 152,
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_type": "extra_group",
+        "source_ref": "",
+        "min_select": 0,
+        "max_select": 6,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 4,
+        "id": 153,
+        "step_key": "supplements",
+        "label": "Suppléments",
+        "source_type": "extra_group",
+        "source_ref": "supplement_bol",
+        "min_select": 0,
+        "max_select": 5,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      }
+    ]
+  },
+  "frites_api_profile": null,
+  "bols_verdict": {
+    "step_count": 5,
+    "step_keys": [
+      "pain",
+      "viande",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_labels": [
+      "Choisis ton pain",
+      "Choisis ta viande",
+      "Choisis ta sauce",
+      "Choisis tes garnitures",
+      "Suppléments"
+    ],
+    "steps_compact": [
+      {
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "is_active": false
+      },
+      {
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "is_active": false
+      },
+      {
+        "step_key": "sauce",
+        "label": "Choisis ta sauce",
+        "source_type": "item_attribute",
+        "source_ref": "Sauce bol",
+        "is_active": true
+      },
+      {
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_type": "extra_group",
+        "source_ref": "",
+        "is_active": false
+      },
+      {
+        "step_key": "supplements",
+        "label": "Suppléments",
+        "source_type": "extra_group",
+        "source_ref": "supplement_bol",
+        "is_active": true
+      }
+    ],
+    "has_sauce_bol": true,
+    "sauce_source_ref": "Sauce bol",
+    "has_supplement_bol": true,
+    "supplement_source_ref": "supplement_bol",
+    "viande_present": true,
+    "viande_inactive": true,
+    "viande_is_active": false,
+    "pain_present": true,
+    "pain_inactive": true,
+    "pain_is_active": false,
+    "inactive_steps": [
+      {
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_ref": ""
+      },
+      {
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_ref": ""
+      },
+      {
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_ref": ""
+      }
+    ],
+    "looks_like_tacos_clone": false
+  },
+  "frites_has_wizard": true,
+  "frites_wizard_note": "YES_WIZARD",
+  "close_overlay": {
+    "closed": true,
+    "already_hidden": false
+  },
+  "photos": {
+    "bols_rail": [
+      {
+        "name": "Bol Riz",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/bol-riz.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Bol Frites",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/bol-frites.webp?v=1787786786",
+        "has_photo": true
+      }
+    ],
+    "frites_rail": [
+      {
+        "name": "Grande Frites Cheddar + Oignons frits",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Grande Frites Cheddar fondu",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites Cheddar + Oignons frits",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites Cheddar fondu",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Grande Frites",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Petite Frites",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/frites.webp?v=1787786786",
+        "has_photo": true
+      }
+    ],
+    "bols_composer": {
+      "tag": "IMG",
+      "is_img": true,
+      "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-bols-gourmands.webp?v=1787786786",
+      "alt": "Bols",
+      "fallback_text": null
+    },
+    "frites_composer": {
+      "tag": "IMG",
+      "is_img": true,
+      "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-frites.webp?v=1787786786",
+      "alt": "Frites",
+      "fallback_text": null
+    }
+  },
+  "raw_labels": {
+    "bols_rail": [],
+    "frites_rail": [],
+    "bols_composer": [],
+    "frites_composer": [],
+    "parent_dom": [
+      "kiosk.js",
+      "undefined",
+      "kiosk.php",
+      "kiosk.php."
+    ]
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194875678
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194880751
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194880753
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194880754
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/api/admin/composer/categories/7/profile",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "xhr",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194888828
+    }
+  ],
+  "http_4xx_ignored_debugbar_english_storage": [
+    {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "status": 404
+    }
+  ],
+  "mutating_requests_after_login_excluding_auth": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+      "ts": 1788194881148
+    }
+  ],
+  "states": [
+    {
+      "name": "bols-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/01-bols-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/01-bols-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/01-bols-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/01-bols-wizard.network.json",
+      "notes": "Clicked Bols then « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/6/composer full_page=false. Did not publish / create / flip flags / POS."
+    },
+    {
+      "name": "frites-rail",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/02-frites-rail.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/02-frites-rail.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/02-frites-rail.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/02-frites-rail.network.json",
+      "notes": "Back/studio then clicked Frites. wizard_button_visible=true product_cards=6."
+    },
+    {
+      "name": "frites-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/03-frites-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/03-frites-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/03-frites-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-bols-frites/03-frites-wizard.network.json",
+      "notes": "Frites HAS wizard. Clicked « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/7/composer. Did not publish."
+    }
+  ],
+  "blockers": [],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio"
+}

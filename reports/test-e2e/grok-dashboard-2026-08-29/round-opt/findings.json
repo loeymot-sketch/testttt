@@ -1,0 +1,112 @@
+{
+  "wave": "round-opt-A+C",
+  "round": "opt",
+  "states_reviewed": 2,
+  "open_p0": 0,
+  "open_p1": 0,
+  "open_p2": 5,
+  "open_p3": 0,
+  "findings": [
+    {
+      "id": "W-T-001",
+      "severity": "P2",
+      "class": "ux",
+      "category": "empty-state_quality",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-C/01-studio.png",
+      "evidence": "01-studio.png viewport + 01-studio.dom.html catalog-studio__category-row: after Sandwichs/Uber, the sidebar is Eligendi, Deleniti, Rerum, Ducimus (all « 0 articles »). notes.json category_names (35) still include 21 faker-latin empties (Eligendi, Deleniti, Rerum, Ducimus, Tempore, Vitae, Unde, Ut, Ipsum, Consequatur, Exercitationem, Qui, Reiciendis, Minima, Aliquam, Numquam, Sed, Quia, Nostrum, Quos, Ad). Counter badge 35. junk_matches AUDIT-KIOSK-MULTI / E2E Cat / E2ECategory = []. Not claimed closed this round.",
+      "why_real": "Same 21 names in PNG (in-viewport Eligendi–Ducimus), DOM strong text, and notes.json category_names. Round-1 studio-list had these plus AUDIT/E2E; only the prefixes were removed. Empty 0-article rows are real ItemCategory records, not a screenshot crop.",
+      "fix_hint": "Soft-delete or archive faker-latin categories with 0 items (G-DATA, not migrate:fresh). Do not touch frozen kiosk/POS. Re-capture studio after the counter drops to the ~14 real Cayenne cats."
+    },
+    {
+      "id": "W-T-002",
+      "severity": "P2",
+      "class": "technical",
+      "category": "unexpected_4xx",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.png",
+      "evidence": "wave-A 01-dashboard.network.json: GET /storage/1/english.png → 404 (×3). Same 404 in wave-C 01-studio.network.json. Console level=error « Failed to load resource: 404 ». PNG header: « Français » plus two empty peach squares (flag chips). CORS: fonts.gstatic.com Inter woff2 blocked (cache-control preflight). Not vendor.js app logic.",
+      "why_real": "Quartet agrees across both waves (network + console + PNG empty chips). Same leftover as round-1 A-002 / B-003. Decorative language asset, not a silent KPI API 4xx — kept P2, not P0.",
+      "fix_hint": "Serve language flags from same-origin APP_URL (relative /storage or /images) so 8766 does not 404 /storage/1/english.png; drop cache-control on Google Fonts preflight or self-host Inter."
+    },
+    {
+      "id": "W-T-003",
+      "severity": "P2",
+      "class": "technical",
+      "category": "numeric_integrity",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-C/01-studio.notes.json",
+      "evidence": "Studio UI category_count=35 (notes.json + DOM catalog-studio__counter). Capture tinker ItemCategory::query()->orderBy('id')->pluck('name') returned db_categories_count=64. First 20 DB names still include Aliquam/Deleniti/Rerum. AUDIT/E2E names were not in that first-20 slice; the other 44 DB names were not dumped. Dashboard Total articles menu 59 (DOM h4 on bg-[#FFB800]) equals studio « Toutes les catégories / 59 articles ». Sum of the 35 visible category product_count labels = 58 (Sandwichs 5+Galette 3+Burgers 6+Tacos 3+Bols 2+Frites 6+Suppléments 10+Desserts 3+Boissons 15+Menu enfant 2+Technique 3). Off-by-one vs 59. V1 SSOT ~45 vendables still not met — leftover extras, not the old 123 count().",
+      "why_real": "64 vs 35 is the capture script vs live Vue list, not a flake. 59 vs 58 is DOM labels on the same 01-studio.html. DashboardService.php:472 now Item::query()->where('status', Status::ACTIVE)->count() — 123→59 is the claimed code path and matches studio 59. Remaining gap is G-DATA / orphan item_category_id, not a reopened 123 bug.",
+      "fix_hint": "Dump the full 64 DB names; hard-delete or status=inactive the leftover AUDIT/E2E rows if still present. Find the 1 item counted in totalProducts but not in any of the 35 rows (null/stale item_category_id)."
+    },
+    {
+      "id": "W-UI-001",
+      "severity": "P2",
+      "class": "ui",
+      "category": "element_overlap",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.png",
+      "evidence": "Both PNGs: phpdebugbar (Request / Timeline / Queries 2 / Models 1) covers the bottom of the merchant canvas. Wave-C 01-studio.png clips Ducimus row + last product card behind the bar. APP_DEBUG local only. Same leftover as round-1 A-001 / B-004.",
+      "why_real": "Visible on both captured PNGs; debugbar markup is in both DOM files. Not an animation frame.",
+      "fix_hint": "Pad main bottom ~48px when debugbar is present, or run e2e with APP_DEBUG=false so the last category/product is readable."
+    },
+    {
+      "id": "W-T-004",
+      "severity": "P2",
+      "class": "technical",
+      "category": "i18n_leak",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-C/01-studio.console.json",
+      "evidence": "01-studio.console.json: 738 warnings [intlify] Not found 'studio.product_composer_button' in fr then en. CatalogStudioComponent.vue:143-144 t('studio.product_composer_button', 'Composer / wizard') — fallback is what the DOM aria-label/title show. Key is NOT visible as raw text in 01-studio.png (protocol cat.1 visible-leak = fail). Not a P1.",
+      "why_real": "Same missing key repeated per product action button in console.json (app.js, not vendor). Fallback path in Vue t() is why the PNG stays clean.",
+      "fix_hint": "Add studio.product_composer_button to fr (and en) locale messages so intlify stops flooding the console."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 5,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 5,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "A-003_total_articles_123": "PASS",
+    "A_overview_cayenne_palette": "PASS",
+    "A_live_duplicate_ca_commandes": "PASS",
+    "C-001_AUDIT_E2E_prefixes": "PASS",
+    "C-001_faker_latin": "FAIL"
+  },
+  "claim_disputes": {
+    "dashboard_vue_ensemble_cayenne": {
+      "claim": "Vue d'ensemble Cayenne orange/black/yellow",
+      "verdict": "CONFIRMED",
+      "evidence": "01-dashboard.png + DOM: Ventes du jour bg-[#F4501E] 0,00 €; Commandes du jour bg-[#1A1A1A] 0; Total articles menu bg-[#FFB800] 59. wave-A-notes.json cayenne_palette [orange,black,yellow], magenta_in_overview false. No #C81E63 in dashboard DOM."
+    },
+    "dashboard_suivi_ticket_moyen_only": {
+      "claim": "Suivi en direct only Ticket Moyen",
+      "verdict": "CONFIRMED",
+      "evidence": "01-dashboard.png + DOM: one live tile p-6 rounded-2xl bg-[#1A1A1A] « Ticket Moyen » 0,00 €. notes live_only_ticket_moyen true; live_has_duplicate_ca/commandes false. RealtimeReportComponent.vue:5-10 is a single column. No « Chiffre d'Affaires du Jour » / « Commandes du Jour » in dashboard DOM."
+    },
+    "dashboard_total_articles_59_not_123": {
+      "claim": "total articles 59 not 123",
+      "verdict": "CONFIRMED",
+      "evidence": "Dashboard h4 text 59 on Total articles menu. Studio « Toutes les catégories » 59 articles. Round-3 cashier notes still had 123 — this admin Mix path is 59. DashboardService.php:470-472 ACTIVE-only count. Cross-surface 59=59. Leftover: 59 vs ~45 SSOT and 58 vs 59 category sum (W-T-003), not a return of 123."
+    },
+    "catalogue_AUDIT_E2E_prefixes_gone": {
+      "claim": "AUDIT-/E2E prefixes gone",
+      "verdict": "CONFIRMED_ON_STUDIO_UI",
+      "evidence": "01-studio.png in-viewport names: Sandwichs, Uber (technique), Eligendi, Deleniti, Rerum, Ducimus, Tempore, Vitae — no AUDIT-/E2E. notes.json AUDIT_KIOSK_MULTI_present/E2E_Cat_present/E2ECategory_present all false; junk_matches empty arrays. Round-1 list had E2E Cat 1786616399744, E2ECategory13511EDITED, E2E_PLAYWRIGHT_STUDIO_CATEGORY, and 27× AUDIT-KIOSK-MULTI. DB still 64 rows (W-T-003) — prefixes not proven gone from item_categories table, only from studio sidebar."
+    },
+    "catalogue_35_faker_leftover": {
+      "claim": "35 cats remain including faker latin (Aliquam, Rerum) — leftover not claimed closed",
+      "verdict": "CONFIRMED_LEFTOVER",
+      "evidence": "Counter 35 + Aliquam/Rerum in category_names and DOM. Open as W-T-001 P2. Not a P1 on this round because AUDIT/E2E prefix closure was the claimed work and is UI-true."
+    }
+  },
+  "allowlisted_noise": [
+    "ws/wss://127.0.0.1:6001 Pusher ERR_CONNECTION_REFUSED (vendor.js) — protocol allowlist",
+    "_debugbar/open net::ERR_ABORTED",
+    "menu thumb ERR_ABORTED on reload (cancelled, not HTTP 4xx)"
+  ],
+  "frozen": "Kiosk wizard / POS wizard / fiscal services not opened, not scored.",
+  "verdict": "PASS"
+}

@@ -194,21 +194,28 @@ export default {
         if (!Array.isArray(perms)) {
             perms = [];
         }
-        let i, j;
-        for (i = 0; i < routes.length; i++) {
-            for (j = 0; j < perms.length; j++) {
-                if (typeof routes[i].meta !== "undefined" && routes[i].meta) {
-                    if (typeof routes[i].meta.permissionUrl !== "undefined" && routes[i].meta.permissionUrl) {
-                        if (routes[i].meta.permissionUrl === perms[j].url) {
-                            routes[i].meta.access = perms[j].access;
-                            routes[i].meta.title = perms[j].title;
-                        }
-
-                        if (typeof routes[i].children !== "undefined" && routes[i].children) {
-                            this.recursiveRouter(routes[i].children, perms);
-                        }
+        const hydrated = perms.length > 0;
+        for (let i = 0; i < routes.length; i++) {
+            const route = routes[i];
+            if (!route) {
+                continue;
+            }
+            if (route.meta && route.meta.permissionUrl) {
+                const key = route.meta.permissionUrl;
+                const entry = perms.find((p) => p && (p.url === key || p.name === key));
+                if (entry) {
+                    route.meta.access = entry.access;
+                    if (entry.title) {
+                        route.meta.title = entry.title;
                     }
+                } else if (hydrated) {
+                    // Table déjà chargée, clé introuvable : ne plus laisser
+                    // le caissier ouvrir le cockpit / une URL non mappée.
+                    route.meta.access = false;
                 }
+            }
+            if (route.children) {
+                this.recursiveRouter(route.children, perms);
             }
         }
     },

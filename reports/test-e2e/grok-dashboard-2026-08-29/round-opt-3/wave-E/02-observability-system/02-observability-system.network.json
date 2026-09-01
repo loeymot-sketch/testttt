@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1788021703751
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ts": 1788021704572
+  }
+]

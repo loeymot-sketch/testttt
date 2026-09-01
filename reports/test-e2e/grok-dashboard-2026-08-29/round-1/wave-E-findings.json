@@ -1,0 +1,68 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 2,
+  "open_p0": 2,
+  "open_p1": 1,
+  "open_p2": 1,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system.png",
+      "category": "unexpected_4xx",
+      "severity": "P0",
+      "class": "technical",
+      "evidence": "Cashier pos@lecayenne.fr. HTML GET /admin/observability/system is 200 and mounts [data-testid=system-health] (02-observability-system.dom.html:7533, notes vueSystemHealthMounted=true). Network: GET /api/admin/observability/system-health status 403 (network.json:95-97) and GET /api/admin/observability/interrupteurs status 403 (network.json:122-125). Console: Failed to load resource 403. notes.toastOrAlert=[]. Error is <p class=\"text-sm text-red-700\" data-testid=\"system-health-erreur\"> without role=alert. Sidebar on both E states hasEtatDuSysteme=false (PHP AppLibrary.php:183-188 maps observability/* → settings).",
+      "why_real": "Two APIs 403 on the same deep-link, Vue still mounted, sidebar correctly hides the item. SyncOverviewController.php:63-69 role:Admin|Tenant Admin on systemHealth. InterrupteurController.php:30 same role middleware. Router beforeEach (router/index.js:279) only blocks meta.access===false; HTML SPA fallback is not role-gated. Reproduced in PNG + parent-pos-cockpit-deeplink.png. Not Mix-only: source still mounts the component on this URL.",
+      "fix_hint": "Refuse the SPA route when hydrated permissions lack settings (call hasPermissionAccess(permissionUrl) in beforeEach, not only meta.access). Optionally 403/redirect the Laravel HTML fallback. Do not fetch health APIs after deny."
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "class": "ux",
+      "evidence": "After 403, Mix paints real-looking health: verdict « Des points demandent votre attention. » with empty alert list (v-if on etat.alertes). Sauvegarde « aucune » / « aucun fichier trouvé ». Planificateur « aucun signe de vie ». Interrupteurs list empty. DOM 02-observability-system.dom.html:7533. Source Vue:192-210 already returns « mesure indisponible » when erreur && !s / !p — served Mix app.js?id=51768c4bbb1086219bfff0f75bbbfe63 does not. verdictOk (Vue:163-165) is false whenever etat.verdict !== 'ok', so {} still shows the amber attention banner.",
+      "why_real": "PNG, sibling parent-pos-cockpit-deeplink.png, and DOM all show « aucune » + « aucun signe de vie » next to the 403 copy. Same session as E-001. Empty etat={} is the catch path in Vue:270-273.",
+      "fix_hint": "Rebuild Mix (mesure indisponible is already in SystemHealthComponent.vue and current admin-shell.2649746a.js). Also: if erreur, hide backup/scheduler cards and the amber verdict (or set verdict to « lecture refusée »); add role=alert on the error <p>. Do not treat missing verdict as « points demandent votre attention »."
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "class": "ux",
+      "evidence": "Cashier Accès rapides includes chip « Ingrédients » (01-dashboard-sidebar.png). Sidebar hrefs in 01-dashboard-sidebar.notes.json have no /admin/ingredients. DashboardComponent.vue:179 push(..., 'ingredients_manage'). has() matches only p.url === permissionUrl (vue:144); permission-match.js:14-23 documents ingredients_manage url=NULL → old fail-open 403 on /api/admin/ingredients. Mix at capture is app.js?id=51768c4…. This round did not click the chip (no ingredients 403 in 01-dashboard-sidebar.network.json).",
+      "why_real": "Visible chip on the PNG vs omitted sidebar in the same quartet. Source now fail-closes missing url; served Mix still shows the chip. Historical 403 is documented in permission-match.js; click not re-run here so severity is P1 not P0.",
+      "fix_hint": "Rebuild Mix. Point DashboardComponent has() at hasPermissionAccess() (url OR name), same as the sidebar."
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "class": "ui",
+      "evidence": "Header: « Français » plus two empty peach icon buttons (PNG). network.json: english.png from http://127.0.0.1:8000/storage/1/english.png net::ERR_BLOCKED_BY_ORB; fonts from :8000 CORS. Page origin 8766. Icon-only empties have no visible label.",
+      "why_real": "Same ORB on wave B and both E states. Flags are broken because assets are absolute :8000 URLs.",
+      "fix_hint": "Same-origin flag/font URLs (APP_URL or relative paths). Give the empty controls an aria-label if they stay icon-only."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 1,
+    "P2": 1,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "FAIL",
+    "E-002": "FAIL",
+    "E-003": "FAIL",
+    "E-004": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Cashier sidebar without « État du système » is correct PHP (not a defect). Dashboard totals 0,00 € / 0 commandes match across Vue d'ensemble and Suivi en direct. WS/debugbar/font console noise allowlisted except E-004 flags. Frozen POS wizard not clicked (landing /admin/pos then immediate goto /admin/dashboard). Mix rebuild claimed in AGGREGATE.md is not evidenced on these quartets (still app.js?id=51768c4…); fail closed — cannot PASS Mix from a later manifest."
+}

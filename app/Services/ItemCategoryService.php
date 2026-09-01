@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Enums\Status;
 use App\Http\Requests\ItemCategoryRequest;
 
 class ItemCategoryService
@@ -66,12 +67,95 @@ class ItemCategoryService
             // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
             // See App\Services\ItemService::applyChannelsFilter() for contract.
             $this->applyChannelsFilter($query, $request->get('surface'));
+            $this->excludeAuditPollution($query);
 
             return $query->orderBy($orderColumn, $orderType)->$method($methodValue);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Noms faker plantés par les factories (Wave C 2026-08-29). Exact match
+     * seulement : on ne masque pas « Tacos » / « Sandwichs » / « Adobo ».
+     */
+    public const FAKER_LATIN_CATEGORY_NAMES = [
+        'Ad',
+        'Aliquam',
+        'Consequatur',
+        'Deleniti',
+        'Ducimus',
+        'Eligendi',
+        'Exercitationem',
+        'Ipsum',
+        'Minima',
+        'Nostrum',
+        'Numquam',
+        'Quia',
+        'Qui',
+        'Quos',
+        'Reiciendis',
+        'Rerum',
+        'Sed',
+        'Tempore',
+        'Unde',
+        'Ut',
+        'Vitae',
+    ];
+
+    /**
+     * Les campagnes E2E laissent des rayons fantômes (AUDIT-KIOSK-MULTI,
+     * E2E Cat…). Le commerçant les voyait dans le catalogue ; la borne aussi.
+     * On les masque à la lecture. Les lignes restent en base (pas de wipe).
+     */
+    public static function isAuditPollutionName(?string $name): bool
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return false;
+        }
+
+        if ((bool) preg_match('/^(AUDIT-|E2E[\s_\-]?|ZZ-TEST-|RED-TEAM-|TEST-)/i', $name)) {
+            return true;
+        }
+
+        return in_array($name, self::FAKER_LATIN_CATEGORY_NAMES, true);
+    }
+
+    public static function isInternalOpsCategoryName(?string $name): bool
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return false;
+        }
+        if (strcasecmp($name, 'Uber (technique)') === 0) {
+            return true;
+        }
+
+        return stripos($name, '(interne') !== false;
+    }
+
+    /** Catalogue gérant / GET public : pas d'AUDIT/E2E/faker. L'interne reste. */
+    public static function constrainVisibleCatalog($query): void
+    {
+        foreach (['AUDIT-%', 'E2E%', 'ZZ-TEST-%', 'RED-TEAM-%', 'TEST-%'] as $pattern) {
+            $query->where('name', 'not like', $pattern);
+        }
+        $query->whereNotIn('name', self::FAKER_LATIN_CATEGORY_NAMES);
+    }
+
+    /** Compteur « articles menu » : pas de pollution ni d'interne/technique. */
+    public static function constrainCustomerFacing($query): void
+    {
+        self::constrainVisibleCatalog($query);
+        $query->where('name', '!=', 'Uber (technique)')
+            ->where('name', 'not like', '%(interne%');
+    }
+
+    private function excludeAuditPollution($query): void
+    {
+        self::constrainVisibleCatalog($query);
     }
 
     /**
@@ -229,6 +313,12 @@ class ItemCategoryService
     public function show(ItemCategory $itemCategory)
     {
         try {
+            // Admin doit pouvoir rouvrir une catégorie inactive.
+            // Hors admin, une catégorie éteinte ne doit plus sortir en JSON public.
+            if ((int) $itemCategory->status !== Status::ACTIVE && ! request()?->is('api/admin/*')) {
+                throw new Exception("Cette catégorie n'est plus au menu.", 404);
+            }
+
             return $itemCategory->load('items');
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

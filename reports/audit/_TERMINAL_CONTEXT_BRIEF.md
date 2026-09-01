@@ -1,6 +1,6 @@
 # Bref contexte FoodKing — alimentation terminal Claude Code
 
-Généré : 2026-08-23T23:43:49+02:00
+Généré : 2026-08-30T17:17:05+02:00
 
 ## .cursor/ACTIVE_CYCLE.md (extrait, 60 premières lignes)
 # Active Cycle – FoodKing
@@ -10,19 +10,20 @@ Généré : 2026-08-23T23:43:49+02:00
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `AUDIT` |
+| **PHASE** | `AUDIT` — validation locale PASS ; auto-audit GPT fallback PASS ; audit Claude terminal en cours, activation réelle toujours gelée. |
 | **MASTER_TASK_ID** | |
-| **TASK_ID** | `CAISSE-SUPERVISOR-CONTROL-20260823` |
-| **PLAN_FILE** | `plans/PLAN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
-| **REPORT_FILE** | `reports/execution/RUN_CAISSE-SUPERVISOR-CONTROL-20260823_2026-08-23.md` |
-| **AUDIT_SOURCE** | `pending` |
-| **PARENT_CYCLE** | `GOAL-WHEEL-EXPERIENCE-20260823 parked at human UX gate; not approved or closed` |
-| **SUBSYSTEMS_TOUCHED** | `POS system health/offline/a11y, dashboard SLA/date presets, kiosk idle/product keyboard activation, Playwright critical sync harness and safe E2E cleanup` |
-| **INVARIANTS_AT_RISK** | `branch_id fiscal health exactness; fail-closed observability; no unsigned offline order replay` |
-| **GATE_CONDITIONS** | `Wheel UX gate remains out of scope and pending; stop on frozen fiscal service, migration, pricing, payment or OrderStatus requirement` |
-| **GATE_FILE** | `None for this cycle; Wheel gate preserved separately at docs/gates/GATE_WHEEL_EXPERIENCE_UX_SIGNOFF_2026-08-23.md` |
+| **TASK_ID** | `VOICE-ORDER-ASSIST-V1-20260830` |
+| **PLAN_FILE** | `plans/PLAN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
+| **REPORT_FILE** | `reports/execution/RUN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
+| **AUDIT_SOURCE** | `Pending` |
+| **CONTINUATION_HANDOFF** | `missions/VOICE-ORDER-ASSIST-V1-20260830/execute_brief.md` |
+| **PARENT_CYCLE** | `None. Previous CAISSE-SUPERVISOR-CONTROL-20260823 remains suspended at GPT final channel decision; its plan/report/handoff are preserved and must not be rewritten.` |
+| **SUBSYSTEMS_TOUCHED** | `Free Pro/Asterisk voice gateway, Deepgram STT, voice transcript cache/ActionLog, catalog-bounded order draft, POS assistant panel, existing phone-order UI handoff` |
+| **INVARIANTS_AT_RISK** | `backend pricing SSOT; branch_id isolation; PII transcript retention; frozen wizard invocation without edit` |
+| **GATE_CONDITIONS** | `No schema/auth/frozen/payment/status gate planned. Implementation may proceed, but production activation is blocked until caller-notice wording + real Free Pro call receive human-verification sign-off.` |
+| **GATE_FILE** | `None for disabled implementation/validation. Deferred production activation checklist: docs/gates/GATE_VOICE-ORDER-ASSIST-V1-20260830_REAL_CALL_2026-08-30.md. Stop now only if implementation requires migration, auth middleware change, frozen edit or out-of-scope branch logic.` |
 
-> **ACTIVE_PRIMARY** : `CAISSE_V1_MASTERPLAY` (un seul cycle peut être actif à la fois — voir B03 méga-checklist).
+> **ACTIVE_PRIMARY** : `VOICE-ORDER-ASSIST-V1-20260830` (cycle standard non-`CV1-MXX`; l'ancienne section Masterplay ci-dessous reste une référence historique, pas un second cycle actif).
 > Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`
 
 ---
@@ -62,7 +63,6 @@ Généré : 2026-08-23T23:43:49+02:00
 ## Archive
 
 Tous les cycles **CLOSED / COMPLETED PASSED** (W4 → W9, NF525, etc.) ont été déplacés dans **`.cursor/ACTIVE_CYCLE_ARCHIVE.md`** pour réduire le coût de lecture du parcours obligatoire (audit 2026-04-24, mission `T-PARCOURS-OPTIMIZE-001`).
-
 
 ## Dernières entrées — memory/episodes/12_decisions_log.jsonl
 {"name":"CV1-V1.5B-DRILLDOWN-INGREDIENTS-MASTER CLOSED PASS — drill-down ingrédients UX (E1 backend usage endpoint + E2 frontend drawer enrichi)","source":"text","source_description":"plans/PLAN_CV1-V1.5B-DRILLDOWN-INGREDIENTS-MASTER_2026-05-04.md + 3× reports/execution/RUN_CV1-V1.5B-DRILLDOWN-*_2026-05-04.md + docs/orchestration/cycles/CYCLE_CV1-V1.5B-DRILLDOWN-INGREDIENTS-MASTER_2026-05-04.md","episode_body":"V1.5b drill-down ingrédients livré 2026-05-04 ~17:35 suite parent V1.5 dettes CLOSED PASS. AUDIT_VERDICT PASS via fallback foodking-planner-orchestrator (terminal Claude quota encore down, reset 18h10). Décision orchestrator post-délégation user 2026-05-04 17:08 (\"prends à ma place les bonnes décisions et continue\"). E1 (complex) : nouveau endpoint GET /api/admin/ingredients/{globalId}/usage via IngredientService::usageDetailsForGlobalId (helpers usedByRowsForAttribute|Extra|Addon + mapStepsToUsedBy + sortUsedBy category puis item puis alphabétique owner_name) + IngredientController::usage retournant 404 JSON ou IngredientUsageResource avec used_by détaillé (owner_type category|item, owner_id, owner_name, step_key, step_label, wizard_profile_id, admin_url) + route enregistrée AVANT /{globalId} (Laravel route ordering critical) + permission ingredients_manage + 7 tests PHPUnit. Détail technique : ItemWizardStep::profile() est belongsTo(ItemWizardProfile::class, 'profile_id') et NON 'item_wizard_profile_id' malgré naming Laravel — documenté pour futurs sub-agents. E2 (routine) : IngredientUsageDrawer.vue enrichi (marqueur 'Drill-down différé V1.5' ligne 52 retiré + en-tête nom + badge En rupture si !isAvailable + empty state + ul role='list' avec entrées li cliquables a:href=admin_url avec focus visible Tailwind + 7 data-testid pour E2E + loading/error aria-live='polite') + getIngredientUsage axios + 4 nouvelles clés i18n (label.ingredient.status_unavailable, usage_empty, owner_category, owner_item) × 5 langues (fr/en/de/bn/ar) + 8 tests Vitest. Baselines : PHPUnit 1421→1428 (+7 tests E1), Vitest 1157→1162 (+5 net après nettoyage cache ENOSPC). Invariants I1-I6 respectés. EXECUTE_DELEGATION 2/2. Cohérence : a11y H3 V1-FINISH préservé (focus trap + esc + aria-modal inchangés), i18n parity H2 V1-FINISH élargie 5 dossiers reste verte. Risques résiduels : disque poste local 99% (211 Mi libre, ENOSPC reproduit puis résolu via rm -rf node_modules/.vite /tmp/vitest-*) — ops user, drill-down addon limité 1 owner item (acceptable structure 1/1), tri pas sur step_label (V1 acceptable), GPT final audit cumulé V1 (4 masters) non exécuté car V1.5/V1.5b sans setup mission codex-extension. Cumulé V1-PIVOT+V1-FINISH+V1.5+V1.5b = V1 prêt prod fonctionnel modulo gate humain prod-cutover Q1-Q4. Plan : plans/PLAN_CV1-V1.5B-DRILLDOWN-INGREDIENTS-MASTER_2026-05-04.md."}

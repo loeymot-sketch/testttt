@@ -1,0 +1,25 @@
+{
+  "wave": "E",
+  "round": 3,
+  "states_reviewed": 2,
+  "findings": [],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 2, "P3": 0,
+    "open_P0": 0, "open_P1": 0, "open_P2": 2, "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PASS",
+    "E-003": "PASS"
+  },
+  "leftover_p2": [
+    "CORS fonts 8766→8000 empty icon squares",
+    "Duplicate KPI rows Vue d'ensemble / Suivi en direct"
+  ],
+  "verdict": "GREEN",
+  "parent_read": [
+    "round-3/wave-E/01-dashboard-sidebar.png",
+    "round-3/wave-E/02-observability-system.png"
+  ],
+  "notes": "Deeplink /admin/observability/system final URL /admin/dashboard. No system-health. No État du système in sidebar. Identical to round 2 wave E."
+}

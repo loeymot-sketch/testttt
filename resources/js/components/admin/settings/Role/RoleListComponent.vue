@@ -22,8 +22,8 @@
                         <i class="lab lab-key"></i>
                         <span>{{ $t("button.permissions") }}</span>
                     </router-link>
-                    <SmModalEditComponent @click="edit(role)" />
-                    <SmDeleteComponent @click="destroy(role.id)" v-if="!enums.roleEnumArray.includes(role.id)" />
+                    <SmModalEditComponent v-if="!isProtectedRole(role)" @click="edit(role)" />
+                    <SmDeleteComponent @click="destroy(role.id)" v-if="!isProtectedRole(role)" />
                 </div>
             </li>
         </ul>
@@ -86,6 +86,16 @@ export default {
                     roleEnum.WAITER,
                     roleEnum.CHEF
                 ],
+                protectedRoleNames: [
+                    'Admin',
+                    'Customer',
+                    'Delivery Boy',
+                    'Waiter',
+                    'Chef',
+                    'Branch Manager',
+                    'POS Operator',
+                    'Stuff',
+                ],
             },
         }
     },
@@ -104,6 +114,11 @@ export default {
         this.list();
     },
     methods: {
+        isProtectedRole: function (role) {
+            // Même liste que RoleService : le bouton corbeille du caissier
+            // restait visible (ids 1–5 seulement) alors que POS Operator = id 7.
+            return this.enums.protectedRoleNames.indexOf(role.name) !== -1;
+        },
         list: function (page = 1) {
             this.loading.isActive = true;
             this.props.search.page = page;

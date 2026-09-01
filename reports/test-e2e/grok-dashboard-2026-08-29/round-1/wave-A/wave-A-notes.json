@@ -1,0 +1,326 @@
+{
+  "wave": "A-admin-dashboard",
+  "base_url": "http://127.0.0.1:8766",
+  "states": [
+    {
+      "name": "login",
+      "url": "http://127.0.0.1:8766/login",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-A/01-login.png",
+      "notes": "Opened /login; form visible (#formEmail / #formPassword). No submit yet."
+    },
+    {
+      "name": "dashboard",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-A/02-dashboard.png",
+      "notes": "Post-login /admin/dashboard; waited for Ventes du jour / Commandes. Overflow expanded for full-page PNG."
+    },
+    {
+      "name": "overview-live",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-A/03-overview-live.png",
+      "notes": "scrollIntoViewIfNeeded on Vue d’ensemble + Suivi en direct. No POS/kiosk click."
+    }
+  ],
+  "sidebar_labels": [
+    "Tableau De Bord",
+    "POS",
+    "Produits & Stock",
+    "Conso & Stock",
+    "Ajustement Stock",
+    "Catalogue",
+    "Attribut D’articles",
+    "Ingrédients",
+    "Scan Facture",
+    "Commandes Caisse",
+    "Historique",
+    "Encaissement",
+    "Vue Caisse Unifiée",
+    "Caisse Livreur",
+    "Ticket Promo",
+    "Réglages Ticket Promo",
+    "Commande Uber (Photo)",
+    "La Roue",
+    "CAISSE ET COMMANDES",
+    "Écran Cuisine",
+    "Suivi Client",
+    "COMMUNICATIONS",
+    "Notification Pushs",
+    "Messages",
+    "Abonnés",
+    "UTILISATEURS",
+    "Administrateurs",
+    "Employés",
+    "Chefs",
+    "COMPTES",
+    "Transactions",
+    "RAPPORTS",
+    "Rapport Des Ventes",
+    "Rapport Articles",
+    "CONFIGURATION",
+    "Paramètres",
+    "État Du Système"
+  ],
+  "quick_access": [
+    {
+      "text": "POS",
+      "href": "/admin/pos"
+    },
+    {
+      "text": "Commandes caisse",
+      "href": "/admin/pos-orders"
+    },
+    {
+      "text": "Suivi caisse (kanban)",
+      "href": "/admin/pos-orders-tracker"
+    },
+    {
+      "text": "Encaissement",
+      "href": "/admin/encaissement"
+    },
+    {
+      "text": "Historique",
+      "href": "/admin/historique"
+    },
+    {
+      "text": "Écran cuisine",
+      "href": "/admin/kitchen-display-system"
+    },
+    {
+      "text": "Suivi client",
+      "href": "/admin/order-status-screen"
+    },
+    {
+      "text": "Catalogue",
+      "href": "/admin/items/studio"
+    },
+    {
+      "text": "Ingrédients",
+      "href": "/admin/ingredients"
+    },
+    {
+      "text": "Produits & Stock",
+      "href": "/admin/stock/rupture"
+    },
+    {
+      "text": "Rapport caisses quotidien",
+      "href": "/admin/cash-sessions-report"
+    },
+    {
+      "text": "Vue caisse unifiée",
+      "href": "/admin/cash-overview"
+    }
+  ],
+  "kpi_text": {
+    "ventes_du_jour": "0,00 €",
+    "commandes_du_jour": "0",
+    "total_articles_menu": "123",
+    "vue_ensemble_present": true,
+    "suivi_en_direct_present": true,
+    "ca_jour": "0,00 €",
+    "commandes_jour_live": "0",
+    "ticket_moyen": "0,00 €"
+  },
+  "http_4xx_5xx_excluding_ws_debugbar": [
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982967868
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968886
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968887
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968887
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968887
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968887
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968887
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968999
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968999
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982968999
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982969243
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/storage/1/english.png",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_BLOCKED_BY_ORB",
+      "ws_or_debugbar": false,
+      "ts": 1787982969328
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/storage/1/english.png",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_BLOCKED_BY_ORB",
+      "ws_or_debugbar": false,
+      "ts": 1787982970638
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982970812
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982970812
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982970815
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787982971530
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "ts": 1787982974558
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "ts": 1787982974558
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "ts": 1787982974559
+    }
+  ],
+  "final_url": "http://127.0.0.1:8766/admin/dashboard"
+}

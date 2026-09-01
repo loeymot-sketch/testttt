@@ -9,14 +9,12 @@
  *
  * Les deux gardes (routeur `router/index.js` et barre latérale
  * `BackendMenuComponent.vue`) cherchent UNIQUEMENT sur `url`. Sans
- * correspondance, elles retombent — délibérément — sur « laisser passer ».
- * Résultat vécu : l'entrée « Ingrédients » s'affiche pour l'opérateur caisse
- * ET le chef, qui reçoivent ensuite un HTTP 403 sur /api/admin/ingredients
- * (vérifié avec de vrais jetons). Le menu promet ce que le serveur refuse.
+ * correspondance, elles laissaient passer. Résultat vécu : l'entrée
+ * « Ingrédients » s'affiche pour l'opérateur caisse ET le chef, qui
+ * reçoivent ensuite un HTTP 403. Le menu promet ce que le serveur refuse.
  *
- * Le repli permissif n'est PAS le défaut (il est documenté et assumé : « le
- * backend reste l'autorité finale »). Le défaut est le DÉSACCORD entre la clé
- * demandée et la clé stockée.
+ * 2026-08-29 : clé inconnue APRÈS hydratation = refus (plus de cockpit
+ * fantôme). Liste encore vide = démarrage à froid, on laisse passer.
  *
  * Vérifié avant d'écrire ce banc : AUCUNE permission ne porte un `name` égal
  * au `url` d'une autre permission (0 collision sur les 86 lignes). La
@@ -67,15 +65,17 @@ describe('résolution de permission (garde routeur + barre latérale)', () => {
         expect(hasPermissionAccess(PERMISSIONS_REELLES, 'kitchen-display-system')).toBe(true);
     });
 
-    it('préserve le repli permissif documenté quand la clé est VRAIMENT inconnue', () => {
-        // Comportement historique assumé : « le backend reste l'autorité finale ».
-        // On ne durcit pas au-delà du désaccord constaté.
-        expect(hasPermissionAccess(PERMISSIONS_REELLES, 'clef-jamais-vue')).toBe(true);
+    it('REFUSE une clé inconnue une fois la table hydratée', () => {
+        // Avant : le caissier voyait « État du système » (pas de ligne Spatie
+        // url=observability/system) puis prenait un 403. Menu menteur.
+        expect(hasPermissionAccess(PERMISSIONS_REELLES, 'clef-jamais-vue')).toBe(false);
+        expect(hasPermissionAccess(PERMISSIONS_REELLES, 'observability/system')).toBe(false);
     });
 
     it('laisse passer quand aucune permission n’est encore chargée (démarrage à froid)', () => {
         expect(hasPermissionAccess([], 'items')).toBe(true);
         expect(hasPermissionAccess(null, 'items')).toBe(true);
+        expect(hasPermissionAccess({}, 'observability/system')).toBe(true);
     });
 
     it('laisse passer quand aucune clé n’est exigée par la route', () => {

@@ -45,7 +45,7 @@
                         <td class="db-table-body-td">{{ itemCategory.name }}</td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(itemCategory.status)">
-                                {{ enums.statusEnumArray[itemCategory.status] }}
+                                {{ statusLabel(itemCategory.status) }}
                             </span>
                         </td>
                         <td class="db-table-body-td">
@@ -184,6 +184,15 @@ export default {
     methods: {
         statusClass: function (status) {
             return appService.statusClass(status);
+        },
+        statusLabel: function (status) {
+            // Avant : un statut hors 5/10 (vieux 0/1, null) laissait un pastille
+            // vide — le commerçant ne savait pas si la catégorie était à la carte.
+            const code = Number(status);
+            if (code === this.enums.statusEnum.ACTIVE || code === 1) {
+                return this.enums.statusEnumArray[this.enums.statusEnum.ACTIVE];
+            }
+            return this.enums.statusEnumArray[this.enums.statusEnum.INACTIVE];
         },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);

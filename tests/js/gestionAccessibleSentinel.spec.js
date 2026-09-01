@@ -52,6 +52,9 @@ describe('accès aux écrans de gestion', () => {
         // ce que la route refusera.
         expect(menu).toContain("'cash-overview': 'cash-sessions-report'");
         expect(menu).toContain("'delivery-boy-cash-sessions': 'delivery-boys'");
+        expect(menu).toContain("'observability/system': 'settings'");
+        expect(menu).toContain("'observability/outbox': 'settings'");
+        expect(menu).toContain("menuUrl.startsWith('observability/')");
 
         const overview = R('resources/js/router/modules/cashOverviewRoutes.js');
         expect(overview, 'la route a changé de droit : le mapping du menu doit suivre, sinon le lien '

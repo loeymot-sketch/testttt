@@ -120,7 +120,7 @@ class ComposerProfileController extends AdminController
         $this->authorizeWritableBranchScope($request, $branchIdScope);
 
         $payload = $this->templates->buildPayload($data['template'], $item, $branchIdScope);
-        $profile = $this->profiles->createForItem($item, $payload);
+        $profile = $this->profiles->applyTemplateToItem($item, $payload);
 
         return response()->json([
             'success' => true,
@@ -143,11 +143,44 @@ class ComposerProfileController extends AdminController
         abort_if(! $firstItem, 422, 'Category has no items yet - add at least one product before applying a template.');
 
         $payload = $this->templates->buildPayload($data['template'], $firstItem, $branchIdScope);
-        $profile = $this->profiles->createForCategory($category, $payload);
+        $profile = $this->profiles->applyTemplateToCategory($category, $payload);
 
         return response()->json([
             'success' => true,
             'data' => new ComposerProfileResource($profile->loadMissing('steps')),
+        ]);
+    }
+
+    /**
+     * Avant : le wizard catégorie n'avait pas d'API de sources. L'écran
+     * affichait un sélecteur vide : impossible de relier une page à Viande.
+     */
+    public function availableSourcesForCategory(ItemCategory $category): JsonResponse
+    {
+        $items = $category->items()
+            ->with(['variations.itemAttribute', 'extras', 'addons.addonItem'])
+            ->get();
+        abort_if($items->isEmpty(), 422, 'Category has no items yet - add at least one product before editing sources.');
+
+        $attributes = collect();
+        $extras = collect();
+        $addons = collect();
+
+        foreach ($items as $item) {
+            $buckets = $this->sourceBuckets($item);
+            $attributes = $attributes->concat($buckets['item_attribute']);
+            $extras = $extras->concat($buckets['extra_group']);
+            $addons = $addons->concat($buckets['addon']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'item_id' => (int) $items->first()->id,
+                'item_attribute' => $attributes->unique('id')->values(),
+                'extra_group' => $extras->unique('id')->values(),
+                'addon' => $addons->unique('id')->values(),
+            ],
         ]);
     }
 
@@ -157,6 +190,24 @@ class ComposerProfileController extends AdminController
      * admin StepEditor — replaces the previous raw `source_ref` text input.
      */
     public function availableSources(Item $item): JsonResponse
+    {
+        $buckets = $this->sourceBuckets($item);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'item_id' => (int) $item->id,
+                'item_attribute' => $buckets['item_attribute'],
+                'extra_group' => $buckets['extra_group'],
+                'addon' => $buckets['addon'],
+            ],
+        ]);
+    }
+
+    /**
+     * @return array{item_attribute: array<int, array<string, mixed>>, extra_group: array<int, array<string, mixed>>, addon: array<int, array<string, mixed>>}
+     */
+    private function sourceBuckets(Item $item): array
     {
         $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);
 
@@ -187,14 +238,10 @@ class ComposerProfileController extends AdminController
                 'addon_role' => $addon->role,
             ])->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'item_id' => (int) $item->id,
-                'item_attribute' => $attributes,
-                'extra_group' => $extras,
-                'addon' => $addons,
-            ],
-        ]);
+        return [
+            'item_attribute' => $attributes->all(),
+            'extra_group' => $extras->all(),
+            'addon' => $addons->all(),
+        ];
     }
 }

@@ -1,5 +1,6 @@
 locale,key,first_seen_in_file
 fr,all.message.coupon_not_applicable_now,app/Services/CouponService.php
+fr,label.…,app/Http/Resources/SimpleOrderResource.php
 en,all.item_match,app/Services/ItemAddonService.php
 en,all.message.email_send,app/Http/Controllers/Admin/SubscriberController.php
 en,all.message.kds_reopen_invalid_state,app/Http/Controllers/Admin/KitchenDisplaySystemController.php
@@ -17,6 +18,7 @@ en,installer.license.step_1,resources/views/installer/license.blade.php
 en,installer.license.step_2,resources/views/installer/license.blade.php
 en,installer.license.step_3,resources/views/installer/license.blade.php
 en,itemType.,resources/views/pdf/items_report.blade.php
+en,label.…,app/Http/Resources/SimpleOrderResource.php
 en,orderStatus.,resources/views/pdf/online_orders.blade.php
 en,orderType.,resources/views/pdf/online_orders.blade.php
 en,payment_gateway.,resources/views/pdf/sales_report.blade.php
@@ -51,6 +53,7 @@ ar,installer.license.step_1,resources/views/installer/license.blade.php
 ar,installer.license.step_2,resources/views/installer/license.blade.php
 ar,installer.license.step_3,resources/views/installer/license.blade.php
 ar,itemType.,resources/views/pdf/items_report.blade.php
+ar,label.…,app/Http/Resources/SimpleOrderResource.php
 ar,orderStatus.,resources/views/pdf/online_orders.blade.php
 ar,orderType.,resources/views/pdf/online_orders.blade.php
 ar,payment_gateway.,resources/views/pdf/sales_report.blade.php
@@ -101,6 +104,7 @@ de,installer.license.step_3,resources/views/installer/license.blade.php
 de,installer.license.templateTitle,resources/views/installer/license.blade.php
 de,installer.license.title,resources/views/installer/license.blade.php
 de,itemType.,resources/views/pdf/items_report.blade.php
+de,label.…,app/Http/Resources/SimpleOrderResource.php
 de,orderStatus.,resources/views/pdf/online_orders.blade.php
 de,orderType.,resources/views/pdf/online_orders.blade.php
 de,payment_gateway.,resources/views/pdf/sales_report.blade.php
@@ -152,6 +156,7 @@ bn,installer.license.step_3,resources/views/installer/license.blade.php
 bn,installer.license.templateTitle,resources/views/installer/license.blade.php
 bn,installer.license.title,resources/views/installer/license.blade.php
 bn,itemType.,resources/views/pdf/items_report.blade.php
+bn,label.…,app/Http/Resources/SimpleOrderResource.php
 bn,orderStatus.,resources/views/pdf/online_orders.blade.php
 bn,orderType.,resources/views/pdf/online_orders.blade.php
 bn,payment_gateway.,resources/views/pdf/sales_report.blade.php

@@ -1,0 +1,182 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930488
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930488
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930488
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930488
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930488
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'studio.product_composer_button' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'studio.product_composer_button' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63",
+      "lineNumber": 141185,
+      "columnNumber": 16
+    },
+    "ts": 1787982930489
+  }
+]

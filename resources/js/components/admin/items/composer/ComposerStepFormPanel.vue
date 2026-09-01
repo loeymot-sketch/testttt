@@ -50,14 +50,14 @@
                         <button
                             type="button"
                             class="text-neutral-400 hover:text-neutral-700"
-                            :aria-label="t('label.composer.source_ref_help', 'Par défaut toutes les options de la source sont proposées.')"
+                            :aria-label="t('label.composer.source_ref_help', 'Vide = aucun choix en caisse, sauf extras liés au nom de la page.')"
                         >
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
                         <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                            {{ t('label.composer.source_ref_help', 'Par défaut toutes les options de la source sont proposées.') }}
+                            {{ t('label.composer.source_ref_help', 'Vide = aucun choix en caisse, sauf extras liés au nom de la page.') }}
                         </span>
                     </span>
                 </span>
@@ -67,7 +67,7 @@
                     data-testid="composer-step-source-ref"
                     @change="commit"
                 >
-                    <option value="">{{ t('label.composer.all_source_options', 'Toutes les options') }}</option>
+                    <option value="">{{ t('label.composer.all_source_options', 'Aucune source — page vide en caisse') }}</option>
                     <option v-for="source in optionsForType" :key="`${draft.source_type}-${source.id}`" :value="String(source.id)">
                         {{ source.name }}
                     </option>

@@ -60,7 +60,9 @@
                             @click="returnToItem"
                         >
                             <i class="lab lab-arrow-left" aria-hidden="true"></i>
-                            {{ t('label.composer.back_to_product', 'Retour fiche produit') }}
+                            {{ isCategoryComposer
+                                ? t('label.composer.back_to_category', 'Retour à la catégorie')
+                                : t('label.composer.back_to_product', 'Retour fiche produit') }}
                         </button>
                         <button
                             v-if="profile && profile.is_published"
@@ -155,6 +157,13 @@
                         >
                             {{ profile?.is_published ? t('label.composer.published', 'Publie') : t('label.composer.draft', 'Brouillon') }}
                         </span>
+                        <p
+                            v-if="profile && !profile.is_published"
+                            class="w-full text-xs text-[#8a6812]"
+                            data-testid="admin-composer-draft-not-till"
+                        >
+                            {{ t('message.composer.draft_not_on_till', 'La caisse lit encore la version publiee. Ceci est un brouillon.') }}
+                        </p>
                     </div>
 
                     <ComposerStepFormPanel
@@ -488,7 +497,10 @@ export default {
         },
         itemCategory() {
             if (this.isCategoryComposer) {
-                return this.t('message.composer.category_inheritance_scope', 'Tous les produits de cette catégorie héritent de ce wizard.');
+                return this.t(
+                    'message.composer.category_inheritance_scope',
+                    'Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.'
+                );
             }
             return this.item?.category_name || this.item?.category?.name || this.t('label.category', 'Categorie');
         },
@@ -528,10 +540,14 @@ export default {
         },
         previewBranches() {
             if (!this.branches.length) return [];
+            const cayenne = this.branches.find((branch) => Number(branch.id) === 1);
+            if (cayenne) {
+                return [cayenne];
+            }
             if (!this.branchIdScope) return this.branches;
             const scoped = this.branches.find((branch) => Number(branch.id) === Number(this.branchIdScope));
             if (!scoped) return this.branches;
-            return [scoped, ...this.branches.filter((branch) => Number(branch.id) !== Number(this.branchIdScope))];
+            return [scoped];
         },
     },
     mounted() {
@@ -630,22 +646,35 @@ export default {
             }
         },
         async loadAvailableSources() {
-            if (this.isCategoryComposer) {
+            // Avant : wizard catégorie = sélecteur vide. Le restaurateur
+            // voyait « Choisir » sans Viande / Sauce, même avec un tacos dans
+            // la catégorie. On reprend les sources du 1er produit.
+            const url = this.isCategoryComposer
+                ? `admin/composer/categories/${this.resolvedEntityId}/available-sources`
+                : `admin/composer/items/${this.resolvedEntityId}/available-sources`;
+
+            try {
+                const response = await axios.get(url);
+                const data = response.data?.data || response.data || {};
+                this.availableSources = {
+                    item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
+                    extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
+                    addon: Array.isArray(data.addon) ? data.addon : [],
+                };
+            } catch (error) {
                 this.availableSources = {
                     item_attribute: [],
                     extra_group: [],
                     addon: [],
                 };
-                return;
+                if (error?.response?.status === 422) {
+                    this.loadError = error.response.data?.message
+                        || this.t(
+                            'message.composer.sources_unavailable',
+                            'Ajoute un produit dans la catégorie avant de relier les pages du wizard.'
+                        );
+                }
             }
-
-            const response = await axios.get(`admin/composer/items/${this.resolvedEntityId}/available-sources`);
-            const data = response.data?.data || response.data || {};
-            this.availableSources = {
-                item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
-                extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
-                addon: Array.isArray(data.addon) ? data.addon : [],
-            };
         },
         hydrateProfile(profile) {
             this.profile = profile;
@@ -736,7 +765,9 @@ export default {
         },
         async onStepsReordered(value) {
             this.onStepsLocalChange(value);
-            if (!this.profile?.id) return;
+            // Wizard publié : on ne PATCH pas les étapes live. Enregistrer
+            // brouillon forke une copie ; Publier envoie en caisse.
+            if (!this.profile?.id || this.profile.is_published) return;
             const requests = this.steps
                 .filter((step) => step.id)
                 .map((step) => axios.patch(`admin/composer/steps/${step.id}`, this.payloadForStep(step)));
@@ -750,7 +781,7 @@ export default {
         async confirmRemoveStep() {
             const step = this.pendingDeleteStep;
             if (!step) return;
-            if (step.id) {
+            if (step.id && !this.profile?.is_published) {
                 await axios.delete(`admin/composer/steps/${step.id}`);
             }
             this.steps = this.steps.filter((candidate) => candidate._uid !== step._uid)
@@ -897,8 +928,11 @@ export default {
                     this.publishConfirmOpen = false;
                     return;
                 }
-                if (!this.profile?.id) {
-                    await this.saveDraft();
+                // Avant : Publier sans d'abord sauver le brouillon envoyait
+                // l'ancien wizard en caisse. Le toast disait « publié ».
+                await this.saveDraft();
+                if (this.conflictDetected || !this.profile?.id) {
+                    return;
                 }
                 const response = await axios.post(`admin/composer/profiles/${this.profile.id}/publish`);
                 this.hydrateProfile(response.data?.data || null);

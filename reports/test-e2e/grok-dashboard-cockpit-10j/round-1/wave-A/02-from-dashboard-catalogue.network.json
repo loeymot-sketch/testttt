@@ -1,0 +1,35 @@
+[
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:9100/health",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_CONNECTION_REFUSED",
+    "ws_or_debugbar": false,
+    "english_storage_leftover": false,
+    "ts": 1788076432801
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:9100/health",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_CONNECTION_REFUSED",
+    "ws_or_debugbar": false,
+    "english_storage_leftover": false,
+    "ts": 1788076432801
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:9101/health",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_CONNECTION_REFUSED",
+    "ws_or_debugbar": false,
+    "english_storage_leftover": false,
+    "ts": 1788076432802
+  }
+]

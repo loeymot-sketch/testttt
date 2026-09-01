@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\RoleService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use JetBrains\PhpStorm\ArrayShape;
@@ -39,9 +40,24 @@ class RoleRequest extends FormRequest
             // un-creatable via API; provision via seeder only.
             'name' => [
                 'required', 'string', 'max:190',
-                Rule::notIn(['Tenant Admin']),
-                Rule::unique("roles", "name")->ignore($this->route('role.id')),
+                Rule::notIn($this->reservedRoleNames()),
+                Rule::unique("roles", "name")->ignore(optional($this->route('role'))->id),
             ],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function reservedRoleNames(): array
+    {
+        $reserved = array_merge(RoleService::protectedRoleNames(), ['Tenant Admin']);
+        $current = $this->route('role');
+        $currentName = is_object($current) ? (string) $current->name : '';
+
+        return array_values(array_filter(
+            $reserved,
+            static fn (string $name): bool => $name !== $currentName
+        ));
     }
 }

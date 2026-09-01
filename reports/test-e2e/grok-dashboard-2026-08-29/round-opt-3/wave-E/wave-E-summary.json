@@ -1,0 +1,70 @@
+{
+  "wave": "E",
+  "base_url": "http://127.0.0.1:8766",
+  "landingUrl": "http://127.0.0.1:8766/admin/pos",
+  "states": [
+    {
+      "name": "idle",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/01-dashboard-sidebar.png",
+      "png_nested": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/01-dashboard-sidebar.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/01-dashboard-sidebar.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/01-dashboard-sidebar.network.json",
+      "notes": "Logged in as pos@lecayenne.fr. Landing http://127.0.0.1:8766/admin/pos. Immediate /admin/dashboard, no POS payment/wizard clicks. Mix app.js hash=534e95f69c7b0d5314488f6bc7f8a464. Sidebar État du système=false. [data-testid=system-health] exists=false."
+    },
+    {
+      "name": "observability-deeplink",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/02-observability-system.png",
+      "png_nested": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/02-observability-system/02-observability-system.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/02-observability-system.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/02-observability-system.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-E/02-observability-system.network.json",
+      "notes": "goto /admin/observability/system. finalUrl=http://127.0.0.1:8766/admin/dashboard. system-health exists=false visible=false. sidebar État du système=false. healthCockpit=#false. app.js hash=534e95f69c7b0d5314488f6bc7f8a464."
+    }
+  ],
+  "record": {
+    "final_url_after_deeplink": "http://127.0.0.1:8766/admin/dashboard",
+    "system_health_exists": false,
+    "system_health_visible": false,
+    "health_cockpit_present": false,
+    "sidebar_etat_du_systeme": false,
+    "sidebar_etat_du_systeme_after_deeplink": false,
+    "sidebar_labels_dashboard": [
+      "CAISSE ET COMMANDES",
+      "Tableau De Bord",
+      "POS",
+      "Commandes Caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket Promo",
+      "Réglages Ticket Promo",
+      "Commande Uber (Photo)",
+      "La Roue",
+      "Écran Cuisine",
+      "Suivi Client"
+    ],
+    "sidebar_labels_deeplink": [
+      "CAISSE ET COMMANDES",
+      "Tableau De Bord",
+      "POS",
+      "Commandes Caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket Promo",
+      "Réglages Ticket Promo",
+      "Commande Uber (Photo)",
+      "La Roue",
+      "Écran Cuisine",
+      "Suivi Client"
+    ],
+    "mix_app_js_hash_dashboard": "534e95f69c7b0d5314488f6bc7f8a464",
+    "mix_app_js_url_dashboard": "http://127.0.0.1:8766/js/app.js?id=534e95f69c7b0d5314488f6bc7f8a464",
+    "mix_app_js_hash_deeplink": "534e95f69c7b0d5314488f6bc7f8a464",
+    "mix_app_js_url_deeplink": "http://127.0.0.1:8766/js/app.js?id=534e95f69c7b0d5314488f6bc7f8a464",
+    "redirected_to_dashboard": true,
+    "still_on_observability": false
+  },
+  "blockers": []
+}

@@ -1,0 +1,68 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 1,
+  "open_p0": 0,
+  "open_p1": 2,
+  "open_p2": 2,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-B/01-cockpit.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "class": "technical",
+      "evidence": "01-cockpit.dom.html:7743 loads /js/app.js?id=51768c4bbb1086219bfff0f75bbbfe63. 01-cockpit.dom.html:7554 + extract.json backup copy: « Une sauvegarde par jour à 3 h, restaurée à 5 h pour vérifier qu'elle s'ouvre vraiment. Conservation 6 ans. » Interrupteurs: « Chaque bascule est tracée. » Source SystemHealthComponent.vue:87-90 says « La restauration de 5 h n'est pas encore lue ici. » Vue:111 says « Consigne dans le journal serveur, pas le journal fiscal NF525. » Current mix-manifest.json:4 is /js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b — different hash than the served page.",
+      "why_real": "Merchant HTML from this capture still ships the old Mix hash. DOM text is the served bundle, not a screenshot crop. Source and current mix-manifest disagree with the quartet. Not a flake.",
+      "fix_hint": "Rebuild Mix so public/js/app.js hash matches mix-manifest and the Vue copy. Re-capture 01-cockpit after the new hash appears in the DOM script tag."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-B/01-cockpit.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "class": "ux",
+      "evidence": "extract.json mesure=« mesuré 25/08/2026 16:56:00 » (capture 2026-08-29 ~07:51). Five control cards still green « en service » (db/redis/websocket/fiscal_chain) while verdict lists « planificateur muet depuis 5215 min » and « file d'attente : 1490 messages ». healthStatus=200 so this is cached healthz:last, not a fetch fail. Console websocket ERR_CONNECTION_REFUSED is allowlisted; the lie is the green « Temps réel / en service » card on a 4-day-old snapshot.",
+      "why_real": "Same payload in extract.json, DOM [data-testid=system-health-mesure] and [data-testid=system-health-controle-websocket], and the PNG. Scheduler mute 5215 min ≈ 3.6 days matches mesure 25/08 vs 29/08. Component comment Vue:227: « Un écran d'état qui fige est pire que pas d'écran. »",
+      "fix_hint": "When planificateur is past seuil, do not paint controles as live green; treat healthz:last as stale (e.g. « mesure périmée ») until scheduler ticks. Smallest: if dernier_battement_min > attendu_max_min, force controles ok=false or hide greens."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-B/01-cockpit.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "class": "ui",
+      "evidence": "Header shows two empty peach squares next to « Français ». network.json english.png GET http://127.0.0.1:8000/storage/1/english.png failure net::ERR_BLOCKED_BY_ORB while the page origin is http://127.0.0.1:8766. Same CORS/ORB pattern on Rubik/lab/FontAwesome from :8000.",
+      "why_real": "ORB is in network.json, empty chips are in the PNG, DOM header uses absolute :8000 asset URLs. Repeatable on this proxy, not a one-frame glitch.",
+      "fix_hint": "Emit language flags and theme fonts from APP_URL (8766) or relative /storage /themes paths so they are same-origin."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-B/01-cockpit.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "class": "ui",
+      "evidence": "PNG: phpdebugbar (Request/Timeline/Views/Queries) covers the last interrupteur consequence line « Désactivée (défaut), le ticket reste imprimable… ». DOM still has the full sentence at interrupteur-impression_ticket_client_auto.",
+      "why_real": "Visible on the captured PNG; debugbar is in the DOM. Local APP_DEBUG only — still merchant-visible on this BASE.",
+      "fix_hint": "Pad main bottom (~48px) when debugbar is present, or disable debugbar for e2e (APP_DEBUG=false) so the last toggle is readable."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 2,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 2,
+    "open_P2": 2,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "B-001": "FAIL",
+    "B-002": "FAIL",
+    "B-003": "FAIL",
+    "B-004": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Sidebar « État du système » is present for Admin (extract bodySnippet). API system-health 200. Queue 1490 / backup 24 days / scheduler 5215 min are real healthz facts the cockpit is built to show — not UI defects. Frozen kiosk/POS wizard not opened. WS/debugbar/font CORS console noise allowlisted except where it blanks language flags (B-003)."
+}

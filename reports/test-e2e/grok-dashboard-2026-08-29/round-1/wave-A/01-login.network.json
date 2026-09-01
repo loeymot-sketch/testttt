@@ -1,0 +1,152 @@
+[
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982967868
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968886
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968887
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968887
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968887
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968887
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968887
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968999
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968999
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982968999
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982969243
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DY9V1NEYWR74DN02ABRW",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982969285
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_BLOCKED_BY_ORB",
+    "ws_or_debugbar": false,
+    "ts": 1787982969328
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DYB0DM86RHTCH3J4DN5Z",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982969394
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DYC0CXTFVE1SJGX6W8A9",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982969471
+  }
+]

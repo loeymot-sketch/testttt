@@ -22,6 +22,18 @@ class RoleService
         EnumsRole::ADMIN, EnumsRole::CUSTOMER, EnumsRole::DELIVERY_BOY, EnumsRole::WAITER, EnumsRole::CHEF
     ];
 
+    /** Noms système : l'id auto-incrémenté n'est PAS une garantie (un rôle métier peut recevoir l'id 7). */
+    private const PROTECTED_ROLE_NAMES = [
+        'Admin',
+        'Customer',
+        'Delivery Boy',
+        'Waiter',
+        'Chef',
+        'Branch Manager',
+        'POS Operator',
+        'Stuff',
+    ];
+
     /**
      * @throws Exception
      */
@@ -77,11 +89,25 @@ class RoleService
     public function update(RoleRequest $request, Role $role)
     {
         try {
+            $newName = (string) ($request->validated()['name'] ?? $role->name);
+            // Avant : on ne protégeait que la corbeille. Renommer « POS Operator »
+            // puis supprimer passait : le caissier n'avait plus de rôle.
+            if ($this->isProtectedRole($role) && $newName !== $role->name) {
+                throw new Exception(
+                    "Impossible de renommer le rôle système « {$role->name} ».",
+                    422
+                );
+            }
             return tap($role)->update($request->validated());
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    public static function protectedRoleNames(): array
+    {
+        return self::PROTECTED_ROLE_NAMES;
     }
 
     /**
@@ -90,15 +116,24 @@ class RoleService
     public function destroy(Role $role): void
     {
         try {
-            if (!in_array($role->id, $this->roleArray)) {
-                $role->delete();
-            } else {
-                throw new Exception("This role not deletable", 422);
+            // Avant : seuls les ids 1–5 étaient bloqués. « POS Operator » (souvent
+            // id 7) partait à la corbeille : le caissier n'ouvrait plus la caisse.
+            if ($this->isProtectedRole($role)) {
+                throw new Exception(
+                    "Impossible de supprimer le rôle « {$role->name} » : c'est un rôle système (caisse, cuisine, admin…). Créez un rôle métier à la place.",
+                    422
+                );
             }
+            $role->delete();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    private function isProtectedRole(Role $role): bool
+    {
+        return in_array($role->name, self::PROTECTED_ROLE_NAMES, true);
     }
 
     /**

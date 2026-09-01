@@ -1,0 +1,1226 @@
+[
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983353784
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983353785
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 362,
+      "columnNumber": 0
+    },
+    "ts": 1787983354869
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983354870
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787983354875
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355014
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355014
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355015
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355015
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355016
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355016
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355184
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355184
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ53GTX5RX4X3DV9628A' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355201
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ53GTX5RX4X3DV9628A",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355202
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983355203
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ5YWA83735GK98VQRPK' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355319
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ5YWA83735GK98VQRPK",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355320
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983355320
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ6XQ5049YJBK7V6EA7X' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355360
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQ6XQ5049YJBK7V6EA7X",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355360
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983355360
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQWCRYD47D68FEEXV5GD' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355810
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SQWCRYD47D68FEEXV5GD",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355810
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983355810
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Request header field cache-control is not allowed by Access-Control-Allow-Headers in preflight response.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355871
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983355871
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356091
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356091
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356091
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356091
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SR9QB4KJG7M4A2MZ5XSP' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356584
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SR9QB4KJG7M4A2MZ5XSP",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356585
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983356585
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRAMB4NPM0BVRSPF6SGG' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356631
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRAMB4NPM0BVRSPF6SGG",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356632
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983356632
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787983356717
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRC4S5C4GHYZGKJJJ3W6' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356957
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRC4S5C4GHYZGKJJJ3W6",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983356957
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983356957
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRD3ZT7GKK9G8A8SJQZY' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357013
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRD3ZT7GKK9G8A8SJQZY",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357013
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357014
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SREZ7RGN767K5YDP5FY0' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357089
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SREZ7RGN767K5YDP5FY0",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357089
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357089
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRH3D0PZ2HDGP2R1RZDD' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357150
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRH3D0PZ2HDGP2R1RZDD",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357150
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357150
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRMG8NGAX2N5STMPMB60' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357197
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRMG8NGAX2N5STMPMB60",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357197
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357198
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRP5ENF3WSJ34QSX942X' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357511
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SRP5ENF3WSJ34QSX942X",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357512
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357512
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS04K420G5SNNR7BS2SV' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357566
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS04K420G5SNNR7BS2SV",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357566
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357566
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS211TN9K5YDFGAM5YGC' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357609
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS211TN9K5YDFGAM5YGC",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357610
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357610
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS4DHTC6J2FGT1Z45TG7' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357668
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SS4DHTC6J2FGT1Z45TG7",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983357668
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983357668
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983358325
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983358325
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787983359756
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359796
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359796
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359796
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359796
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359797
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359797
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359797
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359797
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359798
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359799
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359799
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983359799
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360026
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360026
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360026
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360026
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360840
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983360840
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787983361865
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361931
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361931
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361931
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983361932
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362140
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362140
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362213
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362213
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362422
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362422
+  },
+  {
+    "type": "error",
+    "text": "Access to font at 'http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362537
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362537
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYHZZS79877VG23P479Y' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362799
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYHZZS79877VG23P479Y",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362799
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983362799
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYJXK7PXFGH3A328HZYJ' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362839
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYJXK7PXFGH3A328HZYJ",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362839
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983362840
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYM2C0JBVJVTZCJC4VN6' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362880
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYM2C0JBVJVTZCJC4VN6",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362880
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983362880
+  },
+  {
+    "type": "error",
+    "text": "Access to fetch at 'http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYN61FRSM651AB2G9C7J' from origin 'http://127.0.0.1:8766' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "loc": {
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362942
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "loc": {
+      "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161SYN61FRSM651AB2G9C7J",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1787983362942
+  },
+  {
+    "type": "pageerror",
+    "text": "Uncaught (in promise) TypeError: Failed to fetch",
+    "stack": "Uncaught (in promise) TypeError: Failed to fetch\n    at window.fetch (http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787875343:308:30)\n    at window.fetch (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2037:38)\n    at ajax (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3244:12)\n    at load (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:3231:17)\n    at loadDataSet (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1773:29)\n    at loadFromId (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1953:30)\n    at handle (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:1917:22)\n    at <anonymous> (http://127.0.0.1:8766/_debugbar/assets/javascript?v=1753192890:2077:29)",
+    "ts": 1787983362942
+  },
+  {
+    "type": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "loc": {
+      "url": "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "lineNumber": 3870,
+      "columnNumber": 0
+    },
+    "ts": 1787983363783
+  }
+]

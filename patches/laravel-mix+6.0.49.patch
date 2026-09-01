@@ -16,3 +16,29 @@ index 264eb09..21183a8 100644
          plugins.push(new WebpackBar({ name: 'Mix' }));
      }
  
+diff --git a/node_modules/laravel-mix/src/webpackPlugins/BuildOutputPlugin.js b/node_modules/laravel-mix/src/webpackPlugins/BuildOutputPlugin.js
+index 241a2ed..1166a3a 100644
+--- a/node_modules/laravel-mix/src/webpackPlugins/BuildOutputPlugin.js
++++ b/node_modules/laravel-mix/src/webpackPlugins/BuildOutputPlugin.js
+@@ -3,9 +3,20 @@ const chalk = require('chalk');
+ const Table = require('cli-table3');
+ const readline = require('readline');
+ const stripAnsi = require('strip-ansi');
+-const { formatSize } = require('webpack/lib/SizeFormatHelpers');
+ const { version } = require('../../package.json');
+ 
++// webpack@5.110 removed SizeFormatHelpers. Keep Mix table output local.
++function formatSize(bytes) {
++    const n = Number(bytes) || 0;
++    if (n < 1024) {
++        return `${n} B`;
++    }
++    if (n < 1024 * 1024) {
++        return `${(n / 1024).toFixed(2)} KiB`;
++    }
++    return `${(n / (1024 * 1024)).toFixed(2)} MiB`;
++}
++
+ /**
+  * @typedef {object} BuildOutputOptions
+  * @property {boolean} clearConsole

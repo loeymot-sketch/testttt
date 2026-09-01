@@ -29,7 +29,9 @@ class ItemAttributeRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("item_attributes", "name")->ignore($this->route('itemAttribute.id'))
+                // route('itemAttribute.id') est null (param = modèle). Sans ignore(id),
+                // Enregistrer sans renommer → 422 « déjà pris », min/max jamais écrits.
+                Rule::unique("item_attributes", "name")->ignore(optional($this->route('itemAttribute'))->id)
             ],
             'min_select'   => ['nullable', 'integer', 'min:0', 'max:99'],
             'max_select'   => ['nullable', 'integer', 'min:0', 'max:99', 'gte:min_select'],

@@ -143,11 +143,13 @@ class FilesSurveilleesTest extends TestCase
         $this->assertGreaterThanOrEqual(0, $avecTrois);
     }
 
-    public function test_la_sonde_ne_jette_jamais_meme_si_le_pilote_tombe(): void
+    public function test_la_sonde_ne_renvoie_pas_zero_quand_aucune_file_n_est_lisible(): void
     {
-        // Une sonde qui lève casse le tableau de bord entier : elle doit dégrader, pas exploser.
-        config(['queue.monitored_queues' => ['file_inexistante_' . uniqid()]]);
+        \Illuminate\Support\Facades\Queue::shouldReceive('size')
+            ->andThrow(new \RuntimeException('driver down'));
 
-        $this->assertIsInt(HealthzController::probeQueuePending());
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('queue_unreadable');
+        HealthzController::probeQueuePending();
     }
 }

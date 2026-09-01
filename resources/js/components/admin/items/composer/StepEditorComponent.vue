@@ -81,7 +81,7 @@ export default {
         },
         allOptionsLabel() {
             // i18n optional: when $t is not available (e.g. unit tests), fall back to a literal label.
-            return typeof this.$t === 'function' ? this.$t('label.all_options') : 'Toutes les options';
+            return typeof this.$t === 'function' ? this.$t('label.composer.all_source_options') : 'Aucune source — page vide en caisse';
         },
     },
     watch: {

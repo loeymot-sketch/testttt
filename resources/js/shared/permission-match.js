@@ -22,10 +22,13 @@
  * HTTP 403 sur `/api/admin/ingredients`. Le menu promettait ce que le
  * serveur refusait.
  *
- * CE QU'ON NE CHANGE PAS : le repli permissif sur clé VRAIMENT inconnue.
- * Il est délibéré et documenté (« le backend reste l'autorité finale via 403
- * sur l'API ») ; le durcir masquerait des écrans légitimes au moindre trou de
- * données. On corrige le désaccord, pas la doctrine.
+ * CE QU'ON NE CHANGE PAS : liste VIDE / pas encore un tableau = démarrage
+ * à froid. Masquer toute la barre V1 au premier paint viderait dashboard
+ * et caisse avant que le store soit hydraté. Ça, on le garde ouvert.
+ *
+ * CE QU'ON FERME MAINTENANT : table DÉJÀ chargée, clé introuvable.
+ * Avant, « État du système » n'avait pas de ligne Spatie `url` : le
+ * caissier voyait le cockpit, cliquait, l'API 403. Le menu mentait.
  *
  * SÛRETÉ DE LA CORRESPONDANCE PAR `name` : vérifié sur les 86 permissions en
  * base — AUCUN `name` n'est égal au `url` d'une autre permission. `url` reste
@@ -66,8 +69,9 @@ export function hasPermissionAccess(permissions, permissionKey) {
 
     const entry = resolvePermissionEntry(permissions, permissionKey);
 
-    // Clé vraiment inconnue : repli permissif historique, assumé.
-    if (!entry) return true;
+    // Table hydratée, clé introuvable : refuser. Le serveur 403 n'excuse
+    // plus un lien que le commerçant ne peut pas utiliser.
+    if (!entry) return false;
 
     return entry.access === true;
 }

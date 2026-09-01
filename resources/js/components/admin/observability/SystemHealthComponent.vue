@@ -46,6 +46,7 @@
             class="rounded-lg border p-4"
             :class="verdictOk ? 'border-emerald-300 bg-emerald-50' : 'border-amber-400 bg-amber-50'"
             role="status"
+            aria-live="polite"
             data-testid="system-health-verdict"
         >
             <p class="font-semibold" :class="verdictOk ? 'text-emerald-800' : 'text-amber-900'">
@@ -83,8 +84,9 @@
                     {{ etat.sauvegarde && etat.sauvegarde.dernier_fichier ? etat.sauvegarde.dernier_fichier : 'aucun fichier trouvé' }}
                 </p>
                 <p class="mt-2 text-xs text-slate-500">
-                    Une sauvegarde par jour à 3 h, restaurée à 5 h pour vérifier qu'elle
-                    s'ouvre vraiment. Conservation 6 ans.
+                    Vert seulement si un fichier <code>.sql.gz</code> a moins de
+                    26 h (même seuil que la sonde de readiness). La restauration
+                    de 5 h n'est pas encore lue ici.
                 </p>
             </div>
 
@@ -106,7 +108,7 @@
         <div class="rounded-lg border border-slate-200 bg-white p-4" data-testid="system-interrupteurs">
             <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Interrupteurs</h3>
             <p class="mt-1 text-xs text-slate-500">
-                Prise en compte immédiate, sans mise en ligne. Chaque bascule est tracée.
+                Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525.
             </p>
             <ul class="mt-3 divide-y divide-slate-100">
                 <li
@@ -171,12 +173,15 @@ export default {
                 const [libelle, explication] = LIBELLES[cle] || [cle, ''];
                 // La file est un NOMBRE, pas un état : 0 est bon, 900 ne l'est pas.
                 const estFile = cle === 'queue_pending';
+                const fileInconnue = estFile && v === 'unknown';
                 return {
                     cle,
                     libelle,
                     explication,
-                    valeur: estFile ? `${v} en attente` : (v === 'ok' ? 'en service' : String(v)),
-                    ok: estFile ? Number(v) <= 50 : v === 'ok',
+                    valeur: fileInconnue
+                        ? 'mesure impossible'
+                        : (estFile ? `${v} en attente` : (v === 'ok' ? 'en service' : String(v))),
+                    ok: fileInconnue ? false : (estFile ? Number(v) <= 50 : v === 'ok'),
                 };
             });
         },
@@ -186,6 +191,7 @@ export default {
         },
         sauvegardeTexte() {
             const s = this.etat.sauvegarde;
+            if (this.erreur && !s) return 'mesure indisponible';
             if (!s || s.age_heures === null || s.age_heures === undefined) return 'aucune';
             if (s.age_heures < 1) return "à l'instant";
             if (s.age_heures < 48) return `il y a ${s.age_heures} h`;
@@ -197,6 +203,9 @@ export default {
         },
         planificateurTexte() {
             const p = this.etat.planificateur;
+            if (this.erreur && !p) {
+                return 'mesure indisponible';
+            }
             if (!p || p.dernier_battement_min === null || p.dernier_battement_min === undefined) {
                 return 'aucun signe de vie';
             }
@@ -227,10 +236,19 @@ export default {
                 const { data } = await axios.get('/admin/observability/interrupteurs');
                 this.interrupteurs = data.data || [];
             } catch (e) {
-                this.interrupteurs = [];
+                this.erreur = this.erreur || "Impossible de lire les interrupteurs.";
             }
         },
         async basculer(i) {
+            const verbe = i.actif ? 'désactiver' : 'activer';
+            if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+                const ok = window.confirm(
+                    `Confirmer : ${verbe} « ${i.libelle} » ? ${i.consequence || ''}`
+                );
+                if (!ok) {
+                    return;
+                }
+            }
             this.bascule = i.nom;
             try {
                 const { data } = await axios.put(`/admin/observability/interrupteurs/${i.nom}`, { actif: !i.actif });

@@ -5,6 +5,7 @@ namespace App\Services\Composer;
 use App\Events\ComposerProfileChanged;
 use App\Models\ItemWizardProfile;
 use App\Models\ItemWizardStep;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class ComposerStepService
@@ -14,6 +15,10 @@ class ComposerStepService
 
     public function create(ItemWizardProfile $profile, array $payload, bool $emitSync = true): ItemWizardStep
     {
+        if ($emitSync) {
+            $this->assertDraft($profile);
+        }
+
         $step = $profile->steps()->create($this->normalize($payload));
         $this->dispatchProfileChanged($profile->fresh(), 'steps_updated', $emitSync);
 
@@ -22,6 +27,7 @@ class ComposerStepService
 
     public function update(ItemWizardStep $step, array $payload): ItemWizardStep
     {
+        $this->assertDraft($step->profile);
         $step->update($this->normalize($payload));
         $fresh = $step->fresh('profile');
         $this->dispatchProfileChanged($fresh->profile, 'steps_updated');
@@ -32,6 +38,7 @@ class ComposerStepService
     public function delete(ItemWizardStep $step): void
     {
         $profile = $step->profile;
+        $this->assertDraft($profile);
         $step->delete();
         $this->dispatchProfileChanged($profile, 'steps_updated');
     }
@@ -77,6 +84,19 @@ class ComposerStepService
         }
 
         return null;
+    }
+
+    /**
+     * Avant : réordonner / supprimer une page d'un wizard publié
+     * changeait la caisse sans passer par Publier.
+     */
+    private function assertDraft(?ItemWizardProfile $profile): void
+    {
+        if ($profile && $profile->is_published) {
+            throw ValidationException::withMessages([
+                'steps' => 'Ce wizard est en caisse. Enregistre un brouillon, puis publie.',
+            ]);
+        }
     }
 
     private function assertContract(array $payload): void

@@ -101,13 +101,11 @@ export default {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
             if (!perms.length) {
-                // Empty/initial state — keep historic default-allow so admin
-                // dashboards never silently degrade if perms haven't hydrated.
-                return true;
+                return false;
             }
-            const entry = perms.find((p) => p && p.url === 'items/show');
+            const entry = perms.find((p) => p && (p.url === 'items/show' || p.name === 'items_show'));
             if (!entry) {
-                return true;
+                return false;
             }
             return entry.access === true;
         },

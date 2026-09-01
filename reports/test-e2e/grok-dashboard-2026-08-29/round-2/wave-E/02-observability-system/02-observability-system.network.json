@@ -1,0 +1,121 @@
+[
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983484178
+  },
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485402
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485459
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485460
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485460
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485461
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485462
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485462
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485678
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485678
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983485935
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983486034
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161XQ5ZXBZPAHT709BHJ9Q5",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983486341
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161XQ6VFWBHG147ZFKWW5KS",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983486404
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "failure": "net::ERR_BLOCKED_BY_ORB",
+    "ts": 1787983486429
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161XQ84GGE8TT2NQEHKRB2W",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983486446
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161XQ9E6YXZ4NTD96CBM0ZM",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787983486501
+  }
+]

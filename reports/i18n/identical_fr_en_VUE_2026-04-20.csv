@@ -76,6 +76,7 @@ label.ingredient.column_actions,Actions,Actions
 label.ingredient.tab_addon,Add-ons,Add-ons
 label.instagram,Instagram,Instagram
 label.instruction,Instruction,Instruction
+label.itemAddon.role_dessert,Dessert,Dessert
 label.items,Articles,Articles
 label.items_board,Préparations,Préparations
 label.kds_cuisine_chaude,Cuisine chaude,Cuisine chaude
@@ -153,6 +154,8 @@ pos.cancel_order_done,Commande annulée.,Commande annulée.
 pos.cancel_order_error,Impossible d'annuler cette commande.,Impossible d'annuler cette commande.
 pos.discard,Supprimer,Supprimer
 pos.kiosk_counter_collect_short,À encaisser,À encaisser
+pos.low_stock.button_hint,Articles en stock faible — préparer la liste d'achat pour demain.,Articles en stock faible — préparer la liste d'achat pour demain.
+pos.low_stock.button_label,Stock faible,Stock faible
 pos.no_sale_done,Tiroir ouvert — ouverture enregistrée.,Tiroir ouvert — ouverture enregistrée.
 pos.no_sale_error,Impossible d'ouvrir le tiroir.,Impossible d'ouvrir le tiroir.
 pos.no_sale_untraced,"Tiroir ouvert, mais l'ouverture n'a PAS pu être enregistrée (session de caisse fermée ou serveur injoignable).","Tiroir ouvert, mais l'ouverture n'a PAS pu être enregistrée (session de caisse fermée ou serveur injoignable)."
@@ -171,6 +174,7 @@ pos.receipt_kitchen_subtitle,Préparation — ne pas remettre au client,Prépara
 pos.receipt_kitchen_title,CUISINE,CUISINE
 pos.restore,Restaurer,Restaurer
 pos.tracker.active_orders,actives,actives
+pos.tracker.active_orders_one,active,active
 pos.tracker.back_to_pos,Retour caisse,Retour caisse
 pos.tracker.button_hint,"Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête.","Voir les commandes en attente, en préparation et prêtes à servir. Le bouton devient vert quand une commande est prête."
 pos.tracker.cash_collect_cta,Encaisser,Encaisser
@@ -178,17 +182,26 @@ pos.tracker.cash_due_label,À encaisser,À encaisser
 pos.tracker.col_accept,À encaisser,À encaisser
 pos.tracker.col_on_the_way,En livraison,En livraison
 pos.tracker.col_preparing,En préparation,En préparation
+pos.tracker.compo_more_aria,Voir la composition complète de cet article,Voir la composition complète de cet article
 pos.tracker.customer_screen,Écran client,Écran client
 pos.tracker.empty_accept,Aucune commande à encaisser.,Aucune commande à encaisser.
+pos.tracker.empty_filter_reset,"Voir tout, sans filtre","Voir tout, sans filtre"
+pos.tracker.empty_filtered_search,Aucun résultat pour « {query} » dans « {column} » — recherche active.,Aucun résultat pour « {query} » dans « {column} » — recherche active.
+pos.tracker.empty_filtered_source,Aucune commande {source} dans « {column} » — filtre canal actif.,Aucune commande {source} dans « {column} » — filtre canal actif.
 pos.tracker.empty_on_the_way,Aucune commande en livraison.,Aucune commande en livraison.
 pos.tracker.empty_prepared,Aucune commande prête.,Aucune commande prête.
 pos.tracker.empty_preparing,Aucune commande en cuisine.,Aucune commande en cuisine.
 pos.tracker.history,Historique,Historique
 pos.tracker.loading,Chargement des commandes…,Chargement des commandes…
 pos.tracker.now,à l'instant,à l'instant
+pos.tracker.ready_short,prêtes,prêtes
 pos.tracker.source_all,Toutes,Toutes
+pos.tracker.source_delivery,Livraison,Livraison
 pos.tracker.source_online,En ligne,En ligne
+pos.tracker.source_phone,Téléphone,Téléphone
+pos.tracker.source_platform,Plateforme,Plateforme
 pos.tracker.source_pos,Caisse,Caisse
+pos.tracker.stale_refresh,Rafraîchir la liste des commandes en souffrance,Rafraîchir la liste des commandes en souffrance
 pos.tracker.today_total,aujourd'hui,aujourd'hui
 studio.all_categories,Toutes les catégories,Toutes les catégories
 studio.eyebrow,Pilotage catalogue,Pilotage catalogue

@@ -152,14 +152,42 @@ class AppLibrary
     {
         if ($menus && $permissions) {
             foreach ($menus as $key => $menu) {
-                if (isset($permissions[$menu['url']]) && !$permissions[$menu['url']]['access']) {
-                    if ($menu['url'] != '#') {
-                        unset($menus[$key]);
-                    }
+                $url = (string) ($menu['url'] ?? '');
+                if ($url !== '#' && self::menuRowForbidden($menu, $permissions)) {
+                    unset($menus[$key]);
+                    continue;
+                }
+                if (! empty($menu['children']) && is_array($menu['children'])) {
+                    $children = $menu['children'];
+                    self::menu($children, $permissions);
+                    $menus[$key]['children'] = array_values($children);
                 }
             }
         }
+
         return $menus;
+    }
+
+    /**
+     * Avant : « État du système » n'avait pas de permission.url → le menu
+     * le gardait pour le caissier. Le serveur 403, le lien restait.
+     * Table déjà livrée + URL sans ligne = interdit. Liste vide = pas
+     * filtrée (menu() court-circuite plus haut).
+     */
+    private static function menuRowForbidden(array $menu, $permissions): bool
+    {
+        $url = (string) ($menu['url'] ?? '');
+        if ($url === '' || $url === '#') {
+            return false;
+        }
+        if (str_starts_with($url, 'observability/')) {
+            $url = 'settings';
+        }
+        if (! isset($permissions[$url])) {
+            return true;
+        }
+
+        return empty($permissions[$url]['access']);
     }
 
     /**

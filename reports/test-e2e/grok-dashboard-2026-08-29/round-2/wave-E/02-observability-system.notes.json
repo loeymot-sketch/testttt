@@ -1,0 +1,170 @@
+{
+  "name": "02-observability-system",
+  "url": "http://127.0.0.1:8766/admin/dashboard",
+  "title": "Le Cayenne",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "sidebar": {
+    "present": true,
+    "visible": true,
+    "exactLabels": [
+      "CAISSE ET COMMANDES",
+      "Tableau De Bord",
+      "POS",
+      "Commandes Caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket Promo",
+      "Réglages Ticket Promo",
+      "Commande Uber (Photo)",
+      "La Roue",
+      "Écran Cuisine",
+      "Suivi Client"
+    ],
+    "labeled": [
+      {
+        "kind": "group",
+        "text": "CAISSE ET COMMANDES"
+      },
+      {
+        "kind": "item",
+        "text": "Tableau De Bord"
+      },
+      {
+        "kind": "item",
+        "text": "POS"
+      },
+      {
+        "kind": "item",
+        "text": "Commandes Caisse"
+      },
+      {
+        "kind": "item",
+        "text": "Historique"
+      },
+      {
+        "kind": "item",
+        "text": "Encaissement"
+      },
+      {
+        "kind": "item",
+        "text": "Ticket Promo"
+      },
+      {
+        "kind": "item",
+        "text": "Réglages Ticket Promo"
+      },
+      {
+        "kind": "item",
+        "text": "Commande Uber (Photo)"
+      },
+      {
+        "kind": "item",
+        "text": "La Roue"
+      },
+      {
+        "kind": "item",
+        "text": "Écran Cuisine"
+      },
+      {
+        "kind": "item",
+        "text": "Suivi Client"
+      }
+    ],
+    "hasEtatDuSysteme": false,
+    "hrefs": [
+      {
+        "tag": "A",
+        "href": "/home",
+        "text": ""
+      },
+      {
+        "tag": "A",
+        "href": "/admin/dashboard",
+        "text": "Tableau de bord"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos",
+        "text": "POS"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos-orders",
+        "text": "Commandes caisse"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/historique",
+        "text": "Historique"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/encaissement",
+        "text": "Encaissement"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer",
+        "text": "Ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer/settings",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/uber-photo",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/roue",
+        "text": "La roue"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/kitchen-display-system",
+        "text": "Écran cuisine"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/order-status-screen",
+        "text": "Suivi client"
+      }
+    ],
+    "rawText": "Tableau De Bord POS Commandes Caisse Historique Encaissement Ticket Promo Réglages Ticket Promo Commande Uber (Photo) La Roue CAISSE ET COMMANDES Écran Cuisine Suivi Client"
+  },
+  "assets": {
+    "scripts": [
+      "http://127.0.0.1:8766/js/manifest.js?id=57e1154233dd86f53ae91f1f46f62733",
+      "http://127.0.0.1:8766/js/vendor.js?id=03aeaa9a61370d6c3524c456482eb5a4",
+      "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b"
+    ],
+    "allScriptCount": 11
+  },
+  "mixHashLoaded": false,
+  "vueSystemHealthMounted": false,
+  "healthCockpitPresent": false,
+  "h2EtatDuSysteme": false,
+  "redirectedToDashboard": true,
+  "stillOnObservability": false,
+  "stillOnPos": false,
+  "impossibleDeLire": false,
+  "impossibleEtat": false,
+  "impossibleInterrupteurs": false,
+  "mesureIndisponible": false,
+  "aucune": true,
+  "consigneJournal": false,
+  "chaqueBascule": false,
+  "systemHealthErreurText": null,
+  "sauvegardeText": null,
+  "planificateurText": null,
+  "interrupteursText": null,
+  "toastOrAlert": [],
+  "bodySnippet": "Français\nAnglais\nFrançais\nBonjour\nCaissier Le Cayenne\nCaissier Le Cayenne\n\npos@lecayenne.fr\n\n+330600000002\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nAppareils Connectés\nDéconnexion\nTableau De Bord\nPOS\nCommandes Caisse\nHistorique\nEncaissement\nTicket Promo\nRéglages Ticket Promo\nCommande Uber (Photo)\nLa Roue\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client\nBonjour !\nCaissier Le Cayenne\nAccès rapides\nPOS\nCommandes caisse\nSuivi caisse (kanban)\nEncaissement\nHistorique\nÉcran cuisine\nSuivi client\nVue D’ensemble\nVentes du jour\n0,00 €\nCommandes du jour\n0\nTotal articles menu\n123\nSuivi en direct\nChiffre d'Affaires du Jour\n0,00 €\nCommandes du Jour\n0\nTicket Moyen\n0,00 €\n\nSUPERVISION CUISINE\n\nDélais de préparation\n\nActualisé à l’instant\n\n0\nhors délai\n0\nurgentes\n—\nplus ancienne\n\nAucune préparation hors délai\n\nDernier contrôle terminé avec succès.\n\n0 préparations hors délai, dont 0 urgentes.\nRépartition par Canal (Aujourd'hui)\nWeb\n0%\nKiosk/App\n0%\nPOS\n0%\nAudit Trail NF525 (Journal Inviolable)\n\nSource : audit_logs (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.\n\nUTILISATEUR\tACTION\tRESSOURCE\tHASH\tTEMPS\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\tc7ec1254\til y a 2 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tc7575b5c\til y a 8 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t323c7516\til y a 9 minutes\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\t9374b00c\til y a 12 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t802b1944\til y a 12 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\ta13534df\til y a 13 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t7b40a019\til y a 13 minutes\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\tc4b13299\til y a 51 minutes\nAdmin Le Cayenne\tDéconnexion utilisateur\tuser#1\t8c74fe8f\til y a 51 minutes\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t23a176d6\til y a 1 heure\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t17f9a0f3\til y a 5 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t3751e22b\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t5a5b6ac4\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tbe90568e\til y a 6 heures\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\taf6055fd\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t7ddb14c7\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t098bdcbc\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t84735976\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t63bcba8d\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t2332a037\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t3ad0ed43\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t7ffbd8ef\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tffe28e80\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t7f4f03f3\til y a 6 heures\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\t5edf88f5\til y a 6 heures\nCaissier Le Cayenne\tConnexion utilisateur\tuser#3\te8d44b92\til y a 6 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t6ed47766\til y a 7 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tcc676cf9\til y a 7 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t482dcce1\til y a 7 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tb2139ee5\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tff51ccd6\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\td79b78a3\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t2ca05d22\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\td52740f6\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tbb85904f\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tc861a6d0\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t786e6a48\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t4d5e6cfc\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t9657d2c3\til y a 10 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t8bce75e9\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t32642ec4\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t9bf02591\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\tdae0d97e\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t969e3e29\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t522d4687\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t3afe47ee\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t739e5e0e\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t3efa0f36\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t7dc8ce9e\til y a 11 heures\nAdmin Le Cayenne\tConnexion utilisateur\tuser#1\t9535c437\til y a 11 heures\nStatistiques Des Commandes\nDate\nTotal Commandes\n0\nEn Attente\n0\nAcceptée\n0\nEn Préparation\n0\nPréparée\n0\nEn Livraison\n0\nLivré\n0\nAnnulé\n0\nRetournée\n0\nRefusée\n0\nRésumé Des Ventes\nDate\n352,35 €\n\nTotal Ventes\n\n11,37 €\n\nVentes Moyennes Par Jour\n\n1\n2",
+  "vueMountSelector": "[data-testid=\"system-health\"]"
+}

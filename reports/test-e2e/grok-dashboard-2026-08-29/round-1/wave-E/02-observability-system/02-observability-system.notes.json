@@ -1,0 +1,149 @@
+{
+  "name": "02-observability-system",
+  "url": "http://127.0.0.1:8766/admin/observability/system",
+  "title": "Le Cayenne",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "sidebar": {
+    "present": true,
+    "visible": true,
+    "exactLabels": [
+      "CAISSE ET COMMANDES",
+      "Tableau De Bord",
+      "POS",
+      "Commandes Caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket Promo",
+      "Réglages Ticket Promo",
+      "Commande Uber (Photo)",
+      "La Roue",
+      "Écran Cuisine",
+      "Suivi Client"
+    ],
+    "labeled": [
+      {
+        "kind": "group",
+        "text": "CAISSE ET COMMANDES"
+      },
+      {
+        "kind": "item",
+        "text": "Tableau De Bord"
+      },
+      {
+        "kind": "item",
+        "text": "POS"
+      },
+      {
+        "kind": "item",
+        "text": "Commandes Caisse"
+      },
+      {
+        "kind": "item",
+        "text": "Historique"
+      },
+      {
+        "kind": "item",
+        "text": "Encaissement"
+      },
+      {
+        "kind": "item",
+        "text": "Ticket Promo"
+      },
+      {
+        "kind": "item",
+        "text": "Réglages Ticket Promo"
+      },
+      {
+        "kind": "item",
+        "text": "Commande Uber (Photo)"
+      },
+      {
+        "kind": "item",
+        "text": "La Roue"
+      },
+      {
+        "kind": "item",
+        "text": "Écran Cuisine"
+      },
+      {
+        "kind": "item",
+        "text": "Suivi Client"
+      }
+    ],
+    "hasEtatDuSysteme": false,
+    "hrefs": [
+      {
+        "tag": "A",
+        "href": "/home",
+        "text": ""
+      },
+      {
+        "tag": "A",
+        "href": "/admin/dashboard",
+        "text": "Tableau de bord"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos",
+        "text": "POS"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos-orders",
+        "text": "Commandes caisse"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/historique",
+        "text": "Historique"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/encaissement",
+        "text": "Encaissement"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer",
+        "text": "Ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer/settings",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/uber-photo",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/roue",
+        "text": "La roue"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/kitchen-display-system",
+        "text": "Écran cuisine"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/order-status-screen",
+        "text": "Suivi client"
+      }
+    ],
+    "rawText": "Tableau De Bord POS Commandes Caisse Historique Encaissement Ticket Promo Réglages Ticket Promo Commande Uber (Photo) La Roue CAISSE ET COMMANDES Écran Cuisine Suivi Client"
+  },
+  "vueSystemHealthMounted": true,
+  "h2EtatDuSysteme": true,
+  "impossibleDeLire": true,
+  "impossibleEtat": true,
+  "impossibleInterrupteurs": false,
+  "systemHealthErreurText": "Impossible de lire l'état du système.",
+  "toastOrAlert": [],
+  "vueMountSelector": "[data-testid=\"system-health\"]"
+}

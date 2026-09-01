@@ -29,7 +29,7 @@ export default [
         meta: {
             isFrontend: false,
             auth: true,
-            permissionUrl: "dashboard",
+            permissionUrl: "settings",
             breadcrumb: "observability_system",
         },
     },
@@ -40,7 +40,7 @@ export default [
         meta: {
             isFrontend: false,
             auth: true,
-            permissionUrl: "dashboard",
+            permissionUrl: "settings",
             breadcrumb: "observability_outbox",
         },
     },

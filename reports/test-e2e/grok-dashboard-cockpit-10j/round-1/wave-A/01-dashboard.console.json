@@ -1,0 +1,32 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.audit_event_user_device_revoked' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=db140dc0dc9a29088f2fbf0502040c63",
+      "lineNumber": 141243,
+      "columnNumber": 16
+    },
+    "ts": 1788076429202
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Fall back to translate 'label.audit_event_user_device_revoked' key with 'en' locale.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=db140dc0dc9a29088f2fbf0502040c63",
+      "lineNumber": 141243,
+      "columnNumber": 16
+    },
+    "ts": 1788076429202
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.audit_event_user_device_revoked' key in 'en' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8766/js/app.js?id=db140dc0dc9a29088f2fbf0502040c63",
+      "lineNumber": 141243,
+      "columnNumber": 16
+    },
+    "ts": 1788076429202
+  }
+]

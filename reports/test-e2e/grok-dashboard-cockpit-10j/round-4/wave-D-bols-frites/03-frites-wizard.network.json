@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/api/admin/composer/categories/7/profile",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "xhr",
+    "ws_or_debugbar": false,
+    "english_storage_leftover": false,
+    "ts": 1788194888828
+  }
+]

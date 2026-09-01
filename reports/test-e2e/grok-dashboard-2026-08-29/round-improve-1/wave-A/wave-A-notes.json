@@ -1,0 +1,208 @@
+{
+  "wave": "A-admin-dashboard-round-improve-1",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "states": [
+    {
+      "name": "idle",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-1/wave-A/01-dashboard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-1/wave-A/01-dashboard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-1/wave-A/01-dashboard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-1/wave-A/01-dashboard.network.json",
+      "notes": "Admin login then HARD RELOAD /admin/dashboard (CDP cache disabled). Overflow expanded. No POS/kiosk/orders."
+    }
+  ],
+  "observed": {
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "overview_heading": "Vue d’ensemble",
+    "live_heading": "Suivi en direct",
+    "featured_heading": "Articles Mis En Avant",
+    "overview_tiles": [
+      {
+        "label": "Ventes du jour",
+        "value": "0,00 €",
+        "background": "#F4501E",
+        "background_class": "orange",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#F4501E]"
+      },
+      {
+        "label": "Commandes du jour",
+        "value": "0",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#1A1A1A]"
+      },
+      {
+        "label": "Total articles menu",
+        "value": "55",
+        "background": "#FFB800",
+        "background_class": "yellow",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#FFB800]"
+      }
+    ],
+    "live_tiles": [
+      {
+        "label": "Ticket Moyen",
+        "value": "0,00 €",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-[#1A1A1A] text-white"
+      }
+    ],
+    "live_labels": [
+      "Ticket Moyen"
+    ],
+    "total_articles_menu": "55",
+    "ventes_du_jour": "0,00 €",
+    "commandes_du_jour": "0",
+    "ticket_moyen": "0,00 €",
+    "featured_names_dom": [
+      "Fish Burger",
+      "Double Cheese",
+      "Petite Frites Cheddar + Oignons frits",
+      "Suprême",
+      "Petite Frites Cheddar fondu",
+      "Grande Frites Cheddar + Oignons frits",
+      "Menu Enfant Chicken Burger"
+    ],
+    "featured_contains_e2e_playwright": false,
+    "sidebar_dashboard_labels": [
+      {
+        "exact": "Tableau de bord",
+        "is_Tableau_de_Bord": false,
+        "is_Tableau_De_Bord": false,
+        "is_Tableau_de_bord": true,
+        "textTransform": "none",
+        "source": "A.active router-link-exact-active db-sidebar-nav-menu"
+      }
+    ],
+    "sidebar_dashboard_raw": [
+      {
+        "tag": "A",
+        "className": "active router-link-exact-active db-sidebar-nav-menu",
+        "textContent": "Tableau de bord",
+        "innerText": "Tableau de bord",
+        "textTransform": "none"
+      },
+      {
+        "tag": "SPAN",
+        "className": "text-base flex-auto",
+        "textContent": "Tableau de bord",
+        "innerText": "Tableau de bord",
+        "textTransform": "none"
+      },
+      {
+        "tag": "A",
+        "className": "active router-link-exact-active db-sidebar-nav-menu",
+        "textContent": "Tableau de bord",
+        "innerText": "Tableau de bord",
+        "textTransform": "none"
+      },
+      {
+        "tag": "SPAN",
+        "className": "text-base flex-auto",
+        "textContent": "Tableau de bord",
+        "innerText": "Tableau de bord",
+        "textTransform": "none"
+      }
+    ],
+    "i18n_leak": false,
+    "body_has_ellipsis_kpi": false
+  },
+  "featured_names": [
+    "Fish Burger",
+    "Double Cheese",
+    "Petite Frites Cheddar + Oignons frits",
+    "Suprême",
+    "Petite Frites Cheddar fondu",
+    "Grande Frites Cheddar + Oignons frits",
+    "Menu Enfant Chicken Burger"
+  ],
+  "featured_api": [
+    {
+      "status": 200,
+      "url": "http://127.0.0.1:8766/api/admin/dashboard/featured-items",
+      "names": [
+        "Petite Frites Cheddar fondu",
+        "Double Cheese",
+        "Grande Frites Cheddar + Oignons frits",
+        "Cheese Burger",
+        "Menu Enfant Chicken Burger",
+        "Petite Frites Cheddar + Oignons frits",
+        "Suprême"
+      ],
+      "count": 7
+    },
+    {
+      "status": 200,
+      "url": "http://127.0.0.1:8766/api/admin/dashboard/featured-items",
+      "names": [
+        "Fish Burger",
+        "Double Cheese",
+        "Petite Frites Cheddar + Oignons frits",
+        "Suprême",
+        "Petite Frites Cheddar fondu",
+        "Grande Frites Cheddar + Oignons frits",
+        "Menu Enfant Chicken Burger"
+      ],
+      "count": 7
+    }
+  ],
+  "featured_contains_e2e_playwright": false,
+  "total_articles_menu": "55",
+  "sidebar_dashboard_labels": [
+    {
+      "exact": "Tableau de bord",
+      "is_Tableau_de_Bord": false,
+      "is_Tableau_De_Bord": false,
+      "is_Tableau_de_bord": true,
+      "textTransform": "none",
+      "source": "A.active router-link-exact-active db-sidebar-nav-menu"
+    }
+  ],
+  "http_4xx_5xx_excluding_ws_debugbar": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1788028273470
+    },
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1788028274101
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1788028274109
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1788028276527
+    }
+  ],
+  "final_url": "http://127.0.0.1:8766/admin/dashboard"
+}

@@ -30,7 +30,7 @@ class PageRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("pages", "title")->ignore($this->route('page.id'))
+                Rule::unique("pages", "title")->ignore(optional($this->route('page'))->id)
             ],
             'description'     => ['required', 'string'],
             'template_id'     => ['nullable', 'numeric'],

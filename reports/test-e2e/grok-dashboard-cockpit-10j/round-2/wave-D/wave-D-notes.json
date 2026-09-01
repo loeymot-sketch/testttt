@@ -1,0 +1,459 @@
+{
+  "wave": "D-tacos-composer-from-dashboard-vague-4-cycle-1",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "dashboard_to_catalogue": true,
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "flags_flipped": false,
+  "categories": [
+    {
+      "testid": "catalog-studio-category-row-1",
+      "id": "1",
+      "name": "Sandwichs",
+      "count_text": "5 articles",
+      "product_count": 5,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-21",
+      "id": "21",
+      "name": "Tacos Signature",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-66",
+      "id": "66",
+      "name": "Uber (technique)",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-2",
+      "id": "2",
+      "name": "Galette",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-3",
+      "id": "3",
+      "name": "Sandwich Classique",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-4",
+      "id": "4",
+      "name": "Burgers",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-5",
+      "id": "5",
+      "name": "Tacos",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-6",
+      "id": "6",
+      "name": "Bols",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-7",
+      "id": "7",
+      "name": "Frites",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-8",
+      "id": "8",
+      "name": "Suppléments",
+      "count_text": "10 articles",
+      "product_count": 10,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-9",
+      "id": "9",
+      "name": "Desserts",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-10",
+      "id": "10",
+      "name": "Boissons",
+      "count_text": "15 articles",
+      "product_count": 15,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-11",
+      "id": "11",
+      "name": "Menu enfant",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-27",
+      "id": "27",
+      "name": "Technique (interne — upsell)",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    }
+  ],
+  "tacos_signature": {
+    "testid": "catalog-studio-category-row-21",
+    "id": "21",
+    "name": "Tacos Signature",
+    "count_text": "0 articles",
+    "product_count": 0,
+    "empty": true
+  },
+  "chosen_category": {
+    "testid": "catalog-studio-category-row-5",
+    "id": "5",
+    "name": "Tacos",
+    "count_text": "3 articles",
+    "product_count": 3,
+    "empty": false
+  },
+  "wizard_clicked": true,
+  "wizard_url": "http://127.0.0.1:8766/admin/items/studio",
+  "wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/5/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "rail": {
+    "url": "http://127.0.0.1:8766/admin/items/studio",
+    "title": "Le Cayenne",
+    "active_category": "Tacos 3 articles",
+    "wizard_entry_visible": true,
+    "wizard_button_text": "Wizard De La Catégorie",
+    "wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "empty_state": null,
+    "product_count": 3,
+    "products": [
+      {
+        "name": "Tacos XL",
+        "category": "Tacos",
+        "meta": "10,90 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "photo_alt": "Tacos XL",
+        "has_photo": true
+      },
+      {
+        "name": "Tacos L",
+        "category": "Tacos",
+        "meta": "8,90 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "photo_alt": "Tacos L",
+        "has_photo": true
+      },
+      {
+        "name": "Tacos M",
+        "category": "Tacos",
+        "meta": "6,90 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "photo_alt": "Tacos M",
+        "has_photo": true
+      }
+    ],
+    "body_snippet": "PILOTAGE CATALOGUE Catalogue Catégories, articles, parcours et stock Ajouter Une Catégorie D’articles Ajouter Un Article Catégories 14 Toutes les catégories 55 articles Tacos Ce wizard s'applique à TOUS les produits de cette catégorie. Wizard De La Catégorie Sandwichs 5 articles Tacos Signature 0 articles Uber (technique) 0 articles Galette 3 articles Sandwich Classique 0 articles Burgers 6 articles Tacos 3 articles Bols 2 articles Frites 6 articles Suppléments 10 articles Desserts 3 articles Boissons 15 articles Menu enfant 2 articles Technique (interne — upsell) 3 articles Paramètres avancés Tableau de stock Tacos XL Tacos 10,90 € Actif Tacos L Tacos 8,90 € Actif Tacos M Tacos 6,90 € Actif",
+    "raw_labels": []
+  },
+  "composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Tacos",
+    "overlay_help": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "iframe_src": "/admin/categories/5/composer",
+    "overlay_text": "WIZARD PRODUIT Wizard de la catégorie : Tacos Ce wizard s'applique à TOUS les produits de cette catégorie. Ouvrir En Pleine Page Fermer",
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/5/composer",
+      "title": "Le Cayenne",
+      "composer_name": "Wizard de la catégorie : Tacos",
+      "composer_category": "Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.",
+      "publish_state": "Brouillon",
+      "empty_state": "",
+      "load_error": "",
+      "step_count": 7,
+      "step_labels": [
+        "Choisis la taille",
+        "Choisis tes viandes",
+        "Viande 2",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments",
+        "Choisis ta formule"
+      ],
+      "steps": [
+        {
+          "testid": "composer-step-row-142",
+          "index": 0,
+          "label": "Choisis la taille",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "text": "Choisis la taille item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-143",
+          "index": 1,
+          "label": "Choisis tes viandes",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 4",
+            "POS",
+            "Kiosk"
+          ],
+          "text": "Choisis tes viandes item_attribute 1 / 4 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-144",
+          "index": 2,
+          "label": "Viande 2",
+          "source_line": "item_attribute",
+          "chips": [
+            "0 / 4",
+            "POS",
+            "Kiosk"
+          ],
+          "text": "Viande 2 item_attribute 0 / 4 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-145",
+          "index": 3,
+          "label": "Choisis ta sauce",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "text": "Choisis ta sauce item_attribute 1 / 1 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-146",
+          "index": 4,
+          "label": "Choisis tes garnitures",
+          "source_line": "extra_group",
+          "chips": [
+            "0 / 6",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "text": "Choisis tes garnitures extra_group 0 / 6 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-147",
+          "index": 5,
+          "label": "Suppléments",
+          "source_line": "extra_group",
+          "chips": [
+            "0 / 5",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "text": "Suppléments extra_group 0 / 5 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-148",
+          "index": 6,
+          "label": "Choisis ta formule",
+          "source_line": "addon",
+          "chips": [
+            "0 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "text": "Choisis ta formule addon 0 / 1 POS Kiosk"
+        }
+      ],
+      "source_ref": {
+        "value": "",
+        "label": "Toutes les options",
+        "empty_value": true
+      },
+      "source_type": {
+        "value": "item_attribute",
+        "label": "Attribut produit",
+        "empty_value": false
+      },
+      "source_empty_message": null,
+      "current_step_label_input": "Choisis la taille",
+      "photo": {
+        "tag": "IMG",
+        "is_img": true,
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-tacos.webp?v=1787786786",
+        "alt": "Tacos",
+        "fallback_text": null
+      },
+      "raw_labels": [],
+      "body_has_source_ref_human": true,
+      "body_has_toutes_les_options": true
+    }
+  },
+  "step_labels": [
+    "Choisis la taille",
+    "Choisis tes viandes",
+    "Viande 2",
+    "Choisis ta sauce",
+    "Choisis tes garnitures",
+    "Suppléments",
+    "Choisis ta formule"
+  ],
+  "source_ref": {
+    "value": "",
+    "label": "Toutes les options",
+    "empty_value": true
+  },
+  "source_empty_message": null,
+  "photos": {
+    "rail": [
+      {
+        "name": "Tacos XL",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Tacos L",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Tacos M",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+        "has_photo": true
+      }
+    ],
+    "composer": {
+      "tag": "IMG",
+      "is_img": true,
+      "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-tacos.webp?v=1787786786",
+      "alt": "Tacos",
+      "fallback_text": null
+    }
+  },
+  "raw_labels": {
+    "rail": [],
+    "composer": [],
+    "parent_dom": [
+      "kiosk.js",
+      "kiosk.php",
+      "kiosk.php.",
+      "undefined"
+    ]
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097594064
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097599448
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097599448
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097599449
+    }
+  ],
+  "http_4xx_ignored_debugbar_english_storage": [
+    {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "status": 404
+    }
+  ],
+  "mutating_requests_after_login_excluding_auth": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+      "ts": 1788097600430
+    }
+  ],
+  "states": [
+    {
+      "name": "tacos-rail",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/01-tacos-rail.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/01-tacos-rail.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/01-tacos-rail.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/01-tacos-rail.network.json",
+      "notes": "From dashboard Accès rapides Catalogue, clicked category « Tacos » (not Tacos Signature). Product cards=3."
+    },
+    {
+      "name": "tacos-wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/02-tacos-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/02-tacos-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/02-tacos-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-D/02-tacos-wizard.network.json",
+      "notes": "Clicked « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/5/composer full_page=false. Did not publish / create / flip flags / POS."
+    }
+  ],
+  "blockers": [],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio"
+}

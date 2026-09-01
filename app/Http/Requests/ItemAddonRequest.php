@@ -31,10 +31,12 @@ class ItemAddonRequest extends FormRequest
             'addon_item_id'   => [
                 'required',
                 'numeric',
-                Rule::unique("item_addons", "addon_item_id")->whereNull('deleted_at')->ignore($this->route('itemAddon.id'))->where('item_id', $this->route('item.id')),
+                Rule::unique("item_addons", "addon_item_id")->whereNull('deleted_at')
+                    ->ignore(optional($this->route('itemAddon'))->id)
+                    ->where('item_id', optional($this->route('item'))->id),
             ],
             'addon_item_variation'   => ['nullable', 'json'],
-            'role'                   => ['nullable', 'string', Rule::in(ItemAddon::ROLES)],
+            'role'                   => ['required', 'string', Rule::in(ItemAddon::ROLES)],
         ];
     }
 

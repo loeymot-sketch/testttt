@@ -30,7 +30,10 @@ class PermissionRequest extends FormRequest
     public function rules() : array
     {
         return [
-            'permissions' => ['nullable', 'array']
+            'permissions'   => ['nullable', 'array'],
+            // Avant : PUT {permissions:[999999]} passait. Spatie syncait
+            // zéro ligne : le Chef n'avait plus d'écran cuisine, HTTP 200.
+            'permissions.*' => ['integer', 'exists:permissions,id'],
         ];
     }
 }

@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -62,7 +63,9 @@ class SyncOverviewController extends AdminController
         $this->middleware(['role:Admin|Tenant Admin'])->only(
             'outboxOverview',
             'outboxRetryFailed',
-            'outboxDrainFailed'
+            'outboxDrainFailed',
+            // Avant : un caissier avec « dashboard » lisait le cockpit global.
+            'systemHealth'
         );
     }
 
@@ -456,17 +459,20 @@ class SyncOverviewController extends AdminController
 
     private function describeQueueLane(string $queue, \Illuminate\Support\Carbon $now): array
     {
-        if (! Schema::hasTable('jobs')) {
+        try {
+            $count = (int) Queue::size($queue);
+        } catch (\Throwable $e) {
             return ['available' => false, 'count' => 0, 'oldest_age_seconds' => null];
         }
 
-        $count = DB::table('jobs')->where('queue', $queue)->count();
-        $oldest = DB::table('jobs')
-            ->where('queue', $queue)
-            ->orderBy('available_at')
-            ->value('available_at');
-
-        $oldestAge = $oldest !== null ? max(0, $now->getTimestamp() - (int) $oldest) : null;
+        $oldestAge = null;
+        if (Schema::hasTable('jobs')) {
+            $oldest = DB::table('jobs')
+                ->where('queue', $queue)
+                ->orderBy('available_at')
+                ->value('available_at');
+            $oldestAge = $oldest !== null ? max(0, $now->getTimestamp() - (int) $oldest) : null;
+        }
 
         return [
             'available' => true,
@@ -607,7 +613,7 @@ class SyncOverviewController extends AdminController
         $dernier = null;
         $ageHeures = null;
         if (is_dir($dossier)) {
-            $fichiers = glob($dossier.DIRECTORY_SEPARATOR.'*.gz') ?: [];
+            $fichiers = glob($dossier.DIRECTORY_SEPARATOR.'*.sql.gz') ?: [];
             if ($fichiers !== []) {
                 usort($fichiers, fn ($a, $b) => filemtime($b) <=> filemtime($a));
                 $dernier = basename($fichiers[0]);
@@ -625,6 +631,10 @@ class SyncOverviewController extends AdminController
         $alertes = [];
         foreach ((array) ($sante['checks'] ?? []) as $quoi => $etat) {
             if ($quoi === 'queue_pending') {
+                if ($etat === 'unknown') {
+                    $alertes[] = "file d'attente : mesure impossible";
+                    continue;
+                }
                 if ((int) $etat > 50) {
                     $alertes[] = "file d'attente : {$etat} messages";
                 }
@@ -636,7 +646,7 @@ class SyncOverviewController extends AdminController
         }
         if ($ageHeures === null) {
             $alertes[] = 'aucune sauvegarde trouvée';
-        } elseif ($ageHeures > 30) {
+        } elseif ($ageHeures > 26) {
             // Même unité que la carte de l'écran : « 111 h » dans l'alerte et
             // « 5 jours » sur la carte décrivaient le même fait de deux façons,
             // ce qui fait douter de l'un des deux.
@@ -661,7 +671,7 @@ class SyncOverviewController extends AdminController
             'sauvegarde' => [
                 'dernier_fichier' => $dernier,
                 'age_heures'      => $ageHeures,
-                'attendu_max_h'   => 30,
+                'attendu_max_h'   => 26,
             ],
             'planificateur' => [
                 'dernier_battement_min' => $ticAgeMin,

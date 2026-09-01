@@ -1,0 +1,26 @@
+[
+  {
+    "level": "error",
+    "text": "Framing 'http://127.0.0.1:8766/' violates the following report-only Content Security Policy directive: \"frame-ancestors 'none'\". The violation has been logged, but no further action has been taken.\n",
+    "location": {
+      "url": "",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788194887696
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/admin/composer/categories/7/profile",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1788194888828
+  }
+]

@@ -59,6 +59,9 @@ class HealthzController extends Controller
             $checks['websocket'],
             $checks['fiscal_chain'],
         ];
+        if (($checks['queue_pending'] ?? null) === 'unknown') {
+            $statusChecks[] = 'fail';
+        }
 
         $okCount   = count(array_filter($statusChecks, fn ($v) => $v === 'ok'));
         $failCount = count(array_filter($statusChecks, fn ($v) => $v === 'fail'));
@@ -212,9 +215,13 @@ class HealthzController extends Controller
      * graphs (default + high). Returns 0 on any driver error so the JSON
      * shape never breaks the monitor's parser.
      */
-    private function checkQueuePending(): int
+    private function checkQueuePending(): int|string
     {
-        return self::probeQueuePending();
+        try {
+            return self::probeQueuePending();
+        } catch (\Throwable $e) {
+            return 'unknown';
+        }
     }
 
     /**
@@ -230,14 +237,19 @@ class HealthzController extends Controller
         // pourri pendant que cette sonde renvoyait « 0 en attente ». La liste vient désormais de
         // `queue.monitored_queues`, et un test découvre les `onQueue()` du code pour la vérifier.
         $total = 0;
+        $probed = 0;
+        $unreadable = [];
         foreach ((array) config('queue.monitored_queues', ['default', 'high']) as $file) {
             try {
                 $total += (int) \Illuminate\Support\Facades\Queue::size((string) $file);
+                $probed++;
             } catch (\Throwable $e) {
-                // Une file illisible ne doit pas casser la sonde entière : on ignore CETTE file,
-                // pas les autres. Renvoyer 0 pour tout serait exactement le faux vert d'origine.
-                continue;
+                $unreadable[] = (string) $file;
             }
+        }
+
+        if ($probed === 0 || $unreadable !== []) {
+            throw new \RuntimeException('queue_unreadable');
         }
 
         return $total;

@@ -1,0 +1,205 @@
+{
+  "wave": "A-admin-dashboard-round-opt",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "states": [
+    {
+      "name": "idle",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-opt/wave-A/01-dashboard.network.json",
+      "notes": "Admin login then hard reload /admin/dashboard. Overflow expanded. No POS/kiosk/orders."
+    }
+  ],
+  "observed": {
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "overview_heading": "Vue d’ensemble",
+    "live_heading": "Suivi en direct",
+    "overview_tiles": [
+      {
+        "label": "Ventes du jour",
+        "value": "0,00 €",
+        "background": "#F4501E",
+        "background_class": "orange",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#F4501E]"
+      },
+      {
+        "label": "Commandes du jour",
+        "value": "0",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#1A1A1A]"
+      },
+      {
+        "label": "Total articles menu",
+        "value": "59",
+        "background": "#FFB800",
+        "background_class": "yellow",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#FFB800]"
+      }
+    ],
+    "live_tiles": [
+      {
+        "label": "Ticket Moyen",
+        "value": "0,00 €",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-[#1A1A1A] text-white"
+      }
+    ],
+    "live_labels": [
+      "Ticket Moyen"
+    ],
+    "live_only_ticket_moyen": true,
+    "live_has_duplicate_ca": false,
+    "live_has_duplicate_commandes": false,
+    "total_articles_menu": "59",
+    "ventes_du_jour": "0,00 €",
+    "commandes_du_jour": "0",
+    "ticket_moyen": "0,00 €",
+    "magenta_in_overview": false,
+    "cayenne_palette": [
+      "orange",
+      "black",
+      "yellow"
+    ],
+    "i18n_leak": false,
+    "body_has_ellipsis_kpi": false
+  },
+  "http_4xx_5xx_excluding_ws_debugbar": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1787988759802
+    },
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "ts": 1787988760443
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1787988760466
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/tacos-cayenne.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/eau.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/coca.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-mega.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-cayenne.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/menu-frites-boisson.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar-oignons.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/storage/7/conversions/frites-thumb.png",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:8766/images/menu/thumbs/fish-burger.webp?v=1787786786",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "image",
+      "errorText": "net::ERR_ABORTED",
+      "ws_or_debugbar": false,
+      "ts": 1787988761708
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "resourceType": "image",
+      "ws_or_debugbar": false,
+      "ts": 1787988762898
+    }
+  ],
+  "final_url": "http://127.0.0.1:8766/admin/dashboard"
+}

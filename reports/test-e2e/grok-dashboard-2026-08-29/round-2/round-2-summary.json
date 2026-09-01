@@ -1,0 +1,37 @@
+{
+  "wave": "round-2-E+B",
+  "base_url": "http://127.0.0.1:8766",
+  "mix_closed_pos_deeplink": true,
+  "mix_bundle": "admin-shell.2649746a.js",
+  "mix_bundle_http": "200 on admin cockpit recapture",
+  "states": [
+    {
+      "name": "cashier-dashboard-sidebar",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar.network.json",
+      "notes": "pos@lecayenne.fr, landing /admin/pos, immediate goto /admin/dashboard, hard-reload, no POS clicks. Sidebar: Tableau De Bord, POS, Commandes Caisse, Historique, Encaissement, Ticket Promo, Réglages Ticket Promo, Commande Uber (Photo), La Roue, Écran Cuisine, Suivi Client. « État du système » ABSENT."
+    },
+    {
+      "name": "observability-system-deeplink",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system.network.json",
+      "notes": "Typed /admin/observability/system as cashier. Vue [data-testid=system-health] did NOT mount. SPA redirected to /admin/dashboard. Cockpit copy « mesure indisponible » absent. Body « aucune » is dashboard « Aucune préparation hors délai », not cockpit sauvegardeTexte. Mix closed POS deep-link vs round-1 (Vue mounted + 403)."
+    },
+    {
+      "name": "admin-cockpit",
+      "url": "http://127.0.0.1:8766/admin/observability/system",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-B/01-cockpit.network.json",
+      "notes": "admin@lecayenne.fr. Vue mounted. Mix admin-shell.2649746a.js HTTP 200. Copy « Consigne dans le journal serveur, pas le journal fiscal NF525. » present. Old « Chaque bascule est tracée » absent. Backup « il y a 24 jours » (not « mesure indisponible » / « aucune »)."
+    }
+  ],
+  "blockers": []
+}

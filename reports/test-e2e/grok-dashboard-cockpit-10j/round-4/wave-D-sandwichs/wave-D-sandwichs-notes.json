@@ -1,0 +1,1193 @@
+{
+  "wave": "D-sandwichs",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "dashboard_to_catalogue": true,
+  "pos_clicked": false,
+  "published": false,
+  "products_created": false,
+  "flags_flipped": false,
+  "clicks": [
+    {
+      "step": "goto_login",
+      "label": "/login"
+    },
+    {
+      "step": "login_submit",
+      "label": "Connexion",
+      "email": "admin@lecayenne.fr",
+      "http": 201
+    },
+    {
+      "step": "dashboard_ready",
+      "label": "Ventes du jour / Accès rapides",
+      "url": "http://127.0.0.1:8766/admin/dashboard"
+    },
+    {
+      "step": "click_acces_catalogue",
+      "label": "Catalogue"
+    },
+    {
+      "step": "click_category_sandwichs",
+      "label": "Sandwichs",
+      "testid": "catalog-studio-category-row-1",
+      "count_text": "5 articles"
+    },
+    {
+      "step": "click_wizard_de_la_categorie",
+      "label": "Wizard De La Catégorie"
+    },
+    {
+      "step": "click_pain_step",
+      "label": "Choisis ton pain (if present)",
+      "clicked": true,
+      "error": null
+    }
+  ],
+  "categories": [
+    {
+      "testid": "catalog-studio-category-row-1",
+      "id": "1",
+      "name": "Sandwichs",
+      "count_text": "5 articles",
+      "product_count": 5,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-21",
+      "id": "21",
+      "name": "Tacos Signature",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-66",
+      "id": "66",
+      "name": "Uber (technique)",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-2",
+      "id": "2",
+      "name": "Galette",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-3",
+      "id": "3",
+      "name": "Sandwich Classique",
+      "count_text": "0 articles",
+      "product_count": 0,
+      "empty": true
+    },
+    {
+      "testid": "catalog-studio-category-row-4",
+      "id": "4",
+      "name": "Burgers",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-5",
+      "id": "5",
+      "name": "Tacos",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-6",
+      "id": "6",
+      "name": "Bols",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-7",
+      "id": "7",
+      "name": "Frites",
+      "count_text": "6 articles",
+      "product_count": 6,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-8",
+      "id": "8",
+      "name": "Suppléments",
+      "count_text": "10 articles",
+      "product_count": 10,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-9",
+      "id": "9",
+      "name": "Desserts",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-10",
+      "id": "10",
+      "name": "Boissons",
+      "count_text": "15 articles",
+      "product_count": 15,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-11",
+      "id": "11",
+      "name": "Menu enfant",
+      "count_text": "2 articles",
+      "product_count": 2,
+      "empty": false
+    },
+    {
+      "testid": "catalog-studio-category-row-27",
+      "id": "27",
+      "name": "Technique (interne — upsell)",
+      "count_text": "3 articles",
+      "product_count": 3,
+      "empty": false
+    }
+  ],
+  "chosen_category": {
+    "testid": "catalog-studio-category-row-1",
+    "id": "1",
+    "name": "Sandwichs",
+    "count_text": "5 articles",
+    "product_count": 5,
+    "empty": false
+  },
+  "wizard_clicked": true,
+  "wizard_url": "http://127.0.0.1:8766/admin/items/studio",
+  "wizard_wait": {
+    "overlay_visible": true,
+    "iframe_src": "/admin/categories/1/composer",
+    "frame_ready": true,
+    "full_page_composer": false,
+    "wait_error": null
+  },
+  "pain_click": {
+    "clicked": true,
+    "error": null
+  },
+  "rail": {
+    "url": "http://127.0.0.1:8766/admin/items/studio",
+    "title": "Le Cayenne",
+    "active_category": "Sandwichs 5 articles",
+    "wizard_entry_visible": true,
+    "wizard_button_text": "Wizard De La Catégorie",
+    "wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "empty_state": null,
+    "product_count": 5,
+    "products": [
+      {
+        "name": "Sandwich Classique",
+        "category": "Sandwichs",
+        "meta": "7,40 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-classique.webp?v=1787786786",
+        "photo_alt": "Sandwich Classique",
+        "has_photo": true
+      },
+      {
+        "name": "Terminator",
+        "category": "Sandwichs",
+        "meta": "9,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-terminator.webp?v=1787786786",
+        "photo_alt": "Terminator",
+        "has_photo": true
+      },
+      {
+        "name": "Méga",
+        "category": "Sandwichs",
+        "meta": "8,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-mega.webp?v=1787786786",
+        "photo_alt": "Méga",
+        "has_photo": true
+      },
+      {
+        "name": "Suprême",
+        "category": "Sandwichs",
+        "meta": "7,00 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-supreme.webp?v=1787786786",
+        "photo_alt": "Suprême",
+        "has_photo": true
+      },
+      {
+        "name": "Cayenne",
+        "category": "Sandwichs",
+        "meta": "7,40 € Actif",
+        "photo_src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-cayenne.webp?v=1787786786",
+        "photo_alt": "Cayenne",
+        "has_photo": true
+      }
+    ],
+    "body_snippet": "PILOTAGE CATALOGUE Catalogue Catégories, articles, parcours et stock Ajouter Une Catégorie D’articles Ajouter Un Article Catégories 14 Toutes les catégories 55 articles Sandwichs Ce wizard s'applique à TOUS les produits de cette catégorie. Wizard De La Catégorie Sandwichs 5 articles Tacos Signature 0 articles Uber (technique) 0 articles Galette 3 articles Sandwich Classique 0 articles Burgers 6 articles Tacos 3 articles Bols 2 articles Frites 6 articles Suppléments 10 articles Desserts 3 articles Boissons 15 articles Menu enfant 2 articles Technique (interne — upsell) 3 articles Paramètres avancés Tableau de stock Sandwich Classique Sandwichs 7,40 € Actif Terminator Sandwichs 9,00 € Actif Méga Sandwichs 8,00 € Actif Suprême Sandwichs 7,00 € Actif Cayenne Sandwichs 7,40 € Actif",
+    "raw_labels": []
+  },
+  "composer": {
+    "mode": "drawer-iframe",
+    "overlay_title": "Wizard de la catégorie : Sandwichs",
+    "overlay_help": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+    "iframe_src": "/admin/categories/1/composer",
+    "overlay_text": "WIZARD PRODUIT Wizard de la catégorie : Sandwichs Ce wizard s'applique à TOUS les produits de cette catégorie. Ouvrir En Pleine Page Fermer",
+    "inner": {
+      "url": "http://127.0.0.1:8766/admin/categories/1/composer",
+      "title": "Le Cayenne",
+      "composer_name": "Wizard de la catégorie : Sandwichs",
+      "composer_category": "Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse.",
+      "publish_state": "Brouillon",
+      "publish_button_text": "Publier",
+      "unpublish_button_text": null,
+      "draft_not_till": "La caisse lit encore la version publiee. Ceci est un brouillon.",
+      "empty_state": "",
+      "load_error": "",
+      "step_count": 6,
+      "step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Viande 2",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "steps": [
+        {
+          "testid": "composer-step-row-120",
+          "index": 0,
+          "label": "Choisis ton pain",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk",
+            "Inactive"
+          ],
+          "chip_inactive": true,
+          "selected": false,
+          "text": "Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive"
+        },
+        {
+          "testid": "composer-step-row-121",
+          "index": 1,
+          "label": "Choisis ta viande",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "chip_inactive": false,
+          "selected": false,
+          "text": "Choisis ta viande item_attribute 1 / 1 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-122",
+          "index": 2,
+          "label": "Viande 2",
+          "source_line": "item_attribute",
+          "chips": [
+            "0 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "chip_inactive": false,
+          "selected": false,
+          "text": "Viande 2 item_attribute 0 / 1 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-123",
+          "index": 3,
+          "label": "Choisis ta sauce",
+          "source_line": "item_attribute",
+          "chips": [
+            "1 / 1",
+            "POS",
+            "Kiosk"
+          ],
+          "chip_inactive": false,
+          "selected": false,
+          "text": "Choisis ta sauce item_attribute 1 / 1 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-124",
+          "index": 4,
+          "label": "Choisis tes garnitures",
+          "source_line": "crudite",
+          "chips": [
+            "0 / 6",
+            "POS",
+            "Kiosk"
+          ],
+          "chip_inactive": false,
+          "selected": false,
+          "text": "Choisis tes garnitures crudite 0 / 6 POS Kiosk"
+        },
+        {
+          "testid": "composer-step-row-125",
+          "index": 5,
+          "label": "Suppléments",
+          "source_line": "supplement",
+          "chips": [
+            "0 / 5",
+            "POS",
+            "Kiosk"
+          ],
+          "chip_inactive": false,
+          "selected": false,
+          "text": "Suppléments supplement 0 / 5 POS Kiosk"
+        }
+      ],
+      "vue_steps": [
+        {
+          "id": 120,
+          "step_key": "pain",
+          "label": "Choisis ton pain",
+          "source_type": "item_attribute",
+          "source_ref": "",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": false,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 121,
+          "step_key": "viande",
+          "label": "Choisis ta viande",
+          "source_type": "item_attribute",
+          "source_ref": "Viande 1",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 122,
+          "step_key": "viande_2",
+          "label": "Viande 2",
+          "source_type": "item_attribute",
+          "source_ref": "Viande 2",
+          "min_select": 0,
+          "max_select": 1,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 123,
+          "step_key": "sauce",
+          "label": "Choisis ta sauce",
+          "source_type": "item_attribute",
+          "source_ref": "Sauce (1ère Gratuite)",
+          "min_select": 1,
+          "max_select": 1,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 124,
+          "step_key": "garnitures",
+          "label": "Choisis tes garnitures",
+          "source_type": "extra_group",
+          "source_ref": "crudite",
+          "min_select": 0,
+          "max_select": 6,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        },
+        {
+          "id": 125,
+          "step_key": "supplements",
+          "label": "Suppléments",
+          "source_type": "extra_group",
+          "source_ref": "supplement",
+          "min_select": 0,
+          "max_select": 5,
+          "is_active": true,
+          "visible_on": [
+            "pos",
+            "kiosk"
+          ]
+        }
+      ],
+      "vue_step_keys": [
+        "pain",
+        "viande",
+        "viande_2",
+        "sauce",
+        "garnitures",
+        "supplements"
+      ],
+      "vue_meta": {
+        "found": true,
+        "branch_id_scope": null,
+        "is_published": false,
+        "branches": [
+          {
+            "id": 10,
+            "name": "Collier and Sons Branch"
+          },
+          {
+            "id": 9,
+            "name": "Skiles-Johns Branch"
+          },
+          {
+            "id": 8,
+            "name": "Brekke, Kub and Reichert Branch"
+          },
+          {
+            "id": 7,
+            "name": "Shields Inc Branch"
+          },
+          {
+            "id": 2,
+            "name": "Stiedemann and Sons Branch"
+          },
+          {
+            "id": 1,
+            "name": "Le Cayenne (principal)"
+          }
+        ],
+        "selected_step_id": null,
+        "preview_branches": [
+          {
+            "id": 1,
+            "name": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "branch_scope": {
+        "value": "Toutes les branches",
+        "label": "Toutes les branches",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "Toutes les branches",
+            "label": "Toutes les branches"
+          },
+          {
+            "value": "10",
+            "label": "Collier and Sons Branch"
+          },
+          {
+            "value": "9",
+            "label": "Skiles-Johns Branch"
+          },
+          {
+            "value": "8",
+            "label": "Brekke, Kub and Reichert Branch"
+          },
+          {
+            "value": "7",
+            "label": "Shields Inc Branch"
+          },
+          {
+            "value": "2",
+            "label": "Stiedemann and Sons Branch"
+          },
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_branch": {
+        "value": "1",
+        "label": "Le Cayenne (principal)",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "1",
+            "label": "Le Cayenne (principal)"
+          }
+        ]
+      },
+      "preview_empty": null,
+      "live_preview_visible": true,
+      "preview_pos_step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Viande 2",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "preview_kiosk_step_labels": [
+        "Choisis ton pain",
+        "Choisis ta viande",
+        "Viande 2",
+        "Choisis ta sauce",
+        "Choisis tes garnitures",
+        "Suppléments"
+      ],
+      "body_has_collier": true,
+      "body_has_le_cayenne": true,
+      "body_has_viande_2": true,
+      "body_has_inactive": true,
+      "body_has_brouillon": true,
+      "body_has_publie": true,
+      "source_ref": {
+        "value": "",
+        "label": "Aucune source — page vide en caisse",
+        "empty_value": true,
+        "options": [
+          {
+            "value": "",
+            "label": "Aucune source — page vide en caisse"
+          },
+          {
+            "value": "5",
+            "label": "Sauce (1ère Gratuite)"
+          },
+          {
+            "value": "6",
+            "label": "Type de Pain"
+          },
+          {
+            "value": "1",
+            "label": "Viande 1"
+          },
+          {
+            "value": "2",
+            "label": "Viande 2"
+          }
+        ]
+      },
+      "source_type": {
+        "value": "item_attribute",
+        "label": "Attribut produit",
+        "empty_value": false,
+        "options": [
+          {
+            "value": "item_attribute",
+            "label": "Attribut produit"
+          },
+          {
+            "value": "extra_group",
+            "label": "Groupe extras"
+          },
+          {
+            "value": "addon",
+            "label": "Addon catalogue"
+          }
+        ]
+      },
+      "source_empty_message": null,
+      "current_step_label_input": "Choisis ton pain",
+      "current_step_active_checked": null,
+      "photo": {
+        "tag": "IMG",
+        "is_img": true,
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-sandwich-cayenne.webp?v=1787786786",
+        "alt": "Sandwichs",
+        "fallback_text": null
+      },
+      "raw_labels": [],
+      "body_has_source_ref_human": true,
+      "body_has_toutes_les_options": false,
+      "body_snippet": "Français Anglais Français Bonjour Admin Le Cayenne Admin Le Cayenne admin@lecayenne.fr +330600000000 250,90 € Modifier Le Profil Changer Le Mot De Passe Appareils Connectés Déconnexion Tableau de bord POS Produits & Stock Conso & Stock Ajustement stock Catalogue Attribut d’articles Ingrédients Scan Facture Commandes caisse Historique Encaissement Vue caisse unifiée Caisse livreur Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client COMMUNICATIONS Notification pushs Messages Abonnés UTILISATEURS Administrateurs Employés Chefs COMPTES Transactions RAPPORTS Rapport des ventes Rapport articles CONFIGURATION Paramètres État du système WIZARD DE LA CATÉGORIE Wizard de la catégorie : Sandwichs Les produits déjà dans la catégorie reçoivent ce wizard au moment de Publier. Un produit ajouté ensuite : republier. Dépublier le retire de la caisse. Portee branche Toutes les branches Collier and Sons Branch Skiles-Johns Branch Brekke, Kub and Reichert Branch Shields Inc Branch Stiedemann and Sons Branch Le Cayenne (principal) Retour À La Catégorie Choisir Un Template Ajouter Une Page PAGES 6 Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive Choisis ta viande item_attribute 1 / 1 POS Kiosk Viande 2 item_attribute 0 / 1 POS Kiosk Choisis ta sauce item_attribute 1 / 1 POS Kiosk Choisis tes garnitures crudite 0 / 6 POS Kiosk Suppléments supplement 0 / 5 POS Kiosk Edition de la page Attribut produit Brouillon La caisse lit encore la version publiee. Ceci est un brouillon. Nom de la page D'où viennent les choix ? Détermine la base : ‘Attribut produit’ = tes attributs (viandes, sauces…). ‘Groupe d'extras’ = tes extras. ‘Add-on’ = tes add-ons catalogue. Attribut produit Groupe extras Addon catalogue Limiter à un groupe précis (optionnel) Vide = aucun choix en caisse (sauf extras : le nom de la page sert de groupe). Choisis un groupe précis. Aucune source — page vide en caisse Sauce (1ère Gratuite) Type de Pain Viande 1 Viande 2 Minimum Combien d'articles le client doit minimum choisir. 0 = optionnel, 1+ = obligatoire. 1 Maximum Combien d'articles le client peut maximum choisir. 1 = Obligatoire, le client doit choisir ex"
+    }
+  },
+  "api_profile": {
+    "url": "http://127.0.0.1:8766/api/admin/composer/categories/1/profile",
+    "is_published": false,
+    "template": "sandwich",
+    "branch_id_scope": null,
+    "step_count": 6,
+    "steps": [
+      {
+        "index": 0,
+        "id": 120,
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 1,
+        "id": 121,
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 1",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 2,
+        "id": 122,
+        "step_key": "viande_2",
+        "label": "Viande 2",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 2",
+        "min_select": 0,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 3,
+        "id": 123,
+        "step_key": "sauce",
+        "label": "Choisis ta sauce",
+        "source_type": "item_attribute",
+        "source_ref": "Sauce (1ère Gratuite)",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 4,
+        "id": 124,
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_type": "extra_group",
+        "source_ref": "crudite",
+        "min_select": 0,
+        "max_select": 6,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      },
+      {
+        "index": 5,
+        "id": 125,
+        "step_key": "supplements",
+        "label": "Suppléments",
+        "source_type": "extra_group",
+        "source_ref": "supplement",
+        "min_select": 0,
+        "max_select": 5,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ]
+      }
+    ]
+  },
+  "facts": {
+    "every_step": [
+      {
+        "index": 0,
+        "id": 120,
+        "step_key": "pain",
+        "label": "Choisis ton pain",
+        "source_type": "item_attribute",
+        "source_ref": "",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": false,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "1 / 1",
+          "POS",
+          "Kiosk",
+          "Inactive"
+        ],
+        "ui_chip_inactive": true,
+        "ui_text": "Choisis ton pain item_attribute 1 / 1 POS Kiosk Inactive"
+      },
+      {
+        "index": 1,
+        "id": 121,
+        "step_key": "viande",
+        "label": "Choisis ta viande",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 1",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "1 / 1",
+          "POS",
+          "Kiosk"
+        ],
+        "ui_chip_inactive": false,
+        "ui_text": "Choisis ta viande item_attribute 1 / 1 POS Kiosk"
+      },
+      {
+        "index": 2,
+        "id": 122,
+        "step_key": "viande_2",
+        "label": "Viande 2",
+        "source_type": "item_attribute",
+        "source_ref": "Viande 2",
+        "min_select": 0,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "0 / 1",
+          "POS",
+          "Kiosk"
+        ],
+        "ui_chip_inactive": false,
+        "ui_text": "Viande 2 item_attribute 0 / 1 POS Kiosk"
+      },
+      {
+        "index": 3,
+        "id": 123,
+        "step_key": "sauce",
+        "label": "Choisis ta sauce",
+        "source_type": "item_attribute",
+        "source_ref": "Sauce (1ère Gratuite)",
+        "min_select": 1,
+        "max_select": 1,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "1 / 1",
+          "POS",
+          "Kiosk"
+        ],
+        "ui_chip_inactive": false,
+        "ui_text": "Choisis ta sauce item_attribute 1 / 1 POS Kiosk"
+      },
+      {
+        "index": 4,
+        "id": 124,
+        "step_key": "garnitures",
+        "label": "Choisis tes garnitures",
+        "source_type": "extra_group",
+        "source_ref": "crudite",
+        "min_select": 0,
+        "max_select": 6,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "0 / 6",
+          "POS",
+          "Kiosk"
+        ],
+        "ui_chip_inactive": false,
+        "ui_text": "Choisis tes garnitures crudite 0 / 6 POS Kiosk"
+      },
+      {
+        "index": 5,
+        "id": 125,
+        "step_key": "supplements",
+        "label": "Suppléments",
+        "source_type": "extra_group",
+        "source_ref": "supplement",
+        "min_select": 0,
+        "max_select": 5,
+        "is_active": true,
+        "visible_on": [
+          "pos",
+          "kiosk"
+        ],
+        "ui_chips": [
+          "0 / 5",
+          "POS",
+          "Kiosk"
+        ],
+        "ui_chip_inactive": false,
+        "ui_text": "Suppléments supplement 0 / 5 POS Kiosk"
+      }
+    ],
+    "step_keys": [
+      "pain",
+      "viande",
+      "viande_2",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_labels": [
+      "Choisis ton pain",
+      "Choisis ta viande",
+      "Viande 2",
+      "Choisis ta sauce",
+      "Choisis tes garnitures",
+      "Suppléments"
+    ],
+    "viande_2_exists": true,
+    "viande_2_step": {
+      "index": 2,
+      "id": 122,
+      "step_key": "viande_2",
+      "label": "Viande 2",
+      "source_type": "item_attribute",
+      "source_ref": "Viande 2",
+      "min_select": 0,
+      "max_select": 1,
+      "is_active": true,
+      "visible_on": [
+        "pos",
+        "kiosk"
+      ],
+      "ui_chips": [
+        "0 / 1",
+        "POS",
+        "Kiosk"
+      ],
+      "ui_chip_inactive": false,
+      "ui_text": "Viande 2 item_attribute 0 / 1 POS Kiosk"
+    },
+    "body_has_viande_2": true,
+    "pain_exists": true,
+    "pain_is_active": false,
+    "pain_inactive": true,
+    "pain_ui_chip_inactive": true,
+    "pain_chips": [
+      "1 / 1",
+      "POS",
+      "Kiosk",
+      "Inactive"
+    ],
+    "publish_state_ui": "Brouillon",
+    "is_published_api": false,
+    "brouillon_vs_publie": "Brouillon",
+    "preview_filiale_name": "Le Cayenne (principal)",
+    "preview_filiale_value": "1",
+    "preview_filiale_options": [
+      {
+        "value": "1",
+        "label": "Le Cayenne (principal)"
+      }
+    ],
+    "branch_scope_label": "Toutes les branches",
+    "template": "sandwich"
+  },
+  "step_labels": [
+    "Choisis ton pain",
+    "Choisis ta viande",
+    "Viande 2",
+    "Choisis ta sauce",
+    "Choisis tes garnitures",
+    "Suppléments"
+  ],
+  "step_keys": [
+    "pain",
+    "viande",
+    "viande_2",
+    "sauce",
+    "garnitures",
+    "supplements"
+  ],
+  "viande_2_exists": true,
+  "pain_inactive": true,
+  "brouillon_vs_publie": "Brouillon",
+  "preview_filiale_name": "Le Cayenne (principal)",
+  "publish_state": "Brouillon",
+  "draft_not_till": "La caisse lit encore la version publiee. Ceci est un brouillon.",
+  "branch_scope": {
+    "value": "Toutes les branches",
+    "label": "Toutes les branches",
+    "empty_value": false,
+    "options": [
+      {
+        "value": "Toutes les branches",
+        "label": "Toutes les branches"
+      },
+      {
+        "value": "10",
+        "label": "Collier and Sons Branch"
+      },
+      {
+        "value": "9",
+        "label": "Skiles-Johns Branch"
+      },
+      {
+        "value": "8",
+        "label": "Brekke, Kub and Reichert Branch"
+      },
+      {
+        "value": "7",
+        "label": "Shields Inc Branch"
+      },
+      {
+        "value": "2",
+        "label": "Stiedemann and Sons Branch"
+      },
+      {
+        "value": "1",
+        "label": "Le Cayenne (principal)"
+      }
+    ]
+  },
+  "preview_branch": {
+    "value": "1",
+    "label": "Le Cayenne (principal)",
+    "empty_value": false,
+    "options": [
+      {
+        "value": "1",
+        "label": "Le Cayenne (principal)"
+      }
+    ]
+  },
+  "preview_empty": null,
+  "live_preview_visible": true,
+  "preview_pos_step_labels": [
+    "Choisis ton pain",
+    "Choisis ta viande",
+    "Viande 2",
+    "Choisis ta sauce",
+    "Choisis tes garnitures",
+    "Suppléments"
+  ],
+  "preview_kiosk_step_labels": [
+    "Choisis ton pain",
+    "Choisis ta viande",
+    "Viande 2",
+    "Choisis ta sauce",
+    "Choisis tes garnitures",
+    "Suppléments"
+  ],
+  "body_has_collier": true,
+  "body_has_le_cayenne": true,
+  "clone_verdict": {
+    "looks_like_tacos_clone": true,
+    "has_viande_2": true,
+    "has_viande_3": false,
+    "expected_keys": [
+      "pain",
+      "viande",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "present_expected_keys": [
+      "pain",
+      "viande",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_keys": [
+      "pain",
+      "viande",
+      "viande_2",
+      "sauce",
+      "garnitures",
+      "supplements"
+    ],
+    "step_labels": [
+      "Choisis ton pain",
+      "Choisis ta viande",
+      "Viande 2",
+      "Choisis ta sauce",
+      "Choisis tes garnitures",
+      "Suppléments"
+    ]
+  },
+  "source_ref": {
+    "value": "",
+    "label": "Aucune source — page vide en caisse",
+    "empty_value": true,
+    "options": [
+      {
+        "value": "",
+        "label": "Aucune source — page vide en caisse"
+      },
+      {
+        "value": "5",
+        "label": "Sauce (1ère Gratuite)"
+      },
+      {
+        "value": "6",
+        "label": "Type de Pain"
+      },
+      {
+        "value": "1",
+        "label": "Viande 1"
+      },
+      {
+        "value": "2",
+        "label": "Viande 2"
+      }
+    ]
+  },
+  "source_empty_message": null,
+  "photos": {
+    "rail": [
+      {
+        "name": "Sandwich Classique",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-classique.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Terminator",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-terminator.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Méga",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-mega.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Suprême",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-supreme.webp?v=1787786786",
+        "has_photo": true
+      },
+      {
+        "name": "Cayenne",
+        "src": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-cayenne.webp?v=1787786786",
+        "has_photo": true
+      }
+    ],
+    "composer": {
+      "tag": "IMG",
+      "is_img": true,
+      "src": "http://127.0.0.1:8766/images/menu/thumbs/cat-sandwich-cayenne.webp?v=1787786786",
+      "alt": "Sandwichs",
+      "fallback_text": null
+    }
+  },
+  "raw_labels": {
+    "rail": [],
+    "composer": [],
+    "parent_dom": [
+      "kiosk.js",
+      "undefined",
+      "kiosk.php",
+      "kiosk.php."
+    ]
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194821967
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194827149
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194827152
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788194827153
+    }
+  ],
+  "http_4xx_ignored_debugbar_english_storage": [
+    {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "status": 404
+    }
+  ],
+  "mutating_requests_after_login_excluding_auth": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+      "ts": 1788194828150
+    }
+  ],
+  "states": [
+    {
+      "name": "idle-rail",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/01-rail.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/01-rail.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/01-rail.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/01-rail.network.json",
+      "notes": "From dashboard Accès rapides Catalogue, clicked category « Sandwichs ». Product cards=5. Wizard button=\"Wizard De La Catégorie\"."
+    },
+    {
+      "name": "wizard",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/02-wizard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/02-wizard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/02-wizard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-4/wave-D-sandwichs/02-wizard.network.json",
+      "notes": "Clicked « Wizard de la catégorie ». Overlay=true iframe_src=/admin/categories/1/composer full_page=false. Pain step clicked=true. Did not publish / create / flip flags / POS."
+    }
+  ],
+  "blockers": [],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio"
+}

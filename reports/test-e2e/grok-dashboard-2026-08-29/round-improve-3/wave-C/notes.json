@@ -1,0 +1,297 @@
+{
+  "wave": "C",
+  "round": "round-improve-3",
+  "base_url": "http://127.0.0.1:8766",
+  "name": "idle-studio-hard-reload-toutes-categories",
+  "url": "http://127.0.0.1:8766/admin/items/studio",
+  "title": "Le Cayenne",
+  "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-3/wave-C/01-studio.png",
+  "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-3/wave-C/01-studio.dom.html",
+  "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-3/wave-C/01-studio.console.json",
+  "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-improve-3/wave-C/01-studio.network.json",
+  "expected_shell": "admin-shell.8468e026.js",
+  "admin_shell_src": null,
+  "admin_shell_loaded_expected": false,
+  "shell_network_hits": [
+    {
+      "url": "http://127.0.0.1:8766/js/admin-shell.8468e026.js",
+      "status": 200,
+      "fromCache": false,
+      "ts": 1788039172667
+    },
+    {
+      "url": "http://127.0.0.1:8766/js/admin-shell.8468e026.js",
+      "status": 200,
+      "fromCache": false,
+      "ts": 1788039173399
+    }
+  ],
+  "category_count": 14,
+  "sidebar_counter": "14",
+  "category_names": [
+    "Sandwichs",
+    "Tacos Signature",
+    "Uber (technique)",
+    "Galette",
+    "Sandwich Classique",
+    "Burgers",
+    "Tacos",
+    "Bols",
+    "Frites",
+    "Suppléments",
+    "Desserts",
+    "Boissons",
+    "Menu enfant",
+    "Technique (interne — upsell)"
+  ],
+  "rail": [
+    {
+      "name": "Sandwichs",
+      "countText": "5 articles"
+    },
+    {
+      "name": "Tacos Signature",
+      "countText": "0 articles"
+    },
+    {
+      "name": "Uber (technique)",
+      "countText": "0 articles"
+    },
+    {
+      "name": "Galette",
+      "countText": "3 articles"
+    },
+    {
+      "name": "Sandwich Classique",
+      "countText": "0 articles"
+    },
+    {
+      "name": "Burgers",
+      "countText": "6 articles"
+    },
+    {
+      "name": "Tacos",
+      "countText": "3 articles"
+    },
+    {
+      "name": "Bols",
+      "countText": "2 articles"
+    },
+    {
+      "name": "Frites",
+      "countText": "6 articles"
+    },
+    {
+      "name": "Suppléments",
+      "countText": "10 articles"
+    },
+    {
+      "name": "Desserts",
+      "countText": "3 articles"
+    },
+    {
+      "name": "Boissons",
+      "countText": "15 articles"
+    },
+    {
+      "name": "Menu enfant",
+      "countText": "2 articles"
+    },
+    {
+      "name": "Technique (interne — upsell)",
+      "countText": "3 articles"
+    }
+  ],
+  "technique_interne_in_rail": true,
+  "technique_interne_name": "Technique (interne — upsell)",
+  "all_categories_label": "Toutes les catégories",
+  "all_categories_small": "55 articles",
+  "all_categories_text": "Toutes les catégories 55 articles",
+  "all_categories_active": true,
+  "all_categories_article_count": 55,
+  "product_count_grid": 55,
+  "product_names": [
+    "Tacos XL",
+    "Galette Classique",
+    "Sandwich Classique",
+    "Perrier 33cl",
+    "Hawaï 33cl",
+    "Fuze Tea 33cl",
+    "Fanta Citron 33cl",
+    "Ice Tea Pêche 33cl",
+    "Tropico 33cl",
+    "Coca Cherry 33cl",
+    "Grande Frites Cheddar + Oignons frits",
+    "Grande Frites Cheddar fondu",
+    "Petite Frites Cheddar + Oignons frits",
+    "Petite Frites Cheddar fondu",
+    "Menu Enfant Chicken Burger",
+    "Terminator",
+    "Méga",
+    "Suprême",
+    "Grill Burger",
+    "Big Burger",
+    "Fish Burger",
+    "Double Cheese",
+    "Cheese Burger",
+    "Tacos L",
+    "Capri-Sun",
+    "Eau Plate 50cl",
+    "Orangina 33cl",
+    "Oasis Tropical 33cl",
+    "Sprite 33cl",
+    "Fanta Orange 33cl",
+    "Coca-Cola Zero 33cl",
+    "Coca-Cola 33cl",
+    "Tiramisu",
+    "Tarte Daim",
+    "Glace",
+    "Bol Riz",
+    "Bol Frites",
+    "Menu Enfant Nuggets",
+    "Chicken Burger",
+    "Boursin",
+    "Grande Frites",
+    "Petite Frites",
+    "Tacos M",
+    "Galette Cayenne",
+    "Galette Normale",
+    "Cayenne",
+    "Boule gratinée",
+    "Champignons",
+    "Oignons frits",
+    "Jambon",
+    "Légumes sautés",
+    "Œuf",
+    "Emmental",
+    "Raclette",
+    "Cheddar"
+  ],
+  "e2e_playwright_in_grid": false,
+  "e2e_playwright_in_body": false,
+  "e2e_products": [],
+  "breadcrumb_string": "Tableau de bord / Articles / Catalogue",
+  "breadcrumb_items": [
+    "Tableau de bord",
+    "Articles",
+    "Catalogue"
+  ],
+  "breadcrumb_links": [
+    "Tableau de bord",
+    "Articles"
+  ],
+  "breadcrumb_first": "Tableau de bord",
+  "breadcrumb_tableau_de_bord": true,
+  "breadcrumb_tableau_de_bord_title_case": false,
+  "flag_imgs": [
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    },
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    },
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    }
+  ],
+  "language_flag_imgs": [
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    },
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    },
+    {
+      "src": "/images/language/english.png",
+      "currentSrc": "http://127.0.0.1:8766/images/language/english.png",
+      "alt": "",
+      "className": "w-4 h-4 rounded-full"
+    }
+  ],
+  "flag_srcs": [
+    "/images/language/english.png"
+  ],
+  "flag_src_has_storage_1_english": false,
+  "flag_src_has_images_language": true,
+  "english_png_hits": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "ts": 1788039170830
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039171451
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "method": "GET",
+      "status": 404,
+      "ts": 1788039172769
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039173066
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039173728
+    }
+  ],
+  "english_png_storage_1_get_count": 2,
+  "english_png_storage_1_404_count": 2,
+  "english_png_images_language_hits": [
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039171451
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039173066
+    },
+    {
+      "kind": "http",
+      "url": "http://127.0.0.1:8766/images/language/english.png",
+      "method": "GET",
+      "status": 200,
+      "ts": 1788039173728
+    }
+  ],
+  "console_error_count": 8,
+  "console_warning_count": 0,
+  "network_interesting_count": 60,
+  "notes": "Logged in as admin, opened /admin/items/studio, hard-reloaded Mix admin-shell.8468e026.js with cache disabled, stayed on Toutes les catégories. No items created. No kiosk."
+}

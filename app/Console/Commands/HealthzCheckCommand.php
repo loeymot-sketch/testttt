@@ -63,6 +63,9 @@ class HealthzCheckCommand extends Command
             $checks['websocket'],
             $checks['fiscal_chain'],
         ];
+        if (($checks['queue_pending'] ?? null) === 'unknown') {
+            $statusChecks[] = 'fail';
+        }
 
         $okCount   = count(array_filter($statusChecks, fn ($v) => $v === 'ok'));
         $failCount = count(array_filter($statusChecks, fn ($v) => $v === 'fail'));
@@ -105,7 +108,7 @@ class HealthzCheckCommand extends Command
             $this->line((string) json_encode($payload, JSON_UNESCAPED_SLASHES));
         } else {
             $this->line(sprintf(
-                '[%s] healthz=%s db=%s redis=%s ws=%s fiscal=%s queue=%d',
+                '[%s] healthz=%s db=%s redis=%s ws=%s fiscal=%s queue=%s',
                 $payload['timestamp'],
                 $status,
                 $checks['db'],
@@ -174,8 +177,12 @@ class HealthzCheckCommand extends Command
      * [OPS-2 2026-06-04] Driver-agnostic queue depth (default+high) via the
      * shared probe — the old `jobs` table count was always 0 under redis.
      */
-    private function checkQueuePending(): int
+    private function checkQueuePending(): int|string
     {
-        return \App\Http\Controllers\HealthzController::probeQueuePending();
+        try {
+            return \App\Http\Controllers\HealthzController::probeQueuePending();
+        } catch (\Throwable $e) {
+            return 'unknown';
+        }
     }
 }

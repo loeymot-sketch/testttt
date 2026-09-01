@@ -1,0 +1,123 @@
+{
+  "wave": "round-opt-3-A+C+E",
+  "round": "opt-3",
+  "states_reviewed": 4,
+  "open_p0": 0,
+  "open_p1": 0,
+  "open_p2": 4,
+  "open_p3": 0,
+  "findings": [
+    {
+      "id": "W-T-002",
+      "severity": "P2",
+      "class": "technical",
+      "category": "unexpected_4xx",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-A/01-dashboard.png",
+      "evidence": "Same leftover as opt-2 W-T-002. wave-A 01-dashboard.network.json: GET /storage/1/english.png → 404 (×3). Same 404 in wave-C 01-studio.network.json (×5) and wave-E 01-dashboard-sidebar.network.json + 02-observability-system.network.json. Consoles type/level=error « Failed to load resource: 404 » on english.png + fonts.gstatic.com Inter woff2 CORS (cache-control preflight) + net::ERR_FAILED. PNGs still show Français + empty peach flag chips. Decorative language asset, not a silent KPI API 4xx. Not vendor.js app logic.",
+      "why_real": "Quartet agrees across A+C+E (network + console + header chips). Protocol allowlist does not cover /storage/*.png 404. Identical class/URL as opt-2 — not a new P0.",
+      "fix_hint": "Serve language flags from same-origin APP_URL so :8766 does not 404 /storage/1/english.png; drop cache-control on Google Fonts preflight or self-host Inter."
+    },
+    {
+      "id": "W-T-003",
+      "severity": "P2",
+      "class": "technical",
+      "category": "numeric_integrity",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-A/01-dashboard.png",
+      "evidence": "Unchanged vs opt-2. Dashboard yellow tile « Total articles menu » = 55 (PNG wave-A + wave-E cashier; DOM `>55</h4>` present; `>59</h4>` absent). Studio sidebar « Toutes les catégories » still « 59 articles » (PNG + DOM). Badge 14. Visible category row product_count sum from PNG = 58 (Sandwichs 5 + Galette 3 + Burgers 6 + Tacos 3 + Bols 2 + Frites 6 + Suppléments 10 + Desserts 3 + Boissons 15 + Menu enfant 2 + Technique interne 3; zeros: Tacos Signature / Uber / Sandwich Classique). notes.json db_categories_count=64 (Aliquam/Rerum/AUDIT-/E2E rows remain in item_categories, masked from studio UI). Articles Mis En Avant now shows E2E_PLAYWRIGHT_STUDIO_ITEM on opt-3 admin + cashier PNGs (not in opt-2 featured 8) — leftover G-DATA slot rotation, not a return of 123, not a new P0.",
+      "why_real": "Two admin surfaces, two filters by design: studio item/lists keeps interne; dashboard KPI drops interne/Uber/pollution. Same merchant still sees 55 vs 59 vs 58 without a label. 64 DB rows are the mask, not a flake. P2 (confusing labels + leftover featured item), not P0: hiding interne in studio would contradict the keep-list (Technique interne / Uber technique must stay in the sidebar). Featured 8 differs between opt-2 and opt-3 and between cashier 01 vs 02 — consistent with a sample, not a new item created this round (studio notes: No items created).",
+      "fix_hint": "Relabel the dashboard tile (ex. « Articles carte ») or show the same customer-facing count under « Toutes les catégories ». Exclude E2E_/AUDIT- names from featured. Do not wipe G-DATA as a P0."
+    },
+    {
+      "id": "W-UI-001",
+      "severity": "P2",
+      "class": "ui",
+      "category": "element_overlap",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-A/01-dashboard.png",
+      "evidence": "Leftover of opt-2 W-UI-001. phpdebugbar (Request / Timeline / Queries / Models) covers the bottom of the merchant canvas on wave-A, wave-C, and wave-E PNGs. Studio 01-studio.png still clips the last product card (Cayenne) and « Paramètres avancés » behind the bar. DOM: `phpdebugbar phpdebugbar-minimized` in all four state HTML files. APP_DEBUG local only.",
+      "why_real": "Visible on captured PNGs; debugbar markup is in the DOM files. Not an animation frame. Same leftover, not new.",
+      "fix_hint": "Pad main bottom ~48px when debugbar is present, or run e2e with APP_DEBUG=false so the last category/product is readable."
+    },
+    {
+      "id": "W-T-004",
+      "severity": "P2",
+      "class": "technical",
+      "category": "i18n_leak",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-3/wave-C/01-studio.console.json",
+      "evidence": "Leftover of opt-2 W-T-004. 01-studio.console.json: warnings [intlify] Not found 'studio.product_composer_button' in fr then en (app.js, not vendor). notes.json console_warning_count=1092 (opt-2 was 738 — same missing key, more repeats). CatalogStudioComponent.vue t() fallback is what the PNG shows — key is NOT visible as raw text (protocol cat.1 visible-leak = fail). Not a P1.",
+      "why_real": "Same missing key repeated per product action button. Fallback path is why the PNG stays clean. Count delta is re-render volume, not a new key.",
+      "fix_hint": "Add studio.product_composer_button to fr (and en) locale messages so intlify stops flooding the console."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 4,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "W-T-001_faker_latin_studio_ui": "PASS",
+    "W-T-002_english_png_404": "FAIL",
+    "W-T-003_numeric_59_vs_studio": "FAIL",
+    "W-UI-001_debugbar": "FAIL",
+    "W-T-004_intlify_composer_key": "FAIL",
+    "A-003_total_articles_123": "PASS",
+    "C-001_AUDIT_E2E_prefixes": "PASS",
+    "C-001_faker_latin_ui": "PASS",
+    "E_cashier_cockpit_leak": "PASS",
+    "E_cashier_palette_123_magenta": "PASS"
+  },
+  "claim_disputes": {
+    "studio_14_real_no_junk": {
+      "claim": "Studio now 14 real categories, no Aliquam/Rerum/E2E/AUDIT",
+      "verdict": "CONFIRMED_ON_STUDIO_UI",
+      "evidence": "Read opt-3 01-studio.png (full-page): badge 14; rows Sandwichs, Tacos Signature, Uber (technique), Galette, Sandwich Classique, Burgers, Tacos, Bols, Frites, Suppléments, Desserts, Boissons, Menu enfant, Technique (interne — upsell). Identical to opt-2 PNG. DOM catalog-studio__counter\">14; 59 articles under Toutes; Aliquam not in 01-studio.dom.html. notes.json category_count=14, junk_present all false. DB still 64 rows — mask, not wipe; not scored P0."
+    },
+    "dashboard_total_articles_55": {
+      "claim": "Dashboard Total articles 55",
+      "verdict": "CONFIRMED",
+      "evidence": "Read opt-3 01-dashboard.png yellow tile bg-[#FFB800] « Total articles menu » 55. Same on cashier wave-E 01 and 02. DOM `>55</h4>` present, `>59</h4>` absent. wave-A-notes.json total_articles_menu=\"55\". Cross-surface 55 vs studio 59 remains W-T-003 P2. 123 closed."
+    },
+    "dashboard_suivi_ticket_moyen_only": {
+      "claim": "Suivi en direct only Ticket Moyen",
+      "verdict": "CONFIRMED",
+      "evidence": "opt-3 wave-A PNG + cashier wave-E PNGs: one live tile « Ticket Moyen » 0,00 €. DOM has no « Chiffre d'Affaires du Jour » / « Commandes du Jour » duplicate live KPIs. notes live_only_ticket_moyen true."
+    },
+    "dashboard_vue_ensemble_cayenne": {
+      "claim": "Vue d'ensemble Cayenne orange/black/yellow",
+      "verdict": "CONFIRMED",
+      "evidence": "opt-3 admin + cashier PNGs: Ventes du jour orange #F4501E 0,00 €; Commandes du jour black #1A1A1A 0; Total articles menu yellow #FFB800 55. Round-2/3 cashier still had magenta/purple + 123 — opt-3 cashier matches admin Cayenne. magenta_in_overview false."
+    },
+    "wave_E_observability_is_cashier_dashboard_not_cockpit": {
+      "claim": "wave-E 02-observability-system.png is cashier dashboard not cockpit",
+      "verdict": "CONFIRMED",
+      "evidence": "Read opt-3 02-observability-system.png: Bonsoir ! Caissier Le Cayenne; Vue d'ensemble 55; Ticket Moyen only; sidebar Tableau De Bord / POS / Commandes Caisse / … / Suivi Client — no « État du système », no [data-testid=system-health], no health cockpit. notes requestedUrl=/admin/observability/system, url final=/admin/dashboard, redirectedToDashboard true, healthCockpitPresent false. Network has no 403 on observability (english.png 404 + font CORS only). Same closed leak as round-2/3 wave-E, not a regression."
+    }
+  },
+  "new_vs_opt_2": {
+    "p0": [],
+    "p1": [],
+    "p2_same_leftovers": ["W-T-002", "W-T-003", "W-UI-001", "W-T-004"],
+    "note": "No new P0/P1 vs opt-2. E2E_PLAYWRIGHT_STUDIO_ITEM in Articles Mis En Avant is leftover G-DATA now in the featured sample (folded into W-T-003). Cashier dashboard palette 123→55 Cayenne is an improvement vs round-2/3, not vs opt-2 (opt-2 had no wave-E)."
+  },
+  "allowlisted_noise": [
+    "ws/wss://127.0.0.1:6001 Pusher ERR_CONNECTION_REFUSED (vendor.js) — protocol allowlist",
+    "menu thumb ERR_ABORTED on reload (cancelled, not HTTP 4xx)",
+    "GET /api/admin/setting/branch/show/1 net::ERR_ABORTED on studio hard-reload"
+  ],
+  "parent_read": [
+    "round-opt-3/wave-A/01-dashboard.png",
+    "round-opt-2/wave-A/01-dashboard.png",
+    "round-opt-3/wave-C/01-studio.png",
+    "round-opt-2/wave-C/01-studio.png",
+    "round-opt-3/wave-E/01-dashboard-sidebar.png",
+    "round-opt-3/wave-E/02-observability-system.png",
+    "round-2/wave-E/02-observability-system.png",
+    "round-3/wave-E/02-observability-system.png"
+  ],
+  "frozen": "Kiosk wizard / POS wizard / fiscal services not opened, not scored. G-DATA wipe of the 64 item_categories rows not demanded as P0.",
+  "verdict": "GREEN"
+}

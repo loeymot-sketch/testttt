@@ -1,0 +1,27 @@
+{
+  "url": "http://127.0.0.1:8766/admin/observability/system",
+  "consigneJournal": true,
+  "chaqueBascule": false,
+  "mesureIndisponible": false,
+  "aucuneInHealth": true,
+  "h2": "État du système",
+  "interrupteursLead": "Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525.",
+  "scripts": [
+    "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b"
+  ],
+  "loadedJs": [
+    {
+      "url": "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/js/app.js?id=7ef0fe6e7d49f86e86407efd2f96c81b",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8766/js/admin-shell.2649746a.js",
+      "status": 200
+    }
+  ],
+  "pngSizeHint": "element screenshot system-health"
+}

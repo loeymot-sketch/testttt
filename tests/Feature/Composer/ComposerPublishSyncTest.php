@@ -96,7 +96,7 @@ class ComposerPublishSyncTest extends TestCase
         $this->assertFalse((bool) $row->payload['payload_diff']['is_published']);
     }
 
-    public function test_published_step_mutation_invalidates_catalog_projection(): void
+    public function test_published_step_mutation_is_rejected_until_draft_is_published(): void
     {
         Queue::fake();
 
@@ -109,20 +109,44 @@ class ComposerPublishSyncTest extends TestCase
         ]);
         Cache::put("kiosk.menu.branch.{$branch->id}", ['stale' => true], 120);
 
-        app(ComposerStepService::class)->update($step, [
-            'step_key' => 'cuisson',
-            'label' => 'Choix cuisson',
-            'source_type' => 'item_attribute',
-            'min_select' => 1,
-            'max_select' => 1,
-            'position' => 1,
+        try {
+            app(ComposerStepService::class)->update($step, [
+                'step_key' => 'cuisson',
+                'label' => 'Choix cuisson',
+                'source_type' => 'item_attribute',
+                'min_select' => 1,
+                'max_select' => 1,
+                'position' => 1,
+            ]);
+            $this->fail('A published wizard must not mutate till steps in place.');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('steps', $exception->errors());
+        }
+
+        $this->assertTrue(Cache::has("kiosk.menu.branch.{$branch->id}"));
+        $this->assertSame('Cuisson', $step->fresh()->label);
+
+        $draft = app(ComposerProfileService::class)->update($profile, [
+            'template' => $profile->template,
+            'version' => $profile->version,
+            'steps' => [[
+                'step_key' => 'cuisson',
+                'label' => 'Choix cuisson',
+                'source_type' => 'item_attribute',
+                'min_select' => 0,
+                'max_select' => 1,
+                'position' => 1,
+                'is_active' => true,
+                'visible_on' => ['pos', 'kiosk'],
+            ]],
         ]);
+        $this->assertFalse((bool) $draft->is_published);
+
+        app(ComposerProfileService::class)->publish($draft);
 
         $this->assertFalse(Cache::has("kiosk.menu.branch.{$branch->id}"));
-
-        $row = $this->catalogRow($profile, $branch);
-        $this->assertSame('steps_updated', $row->payload['change_type']);
-        $this->assertSame(2, (int) $row->payload['payload_diff']['version']);
+        $row = $this->catalogRow($draft, $branch);
+        $this->assertSame('published', $row->payload['change_type']);
     }
 
     private function profileForBranch(?int $branchId, bool $published = false): ItemWizardProfile

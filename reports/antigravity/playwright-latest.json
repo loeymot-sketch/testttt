@@ -10,14 +10,18 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
-        "retries": 1,
-        "metadata": {},
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
@@ -58,36 +62,50 @@
   },
   "suites": [
     {
-      "title": "e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js",
-      "file": "e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js",
+      "title": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
+      "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Kiosk · Backend · KDS · POS suivi sync audit Wave E",
-          "file": "e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js",
-          "line": 347,
+          "title": "WAVE A — Admin dashboard capture",
+          "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
+          "line": 176,
           "column": 6,
           "specs": [
             {
-              "title": "Wave E : kiosk pay → KDS pile → POS suivi → lifecycle → cancel",
+              "title": "login → dashboard KPIs → Vue d’ensemble / Suivi en direct",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 360000,
+                  "timeout": 180000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9124,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-29T05:56:06.108Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "id": "dab0b482bc26b8ad940c-7d5d026737c5e148938e",
-              "file": "e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js",
-              "line": 396,
+              "id": "d8f5b1a3baea2f580500-581763192c5b9c5a272c",
+              "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
+              "line": 179,
               "column": 3
             }
           ]
@@ -97,10 +115,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-24T04:03:48.831Z",
-    "duration": 201.85299999999995,
-    "expected": 0,
-    "skipped": 1,
+    "startTime": "2026-08-29T05:56:05.263Z",
+    "duration": 10682.292,
+    "expected": 1,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }

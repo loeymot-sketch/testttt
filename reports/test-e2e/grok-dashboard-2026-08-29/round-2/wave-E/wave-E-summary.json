@@ -1,0 +1,56 @@
+{
+  "wave": "E-cashier",
+  "base_url": "http://127.0.0.1:8766",
+  "mix_expected": "admin-shell.2649746a.js",
+  "mix_hash_loaded_dashboard": false,
+  "mix_hash_loaded_deeplink": false,
+  "mix_closed_pos_deeplink": true,
+  "etat_du_systeme_in_sidebar": false,
+  "sidebar_exact_labels": [
+    "CAISSE ET COMMANDES",
+    "Tableau De Bord",
+    "POS",
+    "Commandes Caisse",
+    "Historique",
+    "Encaissement",
+    "Ticket Promo",
+    "Réglages Ticket Promo",
+    "Commande Uber (Photo)",
+    "La Roue",
+    "Écran Cuisine",
+    "Suivi Client"
+  ],
+  "deeplink": {
+    "final_url": "http://127.0.0.1:8766/admin/dashboard",
+    "vue_mounted": false,
+    "redirected_to_dashboard": true,
+    "still_on_observability": false,
+    "mesure_indisponible": false,
+    "aucune": true,
+    "impossible_de_lire": false,
+    "erreur_text": null,
+    "sauvegarde_text": null,
+    "planificateur_text": null
+  },
+  "states": [
+    {
+      "name": "cashier-dashboard-sidebar",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.network.json",
+      "notes": "Logged in as pos@lecayenne.fr. Landing was http://127.0.0.1:8766/admin/pos. Immediate goto /admin/dashboard, hard-reload, no POS clicks. Mix admin-shell.2649746a.js loaded=false. Sidebar: [\"CAISSE ET COMMANDES\",\"Tableau De Bord\",\"POS\",\"Commandes Caisse\",\"Historique\",\"Encaissement\",\"Ticket Promo\",\"Réglages Ticket Promo\",\"Commande Uber (Photo)\",\"La Roue\",\"Écran Cuisine\",\"Suivi Client\"]. État du système present: false"
+    },
+    {
+      "name": "observability-system-deeplink",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system/02-observability-system.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system/02-observability-system.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system/02-observability-system.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-2/wave-E/02-observability-system/02-observability-system.network.json",
+      "notes": "Deep-link. Vue mounted=false. redirectedToDashboard=true. stillOnObservability=false. mesure indisponible=false. aucune=true. erreur=null. Mix closed POS deep-link=true"
+    }
+  ],
+  "blockers": []
+}

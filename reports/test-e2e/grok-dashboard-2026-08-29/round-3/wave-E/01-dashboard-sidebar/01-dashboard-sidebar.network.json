@@ -1,0 +1,646 @@
+[
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984291322
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Medium.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292283
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292512
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-regular-400.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292513
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292513
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292719
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PAQ8K86F4M0PPZ88P1HC",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292737
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "failure": "net::ERR_BLOCKED_BY_ORB",
+    "ts": 1787984292786
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PAQZNYTQ801WC2F37FHZ",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292830
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PARRR6JJA1VFQWBQ1GZT",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984292916
+  },
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984293351
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PBCYX50A8N7FAF64BN23",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984293361
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984293597
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984293597
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "failure": "net::ERR_BLOCKED_BY_ORB",
+    "ts": 1787984293616
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PBTFKM6RYC3XKT482NYT",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294165
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PBV84Z5SV5WG0YDMHF8Q",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294286
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PBW2YMY1STBTW16QBVZ7",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294578
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PBXWX5QTE53XG69KSP6E",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294633
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PC0Q9YGM7KQDEK7HQ578",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294701
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PC34CRD21X6S9FB8PBXN",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294768
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PC7QNAZQEAVFQBCWMARF",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984294821
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCBSZ2C666212XPTBEC8",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984295150
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCMPZ5Z83BMTDFWH69YB",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984295199
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCPKJNHFT6XNMCS0X8TK",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984295252
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/item-default.svg?v=1774661868",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-boissons.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/pos/customer-display",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/pos/cash-drawer/sessions/current?branch_id=1",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-frites.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCWJG98JQ38JY6DRF2KE",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295292
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PD5PW03MW67GMY1Z914R",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-tacos.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCRNCV23KM3MTVTV11DZ",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/users/address/2",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-burgers.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/sounds/kds-new-order.mp3",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-bols-gourmands.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PCTRS0R4QKF9SFAF8TBB",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-desserts.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-menu-enfant.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PD8B54NZ89H0HDXGF0N6",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/csp-report",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/country-code/show/FRA",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/images/menu/thumbs/cat-galette.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PD9S2Q58FA8HFJCQ5GKE",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1787984295293
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984295930
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Regular.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297490
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297491
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297491
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff2?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297491
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297491
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297491
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/fontawesome/fa-solid-900.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297751
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.woff?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984297751
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/lab/lab.ttf?1740891535263",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298030
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298158
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PG8CD9RZ55VV3XX85WJ8",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298436
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PG9B8YT2YWB6XXF8H52R",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298455
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "failure": "net::ERR_BLOCKED_BY_ORB",
+    "ts": 1787984298503
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PGAMCSR6545K7YDF2ZTW",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298532
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M162PGBQAH6Z2BSX96KKA3D7",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1787984298611
+  }
+]

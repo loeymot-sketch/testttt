@@ -1,0 +1,95 @@
+{
+  "wave": "round-opt-2-A+C",
+  "round": "opt-2",
+  "states_reviewed": 2,
+  "open_p0": 0,
+  "open_p1": 0,
+  "open_p2": 4,
+  "open_p3": 0,
+  "findings": [
+    {
+      "id": "W-T-002",
+      "severity": "P2",
+      "class": "technical",
+      "category": "unexpected_4xx",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-2/wave-A/01-dashboard.png",
+      "evidence": "wave-A 01-dashboard.network.json: GET /storage/1/english.png → 404 (×3). Same 404 in wave-C 01-studio.network.json + console type=error. Dashboard/studio consoles also: fonts.gstatic.com Inter woff2 CORS (cache-control preflight) + net::ERR_FAILED. PNG header still shows Français + flag chips. Not vendor.js app logic. Leftover of round-opt W-T-002.",
+      "why_real": "Quartet agrees on both waves (network + console + header chips). Decorative language asset, not a silent KPI API 4xx — kept P2, not P0. Protocol allowlist does not cover /storage/*.png 404.",
+      "fix_hint": "Serve language flags from same-origin APP_URL so :8766 does not 404 /storage/1/english.png; drop cache-control on Google Fonts preflight or self-host Inter."
+    },
+    {
+      "id": "W-T-003",
+      "severity": "P2",
+      "class": "technical",
+      "category": "numeric_integrity",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-2/wave-A/01-dashboard.png",
+      "evidence": "Dashboard yellow tile « Total articles menu » = 55 (PNG + DOM `>55</h4>`; no `>59</h4>`). Studio sidebar « Toutes les catégories » still « 59 articles » (PNG + DOM). Visible category row product_count sum from PNG = 58 (Sandwichs 5 + Galette 3 + Burgers 6 + Tacos 3 + Bols 2 + Frites 6 + Suppléments 10 + Desserts 3 + Boissons 15 + Menu enfant 2 + Technique interne 3; zeros: Tacos Signature / Uber / Sandwich Classique). 59 − 3 interne − 1 leftover item = 55, matching DashboardService::totalMenuItems() + ItemCategoryService::constrainCustomerFacing(). Capture tinker still dumps db_categories_count=64 (Aliquam/Rerum/AUDIT-/E2E rows remain in item_categories). Not the old 123. Not a demand to wipe G-DATA.",
+      "why_real": "Two admin surfaces, two filters by design: studio item/lists + visible catalog keeps interne; dashboard KPI drops interne/Uber/pollution. Same merchant still sees 55 vs 59 vs 58 without a label. 64 DB rows are the mask, not a flake. P2 (confusing labels), not P0: hiding interne in studio would contradict the keep-list (Technique interne / Uber technique must stay in the sidebar).",
+      "fix_hint": "Relabel the dashboard tile (ex. « Articles carte ») or show the same customer-facing count under « Toutes les catégories ». Find the 1 item in products.length that is not in any of the 14 visible category rows (stale item_category_id / hidden cat). Do not wipe G-DATA as a P0."
+    },
+    {
+      "id": "W-UI-001",
+      "severity": "P2",
+      "class": "ui",
+      "category": "element_overlap",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-2/wave-A/01-dashboard.png",
+      "evidence": "Both PNGs: phpdebugbar (Request / Timeline / Queries / Models) covers the bottom of the merchant canvas. Studio 01-studio.png clips the last product card (Cayenne) and the « Paramètres avancés » link behind the bar. APP_DEBUG local only. Leftover of round-opt W-UI-001.",
+      "why_real": "Visible on both captured PNGs; debugbar markup is in both DOM files (`phpdebugbar phpdebugbar-minimized`). Not an animation frame.",
+      "fix_hint": "Pad main bottom ~48px when debugbar is present, or run e2e with APP_DEBUG=false so the last category/product is readable."
+    },
+    {
+      "id": "W-T-004",
+      "severity": "P2",
+      "class": "technical",
+      "category": "i18n_leak",
+      "state_artifact": "reports/test-e2e/grok-dashboard-2026-08-29/round-opt-2/wave-C/01-studio.console.json",
+      "evidence": "01-studio.console.json: 738 warnings [intlify] Not found 'studio.product_composer_button' in fr then en (app.js, not vendor). notes.json console_warning_count=738. CatalogStudioComponent.vue t() fallback is what the PNG shows — key is NOT visible as raw text (protocol cat.1 visible-leak = fail). Not a P1.",
+      "why_real": "Same missing key repeated per product action button. Grep of lang/** found zero studio.product_composer_button. Fallback path is why the PNG stays clean.",
+      "fix_hint": "Add studio.product_composer_button to fr (and en) locale messages so intlify stops flooding the console."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 4,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "W-T-001_faker_latin_studio_ui": "PASS",
+    "W-T-002_english_png_404": "FAIL",
+    "W-T-003_numeric_59_vs_studio": "FAIL",
+    "W-UI-001_debugbar": "FAIL",
+    "W-T-004_intlify_composer_key": "FAIL",
+    "A-003_total_articles_123": "PASS",
+    "C-001_AUDIT_E2E_prefixes": "PASS",
+    "C-001_faker_latin_ui": "PASS"
+  },
+  "claim_disputes": {
+    "studio_14_real_no_junk": {
+      "claim": "Studio now 14 real categories, no Aliquam/Rerum/E2E/AUDIT",
+      "verdict": "CONFIRMED_ON_STUDIO_UI",
+      "evidence": "Read 01-studio.png (full-page overflow-visible): badge 14; rows Sandwichs, Tacos Signature, Uber (technique), Galette, Sandwich Classique, Burgers, Tacos, Bols, Frites, Suppléments, Desserts, Boissons, Menu enfant, Technique (interne — upsell). DOM: catalog-studio__counter\">14; 59 articles under Toutes; Tacos Signature present; Aliquam/Rerum/Eligendi/AUDIT- not in 01-studio.dom.html (only an SPA comment « E2E flow validation flags »). notes.json category_count=14, junk_present all false, junk_matches all []. Keep Sandwichs/Tacos/Uber/Technique present. DB still 64 rows — mask, not wipe; not scored P0."
+    },
+    "dashboard_total_articles_55": {
+      "claim": "Dashboard Total articles 55 (was 59 then 123)",
+      "verdict": "CONFIRMED",
+      "evidence": "Read 01-dashboard.png yellow tile bg-[#FFB800] « Total articles menu » 55. DOM `>55</h4>` present, `>59</h4>` absent. wave-A-notes.json total_articles_menu=\"55\". DashboardService.php:473-478 ACTIVE + constrainCustomerFacing. 123 is closed. Cross-surface 55 vs studio 59 is W-T-003 P2, not a return of 123."
+    },
+    "phpunit_aliquam_and_total_2": {
+      "claim": "PHPUnit AuditPollutionCategoriesHiddenTest includes Aliquam hide + total_menu_items === 2 with E2E/interne fixtures",
+      "verdict": "CONFIRMED_ON_SOURCE",
+      "evidence": "tests/Feature/Grok/AuditPollutionCategoriesHiddenTest.php:30-31 isAuditPollutionName('Aliquam'|'Rerum') true; :69-90 admin GET /api/admin/setting/item-category hides Aliquam/Rerum, keeps Sandwichs + Uber (technique) + Technique (interne — upsell); :92-127 fixtures 2 Sandwichs ACTIVE + 5 E2E + 3 interne + 1 Aliquam + 1 Sandwichs INACTIVE → assertJsonPath data.total_menu_items === 2. Same endpoint as CatalogStudio itemCategory/lists. This session did not re-execute PHPUnit; claim is about the spec contents."
+    }
+  },
+  "allowlisted_noise": [
+    "ws/wss://127.0.0.1:6001 Pusher ERR_CONNECTION_REFUSED (vendor.js) — protocol allowlist",
+    "menu thumb ERR_ABORTED on reload (cancelled, not HTTP 4xx)",
+    "GET /api/admin/setting/branch/show/1 net::ERR_ABORTED on studio hard-reload"
+  ],
+  "frozen": "Kiosk wizard / POS wizard / fiscal services not opened, not scored. G-DATA wipe of the 64 item_categories rows not demanded as P0.",
+  "verdict": "PASS"
+}

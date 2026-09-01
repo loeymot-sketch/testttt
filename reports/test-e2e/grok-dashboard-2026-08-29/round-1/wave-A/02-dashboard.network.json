@@ -1,0 +1,242 @@
+[
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DZC1R04Y6D2VP3FE3NQ6",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982970568
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/storage/1/english.png",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_BLOCKED_BY_ORB",
+    "ws_or_debugbar": false,
+    "ts": 1787982970638
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Medium.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982970812
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-SemiBold.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982970812
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982970815
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DZTBR3P24D1D6RRH9XT8",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971114
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DZV9V86WYWRY2ZGYV2V4",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971165
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DZXR671RA11FX6R5KP5V",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971231
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161DZZ9DM86J2RA8AK78HAD",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971334
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E00J9BKXQFQQSPTP7RFR",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971449
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E04XRWPJNCACJHTQZ8YS",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971482
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/public/PublicSans-ExtraBold.ttf",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1787982971530
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E06HFHS1GKCR4C0AMFCS",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971597
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E08A65CTG8SJ4V6XP257",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971669
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0AD63280TE8PPYKMB67",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971719
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0CYPKCJXWMBMH2EPWFF",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971773
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0G1YBPDR53F2R7FM08D",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971810
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0J6JYGH6XGW9GT8A1GX",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971833
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0M7CNK3K7SJ8X2BFKAM",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971905
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0NQC07G4987R6G8MQ5G",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971954
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0R28481XT10QTJ85S8G",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982971972
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0SMJQYKYM9M1EG5QCM8",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982972013
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E0TZDR3H37AJDVVP9WAB",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982972053
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8000/_debugbar/open?op=get&id=01M161E18079DKFKQD2KBQ2861",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "fetch",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": true,
+    "ts": 1787982972278
+  }
+]

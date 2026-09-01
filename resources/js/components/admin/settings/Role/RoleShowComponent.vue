@@ -168,6 +168,14 @@ export default {
         },
 
         save: function () {
+            // Avant : Enregistrer avec aucune case cochée vidait le caissier.
+            if (!Array.isArray(this.form) || this.form.length === 0) {
+                alertService.error(this.$t(
+                    'message.role.permissions_required',
+                    'Coche au moins un droit. Un rôle système vide bloque la caisse.'
+                ));
+                return;
+            }
             this.loading.isActive = true;
             this.$store.dispatch('permission/save', {
                 form: this.form,

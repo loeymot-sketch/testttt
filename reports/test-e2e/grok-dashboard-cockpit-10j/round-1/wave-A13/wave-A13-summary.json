@@ -1,0 +1,87 @@
+{
+  "wave": "A13",
+  "base_url": "http://127.0.0.1:8766",
+  "values": {
+    "queuePending": 1490,
+    "backup": "DERNIÈRE SAUVEGARDE\n\nil y a 25 jours\n\npre-8axes-2026-08-05.sql.gz\n\nVert seulement si un fichier .sql.gz a moins de 26 h (même seuil que la sonde de readiness). La restauration de 5 h n'est pas encore lue ici.",
+    "scheduler": "TÂCHES AUTOMATIQUES\n\nmuettes depuis 6776 min\n\nS'il s'arrête, les sauvegardes, les relances et le contrôle de la chaîne fiscale s'arrêtent avec lui, sans aucune erreur visible.",
+    "interrupteurNames": [
+      "Paiement en plusieurs fois",
+      "Roue promotionnelle",
+      "Remise manuelle en caisse",
+      "Programme fidélité (dépense de points)",
+      "Codes promo sur la borne",
+      "Impression automatique du ticket client"
+    ],
+    "interrupteurs": [
+      {
+        "testid": "interrupteur-split_payment",
+        "nom": "split_payment",
+        "libelle": "Paiement en plusieurs fois",
+        "pressed": "true",
+        "etat": "Activé",
+        "description": "Permet d'encaisser une commande en plusieurs règlements (espèces + carte, ou deux cartes)."
+      },
+      {
+        "testid": "interrupteur-wheel",
+        "nom": "wheel",
+        "libelle": "Roue promotionnelle",
+        "pressed": "false",
+        "etat": "Désactivé",
+        "description": "Le jeu de la roue proposé au client après sa commande."
+      },
+      {
+        "testid": "interrupteur-remise_manuelle",
+        "nom": "remise_manuelle",
+        "libelle": "Remise manuelle en caisse",
+        "pressed": "false",
+        "etat": "Désactivé",
+        "description": "Autorise le caissier à appliquer une remise libre sur une commande."
+      },
+      {
+        "testid": "interrupteur-fidelite",
+        "nom": "fidelite",
+        "libelle": "Programme fidélité (dépense de points)",
+        "pressed": "true",
+        "etat": "Activé",
+        "description": "Permet à un client de dépenser ses points fidélité pour obtenir une réduction."
+      },
+      {
+        "testid": "interrupteur-kiosk_promo",
+        "nom": "kiosk_promo",
+        "libelle": "Codes promo sur la borne",
+        "pressed": "false",
+        "etat": "Désactivé",
+        "description": "Affiche le champ code promo dans le parcours de commande borne."
+      },
+      {
+        "testid": "interrupteur-impression_ticket_client_auto",
+        "nom": "impression_ticket_client_auto",
+        "libelle": "Impression automatique du ticket client",
+        "pressed": "false",
+        "etat": "Désactivé",
+        "description": "À l'encaissement, imprime automatiquement le ticket client sans clic du caissier."
+      }
+    ],
+    "nf525": {
+      "interrupteursLeadHasNf525": true,
+      "fiscalChainCopy": true,
+      "consigneJournalServeur": true,
+      "leadText": "Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525.",
+      "fiscalChainText": "CHAÎNE FISCALE\n\nen service\n\nIntégrité NF525 des écritures."
+    },
+    "verdict": "Des points demandent votre attention.\n\nfile d'attente : 1490 messages\ndernière sauvegarde il y a 25 jours\nplanificateur muet depuis 6776 min"
+  },
+  "states": [
+    {
+      "name": "health",
+      "url": "http://127.0.0.1:8766/admin/observability/system",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A13/01-health.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A13/01-health.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A13/01-health.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A13/01-health.network.json",
+      "notes": "nav=sidebar-click. No interrupteur toggle. queue=1490. backup=il y a 25 jours. scheduler=muettes depuis 6776 min. NF525 lead=true."
+    }
+  ],
+  "blockers": []
+}

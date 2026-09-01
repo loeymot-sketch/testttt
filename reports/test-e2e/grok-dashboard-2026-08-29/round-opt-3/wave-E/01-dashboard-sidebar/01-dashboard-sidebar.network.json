@@ -1,0 +1,137 @@
+[
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ts": 1788021669508
+  },
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "failure": "net::ERR_FAILED",
+    "ts": 1788021670286
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ts": 1788021670305
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/users/address/2",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671557
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-galette.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-burgers.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-tacos.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-sandwich-cayenne.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/frontend/branch/show/1",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-frites.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-menu-enfant.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/sounds/kds-new-order.mp3",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/pos/cash-drawer/sessions/current?branch_id=1",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/setting/branch/show/1",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-bols-gourmands.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-desserts.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/cat-boissons.webp?v=1787786786",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/api/admin/pos/customer-display",
+    "method": "POST",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/item-default.svg?v=1774661868",
+    "method": "GET",
+    "failure": "net::ERR_ABORTED",
+    "ts": 1788021671558
+  }
+]

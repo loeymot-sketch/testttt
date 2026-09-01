@@ -89,6 +89,7 @@ class ItemVariationService
                                     'price'             => $itemVariation->price,
                                     'caution'           => $itemVariation->caution,
                                     'status'            => $itemVariation->status,
+                                    'visible_on'        => $itemVariation->visible_on,
                                     'item'              => $itemVariation->item,
                                     'itemAttribute'     => $itemVariation->itemAttribute
                                 ]
@@ -103,6 +104,7 @@ class ItemVariationService
                             'price'             => $itemVariation->price,
                             'caution'           => $itemVariation->caution,
                             'status'            => $itemVariation->status,
+                            'visible_on'        => $itemVariation->visible_on,
                             'item'              => $itemVariation->item,
                             'itemAttribute'     => $itemVariation->itemAttribute
                         ];
@@ -138,13 +140,17 @@ class ItemVariationService
     public function update(ItemVariationRequest $request, Item $item, ItemVariation $itemVariation): ItemVariation
     {
         try {
-            if ($item->id == $itemVariation->item_id) {
-                $itemVariation->update($request->validated());
-                $this->dispatchItemCatalogRefresh($item);
-
-                return $itemVariation->refresh();
+            // Avant : si l'URL parlait d'un autre produit que celui de la
+            // variante (onglet périmé), l'admin répondait OK et le prix/nom
+            // affichés semblaient sauvés — rien n'était écrit. Le commerçant
+            // rouvrait la fiche : l'ancienne valeur était toujours là.
+            if ((int) $item->id !== (int) $itemVariation->item_id) {
+                throw new Exception(trans('all.item_match'), 422);
             }
-            return $itemVariation;
+            $itemVariation->update($request->validated());
+            $this->dispatchItemCatalogRefresh($item);
+
+            return $itemVariation->refresh();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -158,10 +164,13 @@ class ItemVariationService
     public function destroy(Item $item, ItemVariation $itemVariation): void
     {
         try {
-            if ($item->id == $itemVariation->item_id) {
-                $itemVariation->delete();
-                $this->dispatchItemCatalogRefresh($item);
+            // Avant : supprimer une variante depuis le mauvais produit
+            // renvoyait 202 Accepted ; la ligne restait dans la liste.
+            if ((int) $item->id !== (int) $itemVariation->item_id) {
+                throw new Exception(trans('all.item_match'), 422);
             }
+            $itemVariation->delete();
+            $this->dispatchItemCatalogRefresh($item);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             DB::rollBack();
@@ -176,7 +185,11 @@ class ItemVariationService
     public function show(Item $item, ItemVariation $itemVariation)
     {
         try {
-            return ItemVariation::where(['item_id' => $item->id, 'id' => $itemVariation->id])->first();
+            if ((int) $item->id !== (int) $itemVariation->item_id) {
+                throw new Exception(trans('all.item_match'), 422);
+            }
+
+            return $itemVariation;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

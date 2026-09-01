@@ -136,12 +136,14 @@ export default {
                 if (!permissionUrl) {
                     return true;
                 }
+                // Avant : table vide ou URL inconnue = lien visible. Un caissier
+                // voyait des accès qu'il n'a pas.
                 if (!perms.length) {
-                    return true;
+                    return false;
                 }
                 const entry = perms.find((p) => p && p.url === permissionUrl);
                 if (!entry) {
-                    return true;
+                    return false;
                 }
                 return entry.access === true;
             };

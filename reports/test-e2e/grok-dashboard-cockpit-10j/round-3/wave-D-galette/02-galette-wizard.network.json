@@ -1,0 +1,12 @@
+[
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "english_storage_leftover": true,
+    "ts": 1788133646845
+  }
+]

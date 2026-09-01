@@ -9,10 +9,13 @@ use App\Models\User;
 use App\Models\Order;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\Status;
+use App\Services\ItemCategoryService;
 use Illuminate\Http\Request;
 use App\Libraries\AppLibrary;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
+use Illuminate\Validation\ValidationException;
 
 class DashboardService
 {
@@ -40,6 +43,20 @@ class DashboardService
         return $query;
     }
 
+    private function assertSalesDateWindow(Carbon $first, Carbon $last): void
+    {
+        if ($first->gt($last)) {
+            throw ValidationException::withMessages([
+                'last_date' => 'La date de fin doit être postérieure ou égale à la date de début.',
+            ]);
+        }
+        if ($first->diffInDays($last) > 366) {
+            throw ValidationException::withMessages([
+                'last_date' => 'La période ne peut pas dépasser 366 jours.',
+            ]);
+        }
+    }
+
     private function dashboardBranchId(): ?int
     {
         $user = auth()->user();
@@ -49,8 +66,12 @@ class DashboardService
         }
 
         $branchId = (int) ($user->branch_id ?? 0);
+        if ($branchId <= 0) {
+            // Avant : branch_id 0 ouvrait TOUTES les branches (fail-open).
+            abort(403, 'Dashboard branch scope required.');
+        }
 
-        return $branchId > 0 ? $branchId : null;
+        return $branchId;
     }
 
     /**
@@ -120,6 +141,10 @@ class DashboardService
 
             return $orderStatisticsArray;
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -169,6 +194,7 @@ class DashboardService
             if ($request->first_date && $request->last_date) {
                 $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
                 $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
+                $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
             } else {
                 $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
                 $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
@@ -214,6 +240,10 @@ class DashboardService
 
             return $orderSummaryArray;
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -228,6 +258,7 @@ class DashboardService
         if ($request->first_date && $request->last_date) {
             $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
             $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
+            $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
         } else {
             $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
             $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
@@ -282,20 +313,12 @@ class DashboardService
 
 
         $salesSummaryArray = [];
-        if ($date_diff > 0) {
-            // [DASH-SEM-02 heal 2026-06-01] Divide by the INCLUSIVE day count
-            // (count($dateRangeArray) == date_diff + 1), not date_diff. A 7-day
-            // range has date_diff=6 but spans 7 days; dividing by 6 overstated
-            // the daily average by ~16%. count($dateRangeArray) is the same set
-            // the per-day chart iterates, so the average matches the chart.
-            $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
-            $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat($total_sales / count($dateRangeArray));
-            $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
-        } else {
-            $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
-            $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat($total_sales);
-            $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
-        }
+        $dayCount = count($dateRangeArray);
+        $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
+        $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat(
+            $dayCount > 0 ? $total_sales / $dayCount : $total_sales
+        );
+        $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
 
         return $salesSummaryArray;
     }
@@ -309,6 +332,7 @@ class DashboardService
         if ($request->first_date && $request->last_date) {
             $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
             $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
+            $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
         } else {
             $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
             $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
@@ -366,6 +390,10 @@ class DashboardService
                 ->limit(8)
                 ->get();
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -395,6 +423,10 @@ class DashboardService
             // [DASH-NET-01 heal 2026-06-01] Net realized revenue (excl cancelled-paid, net refunds).
             return $this->scopePeriod($this->orderQuery()->realizedRevenue(), $period)->sum('total');
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -410,6 +442,10 @@ class DashboardService
             // breakdown stays in orderStatistics; this headline is total volume.
             return $this->scopePeriod($this->orderQuery()->whereNull('parent_order_id'), $period)->count();
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -420,6 +456,10 @@ class DashboardService
         try {
             return $this->customerQuery()->count();
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -428,8 +468,19 @@ class DashboardService
     public function totalMenuItems()
     {
         try {
-            return Item::count();
+            // Avant : count() de toute la table, puis tous les ACTIVE y compris
+            // E2E / interne upsell → « 123 » puis « 59 » hors carte.
+            return Item::query()
+                ->where('status', Status::ACTIVE)
+                ->whereHas('category', function ($category) {
+                    ItemCategoryService::constrainCustomerFacing($category);
+                })
+                ->count();
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -482,6 +533,10 @@ class DashboardService
                 'average_ticket' => AppLibrary::currencyAmountFormat($average_ticket),
             ];
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -511,6 +566,7 @@ class DashboardService
                 ->where('updated_at', '>=', $planchier)
                 ->with('user')
                 ->orderBy('updated_at', 'asc')
+                ->limit(50)
                 ->get();
 
             return $alerts->map(function ($order) {
@@ -523,6 +579,10 @@ class DashboardService
                 ];
             });
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -624,6 +684,10 @@ class DashboardService
                 ['name' => 'POS', 'value' => round(($posCount / $total) * 100, 2)]
             ];
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -726,6 +790,10 @@ class DashboardService
                 'top_items' => $topItems,
             ];
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
@@ -899,16 +967,20 @@ class DashboardService
             //   - Admin (branch_id = 0) sees every branch.
             //   - Branch staff sees ONLY their own branch.
             //   - Legacy branch_id = NULL rows are admin-only (system events).
-            $actor = auth()->user();
-            $actorBranchId = (int) ($actor?->branch_id ?? 0);
+            $actorBranchId = $this->dashboardBranchId();
 
             $query = \App\Models\AuditLog::query();
-            if ($actorBranchId > 0) {
+            if ($actorBranchId !== null) {
                 $query->where('branch_id', $actorBranchId);
             }
 
-            $rows = $query->orderBy('id', 'desc')
-                ->limit(50)
+            // Le gérant voyait 50 connexions : le journal « inviolable » du
+            // dashboard ne servait plus à rien. On ne touche pas audit_logs
+            // (INSERT-only). On montre 20 lignes, métier d'abord.
+            $rows = $query
+                ->orderByRaw("CASE WHEN action IN ('user.login','user.logout') THEN 1 ELSE 0 END ASC")
+                ->orderBy('id', 'desc')
+                ->limit(20)
                 ->get();
 
             // Resolve user names in one round-trip. AuditLog has no `user()`
@@ -941,6 +1013,10 @@ class DashboardService
                 ];
             });
         } catch (Exception $exception) {
+            if ($exception instanceof ValidationException
+                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                throw $exception;
+            }
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }

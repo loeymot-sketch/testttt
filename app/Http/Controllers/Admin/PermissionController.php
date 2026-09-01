@@ -9,6 +9,7 @@ use App\Http\Resources\PermissionResource;
 use App\Http\Resources\RoleResource;
 use App\Libraries\AppLibrary;
 use App\Services\PermissionService;
+use App\Services\RoleService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,9 +55,66 @@ class PermissionController extends AdminController
     public function update(PermissionRequest $request, Role $role)
     {
         try {
+            $this->assertProtectedRoleKeepsAccess($role, $request);
+
             return new RoleResource($this->permissionService->update($request, $role));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Avant : Enregistrer les droits d'un caissier avec la liste vide
+     * répondait OK. Le rôle existait encore, la caisse ouvrait en 403.
+     */
+    private function assertProtectedRoleKeepsAccess(Role $role, PermissionRequest $request): void
+    {
+        if (! in_array($role->name, RoleService::protectedRoleNames(), true)) {
+            return;
+        }
+
+        $ids = array_values(array_filter(array_map('intval', (array) $request->input('permissions', []))));
+        if ($ids === []) {
+            throw new Exception(
+                "Impossible de vider les droits du rôle système « {$role->name} ». Le caissier / la cuisine ne pourraient plus ouvrir leur écran.",
+                422
+            );
+        }
+
+        if ($role->name === 'POS Operator') {
+            $keepsPos = Permission::query()->whereIn('id', $ids)->where('name', 'pos')->exists();
+            if (! $keepsPos) {
+                throw new Exception(
+                    'Le rôle « POS Operator » doit garder le droit caisse (pos).',
+                    422
+                );
+            }
+        }
+
+        if ($role->name === 'Chef' || $role->name === 'Stuff') {
+            $keepsKds = Permission::query()
+                ->whereIn('id', $ids)
+                ->where('name', 'kitchen-display-system')
+                ->exists();
+            if (! $keepsKds) {
+                throw new Exception(
+                    "Le rôle « {$role->name} » doit garder le droit écran cuisine (kitchen-display-system).",
+                    422
+                );
+            }
+        }
+
+        if ($role->name === 'Waiter') {
+            $keepsTables = Permission::query()
+                ->whereIn('id', $ids)
+                ->where('name', 'table-orders')
+                ->exists();
+            if (! $keepsTables) {
+                throw new Exception(
+                    'Le rôle « Waiter » doit garder le droit commandes de table (table-orders).',
+                    422
+                );
+            }
         }
     }
 }

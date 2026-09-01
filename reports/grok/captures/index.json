@@ -1,0 +1,35 @@
+{
+  "shots": [
+    {
+      "name": "00-login",
+      "url": "http://127.0.0.1:8000/login",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/00-login.png"
+    },
+    {
+      "name": "01-after-login",
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/01-after-login.png"
+    },
+    {
+      "name": "02-categories",
+      "url": "http://127.0.0.1:8000/admin/settings/item-categories/list",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/02-categories.png"
+    },
+    {
+      "name": "03-attributes",
+      "url": "http://127.0.0.1:8000/admin/settings/item-attributes/list",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/03-attributes.png"
+    },
+    {
+      "name": "04-roles",
+      "url": "http://127.0.0.1:8000/admin/settings/role/list",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/04-roles.png"
+    },
+    {
+      "name": "05-pages",
+      "url": "http://127.0.0.1:8000/admin/settings/pages/list",
+      "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/grok/captures/05-pages.png"
+    }
+  ],
+  "at": "2026-08-28T05:33:49.015Z"
+}

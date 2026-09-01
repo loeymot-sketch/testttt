@@ -1,0 +1,39 @@
+[
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788021604339
+  },
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1788021604945
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788021604964
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788021607254
+  }
+]

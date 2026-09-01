@@ -1,0 +1,381 @@
+{
+  "wave": "A-dashboard-cockpit-vague-1-cycle-2",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "hard_reload": true,
+  "states": [
+    {
+      "name": "idle",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-A/01-dashboard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-A/01-dashboard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-A/01-dashboard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-2/wave-A/01-dashboard.network.json",
+      "notes": "Admin login then HARD RELOAD /admin/dashboard (cache disabled). Overflow expanded. No POS/kiosk/orders. Did not click Accès rapides."
+    }
+  ],
+  "observed": {
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "overview_heading": "Vue d’ensemble",
+    "live_heading": "Suivi en direct",
+    "overview_tiles": [
+      {
+        "label": "Ventes du jour",
+        "value": "0,00 €",
+        "background": "#F4501E",
+        "background_class": "orange",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#F4501E]"
+      },
+      {
+        "label": "Commandes du jour",
+        "value": "0",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#1A1A1A]"
+      },
+      {
+        "label": "Total articles menu",
+        "value": "55",
+        "background": "#FFB800",
+        "background_class": "yellow",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#FFB800]"
+      }
+    ],
+    "live_tiles": [
+      {
+        "label": "Ticket Moyen",
+        "value": "0,00 €",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-[#1A1A1A] text-white"
+      }
+    ],
+    "live_labels": [
+      "Ticket Moyen"
+    ],
+    "total_articles_menu": "55",
+    "kpi_articles_is_55": true,
+    "ventes_du_jour": "0,00 €",
+    "commandes_du_jour": "0",
+    "ticket_moyen": "0,00 €",
+    "audit_trail_heading_present": true,
+    "audit_trail_row_count": 20,
+    "audit_trail_sample": [
+      {
+        "user": "Système",
+        "action": "user.device_revoked",
+        "resource": "personal_access_token#11720",
+        "hash": "0651fd3b",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6929",
+        "hash": "05731fbb",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6920",
+        "hash": "7caed138",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6915",
+        "hash": "320b649e",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6908",
+        "hash": "79453d45",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6907",
+        "hash": "e8ce9ef0",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6906",
+        "hash": "86a6b100",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6902",
+        "hash": "18655c4c",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6901",
+        "hash": "0d3058a7",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6900",
+        "hash": "afd2c6c0",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6899",
+        "hash": "6d909761",
+        "time": "il y a 5 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6898",
+        "hash": "99a33812",
+        "time": "il y a 5 jours"
+      }
+    ],
+    "audit_trail_actions": [
+      "user.device_revoked",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Commande annulée",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox",
+      "Rejeu événement outbox"
+    ],
+    "connexion_utilisateur_count": 0,
+    "wall_of_connexion_utilisateur": false,
+    "featured_names": [
+      "Grande Frites Cheddar Fondu",
+      "Terminator",
+      "Double Cheese",
+      "Suprême",
+      "Tacos L",
+      "Big Burger",
+      "Méga",
+      "Petite Frites Cheddar + Oignons Frits"
+    ],
+    "featured_has_e2e_playwright": false,
+    "popular_items": [
+      {
+        "name": "Cayenne",
+        "category": "Sandwichs",
+        "price": "7,40 €"
+      },
+      {
+        "name": "Coca-Cola 33cl",
+        "category": "Boissons",
+        "price": "1,90 €"
+      },
+      {
+        "name": "Tacos M",
+        "category": "Tacos",
+        "price": "6,90 €"
+      },
+      {
+        "name": "Eau Plate 50cl",
+        "category": "Boissons",
+        "price": "1,00 €"
+      }
+    ],
+    "popular_names": [
+      "Cayenne",
+      "Coca-Cola 33cl",
+      "Tacos M",
+      "Eau Plate 50cl"
+    ],
+    "popular_categories": [
+      "Sandwichs",
+      "Boissons",
+      "Tacos",
+      "Boissons"
+    ],
+    "popular_has_technique_interne": false,
+    "body_has_technique_interne": false,
+    "body_technique_interne_count": 0,
+    "i18n_leak": false,
+    "body_has_ellipsis_kpi": false
+  },
+  "api_summary": {
+    "total_menu_items": 55,
+    "popular_count": 4,
+    "popular_items": [
+      {
+        "name": "Cayenne",
+        "category": "Sandwichs"
+      },
+      {
+        "name": "Coca-Cola 33cl",
+        "category": "Boissons"
+      },
+      {
+        "name": "Tacos M",
+        "category": "Tacos"
+      },
+      {
+        "name": "Eau Plate 50cl",
+        "category": "Boissons"
+      }
+    ],
+    "popular_has_technique_interne": false,
+    "featured_count": 8,
+    "featured_names": [
+      "Grande Frites Cheddar fondu",
+      "Terminator",
+      "Double Cheese",
+      "Suprême",
+      "Tacos L",
+      "Big Burger",
+      "Méga",
+      "Petite Frites Cheddar + Oignons frits"
+    ],
+    "featured_has_e2e_playwright": false,
+    "audit_trail_row_count": 20,
+    "connexion_utilisateur_count": 0,
+    "audit_actions_sample": [
+      "user.device_revoked",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled",
+      "order.cancelled"
+    ],
+    "connexion_like_action_count": 0
+  },
+  "counts": {
+    "audit_trail_row_count_dom": 20,
+    "audit_trail_row_count_api": 20,
+    "connexion_utilisateur_count_dom": 0,
+    "connexion_utilisateur_count_api": 0,
+    "kpi_total_articles_menu_dom": "55",
+    "kpi_articles_is_55": true,
+    "kpi_total_menu_items_api": 55,
+    "popular_has_technique_interne_dom": false,
+    "popular_has_technique_interne_api": false,
+    "body_has_technique_interne": false,
+    "body_technique_interne_count": 0,
+    "popular_items": [
+      {
+        "name": "Cayenne",
+        "category": "Sandwichs",
+        "price": "7,40 €"
+      },
+      {
+        "name": "Coca-Cola 33cl",
+        "category": "Boissons",
+        "price": "1,90 €"
+      },
+      {
+        "name": "Tacos M",
+        "category": "Tacos",
+        "price": "6,90 €"
+      },
+      {
+        "name": "Eau Plate 50cl",
+        "category": "Boissons",
+        "price": "1,00 €"
+      }
+    ],
+    "featured_names": [
+      "Grande Frites Cheddar Fondu",
+      "Terminator",
+      "Double Cheese",
+      "Suprême",
+      "Tacos L",
+      "Big Burger",
+      "Méga",
+      "Petite Frites Cheddar + Oignons Frits"
+    ],
+    "featured_has_e2e_playwright_dom": false,
+    "featured_has_e2e_playwright_api": false
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097247624
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097252917
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097252917
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788097252918
+    }
+  ],
+  "http_4xx_ignored_debugbar_english_storage": [
+    {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "status": 404
+    }
+  ],
+  "final_url": "http://127.0.0.1:8766/admin/dashboard",
+  "blockers": []
+}

@@ -1,0 +1,129 @@
+[
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788010541649
+  },
+  {
+    "kind": "failed",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "font",
+    "errorText": "net::ERR_FAILED",
+    "ws_or_debugbar": false,
+    "ts": 1788010542341
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788010542527
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-terminator.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/sandwich-cayenne.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/coca.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/eau.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/frites-cheddar.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/item-default.svg?v=1774661868",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/menu-frites-boisson.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/storage/7/conversions/frites-thumb.png",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "failed",
+    "url": "http://127.0.0.1:8766/images/menu/thumbs/double-cheese.webp?v=1787786786",
+    "method": "GET",
+    "status": 0,
+    "resourceType": "image",
+    "errorText": "net::ERR_ABORTED",
+    "ws_or_debugbar": false,
+    "ts": 1788010543548
+  },
+  {
+    "kind": "http",
+    "url": "http://127.0.0.1:8766/storage/1/english.png",
+    "method": "GET",
+    "status": 404,
+    "resourceType": "image",
+    "ws_or_debugbar": false,
+    "ts": 1788010544661
+  }
+]

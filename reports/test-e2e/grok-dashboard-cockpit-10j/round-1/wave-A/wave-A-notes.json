@@ -1,0 +1,493 @@
+{
+  "wave": "A-dashboard-cockpit-vague-1-cycle-1",
+  "base_url": "http://127.0.0.1:8766",
+  "login": {
+    "status": 201,
+    "url": "http://127.0.0.1:8766/admin/dashboard"
+  },
+  "hard_reload": true,
+  "catalogue_clicked": true,
+  "catalogue_url": "http://127.0.0.1:8766/admin/items/studio",
+  "states": [
+    {
+      "name": "idle",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/01-dashboard.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/01-dashboard.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/01-dashboard.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/01-dashboard.network.json",
+      "notes": "Admin login then HARD RELOAD /admin/dashboard. Overflow expanded. No POS/kiosk/orders."
+    },
+    {
+      "name": "from-dashboard-catalogue",
+      "url": "http://127.0.0.1:8766/admin/items/studio",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/02-from-dashboard-catalogue.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/02-from-dashboard-catalogue.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/02-from-dashboard-catalogue.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-1/wave-A/02-from-dashboard-catalogue.network.json",
+      "notes": "Clicked Accès rapides « Catalogue ». Did not click POS payment, no orders, no kiosk wizard."
+    }
+  ],
+  "observed": {
+    "url": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "overview_heading": "Vue d’ensemble",
+    "live_heading": "Suivi en direct",
+    "overview_tiles": [
+      {
+        "label": "Ventes du jour",
+        "value": "0,00 €",
+        "background": "#F4501E",
+        "background_class": "orange",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#F4501E]"
+      },
+      {
+        "label": "Commandes du jour",
+        "value": "0",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#1A1A1A]"
+      },
+      {
+        "label": "Total articles menu",
+        "value": "55",
+        "background": "#FFB800",
+        "background_class": "yellow",
+        "className": "p-4 rounded-lg flex items-center gap-4 bg-[#FFB800]"
+      }
+    ],
+    "live_tiles": [
+      {
+        "label": "Ticket Moyen",
+        "value": "0,00 €",
+        "background": "#1A1A1A",
+        "background_class": "black",
+        "className": "p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-[#1A1A1A] text-white"
+      }
+    ],
+    "live_labels": [
+      "Ticket Moyen"
+    ],
+    "live_only_ticket_moyen": true,
+    "live_has_duplicate_ca": false,
+    "live_has_duplicate_commandes": false,
+    "total_articles_menu": "55",
+    "kpi_articles_is_55": true,
+    "ventes_du_jour": "0,00 €",
+    "commandes_du_jour": "0",
+    "ticket_moyen": "0,00 €",
+    "quick_access": [
+      {
+        "text": "POS",
+        "href": "/admin/pos"
+      },
+      {
+        "text": "Commandes caisse",
+        "href": "/admin/pos-orders"
+      },
+      {
+        "text": "Suivi caisse (kanban)",
+        "href": "/admin/pos-orders-tracker"
+      },
+      {
+        "text": "Encaissement",
+        "href": "/admin/encaissement"
+      },
+      {
+        "text": "Historique",
+        "href": "/admin/historique"
+      },
+      {
+        "text": "Écran cuisine",
+        "href": "/admin/kitchen-display-system"
+      },
+      {
+        "text": "Suivi client",
+        "href": "/admin/order-status-screen"
+      },
+      {
+        "text": "Catalogue",
+        "href": "/admin/items/studio"
+      },
+      {
+        "text": "Produits & Stock",
+        "href": "/admin/stock/rupture"
+      },
+      {
+        "text": "Rapport caisses quotidien",
+        "href": "/admin/cash-sessions-report"
+      },
+      {
+        "text": "Vue caisse unifiée",
+        "href": "/admin/cash-overview"
+      }
+    ],
+    "pdf_cloture_button": "PDF Clôture du jour",
+    "pdf_cloture_present": true,
+    "audit_trail_heading_present": true,
+    "audit_trail_row_count": 20,
+    "audit_trail_sample": [
+      {
+        "user": "Système",
+        "action": "user.device_revoked",
+        "resource": "personal_access_token#11720",
+        "hash": "0651fd3b",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6929",
+        "hash": "05731fbb",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6920",
+        "hash": "7caed138",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6915",
+        "hash": "320b649e",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6908",
+        "hash": "79453d45",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6907",
+        "hash": "e8ce9ef0",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6906",
+        "hash": "86a6b100",
+        "time": "il y a 4 jours"
+      },
+      {
+        "user": "Système",
+        "action": "Commande annulée",
+        "resource": "order#6902",
+        "hash": "18655c4c",
+        "time": "il y a 4 jours"
+      }
+    ],
+    "connexion_utilisateur_count": 0,
+    "wall_of_connexion_utilisateur": false,
+    "featured_names": [
+      "Petite Frites Cheddar Fondu",
+      "Fish Burger",
+      "Double Cheese",
+      "Big Burger",
+      "Grande Frites Cheddar Fondu",
+      "Méga",
+      "Menu Enfant Chicken Burger",
+      "Grande Frites Cheddar + Oignons Frits"
+    ],
+    "featured_has_e2e_playwright": false,
+    "popular_names": [
+      "Menu (Frites + Boisson)",
+      "Cayenne",
+      "Frites Seules",
+      "Coca-Cola 33cl",
+      "Tacos M",
+      "Eau Plate 50cl"
+    ],
+    "stock_bas": {
+      "present": true,
+      "count_badge": null,
+      "empty": true,
+      "error": false,
+      "rows": []
+    },
+    "last_z": "Dernier Rapport Z Dernier rapport Z #27 Closed 16/07/2026 06:57:02 Voir toutes",
+    "sla_present": true,
+    "sla_text": "SUPERVISION CUISINE Délais de préparation Actualisé à l’instant 0 hors délai 0 urgentes — plus ancienne Aucune préparation hors délai Dernier contrôle terminé avec succès. 0 préparations hors délai, dont 0 urgentes.",
+    "channels": [
+      "Web 0%",
+      "Kiosk/App 0%",
+      "POS 0%"
+    ],
+    "order_stats_heading": "Statistiques Des Commandes",
+    "total_orders": "0",
+    "sales_summary_present": true,
+    "order_summary_present": true,
+    "magenta_in_overview": false,
+    "cayenne_palette": [
+      "orange",
+      "black",
+      "yellow"
+    ],
+    "i18n_leak": false,
+    "body_has_ellipsis_kpi": false,
+    "greeting": "Bonjour !\nAdmin Le Cayenne"
+  },
+  "checklist_A1_A11": {
+    "A1": {
+      "id": "A1",
+      "name": "KPI ventes/commandes/articles/ticket",
+      "ventes_du_jour": "0,00 €",
+      "commandes_du_jour": "0",
+      "total_articles_menu": "55",
+      "kpi_articles_is_55": true,
+      "ticket_moyen": "0,00 €",
+      "observed": true
+    },
+    "A2": {
+      "id": "A2",
+      "name": "Accès rapides",
+      "labels": [
+        "POS",
+        "Commandes caisse",
+        "Suivi caisse (kanban)",
+        "Encaissement",
+        "Historique",
+        "Écran cuisine",
+        "Suivi client",
+        "Catalogue",
+        "Produits & Stock",
+        "Rapport caisses quotidien",
+        "Vue caisse unifiée"
+      ],
+      "hrefs": [
+        "/admin/pos",
+        "/admin/pos-orders",
+        "/admin/pos-orders-tracker",
+        "/admin/encaissement",
+        "/admin/historique",
+        "/admin/kitchen-display-system",
+        "/admin/order-status-screen",
+        "/admin/items/studio",
+        "/admin/stock/rupture",
+        "/admin/cash-sessions-report",
+        "/admin/cash-overview"
+      ],
+      "catalogue_present": true,
+      "observed": true
+    },
+    "A3": {
+      "id": "A3",
+      "name": "Suivi en direct",
+      "heading": "Suivi en direct",
+      "tiles": [
+        {
+          "label": "Ticket Moyen",
+          "value": "0,00 €",
+          "background": "#1A1A1A",
+          "background_class": "black",
+          "className": "p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-[#1A1A1A] text-white"
+        }
+      ],
+      "live_only_ticket_moyen": true,
+      "observed": true
+    },
+    "A4": {
+      "id": "A4",
+      "name": "SLA cuisine",
+      "present": true,
+      "text": "SUPERVISION CUISINE Délais de préparation Actualisé à l’instant 0 hors délai 0 urgentes — plus ancienne Aucune préparation hors délai Dernier contrôle terminé avec succès. 0 préparations hors délai, dont 0 urgentes.",
+      "observed": true
+    },
+    "A5": {
+      "id": "A5",
+      "name": "Canaux (Web / Kiosk / POS)",
+      "channels": [
+        "Web 0%",
+        "Kiosk/App 0%",
+        "POS 0%"
+      ],
+      "observed": true
+    },
+    "A6": {
+      "id": "A6",
+      "name": "Audit trail",
+      "heading_present": true,
+      "row_count": 20,
+      "connexion_utilisateur_count": 0,
+      "wall_of_connexion_utilisateur": false,
+      "sample": [
+        {
+          "user": "Système",
+          "action": "user.device_revoked",
+          "resource": "personal_access_token#11720",
+          "hash": "0651fd3b",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6929",
+          "hash": "05731fbb",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6920",
+          "hash": "7caed138",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6915",
+          "hash": "320b649e",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6908",
+          "hash": "79453d45",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6907",
+          "hash": "e8ce9ef0",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6906",
+          "hash": "86a6b100",
+          "time": "il y a 4 jours"
+        },
+        {
+          "user": "Système",
+          "action": "Commande annulée",
+          "resource": "order#6902",
+          "hash": "18655c4c",
+          "time": "il y a 4 jours"
+        }
+      ],
+      "observed": true
+    },
+    "A7": {
+      "id": "A7",
+      "name": "Stats commandes / CA / résumé",
+      "order_stats_heading": "Statistiques Des Commandes",
+      "total_orders": "0",
+      "sales_summary_present": true,
+      "order_summary_present": true,
+      "observed": true
+    },
+    "A8": {
+      "id": "A8",
+      "name": "Dernier Z",
+      "last_z": "Dernier Rapport Z Dernier rapport Z #27 Closed 16/07/2026 06:57:02 Voir toutes",
+      "observed": true
+    },
+    "A9": {
+      "id": "A9",
+      "name": "Mis en avant / populaires",
+      "featured_names": [
+        "Petite Frites Cheddar Fondu",
+        "Fish Burger",
+        "Double Cheese",
+        "Big Burger",
+        "Grande Frites Cheddar Fondu",
+        "Méga",
+        "Menu Enfant Chicken Burger",
+        "Grande Frites Cheddar + Oignons Frits"
+      ],
+      "popular_names": [
+        "Menu (Frites + Boisson)",
+        "Cayenne",
+        "Frites Seules",
+        "Coca-Cola 33cl",
+        "Tacos M",
+        "Eau Plate 50cl"
+      ],
+      "featured_has_e2e_playwright": false,
+      "observed": true
+    },
+    "A10": {
+      "id": "A10",
+      "name": "Stock bas",
+      "stock_bas": {
+        "present": true,
+        "count_badge": null,
+        "empty": true,
+        "error": false,
+        "rows": []
+      },
+      "observed": true
+    },
+    "A11": {
+      "id": "A11",
+      "name": "PDF clôture",
+      "button": "PDF Clôture du jour",
+      "present": true,
+      "observed": true
+    }
+  },
+  "http_4xx_5xx_excluding_ws_debugbar_english_storage": [
+    {
+      "kind": "failed",
+      "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "font",
+      "errorText": "net::ERR_FAILED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788076427401
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788076432801
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9100/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788076432801
+    },
+    {
+      "kind": "failed",
+      "url": "http://127.0.0.1:9101/health",
+      "method": "GET",
+      "status": 0,
+      "resourceType": "fetch",
+      "errorText": "net::ERR_CONNECTION_REFUSED",
+      "ws_or_debugbar": false,
+      "english_storage_leftover": false,
+      "ts": 1788076432802
+    }
+  ],
+  "http_4xx_ignored_debugbar_english_storage": [
+    {
+      "url": "http://127.0.0.1:8766/storage/1/english.png",
+      "status": 404
+    }
+  ],
+  "final_url": "http://127.0.0.1:8766/admin/items/studio",
+  "blockers": []
+}

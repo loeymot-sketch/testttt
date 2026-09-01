@@ -1,0 +1,64 @@
+{
+  "task_id": "VOICE-ORDER-ASSIST-V1-20260830",
+  "role": "complex-implementer",
+  "mode": "plan-review-then-execute",
+  "primary_model_hint": "gpt-5.6-sol",
+  "reasoning_effort": "xhigh",
+  "objective": "Implement the bounded Voice Order Assistant V1 exactly as described in plans/PLAN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md. The employee remains the caller-facing agent; Deepgram transcribes; FoodKing presents a structured draft and recommended response; the employee validates in the existing POS wizard and submits with the existing deferred phone-order path.",
+  "execution_instruction": "Use the available code-mode filesystem tools to inspect the repository, implement the allowlisted product changes directly in the working tree, and run targeted tests before returning the required strict JSON execution summary. Do not merely propose excerpts. Preserve every unrelated dirty-worktree hunk.",
+  "plan_file": "plans/PLAN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md",
+  "report_file": "reports/execution/RUN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md",
+  "constraints": [
+    "Preserve every unrelated dirty-worktree change. routes/api.php already contains an owner change adding availableSourcesForCategory; retain it byte-for-byte.",
+    "Do not touch resources/js/router/index.js, OrderService, FrontendOrderService, PricingService, OrderStateMachine, payment services, KDS services, migrations or any frozen file.",
+    "No frontend price calculation and no LLM price output. Existing quote/store is the only price and order authority.",
+    "Gateway payload cannot choose branch_id. Resolve branch from server-side gateway configuration after HMAC verification and test cross-branch denial.",
+    "No raw audio persistence. Do not log transcripts, phone numbers, API keys, SIP secrets or HMAC secrets.",
+    "No autonomous order submission. The employee must review/correct and explicitly invoke the existing phone-order submission.",
+    "No media may be opened or sent to Deepgram before per-call employee confirmation that the caller was informed. Pre-consent packets are discarded and never replayed.",
+    "Use atomic shared-cache replay reservation, constant-time HMAC comparison, strict payload size/schema limits and dedicated rate limits.",
+    "Call-order linking must be idempotent, same-branch, phone-order-only, non-reassignable and retryable after cart reset.",
+    "Redact caller name/phone/email before OpenAI; never log transcript or PII.",
+    "VOICE_ORDER_ENABLED must default false. The real-call document is a deferred production activation checklist and does not authorize this implementation to enable production.",
+    "Recommended employee replies are deterministic from validated missing/ambiguous slots; never generate prices, availability/timing/allergen promises or acceptance claims.",
+    "Pending call-order links live 24h in localStorage scoped by branch_id and user_id, survive navigation/reload, never cross a branch/user switch, and never resubmit the order.",
+    "Use existing status/payment enums for deferred-phone verification; no magic values.",
+    "If a migration, auth middleware change, frozen edit or out-of-allowlist file becomes necessary, emit ESCALATION and stop that part."
+  ],
+  "external_services": {
+    "deepgram": {
+      "decision": "ADOPT_NOW",
+      "use": "Flux Multilingual STT on EU endpoint via raw WebSocket",
+      "default_model": "flux-general-multi",
+      "audio": "mulaw 8000 Hz from Asterisk ARI External Media",
+      "sdk": "none"
+    },
+    "openai": {
+      "decision": "REUSE_EXISTING_SERVER_CREDENTIAL",
+      "use": "catalog-bounded structured order draft only",
+      "default_model": "gpt-5.6-luna",
+      "fallback": "deterministic matcher plus needs_review"
+    },
+    "asterisk": {
+      "decision": "SELF_HOST_LOCAL",
+      "use": "Free Pro SIP registration, employee endpoint, ARI External Media",
+      "paid_carrier": "none"
+    }
+  },
+  "required_tests": [
+    "HMAC stale/invalid/replay/cross-gateway feature tests",
+    "branch-scoped transcript read/link tests",
+    "extractor schema/fallback tests with HTTP fakes",
+    "OpenAI outgoing-payload minimization/store-disabled test and deterministic recommended-reply safety tests",
+    "admin/gateway negative authorization tests and pending-link branch/user/reload tests",
+    "existing phone-order deferred regressions",
+    "Vue assistant safety/no-auto-submit tests",
+    "Python RTP/signature/Flux event tests",
+    "route list, playwright-critical-flow visual QA and pending human-verification real-call gate"
+  ],
+  "execution_trace": {
+    "delegation": "codex-extension",
+    "graphiti": "not loaded; memory/INDEX.md fallback read",
+    "owner_decisions": "Deepgram approved; cheap GPT acceptable; Free Pro SIP integration confirmed"
+  }
+}

@@ -25,6 +25,9 @@ class InterrupteurController extends AdminController
     public function __construct(private readonly InterrupteurService $service)
     {
         parent::__construct();
+        // Avant : GET listait les bascules à tout rôle dashboard (caissier).
+        // Seul PUT était Admin. Lecture = plan de panne.
+        $this->middleware(['role:Admin|Tenant Admin']);
     }
 
     public function index(): JsonResponse

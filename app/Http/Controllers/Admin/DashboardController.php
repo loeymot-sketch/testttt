@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Resources\SimpleItemResource;
 use App\Http\Resources\TopCustomerResource;
 use Exception;
+use Throwable;
+use Illuminate\Validation\ValidationException;
 use App\Libraries\AppLibrary;
 use App\Services\ItemService;
 use App\Services\DashboardService;
+use App\Services\ItemCategoryService;
 use App\Http\Resources\ItemResource;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
@@ -23,6 +26,18 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class DashboardController extends AdminController
 {
     private DashboardService $dashboardService;
+
+    private function dashboardFailure(Throwable $exception)
+    {
+        if ($exception instanceof ValidationException) {
+            throw $exception;
+        }
+        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+            throw $exception;
+        }
+
+        return response(['status' => false, 'message' => $exception->getMessage()], 422);
+    }
     private ItemService $itemService;
     private CompanyService $companyService;
 
@@ -68,7 +83,7 @@ class DashboardController extends AdminController
             $period = $request->query('period') === 'today' ? 'today' : 'all';
             return ['data' => ['total_sales' => AppLibrary::currencyAmountFormat($this->dashboardService->totalSales($period))]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -78,7 +93,7 @@ class DashboardController extends AdminController
             $period = $request->query('period') === 'today' ? 'today' : 'all';
             return ['data' => ['total_orders' => $this->dashboardService->totalOrders($period)]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -87,7 +102,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_customers' => $this->dashboardService->totalCustomers()]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -96,7 +111,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_menu_items' => $this->dashboardService->totalMenuItems()]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -106,7 +121,7 @@ class DashboardController extends AdminController
         try {
             return new OrderStatisticsResource($this->dashboardService->orderStatistics($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -115,8 +130,8 @@ class DashboardController extends AdminController
     ): \Illuminate\Http\Response|SalesSummaryResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
             return new SalesSummaryResource($this->dashboardService->salesSummary($request));
-        } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        } catch (Throwable $exception) {
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -126,7 +141,7 @@ class DashboardController extends AdminController
         try {
             return new OrderSummaryResource($this->dashboardService->orderSummary($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -136,7 +151,7 @@ class DashboardController extends AdminController
         try {
             return new CustomerStatesResource($this->dashboardService->customerStates($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -145,26 +160,48 @@ class DashboardController extends AdminController
         try {
             return TopCustomerResource::collection($this->dashboardService->topCustomers());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
     public function featuredItems(): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return SimpleItemResource::collection($this->itemService->featuredItems());
+            return SimpleItemResource::collection($this->withoutCatalogPollution($this->itemService->featuredItems()));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
     public function mostPopularItems(): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return SimpleItemResource::collection($this->itemService->mostPopularItems());
+            return SimpleItemResource::collection($this->withoutCatalogPollution($this->itemService->mostPopularItems()));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
+    }
+
+    /**
+     * SHARED dashboard : on n'édite pas ItemService. On retire les noms E2E/AUDIT
+     * du carrousel « mis en avant » — le gérant ne vend pas ça.
+     */
+    private function withoutCatalogPollution($items)
+    {
+        return collect($items)->filter(function ($item) {
+            if (ItemCategoryService::isAuditPollutionName($item->name ?? '')) {
+                return false;
+            }
+            $categoryName = $item->category->name ?? '';
+            if ($categoryName !== '' && ItemCategoryService::isAuditPollutionName($categoryName)) {
+                return false;
+            }
+            if ($categoryName !== '' && ItemCategoryService::isInternalOpsCategoryName($categoryName)) {
+                return false;
+            }
+
+            return true;
+        })->values();
     }
 
     public function realtimeReport()
@@ -172,7 +209,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->realtimeReport()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -181,7 +218,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->slaAlerts()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -190,7 +227,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->channelStatistics()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -199,7 +236,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->auditTrail()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 
@@ -243,7 +280,7 @@ class DashboardController extends AdminController
                 ]
             );
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->dashboardFailure($exception);
         }
     }
 }

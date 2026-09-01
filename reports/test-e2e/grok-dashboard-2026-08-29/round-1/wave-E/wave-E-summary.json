@@ -1,0 +1,49 @@
+{
+  "wave": "E-cashier",
+  "base_url": "http://127.0.0.1:8766",
+  "states": [
+    {
+      "name": "cashier-dashboard-sidebar",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/01-dashboard-sidebar/01-dashboard-sidebar.network.json",
+      "notes": "Logged in as pos@lecayenne.fr. Landing was http://127.0.0.1:8766/admin/pos. Immediately navigated to /admin/dashboard without POS clicks. Sidebar labels: [\"CAISSE ET COMMANDES\",\"Tableau De Bord\",\"POS\",\"Commandes Caisse\",\"Historique\",\"Encaissement\",\"Ticket Promo\",\"Réglages Ticket Promo\",\"Commande Uber (Photo)\",\"La Roue\",\"Écran Cuisine\",\"Suivi Client\"]. État du système present: false"
+    },
+    {
+      "name": "observability-system-deeplink",
+      "url": "http://127.0.0.1:8766/admin/observability/system",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system/02-observability-system.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system/02-observability-system.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system/02-observability-system.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-2026-08-29/round-1/wave-E/02-observability-system/02-observability-system.network.json",
+      "notes": "Deep-link /admin/observability/system. Vue [data-testid=system-health] mounted=true. h2 État du système=true. Impossible de lire=true. erreur=Impossible de lire l'état du système."
+    }
+  ],
+  "sidebar_exact_labels": [
+    "CAISSE ET COMMANDES",
+    "Tableau De Bord",
+    "POS",
+    "Commandes Caisse",
+    "Historique",
+    "Encaissement",
+    "Ticket Promo",
+    "Réglages Ticket Promo",
+    "Commande Uber (Photo)",
+    "La Roue",
+    "Écran Cuisine",
+    "Suivi Client"
+  ],
+  "etat_du_systeme_in_sidebar": false,
+  "cockpit": {
+    "final_url": "http://127.0.0.1:8766/admin/observability/system",
+    "vue_mounted": true,
+    "h2_etat_du_systeme": true,
+    "impossible_de_lire": true,
+    "impossible_etat": true,
+    "impossible_interrupteurs": false,
+    "erreur_text": "Impossible de lire l'état du système."
+  },
+  "blockers": []
+}

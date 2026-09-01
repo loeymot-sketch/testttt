@@ -30,6 +30,27 @@
                                 {{ errors.addon_item_id[0] }}
                             </small>
                         </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="addon_role" class="db-field-title required">
+                                {{ $t('label.itemAddon.role', 'Rôle (boisson, dessert…)') }}
+                            </label>
+                            <select
+                                id="addon_role"
+                                class="db-field-control"
+                                v-model="props.form.role"
+                                data-testid="admin-addon-form-role"
+                            >
+                                <option value="">--</option>
+                                <option value="drink">{{ $t('label.itemAddon.role_drink', 'Boisson') }}</option>
+                                <option value="side">{{ $t('label.itemAddon.role_side', 'Accompagnement') }}</option>
+                                <option value="dessert">{{ $t('label.itemAddon.role_dessert', 'Dessert') }}</option>
+                                <option value="menu_component">{{ $t('label.itemAddon.role_menu', 'Plat du menu') }}</option>
+                                <option value="upsell">{{ $t('label.itemAddon.role_upsell', 'Suggestion') }}</option>
+                            </select>
+                            <small class="db-field-alert" v-if="errors.role">
+                                {{ errors.role[0] }}
+                            </small>
+                        </div>
                         <div class="form-col-12 sm:form-col-6" v-if="variations.length > 0" v-for="variation in variations"
                             :key="variation">
                             <label :for="'addon_item_id_' + variation.item_attribute_id" class="db-field-title">
@@ -128,14 +149,15 @@ export default {
             this.$props.props.form = {
                 addon_item_id: null,
                 addon_item_variation: {},
+                role: '',
             };
         },
         variation: function (id) {
             this.loading.isActive = true;
-            this.$props.props.form = {
-                addon_item_id: null,
-                addon_item_variation: {},
-            };
+            // Avant : recréer tout le form vidait le produit que le commerçant
+            // venait de choisir — Enregistrer échouait, la liste redevenait « -- ».
+            this.props.form.addon_item_id = id;
+            this.props.form.addon_item_variation = {};
             this.errors = {};
             this.$store.dispatch("itemVariation/listGroupByAttributes", {
                 id: id,
@@ -155,8 +177,7 @@ export default {
             try {
                 const tempId = this.$store.getters["itemAddon/temp"].temp_id;
                 this.loading.isActive = true;
-                if (this.props.form.addon_item_variation) {
-
+                if (this.props.form.addon_item_variation && typeof this.props.form.addon_item_variation === 'object') {
                     this.props.form.addon_item_variation = JSON.stringify(this.props.form.addon_item_variation);
                 }
                 this.$store.dispatch("itemAddon/save", this.props).then((res) => {
@@ -169,6 +190,7 @@ export default {
                     this.props.form = {
                         addon_item_id: null,
                         addon_item_variation: {},
+                        role: '',
                     };
                     this.variations = [],
                         this.errors = {};

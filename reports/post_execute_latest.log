@@ -1,9 +1,10 @@
-[CURRENT] TASK_ID: CAISSE-SUPERVISOR-CONTROL-20260823
-[CURRENT] EXECUTE_DELEGATION: codex-extension
-[CURRENT] EXECUTION_RESULT: PASS — implementation and scoped validation completed 2026-08-23
-[CURRENT] VALIDATION_SUMMARY: PHPUnit 39 passed; Vitest 89 passed; Wave E 1 passed; kiosk multi-product 1 passed; production build passed; browser keyboard QA passed
-[CURRENT] INVARIANTS: backend pricing SSOT preserved; canonical OrderStatus/service transitions; exact branch_id; dispatch sentinels passed; frozen files unchanged; OrderService/FrontendOrderService symmetry N/A
-[CURRENT] KNOWN_EXTERNAL_GATES: pos:lint:pricing requires existing signoffs/frozen-zone approval; historical idempotency fixture references unavailable Coca-Cola 33cl
+[CURRENT] TASK_ID: VOICE-ORDER-ASSIST-V1-20260830
+[CURRENT] EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
+[CURRENT] FALLBACK_REASON: codex-extension exhausted its ChatGPT usage limit after two documented retries
+[CURRENT] EXECUTION_RESULT: PASS — disabled-by-default implementation and scoped validation completed 2026-08-30
+[CURRENT] VALIDATION_SUMMARY: PHPUnit VoiceOrder 11 passed; existing phone-order tests 8 passed; Vitest 4 passed; Python gateway 5 passed; SFC/Babel/PHP/routes PASS; Claude audit PASS; GPT final audit PASS
+[CURRENT] INVARIANTS: backend pricing SSOT and existing phoneOrderSubmit authority preserved; branch-scoped storage; no autonomous dispatch; frozen files unchanged; OrderService/FrontendOrderService symmetry N/A
+[CURRENT] KNOWN_EXTERNAL_GATES: production activation remains blocked until approved consent wording and a real Free Pro SIP call satisfy docs/gates/GATE_VOICE-ORDER-ASSIST-V1-20260830_REAL_CALL_2026-08-30.md
 
 [HISTORICAL 2026-05-04] [D1] EXECUTE_DELEGATION: foodking-complex-implementer
 [post-execute] task: unknown

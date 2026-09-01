@@ -92,7 +92,7 @@ const t = (key) => ({
     'label.composer.source_item_attribute': 'Attribut produit',
     'label.composer.source_extra_group': 'Groupe extras',
     'label.composer.source_addon': 'Addon catalogue',
-    'label.composer.all_source_options': 'Toutes les options',
+    'label.composer.all_source_options': 'Aucune source — page vide en caisse',
     'message.composer.no_steps': 'Ajoutez une page pour commencer.',
 }[key] || key);
 
@@ -224,7 +224,7 @@ describe('ProductComposerEditorComponent V2', () => {
         const { wrapper } = await mountEditor();
 
         expect(wrapper.find('[data-testid="composer-step-source-ref"]').text()).toContain('Viande');
-        expect(wrapper.find('[data-testid="composer-step-source-ref"]').text()).toContain('Toutes les options');
+        expect(wrapper.find('[data-testid="composer-step-source-ref"]').text()).toContain('Aucune source — page vide en caisse');
     });
 
     it('bouton Publier demande confirmation puis appelle POST publish', async () => {

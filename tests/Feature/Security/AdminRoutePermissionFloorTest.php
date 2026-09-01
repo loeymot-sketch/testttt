@@ -54,13 +54,7 @@ class AdminRoutePermissionFloorTest extends TestCase
         'api/admin/cash-overview',            // can('cash-sessions-report')
         'api/admin/cash-sessions-report',     // can('cash-sessions-report')
         'api/admin/fiscal/z-report',          // can('pos-manage-fiscal')
-        // [PILOTAGE 2026-08-09, déclaré le 2026-08-12] Écran « interrupteurs » : gardé INLINE par un
-        // contrôle de RÔLE, plus strict qu'une permission — `InterrupteurController:38` fait
-        // `abort_if(! $u->hasRole('Admin') && ! $u->hasRole('Tenant Admin'), 403)`. Vérifié à la main
-        // avant de le déclarer ici. Aucune PII : la réponse ne contient que des bascules de
-        // configuration, et `idempotency.enabled` est volontairement HORS de la liste blanche du
-        // service (protection NF525, pas une option). Route d'une autre session, guard confirmé.
-        'api/admin/observability/interrupteurs',
+
         // — Non-PII : catalogue / config / lookups —
         'api/admin/country-code',
         'api/admin/default-access',           // POS Operator bootstrap (cf. RouteCoverage_AdminPermissionGateSentinelTest)

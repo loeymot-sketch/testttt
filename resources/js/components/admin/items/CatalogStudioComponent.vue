@@ -343,11 +343,24 @@ export default {
         selectedCategoryName() {
             return this.selectedCategory?.name || `#${this.selectedCategoryId}`;
         },
+        catalogProducts() {
+            const visibleIds = new Set((this.categories || []).map((c) => Number(c.id)));
+            const pollution = /^(AUDIT-|E2E[\s_\-]?|ZZ-TEST-|RED-TEAM-|TEST-)/i;
+            return (this.products || []).filter((item) => {
+                if (pollution.test(String(item.name || "").trim())) {
+                    return false;
+                }
+                return visibleIds.has(Number(item.item_category_id || 0));
+            });
+        },
+        customerFacingProducts() {
+            return this.catalogProducts.filter((item) => !this.isInternalCategoryId(item.item_category_id));
+        },
         totalProducts() {
-            return this.products.length;
+            return this.customerFacingProducts.length;
         },
         productsCountByCategory() {
-            return this.products.reduce((carry, item) => {
+            return this.catalogProducts.reduce((carry, item) => {
                 const key = Number(item.item_category_id || 0);
                 carry[key] = (carry[key] || 0) + 1;
                 return carry;
@@ -355,15 +368,13 @@ export default {
         },
         filteredProducts() {
             const q = this.searchTerm.toLowerCase();
-            return this.products.filter((item) => {
-                if (this.selectedCategoryId !== null && Number(item.item_category_id) !== this.selectedCategoryId) {
-                    return false;
-                }
-                if (!q) {
-                    return true;
-                }
-                return String(item.name || "").toLowerCase().includes(q);
-            });
+            const source = this.selectedCategoryId === null
+                ? this.customerFacingProducts
+                : this.catalogProducts.filter((item) => Number(item.item_category_id) === this.selectedCategoryId);
+            if (!q) {
+                return source;
+            }
+            return source.filter((item) => String(item.name || "").toLowerCase().includes(q));
         },
     },
     mounted() {
@@ -383,6 +394,14 @@ export default {
             }
             const translated = this.$t(key);
             return translated === key ? fallback : translated;
+        },
+        isInternalCategoryId(id) {
+            const cat = (this.categories || []).find((c) => Number(c.id) === Number(id));
+            const name = String(cat?.name || "");
+            if (name === "Uber (technique)") {
+                return true;
+            }
+            return /\(interne/i.test(name);
         },
         statusClass(status) {
             return appService.statusClass(status);

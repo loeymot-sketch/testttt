@@ -80,11 +80,11 @@ export default {
             const raw = this.$store.getters.authPermission;
             const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
             if (!perms.length) {
-                return true;
+                return false;
             }
             const entry = perms.find((p) => p && p.url === 'transactions');
             if (!entry) {
-                return true;
+                return false;
             }
             return entry.access === true;
         },

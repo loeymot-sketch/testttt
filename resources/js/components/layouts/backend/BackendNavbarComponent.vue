@@ -53,7 +53,7 @@
                         <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
                             class="dropdown-group relative">
                             <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
-                                <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                                <img :src="languageFlagSrc(language)" alt="" class="w-4 h-4 rounded-full">
                                 <span
                                     class="hidden md:block whitespace-nowrap text-xs font-medium capitalize text-heading">
                                     {{ language.name }}
@@ -63,7 +63,7 @@
                                 class="p-2 min-w-[180px] rounded-lg shadow-xl absolute top-14 ltr:right-0 rtl:left-0 z-10 border border-gray-200 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list">
                                 <li @click="changeLanguage(language.id, language.code)" v-for="language in languages"
                                     class="flex items-center gap-2 py-1.5 px-2.5 rounded-md cursor-pointer hover:bg-gray-100">
-                                    <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                                    <img :src="languageFlagSrc(language)" alt="" class="w-4 h-4 rounded-full">
                                     <span class="text-heading capitalize text-sm">{{ language.name }}</span>
                                 </li>
                             </ul>
@@ -426,6 +426,24 @@ export default {
         // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
         safePhone(phone) {
             return safePhone(phone);
+        },
+        languageFlagSrc(language) {
+            const code = String(language?.code || language?.name || "").toLowerCase();
+            const files = {
+                en: "english.png",
+                eng: "english.png",
+                english: "english.png",
+                ar: "arabic.png",
+                de: "german.png",
+                bn: "bangla.png",
+                fr: "english.png",
+                french: "english.png",
+            };
+            const file = files[code];
+            if (file) {
+                return `/images/language/${file}`;
+            }
+            return language?.image || "/images/language/english.png";
         },
         // [UR3-A1 V1.0.2 Wave D1] Profile dropdown keyboard handlers.
         // Note: open/close SSOT is dropdown.js — these helpers manually replicate
