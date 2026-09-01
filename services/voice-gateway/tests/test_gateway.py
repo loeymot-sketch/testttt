@@ -6,9 +6,10 @@ import hmac
 import struct
 import unittest
 
-from main import CallSession, DeepgramStream
+from main import CallSession
 from rtp import AudioBatcher, rtp_payload
 from signing import canonical_json, signed_headers
+from stt_providers import DeepgramProvider
 
 
 class RtpContractTest(unittest.TestCase):
@@ -88,7 +89,7 @@ class DeepgramShutdownContractTest(unittest.IsolatedAsyncioTestCase):
             async def close(self) -> None:
                 self.closed = True
 
-        stream = DeepgramStream(None, "key", None, "call-shutdown-001")  # type: ignore[arg-type]
+        stream = DeepgramProvider(None, "key", None)  # type: ignore[arg-type]
         websocket = FakeWebSocket()
         stream.ws = websocket  # type: ignore[assignment]
 

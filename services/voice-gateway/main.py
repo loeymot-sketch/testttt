@@ -14,12 +14,14 @@ import aiohttp
 
 from rtp import AudioBatcher, rtp_payload
 from signing import canonical_json, signed_headers
+from stt_providers import STTProvider, build_stt_provider
 
-
-DEEPGRAM_URL = (
-    "wss://api.eu.deepgram.com/v2/listen"
-    "?model=flux-general-multi&language_hint=fr&encoding=mulaw&sample_rate=8000"
-)
+DEFAULT_ASSEMBLYAI_KEYTERMS = [
+    "Cayenne", "cheeseburger", "cordon bleu", "tenders",
+    "salade", "tomate", "oignon", "cheddar", "fromagère",
+    "algérienne", "andalouse", "samouraï", "sauce blanche",
+    "supplément", "tacos",
+]
 
 
 @dataclass(frozen=True)
@@ -27,7 +29,11 @@ class Settings:
     foodking_base_url: str
     gateway_id: str
     gateway_secret: str
+    stt_provider: str
     deepgram_api_key: str
+    assemblyai_api_key: str
+    assemblyai_model: str
+    assemblyai_keyterms: list[str]
     ari_url: str
     ari_username: str
     ari_password: str
@@ -37,11 +43,18 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
+        stt_provider = os.environ.get("VOICE_GATEWAY_STT_PROVIDER", "assemblyai").strip().lower()
+        keyterms_env = os.environ.get("VOICE_GATEWAY_ASSEMBLYAI_KEYTERMS", "")
+        keyterms = [t.strip() for t in keyterms_env.split(",") if t.strip()] or list(DEFAULT_ASSEMBLYAI_KEYTERMS)
         settings = cls(
             foodking_base_url=os.environ.get("VOICE_GATEWAY_FOODKING_BASE_URL", "").rstrip("/"),
             gateway_id=os.environ.get("VOICE_ORDER_GATEWAY_ID", "restaurant-main"),
             gateway_secret=os.environ.get("VOICE_ORDER_GATEWAY_SECRET", ""),
+            stt_provider=stt_provider,
             deepgram_api_key=os.environ.get("VOICE_GATEWAY_DEEPGRAM_API_KEY", ""),
+            assemblyai_api_key=os.environ.get("VOICE_GATEWAY_ASSEMBLYAI_API_KEY", ""),
+            assemblyai_model=os.environ.get("VOICE_GATEWAY_ASSEMBLYAI_MODEL", "universal-streaming-multilingual"),
+            assemblyai_keyterms=keyterms,
             ari_url=os.environ.get("VOICE_GATEWAY_ARI_URL", "http://127.0.0.1:8088/ari").rstrip("/"),
             ari_username=os.environ.get("VOICE_GATEWAY_ARI_USERNAME", "foodking"),
             ari_password=os.environ.get("VOICE_GATEWAY_ARI_PASSWORD", ""),
@@ -49,10 +62,19 @@ class Settings:
             rtp_advertise_host=os.environ.get("VOICE_GATEWAY_RTP_ADVERTISE_HOST", "127.0.0.1"),
             rtp_bind_host=os.environ.get("VOICE_GATEWAY_RTP_BIND_HOST", "0.0.0.0"),
         )
+        if settings.stt_provider not in {"assemblyai", "deepgram"}:
+            raise RuntimeError(f"VOICE_GATEWAY_STT_PROVIDER invalide: {settings.stt_provider!r} (assemblyai|deepgram attendu).")
+        # Only the SELECTED provider's key is required — switching provider
+        # must never require carrying an unused vendor's secret.
+        stt_key_var, stt_key_value = (
+            ("VOICE_GATEWAY_ASSEMBLYAI_API_KEY", settings.assemblyai_api_key)
+            if settings.stt_provider == "assemblyai"
+            else ("VOICE_GATEWAY_DEEPGRAM_API_KEY", settings.deepgram_api_key)
+        )
         required = {
             "VOICE_GATEWAY_FOODKING_BASE_URL": settings.foodking_base_url,
             "VOICE_ORDER_GATEWAY_SECRET": settings.gateway_secret,
-            "VOICE_GATEWAY_DEEPGRAM_API_KEY": settings.deepgram_api_key,
+            stt_key_var: stt_key_value,
             "VOICE_GATEWAY_ARI_PASSWORD": settings.ari_password,
         }
         missing = [name for name, value in required.items() if not value]
@@ -102,91 +124,25 @@ class RtpReceiver(asyncio.DatagramProtocol):
                     pass
 
 
-class DeepgramStream:
-    def __init__(self, session: aiohttp.ClientSession, key: str, foodking: FoodKingClient, call_id: str) -> None:
-        self.session = session
-        self.key = key
+class FoodKingTranscriptSink:
+    """Adapts the provider-agnostic (final, turn_id, text, confidence) event
+    into the exact FoodKing gateway wire event, unchanged regardless of which
+    STTProvider produced it."""
+
+    def __init__(self, foodking: FoodKingClient, call_id: str) -> None:
         self.foodking = foodking
         self.call_id = call_id
-        self.queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=40)
-        self.ws: aiohttp.ClientWebSocketResponse | None = None
-        self.tasks: list[asyncio.Task[Any]] = []
-        self.last_final_turn: str | None = None
 
-    async def start(self) -> None:
-        # This method is called only after FoodKing returned media_authorized=true.
-        self.ws = await self.session.ws_connect(
-            DEEPGRAM_URL,
-            headers={"Authorization": f"Token {self.key}"},
-            heartbeat=15,
-            timeout=8,
-        )
-        self.tasks = [
-            asyncio.create_task(self._send_audio()),
-            asyncio.create_task(self._receive_events()),
-        ]
-
-    async def close(self) -> None:
-        sender = self.tasks[0] if self.tasks else None
-        receiver = self.tasks[1] if len(self.tasks) > 1 else None
-        if sender:
-            sender.cancel()
-            await asyncio.gather(sender, return_exceptions=True)
-
-        if self.ws and not self.ws.closed:
-            # Flux traite les messages dans l'ordre : terminer le tour courant,
-            # vider l'audio restant, recevoir EndOfTurn, puis fermer proprement.
-            try:
-                await self.ws.send_json({"type": "ForceEndTurn"})
-                await self.ws.send_json({"type": "CloseStream"})
-                if receiver:
-                    await asyncio.wait_for(receiver, timeout=2.0)
-            except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
-                if receiver and not receiver.done():
-                    receiver.cancel()
-            finally:
-                if not self.ws.closed:
-                    await self.ws.close()
-
-        for task in self.tasks:
-            if not task.done():
-                task.cancel()
-        await asyncio.gather(*self.tasks, return_exceptions=True)
-
-    async def _send_audio(self) -> None:
-        assert self.ws is not None
-        while True:
-            await self.ws.send_bytes(await self.queue.get())
-
-    async def _receive_events(self) -> None:
-        assert self.ws is not None
-        async for message in self.ws:
-            if message.type != aiohttp.WSMsgType.TEXT:
-                continue
-            try:
-                payload = json.loads(message.data)
-            except json.JSONDecodeError:
-                continue
-            if payload.get("type") != "TurnInfo":
-                continue
-            text = str(payload.get("transcript") or payload.get("text") or "").strip()
-            if not text:
-                continue
-            event = payload.get("event")
-            turn_id = str(payload.get("turn_index") or payload.get("id") or uuid.uuid4().hex)
-            final = event == "EndOfTurn"
-            if final and self.last_final_turn == turn_id:
-                continue
-            if final:
-                self.last_final_turn = turn_id
-            await self.foodking.event({
-                "event": "transcript.final" if final else "transcript.update",
-                "call_id": self.call_id,
-                "turn_id": turn_id,
-                "speaker": "unknown",
-                "text": text,
-                "confidence": payload.get("confidence"),
-            })
+    async def emit(self, *, final: bool, turn_id: str, text: str, confidence: float | None) -> None:
+        await self.foodking.event({
+            "event": "transcript.final" if final else "transcript.update",
+            "call_id": self.call_id,
+            "turn_id": turn_id,
+            # Never a guessed diarization label — see AssemblyAIProvider for why.
+            "speaker": "unknown",
+            "text": text,
+            "confidence": confidence,
+        })
 
 
 @dataclass
@@ -198,7 +154,7 @@ class CallSession:
     caller_name: str | None = None
     employee_channel_id: str | None = None
     external_channel_id: str | None = None
-    deepgram: DeepgramStream | None = None
+    stt: STTProvider | None = None
     rtp_transport: asyncio.DatagramTransport | None = None
     consent_task: asyncio.Task[Any] | None = None
     ended: bool = False
@@ -294,17 +250,26 @@ class AriGateway:
             await asyncio.sleep(0.75)
 
     async def _attach_transcription(self, call: CallSession) -> None:
-        # No pre-consent packets exist: the UDP listener and Deepgram socket are created here.
-        deepgram = DeepgramStream(self.session, self.settings.deepgram_api_key, self.foodking, call.call_id)
+        # No pre-consent packets exist: the UDP listener and STT socket are created here.
+        sink = FoodKingTranscriptSink(self.foodking, call.call_id)
+        stt = build_stt_provider(
+            self.settings.stt_provider,
+            self.session,
+            sink,
+            deepgram_key=self.settings.deepgram_api_key,
+            assemblyai_key=self.settings.assemblyai_api_key,
+            assemblyai_model=self.settings.assemblyai_model,
+            keyterms=self.settings.assemblyai_keyterms,
+        )
         transport, _ = await asyncio.get_running_loop().create_datagram_endpoint(
-            lambda: RtpReceiver(deepgram.queue),
+            lambda: RtpReceiver(stt.queue),
             local_addr=(self.settings.rtp_bind_host, 0),
         )
         try:
             call.rtp_transport = transport
             port = transport.get_extra_info("sockname")[1]
-            await deepgram.start()
-            call.deepgram = deepgram
+            await stt.start()
+            call.stt = stt
             external = await self._ari("POST", "/channels/externalMedia", params={
                 "app": self.APP,
                 "appArgs": f"external,{call.call_id}",
@@ -319,9 +284,9 @@ class AriGateway:
             if call.external_channel_id:
                 self.channel_to_call[call.external_channel_id] = call.call_id
         except Exception:
-            await deepgram.close()
+            await stt.close()
             transport.close()
-            call.deepgram = None
+            call.stt = None
             call.rtp_transport = None
             raise
 
@@ -334,8 +299,8 @@ class AriGateway:
         call.ended = True
         if call.consent_task:
             call.consent_task.cancel()
-        if call.deepgram:
-            await call.deepgram.close()
+        if call.stt:
+            await call.stt.close()
         if call.rtp_transport:
             call.rtp_transport.close()
         try:
