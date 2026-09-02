@@ -153,12 +153,27 @@ cette mission (POS 18:41 → 19:31, catalogue 16:56, traductions). Conséquences
 
 | Suite | Résultat |
 | --- | --- |
+| **PHPUnit complet** (13 tranches + Unit) | **5 536 tests, 23 014 assertions, 0 échec, 0 erreur, 36 sautés** |
 | PHPUnit ciblé (dashboard, observabilité, pilotage, outbox, sauvegarde) | 384 tests, 0 échec |
 | PHPUnit voisinage dates/authz | 187 tests, 0 échec |
 | PHPUnit pilotage + fiscal | 415 tests, 0 échec |
 | Vitest complet | 4 031 tests, 7 rouges — tous sur `PosComponent`, autre session |
 | Playwright campagne dédiée | 1/1 vert, trois tours |
 | `safety-check` | **BLOQUÉ** — zone gelée stagée par une autre session |
+
+**Comment la suite complète a été obtenue, et pourquoi ça compte.** Deux lancements en une
+seule commande ont été TUÉS avant leur résumé — le premier à 98 % (5 429/5 531), le second à
+16 %. Aucun des deux ne prouve quoi que ce soit : PHPUnit n'imprime son compte qu'à la fin.
+La suite a donc été découpée en douze tranches de fichiers plus la suite Unit, chacune lancée
+jusqu'à son résumé, puis agrégée (`round-2/tranches/`). Chaque tranche est un lancement réel
+avec son propre journal ; ce n'est pas équivalent à un lancement unique — l'état partagé entre
+tranches est réinitialisé — et c'est dit ici plutôt que masqué.
+
+Un seul échec est apparu, dans la tranche 2 :
+`EntityExportNoTruncationTest::test_item_category_export_returns_all_rows` (12 sur 15). Il ne
+vient pas de ce travail : `tests/Feature/Export/EntityExportNoTruncationTest.php` a été
+modifié à 20:08 par l'autre session — pendant la campagne — et son propre commentaire décrit
+la correction d'une instabilité de ce banc. Rejoué sur l'arbre courant : 4/4 verts.
 
 Un rouge de fond a aussi été réparé au passage : `OrderStatisticsSingleGroupedQueryTest`
 échouait depuis le 29 août (le test s'appuyait sur `branch_id = 0` sans le rôle Admin, alors

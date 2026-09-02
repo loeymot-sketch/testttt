@@ -1,0 +1,366 @@
+PHPUnit 9.6.36 by Sebastian Bergmann and contributors.
+
+...............................................................  63 / 502 ( 12%)
+.......SSSSSSSSSS.............................................. 126 / 502 ( 25%)
+..........................................................S.... 189 / 502 ( 37%)
+............................................................... 252 / 502 ( 50%)
+............................................................... 315 / 502 ( 62%)
+............................................................... 378 / 502 ( 75%)
+............................................................... 441 / 502 ( 87%)
+......=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+.=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+.=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 0
+  - Existing items: 0
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+=== MENU SEEDER - Le Grill House ===
+Restaurant: Le Cayenne
+Locale: fr | Currency: EUR
+====================================
+
+Running pre-flight checks...
+✓ Pre-flight checks passed
+
+Checking existing menu data...
+  - Existing categories: 11
+  - Existing items: 11
+  - Found French categories: 4
+  ⚠️ Found English category: 'Sandwich Cayenne'
+🚨 ENGLISH MENU DETECTED! Force purging...
+
+Purging existing menu data...
+  ✓ Purged legacy media from database
+  ✓ Purged item_addons
+  ✓ Purged item_extras
+  ✓ Purged item_variations
+  ✓ Purged item_attributes
+  ✓ Purged items
+  ✓ Purged item_categories
+✓ All menu data purged
+
+Creating categories...
+  ✓ Created: Sandwich Cayenne (template: sandwich)
+  ✓ Created: Galette (template: sandwich)
+  ✓ Created: Sandwich Classique (template: sandwich)
+  ✓ Created: Burgers (template: sandwich)
+  ✓ Created: Tacos (template: tacos)
+  ✓ Created: Bols Gourmands (template: custom)
+  ✓ Created: Frites (template: custom)
+  ✓ Created: Suppléments (template: simple)
+  ✓ Created: Desserts (template: simple)
+  ✓ Created: Boissons (template: simple)
+  ✓ Created: Menu enfant (template: simple)
+✓ Created 11 categories
+
+Creating item attributes...
+  ✓ Created: Viande 1, Viande 2, Viande 3, Viande 4
+  ✓ Created: Sauce (1ère Gratuite)
+  ✓ Created: Type de Pain
+✓ Attributes created
+
+Creating addon items (upsell)...
+  ✓ Created addon: Menu (Frites + Boisson) (3€)
+  ✓ Created addon: Frites Seules (2€)
+  ✓ Created addon: Boisson Seule (2€)
+✓ Created 3 addon items
+
+Creating menu items...
+  ⚠️  Skipping unknown category: nos-tacos
+  ⚠️  Skipping unknown category: nos-sandwichs
+  ⚠️  Skipping unknown category: nos-burgers
+  ⚠️  Skipping unknown category: nos-assiettes
+  ⚠️  Skipping unknown category: ojja
+  ⚠️  Skipping unknown category: omelettes
+  ⚠️  Skipping unknown category: nos-salades
+  ⚠️  Skipping unknown category: chicken-tenders
+  ⚠️  Skipping unknown category: nos-menus-enfants
+  ⚠️  Skipping unknown category: frites-accompagnements
+  ⚠️  Skipping unknown category: nos-desserts
+  ⚠️  Skipping unknown category: nos-boissons
+  ✓ Sauce supplémentaire (0.5€)
+  ✓ Fromage supplémentaire (1€)
+  ✓ Jambon de dinde (1€)
+  ✓ Boursin (1€)
+  ✓ Fromage à raclette (1€)
+  ✓ Œuf (1€)
+  ✓ Galette pommes de terre (1€)
+  ✓ Salade verte (2€)
+✓ Created 8 menu items
+
+
+Verifying French integrity...
+  - Categories: 11
+  - Items: 11
+  - Item Attributes: 6
+  - Item Variations: 0
+  - Item Extras: 48
+  - Item Addons: 24
+
+⚠️  INTEGRITY WARNINGS:
+  - Category 'Sandwich Cayenne' contains English word: Sandwich
+  - Category 'Sandwich Classique' contains English word: Sandwich
+  - Category 'Burgers' contains English word: Burger
+
+✅ Menu seeding completed successfully!
+====================================
+.....................................................   502 / 502 (100%)
+
+Time: 01:59.855, Memory: 139.50 MB
+
+OK, but incomplete, skipped, or risky tests!
+Tests: 502, Assertions: 1724, Skipped: 11.

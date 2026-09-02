@@ -1,0 +1,42 @@
+PHPUnit 9.6.36 by Sebastian Bergmann and contributors.
+
+...............................................................  63 / 596 ( 10%)
+............................................................... 126 / 596 ( 21%)
+.........................[stock-n1-heal] lowAlerts query count = 11
+...................................... 189 / 596 ( 31%)
+............................................................... 252 / 596 ( 42%)
+............................................................... 315 / 596 ( 52%)
+............................................................... 378 / 596 ( 63%)
+............................................................... 441 / 596 ( 73%)
+.........SSS................................................... 504 / 596 ( 84%)
+.................................
+
+--- AG-02: API wizard_template ---
+[POS-WIZARD] wizard_template from API: simple
+has_menu: false
+
+--- AG-04: Order with Instruction ---
+Order Status: 201
+Saved Instruction in DB: VIANDES: Merguez, Poulet. SAUCE: Harissa. FORMULE: Menu Complet.
+.....
+--- AG-02: API wizard_template ---
+Template: simple
+HasMenu: false
+
+--- AG-03-T01: D-001 Fake Item ID ---
+Status: 422
+Message: No open cash drawer — open a session before accepting a cash payment.
+
+--- AG-03-T02: D-004 Missing Item ID ---
+Status: 422
+Errors: {"items":["L'article \u00e0 l'index 0 n'a pas d'item_id valide."]}
+
+--- AG-03-T03: Valid Order ---
+Status: 422
+......................... 567 / 596 ( 95%)
+.............................                                   596 / 596 (100%)
+
+Time: 02:25.319, Memory: 159.50 MB
+
+OK, but incomplete, skipped, or risky tests!
+Tests: 596, Assertions: 1943, Skipped: 3.

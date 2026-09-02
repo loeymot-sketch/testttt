@@ -1,0 +1,22 @@
+PHPUnit 9.6.36 by Sebastian Bergmann and contributors.
+
+...............................................................  63 / 420 ( 15%)
+....................................SS......................... 126 / 420 ( 30%)
+............................................................... 189 / 420 ( 45%)
+........S...................................................... 252 / 420 ( 60%)
+............................................................... 315 / 420 ( 75%)
+S.............................................................F 378 / 420 ( 90%)
+..........................................                      420 / 420 (100%)
+
+Time: 01:28.005, Memory: 137.50 MB
+
+There was 1 failure:
+
+1) Tests\Feature\Export\EntityExportNoTruncationTest::test_item_category_export_returns_all_rows
+ItemCategoryExport must include every category, not the first paginated page (10).
+Failed asserting that 12 is identical to 15.
+
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Export/EntityExportNoTruncationTest.php:92
+
+FAILURES!
+Tests: 420, Assertions: 1386, Failures: 1, Skipped: 4.
