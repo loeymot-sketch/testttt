@@ -2,9 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
-use App\Services\Fiscal\AuditLogService;
+use App\Services\Outbox\OutboxReplayService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -113,66 +112,25 @@ class OutboxRetryFailedCommand extends Command
             ->take(self::BATCH_CAP)
             ->get();
 
-        $auditLog = app(AuditLogService::class);
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-K] La boucle audit-puis-dispatch vit
+        // désormais dans OutboxReplayService, partagé avec le bouton web du cockpit : une
+        // seule sémantique (audit AVANT dispatch, attempts monotone, last_error conservé,
+        // dispatch hors transaction). Les sentinelles OutboxReplayAuditTest et
+        // OutboxRetryFailedAttemptsPreservedTest verrouillent toujours ce comportement.
+        $result = app(OutboxReplayService::class)->replay($events, 'foodking:outbox:retry-failed', null);
 
-        foreach ($events as $event) {
-            // [Wave 3 SYNC-ADV3-04 — NF525-adjacent — 2026-05-18]
-            // Write-then-dispatch ordering: the tamper-evident audit row
-            // MUST exist before we re-broadcast the event. If audit write
-            // throws (chain-lock timeout, UNIQUE violation, secret
-            // misconfig), we skip THIS event but `continue` so the rest
-            // of the batch still replays. Guarantees: audit row exists
-            // IFF dispatch was attempted, AND batch continuity is preserved.
-            try {
-                $auditLog->write([
-                    'branch_id' => (int) ($event->branch_id ?? 0),
-                    'user_id' => null,
-                    'action' => 'outbox.replay',
-                    'resource' => 'domain_event',
-                    'resource_id' => (int) $event->id,
-                    'payload' => [
-                        'command' => 'foodking:outbox:retry-failed',
-                        'event_id' => (int) $event->id,
-                        'event_type' => (string) $event->event_type,
-                        'aggregate_type' => (string) ($event->aggregate_type ?? ''),
-                        'aggregate_id' => (int) ($event->aggregate_id ?? 0),
-                        'correlation_id' => (string) ($event->correlation_id ?? ''),
-                    ],
-                ]);
-            } catch (\Throwable $e) {
-                Log::channel('fiscal')->error('Outbox replay audit_log write failed', [
-                    'event_id' => (int) $event->id,
-                    'error' => $e->getMessage(),
-                ]);
-                continue; // skip this event — do NOT dispatch without audit trail
-            }
+        // Libellé INCHANGÉ : deux sentinelles l'attendent au mot près
+        // (OutboxTest, OutboxProductionLikeSimulationTest). Les compteurs d'échec
+        // partent sur une seconde ligne, et seulement s'il y en a.
+        $this->info('Reset and re-queued ' . $result['requeued'] . ' failed domain events.');
 
-            try {
-                // [Heal B.1 Z3 B-2 P0 — 2026-05-19] attempts left monotonic so:
-                //  - prune lane (`attempts>=6 AND created_at<cutoff`)
-                //    eventually reclaims chronic-fail rows.
-                //  - replay budget bounded by self::REPLAY_MAX_ATTEMPTS
-                //    filter on the query above.
-                //  - last_error preserved as forensic trail (was wiped
-                //    on every cycle pre-heal).
-                // Only `dispatched_at` is re-nulled so DispatchDomainEventsJob
-                // Phase 1 lockForUpdate can re-claim the row.
-                $event->forceFill([
-                    'dispatched_at' => null,
-                ])->save();
-
-                // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
-                DispatchDomainEventsJob::dispatch($event->id);
-            } catch (\Throwable $e) {
-                Log::channel('fiscal')->error('Outbox replay dispatch failed (audit row exists)', [
-                    'event_id' => (int) $event->id,
-                    'error' => $e->getMessage(),
-                ]);
-                continue;
-            }
+        if ($result['audit_failed'] > 0 || $result['dispatch_failed'] > 0) {
+            $this->warn(sprintf(
+                'Skipped %d (audit write failed) and %d (dispatch failed).',
+                $result['audit_failed'],
+                $result['dispatch_failed']
+            ));
         }
-
-        $this->info('Reset and re-queued ' . $events->count() . ' failed domain events.');
 
         return self::SUCCESS;
     }

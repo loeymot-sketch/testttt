@@ -163,11 +163,29 @@ class SyncOverviewControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('requeued', 2);
 
-        // Both recent rows reset (retried); the ancient one untouched (aged out -> escalate/prune).
-        $this->assertSame(0, (int) DB::table('domain_events')->where('id', $recentLow)->value('attempts'));
-        $this->assertNull(DB::table('domain_events')->where('id', $recentLow)->value('last_error'));
-        $this->assertSame(0, (int) DB::table('domain_events')->where('id', $recentExh)->value('attempts'));
-        $this->assertNull(DB::table('domain_events')->where('id', $recentExh)->value('last_error'));
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-K] CONTRAT CHANGÉ, VOLONTAIREMENT.
+        // Ce test attendait `attempts=0` et `last_error=null` : le bouton web remettait le
+        // compteur à zéro à chaque clic. C'est exactement le flapping que le heal B.1
+        // (2026-05-19) avait supprimé côté commande — une ligne qui échoue en boucle ne
+        // franchissait jamais le seuil de PruneOutboxCommand (`attempts>=6`) et perdait sa
+        // trace d'erreur à chaque cycle. Deux sémantiques divergentes sur la même table
+        // sont la classe de défaut qui a produit P1-J ; les deux chemins passent désormais
+        // par OutboxReplayService. Ce qui rendait le bouton utile est préservé : la
+        // sélection ne regarde PAS `attempts` (un événement épuisé après réparation de
+        // l'infra reste rejouable), seulement `last_error` et la fenêtre de 7 jours.
+        // Ce qui est retiré : seul `dispatched_at` repasse à NULL, pour que la Phase 1 du
+        // job puisse re-claimer la ligne.
+        $this->assertSame(2, (int) DB::table('domain_events')->where('id', $recentLow)->value('attempts'));
+        $this->assertSame('boom', DB::table('domain_events')->where('id', $recentLow)->value('last_error'));
+        $this->assertSame(5, (int) DB::table('domain_events')->where('id', $recentExh)->value('attempts'));
+        $this->assertSame('boom', DB::table('domain_events')->where('id', $recentExh)->value('last_error'));
+        $this->assertNull(DB::table('domain_events')->where('id', $recentLow)->value('dispatched_at'));
+        // Et la relance laisse une trace fiscale nominative — c'était le défaut P1-K.
+        $this->assertSame(2, (int) DB::table('audit_logs')->where('action', 'outbox.replay')->count());
+        $this->assertSame(
+            $admin->id,
+            (int) DB::table('audit_logs')->where('action', 'outbox.replay')->orderByDesc('id')->value('user_id')
+        );
         $this->assertSame(1, (int) DB::table('domain_events')->where('id', $ancient)->value('attempts'));
         $this->assertSame('boom', DB::table('domain_events')->where('id', $ancient)->value('last_error'));
     }

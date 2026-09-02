@@ -6,14 +6,19 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Requests\Admin\Observability\StoreClientMetricsRequest;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
+use App\Services\Fiscal\AuditLogService;
 use App\Services\Observability\SyncMetricsRecorder;
+use App\Services\Outbox\OutboxReplayService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * [NEW-04] Read-only admin observability surface (P50/P95/P99 rollups) +
@@ -44,6 +49,17 @@ class SyncOverviewController extends AdminController
      * over-corrected and broke retry-of-exhausted (OutboxOverviewControllerTest).
      */
     private const RETRY_FAILED_MAX_AGE_DAYS = 7;
+
+    /**
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-J] Un claim (`dispatched_at` posé,
+     * `broadcast_at` nul) plus vieux que ceci est un orphelin — même seuil que la lane B
+     * crash-claimed d'OutboxRescueCommand (10 min > pire courbe de backoff 381 s + hang
+     * broadcast ~60 s).
+     */
+    private const CLAIM_STALE_MINUTES = 10;
+
+    /** [Codex P1-K] Borne d'une purge : au-delà, on rejoue le bouton. */
+    private const DRAIN_BATCH_CAP = 500;
 
     public function __construct()
     {
@@ -295,60 +311,83 @@ class SyncOverviewController extends AdminController
     /**
      * [CV1-OBSERVABILITY-OUTBOX-001] Outbox pipeline dashboard.
      *
-     * Five sections aggregated for the ops dashboard:
-     *   1. domain_events pending — count + latest 50 rows (for visual triage)
-     *   2. domain_events dispatched — count last 24h + p95 dispatch latency
-     *   3. jobs queue=high — count + age of oldest reserved job
-     *   4. failed_jobs — count + last 20 with truncated exception line
-     *   5. health probes — websockets:serve and queue:work UP/DOWN heuristic
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-J] Sémantique de LIVRAISON.
+     * Depuis la migration 2026_08_04, le job pose `dispatched_at` au CLAIM (Phase 1,
+     * AVANT la diffusion) et `broadcast_at` seulement quand la diffusion a réussi
+     * (Phase 3a, `DispatchDomainEventsJob.php:151-154`). Ce cockpit comptait encore sur
+     * `dispatched_at` : un worker tué entre claim et broadcast faisait disparaître
+     * l'événement des « en attente », le comptait parmi les « dispatchés » et laissait
+     * les sondes queue/websocket en UP. Mesuré sur la base servie le 2026-09-02 :
+     * 2 149 lignes claimées jamais diffusées, invisibles de cet écran.
      *
-     * Trade-off: the health probes are HEURISTICS, not real process pings.
-     *   - websockets:serve UP iff a recent `ws:heartbeat` cache key exists
-     *     (set by the broadcaster pulse) OR `dispatched_at` advanced in the
-     *     last 60s — the same signal that tells us events left the box.
-     *   - queue:work UP iff the oldest reserved job in `jobs` was reserved
-     *     within the last 90s OR a domain_event was dispatched in the same
-     *     window. A worker that hasn't reserved in 90s on a non-empty queue
-     *     is the canonical "queue stuck" signature.
-     *
-     * Real process probing (pgrep / supervisor RPC) is out of scope for V1
-     * — see runbook OBSERVABILITY_OUTBOX_DASHBOARD.md §3.
+     * États exposés (disjoints) :
+     *   - pending           : jamais claimé (`dispatched_at IS NULL`), 50 dernières lignes
+     *   - terminal_failures : sous-ensemble de pending avec `last_error` (+ contract_violation,
+     *                         non rejouables — voir OutboxRetryFailedCommand SEC MISSION-27)
+     *   - in_flight         : claimé depuis < CLAIM_STALE_MINUTES, pas encore diffusé
+     *   - stale_claimed     : claimé depuis ≥ CLAIM_STALE_MINUTES, jamais diffusé — MÊME
+     *                         seuil que `OutboxRescueCommand` lane B (crash-claimed), sinon
+     *                         deux écrans diraient deux choses
+     *   - delivered_24h     : `broadcast_at` dans les 24 h + latences p50/p95/p99
+     *   - queue_high, failed_jobs, health : voir describeQueueLane / describeFailedJobs /
+     *     probeHealth — les sondes ne prennent plus un claim pour un signal positif.
      */
     public function outboxOverview(Request $request): JsonResponse
     {
         $now = now();
+        $claimStaleCutoff = $now->copy()->subMinutes(self::CLAIM_STALE_MINUTES)->format('Y-m-d H:i:s');
+
+        $columns = ['id', 'event_type', 'aggregate_type', 'aggregate_id', 'branch_id', 'attempts', 'last_error', 'occurred_at', 'created_at', 'dispatched_at'];
+        $rowShape = fn ($row) => [
+            'id' => (int) $row->id,
+            'event_type' => (string) $row->event_type,
+            'aggregate_type' => (string) $row->aggregate_type,
+            'aggregate_id' => (int) $row->aggregate_id,
+            'branch_id' => $row->branch_id !== null ? (int) $row->branch_id : null,
+            'attempts' => (int) ($row->attempts ?? 0),
+            'last_error' => $row->last_error,
+            'occurred_at' => $row->occurred_at,
+            'created_at' => $row->created_at,
+            'dispatched_at' => $row->dispatched_at,
+        ];
 
         $pendingQuery = DB::table('domain_events')->whereNull('dispatched_at');
         $pendingCount = (clone $pendingQuery)->count();
-        $pendingRows = $pendingQuery
-            ->select(['id', 'event_type', 'aggregate_type', 'aggregate_id', 'branch_id', 'attempts', 'last_error', 'occurred_at', 'created_at'])
+        $pendingRows = (clone $pendingQuery)
+            ->select($columns)
             ->orderByDesc('id')
             ->limit(50)
             ->get()
-            ->map(fn ($row) => [
-                'id' => (int) $row->id,
-                'event_type' => (string) $row->event_type,
-                'aggregate_type' => (string) $row->aggregate_type,
-                'aggregate_id' => (int) $row->aggregate_id,
-                'branch_id' => $row->branch_id !== null ? (int) $row->branch_id : null,
-                'attempts' => (int) ($row->attempts ?? 0),
-                'last_error' => $row->last_error,
-                'occurred_at' => $row->occurred_at,
-                'created_at' => $row->created_at,
-            ])
+            ->map($rowShape)
             ->all();
 
-        $dispatchedSince = $now->copy()->subDay();
-        $dispatchedCount = DB::table('domain_events')
-            ->whereNotNull('dispatched_at')
-            ->where('dispatched_at', '>=', $dispatchedSince->format('Y-m-d H:i:s'))
+        $terminalQuery = DB::table('domain_events')->whereNull('dispatched_at')->whereNotNull('last_error');
+        $terminalCount = (clone $terminalQuery)->count();
+        $contractViolations = (clone $terminalQuery)->where('last_error', 'like', 'contract_violation%')->count();
+
+        $claimedQuery = DB::table('domain_events')->whereNotNull('dispatched_at')->whereNull('broadcast_at');
+        $inFlightCount = (clone $claimedQuery)->where('dispatched_at', '>=', $claimStaleCutoff)->count();
+        $staleQuery = (clone $claimedQuery)->where('dispatched_at', '<', $claimStaleCutoff);
+        $staleCount = (clone $staleQuery)->count();
+        $staleRows = (clone $staleQuery)
+            ->select($columns)
+            ->orderByDesc('dispatched_at')
+            ->limit(20)
+            ->get()
+            ->map($rowShape)
+            ->all();
+
+        $deliveredSince = $now->copy()->subDay();
+        $deliveredCount = DB::table('domain_events')
+            ->whereNotNull('broadcast_at')
+            ->where('broadcast_at', '>=', $deliveredSince->format('Y-m-d H:i:s'))
             ->count();
 
         // p95 dispatch latency from sync_metrics over the same window — same
         // method as index() but isolated to the outbox metric type.
         $latencies = DB::table('sync_metrics')
             ->where('metric_type', SyncMetricsRecorder::METRIC_OUTBOX_DISPATCH_LATENCY_MS)
-            ->where('occurred_at', '>=', $dispatchedSince->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'))
+            ->where('occurred_at', '>=', $deliveredSince->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'))
             ->limit(self::SELECT_LIMIT)
             ->pluck('value')
             ->map(fn ($v) => (int) $v)
@@ -365,8 +404,20 @@ class SyncOverviewController extends AdminController
                 'count' => $pendingCount,
                 'rows' => $pendingRows,
             ],
-            'dispatched_24h' => [
-                'count' => $dispatchedCount,
+            'terminal_failures' => [
+                'count' => $terminalCount,
+                'contract_violations' => $contractViolations,
+            ],
+            'in_flight' => [
+                'count' => $inFlightCount,
+                'stale_after_minutes' => self::CLAIM_STALE_MINUTES,
+            ],
+            'stale_claimed' => [
+                'count' => $staleCount,
+                'rows' => $staleRows,
+            ],
+            'delivered_24h' => [
+                'count' => $deliveredCount,
                 'latency_p50_ms' => $this->percentile($latencies, 50),
                 'latency_p95_ms' => $this->percentile($latencies, 95),
                 'latency_p99_ms' => $this->percentile($latencies, 99),
@@ -381,49 +432,51 @@ class SyncOverviewController extends AdminController
     /**
      * [CV1-OBSERVABILITY-OUTBOX-001] "Retry failed" admin action.
      *
-     * Resets attempts/last_error/dispatched_at on at most BATCH events and
-     * re-queues each via DispatchDomainEventsJob — same flow as the
-     * `foodking:outbox:retry-failed` console command. We DO NOT delete or
-     * mutate fiscal/audit data; the action is idempotent (a retry on an
-     * already-dispatched event is a no-op the worker handles).
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-K] Passe par OutboxReplayService :
+     * MÊME verrou que le cron (`outbox.retry-failed.lock`, conflit → 409 explicite au lieu
+     * d'un double rejeu silencieux) et MÊME ligne `audit_logs` NF525 `outbox.replay` par
+     * événement, signée par l'opérateur humain. `attempts`/`last_error` sont conservés
+     * (heal B.1 2026-05-19) — avant, ce bouton les remettait à zéro à chaque clic.
+     *
+     * [GOAL-2026-05-29 F5 / v2] Fenêtre d'ÂGE (pas de plafond d'attempts) : rejouer un
+     * événement qui a épuisé ses relances automatiques après réparation de l'infra est
+     * l'usage légitime premier de ce bouton. Les violations de contrat (payload malformé)
+     * sont exclues comme dans la commande : les rejouer n'écrit que des lignes d'audit
+     * inutiles.
      */
-    public function outboxRetryFailed(Request $request): JsonResponse
+    public function outboxRetryFailed(Request $request, OutboxReplayService $replay): JsonResponse
     {
         $batch = (int) ($request->input('limit', 50));
         if ($batch < 1 || $batch > 200) {
             $batch = 50;
         }
 
-        // [GOAL-2026-05-29 F5 / v2 — corrected after OutboxOverviewControllerTest]
-        // AGE cap (not an attempts cap) so manual "Retry failed" cannot INFINITELY
-        // resurrect a row. Each retry resets attempts->0 + last_error->NULL; with no
-        // bound a row that keeps failing is reset on every click and never ages out
-        // of the prune/escalation lane. An AGE window bounds resurrection: rows older
-        // than the window age out of manual retry and are left to escalate/prune.
-        // We deliberately do NOT cap on attempts — manually retrying an event that
-        // EXHAUSTED its auto-retries (attempts=5) after fixing the root infra is the
-        // PRIMARY legitimate use of this button (locked by OutboxOverviewControllerTest).
-        $events = DomainEvent::query()
-            ->whereNull('dispatched_at')
-            ->whereNotNull('last_error')
-            ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS))
-            ->orderBy('id')
-            ->limit($batch)
-            ->get();
+        $lock = $replay->lock();
+        if (! $lock->get()) {
+            return response()->json([
+                'message' => 'Une relance outbox est déjà en cours (tâche planifiée ou autre opérateur). Réessayez dans quelques minutes.',
+            ], 409);
+        }
 
-        $requeued = 0;
-        foreach ($events as $event) {
-            $event->forceFill([
-                'attempts' => 0,
-                'last_error' => null,
-            ])->save();
+        try {
+            $events = DomainEvent::query()
+                ->whereNull('dispatched_at')
+                ->whereNotNull('last_error')
+                ->where('last_error', 'not like', 'contract_violation%')
+                ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS))
+                ->orderBy('id')
+                ->limit($batch)
+                ->get();
 
-            DispatchDomainEventsJob::dispatch($event->id);
-            $requeued++;
+            $result = $replay->replay($events, 'admin:outbox:retry-failed', $request->user()?->id);
+        } finally {
+            $lock->release();
         }
 
         return response()->json([
-            'requeued' => $requeued,
+            'requeued' => $result['requeued'],
+            'audit_failed' => $result['audit_failed'],
+            'dispatch_failed' => $result['dispatch_failed'],
             'limit' => $batch,
         ]);
     }
@@ -431,13 +484,17 @@ class SyncOverviewController extends AdminController
     /**
      * [CV1-OBSERVABILITY-OUTBOX-001] "Drain failed jobs" admin action.
      *
-     * SAFE-BY-DEFAULT: deletes only `failed_jobs` entries older than the
-     * `older_than_hours` parameter (default 24h). Never touches
-     * `domain_events` / fiscal tables. The endpoint refuses to operate when
-     * `older_than_hours < 1` to make accidental "wipe everything" calls a
-     * 422 instead of silent data loss.
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-K] Avant : `DELETE failed_jobs WHERE
+     * failed_at < cutoff`, quel que soit le job, sans export ni trace — depuis un écran
+     * « outbox », un clic effaçait la preuve forensique de jobs sans rapport (sur la base
+     * servie, le seul job en échec est un listener stock). Maintenant :
+     *   1. seuls les `DispatchDomainEventsJob` de plus de `older_than_hours` sont candidats ;
+     *   2. les lignes sont EXPORTÉES en JSON (`storage/app/outbox/drained-*.json`) avant tout ;
+     *   3. une ligne `audit_logs` NF525 `outbox.drain` (acteur, ids, export) est écrite ;
+     *   4. seulement alors les lignes sont supprimées. Pas d'audit → rien n'est supprimé.
+     * `older_than_hours < 1` reste refusé (422) — une purge « tout de suite » n'existe pas.
      */
-    public function outboxDrainFailed(Request $request): JsonResponse
+    public function outboxDrainFailed(Request $request, AuditLogService $auditLog): JsonResponse
     {
         $olderThan = (int) ($request->input('older_than_hours', 24));
         if ($olderThan < 1) {
@@ -446,15 +503,87 @@ class SyncOverviewController extends AdminController
             ], 422);
         }
 
+        if (! Schema::hasTable('failed_jobs')) {
+            return response()->json(['deleted' => 0, 'older_than_hours' => $olderThan, 'exported_to' => null]);
+        }
+
         $cutoff = now()->subHours($olderThan)->format('Y-m-d H:i:s');
-        $deleted = DB::table('failed_jobs')
+        $candidates = DB::table('failed_jobs')
             ->where('failed_at', '<', $cutoff)
-            ->delete();
+            ->orderBy('id')
+            ->limit(self::DRAIN_BATCH_CAP)
+            ->get()
+            ->filter(fn ($row) => self::isOutboxFailedJob($row))
+            ->values();
+
+        if ($candidates->isEmpty()) {
+            return response()->json(['deleted' => 0, 'older_than_hours' => $olderThan, 'exported_to' => null]);
+        }
+
+        $ids = $candidates->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $actorId = $request->user()?->id;
+        $exportPath = 'outbox/drained-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(6)).'.json';
+
+        Storage::disk('local')->put($exportPath, json_encode([
+            'drained_at' => now()->toIso8601String(),
+            'actor_id' => $actorId,
+            'older_than_hours' => $olderThan,
+            'cutoff' => $cutoff,
+            'rows' => $candidates->map(fn ($row) => (array) $row)->all(),
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        try {
+            $auditLog->write([
+                'branch_id' => 0,
+                'user_id' => $actorId,
+                'action' => 'outbox.drain',
+                'resource' => 'failed_jobs',
+                'resource_id' => null,
+                'payload' => [
+                    'command' => 'admin:outbox:drain-failed',
+                    'older_than_hours' => $olderThan,
+                    'cutoff' => $cutoff,
+                    'deleted' => count($ids),
+                    'failed_job_ids' => $ids,
+                    'uuids' => $candidates->pluck('uuid')->map(fn ($u) => (string) $u)->all(),
+                    'exported_to' => $exportPath,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('fiscal')->error('Outbox drain refused: audit_log write failed', [
+                'actor_id' => $actorId,
+                'failed_job_ids' => $ids,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => "Purge refusée : la trace d'audit n'a pas pu être écrite. Rien n'a été supprimé.",
+                'exported_to' => $exportPath,
+            ], 500);
+        }
+
+        $deleted = DB::table('failed_jobs')->whereIn('id', $ids)->delete();
 
         return response()->json([
             'deleted' => (int) $deleted,
             'older_than_hours' => $olderThan,
+            'exported_to' => $exportPath,
         ]);
+    }
+
+    /**
+     * Un `failed_jobs` est « outbox » si son payload porte la classe du job de diffusion.
+     * Laravel écrit `displayName` (et `data.commandName`) dans le payload JSON.
+     */
+    private static function isOutboxFailedJob(object $row): bool
+    {
+        $payload = json_decode((string) ($row->payload ?? ''), true);
+        if (! is_array($payload)) {
+            return false;
+        }
+        $name = (string) ($payload['displayName'] ?? ($payload['data']['commandName'] ?? ''));
+
+        return $name === DispatchDomainEventsJob::class;
     }
 
     private function describeQueueLane(string $queue, \Illuminate\Support\Carbon $now): array
@@ -517,8 +646,11 @@ class SyncOverviewController extends AdminController
 
     private function probeHealth(\Illuminate\Support\Carbon $now): array
     {
-        // queue:work heuristic — last reserved job within 90s OR a
-        // domain_event was dispatched in the same window.
+        // queue:work heuristic — last reserved job within 90s OR a domain_event
+        // was actually DELIVERED (broadcast_at) in the same window.
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-J] Avant : `dispatched_at`, qui
+        // n'est que le CLAIM. Un worker tué juste après le claim laissait la sonde en UP
+        // pendant 90 s alors qu'aucun client n'avait rien reçu.
         $queueWorkUp = false;
         $queueLastSignalAgo = null;
 
@@ -536,12 +668,12 @@ class SyncOverviewController extends AdminController
             }
         }
 
-        $lastDispatched = DB::table('domain_events')
-            ->whereNotNull('dispatched_at')
-            ->orderByDesc('dispatched_at')
-            ->value('dispatched_at');
-        if ($lastDispatched !== null) {
-            $age = max(0, $now->getTimestamp() - strtotime((string) $lastDispatched));
+        $lastDelivered = DB::table('domain_events')
+            ->whereNotNull('broadcast_at')
+            ->orderByDesc('broadcast_at')
+            ->value('broadcast_at');
+        if ($lastDelivered !== null) {
+            $age = max(0, $now->getTimestamp() - strtotime((string) $lastDelivered));
             if ($queueLastSignalAgo === null || $age < $queueLastSignalAgo) {
                 $queueLastSignalAgo = $age;
             }
@@ -551,7 +683,7 @@ class SyncOverviewController extends AdminController
         }
 
         // websockets:serve heuristic — cache heartbeat key, fallback to
-        // "events were dispatched recently → broadcaster is presumably alive".
+        // "an event was DELIVERED recently → broadcaster is alive".
         $wsHeartbeat = null;
         try {
             $wsHeartbeat = Cache::get('ws:heartbeat');
@@ -569,8 +701,8 @@ class SyncOverviewController extends AdminController
             }
         }
         // Fallback: a successful broadcast in the last 60s is positive evidence.
-        if (! $wsUp && $lastDispatched !== null) {
-            $age = max(0, $now->getTimestamp() - strtotime((string) $lastDispatched));
+        if (! $wsUp && $lastDelivered !== null) {
+            $age = max(0, $now->getTimestamp() - strtotime((string) $lastDelivered));
             if ($age <= 60) {
                 $wsUp = true;
                 $wsLastSignalAgo = $wsLastSignalAgo ?? $age;
@@ -581,12 +713,12 @@ class SyncOverviewController extends AdminController
             'queue_work' => [
                 'status' => $queueWorkUp ? 'up' : 'down',
                 'last_signal_age_seconds' => $queueLastSignalAgo,
-                'method' => 'heuristic_jobs_reserved_or_event_dispatched_within_90s',
+                'method' => 'heuristic_jobs_reserved_or_event_delivered_within_90s',
             ],
             'websockets_serve' => [
                 'status' => $wsUp ? 'up' : 'down',
                 'last_signal_age_seconds' => $wsLastSignalAgo,
-                'method' => 'heuristic_cache_heartbeat_or_recent_dispatch_within_60s',
+                'method' => 'heuristic_cache_heartbeat_or_recent_delivery_within_60s',
             ],
         ];
     }

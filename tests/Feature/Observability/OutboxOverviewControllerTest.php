@@ -95,7 +95,11 @@ class OutboxOverviewControllerTest extends TestCase
             ->assertJsonStructure([
                 'generated_at',
                 'pending' => ['count', 'rows'],
-                'dispatched_24h' => ['count', 'latency_p50_ms', 'latency_p95_ms', 'latency_p99_ms', 'samples'],
+                // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-J] sémantique de livraison
+                'terminal_failures' => ['count', 'contract_violations'],
+                'in_flight' => ['count', 'stale_after_minutes'],
+                'stale_claimed' => ['count', 'rows'],
+                'delivered_24h' => ['count', 'latency_p50_ms', 'latency_p95_ms', 'latency_p99_ms', 'samples'],
                 'queue_high' => ['available', 'count', 'oldest_age_seconds'],
                 'failed_jobs' => ['available', 'count', 'rows'],
                 'health' => [
@@ -123,6 +127,7 @@ class OutboxOverviewControllerTest extends TestCase
                 'correlation_id' => null,
                 'occurred_at' => now(),
                 'dispatched_at' => null,
+                'broadcast_at' => null,
                 'attempts' => 0,
                 'last_error' => null,
                 'created_at' => now(),
@@ -139,6 +144,8 @@ class OutboxOverviewControllerTest extends TestCase
                 'correlation_id' => null,
                 'occurred_at' => now(),
                 'dispatched_at' => now(),
+                // [Codex P1-J] livré = broadcast_at posé ; un claim seul n'est pas une livraison
+                'broadcast_at' => now(),
                 'attempts' => 1,
                 'last_error' => null,
                 'created_at' => now(),
@@ -150,7 +157,7 @@ class OutboxOverviewControllerTest extends TestCase
             ->getJson('/api/admin/observability/outbox')
             ->assertOk()
             ->assertJsonPath('pending.count', 1)
-            ->assertJsonPath('dispatched_24h.count', 1);
+            ->assertJsonPath('delivered_24h.count', 1);
     }
 
     public function test_retry_failed_requeues_failed_events(): void
@@ -180,11 +187,17 @@ class OutboxOverviewControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('requeued', 1);
 
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-K] Même sémantique que la commande
+        // (heal B.1 2026-05-19) : attempts monotone, last_error conservé comme trace
+        // forensique — le job l'efface lui-même quand la diffusion réussit. Avant, ce
+        // bouton remettait tout à zéro à chaque clic.
         $this->assertDatabaseHas('domain_events', [
             'aggregate_id' => 99,
-            'attempts' => 0,
-            'last_error' => null,
+            'attempts' => 5,
+            'last_error' => 'broker unreachable',
+            'dispatched_at' => null,
         ]);
+        $this->assertSame(1, (int) DB::table('audit_logs')->where('action', 'outbox.replay')->count());
     }
 
     public function test_retry_failed_is_forbidden_for_non_admin(): void
@@ -216,7 +229,8 @@ class OutboxOverviewControllerTest extends TestCase
                 'uuid' => 'aaaaaaaa-1111-1111-1111-111111111111',
                 'connection' => 'database',
                 'queue' => 'high',
-                'payload' => '{}',
+                // [Codex P1-K] seuls les jobs OUTBOX sont purgeables d'ici
+                'payload' => json_encode(['displayName' => \App\Jobs\DispatchDomainEventsJob::class]),
                 'exception' => 'Old failure',
                 'failed_at' => now()->subDays(3),
             ],
@@ -224,11 +238,20 @@ class OutboxOverviewControllerTest extends TestCase
                 'uuid' => 'bbbbbbbb-2222-2222-2222-222222222222',
                 'connection' => 'database',
                 'queue' => 'high',
-                'payload' => '{}',
+                'payload' => json_encode(['displayName' => \App\Jobs\DispatchDomainEventsJob::class]),
                 'exception' => 'Recent failure',
                 'failed_at' => now()->subMinutes(5),
             ],
+            [
+                'uuid' => 'cccccccc-3333-3333-3333-333333333333',
+                'connection' => 'database',
+                'queue' => 'default',
+                'payload' => json_encode(['displayName' => 'App\\Listeners\\ReverseRawMaterialsOnOrderCanceled']),
+                'exception' => 'Old failure of a job that is NOT outbox',
+                'failed_at' => now()->subDays(3),
+            ],
         ]);
+        \Illuminate\Support\Facades\Storage::fake('local');
 
         $this->actingAs($admin, 'sanctum')
             ->postJson('/api/admin/observability/outbox/drain-failed', ['older_than_hours' => 24])
@@ -236,6 +259,7 @@ class OutboxOverviewControllerTest extends TestCase
             ->assertJsonPath('deleted', 1);
 
         $this->assertDatabaseHas('failed_jobs', ['uuid' => 'bbbbbbbb-2222-2222-2222-222222222222']);
+        $this->assertDatabaseHas('failed_jobs', ['uuid' => 'cccccccc-3333-3333-3333-333333333333']);
         $this->assertDatabaseMissing('failed_jobs', ['uuid' => 'aaaaaaaa-1111-1111-1111-111111111111']);
     }
 
