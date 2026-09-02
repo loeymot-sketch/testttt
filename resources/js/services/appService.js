@@ -286,6 +286,23 @@ export default {
         return `${d.getFullYear()}-${deuxChiffres(d.getMonth() + 1)}-${deuxChiffres(d.getDate())}`;
     },
 
+    // [2026-09-02] `toLocaleString()` sans argument suit la locale du NAVIGATEUR, pas
+    // celle du produit. Photographié en campagne : « Généré à 9/2/2026, 7:38:28 PM » et
+    // « 7/16/2026, 6:57:02 AM » dans une interface entièrement française. « 9/2/2026 » se
+    // lit 9 février pour un lecteur français et 2 septembre pour un américain ; sur une
+    // date de clôture Z, l'ambiguïté porte sur une pièce fiscale.
+    dateHeureFr: function (valeur) {
+        if (valeur === null || valeur === undefined || valeur === '') return "\u2014";
+        const d = valeur instanceof Date ? valeur : new Date(valeur);
+        if (Number.isNaN(d.getTime())) return String(valeur);
+
+        return d.toLocaleString('fr-FR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false,
+        });
+    },
+
     requestHandler: function (requests) {
         let i = 1;
         let what = "?";

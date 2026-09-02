@@ -1564,7 +1564,11 @@
         "flyer_revoked": "annule",
         "flyer_confirm_revoke": "Annuler le code {code} de {name} ? Il ne sera plus utilisable.",
         "flyer_duplicate_warning": "Un code vient deja d'etre cree pour ce prenom :",
-        "kds_reopen_aria": "Remettre la commande N°{queue} en préparation"
+        "kds_reopen_aria": "Remettre la commande N°{queue} en préparation",
+        "audit_event_user_device_revoked": "Appareil déconnecté",
+        "audit_event_fiscal_orphan_backfilled": "Numéro fiscal réattribué",
+        "audit_event_order_payment_status_change_blocked": "Changement de paiement refusé",
+        "audit_event_pilotage_interrupteur_bascule": "Interrupteur basculé"
     },
     "button": {
         "cash_reconcile_now": "Réconcilier",

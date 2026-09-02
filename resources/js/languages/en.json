@@ -1624,7 +1624,11 @@
         "flyer_used": "Order",
         "flyer_revoked": "cancelled",
         "flyer_confirm_revoke": "Cancel code {code} for {name}? It will no longer work.",
-        "flyer_duplicate_warning": "A code was just created for this first name:"
+        "flyer_duplicate_warning": "A code was just created for this first name:",
+        "audit_event_user_device_revoked": "Device revoked",
+        "audit_event_fiscal_orphan_backfilled": "Fiscal number backfilled",
+        "audit_event_order_payment_status_change_blocked": "Payment status change blocked",
+        "audit_event_pilotage_interrupteur_bascule": "Feature toggle switched"
     },
     "button": {
         "refresh": "Refresh",

@@ -376,6 +376,8 @@
  *   - retryFailed() POST /retry-failed → re-queues failed events
  *   - drainFailed() POST /drain-failed { older_than_hours: 24 } → safe purge
  */
+import appService from '../../../services/appService';
+
 export default {
     name: 'OutboxOverviewComponent',
     props: {
@@ -418,7 +420,7 @@ export default {
     },
     computed: {
         generatedAtHuman() {
-            return this.generatedAt ? new Date(this.generatedAt).toLocaleString() : null;
+            return this.generatedAt ? appService.dateHeureFr(this.generatedAt) : null;
         },
     },
     mounted() {
@@ -537,7 +539,7 @@ export default {
         formatTimestamp(value) {
             if (!value) return '—';
             try {
-                return new Date(value).toLocaleString();
+                return appService.dateHeureFr(value);
             } catch (e) {
                 return String(value);
             }

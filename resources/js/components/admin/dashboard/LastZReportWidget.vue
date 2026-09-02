@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import appService from '../../../services/appService';
 import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent";
 
@@ -55,7 +56,9 @@ export default {
             if (! iso) return '';
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return String(iso);
-            return d.toLocaleString();
+            // [2026-09-02] Locale du produit, pas du navigateur : « 7/16/2026 » sur une
+            // date de clôture Z se lit 7 juillet pour un lecteur français.
+            return appService.dateHeureFr(d);
         },
     },
     mounted() {
