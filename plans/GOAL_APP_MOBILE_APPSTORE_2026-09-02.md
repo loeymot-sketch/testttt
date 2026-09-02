@@ -72,20 +72,40 @@ Le prototype `mobile/` n'est pas modifié (hors chemin store).
   `account-*` remplacés (ils verrouillaient les onglets).
 - B5 Captures 390×844 lues : écran e-mail, dépliage, code, succès, tunnel.
 
-### C — Wizards → panier → paiement → points — [ ] EN COURS
-- C1 Audit « à la place du client » des wizards (`wizard-v2.jsx`), du tunnel (`funnel.jsx`),
-  de la fidélité (`screens.jsx WebLoyalty`, `loyalty-v2.jsx`) : liste défauts prouvés
-  (file:line + capture), triés P0/P1/P2.
-- C2 Correctifs P0/P1 (chaque correctif = un test qui rougit avant, verdit après).
-- C3 Captures avant/après lues.
+### C — Wizards → panier → paiement → points — [~] AUDITÉ, aucun P0/P1 trouvé
+- C1 **FAIT** — parcours réel iPhone 13, Tacos L (produit lu dans le menu servi, jamais deviné),
+  wizard complet → récap → panier → tunnel, + écrans fidélité et commandes. Captures lues.
+  **Aucun P0/P1.** Ce que le parcours prouve, contre l'attente :
+  - étape requise incomplète : le tap sur « Continuer » (grisé, volontairement PAS `disabled`)
+    affiche « 👆 Choisis encore 2 options pour continuer ». J'ai d'abord cru à un cul-de-sac
+    muet — c'était mon pilote qui cliquait « Continuer » en boucle sans jamais choisir de
+    viande. Faux P0 évité de justesse ;
+  - compteurs « 0 sélectionné · 2 minimum · 5 maximum », barre de progression 5 jalons,
+    prix en permanence dans le CTA, récap avec un « MODIFIER » PAR ÉTAPE (la demande §1.3 du
+    propriétaire est donc déjà satisfaite) ;
+  - fidélité / commandes hors session : états « connecte-toi » corrects, aucun libellé brut,
+    aucune erreur JS sur tout le parcours.
+- C2 P2 relevés, non corrigés (cosmétique, à arbitrer) :
+  - au récap, une étape facultative laissée vide affiche « — » (Suppléments) là où une autre
+    affiche « Sans formule » (Faire un menu) : deux façons de dire « rien » ;
+  - ~86 px de blanc entre la barre de progression et le compteur d'options, sur un écran de
+    664 px : les options démarrent bas.
+- C3 Captures : `scratchpad/audit-c1/` (`x00`, `x01`, `y00`..`y07`, `z-fidelite`, `z-commandes`).
 
-### D — App Store — [ ]
-- D1 `PrivacyInfo.xcprivacy` (absent : requis depuis mai 2024 pour UserDefaults/fichiers).
-- D2 `npm run check:www` → `build:www` → `cap sync ios` (sans Xcode : ce qui passe passe, le
-  reste est listé).
+### D — App Store — [~] D1 et D2 PROUVÉS ; D3 fait ; D4 partiel
+- D1 **FAIT** — `app/ios/App/App/PrivacyInfo.xcprivacy` créé ET inscrit dans la cible Xcode
+  (phase « Copy Bundle Resources »), preuve structurelle par lecture du `project.pbxproj`
+  converti en JSON. Sans lui : rejet automatique `ITMS-91053`, avant toute revue humaine.
+- D2 **FAIT** — `check:www` montrait 42+ fichiers divergents (le paquet iOS embarquait encore
+  l'ANCIEN écran de connexion). `build:www` + `cap copy ios|android` (Node 22 obligatoire, le
+  CLI Capacitor refuse Node 20) : les trois paquets portent désormais `?v=20260902mail1`.
+  `cap sync` complet (pods/gradle) et la compilation restent à faire sur une machine avec Xcode.
 - D3 `PUBLICATION.md` : compte de revue, notes de revue, parcours e-mail d'abord, ordre de
   déploiement (backend d'abord — CORS `https://localhost` — puis site, puis app).
-- D4 Chasse aux « bientôt disponible » / factices visibles dans l'app.
+- D4 **PARTIEL** — une seule mention trouvée : « Instagram, TikTok et Snapchat arrivent
+  bientôt. » (`components.jsx:413`), qui est un fait vrai sur les réseaux du restaurant, pas une
+  fonctionnalité factice. À arbitrer avec le propriétaire : Apple sanctionne les *fonctions*
+  annoncées non livrées, pas une note de pied de page — mais le plus sûr reste de la retirer.
 
 ### E — Vérification et livraison — [ ]
 - PHPUnit ciblé + `EmailOtpSignupTest` (18) inchangé vert.
