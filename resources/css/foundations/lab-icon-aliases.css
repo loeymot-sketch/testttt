@@ -1,0 +1,51 @@
+/*
+ * [GOAL DASHBOARD-PILOTABLE 2026-09-02] Boutons sans icône : alias des classes `lab-*` absentes.
+ *
+ * Mesuré à l'écran le 2026-09-02 : le catalogue affiche des pastilles VIDES sur chaque carte produit
+ * (composer / voir / supprimer) et sur chaque catégorie, parce que les classes utilisées dans les
+ * gabarits n'existent pas dans `public/themes/default/fonts/lab/lab.css` (police livrée avec le thème,
+ * jamais éditée ici). Une classe d'icône absente ne lève AUCUNE erreur : ni la console, ni un test ne
+ * peut l'attraper — seul un œil sur la page la voit.
+ *
+ * Correctif additif : on ne touche pas la police, on fait pointer chaque classe manquante vers le
+ * glyphe existant le plus proche. Les points de code viennent de lab.css, relevés le 2026-09-02.
+ * `font-family` est repris de la règle générique `[class^="lab-"]` du thème : ces sélecteurs sont
+ * déjà des `lab-*`, ils héritent donc de la police sans déclaration supplémentaire.
+ */
+
+.lab-cog:before,
+.lab-setting-line:before { content: "\e00b"; }         /* → lab-settings */
+
+.lab-view-line:before,
+.lab-eye:before { content: "\e000"; }                   /* → lab-view */
+
+.lab-delete-line:before { content: "\e02c"; }           /* → lab-delete */
+
+.lab-add-line:before { content: "\e06c"; }              /* → lab-add-circle */
+
+.lab-export:before { content: "\e073"; }                /* → lab-file-export */
+
+.lab-close-circle:before { content: "\e05e"; }          /* → lab-close-circle-line */
+
+.lab-refresh:before { content: "\e002"; }               /* → lab-update */
+
+.lab-toggle-on:before { content: "\e042"; }             /* → lab-tick-circle */
+
+.lab-stock:before { content: "\e022"; }                 /* → lab-items */
+
+/* Flèche retour : le thème n'a qu'une flèche droite — on la retourne. */
+.lab-arrow-left:before {
+    content: "\e069";                                   /* → lab-arrow-right */
+    display: inline-block;
+    transform: scaleX(-1);
+}
+
+/*
+ * Deuxième relevé (balayage des 38 entrées du Dashboard, 2026-09-02) : trois pastilles vides
+ * dans le menu Réglages — « Terminaux de Paiement », « Fidélité », « Devises ».
+ */
+.lab-payment:before { content: "\e014"; }               /* → lab-payment-gateway */
+
+.lab-loyalty:before { content: "\e03f"; }               /* → lab-ticket-discount */
+
+.lab-currency:before { content: "\e02f"; }              /* → lab-currencies */

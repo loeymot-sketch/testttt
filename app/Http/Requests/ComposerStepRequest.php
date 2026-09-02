@@ -15,6 +15,7 @@ class ComposerStepRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'wizard_page_id' => ['nullable', 'integer', 'exists:wizard_pages,id'],
             'step_key' => ['required', 'string', 'max:120'],
             'label' => ['required', 'string', 'max:191'],
             'source_type' => ['required', 'string', 'in:item_attribute,extra_group,addon'],

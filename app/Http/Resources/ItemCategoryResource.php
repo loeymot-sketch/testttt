@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Database\Eloquent\Model;
 
 class ItemCategoryResource extends JsonResource
 {
@@ -18,6 +19,12 @@ class ItemCategoryResource extends JsonResource
         return [
             'id'              => $this->id,
             'name'            => $this->name,
+            // [2026-09-02] La hiérarchie existait en base et dans la borne, mais AUCUN écran admin ne
+            // l'exposait : impossible de créer une sous-catégorie depuis le Dashboard.
+            'parent_id'       => isset($this->resource->parent_id) ? (int) $this->resource->parent_id : null,
+            'parent_name'     => $this->resource instanceof Model
+                ? $this->whenLoaded('parent', fn () => $this->parent?->name)
+                : null,
             'slug'            => $this->slug,
             'description'     => $this->description === null ? '' : $this->description,
             'status'          => $this->status,

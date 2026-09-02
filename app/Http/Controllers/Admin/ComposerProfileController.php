@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\ComposerProfileRequest;
 use App\Http\Resources\ComposerProfileResource;
+use App\Enums\Status;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
@@ -148,6 +149,75 @@ class ComposerProfileController extends AdminController
         return response()->json([
             'success' => true,
             'data' => new ComposerProfileResource($profile->loadMissing('steps')),
+        ]);
+    }
+
+    /**
+     * Version publiée, brouillon en cours et couverture produit par produit : la vérité de ce que la
+     * caisse et la borne utilisent pour cette catégorie.
+     */
+    public function runtimeForCategory(ItemCategory $category): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->profiles->runtimeSnapshot($category),
+        ]);
+    }
+
+    /**
+     * Re-synchronise les produits de la catégorie avec son wizard publié (pages matérialisées,
+     * clones recréés). `dry_run=1` : simulation, rapport identique, aucune écriture.
+     */
+    public function materializeCategory(Request $request, ItemCategory $category): JsonResponse
+    {
+        $this->authorizeWritableBranchScope($request, $request->integer('branch_id_scope') ?: null);
+        $dryRun = $request->boolean('dry_run');
+
+        $result = $this->profiles->resyncCategory($category, $dryRun);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'dry_run' => $dryRun,
+                'report' => $result['report'],
+                'profile' => $result['profile'] ? new ComposerProfileResource($result['profile']->loadMissing('steps')) : null,
+                'runtime' => $result['runtime'],
+            ],
+        ]);
+    }
+
+    /**
+     * Avant : le wizard catégorie n'avait pas d'API de sources. L'écran
+     * affichait un sélecteur vide : impossible de relier une page à Viande.
+     */
+    public function availableSourcesForCategory(ItemCategory $category): JsonResponse
+    {
+        $items = $category->items()
+            ->with(['variations.itemAttribute', 'extras', 'addons.addonItem'])
+            ->get();
+        abort_if($items->isEmpty(), 422, 'Category has no items yet - add at least one product before editing sources.');
+        $previewItem = $items->first(fn (Item $item): bool => (int) $item->status === Status::ACTIVE)
+            ?? $items->first();
+
+        $attributes = collect();
+        $extras = collect();
+        $addons = collect();
+
+        foreach ($items as $item) {
+            $buckets = $this->sourceBuckets($item);
+            $attributes = $attributes->concat($buckets['item_attribute']);
+            $extras = $extras->concat($buckets['extra_group']);
+            $addons = $addons->concat($buckets['addon']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'item_id' => (int) $previewItem->id,
+                'item_attribute' => $attributes->unique('id')->values(),
+                'extra_group' => $extras->unique('id')->values(),
+                'addon' => $addons->unique('id')->values(),
+            ],
         ]);
     }
 

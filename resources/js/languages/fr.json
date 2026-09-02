@@ -332,6 +332,34 @@
             "view_detail": "Voir le détail de la commande",
             "detail_short": "Détail"
         },
+        "controle": {
+            "titre": "Contrôle des commandes",
+            "fermer": "Fermer",
+            "bouton": "Commandes",
+            "bouton_hint": "Voir les commandes à encaisser, en cuisine, prêtes et livrées — sans quitter la caisse",
+            "ticket_conserve": "Votre ticket en cours est conservé — {n} {articles} · {montant}",
+            "ticket_vide": "Aucun ticket en cours",
+            "onglet_cuisine": "En cuisine",
+            "onglet_pretes": "Prêtes",
+            "onglet_livrees": "Livrées",
+            "sous_titre_encaisser": "Paiement au comptoir — borne, caisse, téléphone, web",
+            "sous_titre_cuisine": "Dans l'ordre où la cuisine les prépare",
+            "rang_cuisine": "{rang} sur {total} en cuisine",
+            "commandee_a": "commandée à {heure}",
+            "article": "article",
+            "articles": "articles",
+            "voir_tout": "Voir tout",
+            "plus_anciennes": "{n} plus anciennes, avant aujourd'hui",
+            "ouvrir_encaissement": "Ouvrir l'encaissement",
+            "page_complete": "Ouvrir la page complète",
+            "verifie_sec": "Vérifié il y a {n} s",
+            "verifie_min": "Vérifié il y a {n} min",
+            "donnees_figees": "Données figées depuis {n} min — vérifiez le réseau",
+            "actualiser": "Actualiser",
+            "annonce": "{encaisser} à encaisser, {pretes} prêtes",
+            "cuisine_ticket": "{n} en cuisine · la plus ancienne depuis {m} min · vous serez le {rang}",
+            "cuisine_libre": "Cuisine libre"
+        },
         "tracker": {
             "title": "Suivi commandes",
             "button_label": "Suivi commandes",
@@ -470,6 +498,7 @@
         "item": "Article",
         "items": "Articles",
         "catalog": "Catalogue",
+        "wizard_pages": "Pages de wizard",
         "stock_rupture": "Produits & Stock",
         "purchasing_scan": "Scan Facture",
         "stock_unified": "Conso & Stock",
@@ -660,10 +689,10 @@
             "saving": "Enregistrement...",
             "publish": "Publier",
             "publishing": "Publication...",
-            "unpublish": "Depublier",
+            "unpublish": "Dépublier",
             "publish_confirm_title": "Publier ce wizard",
-            "live_preview": "Apercu live",
-            "branch_scope": "Portee branche",
+            "live_preview": "Aperçu live",
+            "branch_scope": "Portée branche",
             "branch_scope_help": "IDs de branches séparés par des virgules (ex. 1,3). Vide = toutes.",
             "max_uses_global": "Utilisations max (global)",
             "valid_hours_start": "Heure de début",
@@ -683,7 +712,7 @@
             "remove_page": "Supprimer la page",
             "new_page": "Nouvelle page",
             "draft": "Brouillon",
-            "published": "Publie",
+            "published": "Publié",
             "inactive": "Inactive",
             "reorder_page": "Reordonner",
             "all_source_options": "Toutes les options",
@@ -1782,7 +1811,7 @@
         "view": "Voir",
         "composer": {
             "choose_template_v2": "Choisir un template",
-            "add_page_manual": "Ajouter une page manuellement"
+            "add_page_manual": "Ajouter une page"
         },
         "menu": "Menu",
         "rename": "Renommer",
@@ -1930,7 +1959,7 @@
             "load_failed": "Impossible de charger le composer.",
             "draft_saved": "Brouillon sauvegarde.",
             "save_failed": "Sauvegarde impossible.",
-            "published": "Wizard publie.",
+            "published": "Wizard publié.",
             "publish_failed": "Publication impossible.",
             "publish_confirm_body": "Cette modification sera visible immédiatement sur la caisse et la borne, pour l'établissement concerné.",
             "template_applied": "Template applique.",
@@ -1945,7 +1974,7 @@
             "step_deleted": "Page supprimee.",
             "delete_confirm": "Cette page sera retiree du wizard de ce produit.",
             "no_sources": "Aucune source disponible pour ce type.",
-            "preview_refreshing": "Rafraichi apres modification.",
+            "preview_refreshing": "Rafraîchi après modification.",
             "preview_unavailable": "Aucune branche disponible pour afficher la preview.",
             "template_simple": "Simple : quantite seule, sans parcours de composition.",
             "template_sandwich": "Sandwich : pain, viande, sauce, garnitures et supplements.",
@@ -1957,7 +1986,7 @@
             "guidance_zero_steps_title": "Comment fonctionne le wizard ?",
             "guidance_zero_steps_intro": "Le wizard est le parcours que votre client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.",
             "guidance_zero_steps_option_template": "Préférable : choisissez un modèle (Tacos, Sandwich…) pour partir d'une base prête.",
-            "guidance_zero_steps_option_manual": "Sinon : ajoutez une page manuelle pour configurer votre propre parcours."
+            "guidance_zero_steps_option_manual": "Sinon : ajoutez une page en reprenant celles déjà enregistrées (pain, sauces, suppléments…) ou en partant d'une page vide."
         },
         "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
         "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",
@@ -2685,6 +2714,11 @@
                 "title": "Profil Composeur manquant",
                 "message": "Cet article possède des variantes ou des suppléments mais aucun profil Composeur. Ajoutez-en un pour sécuriser la prise de commande guidée.",
                 "action": "Créer le profil Composeur"
+            },
+            "composer_item_not_synced": {
+                "title": "Wizard de la catégorie pas encore appliqué",
+                "message": "La catégorie a un wizard publié, mais ce produit ne l'a pas encore reçu. Ouvrez le wizard de la catégorie et cliquez sur « Synchroniser les produits ».",
+                "action": "Ouvrir le wizard de la catégorie"
             },
             "channels_null": {
                 "title": "Canaux non restreints",

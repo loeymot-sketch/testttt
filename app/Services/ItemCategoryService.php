@@ -46,7 +46,7 @@ class ItemCategoryService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            $query = ItemCategory::with('media')->where(function ($query) use ($requests) {
+            $query = ItemCategory::with(['media', 'parent:id,name'])->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemCateFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');

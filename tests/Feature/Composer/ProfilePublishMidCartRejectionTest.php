@@ -239,7 +239,11 @@ class ProfilePublishMidCartRejectionTest extends TestCase
         $payload = $this->kioskOrderPayload($kioskUser, $item, $itemsLine);
         $quote = $this->kioskQuote($kioskUser, $payload);
 
-        $composer->update($profile->fresh('steps'), [
+        // [2026-09-02] Depuis la correction « Enregistrer ne change pas la caisse » (2026-08-28),
+        // `update()` sur un profil PUBLIÉ crée un brouillon et laisse la caisse intacte. Ce test
+        // vérifiait donc un panier contre un profil INCHANGÉ, et passait au vert sans rien prouver.
+        // Pour exercer vraiment « v2 retire l'option, le panier v1 est refusé », il faut PUBLIER.
+        $brouillonV2 = $composer->update($profile->fresh('steps'), [
             'template' => 'sandwich',
             'branch_id_scope' => $branch->id,
             'steps' => [
@@ -255,6 +259,7 @@ class ProfilePublishMidCartRejectionTest extends TestCase
                 ],
             ],
         ]);
+        $composer->publish($brouillonV2->fresh('steps'));
 
         $ordersBefore = Order::query()->where('user_id', $kioskUser->id)->count();
 

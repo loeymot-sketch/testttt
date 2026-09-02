@@ -284,6 +284,8 @@ class EventServiceProvider extends ServiceProvider
         ItemCreated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
             PersistCatalogChangedToOutbox::class,
+            // [2026-09-02] Produit ajouté dans une catégorie au wizard publié → choix + clone auto.
+            \App\Listeners\SyncNewItemWithCategoryWizard::class,
         ],
         // [GOAL-I2-HEAL-02 2026-05-24] Phase I.3 RISK-01 AMBER:
         // Mirror ItemCreated/ItemDeleted so admin rename/reprice flushes

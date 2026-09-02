@@ -20,6 +20,21 @@
                         </div>
 
 
+                        <div class="form-col-12">
+                            <label for="parent_id" class="db-field-title">Catégorie parente (optionnel)</label>
+                            <select v-model="props.form.parent_id" id="parent_id" class="db-field-control"
+                                data-testid="admin-category-form-parent">
+                                <option :value="null">— Catégorie principale —</option>
+                                <option v-for="candidate in parentCandidates" :key="candidate.id" :value="candidate.id">
+                                    {{ candidate.name }}
+                                </option>
+                            </select>
+                            <small class="db-field-alert text-slate-500">
+                                Choisir une parente crée une sous-catégorie (2 niveaux au maximum).
+                            </small>
+                            <small class="db-field-alert" v-if="errors.parent_id">{{ errors.parent_id[0] }}</small>
+                        </div>
+
                         <div class="form-col-12 sm:form-col-6">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (74px,48px)</label>
                             <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
@@ -206,6 +221,12 @@ export default {
     computed: {
         addButton: function () {
             return { title: this.$t('button.add_item_category') };
+        },
+        /** Seules les catégories RACINE peuvent être parentes (profondeur maximale = 2). */
+        parentCandidates: function () {
+            const editingId = this.$store.getters['itemCategory/temp']?.temp_id ?? null;
+            const all = this.$store.getters['itemCategory/lists'] || [];
+            return all.filter((category) => !category.parent_id && String(category.id) !== String(editingId));
         }
     },
     methods: {
@@ -220,6 +241,7 @@ export default {
             this.$props.props.form = {
                 name: "",
                 description: "",
+                parent_id: null,
                 status: statusEnum.ACTIVE,
                 wizard_template: 'simple',
                 has_menu: 0,
@@ -240,6 +262,9 @@ export default {
                 fd.append('name', this.props.form.name);
                 fd.append('status', this.props.form.status);
                 fd.append('description', this.props.form.description);
+                if (this.props.form.parent_id) {
+                    fd.append('parent_id', this.props.form.parent_id);
+                }
                 fd.append('wizard_template', this.props.form.wizard_template || 'simple');
                 fd.append('has_menu', this.props.form.has_menu ?? 0);
                 fd.append('default_menu_kiosk', this.props.form.default_menu_kiosk ?? 0);
@@ -262,6 +287,7 @@ export default {
                     this.props.form = {
                         name: "",
                         description: "",
+                        parent_id: null,
                         status: statusEnum.ACTIVE,
                         wizard_template: 'simple',
                         has_menu: 0,

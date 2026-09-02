@@ -103,7 +103,12 @@ describe('V1 admin sidebar cleanup', () => {
         // (`items`), donc le même personnel → 18 rows. Compteur remonté DANS la session qui
         // livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.raw_material_adjust');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(18);
+        // [GOAL DASHBOARD-PILOTABLE 2026-09-02] +1 : « Pages de wizard » (menu.wizard_pages).
+        // La bibliothèque de pages réutilisables est la porte du parcours client ; elle vit sous
+        // la même autorisation `catalog.compose` que le composeur → 19 rows. Compteur remonté
+        // DANS la session qui livre l'entrée, pas découvert plus tard.
+        expect(text).toContain('menu.wizard_pages');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(19);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

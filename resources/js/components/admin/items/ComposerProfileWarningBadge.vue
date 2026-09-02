@@ -70,13 +70,18 @@ const SEVERITY_ICON_CLASS = {
 const ACTIONABLE_CODES = new Set([
     'composer_unpublished',
     'composer_missing_for_complex_kind',
+    'composer_item_not_synced',
     'channels_null',
     'missing_photo',
     'branch_availability_unset',
     'high_daily_consumed',
 ]);
 
-const COMPOSER_CODES = ['composer_unpublished', 'composer_missing_for_complex_kind'];
+const COMPOSER_CODES = [
+    'composer_unpublished',
+    'composer_missing_for_complex_kind',
+    'composer_item_not_synced',
+];
 
 const SEVERITY_SURFACE_STYLE = {
     info: {
@@ -115,17 +120,31 @@ export default {
         hasAction(code) {
             return ACTIONABLE_CODES.has(code);
         },
+        /**
+         * [2026-09-02] Le bouton envoyait sur `/admin/items/show/{id}/composer` — une route qui
+         * n'existe pas dans le routeur (`itemRoutes.js` déclare `/admin/items/:id/composer` et
+         * `/admin/categories/:id/composer`) : le clic ne menait nulle part. Et depuis que le wizard
+         * se gère PAR CATÉGORIE, c'est là qu'il faut atterrir quand l'avertissement en désigne une.
+         */
         onAction(warning) {
+            const push = (path) => {
+                this.$router.push(path).catch(() => {});
+            };
+
             if (
                 COMPOSER_CODES.includes(warning.code)
                 && typeof this.$router !== 'undefined'
                 && typeof this.$router.push === 'function'
             ) {
-                const rawId = this.$route.params.id ?? this.$route.params.itemId ?? null;
+                const categoryId = warning.context?.category_id ?? null;
+                if (categoryId) {
+                    push(`/admin/categories/${categoryId}/composer`);
+                    return;
+                }
+
+                const rawId = this.$route?.params?.id ?? this.$route?.params?.itemId ?? null;
                 if (rawId !== null && rawId !== '') {
-                    this.$router
-                        .push(`/admin/items/show/${rawId}/composer`)
-                        .catch(() => {});
+                    push(`/admin/items/${rawId}/composer`);
                     return;
                 }
             }

@@ -58,11 +58,16 @@ describe('BackendMenuComponent virtual children override', () => {
 
         const itemsMenu = wrapper.vm.enrichedVisibleMenus.find((m) => m.url === 'items');
         expect(itemsMenu).toBeTruthy();
+        // [GOAL DASHBOARD-PILOTABLE 2026-09-02] +1 : « Pages de wizard ». La bibliothèque de pages
+        // (une page = une question au client + ses choix et leurs prix) est la porte d'entrée pour
+        // monter le parcours d'une catégorie ; sans entrée de menu, l'écran existait sans être
+        // atteignable. Compteur remonté DANS la session qui livre l'entrée.
         expect(itemsMenu.children.map((c) => c.url)).toEqual([
             'items/studio',
+            'wizard-pages',
             'settings/item-attributes/list',
         ]);
-        expect(itemsMenu.children.map((c) => c.language)).toEqual(['catalog', 'item_attributes']);
+        expect(itemsMenu.children.map((c) => c.language)).toEqual(['catalog', 'wizard_pages', 'item_attributes']);
     });
 
     it('garde le bloc sidebar items avec enfants virtuels (parent row masqué via config)', () => {

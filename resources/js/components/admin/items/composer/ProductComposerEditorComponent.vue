@@ -87,6 +87,32 @@
             </div>
 
             <div
+                v-if="isCategoryComposer && runtime"
+                class="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm"
+                :class="coverageIsLate ? 'border-[#e4d8b5] bg-[#fff8df] text-[#8a6812]' : 'border-[#b9e7c8] bg-[#edf9f1] text-[#14743a]'"
+                data-testid="admin-composer-runtime"
+            >
+                <span>
+                    <strong v-if="runtime.published">En caisse : version {{ runtime.published.version }} ({{ runtime.published.steps_count }} page(s))</strong>
+                    <strong v-else>Aucune version en caisse pour l'instant</strong>
+                    <template v-if="coverageLabel"> — {{ coverageLabel }}</template>
+                </span>
+                <span class="flex items-center gap-3">
+                    <span v-if="syncMessage" data-testid="admin-composer-sync-message">{{ syncMessage }}</span>
+                    <button
+                        v-if="runtime.published"
+                        type="button"
+                        class="db-btn-outline h-[34px] !border-[#6d7c74] !text-[#405149]"
+                        data-testid="admin-composer-sync-products"
+                        :disabled="syncing"
+                        @click="syncProducts"
+                    >
+                        {{ syncing ? 'Synchronisation…' : 'Synchroniser les produits' }}
+                    </button>
+                </span>
+            </div>
+
+            <div
                 v-if="applyTemplateError"
                 role="alert"
                 class="flex items-start gap-3 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900"
@@ -122,7 +148,7 @@
                         type="button"
                         class="db-btn-outline h-[42px] w-full justify-center !border-[#1ab759] !text-[#138445]"
                         data-testid="admin-composer-add-step"
-                        @click="addStep"
+                        @click="openPageLibrary"
                     >
                         <i class="lab lab-add-circle" aria-hidden="true"></i>
                         {{ t('label.composer.add_page', 'Ajouter une page') }}
@@ -162,7 +188,10 @@
                         v-model="selectedStepDraft"
                         :available-sources="availableSources"
                         :source-type-labels="sourceTypeLabels"
+                        :page="pageFor(selectedStep)"
                         @change="schedulePreviewRefresh"
+                        @edit-page="goToPageLibrary"
+                        @customize-page="customizeSelectedPage"
                     />
                     <div
                         v-if="steps.length === 0"
@@ -187,7 +216,7 @@
                                         {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisissez un modèle (Tacos, Sandwich…) pour partir d'une base prête.") }}
                                     </li>
                                     <li>
-                                        {{ t('message.composer.guidance_zero_steps_option_manual', 'Sinon : ajoutez une page manuelle pour configurer votre propre parcours.') }}
+                                        {{ t('message.composer.guidance_zero_steps_option_manual', "Sinon : ajoutez une page en reprenant celles déjà enregistrées (pain, sauces, suppléments…) ou en partant d'une page vide.") }}
                                     </li>
                                 </ol>
                                 <div class="flex flex-wrap gap-2">
@@ -202,9 +231,9 @@
                                     <button
                                         type="button"
                                         class="inline-flex items-center gap-2 rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
-                                        @click="addStep"
+                                        @click="openPageLibrary"
                                     >
-                                        {{ t('button.composer.add_page_manual', 'Ajouter une page manuellement') }}
+                                        {{ t('button.composer.add_page_manual', 'Ajouter une page') }}
                                     </button>
                                 </div>
                             </div>
@@ -281,6 +310,56 @@
             </div>
         </footer>
 
+        <div
+            v-if="syncPreview"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sync-preview-title"
+            data-testid="composer-sync-preview"
+        >
+            <div class="w-full max-w-2xl rounded-lg bg-white p-5 shadow-xl">
+                <h3 id="sync-preview-title" class="text-xl font-semibold text-[#202824]">
+                    Cette synchronisation modifie des produits
+                </h3>
+                <p class="mt-1 text-sm text-[#66756e]">
+                    {{ syncPreview.destructive }} ligne(s) de vos produits seraient réécrites ou retirées de la
+                    vente pour suivre les pages de la catégorie. Les prix saisis à la main sur un produit
+                    reprennent celui de la page. Rien n'est supprimé définitivement, mais il n'y a pas de retour
+                    automatique.
+                </p>
+                <ul v-if="syncPreview.warnings.length" class="mt-3 space-y-1 rounded border border-[#e4d8b5] bg-[#fff8df] p-3 text-xs text-[#8a6812]">
+                    <li v-for="(warning, i) in syncPreview.warnings" :key="`w${i}`">{{ warning }}</li>
+                </ul>
+                <ul class="mt-3 max-h-[38vh] space-y-1 overflow-y-auto rounded border border-[#d9dfdc] bg-[#fbfcfb] p-3 text-xs text-[#405149]"
+                    data-testid="composer-sync-preview-lines">
+                    <li v-for="(line, i) in syncPreview.lines" :key="`l${i}`">{{ line.trim() }}</li>
+                </ul>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" class="db-btn-outline" data-testid="composer-sync-cancel"
+                        @click="syncPreview = null">
+                        Annuler
+                    </button>
+                    <button type="button" class="db-btn py-2 bg-[#334238] text-white" data-testid="composer-sync-confirm"
+                        :disabled="syncing" @click="applySync">
+                        Synchroniser quand même
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <ComposerPageLibraryModal
+            :show="pageLibraryOpen"
+            :pages="libraryPages"
+            :loading="pagesLoading"
+            :used-page-ids="usedPageIds"
+            :error="pagesError"
+            @close="pageLibraryOpen = false"
+            @use="useLibraryPage"
+            @customize="customizeLibraryPage"
+            @blank="addBlankStep"
+        />
+
         <ComposerTemplatePickerModal
             :show="templateModalOpen"
             @close="templateModalOpen = false"
@@ -346,6 +425,7 @@ import ComposerPublishDiffModal from './ComposerPublishDiffModal.vue';
 import ComposerVersionConflictBanner from './ComposerVersionConflictBanner.vue';
 import ComposerStepListSidebar from './ComposerStepListSidebar.vue';
 import ComposerStepFormPanel from './ComposerStepFormPanel.vue';
+import ComposerPageLibraryModal from './ComposerPageLibraryModal.vue';
 
 const SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
 
@@ -358,6 +438,7 @@ export default {
         ComposerVersionConflictBanner,
         ComposerStepListSidebar,
         ComposerStepFormPanel,
+        ComposerPageLibraryModal,
     },
     props: {
         itemId: {
@@ -407,6 +488,14 @@ export default {
             previewRefreshKey: 0,
             previewTimer: null,
             loadError: '',
+            // [GOAL DASHBOARD-PILOTABLE 2026-09-02] Bibliothèque de pages + vérité de ce que lit la caisse.
+            pageLibraryOpen: false,
+            pagesLoading: false,
+            runtime: null,
+            syncing: false,
+            syncMessage: '',
+            syncPreview: null,
+            savedFingerprint: '[]',
         };
     },
     computed: {
@@ -533,6 +622,32 @@ export default {
                 this.updateSelectedStep(value);
             },
         },
+        libraryPages() {
+            return this.$store.getters['wizardPage/lists'] || [];
+        },
+        pagesError() {
+            return this.$store.getters['wizardPage/error'] || '';
+        },
+        usedPageIds() {
+            return this.steps.map((step) => step.wizard_page_id).filter(Boolean);
+        },
+        /** Le brouillon diffère-t-il de ce qui est enregistré ? */
+        isDirty() {
+            return this.stepsFingerprint() !== this.savedFingerprint;
+        },
+        coverageLabel() {
+            const coverage = this.runtime?.coverage;
+            if (!coverage || !coverage.total) return '';
+            if (coverage.covered === coverage.total) {
+                return `${coverage.total} produit(s) à jour en caisse`;
+            }
+            const late = coverage.total - coverage.covered;
+            return `${late} produit(s) sur ${coverage.total} n'ont pas encore ce wizard en caisse`;
+        },
+        coverageIsLate() {
+            const coverage = this.runtime?.coverage;
+            return Boolean(coverage && coverage.total && coverage.covered < coverage.total);
+        },
         previewBranches() {
             if (!this.branches.length) return [];
             if (!this.branchIdScope) return this.branches;
@@ -583,6 +698,12 @@ export default {
                     this.loadBranches(),
                 ]);
                 await this.loadProfile();
+                // [2026-09-02] La bibliothèque et l'état « en caisse » sont du CONFORT : les charger
+                // dans la rafale bloquante mettait le parcours lui-même à la merci de leur échec —
+                // une seule requête perdue et l'écran annonçait « Ajoutez une page pour commencer »
+                // sur une catégorie qui en a huit. Elles arrivent après, et leur échec ne casse rien.
+                this.loadLibraryPages().catch(() => {});
+                this.loadRuntime();
             } catch (error) {
                 this.loadError = error?.response?.data?.message || this.t('message.composer.load_failed', 'Impossible de charger le composer.');
             } finally {
@@ -671,6 +792,14 @@ export default {
                 };
             }
         },
+        /** Empreinte du parcours tel qu'il est en base : sert à savoir si le brouillon a bougé. */
+        stepsFingerprint() {
+            return JSON.stringify((this.steps || []).map((step) => [
+                step.id, step.wizard_page_id, step.step_key, step.label, step.source_type, step.source_ref,
+                step.min_select, step.max_select, step.allow_repeat, step.is_active, step.position,
+                Array.isArray(step.visible_on) ? [...step.visible_on].sort() : null,
+            ]));
+        },
         hydrateProfile(profile) {
             this.profile = profile;
             this.template = profile?.template || 'custom';
@@ -680,6 +809,7 @@ export default {
             this.branchIdScope = profile?.branch_id_scope ?? this.branchIdScope ?? null;
             this.steps = (profile?.steps || []).map((step, index) => this.normalizeStep(step, index));
             this.selectedStepKey = this.steps[0]?._uid || null;
+            this.savedFingerprint = this.stepsFingerprint();
             this.schedulePreviewRefresh();
         },
         normalizeStep(step = {}, index = 0) {
@@ -689,6 +819,8 @@ export default {
             return {
                 id: step.id ?? null,
                 profile_id: step.profile_id ?? this.profile?.id ?? null,
+                wizard_page_id: step.wizard_page_id ?? null,
+                page: step.page ?? null,
                 step_key: step.step_key || this.makeStepKey(step.label || '', index),
                 label: step.label || this.t('label.composer.new_page', 'Nouvelle page'),
                 source_type: sourceType,
@@ -721,6 +853,159 @@ export default {
         selectStep(step) {
             this.selectedStepKey = step?._uid || null;
         },
+        pageFor(step) {
+            if (!step) return null;
+            if (step.page) return step.page;
+            if (!step.wizard_page_id) return null;
+            return this.libraryPages.find((page) => page.id === step.wizard_page_id) || null;
+        },
+        loadLibraryPages() {
+            this.pagesLoading = true;
+            return this.$store.dispatch('wizardPage/lists', {
+                category_id: this.isCategoryComposer ? this.resolvedEntityId : null,
+            }).finally(() => { this.pagesLoading = false; });
+        },
+        openPageLibrary() {
+            this.pageLibraryOpen = true;
+            // L'échec est raconté DANS la modale (`pagesError`), pas avalé — sinon elle annonce
+            // « aucune page enregistrée » alors que la bibliothèque en contient douze.
+            this.loadLibraryPages().catch(() => {});
+        },
+        /**
+         * [2026-09-02 · audit adverse P1-2] Partir éditer une page jetait le parcours non enregistré
+         * (pages ajoutées, ordre changé) sans un mot. On demande avant de quitter.
+         */
+        goToPageLibrary() {
+            if (this.isDirty && typeof window !== 'undefined' && typeof window.confirm === 'function'
+                && ! window.confirm('Votre brouillon de parcours n\'est pas enregistré. Quitter cet écran l\'abandonnera. Continuer ?')) {
+                return;
+            }
+            if (this.$router?.push) {
+                this.$router.push({ name: 'admin.wizard.pages' });
+            }
+        },
+        stepFromPage(page) {
+            return this.normalizeStep({
+                wizard_page_id: page.id,
+                page,
+                step_key: page.step_key || page.key,
+                label: page.label,
+                source_type: page.source_type,
+                source_ref: page.source_ref || '',
+                min_select: page.min_select,
+                max_select: page.max_select,
+                allow_repeat: page.allow_repeat,
+                visible_on: Array.isArray(page.visible_on) && page.visible_on.length ? [...page.visible_on] : ['pos', 'kiosk'],
+                addon_role: page.addon_role || null,
+                // [2026-09-02 · audit adverse] Une page éteinte arrivait « active » dans le parcours :
+                // l'écran promettait une étape que ni la caisse ni la borne n'auraient affichée.
+                is_active: page.is_active !== false,
+                position: this.steps.length,
+            }, this.steps.length);
+        },
+        useLibraryPage(page) {
+            const next = this.stepFromPage(page);
+            this.steps = [...this.steps, next];
+            this.selectedStepKey = next._uid;
+            this.pageLibraryOpen = false;
+            this.schedulePreviewRefresh();
+        },
+        customizeLibraryPage(page) {
+            if (!this.isCategoryComposer) {
+                this.useLibraryPage(page);
+                return;
+            }
+            this.$store.dispatch('wizardPage/duplicateForCategory', {
+                id: page.id,
+                categoryId: this.resolvedEntityId,
+            }).then((copy) => {
+                this.loadLibraryPages();
+                this.useLibraryPage(copy);
+                alertService.success(`« ${copy.label} » est maintenant personnalisable pour cette catégorie.`);
+            }).catch((error) => {
+                alertService.error(error?.response?.data?.message || 'Impossible de personnaliser cette page.');
+            });
+        },
+        customizeSelectedPage() {
+            const page = this.pageFor(this.selectedStep);
+            if (!page || !this.isCategoryComposer) return;
+            this.$store.dispatch('wizardPage/duplicateForCategory', {
+                id: page.id,
+                categoryId: this.resolvedEntityId,
+            }).then((copy) => {
+                this.loadLibraryPages();
+                this.steps = this.steps.map((step) => (step._uid === this.selectedStep._uid
+                    ? { ...step, wizard_page_id: copy.id, page: copy }
+                    : step));
+                alertService.success(`« ${copy.label} » est maintenant personnalisable pour cette catégorie.`);
+                this.schedulePreviewRefresh();
+            }).catch((error) => {
+                alertService.error(error?.response?.data?.message || 'Impossible de personnaliser cette page.');
+            });
+        },
+        loadRuntime() {
+            if (!this.isCategoryComposer || !this.resolvedEntityId) return Promise.resolve();
+            return axios.get(`admin/composer/categories/${this.resolvedEntityId}/runtime`)
+                .then((res) => { this.runtime = res.data?.data || null; })
+                .catch(() => { this.runtime = null; });
+        },
+        /**
+         * [2026-09-02 · audit adverse P0-1] Synchroniser écrit sur le catalogue que la caisse
+         * facture : un prix saisi à la main sur un produit est ramené à celui de la page, et une
+         * option ajoutée hors page est retirée de la vente. C'était immédiat et sans retour arrière.
+         * On simule d'abord (`dry_run`) : si le plan contient une réécriture ou un retrait, on le
+         * MONTRE et on demande confirmation. Sinon (que des créations), on applique directement.
+         */
+        syncProducts() {
+            this.syncing = true;
+            this.syncMessage = '';
+            return axios.post(`admin/composer/categories/${this.resolvedEntityId}/materialize`, { dry_run: 1 })
+                .then((res) => {
+                    const data = res.data?.data || {};
+                    const report = data.report || {};
+                    const counts = report.counts || {};
+                    const destructive = (counts.variations_updated || 0)
+                        + (counts.variations_deactivated || 0)
+                        + (counts.extras_updated || 0)
+                        + (counts.extras_deactivated || 0)
+                        + (counts.addons_removed || 0);
+                    if (destructive > 0) {
+                        this.syncPreview = {
+                            destructive,
+                            warnings: report.warnings || [],
+                            lines: (report.lines || []).filter((l) => /^\s*[~−]/.test(l)).slice(0, 40),
+                        };
+                        this.syncing = false;
+                        return null;
+                    }
+                    return this.applySync();
+                })
+                .catch((error) => {
+                    this.syncing = false;
+                    alertService.error(error?.response?.data?.message || 'Synchronisation impossible.');
+                });
+        },
+        applySync() {
+            this.syncing = true;
+            this.syncPreview = null;
+            return axios.post(`admin/composer/categories/${this.resolvedEntityId}/materialize`)
+                .then((res) => {
+                    const data = res.data?.data || {};
+                    this.runtime = data.runtime || this.runtime;
+                    const coverage = this.runtime?.coverage || {};
+                    this.syncMessage = `${coverage.covered || 0}/${coverage.total || 0} produit(s) à jour.`;
+                    alertService.success('Produits synchronisés avec le wizard publié.');
+                    return this.loadProfile();
+                })
+                .catch((error) => {
+                    alertService.error(error?.response?.data?.message || 'Synchronisation impossible.');
+                })
+                .finally(() => { this.syncing = false; });
+        },
+        addBlankStep() {
+            this.pageLibraryOpen = false;
+            this.addStep();
+        },
         addStep() {
             const next = this.normalizeStep({
                 label: this.t('label.composer.new_page', 'Nouvelle page'),
@@ -744,7 +1029,8 @@ export default {
                     ...step,
                     ...value,
                     // Form panel edits label only — always derive key from label so slug tracks renames.
-                    step_key: this.makeStepKey(value.label || '', index),
+                    // Exception : une étape reliée à une page garde la clé de la page (contrat caisse/borne).
+                    step_key: step.wizard_page_id ? step.step_key : this.makeStepKey(value.label || '', index),
                     position: index,
                 }, index);
                 return { ...next, _uid: step._uid };
@@ -795,7 +1081,13 @@ export default {
             const minSelect = Number(step.min_select || 0);
             const maxSelect = Math.max(Number(step.max_select || 0), minSelect);
             return {
+                wizard_page_id: step.wizard_page_id || null,
                 step_key: (() => {
+                    if (step.wizard_page_id && step.step_key) {
+                        // Étape reliée à une page : la clé vient de la page (c'est elle que la
+                        // caisse et la borne reconnaissent), le libellé reste libre.
+                        return step.step_key;
+                    }
                     const pos = Number(step.position || 0);
                     const fromLabel = this.makeStepKey(step.label || '', pos);
                     if (fromLabel && !['new_page', 'nouvelle_page'].includes(fromLabel)) {
@@ -927,7 +1219,8 @@ export default {
                 const response = await axios.post(`admin/composer/profiles/${this.profile.id}/publish`);
                 this.hydrateProfile(response.data?.data || null);
                 this.publishConfirmOpen = false;
-                alertService.success(this.t('message.composer.published', 'Wizard publie.'));
+                await this.loadRuntime();
+                alertService.success(this.t('message.composer.published', 'Wizard publié.'));
             } catch (error) {
                 alertService.error(error?.response?.data?.message || this.t('message.composer.publish_failed', 'Publication impossible.'));
                 throw error;

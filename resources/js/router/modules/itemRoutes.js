@@ -15,6 +15,8 @@ const WizardAdvancedLauncherComponent = () => import(/* webpackChunkName: "admin
 // commerçant qui construit sa carte vient chercher.
 const MenuImportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/assistant/MenuImportComponent.vue");
 const MissionLocaleComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/assistant/MissionLocaleComponent.vue");
+// [GOAL DASHBOARD-PILOTABLE 2026-09-02] Bibliothèque de pages de wizard réutilisables.
+const WizardPageLibraryComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/wizardPages/WizardPageLibraryComponent.vue");
 
 export const isWizardPerItemDemoEnabled = () => (
     typeof window !== 'undefined'
@@ -169,6 +171,19 @@ export default [
             v2Demo: true,
         },
         beforeEnter: requireWizardPerItemDemo,
+    },
+    {
+        // Bibliothèque des pages de wizard (les listes de choix + prix que les catégories réutilisent).
+        // Même porte que l'API (`permission:catalog.compose`) : pas d'écran ouvert qui répondrait 403.
+        path: '/admin/wizard-pages',
+        component: WizardPageLibraryComponent,
+        name: 'admin.wizard.pages',
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: 'catalog.compose',
+            breadcrumb: 'wizard_pages',
+        },
     },
     {
         path: '/admin/categories/:id/composer',

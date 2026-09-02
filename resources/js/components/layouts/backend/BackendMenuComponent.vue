@@ -94,6 +94,8 @@ const HIDDEN_KEY_TO_MENU_URL = Object.freeze({
 const VIRTUAL_CHILDREN_BY_URL = Object.freeze({
     items: Object.freeze([
         Object.freeze({ url: 'items/studio',                   language: 'catalog',     icon: 'lab lab-list' }),
+        // [2026-09-02] Pages de wizard : les listes de choix (avec prix) réutilisables par catégorie.
+        Object.freeze({ url: 'wizard-pages',                   language: 'wizard_pages', icon: 'lab lab-document-text' }),
         Object.freeze({ url: 'settings/item-attributes/list',  language: 'item_attributes',  icon: 'lab lab-item-attributes' }),
     ]),
 });
@@ -123,6 +125,7 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
         icon: 'lab lab-items',
         children: Object.freeze([
             Object.freeze({ url: 'items/studio', language: 'catalog', icon: 'lab lab-list' }),
+            Object.freeze({ url: 'wizard-pages', language: 'wizard_pages', icon: 'lab lab-document-text' }),
         ]),
     }),
     Object.freeze({ url: 'ingredients', language: 'ingredients', icon: 'lab lab-item-attributes' }),
@@ -176,6 +179,8 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // [CATALOG-HUB 2026-07-21] Hub is gated by the same `items` permission as
     // both screens it wraps.
     'catalog-hub': 'items',
+    // [2026-09-02] Même porte que l'API composeur : un écran ouvert qui répondrait 403 est un piège.
+    'wizard-pages': 'catalog.compose',
     // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection reuse the
     // pos-orders permission (admin + branch managers already hold it).
     historique: 'pos-orders',

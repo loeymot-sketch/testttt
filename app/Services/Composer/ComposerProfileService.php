@@ -19,26 +19,25 @@ class ComposerProfileService
     public function __construct(
         private readonly ComposerStepService $stepService,
         private readonly ComposerProfileProjection $projection,
+        private readonly ?WizardPageMaterializer $materializer = null,
     )
     {
     }
 
+    private function materializer(): WizardPageMaterializer
+    {
+        return $this->materializer ?? app(WizardPageMaterializer::class);
+    }
+
     public function showForItem(Item $item, ?int $branchIdScope = null): ?ItemWizardProfile
     {
-        $base = fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
-            ->with('steps')
-            ->where('item_id', $item->id);
-
-        if ($branchIdScope !== null) {
-            $scoped = $base()->where('branch_id_scope', $branchIdScope)->latest('id')->first();
-            if ($scoped !== null) {
-                return $scoped;
-            }
-
-            return $base()->whereNull('branch_id_scope')->latest('id')->first();
-        }
-
-        return $base()->whereNull('branch_id_scope')->latest('id')->first();
+        return $this->pickAdminProfile(
+            fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
+                ->with('steps.page.choices')
+                ->where('item_id', $item->id),
+            $branchIdScope,
+            'item'
+        );
     }
 
     public function createForItem(Item $item, array $payload): ItemWizardProfile
@@ -63,17 +62,71 @@ class ComposerProfileService
 
     public function showForCategory(ItemCategory $category, ?int $branchIdScope = null): ?ItemWizardProfile
     {
-        $base = fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
-            ->with('steps')
-            ->where('item_category_id', $category->id);
+        return $this->pickAdminProfile(
+            fn (): \Illuminate\Database\Eloquent\Builder => ItemWizardProfile::query()
+                ->with('steps.page.choices')
+                ->where('item_category_id', $category->id),
+            $branchIdScope,
+            'category'
+        );
+    }
+
+    /**
+     * Profil de catégorie EN CAISSE (le plus récent publié), indépendamment du brouillon en cours.
+     */
+    public function publishedForCategory(ItemCategory $category, ?int $branchIdScope = null): ?ItemWizardProfile
+    {
+        $query = ItemWizardProfile::query()
+            ->with('steps.page.choices')
+            ->where('item_category_id', $category->id)
+            ->where('is_published', true);
 
         if ($branchIdScope !== null) {
-            $scoped = $base()->where('branch_id_scope', $branchIdScope)->latest('id')->first();
-            if ($scoped !== null) {
-                return $scoped;
-            }
+            $query->where(function ($q) use ($branchIdScope): void {
+                $q->where('branch_id_scope', $branchIdScope)->orWhereNull('branch_id_scope');
+            })->orderByRaw('CASE WHEN branch_id_scope IS NULL THEN 1 ELSE 0 END');
+        } else {
+            $query->whereNull('branch_id_scope');
+        }
 
-            return $base()->whereNull('branch_id_scope')->latest('id')->first();
+        return $query->orderByDesc('id')->first();
+    }
+
+    /**
+     * Admin : pour un PRODUIT, un brouillon plus récent (version) gagne sur un clone publié
+     * de catégorie (id plus haut). Pour une CATÉGORIE, l'état courant est le profil le plus
+     * récent (id) : un brouillon n'est montré que s'il est postérieur à la dernière publication
+     * — avant, un vieux brouillon abandonné masquait le wizard réellement en caisse (Tacos :
+     * brouillon v3 à 7 pages affiché, publié v4 à 8 pages ignoré). La caisse continue de lire la
+     * version publiée max.
+     */
+    private function pickAdminProfile(\Closure $base, ?int $branchIdScope, string $owner = 'item'): ?ItemWizardProfile
+    {
+        $scopes = $branchIdScope !== null
+            ? [
+                fn () => $base()->where('branch_id_scope', $branchIdScope),
+                fn () => $base()->whereNull('branch_id_scope'),
+            ]
+            : [
+                fn () => $base()->whereNull('branch_id_scope'),
+            ];
+
+        foreach ($scopes as $scoped) {
+            if ($owner === 'category') {
+                $newest = $scoped()->orderByDesc('id')->first();
+                if ($newest) {
+                    return $newest;
+                }
+                continue;
+            }
+            $draft = $scoped()->where('is_published', false)->orderByDesc('version')->orderByDesc('id')->first();
+            if ($draft) {
+                return $draft;
+            }
+            $any = $scoped()->orderByDesc('version')->orderByDesc('id')->first();
+            if ($any) {
+                return $any;
+            }
         }
 
         return $base()->whereNull('branch_id_scope')->latest('id')->first();
@@ -151,6 +204,10 @@ class ComposerProfileService
         $this->assertVersionMatches($profile, $payload);
 
         return DB::transaction(function () use ($profile): ItemWizardProfile {
+            // Les pages de la bibliothèque sont d'abord écrites sur chaque produit de la catégorie :
+            // c'est ce qui donne aux étapes leurs choix (et fait passer le contrôle « page obligatoire
+            // sans choix » ci-dessous) sans aucune saisie produit par produit.
+            $this->materializeProfilePages($profile);
             $this->assertPublishable($profile);
             $profile->publish();
             $fresh = $profile->fresh('steps');
@@ -170,6 +227,277 @@ class ComposerProfileService
 
             return $fresh;
         });
+    }
+
+    /**
+     * Recopie le wizard catégorie sur chaque produit, en version supérieure
+     * aux profils item déjà publiés, pour que la caisse prenne le nouveau.
+     */
+    /**
+     * @return array<int, int>
+     */
+    private function fanOutCategoryPublish(ItemWizardProfile $categoryProfile): array
+    {
+        if (! $categoryProfile->item_category_id) {
+            return [];
+        }
+
+        $items = Item::query()
+            ->where('item_category_id', $categoryProfile->item_category_id)
+            ->get();
+
+        $ids = [];
+        foreach ($items as $item) {
+            $ids[] = $this->upsertPublishedItemClone($categoryProfile, $item);
+        }
+
+        return $ids;
+    }
+
+    private function upsertPublishedItemClone(ItemWizardProfile $source, Item $item): int
+    {
+        $scope = $source->branch_id_scope;
+
+        $maxVersion = (int) ItemWizardProfile::query()
+            ->where('item_id', $item->id)
+            ->max('version');
+        $nextVersion = max($maxVersion, (int) $source->version) + 1;
+
+        // Toujours une NOUVELLE ligne : un brouillon produit ne doit pas
+        // se transformer en « publié » ni perdre ses étapes. La caisse lit
+        // la version max publiée, donc le clone gagne sans écraser l'historique.
+        $target = new ItemWizardProfile();
+        $target->fill([
+            'item_id' => $item->id,
+            'item_category_id' => null,
+            'template' => $source->template,
+            'branch_id_scope' => $scope,
+            'is_published' => true,
+            'published_at' => now(),
+            'version' => $nextVersion,
+        ]);
+        $target->save();
+
+        foreach ($source->steps as $step) {
+            $this->stepService->create($target, [
+                'wizard_page_id' => $step->wizard_page_id,
+                'step_key' => $step->step_key,
+                'label' => $step->label,
+                'source_type' => $step->source_type,
+                'source_ref' => $step->source_ref,
+                'source_item_attribute_id' => $step->source_item_attribute_id,
+                'min_select' => $step->min_select,
+                'max_select' => $step->max_select,
+                'allow_repeat' => $step->allow_repeat,
+                'visible_on' => $step->visible_on,
+                'stockable_choices' => $step->stockable_choices,
+                'position' => $step->position,
+                'is_active' => $step->is_active,
+                'addon_role' => $step->addon_role,
+            ], false);
+        }
+
+        $freshTarget = $target->fresh('steps');
+        ComposerProfileChanged::dispatch(
+            ...$this->composerChangedPayload($freshTarget, 'published')
+        );
+
+        return (int) $freshTarget->id;
+    }
+
+    /**
+     * Avant : Dépublier le wizard catégorie remettait le badge « Brouillon »
+     * mais les clones item_id restaient publiés — la caisse continuait.
+     */
+    private function reverseCategoryPublish(ItemWizardProfile $profile): void
+    {
+        if (! $profile->item_category_id) {
+            return;
+        }
+
+        $ids = [];
+        foreach ($profile->versions()->orderByDesc('version')->get() as $version) {
+            foreach ((array) $version->snapshot as $row) {
+                if (! is_array($row) || ! isset($row['fan_out_profile_ids']) || ! is_array($row['fan_out_profile_ids'])) {
+                    continue;
+                }
+                foreach ($row['fan_out_profile_ids'] as $id) {
+                    $ids[(int) $id] = true;
+                }
+            }
+        }
+
+        foreach (array_keys($ids) as $id) {
+            $clone = ItemWizardProfile::query()->find($id);
+            if (! $clone || ! $clone->item_id || ! $clone->is_published) {
+                continue;
+            }
+
+            $clone->unpublish();
+            ComposerProfileChanged::dispatch(
+                ...$this->composerChangedPayload($clone->fresh('steps'), 'unpublished')
+            );
+        }
+    }
+
+    /**
+     * Matérialise les pages reliées d'un profil : catégorie → tous ses produits ; produit → lui seul.
+     */
+    public function materializeProfilePages(ItemWizardProfile $profile, bool $dryRun = false): MaterializationReport
+    {
+        $profile->loadMissing('steps');
+        if ($profile->item_category_id) {
+            $category = ItemCategory::query()->find($profile->item_category_id);
+            if ($category) {
+                return $this->materializer()->materializeCategory($category, $profile, $dryRun);
+            }
+        }
+        if ($profile->item_id) {
+            $item = Item::query()->find($profile->item_id);
+            if ($item) {
+                return $this->materializer()->materializeItem($item, $profile, $dryRun);
+            }
+        }
+
+        return new MaterializationReport();
+    }
+
+    /**
+     * Re-synchronise les produits d'une catégorie avec son wizard PUBLIÉ : pages matérialisées puis
+     * republication (version +1) qui recopie le profil sur chaque produit — y compris ceux ajoutés
+     * depuis, et ceux dont le clone manquait (cas mesuré le 2026-09-02 : six catégories « publiées »
+     * sans aucun clone produit, caisse et borne sur l'heuristique legacy).
+     *
+     * @return array{report: array<string, mixed>, profile: ?ItemWizardProfile, runtime: array<string, mixed>}
+     */
+    public function resyncCategory(ItemCategory $category, bool $dryRun = false): array
+    {
+        $published = $this->publishedForCategory($category);
+        if (! $published) {
+            throw ValidationException::withMessages([
+                'profile' => 'Cette catégorie n\'a pas de wizard publié : publiez-le d\'abord.',
+            ]);
+        }
+
+        if ($dryRun) {
+            $report = $this->materializer()->materializeCategory($category, $published, true);
+
+            return [
+                'report' => $report->toArray(),
+                'profile' => $published,
+                'runtime' => $this->runtimeSnapshot($category),
+            ];
+        }
+
+        // [2026-09-02 · audit adverse P1-1] La matérialisation était COMMITÉE avant la republication.
+        // Si `publish()` refusait ensuite le profil (`assertPublishable` → 422), les créations, les
+        // désactivations et les prix réécrits restaient en base, définitivement, pour une opération
+        // que l'admin voyait échouer. Tout ou rien.
+        [$report, $published] = DB::transaction(function () use ($category, $published): array {
+            $report = $this->materializer()->materializeCategory($category, $published, false);
+
+            return [$report, $this->publish($published->fresh('steps'))];
+        });
+
+        return [
+            'report' => $report->toArray(),
+            'profile' => $published,
+            'runtime' => $this->runtimeSnapshot($category),
+        ];
+    }
+
+    /**
+     * Produit créé (ou déplacé) dans une catégorie au wizard publié : choix matérialisés + clone publié.
+     */
+    public function syncItemWithCategoryWizard(Item $item): ?ItemWizardProfile
+    {
+        if (! $item->item_category_id) {
+            return null;
+        }
+        $category = ItemCategory::query()->find($item->item_category_id);
+        if (! $category) {
+            return null;
+        }
+        $published = $this->publishedForCategory($category);
+        if (! $published) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($item, $published): ItemWizardProfile {
+            $this->materializer()->materializeItem($item, $published);
+            $cloneId = $this->upsertPublishedItemClone($published, $item);
+
+            return ItemWizardProfile::query()->with('steps')->findOrFail($cloneId);
+        });
+    }
+
+    /**
+     * Ce que la caisse et la borne lisent vraiment pour une catégorie : version publiée, brouillon en
+     * cours, et couverture produit par produit (clone à jour / périmé / manquant).
+     *
+     * @return array<string, mixed>
+     */
+    public function runtimeSnapshot(ItemCategory $category): array
+    {
+        $published = $this->publishedForCategory($category);
+        $current = $this->showForCategory($category);
+        $draft = ($current && ! $current->is_published) ? $current : null;
+
+        $items = Item::query()
+            ->where('item_category_id', $category->id)
+            ->whereNull('deleted_at')
+            ->orderBy('id')
+            ->get(['id', 'name', 'status']);
+
+        $clones = ItemWizardProfile::query()
+            ->whereIn('item_id', $items->pluck('id')->all())
+            ->where('is_published', true)
+            ->whereNull('branch_id_scope')
+            ->orderByDesc('version')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('item_id')
+            ->map(fn ($group) => $group->first());
+
+        $rows = [];
+        $coverage = ['total' => $items->count(), 'covered' => 0, 'stale' => 0, 'missing' => 0];
+        foreach ($items as $item) {
+            $clone = $clones->get($item->id);
+            $state = 'missing';
+            if ($clone && $published) {
+                $state = ($clone->published_at && $published->published_at && $clone->published_at >= $published->published_at)
+                    ? 'covered'
+                    : 'stale';
+            } elseif ($clone) {
+                $state = 'stale';
+            }
+            $coverage[$state]++;
+            $rows[] = [
+                'id' => (int) $item->id,
+                'name' => (string) $item->name,
+                'status' => (int) $item->status,
+                'clone_profile_id' => $clone ? (int) $clone->id : null,
+                'clone_version' => $clone ? (int) $clone->version : null,
+                'clone_published_at' => $clone ? optional($clone->published_at)->toIso8601String() : null,
+                'state' => $state,
+            ];
+        }
+
+        return [
+            'published' => $published ? [
+                'id' => (int) $published->id,
+                'version' => (int) $published->version,
+                'published_at' => optional($published->published_at)->toIso8601String(),
+                'steps_count' => $published->steps->where('is_active', true)->count(),
+            ] : null,
+            'draft' => $draft ? [
+                'id' => (int) $draft->id,
+                'version' => (int) $draft->version,
+                'steps_count' => $draft->steps->count(),
+            ] : null,
+            'coverage' => $coverage,
+            'items' => $rows,
+        ];
     }
 
     private function assertPublishable(ItemWizardProfile $profile): void
@@ -261,6 +589,74 @@ class ComposerProfileService
                 'is_published' => (bool) $profile->is_published,
             ],
         ];
+    }
+
+    /**
+     * Avant : Enregistrer un wizard déjà en caisse réécrivait la ligne
+     * publiée. Toast « brouillon », caisse déjà changée (produit) ou
+     * clones périmés (catégorie). On fork un vrai brouillon, version max+1.
+     */
+    private function forkUnpublishedDraft(ItemWizardProfile $published, array $payload): ItemWizardProfile
+    {
+        $published->loadMissing('steps');
+
+        $steps = $payload['steps'] ?? $published->steps
+            ->sortBy('position')
+            ->map(fn (ItemWizardStep $step): array => [
+                'wizard_page_id' => $step->wizard_page_id,
+                'step_key' => $step->step_key,
+                'label' => $step->label,
+                'source_type' => $step->source_type,
+                'source_ref' => $step->source_ref,
+                'source_item_attribute_id' => $step->source_item_attribute_id,
+                'min_select' => $step->min_select,
+                'max_select' => $step->max_select,
+                'allow_repeat' => $step->allow_repeat,
+                'visible_on' => $step->visible_on,
+                'stockable_choices' => $step->stockable_choices,
+                'position' => $step->position,
+                'is_active' => $step->is_active,
+                'addon_role' => $step->addon_role,
+            ])
+            ->values()
+            ->all();
+
+        $body = [
+            'template' => $payload['template'] ?? $published->template,
+            'branch_id_scope' => array_key_exists('branch_id_scope', $payload)
+                ? $payload['branch_id_scope']
+                : $published->branch_id_scope,
+            'steps' => $steps,
+        ];
+        $scope = $body['branch_id_scope'] !== null ? (int) $body['branch_id_scope'] : null;
+
+        if ($published->item_id) {
+            $item = Item::query()->findOrFail((int) $published->item_id);
+            $current = $this->showForItem($item, $scope);
+            if ($current && ! $current->is_published) {
+                return $this->update($current, $body + ['version' => $current->version]);
+            }
+            $body['version'] = ((int) ItemWizardProfile::query()->where('item_id', $item->id)->max('version')) + 1;
+
+            return $this->createForItem($item, $body);
+        }
+
+        if ($published->item_category_id) {
+            $category = ItemCategory::query()->findOrFail((int) $published->item_category_id);
+            $current = $this->showForCategory($category, $scope);
+            if ($current && ! $current->is_published) {
+                return $this->update($current, $body + ['version' => $current->version]);
+            }
+            $body['version'] = ((int) ItemWizardProfile::query()
+                ->where('item_category_id', $category->id)
+                ->max('version')) + 1;
+
+            return $this->createForCategory($category, $body);
+        }
+
+        throw ValidationException::withMessages([
+            'profile' => 'Impossible de créer un brouillon pour ce wizard.',
+        ]);
     }
 
     private function assertVersionMatches(ItemWizardProfile $profile, array $payload): void

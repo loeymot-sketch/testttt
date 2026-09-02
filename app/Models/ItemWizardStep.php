@@ -13,6 +13,7 @@ class ItemWizardStep extends Model
 
     protected $fillable = [
         'profile_id',
+        'wizard_page_id',
         'step_key',
         'label',
         'source_type',
@@ -31,6 +32,7 @@ class ItemWizardStep extends Model
     protected $casts = [
         'id' => 'integer',
         'profile_id' => 'integer',
+        'wizard_page_id' => 'integer',
         'source_item_attribute_id' => 'integer',
         'min_select' => 'integer',
         'max_select' => 'integer',
@@ -57,5 +59,11 @@ class ItemWizardStep extends Model
     public function profile()
     {
         return $this->belongsTo(ItemWizardProfile::class, 'profile_id');
+    }
+
+    /** Page de la bibliothèque (ou copie privée) dont cette étape tire ses choix. */
+    public function page()
+    {
+        return $this->belongsTo(WizardPage::class, 'wizard_page_id');
     }
 }

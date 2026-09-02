@@ -5,6 +5,8 @@ namespace App\Services\Composer;
 use App\Events\ComposerProfileChanged;
 use App\Models\ItemWizardProfile;
 use App\Models\ItemWizardStep;
+use App\Models\WizardPage;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class ComposerStepService
@@ -14,7 +16,9 @@ class ComposerStepService
 
     public function create(ItemWizardProfile $profile, array $payload, bool $emitSync = true): ItemWizardStep
     {
-        $step = $profile->steps()->create($this->normalize($payload));
+        $attributes = $this->normalize($payload);
+        $attributes['step_key'] = $this->uniqueStepKey($profile, (string) $attributes['step_key']);
+        $step = $profile->steps()->create($attributes);
         $this->dispatchProfileChanged($profile->fresh(), 'steps_updated', $emitSync);
 
         return $step;
@@ -38,9 +42,11 @@ class ComposerStepService
 
     public function normalize(array $payload): array
     {
+        $payload = $this->applyPage($payload);
         $this->assertContract($payload);
 
         return [
+            'wizard_page_id' => isset($payload['wizard_page_id']) && (int) $payload['wizard_page_id'] > 0 ? (int) $payload['wizard_page_id'] : null,
             'step_key' => $payload['step_key'],
             'label' => $payload['label'],
             'source_type' => $payload['source_type'],
@@ -55,6 +61,54 @@ class ComposerStepService
             'is_active' => (bool) ($payload['is_active'] ?? true),
             'addon_role' => $payload['addon_role'] ?? null,
         ];
+    }
+
+    /**
+     * Une étape reliée à une page de la bibliothèque tire d'elle son type de source, sa référence,
+     * son attribut, son rôle d'addon et sa clé (celle que la caisse et la borne reconnaissent) : le
+     * libellé, le minimum/maximum et les canaux restent propres à la catégorie.
+     */
+    private function applyPage(array $payload): array
+    {
+        $pageId = isset($payload['wizard_page_id']) ? (int) $payload['wizard_page_id'] : 0;
+        if ($pageId <= 0) {
+            return $payload;
+        }
+
+        $page = WizardPage::query()->find($pageId);
+        if (! $page) {
+            throw ValidationException::withMessages([
+                'wizard_page_id' => 'Cette page de wizard n\'existe plus.',
+            ]);
+        }
+
+        $payload['source_type'] = (string) $page->source_type;
+        $payload['source_ref'] = $page->effectiveSourceRef();
+        $payload['source_item_attribute_id'] = $page->source_type === 'item_attribute' ? $page->item_attribute_id : null;
+        $payload['addon_role'] = $page->source_type === 'addon' ? $page->addon_role : null;
+        $payload['step_key'] = $page->effectiveStepKey();
+        if (! isset($payload['label']) || trim((string) $payload['label']) === '') {
+            $payload['label'] = (string) $page->label;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * (profile_id, step_key) est unique en base : deux pages « viande » dans un même parcours
+     * reçoivent « viande » puis « viande_2 » — la seconde passe par l'écran générique, comme avant.
+     */
+    private function uniqueStepKey(ItemWizardProfile $profile, string $key): string
+    {
+        $base = $key !== '' ? $key : 'page';
+        $candidate = $base;
+        $suffix = 2;
+        while ($profile->steps()->where('step_key', $candidate)->exists()) {
+            $candidate = $base.'_'.$suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 
     private function resolveSourceItemAttributeId(array $payload): ?int
