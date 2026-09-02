@@ -8,7 +8,7 @@
                 <div class="catalog-control-plane__title-row">
                     <h2>{{ $t('label.catalog_subtitle') }}</h2>
                     <span class="catalog-control-plane__sync">
-                        <i class="lab lab-refresh"></i>
+                        <i class="lab lab-reset"></i>
                         {{ $t('label.catalog_pos_kiosk') }}
                     </span>
                 </div>
@@ -32,6 +32,15 @@
                     <span>{{ unavailableItemsCount }}</span>
                     <small>{{ $t('label.catalog_metric_unavailable') }}</small>
                 </button>
+                <!-- [AUDIT-COMPTA 2026-08-29] La case qui manquait : sans elle le bandeau
+                     annonçait « 123 produits · 58 actifs · 1 indisponible » — 58 + 1 = 59,
+                     et les 64 fiches désactivées n'apparaissaient nulle part. Le clic filtre
+                     dessus, comme les tuiles voisines : compter sans pouvoir y accéder
+                     n'aurait fait que déplacer la frustration. -->
+                <button v-if="disabledItemsCount > 0" type="button" class="catalog-control-plane__metric" :title="`${disabledItemsCount} ${$t('label.catalog_metric_disabled')}`" :aria-label="`${$t('label.filter')} ${disabledItemsCount} ${$t('label.catalog_metric_disabled')}`" @click.prevent="filterDisabledItems">
+                    <span>{{ disabledItemsCount }}</span>
+                    <small>{{ $t('label.catalog_metric_disabled') }}</small>
+                </button>
             </div>
 
             <div class="catalog-control-plane__actions" :aria-label="$t('label.catalog_actions_aria')">
@@ -40,15 +49,15 @@
                     {{ $t('label.catalog_action_products') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-category"></i>
+                    <i class="lab lab-item-categories"></i>
                     {{ $t('label.catalog_action_categories') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.offers.list' }">
-                    <i class="lab lab-discount"></i>
+                    <i class="lab lab-discount-shape"></i>
                     {{ $t('label.catalog_action_offers') }}
                 </router-link>
                 <button type="button" class="catalog-control-plane__action" @click.prevent="focusAvailability">
-                    <i class="lab lab-toggle-on"></i>
+                    <i class="lab lab-tick-square"></i>
                     {{ $t('label.catalog_action_availability') }}
                 </button>
             </div>
@@ -116,7 +125,7 @@
                             }}</label>
 
                             <vue-select class="db-field-control f-b-custom-select" id="tax_id"
-                                v-model="props.search.tax_id" :options="taxes" label-by="name" value-by="id"
+                                v-model="props.search.tax_id" :options="taxesLibellees" label-by="libelle" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />
                         </div>
@@ -252,7 +261,7 @@
                                             :aria-label="$t('label.configure_wizard')"
                                             data-testid="item-list-configure-wizard-button"
                                         >
-                                            <i class="lab lab-cog"></i>
+                                            <i class="lab lab-settings"></i>
                                             <span class="db-tooltip">{{ $t('label.configure_wizard') }}</span>
                                         </router-link>
                                     </span>
@@ -265,7 +274,7 @@
                                             @click.prevent="duplicate(item)"
                                             v-if="permissionChecker('items_create')"
                                         >
-                                            <i class="lab lab-copy"></i>
+                                            <i class="lab lab-document-text"></i>
                                             <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
                                         </button>
                                     </span>
@@ -311,6 +320,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import ItemCreateComponent from "./ItemCreateComponent";
 import alertService from "../../../services/alertService";
 import statusEnum from "../../../enums/modules/statusEnum";
+import { libelleTaxe } from "../../../services/libelleTaxe";
 import askEnum from "../../../enums/modules/askEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import PaginationTextComponent from "../components/pagination/PaginationTextComponent";
@@ -405,6 +415,8 @@ export default {
                     // append when the array is empty, so the server keeps the
                     // legacy NULL = visible-everywhere semantics.)
                     channels: [],
+                    allergen_flags: [],
+                    kds_station: 'none',
                 },
                 search: {
                     paginate: 1,
@@ -466,6 +478,15 @@ export default {
         taxes: function () {
             return this.$store.getters['tax/lists'];
         },
+        // [ONB-10 2026-08-27] Même motif que le formulaire produit : deux taxes
+        // actives s'appellent « VAT » (5 % et 10 %) et deux « GST ». Filtrer sur
+        // l'une des deux sans savoir laquelle ne veut rien dire.
+        taxesLibellees: function () {
+            return (this.taxes || []).map((taxe) => ({
+                ...taxe,
+                libelle: libelleTaxe(taxe),
+            }));
+        },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'
                 && window.foodkingConfig?.features?.wizard_per_item_demo === true;
@@ -516,6 +537,34 @@ export default {
             }
             return this.items.filter((item) => this.isItemRuptured(item)).length;
         },
+        /**
+         * [AUDIT-COMPTA 2026-08-29] Les articles désactivés, qui n'avaient AUCUNE case.
+         *
+         * Mesuré à l'écran : le bandeau annonçait « 123 produits · 58 actifs ·
+         * 1 indisponible ». 58 + 1 = 59, pas 123 : les 64 fiches désactivées étaient dans
+         * le total et dans aucune répartition. Un bandeau dont l'arithmétique ne ferme pas
+         * fait douter de tous ses chiffres.
+         *
+         * Depuis ONB-11 la liste montre volontairement les articles désactivés — sans quoi
+         * le commerçant ne pouvait plus jamais en réactiver un. Il faut donc les COMPTER
+         * aussi, pas seulement les afficher.
+         *
+         * On soustrait plutôt que d'attendre une clé serveur supplémentaire : les trois
+         * termes viennent déjà de la même réponse, donc restent cohérents entre eux, y
+         * compris quand un filtre est appliqué. Le plancher à zéro évite d'afficher un
+         * nombre négatif si une future réponse ne fournissait qu'une partie des compteurs.
+         */
+        disabledItemsCount: function () {
+            const total = Number(this.itemsCount);
+            const actifs = Number(this.activeItemsCount);
+            const indisponibles = Number(this.unavailableItemsCount);
+
+            if (!Number.isFinite(total) || !Number.isFinite(actifs) || !Number.isFinite(indisponibles)) {
+                return 0;
+            }
+
+            return Math.max(0, total - actifs - indisponibles);
+        },
 
     },
     methods: {
@@ -563,6 +612,16 @@ export default {
             this.props.search.status = statusEnum.ACTIVE;
             this.list();
         },
+        /**
+         * [AUDIT-COMPTA 2026-08-29] Voir les fiches désactivées, pour pouvoir les réactiver.
+         *
+         * Même geste que `filterActiveItems` juste au-dessus : la tuile est un bouton, et
+         * cliquer un compteur doit amener à ce qu'il compte.
+         */
+        filterDisabledItems: function () {
+            this.props.search.status = statusEnum.INACTIVE;
+            this.list();
+        },
         focusAvailability: function () {
             this.$nextTick(() => {
                 this.$refs.availabilityTable?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
@@ -601,6 +660,22 @@ export default {
                 channels: Array.isArray(item.channels)
                     ? item.channels.filter((c) => ['kiosk', 'pos', 'web'].indexOf(c) !== -1)
                     : [],
+                /*
+                 * [ONB 2026-08-28] Hydratés depuis `SimpleItemResource`, qui les
+                 * expose depuis le même correctif. Sans cette ligne, le formulaire
+                 * afficherait des cases vides et les renverrait telles quelles :
+                 * corriger une faute dans le NOM d'un produit effacerait ses
+                 * allergènes déclarés — le défaut exact corrigé le même jour sur
+                 * `siret`, sur les réglages de borne et sur `channels`.
+                 */
+                allergen_flags: Array.isArray(item.allergen_flags) ? item.allergen_flags : [],
+                kds_station: item.kds_station || 'none',
+                /*
+                 * [ONB-02 2026-08-28] Meme raison que les allergenes ci-dessus, et
+                 * meme defaut : sans cette ligne le formulaire postait une constante
+                 * et remettait le rang a 1 a chaque enregistrement.
+                 */
+                order: item.order ?? 1,
             };
         },
         destroy: function (id) {
@@ -767,7 +842,19 @@ export default {
 }
 
 .catalog-control-plane__metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /*
+     * [AUDIT-COMPTA 2026-08-29] Quatre colonnes figées rognaient les libellés.
+     *
+     * Capture à 1280 px : « CATÉGORIE » sans son S final, « INDISPONIB… » amputé de cinq
+     * lettres — sans points de suspension, donc rien ne signalait la coupe. `minmax(0, 1fr)`
+     * autorise une colonne à devenir plus étroite que son contenu, et le texte disparaissait
+     * en silence.
+     *
+     * `auto-fit` + un plancher de 96 px : les tuiles gardent une largeur lisible et passent
+     * à la ligne quand il en faut. C'est aussi ce qui permet d'en avoir cinq depuis l'ajout
+     * de la case « désactivés », sans figer un nouveau nombre magique.
+     */
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
 }
 
 .catalog-control-plane__actions {
@@ -805,6 +892,11 @@ export default {
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
+    /* Un libellé trop long passe à la ligne plutôt que d'être coupé net : mieux vaut deux
+       lignes lisibles qu'un mot amputé sans que rien ne l'indique. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
 }
 
 .catalog-control-plane__metric--alert span {

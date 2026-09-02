@@ -61,6 +61,74 @@
                             }}</small>
                         </div>
 
+                        <!-- [ONB-01 T-1.2.1 2026-08-27] Identité fiscale imprimée sur le ticket.
+                             Ces champs étaient lus par le moteur de ticket mais n'avaient aucune
+                             saisie : le ticket sortait sans SIRET. Chaque libellé dit ce qu'il
+                             change, pour qu'on n'ait pas à deviner. -->
+                        <div class="form-col-12">
+                            <p class="db-field-title font-semibold mt-2 mb-1">
+                                {{ $t("label.fiscal_identity") }}
+                            </p>
+                            <small class="text-slate-500 block mb-2">
+                                {{ $t("message.fiscal_identity_hint") }}
+                            </small>
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="siret" class="db-field-title">{{
+                                $t("label.siret")
+                            }}</label>
+                            <input v-model="props.form.siret" v-bind:class="errors.siret ? 'invalid' : ''" type="text"
+                                id="siret" inputmode="numeric" maxlength="14"
+                                :placeholder="$t('label.siret_placeholder')" class="db-field-control" />
+                            <small class="db-field-alert" v-if="errors.siret">{{
+                                errors.siret[0]
+                            }}</small>
+                        </div>
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="vat_intra" class="db-field-title">{{
+                                $t("label.vat_intra")
+                            }}</label>
+                            <input v-model="props.form.vat_intra" v-bind:class="errors.vat_intra ? 'invalid' : ''"
+                                type="text" id="vat_intra" maxlength="16"
+                                :placeholder="$t('label.vat_intra_placeholder')" class="db-field-control" />
+                            <small class="db-field-alert" v-if="errors.vat_intra">{{
+                                errors.vat_intra[0]
+                            }}</small>
+                        </div>
+                        <div class="form-col-12">
+                            <!--
+                                [ONB-01 2026-08-28] Le numéro de caisse, enfin saisissable.
+                                Sa règle existait (`BranchRequest.php:68`), la ressource
+                                l'exposait, `ReceiptDataService` l'imprimait sur le ticket
+                                sous `pos_register_id`, et l'édition l'hydratait déjà — il
+                                manquait uniquement le champ. Sur un document fiscal,
+                                l'identifiant de caisse n'est pas cosmétique.
+                            -->
+                            <label for="register_id" class="db-field-title">{{
+                                $t("label.register_id")
+                            }}</label>
+                            <input v-model="props.form.register_id"
+                                v-bind:class="errors.register_id ? 'invalid' : ''" type="text"
+                                id="register_id" maxlength="32"
+                                :placeholder="$t('label.register_id_placeholder')" class="db-field-control" />
+                            <small class="db-field-alert" v-if="errors.register_id">{{
+                                errors.register_id[0]
+                            }}</small>
+                        </div>
+
+                        <div class="form-col-12">
+                            <label for="legal_footer" class="db-field-title">{{
+                                $t("label.legal_footer")
+                            }}</label>
+                            <textarea v-model="props.form.legal_footer"
+                                v-bind:class="errors.legal_footer ? 'invalid' : ''" id="legal_footer" rows="2"
+                                :placeholder="$t('label.legal_footer_placeholder')"
+                                class="db-field-control"></textarea>
+                            <small class="db-field-alert" v-if="errors.legal_footer">{{
+                                errors.legal_footer[0]
+                            }}</small>
+                        </div>
+
                         <div class="form-col-12 sm:form-col-6">
                             <label for="city" class="db-field-title required">{{
                                 $t("label.city")

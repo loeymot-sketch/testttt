@@ -1,7 +1,37 @@
 <?php
 
 return [
+    // [ONB-02 2026-08-28] Root keys emitted by ItemService, ItemExtraService,
+    // ItemAddonService and OfferItemService (10 live call sites, all in the
+    // merchant's catalogue path). Missing here, they surfaced as the raw keys
+    // `all.item_match` / `all.user_match` to anyone served in English.
+    'item_match' => 'This product does not match.',
+    'user_match' => 'User not found.',
+
+    // [ONB-11 2026-08-28] Activity-log status labels. See lang/fr/all.php.
+    'order' => [
+        'status' => [
+            1 => 'Pending',
+            4 => 'Accepted',
+            7 => 'Preparing',
+            8 => 'Ready',
+            10 => 'Out for delivery',
+            13 => 'Delivered',
+            16 => 'Cancelled',
+            19 => 'Rejected',
+            22 => 'Returned',
+        ],
+    ],
+
     'label' => [
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'fee_percent' => 'Fee (%)',
+        'fee_fixed' => 'Fixed fee',
+        'serial_number' => 'Serial number',
+        'gateway' => 'Gateway',
+        'archived' => 'Archived',
+        'no_data' => 'No data',
+
         // [ultra-goal A8 heal 2026-05-13] OSS (Order Status Screen) labels.
         'oss_main_aria' => 'Order status screen — orders in preparation and ready for pickup',
         'oss_popular_region_aria' => 'Popular items today',
@@ -235,6 +265,47 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'kds_reopen_invalid_state' => 'Only an order marked Ready can be sent back to preparation.',
+        'kds_reopen_success' => 'Order sent back to preparation.',
+
+        'matiere_dune_autre_branche' => "This material belongs to another establishment.",
+        'matiere_encore_dans_une_recette' => "This material is used by :n recipe(s). Removing it would leave those recipes without a material, and stock would stop being deducted.",
+        'unite_non_modifiable_avec_stock' => "This material holds :stock in stock, counted in \":unite\". Changing its unit would not convert that number: it would become wrong. Bring the stock to zero first.",
+        'unite_de_matiere_inconnue' => "This unit is not recognised by purchase-invoice conversion. Pick one of: :unites",
+        'matiere_deja_declaree' => "You already have a material with this name. Open it to edit, rather than creating a second one.",
+        'extension_de_fichier_interdite' => "This file type is not accepted. Upload an image (JPG, PNG) or a spreadsheet (XLSX, CSV), depending on what the screen asks for.",
+        'taxe_encore_utilisee' => "This tax is still used by :n product(s), including deactivated or deleted ones. Change their tax first, otherwise they would be charged at 0% with no warning.",
+        // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
+        'wizard_introuvable' => "This customisation flow could not be found. Reload the page; if it was deleted, create it again.",
+        'wizard_sans_etape' => "Cannot publish: this flow has no active step. Activate at least one step before publishing.",
+        'role_non_supprimable' => "This role is part of the application core and cannot be deleted. You can still change its permissions.",
+        'role_propre_non_modifiable' => "You cannot change the permissions of your own role — this guards against privilege escalation. Ask another administrator to do it.",
+        // [ONB-05 2026-08-28] Le commercant desactive un mode de commande depuis son
+        // ecran, et c'est son CLIENT qui recevait la phrase — en anglais.
+        'type_de_commande_desactive' => "This order type is not available right now. Choose another one, or contact the restaurant.",
+        'sur_place_desactive' => "Dine-in is not enabled for this branch.",
+        // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
+        // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
+        'langue_par_defaut' => "This is the default language: set another one as default before deleting it.",
+        'droit_fiscal_requis' => "You do not have the « pos fiscal management » permission. Ask an administrator for it.",
+        'caisse_sans_etablissement' => "Your account is not attached to any branch. A fiscal report always belongs to a till: ask an administrator to attach you.",
+        'declinaisons_illisibles' => "The variations could not be saved. Check that every row has both a name and a price, then try again.",
+        'duplication_incomplete' => "The product was duplicated but could not be reopened. Close this window and refresh the list: the copy should be there.",
+        // [ONB-09 2026-08-28] Une notification ENREGISTREE n'est pas une notification RECUE.
+        'push_saved' => "Notification saved.",
+        'push_no_device' => "Notification saved, but NO device received it: nobody has installed the app or allowed notifications yet.",
+        'push_all_failed' => "Notification saved, but NONE of the :n devices received it. Check the Firebase configuration in settings.",
+        'push_partial' => "Sent to :ok device(s). :ko could not be reached (expired token or device offline).",
+        'push_sent' => "Sent to :n device(s).",
+        // [ONB-09 2026-08-28] Le message d'envoi aux abonnés n'existait qu'en
+        // français : en anglais, `trans('all.message.email_send')` rendait la CLÉ
+        // BRUTE. On ajoute les deux nouvelles clés dans les deux langues, et la
+        // clé historique au passage — un message d'interface ne doit jamais sortir
+        // sous sa forme technique.
+        'email_send' => 'Email sent successfully.',
+        'email_send_count' => 'Email sent to :count subscriber(s).',
+        'email_no_subscriber' => 'No subscribers: nothing was sent.',
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'      => 'Order not found.',

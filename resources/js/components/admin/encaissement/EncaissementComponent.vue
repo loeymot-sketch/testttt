@@ -51,9 +51,33 @@
                                 <span class="enc-queue" v-if="order.queue_number">N°{{ order.queue_number }}</span>
                             </div>
                             <div class="enc-ticket-customer">{{ customerName(order) }}</div>
+                            <!--
+                              [C-001 2026-08-25 · supervisor-caisse round-1 wave C]
+                              Cette carte rendait `1× Menu (Frites + Boisson)` et RIEN d'autre :
+                              ni la sauce, ni les suppléments facturés, ni les composants de la
+                              formule, ni l'instruction « Sans oignons ». Or la donnée était
+                              DÉJÀ dans la réponse (OrderItemResource:33-36 et :50) — le
+                              template la jetait. C'est l'écran où le caissier fait FACE au
+                              client au moment de prendre l'argent, et c'était le seul des
+                              trois écrans de commande à ne pas savoir dire de quoi le montant
+                              est fait. Lecture par le normaliseur canonique partagé avec la
+                              fiche ET le ticket : une seule vérité pour lire une composition.
+                            -->
                             <ul class="enc-ticket-items" v-if="order.order_items && order.order_items.length">
                                 <li v-for="(it, idx) in order.order_items.slice(0, 4)" :key="idx">
-                                    {{ it.quantity }}× {{ itemName(it) }}
+                                    <span class="enc-item-line">{{ it.quantity }}× {{ itemName(it) }}</span>
+                                    <ul
+                                        v-if="compositionLines(it).length"
+                                        class="enc-item-composition"
+                                        data-testid="enc-item-composition">
+                                        <li
+                                            v-for="(line, lineIdx) in compositionLines(it)"
+                                            :key="lineIdx"
+                                            :class="line.cls">
+                                            <span v-if="line.label" class="enc-comp-label">{{ line.label }}:</span>
+                                            {{ line.value }}
+                                        </li>
+                                    </ul>
                                 </li>
                                 <li v-if="order.order_items.length > 4" class="enc-more">
                                     +{{ order.order_items.length - 4 }}…
@@ -61,7 +85,24 @@
                             </ul>
                             <div class="enc-ticket-bottom">
                                 <span class="enc-amount">{{ formatPrice(orderAmount(order)) }}</span>
-                                <button class="enc-collect-btn" @click.prevent="openEncaissement(order)">
+                                <!--
+                                  [AUDIT-SUPERVISEUR 2026-08-26 · D-007] TROIS BOUTONS
+                                  IDENTIQUES POUR TROIS MONTANTS DIFFÉRENTS.
+                                  Au lecteur d'écran comme au clavier, la file d'encaissement
+                                  annonçait « Encaisser, bouton » trois fois de suite — pour
+                                  11,10 €, 8,30 € et 14,60 €. C'est le geste qui PREND l'argent
+                                  du client : son nom ne doit pas être ambigu.
+                                  Le même dépôt fait déjà l'inverse ailleurs (le bouton de
+                                  réimpression de l'historique porte title ET aria-label).
+                                  Un data-testid aussi : sans lui, aucun test ne peut viser
+                                  UNE commande en particulier dans cette file.
+                                -->
+                                <button
+                                    class="enc-collect-btn"
+                                    :aria-label="`${$t('label.encaisser')} ${order.order_serial_no || order.id} — ${formatPrice(orderAmount(order))}`"
+                                    :data-testid="`enc-collect-${order.id}`"
+                                    @click.prevent="openEncaissement(order)"
+                                >
                                     {{ $t('label.encaisser') }}
                                 </button>
                             </div>
@@ -93,6 +134,16 @@ import axios from "axios";
 import { printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { adminPriceMixin } from "../../../helpers/formatPrice";
+// [C-001 2026-08-25] Normaliseur CANONIQUE de composition — le même que la fiche
+// commande et que le ticket client. Il absorbe l'ancienne forme
+// (`{variation_name, name}`) ET celle de l'instantané NF525
+// (`{attribute_name, variation_name}`, où les rôles sont inversés), et écarte
+// les entrées sans nom. Aucun quatrième lecteur de composition n'est introduit.
+import {
+    normalizeReceiptVariations,
+    normalizeReceiptExtras,
+    normalizeReceiptAddons,
+} from "../../../helpers/posReceiptBuilder";
 import { onEvents } from "../../../services/eventContract";
 
 export default {
@@ -216,6 +267,70 @@ export default {
         itemName(it) {
             return it.item_name || it.name || it.orderItem?.name || it.order_item?.name || '';
         },
+        // [C-001 2026-08-25] Lecture de composition — délégation stricte au
+        // normaliseur canonique (posReceiptBuilder), exactement comme
+        // PosOrderShowComponent et ReceiptComponent.
+        normalizedVariations(it) {
+            return normalizeReceiptVariations(it?.item_variations);
+        },
+        normalizedExtras(it) {
+            return normalizeReceiptExtras(it?.item_extras);
+        },
+        normalizedAddons(it) {
+            return normalizeReceiptAddons(it?.item_addons);
+        },
+        /**
+         * [C-001 2026-08-25] Les lignes de composition d'un article, prêtes à
+         * rendre : `[{ label, value, cls }]`. Chaque bloc n'existe QUE s'il
+         * porte réellement quelque chose — pas de libellé qui survive à sa
+         * valeur (le défaut jumeau C-003/C-004 relevé sur la fiche).
+         */
+        compositionLines(it) {
+            const lines = [];
+
+            const variations = this.normalizedVariations(it);
+            if (variations.length) {
+                lines.push({
+                    label: '',
+                    value: variations.map((v) => (v.label ? `${v.label}: ${v.name}` : v.name)).join(', '),
+                    cls: 'enc-comp-variation',
+                });
+            }
+
+            const extras = this.normalizedExtras(it);
+            if (extras.length) {
+                lines.push({
+                    label: this.$t('label.extras'),
+                    value: extras.map((e) => (e.quantity > 1 ? `${e.name} ×${e.quantity}` : e.name)).join(', '),
+                    cls: 'enc-comp-extra',
+                });
+            }
+
+            // Suppléments de FORMULE (frites, boisson d'un menu) : facturés par
+            // CompositionSnapshotBuilder et imprimés sur le ticket client — donc
+            // dus au client qui paie, donc lisibles au comptoir.
+            const addons = this.normalizedAddons(it);
+            if (addons.length) {
+                lines.push({
+                    label: this.$t('label.addons'),
+                    value: addons.map((a) => (a.quantity > 1 ? `${a.name} ×${a.quantity}` : a.name)).join(', '),
+                    cls: 'enc-comp-addon',
+                });
+            }
+
+            // `instruction` vaut NULL en base — un test `!== ''` laisserait
+            // passer une ligne vide (défaut déjà corrigé sur la fiche).
+            const instruction = typeof it?.instruction === 'string' ? it.instruction.trim() : '';
+            if (instruction !== '') {
+                lines.push({
+                    label: this.$t('label.instruction'),
+                    value: instruction,
+                    cls: 'enc-comp-note',
+                });
+            }
+
+            return lines;
+        },
         orderAmount(order) {
             return order.cash_pending_amount ?? order.total ?? order.order_amount ?? 0;
         },
@@ -328,11 +443,36 @@ export default {
 .enc-ticket-items { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft); }
 .enc-ticket-items li { line-height: 1.4; }
 .enc-more { font-style: italic; }
+
+/* [C-001 2026-08-25] Composition d'une ligne, lisible d'un coup d'œil avec le
+   client en face : l'article reste l'élément fort, la composition s'indente en
+   retrait sous lui (liseré gauche = « ceci appartient à la ligne au-dessus »).
+   `word-break` parce qu'une carte fait ~230px et qu'un nom de formule long ne
+   doit pas déborder ni tronquer une valeur due au client. */
+.enc-item-line { font-weight: 600; color: var(--pos-v5-ink); }
+.enc-item-composition {
+    list-style: none;
+    margin: 0.1rem 0 0.35rem 0.35rem;
+    padding: 0 0 0 0.5rem;
+    border-left: 2px solid var(--pos-v5-border);
+    font-size: 0.76rem;
+    line-height: 1.35;
+    color: var(--pos-v5-ink-soft);
+    overflow-wrap: anywhere;
+}
+.enc-comp-label { font-weight: 600; }
+/* L'instruction du client est la ligne qu'un caissier ne doit PAS rater. */
+.enc-comp-note { color: #9a3412; font-weight: 600; }
 .enc-ticket-bottom {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.4rem;
+    /* [C-001 2026-08-25] `margin-top: auto` : les cartes n'ont plus la même
+       hauteur de contenu depuis qu'elles portent la composition. Sans ça, le
+       montant et le bouton « Encaisser » flottaient à des hauteurs différentes
+       d'une carte à l'autre — or c'est la ligne que le caissier vise. On les
+       pousse au bas de la carte (`.enc-ticket` est déjà un flex colonne). */
+    margin-top: auto;
     padding-top: 0.6rem;
     border-top: 1px dashed var(--pos-v5-border);
 }

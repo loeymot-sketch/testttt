@@ -13,6 +13,18 @@ export default [
             isFrontend: false,
             auth: true,
             permissionUrl: "order-status-screen",
+            // [AUDIT-SUPERVISEUR 2026-08-25 · E-005] Cet écran est un MUR TOURNÉ VERS LA
+            // SALLE : le client y lit son numéro de commande. Sans ce drapeau, la route
+            // tombait dans le `else` de DefaultComponent → theme "backend", qui monte la
+            // navbar et le menu d'admin. Mesuré dans le DOM capturé du mur : « Déconnexion »
+            // et l'adresse du compte d'administration connecté — affichées au-dessus de la
+            // tête des clients, la sortie de session à un clic.
+            //
+            // [AUDIT-COMPTA 2026-08-29] L'adresse était citée en toutes lettres ici ; la
+            // sentinelle `AucunIdentifiantEnDurDansLeFrontTest` l'a relevée, à juste titre :
+            // ce fichier part dans `public/js/*.js`, servi à tout visiteur. Décrire le
+            // défaut suffit, le reproduire ne servait à rien.
+            isWall: true,
         },
     },
 ];

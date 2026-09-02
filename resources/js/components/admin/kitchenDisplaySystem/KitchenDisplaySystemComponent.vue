@@ -270,7 +270,7 @@
                   </h3>
                   <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                     <span v-for="(extra, index) in orderItem.item_extras" :key="index" class="text-heading">
-                      {{ extra.name }}<span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
+                      {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < orderItem.item_extras.length">,&nbsp;</span>
                     </span>
                   </p>
                 </span>
@@ -310,6 +310,12 @@
               <option value="bar">{{ $t('label.kds_bar') }}</option>
               <option value="cuisine_chaude">{{ $t('label.kds_cuisine_chaude') }}</option>
               <option value="cuisine_froide">{{ $t('label.kds_cuisine_froide') }}</option>
+              <!-- [ONB-08 2026-08-28] Option MANQUANTE. `normalizeKdsStation` declare
+                   quatre postes dont `none`, et 7 boissons vendables le portent. Sans
+                   cette entree, un cuisinier qui basculait sur « Bar » ne pouvait plus
+                   les revoir qu'en repassant sur « Toutes » — et une commande composee
+                   uniquement de ces articles disparaissait de toute vue filtree. -->
+              <option value="none">{{ $t('label.kds_sans_poste') }}</option>
             </select>
             <label class="flex items-center gap-2 text-xs font-medium text-heading cursor-pointer">
               <input type="checkbox" v-model="groupByTable" @change="persistKdsUiPrefs" class="rounded border-[#D9DBE9]" />
@@ -351,9 +357,32 @@
           <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
         </div>
         <div class="db-card px-3 py-2.5 mb-4">
-          <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between">
+          <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row xl:flex-wrap items-start justify-between">
+            <!--
+              [AUDIT-SUPERVISEUR 2026-08-26 · E-012] À 1280 px, le 4e onglet « Terminées »
+              était TRONQUÉ par le champ de recherche qui le recouvrait : mesuré au pixel,
+              les glyphes s'arrêtaient net sur la bordure du formulaire. Les deux éléments
+              réclamaient `w-full` dans la même rangée et le plus à droite gagnait.
+              `min-w-0 flex-1` sur les onglets, `shrink-0` sur le champ : le groupe d'onglets
+              a la priorité, le champ prend ce qui reste sans jamais mordre dessus.
+              Et `xl:!w-auto` — sans lui, le `lg:!w-full` marqué IMPORTANT force encore 100 %
+              de largeur et `flex-1` ne peut rien : mesuré, le premier essai laissait l'onglet
+              tronqué exactement comme avant.
+
+              Ça n'a pas suffi non plus, et la mesure dit pourquoi : à 1280 px le conteneur
+              fait 900 px, les quatre onglets en réclament 631 et le champ 305 — soit 936.
+              Ils NE TIENNENT PAS. Le groupe avait bien rétréci (595 px), mais ses boutons
+              débordaient de sa propre boîte et « Terminées » finissait à 979 px là où le
+              champ commence à 943 : 36 px de recouvrement.
+              Et le coupable final était `flex-1` lui-même : `flex: 1 1 0%` donnait au groupe
+              la place RESTANTE (900 - 305 = 595 px) au lieu de celle qu'il lui faut. Sa boîte
+              mentait donc sur sa taille, le passage à la ligne ne se déclenchait pas, et les
+              boutons débordaient dessous.
+              Sans `flex-1`, le groupe prend ses 631 px réels ; 631 + 305 dépasse les 900
+              disponibles, `flex-wrap` fait descendre le champ, et tout se lit. Une ligne de
+              plus vaut mieux qu'un onglet illisible. -->
             <Swiper :dir="direction" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
-              class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full">
+              class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full xl:!w-auto">
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list()"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"
@@ -385,7 +414,7 @@
             </Swiper>
 
             <form @submit.prevent="search"
-              class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary">
+              class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary xl:shrink-0">
               <i class="lab lab-search-normal lab-font-size-16"></i>
               <input type="text" v-model="props.search.order_serial_no" :placeholder="$t('label.kds_search_orders')"
                 :aria-label="$t('button.search')"
@@ -454,10 +483,16 @@
                     {{ $t("label.table_no") }}: <span class="text-heading font-medium">{{ dineinOrder.table_name
                       }}</span>
                   </p>
+                  <!--
+                    [AUDIT-SUPERVISEUR 2026-08-26 · E-011] « N° Commande: En Ligne ».
+                    Une étiquette qui promet un NUMÉRO était suivie d'un TYPE de commande.
+                    Pire, sur la fiche « À emporter » : la carte se contredisait elle-même
+                    sur le canal, dans la colonne qui l'annonce déjà.
+                    Sans jeton, on met un tiret. Le canal a sa colonne et sa pastille ; il
+                    n'a rien à faire dans le champ du numéro.
+                  -->
                   <p class="text-sm font-normal leading-6 font-client capitalize text-[#6E7191]">
-                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ dineinOrder.token ?
-                      dineinOrder.token : $t("label.online")
-                      }}</span>
+                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ dineinOrder.token || '—' }}</span>
                   </p>
                   <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
                        block mirrored from onlineOrder lane. Helper gates on
@@ -524,7 +559,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -712,7 +747,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -822,9 +857,16 @@
                     }}</span>
                 </div>
                 <div class="w-full pt-2 pb-3 px-3">
+                  <!--
+                    [AUDIT-SUPERVISEUR 2026-08-26 · E-011] « N° Commande: En Ligne ».
+                    Une étiquette qui promet un NUMÉRO était suivie d'un TYPE de commande.
+                    Pire, sur la fiche « À emporter » : la carte se contredisait elle-même
+                    sur le canal, dans la colonne qui l'annonce déjà.
+                    Sans jeton, on met un tiret. Le canal a sa colonne et sa pastille ; il
+                    n'a rien à faire dans le champ du numéro.
+                  -->
                   <p class="text-sm font-normal leading-6 font-client capitalize text-[#6E7191]">
-                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ takeawayOrder.token ?
-                      takeawayOrder.token : $t("label.online") }}</span>
+                    {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ takeawayOrder.token || '—' }}</span>
                   </p>
                   <p v-if="takeawayOrder.queue_number" class="text-sm font-normal leading-6 font-client text-[#6E7191]">
                     N° file: <span class="text-heading font-medium">{{ takeawayOrder.queue_number }}</span>
@@ -888,7 +930,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1060,7 +1102,7 @@
                           <span class="capitalize text-xs w-fit whitespace-nowrap font-medium">{{ $t('label.extras') }}:</span>
                           <p class="text-xs font-normal font-client capitalize text-[#6E7191]">
                             <span v-for="(extra, index) in item.item_extras" :key="index" class="text-heading">
-                              {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                              {{ kdsExtraDisplayName(extra) }}<span v-if="Number(extra.quantity || 1) > 1"> ×{{ Number(extra.quantity || 1) }}</span><span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                             </span>
                           </p>
                         </div>
@@ -1736,7 +1778,7 @@ export default {
     if (sf == null && uid > 0) {
       try {
         const leg = localStorage.getItem("kds.station_filter");
-        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide") {
+        if (leg === "all" || leg === "bar" || leg === "cuisine_chaude" || leg === "cuisine_froide" || leg === "none") {
           sf = leg;
           localStorage.setItem(sKey, leg);
         }
@@ -1751,7 +1793,7 @@ export default {
         sf = null;
       }
     }
-    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide") {
+    if (sf === "all" || sf === "bar" || sf === "cuisine_chaude" || sf === "cuisine_froide" || sf === "none") {
       this.stationFilter = sf;
     }
     const gb = localStorage.getItem("kds.group_by_table");
@@ -2843,6 +2885,25 @@ export default {
         return '';
       }
       return addon.addon_name || addon.addon_item_name || addon.name || addon.item_name || 'Addon';
+    },
+    /**
+     * [GOAL-CAISSE-VISION 2026-08-24] Nom d'un EXTRA, quelle que soit sa forme.
+     *
+     * Les suppléments avaient déjà `kdsAddonDisplayName` ; les extras étaient
+     * restés sur une lecture brute `extra.name` — or l'instantané NF525 nomme ce
+     * champ `extra_name` (`CompositionSnapshotBuilder.php:110`), et c'est
+     * l'instantané qui est servi EN PRIORITÉ (`KDSOrderItemsResource:81-86`).
+     *
+     * Mesuré à l'exécution le 2026-08-24 sur la ligne réelle #3956 : la ressource
+     * expédie `extra_name='Salade'`, le gabarit lisait `extra.name` = null. La
+     * cuisine affichait « Extras: , , , » — quatre garnitures invisibles, donc
+     * un produit remis au client sans ce qu'il avait demandé.
+     */
+    kdsExtraDisplayName(extra) {
+      if (!extra || typeof extra !== 'object') {
+        return '';
+      }
+      return extra.extra_name || extra.name || extra.item_name || 'Supplément';
     },
     // [AUDIT-P2] Print a kitchen ticket for a given order using a hidden iframe.
     // Opens a minimal print window with order ref, items, variations, extras, addons, and instructions.

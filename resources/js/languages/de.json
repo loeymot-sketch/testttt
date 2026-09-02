@@ -127,7 +127,8 @@
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
         "demo_wizard_advanced": "Demo erweiterter Wizard",
-        "system_health": "System health"
+        "system_health": "System health",
+        "Assistant téléphone": "Telefon-Assistent"
     },
     "label": {
         "pos_customer_name_placeholder": "Nom du client (optionnel)",

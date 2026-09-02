@@ -57,7 +57,10 @@ class SiteService
 
             if (!$this->envService->getValue('DEMO')) {
                 $this->envService->addData([
-                    'MIX_GOOGLE_MAP_KEY'     => $request->site_google_map_key,
+                    // [ONB-10 2026-08-27] La clé est désormais facultative : on écrit une
+                    // chaîne vide plutôt que null dans le `.env`. `config/app.php` a déjà
+                    // '' pour valeur par défaut, le comportement est donc inchangé.
+                    'MIX_GOOGLE_MAP_KEY'     => (string) ($request->site_google_map_key ?? ''),
                 ]);
             }
 

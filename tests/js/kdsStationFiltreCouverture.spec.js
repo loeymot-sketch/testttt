@@ -97,7 +97,26 @@ describe('KDS — couverture du filtre de station', () => {
         expect(filterOrdersByStation([{ id: 9 }], 'bar')).toHaveLength(0);
     });
 
-    it('documente que le menu déroulant n’offre aucune option « none »', async () => {
+    /**
+     * [RETOURNÉ à la fusion du 2026-08-28]
+     *
+     * Ce test s'appelait « documente que le menu déroulant n'offre aucune option
+     * « none » » et vérifiait l'ABSENCE de l'option. Il ne gardait pas un acquis :
+     * il gardait un DÉFAUT — le seau `none` existait dans `normalizeKdsStation`,
+     * sept boissons vendables le portaient, et aucune entrée du menu ne permettait
+     * d'y revenir. Un cuisinier qui basculait sur « Bar » ne les revoyait qu'en
+     * repassant sur « Toutes », et une commande composée uniquement de ces articles
+     * disparaissait de toute vue filtrée.
+     *
+     * Le test disait lui-même quoi faire si l'option apparaissait. ONB-08 l'a ajoutée
+     * le 2026-08-28, délibérément et avec sa justification en commentaire dans
+     * `KitchenDisplaySystemComponent.vue`. Deux voies parallèles : l'une a constaté le
+     * manque, l'autre l'a comblé. On acte la correction plutôt que de la refuser.
+     *
+     * L'assertion est donc INVERSÉE : « none » doit désormais être là, et son absence
+     * est la régression à rattraper.
+     */
+    it('le menu déroulant offre bien l’option « none » — le seau invisible est atteignable', async () => {
         const fs = await import('fs');
         const source = fs.readFileSync(
             'resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue',
@@ -109,8 +128,9 @@ describe('KDS — couverture du filtre de station', () => {
         for (const poste of POSTES_SELECTIONNABLES) expect(options).toContain(poste);
         expect(
             options,
-            'Si « none » apparaît ici, le seau invisible est devenu atteignable : mettez à jour '
-            + 'ce test ET le rapport KDS_STATIONS pour acter la décision.',
-        ).not.toContain('none');
+            'L’option « none » a disparu du menu déroulant. Les articles sans poste '
+            + 'redeviennent invisibles dès qu’un filtre est posé — c’est exactement le '
+            + 'défaut qu’ONB-08 a fermé le 2026-08-28.',
+        ).toContain('none');
     });
 });

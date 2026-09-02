@@ -1,0 +1,184 @@
+/**
+ * SONDE ADVERSE — vague E, round 2.
+ *
+ * Sème sous un préfixe EXCLUSIF `SUPER2-` (aucune autre vague ne l'utilise), mesure, puis
+ * SUPPRIME systématiquement (afterAll + finally). Ne touche à aucun artefact de la vague E.
+ *
+ * Objet : (1) reconstruire la forme CF921 — CONTENEUR DE MENU portant une sauce (variation)
+ * et un extra payé — sur l'écran RÉEL, pour statuer sur E-002 ; (2) mesurer la géométrie de
+ * la carte légende OUVERTE (E-003) ; (3) mesurer le contraste RÉELLEMENT calculé (E-007).
+ */
+const { test } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
+const { execFileSync } = require('child_process');
+const { loginAsAdmin } = require('./helpers/login');
+
+const RACINE = path.resolve(__dirname, '../..');
+const OUT = path.resolve(__dirname, '../../reports/test-e2e/supervisor-caisse-2026-08-24/round-2');
+fs.mkdirSync(OUT, { recursive: true });
+const SERIAL = 'SUPER2-CF921';
+
+function tinker(php) {
+    return execFileSync('php', ['artisan', 'tinker', '--execute', php], {
+        cwd: RACINE, encoding: 'utf8', timeout: 120_000,
+    });
+}
+
+function nettoyer() {
+    try {
+        tinker(
+            "\\App\\Models\\OrderItem::whereIn('order_id', \\App\\Models\\Order::withoutGlobalScopes()->where('order_serial_no','like','SUPER2-%')->pluck('id'))->forceDelete();"
+            + "\\App\\Models\\Order::withoutGlobalScopes()->where('order_serial_no','like','SUPER2-%')->forceDelete();"
+            + "echo 'nettoye';",
+        );
+    } catch (e) { console.log('[SONDE] nettoyage: ' + e.message); }
+}
+
+function semer() {
+    // Ligne 1 : CONTENEUR DE MENU (item 1 = « Menu (Frites + Boisson) ») portant
+    //   · une VARIATION de groupe Sauce (Algerienne)  → forme CF921
+    //   · un EXTRA payé nommé (Cheddar)               → ce que la V2 perdait
+    //   · un EXTRA payé SANS NOM                      → repli « Supplément »
+    //   · un addon boisson                            → ligne menu_child
+    // Ligne 2 : produit simple très chargé, pour faire DÉBORDER le corps de carte.
+    const snapMenu = "['variations'=>[['attribute_name'=>'Sauce','name'=>'Algerienne']],"
+        + "'extras'=>[['extra_id'=>2,'extra_name'=>'Cheddar','quantity'=>1,'unit_price'=>0.9,'line_total'=>0.9],"
+        + "['extra_id'=>269,'quantity'=>1,'unit_price'=>0.9,'line_total'=>0.9]],"
+        + "'addons'=>[['role'=>'menu_boisson','addon_name'=>'Coca-Cola 33cl','quantity'=>1]]]";
+    const snapCharge = "['variations'=>[['attribute_name'=>'Viande','name'=>'Poulet'],['attribute_name'=>'Sauce','name'=>'Harissa'],['attribute_name'=>'Pain','name'=>'Galette']],"
+        + "'extras'=>[['extra_id'=>2,'extra_name'=>'Cheddar','quantity'=>2,'unit_price'=>0.9,'line_total'=>1.8],"
+        + "['extra_id'=>3,'extra_name'=>'Boursin','quantity'=>1,'unit_price'=>1.2,'line_total'=>1.2],"
+        + "['extra_id'=>4,'extra_name'=>'Raclette','quantity'=>1,'unit_price'=>1.2,'line_total'=>1.2],"
+        + "['extra_id'=>5,'extra_name'=>'Oignons frits','quantity'=>1,'unit_price'=>0.9,'line_total'=>0.9]],"
+        + "'addons'=>[]]";
+    const php = [
+        '$o=new \\App\\Models\\Order();',
+        `$o->order_serial_no='${SERIAL}';`,
+        '$o->user_id=1;$o->branch_id=1;$o->subtotal=25.00;$o->total=25.00;',
+        '$o->order_type=\\App\\Enums\\OrderType::POS;',
+        "$o->source_surface='pos';",
+        "$o->order_datetime=now('UTC');",
+        '$o->preparation_time=5;',
+        '$o->is_advance_order=\\App\\Enums\\Ask::NO;',
+        '$o->payment_method=1;$o->payment_status=5;$o->status=7;',
+        '$o->business_date=now()->toDateString();',
+        '$o->save();',
+        '$i=new \\App\\Models\\OrderItem();',
+        '$i->order_id=$o->id;$i->branch_id=1;$i->item_id=1;$i->quantity=1;',
+        "$i->price=12.50;$i->total_price=12.50;$i->discount=0;$i->tax_rate='0';$i->tax_amount=0;",
+        '$i->tax_type=1;$i->item_variation_total=0;$i->item_extra_total=1.8;',
+        `$i->composition_snapshot=${snapMenu};`,
+        "$i->instruction='Sans oignons';",
+        '$i->save();',
+        '$j=new \\App\\Models\\OrderItem();',
+        '$j->order_id=$o->id;$j->branch_id=1;$j->item_id=22;$j->quantity=1;',
+        "$j->price=12.50;$j->total_price=12.50;$j->discount=0;$j->tax_rate='0';$j->tax_amount=0;",
+        '$j->tax_type=1;$j->item_variation_total=0;$j->item_extra_total=5.1;',
+        `$j->composition_snapshot=${snapCharge};`,
+        "$j->instruction='Sans oignons, bien cuit, emballer separement, appeler a la sortie';",
+        '$j->save();',
+        'echo $o->id;',
+    ].join('');
+    return tinker(php).trim();
+}
+
+test.afterAll(() => nettoyer());
+
+test('sonde round 2 : CF921 reconstruit, geometrie legende, contraste rendu', async ({ page }) => {
+    test.setTimeout(240_000);
+    nettoyer();
+    const idSeme = semer();
+    console.log('[SONDE] commande semee id=' + idSeme);
+
+    try {
+        await loginAsAdmin(page);
+        await page.goto('/admin/kitchen-display-system', { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(7000);
+
+        const mesurer = () => page.evaluate(() => {
+            const lum = (rgb) => {
+                const [r, g, b] = rgb.map((v) => {
+                    const c = v / 255;
+                    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            };
+            const parse = (s) => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+            const opaque = (s) => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return false; const p = m[1].split(',').map((x) => parseFloat(x)); return p.length < 4 || p[3] > 0.01; };
+            const fondEffectif = (el) => {
+                let n = el;
+                while (n && n !== document.documentElement) {
+                    const bg = getComputedStyle(n).backgroundColor;
+                    if (opaque(bg)) return { rgb: parse(bg), source: String(n.className || n.tagName).slice(0, 50) };
+                    n = n.parentElement;
+                }
+                return { rgb: [255, 255, 255], source: '(defaut blanc)' };
+            };
+            const ratio = (a, b) => {
+                const l1 = lum(a), l2 = lum(b);
+                return Math.round(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)) * 100) / 100;
+            };
+
+            const cartes = [...document.querySelectorAll('.kds-card')];
+            const grille = document.querySelector('.kds-grid') || document.querySelector('[class*="grid"]');
+            const rg = grille ? grille.getBoundingClientRect() : null;
+            const out = {
+                nbCartes: cartes.length,
+                hauteurFenetre: window.innerHeight,
+                grilleDeborde: grille ? grille.scrollHeight > grille.clientHeight + 2 : null,
+                cartes: [],
+            };
+            for (const c of cartes) {
+                const body = c.querySelector('.kds-card__body');
+                const footer = c.querySelector('.kds-card__footer') || c.querySelector('footer');
+                const rb = body ? body.getBoundingClientRect() : null;
+                const rf = footer ? footer.getBoundingClientRect() : null;
+                const rc = c.getBoundingClientRect();
+                const ligne = (s) => {
+                    const r = s.getBoundingClientRect();
+                    const cs = getComputedStyle(s);
+                    const bg = fondEffectif(s);
+                    return {
+                        texte: s.textContent.replace(/\s+/g, ' ').trim().slice(0, 60),
+                        classe: String(s.className).slice(0, 60),
+                        dansLeCadreVisible: !!rb && r.top >= rb.top - 1 && r.bottom <= rb.bottom + 1,
+                        recouvertParLePied: !!rf && r.bottom > rf.top + 1 && r.top < rf.bottom - 1,
+                        couleurTexte: cs.color,
+                        taille: cs.fontSize,
+                        graisse: cs.fontWeight,
+                        fond: `rgb(${bg.rgb.join(',')})`,
+                        fondSource: bg.source,
+                        contraste: ratio(parse(cs.color), bg.rgb),
+                    };
+                };
+                out.cartes.push({
+                    numero: c.textContent.replace(/\s+/g, ' ').trim().slice(0, 40),
+                    texteIntegral: c.innerText,
+                    carteHorsGrille: !!rg && (rc.bottom > rg.bottom + 1),
+                    corpsDefile: body ? body.scrollHeight > body.clientHeight + 2 : null,
+                    corpsScrollHeight: body ? body.scrollHeight : null,
+                    corpsClientHeight: body ? body.clientHeight : null,
+                    pieChevaucheCorps: !!(rb && rf) && rf.top < rb.bottom - 1,
+                    lignes: [...c.querySelectorAll('[class*="kds-line"]')].map(ligne),
+                });
+            }
+            return out;
+        });
+
+        const avant = await mesurer();
+        await page.screenshot({ path: path.join(OUT, 'sonde-kds-legende-fermee.png') });
+
+        const bouton = page.locator('button', { hasText: /Afficher les noms|Masquer les noms/ }).first();
+        let ouverte = false;
+        if (await bouton.count()) { await bouton.click(); await page.waitForTimeout(1800); ouverte = true; }
+        const apres = await mesurer();
+        await page.screenshot({ path: path.join(OUT, 'sonde-kds-legende-ouverte.png') });
+
+        const res = { idSeme, boutonLegendeTrouve: ouverte, legendeFermee: avant, legendeOuverte: apres };
+        fs.writeFileSync(path.join(OUT, 'sonde-E002-E003-E007.json'), JSON.stringify(res, null, 2));
+        console.log('\n[SONDE] ' + JSON.stringify(res, null, 2) + '\n');
+    } finally {
+        nettoyer();
+    }
+});

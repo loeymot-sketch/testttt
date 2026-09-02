@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Libraries\AppLibrary;
+use App\Support\Order\CompositionCompactor;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SimpleOrderResource extends JsonResource
@@ -139,6 +140,9 @@ class SimpleOrderResource extends JsonResource
             // que c'est une vraie commande d'une vraie personne, anti « commande nulle »). Le client web a
             // fourni un email VÉRIFIÉ (OTP) + un téléphone à l'inscription. Finalité légitime (fulfillment/
             // vérification) → la minimisation reste pour borne/walk-in (client physiquement présent).
+            // [FIX-6 / A-012 2026-08-25] AUSSI pour le canal TÉLÉPHONE (source_surface='phone') : le
+            // numéro y est saisi par le caissier PENDANT l'appel, il fait partie de la commande. Même
+            // finalité qu'en livraison/web — joindre un client absent. Borne et comptoir : inchangés.
             // [UBER-PHOTO 2026-08-10] Le téléphone de l'ANCRE TECHNIQUE d'un agrégateur
             // (« 0000000042 ») n'est le numéro de personne : affiché à côté d'une commande, il
             // finit par être composé. On rend le numéro porté par la commande s'il existe, jamais
@@ -152,7 +156,15 @@ class SimpleOrderResource extends JsonResource
             // eager-load we return [] rather than triggering a lazy SELECT.
             // Branch isolation: `OrderItem` enforces BranchScope global.
             // Mirrors SimpleDeliveryBoyOrderResource::resolveItemsForDriver().
-            'order_items'                  => $this->resolveItemsForTracker(),
+            // [GOAL-CAISSE-VISION 2026-08-24] `composition=1` : drapeau EXPLICITE.
+            // Cette ressource sert 5 appelants (suivi caisse, liste POS, historique,
+            // commandes en ligne, rapport de ventes) et `OrderService::list()` charge
+            // `orderItems.orderItem` dans les DEUX jeux de relations — sans porte,
+            // la composition partait aussi vers l'historique et le rapport, qui ne
+            // l'affichent pas : +60 Ko mesurés sur un export non borné, pour rien.
+            // Drapeau dédié plutôt que `lean` : un mode « allégé » qui renverrait
+            // PLUS de données serait un piège pour le prochain lecteur.
+            'order_items'                  => $this->resolveItemsForTracker($request),
             // [CAISSE-WEB-INTEL 2026-08-06] Une commande web portant une
             // instruction client (allergie, « sans crudités » en note…) doit
             // être VUE avant l'accept — l'info vivait uniquement dans le
@@ -198,13 +210,28 @@ class SimpleOrderResource extends JsonResource
     }
 
     /**
-     * Téléphone à afficher. Reste réservé aux LIVRAISONS et aux commandes WEB (minimisation des
-     * données, Z9-P0-03 + décision owner 2026-07-31), et n'est JAMAIS emprunté à l'ancre
-     * technique d'un agrégateur.
+     * Téléphone à afficher. Reste réservé aux canaux où le client est ABSENT — LIVRAISON, WEB et
+     * TÉLÉPHONE (minimisation des données, Z9-P0-03 + décision owner 2026-07-31), et n'est JAMAIS
+     * emprunté à l'ancre technique d'un agrégateur.
+     *
+     * [FIX-6 / A-012 2026-08-25] Ajout du canal `phone`. La vague A a montré le contresens : sur
+     * une commande téléphone la carte ordonnait « Rappeler avant de préparer » et ne donnait aucun
+     * numéro — le seul canal dont la raison d'être est que le client n'est pas là était le seul
+     * qu'on ne pouvait pas rappeler. La minimisation n'est pas affaiblie, elle est APPLIQUÉE :
+     *   - le numéro d'une commande téléphone est SAISI par le caissier pendant l'appel
+     *     (`pos_customer_phone`, cf. PhoneOrderDeferredTest) — il n'est pas extrait d'un compte,
+     *     il fait partie de la commande ;
+     *   - la finalité est celle déjà admise pour livraison et web : joindre un client absent pour
+     *     exécuter la commande (rupture, retard, retrait) ;
+     *   - le périmètre exclu reste intact : BORNE et COMPTOIR, où le client est physiquement
+     *     devant le caissier, continuent de renvoyer `null`.
+     * Gardé des deux côtés par tests/Feature/Pos/SimpleOrderResourcePhoneChannelTest.php.
      */
     private function displayCustomerPhone(): ?string
     {
-        $autorise = ((int) $this->order_type === OrderType::DELIVERY) || $this->source_surface === 'web';
+        $autorise = ((int) $this->order_type === OrderType::DELIVERY)
+            || $this->source_surface === 'web'
+            || $this->source_surface === 'phone';
         if (! $autorise) {
             return null;
         }
@@ -221,7 +248,7 @@ class SimpleOrderResource extends JsonResource
         return $this->isAggregatorAnchoredOrder() ? null : $this->user?->numeroJoignable();
     }
 
-    private function resolveItemsForTracker(): array
+    private function resolveItemsForTracker($request = null): array
     {
         $relation = $this->resource->relationLoaded('orderItems')
             ? $this->resource->getRelation('orderItems')
@@ -231,9 +258,21 @@ class SimpleOrderResource extends JsonResource
             return [];
         }
 
-        return $relation->map(function ($line) {
-            return [
+        // La composition ne voyage QUE si l'appelant l'a demandée (voir le
+        // commentaire du drapeau plus haut). Le reste de la ligne — nom, quantité,
+        // instruction — n'a jamais été conditionnel et ne le devient pas.
+        $avecComposition = $request !== null
+            && method_exists($request, 'boolean')
+            && $request->boolean('composition');
+
+        return $relation->map(function ($line) use ($avecComposition) {
+            $ligne = [
                 'item_id'     => (int) $line->item_id,
+                // `orderItem` est nullable (article retiré du catalogue depuis la vente).
+                // Le REPLI d'affichage est délibérément laissé à la vue : le catalogue
+                // `label.*` vit dans `resources/js/languages/fr.json`, pas côté serveur —
+                // un `__('label.…')` ici expédierait la clé brute au caissier.
+                // Voir `PosOrdersTrackerComponent::nomProduit()`.
                 'item_name'   => $line->orderItem?->name,
                 'quantity'    => (int) $line->quantity,
                 // [CAISSE-WEB-INTEL 2026-08-06] Instruction client par ligne
@@ -241,6 +280,14 @@ class SimpleOrderResource extends JsonResource
                 // allergie AVANT d'accepter une commande web. Null si absente.
                 'instruction' => $line->instruction ?: null,
             ];
+
+            // [GOAL-CAISSE-VISION 2026-08-24] La COMPOSITION, en forme compacte.
+            // Besoin propriétaire : « si j'ai un client devant moi, j'ai pas pris son nom,
+            // je peux voir ce qu'il a pris et toutes les personnalisations qu'il a fait ».
+            // Coût SQL : ZÉRO — variations/extras/instantané sont des COLONNES de
+            // `order_items`, déjà rapatriées par le `select *` existant. Les clés vides
+            // sont absentes : une commande sans personnalisation n'ajoute pas un octet.
+            return $avecComposition ? $ligne + CompositionCompactor::forLine($line) : $ligne;
         })->values()->all();
     }
 

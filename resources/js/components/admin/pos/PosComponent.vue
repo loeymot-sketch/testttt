@@ -334,7 +334,7 @@
                             data-testid="pos-cash-session-open"
                             :tone="cashSessionActive ? 'ready' : 'neutral'"
                             :title="cashSessionStale
-                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôture-la pour connaître ton écart.'
+                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôturez-la pour connaître votre écart.'
                                 : $t('label.cash_session_dialog_title')"
                             @click="openCashSessionDialog"
                         >
@@ -2144,6 +2144,7 @@
 </template>
 <script>
 import axios from 'axios';
+import { typeDAdresse } from "../../../services/typeDAdresse";
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
@@ -6361,10 +6362,10 @@ export default {
                     this.checkoutProps.form.delivery_charge = 0;
                     this.checkoutProps.form.delivery_distance_km = null;
                     this.selectedAddress = {};
-                    if (this.address.form.label === this.$t("label.home")) {
+                    if (typeDAdresse(this.address.form.label) === labelEnum.HOME) {
                         this.address.status = false;
                         this.address.switchLabel = labelEnum.HOME;
-                    } else if (this.address.form.label === this.$t("label.work")) {
+                    } else if (typeDAdresse(this.address.form.label) === labelEnum.WORK) {
                         this.address.status = false;
                         this.address.switchLabel = labelEnum.WORK;
                     } else {

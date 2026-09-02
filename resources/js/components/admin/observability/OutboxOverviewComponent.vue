@@ -122,7 +122,7 @@
                     data-testid="outbox-refresh"
                     @click="loadAll"
                 >
-                    <i class="lab lab-refresh" aria-hidden="true"></i>
+                    <i class="lab lab-reset" aria-hidden="true"></i>
                     {{ $t('admin.observability_outbox.refresh') }}
                 </button>
                 <!--
@@ -143,7 +143,7 @@
                     data-testid="outbox-retry-failed"
                     @click="retryFailed"
                 >
-                    <i class="lab lab-redo" aria-hidden="true"></i>
+                    <i class="lab lab-reset" aria-hidden="true"></i>
                     {{ $t('admin.observability_outbox.retry_failed') }}
                 </button>
                 <button
