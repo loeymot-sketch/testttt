@@ -30,13 +30,25 @@ class AuditTrailUsesAuditLogSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // [2026-09-02] `DashboardService::dashboardBranchId()` abort(403) sur un
+        // `branch_id = 0` SANS rôle Admin — garde anti-fail-open posé après l'écriture
+        // de ces tests, qui supposaient encore « branch_id 0 ⇒ admin ». Il faut donc un
+        // vrai rôle Spatie. Le garde est juste : on corrige la fixture, pas le garde.
+        $this->seedSpatieRoles();
+    }
+
+
     /**
      * Source verification: returned items expose chain-integrity hash prefix.
      */
     public function test_audit_trail_returns_hash_prefix_field(): void
     {
         $branch = Branch::factory()->create();
-        $admin = User::factory()->create(['branch_id' => 0]); // admin sees all
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
         $this->actingAs($admin);
 
         app(AuditLogService::class)->write([
@@ -68,6 +80,7 @@ class AuditTrailUsesAuditLogSentinelTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
         $this->actingAs($admin);
 
         // Insert one ActionLog row with a recognisable action string.
@@ -117,6 +130,7 @@ class AuditTrailUsesAuditLogSentinelTest extends TestCase
     {
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['name' => 'Admin Sentinel', 'branch_id' => 0]);
+        $admin->assignRole('Admin');
         $this->actingAs($admin);
 
         app(AuditLogService::class)->write([
@@ -147,5 +161,97 @@ class AuditTrailUsesAuditLogSentinelTest extends TestCase
         // generic 'Système' fallback (proves the service-side User::whereIn
         // lookup works).
         $this->assertSame('Admin Sentinel', $first['user_name']);
+    }
+
+    /**
+     * [2026-09-02] Un journal d'audit sert à répondre à « qui ». Il répondait « Système »
+     * pour 152 lignes portant pourtant un `user_id` renseigné — dont 19 ouvertures de caisse,
+     * 19 fermetures et 9 mouvements d'espèces. Cause : `$log->user_id && isset($users[...])
+     * ? nom : 'Système'` faisait retomber un acteur NON RÉSOLU sur la même étiquette qu'un
+     * acteur réellement absent. La ligne fiscale, elle, était intacte : `user_id` conservé,
+     * table en insertion seule. C'était l'AFFICHAGE qui inventait un acteur.
+     */
+    public function test_un_acteur_supprime_n_est_pas_maquille_en_systeme(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $auteur = User::factory()->create(['branch_id' => 0, 'name' => 'Caissière Dupont']);
+        $this->actingAs($admin);
+
+        app(AuditLogService::class)->write([
+            'branch_id' => $branch->id,
+            'user_id' => $auteur->id,
+            'action' => 'cash.session.opened',
+            'resource' => 'cash_drawer_session',
+            'resource_id' => 4242,
+            'payload' => [],
+        ]);
+
+        $auteur->delete(); // suppression douce : le compte part, la trace reste
+
+        $ligne = app(DashboardService::class)->auditTrail()
+            ->firstWhere('action', 'cash.session.opened');
+
+        $this->assertNotNull($ligne, "la ligne d'audit doit rester lisible après suppression du compte");
+        $this->assertNotSame('Système', $ligne['user_name'], "un acteur identifié ne doit jamais être maquillé en « Système »");
+        $this->assertStringContainsString('Caissière Dupont', $ligne['user_name']);
+        $this->assertStringContainsString('supprimé', $ligne['user_name']);
+    }
+
+    /** Un acteur dont le compte n'existe plus du tout doit être nommé par son identifiant. */
+    public function test_un_acteur_introuvable_est_nomme_par_son_identifiant(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin);
+
+        app(AuditLogService::class)->write([
+            'branch_id' => $branch->id,
+            'user_id' => 999123,
+            'action' => 'cash.movement.recorded',
+            'resource' => 'cash_movement',
+            'resource_id' => 7,
+            'payload' => [],
+        ]);
+
+        $ligne = app(DashboardService::class)->auditTrail()
+            ->firstWhere('action', 'cash.movement.recorded');
+
+        $this->assertNotNull($ligne);
+        $this->assertSame('Utilisateur #999123 (compte supprimé)', $ligne['user_name']);
+    }
+
+    /**
+     * Contrôle apparié : une écriture réellement sans acteur reste « Système ».
+     *
+     * [2026-09-02] Attention à l'instrument : `AuditLogService::write()` retombe sur
+     * `auth()->id()` quand `user_id` est nul. Écrire en étant authentifié ne produit donc
+     * PAS une ligne sans acteur — ma première version de ce test s'est fait piéger et a
+     * lu le nom de l'admin connecté. On écrit avant de s'authentifier.
+     */
+    public function test_une_ecriture_sans_acteur_reste_systeme(): void
+    {
+        $branch = Branch::factory()->create();
+
+        app(AuditLogService::class)->write([
+            'branch_id' => $branch->id,
+            'user_id' => null,
+            'action' => 'outbox.replayed',
+            'resource' => 'domain_event',
+            'resource_id' => 3,
+            'payload' => [],
+        ]);
+
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin);
+
+        $ligne = app(DashboardService::class)->auditTrail()
+            ->firstWhere('action', 'outbox.replayed');
+
+        $this->assertNotNull($ligne);
+        $this->assertSame('Système', $ligne['user_name']);
     }
 }

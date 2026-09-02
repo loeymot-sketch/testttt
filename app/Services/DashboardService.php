@@ -940,6 +940,7 @@ class DashboardService
             ? \App\Models\Item::whereIn('id', $itemIds)->pluck('name', 'id')
             : collect();
 
+
         return $rows->map(function ($row) use ($names) {
             return [
                 'name' => $names[$row->item_id] ?? ('Item #' . $row->item_id),
@@ -989,8 +990,12 @@ class DashboardService
             // booted() guard). Service-side lookup keeps the fiscal model
             // surface untouched.
             $userIds = $rows->pluck('user_id')->filter()->unique()->all();
+            // [2026-09-02] `withTrashed()` : un compte supprimé ne doit pas effacer
+            // l'acteur d'une écriture fiscale. Mesuré sur cette base : 11 des 152 lignes
+            // d'audit à acteur non résolu visent un compte en suppression douce — leur
+            // nom est donc récupérable, et l'était déjà en base.
             $users = $userIds
-                ? User::whereIn('id', $userIds)->get(['id', 'name'])->keyBy('id')
+                ? User::withTrashed()->whereIn('id', $userIds)->get(['id', 'name', 'deleted_at'])->keyBy('id')
                 : collect();
 
             return $rows->map(function ($log) use ($users) {
@@ -1001,9 +1006,7 @@ class DashboardService
 
                 return [
                     'id' => $log->id,
-                    'user_name' => $log->user_id && isset($users[$log->user_id])
-                        ? $users[$log->user_id]->name
-                        : 'Système',
+                    'user_name' => $this->auditActorName($log->user_id, $users),
                     'branch_id' => $log->branch_id,
                     'action' => $log->action,
                     'resource' => $resourceRef,
@@ -1020,5 +1023,33 @@ class DashboardService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * Qui a fait l'écriture — sans jamais inventer d'acteur.
+     *
+     * [2026-09-02] Le code faisait `$log->user_id && isset($users[...]) ? nom : 'Système'` :
+     * un `user_id` RENSEIGNÉ mais non résolu retombait sur la même étiquette qu'un `user_id`
+     * réellement NULL. Mesuré : 152 lignes concernées, dont 19 ouvertures de caisse, 19
+     * fermetures et 9 mouvements d'espèces — toutes attribuées à « Système » alors qu'un
+     * humain identifié les avait faites. La ligne fiscale, elle, est intacte : `user_id` est
+     * conservé et la table reste en insertion seule. C'était l'AFFICHAGE qui mentait, et un
+     * journal d'audit sert précisément à répondre à « qui ».
+     */
+    private function auditActorName($userId, $users): string
+    {
+        if (! $userId) {
+            return 'Système';
+        }
+
+        $utilisateur = $users[$userId] ?? null;
+
+        if ($utilisateur === null) {
+            return 'Utilisateur #' . $userId . ' (compte supprimé)';
+        }
+
+        return $utilisateur->deleted_at
+            ? $utilisateur->name . ' (compte supprimé)'
+            : $utilisateur->name;
     }
 }

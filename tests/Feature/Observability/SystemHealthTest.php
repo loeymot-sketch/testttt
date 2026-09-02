@@ -128,4 +128,69 @@ class SystemHealthTest extends TestCase
     {
         $this->getJson('/api/admin/observability/system-health')->assertUnauthorized();
     }
+
+    /**
+     * [2026-09-02] La panne qui casse la surveillance effaçait aussi le rapport sur elle-même.
+     *
+     * Mesuré sur la machine de développement : l'API répondait `controles: []` — donc aucune
+     * carte, aucun message, aucune alerte — pendant que 1 521 messages attendaient en file
+     * (seuil du code : 50), dont 1 511 notifications clients. Cause : `controles` vient de
+     * `Cache::get('healthz:last')`, vide parce que le planificateur était mort ; et la boucle
+     * du verdict itérait donc sur zéro élément. Le gérant lisait deux alertes et les croyait
+     * exhaustives.
+     */
+    public function test_une_sonde_qui_n_a_pas_tourne_est_dite_et_non_tue(): void
+    {
+        Cache::forget('healthz:last');
+        Cache::forever('scheduler:last_tick', now()->timestamp);
+
+        $r = $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/admin/observability/system-health')->assertOk()->json();
+
+        $this->assertSame([], $r['controles']);
+        $this->assertSame('attention', $r['verdict']);
+        $this->assertContains(
+            "contrôles de santé : aucune mesure disponible — la sonde n'a pas tourné",
+            $r['alertes'],
+        );
+    }
+
+    /**
+     * [2026-09-02] `HealthzCheckCommand` écrit `Cache::forever('healthz:last', ...)` — sans
+     * expiration. Rien ne comparait l'horodatage de la mesure à l'heure courante : les cinq
+     * cartes pouvaient afficher « en service » en vert à partir d'une mesure arbitrairement
+     * vieille. La fraîcheur était contrôlée pour la sauvegarde et le planificateur, pas pour
+     * les contrôles eux-mêmes.
+     */
+    public function test_une_mesure_perimee_est_signalee_meme_si_tout_y_est_vert(): void
+    {
+        Cache::forever('healthz:last', [
+            'status' => 'ok',
+            'checks' => ['db' => 'ok', 'redis' => 'ok', 'websocket' => 'ok', 'fiscal_chain' => 'ok', 'queue_pending' => 0],
+            'timestamp' => now()->subHours(6)->toIso8601String(),
+        ]);
+        Cache::forever('scheduler:last_tick', now()->timestamp);
+
+        $r = $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/admin/observability/system-health')->assertOk()->json();
+
+        $this->assertSame('attention', $r['verdict']);
+        $this->assertContains('contrôles de santé : mesure vieille de 6 h', $r['alertes']);
+        $this->assertGreaterThanOrEqual(360, $r['mesure_age_min']);
+    }
+
+    /** Une mesure fraîche ne doit évidemment déclencher aucun de ces deux avertissements. */
+    public function test_une_mesure_fraiche_ne_declenche_aucun_avertissement_de_fraicheur(): void
+    {
+        $this->sante(['db' => 'ok', 'redis' => 'ok', 'websocket' => 'ok', 'fiscal_chain' => 'ok', 'queue_pending' => 0]);
+        Cache::forever('scheduler:last_tick', now()->timestamp);
+
+        $r = $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/admin/observability/system-health')->assertOk()->json();
+
+        foreach ($r['alertes'] as $alerte) {
+            $this->assertStringNotContainsString('contrôles de santé', $alerte);
+        }
+        $this->assertLessThan(30, $r['mesure_age_min']);
+    }
 }

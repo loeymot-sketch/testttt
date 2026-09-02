@@ -389,6 +389,10 @@ export default {
             savingDraft: false,
             publishing: false,
             item: null,
+            // [2026-09-02] La CATÉGORIE éditée, distincte de `item` (qui porte désormais un
+            // article représentatif servant l'aperçu). Elle était assignée sans être déclarée
+            // ici : non réactive, donc l'en-tête restait bloqué sur « Chargement catégorie ».
+            categoryRecord: null,
             profile: null,
             template: 'custom',
             branchIdScope: null,
@@ -491,7 +495,10 @@ export default {
         },
         itemName() {
             if (this.isCategoryComposer) {
-                return this.item?.name || this.t('label.composer.loading_category', 'Chargement catégorie');
+                // Le nom vient de la CATÉGORIE, pas de `item` : en mode catégorie, `item`
+                // porte un article représentatif chargé pour l'aperçu, dont le nom écrirait
+                // « Wizard de la catégorie : Tacos XL » au lieu de « … : Tacos ».
+                return this.categoryRecord?.name || this.t('label.composer.loading_category', 'Chargement catégorie');
             }
             return this.item?.name || this.t('label.composer.loading_product', 'Chargement produit');
         },
@@ -610,7 +617,10 @@ export default {
         },
         async loadCategory() {
             const response = await axios.get(`admin/setting/item-category/show/${this.resolvedEntityId}`);
-            this.item = response.data?.data || response.data || null;
+            this.categoryRecord = response.data?.data || response.data || null;
+            // Avant : this.item = la CATÉGORIE. L'aperçu cherchait item.id === cat.id
+            // dans le menu → « Article non disponible » alors que Tacos XL est en vente.
+            this.item = null;
         },
         async loadBranches() {
             try {
@@ -661,6 +671,11 @@ export default {
                     extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
                     addon: Array.isArray(data.addon) ? data.addon : [],
                 };
+                const previewId = Number(data.item_id || 0);
+                if (this.isCategoryComposer && previewId > 0) {
+                    const itemRes = await axios.get(`admin/item/show/${previewId}`);
+                    this.item = itemRes.data?.data || itemRes.data || null;
+                }
             } catch (error) {
                 this.availableSources = {
                     item_attribute: [],

@@ -110,4 +110,59 @@ class StockRuptureDashboardEndpointsTest extends TestCase
             'threshold_low' => 2,
         ]);
     }
+
+    /**
+     * [2026-09-02] « Aucune alerte de stock bas » se lit « votre stock va bien ». Or la
+     * requête filtre `whereNotNull('threshold_low')` : sans aucun seuil configuré, elle ne
+     * peut RIEN remonter, quel que soit le stock. Mesuré sur la base de développement :
+     * 55 lignes de stock sur 55 à `threshold_low` NULL — feu vert permanent, pendant que
+     * Coca-Cola 33cl était à 0. L'API doit donc permettre de distinguer « rien à signaler »
+     * de « rien n'est surveillé » ; c'est l'écran qui doit le dire, pas le commerçant qui
+     * doit le deviner.
+     */
+    public function test_les_alertes_disent_si_un_seuil_est_seulement_configure(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo(['items_show', 'items_create']);
+        Sanctum::actingAs($admin, ['*']);
+
+        [$item, $first, $second] = $this->itemWithTwoVariations();
+
+        // Du stock SUIVI, mais aucun seuil : la requête d'alerte ne peut rien remonter.
+        StockLevel::query()->create([
+            'branch_id' => $branch->id,
+            'stockable_type' => ItemVariation::class,
+            'stockable_id' => $first->id,
+            'on_hand' => 0,
+            'reserved' => 0,
+            'threshold_low' => null,
+        ]);
+
+        $r = $this->getJson('/api/admin/stock/low-alerts')->assertOk()->json();
+
+        $this->assertSame([], $r['alerts'], 'sans seuil, aucune alerte ne peut sortir — c\'est le piège');
+        $this->assertSame(1, $r['tracked_rows'], 'du stock EST suivi');
+        $this->assertSame(0, $r['thresholds_configured'], 'mais rien n\'est surveillé, et ça doit se voir');
+    }
+
+    /** Contrôle apparié : dès qu'un seuil existe, le compteur le dit, et l'alerte sort. */
+    public function test_un_seuil_configure_est_compte_et_declenche_bien_l_alerte(): void
+    {
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo(['items_show', 'items_create']);
+        Sanctum::actingAs($admin, ['*']);
+
+        [$item, $first, $second] = $this->itemWithTwoVariations();
+        $this->stock($branch, $first->id, 0); // threshold_low = 2
+
+        $r = $this->getJson('/api/admin/stock/low-alerts')->assertOk()->json();
+
+        $this->assertSame(1, $r['thresholds_configured']);
+        $this->assertSame(1, $r['tracked_rows']);
+        $this->assertCount(1, $r['alerts']);
+    }
 }

@@ -120,8 +120,25 @@ class StockRuptureDashboardController extends AdminController
             'threshold_low' => (int) $level->threshold_low,
         ])->values();
 
+        // [2026-09-02] « Aucune alerte de stock bas » se lit « votre stock va bien ».
+        // Mesuré sur cette base : 55 lignes de stock sur 55 ont `threshold_low` NULL, donc
+        // AUCUNE ne peut jamais satisfaire le `whereNotNull` ci-dessus — le panneau était un
+        // feu vert permanent, quel que soit le stock réel (Coca-Cola 33cl était à 0 pendant
+        // qu'il affichait « aucune alerte »). On expose donc de quoi distinguer « rien à
+        // signaler » de « rien n'est surveillé » : c'est l'écran qui doit le dire, pas le
+        // commerçant qui doit le deviner.
+        $lignesSuivies = StockLevel::query()
+            ->whereIn('branch_id', $branches->pluck('id')->map(fn ($id): int => (int) $id)->all())
+            ->count();
+        $seuilsConfigures = StockLevel::query()
+            ->whereIn('branch_id', $branches->pluck('id')->map(fn ($id): int => (int) $id)->all())
+            ->whereNotNull('threshold_low')
+            ->count();
+
         return response()->json([
             'alerts' => $alerts,
+            'tracked_rows' => $lignesSuivies,
+            'thresholds_configured' => $seuilsConfigures,
             'fetched_at' => now()->toIso8601String(),
         ]);
     }

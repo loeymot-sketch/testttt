@@ -19,7 +19,12 @@ function mountWidget() {
   return mount(StockLowAlertsWidget, {
     global: {
       plugins: [i18n],
-      mocks: { $store: { getters: { authPermission: [] } } },
+      // [2026-09-01] Un droit RÉALISTE, pas une liste vide. La garde `canFetchAlerts()`
+      // refuse désormais par défaut quand la liste de droits est vide (durcissement
+      // 4608078ca : elle autorisait auparavant, « le temps que le store s'hydrate »).
+      // Simuler [] revenait donc à tester le refus, pas le badge. Le refus a son propre
+      // cas ci-dessous ; ici on veut mesurer le COMPTE.
+      mocks: { $store: { getters: { authPermission: [{ url: 'items/show', access: true }] } } },
       stubs: { LoadingComponent: true, 'router-link': true },
     },
   });
@@ -41,6 +46,22 @@ describe('[T-D STOCK-IA 2026-08-16] StockLowAlertsWidget — badge de compte', (
     expect(badge.exists()).toBe(true);
     expect(badge.text()).toBe('8');
     expect(wrapper.findAll('tbody tr').length).toBe(5);
+    wrapper.unmount();
+  });
+
+  it('ne fetch PAS quand la liste de droits est vide (refus par défaut)', async () => {
+    // Verrouille le durcissement 4608078ca. Une liste vide n'est PAS un blanc-seing :
+    // le widget ne doit pas appeler l'API tant qu'aucun droit n'est connu.
+    axios.get.mockResolvedValue({ data: { alerts: [] } });
+    const wrapper = mount(StockLowAlertsWidget, {
+      global: {
+        plugins: [i18n],
+        mocks: { $store: { getters: { authPermission: [] } } },
+        stubs: { LoadingComponent: true, 'router-link': true },
+      },
+    });
+    await flushPromises();
+    expect(axios.get).not.toHaveBeenCalled();
     wrapper.unmount();
   });
 
@@ -121,5 +142,53 @@ describe('[test-e2e fix A-002/E-001/E-002/E-006] StockLowAlertsWidget — gate i
 
     expect(axios.get).not.toHaveBeenCalled();
     wrapper.unmount();
+  });
+});
+
+/**
+ * [2026-09-02] « Aucune alerte de stock bas » se lit « votre stock va bien ». Mesuré sur la
+ * base réelle : 55 lignes de stock sur 55 ont `threshold_low` NULL, donc la requête de l'API
+ * (`whereNotNull('threshold_low')`) ne peut JAMAIS rien remonter — le panneau était un feu
+ * vert permanent, pendant que Coca-Cola 33cl était à 0. L'écran doit dire qu'il ne surveille
+ * rien, au lieu de laisser croire que tout va bien.
+ */
+describe('StockLowAlertsWidget — « rien à signaler » vs « rien n\'est surveillé »', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  function monter() {
+    return mount(StockLowAlertsWidget, {
+      global: {
+        plugins: [i18n],
+        mocks: { $store: { getters: { authPermission: [{ url: 'items/show', access: true }] } } },
+        stubs: { LoadingComponent: true, 'router-link': true },
+      },
+    });
+  }
+
+  it('avertit quand du stock est suivi mais qu\'aucun seuil n\'est configuré', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 55, thresholds_configured: 0 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(true);
+    expect(w.text()).not.toContain(frMessages.label.no_low_alerts);
+    w.unmount();
+  });
+
+  it('dit bien « aucune alerte » quand des seuils existent et que rien ne les franchit', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 55, thresholds_configured: 12 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(false);
+    expect(w.text()).toContain(frMessages.label.no_low_alerts);
+    w.unmount();
+  });
+
+  it('ne crie pas au loup sur une base sans aucun stock suivi', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 0, thresholds_configured: 0 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(false);
+    expect(w.text()).toContain(frMessages.label.no_low_alerts);
+    w.unmount();
   });
 });
