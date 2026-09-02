@@ -3,7 +3,7 @@
     :is="tag"
     :type="tag === 'button' ? type : null"
     :to="tag === 'router-link' ? to : null"
-    :href="tag === 'a' ? href : null"
+    v-bind="attributsDeLien"
     :target="tag === 'a' || tag === 'router-link' ? target : null"
     :rel="tag === 'a' && target === '_blank' ? 'noopener' : rel"
     :disabled="(tag === 'button' && (disabled || loading)) || null"
@@ -93,6 +93,28 @@ export default {
     computed: {
         tag() {
             return this.as;
+        },
+        /**
+         * [GOAL CAISSE CONTRÔLE 2026-09-02] `href` n'est lié QUE sur une vraie ancre.
+         *
+         * DÉFAUT CORRIGÉ ICI : l'attribut était écrit `:href="tag === 'a' ? href : null"`. Sur un
+         * `router-link`, ce `null` ne « ne faisait rien » — il RETOMBAIT sur l'ancre rendue par
+         * `RouterLink` et EFFAÇAIT le `href` que le routeur venait d'y calculer. Constaté au
+         * navigateur le 2026-09-02 : `pos-tracker-open` ET `pos-encaissement-open` rendaient
+         * `<a>` sans aucun `href`.
+         *
+         * Conséquences réelles, jamais signalées parce que le clic simple, lui, marchait (le
+         * gestionnaire de `RouterLink` reste posé sur l'élément) :
+         *   · clic du milieu et Ctrl/Cmd-clic INERTES — impossible d'ouvrir le suivi ou
+         *     l'encaissement dans un second onglet ;
+         *   · « Copier l'adresse du lien » absent du menu contextuel ;
+         *   · lien non annoncé comme lien par les lecteurs d'écran, et non atteignable au clavier
+         *     (une ancre sans `href` sort de l'ordre de tabulation).
+         *
+         * En n'ajoutant l'attribut que pour `as="a"`, le `href` du routeur survit.
+         */
+        attributsDeLien() {
+            return this.tag === 'a' ? { href: this.href } : {};
         },
         rootClass() {
             return [

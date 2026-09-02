@@ -104,15 +104,38 @@ describe('PosComponent shortcuts — Wave X X2 main-page notifications', () => {
         expect(source).toMatch(/status:\s*orderStatusEnum\.DELIVERED/);
     });
 
-    it('loadReadyOrders filters PREPARED AND order_type ∈ {KIOSK, TAKEAWAY, POS}', () => {
+    /**
+     * [GOAL CAISSE CONTRÔLE 2026-09-02] CETTE ASSERTION A ÉTÉ RETOURNÉE, SCIEMMENT.
+     *
+     * Elle exigeait `allowedTypes = new Set([KIOSK, TAKEAWAY, POS])` dans `loadReadyOrders`.
+     * Ce filtre était INERTE : la source d'alors (`admin/oss-order`) ne servait DÉJÀ que des
+     * commandes borne et à emporter, filtrées côté serveur par
+     * `OrderStatusScreenOrderService::list()`. Le filtre client ne retirait donc jamais rien —
+     * et le banc verrouillait une garantie que personne n'exerçait.
+     *
+     * La caisse lit désormais `admin/pos-order` (tous les canaux). Conservé, ce filtre serait
+     * devenu MORDANT et aurait caché les commandes COMPTOIR, TÉLÉPHONE et WEB prêtes — c'est
+     * précisément le défaut mesuré avant ce chantier : sur neuf commandes semées, le panneau
+     * « Prêt à livrer » n'en montrait qu'une, et la commande comptoir prête de « Sofiane »
+     * n'apparaissait nulle part sur l'écran de la caisse.
+     *
+     * La règle protégée devient donc : une commande PRÊTE est visible, quel que soit son canal ;
+     * seul le remboursement passerelle reste exclu (il conserve son statut cuisine, et le KDS
+     * l'a déjà retirée via `KitchenReleaseRule::applyBoardReleaseFilter`).
+     *
+     * Le cas « livraison » reste traité, mais là où il appartient : le flux conducteur a sa
+     * propre interface, et une commande de livraison prête n'est pas remise au comptoir. Elle
+     * apparaît dans la file « Prêtes » du tiroir, sans bouton « Livré » qui doublerait le
+     * livreur — l'action reste celle du flux conducteur.
+     */
+    it('loadReadyOrders retient PREPARED de TOUS les canaux, sauf remboursement passerelle', () => {
         expect(source).toMatch(/loadReadyOrders/);
         expect(source).toMatch(/orderStatusEnum\.PREPARED/);
-        expect(source).toMatch(/orderTypeEnum\.KIOSK/);
-        expect(source).toMatch(/orderTypeEnum\.TAKEAWAY/);
-        // DELIVERY orders MUST be excluded — driver flow is a separate UI.
-        // We assert allowedTypes is a Set including KIOSK + TAKEAWAY (+ POS)
-        // but not DELIVERY in the same expression.
-        expect(source).toMatch(/allowedTypes\s*=\s*new Set/);
+        const corps = source.match(/async loadReadyOrders\s*\(\)\s*\{[\s\S]+?\n {8}\},/);
+        expect(corps).not.toBeNull();
+        expect(corps[0]).not.toMatch(/allowedTypes/);
+        expect(corps[0]).not.toMatch(/orderTypeEnum\./);
+        expect(corps[0]).toMatch(/paymentStatusEnum\.REFUNDED/);
     });
 
     it('readyOrders is sorted oldest-first (cashier clears the longest-waiting first)', () => {

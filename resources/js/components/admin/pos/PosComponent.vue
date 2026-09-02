@@ -228,19 +228,73 @@
                           [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour
                           réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.
                         -->
-                        <PosV5Button
-                            variant="tracker"
-                            size="md"
-                            as="router-link"
-                            :to="{ name: 'admin.pos-orders.tracker' }"
-                            :tone="activeOrdersStats.ready > 0 ? 'ready' : 'neutral'"
-                            :badge="activeOrdersStats.active > 0 ? activeOrdersStats.active : null"
-                            data-testid="pos-tracker-open"
-                            :title="$t('pos.tracker.button_hint')"
+                        <!--
+                          [GOAL CAISSE CONTRÔLE 2026-09-02] « Suivi commandes » EST le tiroir.
+
+                          UN SEUL BOUTON, délibérément. La première version en ajoutait un seul
+                          second, « Commandes » ; la capture a montré le résultat : deux boutons
+                          voisins disant tous deux « les commandes », avec DEUX NOMBRES DIFFÉRENTS
+                          (« 6 » d'un côté, « 3 💶 2 🛎️ » de l'autre), qu'aucun caissier ne peut
+                          réconcilier. C'est très exactement le défaut que ce chantier corrige —
+                          « je me perds ». Le libellé conservé est celui que le propriétaire
+                          connaît déjà.
+
+                          Le bouton reste un `router-link`, même `:to`, même `data-testid` : les
+                          bancs qui vérifient sa présence restent verts, son `href` est réel depuis
+                          le correctif de `PosV5Button`, et Ctrl-clic / clic du milieu ouvrent
+                          toujours la page complète dans un onglet. Ce qui change : le clic SIMPLE
+                          ouvre le tiroir au lieu de remplacer le document — 15,6 s mesurées avant
+                          correctif depuis /admin/pos-v4, 95 ms après.
+
+                          L'écouteur est en phase de CAPTURE sur l'enveloppe : celui de
+                          `router-link` est posé sur l'ancre elle-même et gagnerait sinon la course.
+                        -->
+                        <span
+                            class="pos-op-suivi-intercept"
+                            @click.capture="interceptSuivi"
                         >
-                            <template #icon>📋</template>
-                            <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
-                        </PosV5Button>
+                            <PosV5Button
+                                variant="tracker"
+                                size="md"
+                                as="router-link"
+                                :to="{ name: 'admin.pos-orders.tracker' }"
+                                :tone="filesControle.pretes.length > 0 ? 'ready' : 'neutral'"
+                                data-testid="pos-tracker-open"
+                                :title="$t('pos.controle.bouton_hint')"
+                            >
+                                <template #icon>📋</template>
+                                <span class="hidden lg:inline">{{ $t('pos.tracker.button_label') }}</span>
+                                <!--
+                                  DEUX pastilles, jamais un total.
+                                  Elles remplacent l'ancien compteur unique `activeOrdersStats.active`
+                                  (ACCEPT + PREPARING + PREPARED confondus). Ce nombre-là ne
+                                  correspondait à AUCUNE action : « 6 » ne dit ni combien d'argent
+                                  attend, ni combien de clients attendent leur sac. Les deux
+                                  nombres qui suivent ne sont pas de même nature et ne doivent
+                                  jamais être additionnés — « 3 💶 » c'est de la recette non
+                                  encaissée, « 2 🛎️ » c'est quelqu'un debout au comptoir.
+                                  Le compteur cuisine n'est pas ici mais sur le ticket, là où le
+                                  regard est déjà posé pendant la saisie : une troisième pastille
+                                  ferait ~130 px dans une pilule de 22 px, sur une barre qui
+                                  s'empile déjà en deux rangs sous 1439 px.
+                                -->
+                                <template
+                                    v-if="filesControle.encaisser.length > 0 || filesControle.pretes.length > 0"
+                                    #badge
+                                >
+                                    <span
+                                        v-if="filesControle.encaisser.length > 0"
+                                        class="pos-ctrl-pastille pos-ctrl-pastille--argent pos-v5-tabular"
+                                        data-testid="pos-control-badge-cash"
+                                    >{{ filesControle.encaisser.length }} 💶</span>
+                                    <span
+                                        v-if="filesControle.pretes.length > 0"
+                                        class="pos-ctrl-pastille pos-ctrl-pastille--pretes pos-v5-tabular"
+                                        data-testid="pos-control-badge-ready"
+                                    >{{ filesControle.pretes.length }} 🛎️</span>
+                                </template>
+                            </PosV5Button>
+                        </span>
                         <!--
                           [T-D STOCK-IA 2026-08-16 · GOAL owner] "sur la caisse voir le nombre
                           de stock faible... pour préparer la liste à acheter demain" — même
@@ -508,14 +562,17 @@
             >
               {{ $t('label.pos_shortcut_ready_empty') }}
             </p>
-            <router-link
+            <!-- [GOAL CAISSE CONTRÔLE 2026-09-02] Ouvre le tiroir sur l'onglet « Prêtes »
+                 au lieu de quitter la caisse. Même testid, même libellé. -->
+            <button
               v-if="readyOrders.length > 4"
-              :to="{ name: 'admin.pos-orders.tracker' }"
+              type="button"
               class="pos-shortcuts__more"
               data-testid="pos-shortcut-ready-more"
+              @click="ouvrirTiroirControle('pretes')"
             >
               {{ $t('label.pos_shortcut_view_more', { count: readyOrders.length - 4 }) }}
-            </router-link>
+            </button>
             <!-- [Q10] Last-refresh timestamp — visible health signal. -->
             <p
               v-if="readyLastRefreshLabel"
@@ -615,7 +672,7 @@
               type="button"
               class="pos-shortcuts__more"
               data-testid="pos-shortcut-cash-more"
-              @click="showKioskCashPanel = true"
+              @click="ouvrirTiroirControle('encaisser')"
             >
               {{ $t('label.pos_shortcut_view_more', { count: kioskCashOrders.length - 4 }) }}
             </button>
@@ -954,6 +1011,31 @@
                 <p class="pos-v5-cart__eyebrow">Ticket caisse</p>
                 <h2 class="pos-v5-cart__title">Commande en cours</h2>
             </div>
+            <!--
+              [GOAL CAISSE CONTRÔLE 2026-09-02] « Il y a combien d'attente ? », posée par le client
+              AU MOMENT où on prend sa commande. La ligne est donc ici, sur le ticket, là où le
+              regard du caissier est déjà posé — et elle est rendue même à panier vide, parce que
+              c'est à panier vide qu'on prend une commande.
+
+              TROIS FAITS MESURÉS, ZÉRO PRÉVISION. Une « attente ≈ 14 min » calculée sur l'âge de
+              la plus ancienne serait un mensonge commercial : c'est le temps déjà écoulé pour
+              QUELQU'UN D'AUTRE, et la commande de 14 min sort peut-être dans trente secondes. Ce
+              dépôt n'a aucun modèle de débit cuisine — la seule sonde temporelle existante mesure
+              du retard CONSTATÉ. Le caissier compose lui-même la phrase orale : il connaît son
+              coup de feu, l'application ne le connaît pas.
+            -->
+            <button
+                type="button"
+                class="pos-v5-cart__cuisine"
+                :class="{ 'pos-v5-cart__cuisine--libre': attenteCuisineTicket.total === 0 }"
+                data-testid="pos-cart-kitchen-depth"
+                :title="$t('pos.controle.bouton_hint')"
+                @click="ouvrirTiroirControle('cuisine')"
+            >
+                <span aria-hidden="true">🍳</span>
+                <span v-if="attenteCuisineTicket.total === 0">{{ $t('pos.controle.cuisine_libre') }}</span>
+                <span v-else class="pos-v5-tabular">{{ phraseAttenteCuisine }}</span>
+            </button>
             <div class="pos-v5-stack-3 mt-3">
                 <PosV5Pill
                     v-if="totalItems() > 0"
@@ -1879,6 +1961,30 @@
         @close="showAvailabilityPanel = false"
     />
 
+    <!--
+        [GOAL CAISSE CONTRÔLE 2026-09-02] Le tiroir de contrôle. Il ne remplace PAS le panneau
+        borne ci-dessous (chemin de repli, testids et bancs conservés) : il devient l'entrée
+        principale. Zéro requête propre — tout est passé en propriétés depuis l'état que la caisse
+        rafraîchit déjà, donc le budget réseau (`tests/e2e/pos-request-budget.spec.js`) est intact.
+      -->
+    <PosControlDrawer
+      :open="controlDrawerOpen"
+      :orders="serviceOrders"
+      :anciennes-count="anciennesAEncaisser"
+      :last-refresh="lastReadyRefresh"
+      :tick="_lastRefreshTick"
+      :cart-count="cartTotalQuantity"
+      :cart-total="grandTotal"
+      :initial-tab="controlDrawerTab"
+      @close="controlDrawerOpen = false"
+      @encaisser="tiroirEncaisser"
+      @livrer="tiroirLivrer"
+      @annuler="tiroirAnnuler"
+      @rafraichir="tiroirRafraichir"
+      @ouvrir-suivi="tiroirOuvrirSuiviComplet"
+      @ouvrir-encaissement="tiroirOuvrirEncaissement"
+    />
+
     <!-- Panel commandes borne cash (ouvert depuis la barre du haut) -->
     <transition name="slide-panel">
       <div v-if="showKioskCashPanel" class="kiosk-cash-panel-overlay" @click.self="showKioskCashPanel = false">
@@ -2234,6 +2340,10 @@ import { normalizeRealtimeOrderEvent, shouldNotifyPosRealtimeOrder } from "../..
 import debounce from "lodash/debounce";
 import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
 import { calculateDeliveryChargeFromDistance } from "../../../helpers/deliveryCharge";
+import { serviceDayRange } from "../../../helpers/posServiceDay";
+import PosControlDrawer from "./PosControlDrawer.vue";
+import { attenteCuisine } from "../../../support/fileCuisine";
+import { filesDeControle } from "../../../support/filesControle";
 // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives unifiées POS V5.
 // Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md §4.
 import PosV5Button from "./v5/PosV5Button.vue";
@@ -2296,6 +2406,10 @@ export default {
         // [GOAL RUPTURE-CARNET 2026-07-15 / W2] Rupture produits (86).
         AvailabilityTogglePanel,
         VoiceOrderAssistantPanel,
+        // [GOAL CAISSE CONTRÔLE 2026-09-02] Le tiroir de contrôle des commandes — quatre files
+        // (à encaisser / en cuisine / prêtes / livrées) SANS quitter la caisse. Zéro requête
+        // propre : il lit `serviceOrders`, que la caisse rafraîchit déjà.
+        PosControlDrawer,
     },
     // Composition-API bridge for network state, quarantine and signed replay.
     setup() {
@@ -2436,6 +2550,15 @@ export default {
             // PREPARED uniquement (déclencheur du halo vert). Pas de popup, pas de son
             // ici — l'écran tracker dédié et l'OSS client gèrent les notifications fortes.
             activeOrdersStats: { active: 0, ready: 0 },
+            // [GOAL CAISSE CONTRÔLE 2026-09-02] Les commandes de la JOURNÉE DE SERVICE, tous
+            // canaux confondus (`admin/pos-order`, composition compacte). Source unique des
+            // quatre files du tiroir de contrôle ET du compteur cuisine du ticket.
+            serviceOrders: [],
+            // Le tiroir : ouvert ou non, et sur quel onglet. Il ne mémorise pas le dernier
+            // onglet d'une ouverture à l'autre — en coup de feu, un état persistant invisible
+            // fait croire qu'on regarde la file argent alors qu'on regarde les livrées.
+            controlDrawerOpen: false,
+            controlDrawerTab: 'encaisser',
             // [T-D STOCK-IA 2026-08-16 · GOAL owner] Nombre d'articles en stock faible
             // (StockLevel.on_hand <= threshold_low), même endpoint que
             // StockLowAlertsWidget.vue côté dashboard admin — une seule définition.
@@ -2897,6 +3020,51 @@ export default {
          * référence en ancienne et nouvelle valeur, donc les deux totaux étaient toujours
          * égaux. Sur un nombre, la comparaison redevient vraie.
          */
+        /**
+         * [GOAL CAISSE CONTRÔLE 2026-09-02] Les quatre files, lues d'une SEULE source partagée
+         * avec le tiroir (`resources/js/support/filesControle.js`). Écrire ces prédicats ici en
+         * plus du tiroir aurait recréé exactement le défaut d'origine : deux compteurs affichés
+         * à 40 px l'un de l'autre, disant tous deux « les commandes en cours », en désaccord.
+         */
+        filesControle: function () {
+            return filesDeControle(this.serviceOrders);
+        },
+        /**
+         * Les commandes à encaisser d'AVANT la journée de service en cours.
+         *
+         * Elles ne sont pas un détail : l'endpoint d'encaissement n'a aucun filtre de date et
+         * trie du plus ancien d'abord, si bien que deux commandes mortes de 20 h 09 occupaient
+         * les deux premières lignes du panneau pendant que la commande téléphone du jour était
+         * reléguée derrière « Voir plus ». Le tiroir ne les mélange pas aux cartes du jour et ne
+         * les cache pas non plus : il les ANNONCE en pied, datées, avec un lien vers la page
+         * d'encaissement — qui reste la file de toute la période.
+         *
+         * Compté sur `kioskCashOrders`, que la caisse charge DÉJÀ : aucune requête de plus.
+         */
+        anciennesAEncaisser: function () {
+            const jour = serviceDayRange();
+            const debut = new Date(`${jour.from}T00:00:00`).getTime();
+            if (!Number.isFinite(debut)) return 0;
+            return (Array.isArray(this.kioskCashOrders) ? this.kioskCashOrders : [])
+                .filter((o) => {
+                    const t = Date.parse(o?.created_at ?? '');
+                    return Number.isFinite(t) && t < debut;
+                }).length;
+        },
+        /** Profondeur de la file cuisine pour le ticket en cours — mesures, jamais prévision. */
+        attenteCuisineTicket: function () {
+            // Se raccroche au battement de 5 s pour que « depuis 14 min » avance tout seul.
+            void this._lastRefreshTick;
+            return attenteCuisine(this.serviceOrders, Date.now());
+        },
+        phraseAttenteCuisine: function () {
+            const a = this.attenteCuisineTicket;
+            return this.$t('pos.controle.cuisine_ticket', {
+                n: a.total,
+                m: a.plusAncienneMinutes,
+                rang: a.prochainRang === 1 ? '1ᵉʳ' : `${a.prochainRang}ᵉ`,
+            });
+        },
         cartTotalQuantity: function () {
             const lignes = Array.isArray(this.carts) ? this.carts : [];
 
@@ -4584,15 +4752,45 @@ export default {
         // promise; the shared slot is released once it settles so the next tick
         // fetches fresh. The store commit + both callers' derivations are unchanged
         // — this only dedupes the network round-trip.
-        _fetchOssOrdersOnce() {
-            if (this._ossFetchInFlight) {
-                return this._ossFetchInFlight;
+        // [POSPERF-03-dup-oss 2026-07-22] loadActiveOrdersStats + loadReadyOrders tapaient le MÊME
+        // endpoint à chaque tick ET à chaque rafale Echo → deux GET identiques par cycle. Le
+        // coalesceur les fond en une seule requête en vol : le premier appelant lance, les
+        // concurrents attendent la même promesse, le créneau est libéré au règlement.
+        //
+        // [GOAL CAISSE CONTRÔLE 2026-09-02] LA SOURCE CHANGE, la mécanique NON.
+        // Avant : `admin/oss-order` (écran de statut client), dont le service filtre par
+        // `OrderType` BORNE + À EMPORTER (`OrderStatusScreenOrderService::list()`). Conséquence
+        // mesurée en audit : sur neuf commandes semées, ce flux n'en rendait TROIS — une commande
+        // COMPTOIR prête était invisible du panneau « Prêt à livrer », et le badge « Suivi 3 »
+        // contredisait le suivi qui affichait « 7 actives » à 40 px de là.
+        // Après : `admin/pos-order` borné à la journée de service — tous les canaux, avec la
+        // composition compacte dont le tiroir de contrôle a besoin. UN GET remplace UN GET :
+        // le budget réseau de la caisse est inchangé (`tests/e2e/pos-request-budget.spec.js`).
+        _fetchServiceOrdersOnce() {
+            if (this._serviceFetchInFlight) {
+                return this._serviceFetchInFlight;
             }
-            const p = this.$store.dispatch('orderStatusScreenOrder/lists');
-            this._ossFetchInFlight = p;
+            const jour = serviceDayRange();
+            const p = this.$store.dispatch('posOrder/lists', {
+                // Mêmes paramètres que le tableau de suivi (`PosOrdersTrackerComponent.fetchOrders`) :
+                // `paginate` fait HONORER `per_page` (sans lui le serveur renvoie TOUTE la journée),
+                // `lean` échange le jeu d'eager-loads lourd contre celui dont le suivi a besoin,
+                // `composition` demande explicitement le contenu compact des lignes — il ne part
+                // donc pas vers l'historique et le rapport de ventes, qui ne l'affichent pas.
+                paginate: 1,
+                per_page: 100,
+                lean: 1,
+                composition: 1,
+                from_date: jour.from,
+                to_date: jour.to,
+                // Pas de commit Vuex : cette liste n'appartient qu'à la caisse, et le store
+                // `posOrder/lists` est déjà la liste du tableau de suivi.
+                vuex: false,
+            });
+            this._serviceFetchInFlight = p;
             const release = () => {
-                if (this._ossFetchInFlight === p) {
-                    this._ossFetchInFlight = null;
+                if (this._serviceFetchInFlight === p) {
+                    this._serviceFetchInFlight = null;
                 }
             };
             p.then(release, release);
@@ -4600,8 +4798,11 @@ export default {
         },
         async loadActiveOrdersStats() {
             try {
-                const res = await this._fetchOssOrdersOnce();
-                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
+                const res = await this._fetchServiceOrdersOnce();
+                const list = (res?.data?.data) || [];
+                // La liste de la journée de service — source unique des quatre files du tiroir
+                // de contrôle. Le tiroir ne fait AUCUNE requête : il lit ceci.
+                this.serviceOrders = Array.isArray(list) ? list : [];
                 let active = 0;
                 let ready = 0;
                 for (let i = 0; i < list.length; i++) {
@@ -4962,6 +5163,63 @@ export default {
         //   3. On success emits `confirmed` → we refresh the lists.
         //      On cancel emits `cancel` → we close + clear per-row guard.
         // Multi-tranche split deferred to V1.0.2 (backend extension required).
+        // ─────────────────────────────────────────────────────────────────────
+        // [GOAL CAISSE CONTRÔLE 2026-09-02] Le tiroir de contrôle des commandes.
+        // Il ne possède aucune action propre : il ÉMET, et la caisse exécute avec les chemins
+        // déjà éprouvés (modal d'encaissement SSOT, changement de statut idempotent, dialogue
+        // d'annulation avec motif). Aucune règle métier nouvelle n'entre par ce tiroir.
+        // ─────────────────────────────────────────────────────────────────────
+        ouvrirTiroirControle(onglet) {
+            this.controlDrawerTab = onglet || 'encaisser';
+            this.controlDrawerOpen = true;
+        },
+        /**
+         * Clic SIMPLE sur « Suivi commandes » → le tiroir, pas une nouvelle page.
+         *
+         * Laisse passer intacts : clic-milieu, Ctrl/Cmd/Maj-clic (ouvrir dans un onglet) et le
+         * clic droit. Le lien reste donc un vrai lien — c'est la condition pour que les bancs
+         * qui vérifient son `href` restent verts et que le propriétaire garde l'accès à la page
+         * complète, qui offre ce que le tiroir ne fera pas (filtres, recherche, ticket promo,
+         * sortie stock, remboursement, écran client).
+         */
+        interceptSuivi(evenement) {
+            if (!evenement) return;
+            if (evenement.button && evenement.button !== 0) return;
+            if (evenement.metaKey || evenement.ctrlKey || evenement.shiftKey || evenement.altKey) return;
+            evenement.preventDefault();
+            evenement.stopPropagation();
+            this.ouvrirTiroirControle('encaisser');
+        },
+        tiroirEncaisser(order) {
+            this.openCounterCollect(order);
+        },
+        tiroirLivrer(order) {
+            this.markDelivered(order);
+        },
+        tiroirAnnuler(order) {
+            this.openCancelKioskCashDialog(order);
+        },
+        tiroirRafraichir() {
+            this.loadActiveOrdersStats();
+            this.loadReadyOrders();
+            this.loadKioskCashOrders();
+        },
+        tiroirOuvrirSuiviComplet() {
+            this.controlDrawerOpen = false;
+            try {
+                this.$router.push({ name: 'admin.pos-orders.tracker' });
+            } catch (_) {
+                window.location.assign('/admin/pos-orders-tracker');
+            }
+        },
+        tiroirOuvrirEncaissement() {
+            this.controlDrawerOpen = false;
+            try {
+                this.$router.push({ name: 'admin.encaissement' });
+            } catch (_) {
+                window.location.assign('/admin/encaissement');
+            }
+        },
         openCounterCollect(order) {
             if (!order || order._collecting || order._canceling) return;
             // Flag the row immediately so a second click on the same row
@@ -5047,25 +5305,29 @@ export default {
         async loadReadyOrders() {
             this.readyOrdersLoading = true;
             try {
-                // [POSPERF-03-dup-oss 2026-07-22] Shares the single coalesced
-                // admin/oss-order fetch with loadActiveOrdersStats (same tick).
-                const res = await this._fetchOssOrdersOnce();
-                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
-                const allowedTypes = new Set([orderTypeEnum.KIOSK, orderTypeEnum.TAKEAWAY, orderTypeEnum.POS]);
+                // Partage la requête unique de la journée de service avec loadActiveOrdersStats.
+                const res = await this._fetchServiceOrdersOnce();
+                const list = (res?.data?.data) || [];
+                if (Array.isArray(list)) this.serviceOrders = list;
+                // [GOAL CAISSE CONTRÔLE 2026-09-02] Le filtre par TYPE de commande a disparu.
+                // Il existait parce que le flux amont (borne/à-emporter) n'apportait rien d'autre :
+                // le filtre côté client ne retirait donc jamais rien, mais il aurait CACHÉ les
+                // commandes comptoir et téléphone du nouveau flux. Une commande prête est une
+                // commande prête, quel que soit le canal par lequel elle est entrée. Le
+                // remboursement passerelle, lui, reste exclu : il garde souvent son statut cuisine.
                 this.readyOrders = list
                     .filter((o) => {
                         const s = parseInt(o.status ?? o.order_status ?? 0, 10);
-                        const t = parseInt(o.order_type ?? 0, 10);
-                        return s === orderStatusEnum.PREPARED && allowedTypes.has(t);
+                        const paiement = parseInt(o.payment_status ?? 0, 10);
+                        return s === orderStatusEnum.PREPARED && paiement !== paymentStatusEnum.REFUNDED;
                     })
-                    // Oldest first — cashier should clear orders that have
-                    // been ready the longest. Mirrors kioskCashOrders sort.
+                    // Plus ancienne d'abord — le caissier écoule d'abord ce qui attend depuis
+                    // le plus longtemps. Même tri que kioskCashOrders.
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
-                // the always-rendered shortcut panel can show "Mis à jour
-                // il y a Xs". When the list is empty we still tell the
-                // cashier polling is alive — distinguishes a calm period
-                // from a WebSocket/poll outage.
+                // [Q10 P-OWNER 2026-05-21] Estampille du rafraîchissement RÉUSSI : le panneau
+                // toujours rendu peut dire « Mis à jour il y a Xs ». Liste vide + horodatage frais
+                // = période calme ; horodatage qui vieillit = poll mort. Un échec ne réestampille
+                // pas, et c'est exactement ce qu'il faut pour que la panne remonte.
                 this.lastReadyRefresh = Date.now();
             } catch (_) {
                 this.readyOrders = [];
@@ -7719,5 +7981,78 @@ export default {
 .pos-kiosk-cash-cancel-btn--danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* =============================================================================
+   [GOAL CAISSE CONTRÔLE 2026-09-02] Bouton « Commandes » + compteur cuisine du ticket
+   -----------------------------------------------------------------------------
+   Aucune couleur en dur : uniquement des jetons `--pos-v5-*`. À noter pour qui
+   éditera les panneaux raccourcis plus bas : ils peignent avec `--pos-v5-surface`,
+   `--pos-v5-text` et `--pos-v5-surface-2`, TROIS jetons qui n'existent nulle part
+   dans `resources/` — ils tombent donc toujours sur leurs valeurs de repli, qui ne
+   sont pas celles de la charte. Ce bloc-ci n'hérite pas de cette dérive.
+   ============================================================================= */
+
+/* Deux pastilles côte à côte dans le slot `badge` du bouton — jamais un total :
+   « 3 à encaisser » et « 2 prêtes » ne sont pas de même nature, et « 5 » ne
+   correspondrait à aucune action. */
+.pos-ctrl-pastille {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 5px;
+    height: 18px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+}
+.pos-ctrl-pastille + .pos-ctrl-pastille { margin-left: 3px; }
+.pos-ctrl-pastille--argent {
+    background: var(--pos-v5-brand-red, #F4501E);
+    color: #fff;
+}
+.pos-ctrl-pastille--pretes {
+    background: var(--pos-v5-success, #1B8A3A);
+    color: #fff;
+}
+
+/* L'enveloppe qui intercepte le clic simple sur « Suivi commandes ». Elle ne doit
+   rien changer à la mise en page du cluster : `display: contents` la rend
+   transparente pour le flex parent. */
+.pos-op-suivi-intercept {
+    display: contents;
+}
+
+/* Le compteur cuisine du ticket. `flex-shrink: 0` et placé dans l'en-tête NON
+   défilant : à 720 px de haut, l'en-tête du panier chargé cache déjà 54 % de
+   lui-même — ajouter la ligne la plus utile de l'écran dans la partie qu'on ne
+   voit jamais aurait été un progrès imaginaire. */
+.pos-v5-cart__cuisine {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 32px;
+    margin-top: 6px;
+    padding: 0 8px;
+    text-align: left;
+    border: 0;
+    border-left: 3px solid var(--pos-v5-info, #2563EB);
+    border-radius: 0 var(--pos-v5-radius-md, 12px) var(--pos-v5-radius-md, 12px) 0;
+    background: var(--pos-v5-info-soft, #EFF6FF);
+    color: var(--pos-v5-info, #2563EB);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+/* Jamais masqué à zéro : une ligne absente est ambiguë (rien en cuisine, ou bloc
+   cassé ?). Elle passe en sourdine, elle ne disparaît pas. */
+.pos-v5-cart__cuisine--libre {
+    border-left-color: var(--pos-v5-border-strong, #D9C9B8);
+    background: var(--pos-v5-bg-subtle, #F7F3EC);
+    color: var(--pos-v5-ink-muted, #8A8278);
 }
 </style>
