@@ -107,7 +107,24 @@ Le prototype `mobile/` n'est pas modifié (hors chemin store).
   fonctionnalité factice. À arbitrer avec le propriétaire : Apple sanctionne les *fonctions*
   annoncées non livrées, pas une note de pied de page — mais le plus sûr reste de la retirer.
 
-### E — Vérification et livraison — [ ]
+### E — Vérification et livraison — [x] SITE DÉPLOYÉ le 2026-09-02
+
+**Déployé :** site `9f99754` poussé sur `origin/main` → Vercel. Contenu SERVI vérifié
+(`api.js?v=20260902mail2`, `routeAbsente` présent, onglets absents), puis fumée sur la
+production réelle : e-mail seul → 405 → dépliage prénom + nom + téléphone, **aucune erreur
+affichée au client, aucune erreur JS**. La bascule de compatibilité est donc active en
+production, et le nouveau parcours s'allumera seul le jour où le backend suivra.
+
+**Non déployé, et pourquoi :**
+- **Backend** — `ssh root@vps-418872ac.vps.ovh.net` → `Permission denied (publickey,password)`
+  (revérifié ce jour). Le code est sur origine, branche neuve
+  `app-mobile-email-dabord-2026-09-02` : la branche partagée était 207 commits en retard, et
+  fusionner ça dans un arbre dont l'index porte des centaines de fichiers d'autres sessions
+  n'est pas une opération à faire en douce sous couvert de « deploy ».
+- **Application iOS/Android** — exige Xcode et un compte développeur (§3 de PUBLICATION.md).
+  Les paquets `app/www`, `app/ios`, `app/android` portent déjà le nouveau site.
+
+### E bis — Vérifications techniques — [x]
 - PHPUnit ciblé + `EmailOtpSignupTest` (18) inchangé vert.
 - e2e site : `nav-smoke.local.js`, suites `*.regression.js` touchées, nouveaux specs.
 - `compile-jsx.mjs --check`, `check-asset-versions.mjs --check`, `build-app-www.mjs --check`.
