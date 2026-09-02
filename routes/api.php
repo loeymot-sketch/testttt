@@ -216,6 +216,11 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // d'abus (spam email). Verify réutilise /verify ci-dessous, inchangé.
         Route::post('/email-otp', [GuestSignupController::class, 'emailOtp'])
             ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
+        // [APP MOBILE 2026-09-02 — GOAL_APP_MOBILE_APPSTORE §A1] Connexion « e-mail d'abord » :
+        // {email} → connu (code envoyé à l'e-mail du compte) / inconnu ; {email, first_name, phone}
+        // → inscription. Même débit que les autres envois de code (endpoint public = vecteur d'abus).
+        Route::post('/email-login', [GuestSignupController::class, 'emailLogin'])
+            ->middleware('throttle:otp-send');
         // [GAP-20-2] OTP verify: 3 per 5 minutes — prevents brute-force of 4-digit codes.
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
@@ -945,6 +950,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
             Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
+            // [GOAL DASHBOARD-PILOTABLE 2026-09-02] Ce que la caisse lit vraiment (version publiée,
+            // couverture produit par produit) + resynchronisation des produits avec le wizard publié.
+            Route::get('/categories/{category}/runtime', [ComposerProfileController::class, 'runtimeForCategory']);
+            Route::post('/categories/{category}/materialize', [ComposerProfileController::class, 'materializeCategory']);
+            // Bibliothèque de pages de wizard réutilisables (choix + prix), copies privées par catégorie.
+            Route::get('/wizard-pages', [\App\Http\Controllers\Admin\WizardPageController::class, 'index']);
+            Route::post('/wizard-pages', [\App\Http\Controllers\Admin\WizardPageController::class, 'store']);
+            Route::get('/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'show']);
+            Route::match(['put', 'patch'], '/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'update']);
+            Route::delete('/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'destroy']);
+            Route::post('/wizard-pages/{wizardPage}/duplicate-for-category/{category}', [\App\Http\Controllers\Admin\WizardPageController::class, 'duplicateForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);

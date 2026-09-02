@@ -155,4 +155,19 @@ return [
         'decay_minutes' => max(1, (int) env('LOGIN_LOCKOUT_DECAY_MINUTES', 10)),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Compte de revue App Store / Google Play
+    |--------------------------------------------------------------------------
+    | [APP MOBILE 2026-09-02 — GOAL_APP_MOBILE_APPSTORE §A3] Le réviseur Apple doit
+    | pouvoir se connecter, et il ne peut pas lire nos e-mails. Pour CE SEUL e-mail
+    | (un compte invité sans valeur, créé pour la revue), le code de connexion est
+    | FIXE et n'est pas envoyé. Vide par défaut = fonctionnalité éteinte. Ne
+    | s'applique qu'aux comptes invités (jamais staff) — GuestSignupController::emailLogin.
+    */
+    'app_review' => [
+        'email' => env('APP_REVIEW_EMAIL', ''),
+        'otp'   => env('APP_REVIEW_OTP', ''),
+    ],
+
 ];
