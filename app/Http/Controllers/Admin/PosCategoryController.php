@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use Exception;
 use App\Models\ItemCategory;
+use App\Services\ItemCategoryService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\PaginateRequest;
 use App\Services\Menu\PosMenuProjection;
 use Illuminate\Support\Facades\DB;
@@ -122,6 +124,27 @@ class PosCategoryController extends AdminController
             $itemCategories = $itemCategories->orderBy($orderColumn, $orderType)->$method(
                 $methodValue
             );
+
+            // [CHEF 2026-09-02] Les rayons laissés par les campagnes (AUDIT-, E2E…,
+            // ZZ-TEST-, faker latin) atteignaient le CAISSIER : mesuré au navigateur,
+            // la bande de rayons servait « E2E_PLAYWRIGHT_STUDIO_CATEGORY » entre
+            // Burgers et Sandwichs. Le garde-fou existait mais n'était appliqué qu'au
+            // catalogue admin ; ce contrôleur bâtit sa propre requête. Deux rayons
+            // pollués sur trois étaient masqués PAR ACCIDENT (whereHas('items') : ils
+            // n'avaient aucun article), ce qui rendait le défaut discret.
+            //
+            // On réutilise le garde-fou existant au lieu d'en écrire un second : deux
+            // listes de motifs finissent toujours par diverger. Rien n'est supprimé en
+            // base — c'est un masque de lecture. Posé après la requête, donc commun
+            // aux deux voies (caissier avec branche courante / vue configuration).
+            $sansPollution = static fn (ItemCategory $cat): bool
+                => ! ItemCategoryService::isAuditPollutionName($cat->name);
+
+            if ($itemCategories instanceof LengthAwarePaginator) {
+                $itemCategories->setCollection($itemCategories->getCollection()->filter($sansPollution)->values());
+            } else {
+                $itemCategories = $itemCategories->filter($sansPollution)->values();
+            }
 
             $itemCategoryArray = [];
 
