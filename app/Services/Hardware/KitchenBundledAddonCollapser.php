@@ -274,7 +274,12 @@ class KitchenBundledAddonCollapser
 
         if ($snapPorte) {
             $snap['extras'] = $fusionnes;
-            $parent->composition_snapshot = $snap;
+            // Mutation EN MÉMOIRE, sur un clone, jamais persistée. `$parent` arrive toujours
+            // par `$clone ?? clone $parent` (voir collapse()), et ce service n'écrit rien en
+            // base : aucun ->save(), ->update(), DB:: ni ::query(). L'instantané fiscal de la
+            // commande n'est donc pas touché — on ne fabrique ici que la vue du ticket cuisine.
+            // NF525 : `composition_snapshot` reste figé à la création (CLAUDE.md §8).
+            $parent->composition_snapshot = $snap; // [SnapshotSSOT:clone-only]
         } else {
             $parent->item_extras = json_encode($fusionnes);
         }

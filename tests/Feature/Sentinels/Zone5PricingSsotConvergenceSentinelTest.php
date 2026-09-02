@@ -230,10 +230,34 @@ class Zone5PricingSsotConvergenceSentinelTest extends TestCase
                 continue;
             }
             foreach ($forbiddenRegex as $rx) {
-                if (preg_match_all($rx, $contents, $m)) {
-                    foreach ($m[0] as $hit) {
+                if (preg_match_all($rx, $contents, $m, PREG_OFFSET_CAPTURE)) {
+                    foreach ($m[0] as [$hit, $offset]) {
+                        // [2026-09-02] Annotation explicite, même convention que
+                        // WithoutGlobalScopesAuditSentinelTest (`// [GlobalScopes:keep-both]`).
+                        // Une mutation EN MÉMOIRE sur un clone jamais persisté ne touche pas
+                        // l'instantané fiscal ; il faut pouvoir le dire, sinon la seule issue
+                        // est de désarmer la sentinelle. Toute écriture NON annotée reste
+                        // rouge — c'est là qu'est la garde.
+                        $debutLigne = strrpos(substr($contents, 0, $offset), "\n");
+                        $finLigne = strpos($contents, "\n", $offset);
+                        $ligne = substr(
+                            $contents,
+                            $debutLigne === false ? 0 : $debutLigne + 1,
+                            ($finLigne === false ? strlen($contents) : $finLigne) - ($debutLigne === false ? 0 : $debutLigne + 1)
+                        );
+                        if (str_contains($ligne, '[SnapshotSSOT:clone-only]')) {
+                            continue;
+                        }
                         // Skip false positive: comments / docstrings mentioning UPDATE
-                        if (preg_match('#^\s*[*/#]#', $hit)) continue;
+                        //
+                        // [2026-09-02] Le motif était `'#^\s*[*/#]#'` : délimiteur `#` ET `#`
+                        // dans la classe de caractères. PHP coupe donc le motif à ce `#` et lit
+                        // `]#` comme modificateurs → « preg_match(): Unknown modifier ']' ».
+                        // Cette sentinelle garde un invariant NF525 (`composition_snapshot` figé
+                        // à la création d'une commande, JAMAIS réécrit — CLAUDE.md §8) : elle
+                        // LEVAIT une exception au lieu de contrôler quoi que ce soit. Un
+                        // garde-fou qui plante ne garde rien. Délimiteur changé pour `~`.
+                        if (preg_match('~^\s*[*/#]~', $hit)) continue;
                         $offenders[] = [
                             'file' => str_replace($appPath . DIRECTORY_SEPARATOR, '', $file->getPathname()),
                             'pattern' => $rx,
