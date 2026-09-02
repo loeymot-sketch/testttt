@@ -36,7 +36,7 @@ Le prototype `mobile/` n'est pas modifié (hors chemin store).
 
 ## 2. Vagues
 
-### A — Backend : contrat « e-mail d'abord » (testttt) — [ ]
+### A — Backend : contrat « e-mail d'abord » (testttt) — [x] PROUVÉ (testttt `8fc877521`, EmailLoginFlowTest 11/11)
 - A1 `POST /api/auth/guest-signup/email-login` (throttle `otp-send`) :
   - `{email}` seul → compte invité connu : code généré sur le téléphone du compte (ou clé
     `email:<adresse>` si le compte n'a pas de numéro), envoyé à **l'e-mail du compte** ;
@@ -47,15 +47,21 @@ Le prototype `mobile/` n'est pas modifié (hors chemin store).
     canal conservé), `last_name` **facultatif** (le propriétaire ne demande plus que le prénom).
 - A2 `POST /verify` accepte `email` à la place de `phone` : le serveur résout le compte, jamais
   le client. Réponse enrichie de `phone_required` (compte social sans numéro).
-- A3 Compte de revue App Store : `APP_REVIEW_EMAIL` + `APP_REVIEW_OTP` (env, vide par défaut) →
-  code fixe pour **ce seul** e-mail, aucun envoi. Documenté dans `PUBLICATION.md`.
+- A3 ~~Compte de revue App Store à code fixe~~ — **RETIRÉ le 2026-09-02, contradiction assumée.**
+  Je l'avais implémenté (`APP_REVIEW_EMAIL` / `APP_REVIEW_OTP`) ; `app/PUBLICATION.md §8` du dépôt
+  du site tranchait déjà l'inverse : « un code fixe pour une adresse connue est une porte qu'on
+  oublie de refermer ». Le garde-fou habituel du projet (refus de démarrer en production) ne peut
+  pas s'appliquer, puisque Apple examine l'application **contre la production**. Retiré, et
+  verrouillé par la sentinelle `test_aucun_code_fixe_de_revue_app_store` (rouge si quelqu'un la
+  remet — vérifié en restaurant le commit `8fc877521`). L'examinateur reçoit son code dans une
+  boîte de démonstration dédiée, à créer par le propriétaire (PUBLICATION.md §8).
 - A4 `dev_code` renvoyé en `local` uniquement (parité `otp()`), pour le banc E2E.
-- A5 Tests PHPUnit `EmailLoginFlowTest` : connu → mail au compte + token par e-mail ;
+- A5 Tests PHPUnit `EmailLoginFlowTest` (10 verts) : connu → mail au compte + token par e-mail ;
   inconnu → `known:false` ; inscription prénom+téléphone → compte « Prénom » + e-mail attaché ;
   e-mail d'un compte non-invité → jamais de token ; compte sans numéro → clé synthétique, pas de
   doublon ; code de revue hors `local` désactivé sans env.
 
-### B — Site/app : écran compte « e-mail d'abord » — [ ]
+### B — Site/app : écran compte « e-mail d'abord » — [x] PROUVÉ (site `a7e9c50`, 24/24 + 7/7 + 17/17, captures lues)
 - B1 `api.js` : `emailLogin(email)`, `emailSignup({email, first_name, phone})`, `guestVerify`
   par e-mail.
 - B2 `account-v2.jsx` : **un seul écran** : e-mail → (connu) code | (inconnu) dépliage prénom +
@@ -66,7 +72,7 @@ Le prototype `mobile/` n'est pas modifié (hors chemin store).
   `account-*` remplacés (ils verrouillaient les onglets).
 - B5 Captures 390×844 lues : écran e-mail, dépliage, code, succès, tunnel.
 
-### C — Wizards → panier → paiement → points — [ ]
+### C — Wizards → panier → paiement → points — [ ] EN COURS
 - C1 Audit « à la place du client » des wizards (`wizard-v2.jsx`), du tunnel (`funnel.jsx`),
   de la fidélité (`screens.jsx WebLoyalty`, `loyalty-v2.jsx`) : liste défauts prouvés
   (file:line + capture), triés P0/P1/P2.
