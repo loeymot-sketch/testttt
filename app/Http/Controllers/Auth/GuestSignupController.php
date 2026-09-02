@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\Activity;
 use App\Enums\Ask;
+use App\Http\Requests\GuestEmailLoginRequest;
 use App\Http\Requests\GuestSignupEmailOtpRequest;
 use App\Http\Requests\GuestSignupPhoneRequest;
+use Illuminate\Http\Request;
 use App\Mail\SignupOtpMail;
 use App\Http\Resources\MenuResource;
 use App\Http\Resources\PermissionResource;
@@ -112,6 +114,188 @@ class GuestSignupController extends Controller
                 $request->merge(['code' => '+33']);
             }
 
+            $this->envoyerCodeParEmail($request);
+
+            $payload = ['status' => true, 'message' => trans('all.message.check_your_email_for_code')];
+            $this->ajouterCodeDev($payload, (string) $request->post('phone'));
+
+            return response($payload);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [APP MOBILE 2026-09-02 — GOAL_APP_MOBILE_APPSTORE §A1] Connexion « e-mail d'abord ».
+     *
+     * Demande propriétaire : « s'il a un compte, juste un mail, il reçoit le code ; s'il n'a
+     * pas de compte, sans changer de page, on lui demande le prénom et le téléphone ». UN seul
+     * écran côté client, deux formes ici :
+     *   - {email}                     → compte invité connu : code posé sur le téléphone du compte
+     *                                    (clé fidélité) — ou sur `email:<adresse>` si le compte n'a
+     *                                    pas de numéro (connexion Apple/Google) —, envoyé à l'e-mail
+     *                                    DU COMPTE, jamais à une adresse fournie. Réponse known:true.
+     *                                    Inconnu : known:false, rien n'est envoyé, rien n'est créé.
+     *   - {email, first_name, phone}  → inscription : MÊME moteur que email-otp (garde
+     *                                    anti-usurpation de canal conservée, cf. envoyerCodeParEmail).
+     *
+     * Choix ASSUMÉ (propriétaire) : `known` révèle qu'un e-mail a un compte — c'est ce qui permet
+     * de ne rien demander d'autre à celui qui en a un. Mitigation : débit `otp-send` (5/min par
+     * e-mail + 20/min global) ; un compte non-invité (staff) est TOUJOURS « inconnu » ici.
+     *
+     * Compte de revue App Store (§A3) : APP_REVIEW_EMAIL + APP_REVIEW_OTP (config auth.app_review,
+     * vides par défaut) → code FIXE pour CE seul e-mail, aucun envoi. Le réviseur Apple ne peut pas
+     * lire nos e-mails ; sans cela l'application est refusée faute de pouvoir se connecter.
+     */
+    public function emailLogin(GuestEmailLoginRequest $request
+    ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
+        try {
+            $email  = mb_strtolower(trim((string) $request->post('email')));
+            $compte = $this->compteInviteParEmail($email);
+
+            if ($compte) {
+                $cle = self::cleOtpDuCompte($compte, $email);
+                $this->poser($request, ['phone' => $cle, 'code' => filled($compte->country_code) ? $compte->country_code : '+33']);
+                $this->otpManagerService->otp($request, dispatchSms: false);
+
+                $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
+                $codeRevue  = $this->codeDeRevuePour($email);
+                if ($codeRevue !== null) {
+                    // Revue App Store : code fixe, jamais envoyé — la ligne otps garde son expiry.
+                    DB::table('otps')->where('phone', $cle)->update(['token' => $codeRevue]);
+                } else {
+                    $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
+                    if (! blank($token) && filled($compte->email)) {
+                        Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                    }
+                }
+
+                $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
+                $this->ajouterCodeDev($payload, $cle);
+
+                return response($payload);
+            }
+
+            // Inconnu, sans identité : l'écran client déplie prénom + téléphone. Rien n'est envoyé.
+            if (blank($request->post('phone')) || blank($request->post('first_name'))) {
+                return response([
+                    'status'  => true,
+                    'known'   => false,
+                    'sent'    => false,
+                    'message' => 'Aucun compte avec cet e-mail. Indique ton prénom et ton numéro pour en créer un.',
+                ]);
+            }
+
+            // Inscription : moteur email-otp (le téléphone reste la clé fidélité, l'e-mail le canal).
+            if (blank($request->post('code'))) {
+                $this->poser($request, ['code' => '+33']);
+            }
+            $this->envoyerCodeParEmail($request);
+
+            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code')];
+            $this->ajouterCodeDev($payload, (string) $request->post('phone'));
+
+            return response($payload);
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Pose des valeurs SUR LES DEUX sources d'entrée d'une FormRequest JSON.
+     *
+     * Piège Laravel vérifié en test : pour une requête JSON, `FormRequest::createFrom()`
+     * COPIE le corps dans le sac `request` (lu par `->post()`) et garde le sac `json`
+     * (lu par `->input()` / `$request->phone`) à part. `merge()` n'écrit QUE dans le sac
+     * `json` : `OtpManagerService` lit `->post('phone')` et ne voyait donc jamais la clé
+     * posée ici — le code était créé sur une clé et vérifié sur une autre.
+     */
+    private function poser(Request $request, array $valeurs): void
+    {
+        $request->merge($valeurs);
+        foreach ($valeurs as $cle => $valeur) {
+            $request->request->set($cle, $valeur);
+        }
+    }
+
+    /** Compte INVITÉ (jamais staff) portant cet e-mail, y compris soft-deleted (restauré au verify). */
+    private function compteInviteParEmail(string $email): ?User
+    {
+        if ($email === '') {
+            return null;
+        }
+
+        return User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->withTrashed()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where('is_guest', Ask::YES)
+            ->orderBy('deleted_at') // un compte vivant prime sur un compte supprimé portant le même e-mail
+            ->first();
+    }
+
+    /**
+     * Clé otps d'un compte SANS numéro (connexion Apple/Google, téléphone pas encore donné).
+     * Ne passe jamais ValidPhone ni ne devient un téléphone de compte : register() reçoit le
+     * compte déjà résolu et ne crée rien à partir de cette clé.
+     */
+    public static function cleSansNumero(string $email): string
+    {
+        return 'email:'.mb_strtolower(trim($email));
+    }
+
+    /**
+     * Clé otps d'un compte connu : son numéro s'il est JOIGNABLE, sinon la clé synthétique.
+     * Vérifié en test : un compte créé sans numéro (connexion Apple/Google) ne porte pas `null`
+     * mais un jalon `PENDING_CREATE_…` (colonne non nulle) — `filled()` le prendrait pour un
+     * numéro. `PhoneDisplay::safe()` est le seul juge de « joignable », comme pour la commande.
+     */
+    private static function cleOtpDuCompte(User $compte, string $email): string
+    {
+        return \App\Support\PhoneDisplay::safe($compte->phone) !== null
+            ? (string) $compte->phone
+            : self::cleSansNumero($email);
+    }
+
+    /** Code fixe du compte de revue App Store, ou null si non configuré / autre e-mail. */
+    private function codeDeRevuePour(string $email): ?string
+    {
+        $emailRevue = mb_strtolower(trim((string) config('auth.app_review.email', '')));
+        $code       = trim((string) config('auth.app_review.otp', ''));
+        if ($emailRevue === '' || $code === '' || $emailRevue !== $email) {
+            return null;
+        }
+
+        return $code;
+    }
+
+    /**
+     * [W16 DEV-OTP · même garde que otp()] Renvoie le code dans `dev_code` en environnement
+     * `local` UNIQUEMENT (machine développeur, banc E2E) — jamais sur un box déployé.
+     */
+    private function ajouterCodeDev(array &$payload, string $cle): void
+    {
+        if (! app()->environment('local')) {
+            return;
+        }
+        try {
+            $devCode = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
+            if (! blank($devCode)) {
+                $payload['dev_code'] = (string) $devCode;
+            }
+        } catch (\Throwable $e) {
+            // Best-effort — ne doit JAMAIS casser l'envoi.
+        }
+    }
+
+    /**
+     * Moteur commun email-otp / email-login (inscription) : génère le code (ligne otps,
+     * phone = clé), décide OÙ il part (garde anti-usurpation de canal), l'envoie par e-mail
+     * et mémorise l'identité saisie pour le verify.
+     *
+     * @throws Exception
+     */
+    private function envoyerCodeParEmail(Request $request): void
+    {
             $this->otpManagerService->otp($request, dispatchSms: false);
 
             // otp() ne retourne pas le code — relecture de la ligne fraîche (pattern dev_code W16).
@@ -173,16 +357,29 @@ class GuestSignupController extends Controller
                     Mail::to($deliverTo)->send(new SignupOtpMail((string) $token, $ttlMinutes));
                 }
             }
-
-            return response(['status' => true, 'message' => trans('all.message.check_your_email_for_code')]);
-        } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
-        }
     }
 
     public function verify(VerifyPhoneRequest $request)
     {
         try {
+            // [APP MOBILE 2026-09-02 · e-mail d'abord] Vérification PAR E-MAIL : le client ne
+            // connaît pas le téléphone du compte (il ne sort jamais vers l'appelant). Le serveur
+            // résout le compte invité, pose la clé otps (téléphone du compte, ou `email:<adresse>`
+            // pour un compte sans numéro) puis vérifie le code exactement comme par téléphone.
+            // Compte introuvable (ou non-invité) ⇒ 422 générique, même texte qu'un code faux.
+            $compteConnu = null;
+            if (blank($request->post('phone')) && filled($request->post('email'))) {
+                $email       = mb_strtolower(trim((string) $request->post('email')));
+                $compteConnu = $this->compteInviteParEmail($email);
+                if (! $compteConnu) {
+                    return response(['status' => false, 'message' => trans('all.message.code_is_invalid')], 422);
+                }
+                $this->poser($request, [
+                    'phone' => self::cleOtpDuCompte($compteConnu, $email),
+                    'code'  => filled($compteConnu->country_code) ? $compteConnu->country_code : '+33',
+                ]);
+            }
+
             // [P0 OTP-BYPASS 2026-07-20] `site_phone_verification` ne pilote QUE l'envoi SMS
             // (dans OtpManagerService::otp()) — JAMAIS le fait de VÉRIFIER le code. L'ancienne
             // branche `if (site_phone_verification == DISABLE)` supprimait les otps du téléphone
@@ -204,7 +401,8 @@ class GuestSignupController extends Controller
                         'email' => $request->post('email'),
                         'first_name' => $request->post('first_name'),
                         'last_name' => $request->post('last_name'),
-                    ]
+                    ],
+                    $compteConnu
                 );
             }
         } catch (Exception $exception) {
@@ -217,7 +415,7 @@ class GuestSignupController extends Controller
         ], 422);
     }
 
-    private function register($array) : JsonResponse
+    private function register($array, ?User $compteConnu = null) : JsonResponse
     {
 
         if (Settings::group('site')->get('site_guest_login') == Activity::DISABLE) {
@@ -227,7 +425,10 @@ class GuestSignupController extends Controller
         // [GAP-32-3] Pre-auth lookup: find ALL accounts with this phone, including
         // soft-deleted users and users from other branches (BranchScope).
         // Without this, a deleted or out-of-scope account causes a duplicate to be created.
-        $user = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('phone', $array['phone'])->first();
+        // [APP MOBILE 2026-09-02] Vérification par e-mail : le compte est DÉJÀ résolu par verify()
+        // — on ne repasse pas par le téléphone (qui peut être la clé synthétique `email:<adresse>`,
+        // laquelle ne doit JAMAIS créer un compte).
+        $user = $compteConnu ?: User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('phone', $array['phone'])->first();
 
         // [SECURITY] If the phone matches a non-guest account (staff, admin, manager),
         // refuse to issue a guest token. OTP alone must not grant access to privileged accounts.
@@ -370,6 +571,10 @@ class GuestSignupController extends Controller
                 'message'           => trans('all.message.login_success'),
                 'token'             => $this->token,
                 'branch_id'         => (int)$user->branch_id,
+                // [APP MOBILE 2026-09-02] Parité avec la connexion Apple/Google : un compte sans
+                // numéro joignable doit être invité à en donner un (le serveur refuse la commande
+                // sinon — RequireCustomerPhone). Le client affiche l'écran « Ton numéro ».
+                'phone_required'    => $user->numeroJoignable() === null,
                 'user'              => new UserResource($user),
                 'menu'              => MenuResource::collection(collect($this->menuService->menu($firstRole))),
                 'permission'        => $permission,

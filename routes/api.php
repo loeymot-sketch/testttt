@@ -219,6 +219,11 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // d'abus (spam email). Verify réutilise /verify ci-dessous, inchangé.
         Route::post('/email-otp', [GuestSignupController::class, 'emailOtp'])
             ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
+        // [APP MOBILE 2026-09-02 — GOAL_APP_MOBILE_APPSTORE §A1] Connexion « e-mail d'abord » :
+        // {email} → connu (code envoyé à l'e-mail du compte) / inconnu ; {email, first_name, phone}
+        // → inscription. Même débit que les autres envois de code (endpoint public = vecteur d'abus).
+        Route::post('/email-login', [GuestSignupController::class, 'emailLogin'])
+            ->middleware('throttle:otp-send');
         // [GAP-20-2] OTP verify: 3 per 5 minutes — prevents brute-force of 4-digit codes.
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
