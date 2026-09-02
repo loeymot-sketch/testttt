@@ -119,6 +119,9 @@ describe('ProductComposerEditorComponent zero-step guidance callout', () => {
 
         expect(text).toContain('Comment fonctionne le wizard ?');
         expect(text).toContain('Choisir un template');
-        expect(text).toContain('Ajouter une page manuellement');
+        // [2026-09-02] Le bouton n'invente plus une page vide : il ouvre la bibliothèque
+        // (reprendre une page enregistrée avec ses choix et ses prix, ou partir d'une page vide).
+        expect(text).toContain('Ajouter une page');
+        expect(text).toContain('déjà enregistrées');
     });
 });

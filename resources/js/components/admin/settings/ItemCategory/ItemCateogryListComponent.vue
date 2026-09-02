@@ -42,7 +42,13 @@
                     @end="sortCategory" :handle="'.drag-handle'">
                     <tr class="db-table-body-tr" v-for="itemCategory in categories" :key="itemCategory" :data-testid="`admin-category-row-${itemCategory.id}`">
                         <td class="db-table-body-td"><i class="lab lab-move cursor-move drag-handle"></i></td>
-                        <td class="db-table-body-td">{{ itemCategory.name }}</td>
+                        <td class="db-table-body-td">
+                            <span v-if="itemCategory.parent_id" class="text-slate-400 mr-1" aria-hidden="true">↳</span>
+                            {{ itemCategory.name }}
+                            <small v-if="itemCategory.parent_name" class="block text-slate-500">
+                                Sous-catégorie de {{ itemCategory.parent_name }}
+                            </small>
+                        </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(itemCategory.status)">
                                 {{ statusLabel(itemCategory.status) }}
@@ -148,6 +154,7 @@ export default {
                     name: "",
                     status: statusEnum.ACTIVE,
                     description: "",
+                    parent_id: null,
                     wizard_template: 'simple',
                     has_menu: 0,
                     default_menu_kiosk: 0,
@@ -215,6 +222,7 @@ export default {
             this.props.form = {
                 name: itemCategory.name,
                 status: itemCategory.status,
+                parent_id: itemCategory.parent_id ?? null,
                 description: itemCategory.description || '',
                 wizard_template: itemCategory.wizard_template || 'simple',
                 has_menu: yn(itemCategory.has_menu),

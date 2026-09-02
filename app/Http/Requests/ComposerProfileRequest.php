@@ -19,6 +19,7 @@ class ComposerProfileRequest extends FormRequest
             'branch_id_scope' => ['nullable', 'integer', 'exists:branches,id'],
             'price' => ['prohibited'],
             'steps' => ['nullable', 'array'],
+            'steps.*.wizard_page_id' => ['nullable', 'integer', 'exists:wizard_pages,id'],
             'steps.*.step_key' => ['required_with:steps', 'string', 'max:120'],
             'steps.*.label' => ['required_with:steps', 'string', 'max:191'],
             'steps.*.source_type' => ['required_with:steps', 'string', 'in:item_attribute,extra_group,addon'],

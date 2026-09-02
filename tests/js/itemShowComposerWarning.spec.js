@@ -94,7 +94,10 @@ describe('ComposerProfileWarningBadge', () => {
         expect(wrapper.text()).toContain(localeFr.warning.catalog.channels_null.title);
     });
 
-    it('clic Publier appelle vue-router vers la page Composeur admin', async () => {
+    // [2026-09-02] Le bouton visait `/admin/items/show/{id}/composer`, une route ABSENTE du routeur
+    // (`itemRoutes.js` déclare `/admin/items/:id/composer`). Le clic ne menait nulle part, et rien
+    // ne l'attrapait : ce test figeait la faute au lieu de la voir.
+    it('clic Publier appelle vue-router vers la vraie route Composeur produit', async () => {
         const warnings = [
             {
                 code: 'composer_unpublished',
@@ -107,6 +110,24 @@ describe('ComposerProfileWarningBadge', () => {
         await wrapper.get('[data-testid="warning-action-composer_unpublished"]').trigger('click');
         await flushPromises();
         expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1);
-        expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/admin/items/show/42/composer');
+        expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/admin/items/42/composer');
+    });
+
+    // Le wizard se gère PAR CATÉGORIE : quand l'avertissement en désigne une, c'est là qu'il faut
+    // atterrir — c'est le seul écran où « Synchroniser les produits » existe.
+    it('un avertissement qui designe une categorie ouvre le wizard de la categorie', async () => {
+        const warnings = [
+            {
+                code: 'composer_item_not_synced',
+                severity: 'warning',
+                context: { category_id: 5, category_profile_id: 38 },
+            },
+        ];
+        const wrapper = mountBadge(warnings);
+        await flushPromises();
+        await wrapper.get('[data-testid="warning-action-composer_item_not_synced"]').trigger('click');
+        await flushPromises();
+        expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1);
+        expect(wrapper.vm.$router.push).toHaveBeenCalledWith('/admin/categories/5/composer');
     });
 });

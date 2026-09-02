@@ -83,7 +83,14 @@ class EntityExportNoTruncationTest extends TestCase
     /** FIX — ItemCategoryExport must contain every category, not 10. */
     public function test_item_category_export_returns_all_rows(): void
     {
-        ItemCategory::factory()->count(15)->create();
+        // [2026-09-02] Ce banc était INSTABLE (12, 13 ou 14 sur 15 selon le tirage) et ne mesurait
+        // plus ce qu'il annonce : `ItemCategoryService::constrainVisibleCatalog()` (Wave C,
+        // 2026-08-29) masque les catégories dont le nom est un mot latin de faker — que la factory
+        // tire au hasard. On nomme donc les catégories nous-mêmes : le banc redevient une mesure de
+        // la PAGINATION, son seul objet. Vérifié rouge à 10/25 en remettant `paginate=1`.
+        foreach (range(1, 25) as $i) {
+            ItemCategory::factory()->create(['name' => sprintf('Rayon export %02d', $i)]);
+        }
         $expected = ItemCategory::query()->count();
         $this->assertGreaterThan(10, $expected, 'precondition: more than one page of categories');
 

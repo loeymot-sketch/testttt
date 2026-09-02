@@ -120,6 +120,8 @@ import kioskFilter from './modules/kioskFilter';
 // item composer profile feature mais n'était pas câblé dans le store — actions
 // `show / save / publish / unpublish` désormais accessibles via `composer/...`.
 import { composer } from './modules/composer';
+// [2026-09-02] Bibliothèque de pages de wizard (listes de choix + prix réutilisables par catégorie).
+import { wizardPage } from './modules/wizardPage';
 // [PHASE-6.4] Plugin analytics : s'abonne aux mutations Vuex pertinentes
 //             et relaie vers kioskAnalytics.track() (consent-gated, anonyme).
 import kioskAnalyticsPlugin from './plugins/kioskAnalyticsPlugin';
@@ -244,6 +246,7 @@ export default new createStore({
         kioskSettings,
         kioskFilter,
         composer,
+        wizardPage,
     },
     plugins: [
         createPersistedState({

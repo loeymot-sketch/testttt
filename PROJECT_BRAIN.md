@@ -47,6 +47,109 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-02 — GOAL `CAISSE_CONTRÔLE` : la caisse pilote enfin son service, sans changer de page**
+>
+> Branche `pos/category-first-caisse-2026-06-23`. Rien de commité : tout est dans l'arbre.
+> ⚠ **Arbre partagé** : au moins deux autres sessions écrivent dans ce dépôt en même temps
+> (GOAL `DASHBOARD_PILOTABLE`, SUPERVISION `CHEF`). Leur note « le travail de la session
+> CAISSE CONTRÔLE casse 32 tests Vitest » a été **relevée pendant une édition en cours** :
+> c'était un `<transition>` à deux enfants, corrigé depuis. **Vitest complet re-passé après
+> correction : 476 fichiers, 4029 tests VERTS**, 3 ignorés préexistants.
+>
+> **Le constat mesuré** (semis réel, captures `reports/goal-caisse-controle-2026-09-02/captures-avant/`) :
+> une commande COMPTOIR prête était INVISIBLE de la caisse (son flux filtrait borne + à emporter,
+> vérifié par appel direct du service : 3 commandes rendues sur 9) ; la file « à encaisser »
+> n'affichait ni produit, ni heure, ni nom, et mettait deux commandes d'un AUTRE JOUR en tête ;
+> aucune vue « file cuisine », aucun rang, le suivi annonçant « EN PRÉPARATION 1 » pendant que
+> QUATRE commandes cuisaient ; et consulter tout cela coûtait **15 658 ms de rechargement** depuis
+> `/admin/pos-v4` (marqueur `window` disparu ⇒ document remplacé — `framenavigated` aurait menti).
+>
+> **Ce qui a été livré.** `PosControlDrawer.vue` : quatre files (💶 à encaisser · 🍳 en cuisine ·
+> 🛎️ prêtes · ✅ livrées) en recouvrement au bord droit, contenu des commandes avec composition,
+> heure, nom/téléphone quand ils existent, **rang « 2ᵉ sur 4 en cuisine »** calculé sur le miroir
+> strict de `KitchenReleaseRule` (pas sur le bucket du suivi, qui est la cause du « 1 »), et
+> **zéro requête propre**. Sur le ticket : `🍳 4 en cuisine · la plus ancienne depuis 14 min · vous
+> serez le 5ᵉ` — trois faits mesurés, aucune attente prédite. Le flux de la caisse passe de
+> `admin/oss-order` à `admin/pos-order` borné à la journée : **un GET remplace un GET**. Quatre
+> modules partagés extraits (`compositionCommande`, `canalCommande`, `fileCuisine`, `filesControle`)
+> pour que le tiroir, son badge, le ticket et le suivi ne puissent plus compter différemment.
+> Les six couleurs de canal sortent du `<style scoped>` du suivi vers `pos-v5.css`.
+>
+> **Trois défauts trouvés en chemin, non demandés, corrigés.** (a) `PosV5Button` effaçait le `href`
+> calculé par le routeur : clic du milieu, Ctrl-clic, « copier l'adresse » et la tabulation clavier
+> étaient morts sur « Suivi commandes » ET « Encaissement ». (b) La caisse affichait
+> « 👤 Admin Le Cayenne » comme CLIENT d'une commande borne, et le nom du caissier sur une vente au
+> comptoir — corrigé en appliquant au nom la règle déjà écrite pour le téléphone. (c) Le tiroir
+> débordait de 97 px hors écran (`position: fixed` capté par un ancêtre transformé) → `Teleport`.
+>
+> **Preuves.** Vitest 4029 verts · E2E `goal-caisse-controle-2026-09-02` **11 verts** ·
+> `SimpleOrderResourceNomClientCanalTest` 6 verts · zones gelées §7 **0 fichier touché** ·
+> ouverture depuis `/admin/pos-v4` : **15 658 ms → 95 ms**, document intact.
+> `pos-request-budget.spec.js` est ROUGE (34/32 et 50/12) **mais l'était déjà** : l'arbre
+> d'avant-correctif servi sur le même port rend exactement les mêmes 34 et 50. Plafonds non touchés.
+>
+> **Ce qui reste, et appartient au propriétaire.** Le bouton rouge « À encaisser (5) » contredit
+> toujours le tiroir (« 3 💶 ») : il compte toute la période, le tiroir la journée. Son panneau était
+> volontairement gardé comme repli ; **son retrait est la suite logique**. Les deux panneaux
+> raccourcis gardent leurs lignes sans nom ni produit (mandat « 2 zones » de 2026-05-21, non
+> retouché). Rapport complet : `reports/goal-caisse-controle-2026-09-02/RAPPORT.md`.
+
+
+> **2026-09-02 — GOAL `DASHBOARD_PILOTABLE` : le Dashboard pilote enfin le parcours client**
+>
+> Branche `pos/category-first-caisse-2026-06-23`, HEAD de départ `ef0e41d01`. Rien de commité :
+> tout est dans l'arbre de travail (voir §« Restes » du plan).
+> ⚠ **Arbre partagé** : une seconde session (GOAL CAISSE CONTRÔLE) écrit dans
+> `PosComponent.vue`, `PosOrdersTrackerComponent.vue` et `fr.json` en même temps. Son travail
+> non commité casse 32 tests Vitest (voir plus bas) — ce n'est PAS cette session.
+>
+> **Le constat mesuré.** « Publié » mentait : sur les 6 catégories qui ont un wizard, **28 des 30
+> produits n'avaient aucun clone publié** — la caisse et la borne tournaient sur l'heuristique
+> legacy. L'admin voyait en plus un brouillon plus VIEUX que la version en caisse. Et une page de
+> wizard ne portait ni choix ni prix : elle pointait par NOM vers des attributs/extras à ressaisir
+> produit par produit (188 lignes « supplément » sur 20 produits, dérive mesurée).
+>
+> **Ce qui a été livré.** Une bibliothèque de pages : `wizard_pages` + `wizard_page_choices`
+> (+ `item_wizard_steps.wizard_page_id`), 12 pages construites depuis le catalogue réel par
+> `wizard-pages:bootstrap` (133 des 136 étapes existantes reliées). Une page = une question au
+> client, ses choix et leurs prix. Une catégorie prend une page telle quelle ou la personnalise
+> (copie privée). À la publication, `WizardPageMaterializer` écrit les choix sur CHAQUE produit
+> (`item_variations` / `item_extras` / `item_addons`, idempotent, jamais de suppression dure) puis
+> clone le profil : **le contrat lu par la caisse, la borne et `PricingService` ne change pas d'un
+> octet** — zones gelées à 0 ligne. Écran `/admin/wizard-pages`, « Ajouter une page » ouvre la
+> bibliothèque, en-tête « En caisse : version N » + couverture produits + « Synchroniser les
+> produits », champ « Catégorie parente ».
+>
+> **Preuves.** `composer:materialize --all` : 339 changements appliqués (306 créations pures,
+> `~0 −0` : aucun prix réécrit, aucune option retirée), 30/30 produits à jour, second passage
+> « 0 changement ». Vitest : **4042 tests, 0 échec**. PHPUnit suite complète : **5501 verts, 1 rouge**
+> — un banc préexistant instable (`EntityExportNoTruncationTest`, rouge aussi sur la version HEAD du
+> service : le masque anti-pollution Wave C cache les noms latins que sa factory tire au hasard),
+> réparé depuis en nommant les catégories, et re-prouvé mordant sur la vraie troncature (10/25).
+> Zones gelées : `git diff` vide sur les 15 fichiers. `fiscal:verify-chain --all` :
+> CHAIN OK sur 6 branches. Captures relues : 12 écrans catalogue, 0 clé i18n brute, 0 réponse ≥ 400
+> (hors 404 « pas encore de parcours », documentée dans l'instrument).
+>
+> **Deux relecteurs adverses ont trouvé 4 défauts sérieux dans MON travail**, tous reproduits puis
+> corrigés avec banc rouge-avant/vert-après : (1) `WizardPageService::update()` n'était pas partiel —
+> corriger un prix mettait `item_attribute_id` à `null` et faisait recréer un attribut neuf,
+> orphelinant les variations que la caisse lit (deux attributs fantômes réellement laissés en base
+> par mon propre parcours de test, nettoyés) ; (2) une page « formule » sans produit relié effaçait
+> TOUS les addons du rôle sans rien recréer ; (3) matérialiser puis republier n'était pas atomique ;
+> (4) « Synchroniser les produits » écrasait prix et options sans aperçu — il simule maintenant et
+> demande confirmation dès qu'une ligne serait réécrite ou retirée. Bancs :
+> `ModifierUnePageNeCasseRienTest` (6), `MaterialisationNeDetruitPasEnSilenceTest` (5).
+> Signalés et NON corrigés (décision propriétaire) : `catalog.publish` seul donne désormais le
+> pouvoir de réécrire le catalogue ; ~50 requêtes par produit et par passage ; `bindSteps` retouche
+> un profil publié sans monter de version ; le listener « produit créé » échoue en silence.
+>
+> **Ce qui reste, assumé.** Les pages `pain` (5 catégories), `garnitures`/`supplements` (Tacos) et
+> `viande` (Bols) sont reliées mais ÉTEINTES avec une source vide. Le composeur le dit désormais
+> (« Page éteinte : elle n'apparaît ni en caisse ni sur la borne ») et l'interrupteur les rallume —
+> mais les rallumer change la carte servie au client : décision du propriétaire, pas de la session.
+> Plan : `plans/GOAL_DASHBOARD_PILOTABLE_2026-09-02.md`.
+
+
 > **2026-09-02 — SUPERVISION `CHEF` : trois garde-fous au mauvais périmètre, et un P0 que j'ai retiré**
 >
 > HEAD `5f3b6a147` · branche `pos/category-first-caisse-2026-06-23`.

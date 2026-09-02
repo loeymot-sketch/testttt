@@ -53,6 +53,8 @@ class CatalogWarningService
      */
     public const CODE_COMPOSER_UNPUBLISHED            = 'composer_unpublished';
     public const CODE_COMPOSER_MISSING_FOR_COMPLEX    = 'composer_missing_for_complex_kind';
+    /** Wizard de catégorie publié mais clone produit absent/périmé : à synchroniser, pas à créer. */
+    public const CODE_COMPOSER_ITEM_NOT_SYNCED        = 'composer_item_not_synced';
     public const CODE_CHANNELS_NULL                   = 'channels_null';
     public const CODE_MISSING_PHOTO                   = 'missing_photo';
     public const CODE_BRANCH_AVAILABILITY_UNSET       = 'branch_availability_unset';
@@ -78,7 +80,18 @@ class CatalogWarningService
             ->orderByDesc('version')
             ->first();
 
-        if ($profile !== null && !$profile->is_published) {
+        // [2026-09-02] Le wizard se gère PAR CATÉGORIE : un produit dont la catégorie a un wizard
+        // publié n'a rien de « manquant » — il attend au pire son clone (synchronisation). Avant,
+        // chaque Tacos affichait un blocage rouge « Profil Composeur manquant » avec un bouton vers
+        // une route inexistante.
+        $categoryProfile = $item->item_category_id
+            ? ItemWizardProfile::query()
+                ->where('item_category_id', $item->item_category_id)
+                ->orderByDesc('id')
+                ->first()
+            : null;
+
+        if ($profile !== null && !$profile->is_published && $categoryProfile === null) {
             $warnings[] = [
                 'code'     => self::CODE_COMPOSER_UNPUBLISHED,
                 'severity' => self::SEVERITY_WARNING,
@@ -89,12 +102,33 @@ class CatalogWarningService
         $isComplexKind = $item->variations()->exists()
             || $item->extras()->exists();
 
-        if ($profile === null && $isComplexKind) {
+        if ($profile === null && $categoryProfile === null && $isComplexKind) {
             $warnings[] = [
                 'code'     => self::CODE_COMPOSER_MISSING_FOR_COMPLEX,
                 'severity' => self::SEVERITY_BLOCKER,
-                'context'  => [],
+                'context'  => ['category_id' => $item->item_category_id ? (int) $item->item_category_id : null],
             ];
+        }
+
+        if ($categoryProfile !== null && $categoryProfile->is_published) {
+            $publishedClone = ItemWizardProfile::query()
+                ->where('item_id', $item->id)
+                ->where('is_published', true)
+                ->orderByDesc('version')
+                ->first();
+            $stale = $publishedClone === null
+                || ($publishedClone->published_at && $categoryProfile->published_at
+                    && $publishedClone->published_at < $categoryProfile->published_at);
+            if ($stale) {
+                $warnings[] = [
+                    'code'     => self::CODE_COMPOSER_ITEM_NOT_SYNCED,
+                    'severity' => self::SEVERITY_WARNING,
+                    'context'  => [
+                        'category_id' => (int) $item->item_category_id,
+                        'category_profile_id' => (int) $categoryProfile->id,
+                    ],
+                ];
+            }
         }
 
         if ($item->channels === null) {

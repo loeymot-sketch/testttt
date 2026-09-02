@@ -12,7 +12,73 @@
             />
         </label>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section
+            v-if="page"
+            class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+            data-testid="composer-step-page-block"
+        >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-[#405149]">
+                        Choix de la page « {{ page.label }} »
+                        <span
+                            v-if="!page.is_library"
+                            class="ml-2 rounded-full bg-[#fff7ed] px-2 py-0.5 text-[11px] font-semibold text-[#9a3412]"
+                        >personnalisée</span>
+                    </p>
+                    <p class="text-xs text-[#66756e]">
+                        {{ page.is_library
+                            ? 'Page partagée : la modifier met à jour toutes les catégories qui l\'utilisent.'
+                            : 'Page propre à cette catégorie : vous pouvez la modifier librement.' }}
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button
+                        v-if="page.is_library"
+                        type="button"
+                        class="db-btn-outline"
+                        data-testid="composer-step-customize-page"
+                        @click="$emit('customize-page', page)"
+                    >
+                        Personnaliser pour cette catégorie
+                    </button>
+                    <button
+                        type="button"
+                        class="db-btn-outline"
+                        data-testid="composer-step-edit-page"
+                        @click="$emit('edit-page', page)"
+                    >
+                        Modifier les choix et les prix
+                    </button>
+                </div>
+            </div>
+
+            <ul v-if="pageChoices.length" class="mt-3 flex flex-wrap gap-2" data-testid="composer-step-page-choices">
+                <li
+                    v-for="choice in pageChoices"
+                    :key="choice.id"
+                    class="rounded-full border border-[#d9dfdc] bg-white px-3 py-1 text-xs text-[#405149]"
+                >
+                    {{ choice.name }}
+                    <span v-if="Number(choice.price) > 0" class="ml-1 font-semibold text-[#14743a]">
+                        +{{ euros(choice.price) }}
+                    </span>
+                </li>
+            </ul>
+            <p v-else class="mt-3 text-xs font-semibold text-[#8a6812]" data-testid="composer-step-page-empty">
+                Cette page n'a aucun choix : elle serait vide en caisse. Ajoutez-en dans « Pages de wizard ».
+            </p>
+
+            <p
+                v-if="!draft.is_active"
+                class="mt-3 rounded border border-[#e4d8b5] bg-[#fff8df] px-3 py-2 text-xs font-semibold text-[#8a6812]"
+                data-testid="composer-step-page-off"
+            >
+                Page éteinte : elle n'apparaît ni en caisse ni sur la borne. Activez-la ci-dessous, puis publiez.
+            </p>
+        </section>
+
+        <div v-if="!page" class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="block">
                 <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
                     {{ t('label.composer.source_type_human', "D'où viennent les choix ?") }}
@@ -102,10 +168,10 @@
                 </span>
                 <input
                     v-model.number="draft.min_select"
-                    type="range"
+                    type="number"
                     min="0"
-                    max="10"
-                    class="mt-3 w-full"
+                    max="20"
+                    class="db-field-control mt-3"
                     data-testid="composer-step-min-range"
                     @input="onMinChange"
                 />
@@ -134,25 +200,17 @@
                 </span>
                 <input
                     v-model.number="draft.max_select"
-                    type="range"
+                    type="number"
                     min="0"
-                    max="10"
-                    class="mt-3 w-full"
+                    max="20"
+                    class="db-field-control mt-3"
                     data-testid="composer-step-max-range"
                     @input="onMaxChange"
                 />
             </label>
         </div>
         <div class="text-xs text-neutral-600" data-testid="composer-step-min-max-summary">
-            <span v-if="Number(draft.min_select) === 0 && Number(draft.max_select) === 1">
-                {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
-            </span>
-            <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
-                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', draft.min_select) }}
-            </span>
-            <span v-else>
-                {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.').replace('{min}', draft.min_select).replace('{max}', draft.max_select) }}
-            </span>
+            {{ minMaxSummary }}
         </div>
 
         <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
@@ -249,14 +307,42 @@ export default {
                 addon: 'Addon catalogue',
             }),
         },
+        /** Page de la bibliothèque reliée à cette étape (null = étape libre, ancien mode). */
+        page: {
+            type: Object,
+            default: null,
+        },
     },
-    emits: ['update:modelValue', 'change'],
+    emits: ['update:modelValue', 'change', 'edit-page', 'customize-page'],
     data() {
         return {
             draft: this.clone(this.modelValue),
         };
     },
     computed: {
+        /**
+         * Avant : « le client doit choisir exactement 1 articles. » — le pluriel était figé et le
+         * `{n}` de la clé i18n avait déjà été interpolé à vide par `$t` avant le `.replace` appelant.
+         */
+        minMaxSummary() {
+            const min = Number(this.draft.min_select) || 0;
+            const max = Number(this.draft.max_select) || 0;
+            const noun = (n) => (n > 1 ? 'articles' : 'article');
+            if (min === 0 && max === 1) {
+                return '= Optionnel, le client peut choisir 1 article maximum.';
+            }
+            if (min === 0) {
+                return `= Optionnel, le client peut choisir jusqu'à ${max} ${noun(max)}.`;
+            }
+            if (min === max) {
+                return `= Obligatoire, le client doit choisir exactement ${min} ${noun(min)}.`;
+            }
+            return `= Le client peut choisir entre ${min} et ${max} ${noun(max)}.`;
+        },
+        pageChoices() {
+            const choices = Array.isArray(this.page?.choices) ? this.page.choices : [];
+            return choices.filter((choice) => Number(choice.status) !== 10);
+        },
         optionsForType() {
             const list = this.availableSources?.[this.draft.source_type];
             return Array.isArray(list) ? list : [];
@@ -288,6 +374,10 @@ export default {
         },
     },
     methods: {
+        /** Prix au format français : 0.9 → « 0,90 € ». */
+        euros(value) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
+        },
         t(key, fallback) {
             return typeof this.$t === 'function' ? this.$t(key) : fallback;
         },

@@ -182,12 +182,21 @@ describe('ProductComposerEditorComponent V2', () => {
         expect(axios.patch).toHaveBeenCalledWith('admin/composer/steps/101', expect.objectContaining({ position: 1 }));
     });
 
-    it('bouton Ajouter page ouvre le formulaire nouveau step', async () => {
+    // [GOAL DASHBOARD-PILOTABLE 2026-09-02] « Ajouter une page » n'invente plus une page vide sans
+    // choix : il ouvre la bibliothèque (reprendre une page enregistrée avec ses choix et ses prix,
+    // la personnaliser pour la catégorie, ou partir d'une page vide). La page vide reste possible —
+    // c'est ce que ce test prouve, en passant par le chemin réel de l'écran.
+    it('bouton Ajouter page ouvre la bibliotheque, dont la page vide cree un step neuf', async () => {
         const { wrapper } = await mountEditor();
 
         await wrapper.find('[data-testid="admin-composer-add-step"]').trigger('click');
         await flushPromises();
+        expect(wrapper.find('[data-testid="composer-page-library-modal"]').exists()).toBe(true);
 
+        await wrapper.find('[data-testid="composer-page-library-blank"]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="composer-page-library-modal"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="composer-step-form-panel"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="composer-step-label-input"]').element.value).toBe('Nouvelle page');
         expect(wrapper.vm.selectedStep.id).toBeNull();

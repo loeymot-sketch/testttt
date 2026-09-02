@@ -686,6 +686,9 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
 @import './pos-a11y.css';
 
+/* [2026-09-02] Alias des classes d'icônes `lab-*` absentes de la police du thème (boutons vides). */
+@import './foundations/lab-icon-aliases.css';
+
 /* CV1 design tokens (sémantique admin — mission CV1-CATALOG-CONVERGENCE-001) */
 @import './foundations/cv1-tokens.css';
 
