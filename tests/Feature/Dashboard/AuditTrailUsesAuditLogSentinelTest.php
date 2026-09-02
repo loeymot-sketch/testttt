@@ -254,4 +254,39 @@ class AuditTrailUsesAuditLogSentinelTest extends TestCase
         $this->assertNotNull($ligne);
         $this->assertSame('Système', $ligne['user_name']);
     }
+
+    /**
+     * [2026-09-02 · Sub 3.4 · Codex P1-I] « il y a 3 heures » ne se recoupe avec rien.
+     *
+     * Pour un contrôle, la seule question utile est « à quelle heure exactement, et sur
+     * quelle branche ». Le widget ne rendait que `diffForHumans()` : impossible de
+     * rapprocher une ligne d'audit d'un ticket, d'un Z ou d'une capture d'écran. La date
+     * exacte est désormais publiée à côté de la formulation relative.
+     */
+    public function test_chaque_ligne_porte_l_horodatage_exact_et_la_branche(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin, 'sanctum');
+
+        app(AuditLogService::class)->write([
+            'branch_id' => 0,
+            'user_id' => $admin->id,
+            'action' => 'test.horodatage',
+            'resource' => 'cash_drawer',
+            'resource_id' => 7,
+            'payload' => ['x' => 1],
+        ]);
+
+        $ligne = app(DashboardService::class)->auditTrail()->first();
+
+        $this->assertArrayHasKey('created_at', $ligne, "l'horodatage exact doit être publié");
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
+            (string) $ligne['created_at'],
+            "l'horodatage doit être une date complète, pas une formulation relative"
+        );
+        $this->assertArrayHasKey('branch_id', $ligne, 'la branche doit rester lisible sur chaque ligne');
+        $this->assertArrayHasKey('time', $ligne, 'la formulation relative reste, à côté de la date exacte');
+    }
 }

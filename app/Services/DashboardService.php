@@ -1079,6 +1079,11 @@ class DashboardService
                     'hash_prefix' => substr((string) $log->current_hash, 0, 8),
                     'payload_keys' => array_slice(array_keys($payload), 0, 5),
                     'time' => $log->created_at?->diffForHumans(),
+                    // [2026-09-02 · Sub 3.4 · Codex P1-I] « il y a 3 heures » ne se recoupe
+                    // avec rien. Pour un contrôle, la seule question utile est « à quelle
+                    // heure exactement » — sans la date exacte, impossible de rapprocher une
+                    // ligne d'audit d'un ticket, d'un Z ou d'une capture d'écran.
+                    'created_at' => $log->created_at?->toIso8601String(),
                 ];
             });
         } catch (Exception $exception) {
