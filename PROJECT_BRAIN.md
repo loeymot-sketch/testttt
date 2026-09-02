@@ -47,6 +47,54 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-02 — SUPERVISION `CHEF` : trois garde-fous au mauvais périmètre, et un P0 que j'ai retiré**
+>
+> HEAD `5f3b6a147` · branche `pos/category-first-caisse-2026-06-23`.
+> ⚠ **Arbre partagé** : une seconde session travaillait dans ce dépôt pendant la mienne
+> (commits `8fc877521`, `179e27d99` ; `fr.json`, `BackendMenuComponent.vue`,
+> `ProductComposerEditorComponent.vue` édités à 14:56). Tout verdict de suite rendu
+> sur cet arbre mesure une cible mouvante.
+>
+> **CE QUI EST CORRIGÉ ET PROUVÉ**
+> - `ef0e41d01` — deux sentinelles qui ne mordaient plus. `Zone5Pricing` portait un
+>   `preg_match('#…[*/#]…#')` dont le `#` non échappé cassait le motif : elle n'explosait
+>   QUE s'il y avait un candidat, donc verte tant qu'il n'y avait rien à vérifier.
+>   Réparée, elle a immédiatement dénoncé une affectation de `composition_snapshot`
+>   (clone, non persistée — prouvé par `CollapserNePersistePasLInstantaneTest`, dont j'ai
+>   vérifié la morsure en sabotant la ligne 182). Exemption à CLIQUET, pas silencieuse.
+> - `de63f72f9` — `MenuProjectionService` servait trois rayons de campagne. Correct, mais
+>   **ce n'était pas la couche que la caisse consomme** : mon annonce dépassait ma preuve.
+> - `5f3b6a147` — le vrai point : `PosCategoryController` bâtit sa propre requête sans le
+>   garde-fou. `E2E_PLAYWRIGHT_STUDIO_CATEGORY` s'affichait au caissier ; les deux autres
+>   rayons pollués étaient masqués PAR ACCIDENT (`whereHas('items')` vide). Re-mesuré au
+>   navigateur : 9 rayons, les neuf vrais.
+>
+> **CE QUE JE RETIRE** — j'ai annoncé « la catégorie Burgers entière est cassée, pas
+> obligatoire à zéro choix ». **Faux.** Je mesurais `ComposerProfileProjection` avec le
+> profil de CATÉGORIE ; la caisse reçoit un profil PAR PRODUIT (Chicken Burger id 66 v4 :
+> viande 11 choix, sauce 14). Wizard ouvert au navigateur : viandes présentes, l'ajout
+> n'est refusé que sur « Choisissez votre boisson » / « Sélectionnez au moins une sauce ».
+> Comportement correct. Mesurer la bonne couche AVANT de qualifier un P0.
+>
+> **BLOQUEUR DE DÉPLOIEMENT (ouvert)** — à HEAD, `KioskWizardComponent.vue` vaut
+> `f445b1a8…` mais la baseline commitée annonce `fcbe3755…`. Le commit `6a2264085` a
+> régénéré la baseline DEPUIS L'ARBRE DE TRAVAIL, bénissant un correctif jamais commité
+> (il dort dans l'index, sous `LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25`, 23
+> tests verts). 14 fichiers gelés sur 15 sont sains. Un clone neuf échoue sa propre
+> sentinelle. **Ne jamais régénérer une baseline depuis l'arbre de travail : elle devient
+> aveugle par construction.**
+>
+> **BANCS** — PHPUnit Grok 83/83 (263 assertions) reproduit ; sentinelles 369/369 après
+> `ef0e41d01` (elles étaient 1 erreur + 2 échecs avant, hors du filtre de Grok) ;
+> `tests/Feature/Menu` 166/166. Vitest complet sous **Node 22** : 3857 verts, **6 échecs**,
+> tous tracés au travail en vol de l'autre session. ⚠ Le `node` ambiant est en **v18** :
+> Playwright ≥ 20 exige plus, et toute spec qui charge `playwright.config.js` échoue alors
+> pour une raison qui n'a rien à voir avec le produit.
+>
+> **VERDICT** — `block` sur le déploiement (baseline gelée incohérente + arbre partagé en
+> cours d'édition). `continue` sur le travail lui-même.
+
+
 > **2026-08-28 — GOAL `WIZARD_CAISSE` : une seule carte de sauces, enfin**
 >
 > Branche `pos/category-first-caisse-2026-06-23` · **rien commité, rien poussé**.
