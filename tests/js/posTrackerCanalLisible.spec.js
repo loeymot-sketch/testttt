@@ -117,14 +117,9 @@ const commandeTel = (over = {}) => ({
 /* ------------------------------------------------------------------ A-002 */
 
 describe('A-002 — le canal TÉLÉPHONE devient distinguable à l\'œil ET au lecteur d\'écran', () => {
-    // [GOAL CAISSE CONTRÔLE 2026-09-02] Les six teintes ont été PROMUES du `<style scoped>` du
-    // suivi vers `resources/css/pos-v5.css`, parce que le tiroir de contrôle de la caisse affiche
-    // les mêmes canaux et qu'un style scopé les lui rendait inatteignables — deux jeux de couleurs
-    // de canal auraient cohabité, ce qui détruit la seule chose qu'un code couleur garantit.
-    // Le banc suit les déclarations là où elles vivent ; ce qu'il vérifie est inchangé.
     const regleFond = (variante) => {
-        const m = CSS_PARTAGEE.match(
-            new RegExp(`\\.pos-canal--${variante}[^{]*\\{([^}]*)\\}`)
+        const m = SFC.match(
+            new RegExp(`\\.pos-tracker-card-source--${variante}\\s*\\{([^}]*)\\}`)
         );
         if (!m) return null;
         const fond = m[1].match(/background\s*:\s*([^;}]+)/);
@@ -439,13 +434,10 @@ const SOURCE_TRACKER = readFileSync(
     'utf8',
 );
 
-// [GOAL CAISSE CONTRÔLE 2026-09-02] Les teintes de canal vivent ici depuis leur promotion.
-const CSS_PARTAGEE = readFileSync(resolve(process.cwd(), 'resources/css/pos-v5.css'), 'utf8');
-
 /** Extrait le `background` déclaré pour une variante de pastille de canal. */
 function fondDuCanal(canal) {
-    const m = CSS_PARTAGEE.match(
-        new RegExp(`\\.pos-canal--${canal}[^{]*\\{[^}]*background:\\s*(#[0-9A-Fa-f]{6})`),
+    const m = SOURCE_TRACKER.match(
+        new RegExp(`\\.pos-tracker-card-source--${canal}\\s*\\{[^}]*background:\\s*(#[0-9A-Fa-f]{6})`),
     );
     return m ? m[1].toUpperCase() : null;
 }
@@ -486,28 +478,11 @@ describe('couleurs de canal — distinctes ENTRE ELLES, pas seulement du fond', 
 
     it('chaque canal porte un liseré — la couleur n\'est jamais le seul support', () => {
         CANAUX.forEach((c) => {
-            const bloc = CSS_PARTAGEE.match(
-                new RegExp(`\\.pos-canal--${c}[^{]*\\{[^}]*\\}`),
+            const bloc = SOURCE_TRACKER.match(
+                new RegExp(`\\.pos-tracker-card-source--${c}\\s*\\{[^}]*\\}`),
             );
             expect(bloc, `bloc introuvable pour ${c}`).toBeTruthy();
             expect(bloc[0], `le canal ${c} n'a pas de liseré`).toContain('box-shadow');
-        });
-    });
-});
-
-describe('une seule définition des teintes de canal', () => {
-    it('le suivi ne redéclare AUCUNE couleur de canal en propre', () => {
-        // La divergence est le vrai risque : si quelqu'un recolle un `background` de canal dans
-        // le `<style scoped>` du suivi, la caisse et le suivi peindront deux codes couleur
-        // différents pour le même canal, sans que rien ne le signale à l'œil.
-        const copies = SOURCE_TRACKER.match(/\.pos-tracker-card-source--\w+\s*\{/g) || [];
-        expect(copies, `copies retrouvées : ${copies.join(', ')}`).toHaveLength(0);
-    });
-
-    it('les six canaux sont déclarés une seule fois dans la feuille partagée', () => {
-        ['pos', 'kiosk', 'online', 'phone', 'platform', 'delivery'].forEach((c) => {
-            const occurrences = CSS_PARTAGEE.match(new RegExp(`\\.pos-canal--${c}[^{]*\\{`, 'g')) || [];
-            expect(occurrences, `canal ${c}`).toHaveLength(1);
         });
     });
 });

@@ -59,7 +59,7 @@
                             data-testid="admin-composer-back"
                             @click="returnToItem"
                         >
-                            <i class="lab lab-arrow-left" aria-hidden="true"></i>
+                            <i class="lab lab-back-bold" aria-hidden="true"></i>
                             {{ isCategoryComposer
                                 ? t('label.composer.back_to_category', 'Retour à la catégorie')
                                 : t('label.composer.back_to_product', 'Retour fiche produit') }}
@@ -72,7 +72,7 @@
                             :disabled="savingDraft"
                             @click="unpublish"
                         >
-                            <i class="lab lab-close-circle" aria-hidden="true"></i>
+                            <i class="lab lab-close-circle-line" aria-hidden="true"></i>
                             {{ t('label.composer.unpublish', 'Depublier') }}
                         </button>
                     </div>
@@ -218,11 +218,11 @@
                                     {{ t('message.composer.guidance_zero_steps_title', 'Comment fonctionne le wizard ?') }}
                                 </h3>
                                 <p class="mb-3 text-sm leading-relaxed text-amber-900">
-                                    {{ t('message.composer.guidance_zero_steps_intro', 'Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.') }}
+                                    {{ t('message.composer.guidance_zero_steps_intro', 'Le wizard est le parcours que votre client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.') }}
                                 </p>
                                 <ol class="mb-4 list-decimal space-y-2 pl-5 text-sm text-amber-900">
                                     <li>
-                                        {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.") }}
+                                        {{ t('message.composer.guidance_zero_steps_option_template', "Préférable : choisissez un modèle (Tacos, Sandwich…) pour partir d'une base prête.") }}
                                     </li>
                                     <li>
                                         {{ t('message.composer.guidance_zero_steps_option_manual', "Sinon : ajoute une page en reprenant celles déjà enregistrées (pain, sauces, suppléments…) ou en partant d'une page vide.") }}
@@ -1290,8 +1290,21 @@ export default {
             }
         },
         categoryPublishWarning() {
-            const count = this.item?.product_count || this.item?.products_count || this.item?.items_count || 'N';
-            return `Cette opération va remplacer les wizards personnalisés de ${count} produits dans cette catégorie. Continuer ?`;
+            // [ONB-03 2026-08-28] Le repli valait litteralement `'N'` : la boite de
+            // dialogue lisait « ... de N produits ... », toujours, parce qu'AUCUN des
+            // trois champs testes n'existe dans `ItemCategoryResource`
+            // (`app/Http/Resources/ItemCategoryResource.php:18-33`). Au moment precis
+            // ou on lui demande de confirmer, le commercant lisait un compteur casse.
+            //
+            // Sans compteur fiable, on ne l'invente pas : on pose une phrase qui ne
+            // ment sur rien.
+            const count = Number(
+                this.item?.product_count ?? this.item?.products_count ?? this.item?.items_count ?? NaN,
+            );
+
+            return Number.isFinite(count) && count > 0
+                ? this.$t('label.composer.publish_confirm_n', { n: count })
+                : this.$t('label.composer.publish_confirm');
         },
         confirmCategoryPublish() {
             if (typeof window === 'undefined' || typeof window.confirm !== 'function') {

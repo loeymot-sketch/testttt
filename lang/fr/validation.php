@@ -173,9 +173,34 @@ return [
         'no_repeat' => 'L\'attribut :attribute n\'autorise pas la répétition d\'une même variation.',
     ],
 
+
+    /*
+    | [ONB-02 2026-08-28] Messages de la regle App\Rules\IniAmount.
+    |
+    | Laravel ne traduit pas le message d'une regle-objet : il faut que la regle
+    | appelle trans() elle-meme. Sans ces cles, le commercant lisait des phrases
+    | hybrides du genre « This prix must be a number. » sur le champ Prix.
+    */
+    'ini_amount' => [
+        'pas_un_nombre' => "Le champ :attribute doit être un nombre. Utilisez un point pour les centimes, par exemple 8.50",
+        'negatif_interdit' => "Le champ :attribute ne peut pas être négatif.",
+        'doit_etre_positif' => "Le champ :attribute doit être supérieur à 0.",
+        'trop_long' => "Le champ :attribute ne peut pas dépasser 12 chiffres.",
+        'format_invalide' => "Le champ :attribute n'a pas un format de montant valide (10 chiffres au maximum, et jusqu'à 6 décimales).",
+    ],
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',
+        ],
+
+        // [ONB-01 T-1.2.1 2026-08-27] Un commerçant ne doit jamais lire une
+        // expression rationnelle : on lui dit ce qu'on attend, avec un exemple.
+        'siret' => [
+            'regex' => 'Le SIRET doit comporter exactement 14 chiffres, sans espace ni tiret.',
+        ],
+        'vat_intra' => [
+            'regex' => 'Le numéro de TVA intracommunautaire doit commencer par deux lettres de pays, par exemple FR12345678901.',
         ],
     ],
 
@@ -188,7 +213,87 @@ return [
     |
     */
 
-    'attributes' => [],
+    // [ONB-11 T-2.1.2 2026-08-27] Ce tableau etait VIDE.
+    //
+    // Consequence, dans TOUS les formulaires de l'administration : Laravel remplace
+    // `:attribute` par le nom technique du champ. Un commercant lisait donc
+    // « The item_category_id field is required » ou « Le champ branch_id est
+    // obligatoire » — le nom d'une colonne de base de donnees, en plein ecran, au
+    // moment ou il essaie juste d'enregistrer un produit.
+    //
+    // C'est la cause racine unique de la majeure partie des messages d'erreur
+    // incomprehensibles releves dans l'audit d'experience : un seul tableau vide,
+    // des dizaines d'ecrans touches.
+    //
+    // Les noms ci-dessous sont ceux reellement utilises par les FormRequest du
+    // projet, extraits puis tries par frequence d'usage.
+    'attributes' => [
+        'name'                  => 'nom',
+        'first_name'            => 'prénom',
+        'last_name'             => 'nom de famille',
+        'username'              => 'identifiant',
+        'email'                 => 'adresse e-mail',
+        'phone'                 => 'téléphone',
+        'password'              => 'mot de passe',
+        'password_confirmation' => 'confirmation du mot de passe',
+        'status'                => 'statut',
+        'image'                 => 'image',
+        'photo'                 => 'photo',
+        'description'           => 'description',
+        'title'                 => 'titre',
+        'label'                 => 'libellé',
+        'code'                  => 'code',
+        'reason'                => 'motif',
+
+        'price'                 => 'prix',
+        'total'                 => 'total',
+        'subtotal'              => 'sous-total',
+        'discount'              => 'remise',
+        'points'                => 'points',
+        'tax_id'                => 'taxe',
+        'item_category_id'      => 'catégorie',
+        'item_type'             => 'type de produit',
+        'items'                 => 'articles',
+        'order'                 => 'ordre d’affichage',
+        'is_featured'           => 'mise en avant',
+
+        'branch_id'             => 'établissement',
+        'user_id'               => 'utilisateur',
+        'role_id'               => 'rôle',
+        'coupon_id'             => 'code promo',
+        'order_id'              => 'commande',
+        'order_type'            => 'type de commande',
+        'payment_method'        => 'moyen de paiement',
+        'source'                => 'canal de vente',
+
+        'address'               => 'adresse',
+        'apartment'             => 'complément d’adresse',
+        'city'                  => 'ville',
+        'state'                 => 'région',
+        'zip_code'              => 'code postal',
+        'country_code'          => 'indicatif pays',
+        'latitude'              => 'latitude',
+        'longitude'             => 'longitude',
+
+        'siret'                 => 'SIRET',
+        'vat_intra'             => 'numéro de TVA intracommunautaire',
+        'legal_footer'          => 'mention légale du ticket',
+        'register_id'           => 'numéro de caisse',
+
+        'start_date'            => 'date de début',
+        'end_date'              => 'date de fin',
+        'scheduled_at'          => 'date programmée',
+        'is_advance_order'      => 'commande à l’avance',
+
+        'kds_station'           => 'poste de cuisine',
+        'min_select'            => 'nombre minimum de choix',
+        'max_select'            => 'nombre maximum de choix',
+        'visible_on'            => 'surfaces d’affichage',
+        'loyalty_code'          => 'code de fidélité',
+        'device_token'          => 'jeton de l’appareil',
+        'web_token'             => 'jeton web',
+        'token'                 => 'jeton',
+    ],
 
     'items_cap_exceeded' => 'Maximum 50 articles par commande',
 

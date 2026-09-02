@@ -289,6 +289,14 @@ function readAddons(orderItem) {
     return Array.isArray(orderItem?.item_addons) ? orderItem.item_addons : [];
 }
 
+/**
+ * [FIX-1 2026-08-25 · P0 cuisine] Repli d'un extra dont l'entrée ne porte AUCUN champ de nom.
+ * Même mot que le gabarit KDS hérité (`kdsExtraDisplayName`, corrigé le 2026-08-24) pour que
+ * les deux écrans nomment la même chose de la même façon.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::EXTRA_SANS_NOM.
+ */
+export const EXTRA_SANS_NOM = 'Supplément';
+
 function extraName(e) {
     return e?.extra_name || e?.name || '';
 }
@@ -455,8 +463,16 @@ export function buildSymbolic(orderItem) {
         + Math.max(0, fritesSauceNames(orderItem?.instruction).length - 1);
 
     for (const e of readExtras(orderItem)) {
-        const name = extraName(e);
-        if (!name) continue;
+        // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom ne disparaît PLUS.
+        // Le code lisait `extraName(e)` puis `if (!name) continue;` : l'entrée était sautée —
+        // aucune ligne, aucun marqueur, du blanc à sa place. Le gabarit hérité, lui, rendait
+        // « Supplément » (corrigé le 2026-08-24) : l'écran de PRODUCTION affichait donc STRICTEMENT
+        // MOINS que l'ancien. Un cuisinier qui ne voit pas un supplément sert un produit faux ;
+        // annoncer un supplément sans savoir le nommer reste infiniment moins grave que de
+        // l'escamoter. La forme brute existe en base (`item_extras` = [{"id":269,"quantity":1}]) et
+        // elle est servie dès que l'instantané NF525 ne porte pas d'extras.
+        // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
+        const name = extraName(e) || EXTRA_SANS_NOM;
         const cs = cruditeSymbol(name);
         const price = Number(e?.unit_price ?? e?.line_total ?? 0) || 0;
         // Only FREE garnitures (price 0) fold into the crudités slot; a paid extra
@@ -615,6 +631,15 @@ export function renderItemSymbolic(orderItem) {
             category: s.category,
             hasAllergen,
         });
+        // [FIX-1 2026-08-25 · P0 cuisine, constat E-002] Les SUPPLÉMENTS d'une ligne « conteneur
+        // de menu » atteignent enfin la cuisine. Cette branche retournait tôt avec la boisson et
+        // la note mais SANS aucun supplément : un cheddar facturé sur une ligne « Menu (Frites +
+        // Boisson) » n'était affiché nulle part. La règle owner [KITCHEN-MENU 2026-06-30] visait
+        // le DÉTAIL de la formule (« Frites + Boisson ») et le prix — jamais un extra payé, qui
+        // est du travail à faire en plus. Le badge MENU reste inchangé.
+        for (const sup of s.supplements) {
+            lines.push({ type: 'supplement', label: String(sup).replace(/^\+\s*/, '⭐ ') });
+        }
         // [W3-FIX-C] Boisson de la formule visible sous le badge MENU.
         for (const d of drinkAddonLabels(orderItem)) {
             lines.push({ type: 'menu_child', label: d });

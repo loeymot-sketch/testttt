@@ -127,7 +127,8 @@
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
         "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
-        "system_health": "System health"
+        "system_health": "System health",
+        "Assistant téléphone": "ফোন সহায়ক"
     },
     "label": {
         "pos_customer_name_placeholder": "Nom du client (optionnel)",

@@ -5,7 +5,7 @@
             <div class="db-card">
                 <div class="db-card-header">
                     <h3 class="db-card-title">{{ $t('menu.role') }} &amp; {{ $t('label.permissions') }} <span
-                            class="text-primary">({{ role.name }})</span></h3>
+                            class="text-primary">({{ libelleRole(role.name) }})</span></h3>
                 </div>
                 <div class="db-table-responsive mb-8">
                     <table class="db-table stripe">
@@ -30,8 +30,18 @@
                                         <i class="fa-solid fa-check custom-checkbox-icon"></i>
                                     </div>
                                 </td>
-                                <td :colspan="!permission.children ? 5 : ''" class="db-table-body-td text-base capitalize">
-                                    {{ permission.title }}</td>
+                                <!-- [ONB-06 T-2.1.2 2026-08-27] Les 80 permissions etaient
+                                     affichees en anglais brut (« POS Destroy Paid Order »,
+                                     « POS Refund (Counter-Entry NF525) ») : un patron ne peut
+                                     pas decider de donner un droit qu'il ne comprend pas.
+                                     On traduit A L'AFFICHAGE, pas en base : le seeder ne peut
+                                     pas etre rejoue sur une installation en service, alors que
+                                     cette table de correspondance vaut immediatement pour
+                                     l'existant comme pour le neuf.
+                                     `capitalize` est retire : en francais il mettrait une
+                                     majuscule a CHAQUE mot (« Voir Le Tableau De Bord »). -->
+                                <td :colspan="!permission.children ? 5 : ''" class="db-table-body-td text-base">
+                                    {{ libellePermission(permission) }}</td>
                                 <td v-if="permission.children" v-for="children in permission.children" :key="children"
                                     class="db-table-body-td text-sm">
                                     <div class="custom-checkbox">
@@ -92,6 +102,52 @@ export default {
         });
     },
     methods: {
+        /** Même table de correspondance que la liste des rôles : on ne renomme rien en base. */
+        libelleRole: function (nom) {
+            if (!nom) {
+                return '';
+            }
+            const cle = 'role.' + String(nom).replace(/[.]/g, '_');
+            const traduit = this.$t(cle);
+
+            return traduit === cle ? nom : traduit;
+        },
+        /**
+         * [ONB-06 T-2.1.2 2026-08-27] Le libellé métier d'une permission.
+         *
+         * Les 80 permissions sont stockées en anglais brut (« POS Destroy Paid Order »,
+         * « POS Refund (Counter-Entry NF525) ») et étaient affichées telles quelles. Un
+         * patron ne peut pas décider d'accorder un droit qu'il ne comprend pas.
+         *
+         * On traduit ici, à l'affichage, en s'appuyant sur `name` — la clé stable —
+         * plutôt qu'en réécrivant la base : un seeder ne peut pas être rejoué sur une
+         * installation en service, alors que cette table vaut immédiatement pour
+         * l'existant comme pour le neuf.
+         *
+         * Repli explicite sur le titre anglais si une clé manque : mieux vaut un mot
+         * anglais qu'une case vide ou une clé technique affichée au commerçant.
+         */
+        libellePermission: function (permission) {
+            if (!permission) {
+                return '';
+            }
+            // Le point est remplacé par un souligné AVANT la recherche.
+            //
+            // Pourquoi : `$t('permission.' + name)` interprète le point comme un
+            // niveau d'imbrication. La permission `pos.redeem-loyalty` faisait donc
+            // chercher `permission → pos → redeem-loyalty`, qui n'existe pas — et
+            // elle restait seule en anglais au milieu de douze lignes traduites.
+            // Constaté à l'écran, jamais dans un test : les douze autres passaient.
+            // La clé correspondante de fr.json porte donc `pos_redeem-loyalty`.
+            //
+            // Première tentative de correction — lire `$i18n.messages` directement —
+            // a fait repasser les treize lignes en anglais : cette table n'est pas
+            // accessible ainsi ici. Vu à l'écran, corrigé, revérifié.
+            const cle = 'permission.' + String(permission.name).replace(/\./g, '_');
+            const traduit = this.$t(cle);
+
+            return traduit === cle ? (permission.title || permission.name) : traduit;
+        },
         list: function () {
             this.loading.isActive = true;
             this.$store.dispatch('permission/lists', this.$route.params.id).then(res => {

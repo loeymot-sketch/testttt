@@ -52,7 +52,22 @@ return [
 
     // Adresse PUBLIQUE de la page de la roue (site client). Sert à composer le QR affiché au
     // comptoir. Vide = pas de QR : on préfère ne rien afficher qu'un QR qui mène nulle part.
-    'public_url' => rtrim((string) env('WHEEL_PUBLIC_URL', 'https://www.lecayenne.fr'), '/'),
+    //
+    // [ONB-09 2026-08-28] Le defaut valait `https://www.lecayenne.fr`.
+    //
+    // Consequence : le QR affiche au comptoir et sur l'ecran de validation
+    // envoyait les clients de TOUT commercant installant le produit vers le site
+    // d'un autre restaurant. Et le garde-fou pose juste au-dessus — « vide = pas
+    // de QR » — ne pouvait JAMAIS se declencher, puisque la valeur n'etait jamais
+    // vide. Le commercant n'etait donc meme pas averti.
+    //
+    // Un garde-fou qu'une valeur par defaut rend inatteignable est pire qu'absent :
+    // il donne l'impression que le cas est couvert.
+    //
+    // ⚠️ L'installation EN SERVICE doit desormais poser `WHEEL_PUBLIC_URL` dans son
+    // `.env`. Le message du garde-fou nomme la variable, donc la marche a suivre
+    // s'affiche a l'ecran au lieu d'un QR errone.
+    'public_url' => rtrim((string) env('WHEEL_PUBLIC_URL', ''), '/'),
 
     // Change de campagne = tout le monde peut rejouer une fois. C'est le seul
     // levier pour relancer le jeu sans vider la table des participations.

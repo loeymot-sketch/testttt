@@ -130,12 +130,14 @@
                             </p>
 
                             <div class="space-y-2">
-                                <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
+                                <template v-for="(variation, vIdx) in getAttributeVariations(itemAttribute)" :key="variation.id">
                                     <label v-if="!isMultiAttribute(itemAttribute)"
                                         :title="modifierUnavailableReason(variation)"
                                         :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
-                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
-                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
+                                        :class="getVariationQuantity(variation.id) > 0
+                                            ? 'border-primary bg-[#FFE8DD] opt-choisie'
+                                            : ['border', teinteOption(vIdx)]"
+                                        class="w-full min-h-[72px] cursor-pointer py-3 px-3 gap-3 rounded-lg flex items-center border-2 transition opt-choix"
                                         :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <div class="custom-radio sm flex-shrink-0">
                                             <input :checked="getVariationQuantity(variation.id) > 0"
@@ -148,8 +150,8 @@
                                         </div>
                                         <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
                                         <div class="flex-1 min-w-0">
-                                            <h3 class="block capitalize text-xs text-heading">
-                                                {{ textShortener(variation.name, 15) }}</h3>
+                                            <h3 class="block capitalize text-sm font-semibold text-heading">
+                                                {{ textShortener(variation.name, 18) }}</h3>
                                             <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
                                                 +{{ variation.currency_price }}
                                             </h4>
@@ -499,6 +501,35 @@ export default {
         },
     },
     methods: {
+        /**
+         * [PROPRIETAIRE 2026-08-28] UNE TEINTE STABLE PAR CHOIX.
+         *
+         * Sa demande : « les choix, on a dit de lui mettre plus grand pour occuper tout
+         * l'espace quand y en a, ainsi que mettre des couleurs, comme ca c'est plus facile
+         * a choisir pour le caissier ».
+         *
+         * Les options etaient toutes du meme gris tres pale (#F7F7FC) : rien ne les
+         * distinguait sinon un nom a relire a chaque commande, en 12 px. Les crudites de
+         * l'assistant, elles, sont deja colorees — c'est ce modele que le proprietaire
+         * voulait etendre.
+         *
+         * La teinte suit la POSITION, pas le nom : elle reste donc identique tant que la
+         * carte ne bouge pas, et la memoire du geste s'installe — « l'algerienne, c'est
+         * l'orange, deuxieme ligne ». Huit teintes qui tournent, assez pales pour qu'un
+         * texte sombre reste lisible dessus.
+         *
+         * Le choix RETENU garde son fond orange de marque : il doit rester le signal le
+         * plus fort de l'ecran, quelle que soit la teinte de repos de la pastille.
+         */
+        teinteOption(index) {
+            const TEINTES = [
+                'opt-t1', 'opt-t2', 'opt-t3', 'opt-t4',
+                'opt-t5', 'opt-t6', 'opt-t7', 'opt-t8',
+            ];
+
+            return TEINTES[Number(index) % TEINTES.length];
+        },
+
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
         },
@@ -1779,6 +1810,21 @@ export default {
 </script>
 
 <style scoped>
+/*
+ * [PROPRIETAIRE 2026-08-28] Les huit teintes des choix de personnalisation.
+ * Pales a dessein : le texte est sombre par-dessus, et le choix retenu (fond orange de
+ * marque) doit continuer de sauter aux yeux au milieu d'elles.
+ */
+.opt-choix { border-color: transparent; }
+.opt-t1 { background: #FFE8D6; border-color: #F0BF97 !important; }
+.opt-t2 { background: #DFEFE4; border-color: #A8D2B6 !important; }
+.opt-t3 { background: #DEEAF7; border-color: #A6C3E3 !important; }
+.opt-t4 { background: #F7E2EE; border-color: #E0AECB !important; }
+.opt-t5 { background: #FFF0C9; border-color: #EBD08C !important; }
+.opt-t6 { background: #E8E0F5; border-color: #C0B0E0 !important; }
+.opt-t7 { background: #D9EEEB; border-color: #9FCFC9 !important; }
+.opt-t8 { background: #FBE0DA; border-color: #EAB2A5 !important; }
+
 /* =============================================================================
    ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)
    -----------------------------------------------------------------------------

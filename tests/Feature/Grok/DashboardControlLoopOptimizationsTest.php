@@ -34,7 +34,17 @@ class DashboardControlLoopOptimizationsTest extends TestCase
     public function test_sla_alerts_are_capped_in_sql(): void
     {
         $src = file_get_contents(base_path('app/Services/DashboardService.php'));
-        $this->assertStringContainsString("->orderBy('updated_at', 'asc')\n                ->limit(50)", $src);
+        // [fusion 2026-09-02] Ce contrôle porte sur le PLAFOND SQL — c'est son nom et son
+        // objet. Il épinglait aussi le SENS du tri ('asc'), par accident de rédaction, et
+        // entrait alors en contradiction frontale avec AlertesSlaFenetreBorneeTest, qui
+        // tranche pour 'desc' avec une raison produit explicite (« c'est la commande de tout
+        // à l'heure qu'un cuisinier doit voir en premier »). On vérifie donc ce que ce test
+        // annonce vérifier : que la requête est bornée en SQL juste après son tri.
+        $this->assertMatchesRegularExpression(
+            "/->orderBy\\('updated_at', '(asc|desc)'\\)\\s*\\n\\s*->limit\\(50\\)/",
+            $src,
+            'La requête des alertes SLA doit rester bornée en SQL (limit 50) juste après son tri.'
+        );
     }
 
     public function test_system_health_asks_before_toggle_and_announces_status(): void

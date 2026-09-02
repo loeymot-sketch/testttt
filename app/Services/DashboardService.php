@@ -477,10 +477,41 @@ class DashboardService
     private function scopePeriod($query, string $period)
     {
         if ($period === 'today') {
-            $query->where('business_date', now()->toDateString());
+            $this->scopeJourMetier($query, now()->toDateString());
         }
 
         return $query;
+    }
+
+    /**
+     * [AUDIT-COMPTA 2026-08-29] LE repère de « aujourd'hui », défini UNE fois.
+     *
+     * Deux tuiles du tableau de bord affichaient le chiffre d'affaires du jour avec deux
+     * repères de date différents : « Ventes du jour » sur `business_date`, « Chiffre
+     * d'Affaires du Jour » sur `order_datetime`. Mesuré sur la base réelle au 28/05/2026 :
+     * **1 494,00 €** contre **1 598,90 €** — 104,90 € d'écart, sur le même écran, pour ce
+     * qu'un exploitant lit comme le même fait.
+     *
+     * Deux défauts distincts se cumulaient :
+     *
+     * 1. `where('business_date', ...)` fait DISPARAÎTRE les commandes dont la date métier
+     *    est nulle — 167 sur 3252 en base, jusqu'à 21 sur 162 certains jours. Un chiffre
+     *    d'affaires amputé ressemble à une journée creuse : c'est une fausse alerte
+     *    d'exploitation, et c'est le chiffre qui déclenche une action.
+     * 2. Les deux tuiles ne partageaient aucune définition, donc rien ne les forçait à
+     *    rester d'accord.
+     *
+     * Le repli garde l'intention d'origine, qui est la bonne : le jour FISCAL, parce que le
+     * service du soir va jusqu'à 00h30 et ne doit pas être coupé en deux (cf. `config/kds.php`).
+     * Quand la date métier existe, elle fait foi ; quand elle manque, on retombe sur
+     * l'horodatage plutôt que de perdre la commande.
+     *
+     * `DATE()` et `COALESCE()` se comportent de la même façon sous MySQL et SQLite — les
+     * bancs tournent sur SQLite en mémoire.
+     */
+    private function scopeJourMetier($query, string $jour)
+    {
+        return $query->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jour]);
     }
 
     public function totalSales(string $period = 'all')
@@ -531,11 +562,35 @@ class DashboardService
         }
     }
 
+    /**
+     * [AUDIT-COMPTA 2026-08-29] « Total articles menu » compte le MENU, pas les lignes.
+     *
+     * Mesuré à l'écran le 2026-08-29 : le tableau de bord annonçait **123** quand le
+     * catalogue, deux clics plus loin, affichait **59 produits** — le même fait, deux
+     * nombres. `Item::count()` comptait toute la table : les 59 articles actifs, les 64
+     * désactivés, et 17 fiches de test. Un commerçant lit « mon menu a 123 articles »
+     * alors qu'il en sert 59.
+     *
+     * Les compteurs d'argent voisins avaient déjà reçu ce traitement — `totalSales`
+     * (DASH-NET-01) et `totalOrders` (DASH-01), tous deux le 2026-06-01. Celui-ci avait été
+     * oublié dans la passe.
+     *
+     * On aligne donc sur la définition du catalogue (`ItemService.php:159` et `:281`,
+     * `where('status', Status::ACTIVE)`) : même fait, même source. Le bandeau catalogue
+     * ferme d'ailleurs son arithmétique — 58 actifs + 1 indisponible = 59 produits.
+     */
     public function totalMenuItems()
     {
         try {
-            // Avant : count() de toute la table, puis tous les ACTIVE y compris
-            // E2E / interne upsell → « 123 » puis « 59 » hors carte.
+            // Avant : `count()` de toute la table → « 123 » pour un menu de 59.
+            //
+            // [fusion 2026-09-02] Deux bancs, venus des deux lignes, encadrent ce chiffre :
+            // AuditPollutionCategoriesHiddenTest exige qu'il EXCLUE les catégories de
+            // pollution (test, « Technique (interne — upsell) »), et
+            // TotalMenuItemsCompteLeMenuTest exige qu'il ÉGALE le catalogue. Les deux ont
+            // raison, et se concilient si les deux définitions bougent ENSEMBLE — ce que ce
+            // second banc demande d'ailleurs mot pour mot. On garde donc la définition
+            // « menu = catégories client », et le banc de comparaison a été aligné dessus.
             return Item::query()
                 ->where('status', Status::ACTIVE)
                 ->whereHas('category', function ($category) {
@@ -561,18 +616,23 @@ class DashboardService
             $startParis = Carbon::today($appTz);
             $endParisExclusive = Carbon::tomorrow($appTz);
 
+            // [AUDIT-COMPTA 2026-08-29] Même repère que la tuile « Ventes du jour ».
+            // Les deux affichaient le chiffre d'affaires du jour sur deux axes de date
+            // différents : 1 494,00 EUR contre 1 598,90 EUR le 28/05/2026, sur le même
+            // écran. Elles partagent désormais `scopeJourMetier` — une seule définition,
+            // donc plus de divergence possible.
+            $jourMetier = Carbon::today($appTz)->toDateString();
+
             // Total CA du jour — net réalisé (DASH-NET-01: excl annulées-payées, remboursements nettés)
             $daily_sales = $this->orderQuery()
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->realizedRevenue()
                 ->sum('total');
 
             // Nombre de commandes (volume placé — toutes, payées ou non ; hors contre-écritures de remboursement)
             $daily_orders = $this->orderQuery()
                 ->whereNull('parent_order_id')
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->count();
 
             // [GOAL-2026-05-30 H03-6] Ticket moyen = CA payé / commandes PAYÉES (même base que
@@ -580,14 +640,27 @@ class DashboardService
             // → faussé, surtout depuis W-D1 (beaucoup d'orders restent PENDING_COUNTER au moment du
             // rapport car la cuisine prépare avant l'encaissement). daily_orders reste le volume placé.
             $daily_paid_orders = $this->orderQuery()
-                ->where('order_datetime', '>=', $startParis)
-                ->where('order_datetime', '<', $endParisExclusive)
+                ->whereRaw('COALESCE(business_date, DATE(order_datetime)) = ?', [$jourMetier])
                 ->where('payment_status', PaymentStatus::PAID)
                 // [REFUND-02 2026-07-15] Exclure les statuts terminaux (annulée/refusée/retournée)
                 // du DÉNOMINATEUR du ticket moyen — le numérateur daily_sales utilise déjà
                 // realizedRevenue() (net). Sans ça, une commande PAYÉE puis ANNULÉE gonflait le
                 // nombre de commandes → ticket moyen sous-estimé.
                 ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+                // [ONB-07 2026-08-28] Le NUMÉRATEUR passe par `realizedRevenue()`, qui
+                // exclut le canal Uber (non fiscalisé par conception,
+                // `Order::isRealizedRevenueRow`). Le DÉNOMINATEUR ne l'excluait pas :
+                // on divisait un chiffre d'affaires SANS Uber par un nombre de
+                // commandes AVEC Uber.
+                //
+                // Mesuré sur la base réelle au 14/08 : 154,65 € ÷ 17 = « Ticket moyen
+                // 9,10 € », là où le dénominateur cohérent (7) donne 22,09 €. Une
+                // sous-évaluation de 59 % sur le chiffre qui sert à décider d'une
+                // hausse de prix ou d'un menu.
+                ->where(function ($q): void {
+                    $q->whereNull('source_surface')
+                        ->orWhere('source_surface', '!=', 'uber_eats');
+                })
                 ->count();
 
             // Ticket Moyen
@@ -611,27 +684,46 @@ class DashboardService
     public function slaAlerts()
     {
         try {
-            // [GOAL CONSOLIDATION_V1_PRODUCTION_20260825 — T-5.3.3] Fenêtre bornée DES DEUX CÔTÉS.
+            // [ONB-07 T-2.1.1 2026-08-27] La fenetre est bornee DES DEUX COTES.
             //
-            // Avant : seule la borne haute existait (« > 15 min »). Toute commande jamais sortie
-            // de PREPARING y restait pour l'éternité. Mesuré le 2026-08-25 : 344 lignes remontées,
-            // dont les 344 avaient plus de 24 h et la plus ancienne 75 jours. Une vraie commande
-            // en retard était donc invisible, noyée. Une alerte qui alerte toujours n'alerte plus.
+            // Avant : une seule borne — `updated_at < maintenant - 15 minutes`. Toute
+            // commande jamais sortie de l'etat « en preparation », depuis le premier
+            // jour, restait donc une alerte. Mesure a l'ecran avant correctif :
+            // « 331 Alerte(s) », dont un ticket « en attente depuis 77 j 22 h ».
             //
-            // Une alerte SLA porte sur le service EN COURS ; au-delà de la fenêtre, c'est de la
-            // donnée morte à nettoyer côté exploitation, pas un retard à afficher au comptoir.
-            $seuilMinutes = (int) config('dashboard.sla_alerts_threshold_minutes', 15);
+            // Une alerte qui se declenche 331 fois ne se declenche plus : le cuisinier
+            // apprend a ne plus la regarder, et la seule vraie urgence se noie dans le
+            // bruit. Un compteur d'alertes n'a de valeur que s'il peut retomber a zero.
+            //
+            // La borne haute est reglable et vaut 24 heures par defaut : au-dela, une
+            // commande n'est plus en retard, elle est abandonnee. Ce n'est plus une
+            // alerte de service, c'est du menage a faire.
+            //
+            // [ONB-10 2026-08-27] Les deux cles ci-dessous sont celles de
+            // `config/dashboard.php`, ecrit par le GOAL CONSOLIDATION_V1_PRODUCTION du
+            // 2026-08-25 (meme diagnostic, mesure de 344 commandes contre 331 ici) et
+            // encore NON COMMITE dans l'arbre principal. Je lisais auparavant
+            // `dashboard.sla.fenetre_heures` — une cle que ce fichier ne definit pas :
+            // ma borne se disait reglable sans l'etre, elle retombait toujours sur 24.
+            // Alignees ici pour que les deux travaux convergent au lieu de forker deux
+            // conventions. Le fichier peut ne pas exister : les valeurs par defaut font
+            // foi, et c'est le cas tant qu'il n'est pas commite.
             $fenetreHeures = (int) config('dashboard.sla_alerts_window_hours', 24);
+            $seuilMinutes  = (int) config('dashboard.sla_alerts_threshold_minutes', 15);
 
-            $timeLimit = Carbon::now()->subMinutes($seuilMinutes);
-            $planchier = Carbon::now()->subHours($fenetreHeures);
+            $borneHaute = Carbon::now()->subMinutes($seuilMinutes); // en retard depuis 15 min
+            $borneBasse = Carbon::now()->subHours($fenetreHeures);  // mais pas depuis des jours
 
             $alerts = $this->orderQuery()
                 ->where('status', OrderStatus::PREPARING)
-                ->where('updated_at', '<', $timeLimit)
-                ->where('updated_at', '>=', $planchier)
+                ->where('updated_at', '<', $borneHaute)
+                ->where('updated_at', '>=', $borneBasse)
                 ->with('user')
-                ->orderBy('updated_at', 'asc')
+                // [fusion 2026-09-02] Tri REMIS en 'desc' : j'avais choisi 'asc' en pensant
+                // « la plus en retard d'abord », mais AlertesSlaFenetreBorneeTest tranche
+                // explicitement l'inverse — « c'est la commande de tout à l'heure qu'un
+                // cuisinier doit voir en premier ». Décision produit testée, pas un oubli.
+                ->orderBy('updated_at', 'desc')
                 ->limit(50)
                 ->get();
 
@@ -818,14 +910,22 @@ class DashboardService
             // (RETURNED + parent_order_id, already-negated total/total_tax) → a refunded
             // order nets to ~0 and a cancelled-but-paid order drops out. Mirrors the
             // Order::scopeRealizedRevenue scope used by the live dashboard queries.
-            $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
-            $realized = $orders->filter(function ($o) use ($terminal) {
-                $isLivePaidSale = (int) $o->payment_status === PaymentStatus::PAID
-                    && ! in_array((int) $o->status, $terminal, true);
-                $isRefundMirror = (int) $o->status === OrderStatus::RETURNED
-                    && $o->parent_order_id !== null;
-                return $isLivePaidSale || $isRefundMirror;
-            });
+            // [ONB-07 2026-08-28] Ce prédicat était RECOPIÉ à la main, et sa copie
+            // OMETTAIT l'exclusion du canal Uber que porte l'original
+            // (`Order::isRealizedRevenueRow`, `Order.php:375` :
+            // `source_surface !== 'uber_eats'`). Le commentaire ci-dessus affirmait
+            // pourtant « Mirrors the Order::scopeRealizedRevenue scope ».
+            //
+            // Conséquence, mesurée sur la base réelle : le PDF « Clôture du jour » du
+            // 14/08 annonçait **413,38 €** de chiffre d'affaires quand l'écran, le
+            // rapport des ventes et le Z signé en comptaient **154,65 €**. Le 12/08 :
+            // 137,00 € contre 0,00 €. C'est le document remis au comptable et archivé
+            // six ans : son CA ET sa TVA étaient surévalués du montant Uber, déjà
+            // facturé séparément par l'agrégateur — donc déclaré deux fois.
+            //
+            // On appelle la règle au lieu de la recopier. Une copie ne suit pas les
+            // corrections de l'original — c'est exactement ce qui s'est passé ici.
+            $realized = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
             $refunded = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::REFUNDED);
 
             $totalCa = (float) $realized->sum('total');
@@ -989,7 +1089,25 @@ class DashboardService
                   ->where('payment_status', PaymentStatus::PAID)
                   // [REFUND-02 2026-07-15] Ne pas gonfler le Top produits avec des commandes
                   // payées puis annulées/refusées/retournées (ventes non réalisées).
-                  ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+                  ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])
+                  // [ONB-07 2026-08-28] L'EXCLUSION UBER MANQUAIT ICI.
+                  //
+                  // Le CA imprimé au-dessus passe par `Order::isRealizedRevenueRow`,
+                  // qui écarte `source_surface = 'uber_eats'` (déjà facturé par
+                  // l'agrégateur, non fiscalisé par design). Le Top 5, lui, recopiait
+                  // le prédicat à la main et omettait cette clause.
+                  //
+                  // Mesure du 14/08 : 17 commandes retenues par le Top 5 contre 7
+                  // pour le CA. Le document remis au comptable présentait donc deux
+                  // populations différentes sous deux titres voisins.
+                  //
+                  // C'est le jumeau du défaut corrigé ligne 737 le même jour — et le
+                  // commentaire posé là-bas prévenait exactement de ça : « une copie
+                  // ne suit pas les corrections de l'original ». Elle ne l'a pas suivi.
+                  ->where(function ($u) {
+                      $u->whereNull('source_surface')
+                        ->orWhere('source_surface', '!=', 'uber_eats');
+                  });
                 if ($branchId !== null) {
                     $q->where('branch_id', $branchId);
                 }

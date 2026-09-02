@@ -29,7 +29,7 @@
                     <span class="wp__counter">{{ libraryPages.length }}</span>
                 </div>
                 <p v-if="!loading && libraryPages.length === 0" class="wp__empty">
-                    Aucune page pour l'instant. Créez « Choisis ton pain », « Suppléments »…
+                    Aucune page pour l'instant. Créez « Choix du pain », « Suppléments »…
                 </p>
                 <button v-for="page in libraryPages" :key="page.id" type="button" class="wp__card"
                     :class="{ 'wp__card--active': selectedId === page.id }"

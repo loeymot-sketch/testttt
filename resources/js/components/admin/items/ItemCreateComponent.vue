@@ -37,12 +37,23 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="tax_id" class="db-field-title">{{ $t("label.tax") }} ({{ $t("label.including")
-                            }})</label>
+                        <!-- [ONB-02 T-2.1.3 2026-08-27] Trois défauts corrigés ici, tous
+                             constatés à l'écran et invisibles autrement :
+                             1. le champ n'était pas marqué obligatoire alors que le backend
+                                l'exige désormais — le commerçant remplissait tout puis se
+                                prenait un 422 sans avoir été prévenu ;
+                             2. le libellé « Taxe (incluant) » ne veut rien dire en français ;
+                             3. label-by="code" affichait « VAT-10% » au lieu du nom du taux :
+                                les noms lisibles du socle n'arrivaient jamais à l'écran. -->
+                        <label for="tax_id" class="db-field-title required">{{ $t("label.tax") }}</label>
                         <vue-select class="db-field-control f-b-custom-select" id="tax_id"
-                            v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id" :options="taxes"
-                            label-by="code" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
+                            v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id"
+                            :options="taxesLibellees"
+                            label-by="libelle" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
                             placeholder="--" search-placeholder="--" />
+                        <small class="text-slate-500 block mt-1" v-if="!errors.tax_id">{{
+                            $t("message.tax_required_hint")
+                        }}</small>
                         <small class="db-field-alert" v-if="errors.tax_id">{{ errors.tax_id[0] }}</small>
                     </div>
 
@@ -178,6 +189,54 @@
                         <p class="text-xs text-gray-400 mt-1">{{ $t('label.channels_help') }}</p>
                     </div>
 
+                    <!--
+                        [ONB 2026-08-28] Les allergènes, enfin saisissables.
+                        Toute la chaîne existait — colonne, validation, observateur,
+                        pivot, affichage caisse et cuisine, et jusqu'au FILTRE
+                        ALLERGÈNES DE LA BORNE — sauf l'écran par lequel un humain
+                        entre la vérité. Les correspondances actuelles viennent d'un
+                        seed qui les qualifie lui-même de « guessed mappings ».
+                    -->
+                    <div class="form-col-12" data-testid="admin-item-form-allergens">
+                        <label class="db-field-title">{{ $t("label.allergens_title") }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio" v-for="allergene in allergenes" :key="allergene.code">
+                                <div class="custom-radio">
+                                    <input type="checkbox"
+                                        :id="'item-allergen-' + allergene.code"
+                                        :value="allergene.code"
+                                        v-model="props.form.allergen_flags"
+                                        class="custom-radio-field"
+                                        :data-testid="'admin-item-form-allergen-' + allergene.code">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label :for="'item-allergen-' + allergene.code" class="db-field-label">
+                                    <span v-if="allergene.icon" aria-hidden="true">{{ allergene.icon }}</span>
+                                    {{ $t(allergene.cle) }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.allergen_flags">{{ errors.allergen_flags[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.allergens_help') }}</p>
+                    </div>
+
+                    <!--
+                        [ONB 2026-08-28] Le poste de cuisine : même histoire.
+                        `ItemRequest` le valide contre les quatre valeurs de l'ENUM
+                        MySQL, le KDS le lit pour router la préparation — et aucun
+                        écran ne l'écrivait, donc tout tombait sur le poste par défaut.
+                    -->
+                    <div class="form-col-12 sm:form-col-6" data-testid="admin-item-form-kds-station">
+                        <label for="kds_station" class="db-field-title">{{ $t("label.kds_station") }}</label>
+                        <select id="kds_station" v-model="props.form.kds_station" class="db-field-control">
+                            <option v-for="(libelle, valeur) in postesDeCuisine" :key="valeur" :value="valeur">
+                                {{ libelle }}
+                            </option>
+                        </select>
+                        <small class="db-field-alert" v-if="errors.kds_station">{{ errors.kds_station[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.kds_station_help') }}</p>
+                    </div>
+
                     <div class="form-col-12">
                         <label for="description" class="db-field-title">{{ $t("label.description") }}</label>
                         <textarea v-model="props.form.description" v-bind:class="errors.description ? 'invalid' : ''"
@@ -256,8 +315,34 @@ import LoadingComponent from "../components/LoadingComponent.vue";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
+import { libelleTaxe } from "../../../services/libelleTaxe";
 import alertService from "../../../services/alertService";
 import appService from "../../../services/appService";
+// [ONB 2026-08-28] `axios.defaults.baseURL` vaut deja « <hote>/api »
+// (`shared/axios-setup.js:75`) : les URL s'ecrivent SANS prefixe.
+import axios from "axios";
+
+/**
+ * [ONB-02 C1 2026-08-28] Taxe proposee a la creation d'un article.
+ *
+ * Le critere C1 de la mission demande qu'« un article neuf naisse avec la TVA
+ * restauration ». L'API, elle, EXIGE une taxe depuis le 2026-08-27 : sans elle,
+ * `PricingService` facturait a 0 % en silence.
+ *
+ * Les deux se concilient — severite a l'API, confort a l'ecran. On propose le
+ * defaut configure ; le commercant peut en changer, mais il n'a plus a deviner
+ * parmi six taxes dont deux GST etrangeres et un « No-VAT 0 % ».
+ *
+ * `0` (config absente) rend `null` : mieux vaut un champ vide qu'une taxe
+ * inventee sur un champ fiscal.
+ */
+function taxeParDefaut() {
+    const id = Number(
+        (typeof window !== 'undefined' && window.foodkingConfig?.catalogue?.defaultTaxId) || 0,
+    );
+
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
 
 export default {
     name: "ItemCreateComponent",
@@ -285,6 +370,18 @@ export default {
                     [askEnum.NO]: this.$t("label.no")
                 }
             },
+            /** Le referentiel des 14 allergenes, charge au montage. */
+            allergenes: [],
+            /**
+             * Les quatre valeurs de l'ENUM MySQL `items.kds_station`, ecrites ici
+             * comme dans `ItemRequest` — l'enum PHP est revendique par ONB-10.
+             */
+            postesDeCuisine: {
+                none: this.$t("label.kds_station_none"),
+                bar: this.$t("label.kds_station_bar"),
+                cuisine_chaude: this.$t("label.kds_station_hot"),
+                cuisine_froide: this.$t("label.kds_station_cold"),
+            },
             image: "",
             errors: {},
             showPostSaveCta: false,
@@ -301,6 +398,48 @@ export default {
         taxes: function () {
             return this.$store.getters['tax/lists'];
         },
+        // [ONB-10 2026-08-27] Deux taxes ACTIVES s'appellent toutes deux « VAT »,
+        // pour 5 % et 10 % ; deux autres « GST ». Le libellé porte donc le taux —
+        // dérivé de `tax_rate`, la seule valeur que PricingService facture, pour
+        // qu'il ne puisse jamais contredire ce qui sera facturé.
+        //
+        // Le filtre de statut est refait ICI, en plus du `status` passé au chargement
+        // (voir `mounted`). Raison constatée à l'écran : `ItemListComponent` remplit
+        // le MÊME emplacement du magasin (`tax/lists`) SANS filtre, et écrase donc
+        // celui-ci selon l'ordre de chargement. Le formulaire proposait encore
+        // « TVA 67% » (taux réel 0 %) et « TVA 97% » (taux réel 20 %). Un filtre qui
+        // dépend de l'ordre de chargement n'est pas un filtre.
+        taxesLibellees: function () {
+            const toutes = this.taxes || [];
+            const actives = toutes.filter((t) => Number(t?.status) === statusEnum.ACTIVE);
+
+            // [ONB-02 2026-08-28 · REGRESSION CORRIGEE] Ne filtrer QUE les actives
+            // vidait le champ obligatoire pour tout produit rattaché à une taxe
+            // inactive — 64 sur la base de travail. Le commerçant venu renommer un
+            // article trouvait « Taxe * » vide, et le geste naturel pour le remplir
+            // CHANGEAIT SON TAUX DE TVA. C'était pire que le défaut d'origine.
+            //
+            // On garde donc la taxe COURANTE dans la liste même si elle est inactive,
+            // signalée comme telle : le commerçant voit ce qui est réellement appliqué
+            // et choisit de le changer, au lieu d'y être poussé sans le savoir. Les
+            // NOUVELLES sélections restent bornées aux taxes actives.
+            //
+            // Trouvé par un agent adverse lancé sur mon propre travail.
+            const courante = Number(this.props?.form?.tax_id);
+            const dejaLa = actives.some((t) => Number(t.id) === courante);
+            const heritee = (! dejaLa && Number.isFinite(courante) && courante > 0)
+                ? toutes.find((t) => Number(t.id) === courante)
+                : null;
+
+            const liste = heritee ? [heritee, ...actives] : actives;
+
+            return liste.map((taxe) => ({
+                ...taxe,
+                libelle: (heritee && Number(taxe.id) === courante)
+                    ? `${libelleTaxe(taxe)} — inactive`
+                    : libelleTaxe(taxe),
+            }));
+        },
         wizardPerItemDemoEnabled() {
             return typeof window !== 'undefined'
                 && window.foodkingConfig?.features?.wizard_per_item_demo === true;
@@ -313,10 +452,30 @@ export default {
             order_type: 'asc',
             status: statusEnum.ACTIVE
         });
+        // [ONB-06/ROUGE 2026-08-27] `status` manquait ici alors que la ligne du dessus
+        // (itemCategory/lists) l'a. Mesure sur la base de travail : 6 taxes actives et
+        // 47 INACTIVES — les 47 etaient proposees au commercant, y compris d'anciens
+        // taux et des residus d'audit. Choisir une taxe inactive passait la validation
+        // (`exists:taxes,id` ne regarde pas le statut) et facturait a son taux.
         this.$store.dispatch('tax/lists', {
             order_column: 'id',
-            order_type: 'asc'
+            order_type: 'asc',
+            status: statusEnum.ACTIVE
         });
+
+        // [ONB 2026-08-28] Le referentiel legal des allergenes. En cas d'echec on
+        // laisse la liste vide plutot que de bloquer le formulaire : ne pas pouvoir
+        // declarer un allergene est genant, ne pas pouvoir creer un produit l'est
+        // davantage. L'erreur est tracee, pas avalee.
+        axios.get("admin/item/allergens")
+            .then((reponse) => {
+                this.allergenes = Array.isArray(reponse?.data?.data) ? reponse.data.data : [];
+            })
+            .catch((erreur) => {
+                this.allergenes = [];
+                console.error("[items] référentiel allergènes indisponible", erreur);
+            });
+
         this.loading.isActive = false;
     },
     methods: {
@@ -336,10 +495,17 @@ export default {
                 is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
-                tax_id: null,
+                tax_id: taxeParDefaut(),
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
+                // [ONB 2026-08-28] Sans cette remise a zero, enchainer deux
+                // creations reporterait les allergenes du produit precedent sur
+                // le suivant — une declaration FAUSSE, plus couteuse qu'une absente.
+                allergen_flags: [],
+                kds_station: "none",
+                            // Creation : aucun rang encore.
+                order: 1,
             };
             if (this.image) {
                 this.image = "";
@@ -358,10 +524,15 @@ export default {
                 is_upsell: askEnum.NO,
                 item_type: itemTypeEnum.VEG,
                 item_category_id: null,
-                tax_id: null,
+                tax_id: taxeParDefaut(),
                 status: statusEnum.ACTIVE,
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                 channels: [],
+                // [ONB 2026-08-28] Sans cette remise a zero, enchainer deux
+                // creations reporterait les allergenes du produit precedent sur
+                // le suivant — une declaration FAUSSE, plus couteuse qu'une absente.
+                allergen_flags: [],
+                kds_station: "none",
             };
             if (this.image) {
                 this.image = "";
@@ -380,7 +551,14 @@ export default {
                 fd.append('is_upsell', this.props.form.is_upsell ?? askEnum.NO);
                 fd.append('description', this.props.form.description);
                 fd.append('caution', this.props.form.caution);
-                fd.append('order', 1);
+                // [ONB-02 2026-08-28] Etait `fd.append('order', 1)` — une CONSTANTE,
+                // en creation COMME en modification. Corriger une faute de frappe
+                // dans le nom d'un produit defaisait donc l'ordre de la carte, que
+                // la borne utilise pour trier. Le commercant ne voyait rien.
+                //
+                // On renvoie le rang REEL, hydrate depuis la ressource. `?? 1` ne
+                // sert qu'a la creation, ou aucun rang n'existe encore.
+                fd.append('order', this.props.form.order ?? 1);
                 fd.append('status', this.props.form.status);
                 // [v1-0-1-h5 Z5-P1-01 2026-05-17] Append channels[] entries.
                 // Empty array → skip → server keeps existing value (legacy
@@ -393,6 +571,24 @@ export default {
                         fd.append('channels[]', c);
                     }
                 });
+
+                /*
+                 * [ONB 2026-08-28] Les allergènes, avec leur témoin.
+                 *
+                 * Décocher la DERNIÈRE case n'ajoute aucune entrée `allergen_flags[]`
+                 * — indiscernable, côté serveur, d'un formulaire qui ignore le champ.
+                 * Le témoin `allergen_flags_defini` lève l'ambiguïté : il affirme
+                 * « cet écran a affiché le champ, et voici son état complet ». Sans
+                 * lui, un commerçant ne pourrait jamais RETIRER un allergène déclaré
+                 * par erreur — et une déclaration fausse est pire qu'une absente.
+                 */
+                fd.append('allergen_flags_defini', '1');
+                const allergenes = Array.isArray(this.props.form.allergen_flags)
+                    ? this.props.form.allergen_flags
+                    : [];
+                allergenes.forEach((code) => fd.append('allergen_flags[]', code));
+
+                fd.append('kds_station', this.props.form.kds_station || 'none');
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -414,10 +610,14 @@ export default {
                         is_upsell: askEnum.NO,
                         item_type: itemTypeEnum.VEG,
                         item_category_id: null,
-                        tax_id: null,
+                        tax_id: taxeParDefaut(),
                         status: statusEnum.ACTIVE,
                         // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
                         channels: [],
+                        allergen_flags: [],
+                        kds_station: "none",
+                                            // Creation : aucun rang encore.
+                        order: 1,
                     };
                     this.image = "";
                     this.errors = {};

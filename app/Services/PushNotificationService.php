@@ -16,6 +16,18 @@ use App\Http\Requests\PushNotificationRequest;
 
 class PushNotificationService
 {
+
+    /**
+     * [ONB-09 2026-08-28] Compte rendu du dernier envoi Firebase.
+     *
+     * `FirebaseService::sendNotification()` etait declaree `void` et avalait chaque
+     * echec par appareil dans un `catch` VIDE : l'appelant ne pouvait rien savoir,
+     * et l'ecran annoncait un succes meme quand zero appareil avait recu la
+     * notification. Le controleur lit cette propriete pour dire la verite.
+     *
+     * @var array{destinataires:int, envoyes:int, echecs:int, erreur:string|null}|null
+     */
+    public ?array $rapportDeDernierEnvoi = null;
     use EnforcesOwnBranchScope;
 
     public object $pushNotification;
@@ -122,7 +134,19 @@ class PushNotificationService
 
             $fcmTokenArray = array_merge($fcmWebDeviceToken, $fcmMobileDeviceToken);
             $firebase      = app(FirebaseService::class);
-            $firebase->sendNotification($pushNotification, $fcmTokenArray, "promotion");
+
+            // [ONB-09 2026-08-28] MEME DEFAUT QUE L'ENVOI AUX ABONNES, autre ecran.
+            // Le compte rendu de Firebase etait jete : le controleur repondait la
+            // notification enregistree, l'ecran affichait une bulle verte figee, et
+            // le commercant lisait « envoye » meme quand la liste de jetons etait
+            // VIDE ou que chaque envoi avait echoue. On le fait remonter.
+            // Le rapport est porte par le SERVICE et non par le modele : l'attacher
+            // au modele en ferait un attribut Eloquent, qu'un `save()` ulterieur
+            // tenterait d'ecrire dans une colonne inexistante.
+            $this->rapportDeDernierEnvoi = $firebase->sendNotification(
+                $pushNotification, $fcmTokenArray, "promotion"
+            );
+
             return $pushNotification;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

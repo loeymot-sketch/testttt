@@ -238,8 +238,33 @@ class RouteServiceProvider extends ServiceProvider
             // default, raised to 1000/min in local dev via O5). The stacked
             // admin-mutation ceiling here is the safety net against accidental
             // burst, not the primary cap.
+
+            /*
+             * [AUDIT-SUPERVISEUR 2026-08-25 - ronde 3] UN FILET PLUS SERRE QUE CE QU'IL PROTEGE
+             * N'EST PAS UN FILET : C'EST LE PLAFOND.
+             *
+             * Les trois branches ci-dessous se decrivent elles-memes comme « the safety net
+             * against accidental burst, not the primary cap ». Elles rendaient pourtant un 120
+             * ECRIT EN DUR, insensible a toute configuration — pendant que les plafonds
+             * primaires qu'elles sont censees doubler (`pos-order-create`, `pos-order-update`,
+             * `kds-bump`) sont, eux, reglables et montes a 1000/min sur ce poste.
+             *
+             * Resultat : l'exploitant regle `ADMIN_MUTATION_RATE_LIMIT=1000`, croit avoir
+             * desserre la caisse, et la caisse reste a 120/min par appareil. C'est ce qui a
+             * produit les deux 429 mesures sur l'afficheur client pendant les captures — et
+             * c'est de la meme famille que la plainte de production du 2026-08-13
+             * (« beaucoup d'erreur trop de request »).
+             *
+             * 120/min par appareil est atteignable en coup de feu : un article par seconde
+             * emet deja le calcul du prix ET la poussee vers l'afficheur, soit 120/min a deux
+             * requetes, avant meme les sondages d'impression (24/min) et le suivi (12/min).
+             *
+             * On garde 120 comme PLANCHER — la valeur livree, donc aucun changement de
+             * comportement par defaut — et on laisse le filet remonter avec le reglage qu'il
+             * double. Il reste un plafond dans tous les cas.
+             */
             if ($request->is('api/admin/pos/*') || $request->is('api/admin/pos')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA hits
@@ -252,7 +277,7 @@ class RouteServiceProvider extends ServiceProvider
             // dedicated `kds-bump` limiter below is the primary cap;
             // admin-mutation here is the safety net against accidental burst.
             if ($request->is('api/admin/kds-order/change-status/*')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave Y RATE-LIMIT 2026-05-21] Owner-facing rapid CTA family —
@@ -266,7 +291,7 @@ class RouteServiceProvider extends ServiceProvider
             // chain insert is inside controller TX, not in the throttle).
             if ($request->is('api/admin/online-order/change-status/*')
                 || $request->is('api/admin/table-order/change-status/*')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             return Limit::perMinute($adminMutationCap)->by($this->throttleKeyParAppareil($request));
@@ -329,6 +354,46 @@ class RouteServiceProvider extends ServiceProvider
          */
         RateLimiter::for('print-queue-poll', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.print_queue_poll', 240));
+
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
+        });
+
+        /*
+         * [AUDIT-SUPERVISEUR 2026-08-25 · ronde 3] L'AFFICHEUR CLIENT, MEME CAUSE QUE CI-DESSUS.
+         *
+         * CE QUI A ETE MESURE
+         * -------------------
+         * Sur la campagne de captures de la caisse : 2 reponses 429 sur
+         * `POST /api/admin/pos/customer-display`, seules requetes en echec de tout le jeu.
+         *
+         * POURQUOI
+         * --------
+         * Cette route tombait dans le seau `api/admin/pos/*` (120/min), PARTAGE avec toutes
+         * les mutations de la caisse. Or chaque changement de panier emet DEUX requetes : le
+         * calcul du prix cote serveur, et cette poussee vers l'afficheur. A un article par
+         * seconde — un coup de feu ordinaire — les deux ensemble atteignent le plafond.
+         *
+         * POURQUOI CA COMPTE MALGRE LE « best-effort »
+         * --------------------------------------------
+         * L'echec est avale en silence par `.catch(() => {})`, donc le caissier ne voit rien
+         * et la trace fiscale est intacte. Mais l'afficheur, LUI, reste sur le montant
+         * precedent : le client lit un total qui n'est pas le sien. Si c'est la DERNIERE
+         * poussee de la vente qui est refusee, l'ecart tient jusqu'au prochain changement de
+         * panier — c'est-a-dire pendant le paiement.
+         *
+         * POURQUOI UN SEAU A PART PLUTOT QU'UN PLAFOND PLUS HAUT
+         * ------------------------------------------------------
+         * Le meme raisonnement qu'au 2026-08-13, et pour les memes raisons : ce n'est pas une
+         * mutation. Aucune ecriture en base, rien de fiscal, idempotente (le dernier gagne),
+         * a cadence FIXE et connue — l'emission est freinee a 350 ms cote caisse, soit 171/min
+         * au grand maximum theorique pour un ecran. Monter `api/admin/pos/*` desserrerait la
+         * protection de l'encaissement et du paiement pour un probleme qui ne vient pas d'eux.
+         *
+         * 240/min couvre le maximum theorique d'un ecran avec de la marge, et reste un
+         * plafond : une boucle emballee demeure bornee.
+         */
+        RateLimiter::for('customer-display', function (Request $request) {
+            $perMinute = max(1, (int) config('pos.rate_limit.customer_display', 240));
 
             return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
@@ -429,9 +494,15 @@ class RouteServiceProvider extends ServiceProvider
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
 
+            // [ONB-11 2026-08-28] Le message etait en anglais, et surtout il ne DISAIT
+            // pas le delai — `retry_after` etait calcule juste en dessous et jamais
+            // montre. Un commercant qui se trompe de mot de passe dix fois au comptoir
+            // un vendredi soir lisait « Too many login attempts. Please try again
+            // later. » sans savoir s'il devait attendre une minute ou rappeler
+            // quelqu'un. On traduit, et on donne la minute.
             $tooMany = function () use ($decayMinutes) {
                 return response()->json([
-                    'message' => 'Too many login attempts. Please try again later.',
+                    'message' => trans('auth.trop_de_tentatives', ['minutes' => $decayMinutes]),
                     'retry_after' => $decayMinutes * 60,
                 ], 429);
             };
