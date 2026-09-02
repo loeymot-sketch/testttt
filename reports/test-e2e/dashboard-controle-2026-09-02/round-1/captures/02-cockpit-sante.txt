@@ -1,0 +1,156 @@
+Français
+Anglais
+Français
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+250,90 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Appareils Connectés
+Déconnexion
+Tableau de bord
+POS
+Produits & Stock
+Conso & Stock
+Ajustement stock
+Catalogue
+Pages de wizard
+Attribut d’articles
+Ingrédients
+Scan Facture
+Commandes caisse
+Historique
+Encaissement
+Vue caisse unifiée
+Caisse livreur
+Ticket promo
+Réglages ticket promo
+Commande Uber (photo)
+La roue
+CAISSE ET COMMANDES
+Écran cuisine
+Suivi client
+COMMUNICATIONS
+Notification pushs
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport des ventes
+Rapport articles
+CONFIGURATION
+Paramètres
+État du système
+État du système
+
+Ce que le logiciel sait de lui-même, en un coup d'œil.
+
+Actualiser
+
+Des points demandent votre attention.
+
+contrôles de santé : aucune mesure disponible — la sonde n'a pas tourné
+dernière sauvegarde il y a 29 jours
+restauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien
+planificateur : aucun battement enregistré
+
+DERNIÈRE SAUVEGARDE
+
+il y a 29 jours
+
+pre-8axes-2026-08-05.sql.gz
+
+Restauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien
+
+Vert seulement si un fichier .sql.gz a moins de 26 h et si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien.
+
+TÂCHES AUTOMATIQUES
+
+aucun signe de vie
+
+S'il s'arrête, les sauvegardes, les relances et le contrôle de la chaîne fiscale s'arrêtent avec lui, sans aucune erreur visible.
+
+INTERRUPTEURS
+
+Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525.
+
+Paiement en plusieurs fois
+
+Permet d'encaisser une commande en plusieurs règlements (espèces + carte, ou deux cartes).
+
+Désactivé, la caisse n’accepte plus qu’un seul moyen de paiement par commande.
+
+Activé
+
+Roue promotionnelle
+
+Le jeu de la roue proposé au client après sa commande.
+
+Désactivée, la roue disparaît ; les lots déjà gagnés restent valables.
+
+Désactivé
+
+Remise manuelle en caisse
+
+Autorise le caissier à appliquer une remise libre sur une commande.
+
+Désactivée, le bouton remise disparaît de la caisse ; les remises déjà appliquées restent valables (F1 : le Z reste fiscalement correct sur base remisée).
+
+Désactivé
+
+Programme fidélité (dépense de points)
+
+Permet à un client de dépenser ses points fidélité pour obtenir une réduction.
+
+Désactivé, les points cessent d’être dépensables ; ils continuent de s’accumuler et restent visibles au client.
+
+Activé
+
+Codes promo sur la borne
+
+Affiche le champ code promo dans le parcours de commande borne.
+
+Désactivé, le champ disparaît de la borne ; les codes restent utilisables aux autres canaux (caisse, web).
+
+Désactivé
+
+Impression automatique du ticket client
+
+À l'encaissement, imprime automatiquement le ticket client sans clic du caissier.
+
+Désactivée (défaut), le ticket reste imprimable à la demande via le bouton dédié — rien ne se perd, juste plus de clic requis.
+
+Désactivé
+Request
+Messages
+7
+Timeline
+Queries
+1
+11
+#1 system (19:38:24)
+#2 language?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (19:38:24)
+#3 show/2 (ajax) (19:38:24)
+#4 item-category?paginate=0&order_column=sort&order_type=asc&status=5 (ajax) (19:38:24)
+#5 default-access (ajax) (19:38:24)
+#6 system-health (ajax) (19:38:24)
+#7 branch?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (19:38:25)
+#8 interrupteurs (ajax) (19:38:25)
+#9 authcheck (ajax) (19:38:25)
+#10 show/1 (ajax) (19:38:25)
+#11 FRA (ajax) (19:38:27)
+73.24ms
+26MB
+9.x
+GET api/frontend/country-code/show/{country}

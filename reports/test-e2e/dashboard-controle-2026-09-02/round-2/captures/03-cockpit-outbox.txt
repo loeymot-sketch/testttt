@@ -1,0 +1,165 @@
+Français
+Anglais
+Français
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+250,90 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Appareils Connectés
+Déconnexion
+Tableau de bord
+POS
+Produits & Stock
+Conso & Stock
+Ajustement stock
+Catalogue
+Pages de wizard
+Attribut d’articles
+Ingrédients
+Scan Facture
+Commandes caisse
+Historique
+Encaissement
+Vue caisse unifiée
+Caisse livreur
+Ticket promo
+Réglages ticket promo
+Commande Uber (photo)
+La roue
+CAISSE ET COMMANDES
+Écran cuisine
+Suivi client
+COMMUNICATIONS
+Notification pushs
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport des ventes
+Rapport articles
+CONFIGURATION
+Paramètres
+État du système
+Pipeline outbox & événements
+
+Santé du pipeline domain_events, files de jobs et workers
+
+Généré à 02/09/2026 19:44:20
+Rafraîchir
+Rejouer Les Échecs
+Purger Échecs > 24h
+queue:work
+DOWN
+
+Dernier signal il y a 175h
+
+websockets:serve
+DOWN
+
+Aucun signal
+
+Événements en attente (10890)
+ID	TYPE D'ÉVÉNEMENT	BRANCHE	TENTATIVES	CRÉÉ LE	DERNIÈRE ERREUR
+15028	catalog.changed	10	0	02/09/2026 18:32:45	—
+15027	catalog.changed	9	0	02/09/2026 18:32:45	—
+15026	catalog.changed	8	0	02/09/2026 18:32:45	—
+15025	catalog.changed	7	0	02/09/2026 18:32:45	—
+15024	catalog.changed	2	0	02/09/2026 18:32:45	—
+15023	catalog.changed	1	0	02/09/2026 18:32:45	—
+15022	catalog.changed	10	0	02/09/2026 18:32:45	—
+15021	catalog.changed	9	0	02/09/2026 18:32:45	—
+15020	catalog.changed	8	0	02/09/2026 18:32:45	—
+15019	catalog.changed	7	0	02/09/2026 18:32:45	—
+15018	catalog.changed	2	0	02/09/2026 18:32:45	—
+15017	catalog.changed	1	0	02/09/2026 18:32:45	—
+15016	catalog.changed	10	0	02/09/2026 18:32:45	—
+15015	catalog.changed	9	0	02/09/2026 18:32:45	—
+15014	catalog.changed	8	0	02/09/2026 18:32:45	—
+15013	catalog.changed	7	0	02/09/2026 18:32:45	—
+15012	catalog.changed	2	0	02/09/2026 18:32:45	—
+15011	catalog.changed	1	0	02/09/2026 18:32:45	—
+15010	catalog.changed	10	0	02/09/2026 18:32:45	—
+15009	catalog.changed	9	0	02/09/2026 18:32:45	—
+15008	catalog.changed	8	0	02/09/2026 18:32:45	—
+15007	catalog.changed	7	0	02/09/2026 18:32:45	—
+15006	catalog.changed	2	0	02/09/2026 18:32:45	—
+15005	catalog.changed	1	0	02/09/2026 18:32:45	—
+15004	catalog.changed	10	0	02/09/2026 18:32:45	—
+15003	catalog.changed	9	0	02/09/2026 18:32:45	—
+15002	catalog.changed	8	0	02/09/2026 18:32:45	—
+15001	catalog.changed	7	0	02/09/2026 18:32:45	—
+15000	catalog.changed	2	0	02/09/2026 18:32:45	—
+14999	catalog.changed	1	0	02/09/2026 18:32:45	—
+14998	catalog.changed	10	0	02/09/2026 18:32:45	—
+14997	catalog.changed	9	0	02/09/2026 18:32:45	—
+14996	catalog.changed	8	0	02/09/2026 18:32:45	—
+14995	catalog.changed	7	0	02/09/2026 18:32:45	—
+14994	catalog.changed	2	0	02/09/2026 18:32:45	—
+14993	catalog.changed	1	0	02/09/2026 18:32:45	—
+14992	catalog.changed	10	0	02/09/2026 18:32:45	—
+14991	catalog.changed	9	0	02/09/2026 18:32:45	—
+14990	catalog.changed	8	0	02/09/2026 18:32:45	—
+14989	catalog.changed	7	0	02/09/2026 18:32:45	—
+14988	catalog.changed	2	0	02/09/2026 18:32:45	—
+14987	catalog.changed	1	0	02/09/2026 18:32:45	—
+14986	catalog.changed	10	0	02/09/2026 18:32:45	—
+14985	catalog.changed	9	0	02/09/2026 18:32:45	—
+14984	catalog.changed	8	0	02/09/2026 18:32:45	—
+14983	catalog.changed	7	0	02/09/2026 18:32:45	—
+14982	catalog.changed	2	0	02/09/2026 18:32:45	—
+14981	catalog.changed	1	0	02/09/2026 18:32:45	—
+14980	catalog.changed	10	0	02/09/2026 18:32:45	—
+14979	catalog.changed	9	0	02/09/2026 18:32:45	—
+Événements dispatchés (24h)
+Nombre
+0
+p50
+—
+p95
+—
+p99
+—
+Échantillons
+0
+File queue=high
+Nombre
+219
+Âge plus ancien
+—
+Disponible
+✓
+Jobs en échec (1)
+ID	FILE	ÉCHOUÉ LE	EXCEPTION
+2461	default	25/08/2026 13:15:39	Error: Typed property App\Events\OrderCanceled::$fromStatus must not be accessed before initialization in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Events/OrderCanceled.php:55
+Request
+Timeline
+Queries
+2
+Models
+1
+9
+#1 outbox (19:44:19)
+#2 language?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (19:44:20)
+#3 show/2 (ajax) (19:44:20)
+#4 item-category?paginate=0&order_column=sort&order_type=asc&status=5 (ajax) (19:44:20)
+#5 default-access (ajax) (19:44:20)
+#6 outbox (ajax) (19:44:20)
+#7 branch?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (19:44:20)
+#8 authcheck (ajax) (19:44:20)
+#9 show/1 (ajax) (19:44:20)
+37.2ms
+3MB
+9.x
+GET api/admin/setting/branch/show/{branch}

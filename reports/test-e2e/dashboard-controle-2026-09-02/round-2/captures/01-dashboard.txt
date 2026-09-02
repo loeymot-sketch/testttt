@@ -1,0 +1,291 @@
+Français
+Anglais
+Français
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+250,90 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Appareils Connectés
+Déconnexion
+Tableau de bord
+POS
+Produits & Stock
+Conso & Stock
+Ajustement stock
+Catalogue
+Pages de wizard
+Attribut d’articles
+Ingrédients
+Scan Facture
+Commandes caisse
+Historique
+Encaissement
+Vue caisse unifiée
+Caisse livreur
+Ticket promo
+Réglages ticket promo
+Commande Uber (photo)
+La roue
+CAISSE ET COMMANDES
+Écran cuisine
+Suivi client
+COMMUNICATIONS
+Notification pushs
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport des ventes
+Rapport articles
+CONFIGURATION
+Paramètres
+État du système
+Bonsoir !
+Admin Le Cayenne
+PDF Clôture du jour
+Accès rapides
+POS
+Commandes caisse
+Suivi caisse (kanban)
+Encaissement
+Historique
+Écran cuisine
+Suivi client
+Catalogue
+Produits & Stock
+Rapport caisses quotidien
+Vue caisse unifiée
+Vue d’ensemble
+Ventes du jour
+0,00 €
+Commandes du jour
+0
+Total articles menu
+55
+Suivi en direct
+Ticket Moyen
+0,00 €
+
+SUPERVISION CUISINE
+
+Délais de préparation
+
+Actualisé à l’instant
+
+0
+hors délai
+0
+urgentes
+—
+plus ancienne
+
+Aucune préparation hors délai
+
+Dernier contrôle terminé avec succès.
+
+0 préparations hors délai, dont 0 urgentes.
+Répartition par Canal (Aujourd'hui)
+Web
+0%
+Kiosk/App
+0%
+POS
+0%
+Audit Trail NF525 (Journal Inviolable)
+
+Source : audit_logs (écriture seule, chaîne signée HMAC SHA-256). La colonne « Empreinte » montre le préfixe du hash de chaînage : elle prouve que la ligne appartient à la chaîne, pas que la chaîne est intacte. L'intégrité n'est attestée que par un reparcours complet — php artisan fiscal:verify-chain.
+
+UTILISATEUR	ACTION	RESSOURCE	BRANCHE	EMPREINTE	QUAND
+Utilisateur #653 (compte supprimé)	Appareil déconnecté	personal_access_token#11720	1	0651fd3b	il y a 1 semaine
+2026-08-26 03:55:10
+
+Système	Commande annulée	order#6929	1	05731fbb	il y a 1 semaine
+2026-08-25 18:18:27
+
+Système	Commande annulée	order#6920	1	7caed138	il y a 1 semaine
+2026-08-25 14:09:08
+
+Système	Commande annulée	order#6915	1	320b649e	il y a 1 semaine
+2026-08-25 14:03:05
+
+Système	Commande annulée	order#6908	1	79453d45	il y a 1 semaine
+2026-08-25 13:54:19
+
+Système	Commande annulée	order#6907	1	e8ce9ef0	il y a 1 semaine
+2026-08-25 13:54:19
+
+Système	Commande annulée	order#6906	1	86a6b100	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Commande annulée	order#6902	1	18655c4c	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Commande annulée	order#6901	1	0d3058a7	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Commande annulée	order#6900	1	afd2c6c0	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Commande annulée	order#6899	1	6d909761	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Commande annulée	order#6898	1	99a33812	il y a 1 semaine
+2026-08-25 13:54:09
+
+Système	Rejeu événement outbox	domain_event#14667	Toutes	3edce24d	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14666	Toutes	2c10e458	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14665	Toutes	976db7a8	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14664	Toutes	8e3eb2fc	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14663	Toutes	021e7f21	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14662	Toutes	9e1ad72f	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14661	Toutes	5405f2a7	il y a 1 semaine
+2026-08-25 13:46:44
+
+Système	Rejeu événement outbox	domain_event#14660	Toutes	77adcd72	il y a 1 semaine
+2026-08-25 13:46:44
+Statistiques Des Commandes
+Date
+Total Commandes
+0
+En Attente
+0
+Acceptée
+0
+En Préparation
+0
+Préparée
+0
+En Livraison
+0
+Livré
+0
+Annulé
+0
+Retournée
+0
+Refusée
+0
+Résumé Des Ventes
+Date
+0,00 €
+
+Total Ventes
+
+0,00 €
+
+Ventes Moyennes Par Jour
+
+09-01
+09-02
+09-03
+09-04
+09-05
+09-06
+09-07
+09-08
+09-09
+09-10
+09-11
+09-12
+09-13
+09-14
+09-15
+09-16
+09-17
+09-18
+09-19
+09-20
+09-21
+09-22
+09-23
+09-24
+09-25
+09-26
+09-27
+09-28
+09-29
+09-30
+Résumé Des Commandes
+Date
+Total
+0
+Livré (0%)
+Retournée (0%)
+Annulé (0%)
+Refusée (0%)
+Dernier Rapport Z
+
+Dernier rapport Z #27
+
+Closed
+
+16/07/2026 06:57:02
+
+Voir toutes
+Articles Mis En Avant
+Menu Enfant Chicken Burger
+Big Burger
+Cheese Burger
+Méga
+Grande Frites Cheddar Fondu
+Tacos XL
+Grill Burger
+Articles Les Plus Populaires
+Cayenne
+Sandwichs
+7,40 €
+Coca-Cola 33cl
+Boissons
+1,90 €
+Tacos M
+Tacos
+6,90 €
+Eau Plate 50cl
+Boissons
+1,00 €
+Alertes Stock Bas
+Voir toutes
+
+Aucun seuil d'alerte n'est configuré : ce panneau ne surveille rien.
+
+Request
+Messages
+7
+Timeline
+Queries
+1
+6
+#1 dashboard (19:44:12)
+#2 language?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (19:44:13)
+#3 show/2 (ajax) (19:44:13)
+#4 item-category?paginate=0&order_column=sort&order_type=asc&status=5 (ajax) (19:44:13)
+#5 show/1 (ajax) (19:44:13)
+#6 FRA (ajax) (19:44:16)
+112ms
+26MB
+9.x
+GET api/frontend/country-code/show/{country}

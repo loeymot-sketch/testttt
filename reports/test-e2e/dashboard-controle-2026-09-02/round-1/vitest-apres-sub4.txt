@@ -1,0 +1,14 @@
+ ❯ withEnv node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:81:15
+ ❯ run node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:105:3
+ ❯ runBaseTests node_modules/vitest/dist/vendor/base.Ybri3C14.js:30:3
+ ❯ run node_modules/vitest/dist/worker.js:99:5
+ ❯ async file:/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/tinypool/dist/esm/entry/worker.js:72:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  5 failed | 463 passed (468)
+      Tests  9 failed | 3907 passed | 3 skipped (3919)
+     Errors  1 error
+   Start at  18:38:08
+   Duration  190.36s (transform 6.03s, setup 1.82s, collect 35.57s, tests 15.78s, environment 77.29s, prepare 22.58s)
+

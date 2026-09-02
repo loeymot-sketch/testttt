@@ -1,0 +1,25 @@
+..................[stock-n1-heal] lowAlerts query count = 11
+.............................................  63 / 384 ( 16%)
+.E............................................................. 126 / 384 ( 32%)
+............................................................... 189 / 384 ( 49%)
+............................................................... 252 / 384 ( 65%)
+............................................................... 315 / 384 ( 82%)
+......................................SS....................... 378 / 384 ( 98%)
+......                                                          384 / 384 (100%)
+
+Time: 01:17.891, Memory: 201.50 MB
+
+There was 1 error:
+
+1) Tests\Feature\Dashboard\OrderStatisticsSingleGroupedQueryTest::test_order_statistics_correct_counts_via_single_grouped_query
+Symfony\Component\HttpKernel\Exception\HttpException: Dashboard branch scope required.
+
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1172
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php:45
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/DashboardService.php:71
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/DashboardService.php:25
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/DashboardService.php:87
+/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Dashboard/OrderStatisticsSingleGroupedQueryTest.php:47
+
+ERRORS!
+Tests: 384, Assertions: 2035, Errors: 1, Skipped: 2.

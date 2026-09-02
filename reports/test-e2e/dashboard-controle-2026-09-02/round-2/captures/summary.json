@@ -1,0 +1,47 @@
+[
+  {
+    "name": "01-dashboard",
+    "url": "/admin/dashboard",
+    "finalUrl": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "ms": 3805,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 4963
+  },
+  {
+    "name": "02-cockpit-sante",
+    "url": "/admin/observability/system",
+    "finalUrl": "http://127.0.0.1:8766/admin/observability/system",
+    "title": "Le Cayenne",
+    "ms": 3351,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 3685
+  },
+  {
+    "name": "03-cockpit-outbox",
+    "url": "/admin/observability/outbox",
+    "finalUrl": "http://127.0.0.1:8766/admin/observability/outbox",
+    "title": "Le Cayenne",
+    "ms": 3259,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 4390
+  }
+]

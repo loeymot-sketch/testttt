@@ -1,0 +1,50 @@
+[
+  {
+    "name": "01-dashboard",
+    "url": "/admin/dashboard",
+    "finalUrl": "http://127.0.0.1:8766/admin/dashboard",
+    "title": "Le Cayenne",
+    "ms": 4282,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "warning: [intlify] Not found 'label.audit_event_user_device_revoked' key in 'fr' locale messages.",
+      "warning: [intlify] Fall back to translate 'label.audit_event_user_device_revoked' key with 'en' locale.",
+      "warning: [intlify] Not found 'label.audit_event_user_device_revoked' key in 'en' locale messages.",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 4977
+  },
+  {
+    "name": "02-cockpit-sante",
+    "url": "/admin/observability/system",
+    "finalUrl": "http://127.0.0.1:8766/admin/observability/system",
+    "title": "Le Cayenne",
+    "ms": 3391,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 3685
+  },
+  {
+    "name": "03-cockpit-outbox",
+    "url": "/admin/observability/outbox",
+    "finalUrl": "http://127.0.0.1:8766/admin/observability/outbox",
+    "title": "Le Cayenne",
+    "ms": 3371,
+    "navError": null,
+    "consoleErrors": [
+      "error: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+      "error: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    ],
+    "badResponses": [],
+    "rawI18nKeys": [],
+    "textLength": 4444
+  }
+]

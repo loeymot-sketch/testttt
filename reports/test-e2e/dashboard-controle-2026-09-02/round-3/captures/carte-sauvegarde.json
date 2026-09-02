@@ -1,0 +1,4 @@
+{
+  "texte": "DERNIÈRE SAUVEGARDE\n\nil y a 29 jours\n\npre-8axes-2026-08-05.sql.gz\n\nRestauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien\n\nVert seulement si un fichier .sql.gz a moins de 26 h et si la restauration de vérification de 5 h a réellement remonté cette sauvegarde. Un fichier récent qu'on n'a jamais réussi à restaurer ne protège de rien.",
+  "restauration": "Restauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien"
+}
