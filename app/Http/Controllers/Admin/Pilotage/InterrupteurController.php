@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Pilotage;
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Services\Fiscal\AuditLogService;
 use App\Services\Pilotage\InterrupteurService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,8 +23,10 @@ use Illuminate\Support\Facades\Log;
  */
 class InterrupteurController extends AdminController
 {
-    public function __construct(private readonly InterrupteurService $service)
-    {
+    public function __construct(
+        private readonly InterrupteurService $service,
+        private readonly AuditLogService $auditLog,
+    ) {
         parent::__construct();
         // Avant : GET listait les bascules à tout rôle dashboard (caissier).
         // Seul PUT était Admin. Lecture = plan de panne.
@@ -44,15 +47,45 @@ class InterrupteurController extends AdminController
 
         try {
             $avant = $this->service->valeur($nom);
-            $etat = $this->service->regler($nom, (bool) $valide['actif']);
+            $apres = (bool) $valide['actif'];
 
-            // Une bascule qui change le comportement de la caisse doit laisser
-            // une trace : sans elle, personne ne saura POURQUOI le paiement
-            // fractionné a cessé de fonctionner un mardi soir.
+            // [2026-09-02 · Sub 4.3 · Codex P2-B] La trace est écrite AVANT la bascule, et
+            // dans le journal d'audit chaîné — pas dans un fichier texte.
+            //
+            // Le soir où le paiement fractionné cesse de fonctionner, la question n'est
+            // pas « est-ce que ça marche », c'est « QUI l'a coupé, QUAND, depuis quel
+            // état ». Un `Log::info` ne répond pas à ça de façon opposable : le fichier
+            // est rotaté, tronquable, et purgeable par la personne même qui a basculé.
+            // `audit_logs` est signé en chaîne et sa suppression est refusée par un
+            // déclencheur SQL.
+            //
+            // L'ordre compte : si la trace ne peut pas être écrite, la bascule N'A PAS
+            // LIEU. Une caisse dont le comportement change sans que le journal le sache
+            // est exactement ce qu'on cherche à rendre impossible.
+            $this->auditLog->write([
+                'branch_id'   => (int) ($u->branch_id ?? 0),
+                'user_id'     => (int) $u->id,
+                'action'      => 'pilotage.interrupteur.bascule',
+                'resource'    => 'interrupteur',
+                'resource_id' => null,
+                'payload'     => [
+                    'interrupteur'   => $nom,
+                    'avant'          => $avant,
+                    'apres'          => $apres,
+                    'par'            => $u->email,
+                    'correlation_id' => $request->header('X-Correlation-Id'),
+                    'ip'             => $request->ip(),
+                ],
+            ]);
+
+            $etat = $this->service->regler($nom, $apres);
+
+            // Le journal applicatif reste, pour le confort du diagnostic — mais il n'est
+            // plus la seule trace.
             Log::info('[pilotage] interrupteur bascule', [
                 'interrupteur' => $nom,
                 'avant'        => $avant,
-                'apres'        => (bool) $valide['actif'],
+                'apres'        => $apres,
                 'par'          => $u->email,
                 'user_id'      => $u->id,
             ]);
