@@ -9,6 +9,7 @@ use App\Models\DomainEvent;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Observability\SyncMetricsRecorder;
 use App\Services\Outbox\OutboxReplayService;
+use App\Support\Backup\RestoreDrillResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -741,17 +742,30 @@ class SyncOverviewController extends AdminController
 
         // Fraîcheur des sauvegardes : c'est la DATE du fichier le plus récent qui
         // compte, pas leur nombre. Dix sauvegardes vieilles d'un mois ne valent rien.
+        // [2026-09-02 · Codex P1-H] L'âge est gardé en DÉCIMAL pour la comparaison au
+        // seuil ; l'arrondi n'intervient qu'à l'affichage. Avant, `(int) round(26.4)`
+        // donnait 26, donc « 26 > 26 » était faux et la carte restait verte pendant que
+        // HealthController::checkBackupAge, qui compare en décimal, déclarait `degraded`.
+        // Deux écrans, deux vérités, pour le même fichier.
         $dossier = storage_path('backups'.DIRECTORY_SEPARATOR.'db-daily');
         $dernier = null;
+        $ageHeuresExact = null;
         $ageHeures = null;
         if (is_dir($dossier)) {
             $fichiers = glob($dossier.DIRECTORY_SEPARATOR.'*.sql.gz') ?: [];
             if ($fichiers !== []) {
                 usort($fichiers, fn ($a, $b) => filemtime($b) <=> filemtime($a));
                 $dernier = basename($fichiers[0]);
-                $ageHeures = (int) round((time() - filemtime($fichiers[0])) / 3600);
+                $ageHeuresExact = (time() - filemtime($fichiers[0])) / 3600;
+                $ageHeures = (int) round($ageHeuresExact);
             }
         }
+
+        // [2026-09-02 · Codex P1-A] Le RÉSULTAT de la restauration de vérification (5 h),
+        // et plus seulement la date du fichier. Une sauvegarde fraîche mais non
+        // restaurable ne vaut rien ; jusqu'ici son verdict finissait dans un fichier de
+        // log que personne n'ouvre.
+        $restauration = RestoreDrillResult::current();
 
         // Battement du planificateur : s'il s'arrête, TOUT s'arrête en silence —
         // sauvegardes, relances de file, vérification de la chaîne fiscale.
@@ -764,11 +778,19 @@ class SyncOverviewController extends AdminController
         // jusqu'ici `timestamp` à l'heure courante. Les cartes pouvaient donc afficher
         // « en service » en vert à partir d'une mesure arbitrairement vieille. La fraîcheur
         // était vérifiée pour la sauvegarde et pour le planificateur, pas pour les contrôles.
+        // [2026-09-02 · Codex P1-H] Deuxième passe : un horodatage PRÉSENT mais illisible
+        // (`strtotime` → false) ou DANS LE FUTUR donnait un âge nul ou négatif, donc aucune
+        // alerte — une mesure dont on ne sait pas dater n'est pas une mesure fraîche.
         $mesureLe = $sante['timestamp'] ?? null;
         $mesureAgeMin = null;
+        $horodatageInvalide = false;
         if ($mesureLe !== null) {
             $horodatage = is_numeric($mesureLe) ? (int) $mesureLe : strtotime((string) $mesureLe);
-            if ($horodatage) {
+            if ($horodatage === false || $horodatage <= 0) {
+                $horodatageInvalide = true;
+            } elseif ($horodatage > time() + 60) {
+                $horodatageInvalide = true;
+            } else {
                 $mesureAgeMin = (int) round((time() - $horodatage) / 60);
             }
         }
@@ -784,6 +806,8 @@ class SyncOverviewController extends AdminController
         // efface aussi le rapport sur elle-même. Un panneau qui ne mesure rien doit le dire.
         if ((array) ($sante['checks'] ?? []) === []) {
             $alertes[] = "contrôles de santé : aucune mesure disponible — la sonde n'a pas tourné";
+        } elseif ($horodatageInvalide) {
+            $alertes[] = "contrôles de santé : horodatage de mesure invalide — impossible de dater ces valeurs";
         } elseif ($mesureAgeMin !== null && $mesureAgeMin > 30) {
             $alertes[] = $mesureAgeMin > 120
                 ? 'contrôles de santé : mesure vieille de '.((int) round($mesureAgeMin / 60)).' h'
@@ -805,9 +829,9 @@ class SyncOverviewController extends AdminController
                 $alertes[] = "{$quoi} : {$etat}";
             }
         }
-        if ($ageHeures === null) {
+        if ($ageHeuresExact === null) {
             $alertes[] = 'aucune sauvegarde trouvée';
-        } elseif ($ageHeures > 26) {
+        } elseif ($ageHeuresExact > 26) {
             // Même unité que la carte de l'écran : « 111 h » dans l'alerte et
             // « 5 jours » sur la carte décrivaient le même fait de deux façons,
             // ce qui fait douter de l'un des deux.
@@ -815,6 +839,12 @@ class SyncOverviewController extends AdminController
                 ? 'dernière sauvegarde il y a '.((int) round($ageHeures / 24)).' jours'
                 : "dernière sauvegarde il y a {$ageHeures} h";
         }
+
+        // [2026-09-02 · Codex P1-A] Une sauvegarde restaurable est la seule qui compte.
+        if (($alerteRestauration = RestoreDrillResult::alerte($restauration)) !== null) {
+            $alertes[] = $alerteRestauration;
+        }
+
         if ($ticAgeMin === null) {
             $alertes[] = 'planificateur : aucun battement enregistré';
         } elseif ($ticAgeMin > 10) {
@@ -831,11 +861,14 @@ class SyncOverviewController extends AdminController
             'mesure_le'  => $mesureLe,
             // Permet à l'écran de distinguer une mesure fraîche d'une mesure figée.
             'mesure_age_min'    => $mesureAgeMin,
+            'mesure_horodatage_invalide' => $horodatageInvalide,
             'mesure_attendu_max_min' => 30,
             'sauvegarde' => [
                 'dernier_fichier' => $dernier,
                 'age_heures'      => $ageHeures,
                 'attendu_max_h'   => 26,
+                // Le fichier existe-t-il ET a-t-il été restauré avec succès récemment ?
+                'restauration'    => $restauration,
             ],
             'planificateur' => [
                 'dernier_battement_min' => $ticAgeMin,

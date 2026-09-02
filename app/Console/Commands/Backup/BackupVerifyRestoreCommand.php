@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
+use App\Support\Backup\RestoreDrillResult;
 
 /**
  * [OPS-1 restore drill — supervisor campaign 2026-06-04]
@@ -74,6 +75,17 @@ use Symfony\Component\Process\Process;
  */
 class BackupVerifyRestoreCommand extends Command
 {
+    /**
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-A] Contexte du drill en cours, pour
+     * que le verdict persisté dise QUOI a été restauré et EN COMBIEN DE TEMPS — pas
+     * seulement vert/rouge.
+     */
+    private ?string $drillFile = null;
+
+    private ?string $drillSha256 = null;
+
+    private ?float $drillStartedAt = null;
+
     protected $signature = 'backup:verify-restore'
         . ' {--file= : Explicit backup .sql.gz to restore (default: newest daily-*.sql.gz)}'
         . ' {--scratch-db= : Scratch DB name (default: <live>_restore_scratch). MUST differ from live.}'
@@ -118,6 +130,16 @@ class BackupVerifyRestoreCommand extends Command
         $file = $this->resolveBackupFile();
         if ($file === null) {
             $this->error('No backup file found. Run `php artisan foodking:backup-daily` first, or pass --file=.');
+            // [Codex P1-A] Un drill qui ne trouve rien à restaurer est un ÉCHEC à afficher,
+            // pas un silence : sans cette ligne le cockpit garderait le dernier verdict vert.
+            RestoreDrillResult::store([
+                'status' => 'failed',
+                'verified_at' => now()->toIso8601String(),
+                'file' => null,
+                'sha256' => null,
+                'duration_s' => 0.0,
+                'reasons' => ['no backup file found to restore'],
+            ]);
 
             return self::FAILURE;
         }
@@ -126,6 +148,11 @@ class BackupVerifyRestoreCommand extends Command
 
             return self::FAILURE;
         }
+
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-A] Contexte pour le verdict persisté.
+        $this->drillFile = basename($file);
+        $this->drillSha256 = @hash_file('sha256', $file) ?: null;
+        $this->drillStartedAt = microtime(true);
 
         $ageHours = (time() - (int) @filemtime($file)) / 3600;
         $this->info(sprintf(
@@ -574,6 +601,20 @@ class BackupVerifyRestoreCommand extends Command
      */
     private function renderVerdict(bool $green, array $reasons, array $scratchCounts, array $liveCounts): void
     {
+        // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-A] LE point de bascule : le verdict
+        // est désormais PERSISTÉ, pas seulement journalisé. Le cockpit et /health/ready le
+        // lisent — une sauvegarde fraîche mais non restaurable ne peut plus afficher
+        // « Tout va bien ». Écriture au mieux-effort : elle ne doit jamais faire échouer
+        // le drill lui-même (RestoreDrillResult avale ses propres erreurs).
+        RestoreDrillResult::store([
+            'status' => $green ? 'green' : 'failed',
+            'verified_at' => now()->toIso8601String(),
+            'file' => $this->drillFile,
+            'sha256' => $this->drillSha256,
+            'duration_s' => $this->drillStartedAt !== null ? microtime(true) - $this->drillStartedAt : null,
+            'reasons' => $reasons,
+        ]);
+
         $this->newLine();
         if ($green) {
             $this->info('==================== RESTORE DRILL: GREEN ====================');

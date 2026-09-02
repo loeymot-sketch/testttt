@@ -27,7 +27,14 @@ class OrderStatisticsSingleGroupedQueryTest extends TestCase
     public function test_order_statistics_correct_counts_via_single_grouped_query(): void
     {
         // Admin (branch_id=0) bypasse BranchScope → voit toutes les commandes.
+        // [2026-09-02] Le RÔLE est désormais indispensable, pas seulement `branch_id = 0`.
+        // Depuis le passage en fail-closed de `DashboardService::dashboardBranchId()`
+        // (29 août), `branch_id = 0` SANS rôle Admin est refusé en 403 au lieu d'ouvrir
+        // toutes les branches. Ce test était resté sur l'ancien contrat et échouait depuis
+        // — un rouge de fond que personne n'avait relié à son correctif.
+        $this->seedSpatieRoles();
         $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
         $this->actingAs($admin, 'sanctum');
 
         $today = now();

@@ -63,11 +63,17 @@ class HealthController extends Controller
             // ou si le dernier backup dépasse 26 h (mort silencieuse jusqu'ici invisible des sondes).
             'scheduler' => $this->checkScheduler(),
             'backup_age' => $this->checkBackupAge(),
+            // [2026-09-02 · Codex P1-A] `backup_age` ne dit QUE l'âge du fichier. Un
+            // `.sql.gz` de deux heures qu'on n'a jamais réussi à remonter ne protège de
+            // rien — et c'est le cas le plus dangereux, parce qu'il s'affiche en vert.
+            // Consultatif hors production comme ses deux voisins : un poste de
+            // développement ne lance pas le planificateur, donc jamais le drill.
+            'restore_drill' => $this->checkRestoreDrill(),
         ];
 
         $gating = app()->environment('production')
             ? $checks
-            : array_diff_key($checks, ['scheduler' => 1, 'backup_age' => 1]);
+            : array_diff_key($checks, ['scheduler' => 1, 'backup_age' => 1, 'restore_drill' => 1]);
         $allOk = collect($gating)->every(fn ($c) => $c['status'] === 'ok');
 
         return response()->json([
@@ -205,6 +211,29 @@ class HealthController extends Controller
         return $ageHours > 26
             ? ['status' => 'degraded', 'detail' => sprintf('newest backup %.1fh old (>26h)', $ageHours)]
             : ['status' => 'ok'];
+    }
+
+    /**
+     * [2026-09-02 · Codex P1-A] Le verdict de la restauration de vérification (5 h), tel
+     * que `backup:verify-restore` le persiste désormais. Jamais joué, échoué ou périmé →
+     * `degraded` : l'absence de preuve n'est pas une preuve.
+     */
+    private function checkRestoreDrill(): array
+    {
+        $etat = \App\Support\Backup\RestoreDrillResult::current();
+
+        if ($etat['status'] === 'green') {
+            return ['status' => 'ok', 'detail' => sprintf(
+                'restore verified %.1fh ago (%s)',
+                (float) ($etat['age_hours'] ?? 0),
+                $etat['file'] ?? 'unknown file'
+            )];
+        }
+
+        return [
+            'status' => 'degraded',
+            'detail' => \App\Support\Backup\RestoreDrillResult::alerte($etat) ?? 'restore drill status unknown',
+        ];
     }
 
     private function checkQueueWorker(): array

@@ -83,10 +83,18 @@
                 <p class="mt-1 truncate text-xs text-slate-500">
                     {{ etat.sauvegarde && etat.sauvegarde.dernier_fichier ? etat.sauvegarde.dernier_fichier : 'aucun fichier trouvé' }}
                 </p>
+                <p
+                    class="mt-2 text-xs font-medium"
+                    :class="restaurationOk ? 'text-emerald-700' : 'text-red-700'"
+                    data-testid="system-health-restauration"
+                >
+                    {{ restaurationTexte }}
+                </p>
                 <p class="mt-2 text-xs text-slate-500">
                     Vert seulement si un fichier <code>.sql.gz</code> a moins de
-                    26 h (même seuil que la sonde de readiness). La restauration
-                    de 5 h n'est pas encore lue ici.
+                    26 h <em>et</em> si la restauration de vérification de 5 h a
+                    réellement remonté cette sauvegarde. Un fichier récent qu'on
+                    n'a jamais réussi à restaurer ne protège de rien.
                 </p>
             </div>
 
@@ -185,9 +193,41 @@ export default {
                 };
             });
         },
+        // [2026-09-02 · Codex P1-A] Le verdict de la restauration de vérification.
+        // Absent = `unknown` : ne JAMAIS traiter l'absence de preuve comme une preuve.
+        restauration() {
+            const s = this.etat.sauvegarde;
+            return (s && s.restauration) || { status: 'unknown', reasons: [] };
+        },
+        restaurationOk() {
+            return this.restauration.status === 'green';
+        },
+        restaurationTexte() {
+            const r = this.restauration;
+            const raison = Array.isArray(r.reasons) && r.reasons.length ? ` : ${r.reasons[0]}` : '';
+            if (r.status === 'green') {
+                const age = r.age_hours === null || r.age_hours === undefined
+                    ? ''
+                    : ` il y a ${r.age_hours < 1 ? "moins d'une heure" : `${Math.round(r.age_hours)} h`}`;
+                const duree = r.duration_s ? ` (${Math.round(r.duration_s)} s)` : '';
+                return `Restauration de vérification réussie${age}${duree}`;
+            }
+            if (r.status === 'failed') {
+                return `Restauration de vérification ÉCHOUÉE${raison}`;
+            }
+            if (r.status === 'stale') {
+                const jours = Math.round((r.age_hours || 0) / 24);
+                return `Restauration de vérification non rejouée depuis ${jours} jours`;
+            }
+            return "Restauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien";
+        },
+        // Le fichier ET sa restauration. Une sauvegarde de 2 h corrompue s'affichait
+        // en vert : seule la date du fichier était lue.
         sauvegardeOk() {
             const s = this.etat.sauvegarde;
-            return !!s && s.age_heures !== null && s.age_heures <= s.attendu_max_h;
+            const fichierFrais = !!s && s.age_heures !== null && s.age_heures !== undefined
+                && s.age_heures <= s.attendu_max_h;
+            return fichierFrais && this.restaurationOk;
         },
         sauvegardeTexte() {
             const s = this.etat.sauvegarde;

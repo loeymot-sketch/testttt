@@ -192,5 +192,54 @@ class SystemHealthTest extends TestCase
             $this->assertStringNotContainsString('contrôles de santé', $alerte);
         }
         $this->assertLessThan(30, $r['mesure_age_min']);
+        $this->assertFalse($r['mesure_horodatage_invalide']);
+    }
+
+    /**
+     * [2026-09-02 · Codex P1-H] Deuxième passe sur la fraîcheur. Le contrôle d'âge ne
+     * mordait que si `strtotime()` rendait un entier plausible. Un horodatage ILLISIBLE
+     * (`strtotime` → false) donnait un âge `null`, donc aucune alerte : cinq cartes vertes
+     * à partir d'une mesure qu'on ne sait même pas dater.
+     */
+    public function test_un_horodatage_illisible_est_signale_et_ne_passe_pas_pour_frais(): void
+    {
+        Cache::forever('healthz:last', [
+            'status' => 'ok',
+            'checks' => ['db' => 'ok', 'redis' => 'ok', 'websocket' => 'ok', 'fiscal_chain' => 'ok', 'queue_pending' => 0],
+            'timestamp' => 'pas-une-date',
+        ]);
+        Cache::forever('scheduler:last_tick', now()->timestamp);
+
+        $r = $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/admin/observability/system-health')->assertOk()->json();
+
+        $this->assertSame('attention', $r['verdict']);
+        $this->assertTrue($r['mesure_horodatage_invalide']);
+        $this->assertNull($r['mesure_age_min']);
+        $this->assertContains(
+            "contrôles de santé : horodatage de mesure invalide — impossible de dater ces valeurs",
+            $r['alertes']
+        );
+    }
+
+    /**
+     * Le cas jumeau, plus vicieux : un horodatage DANS LE FUTUR (horloge décalée, machine
+     * remise à l'heure) produisait un âge négatif — donc « frais » — et taisait l'anomalie.
+     */
+    public function test_un_horodatage_dans_le_futur_ne_passe_pas_pour_frais(): void
+    {
+        Cache::forever('healthz:last', [
+            'status' => 'ok',
+            'checks' => ['db' => 'ok', 'redis' => 'ok', 'websocket' => 'ok', 'fiscal_chain' => 'ok', 'queue_pending' => 0],
+            'timestamp' => now()->addHours(3)->toIso8601String(),
+        ]);
+        Cache::forever('scheduler:last_tick', now()->timestamp);
+
+        $r = $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/admin/observability/system-health')->assertOk()->json();
+
+        $this->assertSame('attention', $r['verdict']);
+        $this->assertTrue($r['mesure_horodatage_invalide']);
+        $this->assertNull($r['mesure_age_min']);
     }
 }
