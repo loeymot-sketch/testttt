@@ -143,9 +143,13 @@ class GuestSignupController extends Controller
      * de ne rien demander d'autre à celui qui en a un. Mitigation : débit `otp-send` (5/min par
      * e-mail + 20/min global) ; un compte non-invité (staff) est TOUJOURS « inconnu » ici.
      *
-     * Compte de revue App Store (§A3) : APP_REVIEW_EMAIL + APP_REVIEW_OTP (config auth.app_review,
-     * vides par défaut) → code FIXE pour CE seul e-mail, aucun envoi. Le réviseur Apple ne peut pas
-     * lire nos e-mails ; sans cela l'application est refusée faute de pouvoir se connecter.
+     * PAS de code fixe pour la revue App Store. J'en avais posé un (APP_REVIEW_EMAIL /
+     * APP_REVIEW_OTP) : `app/PUBLICATION.md §8` du dépôt tranche l'inverse, et a raison —
+     * « un code fixe pour une adresse connue est une porte qu'on oublie de refermer ». Le
+     * garde-fou habituel du projet (interdire en production) ne s'applique pas ici, puisque
+     * Apple examine l'application CONTRE la production. L'examinateur reçoit donc son code
+     * comme tout le monde, dans une boîte de démonstration dédiée dont les identifiants sont
+     * donnés en notes de revue (procédure : PUBLICATION.md §8).
      */
     public function emailLogin(GuestEmailLoginRequest $request
     ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
@@ -159,15 +163,9 @@ class GuestSignupController extends Controller
                 $this->otpManagerService->otp($request, dispatchSms: false);
 
                 $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
-                $codeRevue  = $this->codeDeRevuePour($email);
-                if ($codeRevue !== null) {
-                    // Revue App Store : code fixe, jamais envoyé — la ligne otps garde son expiry.
-                    DB::table('otps')->where('phone', $cle)->update(['token' => $codeRevue]);
-                } else {
-                    $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
-                    if (! blank($token) && filled($compte->email)) {
-                        Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
-                    }
+                $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
+                if (! blank($token) && filled($compte->email)) {
+                    Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
                 }
 
                 $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
@@ -254,18 +252,6 @@ class GuestSignupController extends Controller
         return \App\Support\PhoneDisplay::safe($compte->phone) !== null
             ? (string) $compte->phone
             : self::cleSansNumero($email);
-    }
-
-    /** Code fixe du compte de revue App Store, ou null si non configuré / autre e-mail. */
-    private function codeDeRevuePour(string $email): ?string
-    {
-        $emailRevue = mb_strtolower(trim((string) config('auth.app_review.email', '')));
-        $code       = trim((string) config('auth.app_review.otp', ''));
-        if ($emailRevue === '' || $code === '' || $emailRevue !== $email) {
-            return null;
-        }
-
-        return $code;
     }
 
     /**

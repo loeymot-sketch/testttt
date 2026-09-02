@@ -52,7 +52,6 @@ class EmailLoginFlowTest extends TestCase
         ]);
 
         config(['app.api_key' => self::API_KEY]);
-        config(['auth.app_review.email' => '', 'auth.app_review.otp' => '']);
         $this->withHeaders([
             'x-api-key' => self::API_KEY,
             'Accept'    => 'application/json',
@@ -206,33 +205,42 @@ class EmailLoginFlowTest extends TestCase
         $this->assertNull(User::withoutGlobalScopes()->where('phone', 'email:social@example.com')->first(), 'La clé synthétique ne doit JAMAIS devenir un téléphone de compte.');
     }
 
-    /** (7) Compte de revue App Store : code FIXE, aucun e-mail, uniquement pour cet e-mail. */
-    public function test_app_review_account_gets_fixed_code_and_no_mail(): void
+    /**
+     * (7) SENTINELLE — aucune porte dérobée d'examen App Store.
+     *
+     * J'avais posé un code de connexion FIXE pour une adresse configurée (APP_REVIEW_EMAIL /
+     * APP_REVIEW_OTP), afin que l'examinateur Apple puisse se connecter sans lire nos e-mails.
+     * `app/PUBLICATION.md §8` du dépôt du site tranchait déjà l'inverse : « un code fixe pour
+     * une adresse connue est une porte qu'on oublie de refermer ». Et le garde-fou habituel du
+     * projet — interdire en production — ne peut pas s'appliquer, puisque l'examen se fait
+     * CONTRE la production. Le mécanisme a donc été retiré ; l'examinateur reçoit son code
+     * dans une boîte de démonstration dédiée (procédure PUBLICATION.md §8).
+     *
+     * Ce test verrouille la décision : quelle que soit la configuration, le code d'un compte
+     * connu reste ALÉATOIRE et part par e-mail. Il rougirait si quelqu'un remettait la porte.
+     */
+    public function test_aucun_code_fixe_de_revue_app_store(): void
     {
         Mail::fake();
-        config(['auth.app_review.email' => 'revue@lecayenne.fr', 'auth.app_review.otp' => '246810']);
+        // On tente de rallumer l'ancienne porte par tous ses noms — elle ne doit plus exister.
+        config([
+            'auth.app_review.email'     => 'revue@lecayenne.fr',
+            'auth.app_review.otp'       => '246810',
+            'security.app_review.email' => 'revue@lecayenne.fr',
+            'security.app_review.otp'   => '246810',
+        ]);
         $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555010', 'name' => 'Revue Apple']);
-        $this->guest(['email' => 'client@example.com', 'phone' => '0699555011', 'name' => 'Client']);
 
         $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
-        Mail::assertNothingSent();
-        $this->assertSame('246810', $this->tokenFor('0699555010'));
-        $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '246810'])->assertStatus(201);
 
-        // Un autre client garde le comportement normal : code aléatoire + e-mail.
-        $this->emailLogin(['email' => 'client@example.com'])->assertStatus(200);
-        $this->assertNotSame('246810', $this->tokenFor('0699555011'));
-        Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $m) => $m->hasTo('client@example.com'));
-    }
-
-    /** (7b) Sans APP_REVIEW_OTP, le compte de revue est un compte comme un autre. */
-    public function test_app_review_is_inert_when_not_configured(): void
-    {
-        Mail::fake();
-        config(['auth.app_review.email' => 'revue@lecayenne.fr', 'auth.app_review.otp' => '']);
-        $this->guest(['email' => 'revue@lecayenne.fr']);
-        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200);
+        $token = $this->tokenFor('0699555010');
+        $this->assertNotSame('246810', $token, 'Un code fixe de revue a été réintroduit — porte dérobée.');
+        $this->assertMatchesRegularExpression('/^\d{4,6}$/', (string) $token);
         Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $m) => $m->hasTo('revue@lecayenne.fr'));
+
+        // Et le code fixe ne doit ouvrir aucune session.
+        $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '246810'])
+            ->assertStatus(422);
     }
 
     /** (8) verify sans téléphone NI e-mail → 422, jamais de token. */
