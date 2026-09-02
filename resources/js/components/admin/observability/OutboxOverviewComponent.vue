@@ -125,10 +125,21 @@
                     <i class="lab lab-refresh" aria-hidden="true"></i>
                     {{ $t('admin.observability_outbox.refresh') }}
                 </button>
+                <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                -->
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
+                    :class="{ 'opacity-50 cursor-not-allowed': retrying || terminalFailures.count === 0 }"
                     :disabled="retrying || terminalFailures.count === 0"
+                    :title="terminalFailures.count === 0
+                        ? 'Aucun échec terminal à rejouer'
+                        : `${terminalFailures.count} échec(s) à rejouer`"
                     data-testid="outbox-retry-failed"
                     @click="retryFailed"
                 >
@@ -138,7 +149,11 @@
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
+                    :class="{ 'opacity-50 cursor-not-allowed': draining || terminalFailures.count === 0 }"
                     :disabled="draining || terminalFailures.count === 0"
+                    :title="terminalFailures.count === 0
+                        ? 'Aucun échec terminal à purger'
+                        : `${terminalFailures.count} échec(s) purgeables`"
                     data-testid="outbox-drain-failed"
                     @click="drainFailed"
                 >

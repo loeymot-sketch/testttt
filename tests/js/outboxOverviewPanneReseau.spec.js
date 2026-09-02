@@ -167,3 +167,56 @@ describe('Cockpit outbox — honnête quand il ne mesure plus rien', () => {
         expect(w.get('[data-testid="outbox-retry-failed"]').attributes('disabled')).toBeDefined();
     });
 });
+
+/**
+ * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · relevé de la campagne navigateur]
+ *
+ * Sur la capture, « Rejouer Les Échecs » et « Purger Échecs > 24h » sont rigoureusement
+ * identiques à « Rafraîchir » — alors qu'ils sont désactivés (aucun échec terminal).
+ * `.db-btn` n'a AUCUN style d'état désactivé dans toute l'administration : un bouton
+ * inerte a exactement l'apparence d'un bouton actif. Sur l'écran qu'on ouvre quand
+ * quelque chose ne va pas, l'opérateur clique, rien ne se passe, et il en conclut que
+ * l'outil est cassé.
+ */
+describe('Cockpit outbox — un bouton inerte doit se voir', () => {
+    beforeEach(() => {
+        axiosMock = { get: vi.fn(), post: vi.fn() };
+        globalThis.axios = axiosMock;
+        window.axios = axiosMock;
+    });
+
+    it('les actions indisponibles sont visuellement distinctes', async () => {
+        axiosMock.get.mockResolvedValue({
+            data: { ...REPONSE, terminal_failures: { count: 0, contract_violations: 0 } },
+        });
+        const w = monter();
+        await flushPromises();
+
+        for (const id of ['outbox-retry-failed', 'outbox-drain-failed']) {
+            const b = w.get(`[data-testid="${id}"]`);
+            expect(b.attributes('disabled'), `${id} doit être désactivé`).toBeDefined();
+            expect(b.classes().join(' '), `${id} doit le montrer`).toMatch(/opacity|cursor-not-allowed/);
+        }
+    });
+
+    it('les actions disponibles ne portent pas ce style', async () => {
+        axiosMock.get.mockResolvedValue({ data: REPONSE });
+        const w = monter();
+        await flushPromises();
+
+        const b = w.get('[data-testid="outbox-retry-failed"]');
+        expect(b.attributes('disabled')).toBeUndefined();
+        expect(b.classes().join(' ')).not.toMatch(/cursor-not-allowed/);
+    });
+
+    it('le bouton dit pourquoi il est inerte', async () => {
+        axiosMock.get.mockResolvedValue({
+            data: { ...REPONSE, terminal_failures: { count: 0, contract_violations: 0 } },
+        });
+        const w = monter();
+        await flushPromises();
+
+        expect(w.get('[data-testid="outbox-retry-failed"]').attributes('title'))
+            .toMatch(/aucun échec/i);
+    });
+});
