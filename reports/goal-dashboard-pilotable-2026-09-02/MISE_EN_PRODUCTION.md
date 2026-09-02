@@ -23,38 +23,64 @@ justes du même défaut se contredisent — à faire de tête reposée, pas en f
 
 ---
 
-## 2. Ce que cette mise en production exige (ce n'est pas qu'un `git pull`)
+## 2. Ce qui est sur GitHub
 
-Deux migrations et une reconstruction des assets. Sur une caisse NF525 en service.
+Branche **`feat/wizard-pages-2026-09-02`** (poussée le 2026-09-02, sur autorisation explicite).
+
+⚠ **Elle porte 30 commits, pas 2.** C'est la pointe de la branche de travail : mes deux commits
+(`5f0f1d405`, `e149dd493`) plus 28 d'autres sessions déjà présents dessus — dont deux arrivés
+pendant ma session (`41025322f` « contrôler tout le service sans jamais quitter la caisse »,
+`56b4a41ec`). Déployer cette branche déploie **tout cela**. Si vous ne voulez que la bibliothèque de
+pages, il faut extraire mes deux commits sur une branche partie de la production actuelle — dites-le,
+je le fais.
+
+---
+
+## 3. La marche à suivre sur le VPS
+
+Deux migrations et une reconstruction des assets, sur une caisse NF525 en service. Les valeurs
+ci-dessous viennent de `deploy/ansible/group_vars/all.yml` et du gabarit supervisor du dépôt
+(`app_root=/var/www/foodking`, PHP 8.2, programmes `foodking-queue` / `foodking-soketi`) : **à
+confirmer sur la machine**, cette configuration est un modèle qui n'a jamais été branché sur
+l'origine réelle.
+
+**À faire hors service** (aucune commande en cours, tiroir fermé, Z du jour passé).
 
 ```bash
+ssh <utilisateur>@vps-418872ac.vps.ovh.net
+cd /var/www/foodking
+
 # 0. SAUVEGARDE D'ABORD — non négociable
-php artisan foodking:backup-daily
-php artisan fiscal:verify-chain --all          # doit dire CHAIN OK avant de commencer
+php8.2 artisan foodking:backup-daily
+php8.2 artisan fiscal:verify-chain --all        # doit dire CHAIN OK AVANT de commencer
+git rev-parse HEAD > /tmp/foodking-revision-precedente.txt   # pour le retour arrière
 
 # 1. Code
-git fetch origin && git checkout <la révision retenue>
+git fetch origin
+git checkout feat/wizard-pages-2026-09-02
 
-# 2. Dépendances + assets (les bundles ne sont PAS dans le dépôt)
+# 2. Dépendances + assets (les bundles ne sont PAS versionnés : ils se construisent ici)
 composer install --no-dev --optimize-autoloader
 npm ci && npm run production
 
 # 3. Base — les deux migrations de cette livraison
-php artisan migrate --force
+php8.2 artisan migrate --force
 #   2026_09_02_100000_create_wizard_pages_tables      (2 tables neuves + 1 colonne nullable)
-#   2026_09_02_110000_bootstrap_wizard_pages_library  (données seules, idempotente)
+#   2026_09_02_110000_bootstrap_wizard_pages_library  (données seules, idempotente, rejouable)
 
-# 4. Caches
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+# 4. Caches + services
+php8.2 artisan config:cache && php8.2 artisan route:cache && php8.2 artisan view:cache
+sudo supervisorctl restart foodking-queue
+sudo systemctl reload php8.2-fpm nginx
 
-# 5. Contrôle : la bibliothèque s'est construite depuis le catalogue réel
-php artisan tinker --execute='echo \App\Models\WizardPage::count()." pages, ".\App\Models\WizardPageChoice::count()." choix";'
-php artisan composer:materialize --all --dry-run   # LIRE le plan avant d'appliquer
+# 5. Contrôle : la bibliothèque s'est construite depuis VOTRE catalogue
+php8.2 artisan tinker --execute='echo \App\Models\WizardPage::count()." pages, ".\App\Models\WizardPageChoice::count()." choix";'
+php8.2 artisan composer:materialize --all --dry-run   # LIRE le plan en entier avant d'appliquer
 ```
 
-### ⚠ L'étape 6 change la carte servie au client
+### ⚠ L'étape suivante, elle, change la carte servie au client
 
-`php artisan composer:materialize --all` aligne **chaque produit** sur les pages de sa catégorie.
+Une fois le plan lu et accepté : `php8.2 artisan composer:materialize --all`. Elle aligne **chaque produit** sur les pages de sa catégorie.
 Sur la base de développement, ce passage n'a produit **que des créations** (306 lignes, `~0 −0` :
 aucun prix réécrit, aucune option retirée) — mais sur une base qui a divergé davantage, il peut
 **ramener un prix saisi à la main au prix de la page** et **retirer de la vente** une option ajoutée
@@ -68,9 +94,12 @@ demande confirmation dès qu'une ligne serait réécrite ou retirée.
 ### Retour arrière
 
 ```bash
-php artisan migrate:rollback --step=2   # supprime les 2 tables + la colonne nullable
-git checkout <révision précédente> && composer install --no-dev && npm run production
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+cd /var/www/foodking
+php8.2 artisan migrate:rollback --step=2    # supprime les 2 tables + la colonne nullable
+git checkout "$(cat /tmp/foodking-revision-precedente.txt)"
+composer install --no-dev --optimize-autoloader && npm ci && npm run production
+php8.2 artisan config:cache && php8.2 artisan route:cache && php8.2 artisan view:cache
+sudo supervisorctl restart foodking-queue && sudo systemctl reload php8.2-fpm nginx
 ```
 Les migrations sont réversibles par construction (deux tables neuves + une colonne nullable sur
 `item_wizard_steps`). Ce qui n'est PAS réversible automatiquement, ce sont les lignes écrites par
@@ -78,11 +107,11 @@ Les migrations sont réversibles par construction (deux tables neuves + une colo
 
 ---
 
-## 3. Contrôles après bascule
+## 4. Contrôles après bascule
 
 ```bash
-php artisan fiscal:verify-chain --all               # CHAIN OK sur chaque branche
-php artisan composer:materialize --all --dry-run    # doit dire « 0 changement »
+php8.2 artisan fiscal:verify-chain --all               # CHAIN OK sur chaque branche
+php8.2 artisan composer:materialize --all --dry-run    # doit dire « 0 changement »
 ```
 Puis, dans le navigateur, en tant qu'admin :
 - `/admin/wizard-pages` liste les pages avec leur nombre de choix ;
@@ -92,15 +121,16 @@ Puis, dans le navigateur, en tant qu'admin :
 
 ---
 
-## 4. La question qui bloque
+## 5. Ce qui reste à décider
 
-**Quelle est la procédure de déploiement réelle de la caisse ?** C'est la seule chose qui manque :
-le code est commité, testé et documenté. Trois réponses possibles, chacune avec sa suite :
+Cible retenue par le propriétaire le 2026-09-02 : **le VPS OVH**. Le code y est prêt (branche
+poussée), mais l'exécution du §3 demande un accès que je n'ai pas. Deux façons d'avancer :
 
-1. **La caisse tourne sur cette machine** (V1 LOCAL, mandat CONSTITUTION « 1 machine seule ») →
-   alors c'est déjà fait ici : migrations appliquées, assets construits, serveur `:8766` à jour.
-   Il reste à le dire, et à rejouer les contrôles du §3 sur la vraie base.
-2. **La caisse tourne sur le VPS OVH** → il me faut la procédure (clé SSH, chemin de l'application,
-   utilisateur, commande de bascule) ou quelqu'un qui exécute le §2.
-3. **Le déploiement passe par la branche `main`** → il faut d'abord fusionner les 207 commits de
-   retard, ce qui est un travail à part entière et doit être vérifié avant d'être poussé.
+1. **Quelqu'un exécute le §3 sur le VPS** — la marche à suivre est complète, y compris le retour
+   arrière. C'est la voie la plus courte.
+2. **On me donne le chemin d'accès** (clé SSH de déploiement, utilisateur, chemin réel de
+   l'application) et je le fais, avec les contrôles du §4 à l'appui.
+
+Deux points à trancher au passage : (a) déployer les 30 commits de la branche ou seulement mes deux
+(§2) ; (b) lancer ou non `composer:materialize --all` après la bascule — sans lui, les nouveaux
+écrans existent mais les produits ne sont pas encore alignés sur les pages.
