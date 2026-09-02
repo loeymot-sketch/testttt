@@ -6,6 +6,7 @@ use App\Enums\Status;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
+use App\Models\Scopes\BranchScope;
 use Illuminate\Support\Str;
 
 class VoiceOrderCatalogMatcher
@@ -25,7 +26,11 @@ class VoiceOrderCatalogMatcher
             return [];
         }
 
-        $unavailable = ItemBranchAvailability::withoutGlobalScopes()
+        // [CHEF 2026-09-02 · §9] Filtre de branche explicite ci-dessous : on retire
+        // BranchScope au SINGULIER. Le pluriel retirait aussi SoftDeletingScope —
+        // sans effet ici (ItemBranchAvailability n'utilise pas SoftDeletes) mais il
+        // masquait l'intention et faisait échouer la sentinelle Z6-P1-WGS.
+        $unavailable = ItemBranchAvailability::withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branchId)
             ->where('is_available', false)
             ->pluck('item_id')

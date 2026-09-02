@@ -101,6 +101,15 @@ class WithoutGlobalScopesAuditSentinelTest extends TestCase
         // sauces sur TOUT le catalogue, soft-deleted inclus (ne pas recréer un doublon d'une
         // variation supprimée). 3 sites pluriels.
         'Console/Commands/EnsureNewSaucesCommand.php' => [44, 54, 70],
+        // [CHEF 2026-09-02] EnsureTacosXl3ViandesCommand — même famille Ensure* que
+        // ci-dessus : commande console de réparation de données, exécutée hors requête
+        // HTTP (aucun utilisateur authentifié, donc aucune branche courante à respecter),
+        // qui doit lire le catalogue ENTIER soft-deleted inclus — sans quoi elle recrée
+        // un doublon d'une variation/extra/ligne de recette supprimée au lieu de la
+        // restaurer. 14 sites pluriels, tous en LECTURE de catalogue.
+        'Console/Commands/EnsureTacosXl3ViandesCommand.php' => [
+            135, 168, 174, 177, 182, 254, 320, 386, 408, 438, 445, 525, 531, 568,
+        ],
         // [2026-08-01] PaymentService::hasRecordedCashIn (SYMÉTRIE-TIROIR 2026-07-30) — la
         // garde doit voir le mouvement IN cross-branch et même soft-deleted (l'entrée a
         // existé). ⚠ Le COMPORTEMENT de cette garde reste GATÉ owner (audit superviseur

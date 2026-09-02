@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Models\ActionLog;
 use App\Models\Order;
+use App\Models\Scopes\BranchScope;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -214,7 +215,12 @@ class VoiceOrderTranscriptStore
     public function linkOrder(int $branchId, int $userId, string $callId, int $orderId): array
     {
         $callId = $this->validCallId($callId);
-        $order = Order::withoutGlobalScopes()
+        // [CHEF 2026-09-02 · §9] SINGULIER. Le pluriel retirait aussi SoftDeletingScope :
+        // une commande téléphone SUPPRIMÉE conserve son source_surface, son
+        // payment_status et son pos_payment_method, elle franchissait donc les trois
+        // gardes ci-dessous et pouvait être rattachée à un appel en cours. La branche
+        // reste filtrée explicitement.
+        $order = Order::withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branchId)
             ->whereKey($orderId)
             ->first();

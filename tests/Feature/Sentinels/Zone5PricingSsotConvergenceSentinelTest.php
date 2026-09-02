@@ -233,7 +233,7 @@ class Zone5PricingSsotConvergenceSentinelTest extends TestCase
                 if (preg_match_all($rx, $contents, $m)) {
                     foreach ($m[0] as $hit) {
                         // Skip false positive: comments / docstrings mentioning UPDATE
-                        if (preg_match('#^\s*[*/#]#', $hit)) continue;
+                        if (preg_match('~^\s*[*/#]~', $hit)) continue;
                         $offenders[] = [
                             'file' => str_replace($appPath . DIRECTORY_SEPARATOR, '', $file->getPathname()),
                             'pattern' => $rx,
@@ -244,11 +244,48 @@ class Zone5PricingSsotConvergenceSentinelTest extends TestCase
             }
         }
 
+        // Sites connus, justifiés, et prouvés non persistants par un test de
+        // comportement dédié. Le compte est un CLIQUET : un site SUPPLÉMENTAIRE
+        // dans un fichier déjà listé fait quand même échouer ce test.
+        //
+        //   KitchenBundledAddonCollapser.php — le repli des formules revendiquées
+        //   fusionne les extras hérités pour le RENDU du ticket cuisine. La ligne
+        //   `$parent->composition_snapshot = $snap` s'applique à un CLONE
+        //   (`$clone ?? clone $parent`, ligne 182) ; le fichier ne contient aucun
+        //   site de persistance et son unique consommateur est
+        //   OrderReceiptEscPosRenderer (chemin de lecture). Preuve indépendante :
+        //   tests/Feature/Hardware/CollapserNePersistePasLInstantaneTest.php
+        $allowlist = [
+            'Services/Hardware/KitchenBundledAddonCollapser.php' => 1,
+        ];
+
+        $restants = [];
+        $comptes = [];
+        foreach ($offenders as $offender) {
+            $rel = str_replace(DIRECTORY_SEPARATOR, '/', $offender['file']);
+            if (!array_key_exists($rel, $allowlist)) {
+                $restants[] = $offender;
+                continue;
+            }
+            $comptes[$rel] = ($comptes[$rel] ?? 0) + 1;
+        }
+
         $this->assertEmpty(
-            $offenders,
+            $restants,
             'PR03 BREACH (NF525 §8): composition_snapshot UPDATE/assign call sites detected in app/: '
-            . PHP_EOL . json_encode($offenders, JSON_PRETTY_PRINT)
+            . PHP_EOL . json_encode($restants, JSON_PRETTY_PRINT)
         );
+
+        foreach ($allowlist as $rel => $attendu) {
+            $this->assertSame(
+                $attendu,
+                $comptes[$rel] ?? 0,
+                "PR03 CLIQUET (NF525 §8): {$rel} porte " . ($comptes[$rel] ?? 0)
+                . " affectation(s) de composition_snapshot, {$attendu} attendue(s). "
+                . 'Un site AJOUTÉ doit être justifié et prouvé non persistant ; '
+                . 'un site RETIRÉ doit faire baisser ce compte.'
+            );
+        }
     }
 
     /**
