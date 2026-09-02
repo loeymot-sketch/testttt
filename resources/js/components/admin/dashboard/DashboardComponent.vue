@@ -224,15 +224,12 @@ export default {
             }
             this.eodDownloading = true;
             try {
-                // Default to today (Paris) — server-side fallback when no `date` query.
-                const today = new Date();
-                const yyyy = today.getFullYear();
-                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                const dd = String(today.getDate()).padStart(2, '0');
-                const dateStr = `${yyyy}-${mm}-${dd}`;
-
+                // [2026-09-02] Le jour de clôture est choisi par le SERVEUR (heure de
+                // Paris), plus par le navigateur. Une tablette de caisse réglée sur un
+                // autre fuseau, ou dont l'horloge a dérivé, faisait clôturer un autre jour
+                // que celui du restaurant — sur une pièce de nature fiscale.
                 const res = await axios.post(
-                    `admin/dashboard/eod-pdf?date=${dateStr}`,
+                    'admin/dashboard/eod-pdf',
                     {},
                     { responseType: 'blob' }
                 );
@@ -241,7 +238,11 @@ export default {
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `cloture_jour_${dateStr}.pdf`;
+                // Le nom vient de l'en-tête du serveur : c'est LUI qui a choisi le jour.
+                const entete = (res.headers && (res.headers['content-disposition']
+                    || res.headers['Content-Disposition'])) || '';
+                const trouve = /filename="?([^\";]+)"?/.exec(entete);
+                link.download = trouve ? trouve[1] : 'cloture_jour.pdf';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

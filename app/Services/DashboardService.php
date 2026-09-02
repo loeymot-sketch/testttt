@@ -43,6 +43,75 @@ class DashboardService
         return $query;
     }
 
+    /**
+     * [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Sub 3.1 · Codex P1-E] Le résolveur UNIQUE de
+     * la fenêtre de dates du tableau de bord.
+     *
+     * Avant, chaque point d'entrée décidait seul, avec trois contrats différents :
+     *  - `orderStatistics` n'avait AUCUN garde (période inversée ou de dix ans acceptée)
+     *    quand les trois autres refusaient en 422 — le même écran répondait donc deux
+     *    choses contradictoires pour les mêmes paramètres ;
+     *  - une seule borne fournie repliait EN SILENCE sur la période par défaut : on
+     *    croyait lire mars, on lisait le mois courant, et rien ne le disait ;
+     *  - `Carbon::parse('2026-02-31')` ne lève pas, il roule au 3 mars : une date
+     *    impossible donnait un résultat, décalé sans le dire.
+     *
+     * @param  string  $defaut  'mois' (mois civil courant) ou 'jour' (aujourd'hui)
+     * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon} [premier jour, dernier jour] — jours
+     *                                                    civils Paris, bornes INCLUSIVES.
+     */
+    private function resolveDashboardWindow(Request $request, string $defaut = 'mois'): array
+    {
+        $appTz = config('app.timezone');
+        $premiere = $request->input('first_date');
+        $derniere = $request->input('last_date');
+        $aPremiere = ! empty($premiere);
+        $aDerniere = ! empty($derniere);
+
+        // Une borne isolée est une demande INCOMPLÈTE, pas une demande par défaut.
+        if ($aPremiere !== $aDerniere) {
+            throw ValidationException::withMessages([
+                $aPremiere ? 'last_date' : 'first_date' =>
+                    'Les deux bornes de la période sont requises : une seule date ne suffit pas.',
+            ]);
+        }
+
+        if (! $aPremiere) {
+            return $defaut === 'jour'
+                ? [Carbon::today($appTz), Carbon::today($appTz)]
+                : [Carbon::today($appTz)->startOfMonth(), Carbon::today($appTz)->endOfMonth()->startOfDay()];
+        }
+
+        $premierJour = $this->jourCivilParisStrict($premiere, 'first_date');
+        $dernierJour = $this->jourCivilParisStrict($derniere, 'last_date');
+        $this->assertSalesDateWindow($premierJour, $dernierJour);
+
+        return [$premierJour, $dernierJour];
+    }
+
+    /**
+     * Une date au format `Y-m-d` qui EXISTE réellement. `Carbon::hasFormat('2026-02-31',
+     * 'Y-m-d')` rend `true` — le format est bon, le jour n'existe pas — d'où la
+     * comparaison aller-retour : si le reformatage ne rend pas la chaîne d'origine, la
+     * date a été roulée.
+     */
+    private function jourCivilParisStrict($valeur, string $champ): Carbon
+    {
+        $texte = trim((string) $valeur);
+        $appTz = config('app.timezone');
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $texte) === 1) {
+            $jour = Carbon::createFromFormat('!Y-m-d', $texte, $appTz);
+            if ($jour !== false && $jour->format('Y-m-d') === $texte) {
+                return $jour;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            $champ => 'La date doit être un jour réel au format AAAA-MM-JJ.',
+        ]);
+    }
+
     private function assertSalesDateWindow(Carbon $first, Carbon $last): void
     {
         if ($first->gt($last)) {
@@ -105,10 +174,7 @@ class DashboardService
             // INVARIANT DEPENDENCY: this heal assumes session_tz=OS-local
             // (Paris). Future config/database.php
             // connections.mysql.timezone => '+00:00' MUST re-evaluate.
-            [$startParis, $endParisExclusive] = $this->resolveDayBoundaryParis(
-                $request->first_date,
-                $request->last_date
-            );
+            [$startParis, $endParisExclusive] = $this->resolveDayBoundaryParis($request);
 
             $orderStatisticsArray = [];
 
@@ -164,19 +230,15 @@ class DashboardService
      *
      * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon}
      */
-    private function resolveDayBoundaryParis($firstDate, $lastDate): array
+    private function resolveDayBoundaryParis(Request $request): array
     {
-        $appTz = config('app.timezone');
+        // [2026-09-02 · Sub 3.1 · Codex P1-E] Cette méthode n'avait AUCUN garde : période
+        // inversée, période de dix ans et date impossible y passaient, alors que les trois
+        // autres points datés les refusaient en 422. Elle délègue désormais au contrat
+        // unique et se contente de convertir en borne de fin EXCLUSIVE.
+        [$premierJour, $dernierJour] = $this->resolveDashboardWindow($request, 'jour');
 
-        if (! empty($firstDate) && ! empty($lastDate)) {
-            $startParis = Carbon::parse($firstDate, $appTz)->startOfDay();
-            $endParis = Carbon::parse($lastDate, $appTz)->addDay()->startOfDay();
-        } else {
-            $startParis = Carbon::today($appTz);
-            $endParis = Carbon::tomorrow($appTz);
-        }
-
-        return [$startParis, $endParis];
+        return [$premierJour->copy(), $dernierJour->copy()->addDay()->startOfDay()];
     }
 
 
@@ -190,15 +252,8 @@ class DashboardService
             // The user-supplied path uses raw Y-m-d strings; the default-month
             // path falls back to the current Paris-local month (first day
             // Y-m-01 .. last day Y-m-t).
-            $appTz = config('app.timezone');
-            if ($request->first_date && $request->last_date) {
-                $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
-                $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
-                $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
-            } else {
-                $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
-                $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
-            }
+            // [2026-09-02 · Sub 3.1] Contrat de dates unique — voir resolveDashboardWindow().
+            [$firstDateParisDay, $lastDateParisDay] = $this->resolveDashboardWindow($request, 'mois');
             $startParis = $firstDateParisDay->copy();
             $endParisExclusive = $lastDateParisDay->copy()->addDay();
 
@@ -254,15 +309,8 @@ class DashboardService
         $order = $this->orderQuery();
         // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
         // Paris bounds — see orderStatistics() comment for full rationale.
-        $appTz = config('app.timezone');
-        if ($request->first_date && $request->last_date) {
-            $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
-            $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
-            $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
-        } else {
-            $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
-            $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
-        }
+        // [2026-09-02 · Sub 3.1] Contrat de dates unique — voir resolveDashboardWindow().
+        [$firstDateParisDay, $lastDateParisDay] = $this->resolveDashboardWindow($request, 'mois');
         $startParis = $firstDateParisDay->copy();
         $endParisExclusive = $lastDateParisDay->copy()->addDay();
         $first_date = $firstDateParisDay->toDateString();
@@ -282,11 +330,15 @@ class DashboardService
                 ->sum('total')
         );
 
+        // [2026-09-02 · Sub 3.1 · Codex P1-G] Jours civils, pas tranches de 86 400 s.
+        // Un jour civil ne fait pas toujours 86 400 secondes : à Paris le 29 mars 2026 en
+        // fait 82 800 (passage à l'heure d'été) et le 25 octobre 90 000 (retour à l'heure
+        // d'hiver). L'ancienne boucle `+= 86400` FAISAIT DISPARAÎTRE le 31 mars et
+        // COMPTAIT DEUX FOIS le 25 octobre — deux fois par an, le « CA moyen par jour »
+        // était donc faux, sans qu'aucune erreur n'apparaisse nulle part.
         $dateRangeArray = [];
-        for ($currentDate = strtotime($first_date); $currentDate <= strtotime($last_date); $currentDate += (86400)) {
-
-            $date = date('Y-m-d', $currentDate);
-            $dateRangeArray[] = $date;
+        foreach (\Carbon\CarbonPeriod::create($firstDateParisDay->copy(), $lastDateParisDay->copy()) as $jour) {
+            $dateRangeArray[] = $jour->toDateString();
         }
 
         // [NUIT-A 2026-07-03 / P3 perf] UNE seule requête GROUP BY au lieu d'un SUM par jour (jusqu'à 365
@@ -319,6 +371,10 @@ class DashboardService
             $dayCount > 0 ? $total_sales / $dayCount : $total_sales
         );
         $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
+        // Les montants seuls ne se lisent pas : le graphique traçait une courbe sans
+        // aucune date en abscisse. Les jours sont désormais publiés à côté des montants,
+        // dans le même ordre.
+        $salesSummaryArray['per_day_labels'] = $dateRangeArray;
 
         return $salesSummaryArray;
     }
@@ -328,15 +384,8 @@ class DashboardService
         $order = $this->orderQuery();
         // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
         // Paris bounds — see orderStatistics() comment for full rationale.
-        $appTz = config('app.timezone');
-        if ($request->first_date && $request->last_date) {
-            $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
-            $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
-            $this->assertSalesDateWindow($firstDateParisDay, $lastDateParisDay);
-        } else {
-            $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
-            $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
-        }
+        // [2026-09-02 · Sub 3.1] Contrat de dates unique — voir resolveDashboardWindow().
+        [$firstDateParisDay, $lastDateParisDay] = $this->resolveDashboardWindow($request, 'mois');
         $startParis = $firstDateParisDay->copy();
         $endParisExclusive = $lastDateParisDay->copy()->addDay();
 

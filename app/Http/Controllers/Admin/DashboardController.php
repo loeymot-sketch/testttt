@@ -256,8 +256,22 @@ class DashboardController extends AdminController
             $date = $request->query('date') ?: null;
             // Validate Y-m-d shape upfront to fail fast (Carbon parse otherwise
             // accepts a wide range of strings and silently coerces to today).
-            if ($date !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                return response(['status' => false, 'message' => 'Invalid date format. Expected YYYY-MM-DD.'], 422);
+            // [2026-09-02 · Sub 3.1 · Codex P1-G] La FORME ne suffit pas : `2026-02-31`
+            // passait ce filtre, puis `Carbon::parse` le roulait au 3 mars. Le PDF de
+            // clôture portait alors les chiffres d'un AUTRE jour, sans le dire — sur une
+            // pièce de nature fiscale, l'écart ne se découvre qu'au contrôle. La date doit
+            // exister : on la reformate et on compare à la chaîne demandée.
+            if ($date !== null) {
+                $jour = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1
+                    ? \Carbon\Carbon::createFromFormat('!Y-m-d', $date, config('app.timezone'))
+                    : false;
+
+                if ($jour === false || $jour->format('Y-m-d') !== $date) {
+                    return response([
+                        'status' => false,
+                        'message' => 'La date doit être un jour réel au format AAAA-MM-JJ.',
+                    ], 422);
+                }
             }
 
             $synthesis = $this->dashboardService->eodSynthesis($date);

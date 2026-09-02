@@ -114,8 +114,18 @@ export default {
                         toolbar: { show: false, },
                     },
                     xaxis: {
+                        // [2026-09-02] La courbe n'avait AUCUNE date en abscisse : on
+                        // voyait des points sans savoir de quel jour ils parlaient. Le
+                        // serveur publie désormais les jours à côté des montants.
+                        type: 'category',
+                        categories: res.data.data.per_day_labels || [],
                         tooltip: { enabled: false },
                         axisBorder: { show: false },
+                        labels: {
+                            // Une période d'un an rendrait 365 étiquettes illisibles :
+                            // ApexCharts en espace automatiquement, on borne juste le format.
+                            formatter: (v) => (typeof v === 'string' ? v.slice(5) : v),
+                        },
                     },
                     stroke: {
                         width: 3,

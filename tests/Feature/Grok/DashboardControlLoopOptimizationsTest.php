@@ -98,11 +98,21 @@ class DashboardControlLoopOptimizationsTest extends TestCase
         $this->assertStringNotContainsString('never silently degrade', $src);
     }
 
-    public function test_order_summary_rejects_inverted_dates(): void
-    {
-        $src = file_get_contents(base_path('app/Services/DashboardService.php'));
-        $this->assertGreaterThanOrEqual(3, substr_count($src, '$this->assertSalesDateWindow'));
-    }
+    /**
+     * [2026-09-02 · Sub 3.1] Ce banc COMPTAIT les occurrences de `$this->assertSalesDateWindow`
+     * dans le source et en exigeait au moins trois. Il mesurait une forme d'écriture, pas un
+     * comportement : le garde a été centralisé dans `DashboardService::resolveDashboardWindow()`,
+     * ce qui le fait passer de 3 points d'entrée gardés à 4 — une amélioration nette — et
+     * pourtant le compteur tombait à 1 et le banc virait au rouge. Un banc qui rougit quand le
+     * produit s'améliore finit par être neutralisé, pas écouté.
+     *
+     * Le refus lui-même est désormais vérifié pour de bon, sur les quatre points datés et sur
+     * cinq formes d'entrée fautives (période inversée, > 366 jours, borne isolée, date
+     * impossible, date illisible), dans
+     * `tests/Feature/Dashboard/DashboardDateContractMatrixTest.php`. Cette classe-ci n'a pas de
+     * base de données (elle ne fait que lire des sources), d'où le déplacement plutôt qu'une
+     * réécriture sur place.
+     */
 
     public function test_outbox_queue_lane_uses_queue_size(): void
     {

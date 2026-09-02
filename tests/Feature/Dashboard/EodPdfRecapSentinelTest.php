@@ -215,4 +215,66 @@ class EodPdfRecapSentinelTest extends TestCase
         $this->assertGreaterThan(0, count($synthesis['by_payment']),
             'by_payment MUST contain at least the CASH bucket from the seeded POS order.');
     }
+
+    /**
+     * [2026-09-02 · Sub 3.1 · Codex P1-G] La validation ne contrôlait que la FORME
+     * `\d{4}-\d{2}-\d{2}`, pas l'existence du jour. `2026-02-31` passait le filtre, puis
+     * `Carbon::parse` le roulait au 3 mars : le PDF de clôture portait alors les chiffres
+     * d'un AUTRE jour que celui demandé, sans le dire. Sur une pièce de nature fiscale,
+     * c'est le genre d'écart qu'on ne découvre qu'au contrôle.
+     */
+    public function test_une_date_impossible_est_refusee_et_non_roulee(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos-manage-fiscal');
+        $this->actingAs($admin, 'sanctum');
+
+        $r = $this->withHeaders($this->apiHeaders())
+            ->post('/api/admin/dashboard/eod-pdf?date=2026-02-31');
+
+        $r->assertStatus(422);
+        $this->assertStringNotContainsString(
+            'pdf',
+            strtolower((string) $r->headers->get('Content-Type')),
+            'aucun PDF ne doit être produit pour un jour qui n’existe pas'
+        );
+    }
+
+    public function test_une_date_hors_format_reste_refusee(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos-manage-fiscal');
+        $this->actingAs($admin, 'sanctum');
+
+        foreach (['hier', '31/02/2026', '2026-2-3', '2026-02-31T00:00:00'] as $mauvaise) {
+            $this->withHeaders($this->apiHeaders())
+                ->post('/api/admin/dashboard/eod-pdf?date='.urlencode($mauvaise))
+                ->assertStatus(422);
+        }
+    }
+
+    /**
+     * Sans paramètre, c'est le SERVEUR qui choisit le jour — heure de Paris. Le navigateur
+     * de la caisse peut être réglé sur un autre fuseau ou avoir l'horloge décalée : lui
+     * laisser désigner le jour de clôture, c'est risquer de clôturer la veille.
+     */
+    public function test_sans_date_le_serveur_choisit_le_jour_de_paris(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos-manage-fiscal');
+        $this->actingAs($admin, 'sanctum');
+
+        $r = $this->withHeaders($this->apiHeaders())
+            ->post('/api/admin/dashboard/eod-pdf');
+
+        $r->assertStatus(200);
+        $this->assertStringContainsString(
+            'cloture_jour_'.now(config('app.timezone'))->toDateString(),
+            (string) $r->headers->get('Content-Disposition'),
+            'le nom du fichier doit porter le jour choisi par le serveur'
+        );
+    }
 }

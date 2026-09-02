@@ -274,6 +274,18 @@ export default {
         }
     },
 
+    // [2026-09-02] Un objet `Date` passé tel quel devient, via `encodeURIComponent`,
+    // « Sun Mar 01 2026 00:00:00 GMT+0100 (heure normale d’Europe centrale) » — une chaîne
+    // que le serveur REFUSE de lire (mesuré : `Carbon::parse` → « Could not parse »).
+    // Choisir une période sur le tableau de bord ne renvoyait donc aucun chiffre.
+    // Le jour est pris en heure LOCALE : `toISOString()` reculerait le 1er mars à minuit
+    // à Paris au 28 février, puisqu'il vaut 23:00 UTC la veille.
+    jourCivilLocal: function (d) {
+        const deuxChiffres = (n) => String(n).padStart(2, "0");
+
+        return `${d.getFullYear()}-${deuxChiffres(d.getMonth() + 1)}-${deuxChiffres(d.getDate())}`;
+    },
+
     requestHandler: function (requests) {
         let i = 1;
         let what = "?";
@@ -284,7 +296,10 @@ export default {
                 if (i !== 1) {
                     response += "&";
                 }
-                response += request + "=" + encodeURIComponent(requests[request]);
+                const valeur = requests[request] instanceof Date
+                    ? this.jourCivilLocal(requests[request])
+                    : requests[request];
+                response += request + "=" + encodeURIComponent(valeur);
             }
             i++;
         }

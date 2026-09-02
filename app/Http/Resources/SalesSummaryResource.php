@@ -24,6 +24,10 @@ class SalesSummaryResource extends JsonResource
             "total_sales"   => $this->info['total_sales'],
             "avg_per_day"   => $this->info['avg_per_day'],
             "per_day_sales" => $this->info['per_day_sales'],
+            // [2026-09-02] Les jours, dans le même ordre que les montants. Sans eux le
+            // graphique traçait une courbe sans aucune date en abscisse — illisible — et
+            // la génération des jours n'était observable par aucun banc.
+            "per_day_labels" => $this->info['per_day_labels'] ?? [],
         ];
     }
 }
