@@ -126,6 +126,23 @@ class DashboardService
         }
     }
 
+    /**
+     * [2026-09-02 · Sub 3.2 · Codex P1-F] Le même garde, rendu appelable par les cartes
+     * qui n'entrent pas par ce service.
+     *
+     * `popular-items` appelle directement `ItemService::mostPopularItems()` : elle
+     * échappait donc au fail-closed du 29 août, et le compte non-Admin à `branch_id = 0`
+     * qui reçoit 403 sur les huit autres cartes obtenait ici le classement de TOUTES les
+     * branches. Un trou d'isolation présent sur une seule carte est le plus difficile à
+     * voir : les autres écrans rassurent.
+     *
+     * @return int|null la branche à appliquer, ou null pour un Admin (portée globale)
+     */
+    public function assertDashboardBranchScope(): ?int
+    {
+        return $this->dashboardBranchId();
+    }
+
     private function dashboardBranchId(): ?int
     {
         $user = auth()->user();

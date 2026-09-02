@@ -27,6 +27,20 @@ class DashboardController extends AdminController
 {
     private DashboardService $dashboardService;
 
+    /**
+     * [2026-09-02 · Sub 3.3 · Codex P2-D] Une panne du tableau de bord ne doit pas
+     * raconter l'intérieur du serveur.
+     *
+     * Cette méthode renvoyait `$exception->getMessage()` tel quel. Pour une exception de
+     * base de données, ce message porte la REQUÊTE SQL complète, le code SQLSTATE, le nom
+     * du pilote et souvent un chemin de fichier du serveur — servis à quiconque a la
+     * permission `dashboard`, et affichés en clair par l'écran. Le sélecteur de dates
+     * cassé (corrigé au commit précédent) les faisait apparaître à chaque essai.
+     *
+     * Les refus MÉTIER continuent de passer intacts : « la date de fin doit être
+     * postérieure » n'est pas une fuite, c'est la seule information utile à l'opérateur.
+     * Rendre toutes les erreurs muettes serait pire que le défaut corrigé.
+     */
     private function dashboardFailure(Throwable $exception)
     {
         if ($exception instanceof ValidationException) {
@@ -36,7 +50,20 @@ class DashboardController extends AdminController
             throw $exception;
         }
 
-        return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        // Ne rien dire au navigateur ne veut pas dire ne rien savoir : sans cette trace,
+        // on aurait seulement déplacé la panne dans le noir.
+        \Illuminate\Support\Facades\Log::error('[dashboard] échec non métier', [
+            'route' => request()->path(),
+            'exception' => get_class($exception),
+            'message' => $exception->getMessage(),
+            'correlation_id' => request()->header('X-Correlation-Id'),
+            'user_id' => auth()->id(),
+        ]);
+
+        return response([
+            'status' => false,
+            'message' => trans('all.message.database_error_message'),
+        ], 422);
     }
     private ItemService $itemService;
     private CompanyService $companyService;
@@ -176,6 +203,12 @@ class DashboardController extends AdminController
     public function mostPopularItems(): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
+            // [2026-09-02 · Sub 3.2 · Codex P1-F] Cette carte n'entre pas par
+            // DashboardService : elle échappait au fail-closed du 29 août. Un compte
+            // non-Admin à `branch_id = 0` recevait ici le classement de TOUTES les
+            // branches, alors qu'il reçoit 403 sur les huit autres cartes.
+            $this->dashboardService->assertDashboardBranchScope();
+
             return SimpleItemResource::collection($this->withoutCatalogPollution($this->itemService->mostPopularItems()));
         } catch (Exception $exception) {
             return $this->dashboardFailure($exception);
