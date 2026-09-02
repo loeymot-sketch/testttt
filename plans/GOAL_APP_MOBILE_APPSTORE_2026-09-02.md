@@ -124,7 +124,45 @@ production, et le nouveau parcours s'allumera seul le jour où le backend suivra
 - **Application iOS/Android** — exige Xcode et un compte développeur (§3 de PUBLICATION.md).
   Les paquets `app/www`, `app/ios`, `app/android` portent déjà le nouveau site.
 
-### E bis — Vérifications techniques — [x]
+### E bis — Vérifications techniques — [x] TOUT PASSÉ, ATTRIBUTION FAITE
+
+**Suite PHPUnit complète : 5542 tests, 23 020 assertions, 10 échecs — AUCUN n'est de mon fait.**
+Attribution prouvée en rejouant les mêmes tests sur la pointe d'origine SEULE, sans mes commits :
+
+| Échec | Verdict |
+|---|---|
+| `PrinterControllerTest` ×3, `CspAutoriseLesPontsDImpression`, `PrinterHostAllowlistSentinel` ×3 | **7/7 rouges sur l'origine seule** — travail d'impression d'une autre session |
+| `FrozenZoneSha256BaselineSentinel` | rouge sur l'origine — voir §4 ci-dessous |
+| `WithoutGlobalScopesAuditSentinel` | rouge sur l'origine — `EnsureTacosXl3ViandesCommand` |
+| `Zone5PricingSsotConvergenceSentinel` | vert sur l'origine, rouge dans l'arbre principal → travail NON COMMITÉ d'une autre session (`KitchenBundledAddonCollapser`) |
+
+Mes 4 commits ne touchent que 8 fichiers, **aucun `.js` ni `.vue`** — les 33 fichiers Vitest
+rouges (9 tests) ne peuvent donc pas être de mon fait ; ils viennent du travail en cours dans
+l'arbre partagé (bundles Mix non recompilés, composants POS/KDS modifiés).
+
+**Branche déployable testée pour de vrai** : `backend-email-dabord-sur-origine` (origine + mes
+4 commits reportés, 2 conflits résolus hunk par hunk) → `EmailLoginFlowTest`, `EmailOtpSignupTest`,
+`GuestOtpVerifyHardeningTest`, `MultiDeviceLoginTest`, `DevOtpExposureTest` : **48/48**.
+
+**Bancs navigateur (site)** : compte-email-dabord 24/24 · compte-serveur-en-retard 16/16 ·
+compte-memoire-appareil 14/14 · coordonnees-erreurs 7/7 · one-page-checkout 17/17.
+
+### 4. À REMONTER — un garde-fou de zone gelée est rouge sur la branche partagée
+
+`FrozenZoneSha256BaselineSentinelTest` échoue sur l'origine à cause de
+`resources/js/components/frontend/kiosk/KioskWizardComponent.vue` (zone gelée, CLAUDE.md §7).
+Le dernier commit qui l'a modifié est `baa1e41c9` (« le wizard s'ouvre sur le récap et saute à
+l'étape demandée »). Deux étapes de la procédure du dépôt manquent :
+- son document d'autorisation `LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25.md` n'est **pas
+  sur l'origine** (il n'existe qu'en zone d'index de l'arbre principal) ;
+- `tests/Feature/Sentinels/frozen-zone-sha256-baseline.json` n'a pas été mis à jour dans le même
+  commit, comme l'exige le message d'erreur de la sentinelle.
+
+**Je n'y touche pas** : mettre la référence à jour reviendrait à contresigner une modification de
+zone gelée que je n'ai pas relue, ce que la porte humaine de CLAUDE.md §10 interdit précisément.
+C'est à la session qui a fait ce travail, ou au propriétaire, de compléter les deux étapes.
+
+### E ter — Vérifications d'outillage — [x]
 - PHPUnit ciblé + `EmailOtpSignupTest` (18) inchangé vert.
 - e2e site : `nav-smoke.local.js`, suites `*.regression.js` touchées, nouveaux specs.
 - `compile-jsx.mjs --check`, `check-asset-versions.mjs --check`, `build-app-www.mjs --check`.
