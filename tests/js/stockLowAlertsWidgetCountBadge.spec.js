@@ -19,7 +19,11 @@ function mountWidget() {
   return mount(StockLowAlertsWidget, {
     global: {
       plugins: [i18n],
-      mocks: { $store: { getters: { authPermission: [] } } },
+      // [2026-09-02] Un droit RÉALISTE plutôt qu'une liste vide : ce cas mesure le COMPTE,
+      // pas la garde de permission (qui a ses propres cas plus bas). Une liste vide fait
+      // dépendre le résultat du comportement par défaut de `canFetchAlerts()`, ce qui n'est
+      // pas ce qu'on veut prouver ici.
+      mocks: { $store: { getters: { authPermission: [{ url: 'items/show', access: true }] } } },
       stubs: { LoadingComponent: true, 'router-link': true },
     },
   });
@@ -121,5 +125,53 @@ describe('[test-e2e fix A-002/E-001/E-002/E-006] StockLowAlertsWidget — gate i
 
     expect(axios.get).not.toHaveBeenCalled();
     wrapper.unmount();
+  });
+});
+
+/**
+ * [2026-09-02] « Aucune alerte de stock bas » se lit « votre stock va bien ». Mesuré sur la
+ * base réelle : 55 lignes de stock sur 55 ont `threshold_low` NULL, donc la requête de l'API
+ * (`whereNotNull('threshold_low')`) ne peut JAMAIS rien remonter — le panneau était un feu
+ * vert permanent, pendant que Coca-Cola 33cl était à 0. L'écran doit dire qu'il ne surveille
+ * rien, au lieu de laisser croire que tout va bien.
+ */
+describe('StockLowAlertsWidget — « rien à signaler » vs « rien n\'est surveillé »', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  function monter() {
+    return mount(StockLowAlertsWidget, {
+      global: {
+        plugins: [i18n],
+        mocks: { $store: { getters: { authPermission: [{ url: 'items/show', access: true }] } } },
+        stubs: { LoadingComponent: true, 'router-link': true },
+      },
+    });
+  }
+
+  it('avertit quand du stock est suivi mais qu\'aucun seuil n\'est configuré', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 55, thresholds_configured: 0 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(true);
+    expect(w.text()).not.toContain(frMessages.label.no_low_alerts);
+    w.unmount();
+  });
+
+  it('dit bien « aucune alerte » quand des seuils existent et que rien ne les franchit', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 55, thresholds_configured: 12 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(false);
+    expect(w.text()).toContain(frMessages.label.no_low_alerts);
+    w.unmount();
+  });
+
+  it('ne crie pas au loup sur une base sans aucun stock suivi', async () => {
+    axios.get.mockResolvedValue({ data: { alerts: [], tracked_rows: 0, thresholds_configured: 0 } });
+    const w = monter();
+    await flushPromises();
+    expect(w.find('[data-testid="stock-low-alerts-no-threshold"]').exists()).toBe(false);
+    expect(w.text()).toContain(frMessages.label.no_low_alerts);
+    w.unmount();
   });
 });

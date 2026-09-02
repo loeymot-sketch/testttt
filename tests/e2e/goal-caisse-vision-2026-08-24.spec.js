@@ -24,6 +24,23 @@ const fs = require('fs');
 const path = require('path');
 const { loginAsAdmin } = require('./helpers/login');
 
+/**
+ * [2026-09-02] Plus aucun identifiant d'article figé dans les fixtures de cette spec.
+ * Cliquet : tests/js/e2eFixturesSansIdentifiantCode.spec.js. Le NOM est la clé stable —
+ * les identifiants, eux, ont dérivé (relevé du 2026-08-25 : 27 des 36 identifiants codés
+ * en dur dans tests/e2e/ ne visaient plus aucun article existant). On résout donc l'article
+ * à l'exécution, dans la même commande artisan que le semis.
+ *
+ * On ne filtre PAS sur `status = 5` : semer un HISTORIQUE de commandes doit pouvoir viser un
+ * article devenu inactif depuis (« Sandwich Classique » et « Big Tacos » sont a status = 10).
+ * `orderBy('id')` rend la resolution deterministe : « Sandwich Classique » existe en double
+ * parmi les articles non supprimes.
+ */
+function phpItemId(nom) {
+    const n = String(nom).replace(/'/g, "\\'");
+    return `(int) DB::table('items')->whereNull('deleted_at')->where('name', '${n}')->orderBy('id')->value('id')`;
+}
+
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SHOTS_DIR = path.join(REPO_ROOT, 'reports', 'goal-caisse-vision-2026-08-24', 'captures');
 if (!fs.existsSync(SHOTS_DIR)) fs.mkdirSync(SHOTS_DIR, { recursive: true });
@@ -58,7 +75,7 @@ function seedOrdreComposee({ suffix, sourceSurface, statusInt, typeInt, lignes }
         }).replace(/'/g, "\\'");
         return (
             `$i = new App\\Models\\OrderItem; ` +
-            `$i->order_id = $o->id; $i->branch_id = 1; $i->item_id = ${l.itemId}; ` +
+            `$i->order_id = $o->id; $i->branch_id = 1; $i->item_id = ${phpItemId(l.itemName)}; ` +
             `$i->quantity = ${l.qty}; $i->price = 6.50; $i->total_price = ${(l.qty * 6.5).toFixed(2)}; ` +
             `$i->discount = 0; $i->tax_rate = '0'; $i->tax_amount = 0; $i->tax_type = 1; ` +
             `$i->item_variation_total = 0; $i->item_extra_total = 0; ` +
@@ -113,7 +130,7 @@ test.describe('GOAL CAISSE VISION — voir ce que le client a pris', () => {
             typeInt: 15,   // POS
             lignes: [
                 {
-                    itemId: 22, qty: 2,
+                    itemName: 'Cayenne', qty: 2,
                     options: [
                         { variation_id: 1, attribute_name: 'Pain', variation_name: 'Galette', quantity: 1 },
                         { variation_id: 2, attribute_name: 'Sauce', variation_name: 'Algerienne', quantity: 1 },
@@ -126,12 +143,12 @@ test.describe('GOAL CAISSE VISION — voir ce que le client a pris', () => {
                     instruction: 'Sans oignons - allergie',
                 },
                 {
-                    itemId: 26, qty: 1,
+                    itemName: 'Tacos M', qty: 1,
                     options: [{ variation_id: 4, attribute_name: 'Viande', variation_name: 'Poulet marine', quantity: 1 }],
                     addons: [{ addon_id: 1, addon_name: 'Frites', role: 'menu_frites', quantity: 1, line_total: 1.2 }],
                 },
-                { itemId: 22, qty: 1, options: [{ variation_id: 5, attribute_name: 'Sauce', variation_name: 'Blanche', quantity: 1 }] },
-                { itemId: 26, qty: 3 },
+                { itemName: 'Cayenne', qty: 1, options: [{ variation_id: 5, attribute_name: 'Sauce', variation_name: 'Blanche', quantity: 1 }] },
+                { itemName: 'Tacos M', qty: 3 },
             ],
         });
 
@@ -141,7 +158,7 @@ test.describe('GOAL CAISSE VISION — voir ce que le client a pris', () => {
             sourceSurface: 'phone',
             statusInt: 7,
             typeInt: 15,
-            lignes: [{ itemId: 22, qty: 1, options: [{ variation_id: 6, attribute_name: 'Sauce', variation_name: 'Samourai', quantity: 1 }] }],
+            lignes: [{ itemName: 'Cayenne', qty: 1, options: [{ variation_id: 6, attribute_name: 'Sauce', variation_name: 'Samourai', quantity: 1 }] }],
         });
     });
 

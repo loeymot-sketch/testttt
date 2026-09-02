@@ -250,17 +250,17 @@ export default {
     computed: {
         posSummary() {
             return {
-                statusLabel: this.posProjection?.is_available ? this.$t('label.available') : this.$t('label.unavailable'),
+                statusLabel: this.previewStatusLabel(this.posProjection),
             };
         },
         kioskSummary() {
             return {
-                statusLabel: this.kioskProjection?.is_available ? this.$t('label.available') : this.$t('label.unavailable'),
+                statusLabel: this.previewStatusLabel(this.kioskProjection),
             };
         },
     },
     mounted() {
-        this.selectedBranchId = this.branches[0]?.id ?? null;
+        this.selectedBranchId = this.defaultBranchId();
         if (this.selectedBranchId && this.item?.id) {
             this.refreshAll();
         }
@@ -273,6 +273,48 @@ export default {
         },
     },
     methods: {
+        /**
+         * Succursale sur laquelle l'aperçu s'ouvre.
+         *
+         * [CHEF 2026-09-01, corrigé le 2026-09-02] Avant : `this.branches[0]?.id`.
+         * `BranchService::list()` trie en `id desc` : la liste arrive 10, 9, 8, 7, 2, 1 et
+         * « Le Cayenne (principal) » (id 1) se retrouve EN DERNIER. L'aperçu s'ouvrait donc
+         * sur « Collier and Sons Branch », une succursale héritée du jeu de test.
+         *
+         * ⚠️ La première version de ce commentaire affirmait que cela provoquait un faux
+         * « Article non disponible ». C'EST FAUX, et un audit l'a réfuté en rejouant l'état
+         * d'avant-correctif : `MenuProjectionService` ne filtre PAS les articles par
+         * succursale (`Item::where('status', ACTIVE)->whereIn('item_category_id', …)`), donc
+         * une mauvaise succursale ne peut pas faire disparaître un article — elle ne peut
+         * que changer son badge de disponibilité.
+         *
+         * L'effet réel de l'ancien défaut était l'inverse, et il est plus grave : il
+         * MASQUAIT les ruptures. Coca-Cola 33cl est en `stock_rupture` sur la succursale 1
+         * depuis le 2026-08-19 ; l'aperçu, ouvert sur la succursale 10, l'affichait
+         * « Disponible ». On lisait un stock sain sur un produit en rupture.
+         *
+         * On ouvre donc sur une succursale ACTIVE — celle qu'on exploite réellement.
+         * `Status::ACTIVE = 5`, et seule la principale le porte ; les cinq autres sont à
+         * `status = 1`, valeur qui ne correspond à aucun statut du domaine (reliquat de
+         * peuplement). Si plusieurs succursales deviennent réellement actives, la première
+         * active reste un défaut correct, et le sélecteur laisse en changer.
+         */
+        defaultBranchId() {
+            const list = this.branches || [];
+            const active = list.find((b) => Number(b.status) === 5);
+            return (active || list[0])?.id ?? null;
+        },
+        previewStatusLabel(proj) {
+            if (this.loading) {
+                return this.$t('admin.item_preview.loading');
+            }
+            if (proj == null) {
+                return this.$t('admin.item_preview.no_pos_data');
+            }
+            return proj.is_available
+                ? this.$t('label.available')
+                : this.$t('label.unavailable');
+        },
         async refreshAll() {
             if (!this.selectedBranchId || !this.item?.id) return;
             this.loading = true;
@@ -349,13 +391,39 @@ export default {
                 this.$emit('parity-warning', msg);
             }
         },
+        /**
+         * [2026-09-02] Etait un passe-plat : l'ecran rendait « 6.9 », « 8 », « 1.9 » —
+         * point decimal anglo-saxon, ni centimes ni symbole, alors que l'onglet
+         * Composition de la MEME page affiche « 6,90 € ». Locale FR = regle dure du
+         * projet (ADR-007). Meme motif que PosComponent.vue et PosRefundModal.vue.
+         */
         formatPrice(value) {
-            if (value === null || value === undefined) return '';
-            return value;
+            if (value === null || value === undefined || value === '') return '';
+            const n = Number(value);
+            if (!Number.isFinite(n)) return String(value);
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
         },
+        /**
+         * [2026-09-02] L'aperçu ne filtrait QUE sur `visible_on`. Le runtime, lui, filtre
+         * d'abord sur `is_active` (`ComposerProfileProjection.php:36` :
+         * `filter(fn ($step) => (bool) $step->is_active && $this->stepVisibleOn(...))`).
+         *
+         * Conséquence mesurée sur le rayon Bols (profil #33, étapes `pain`, `viande` et
+         * `garnitures` INACTIVES) : la colonne « ce que la borne et la caisse afficheront »
+         * annonçait 5 pages, dont « Choisis ton pain » — pour un bol. Trois pages fantômes.
+         * Même écart sur Tacos (`taille`, `garnitures`, `suppléments`) et sur Sandwichs,
+         * Galette et Burgers (`pain`).
+         *
+         * `is_active` absent ou nul ⇒ on GARDE l'étape : un brouillon d'éditeur ne porte pas
+         * toujours la colonne, et masquer ce qu'on ne peut pas juger serait le défaut inverse.
+         * Seul un `is_active` explicitement faux retire la page.
+         */
         stepsForChannel(channelKey) {
             if (!Array.isArray(this.steps)) return [];
             return this.steps.filter((step) => {
+                if (step.is_active !== undefined && step.is_active !== null && !step.is_active) {
+                    return false;
+                }
                 const visibleOn = step.visible_on || ['pos', 'kiosk'];
                 return Array.isArray(visibleOn) ? visibleOn.includes(channelKey) : true;
             });

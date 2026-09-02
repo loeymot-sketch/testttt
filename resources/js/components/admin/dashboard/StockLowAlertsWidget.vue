@@ -25,6 +25,19 @@
                 <p v-if="!loading.isActive && fetchError" class="text-sm text-red-600" data-testid="stock-low-alerts-error">
                     {{ $t('label.stock_low_alerts_error') }}
                 </p>
+                <!--
+                    [2026-09-02] « Aucune alerte de stock bas » se lit « votre stock va bien ».
+                    Mesuré : 55 lignes de stock sur 55 ont `threshold_low` NULL, donc la requête
+                    de l'API ne peut JAMAIS rien remonter — feu vert permanent, pendant que
+                    Coca-Cola 33cl était à 0. Un panneau qui ne surveille rien doit le dire.
+                -->
+                <p
+                    v-else-if="!loading.isActive && alerts.length === 0 && aucunSeuilConfigure"
+                    class="text-sm text-amber-700"
+                    data-testid="stock-low-alerts-no-threshold"
+                >
+                    {{ $t('label.stock_low_alerts_no_threshold') }}
+                </p>
                 <p v-else-if="!loading.isActive && alerts.length === 0" class="text-sm text-gray-500">
                     {{ $t('label.no_low_alerts') }}
                 </p>
@@ -68,7 +81,21 @@ export default {
             loading: { isActive: false },
             alerts: [],
             fetchError: false,
+            // [2026-09-02] Distinguer « rien à signaler » de « rien n'est surveillé ».
+            trackedRows: 0,
+            thresholdsConfigured: 0,
         };
+    },
+    computed: {
+        /**
+         * Vrai quand des lignes de stock existent mais qu'AUCUNE ne porte de seuil bas :
+         * la requête d'alerte ne peut alors rien remonter, quel que soit le stock réel.
+         * On ne l'affirme que si `tracked_rows > 0` — sur une base sans aucun stock suivi,
+         * « aucune alerte » reste la bonne phrase.
+         */
+        aucunSeuilConfigure() {
+            return this.trackedRows > 0 && this.thresholdsConfigured === 0;
+        },
     },
     mounted() {
         // [iter15-mega-fix D-005 2026-05-10] Cashier (POS role) used to land
@@ -116,11 +143,15 @@ export default {
             try {
                 const res = await axios.get('admin/stock/low-alerts');
                 this.alerts = res.data?.alerts ?? [];
+                this.trackedRows = Number(res.data?.tracked_rows ?? 0);
+                this.thresholdsConfigured = Number(res.data?.thresholds_configured ?? 0);
                 this.fetchError = false;
             } catch (_e) {
                 // [T-5.2 PANNE-MASQUEE] Une panne (403/500/réseau) ne doit JAMAIS
                 // ressembler à "aucune alerte" — cf. bannière d'erreur dans le template.
                 this.alerts = [];
+                this.trackedRows = 0;
+                this.thresholdsConfigured = 0;
                 this.fetchError = true;
             } finally {
                 this.loading.isActive = false;

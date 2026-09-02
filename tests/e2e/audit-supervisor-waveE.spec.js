@@ -18,6 +18,23 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { loginAsAdmin } = require('./helpers/login');
+
+/**
+ * [2026-09-02] Plus aucun identifiant d'article figé dans les fixtures de cette spec.
+ * Cliquet : tests/js/e2eFixturesSansIdentifiantCode.spec.js. Le NOM est la clé stable —
+ * les identifiants, eux, ont dérivé (relevé du 2026-08-25 : 27 des 36 identifiants codés
+ * en dur dans tests/e2e/ ne visaient plus aucun article existant). On résout donc l'article
+ * à l'exécution, dans la même commande artisan que le semis.
+ *
+ * On ne filtre PAS sur `status = 5` : semer un HISTORIQUE de commandes doit pouvoir viser un
+ * article devenu inactif depuis (« Sandwich Classique » et « Big Tacos » sont a status = 10).
+ * `orderBy('id')` rend la resolution deterministe : « Sandwich Classique » existe en double
+ * parmi les articles non supprimes.
+ */
+function phpItemId(nom) {
+    const n = String(nom).replace(/'/g, "\\'");
+    return `(int) DB::table('items')->whereNull('deleted_at')->where('name', '${n}')->orderBy('id')->value('id')`;
+}
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 
 const RACINE = path.resolve(__dirname, '../..');
@@ -66,7 +83,7 @@ function lignePhpCommande(serial, typeCmd, surface, extra) {
     '$o->business_date=now()->toDateString();',
     '$o->save();',
     '$i=new \\App\\Models\\OrderItem();',
-    '$i->order_id=$o->id;$i->branch_id=1;$i->item_id=22;$i->quantity=1;',
+    '$i->order_id=$o->id;$i->branch_id=1;$i->item_id='+phpItemId('Cayenne')+';$i->quantity=1;',
     "$i->price=12.50;$i->total_price=12.50;$i->discount=0;$i->tax_rate='0';$i->tax_amount=0;",
     '$i->tax_type=1;$i->item_variation_total=0;$i->item_extra_total=0;',
     `$i->composition_snapshot=${SNAPSHOT_PHP};`,

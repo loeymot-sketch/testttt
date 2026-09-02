@@ -621,8 +621,37 @@ class SyncOverviewController extends AdminController
         $tic = Cache::get('scheduler:last_tick');
         $ticAgeMin = $tic ? (int) round((time() - (int) $tic) / 60) : null;
 
+        // [2026-09-02] Fraîcheur de la mesure elle-même. `HealthzCheckCommand` écrit
+        // `Cache::forever('healthz:last', ...)` — SANS expiration — et rien ne comparait
+        // jusqu'ici `timestamp` à l'heure courante. Les cartes pouvaient donc afficher
+        // « en service » en vert à partir d'une mesure arbitrairement vieille. La fraîcheur
+        // était vérifiée pour la sauvegarde et pour le planificateur, pas pour les contrôles.
+        $mesureLe = $sante['timestamp'] ?? null;
+        $mesureAgeMin = null;
+        if ($mesureLe !== null) {
+            $horodatage = is_numeric($mesureLe) ? (int) $mesureLe : strtotime((string) $mesureLe);
+            if ($horodatage) {
+                $mesureAgeMin = (int) round((time() - $horodatage) / 60);
+            }
+        }
+
         $verdict = 'ok';
         $alertes = [];
+
+        // [2026-09-02] Le `foreach` ci-dessous itère sur un tableau VIDE quand la sonde n'a
+        // pas tourné : aucune carte, aucun message, aucune alerte. Mesuré sur cette machine :
+        // `controles: []` renvoyé pendant que 1 521 messages attendaient en file (seuil du
+        // code : 50) — dont 1 511 notifications clients. Et c'est justement le planificateur
+        // mort qui empêche `healthz:check` de tourner : la panne qui casse la surveillance
+        // efface aussi le rapport sur elle-même. Un panneau qui ne mesure rien doit le dire.
+        if ((array) ($sante['checks'] ?? []) === []) {
+            $alertes[] = "contrôles de santé : aucune mesure disponible — la sonde n'a pas tourné";
+        } elseif ($mesureAgeMin !== null && $mesureAgeMin > 30) {
+            $alertes[] = $mesureAgeMin > 120
+                ? 'contrôles de santé : mesure vieille de '.((int) round($mesureAgeMin / 60)).' h'
+                : "contrôles de santé : mesure vieille de {$mesureAgeMin} min";
+        }
+
         foreach ((array) ($sante['checks'] ?? []) as $quoi => $etat) {
             if ($quoi === 'queue_pending') {
                 if ((int) $etat > 50) {
@@ -657,7 +686,10 @@ class SyncOverviewController extends AdminController
             'verdict'    => $verdict,
             'alertes'    => $alertes,
             'controles'  => (array) ($sante['checks'] ?? []),
-            'mesure_le'  => $sante['timestamp'] ?? null,
+            'mesure_le'  => $mesureLe,
+            // Permet à l'écran de distinguer une mesure fraîche d'une mesure figée.
+            'mesure_age_min'    => $mesureAgeMin,
+            'mesure_attendu_max_min' => 30,
             'sauvegarde' => [
                 'dernier_fichier' => $dernier,
                 'age_heures'      => $ageHeures,

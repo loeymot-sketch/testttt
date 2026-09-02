@@ -15,6 +15,23 @@ const fs = require('fs');
 const path = require('path');
 const { loginAsAdmin } = require('./helpers/login');
 
+/**
+ * [2026-09-02] Plus aucun identifiant d'article figé dans les fixtures de cette spec.
+ * Cliquet : tests/js/e2eFixturesSansIdentifiantCode.spec.js. Le NOM est la clé stable —
+ * les identifiants, eux, ont dérivé (relevé du 2026-08-25 : 27 des 36 identifiants codés
+ * en dur dans tests/e2e/ ne visaient plus aucun article existant). On résout donc l'article
+ * à l'exécution, dans la même commande artisan que le semis.
+ *
+ * On ne filtre PAS sur `status = 5` : semer un HISTORIQUE de commandes doit pouvoir viser un
+ * article devenu inactif depuis (« Sandwich Classique » et « Big Tacos » sont a status = 10).
+ * `orderBy('id')` rend la resolution deterministe : « Sandwich Classique » existe en double
+ * parmi les articles non supprimes.
+ */
+function phpItemId(nom) {
+    const n = String(nom).replace(/'/g, "\\'");
+    return `(int) DB::table('items')->whereNull('deleted_at')->where('name', '${n}')->orderBy('id')->value('id')`;
+}
+
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SHOTS_DIR = path.join(REPO_ROOT, 'tests', 'e2e', '__screenshots__', 'fix6-suivi-canal');
 const TRACKER_URL = '/admin/pos-orders-tracker';
@@ -34,7 +51,7 @@ function seedOrdre({ suffix, sourceSurface, statusInt, typeInt, lignes, posName 
         }).replace(/'/g, "\\'");
         const aQuelqueChose = (l.options || []).length || (l.extras || []).length;
         return `$i = new App\\Models\\OrderItem; $i->order_id = $o->id; $i->branch_id = 1; `
-            + `$i->item_id = ${l.itemId}; $i->quantity = ${l.qty}; $i->price = 6.50; `
+            + `$i->item_id = ${phpItemId(l.itemName)}; $i->quantity = ${l.qty}; $i->price = 6.50; `
             + `$i->total_price = ${(l.qty * 6.5).toFixed(2)}; $i->discount = 0; $i->tax_rate = '0'; `
             + `$i->tax_amount = 0; $i->tax_type = 1; $i->item_variation_total = 0; $i->item_extra_total = 0; `
             + (aQuelqueChose ? `$i->composition_snapshot = json_decode('${snap}', true); ` : '')
@@ -75,7 +92,7 @@ test('FIX-6 — le suivi caisse après correctifs : canaux, numéro, état vide,
     seedOrdre({
         suffix: 'COMPO', sourceSurface: 'pos', statusInt: 4, typeInt: 15,
         lignes: [{
-            itemId: 1, qty: 2,
+            itemName: 'Menu (Frites + Boisson)', qty: 2,
             options: [
                 { attribute_name: 'Pain', variation_name: 'Galette' },
                 { attribute_name: 'Sauce', variation_name: 'Algerienne' },
@@ -84,11 +101,11 @@ test('FIX-6 — le suivi caisse après correctifs : canaux, numéro, état vide,
             extras: [{ name: 'Cheddar', quantity: 2 }, { name: 'Salade' }],
         }],
     });
-    seedOrdre({ suffix: 'UBER', sourceSurface: 'uber_eats', statusInt: 4, typeInt: 10, lignes: [{ itemId: 1, qty: 1 }] });
+    seedOrdre({ suffix: 'UBER', sourceSurface: 'uber_eats', statusInt: 4, typeInt: 10, lignes: [{ itemName: 'Menu (Frites + Boisson)', qty: 1 }] });
     seedOrdre({
         suffix: 'TEL', sourceSurface: 'phone', statusInt: 4, typeInt: 10,
         posName: 'Karim Bensalah', posPhone: '0612345678',
-        lignes: [{ itemId: 1, qty: 1 }],
+        lignes: [{ itemName: 'Menu (Frites + Boisson)', qty: 1 }],
     });
 
     await loginAsAdmin(page);

@@ -82,8 +82,17 @@ const FAUX_INTENTIONNELS = new Set([999, 9001, 9002]);
  * le fais pas ici parce que ces specs exigent un serveur vivant pour être rejouées, et
  * modifier un test sans pouvoir le rejouer, c'est fabriquer un banc au mauvais périmètre.
  */
-const PLAFOND_FICHIERS = 28;
-const PLAFOND_PAIRES = 65;
+/**
+ * [2026-09-02] Plafonds RABAISSÉS 28→24 fichiers et 65→56 couples, soit le relevé de
+ * référence du 2026-08-25. Ils avaient été RELEVÉS pour laisser passer quatre specs
+ * (audit-supervisor-waveA/E, fix6-visuel-suivi-canal, goal-caisse-vision-2026-08-24) —
+ * or l'en-tête de ce fichier dit l'inverse : « ILS NE DOIVENT QUE DESCENDRE ». Relever le
+ * plafond ne fait pas disparaître la dette, il fait disparaître le cliquet.
+ * Les identifiants de ces quatre specs sont désormais résolus par NOM à l'exécution
+ * (`phpItemId()` dans chacune), ce qui rend le relèvement inutile.
+ */
+const PLAFOND_FICHIERS = 24;
+const PLAFOND_PAIRES = 56;
 
 function listerSpecs(repertoire) {
     const sortie = [];
