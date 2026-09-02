@@ -974,6 +974,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
+            Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
+            // [GOAL DASHBOARD-PILOTABLE 2026-09-02] Ce que la caisse lit vraiment (version publiée,
+            // couverture produit par produit) + resynchronisation des produits avec le wizard publié.
+            Route::get('/categories/{category}/runtime', [ComposerProfileController::class, 'runtimeForCategory']);
+            Route::post('/categories/{category}/materialize', [ComposerProfileController::class, 'materializeCategory']);
+            // Bibliothèque de pages de wizard réutilisables (choix + prix), copies privées par catégorie.
+            Route::get('/wizard-pages', [\App\Http\Controllers\Admin\WizardPageController::class, 'index']);
+            Route::post('/wizard-pages', [\App\Http\Controllers\Admin\WizardPageController::class, 'store']);
+            Route::get('/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'show']);
+            Route::match(['put', 'patch'], '/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'update']);
+            Route::delete('/wizard-pages/{wizardPage}', [\App\Http\Controllers\Admin\WizardPageController::class, 'destroy']);
+            Route::post('/wizard-pages/{wizardPage}/duplicate-for-category/{category}', [\App\Http\Controllers\Admin\WizardPageController::class, 'duplicateForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);

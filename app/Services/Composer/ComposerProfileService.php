@@ -211,14 +211,27 @@ class ComposerProfileService
             $this->assertPublishable($profile);
             $profile->publish();
             $fresh = $profile->fresh('steps');
+
+            // POS/kiosk ne lisent que item_id. Un wizard catégorie « publié » sans copie sur les
+            // produits n'existe que dans l'admin — c'est le défaut mesuré le 2026-09-02 (28 des
+            // 30 produits sans clone). L'appel avait disparu à la fusion : la définition était là,
+            // plus personne ne l'appelait.
+            $fanOutIds = $this->fanOutCategoryPublish($fresh);
+
+            $snapshot = $fresh->steps
+                ->sortBy('position')
+                ->map(fn (ItemWizardStep $step): array => $step->toArray())
+                ->values()
+                ->all();
+            if ($fanOutIds !== []) {
+                // Métadonnée ignorée par ComposerDiffService (pas de step_key).
+                array_unshift($snapshot, ['fan_out_profile_ids' => $fanOutIds]);
+            }
+
             ItemWizardStepVersion::create([
                 'profile_id' => $fresh->id,
                 'version' => $fresh->version,
-                'snapshot' => $fresh->steps
-                    ->sortBy('position')
-                    ->map(fn (ItemWizardStep $step): array => $step->toArray())
-                    ->values()
-                    ->all(),
+                'snapshot' => $snapshot,
                 'published_at' => now(),
                 'published_by_id' => auth()->id() ?: null,
             ]);

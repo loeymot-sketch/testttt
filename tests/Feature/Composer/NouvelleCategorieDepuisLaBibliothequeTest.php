@@ -140,11 +140,19 @@ class NouvelleCategorieDepuisLaBibliothequeTest extends TestCase
         app(ComposerProfileService::class)->publish($profile);
 
         // Le gérant ajoute un produit depuis le Dashboard (vrai chemin : ItemController::store).
+        // [ONB-02 2026-08-27] `tax_id` est OBLIGATOIRE depuis que la création sans taxe facturait
+        // hors taxe en silence : le décor doit donc en fournir une, comme l'écran le fait.
+        $taxe = \App\Models\Tax::query()->firstOr(fn () => \App\Models\Tax::create([
+            'name' => 'TVA 10',
+            'tax_rate' => 10,
+            'status' => Status::ACTIVE,
+        ]));
         $nouveauId = (int) $this->actingAs($this->admin, 'sanctum')
             ->postJson('/api/admin/item', [
                 'name' => 'Wrap Végé',
                 'price' => 7.5,
                 'item_category_id' => $category->id,
+                'tax_id' => $taxe->id,
                 'item_type' => 5,
                 'is_featured' => 10,
                 'status' => Status::ACTIVE,
