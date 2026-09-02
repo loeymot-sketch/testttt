@@ -1801,3 +1801,62 @@
     border-top-right-radius: var(--pos-v5-radius-xl);
     border-bottom-right-radius: var(--pos-v5-radius-xl);
 }
+
+/* =============================================================================
+   CANAUX DE COMMANDE — définition UNIQUE (promue le 2026-09-02)
+   -----------------------------------------------------------------------------
+   [GOAL CAISSE CONTRÔLE 2026-09-02] Ces six familles de teintes vivaient dans le
+   `<style scoped>` de `PosOrdersTrackerComponent.vue` — donc inatteignables depuis
+   tout autre composant. Le tiroir de contrôle de la caisse affiche les mêmes canaux :
+   deux jeux de couleurs qui cohabitent détruiraient la seule chose qu'un code couleur
+   doit garantir, à savoir qu'une teinte veut dire UNE chose sur tout l'écran.
+
+   Ce qui porte l'information est le FOND et le LISERÉ, pas la `color` : l'unique enfant
+   visible de la pastille est un EMOJI, et un emoji ignore `color` (constat A-002 du
+   2026-08-25 — la couleur de texte annoncée « AA vérifié » n'était peinte nulle part).
+   La `color` reste déclarée pour le libellé lu par les lecteurs d'écran et pour tout
+   enfant textuel futur.
+
+   Et la couleur n'est JAMAIS seule : chaque canal porte aussi un pictogramme de forme
+   distincte (🛒 🖥️ 🌐 📞 🛵 🚗, `resources/js/support/canalCommande.js`) plus un nom
+   accessible en texte — WCAG 1.4.1.
+
+   Les sélecteurs `.pos-tracker-card-source--*` sont conservés en alias : le suivi garde
+   son balisage et ses bancs, mais il n'a plus sa propre copie des teintes.
+   ============================================================================= */
+
+.pos-canal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.pos-canal--pos,      .pos-tracker-card-source--pos      { background: #DEE2E6; color: #343A40; box-shadow: inset 0 0 0 1px #9AA3AC; }
+.pos-canal--kiosk,    .pos-tracker-card-source--kiosk    { background: #C3CEFF; color: #2A2377; box-shadow: inset 0 0 0 1px #8C9BF0; }
+/* Rouge : même teinte que `.pos-shortcuts__panel--web`, identité « commande web » cohérente
+   sur tout l'écran caisse (T-B ALERTE-WEB 2026-08-16). */
+.pos-canal--online,   .pos-tracker-card-source--online   { background: #FDECEA; color: #B3261E; box-shadow: inset 0 0 0 1px #F5B5AE; }
+.pos-canal--phone,    .pos-tracker-card-source--phone    { background: #BFEBD3; color: #14532D; box-shadow: inset 0 0 0 1px #57B98A; }
+.pos-canal--platform, .pos-tracker-card-source--platform { background: #FFE8CC; color: #8A4B00; box-shadow: inset 0 0 0 1px #F0A952; }
+.pos-canal--delivery, .pos-tracker-card-source--delivery { background: #E4CCFF; color: #5B1A93; box-shadow: inset 0 0 0 1px #B583E8; }
+
+/* Nom accessible : lu par les lecteurs d'écran, invisible à l'œil. Défini ici plutôt que via
+   l'utilitaire `sr-only` de Tailwind — une garantie d'accessibilité ne doit dépendre d'aucune
+   feuille externe. */
+.pos-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

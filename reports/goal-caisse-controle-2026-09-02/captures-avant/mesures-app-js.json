@@ -1,0 +1,18 @@
+{
+  "source": "/admin/pos",
+  "url": "http://127.0.0.1:8766/admin/pos",
+  "scripts": [
+    "http://127.0.0.1:8766/js/app.js?id=a762ad1a87f2cfe07f15829b2f3c1c22"
+  ],
+  "aller": {
+    "label": "app.js → suivi",
+    "ms": 2601,
+    "spa": true,
+    "url": "http://127.0.0.1:8766/admin/pos-orders-tracker"
+  },
+  "retour": {
+    "ms": 18043,
+    "spa": true,
+    "url": "http://127.0.0.1:8766/admin/pos-orders-tracker"
+  }
+}

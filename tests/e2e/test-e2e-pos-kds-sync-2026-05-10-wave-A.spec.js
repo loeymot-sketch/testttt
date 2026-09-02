@@ -449,7 +449,11 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
       const trackerVisible = await trackerBtn.isVisible({ timeout: 3_000 }).catch((e) => { observations.push(`state10: trackerBtn isVisible threw ${e.message}`); return false; });
       observations.push(`state10: tracker_btn_visible=${trackerVisible}`);
       if (trackerVisible) {
-        await trackerBtn.click({ timeout: 5_000 });
+        // [GOAL CAISSE CONTRÔLE 2026-09-02] Le clic simple sur ce bouton ouvre maintenant le
+        // tiroir de contrôle DANS la caisse (mandat propriétaire). Cet état documente la PAGE de
+        // suivi : on y va donc par l'URL, sinon `[data-pos-tracker-shell]` ne monterait jamais et
+        // l'observation deviendrait un faux « page vide » au lieu d'un constat.
+        await page.goto('/admin/pos-orders-tracker', { waitUntil: 'domcontentloaded' });
         // Tracker SPA route — wait for the shell to mount.
         // [test-e2e fix A-005 round-2] tracker shell waitFor failure is critical — log
         await page.locator('[data-pos-tracker-shell]').waitFor({ state: 'visible', timeout: 15_000 }).catch((e) => observations.push(`state10: tracker shell waitFor threw ${e.message}`));

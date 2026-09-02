@@ -1,0 +1,14 @@
+{
+  "hardNav": true,
+  "ms": 4102,
+  "navs": [
+    "http://127.0.0.1:8766/login",
+    "http://127.0.0.1:8766/login",
+    "http://127.0.0.1:8766/login",
+    "http://127.0.0.1:8766/login",
+    "http://127.0.0.1:8766/admin/pos",
+    "http://127.0.0.1:8766/admin/pos",
+    "http://127.0.0.1:8766/admin/pos-orders-tracker"
+  ]
+}
+// retour caisse : hardNav=true, url=http://127.0.0.1:8766/admin/pos

@@ -403,14 +403,18 @@ test.describe.serial('Wave B — POS caisse full register (frozen wizard observe
     }
 
     // ── 10 — orders tracker (tracker amount echoes a receipt total) ─────────
-    // pos-tracker-open is a ROUTER-LINK to admin.pos-orders.tracker (full-screen
-    // route, NOT a modal) — it navigates AWAY from /admin/pos. Capture it, assert
-    // the cross-surface total, then navigate BACK so states 11-13 (cart-side
-    // controls) remain reachable.
+    // [GOAL CAISSE CONTRÔLE 2026-09-02] LE CLIC A CHANGÉ DE SENS, pas cet état.
+    // `pos-tracker-open` reste un router-link vers la page de suivi, mais son CLIC SIMPLE ouvre
+    // désormais le tiroir de contrôle dans la caisse — mandat propriétaire : « pour les commandes
+    // en cours je veux pas que ça ouvre une nouvelle page ». Le clic ne mène donc plus ici à la
+    // page pleine, et cet état-ci a besoin de la PAGE (il lit `tracker-amount-<id>`).
+    //
+    // On y va donc par l'URL. C'est important : laissé au clic, le bloc serait tombé dans sa
+    // branche « non visible » et l'assertion DURE `expect(rowAmt).toBe(canonicalTotal)` aurait
+    // cessé de s'exécuter EN SILENCE — une preuve croisée perdue sans que rien ne rougisse.
     const trackerOpen = page.locator('[data-testid="pos-tracker-open"]').first();
     if (await trackerOpen.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await trackerOpen.click({ timeout: 5000 });
-      await page.waitForURL(/\/admin\/pos-orders\/tracker|tracker/, { timeout: 10_000 }).catch(() => {});
+      await page.goto('/admin/pos-orders-tracker', { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1800);
       await snap('10a-orders-tracker');
       // Cross-surface #2: scope to THIS order's tracker-amount-<id> element.

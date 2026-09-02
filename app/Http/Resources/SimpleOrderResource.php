@@ -198,7 +198,29 @@ class SimpleOrderResource extends JsonResource
         );
     }
 
-    /** Nom à afficher : celui porté par la commande d'abord, le compte porteur ensuite. */
+    /**
+     * Nom à afficher : celui porté par la commande d'abord, le compte porteur ensuite — mais le
+     * compte porteur SEULEMENT là où il désigne vraiment le client.
+     *
+     * [GOAL CAISSE CONTRÔLE 2026-09-02] DÉFAUT CORRIGÉ ICI, constaté au navigateur : une commande
+     * BORNE sans nom affichait « 👤 Admin Le Cayenne » en caisse. Le repli `$this->user?->name`
+     * ne connaissait pas le canal, et rendait donc le nom du compte TECHNIQUE qui ancre la
+     * commande — sur une commande de comptoir, il rend le nom du CAISSIER. Présenté au caissier
+     * comme « le client », c'est exactement la confusion décrite par le propriétaire (« je me
+     * perds entre les clients qui viennent »), et c'est pire que pas de nom du tout : un nom faux
+     * fait CHERCHER quelqu'un qui n'existe pas.
+     *
+     * La règle appliquée n'est pas nouvelle : c'est EXACTEMENT celle de `displayCustomerPhone()`
+     * ci-dessous, écrite le 2026-07-31 avec le propriétaire — « borne et comptoir, où le client
+     * est physiquement devant le caissier, renvoient null ». Le nom suit désormais le téléphone.
+     *
+     * Ce qui ne change pas :
+     *   · un nom SAISI pour cette commande (`pos_customer_name`) prime toujours, sur tous les
+     *     canaux — c'est le cas d'usage « j'ai pris le nom au téléphone », et celui du prénom
+     *     scellé sur une commande d'agrégateur ;
+     *   · web, en ligne, téléphone et livraison continuent de replier sur le compte porteur : là,
+     *     le titulaire du compte EST le client, et il est absent — son nom est la seule prise.
+     */
     private function displayCustomerName(): ?string
     {
         $nomCommande = trim((string) ($this->pos_customer_name ?? ''));
@@ -206,7 +228,10 @@ class SimpleOrderResource extends JsonResource
             return $nomCommande;
         }
 
-        return $this->user?->name;
+        $clientAbsent = ((int) $this->order_type === OrderType::DELIVERY)
+            || in_array((string) $this->source_surface, ['web', 'online', 'phone', 'delivery'], true);
+
+        return $clientAbsent ? $this->user?->name : null;
     }
 
     /**
