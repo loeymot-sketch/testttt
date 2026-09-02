@@ -26,7 +26,78 @@
         class="space-y-4"
         data-testid="outbox-overview-dashboard"
         :aria-busy="loading"
+        :data-perime="perime ? 'true' : 'false'"
     >
+        <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+        <div
+            v-if="erreur"
+            role="alert"
+            data-testid="outbox-erreur"
+            class="rounded border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900"
+        >
+            <p class="font-semibold">{{ erreur }}</p>
+            <p class="mt-1 text-xs">
+                Les valeurs ci-dessous datent de la dernière lecture réussie{{ generatedAtHuman ? ` (${generatedAtHuman})` : '' }}
+                — elles ne décrivent PAS l'état actuel.
+            </p>
+            <button
+                type="button"
+                class="db-btn db-btn-secondary mt-2 text-xs !text-slate-800"
+                data-testid="outbox-reessayer"
+                @click="loadAll"
+            >Réessayer</button>
+        </div>
+
+        <p
+            v-if="retourAction"
+            :role="retourAction.type === 'alert' ? 'alert' : 'status'"
+            data-testid="outbox-retour-action"
+            class="rounded border p-3 text-sm"
+            :class="retourAction.type === 'alert'
+                ? 'border-rose-300 bg-rose-50 text-rose-900'
+                : 'border-emerald-300 bg-emerald-50 text-emerald-900'"
+        >{{ retourAction.texte }}</p>
+
+        <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+        <div
+            v-if="confirmationPurge"
+            data-testid="outbox-drain-confirm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="outbox-drain-titre"
+            class="rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+            <p id="outbox-drain-titre" class="font-semibold">Purger les échecs de plus de 24 h ?</p>
+            <p class="mt-1 text-xs">
+                {{ terminalFailures.count }} événement(s) en échec seront supprimés définitivement.
+                L'opération est consignée au journal d'audit.
+            </p>
+            <div class="mt-3 flex gap-2">
+                <button
+                    type="button"
+                    class="db-btn db-btn-primary text-xs"
+                    :disabled="draining"
+                    data-testid="outbox-drain-confirmer"
+                    @click="confirmerPurge"
+                >Confirmer la purge</button>
+                <button
+                    type="button"
+                    class="db-btn db-btn-secondary text-xs !text-slate-800"
+                    data-testid="outbox-drain-annuler"
+                    @click="annulerPurge"
+                >Annuler</button>
+            </div>
+        </div>
         <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-slate-800">
@@ -57,7 +128,7 @@
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
-                    :disabled="retrying || (failedJobs.count === 0 && pending.count === 0)"
+                    :disabled="retrying || terminalFailures.count === 0"
                     data-testid="outbox-retry-failed"
                     @click="retryFailed"
                 >
@@ -67,7 +138,7 @@
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
-                    :disabled="draining || failedJobs.count === 0"
+                    :disabled="draining || terminalFailures.count === 0"
                     data-testid="outbox-drain-failed"
                     @click="drainFailed"
                 >
@@ -199,7 +270,7 @@
             <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                 <div>
                     <dt class="text-xs text-slate-600">{{ $t('admin.observability_outbox.count') }}</dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-800">{{ dispatched.count }}</dd>
+                    <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">{{ dispatched.count }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-600">p50</dt>
@@ -315,8 +386,19 @@ export default {
             loading: false,
             retrying: false,
             draining: false,
+            // [2026-09-02 · Codex P1-L] L'état de la MESURE elle-même, distinct des
+            // valeurs mesurées : sans lui, une panne de lecture est indiscernable d'un
+            // système sain.
+            erreur: null,
+            perime: false,
+            retourAction: null,
+            confirmationPurge: false,
+            _lecture: null,
             generatedAt: null,
             pending: { count: 0, rows: [] },
+            terminalFailures: { count: 0, contract_violations: 0 },
+            inFlight: { count: 0, stale_after_minutes: 5 },
+            staleClaimed: { count: 0, rows: [] },
             dispatched: {
                 count: 0,
                 latency_p50_ms: null,
@@ -355,39 +437,101 @@ export default {
         }
     },
     methods: {
-        async loadAll() {
-            if (document.hidden) return;
+        // Une seule lecture à la fois. Le rafraîchissement automatique (10 s), le retour
+        // d'onglet et le bouton peuvent se déclencher ensemble : sans ce verrou, trois
+        // requêtes partent et la dernière réponse arrivée gagne — pas forcément la plus
+        // récente.
+        loadAll() {
+            if (document.hidden) return Promise.resolve();
+            if (this._lecture) return this._lecture;
+
             this.loading = true;
-            try {
-                const { data } = await axios.get('/admin/observability/outbox');
-                this.generatedAt = data.generated_at || null;
-                this.pending = data.pending || { count: 0, rows: [] };
-                this.dispatched = data.dispatched_24h || this.dispatched;
-                this.queueHigh = data.queue_high || this.queueHigh;
-                this.failedJobs = data.failed_jobs || this.failedJobs;
-                this.health = data.health || this.health;
-            } finally {
-                this.loading = false;
-            }
+            this._lecture = (async () => {
+                try {
+                    const { data } = await axios.get('/admin/observability/outbox');
+                    this.generatedAt = data.generated_at || null;
+                    this.pending = data.pending || { count: 0, rows: [] };
+                    this.terminalFailures = data.terminal_failures || { count: 0, contract_violations: 0 };
+                    this.inFlight = data.in_flight || this.inFlight;
+                    this.staleClaimed = data.stale_claimed || { count: 0, rows: [] };
+                    // `dispatched_24h` comptait un CLAIM comme une livraison : la clé a
+                    // disparu du contrat. La lire encore afficherait zéro sans le dire.
+                    this.dispatched = data.delivered_24h || this.dispatched;
+                    this.queueHigh = data.queue_high || this.queueHigh;
+                    this.failedJobs = data.failed_jobs || this.failedJobs;
+                    this.health = data.health || this.health;
+                    this.erreur = null;
+                    this.perime = false;
+                } catch (e) {
+                    // Ne PAS remettre les compteurs à zéro : afficher zéro en attente
+                    // pendant une panne de lecture serait un deuxième mensonge. On garde
+                    // les dernières valeurs ET on dit qu'elles sont périmées.
+                    this.erreur = this.messageDErreur(e);
+                    this.perime = true;
+                } finally {
+                    this.loading = false;
+                    this._lecture = null;
+                }
+            })();
+
+            return this._lecture;
+        },
+        messageDErreur(e) {
+            const code = e && e.response ? e.response.status : null;
+            if (code === 403) return "Lecture refusée : ce compte n'a pas accès au cockpit outbox.";
+            if (code === 401) return 'Session expirée : reconnectez-vous pour lire l’état du pipeline.';
+            if (code) return `Le serveur a répondu ${code} : l’état affiché n’est plus à jour.`;
+
+            return 'Impossible de lire l’état du pipeline (réseau ou serveur injoignable).';
         },
         async retryFailed() {
             this.retrying = true;
+            this.retourAction = null;
             try {
-                await axios.post('/admin/observability/outbox/retry-failed');
+                const { data } = await axios.post('/admin/observability/outbox/retry-failed');
+                const combien = data && typeof data.retried === 'number' ? data.retried : null;
+                this.retourAction = {
+                    type: 'status',
+                    texte: combien === null
+                        ? 'Relance demandée.'
+                        : `${combien} événement(s) remis en file.`,
+                };
                 await this.loadAll();
+            } catch (e) {
+                // Une action qui échoue en silence fait croire qu'elle a réussi — et on
+                // attend une reprise qui ne viendra pas.
+                this.retourAction = { type: 'alert', texte: 'La relance a échoué : ' + this.messageDErreur(e) };
             } finally {
                 this.retrying = false;
             }
         },
-        async drainFailed() {
+        // Purger supprime définitivement : on demande, on n'agit pas.
+        drainFailed() {
+            this.retourAction = null;
+            this.confirmationPurge = true;
+        },
+        annulerPurge() {
+            this.confirmationPurge = false;
+        },
+        async confirmerPurge() {
             this.draining = true;
             try {
-                await axios.post('/admin/observability/outbox/drain-failed', {
+                const { data } = await axios.post('/admin/observability/outbox/drain-failed', {
                     older_than_hours: 24,
                 });
+                const combien = data && typeof data.deleted === 'number' ? data.deleted : null;
+                this.retourAction = {
+                    type: 'status',
+                    texte: combien === null
+                        ? 'Purge effectuée.'
+                        : `${combien} événement(s) supprimé(s) définitivement.`,
+                };
                 await this.loadAll();
+            } catch (e) {
+                this.retourAction = { type: 'alert', texte: 'La purge a échoué : ' + this.messageDErreur(e) };
             } finally {
                 this.draining = false;
+                this.confirmationPurge = false;
             }
         },
         formatTimestamp(value) {
