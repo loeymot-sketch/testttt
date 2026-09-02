@@ -8,6 +8,7 @@ use App\Models\ItemBranchAvailability;
 use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
+use App\Services\ItemCategoryService;
 use App\Services\Stock\ChoiceAvailabilityResolver;
 use Illuminate\Support\Collection;
 
@@ -71,6 +72,15 @@ final class MenuProjectionService
             ->get();
 
         $visibleCategories = $categories
+            // [CHEF 2026-09-02] Les rayons laissés par les campagnes (AUDIT-, E2E…,
+            // ZZ-TEST-, faker latin) étaient masqués dans le catalogue ADMIN mais
+            // PAS ici : mesuré le 2026-09-02, la caisse et la borne servaient
+            // « E2E Cat … », « E2ECategory13511EDITED » et
+            // « E2E_PLAYWRIGHT_STUDIO_CATEGORY » au caissier et au client.
+            // On réutilise le garde-fou existant plutôt que d'en écrire un second
+            // qui dériverait — deux listes de motifs finissent toujours par diverger.
+            // Rien n'est supprimé en base : c'est un masque de lecture.
+            ->reject(fn (ItemCategory $cat): bool => ItemCategoryService::isAuditPollutionName($cat->name))
             ->filter(fn (ItemCategory $cat): bool => $cat->isVisibleOn($channel))
             ->sortBy(fn (ItemCategory $cat): int => $cat->sortFor($channel))
             ->values();
