@@ -47,6 +47,99 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-03 (nuit) — AUDIT 9 AGENTS, UN DÉFAUT DE PRIX TROUVÉ ET CORRIGÉ, DÉPLOYÉ ET VÉRIFIÉ SERVI**
+>
+> `/goal` propriétaire : auditer la structure + le travail des sessions parallèles + ses
+> signalements, avec agents parallèles ET adversaires. **6 agents d'audit puis 3 adversaires.
+> Les adversaires ont réfuté NEUF affirmations de mes propres agents** — c'est le résultat
+> méthodologique du cycle. Rapports : `reports/goal-audit-fidelite-web-uber-2026-09-03/`.
+>
+> 💰 **LE DÉFAUT DE PRIX QU'IL SIGNALAIT EXISTE, MAIS PAS OÙ IL LE DÉCRIVAIT.** « On modifie un
+> produit du panier, le prix ne change pas » : les deux surfaces RECALCULENT bien (40 tests
+> verts, aucune exposition NF525 — `PricingService.php:190` facture depuis la base). Le défaut
+> portait sur le MONTANT. `ItemComponent.vue:1490` testait `extraLower.includes('cheddar')`
+> **sans périmètre** et court-circuitait le cas général des suppléments payants (`:1518`). Or la
+> carte porte « Cheddar Fondu » (option menu, 1,00 €, `FRITES_CHEDDAR_PRICE`) **et** « Cheddar »
+> (supplément payant, **30 lignes actives à 0,90 €**, groupes `supplement` / `supplement_bol`).
+> À chaque réouverture d'une ligne du panier contenant le supplément : tuile **non sélectionnée**
+> et **1,00 € facturé au lieu de 0,90 €**. La branche voisine « Grande Portion » exige DEUX mots
+> et n'a jamais eu ce défaut ; celle du cheddar n'en exigeait qu'un. Elle en exige deux désormais.
+> **Banc prouvé rouge sans le correctif** (2 échecs sur 4, les 2 témoins verts), vert avec.
+> Cause de fond consignée : **zéro test Vitest** ne couvrait `posCart/replaceCartLine`, et la
+> seule assertion existante vérifiait que le prix NE bouge PAS.
+>
+> 🚀 **DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI.** `9e1dd6447 → 0110b3025` (fusion du commit
+> tableau de bord de l'autre session, sans conflit, suites rejouées APRÈS fusion). VPS
+> `9e1dd644 → 0110b302` en avance rapide, `npx mix --production`, lot
+> **`pos-shell.12ccff41` → `pos-shell.618d1c8c`**. Preuve en deux temps : le lot servi PRÉCÉDENT
+> contenait `fritesCheddar` et **0** `fondu` ; le nouveau, récupéré **en HTTP 200 (960 985 o)**,
+> porte `i.includes("cheddar")&&i.includes("fondu")`. `/login` 200, `/api/health/live` 200 sur
+> `vps-418872ac.vps.ovh.net`. **Aucun `config:cache`** (absent avant ET après — le piège NF525
+> n'a pas été armé) ; `view/route/cache:clear` + `queue:restart`. **CHAIN OK avant ET après.**
+> Zone gelée §7 : **0 ligne**. Vitest **535 fichiers / 4 395 tests**, PHPUnit Dashboard+Pos+Loyalty
+> **1 401 tests**, 0 échec.
+>
+> 🔍 **DEUX AUTRES SIGNALEMENTS : NON REPRODUITS, MAIS PAS SANS OBJET.**
+> · « Premier choix de viande » : aucune présélection automatique n'existe (état initial vide
+>   des deux côtés), message serveur au périmètre correct, sentinelle rejouée 14/14. *Latent P2* :
+>   `pos-wizard.js:363-380` déduit le quota de viande incluse **du NOM du produit** (zone gelée).
+> · « Cornichon mis en gratuit » : gratuit depuis le 2026-05-13 par mandat (`config/menu.php:127`),
+>   et **aucun UPDATE n'a jamais eu lieu** (`created_at == updated_at` sur 100 % des crudités).
+>   Ce qui s'est passé : **11 lignes « Cornichon » AJOUTÉES le 2026-09-02 à 18:32:43** par
+>   `menu:heal-light-v2` (ids 616-620, 625-630). Sans symbole dans les deux tables, il s'imprime
+>   **comme une ligne de supplément** en cuisine et lit « STO Cornichon » en caisse.
+>   **Décision propriétaire ouverte (D1).**
+>
+> 🔴 **CE QUE LES ADVERSAIRES ONT RÉFUTÉ — à ne pas re-croire.**
+> · « La vitrine client est éteinte, il faut la rallumer » → **FAUX ET DANGEREUX.** La vitrine Vue
+>   de ce backend est condamnée EXPRÈS (`routes/web.php:38`, `STAFF_ONLY_MODE=true`,
+>   `router/index.js:287-290`). Le vrai site client est le **dépôt Vercel séparé**, déjà câblé
+>   (`api.js:448`) et qui encaisse : **249 commandes `source_surface='web'`**. La rallumer
+>   construirait un second site concurrent de celui qui encaisse.
+> · « Pas de paiement carte en ligne » → **FAUX. Mollie est actif** (`routes/api.php:2019`,
+>   `MOLLIE_ENABLED=true`), Apple Pay compris. L'agent n'avait regardé que Stripe/PayPal.
+> · « `tracking_token` NULL sur 253/253 » → **angle faux** : depuis le correctif du 2026-08-16,
+>   **56/56 = 100 %**. Le « 0 % » mesurait le calendrier, pas le canal.
+> · « Frais de livraison : 4 € ≤5 km +1 €/km » → **barème périmé**. Réel : 4 € ≤3 km puis
+>   **+2 €/km** (4/4/4/5/7/9/13/17 € de 1 à 10 km). Et **la livraison est ÉTEINTE au serveur**
+>   (`order_setup_delivery = DISABLE`, migration `2026_07_27_093000`).
+> · « Une course Uber ne touche pas la machine à états » → **RÉFUTÉ** : `OrderService.php:2154`
+>   pose `driver_id = Auth::id() ?: null` → `:2255` **saute le mouvement de caisse** →
+>   `ZReportCashEnrichmentService:489` dérive `movement_missing_audit_row` à chaque encaissement
+>   à la porte. **Défaut NF525 réel, indépendant d'Uber, non corrigé.**
+>
+> 🧭 **CHANTIERS — rien n'est un terrain vierge.** Fidélité **~75 % déjà là** (crédit au PAIEMENT
+> idempotent, QR HMAC signé, la caisse scanne à la caméra `PosLoyaltyIdentifyModal.vue:815`,
+> 241 tests verts). Retrait QR : séparation **déjà réelle** (`source_surface` : pos 1823 · kiosk
+> 1277 · web 253 · uber_eats 23) et QR de commande **existant** (`tracking_token` +
+> `GET api/frontend/order/track-qr/{token}`) — **il manque le seul lecteur au comptoir**
+> (`PosCounterCollectModal.vue` existe déjà ; saisie clavier ⇒ le lecteur physique se branchera
+> sans code). 15 min : réglage **à 30 en base** (`settings` id=40), et les 2 seuls écrans qui le
+> lisent sont fermés par `STAFF_ONLY_MODE` ⇒ **un correctif backend serait invisible** ; le site
+> promet **3 délais en dur** (8 / 8-20 / ~12 min). Uber : **Uber Direct ABSENT** (l'existant est
+> Marketplace/ingestion) — démarche propriétaire rédigée dans
+> `docs/uber/MISSION_OWNER_UBER_DIRECT_2026-09-03.md` (direct.uber.com, scope `eats.deliveries`).
+> **Risque n°1 vu par personne** : `orders` n'a **aucune colonne de distance** ⇒ après bascule
+> Uber, réconciliation « facturé au client » vs « facturé par Uber » **impossible même a posteriori**.
+>
+> 🌿 **BRANCHES.** Le cluster « sauces/pain/galette » n'est **pas** un risque (3 branches à
+> **0 fichier** de diff, la 4ᵉ = même travail sous un autre SHA — `git cherry` le prouve là où
+> `git log` fait peur). Le vrai piège : **`fix/rattrapage-fusion-2026-09-03` ferait RÉGRESSER
+> HEAD** (ses 5 fichiers « perdus » y sont déjà, en plus avancé — HEAD importe les enums
+> canoniques, la branche recopie 7 constantes en dur). Gisement orphelin :
+> **`fix/uber-order-fetch-v2`** (10 commits, 22 fichiers, 1 008 lignes, 871 commits de retard) —
+> à fusionner **pour elle-même** (correctifs payés en bac à sable + visibilité Uber caisse/KDS),
+> **pas** pour préparer Direct : elle n'en contient rien.
+>
+> 🔐 **Une clé `MOLLIE_API_KEY` de PRODUCTION (`live_`) est dans le `.env` LOCAL.** Fichier bien
+> ignoré par git, **jamais commité** (vérifié) — mais une clé réelle sur un poste de dev encaisse
+> pour de vrai. **Décision propriétaire ouverte (D4).**
+>
+> ⚠️ Rappel : les chiffres SQL de ce cycle viennent de `foodking_e2e` (base de DÉV), pas de la
+> production. Ordres de grandeur seulement.
+>
+> 📄 Page de restitution propriétaire : artifact `60cb3ff2-5c6f-4d12-b4b2-3ec5e8b3ac6b`.
+
 > **2026-09-03 — DÉPLOYÉ, VÉRIFIÉ SUR LE CONTENU SERVI — ET LA MACHINE QUI ENCAISSE TOURNE EN `staging`**
 >
 > **Déploiement fait et vérifié.** Vitrine `007bc75 → 30cc82f` sur Vercel : `/` répond 200, le
