@@ -382,11 +382,26 @@ class DashboardService
 
 
         $salesSummaryArray = [];
-        $dayCount = count($dateRangeArray);
+
+        // [2026-09-03] Avant : `count($dateRangeArray)` — le nombre de jours de la PLAGE, jours
+        // à venir compris. Sur le mois en cours, la moyenne était donc divisée par 30 ou 31 dès
+        // le 1er du mois. Arithmétique sur des valeurs mesurées (juillet, J1 = 71,10 €,
+        // J2 = 131,60 €) : consulté le 2 juillet, le widget affichait 6,54 €/jour au lieu de
+        // 101,35 € — un facteur 15. On ne divise que par les jours ÉCOULÉS ; sur une plage
+        // entièrement passée, rien ne change.
+        $aujourdhuiParis = \Carbon\Carbon::now($firstDateParisDay->timezoneName)->toDateString();
+        $joursEcoules = array_values(array_filter(
+            $dateRangeArray,
+            fn ($jour) => (string) $jour <= $aujourdhuiParis
+        ));
+        $dayCount = count($joursEcoules) ?: count($dateRangeArray);
+
         $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
         $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat(
             $dayCount > 0 ? $total_sales / $dayCount : $total_sales
         );
+        // Publié pour que l'écran puisse dire sur quoi la moyenne est calculée.
+        $salesSummaryArray['avg_per_day_days'] = $dayCount;
         $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
         // Les montants seuls ne se lisent pas : le graphique traçait une courbe sans
         // aucune date en abscisse. Les jours sont désormais publiés à côté des montants,
