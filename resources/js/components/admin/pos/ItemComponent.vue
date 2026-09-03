@@ -1487,7 +1487,18 @@ export default {
                     else if (extraLower.includes('grande') && extraLower.includes('portion')) {
                         restore.fritesGrande = true;
                     }
-                    else if (extraLower.includes('cheddar')) {
+                    // [GOAL AUDIT 2026-09-03] `fritesCheddar` désigne l'option de MENU
+                    // « Cheddar Fondu » (pos-wizard.js:195 FRITES_CHEDDAR_PRICE, libellé
+                    // « Avec Cheddar Fondu » à :2120). La carte porte AUSSI un supplément
+                    // payant nommé simplement « Cheddar » (groupes `supplement` et
+                    // `supplement_bol`, 30 lignes à 0,90 €). Tester le seul mot « cheddar »
+                    // faisait tomber ce supplément ici : à la réouverture d'une ligne du
+                    // panier sa tuile revenait NON sélectionnée et la caisse facturait
+                    // 1,00 € au lieu de 0,90 €. On exige donc les DEUX mots, exactement
+                    // comme la branche « grande » + « portion » juste au-dessus, qui n'a
+                    // jamais eu ce défaut. Le supplément retombe alors sur le cas général
+                    // des suppléments payants plus bas.
+                    else if (extraLower.includes('cheddar') && extraLower.includes('fondu')) {
                         restore.fritesCheddar = true;
                     }
                     // [EDIT-RESTORE FIX 2026-08-16] Sauce (gratuite OU payante) — DOIT être
