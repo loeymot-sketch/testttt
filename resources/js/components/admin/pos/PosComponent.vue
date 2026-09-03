@@ -1970,6 +1970,7 @@
     <PosControlDrawer
       :open="controlDrawerOpen"
       :orders="serviceOrders"
+      :troncature="serviceOrdersMeta"
       :anciennes-count="anciennesAEncaisser"
       :last-refresh="lastReadyRefresh"
       :tick="_lastRefreshTick"
@@ -2555,6 +2556,10 @@ export default {
             // canaux confondus (`admin/pos-order`, composition compacte). Source unique des
             // quatre files du tiroir de contrôle ET du compteur cuisine du ticket.
             serviceOrders: [],
+            // [GOAL G1 2026-09-03] Ce que le serveur dit de sa propre réponse : total réel de la
+            // journée, nombre rendu, et si une borne a mordu. `null` tant qu'aucun chargement
+            // n'a abouti. Sert au bandeau du tiroir — une troncature ne doit jamais être muette.
+            serviceOrdersMeta: null,
             // Le tiroir : ouvert ou non, et sur quel onglet. Il ne mémorise pas le dernier
             // onglet d'une ouverture à l'autre — en coup de feu, un état persistant invisible
             // fait croire qu'on regarde la file argent alors qu'on regarde les livrées.
@@ -4771,19 +4776,22 @@ export default {
             if (this._serviceFetchInFlight) {
                 return this._serviceFetchInFlight;
             }
-            const jour = serviceDayRange();
-            const p = this.$store.dispatch('posOrder/lists', {
-                // Mêmes paramètres que le tableau de suivi (`PosOrdersTrackerComponent.fetchOrders`) :
-                // `paginate` fait HONORER `per_page` (sans lui le serveur renvoie TOUTE la journée),
-                // `lean` échange le jeu d'eager-loads lourd contre celui dont le suivi a besoin,
-                // `composition` demande explicitement le contenu compact des lignes — il ne part
-                // donc pas vers l'historique et le rapport de ventes, qui ne l'affichent pas.
-                paginate: 1,
-                per_page: 100,
-                lean: 1,
+            //
+            // [GOAL G1 2026-09-03] LA BORNE DE CENT A DISPARU. Cet appel demandait
+            // `paginate: 1, per_page: 100` sur `admin/pos-order`. `OrderService::list` trie
+            // `id desc` par défaut : au-delà de cent commandes dans le service, ce sont les PLUS
+            // ANCIENNES qui tombaient — celles qui traînent, celles qu'il faut voir — et rien ne
+            // le signalait. Devenaient faux en silence : les quatre files du tiroir, les deux
+            // pastilles de la barre, `activeOrdersStats`, `readyOrders`, et le rang cuisine
+            // annoncé au client (« vous êtes le 4ᵉ », sous-estimé).
+            //
+            // `admin/pos-order/service-day` borne SERVEUR à la journée de service et aux états
+            // des quatre files, sans plafond d'affichage, et renvoie `meta.total`. Le serveur
+            // calcule lui-même la fenêtre (miroir de `posServiceDay.js`) : plus aucune chance que
+            // le client et le serveur ne parlent pas de la même journée. `composition` reste
+            // explicite — le contenu compact des lignes ne part que vers les écrans qui l'affichent.
+            const p = this.$store.dispatch('posOrder/serviceDay', {
                 composition: 1,
-                from_date: jour.from,
-                to_date: jour.to,
                 // Pas de commit Vuex : cette liste n'appartient qu'à la caisse, et le store
                 // `posOrder/lists` est déjà la liste du tableau de suivi.
                 vuex: false,
@@ -4797,6 +4805,28 @@ export default {
             p.then(release, release);
             return p;
         },
+        /**
+         * [GOAL G1 2026-09-03] Retient ce que le serveur DIT de sa propre réponse.
+         *
+         * Le serveur borne la journée par deux plafonds de sécurité (voir
+         * `PosOrderController::serviceDay`). Ils ne mordent pas sur un service réel — mais s'ils
+         * mordaient, l'écran doit l'ANNONCER. Un compteur silencieusement faux est pire qu'une
+         * borne assumée : c'est très exactement le défaut que ce chantier ferme.
+         */
+        _retenirMetaService(res) {
+            const meta = res?.data?.meta;
+            if (!meta || typeof meta !== 'object') {
+                this.serviceOrdersMeta = null;
+                return;
+            }
+            const total = parseInt(meta.total, 10);
+            const affichees = parseInt(meta.shown, 10);
+            this.serviceOrdersMeta = {
+                total: Number.isFinite(total) ? total : 0,
+                affichees: Number.isFinite(affichees) ? affichees : 0,
+                tronquee: meta.truncated === true,
+            };
+        },
         async loadActiveOrdersStats() {
             try {
                 const res = await this._fetchServiceOrdersOnce();
@@ -4804,6 +4834,7 @@ export default {
                 // La liste de la journée de service — source unique des quatre files du tiroir
                 // de contrôle. Le tiroir ne fait AUCUNE requête : il lit ceci.
                 this.serviceOrders = Array.isArray(list) ? list : [];
+                this._retenirMetaService(res);
                 let active = 0;
                 let ready = 0;
                 for (let i = 0; i < list.length; i++) {
@@ -5310,6 +5341,7 @@ export default {
                 const res = await this._fetchServiceOrdersOnce();
                 const list = (res?.data?.data) || [];
                 if (Array.isArray(list)) this.serviceOrders = list;
+                this._retenirMetaService(res);
                 // [GOAL CAISSE CONTRÔLE 2026-09-02] Le filtre par TYPE de commande a disparu.
                 // Il existait parce que le flux amont (borne/à-emporter) n'apportait rien d'autre :
                 // le filtre côté client ne retirait donc jamais rien, mais il aurait CACHÉ les

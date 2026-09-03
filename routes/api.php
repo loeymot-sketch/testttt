@@ -1458,6 +1458,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/stale', [PosOrderController::class, 'stale'])
             ->middleware('throttle:60,1')
             ->name('stale');
+        // [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée aux états des quatre files
+        // du tiroir de contrôle. Remplace `?paginate=1&per_page=100` sur ce chemin : la page de
+        // cent, triée `id desc`, jetait les commandes les PLUS ANCIENNES — celles qui traînent —
+        // sans rien signaler. Lecture seule ; `throttle` aligné sur les lectures du tableau.
+        Route::get('/service-day', [PosOrderController::class, 'serviceDay'])
+            ->middleware('throttle:60,1')
+            ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);

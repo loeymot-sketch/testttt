@@ -46,6 +46,21 @@
                          veille + 3 depuis minuit = « 143 aujourd'hui »). Le mot bascule dès que
                          la fenêtre s'étend sur deux jours civils. -->
                     <span>{{ stats.todayCount }} {{ windowSpansTwoDays ? $t('pos.tracker.service_total') : $t('pos.tracker.today_total') }}</span>
+                    <!-- [GOAL G1 2026-09-03] LA TRONCATURE NE PEUT PLUS SE CACHER. Le compteur
+                         ci-dessus comptait les lignes REÇUES : sur une page de cent, il annonçait
+                         « 100 aujourd'hui » pour 137, et les 37 manquantes étaient les plus
+                         ANCIENNES. La borne serveur ne mord plus sur un service réel — si elle
+                         mordait, elle se dit ici, avec les deux nombres. -->
+                    <span
+                        v-if="troncatureService"
+                        class="pos-tracker-status-pill pos-tracker-status-pill--stale"
+                        role="status"
+                        data-testid="tracker-troncature-pill"
+                        title="Le service dépasse ce que cet écran peut charger d'un coup"
+                    >
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        {{ troncatureService.affichees }} affichées sur {{ troncatureService.total }}
+                    </span>
                     <!-- [COMMANDES EN SOUFFRANCE 2026-08-19] Le tableau ne montre que la journée
                          de SERVICE : tout ce qui traîne au-delà était devenu invisible (577 non
                          terminées mesurées le 2026-08-19, dont 486 payées, la plus ancienne du
@@ -1101,6 +1116,10 @@ export default {
             staleError: '',
             promoFlyerPrefill: '',
             orders: [],
+            // [GOAL G1 2026-09-03] `{ total, affichees }` si le serveur a écourté la journée,
+            // `null` sinon. Une troncature muette se lit « il n'y a que ça » — c'est très
+            // exactement ce que faisait l'ancienne page de cent.
+            troncatureService: null,
             filters: {
                 query: '',
                 source: 'all',
@@ -1841,32 +1860,33 @@ export default {
             this._fetchInFlight = true;
             this.loading = this.orders.length === 0;
             try {
-                const today = this._todayRange();
-                const res = await this.$store.dispatch('posOrder/lists', {
-                    // [POSPERF-07 2026-07-22] `paginate: 1` makes OrderService::list
-                    // HONOUR per_page — without it the backend runs ->get('*') and
-                    // returns EVERY order of the day (unbounded) with 8 eager
-                    // relations each. `lean: 1` swaps the heavy OrderResource
-                    // eager-load set (media/category/roles/branch/transaction.order),
-                    // which SimpleOrderResource never reads, for the tracker's real
-                    // needs (transaction/user/orderItems.orderItem) → lighter payload.
-                    // 100 most-recent (id desc) covers every active lane; only stale
-                    // DELIVERED rows beyond 100 fall off (they live in the muted lane).
-                    paginate: 1,
-                    per_page: 100,
-                    lean: 1,
-                    // [GOAL-CAISSE-VISION 2026-08-24] Le suivi est le SEUL écran qui
-                    // affiche la composition d'une commande. Il la demande donc
-                    // explicitement : sans ce drapeau, elle partait aussi vers
-                    // l'historique et le rapport de ventes, qui ne la montrent pas
-                    // (+60 Ko mesurés sur un export non borné, pour zéro usage).
+                //
+                // [GOAL G1 2026-09-03] LA BORNE DE CENT A DISPARU. Cet appel demandait
+                // `paginate: 1, per_page: 100` sur `admin/pos-order`. Le commentaire d'alors
+                // affirmait que « seules les DELIVERED périmées au-delà de 100 tombent » : c'était
+                // FAUX. `OrderService::list` trie `id desc`, donc au-delà de cent commandes dans
+                // le service, ce sont les PLUS ANCIENNES de TOUTES les voies qui tombaient — y
+                // compris une commande à encaisser oubliée depuis l'ouverture. Le compteur
+                // « X aujourd'hui » annonçait alors 100 pour 137, sans rien signaler.
+                //
+                // `admin/pos-order/service-day` borne SERVEUR à la journée de service (miroir de
+                // `posServiceDay.js`, plus aucune chance que client et serveur parlent de deux
+                // journées différentes) et renvoie `meta.total`. `avec_terminales` rajoute les
+                // annulées / rejetées / rendues : elles n'ont aucune voie sur le tableau, mais le
+                // compteur « X aujourd'hui » les compte, et il doit rester exact.
+                //
+                // [GOAL-CAISSE-VISION 2026-08-24] `composition` reste explicite : le suivi est le
+                // SEUL écran qui affiche le contenu d'une commande — sans ce drapeau il partait
+                // aussi vers l'historique et le rapport de ventes, qui ne le montrent pas
+                // (+60 Ko mesurés sur un export non borné, pour zéro usage).
+                const res = await this.$store.dispatch('posOrder/serviceDay', {
                     composition: 1,
-                    from_date: today.from,
-                    to_date: today.to,
+                    avec_terminales: 1,
                     vuex: false,
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
+                this._retenirTroncature(res);
                 // [S2 F1 2026-07-29, révisé par auto-RED cycle 1] Ce fetch ne couvre
                 // que le JOUR COURANT alors que la file d'encaissement est all-time :
                 // une commande PENDING_COUNTER de la veille reste encaissable dans
@@ -1944,6 +1964,23 @@ export default {
          */
         _todayRange() {
             return serviceDayRange();
+        },
+        /**
+         * [GOAL G1 2026-09-03] Retient ce que le serveur DIT de sa propre réponse.
+         *
+         * Le serveur borne la journée par deux plafonds de sécurité (voir
+         * `PosOrderController::serviceDay`) qui ne mordent pas sur un service réel. S'ils
+         * mordaient, le tableau doit l'ANNONCER : c'est le SILENCE de l'ancienne borne de cent,
+         * pas la borne elle-même, qui faisait disparaître des commandes sans que personne
+         * puisse le savoir.
+         */
+        _retenirTroncature(res) {
+            const meta = res?.data?.meta;
+            const total = parseInt(meta?.total, 10);
+            const affichees = parseInt(meta?.shown, 10);
+            this.troncatureService = (Number.isFinite(total) && Number.isFinite(affichees) && total > affichees)
+                ? { total, affichees }
+                : null;
         },
         /**
          * [COMMANDES EN SOUFFRANCE 2026-08-19] Libellé de statut du panneau.

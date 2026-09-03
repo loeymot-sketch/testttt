@@ -467,7 +467,8 @@
             "actualiser": "Actualiser",
             "annonce": "{encaisser} à encaisser, {pretes} prêtes",
             "cuisine_ticket": "{n} en cuisine · la plus ancienne depuis {m} min · vous serez le {rang}",
-            "cuisine_libre": "Cuisine libre"
+            "cuisine_libre": "Cuisine libre",
+            "troncature": "Liste écourtée : {affichees} commandes affichées sur {total} dans le service"
         }
     },
     "menu": {
@@ -1297,6 +1298,9 @@
         "fav_icon": "Icône favorite",
         "featured": "Mis en avant",
         "featured_items": "Articles mis en avant",
+        "featured_items_error": "Impossible de charger les articles mis en avant — réessayez plus tard.",
+        "featured_items_empty": "Aucun article n’est mis en avant pour le moment.",
+        "order_statistics_error": "Impossible de charger les compteurs de commandes — ces chiffres ne sont pas ceux de la période demandée.",
         "file": "Fichier",
         "files": "Fichiers",
         "first_name": "Prénom",
@@ -1375,6 +1379,8 @@
         "mobile_number": "Numéro mobile",
         "more_gateway": "Autres passerelles",
         "most_popular_items": "Articles les plus populaires",
+        "most_popular_items_error": "Impossible de charger le classement des ventes — le chiffre affiché serait faux.",
+        "most_popular_items_empty": "Aucune vente sur la période : le classement est vide.",
         "last_z_report": "Dernier rapport Z",
         "stock_low_alerts": "Alertes stock bas",
         "stock_low_alerts_error": "Impossible de charger les alertes stock — réessayez plus tard",
@@ -1509,6 +1515,7 @@
         "rtl": "RTL",
         "sales": "Ventes",
         "sales_summary": "Résumé des ventes",
+        "sales_summary_error": "Impossible de charger le résumé des ventes — les montants ci-dessous ne sont pas à jour.",
         "schedule": "Planifier",
         "schedule_for_later": "Planifier pour plus tard",
         "schedule_order_slot_duration": "Durée du créneau de commande",

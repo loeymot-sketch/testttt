@@ -29,15 +29,18 @@
  * `tests/js/fileCuisineModule.spec.js` verrouille ce miroir. Si la règle serveur bouge, il rougit.
  */
 
-// Valeurs des enums PHP (App\Enums\*). Écrites ici plutôt qu'importées des enums JS parce que ce
-// module est le miroir d'une règle SERVEUR : ce qu'il doit suivre, ce sont les constantes PHP.
-const STATUT_ACCEPT = 4;
-const STATUT_PREPARING = 7;
-const PAIEMENT_PAID = 5;
-const PAIEMENT_PENDING_COUNTER = 15;
-const PAIEMENT_REFUNDED = 20;
-const TYPE_POS = 15;
-const REGLEMENT_ESPECES = 1;
+// [GOAL G1 · V-13 2026-09-03] Ces sept valeurs étaient RECOPIÉES à la main ici, avec pour
+// justification que ce module est le miroir d'une règle SERVEUR. L'intention était juste, le
+// moyen ne l'était pas : une recopie ne suit rien, elle fige. Changer `App\Enums\OrderStatus`
+// n'aurait fait rougir AUCUN banc, et le rang cuisine annoncé au client au comptoir
+// (« vous êtes le 4ᵉ ») serait devenu faux en silence.
+// Le miroir est maintenant VÉRIFIÉ, pas recopié : les valeurs viennent des enums JS canoniques,
+// et `tests/Feature/Sentinels/EnumsJsPhpConvergenceSentinelTest.php` les épingle sur les
+// interfaces PHP — un écart d'un seul nombre fait rougir avant d'atteindre un écran.
+import orderStatusEnum from '../enums/modules/orderStatusEnum';
+import paymentStatusEnum from '../enums/modules/paymentStatusEnum';
+import orderTypeEnum from '../enums/modules/orderTypeEnum';
+import posPaymentMethodEnum from '../enums/modules/posPaymentMethodEnum';
 
 function entier(valeur) {
     const n = parseInt(valeur, 10);
@@ -55,11 +58,11 @@ function statutDe(commande) {
 export function libereePourLeTableau(commande) {
     if (!commande) return false;
     const paiement = entier(commande.payment_status);
-    if (paiement === PAIEMENT_PAID || paiement === PAIEMENT_PENDING_COUNTER) {
+    if (paiement === paymentStatusEnum.PAID || paiement === paymentStatusEnum.PENDING_COUNTER) {
         return true;
     }
-    return entier(commande.order_type) === TYPE_POS
-        && entier(commande.pos_payment_method) === REGLEMENT_ESPECES;
+    return entier(commande.order_type) === orderTypeEnum.POS
+        && entier(commande.pos_payment_method) === posPaymentMethodEnum.CASH;
 }
 
 /**
@@ -72,8 +75,8 @@ export function libereePourLeTableau(commande) {
 export function estEnCuisine(commande) {
     if (!commande) return false;
     const statut = statutDe(commande);
-    if (statut !== STATUT_ACCEPT && statut !== STATUT_PREPARING) return false;
-    if (entier(commande.payment_status) === PAIEMENT_REFUNDED) return false;
+    if (statut !== orderStatusEnum.ACCEPT && statut !== orderStatusEnum.PREPARING) return false;
+    if (entier(commande.payment_status) === paymentStatusEnum.REFUNDED) return false;
     return libereePourLeTableau(commande);
 }
 
