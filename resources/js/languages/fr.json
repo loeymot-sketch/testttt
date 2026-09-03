@@ -1631,7 +1631,7 @@
             "view_details": "Voir les détails"
         },
         "kds_toggle_items": "Afficher/Masquer les articles",
-        "eod_pdf_button": "PDF Clôture du jour",
+        "eod_pdf_button": "PDF Synthèse du jour",
         "eod_pdf_error": "Téléchargement du PDF échoué. Réessayez ou vérifiez vos permissions.",
         "downloading": "Téléchargement…",
         "branch_scope": "Portée par succursale",

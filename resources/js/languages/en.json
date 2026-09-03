@@ -1711,7 +1711,7 @@
             "view_details": "View details"
         },
         "kds_toggle_items": "Show/Hide items",
-        "eod_pdf_button": "EOD Closing PDF",
+        "eod_pdf_button": "Daily Summary PDF",
         "eod_pdf_error": "PDF download failed. Try again or check your permissions.",
         "downloading": "Downloading…",
         "branch_scope": "Branch scope",
