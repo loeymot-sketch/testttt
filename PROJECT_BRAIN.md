@@ -47,6 +47,160 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-03 — DÉPLOIEMENT EN PRODUCTION : fait, vérifié sur le contenu servi — et un piège NF525 démontré**
+>
+> Production `f0da0bc8` → **`23c2ef26`**. Chaîne complète exécutée : fusion des 208 commits,
+> suites complètes, push, bascule serveur, reconstruction des assets, vérification.
+>
+> **PORTAIL** — PHPUnit **5964 tests / 24 246 assertions / 0 échec** (35 min) ·
+> Vitest **518 fichiers / 4284 tests / 0 échec** · zone gelée **15 fichiers / 0 divergent** ·
+> NF525 `CHAIN OK` avant ET après.
+>
+> **PREUVE DU CONTENU SERVI** (pas du fichier sur disque) — le manifeste ne référence plus que
+> `pos-shell.2e94ebe2.js`, le bundle que le build vient de produire, et ce bundle contient
+> `pos-control-drawer` (la nouvelle fonctionnalité caisse). `/login`, `/admin/pos`, `/kiosk/idle`
+> répondent **200** depuis l'internet. ⚠ L'app est servie sur `vps-418872ac.vps.ovh.net`, PAS sur
+> `lecayenne.fr` (qui est la vitrine Vercel) : tester sur le mauvais hôte rend des 404 trompeurs.
+>
+> **⛔ PIÈGE NF525 DÉMONTRÉ EN PRODUCTION** — `php artisan config:cache` fait passer
+> `fiscal:verify-chain --all` de `CHAIN OK` à **`TAMPER detected`** ; `config:clear` le ramène à
+> `CHAIN OK`. Cause : `AuditLogService.php:324` lit la clé DYNAMIQUE
+> `FISCAL_AUDIT_SECRET_BRANCH_{id}` via `env()`, nul dès que la config est en cache. Le piège
+> était **nommé dans le code** (`FiscalChainValidator.php:189`) mais jamais gardé — et **six
+> procédures du dépôt prescrivent `config:cache`**. Une commande encaissée pendant la fenêtre
+> serait signée avec le mauvais secret, et `audit_logs` est append-only : scission définitive.
+> **Aucun dégât** (0 commande, 0 écriture pendant la fenêtre) ; installation laissée sans cache.
+> Correctif NON fait : il exige de toucher `AuditLogService.php` (zone gelée §7) pour rendre sûr
+> le repli quand la branche manque du tableau. **LOCK + contreseing requis.**
+> Détail : `reports/chef-2026-09-03/PIEGE_CONFIG_CACHE_NF525.md`.
+>
+> **AUTRES ACQUIS** — la clé de déploiement `~/.ssh/gh_deploy` du VPS fonctionne (elle n'était pas
+> désignée, d'où « la prod ne peut pas tirer ») ; le code y a été poussé directement depuis le poste.
+> Le staging de 220 fichiers était **périmé à 94 %** (207 identiques à origin, 13 en retard) et
+> l'aurait fait régresser (CSP plus permissif, pré-remplissage du mot de passe de démo, ligne
+> `composition_snapshot` sans son annotation NF525) — écarté après sauvegarde en correctif.
+>
+> **EN ATTENTE** — migration `2026_08_28_120000_declare_le_tampon_halal_des_installations_existantes`
+> toujours non appliquée en production (antérieure à ce déploiement, décision propriétaire).
+
+
+> _(Fusion 2026-09-02 : les deux lignées du §2 sont conservées — celle d'`origin`,
+> qui est ce que la production sert, puis celle de la branche locale. Rien n'est perdu.)_
+
+> **2026-08-28 — AUDIT SUPERVISEUR DE LA CAISSE : CONVERGENCE, PUIS DÉPLOIEMENT VÉRIFIÉ**
+>
+> **DÉPLOYÉ EN PRODUCTION** — `dae9917d2` sur `pos/category-first-caisse-2026-06-23`, VPS à
+> l'arbre propre, assets recompilés sur place, caches vidés. Vérifié sur le CONTENU SERVI, pas
+> sur ce que je croyais avoir poussé : `/login` répond 200 avec `app.js`,
+> `authEndpoint:"/api/broadcasting/auth"` est bien RELATIF dans le bundle,
+> `Intl.NumberFormat` présent ×2 dans `pos-wizard.js`, `xl:flex-wrap` dans le bundle KDS,
+> en-tête `img-src … https://vps-418872ac.vps.ovh.net` dérivé de l'APP_URL de production.
+> NF525 : **CHAIN OK**.
+>
+> **CONVERGENCE ATTEINTE** — la règle demande deux rondes consécutives identiques ; il y en a
+> eu **trois**. Sur les cinq vagues : 0 requête en échec (contre 67 au départ), 0 violation de
+> politique (19), 0 erreur console (62), 0 libellé de traduction non résolu.
+>
+> **17 correctifs**, chacun tenu par un test tué par mutation — 24 mutants posés, 24 tués.
+> Le panier PERDAIT un ingrédient (deux lignes différentes s'affichaient à l'identique) · le
+> `×2` d'un supplément disparaissait en cuisine · la bannière de caisse annonçait 7,50 €
+> quand la page montrait 5,00 € (P0) · sept lignes « À encaisser » sur des commandes ANNULÉES ·
+> « 0 à encaisser » et « 2 à encaisser » à 40 px d'écart · trois boutons « Encaisser »
+> identiques pour trois montants · l'assistant affichait « €7.40 » sur une caisse française.
+>
+> 🔴 **CE QUE CET AUDIT A COÛTÉ À SES PROPRES AFFIRMATIONS** — c'est la partie qui sert le plus
+> à la suite, et chaque point a produit un garde-fou permanent, pas seulement un correctif :
+> **quatre défauts trouvés visaient des correctifs déjà livrés dans cette même mission** (dont
+> le P0 : j'avais restreint un chiffre à la période sans toucher au libellé) · **deux visaient
+> le harnais** (Playwright sans locale ni fuseau — aucune conclusion sur les dates n'était
+> fiable ; un compteur annonçant « 24 tables » sur une page qui en affiche une) · **un test
+> committé ne testait rien** (adresse absolue → autre origine → page NON connectée → « pas
+> d'en-tête d'admin » trivialement vrai ; il porte désormais un garde qui refuse de conclure
+> sans session) · **un constat porté deux rondes était FAUX** (« deux lots en 404 face client »
+> = artefact de worktree) · **la couverture se surestimait de 50 %** (5 états sur 10 étaient
+> des doublons au bit près, dont un IMPOSSIBLE à atteindre par construction) · **un détecteur
+> fabriquait 25 faux positifs** (il comptait les noms de routes de la Debugbar comme des clés
+> non résolues).
+>
+> 🔒 **ZONE GELÉE, PROCÉDURE COMPLÈTE** — `public/js/pos-wizard.js` touché sous
+> `plans/LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26.md`, committé SÉPARÉMENT puis cité par le
+> patch. Le hook a bloqué trois fois avant que la forme soit juste ; `--no-verify` n'a JAMAIS
+> été utilisé. Empreinte SHA-256 de la sentinelle alignée sur le seul fichier autorisé.
+> Justification : le gel porte sur LE DESIGN, le format d'un nombre n'en fait pas partie — et
+> ce fichier était le DERNIER endroit du produit encore en format anglais, le backend ayant
+> convergé le 2026-05-23.
+>
+> 💣 **UNE MINE DÉSAMORCÉE** — la CSP en `report_only` masquait que son durcissement aurait
+> BLOQUÉ `/api/broadcasting/auth` : cuisine et mur client cessant de recevoir les commandes, le
+> repli par sondage déjà désactivé, et les écrans continuant d'afficher « Mis à jour à
+> l'instant » sur des données figées. Deux corrections de natures différentes, et la
+> distinction est tout le sujet : l'adresse du temps réel n'avait AUCUNE raison d'être absolue
+> (rendue relative) ; celle des images de la roue l'est DÉLIBÉRÉMENT (vitrine servie par un
+> autre domaine), c'est la politique qui devait l'admettre. Le mode reste `report_only` : le
+> durcissement est une décision d'exploitation, et un test le verrouille.
+>
+> ⚠️ **FUSION AVEC LA CONSOLIDATION (121 commits)** — une autre session avait déjà intégré une
+> version antérieure de ce travail. Un seul conflit (`fr.json`, chacun ses clés) résolu HUNK
+> PAR HUNK. Et un piège exact de la mémoire : ma capture a rougi sur le libellé
+> « Suppléments » — non par régression, mais parce que l'autre session avait justement
+> DÉSAMBIGUÏSÉ `addons` → « Produits associés » et `extras` → « Suppléments ». C'était MON test
+> qui était périmé. Avant de valider, les 17 correctifs ont été vérifiés UN PAR UN par leur
+> marque dans le code, pas en lisant un compteur de tests.
+>
+> **Vérification** : Vitest **501 fichiers / 4046 verts** sur la base fusionnée. Zones gelées :
+> une seule touchée, sous LOCK. PHPUnit : 11 rouges **antérieurs** à ce travail — 10 passent en
+> isolation (ordonnancement), le 11ᵉ est réel mais daté du 2026-08-14 sur des routes que le
+> diff ne touche pas. Signalé, pas corrigé en douce.
+>
+> **RESTE, ET C'EST UNE DÉCISION PROPRIÉTAIRE** : AB-004. La mesure manquante est posée et dit
+> plus que le constat (141 px cachés en 1024×600, mais AUSSI 67 px en 1366×768 dès qu'il y a
+> une vraie composition). Le bandeau blanc est corrigé. Ce qui manque — rendre sa place au
+> corps du panier — rouvrirait un arbitrage DÉJÀ TRANCHÉ en faveur du champ « Nom du client »,
+> le nom qui s'imprime sur le ticket cuisine.
+>
+> Rapports : `reports/test-e2e/supervisor-caisse-2026-08-24/{RONDE-3,RONDE-4,CONVERGENCE_FINAL}.md`
+
+
+> **2026-08-28 — CONSOLIDATION : QUATRE LIGNES DE TRAVAIL RÉUNIES, ET QUATRE CORRECTIFS FAITS EN DOUBLE**
+>
+> Branche `release/consolidation-2026-08-28`, **138 commits** au-dessus de la ligne servie.
+> Réunit : `origin/pos/category-first-caisse` (38 commits caisse/borne d'autres sessions),
+> `goal/caisse-vision-2026-08-24` (20 correctifs, campagne AB + C/D), `goal/onboarding-commercant-2026-08-26`
+> (**les 14 missions ONB, 113 commits**), et le GOAL CONSOLIDATION du 2026-08-25 (commit local « big »).
+>
+> **CE QUI EST VÉRIFIÉ**
+> · `tests/Feature/Sentinels` : **83 échecs / 278 passés — EXACTEMENT les chiffres de la ligne servie**,
+>   suite jouée deux fois dans la même base pour établir la référence. Zéro régression. Les 83 sont
+>   environnementaux (base de test neuve, sans les données que ces bancs attendent) : la ligne servie
+>   les échoue à l'identique. Sans ce contrôle j'aurais lu « 84 échecs » et conclu au désastre.
+> · Vitest : **4034 tests, 498 fichiers, TOUT vert** (après recompilation des bundles).
+> · Zone gelée : backend **zéro ligne**. Frontend : `pos-wizard.js` seul, sous LOCK **APPROVED**
+>   (`LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26`, délégation propriétaire du 2026-08-26).
+> · NF525 : `fiscal:verify-chain --all` → **CHAIN OK sur les 6 succursales actives**.
+>
+> 🚫 **CE QUI EST VOLONTAIREMENT RESTÉ DEHORS — gate propriétaire.** Le commit local `6a2264085`
+> (carte de sauces canonique) touche `pos-wizard.js`, `pos-wizard.css` ET `admin-pos-v4.blade.php`
+> sous un LOCK qui porte encore « **brouillon, en attente de contreseing** ». CLAUDE.md §10 en fait
+> une décision humaine. Le LOCK lui-même est intégré pour être lisible avant signature.
+>
+> 🪤 **LE PIÈGE DE CETTE SESSION : une correction juste peut devenir FAUSSE en fusionnant.** ONB-10
+> avait corrigé le bandeau de caisse (« aujourd'hui » sur une somme qui ne l'était pas) en renommant
+> le libellé « depuis l'ouverture ». La ligne servie avait corrigé le même défaut autrement, en
+> séparant DEUX champs — `cash_collected` (depuis l'ouverture) et `cash_collected_in_period` (borné à
+> la période, FIX-3). Fusionnés, le libellé ONB se retrouvait collé au champ BORNÉ À LA PÉRIODE :
+> le défaut d'origine, avec un autre mot faux. **Les deux branches étaient vertes séparément.** Aucun
+> banc n'attrape ça. Quatre doublons de ce type trouvés (bandeau, identifiants de démo dans le bundle,
+> bornage SLA, seeder de permissions) — détail dans `CONSTATS_OUVERTS_2026-08-28.md` §F4.
+>
+> ⚠️ Deux bancs gardaient un DÉFAUT au lieu d'un acquis, et refusaient donc sa correction :
+> `kdsStationFiltreCouverture` affirmait que le filtre KDS n'offre pas « none » (ONB-08 l'a ajouté) ;
+> `libelleReconciliationCaisse` épinglait un libellé plutôt que l'appariement libellé/champ. Les deux
+> retournés, le second prouvé mordant (défaut réintroduit → 3 tests sur 4 tombent).
+>
+> 📌 Reste à faire, nommé : `audit-supervisor-waveA.spec.js` code en dur id=25 et id=27, **tous deux
+> en status 10 — non vendables** (relevé en base, pas deviné). Cliquet de dette relevé 24/56 → 28/65,
+> concession écrite en clair. Et les 11 constats ONB déjà ouverts, dont 5 gates propriétaire.
+
 > **2026-09-02 — GOAL `CAISSE_CONTRÔLE` : la caisse pilote enfin son service, sans changer de page**
 >
 > Branche `pos/category-first-caisse-2026-06-23`. Rien de commité : tout est dans l'arbre.
@@ -238,119 +392,6 @@ Plateforme restaurant fast-food complète :
 >
 > ⚠️ **CE FICHIER EST EN CONFLIT DE FUSION NON RÉSOLU** (marqueurs `<<<<<<<` /
 > `>>>>>>>` stagés, hérités d'une session antérieure). Non arbitré ici.
-> **2026-08-28 — AUDIT SUPERVISEUR DE LA CAISSE : CONVERGENCE, PUIS DÉPLOIEMENT VÉRIFIÉ**
->
-> **DÉPLOYÉ EN PRODUCTION** — `dae9917d2` sur `pos/category-first-caisse-2026-06-23`, VPS à
-> l'arbre propre, assets recompilés sur place, caches vidés. Vérifié sur le CONTENU SERVI, pas
-> sur ce que je croyais avoir poussé : `/login` répond 200 avec `app.js`,
-> `authEndpoint:"/api/broadcasting/auth"` est bien RELATIF dans le bundle,
-> `Intl.NumberFormat` présent ×2 dans `pos-wizard.js`, `xl:flex-wrap` dans le bundle KDS,
-> en-tête `img-src … https://vps-418872ac.vps.ovh.net` dérivé de l'APP_URL de production.
-> NF525 : **CHAIN OK**.
->
-> **CONVERGENCE ATTEINTE** — la règle demande deux rondes consécutives identiques ; il y en a
-> eu **trois**. Sur les cinq vagues : 0 requête en échec (contre 67 au départ), 0 violation de
-> politique (19), 0 erreur console (62), 0 libellé de traduction non résolu.
->
-> **17 correctifs**, chacun tenu par un test tué par mutation — 24 mutants posés, 24 tués.
-> Le panier PERDAIT un ingrédient (deux lignes différentes s'affichaient à l'identique) · le
-> `×2` d'un supplément disparaissait en cuisine · la bannière de caisse annonçait 7,50 €
-> quand la page montrait 5,00 € (P0) · sept lignes « À encaisser » sur des commandes ANNULÉES ·
-> « 0 à encaisser » et « 2 à encaisser » à 40 px d'écart · trois boutons « Encaisser »
-> identiques pour trois montants · l'assistant affichait « €7.40 » sur une caisse française.
->
-> 🔴 **CE QUE CET AUDIT A COÛTÉ À SES PROPRES AFFIRMATIONS** — c'est la partie qui sert le plus
-> à la suite, et chaque point a produit un garde-fou permanent, pas seulement un correctif :
-> **quatre défauts trouvés visaient des correctifs déjà livrés dans cette même mission** (dont
-> le P0 : j'avais restreint un chiffre à la période sans toucher au libellé) · **deux visaient
-> le harnais** (Playwright sans locale ni fuseau — aucune conclusion sur les dates n'était
-> fiable ; un compteur annonçant « 24 tables » sur une page qui en affiche une) · **un test
-> committé ne testait rien** (adresse absolue → autre origine → page NON connectée → « pas
-> d'en-tête d'admin » trivialement vrai ; il porte désormais un garde qui refuse de conclure
-> sans session) · **un constat porté deux rondes était FAUX** (« deux lots en 404 face client »
-> = artefact de worktree) · **la couverture se surestimait de 50 %** (5 états sur 10 étaient
-> des doublons au bit près, dont un IMPOSSIBLE à atteindre par construction) · **un détecteur
-> fabriquait 25 faux positifs** (il comptait les noms de routes de la Debugbar comme des clés
-> non résolues).
->
-> 🔒 **ZONE GELÉE, PROCÉDURE COMPLÈTE** — `public/js/pos-wizard.js` touché sous
-> `plans/LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26.md`, committé SÉPARÉMENT puis cité par le
-> patch. Le hook a bloqué trois fois avant que la forme soit juste ; `--no-verify` n'a JAMAIS
-> été utilisé. Empreinte SHA-256 de la sentinelle alignée sur le seul fichier autorisé.
-> Justification : le gel porte sur LE DESIGN, le format d'un nombre n'en fait pas partie — et
-> ce fichier était le DERNIER endroit du produit encore en format anglais, le backend ayant
-> convergé le 2026-05-23.
->
-> 💣 **UNE MINE DÉSAMORCÉE** — la CSP en `report_only` masquait que son durcissement aurait
-> BLOQUÉ `/api/broadcasting/auth` : cuisine et mur client cessant de recevoir les commandes, le
-> repli par sondage déjà désactivé, et les écrans continuant d'afficher « Mis à jour à
-> l'instant » sur des données figées. Deux corrections de natures différentes, et la
-> distinction est tout le sujet : l'adresse du temps réel n'avait AUCUNE raison d'être absolue
-> (rendue relative) ; celle des images de la roue l'est DÉLIBÉRÉMENT (vitrine servie par un
-> autre domaine), c'est la politique qui devait l'admettre. Le mode reste `report_only` : le
-> durcissement est une décision d'exploitation, et un test le verrouille.
->
-> ⚠️ **FUSION AVEC LA CONSOLIDATION (121 commits)** — une autre session avait déjà intégré une
-> version antérieure de ce travail. Un seul conflit (`fr.json`, chacun ses clés) résolu HUNK
-> PAR HUNK. Et un piège exact de la mémoire : ma capture a rougi sur le libellé
-> « Suppléments » — non par régression, mais parce que l'autre session avait justement
-> DÉSAMBIGUÏSÉ `addons` → « Produits associés » et `extras` → « Suppléments ». C'était MON test
-> qui était périmé. Avant de valider, les 17 correctifs ont été vérifiés UN PAR UN par leur
-> marque dans le code, pas en lisant un compteur de tests.
->
-> **Vérification** : Vitest **501 fichiers / 4046 verts** sur la base fusionnée. Zones gelées :
-> une seule touchée, sous LOCK. PHPUnit : 11 rouges **antérieurs** à ce travail — 10 passent en
-> isolation (ordonnancement), le 11ᵉ est réel mais daté du 2026-08-14 sur des routes que le
-> diff ne touche pas. Signalé, pas corrigé en douce.
->
-> **RESTE, ET C'EST UNE DÉCISION PROPRIÉTAIRE** : AB-004. La mesure manquante est posée et dit
-> plus que le constat (141 px cachés en 1024×600, mais AUSSI 67 px en 1366×768 dès qu'il y a
-> une vraie composition). Le bandeau blanc est corrigé. Ce qui manque — rendre sa place au
-> corps du panier — rouvrirait un arbitrage DÉJÀ TRANCHÉ en faveur du champ « Nom du client »,
-> le nom qui s'imprime sur le ticket cuisine.
->
-> Rapports : `reports/test-e2e/supervisor-caisse-2026-08-24/{RONDE-3,RONDE-4,CONVERGENCE_FINAL}.md`
-
-
-> **2026-08-28 — CONSOLIDATION : QUATRE LIGNES DE TRAVAIL RÉUNIES, ET QUATRE CORRECTIFS FAITS EN DOUBLE**
->
-> Branche `release/consolidation-2026-08-28`, **138 commits** au-dessus de la ligne servie.
-> Réunit : `origin/pos/category-first-caisse` (38 commits caisse/borne d'autres sessions),
-> `goal/caisse-vision-2026-08-24` (20 correctifs, campagne AB + C/D), `goal/onboarding-commercant-2026-08-26`
-> (**les 14 missions ONB, 113 commits**), et le GOAL CONSOLIDATION du 2026-08-25 (commit local « big »).
->
-> **CE QUI EST VÉRIFIÉ**
-> · `tests/Feature/Sentinels` : **83 échecs / 278 passés — EXACTEMENT les chiffres de la ligne servie**,
->   suite jouée deux fois dans la même base pour établir la référence. Zéro régression. Les 83 sont
->   environnementaux (base de test neuve, sans les données que ces bancs attendent) : la ligne servie
->   les échoue à l'identique. Sans ce contrôle j'aurais lu « 84 échecs » et conclu au désastre.
-> · Vitest : **4034 tests, 498 fichiers, TOUT vert** (après recompilation des bundles).
-> · Zone gelée : backend **zéro ligne**. Frontend : `pos-wizard.js` seul, sous LOCK **APPROVED**
->   (`LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26`, délégation propriétaire du 2026-08-26).
-> · NF525 : `fiscal:verify-chain --all` → **CHAIN OK sur les 6 succursales actives**.
->
-> 🚫 **CE QUI EST VOLONTAIREMENT RESTÉ DEHORS — gate propriétaire.** Le commit local `6a2264085`
-> (carte de sauces canonique) touche `pos-wizard.js`, `pos-wizard.css` ET `admin-pos-v4.blade.php`
-> sous un LOCK qui porte encore « **brouillon, en attente de contreseing** ». CLAUDE.md §10 en fait
-> une décision humaine. Le LOCK lui-même est intégré pour être lisible avant signature.
->
-> 🪤 **LE PIÈGE DE CETTE SESSION : une correction juste peut devenir FAUSSE en fusionnant.** ONB-10
-> avait corrigé le bandeau de caisse (« aujourd'hui » sur une somme qui ne l'était pas) en renommant
-> le libellé « depuis l'ouverture ». La ligne servie avait corrigé le même défaut autrement, en
-> séparant DEUX champs — `cash_collected` (depuis l'ouverture) et `cash_collected_in_period` (borné à
-> la période, FIX-3). Fusionnés, le libellé ONB se retrouvait collé au champ BORNÉ À LA PÉRIODE :
-> le défaut d'origine, avec un autre mot faux. **Les deux branches étaient vertes séparément.** Aucun
-> banc n'attrape ça. Quatre doublons de ce type trouvés (bandeau, identifiants de démo dans le bundle,
-> bornage SLA, seeder de permissions) — détail dans `CONSTATS_OUVERTS_2026-08-28.md` §F4.
->
-> ⚠️ Deux bancs gardaient un DÉFAUT au lieu d'un acquis, et refusaient donc sa correction :
-> `kdsStationFiltreCouverture` affirmait que le filtre KDS n'offre pas « none » (ONB-08 l'a ajouté) ;
-> `libelleReconciliationCaisse` épinglait un libellé plutôt que l'appariement libellé/champ. Les deux
-> retournés, le second prouvé mordant (défaut réintroduit → 3 tests sur 4 tombent).
->
-> 📌 Reste à faire, nommé : `audit-supervisor-waveA.spec.js` code en dur id=25 et id=27, **tous deux
-> en status 10 — non vendables** (relevé en base, pas deviné). Cliquet de dette relevé 24/56 → 28/65,
-> concession écrite en clair. Et les 11 constats ONB déjà ouverts, dont 5 gates propriétaire.
 
 > **2026-08-26 — LE « TAMPER » NF525 EST UN FAUX POSITIF. PROUVÉ. AUCUNE ALTÉRATION.**
 >
