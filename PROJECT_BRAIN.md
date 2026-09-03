@@ -47,6 +47,57 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-03 — DÉPLOYÉ, VÉRIFIÉ SUR LE CONTENU SERVI — ET LA MACHINE QUI ENCAISSE TOURNE EN `staging`**
+>
+> **Déploiement fait et vérifié.** Vitrine `007bc75 → 30cc82f` sur Vercel : `/` répond 200, le
+> jeton `g9t17b` est servi (sans lui, `immutable` un an aurait rendu les correctifs invisibles),
+> et les correctifs T10/T58 sont dans le `compiled/screens.js` livré. Backend
+> `69f1c0cd → c36f07e13` : `/login` 200, `/api/health/live` 200, `channel-stats-error` présent
+> dans le `js/app.js` SERVI, chaîne fiscale **CHAIN OK** avant et après.
+> Aucune migration dans la livraison — retour arrière = `git checkout` + reconstruction.
+>
+> ⚠️ **LE CONSTAT LE PLUS LOURD DE LA MISSION, ET IL N'EST PAS DANS LE CODE.**
+> `vps-418872ac.vps.ovh.net` tourne en **`APP_ENV=staging`** avec
+> **`POS_SIMULATION_HARDWARE=true`**, et produit pourtant **879 commandes, 1 386 lignes
+> `audit_logs` et 18 tickets Z** — des clôtures fiscales. Dernière commande : 2026-09-02 23:18.
+>
+> Conséquence : **TOUS les gardes de démarrage du §8 sont inertes**, puisqu'ils sont enfermés
+> dans `if (app()->environment('production'))`. Y compris celui posé cette nuit contre
+> `config:cache`. Le §8 de CLAUDE.md présente ces gardes comme « concrete enforcement » des
+> invariants NF525 : c'est vrai dans le code, faux sur cette machine.
+> `/api/health/ready` annonce d'ailleurs `status: ok` alors que `restore_drill` est `degraded`.
+>
+> **Rien n'a été changé, et c'est délibéré.** `APP_ENV=production` ferait REFUSER le démarrage
+> (`POS_SIMULATION_HARDWARE must be false in production`) → service à terre. Et
+> `POS_SIMULATION_HARDWARE=false` n'est pas une option : les terminaux ne sont pas câblés à la
+> banque. Les deux valeurs se tiennent : `staging` est un contournement pour démarrer malgré du
+> matériel non câblé. Décision d'exploitation et de conformité, pas correctif.
+> Issues chiffrées : `reports/supervision/2026-09-03/FINDING-APP-ENV-STAGING.md`.
+>
+> 🔒 **NF525 — `config:cache` ne peut plus signer avec le mauvais secret.** Douze procédures du
+> dépôt le prescrivent ; aucun test ne le gardait. `AuditLogService::secretFor()` lit
+> `env('FISCAL_AUDIT_SECRET_BRANCH_{id}')` à l'exécution : cache chaud ⇒ `env()` null ⇒ repli
+> silencieux sur le secret par défaut, et `audit_logs` est append-only. Le fond (publier les
+> secrets en config) ferait échouer les branches SANS surcharge — le repli gelé exige une
+> chaîne : **chantier sous LOCK**. En attendant, la config recense les branches porteuses
+> (l'info survit au cache) et un garde refuse le démarrage. **Prouvé mordant** : sans cache
+> `env()` lisible + recensées `[1]` ; avec cache `env()` NULL + recensées `[1]` ⇒ il lève.
+> ⚠️ Il est inerte sur la machine actuelle, cf. le constat `staging` ci-dessus.
+>
+> 🩹 **Un défaut dans mon propre garde, corrigé avant qu'il ne serve** : son message conseillait
+> `php artisan config:clear`, or artisan DÉMARRE l'application et se heurterait au garde. Il dit
+> désormais `rm bootstrap/cache/config.php`.
+>
+> 🔧 **Trois versions de PHP pour une seule machine.** `composer.json` exige `^8.1.0`, la prod
+> tourne en 8.1.2, `deploy.sh` exigeait **8.4** et la procédure appelait **php8.2**. Le script
+> officiel REFUSAIT donc de tourner en production — son garde faisait son travail — d'où des
+> déploiements à la main, hors procédure. C'est ainsi que `config:cache` a fini par être lancé.
+> `composer.json` fait autorité, un banc y attache le socle, 17 appels `php8.2` corrigés.
+>
+> 💤 Les deux composants dashboard non montés portent désormais la mention dans leur propre
+> source : ni supprimés, ni montés — la décision produit reste ouverte, mais elle ne se
+> redécouvrira plus.
+
 > **2026-09-03 — CONVERGENCE : LA MOITIÉ DE CE QUE DEUX AUDITS AFFIRMAIENT ÉTAIT FAUX**
 >
 > Suites complètes **VERTES** : PHPUnit **5 991 / 0 échec** (6 incomplets, 36 sautés) ·
