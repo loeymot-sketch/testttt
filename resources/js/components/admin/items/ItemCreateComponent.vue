@@ -635,15 +635,44 @@ export default {
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = {};
-                    if (err.response && err.response.data && err.response.data.errors) {
-                        this.errors = err.response.data.errors;
+                    const donnees = err && err.response ? err.response.data : null;
+                    if (donnees && donnees.errors) {
+                        this.errors = donnees.errors;
+                        /*
+                         * [F-ITEM-SAVE-MUET 2026-09-03] Une erreur de validation s'affiche
+                         * sous SON champ — donc en HAUT du panneau — alors que le bouton
+                         * « Enregistrer » est tout en BAS. Le commercant qui enregistre
+                         * depuis le bas ne voyait donc RIEN : ni alerte, ni deplacement, ni
+                         * fermeture. Symptome vecu et reproduit le 2026-09-03 : « je modifie
+                         * un produit, ca ne s'enregistre jamais », sans la moindre
+                         * explication a l'ecran. On rend l'echec visible d'ou qu'on
+                         * enregistre, et on ramene le panneau sur le premier champ fautif.
+                         */
+                        const premierMessage = Object.keys(donnees.errors)
+                            .map((champ) => (Array.isArray(donnees.errors[champ]) ? donnees.errors[champ][0] : donnees.errors[champ]))
+                            .find((message) => !!message);
+                        if (premierMessage) {
+                            alertService.error(premierMessage);
+                        }
+                        this.$nextTick(() => this.defilerVersPremiereErreur());
                     } else {
-                        alertService.error(err.response.data.message);
+                        alertService.error((donnees && donnees.message) ? donnees.message : this.$t('error.something_wrong'));
                     }
                 })
             } catch (err) {
                 this.loading.isActive = false;
                 alertService.error(err)
+            }
+        },
+        // [F-ITEM-SAVE-MUET 2026-09-03] Ramene le panneau sur le premier champ en erreur,
+        // sinon le message reste hors ecran quand on enregistre depuis le bas du formulaire.
+        defilerVersPremiereErreur: function () {
+            if (typeof document === 'undefined') {
+                return;
+            }
+            const cible = document.querySelector('.db-field-alert');
+            if (cible && typeof cible.scrollIntoView === 'function') {
+                cible.scrollIntoView({ block: 'center', behavior: 'smooth' });
             }
         },
         // [T-WC-AFTER-CREATE-01] Post-save CTA handlers — wizard / product detail / dismiss.

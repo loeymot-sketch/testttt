@@ -647,7 +647,24 @@ export default {
                 price: item.flat_price,
                 description: item.description,
                 caution: item.caution,
-                is_featured: item.is_featured,
+                /*
+                 * [F-ITEM-SAVE-MUET 2026-09-03] Coercition indispensable, pas cosmetique.
+                 *
+                 * `is_featured` n'accepte que Ask::YES (5) ou Ask::NO (10), et la validation
+                 * refuse explicitement 0 (`not_in:0`). Or 41 des 70 fiches du menu portent 0
+                 * — « jamais renseigne », heritage des imports. Le formulaire renvoyait ce 0
+                 * tel quel : le serveur refusait, aucune case n'etait cochee a l'ecran, et le
+                 * commercant voyait un enregistrement qui « ne marche jamais », sans savoir
+                 * pourquoi. Mesure du 2026-09-03 sur la production : 42 fiches non
+                 * enregistrables, dont 34 ACTIVES au menu.
+                 *
+                 * 0 n'a jamais voulu dire « mis en avant » (la mise en avant filtre sur
+                 * Ask::YES), donc replier sur NO ne change aucun comportement — cela rend
+                 * seulement la fiche modifiable. Voir tests/js/itemListMiseEnAvantLegacy.spec.js.
+                 */
+                is_featured: [askEnum.YES, askEnum.NO].indexOf(Number(item.is_featured)) !== -1
+                    ? item.is_featured
+                    : askEnum.NO,
                 // [GAP-27-1] Load is_upsell from API so admin can toggle it (askEnum.NO=10 default)
                 is_upsell: item.is_upsell ?? askEnum.NO,
                 item_type: item.item_type,

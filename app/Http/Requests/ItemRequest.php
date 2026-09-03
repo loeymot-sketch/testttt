@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Status;
 use App\Models\Allergen;
+use App\Models\Item;
 use App\Rules\IniAmount;
 use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
@@ -135,6 +137,53 @@ class ItemRequest extends FormRequest
             // blocks .pht / double-extension polyglot attacks.
             'image'            => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
         ];
+    }
+
+    /**
+     * [F-ITEM-SAVE-MUET 2026-09-03] « La valeur du champ nom est deja utilisee » ne dit pas
+     * QUI occupe le nom. Or le produit en conflit peut etre DESACTIVE : il n'apparait alors
+     * dans aucune liste que le commercant consulte, et le refus devient incomprehensible —
+     * il ne voit qu'un enregistrement qui « ne marche pas ».
+     *
+     * Cas reel, reproduit en production le 2026-09-03 : deux fiches « Sandwich Classique »,
+     * l'une de mai DESACTIVEE, l'autre d'aout ACTIVE. Modifier la fiche active repondait 422
+     * a cause d'une fiche invisible. On nomme donc le produit qui occupe le nom, et son etat.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.unique' => $this->messageNomDejaUtilise(),
+        ];
+    }
+
+    private function messageNomDejaUtilise(): string
+    {
+        $nom = (string) $this->input('name');
+
+        $enCours = $this->route('item');
+        $idEnCours = $enCours instanceof Item ? $enCours->getKey() : $enCours;
+
+        $conflit = Item::query()
+            ->withoutGlobalScopes()
+            ->whereNull('deleted_at')
+            ->where('name', $nom)
+            ->when($idEnCours !== null, fn ($requete) => $requete->whereKeyNot($idEnCours))
+            ->first();
+
+        if ($conflit === null) {
+            return 'Ce nom est deja utilise par un autre produit.';
+        }
+
+        $etat = (int) $conflit->status === Status::ACTIVE
+            ? 'actif'
+            : 'DESACTIVE — il n\'apparait pas dans la liste des produits actifs';
+
+        return sprintf(
+            'Le nom « %s » est deja porte par le produit #%d (%s). Renommez l\'un des deux.',
+            $nom,
+            $conflit->getKey(),
+            $etat
+        );
     }
 
     public function attributes()
