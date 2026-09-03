@@ -163,8 +163,12 @@ class ItemRequest extends FormRequest
         $enCours = $this->route('item');
         $idEnCours = $enCours instanceof Item ? $enCours->getKey() : $enCours;
 
+        // [SENTINELLE WGS 2026-09-03] `withoutGlobalScopes()` retiré : le modèle Item ne
+        // déclare AUCUN scope global (vérifié), l'appel était donc un no-op posé par
+        // réflexe — précisément ce que WithoutGlobalScopesAuditSentinelTest traque. Le
+        // précédent du 2026-08-19 (5 appels retirés plutôt qu'inscrits sur la liste
+        // d'exceptions) fait règle. Comportement inchangé.
         $conflit = Item::query()
-            ->withoutGlobalScopes()
             ->whereNull('deleted_at')
             ->where('name', $nom)
             ->when($idEnCours !== null, fn ($requete) => $requete->whereKeyNot($idEnCours))
