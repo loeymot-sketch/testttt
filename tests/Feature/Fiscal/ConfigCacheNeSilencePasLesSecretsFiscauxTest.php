@@ -117,10 +117,18 @@ class ConfigCacheNeSilencePasLesSecretsFiscauxTest extends TestCase
             $source,
             'Le garde doit détecter la mise en cache de la configuration.'
         );
-        $this->assertMatchesRegularExpression(
-            '/config:clear/',
+        // Le déblocage doit être celui qui MARCHE. `php artisan config:clear` démarre
+        // l'application et se heurterait au garde lui-même : conseiller cette commande
+        // enverrait l'exploitant dans un mur, à l'heure exacte où il est déjà bloqué.
+        $this->assertStringContainsString(
+            'rm bootstrap/cache/config.php',
             $source,
-            'Le message doit dire quoi faire — `config:clear` — et pas seulement constater.'
+            'Le message doit donner le déblocage RÉEL : supprimer le fichier de cache à la main.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/PAS\s*.\s*\n?.*config:clear/s',
+            $source,
+            'Le message doit dire explicitement que `config:clear` NE marche pas ici.'
         );
     }
 }

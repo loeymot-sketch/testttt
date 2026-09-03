@@ -386,8 +386,10 @@ class AppServiceProvider extends ServiceProvider
                             .'configuration est en cache et Laravel ne lit plus .env, donc '
                             .'AuditLogService signerait la chaîne NF525 avec le secret par DÉFAUT. '
                             .'audit_logs est append-only : la scission serait définitive. '
-                            .'Exécuter `php artisan config:clear` et NE PAS remettre `config:cache` '
-                            .'tant que AuditLogService::secretFor() lit env() à l\'exécution.'
+                            .'DÉBLOCAGE : `rm bootstrap/cache/config.php` — et PAS '
+                            .'`php artisan config:clear`, qui démarre l\'application et se '
+                            .'heurterait à ce même garde. Ne PAS remettre `config:cache` tant '
+                            .'que AuditLogService::secretFor() lit env() à l\'exécution.'
                         );
                     }
                 }
