@@ -244,12 +244,18 @@ class HealthController extends Controller
      */
     private function checkBackupAge(): array
     {
-        $dir = storage_path('backups/db-daily');
-        $files = @glob($dir.'/*.sql.gz') ?: [];
-        if (empty($files)) {
+        // [GOAL G4 2026-09-03 · suite de T4.1] La désignation passe par le SEUL endroit qui
+        // la connaît. Cette méthode globait `*.sql.gz` pendant que `backup:verify-restore`
+        // restaurait `daily-*.sql.gz` : readiness pouvait donc juger la fraîcheur d'un dump
+        // manuel que le drill n'éprouverait jamais.
+        $newestPath = \App\Support\Backup\RestoreDrillResult::cheminSauvegardeCourante();
+        if ($newestPath === null) {
             return ['status' => 'degraded', 'detail' => 'no daily backup found'];
         }
-        $newest = max(array_map('filemtime', $files));
+        $newest = @filemtime($newestPath);
+        if ($newest === false) {
+            return ['status' => 'degraded', 'detail' => 'newest backup unreadable'];
+        }
         $ageHours = (now()->timestamp - (int) $newest) / 3600;
         return $ageHours > 26
             ? ['status' => 'degraded', 'detail' => sprintf('newest backup %.1fh old (>26h)', $ageHours)]
@@ -263,7 +269,14 @@ class HealthController extends Controller
      */
     private function checkRestoreDrill(): array
     {
-        $etat = \App\Support\Backup\RestoreDrillResult::current();
+        // [G4 2026-09-03 · T4.1 · défaut V-08] Le verdict n'est une preuve que s'il porte
+        // sur LA sauvegarde qu'on garde. Un drill vert sur le dump d'hier ne dit rien du
+        // dump d'aujourd'hui — et c'est exactement le cas dangereux, parce qu'il répond
+        // `ok` sur la sonde que la supervision interroge.
+        $etat = \App\Support\Backup\RestoreDrillResult::rapprocher(
+            \App\Support\Backup\RestoreDrillResult::current(),
+            \App\Support\Backup\RestoreDrillResult::cheminSauvegardeCourante()
+        );
 
         if ($etat['status'] === 'green') {
             return ['status' => 'ok', 'detail' => sprintf(

@@ -136,11 +136,29 @@ class DashboardControlLoopOptimizationsTest extends TestCase
         $this->assertStringContainsString('$unreadable !== []', $src);
     }
 
+    /**
+     * [G3 2026-09-03 · T3.4] La seconde assertion verrouillait une PHRASE DEVENUE FAUSSE.
+     *
+     * Elle exigeait que l'écran dise « journal serveur, pas le journal fiscal ». Or la bascule
+     * d'un interrupteur écrit désormais dans `audit_logs` : chaîné HMAC, append-only,
+     * suppression refusée par déclencheur SQL. Appeler ça un « journal serveur » — un fichier
+     * rotaté et purgeable — sous-vend une trace opposable, et c'est le jour où on en a besoin
+     * qu'on découvre qu'on n'y croyait pas.
+     *
+     * La sentinelle garde donc la même PROPRIÉTÉ, avec les bons mots : l'écran doit nommer le
+     * journal d'audit métier, ET refuser de se faire passer pour une écriture fiscale au sens
+     * du ticket Z. Les deux moitiés comptent — sur-vendre serait aussi faux que sous-vendre.
+     */
     public function test_system_health_failed_fetch_is_not_no_backup(): void
     {
         $src = file_get_contents(base_path('resources/js/components/admin/observability/SystemHealthComponent.vue'));
         $this->assertStringContainsString("return 'mesure indisponible'", $src);
-        $this->assertStringContainsString('journal serveur, pas le journal fiscal', $src);
+        // Espaces normalisés : le texte est retourné à la ligne dans le gabarit, et une
+        // assertion sur des sauts de ligne exacts casserait au premier reformatage sans que
+        // rien de vrai n'ait changé.
+        $plat = preg_replace('/\s+/u', ' ', $src);
+        $this->assertStringContainsString("journal d'audit métier (audit_logs)", $plat);
+        $this->assertStringContainsString('pas une écriture fiscale NF525', $plat);
     }
 
     public function test_page_index_requires_settings_permission(): void

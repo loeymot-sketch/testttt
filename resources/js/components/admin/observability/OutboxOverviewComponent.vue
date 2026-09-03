@@ -77,10 +77,22 @@
             aria-labelledby="outbox-drain-titre"
             class="rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
         >
-            <p id="outbox-drain-titre" class="font-semibold">Purger les échecs de plus de 24 h ?</p>
+            <!--
+                [G2 2026-09-03 · T2.3 · défaut V-04] Cette confirmation annonçait
+                `terminalFailures.count` — un compteur de `domain_events`. Or l'action
+                supprime des lignes `failed_jobs` : deux tables sans rapport. On annonçait
+                donc « 5 supprimés » là où la purge n'effaçait rien. Le compteur affiché
+                est désormais celui de la table que l'action touche, et c'est le MÊME
+                ensemble que le serveur purgera (helper partagé côté contrôleur).
+            -->
+            <p id="outbox-drain-titre" class="font-semibold">
+                Purger les travaux en échec de plus de {{ purgeableFailedJobs.older_than_hours }} h ?
+            </p>
             <p class="mt-1 text-xs">
-                {{ terminalFailures.count }} événement(s) en échec seront supprimés définitivement.
-                L'opération est consignée au journal d'audit.
+                {{ purgeableFailedJobs.count }} travail(aux) en échec de la file (table
+                <code>failed_jobs</code>, travaux outbox uniquement) seront supprimés définitivement.
+                Les lignes sont exportées avant suppression et l'opération est consignée au
+                journal d'audit.
             </p>
             <div class="mt-3 flex gap-2">
                 <button
@@ -132,14 +144,25 @@
                     se passe, et il en conclut que l'outil est cassé. Le titre dit
                     POURQUOI, la mise en forme dit QUE.
                 -->
+                <!--
+                    [G2 2026-09-03 · T2.3 · défaut V-04] Chaque bouton suit le compteur de
+                    CE QU'IL FAIT :
+                      - Rejouer  → `replayable_events` : événements pendants avec `last_error`,
+                        hors violations de contrat (non rejouables) et dans la fenêtre d'âge
+                        — exactement la sélection de `outboxRetryFailed`.
+                      - Purger   → `purgeable_failed_jobs` : travaux `failed_jobs` outbox
+                        au-delà du seuil — exactement la sélection de `outboxDrainFailed`.
+                    Avant, LES DEUX suivaient `terminal_failures` (des `domain_events`), donc
+                    la purge s'activait sur un compteur étranger à la table qu'elle vide.
+                -->
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
-                    :class="{ 'opacity-50 cursor-not-allowed': retrying || terminalFailures.count === 0 }"
-                    :disabled="retrying || terminalFailures.count === 0"
-                    :title="terminalFailures.count === 0
-                        ? 'Aucun échec terminal à rejouer'
-                        : `${terminalFailures.count} échec(s) à rejouer`"
+                    :class="{ 'opacity-50 cursor-not-allowed': retrying || replayableEvents.count === 0 }"
+                    :disabled="retrying || replayableEvents.count === 0"
+                    :title="replayableEvents.count === 0
+                        ? 'Aucun échec rejouable (une violation de contrat ne se rejoue pas)'
+                        : `${replayableEvents.count} échec(s) à rejouer`"
                     data-testid="outbox-retry-failed"
                     @click="retryFailed"
                 >
@@ -149,11 +172,11 @@
                 <button
                     type="button"
                     class="db-btn db-btn-secondary text-sm !text-slate-800"
-                    :class="{ 'opacity-50 cursor-not-allowed': draining || terminalFailures.count === 0 }"
-                    :disabled="draining || terminalFailures.count === 0"
-                    :title="terminalFailures.count === 0
-                        ? 'Aucun échec terminal à purger'
-                        : `${terminalFailures.count} échec(s) purgeables`"
+                    :class="{ 'opacity-50 cursor-not-allowed': draining || purgeableFailedJobs.count === 0 }"
+                    :disabled="draining || purgeableFailedJobs.count === 0"
+                    :title="purgeableFailedJobs.count === 0
+                        ? 'Aucun travail en échec à purger'
+                        : `${purgeableFailedJobs.count} travail(aux) en échec purgeable(s)`"
                     data-testid="outbox-drain-failed"
                     @click="drainFailed"
                 >
@@ -218,6 +241,98 @@
                 </div>
                 <p class="mt-2 text-xs text-slate-600">
                     {{ formatHealthAge(health.websockets_serve.last_signal_age_seconds) }}
+                </p>
+            </div>
+        </article>
+
+        <!--
+            [G2 2026-09-03 · T2.2 · défaut V-03] Claims en cours et orphelins.
+
+            `loadAll()` chargeait DÉJÀ `in_flight`, `stale_claimed` et `terminal_failures`
+            dans l'état du composant — et le template n'en rendait AUCUN. Le cockpit
+            pouvait donc connaître 2 149 claims orphelins (chiffre mesuré sur la base
+            servie le 2026-09-02) et rester muet sur exactement la population qu'on vient
+            y chercher. `terminal_failures` n'apparaissait que dans un `title` de bouton :
+            invisible sans survol, absent de tout parcours au lecteur d'écran.
+
+            `aria-live="polite"` : c'est la zone qui bouge au fil du rafraîchissement 10 s.
+        -->
+        <article
+            class="rounded border border-slate-200 bg-white p-4"
+            data-testid="outbox-claims"
+            aria-live="polite"
+        >
+            <h3 class="text-sm font-semibold text-slate-800">
+                Claims en cours, orphelins et échecs terminaux
+            </h3>
+            <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                    <dt class="text-xs text-slate-600">
+                        En vol (claimé depuis moins de {{ inFlight.stale_after_minutes }} min)
+                    </dt>
+                    <dd
+                        class="mt-1 text-sm font-semibold text-slate-800"
+                        data-testid="outbox-in-flight-count"
+                    >{{ inFlight.count }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-600">
+                        Orphelins (claimé depuis {{ inFlight.stale_after_minutes }} min ou plus, jamais diffusé)
+                    </dt>
+                    <dd
+                        class="mt-1 text-sm font-semibold"
+                        :class="staleClaimed.count > 0 ? 'text-rose-700' : 'text-slate-800'"
+                        data-testid="outbox-stale-claimed-count"
+                    >{{ staleClaimed.count }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-600">Échecs terminaux</dt>
+                    <dd
+                        class="mt-1 text-sm font-semibold"
+                        :class="terminalFailures.count > 0 ? 'text-rose-700' : 'text-slate-800'"
+                        data-testid="outbox-terminal-count"
+                    >
+                        {{ terminalFailures.count }}
+                        <span class="font-normal text-xs text-slate-600">
+                            dont {{ terminalFailures.contract_violations }} violation(s) de contrat, non rejouable(s)
+                        </span>
+                    </dd>
+                </div>
+            </dl>
+
+            <p v-if="staleClaimed.rows.length === 0" class="mt-3 text-sm text-slate-600">
+                Aucun claim orphelin à lister.
+            </p>
+            <div v-else class="mt-3 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="text-xs uppercase text-slate-500">
+                            <th class="px-2 py-1 text-left">id</th>
+                            <th class="px-2 py-1 text-left">{{ $t('admin.observability_outbox.event_type') }}</th>
+                            <th class="px-2 py-1 text-left">{{ $t('admin.observability_outbox.branch_id') }}</th>
+                            <th class="px-2 py-1 text-left">{{ $t('admin.observability_outbox.attempts') }}</th>
+                            <th class="px-2 py-1 text-left">Claimé à</th>
+                            <th class="px-2 py-1 text-left">{{ $t('admin.observability_outbox.last_error') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="row in staleClaimed.rows"
+                            :key="`stale-${row.id}`"
+                            class="border-t border-slate-100"
+                            :data-testid="`outbox-stale-row-${row.id}`"
+                        >
+                            <td class="px-2 py-1 font-mono text-xs">{{ row.id }}</td>
+                            <td class="px-2 py-1">{{ row.event_type }}</td>
+                            <td class="px-2 py-1">{{ row.branch_id ?? '—' }}</td>
+                            <td class="px-2 py-1">{{ row.attempts }}</td>
+                            <td class="px-2 py-1 text-xs text-slate-600">{{ formatTimestamp(row.dispatched_at) }}</td>
+                            <td class="px-2 py-1 text-xs text-rose-700">{{ row.last_error ?? '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-if="staleClaimed.count > staleClaimed.rows.length" class="mt-2 text-xs text-slate-600">
+                    {{ staleClaimed.rows.length }} ligne(s) affichée(s) sur {{ staleClaimed.count }}.
                 </p>
             </div>
         </article>
@@ -414,7 +529,15 @@ export default {
             generatedAt: null,
             pending: { count: 0, rows: [] },
             terminalFailures: { count: 0, contract_violations: 0 },
-            inFlight: { count: 0, stale_after_minutes: 5 },
+            // [G2 2026-09-03 · T2.3] Le compteur qui gouverne CHAQUE bouton, tiré de la
+            // table que le bouton touche. Valeur initiale 0 : tant qu'on n'a pas mesuré,
+            // on n'invite pas à une action destructrice.
+            replayableEvents: { count: 0, max_age_days: 7 },
+            purgeableFailedJobs: { count: 0, older_than_hours: 24 },
+            // 10 min = `SyncOverviewController::CLAIM_STALE_MINUTES`. La valeur par défaut
+            // était 5 : avant la première lecture, l'écran annonçait un seuil que le
+            // serveur n'applique pas.
+            inFlight: { count: 0, stale_after_minutes: 10 },
             staleClaimed: { count: 0, rows: [] },
             dispatched: {
                 count: 0,
@@ -476,6 +599,17 @@ export default {
                     this.dispatched = data.delivered_24h || this.dispatched;
                     this.queueHigh = data.queue_high || this.queueHigh;
                     this.failedJobs = data.failed_jobs || this.failedJobs;
+                    // [G2 2026-09-03 · T2.3] Deux compteurs d'ACTION, distincts des
+                    // compteurs d'état. Dégradation si un backend antérieur ne les envoie
+                    // pas encore (repli à retirer après V1.1, comme `retried` ci-dessous) :
+                    //  - rejouer : on retombe sur les échecs terminaux, l'ancien critère ;
+                    //  - purger  : on retombe sur ZÉRO, jamais sur `failed_jobs.count` —
+                    //    tous les travaux en échec ne sont pas des travaux outbox, et on
+                    //    n'invite pas à une suppression définitive sur une mesure absente.
+                    this.replayableEvents = data.replayable_events
+                        || { count: this.terminalFailures.count ?? 0, max_age_days: this.replayableEvents.max_age_days };
+                    this.purgeableFailedJobs = data.purgeable_failed_jobs
+                        || { count: 0, older_than_hours: this.purgeableFailedJobs.older_than_hours };
                     this.health = data.health || this.health;
                     this.erreur = null;
                     this.perime = false;
@@ -506,12 +640,28 @@ export default {
             this.retourAction = null;
             try {
                 const { data } = await axios.post('/admin/observability/outbox/retry-failed');
-                const combien = data && typeof data.retried === 'number' ? data.retried : null;
+                // [G2 2026-09-03 · T2.1 · défaut V-02] Le serveur répond `requeued`
+                // (SyncOverviewController::outboxRetryFailed). Ce composant lisait
+                // `retried` — une clé qu'AUCUNE réponse du contrôleur ne contient : le
+                // compte était donc TOUJOURS `null` et l'écran affichait « Relance
+                // demandée. », que 37 événements soient repartis ou aucun.
+                // `retried` reste lu en REPLI DE DÉPRÉCIATION pour un backend non encore
+                // redéployé — à retirer après V1.1 (posé le 2026-09-03).
+                const combien = data && typeof data.requeued === 'number'
+                    ? data.requeued
+                    : (data && typeof data.retried === 'number' ? data.retried : null);
+                // Une relance partiellement en échec n'est pas une relance réussie : le
+                // serveur compte séparément les audits et les ré-expéditions manqués.
+                const rates = [];
+                if (data && Number(data.audit_failed) > 0) rates.push(`${data.audit_failed} sans trace d'audit`);
+                if (data && Number(data.dispatch_failed) > 0) rates.push(`${data.dispatch_failed} non ré-expédié(s)`);
+
                 this.retourAction = {
-                    type: 'status',
+                    type: rates.length > 0 ? 'alert' : 'status',
                     texte: combien === null
-                        ? 'Relance demandée.'
-                        : `${combien} événement(s) remis en file.`,
+                        ? 'Relance demandée (le serveur n’a pas dit combien).'
+                        : `${combien} événement(s) remis en file.`
+                            + (rates.length > 0 ? ` Échecs : ${rates.join(', ')}.` : ''),
                 };
                 await this.loadAll();
             } catch (e) {
@@ -537,11 +687,14 @@ export default {
                     older_than_hours: 24,
                 });
                 const combien = data && typeof data.deleted === 'number' ? data.deleted : null;
+                // [G2 2026-09-03 · T2.3] Ce sont des TRAVAUX EN ÉCHEC (`failed_jobs`) qui
+                // sont supprimés, pas des événements : nommer la mauvaise table fait
+                // croire à l'opérateur qu'il vient d'effacer des `domain_events`.
                 this.retourAction = {
                     type: 'status',
                     texte: combien === null
                         ? 'Purge effectuée.'
-                        : `${combien} événement(s) supprimé(s) définitivement.`,
+                        : `${combien} travail(aux) en échec supprimé(s) définitivement.`,
                 };
                 await this.loadAll();
             } catch (e) {
