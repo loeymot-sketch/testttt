@@ -94,3 +94,39 @@ transversal (`fr.json`) au lieu d'attendre. La règle à retenir : **un fichier 
 partagé par tous les chantiers — il se commite en dernier, jamais avec un lot.**
 
 Consigné dans le message du commit `bf66d8fab` plutôt que dissimulé.
+
+### 02h58 — Vitest complet : VERT INTÉGRAL
+
+```
+Test Files  531 passed (531)
+     Tests  4375 passed | 3 skipped (4378)
+  Duration  181,30 s
+```
+
+Journal brut : `reports/supervision/2026-09-03/vitest-complet.txt`.
+
+À comparer avec le contre-audit qui a ouvert cette mission, qui relevait
+« 460 fichiers verts, 4 rouges ; 3 917 tests verts, 4 rouges » et concluait
+`RELEASE_READINESS: BLOCKED_BY_RED_GLOBAL_GATES`.
+
+Les quatre rouges étaient les sentinelles de fraîcheur des lots. Ils tenaient à une seule
+chose : **les sources du 2 septembre 23h24 n'étaient pas livrées.** Une reconstruction les a
+fermés, et a fermé du même coup les cinq échecs Playwright que le même rapport imputait au
+produit.
+
+L'écart de volume (531 fichiers contre 460, 4 378 tests contre 3 924) vient des bancs écrits
+cette nuit et de ceux des autres sessions intégrés depuis.
+
+### 02h55 — Campagne navigateur de clôture : 4/4
+
+`tests/e2e/goal-convergence-2026-09-03.spec.js` — tableau de bord, cockpit santé, cockpit
+outbox, tiroir de caisse. Sur le lot **réellement servi**, reconstruit et vérifié en HTTP.
+
+Différence de fond avec les campagnes précédentes du dépôt : **les erreurs de console et les
+refus réseau font échouer le test**. La première exécution a d'ailleurs rougi trois fois sur
+`127.0.0.1:9100` et `:9101` — les ponts d'impression ESC/POS, démons matériels absents de ce
+poste. Ils sont tolérés **au port près**, avec la raison écrite, et le message générique
+`ERR_CONNECTION_REFUSED` n'est écarté que si tous les refus réseau de la page étaient
+eux-mêmes tolérés. Une tolérance nommée n'est pas un tapis.
+
+Captures lues et analysées, pas seulement produites : `reports/supervision/2026-09-03/captures/`.

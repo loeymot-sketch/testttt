@@ -47,6 +47,69 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-03 — CONVERGENCE : LA MOITIÉ DE CE QUE DEUX AUDITS AFFIRMAIENT ÉTAIT FAUX**
+>
+> Suites complètes **VERTES** : PHPUnit **5 991 / 0 échec** (6 incomplets, 36 sautés) ·
+> Vitest **531 fichiers, 4 375 tests / 0 rouge** · campagne navigateur de clôture **4/4** ·
+> 5 sentinelles de fraîcheur vertes · zone gelée **0 ligne** · `safety-check` PASS ·
+> `fiscal:verify-chain --all` **CHAIN OK** sur 6 branches. Journaux bruts dans
+> `reports/supervision/2026-09-03/`.
+>
+> 🔴 **CE QUE LA RE-VÉRIFICATION A COÛTÉ AUX AUDITS D'ORIGINE.** Sept affirmations de Codex
+> sont fausses sur ce HEAD : zone gelée prétendue modifiée (diff vide), `safety-check`
+> prétendu bloquant (PASS), trois sentinelles PHP prétendues rouges (vertes 9/9), campagne
+> caisse prétendue en échec (11/11), contrôles `pos-control-*` prétendus absents — ils sont
+> dans le morceau différé `pos-shell`, pas dans `pos-app` —, zéro route dashboard prétendue
+> non testée (0 réellement), message d'exception prétendu renvoyé brut (déjà traduit). Côté
+> vitrine, **19 des 41 tickets vérifiables étaient déjà corrigés**, 1 réfuté par la mesure,
+> 1 non reproductible. Cause commune : instantané mouvant + `grep` littéraux aveugles à la
+> concaténation d'URL et au découpage Webpack.
+>
+> 💣 **LE DÉFAUT LE PLUS COÛTEUX TENAIT EN UNE COMMANDE.** Quatre sentinelles Vitest rouges,
+> cinq échecs Playwright et « le tiroir existe mais n'est pas livré » avaient UNE cause : les
+> sources du 2 septembre 23h24 n'étaient pas compilées. `npm run production` a tout fermé.
+>
+> **NEUF P1 RÉELS FERMÉS**, chacun par un banc prouvé rouge sans son correctif (sorties
+> conservées dans `G*-bancs-mordent.txt`) : le tiroir de caisse jetait les commandes les plus
+> ANCIENNES au-delà de 100, sans rien dire · la relance outbox ne disait jamais combien ·
+> **2 150 claims orphelins** étaient chargés puis jetés sans être affichés · la purge comptait
+> une table et en supprimait une autre · l'audit de purge écrivait le nombre supprimé AVANT le
+> `DELETE` · un worker de notifications vivant affichait la file outbox « up » alors qu'elle
+> était morte · l'audit d'une bascule précédait la mutation · un dump corrompu était présenté
+> comme « réellement remonté » · six des neuf sorties d'échec du drill ne persistaient rien.
+>
+> 🔍 **CINQ TROUVAILLES EN PROPRE**, qu'aucun des deux audits n'avait vues. La carte sauvegarde
+> restait verte **29 minutes par jour** en contredisant la bande d'alertes du même écran ·
+> trois surfaces lisaient le dossier de sauvegardes avec DEUX motifs, rendant le rapprochement
+> structurellement impossible (rouge permanent, pire qu'un faux vert) · le sondage périodique
+> **effaçait** le message d'échec d'une bascule · un bouton promettait « Clôture du jour » sur
+> une surface NF525 alors que `eodSynthesis()` est une lecture pure — trouvé en LISANT la
+> capture · deux composants du tableau de bord ne sont montés nulle part, dont un gardé par
+> trois tests verts.
+>
+> Sur le tableau de bord, le vrai défaut n'était pas l'absence de tests : sur **cinq composants
+> sur six**, un échec réseau était indiscernable d'une journée creuse. `OrderStatistics` faisait
+> pire — une journée à zéro affiche « 0 », l'échec affichait du BLANC. Et `RealtimeReport`
+> levait son drapeau d'échec alors que les deux branches rendaient la même chose : un correctif
+> qui avait l'air appliqué et n'avait aucun effet.
+>
+> ⚠️ **UNE ERREUR DE MA PART** : le commit caisse a emporté six clés `fr.json` d'un autre
+> chantier — fichier transversal commité pendant qu'un agent y écrivait. Rien de cassé,
+> attribution fausse. Un fichier de traduction se commite en dernier, jamais avec un lot.
+>
+> **PORTES PROPRIÉTAIRE OUVERTES** : sort des 2 composants morts · production en **PHP 8.1**
+> contre un script qui installe **8.4** (recommandation : pré-vol qui REFUSE) · déploiement
+> vitrine, commit posé en local et **non poussé** · politique d'upsell (mesure faite : deux
+> murs et non trois, un écran groupé n'économise qu'UN clic sur six) · CGV « sur place » contre
+> accueil « tout à emporter ».
+>
+> **NON CORRIGÉ, PORTÉ** : 5 violations du garde de prix toutes ANTÉRIEURES (vérifiées au HEAD
+> d'ouverture) dont une signature en retard depuis le 10 mai · une sauvegarde de sécurité VIDE
+> prise avant une synchro le 30 août en production. Le « dump de 20 octets » de l'audit n'existe
+> pas en production : c'est un fichier local d'un octet, désormais rejeté par un banc.
+>
+> Détail complet : `reports/supervision/2026-09-03/RAPPORT-DE-CLOTURE.md`.
+
 > **2026-09-03 — DÉPLOIEMENT EN PRODUCTION : fait, vérifié sur le contenu servi — et un piège NF525 démontré**
 >
 > Production `f0da0bc8` → **`23c2ef26`**. Chaîne complète exécutée : fusion des 208 commits,
