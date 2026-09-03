@@ -47,6 +47,76 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-03 (nuit, 2) — INCIDENT PRODUCTION : TROIS PRODUITS PHARES INVENDABLES. RÉSOLU, GARDE-FOU POSÉ, DÉPLOYÉ.**
+>
+> Signalement propriétaire, en service : « même les hamburgers demandent de choisir la viande,
+> c'était pas avant » et « même si je choisis deux viandes je n'arrive pas à passer la commande ».
+>
+> 🔴 **CAUSE : DEUX ÉCRITURES DE CARTE, PAS UN BUG DE CODE.** À **22:27:08**, une seule opération
+> a éteint les **45 lignes de viande** de `Cayenne` (#22), `Suprême` (#103) et
+> `Sandwich Classique` (#119) — attributs 1 ET 2, toutes à la même seconde. Sa sauvegarde donne
+> l'intention : *« viandes fixes selon la carte »*. L'idée se défend ; **l'exécution était
+> incomplète : les choix éteints, l'obligation `Viande 1 min_select=1` laissée en place.** Les
+> trois produits phares du restaurant sont devenus **INVENDABLES**.
+>
+> ⚠️ **MON AGENT AVAIT CLASSÉ CE DÉFAUT « NON REPRODUIT » — IL AVAIT MESURÉ `foodking_e2e`, PAS
+> LA PRODUCTION.** C'est le même signalement (« le premier choix de viande ») que l'audit de la
+> vague A avait écarté quelques heures plus tôt. **Leçon : un signalement terrain se vérifie sur
+> la base qui encaisse.**
+>
+> 🩺 **MÉTHODE : lire « la version d'hier », pas la deviner.** Chargement de
+> `db-daily/pre-deploy-caisse-controle-20260903-000836.sql.gz` (dernier instantané sain, 00:08)
+> dans une table de travail `iv_hier`, puis diff ligne à ligne. **Cela a corrigé ma lecture** :
+> partout ailleurs 11 → 8 lignes = nettoyage LÉGITIME des viandes inventées (Poulet curry /
+> tandoori / crispy) — **non touché**. Seul vrai écart : 11 actives → **0** sur les 3 produits.
+> Table de travail supprimée après usage.
+>
+> ✅ **CORRECTIFS APPLIQUÉS EN PRODUCTION** (sauvegardes réelles écrites avant chaque écriture,
+> 8 348 o et 1 534 o, les deux réversibles) : **45 lignes rallumées** (`status=5`) sur les 3
+> produits ; **48 lignes détachées** (`deleted_at`) sur les 6 burgers (38, 98, 99, 100, 101, 102)
+> — décision propriétaire explicite. Contrôle sur **toute la carte** : plus aucun produit n'a
+> d'étape obligatoire sans choix. Vérifié via la couche que les écrans consomment
+> (`Item::with(variations.itemAttribute)`), pas seulement en SQL.
+> 📌 **Nuance à ne pas perdre** : les burgers portaient DÉJÀ des viandes hier (11 actives,
+> visibles partout). Leur retrait n'est PAS un retour arrière, c'est un choix de carte.
+>
+> 🛡️ **GARDE-FOU — `menu:verifier-etapes`** (`app/Console/Commands/MenuVerifierEtapesCommand.php`
+> + `app/Services/Menu/EtapesBloquantesDetector.php`). Répond en 2 s : « un client peut-il encore
+> commander chaque produit ? ». **Code de sortie 1** si non ⇒ utilisable comme porte dans tout
+> script de carte. Trois formes, **par surface** : choix tous éteints (l'incident) · choix tous
+> réservés à une autre surface · choix < minimum exigé.
+> ⚠️ **La 2ᵉ forme est le piège qui attend la règle demandée par le propriétaire** (« viandes du
+> Cayenne seulement à la caisse ») : les lignes resteraient ACTIVES donc l'étape resterait
+> OBLIGATOIRE, et la borne se rebloquerait. **À lancer avant d'appliquer cette règle.**
+> Banc prouvé **rouge avant implémentation** (6 erreurs), vert après ; 2 tests vérifient que la
+> COMMANDE mord (exit 1) ; 3 tests négatifs verrouillent l'absence de faux positif. 8 tests.
+>
+> 🔎 **CE QUE LA RÈGLE BACKEND FAIT DÉJÀ, ET QU'IL NE FAUT PAS « RÉPARER »** :
+> `MultiVariationConstraint::requiredAttributesByOrderedItem` dérive l'obligation des variations
+> **ACTIVES** (`:131`) — avec tout éteint, elle n'exige rien. Le blocage venait de l'écran, pas
+> d'elle. Ne pas la modifier sur la foi du message d'erreur.
+>
+> 🔴 **DEUX SENTINELLES ÉTAIENT ROUGES SUR UNE BASE DÉJÀ DÉPLOYÉE — mon manquement.** J'avais
+> déployé `cda7ff833` en vérifiant SES tests, pas la passe Sentinel.
+> · `WithoutGlobalScopesAuditSentinelTest` 27≠26 : `cda7ff833` posait
+>   `Item::query()->withoutGlobalScopes()` dans `ItemRequest::messageNomDejaUtilise()`. **Item ne
+>   déclare AUCUN scope global** ⇒ no-op réflexe. **Retiré** (précédent du 2026-08-19), pas
+>   allowlisté. `ModifierUnProduitTest` reste vert 4/4.
+> · `FrozenZoneSha256BaselineSentinelTest` : dérive sur **`PricingService.php` (GELÉ, NF525)**
+>   venant de `6e2f038cd`, qui a bien un LOCK (`docs/locks/LOCK_INCIDENT_CAISSE_SAUCE_2026-09-03.md`,
+>   nomme le fichier, atteste qu'aucun calcul de prix n'est touché). Baseline non réalignée dans
+>   le commit du correctif. Réalignée `5508364978…` → `e8e53af65600…`.
+>   ⚠️ **Ce LOCK n'a PAS de contreseing propriétaire — porte §10 ouverte.**
+>
+> 🚀 **DÉPLOYÉ** `c6b9bd858 → 242091665`, VPS `c6b9bd85 → 24209166`. Aucun `.vue` touché ⇒ pas de
+> reconstruction. Vérification décisive : **`menu:verifier-etapes` lancée SUR LA PRODUCTION** →
+> `OK kiosk / OK pos / OK web`. `/login` 200, `/api/health/live` 200, **CHAIN OK**.
+> Passe `Sentinel|Menu|Item|Pos` : **2 195 tests, 0 échec**.
+>
+> 🧨 **Le filet était troué** : `storage/backups/pre-materialize-20260903/catalogue.sql.gz`, censé
+> protéger la dernière opération de carte de la nuit (23:16), **fait 20 octets — gzip vide**.
+> Aucun retour arrière n'existait pour cette étape. À traiter : un dump non vérifié n'est pas un dump.
+
 > **2026-09-03 (nuit) — AUDIT 9 AGENTS, UN DÉFAUT DE PRIX TROUVÉ ET CORRIGÉ, DÉPLOYÉ ET VÉRIFIÉ SERVI**
 >
 > `/goal` propriétaire : auditer la structure + le travail des sessions parallèles + ses
