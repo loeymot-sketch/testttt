@@ -355,6 +355,45 @@ class AppServiceProvider extends ServiceProvider
             }
 
             /*
+             * [2026-09-03] `config:cache` signait la chaîne fiscale avec le MAUVAIS secret,
+             * en silence, et définitivement.
+             *
+             * `AuditLogService::secretFor()` lit la surcharge par branche via
+             * `env('FISCAL_AUDIT_SECRET_BRANCH_{id}')` — un appel à `env()` À L'EXÉCUTION.
+             * Une fois la configuration mise en cache, Laravel ne charge plus `.env` :
+             * `env()` rend `null` et la signature retombe sans bruit sur le secret par
+             * défaut. Une commande encaissée pendant cette fenêtre est signée autrement que
+             * ses voisines, et `audit_logs` est append-only — la scission est définitive.
+             *
+             * Reproduit en production le 2026-09-03, et inversé deux fois pour l'établir :
+             *   config:cache → « TAMPER detected on 1/1 branches »
+             *   config:clear → « CHAIN OK on every active branch »
+             *
+             * Douze procédures du dépôt prescrivent `config:cache`. Ce garde rend l'état
+             * dangereux impossible plutôt que de compter sur la lecture d'une note.
+             *
+             * Il ne se déclenche QUE si une surcharge a réellement été déclarée : la liste
+             * `fiscal.audit_secret_branch_ids` est calculée pendant que `.env` est encore
+             * lisible, donc elle survit à la mise en cache. Une installation sans surcharge
+             * — tout poste de développement — n'est pas touchée.
+             */
+            if (app()->configurationIsCached()) {
+                $branchesAvecSurcharge = (array) config('fiscal.audit_secret_branch_ids', []);
+                foreach ($branchesAvecSurcharge as $branchId) {
+                    if (env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId) === null) {
+                        throw new \RuntimeException(
+                            'FISCAL_AUDIT_SECRET_BRANCH_'.$branchId.' est devenu illisible : la '
+                            .'configuration est en cache et Laravel ne lit plus .env, donc '
+                            .'AuditLogService signerait la chaîne NF525 avec le secret par DÉFAUT. '
+                            .'audit_logs est append-only : la scission serait définitive. '
+                            .'Exécuter `php artisan config:clear` et NE PAS remettre `config:cache` '
+                            .'tant que AuditLogService::secretFor() lit env() à l\'exécution.'
+                        );
+                    }
+                }
+            }
+
+            /*
              * [W9-AUDIT B1-OPS] AuditLogService::write uses Cache::lock(audit_chain_b{n})
              * to serialize hash-chain inserts across concurrent workers. With CACHE_DRIVER=array
              * (or any in-process driver), the lock is per-process only, so two PHP-FPM workers
