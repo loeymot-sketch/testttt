@@ -6,6 +6,7 @@ use App\Enums\TaxType;
 use App\Enums\Status;
 use App\Libraries\AppLibrary;
 use App\Models\Item;
+use App\Services\Composer\ComposerTemplateService;
 use App\Models\ItemAddon;
 use App\Models\ItemAttribute;
 use App\Models\ItemExtra;
@@ -600,7 +601,7 @@ final class PricingService
             }
 
             $projected = $this->composerProfileProjection()->project($profile, $item, $surface);
-            $this->assertComposerSelectionsBelongToPublishedProfile($line, $projected);
+            $this->assertComposerSelectionsBelongToPublishedProfile($line, $projected, $item, $surface);
             foreach (($projected['steps'] ?? []) as $step) {
                 if (! in_array($step['source_type'] ?? '', ['item_attribute', 'extra_group', 'addon'], true)) {
                     throw new \InvalidArgumentException(
@@ -656,16 +657,51 @@ final class PricingService
         }
     }
 
-    private function assertComposerSelectionsBelongToPublishedProfile(object $line, array $projected): void
-    {
+    /**
+     * [INCIDENT CAISSE 2026-09-03] Le profil contraint ce qu'il DÉCRIT — pas le reste.
+     *
+     * Signalé par le propriétaire, capture à l'appui : au moment d'encaisser, la caisse
+     * refusait avec « le choix #450 n'appartient pas au profil publié ». Ticket construit,
+     * montant affiché, monnaie calculée — et paiement impossible.
+     *
+     * Mesuré sur le catalogue réel : le wizard facture la 2ᵉ sauce 0,50 € via un extra
+     * générique « Sauce supplémentaire » qui appartient bien à l'article
+     * (LOCK_CAISSE_SAUCE_SEAL du 2026-07-16), et qui porte le groupe `sauce`. Or le profil
+     * publié ne décrit d'étapes `extra_group` que pour `crudite` et `supplement` : les
+     * sauces GRATUITES passent par une étape `item_attribute`, si bien qu'aucune étape ne
+     * couvre l'extra PAYANT du groupe `sauce`.
+     *
+     * Sur le MÊME article, « Viande supplémentaire » (groupe `supplement`) passait donc et
+     * « Sauce supplémentaire » (groupe `sauce`) bloquait la vente. La seule différence était
+     * qu'une étape existait pour l'un et pas pour l'autre — un détail de configuration qui
+     * décidait si le restaurant pouvait encaisser.
+     *
+     * Ce que ce garde protège réellement, c'est l'INJECTION : un client ne doit pas pouvoir
+     * facturer une option qui n'est pas vendue avec ce produit, ni une option retirée de la
+     * carte. Cette frontière-là est conservée intégralement. Ce qui change : quand le profil
+     * ne décrit AUCUNE étape pour une famille (ou, pour les extras, pour un groupe donné),
+     * on retombe sur la frontière du catalogue — l'option doit appartenir à l'article, être
+     * active et visible sur cette surface. Quand le profil décrit la famille, sa liste fait
+     * foi, inchangée : une option retirée d'une étape publiée reste refusée
+     * (`ProfilePublishMidCartRejectionTest`).
+     */
+    private function assertComposerSelectionsBelongToPublishedProfile(
+        object $line,
+        array $projected,
+        ?Item $item = null,
+        string $surface = 'pos'
+    ): void {
         $allowedByPayload = [
             'item_variations' => [],
             'item_extras' => [],
             'item_addons' => [],
         ];
+        $famillesDecrites = [];
+        $groupesExtrasDecrits = [];
 
         foreach (($projected['steps'] ?? []) as $step) {
-            $payloadKey = match ($step['source_type'] ?? '') {
+            $sourceType = $step['source_type'] ?? '';
+            $payloadKey = match ($sourceType) {
                 'item_attribute' => 'item_variations',
                 'extra_group' => 'item_extras',
                 'addon' => 'item_addons',
@@ -673,6 +709,16 @@ final class PricingService
             };
             if ($payloadKey === null) {
                 continue;
+            }
+            $famillesDecrites[$payloadKey] = true;
+            if ($sourceType === 'extra_group') {
+                $ref = mb_strtolower(trim((string) ($step['source_ref'] ?? '')));
+                if ($ref === '') {
+                    $ref = mb_strtolower(trim((string) ($step['step_key'] ?? '')));
+                }
+                if ($ref !== '') {
+                    $groupesExtrasDecrits[$ref] = true;
+                }
             }
             foreach (($step['choices'] ?? []) as $choice) {
                 $id = $choice['id'] ?? null;
@@ -688,14 +734,90 @@ final class PricingService
                 if ($id === null) {
                     continue;
                 }
-                if (! isset($allowedIds[(string) $id])) {
-                    throw new \InvalidArgumentException(
-                        "Composition : le choix #{$id} n'appartient pas au profil publié.",
-                        422
-                    );
+                if (isset($allowedIds[(string) $id])) {
+                    continue;
                 }
+                if ($this->choixCouvertParLeCatalogue($payloadKey, (int) $id, $item, $surface, $famillesDecrites, $groupesExtrasDecrits)) {
+                    continue;
+                }
+
+                throw new \InvalidArgumentException(
+                    "Composition : le choix #{$id} n'appartient pas au profil publié.",
+                    422
+                );
             }
         }
+    }
+
+    /**
+     * Le repli : l'option appartient-elle à l'article vendu, est-elle active et visible, et
+     * le profil publié se tait-il à son sujet ? Les trois conditions sont nécessaires.
+     */
+    private function choixCouvertParLeCatalogue(
+        string $payloadKey,
+        int $id,
+        ?Item $item,
+        string $surface,
+        array $famillesDecrites,
+        array $groupesExtrasDecrits
+    ): bool {
+        if ($item === null) {
+            return false;
+        }
+
+        if ($payloadKey === 'item_extras') {
+            $extra = $item->extras->firstWhere('id', $id);
+            if ($extra === null || (int) $extra->status !== Status::ACTIVE || ! $extra->isVisibleOn($surface)) {
+                return false;
+            }
+            $groupe = mb_strtolower(trim((string) ($extra->group_label ?? '')));
+            $groupe = $groupe === '' ? 'default' : $groupe;
+
+            // Le groupe est-il décrit par une étape publiée ? Si oui, la liste de l'étape
+            // fait foi et l'absence de cet extra est une décision, pas un trou.
+            foreach (array_keys($groupesExtrasDecrits) as $ref) {
+                if ($this->groupeExtraCorrespond($groupe, (string) $ref)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Variations et produits ajoutés : repli uniquement si le profil ne décrit AUCUNE
+        // étape de cette famille.
+        if (isset($famillesDecrites[$payloadKey])) {
+            return false;
+        }
+
+        if ($payloadKey === 'item_variations') {
+            $variation = $item->variations->firstWhere('id', $id);
+
+            return $variation !== null && (int) $variation->status === Status::ACTIVE;
+        }
+
+        if ($payloadKey === 'item_addons') {
+            return $item->addons->contains(fn ($addon): bool => (int) $addon->id === $id
+                || (int) ($addon->addon_item_id ?? 0) === $id);
+        }
+
+        return false;
+    }
+
+    /** Même correspondance que la projection : égalité, `default`, ou alias déclaré. */
+    private function groupeExtraCorrespond(string $groupe, string $ref): bool
+    {
+        if ($ref === '') {
+            return false;
+        }
+        if ($groupe === $ref) {
+            return true;
+        }
+        if ($ref === 'default' && $groupe === 'default') {
+            return true;
+        }
+
+        return in_array($groupe, ComposerTemplateService::EXTRA_GROUP_ALIASES[$ref] ?? [], true);
     }
 
     private function composerSelectedCountsForStep(object $line, array $step): array
