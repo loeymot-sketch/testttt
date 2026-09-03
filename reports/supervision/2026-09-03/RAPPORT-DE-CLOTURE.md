@@ -166,3 +166,41 @@ Trois règles ont produit tout ce qui précède, et une quatrième a failli coû
    monté par `Teleport` que `find()` ne trouvait pas, et un `ZReport` lu dans un **commentaire**.
 3. **Mesurer le fichier servi**, pas celui dont on suppose le nom.
 4. **Lire les captures.** Le défaut du bouton « Clôture » n'était visible nulle part ailleurs.
+
+---
+
+## §9 — Vitrine : les dix-sept jamais mesurés (ajouté après clôture backend)
+
+Onze étaient encore vrais. **Cinq corrigés** (T17, T24, T26, T35, T36), **trois réfutés par la
+mesure** (T25, T31, T57), **trois relèvent d'un choix propriétaire** (T19, T21, T30).
+
+**T24 était bien plus grave que son propre ticket.** Pas 26 fiches mais 24, et **35 constats sur
+14 d'entre elles**. Le rang de prix sortait de la position dans une liste triée : entre deux
+produits au même prix il était **tiré du hasard**, et la phrase se contredisait dans sa propre
+ligne — « C'est le plus cher des 3 desserts […] au même prix que Glace et Tarte Daim ». Corrigé
+dans le générateur, 24 fiches régénérées, banc à 108 constats verts.
+
+**T17 : le diagnostic du ticket était inversé.** Le cartouche n'était pas figé, il était **en
+avance** — texte instantané, photo en 900 ms. 25 relevés sur 335 nommaient une photo visible à
+2 %. Un premier réglage à 450 ms est resté rouge ; le banc a imposé **265 ms**, le croisement
+réel d'une courbe `ease` étant à 29,3 % de sa durée et non à la moitié.
+
+**Trois prémisses d'audit fausses à la mesure** : les emojis ne sont pas « le seul endroit du
+site » (l'accueil en porte 15) · « Pepper Club » est nommé ailleurs que dans les CGV · les sept
+scripts « sans `defer` » sont en fin de `<body>` et ne bloquent rien — 1,3 Mo sur disque font
+**411 Ko réellement transférés**.
+
+**Non appliqué volontairement** : l'en-tête `Access-Control-Allow-Origin: *` est réel et mesuré
+en production, mais rien ne permet de vérifier sans déploiement que le correctif écrase bien
+l'en-tête ajouté par la plateforme. Le correctif est écrit dans le rapport, pas dans le dépôt.
+
+**Reste hors code** : T09 et T20 demandent un fichier image. Et une correction d'énoncé — le
+logo dit « SANDWICHS », français correct ; le seul mot anglais est **BOWLS**, quand le site dit
+« Bols » partout.
+
+**T15 mesuré, rien refondu** : trois en-têtes, 9 · 10 · 4 liens, deux fonds, écrits en trois
+langages sur 43 pages. C'est **une journée pleine**, pas une nuit — et le dire vaut mieux que
+le commencer.
+
+Détail : `reports/audit/VERIF_VITRINE_LOT2_2026-09-03.md`.
+Dépôt vitrine : **2 commits en local, non poussés** (porte propriétaire P3).
