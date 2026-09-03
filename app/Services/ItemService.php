@@ -694,7 +694,17 @@ class ItemService
     public function featuredItems()
     {
         try {
-            return Item::with('media', 'category', 'offer')->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])->inRandomOrder()->limit(8)->get();
+            // [2026-09-03] Avant : `inRandomOrder()->limit(8)` sur 16 articles mis en avant.
+            // Le gérant qui vient VÉRIFIER qu'un article est bien mis en avant avait une chance
+            // sur deux de ne pas le voir, et la liste changeait à chaque rechargement — trois
+            // tirages successifs ont donné trois listes différentes. Un ordre stable rend l'écran
+            // vérifiable : c'est l'ordre d'affichage choisi par le gérant (`order`), puis le nom.
+            return Item::with('media', 'category', 'offer')
+                ->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])
+                ->orderBy('order')
+                ->orderBy('name')
+                ->limit(8)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -704,7 +714,32 @@ class ItemService
     public function mostPopularItems()
     {
         try {
-            return Item::with('media', 'category', 'offer')->withCount('orders')->where(['status' => Status::ACTIVE])->orderBy('orders_count', 'desc')->limit(6)->get();
+            // [2026-09-03] Avant : `withCount('orders')` nu, trié dessus. Deux défauts cumulés,
+            // mesurés en base : (1) `orders` est une relation vers les LIGNES de commande, tous
+            // statuts confondus — pour le seul Cayenne, 54 lignes venaient de commandes REFUSÉES
+            // et impayées, soit 29 % de son score ; (2) on comptait des lignes, pas des quantités.
+            // Résultat à l'écran : le tableau de bord couronnait Cayenne (83 unités réellement
+            // vendues) devant Coca-Cola (109), et la Galette Normale (53) manquait alors que
+            // l'Eau Plate (50) figurait. C'est l'écran sur lequel on décide quoi mettre en avant
+            // et quoi commander : un classement bâti sur des commandes refusées oriente ces
+            // décisions à l'envers.
+            //
+            // `realizedRevenue()` est la définition de vente déjà utilisée par le chiffre
+            // d'affaires, alignée sur le Z signé. Les miroirs de remboursement sont écartés :
+            // leur `total` est négaté, mais leur `quantity` ne l'est pas.
+            $ventesReelles = function ($q) {
+                $q->whereHas('order', function ($o) {
+                    $o->realizedRevenue()->whereNull('parent_order_id');
+                });
+            };
+
+            return Item::with('media', 'category', 'offer')
+                ->withCount(['orders' => $ventesReelles])
+                ->withSum(['orders as unites_vendues' => $ventesReelles], 'quantity')
+                ->where(['status' => Status::ACTIVE])
+                ->orderByDesc('unites_vendues')
+                ->limit(6)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

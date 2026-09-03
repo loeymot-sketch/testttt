@@ -249,7 +249,17 @@ class DashboardController extends AdminController
     public function slaAlerts()
     {
         try {
-            return response()->json(['data' => $this->dashboardService->slaAlerts()]);
+            // [2026-09-03] La fenêtre est publiée À CÔTÉ des alertes. « Aucune préparation
+            // hors délai » se lisait comme un fait absolu alors que le contrôle ne regarde que
+            // les dernières heures : 344 commandes étaient figées en préparation, la plus
+            // ancienne depuis le 10 juin, pendant que l'écran affichait « Dernier contrôle
+            // terminé avec succès ». Le chiffre était juste dans son périmètre ; c'est le
+            // périmètre qui n'était écrit nulle part. Le client ne lit que `data.data` : cette
+            // clé supplémentaire ne casse rien.
+            return response()->json([
+                'data' => $this->dashboardService->slaAlerts(),
+                'fenetre_heures' => (int) config('dashboard.sla_alerts_window_hours', 24),
+            ]);
         } catch (Exception $exception) {
             return $this->dashboardFailure($exception);
         }
