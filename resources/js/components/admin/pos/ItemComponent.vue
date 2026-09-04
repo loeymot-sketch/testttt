@@ -1562,7 +1562,14 @@ export default {
                     const isFree = parseFloat(extra.convert_price) <= 0;
                     if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) return;
                     if (extraLower.includes('grande') && extraLower.includes('portion')) return;
-                    if (extraLower.includes('cheddar')) return;
+                    // [GOAL AUDIT 2026-09-05] Ce test DOIT refléter exactement la
+                    // classification ci-dessus (« cheddar » ET « fondu »). Depuis le
+                    // correctif du supplément Cheddar, « cheddar » seul y désignait aussi
+                    // le supplément payant à 0,90 € : le miroir n'en était plus un. Sans
+                    // effet observable aujourd'hui (le supplément retombe de toute façon
+                    // hors des garnitures), mais une divergence entre les deux listes est
+                    // exactement ce qui a produit le défaut de facturation d'origine.
+                    if (extraLower.includes('cheddar') && extraLower.includes('fondu')) return;
                     if (extraLower.includes('sauce')) return;
                     const isGarniture = isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon');
                     if (!isGarniture) return; // paid supplement not selected — leave unset, not our concern here

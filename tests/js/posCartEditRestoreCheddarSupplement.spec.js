@@ -87,6 +87,16 @@ describe('buildWizardRestorePayload — le supplément « Cheddar » (0,90 €) 
         expect(restore.fritesGrande).toBe(true);
     });
 
+    it('le supplément Cheddar payant n\'atterrit JAMAIS dans les garnitures', () => {
+        // Verrouille le MIROIR d'exclusion (ItemComponent.vue ~:1565), qui doit refléter
+        // exactement la chaîne de classification. Une divergence entre les deux listes est
+        // précisément ce qui a produit le défaut de facturation d'origine.
+        const restore = buildWizardRestorePayload(makeCartLine(['Cheddar']), makeItem());
+
+        expect(restore.garnitures['c_301'], 'un supplément payant n\'est pas une garniture').toBeUndefined();
+        expect(restore.supplements['p_301']).toBe(true);
+    });
+
     it('les deux peuvent coexister sur la même ligne sans se contaminer', () => {
         const restore = buildWizardRestorePayload(makeCartLine(['Cheddar', 'Cheddar Fondu']), makeItem());
 
