@@ -47,6 +47,46 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-05 (clôture) — LES 4 PLAINTES SONT TRANCHÉES. LE 5ᵉ POINT N'EST PAS « LA LOGIQUE D'AVANT ».**
+>
+> Le GOAL demandait « corrige tout ça **selon la logique d'avant** ». Bilan, chacun adossé à
+> une mesure :
+>
+> | Plainte | Verdict | Preuve |
+> |---|---|---|
+> | « ça affiche un chiffre 90 » | **CORRIGÉ** | ticket cuisine cmd 929 : `MAY 90` → `MAY` |
+> | « le supplément ne s'affiche pas » | **CORRIGÉ** | cmd 929 : `* Sauce supplémentaire` apparaît enfin |
+> | « prix ticket ≠ prix encaissement » | **CORRIGÉ** | ligne borne lit `total_price` (138 lignes, 321,20 €) |
+> | « ça ne prend pas les suppléments » | **RÉFUTÉ** | 224 lignes / 35 j = 289,50 € facturés, **0,00 € manquant** |
+> | « Américaine vue comme un supplément » | **COMPORTEMENT CORRECT** | 2ᵉ sauce = extra payant 0,50 € |
+>
+> 🧭 **LE 5ᵉ POINT — crudités payantes sous « Suppléments » à la caisse — EST PRÉ-EXISTANT, DONC
+> IL *EST* « LA LOGIQUE D'AVANT ».** Daté au commit près :
+> · filtre `extra.convert_price === 0 && isCruditeName(extra.name)` → **inchangé depuis
+>   `34dc7e705`, 2026-03-21** (près de six mois) ;
+> · liste blanche de noms (sans « cornichon » ni « olive ») → **inchangée depuis `827c3512e`,
+>   2026-03-25** ;
+> · `Poivrons cuits` / `Maïs` / `Olives` (0,90 €, groupe `crudite`) créés le **2026-08-06**.
+> ⇒ Ce comportement dure depuis un mois, identique hier, avant-hier et il y a 48 h.
+> **Le corriger serait une NOUVEAUTÉ, pas une restauration** — donc une décision produit du
+> propriétaire, pas une remise en état. C'est la raison de fond pour laquelle il reste ouvert,
+> au-delà de la porte technique de zone gelée.
+> ⚠️ Il n'est PAS prouvé que ce soit ce que le propriétaire a vu : C1 a explicitement classé
+> cette lecture « à mesurer par extraction DOM en caisse réelle », et le « 90 » qu'il décrivait
+> a reçu une explication PROUVÉE ailleurs (ticket cuisine). **Ne pas le présenter comme sa plainte.**
+> Prêt à appliquer : `LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md` §4 + banc armé
+> (`posWizardCruditesPayantes.spec.js`, en `describe.skip`, prouvé rouge 3/6).
+>
+> ✅ **PORTE DE CLÔTURE** — trois lots vérifiés sur le contenu SERVI en HTTP 200, marqueur par
+> marqueur : `admin-kds.6b3dca60` (`includes(":")`) · `kiosk-shell.b28fbe26`
+> (`Number.isFinite(parseFloat(total_price))`) · `pos-shell.aad18974` (`fondu`).
+> `menu:verifier-etapes` OK kiosk/pos/web · **CHAIN OK** · aucun `bootstrap/cache/config.php` ·
+> `/login` `/kds` `/kiosk/idle` `/api/health/live` **tous 200**. HEAD prod `bf105cef`.
+>
+> ⚠️ **Ce cycle n'a AUCUNE preuve navigateur** : Playwright et Chrome DevTools n'ont pas pu se
+> connecter. Les preuves sont des rendus de ticket réels, des mesures SQL et des bancs.
+> Ne pas le présenter comme une validation visuelle.
+
 > **2026-09-05 (suite) — LE « 90 » EST TROUVÉ : UNE VIRGULE DE PRIX. CORRIGÉ ET DÉPLOYÉ.**
 >
 > C1 avait cherché le « 90 » à l'ÉCRAN et ne l'avait pas trouvé (les 4 formateurs rendent tous
