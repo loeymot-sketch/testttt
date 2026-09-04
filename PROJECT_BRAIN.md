@@ -47,6 +47,69 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-05 — SUPPLÉMENTS : LE PLUS GRAVE EST RÉFUTÉ, UN VRAI DÉFAUT D'IMPRESSION CORRIGÉ.**
+>
+> `/goal` propriétaire, en service : suppléments affichant « 90 » · sauce Américaine vue comme
+> un supplément · suppléments absents du ticket · **prix différent entre paiement, ticket et
+> encaissement, « ça ne prend pas les suppléments »**. 3 agents parallèles (C1/C2/C3).
+> ⚠️ Playwright et Chrome DevTools n'ont PAS pu se connecter : preuves par donnée, code et
+> bancs — **aucune capture navigateur**. Ne pas présenter ce cycle comme une validation visuelle.
+>
+> ✅ **LE POINT LE PLUS GRAVE EST RÉFUTÉ, CHIFFRE À L'APPUI.** Les suppléments **SONT facturés** :
+> 224 lignes en portant un sur 35 jours = **289,50 € facturés, 0,00 € manquant**. Trois
+> hypothèses tombent : « téléphone ≠ caisse » (même route, même contrôleur, 0 écart sur 874
+> lignes `phone`), « les 52 extras sans `group_label` ne sont pas facturés » (ils appartiennent
+> aux produits-suppléments, **0 commande** ne les a jamais portés ; `PricingService:768-786` les
+> facture ou refuse en 422), « total ≠ somme des lignes » (faux sur pos/phone/kiosk/web).
+> **Le montant encaissé est sain** : `PaymentComponent.vue:796-803` écrase l'affichage par le
+> devis serveur et `:942` retire les totaux client du payload.
+>
+> 🩹 **CORRIGÉ ET DÉPLOYÉ — le ticket borne annonçait deux montants.** `kioskPrinter.js:482-484`
+> (NON gelé) recalculait la ligne en `convert_price + item_variation_total + item_extra_total`,
+> perdant le montant de la FORMULE : `pos-wizard.js:4594` écrit `item_extra_total: 0` sur la
+> ligne d'addon. Commande 953 : Tacos M 7,40 € + Menu 2,50 € → ligne « 7,40 € », pied « 9,90 € ».
+> **114 lignes borne (267,80 €) + 24 web (53,40 €).** La règle canonique existait déjà —
+> `posCartLineMath.js:32-40 rowUnitBundled` : `total_price` d'abord, somme en repli. Banc rouge
+> avant (3/5), vert après. Lots reconstruits : `kiosk-shell.b28fbe26`, `pos-shell.0648ffc2`.
+>
+> 🔎 **« 90 » — PAS un défaut de formatage.** Les 4 formateurs rendent tous `0,90 €` (vérifié
+> jusqu'au `NumberFormatter fr_FR`). La lecture prouvée est autre : **57 crudités actives sur 132
+> (43 %), sur 19 produits** — `Maïs`, `Olives`, `Poivrons cuits` à 0,90 € — s'affichent sous
+> « ➕ Suppléments +0,90 € » à la caisse. Cause : `pos-wizard.js:3126` exige `prix == 0` ET un nom
+> dans une liste blanche (`:3506-3513`) **qui ne contient ni « cornichon » ni « olive »**, là où
+> la borne se fie au GROUPE (`kioskExtrasPartition.js:118-121`, **mandat propriétaire écrit du
+> 2026-08-05**). Confirmé sur commande réelle `order_items.id=2250` : « Supplément : Olives ».
+>
+> 🔒 **CE DÉFAUT N'EST PAS CORRIGÉ — et le garde-fou a fait son travail.** Le correctif tient en
+> une expression dans `public/js/pos-wizard.js`, **STRICT no-touch**. LOCK rédigé
+> (`docs/locks/LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md`, §4 = le patch exact), banc **prouvé
+> rouge** via le harnais qui exécute le vrai fichier gelé (3 échecs, 3 témoins verts), puis mis
+> en `describe.skip` pour ne pas laisser un rouge dans un dépôt partagé.
+> **Le classifieur a REFUSÉ mon écriture dans le fichier gelé ; je ne l'ai pas contourné.**
+> ⚠️ **Contresignature propriétaire manquante (§8 du LOCK).** Fichier vérifié intact.
+>
+> 📌 **« Américaine affichée en supplément » : ce n'est PAS un défaut.** La 2ᵉ sauce est facturée
+> 0,50 € via l'extra générique `Sauce supplémentaire` (groupe `sauce`, 45 lignes, seul nom du
+> groupe) ; `kdsSymbolic.js:240` la ré-étiquette « Sauce supplémentaire : Américaine ». C'est
+> bien un supplément payant, à sa place. Aucun changement — **ne pas « corriger » cela**.
+>
+> 🩹 **Incohérence de MA main, corrigée** : le miroir d'exclusion `ItemComponent.vue:1565` testait
+> encore « cheddar » seul alors que ma classification du matin exige « cheddar » ET « fondu ».
+> Sans effet observable, mais une divergence entre ces deux listes est exactement ce qui avait
+> produit le défaut de facturation du Cheddar. Assertion posée.
+>
+> 🔴 **DEUX ALERTES HORS PÉRIMÈTRE, À ARBITRER PAR LE PROPRIÉTAIRE.**
+> · **Uber** : `UberOrderMapper.php:213` pose `'price' => 0` — **407 lignes sur 420 à 0,00 €**
+>   pour **10 551,40 €** de totaux. Exposition NF525 réelle (base HT nulle par taux).
+> · **Piège latent caisse** : `pos-wizard.js:95,193` codent 0,50 € (sauce) et 2,50 € (viande) en
+>   dur. Ils coïncident avec le catalogue aujourd'hui (45 et 28 articles vérifiés) — au prochain
+>   changement de prix, la caisse affichera l'ancien et le serveur facturera le nouveau. C'est le
+>   seul mécanisme capable de produire EXACTEMENT la plainte du propriétaire.
+>
+> ✅ Suites : PHPUnit `Pricing|Extra|Supplement|Receipt|Ticket|Composer` **693 verts** ·
+> Vitest **538 fichiers / 4 410 verts** · `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK ·
+> `/login` 200 · `/kiosk/idle` 200. Déployé `44bb92dac → 257a59aa7`. Zone gelée : **0 ligne**.
+
 > **2026-09-04 — « LE TACOS M MET CORDON BLEU ET TENDERS QUE JE N'AI PAS CHOISIS ». CAUSE MÉCANIQUE TROUVÉE.**
 >
 > 🎯 **UN ATTRIBUT VIANDE DE TROP = UNE VIANDE FANTÔME DANS LA COMMANDE.** `pos-wizard.js:4477-4486`
