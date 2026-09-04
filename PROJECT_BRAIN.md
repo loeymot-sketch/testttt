@@ -47,6 +47,28 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-04 — VÉRIFICATION DES TROIS SURFACES : RIEN À DÉPLOYER, ET LE SITE N'A PAS À ÊTRE « ALIGNÉ ».**
+>
+> Contrôle demandé « même logique caisse + borne + site ». Local == origin == production sur
+> `14a39e2d`, **rien en attente**. Lots à jour : manifeste construit le 2026-09-03 20:33 **UTC**
+> (le serveur est en UTC = 22:33 Paris), soit 10 min APRÈS le dernier commit front `cda7ff833`
+> (20:23 UTC). Vérifié sur le contenu SERVI en HTTP 200 : `pos-shell.618d1c8c.js` porte `fondu`
+> (supplément Cheddar), `admin-shell.bb9bdff4.js` porte `defilerVersPremiereErreur` (échec muet
+> du catalogue), et le filtre d'étape vide est présent dans le PHP déployé.
+> `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` `/api/health/live` `/kiosk/idle`
+> tous 200 · aucun `bootstrap/cache/config.php`.
+>
+> 🛑 **NE PAS « ALIGNER » LE SITE VITRINE — il est déjà juste.** Dépôt séparé
+> `/Users/1millnonstop/Downloads/web` : dernier commit **2026-08-24**, **0 commit depuis le
+> 2026-09-02**. Il n'a donc jamais quitté l'état qui fonctionnait, et c'est la caisse/borne qui
+> ont été ramenées vers LUI, pas l'inverse. Deux pièges pour la prochaine session :
+> · **`Sandwich Classique` est ABSENT du site volontairement** (catégorie 3 masquée, cf. en-tête
+>   de `data/menu.js`) — ce n'est pas un oubli, ne pas l'ajouter.
+> · **Cayenne y est `viandes: 0`**, composition fixe « Poulet mariné … ». Ce n'est PAS une
+>   divergence avec la borne : la borne demande 1 viande dont **seul « Poulet mariné » est
+>   visible** (Hachée et Mixte sont `visible_on=["pos"]`). Résultat servi identique. Passer le
+>   site à `viandes: 1` ferait apparaître les 7 viandes du miroir web et casserait l'accord.
+
 > **2026-09-04 (suite) — CAYENNE ET CLASSIQUE : UNE VIANDE, PAS DEUX. RESTAURÉ SUR PREUVE.**
 >
 > Propriétaire : « le Cayenne me demande toujours deux viandes alors que c'est UNE viande,
