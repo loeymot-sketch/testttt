@@ -77,7 +77,10 @@ Plateforme restaurant fast-food complète :
 > Prêt à appliquer : `LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md` §4 + banc armé
 > (`posWizardCruditesPayantes.spec.js`, en `describe.skip`, prouvé rouge 3/6).
 >
-> ✅ **PORTE DE CLÔTURE** — trois lots vérifiés sur le contenu SERVI en HTTP 200, marqueur par
+> ✅ **PORTE DE CLÔTURE — SUITE `Feature` COMPLÈTE : 5 709 tests, 23 678 assertions, 0 ÉCHEC**
+> (19 min 57 s ; 36 sautés, 4 incomplets = base connue). Un seul processus PHPUnit actif,
+> vérifié : aucune session concurrente ne fausse ce chiffre. Vitest complet **4 410 verts**.
+> Trois lots vérifiés sur le contenu SERVI en HTTP 200, marqueur par
 > marqueur : `admin-kds.6b3dca60` (`includes(":")`) · `kiosk-shell.b28fbe26`
 > (`Number.isFinite(parseFloat(total_price))`) · `pos-shell.aad18974` (`fondu`).
 > `menu:verifier-etapes` OK kiosk/pos/web · **CHAIN OK** · aucun `bootstrap/cache/config.php` ·
