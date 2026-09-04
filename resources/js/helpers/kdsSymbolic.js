@@ -252,7 +252,24 @@ export function extraDisplayName(name, instruction) {
 
 /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
 function splitSauceList(raw) {
-    return String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+    // [INCIDENT TICKET CUISINE 2026-09-05] Jumeau strict de
+    // KitchenTicketSymbolicFormatter::splitSauceList (PHP). Une instruction enchaîne les
+    // rubriques sur UNE seule ligne — « Sauce : Mayonnaise, Supplément : Œuf (+0,90 €) ».
+    // Découper naïvement sur la virgule coupait aussi celle du PRIX : « 90 € » devenait
+    // un faux nom de sauce, imprimé en tête du ticket cuisine (commande 929 : « MAY 90 »),
+    // et son jeton parasite masquait la vraie ligne « + Sauce supplémentaire ».
+    //  1. on retire les montants entre parenthèses — leur virgule ne sépare rien ;
+    //  2. on s'arrête à la première rubrique suivante : un segment portant un « : » est un
+    //     nouveau libellé, plus une sauce. Aucun nom de sauce de la carte n'en contient.
+    const sansMontants = String(raw).replace(/\([^)]*\)/gu, '');
+    const out = [];
+    for (const piece of sansMontants.split(',')) {
+        const name = piece.trim();
+        if (!name) continue;
+        if (name.includes(':')) break;
+        out.push(name);
+    }
+    return out;
 }
 
 /**
