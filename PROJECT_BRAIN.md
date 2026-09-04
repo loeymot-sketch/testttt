@@ -47,6 +47,43 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-04 — « LE CAYENNE DEMANDE TOUJOURS 3 VIANDES » : LA CAISSE LIT `max_select` COMME UN COMPTE.**
+>
+> Ma mesure serveur disait `viande_count = 1` et le propriétaire voyait 3. Les deux étaient
+> vrais : **la caisse et la borne ne déduisent PAS le nombre de viandes de la même façon.**
+>
+> · **BORNE** — `KioskWizardComponent.detectViandeCount()` (`:1005-1032`, zone gelée, lu seulement) :
+>   `_tailleMeta.viandeCount` → **`item.viande_count`** (= nombre d'ATTRIBUTS viande visibles) →
+>   heuristique nom → 1. Pour le Cayenne : **1**. Correct depuis la veille.
+> · **CAISSE** — `pos-wizard.js detectViandeCountFromData()` (`:397-418`, gelé) : nom → description →
+>   puis les attributs viande : **plus d'un ⇒ leur NOMBRE ; un seul ⇒ son `max_select`**.
+>   Le Cayenne n'a qu'un attribut viande ⇒ la caisse lisait `Viande 1.max_select` = **3**.
+>
+> 🎯 `item_attributes` id=1 « Viande 1 » : `max_select 1 → 3` et `allow_repeat 0 → 1` dans la
+> fenêtre des 48 h (mesuré la veille contre `daily-2026-09-02.sql.gz`, **repéré et NON corrigé**
+> parce que le retour arrière des profils avait masqué le symptôme de la page en double).
+> **Restauré aux valeurs de 48 h : `max_select=1, allow_repeat=0`.** Sauvegarde TSV des 4 attributs.
+>
+> ✅ **CE N'ÉTAIT PAS QUE LE CAYENNE.** Tout produit à UN SEUL attribut viande lisait 3 à la caisse :
+> Cayenne · Sandwich Classique · **les 3 Galettes** · **les 2 Bols**. Vérifié après correctif en
+> rejouant l'algorithme exact de `detectViandeCountFromData` sur les 15 produits :
+> Cayenne 1 · Classique 1 · Suprême 0 · Terminator 2 · Méga 2 · Tacos M/L/XL 1/2/3 ·
+> Galettes 1 · Bols 1 · burgers 0. La borne est inchangée (elle ne lit pas `max_select`).
+>
+> 🧭 **À RETENIR — le repli par le NOM ne concerne QUE les tacos** (`pos-wizard.js:366`
+> `if (!n.includes('tacos')) return 0;`). Pour tout le reste, c'est l'attribut qui décide. Et
+> `Tacos M` = 1 par le nom côté caisse alors que la borne compte 3 attributs : la divergence est
+> absorbée par l'étape Taille de la borne (`_tailleMeta.viandeCount`, priorité 1). Ne pas
+> « corriger » cela sans mesurer les deux surfaces.
+>
+> ⚠️ **FRAGILITÉ DE CONCEPTION, non corrigeable sans LOCK** : la caisse interprète un
+> `max_select` (une BORNE) comme un COMPTE. Toute future modification de `Viande 1.max_select`
+> changera silencieusement le nombre de viandes demandées à la caisse, sans toucher la borne.
+> `pos-wizard.js` est en zone gelée STRICTE.
+>
+> ✅ `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 · `/kiosk/idle` 200.
+> Données seules, aucun changement de code.
+
 > **2026-09-04 — VÉRIFICATION DES TROIS SURFACES : RIEN À DÉPLOYER, ET LE SITE N'A PAS À ÊTRE « ALIGNÉ ».**
 >
 > Contrôle demandé « même logique caisse + borne + site ». Local == origin == production sur
