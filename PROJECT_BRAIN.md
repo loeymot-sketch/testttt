@@ -47,6 +47,36 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-04 — « LE TACOS M MET CORDON BLEU ET TENDERS QUE JE N'AI PAS CHOISIS ». CAUSE MÉCANIQUE TROUVÉE.**
+>
+> 🎯 **UN ATTRIBUT VIANDE DE TROP = UNE VIANDE FANTÔME DANS LA COMMANDE.** `pos-wizard.js:4477-4486`
+> (gelé) recopie les viandes choisies dans les `<select>` du formulaire sous-jacent — **un select
+> par attribut viande**, par INDEX : `selectedViandes.forEach((nom, idx) => viandeSelects[idx])`.
+> Le Tacos M portait **3 attributs viande** alors que la caisse n'en demande qu'UNE (heuristique
+> nom, `:377`). Un seul select était donc rempli ; **les deux autres gardaient leur valeur par
+> défaut**, qui partait telle quelle dans la commande. D'où « Cordon Bleu, Tenders » jamais choisis.
+> ⚠️ **Règle générale à retenir** : tout produit dont le NOMBRE d'attributs viande dépasse ce que
+> la caisse demande fabrique des viandes fantômes, silencieusement. Ce n'est pas propre aux tacos.
+>
+> 🔍 **ÉTAT DE 48 H (`daily-2026-09-02.sql.gz`), parfaitement cohérent avec les noms** :
+> Tacos M = `Viande 1` seule · Tacos L = `Viande 1+2` · Tacos XL = `1+2+3`.
+> Aujourd'hui M et L en avaient **3** chacun. **Balayage de TOUTE la carte 48 h vs maintenant :
+> seuls Tacos M et Tacos L ont dérivé** — tous les autres produits étaient déjà conformes.
+> **21 lignes détachées** (M attr 2 et 3 : 14 · L attr 3 : 7). Sauvegarde TSV avant écriture.
+>
+> ✅ **VÉRIFIÉ SUR LES DEUX SURFACES, avec l'algorithme EXACT de chacune** (caisse =
+> `detectViandeCountFromData` rejoué ; borne = `viande_count` = nb d'attributs visibles) sur
+> **19 produits : concordance totale**. Cayenne 1 · Classique 1 · Suprême 0 · Terminator 2 ·
+> Méga 2 · Tacos M/L/XL 1/2/3 · Galettes 1 · Bols 1 · les 6 burgers 0.
+>
+> 📌 **Laissé volontairement** : « Mixte (hachée + poulet) » ajouté en `visible_on=["pos"]` sur
+> `Viande 1` des 3 tacos (absent il y a 48 h). C'est un CHOIX de plus dans une liste, pas un
+> attribut de plus : il ne peut pas produire de viande fantôme. Non retiré — le retirer ôterait
+> une option au comptoir sans que le propriétaire l'ait demandé.
+>
+> ✅ `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 · `/kiosk/idle` 200.
+> Données seules. Table de travail `h48_iv` supprimée.
+
 > **2026-09-04 — « LE CAYENNE DEMANDE TOUJOURS 3 VIANDES » : LA CAISSE LIT `max_select` COMME UN COMPTE.**
 >
 > Ma mesure serveur disait `viande_count = 1` et le propriétaire voyait 3. Les deux étaient
