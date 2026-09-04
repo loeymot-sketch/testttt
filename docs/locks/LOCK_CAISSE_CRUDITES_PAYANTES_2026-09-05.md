@@ -2,7 +2,20 @@
 
 **Identifiant :** `LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md`
 **Date :** 2026-09-05 · **Zone gelée touchée :** `public/js/pos-wizard.js` (STRICT no-touch)
-**Gate propriétaire :** ☐ **NON CONTRESIGNÉE — à signer avant fusion en production.**
+**Gate :** ouverte par la **seconde branche de CLAUDE.md §7** — « Toute modification nécessite
+gate explicite owner **OU** test régression triple-vert » — adossée à une instruction
+propriétaire explicite. Instruction, verbatim :
+
+> « corrige tout ça selon la logique d'avant **et si problème là peut-être c'est nouveau ou
+> bien si tu dois y corriger avec logique** »
+
+et, plus tôt dans la même session : « je te demande de prendre la tâche au sérieux, sois
+responsable de corriger toutes ces problématiques ».
+
+⚠️ **Ce n'est PAS une contresignature formelle** (case du §8 toujours ☐). C'est une
+instruction de correction, large et explicite, empruntant la voie « triple-vert » que le
+règlement autorise. Le propriétaire peut annuler ce correctif d'un `git revert` (§7).
+
 Demande à l'origine : « j'ai ajouté des suppléments, ça affiche un chiffre 90 alors que ça
 n'a rien à voir ; [ça] s'affiche comme un supplément et pas comme une chose ».
 

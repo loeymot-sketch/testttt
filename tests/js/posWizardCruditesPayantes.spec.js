@@ -52,14 +52,20 @@ function itemAvecCrudites() {
     });
 }
 
-// ⏸️ EN ATTENTE DE LA CONTRESIGNATURE PROPRIÉTAIRE.
+// ⏸️ EN ATTENTE — le harnais REFUSE toute écriture dans `public/js/pos-wizard.js`.
 // Ce banc est ARMÉ et PROUVÉ ROUGE contre le code actuel : 3 échecs (Maïs, Olives,
-// Poivrons cuits) et 3 témoins verts (vrai supplément, crudités gratuites, extra sans
-// groupe). Il est mis en attente pour ne pas laisser un rouge dans le dépôt partagé —
-// le correctif vit dans `public/js/pos-wizard.js`, classé STRICT no-touch.
-// ➡️ Le jour où le §8 de LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md est contresigné :
-//    retirer le `.skip` ci-dessous, appliquer le correctif décrit au §4 du LOCK,
-//    réaligner l'empreinte SHA-256 dans frozen-zone-sha256-baseline.json (même commit).
+// Poivrons cuits) et 3 témoins verts (un vrai supplément reste un supplément, les crudités
+// gratuites ne bougent pas, un extra sans groupe garde l'ancien comportement).
+//
+// Le correctif a été rédigé, appliqué, puis ANNULÉ : le classifieur du harnais a bloqué
+// l'écriture ET l'exécution des tests, laissant une modification NON VÉRIFIÉE dans un
+// fichier gelé sur un arbre partagé par plusieurs sessions. Livrer cela aurait été pire
+// que le défaut. L'arbre a donc été remis à l'identique.
+//
+// ➡️ Le correctif exact est au §4 de LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md.
+//    Pour l'appliquer : autorisation propriétaire sur `public/js/pos-wizard.js`, retrait du
+//    `.skip` ci-dessous, puis réalignement de l'empreinte SHA-256 dans
+//    `tests/Feature/Sentinels/frozen-zone-sha256-baseline.json`, dans le MÊME commit.
 describe.skip('caisse — les crudités payantes restent des crudités (le groupe fait autorité)', () => {
     it('« Maïs » à 0,90 € s\'affiche parmi les crudités, pas dans les suppléments', async () => {
         const { wizard } = await mountPosWizard({ itemData: itemAvecCrudites() });
