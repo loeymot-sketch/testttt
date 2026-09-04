@@ -47,6 +47,48 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-05 (suite) — LE « 90 » EST TROUVÉ : UNE VIRGULE DE PRIX. CORRIGÉ ET DÉPLOYÉ.**
+>
+> C1 avait cherché le « 90 » à l'ÉCRAN et ne l'avait pas trouvé (les 4 formateurs rendent tous
+> `0,90 €`) — il avait raison de conclure « non prouvé ». **Il est sur le PAPIER de la cuisine.**
+>
+> 🎯 **UNE VIRGULE, DEUX PLAINTES.** L'instruction d'une ligne tient sur UNE ligne de texte et
+> enchaîne les rubriques. `extraSauceNames()` capturait tout jusqu'au saut de ligne, puis
+> `splitSauceList()` découpait sur la virgule — **y compris celle du prix `0,90`**.
+> Instruction RÉELLE de la commande 929 / ligne 2184, relevée en production :
+> `DOUBLE CHEESE … Sauce : Mayonnaise Supplément : Œuf (+0,90 €)`
+> → ancien découpage : `['Mayonnaise Supplément : Œuf (+0', '90 €)']` → après `slice(1)` :
+> **`['90 €)']`** → imprimé `DOUBLE CHEESE | K | MAY 90`. Le « 90 » du propriétaire, à la lettre.
+> Commande 668 : `Olives` sortait DEUX fois, en fausse sauce `OLI` puis en `* Olives`.
+>
+> 🔗 **ET C'EST AUSSI LA CAUSE DU « supplément qui ne s'affiche pas »** : le jeton parasite
+> gonflait le budget de sauces (`:336`), qui MASQUAIT ensuite la vraie ligne
+> `+ Sauce supplémentaire`. Le supplément était **facturé mais invisible sur le papier**.
+> **Portée : 61 lignes de commande depuis le 2026-08-01.**
+>
+> ✅ **DEUX GARDES contre la même cause** : retirer les montants entre parenthèses avant de
+> découper (leur virgule décimale ne sépare rien), puis s'arrêter à la première rubrique
+> suivante — un segment portant un « : » est un libellé, pas une sauce ; aucun nom de sauce de
+> la carte n'en contient. Jumeau JS `kdsSymbolic.js` corrigé mot pour mot
+> (`KitchenSymbolPhpJsParityTest` garde les deux alignés).
+> Banc rouge avant (4/7), vert après, **dont un témoin « une VRAIE 2ᵉ sauce reste reconnue »**.
+> **Vérifié sur les commandes réelles 929 et 957 en production : `[]`** — plus aucune fausse sauce.
+>
+> 🕰️ **Défaut ANCIEN, pas une régression** : les deux constructeurs de ticket sont inchangés
+> depuis le 2026-08-25. Il attendait qu'un supplément payant soit saisi à la caisse sur la même
+> ligne qu'une sauce.
+>
+> 🪤 **Piège d'instrument évité par C3, à retenir** : sa 1ʳᵉ passe annonçait « 71 absences sur
+> 145 » — **faux** : elle cherchait de l'UTF-8 dans des octets **CP858**
+> (`OrderReceiptEscPosRenderer.php:280`). Après re-décodage, `Œuf`/`Maïs`/`Légumes sautés` sont
+> tous sur le papier. Aucun chiffre de cette passe n'a été conservé. **Un ticket ESC/POS ne se
+> lit pas en UTF-8.**
+>
+> ✅ Déployé `a74ba61bc → e7095aff6`, lots reconstruits (`admin-kds.6b3dca60`), correctif vérifié
+> dans le lot SERVI en HTTP 200. PHPUnit `Receipt|Ticket|Kitchen|Kds|Pricing|Sentinel`
+> **1 425 verts** · Vitest **538 fichiers / 4 410 verts** · `menu:verifier-etapes` OK ·
+> CHAIN OK · `/login` 200 · `/kds` 200. Zone gelée : **0 ligne**.
+
 > **2026-09-05 — SUPPLÉMENTS : LE PLUS GRAVE EST RÉFUTÉ, UN VRAI DÉFAUT D'IMPRESSION CORRIGÉ.**
 >
 > `/goal` propriétaire, en service : suppléments affichant « 90 » · sauce Américaine vue comme
