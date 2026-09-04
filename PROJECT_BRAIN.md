@@ -47,6 +47,40 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-04 (suite) — CAYENNE ET CLASSIQUE : UNE VIANDE, PAS DEUX. RESTAURÉ SUR PREUVE.**
+>
+> Propriétaire : « le Cayenne me demande toujours deux viandes alors que c'est UNE viande,
+> sinon il y a l'option Mixte sur la caisse ; même logique pour le Sandwich Classique. Rien
+> d'autre à signaler sur les autres produits. »
+>
+> 🔍 **L'INSTANTANÉ DE 48 H A TRANCHÉ, MOT POUR MOT.** Rechargé `daily-2026-09-02.sql.gz` en
+> table de travail `h48_iv` : le 2026-09-02 à 01h00, **Cayenne (22) et Sandwich Classique (119)
+> n'avaient QUE l'attribut `Viande 1`, avec exactement 3 choix** — `Poulet mariné` (visible
+> partout), `Viande Hachée` **[pos]**, `Mixte (hachée + poulet)` **[pos]**. Aucun attribut
+> `Viande 2`. D'où : **borne = 1 seul choix affiché (Poulet), caisse = les 3**. C'est
+> exactement la règle que le propriétaire décrivait depuis deux jours, et elle était DÉJÀ
+> encodée dans `visible_on` — il ne restait qu'à retirer ce qui avait été ajouté depuis.
+> · **Suprême (103) : AUCUNE viande il y a 48 h** → composition figée, ce qu'il avait dit aussi.
+> · **Méga (104) / Terminator (105) : 7 + 7 sur attributs 1 et 2 → 2 viandes.** Conformes, NON TOUCHÉS.
+>
+> ✅ **RESTAURATION** : **39 lignes détachées** (`deleted_at`) — 15 sur Suprême, 12 sur Cayenne,
+> 12 sur Classique — en ne gardant que les 6 lignes d'origine (ids 728/731/735 et 755/756/757),
+> dont les `visible_on` étaient déjà exacts. Sauvegarde TSV des 45 lignes avant écriture.
+> Sélection vérifiée en lecture seule AVANT l'écriture (6 à garder, 39 à détacher).
+>
+> 📐 **ÉTAT FINAL MESURÉ** (via la vraie résolution du service, pas une reconstruction) :
+> Cayenne **1** · Classique **1** · Suprême **0** · Méga **2** · Terminator **2** · Tacos M/L/XL **3** ·
+> burgers **0** · Galettes **1** · Bols **1** — identique aux deux surfaces pour le COMPTE, la
+> différence borne/caisse se jouant sur `visible_on` (borne : Poulet seul ; caisse : + Hachée + Mixte).
+>
+> ⚠️ **CE QUE J'AVAIS FAIT DE TROP LA VEILLE** : en rallumant 45 lignes sur 22/103/119 pour
+> débloquer la vente, j'ai réactivé des viandes qui n'existaient PAS il y a 48 h (Cordon Bleu,
+> Fricadelle, Mexicanos, Nuggets, Tenders + tout l'attribut 2). Le déblocage était juste dans
+> l'urgence ; le périmètre était trop large. Corrigé ici sur preuve, pas sur intuition.
+>
+> ✅ Contrôles : `menu:verifier-etapes` **OK kiosk/pos/web** · **CHAIN OK** · `/login` 200 ·
+> `/api/health/live` 200. Aucun changement de code — données seules. Table `h48_iv` supprimée.
+
 > **2026-09-04 — LE COMPOSEUR REMIS DANS L'ÉTAT DE 48 H. TROIS SYMPTÔMES, UNE SEULE CAUSE.**
 >
 > Signalement propriétaire, capture à l'appui (Terminator sur borne) : (1) une page « VIANDE 2 »
