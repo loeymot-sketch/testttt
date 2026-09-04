@@ -47,6 +47,67 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-04 — LE COMPOSEUR REMIS DANS L'ÉTAT DE 48 H. TROIS SYMPTÔMES, UNE SEULE CAUSE.**
+>
+> Signalement propriétaire, capture à l'appui (Terminator sur borne) : (1) une page « VIANDE 2 »
+> qui redemande ce que la page principale a déjà pris, (2) les burgers qui exigent une viande
+> qu'ils n'ont pas, (3) **« choisir la formule » devenu impossible**. Sa consigne : revenir à la
+> version d'il y a 24-48 h, « où tout fonctionnait sans faute ».
+>
+> 🎯 **CAUSE UNIQUE, MESURÉE : 34 profils publiés en UNE opération le 2026-09-03 à 01:17**
+> (28 par produit — nouveaux — + 6 par catégorie, déjà publiés). Avant : **2 profils produit
+> publiés** (Bol Frites #8, Bol Riz #12, du 2026-06-24). `KioskMenuService::publishedComposerProfiles`
+> (`:475-482`) ne cherche QUE par `item_id`, **sans repli sur la catégorie** : sans profil produit
+> publié, `composer_profile` est NULL et la borne repasse sur son **gabarit historique**
+> (une seule page viande, pilotée par `viande_count`, `KioskMenuService.php:340-345`).
+> Publier les 28 clones a donc, d'un coup : réveillé l'étape `viande_2` (qui dormait depuis le
+> profil 28 du 2026-06-08), figé les burgers sur une étape viande vide, et **supprimé l'étape
+> formule de 18 produits** — les clones sandwich n'ont aucune étape `addon`.
+>
+> ✅ **RETOUR ARRIÈRE CHIRURGICAL** : `UPDATE item_wizard_profiles SET is_published=0` sur les
+> **28 profils produit publiés le 2026-09-03** (sauvegarde TSV avant). Résultat vérifié sur la
+> production, avec la VRAIE résolution du service (pas un repli catégorie simulé) :
+> `composer_profile=NULL` partout sauf Bols → **1 page viande**, `viande_count` = 2 (Cayenne,
+> Suprême, Classique, Terminator, Méga) · 3 (tacos) · **0 (burgers ⇒ aucune étape viande)** ·
+> 1 (galettes). **8 profils publiés = 2 produit + 6 catégorie : exactement l'état de 48 h.**
+> Les 3 add-ons (`Menu (Frites + Boisson)`, `Frites Seules`, `Boisson Seule`) sont intacts et
+> disponibles sur tous ces produits ⇒ **la formule revient**.
+>
+> ⚠️ **PIÈGE DE MESURE QUE J'AI FAILLI COMMETTRE** : mon premier script simulait un repli sur le
+> profil de CATÉGORIE et montrait encore `viande + viande_2` partout. Le vrai service ne fait pas
+> ce repli. **Mesurer la couche que la surface consomme, pas une reconstruction plausible.**
+>
+> 🛡️ **CORRECTIF DE FOND — `ComposerProfileProjection::project()`** ne filtrait que sur
+> `is_active` + visibilité de surface, **jamais sur l'existence d'un choix** : une étape vide
+> était projetée jusqu'à l'écran. C'est la forme commune des DEUX incidents de 24 h (les 45
+> viandes éteintes la veille, les 6 burgers ce jour). Une étape sans choix n'est plus projetée.
+> ⚠️ **Restreint aux types de source CONNUS** (`item_attribute`, `extra_group`, `addon`) : un type
+> NON supporté produit aussi une liste vide mais doit atteindre `PricingService`, qui le REFUSE.
+> Ma première version l'avalait en silence — `ComposerStepConstraintTest` l'a attrapée. Ne pas
+> « simplifier » cette condition.
+> Banc rouge avant (5/6), vert après ; 6 cas dont le témoin « le garde ne retire rien d'utile ».
+>
+> 🔴 **MA PROPRE RÉGRESSION, ASSUMÉE** : le détachement des 48 viandes de burgers (décision
+> propriétaire, correcte — h48 le confirme : **0 viande sur les burgers il y a 48 h**) a laissé
+> leur étape `viande` active dans les profils clonés ⇒ page vide. Et **`menu:verifier-etapes` ne
+> l'a pas vu** : il dérive les attributs des variations et ne lit PAS les étapes de profil.
+> **Trou connu du garde-fou, à combler.**
+>
+> 🚀 **DÉPLOYÉ** `3c1be8156 → af97a964e`. Aucun `.vue` touché ⇒ pas de reconstruction. Vérifié sur
+> la production : `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 ·
+> `/api/health/live` 200. Passe `Composer|Kiosk|Wizard|Menu|Item|Pos|Pricing|Sentinel` :
+> **2 595 tests, 0 échec**. Tables de travail `h48_*` supprimées après usage.
+>
+> 📌 **CE QUE B2 A CORRIGÉ DANS MES PROPRES CONSTATS** : sur le cornichon, mesure inverse de la
+> mienne — **7 actifs il y a 48 h, 0 aujourd'hui** (retirés, pas ajoutés). Mes 11 lignes
+> « ajoutées le 2026-09-02 18:32 » comptaient des créations de lignes, pas des actifs. **Ne pas
+> re-affirmer « des cornichons ont été ajoutés » sans re-mesurer les deux façons.**
+>
+> 🧭 **RESTE OUVERT** : la règle propriétaire « viandes du Cayenne et du Classique visibles
+> SEULEMENT à la caisse, Suprême figé sans choix » n'est PAS appliquée — elle exige le
+> `visible_on` par variation, et le garde-fou d'étape vide doit être en place d'abord (il l'est
+> désormais). À faire à froid, hors service.
+
 > **2026-09-03 (nuit, 2) — INCIDENT PRODUCTION : TROIS PRODUITS PHARES INVENDABLES. RÉSOLU, GARDE-FOU POSÉ, DÉPLOYÉ.**
 >
 > Signalement propriétaire, en service : « même les hamburgers demandent de choisir la viande,
