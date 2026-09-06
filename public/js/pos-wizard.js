@@ -321,9 +321,39 @@
     /* ==============================
        HELPERS
        ============================== */
+    /*
+     * [AUDIT-SUPERVISEUR 2026-08-26 · AB-003 · GATE PROPRIETAIRE ACCORDEE]
+     *
+     * CE FICHIER EST EN ZONE GELEE (CLAUDE.md §7). Ce qui y est gele, c'est LE DESIGN :
+     * « design parfait selon owner ». Le format d'un NOMBRE n'est pas le design. Aucune
+     * couleur, aucune mise en page, aucun comportement n'est touche par ce commit — seule
+     * la chaine qui represente un montant.
+     *
+     * LE DEFAUT : l'assistant affichait « €7.40 » — point decimal, symbole DEVANT — dans la
+     * meme capture ou la fiche produit derriere lui affichait « 7,40 € » et le ticket
+     * caisse « 0,00 € ». Ce n'etait pas un artefact de locale du navigateur : la chaine
+     * etait construite en dur, donc identique partout, sur un produit dont la locale est
+     * IMMUABLE (ADR-007, FR).
+     *
+     * On reprend le patron canonique du reste du produit (CashOverviewComponent.formatMoney) :
+     * `Intl.NumberFormat` en EUR, avec le meme repli. Les deux surfaces s'accordent donc par
+     * construction, et non par recopie.
+     *
+     * La locale est ecrite en dur, et c'est voulu : ce fichier est du JavaScript a la main,
+     * hors bundle, sans acces a l'instance i18n — et V1 est mono-locale par mandat.
+     */
     function fmtPrice(val) {
         var num = parseFloat(val) || 0;
-        return '€' + num.toFixed(2);
+        try {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        } catch (e) {
+            return num.toFixed(2).replace('.', ',') + '\u00A0€';
+        }
     }
 
     /**
@@ -841,7 +871,9 @@
                     itemId: ad.addon_item_id || ad.item_addon_id,
                     name: ad.addon_item_name,
                     price: unitPrice,
-                    currencyPrice: '€' + unitPrice.toFixed(2),
+                    // [AB-003] Passe par le formateur commun : une seconde fabrication en
+                    // dur, c'est un second endroit ou la locale peut deriver.
+                    currencyPrice: fmtPrice(unitPrice),
                     thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || ''),
                     groupLabel: groupLabel.toLowerCase()
                 };
@@ -3092,6 +3124,21 @@
         }
         if (lastItemData && lastItemData.extras) {
             crudites = lastItemData.extras.filter(function (extra) {
+                // [LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05 — contresigné 2026-09-06]
+                // Le GROUPE fait autorité (SSOT `item_extras.group_label`), exactement
+                // comme sur la borne (`kioskExtrasPartition.js:118-121`, mandat
+                // propriétaire du 2026-08-05 : les crudités PAYANTES s'affichent à côté
+                // des crudités, avec leur badge de prix). L'ancienne règle exigeait
+                // prix == 0 ET un nom dans une liste blanche qui ne contient ni
+                // « cornichon » ni « olive » : 57 crudités sur 132 (Maïs, Olives,
+                // Poivrons cuits à 0,90 €, sur 19 produits) tombaient dans le bac
+                // « ➕ Suppléments ». Le nom et le prix ne restent qu'un REPLI, pour les
+                // extras SANS groupe — sans groupe, il n'y a pas de vérité à préférer.
+                // Aucun prix n'est modifié : ces articles restent facturés par le serveur
+                // et l'étape affiche toujours leur badge « +0,90 € ».
+                var groupe = String(extra.group_label || '').toLowerCase();
+                if (groupe === 'crudite') return true;
+                if (groupe !== '') return false;
                 return extra.convert_price === 0 && isCruditeName(extra.name);
             });
             hasCrudites = crudites.length > 0;

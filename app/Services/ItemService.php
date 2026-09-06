@@ -114,7 +114,15 @@ class ItemService
         }
     }
 
-    public function simpleList(PaginateRequest $request)
+    /**
+     * @param  bool  $cataloguePublic  VRAI (défaut) = surface client : seuls les
+     *   articles ACTIFS sortent. FAUX = back-office : le commerçant voit aussi ce
+     *   qu'il a désactivé, sinon il ne peut plus jamais le réactiver.
+     *
+     *   Le défaut est la valeur SÛRE : un appelant qui oublie le paramètre filtre,
+     *   il n'expose pas. C'est le sens dans lequel un oubli doit pencher.
+     */
+    public function simpleList(PaginateRequest $request, bool $cataloguePublic = true)
     {
         try {
             $requests = $request->all();
@@ -123,33 +131,33 @@ class ItemService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType = $request->get('order_type') ?? 'desc';
 
-            $query = Item::with('media', 'category', 'offer')->where(function ($query) use ($requests) {
-                foreach ($requests as $key => $request) {
-                    if (in_array($key, $this->itemFilter)) {
-                        if ($key == 'except') {
-                            $explodes = explode('|', $request);
-                            if (count($explodes)) {
-                                foreach ($explodes as $explode) {
-                                    $query->where('id', '!=', $explode);
-                                }
-                            }
-                        } else {
-                            if ($key == 'item_category_id') {
-                                $query->where($key, $request);
-                            } else {
-                                $query->where($key, 'like', '%'.$request.'%');
-                            }
-                        }
-                    }
-                }
-            });
+            $query = Item::with('media', 'category', 'offer')
+                ->where(fn ($q) => $this->appliquerFiltresCatalogue($q, $requests));
 
             // [SELF-AUDIT R6 P3 2026-07-05 — fuite d'articles INACTIFS sur le catalogue PUBLIC] simpleList
             // sert /api/frontend/item (borne/web/mobile, x-api-key public). Le filtre par requête laissait
             // un `?status=10` (ou l'absence de filtre) exposer les articles INACTIFS (désactivés par
             // l'admin) — nom/prix/media. On force la visibilité ACTIVE côté serveur (les surfaces
-            // featured/popular le font déjà). L'admin utilise list() (visibilité complète), pas simpleList.
-            $query->where('status', \App\Enums\Status::ACTIVE);
+            // featured/popular le font déjà).
+            //
+            // [ONB-11 2026-08-28 — LA PHRASE SUIVANTE ÉTAIT FAUSSE] Le commentaire d'origine
+            // se terminait par « L'admin utilise list() (visibilité complète), pas simpleList ».
+            // C'était l'hypothèse qui rendait ce filtre inoffensif, et elle ne tenait pas :
+            // `Admin\ItemController::index()` appelle bien `simpleList()` (ligne 103). Le filtre
+            // s'appliquait donc AUSSI au back-office.
+            //
+            // Conséquence pour le commerçant : un article désactivé — pour l'hiver, une rupture,
+            // un essai — disparaissait de sa liste ET du filtre « Inactif » que l'écran lui
+            // propose pourtant (`ItemListComponent.vue:154`). Aucun écran ne le rattrapait ; seul
+            // l'export Excel le contenait encore, parce que lui passe par `list()`
+            // (`ItemExport.php:28`). Le seul moyen de le récupérer était de le recréer à la main.
+            //
+            // Deux correctifs justes s'annulaient : fermer la fuite publique était nécessaire, et
+            // l'a été correctement ; c'est le PÉRIMÈTRE qui était trop large. On le restreint à
+            // la surface publique, sans rien rouvrir.
+            if ($cataloguePublic) {
+                $query->where('status', \App\Enums\Status::ACTIVE);
+            }
 
             // [AUDIT 2026-04-17 R1] Channels SSOT parity (POS/Kiosk/Web).
             // Gate visibility only when the caller declares a surface; legacy
@@ -214,9 +222,70 @@ class ItemService
      * ItemBranchAvailability is admin-bypass (branch_id=0); we still resolve
      * to a concrete branchId from the caller so the count is deterministic.
      */
-    public function availabilityCounts(?int $branchId): array
+    /**
+     * [ONB-11 2026-08-28] Les filtres du catalogue, en un seul endroit.
+     *
+     * Ils vivaient EN LIGNE dans `simpleList()`. `availabilityCounts()`, qui alimente
+     * les tuiles « Actifs » et « Indisponibles » posées AU-DESSUS de cette même liste,
+     * n'en appliquait aucun : elle comptait toute la carte.
+     *
+     * Le commerçant filtrait sur « Burgers » et lisait, sur la même barre :
+     * « 5 Produits » à côté de « 57 Actifs ». Pire, la tuile 57 est un bouton
+     * (`ItemListComponent.vue:27`) : il cliquait sur 57 et la liste lui en montrait 5.
+     * Deux chiffres pour la même chose, sans moyen de trancher depuis l'écran.
+     *
+     * @param  array<string, mixed>  $requests
+     * @param  list<string>  $exclure  Clés de filtre à NE PAS appliquer.
+     */
+    private function appliquerFiltresCatalogue($query, array $requests, array $exclure = [])
+    {
+        foreach ($requests as $key => $valeur) {
+            if (! in_array($key, $this->itemFilter) || in_array($key, $exclure, true)) {
+                continue;
+            }
+
+            if ($key == 'except') {
+                $explodes = explode('|', $valeur);
+                if (count($explodes)) {
+                    foreach ($explodes as $explode) {
+                        $query->where('id', '!=', $explode);
+                    }
+                }
+
+                continue;
+            }
+
+            if ($key == 'item_category_id') {
+                $query->where($key, $valeur);
+
+                continue;
+            }
+
+            $query->where($key, 'like', '%'.$valeur.'%');
+        }
+
+        return $query;
+    }
+
+    /**
+     * @param  \Illuminate\Http\Request|null  $request  Quand il est fourni, les tuiles
+     *   comptent la SÉLECTION EN COURS et non la carte entière — sinon l'écran affiche
+     *   deux chiffres différents pour la même chose.
+     *
+     *   Le filtre `status` est délibérément EXCLU : ces tuiles SONT la répartition par
+     *   statut. Les filtrer par statut serait circulaire — « Actifs » vaudrait toujours
+     *   le total, ou zéro.
+     */
+    public function availabilityCounts(?int $branchId, $request = null): array
     {
         $activeQuery = Item::query()->where('status', \App\Enums\Status::ACTIVE);
+
+        if ($request !== null) {
+            $filtres = $request->all();
+            $activeQuery->where(
+                fn ($q) => $this->appliquerFiltresCatalogue($q, $filtres, ['status'])
+            );
+        }
         $totalActive = (int) (clone $activeQuery)->count();
 
         if ($branchId === null || $branchId < 1) {
@@ -361,7 +430,7 @@ class ItemService
                     $oldVariations = $item->variations->pluck('id')->toArray();
                     $decodedVariations = $this->safeJsonDecode($request->variations, true);
                     if ($decodedVariations === null) {
-                        throw new Exception('Invalid variations JSON format', 422);
+                        throw new Exception(trans('all.message.declinaisons_illisibles'), 422);
                     }
                     foreach ($decodedVariations as $variation) {
                         if (isset($variation['id'])) {
@@ -562,7 +631,7 @@ class ItemService
                 ]);
 
                 if (! $fresh) {
-                    throw new Exception('Duplicated item could not be reloaded.', 422);
+                    throw new Exception(trans('all.message.duplication_incomplete'), 422);
                 }
 
                 $this->prepareAddonsForItemResource($fresh);
@@ -625,7 +694,17 @@ class ItemService
     public function featuredItems()
     {
         try {
-            return Item::with('media', 'category', 'offer')->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])->inRandomOrder()->limit(8)->get();
+            // [2026-09-03] Avant : `inRandomOrder()->limit(8)` sur 16 articles mis en avant.
+            // Le gérant qui vient VÉRIFIER qu'un article est bien mis en avant avait une chance
+            // sur deux de ne pas le voir, et la liste changeait à chaque rechargement — trois
+            // tirages successifs ont donné trois listes différentes. Un ordre stable rend l'écran
+            // vérifiable : c'est l'ordre d'affichage choisi par le gérant (`order`), puis le nom.
+            return Item::with('media', 'category', 'offer')
+                ->where(['is_featured' => Ask::YES, 'status' => Status::ACTIVE])
+                ->orderBy('order')
+                ->orderBy('name')
+                ->limit(8)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -635,9 +714,64 @@ class ItemService
     public function mostPopularItems()
     {
         try {
-            return Item::with('media', 'category', 'offer')->withCount('orders')->where(['status' => Status::ACTIVE])->orderBy('orders_count', 'desc')->limit(6)->get();
+            // [2026-09-03] Avant : `withCount('orders')` nu, trié dessus. Deux défauts cumulés,
+            // mesurés en base : (1) `orders` est une relation vers les LIGNES de commande, tous
+            // statuts confondus — pour le seul Cayenne, 54 lignes venaient de commandes REFUSÉES
+            // et impayées, soit 29 % de son score ; (2) on comptait des lignes, pas des quantités.
+            // Résultat à l'écran : le tableau de bord couronnait Cayenne (83 unités réellement
+            // vendues) devant Coca-Cola (109), et la Galette Normale (53) manquait alors que
+            // l'Eau Plate (50) figurait. C'est l'écran sur lequel on décide quoi mettre en avant
+            // et quoi commander : un classement bâti sur des commandes refusées oriente ces
+            // décisions à l'envers.
+            //
+            // `realizedRevenue()` est la définition de vente déjà utilisée par le chiffre
+            // d'affaires, alignée sur le Z signé. Les miroirs de remboursement sont écartés :
+            // leur `total` est négaté, mais leur `quantity` ne l'est pas.
+            $ventesReelles = function ($q) {
+                $q->whereHas('order', function ($o) {
+                    $o->realizedRevenue()->whereNull('parent_order_id');
+                });
+            };
+
+            return Item::with('media', 'category', 'offer')
+                ->withCount(['orders' => $ventesReelles])
+                ->withSum(['orders as unites_vendues' => $ventesReelles], 'quantity')
+                ->where(['status' => Status::ACTIVE])
+                ->orderByDesc('unites_vendues')
+                ->limit(6)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [ONB-07 2026-08-28] Le total du rapport articles, sur le PÉRIMÈTRE FILTRÉ.
+     *
+     * L'écran affichait `subTotal(itemsReports)` — la somme de la PAGE courante
+     * (`per_page: 10`) — sous le même libellé « Total » que l'export, qui totalise
+     * tout le catalogue. Sur 45 produits, deux nombres différents pour un seul mot,
+     * et c'est celui-là qui sert à décider d'un réassort.
+     *
+     * Ce défaut avait DÉJÀ été corrigé pour le PDF en juillet (voir le commentaire
+     * de `ItemsReportController::pdf()` : « le Total sous-comptait les unités
+     * vendues »). La correction n'avait pas été portée à l'écran.
+     *
+     * On passe par `requeteDuRapportArticles()` : le total et la liste partagent
+     * exactement les mêmes filtres et la même fenêtre. Deux requêtes construites
+     * séparément divergeraient au premier filtre ajouté d'un seul côté — c'est
+     * l'histoire de ce fichier.
+     */
+    public function totalUnitesVenduesDuRapport(PaginateRequest $request): int
+    {
+        try {
+            return (int) $this->requeteDuRapportArticles($request)
+                ->get()
+                ->sum('units_sold');
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }
@@ -645,9 +779,24 @@ class ItemService
     public function itemReport(PaginateRequest $request)
     {
         try {
-            $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
+
+            return $this->requeteDuRapportArticles($request)->$method($methodValue);
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * La requête du rapport articles, sans pagination : filtres, fenêtre de dates et
+     * tri, partagés par la liste, l'export, le PDF et le total.
+     */
+    private function requeteDuRapportArticles(PaginateRequest $request)
+    {
+        {
+            $requests = $request->all();
             // [ITEMS-SEM-01/02/NET-03 heal 2026-06-01, owner "agree with the Z"]
             // "Units sold" = SUM(order_items.quantity) — NOT COUNT of order lines —
             // scoped to the SALE date (the parent order's order_datetime, NOT
@@ -685,12 +834,7 @@ class ItemService
                             }
                         }
                     }
-                })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
-                    $methodValue
-                );
-        } catch (Exception $exception) {
-            Log::info($exception->getMessage());
-            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+                })->orderByRaw('units_sold IS NULL, units_sold DESC');
         }
     }
 

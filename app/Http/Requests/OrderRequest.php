@@ -293,11 +293,11 @@ class OrderRequest extends FormRequest
             }
 
             if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if (blank($orderType)) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             }
 
             // [Sprint 2B / DEL-4] DELIVERY orders require a reachable phone on

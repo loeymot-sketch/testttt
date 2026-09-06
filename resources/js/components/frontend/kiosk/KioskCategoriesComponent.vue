@@ -149,7 +149,7 @@
                 <span class="kiosk-item-error-icon" aria-hidden="true">📡</span>
                 <p>{{ $t('kiosk.catalog.item_options_error', { name: itemError }) }}</p>
               </div>
-              <div class="kiosk-product-grid" :class="productGridLayoutClass" role="list">
+              <div class="kiosk-product-grid" :class="productGridLayoutClass" :style="productGridStyle" role="list">
                 <div
                   v-for="product in catalogProducts"
                   :key="product.id"
@@ -404,12 +404,40 @@ export default {
     },
     // [BORNE-UX 2026-07-11] Layout adaptatif : peu de produits → cartes très
     // grandes qui remplissent l'espace (2 tacos = empilés ~80%). Owner.
+    //
+    // [OWNER 2026-08-24] UNE SEULE COLONNE, TOUTES CATÉGORIES CONFONDUES.
+    // Le propriétaire : « je voulais toujours les produits prennent la taille
+    // complète de la borne […] pas juste des petits produits ». Les deux colonnes
+    // donnaient des cartes de 370 px sur un écran de 1080 (un tiers de la largeur),
+    // et un nombre IMPAIR de produits laissait un trou : mesuré à 3 tacos, la
+    // grille affichait 2 + 1 avec une case vide et ~40 % de l'écran blanc dessous.
+    // Chaque produit occupe désormais toute la largeur ; seule la HAUTEUR varie
+    // selon le nombre, pour que 3 produits remplissent l'écran sans qu'une
+    // catégorie de 15 boissons devienne 15 écrans de défilement.
+    // [OWNER 2026-08-25] « ça affiche selon le nombre d'article, TOUS les produits, pas que 3 ».
+    // La hauteur n'est plus choisie par paliers : elle est CALCULÉE à partir du nombre
+    // d'articles (cf. --kiosk-produits, posé par productGridStyle) pour que la catégorie
+    // entière tienne dans l'écran, sans défilement, qu'elle contienne 2 bols ou 15 boissons.
+    //
+    // Au-delà de 3 produits, la carte bascule en HORIZONTAL (photo à gauche). Ce n'est pas
+    // une préférence : à 6 produits la carte ne fait plus que ~245 px de haut, et une photo
+    // EMPILÉE au-dessus du texte ne laisse alors de place ni à l'une ni à l'autre. Couchée,
+    // la photo garde toute la hauteur de la carte et le texte toute la largeur restante.
     productGridLayoutClass() {
       const n = this.catalogProducts.length;
       if (n <= 1) return 'kiosk-product-grid--solo';
       if (n === 2) return 'kiosk-product-grid--duo';
-      if (n <= 4) return 'kiosk-product-grid--quad';
-      return '';
+      if (n === 3) return 'kiosk-product-grid--trio';
+      if (n <= 9) return 'kiosk-product-grid--dense';
+      // Au-delà de 9, la carte passe sous ~140 px : le nom, les pastilles de régime,
+      // la description ET le prix ne tiennent plus ensemble. Mesuré sur les 15 boissons :
+      // c'est le PRIX qui passait sous le bord et disparaissait. Un produit sans prix
+      // affiché sur une borne n'est pas acceptable — on allège le reste, jamais le prix.
+      return ['kiosk-product-grid--dense', 'kiosk-product-grid--minimal'];
+    },
+    /** Expose le nombre d'articles au CSS — c'est lui qui divise la hauteur disponible. */
+    productGridStyle() {
+      return { '--kiosk-produits': String(Math.max(1, this.catalogProducts.length)) };
     },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
@@ -457,10 +485,30 @@ export default {
     // [BORNE-UX 2026-07-11 #3] Variantes de taille : la grande (L/XL) est rendue
     // ~30 % plus grande que la petite (M/S) pour que la différence saute aux yeux
     // (ex Tacos M vs Tacos L). Détection par suffixe de taille du nom produit.
+    /**
+     * [OWNER 2026-08-24] Un CRAN PAR TAILLE, pas deux paliers pour quatre tailles.
+     *
+     * Jusqu'ici `--size-l` couvrait L, XL ET XXL : mesuré sur la borne (1080×1920),
+     * l'image du Tacos L et celle du Tacos XL faisaient toutes deux 366×355 px —
+     * strictement identiques. Le client voyait donc « L = XL » alors que le XL est
+     * le plus grand, et payait 2 € de plus sans rien voir de différent.
+     * Le propriétaire : « entre le M le L et le XL ça doit être visiblement […]
+     * avec l'œil on fera la différence entre les tailles ».
+     *
+     * `maxi` / `grande` / `large` restent volontairement au cran L : ce sont des
+     * libellés flous (une « grande frite » n'est pas un XL), et les promouvoir
+     * changerait des produits que personne n'a demandé de toucher.
+     */
     productSizeClass(product) {
       const name = String(product?.name || '').trim().toLowerCase();
       const last = name.split(/\s+/).pop();
-      if (last === 'l' || last === 'xl' || last === 'xxl' || /\b(grande?|large|maxi)$/.test(name)) {
+      if (last === 'xxl') {
+        return 'kiosk-product-image--size-xxl';
+      }
+      if (last === 'xl') {
+        return 'kiosk-product-image--size-xl';
+      }
+      if (last === 'l' || /\b(grande?|large|maxi)$/.test(name)) {
         return 'kiosk-product-image--size-l';
       }
       if (last === 'm' || last === 's' || /\b(petite?|moyen(?:ne)?|small)$/.test(name)) {
@@ -1204,40 +1252,123 @@ export default {
   color: var(--kiosk-text-mute);
 }
 
+/* [OWNER 2026-08-24] Une seule colonne, quelle que soit la catégorie : chaque
+   produit occupe TOUTE la largeur de la borne. Les 2 colonnes rendaient des
+   cartes de 370 px sur 1080 et laissaient une case vide dès que le nombre de
+   produits était impair. */
 .kiosk-product-grid {
+  /* [OWNER 2026-08-25] Nombre d'articles de la catégorie, posé par productGridStyle.
+     Le 3 n'est qu'un repli si le style inline manque (test unitaire, rendu partiel). */
+  --kiosk-produits: 3;
+  /* Hauteur utile entre le haut de la grille et la barre du panier — MESURÉE sur la
+     borne (1592 px sur 1920), pas estimée. On garde 1 % de marge : à 82,9 vh pile,
+     l'arrondi des sous-pixels faisait dépasser la dernière carte de 2 px, et le
+     dernier produit disparaissait sous la barre du panier. */
+  --kiosk-zone: 82vh;
+  /* L'espacement se resserre quand les produits se multiplient : à 15 boissons,
+     14 intervalles de 24 px mangeraient 336 px, soit un cinquième de l'écran. */
+  --kiosk-gap: max(10px, calc(24px - (var(--kiosk-produits) - 3) * 1.5px));
+
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-}
-
-/* [BORNE-UX 2026-07-11] Layout adaptatif : occuper le MAXIMUM d'espace selon le
-   nombre de produits, sans déborder de la zone allouée (owner). */
-.kiosk-product-grid--solo {
   grid-template-columns: minmax(0, 1fr);
+  gap: var(--kiosk-gap);
 }
-.kiosk-product-grid--solo .kiosk-product-card { min-height: min(74vh, 760px); }
-.kiosk-product-grid--solo .kiosk-product-media { height: min(56vh, 580px); }
 
-/* 2 produits (ex Tacos M/L) : empilés haut/bas, très grands (~80% de la zone). */
-.kiosk-product-grid--duo {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 28px;
+/* [OWNER 2026-08-25] LA HAUTEUR SE CALCULE, ELLE NE SE CHOISIT PLUS PAR PALIERS.
+   Le propriétaire : « ça affiche selon le nombre d'article, TOUS les produits, pas
+   que 3 ». Les paliers fixes de la veille laissaient 3 produits à l'écran quelle que
+   soit la catégorie — donc Sandwichs (5), Burgers (6), Frites (6) et Boissons (15)
+   obligeaient à faire défiler pour découvrir la carte.
+   Une seule formule : la hauteur utile MOINS les intervalles, divisée par le nombre
+   d'articles. Une catégorie entière tient toujours dans l'écran. */
+/* 1 à 3 produits : carte VERTICALE, grande photo au-dessus du texte. */
+.kiosk-product-grid--solo .kiosk-product-media,
+.kiosk-product-grid--duo .kiosk-product-media,
+.kiosk-product-grid--trio .kiosk-product-media { height: 64%; }
+
+/* 4 produits et plus : la photo passe À GAUCHE.
+   Ce n'est pas un goût : à 6 produits la carte tombe à ~245 px de haut, et une photo
+   EMPILÉE au-dessus du texte ne laisse alors de place ni à la photo ni au texte.
+   Couchée, elle garde toute la hauteur de la carte, et le texte toute la largeur. */
+.kiosk-product-grid--dense .kiosk-product-card {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+  padding: 12px 96px 12px 14px;   /* la marge droite réserve la place du bouton + */
 }
-.kiosk-product-grid--duo .kiosk-product-card { min-height: min(41vh, 470px); }
-.kiosk-product-grid--duo .kiosk-product-media { height: min(30vh, 360px); }
+.kiosk-product-grid--dense .kiosk-product-media {
+  flex: 0 0 auto;
+  /* La photo produit est en 3:2. Dans une colonne à largeur fixe elle se retrouve
+     bridée par la LARGEUR et flotte au milieu du vide : mesuré, 160 px de photo dans
+     une carte de 298. On donne donc à la boîte le rapport de la photo et on la laisse
+     prendre toute la hauteur — c'est la hauteur qui commande, la largeur suit. */
+  height: 86%;
+  width: auto;
+  aspect-ratio: 3 / 2;
+  max-width: 46%;
+  border-radius: 22px;
+  /* Rendue NON positionnée pour que le bouton + s'ancre à la CARTE : ancré à la photo,
+     il se posait en plein milieu du visuel. */
+  position: static;
+}
+.kiosk-product-grid--dense .kiosk-product-copy {
+  flex: 1 1 auto;
+  min-width: 0;                    /* sans quoi un nom long pousse la carte hors écran */
+}
+/* 10 produits et plus : on n'affiche plus que ce qui sert à CHOISIR — le nom et le
+   prix. Les pastilles de régime, les allergènes et la description sont masqués : à
+   96 px de haut ils poussaient le prix hors de la carte, et `overflow: hidden` le
+   coupait net. Le détail reste accessible en ouvrant le produit. */
+.kiosk-product-grid--minimal .kiosk-product-flag-row,
+.kiosk-product-grid--minimal .kiosk-product-desc,
+.kiosk-product-grid--minimal .ks-allergen-badge {
+  display: none;
+}
+.kiosk-product-grid--minimal .kiosk-product-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+.kiosk-product-grid--minimal .kiosk-product-name {
+  margin: 0;
+}
 
-/* 3-4 produits : 2 colonnes mais cartes agrandies. */
-.kiosk-product-grid--quad .kiosk-product-card { min-height: min(44vh, 470px); }
-.kiosk-product-grid--quad .kiosk-product-media { height: min(30vh, 320px); }
+/* Le bouton + était ancré à la PHOTO : couché, il se serait posé au milieu du texte.
+   On l'ancre à la carte, centré sur le bord droit — même geste, même cible tactile. */
+.kiosk-product-grid--dense .kiosk-product-add {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 18px;
+  transform: translateY(-50%);
+  bottom: auto;
+}
 
-/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes :
-   l'image L est ~30 % plus grande que la M (owner). */
-.kiosk-product-image--size-l { transform: scale(1.18); }
-.kiosk-product-image--size-m { transform: scale(0.9); }
+/* [BORNE-UX 2026-07-11 #3] Différence de taille visible entre variantes.
+   [OWNER 2026-08-24] Quatre crans au lieu de deux : le L et le XL partageaient
+   `--size-l` et sortaient au pixel près à la même taille (366×355 mesurés sur
+   les deux). Les valeurs restent SOUS 1 : l'image occupe déjà 94 % de sa boîte,
+   et la carte est en `overflow: hidden` — au-delà, le tacos serait rogné.
+   L'écart entre deux crans consécutifs est d'environ +15 %, visible à l'œil. */
+.kiosk-product-image--size-xxl { transform: scale(1.06); }
+.kiosk-product-image--size-xl  { transform: scale(0.98); }
+.kiosk-product-image--size-l   { transform: scale(0.85); }
+.kiosk-product-image--size-m   { transform: scale(0.72); }
 
 .kiosk-product-card {
   position: relative;
-  min-height: 392px;
+  /* [OWNER 2026-08-25] La hauteur se CALCULE sur le nombre d'articles pour que la
+     catégorie entière tienne dans l'écran : hauteur utile − intervalles, divisé par le
+     nombre de produits. Les 392 px fixes d'avant laissaient 3 produits visibles quelle
+     que soit la catégorie — donc 15 boissons demandaient cinq écrans de défilement. */
+  /* HAUTEUR FERME, pas un plancher : `min-height` laissait le contenu repousser la
+     carte (mesuré : 602 px pour une cible de 514), et trois produits débordaient de
+     l'écran. Une hauteur explicite permet aussi aux enfants en % de se résoudre. */
+  height: calc(
+    (var(--kiosk-zone, 82vh) - (var(--kiosk-produits, 3) - 1) * var(--kiosk-gap, 24px))
+    / var(--kiosk-produits, 3)
+  );
+  min-height: 0;
   padding: 16px 18px 18px;
   border-radius: 30px;
   border: 1.5px solid var(--kiosk-border);

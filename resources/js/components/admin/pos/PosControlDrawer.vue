@@ -100,6 +100,22 @@
 
             <p v-if="sousTitreOnglet" class="pos-ctrl__sous-titre">{{ sousTitreOnglet }}</p>
 
+            <!-- [GOAL G1 2026-09-03] LA TRONCATURE NE PEUT PLUS SE CACHER.
+                 Le défaut d'origine n'était pas la borne, c'était son SILENCE : la caisse
+                 demandait cent commandes, en affichait cent, et laissait croire que c'était
+                 toute la journée. Ce bandeau n'apparaît que si le serveur déclare avoir coupé —
+                 il ne mordra pas sur un service réel — et alors il dit les deux nombres. Un
+                 compteur silencieusement faux est pire qu'une borne assumée. -->
+            <p
+                v-if="troncatureAAvouer"
+                class="pos-ctrl__troncature"
+                role="status"
+                data-testid="pos-control-troncature"
+            >
+                <span aria-hidden="true">⚠️</span>
+                <span>{{ $t('pos.controle.troncature', { affichees: troncatureAAvouer.affichees, total: troncatureAAvouer.total }) }}</span>
+            </p>
+
             <div
                 :id="`pos-ctrl-panneau-${ongletActif}`"
                 class="pos-ctrl__liste"
@@ -410,6 +426,15 @@ export default {
          * c'est `PosComponent` qui poll, et il poll déjà.
          */
         orders: { type: Array, default: () => [] },
+        /**
+         * [GOAL G1 2026-09-03] Ce que le SERVEUR dit de sa propre réponse :
+         * `{ total, affichees, tronquee }`. `null` quand rien n'a encore été chargé.
+         *
+         * Le tiroir ne devine JAMAIS une troncature : il ne peut pas — il ne voit que ce qu'on
+         * lui a donné, et c'est précisément ce qui rendait le défaut d'origine invisible. Le
+         * serveur, lui, connaît le vrai total ; il le dit, et le tiroir l'affiche.
+         */
+        troncature: { type: Object, default: null },
         /** Commandes à encaisser ANTÉRIEURES à aujourd'hui — un compteur, jamais des cartes. */
         anciennesCount: { type: Number, default: 0 },
         /** Horodatage du dernier rafraîchissement RÉUSSI (null = jamais). */
@@ -444,6 +469,26 @@ export default {
          */
         files() {
             return filesDeControle(this.orders);
+        },
+        /**
+         * La troncature à AVOUER, ou `null` s'il n'y a rien à avouer.
+         *
+         * Deux nombres, jamais un seul : « 100 affichées sur 137 » se vérifie, « liste écourtée »
+         * ne se vérifie pas.
+         *
+         * Ce sont les NOMBRES qui décident, pas le drapeau `tronquee`. Exiger le drapeau ferait
+         * dépendre l'aveu d'un champ qu'un appelant peut oublier de transmettre — et une
+         * troncature qui se tait faute d'un booléen serait le défaut d'origine, reconstitué. Dans
+         * l'autre sens, un bandeau permanent sur des données complètes serait du bruit, et le
+         * bruit finit par ne plus être lu : d'où `total > affichees`, et rien d'autre.
+         */
+        troncatureAAvouer() {
+            const m = this.troncature;
+            if (!m) return null;
+            const total = parseInt(m.total, 10);
+            const affichees = parseInt(m.affichees, 10);
+            if (!Number.isFinite(total) || !Number.isFinite(affichees) || total <= affichees) return null;
+            return { total, affichees };
         },
         listeEncaisser() { return this.files.encaisser; },
         listeCuisine() { return this.files.cuisine; },
@@ -803,6 +848,24 @@ export default {
     padding: 4px 12px 0;
     font-size: 11px;
     color: var(--pos-v5-ink-muted, #8A8278);
+}
+
+/* [GOAL G1 2026-09-03] L'aveu de troncature. Ton AMBRE, jamais rouge : rien n'est cassé, la
+   liste est écourtée — le rouge de cet écran est réservé à ce qui attend depuis 20 min. Il ne
+   s'affiche que si le serveur déclare avoir coupé, donc jamais sur un service réel. */
+.pos-ctrl__troncature {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 12px 0;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--pos-v5-warning, #B8730B);
+    background: var(--pos-v5-warning-soft, #FFFBEB);
+    color: var(--pos-v5-warning-dark, #8C5408);
+    font-size: 11px;
+    line-height: 1.3;
 }
 
 /* La liste défile — et elle DOIT le dire. Doctrine acquise sur cet écran :

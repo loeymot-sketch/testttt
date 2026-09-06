@@ -32,6 +32,45 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Branches porteuses d'une surcharge de secret d'audit
+    |----------------------------------------------------------------------
+    |
+    | [2026-09-03] `AuditLogService::secretFor()` lit la surcharge par branche via
+    | `env('FISCAL_AUDIT_SECRET_BRANCH_{id}')` — un appel à `env()` À L'EXÉCUTION. Après
+    | `config:cache`, Laravel ne charge plus `.env` : `env()` rend `null`, et la signature
+    | retombe SANS BRUIT sur le secret par défaut. Une commande encaissée pendant cette
+    | fenêtre est signée avec un autre secret que ses voisines, et `audit_logs` est
+    | append-only — la scission de chaîne est définitive. Mesuré en production le
+    | 2026-09-03, et inversé deux fois pour l'établir.
+    |
+    | Cette liste est calculée pendant que `.env` est ENCORE lisible, donc elle survit à la
+    | mise en cache. C'est la seule information qui permette au garde de boot
+    | (`AppServiceProvider`) de distinguer « aucune surcharge n'a jamais existé » de
+    | « la surcharge est devenue illisible ».
+    |
+    | On ne publie ICI que les identifiants, jamais les secrets : le service gelé ne retombe
+    | sur le défaut que si `audit_secret` est une CHAÎNE (`AuditLogService.php:335`). En
+    | faire un tableau ferait échouer toutes les branches SANS surcharge. Compléter ce repli
+    | demande un LOCK — c'est un chantier nommé, pas un effet de bord.
+    */
+    'audit_secret_branch_ids' => (static function (): array {
+        $ids = [];
+        foreach (array_merge($_ENV, $_SERVER) as $cle => $valeur) {
+            if (! is_string($cle) || ! is_string($valeur) || $valeur === '') {
+                continue;
+            }
+            if (preg_match('/^FISCAL_AUDIT_SECRET_BRANCH_(\d+)$/', $cle, $m) === 1) {
+                $ids[(int) $m[1]] = true;
+            }
+        }
+        $ids = array_keys($ids);
+        sort($ids);
+
+        return $ids;
+    })(),
+
+    /*
+    |----------------------------------------------------------------------
     | Z/X report signing secret
     |----------------------------------------------------------------------
     */

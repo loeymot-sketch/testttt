@@ -64,6 +64,14 @@ final class KitchenTicketSymbolicFormatter
 
     private const CRUDITE_ORDER = ['S', 'T', 'O', "O\u{0332}"];
 
+    /**
+     * [FIX-1 2026-08-25 · P0 cuisine] Repli d'un extra dont l'entrée ne porte AUCUN champ de nom.
+     * Même mot que le gabarit KDS hérité (`kdsExtraDisplayName`, corrigé le 2026-08-24) pour que
+     * l'écran et le papier nomment la même chose de la même façon.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js EXTRA_SANS_NOM.
+     */
+    public const EXTRA_SANS_NOM = 'Supplément';
+
     /** lowercase, strip diacritics, trim — for keyword matching. */
     private function norm(?string $s): string
     {
@@ -329,10 +337,22 @@ final class KitchenTicketSymbolicFormatter
             + max(0, count($this->fritesSauceNames($instruction)) - 1);
 
         foreach (($snapshot['extras'] ?? []) as $e) {
+            // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom n'est PLUS sauté.
+            // La condition `$name === ''` le faisait disparaître du ticket : ni ligne, ni marqueur.
+            // Le gabarit KDS hérité, lui, rendait « Supplément » (corrigé le 2026-08-24) — le papier
+            // que le cuisinier a en main disait donc STRICTEMENT MOINS que l'ancien écran. Un
+            // supplément non vu est un produit servi faux ; l'annoncer sans savoir le nommer reste
+            // infiniment moins grave que de l'escamoter. La forme brute existe en base
+            // (`item_extras` = [{"id":269,"quantity":1}]) et elle est servie dès que l'instantané
+            // NF525 ne porte pas d'extras.
+            // Jumeau STRICT : resources/js/helpers/kdsSymbolic.js (EXTRA_SANS_NOM).
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
+            if ($name === '') {
+                $name = self::EXTRA_SANS_NOM;
+            }
             // Skip only FREE garnitures (folded into Line 1). Paid extras — even
             // crudité-named ones like "Oignons frits" — stay as supplement lines.
-            if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
+            if ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e)) {
                 continue;
             }
             // La sauce en plus générique : on masque autant d'unités que le budget en explique
@@ -459,10 +479,42 @@ final class KitchenTicketSymbolicFormatter
         return $extraName;
     }
 
-    /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
+    /**
+     * Split a "A, B, C" sauce list → trimmed, non-empty names.
+     *
+     * [INCIDENT TICKET CUISINE 2026-09-05] Deux gardes, contre la MÊME cause : une
+     * instruction tient sur une seule ligne et enchaîne les rubriques —
+     * « Sauce : Mayonnaise, Supplément : Œuf (+0,90 €) ». Découper naïvement sur la
+     * virgule coupait aussi celle du PRIX : « 90 € » devenait un faux nom de sauce,
+     * imprimé en tête du ticket cuisine (commande 929 : « MAY 90 »), et son jeton
+     * parasite gonflait le budget de sauces au point de MASQUER la vraie ligne
+     * « + Sauce supplémentaire ». 61 lignes de commande concernées depuis le 2026-08-01.
+     *
+     *  1. On retire d'abord les montants entre parenthèses — leur virgule décimale est
+     *     la seule qui ne sépare rien.
+     *  2. On s'arrête à la première rubrique suivante : un segment qui porte un « : »
+     *     n'est plus une sauce mais un nouveau libellé (Supplément, Viandes, Formule,
+     *     Sauce frites…). Aucun nom de sauce de la carte ne contient de deux-points.
+     *
+     * Jumeau JS : resources/js/helpers/kdsSymbolic.js splitSauceList().
+     */
     private function splitSauceList(string $raw): array
     {
-        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn ($n): bool => $n !== ''));
+        $raw = preg_replace('/\([^)]*\)/u', '', $raw) ?? $raw;
+
+        $out = [];
+        foreach (explode(',', $raw) as $piece) {
+            $name = trim($piece);
+            if ($name === '') {
+                continue;
+            }
+            if (mb_strpos($name, ':') !== false) {
+                break;
+            }
+            $out[] = $name;
+        }
+
+        return $out;
     }
 
     /**

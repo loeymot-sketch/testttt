@@ -13,14 +13,15 @@
  */
 
 import { fileCuisine } from './fileCuisine';
-
-// Enums serveur (App\Enums\OrderStatus, App\Enums\PaymentStatus).
-const STATUT_PREPARED = 8;
-const STATUT_DELIVERED = 13;
-const STATUT_CANCELED = 16;
-const STATUT_REJECTED = 19;
-const STATUT_RETURNED = 22;
-const PAIEMENT_REFUNDED = 20;
+// [GOAL G1 · V-13 2026-09-03] Les valeurs viennent des enums JS canoniques, plus jamais d'une
+// recopie à la main. Six nombres vivaient ici, écrits en dur (8 = prête, 13 = livrée, 20 =
+// remboursée…). Ils concordaient avec `App\Enums\` — rien ne garantissait qu'ils le resteraient :
+// changer `OrderStatus::PREPARED` côté serveur n'aurait fait rougir aucun banc, et la file
+// « prêtes » se serait vidée en silence, un soir de service.
+// `tests/Feature/Sentinels/EnumsJsPhpConvergenceSentinelTest.php` épingle désormais ces modules
+// sur les interfaces PHP, et interdit qu'on réintroduise une recopie ici.
+import orderStatusEnum from '../enums/modules/orderStatusEnum';
+import paymentStatusEnum from '../enums/modules/paymentStatusEnum';
 
 function entier(v) {
     const n = parseInt(v, 10);
@@ -34,8 +35,8 @@ function statutDe(commande) {
 /** Statut dont on ne revient pas : la commande a quitté le service. */
 export function estTerminale(commande) {
     const s = statutDe(commande);
-    return s === STATUT_DELIVERED || s === STATUT_CANCELED
-        || s === STATUT_REJECTED || s === STATUT_RETURNED;
+    return s === orderStatusEnum.DELIVERED || s === orderStatusEnum.CANCELED
+        || s === orderStatusEnum.REJECTED || s === orderStatusEnum.RETURNED;
 }
 
 export function horodatage(commande) {
@@ -77,7 +78,7 @@ export function fileEncaisser(commandes) {
 export function filePretes(commandes) {
     if (!Array.isArray(commandes)) return [];
     return commandes
-        .filter((o) => statutDe(o) === STATUT_PREPARED && entier(o?.payment_status) !== PAIEMENT_REFUNDED)
+        .filter((o) => statutDe(o) === orderStatusEnum.PREPARED && entier(o?.payment_status) !== paymentStatusEnum.REFUNDED)
         .slice()
         .sort((a, b) => horodatage(a) - horodatage(b));
 }
@@ -89,7 +90,7 @@ export function filePretes(commandes) {
 export function fileLivrees(commandes) {
     if (!Array.isArray(commandes)) return [];
     return commandes
-        .filter((o) => statutDe(o) === STATUT_DELIVERED)
+        .filter((o) => statutDe(o) === orderStatusEnum.DELIVERED)
         .slice()
         .sort((a, b) => horodatage(b) - horodatage(a));
 }

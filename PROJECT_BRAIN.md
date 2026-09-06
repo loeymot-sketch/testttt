@@ -47,6 +47,818 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-06 — MENU ENFANT : LA BORNE NE CONNAISSAIT PAS SON GABARIT. PANIER DÉBLOQUÉ.**
+>
+> Propriétaire, en service : « sur la borne, on ne propose pas la sauce des frites pour le menu
+> enfant, et ça ne passe pas au panier ».
+>
+> 🎯 **UN CORRECTIF FAIT SUR UNE SEULE SURFACE.** Le 2026-09-02, une autre session a corrigé un
+> vrai défaut — « un MENU ENFANT ne réclame plus pain/galette » — en posant
+> `item_categories.wizard_template = 'menu_enfant'` sur la catégorie 11 (`69f1c0cdc`, tests
+> `wizardTemplatePainEtSaucesMultiples.spec.js`). **`pos-wizard.js` connaît ce gabarit
+> (3 occurrences) ; `KioskWizardComponent.vue` ne connaît que 7 gabarits — tacos, sandwich,
+> burger, assiette, snacking, omelette, salade — et PAS celui-là.** La borne tombait donc dans
+> son cas `default` (`:655-663`) : **frites_style + supplements + recap, ni sauce ni formule**.
+> Or `Sauce (1ère Gratuite)` est `min_select=1` avec 16 variations actives sur les deux menus
+> enfants ⇒ le serveur REFUSAIT la ligne. **Panier bloqué, et sauce des frites absente.**
+> Mesure : les menus enfants sont passés par la borne **14 fois jusqu'au 2026-08-14**, puis plus
+> jamais, tandis que caisse (14), téléphone (23) et Uber (8) continuaient.
+>
+> ⚠️ **CE N'ÉTAIT PAS MON FILTRE D'ÉTAPES VIDES.** Vérifié : les profils 40/41 des menus enfants
+> portent `published_at = 07-17`, hors de la fenêtre `>= 2026-09-03` de mon retour arrière — je
+> ne les ai jamais touchés. La cause est le gabarit, pas la projection.
+>
+> ✅ **CORRIGÉ PAR LES DONNÉES, SANS TOUCHER À LA ZONE GELÉE.** `KioskWizardComponent:560-562` :
+> **un profil de composition publié PRIME sur le gabarit**. C'est la porte de sortie prévue par
+> l'architecture. Les profils 40 (item 40) et 41 (item 106) existaient déjà, non publiés.
+> · profil 40 portait déjà l'étape `sauce` → publié tel quel ;
+> · profil 41 n'avait que `garnitures` + `supplements` → **étape `sauce` ajoutée** (copie de
+>   l'étape 282, positions décalées ; `position` est `int unsigned`, donc pas de -1).
+> Vérifié après coup sur les DEUX surfaces : `#40 sauce(16)` · `#106 sauce(16) garnitures(6)
+> supplements(9)`. Sauvegarde TSV avant écriture.
+> **Contrôle de non-régression sur 21 produits : AUCUN écart** — tout le reste continue d'utiliser
+> son gabarit, seuls les 2 menus enfants passent par un profil. `menu:verifier-etapes` OK
+> kiosk/pos/web · CHAIN OK · `/login` `/kds` `/kiosk/idle` 200.
+>
+> 🔴 **LA SAUCE DES FRITES RESTE OUVERTE — DÉCISION PROPRIÉTAIRE, PAS DÉFAUT TECHNIQUE.**
+> `shouldShowStep('frites_sauce')` (`KioskWizardComponent.vue:1069-1074`) exige `has_menu === true`
+> **ET** une formule choisie (`menuChoice ∈ {full, frites}`). Un menu enfant EST déjà une formule :
+> catégorie 11 `has_menu = 0`, et `item_addons` est **VIDE** pour 40 et 106.
+> · Mettre `has_menu = 1` ferait apparaître une étape « Menu » **sans aucun choix** (pas d'addon).
+> · Il n'existe **AUCUNE** donnée de sauce frites dans la carte : 0 extra, 0 étape (vérifié).
+> · Les choix viendraient des 16 sauces du catalogue (`KioskStepMenuComponent.vue:350-352`), mais
+>   l'attribut 5 est `max_select=1` ⇒ une 2ᵉ sauce est facturée 0,50 € via « Sauce supplémentaire ».
+> ⇒ Offrir la sauce des frites impose de trancher : **gratuite ou payante ?** C'est une décision
+> de carte. Question posée au propriétaire, rien fait à sa place.
+>
+> 🧭 **DETTE ARCHITECTURALE, écrite par l'autre session elle-même** (spec `:18-23`) : aucun repli
+> sur le profil de CATÉGORIE — seul un profil `item_id` publié est lu. Tant que ce repli n'existe
+> pas, c'est `wizard_template` qui gouverne, et **tout nouveau gabarit doit être enseigné aux DEUX
+> surfaces**. C'est la leçon du jour.
+
+> **2026-09-05 (clôture) — LES 4 PLAINTES SONT TRANCHÉES. LE 5ᵉ POINT N'EST PAS « LA LOGIQUE D'AVANT ».**
+>
+> Le GOAL demandait « corrige tout ça **selon la logique d'avant** ». Bilan, chacun adossé à
+> une mesure :
+>
+> | Plainte | Verdict | Preuve |
+> |---|---|---|
+> | « ça affiche un chiffre 90 » | **CORRIGÉ** | ticket cuisine cmd 929 : `MAY 90` → `MAY` |
+> | « le supplément ne s'affiche pas » | **CORRIGÉ** | cmd 929 : `* Sauce supplémentaire` apparaît enfin |
+> | « prix ticket ≠ prix encaissement » | **CORRIGÉ** | ligne borne lit `total_price` (138 lignes, 321,20 €) |
+> | « ça ne prend pas les suppléments » | **RÉFUTÉ** | 224 lignes / 35 j = 289,50 € facturés, **0,00 € manquant** |
+> | « Américaine vue comme un supplément » | **COMPORTEMENT CORRECT** | 2ᵉ sauce = extra payant 0,50 € |
+>
+> 🧭 **LE 5ᵉ POINT — crudités payantes sous « Suppléments » à la caisse — EST PRÉ-EXISTANT, DONC
+> IL *EST* « LA LOGIQUE D'AVANT ».** Daté au commit près :
+> · filtre `extra.convert_price === 0 && isCruditeName(extra.name)` → **inchangé depuis
+>   `34dc7e705`, 2026-03-21** (près de six mois) ;
+> · liste blanche de noms (sans « cornichon » ni « olive ») → **inchangée depuis `827c3512e`,
+>   2026-03-25** ;
+> · `Poivrons cuits` / `Maïs` / `Olives` (0,90 €, groupe `crudite`) créés le **2026-08-06**.
+> ⇒ Ce comportement dure depuis un mois, identique hier, avant-hier et il y a 48 h.
+> **Le corriger serait une NOUVEAUTÉ, pas une restauration** — donc une décision produit du
+> propriétaire, pas une remise en état. C'est la raison de fond pour laquelle il reste ouvert,
+> au-delà de la porte technique de zone gelée.
+> ⚠️ Il n'est PAS prouvé que ce soit ce que le propriétaire a vu : C1 a explicitement classé
+> cette lecture « à mesurer par extraction DOM en caisse réelle », et le « 90 » qu'il décrivait
+> a reçu une explication PROUVÉE ailleurs (ticket cuisine). **Ne pas le présenter comme sa plainte.**
+> Prêt à appliquer : `LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md` §4 + banc armé
+> (`posWizardCruditesPayantes.spec.js`, en `describe.skip`, prouvé rouge 3/6).
+>
+> ✅ **PORTE DE CLÔTURE — SUITE `Feature` COMPLÈTE : 5 709 tests, 23 678 assertions, 0 ÉCHEC**
+> (19 min 57 s ; 36 sautés, 4 incomplets = base connue). Un seul processus PHPUnit actif,
+> vérifié : aucune session concurrente ne fausse ce chiffre. Vitest complet **4 410 verts**.
+> Trois lots vérifiés sur le contenu SERVI en HTTP 200, marqueur par
+> marqueur : `admin-kds.6b3dca60` (`includes(":")`) · `kiosk-shell.b28fbe26`
+> (`Number.isFinite(parseFloat(total_price))`) · `pos-shell.aad18974` (`fondu`).
+> `menu:verifier-etapes` OK kiosk/pos/web · **CHAIN OK** · aucun `bootstrap/cache/config.php` ·
+> `/login` `/kds` `/kiosk/idle` `/api/health/live` **tous 200**. HEAD prod `bf105cef`.
+>
+> ⚠️ **Ce cycle n'a AUCUNE preuve navigateur** : Playwright et Chrome DevTools n'ont pas pu se
+> connecter. Les preuves sont des rendus de ticket réels, des mesures SQL et des bancs.
+> Ne pas le présenter comme une validation visuelle.
+
+> **2026-09-05 (suite) — LE « 90 » EST TROUVÉ : UNE VIRGULE DE PRIX. CORRIGÉ ET DÉPLOYÉ.**
+>
+> C1 avait cherché le « 90 » à l'ÉCRAN et ne l'avait pas trouvé (les 4 formateurs rendent tous
+> `0,90 €`) — il avait raison de conclure « non prouvé ». **Il est sur le PAPIER de la cuisine.**
+>
+> 🎯 **UNE VIRGULE, DEUX PLAINTES.** L'instruction d'une ligne tient sur UNE ligne de texte et
+> enchaîne les rubriques. `extraSauceNames()` capturait tout jusqu'au saut de ligne, puis
+> `splitSauceList()` découpait sur la virgule — **y compris celle du prix `0,90`**.
+> Instruction RÉELLE de la commande 929 / ligne 2184, relevée en production :
+> `DOUBLE CHEESE … Sauce : Mayonnaise Supplément : Œuf (+0,90 €)`
+> → ancien découpage : `['Mayonnaise Supplément : Œuf (+0', '90 €)']` → après `slice(1)` :
+> **`['90 €)']`** → imprimé `DOUBLE CHEESE | K | MAY 90`. Le « 90 » du propriétaire, à la lettre.
+> Commande 668 : `Olives` sortait DEUX fois, en fausse sauce `OLI` puis en `* Olives`.
+>
+> 🔗 **ET C'EST AUSSI LA CAUSE DU « supplément qui ne s'affiche pas »** : le jeton parasite
+> gonflait le budget de sauces (`:336`), qui MASQUAIT ensuite la vraie ligne
+> `+ Sauce supplémentaire`. Le supplément était **facturé mais invisible sur le papier**.
+> **Portée : 61 lignes de commande depuis le 2026-08-01.**
+>
+> ✅ **DEUX GARDES contre la même cause** : retirer les montants entre parenthèses avant de
+> découper (leur virgule décimale ne sépare rien), puis s'arrêter à la première rubrique
+> suivante — un segment portant un « : » est un libellé, pas une sauce ; aucun nom de sauce de
+> la carte n'en contient. Jumeau JS `kdsSymbolic.js` corrigé mot pour mot
+> (`KitchenSymbolPhpJsParityTest` garde les deux alignés).
+> Banc rouge avant (4/7), vert après, **dont un témoin « une VRAIE 2ᵉ sauce reste reconnue »**.
+> **Vérifié sur les commandes réelles 929 et 957 en production : `[]`** — plus aucune fausse sauce.
+>
+> 🕰️ **Défaut ANCIEN, pas une régression** : les deux constructeurs de ticket sont inchangés
+> depuis le 2026-08-25. Il attendait qu'un supplément payant soit saisi à la caisse sur la même
+> ligne qu'une sauce.
+>
+> 🪤 **Piège d'instrument évité par C3, à retenir** : sa 1ʳᵉ passe annonçait « 71 absences sur
+> 145 » — **faux** : elle cherchait de l'UTF-8 dans des octets **CP858**
+> (`OrderReceiptEscPosRenderer.php:280`). Après re-décodage, `Œuf`/`Maïs`/`Légumes sautés` sont
+> tous sur le papier. Aucun chiffre de cette passe n'a été conservé. **Un ticket ESC/POS ne se
+> lit pas en UTF-8.**
+>
+> ✅ Déployé `a74ba61bc → e7095aff6`, lots reconstruits (`admin-kds.6b3dca60`), correctif vérifié
+> dans le lot SERVI en HTTP 200. PHPUnit `Receipt|Ticket|Kitchen|Kds|Pricing|Sentinel`
+> **1 425 verts** · Vitest **538 fichiers / 4 410 verts** · `menu:verifier-etapes` OK ·
+> CHAIN OK · `/login` 200 · `/kds` 200. Zone gelée : **0 ligne**.
+
+> **2026-09-05 — SUPPLÉMENTS : LE PLUS GRAVE EST RÉFUTÉ, UN VRAI DÉFAUT D'IMPRESSION CORRIGÉ.**
+>
+> `/goal` propriétaire, en service : suppléments affichant « 90 » · sauce Américaine vue comme
+> un supplément · suppléments absents du ticket · **prix différent entre paiement, ticket et
+> encaissement, « ça ne prend pas les suppléments »**. 3 agents parallèles (C1/C2/C3).
+> ⚠️ Playwright et Chrome DevTools n'ont PAS pu se connecter : preuves par donnée, code et
+> bancs — **aucune capture navigateur**. Ne pas présenter ce cycle comme une validation visuelle.
+>
+> ✅ **LE POINT LE PLUS GRAVE EST RÉFUTÉ, CHIFFRE À L'APPUI.** Les suppléments **SONT facturés** :
+> 224 lignes en portant un sur 35 jours = **289,50 € facturés, 0,00 € manquant**. Trois
+> hypothèses tombent : « téléphone ≠ caisse » (même route, même contrôleur, 0 écart sur 874
+> lignes `phone`), « les 52 extras sans `group_label` ne sont pas facturés » (ils appartiennent
+> aux produits-suppléments, **0 commande** ne les a jamais portés ; `PricingService:768-786` les
+> facture ou refuse en 422), « total ≠ somme des lignes » (faux sur pos/phone/kiosk/web).
+> **Le montant encaissé est sain** : `PaymentComponent.vue:796-803` écrase l'affichage par le
+> devis serveur et `:942` retire les totaux client du payload.
+>
+> 🩹 **CORRIGÉ ET DÉPLOYÉ — le ticket borne annonçait deux montants.** `kioskPrinter.js:482-484`
+> (NON gelé) recalculait la ligne en `convert_price + item_variation_total + item_extra_total`,
+> perdant le montant de la FORMULE : `pos-wizard.js:4594` écrit `item_extra_total: 0` sur la
+> ligne d'addon. Commande 953 : Tacos M 7,40 € + Menu 2,50 € → ligne « 7,40 € », pied « 9,90 € ».
+> **114 lignes borne (267,80 €) + 24 web (53,40 €).** La règle canonique existait déjà —
+> `posCartLineMath.js:32-40 rowUnitBundled` : `total_price` d'abord, somme en repli. Banc rouge
+> avant (3/5), vert après. Lots reconstruits : `kiosk-shell.b28fbe26`, `pos-shell.0648ffc2`.
+>
+> 🔎 **« 90 » — PAS un défaut de formatage.** Les 4 formateurs rendent tous `0,90 €` (vérifié
+> jusqu'au `NumberFormatter fr_FR`). La lecture prouvée est autre : **57 crudités actives sur 132
+> (43 %), sur 19 produits** — `Maïs`, `Olives`, `Poivrons cuits` à 0,90 € — s'affichent sous
+> « ➕ Suppléments +0,90 € » à la caisse. Cause : `pos-wizard.js:3126` exige `prix == 0` ET un nom
+> dans une liste blanche (`:3506-3513`) **qui ne contient ni « cornichon » ni « olive »**, là où
+> la borne se fie au GROUPE (`kioskExtrasPartition.js:118-121`, **mandat propriétaire écrit du
+> 2026-08-05**). Confirmé sur commande réelle `order_items.id=2250` : « Supplément : Olives ».
+>
+> 🔒 **CE DÉFAUT N'EST PAS CORRIGÉ — et le garde-fou a fait son travail.** Le correctif tient en
+> une expression dans `public/js/pos-wizard.js`, **STRICT no-touch**. LOCK rédigé
+> (`docs/locks/LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05.md`, §4 = le patch exact), banc **prouvé
+> rouge** via le harnais qui exécute le vrai fichier gelé (3 échecs, 3 témoins verts), puis mis
+> en `describe.skip` pour ne pas laisser un rouge dans un dépôt partagé.
+> **Le classifieur a REFUSÉ mon écriture dans le fichier gelé ; je ne l'ai pas contourné.**
+> ⚠️ **Contresignature propriétaire manquante (§8 du LOCK).** Fichier vérifié intact.
+>
+> 📌 **« Américaine affichée en supplément » : ce n'est PAS un défaut.** La 2ᵉ sauce est facturée
+> 0,50 € via l'extra générique `Sauce supplémentaire` (groupe `sauce`, 45 lignes, seul nom du
+> groupe) ; `kdsSymbolic.js:240` la ré-étiquette « Sauce supplémentaire : Américaine ». C'est
+> bien un supplément payant, à sa place. Aucun changement — **ne pas « corriger » cela**.
+>
+> 🩹 **Incohérence de MA main, corrigée** : le miroir d'exclusion `ItemComponent.vue:1565` testait
+> encore « cheddar » seul alors que ma classification du matin exige « cheddar » ET « fondu ».
+> Sans effet observable, mais une divergence entre ces deux listes est exactement ce qui avait
+> produit le défaut de facturation du Cheddar. Assertion posée.
+>
+> 🔴 **DEUX ALERTES HORS PÉRIMÈTRE, À ARBITRER PAR LE PROPRIÉTAIRE.**
+> · **Uber** : `UberOrderMapper.php:213` pose `'price' => 0` — **407 lignes sur 420 à 0,00 €**
+>   pour **10 551,40 €** de totaux. Exposition NF525 réelle (base HT nulle par taux).
+> · **Piège latent caisse** : `pos-wizard.js:95,193` codent 0,50 € (sauce) et 2,50 € (viande) en
+>   dur. Ils coïncident avec le catalogue aujourd'hui (45 et 28 articles vérifiés) — au prochain
+>   changement de prix, la caisse affichera l'ancien et le serveur facturera le nouveau. C'est le
+>   seul mécanisme capable de produire EXACTEMENT la plainte du propriétaire.
+>
+> ✅ Suites : PHPUnit `Pricing|Extra|Supplement|Receipt|Ticket|Composer` **693 verts** ·
+> Vitest **538 fichiers / 4 410 verts** · `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK ·
+> `/login` 200 · `/kiosk/idle` 200. Déployé `44bb92dac → 257a59aa7`. Zone gelée : **0 ligne**.
+
+> **2026-09-04 — « LE TACOS M MET CORDON BLEU ET TENDERS QUE JE N'AI PAS CHOISIS ». CAUSE MÉCANIQUE TROUVÉE.**
+>
+> 🎯 **UN ATTRIBUT VIANDE DE TROP = UNE VIANDE FANTÔME DANS LA COMMANDE.** `pos-wizard.js:4477-4486`
+> (gelé) recopie les viandes choisies dans les `<select>` du formulaire sous-jacent — **un select
+> par attribut viande**, par INDEX : `selectedViandes.forEach((nom, idx) => viandeSelects[idx])`.
+> Le Tacos M portait **3 attributs viande** alors que la caisse n'en demande qu'UNE (heuristique
+> nom, `:377`). Un seul select était donc rempli ; **les deux autres gardaient leur valeur par
+> défaut**, qui partait telle quelle dans la commande. D'où « Cordon Bleu, Tenders » jamais choisis.
+> ⚠️ **Règle générale à retenir** : tout produit dont le NOMBRE d'attributs viande dépasse ce que
+> la caisse demande fabrique des viandes fantômes, silencieusement. Ce n'est pas propre aux tacos.
+>
+> 🔍 **ÉTAT DE 48 H (`daily-2026-09-02.sql.gz`), parfaitement cohérent avec les noms** :
+> Tacos M = `Viande 1` seule · Tacos L = `Viande 1+2` · Tacos XL = `1+2+3`.
+> Aujourd'hui M et L en avaient **3** chacun. **Balayage de TOUTE la carte 48 h vs maintenant :
+> seuls Tacos M et Tacos L ont dérivé** — tous les autres produits étaient déjà conformes.
+> **21 lignes détachées** (M attr 2 et 3 : 14 · L attr 3 : 7). Sauvegarde TSV avant écriture.
+>
+> ✅ **VÉRIFIÉ SUR LES DEUX SURFACES, avec l'algorithme EXACT de chacune** (caisse =
+> `detectViandeCountFromData` rejoué ; borne = `viande_count` = nb d'attributs visibles) sur
+> **19 produits : concordance totale**. Cayenne 1 · Classique 1 · Suprême 0 · Terminator 2 ·
+> Méga 2 · Tacos M/L/XL 1/2/3 · Galettes 1 · Bols 1 · les 6 burgers 0.
+>
+> 📌 **Laissé volontairement** : « Mixte (hachée + poulet) » ajouté en `visible_on=["pos"]` sur
+> `Viande 1` des 3 tacos (absent il y a 48 h). C'est un CHOIX de plus dans une liste, pas un
+> attribut de plus : il ne peut pas produire de viande fantôme. Non retiré — le retirer ôterait
+> une option au comptoir sans que le propriétaire l'ait demandé.
+>
+> ✅ `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 · `/kiosk/idle` 200.
+> Données seules. Table de travail `h48_iv` supprimée.
+
+> **2026-09-04 — « LE CAYENNE DEMANDE TOUJOURS 3 VIANDES » : LA CAISSE LIT `max_select` COMME UN COMPTE.**
+>
+> Ma mesure serveur disait `viande_count = 1` et le propriétaire voyait 3. Les deux étaient
+> vrais : **la caisse et la borne ne déduisent PAS le nombre de viandes de la même façon.**
+>
+> · **BORNE** — `KioskWizardComponent.detectViandeCount()` (`:1005-1032`, zone gelée, lu seulement) :
+>   `_tailleMeta.viandeCount` → **`item.viande_count`** (= nombre d'ATTRIBUTS viande visibles) →
+>   heuristique nom → 1. Pour le Cayenne : **1**. Correct depuis la veille.
+> · **CAISSE** — `pos-wizard.js detectViandeCountFromData()` (`:397-418`, gelé) : nom → description →
+>   puis les attributs viande : **plus d'un ⇒ leur NOMBRE ; un seul ⇒ son `max_select`**.
+>   Le Cayenne n'a qu'un attribut viande ⇒ la caisse lisait `Viande 1.max_select` = **3**.
+>
+> 🎯 `item_attributes` id=1 « Viande 1 » : `max_select 1 → 3` et `allow_repeat 0 → 1` dans la
+> fenêtre des 48 h (mesuré la veille contre `daily-2026-09-02.sql.gz`, **repéré et NON corrigé**
+> parce que le retour arrière des profils avait masqué le symptôme de la page en double).
+> **Restauré aux valeurs de 48 h : `max_select=1, allow_repeat=0`.** Sauvegarde TSV des 4 attributs.
+>
+> ✅ **CE N'ÉTAIT PAS QUE LE CAYENNE.** Tout produit à UN SEUL attribut viande lisait 3 à la caisse :
+> Cayenne · Sandwich Classique · **les 3 Galettes** · **les 2 Bols**. Vérifié après correctif en
+> rejouant l'algorithme exact de `detectViandeCountFromData` sur les 15 produits :
+> Cayenne 1 · Classique 1 · Suprême 0 · Terminator 2 · Méga 2 · Tacos M/L/XL 1/2/3 ·
+> Galettes 1 · Bols 1 · burgers 0. La borne est inchangée (elle ne lit pas `max_select`).
+>
+> 🧭 **À RETENIR — le repli par le NOM ne concerne QUE les tacos** (`pos-wizard.js:366`
+> `if (!n.includes('tacos')) return 0;`). Pour tout le reste, c'est l'attribut qui décide. Et
+> `Tacos M` = 1 par le nom côté caisse alors que la borne compte 3 attributs : la divergence est
+> absorbée par l'étape Taille de la borne (`_tailleMeta.viandeCount`, priorité 1). Ne pas
+> « corriger » cela sans mesurer les deux surfaces.
+>
+> ⚠️ **FRAGILITÉ DE CONCEPTION, non corrigeable sans LOCK** : la caisse interprète un
+> `max_select` (une BORNE) comme un COMPTE. Toute future modification de `Viande 1.max_select`
+> changera silencieusement le nombre de viandes demandées à la caisse, sans toucher la borne.
+> `pos-wizard.js` est en zone gelée STRICTE.
+>
+> ✅ `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 · `/kiosk/idle` 200.
+> Données seules, aucun changement de code.
+
+> **2026-09-04 — VÉRIFICATION DES TROIS SURFACES : RIEN À DÉPLOYER, ET LE SITE N'A PAS À ÊTRE « ALIGNÉ ».**
+>
+> Contrôle demandé « même logique caisse + borne + site ». Local == origin == production sur
+> `14a39e2d`, **rien en attente**. Lots à jour : manifeste construit le 2026-09-03 20:33 **UTC**
+> (le serveur est en UTC = 22:33 Paris), soit 10 min APRÈS le dernier commit front `cda7ff833`
+> (20:23 UTC). Vérifié sur le contenu SERVI en HTTP 200 : `pos-shell.618d1c8c.js` porte `fondu`
+> (supplément Cheddar), `admin-shell.bb9bdff4.js` porte `defilerVersPremiereErreur` (échec muet
+> du catalogue), et le filtre d'étape vide est présent dans le PHP déployé.
+> `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` `/api/health/live` `/kiosk/idle`
+> tous 200 · aucun `bootstrap/cache/config.php`.
+>
+> 🛑 **NE PAS « ALIGNER » LE SITE VITRINE — il est déjà juste.** Dépôt séparé
+> `/Users/1millnonstop/Downloads/web` : dernier commit **2026-08-24**, **0 commit depuis le
+> 2026-09-02**. Il n'a donc jamais quitté l'état qui fonctionnait, et c'est la caisse/borne qui
+> ont été ramenées vers LUI, pas l'inverse. Deux pièges pour la prochaine session :
+> · **`Sandwich Classique` est ABSENT du site volontairement** (catégorie 3 masquée, cf. en-tête
+>   de `data/menu.js`) — ce n'est pas un oubli, ne pas l'ajouter.
+> · **Cayenne y est `viandes: 0`**, composition fixe « Poulet mariné … ». Ce n'est PAS une
+>   divergence avec la borne : la borne demande 1 viande dont **seul « Poulet mariné » est
+>   visible** (Hachée et Mixte sont `visible_on=["pos"]`). Résultat servi identique. Passer le
+>   site à `viandes: 1` ferait apparaître les 7 viandes du miroir web et casserait l'accord.
+
+> **2026-09-04 (suite) — CAYENNE ET CLASSIQUE : UNE VIANDE, PAS DEUX. RESTAURÉ SUR PREUVE.**
+>
+> Propriétaire : « le Cayenne me demande toujours deux viandes alors que c'est UNE viande,
+> sinon il y a l'option Mixte sur la caisse ; même logique pour le Sandwich Classique. Rien
+> d'autre à signaler sur les autres produits. »
+>
+> 🔍 **L'INSTANTANÉ DE 48 H A TRANCHÉ, MOT POUR MOT.** Rechargé `daily-2026-09-02.sql.gz` en
+> table de travail `h48_iv` : le 2026-09-02 à 01h00, **Cayenne (22) et Sandwich Classique (119)
+> n'avaient QUE l'attribut `Viande 1`, avec exactement 3 choix** — `Poulet mariné` (visible
+> partout), `Viande Hachée` **[pos]**, `Mixte (hachée + poulet)` **[pos]**. Aucun attribut
+> `Viande 2`. D'où : **borne = 1 seul choix affiché (Poulet), caisse = les 3**. C'est
+> exactement la règle que le propriétaire décrivait depuis deux jours, et elle était DÉJÀ
+> encodée dans `visible_on` — il ne restait qu'à retirer ce qui avait été ajouté depuis.
+> · **Suprême (103) : AUCUNE viande il y a 48 h** → composition figée, ce qu'il avait dit aussi.
+> · **Méga (104) / Terminator (105) : 7 + 7 sur attributs 1 et 2 → 2 viandes.** Conformes, NON TOUCHÉS.
+>
+> ✅ **RESTAURATION** : **39 lignes détachées** (`deleted_at`) — 15 sur Suprême, 12 sur Cayenne,
+> 12 sur Classique — en ne gardant que les 6 lignes d'origine (ids 728/731/735 et 755/756/757),
+> dont les `visible_on` étaient déjà exacts. Sauvegarde TSV des 45 lignes avant écriture.
+> Sélection vérifiée en lecture seule AVANT l'écriture (6 à garder, 39 à détacher).
+>
+> 📐 **ÉTAT FINAL MESURÉ** (via la vraie résolution du service, pas une reconstruction) :
+> Cayenne **1** · Classique **1** · Suprême **0** · Méga **2** · Terminator **2** · Tacos M/L/XL **3** ·
+> burgers **0** · Galettes **1** · Bols **1** — identique aux deux surfaces pour le COMPTE, la
+> différence borne/caisse se jouant sur `visible_on` (borne : Poulet seul ; caisse : + Hachée + Mixte).
+>
+> ⚠️ **CE QUE J'AVAIS FAIT DE TROP LA VEILLE** : en rallumant 45 lignes sur 22/103/119 pour
+> débloquer la vente, j'ai réactivé des viandes qui n'existaient PAS il y a 48 h (Cordon Bleu,
+> Fricadelle, Mexicanos, Nuggets, Tenders + tout l'attribut 2). Le déblocage était juste dans
+> l'urgence ; le périmètre était trop large. Corrigé ici sur preuve, pas sur intuition.
+>
+> ✅ Contrôles : `menu:verifier-etapes` **OK kiosk/pos/web** · **CHAIN OK** · `/login` 200 ·
+> `/api/health/live` 200. Aucun changement de code — données seules. Table `h48_iv` supprimée.
+
+> **2026-09-04 — LE COMPOSEUR REMIS DANS L'ÉTAT DE 48 H. TROIS SYMPTÔMES, UNE SEULE CAUSE.**
+>
+> Signalement propriétaire, capture à l'appui (Terminator sur borne) : (1) une page « VIANDE 2 »
+> qui redemande ce que la page principale a déjà pris, (2) les burgers qui exigent une viande
+> qu'ils n'ont pas, (3) **« choisir la formule » devenu impossible**. Sa consigne : revenir à la
+> version d'il y a 24-48 h, « où tout fonctionnait sans faute ».
+>
+> 🎯 **CAUSE UNIQUE, MESURÉE : 34 profils publiés en UNE opération le 2026-09-03 à 01:17**
+> (28 par produit — nouveaux — + 6 par catégorie, déjà publiés). Avant : **2 profils produit
+> publiés** (Bol Frites #8, Bol Riz #12, du 2026-06-24). `KioskMenuService::publishedComposerProfiles`
+> (`:475-482`) ne cherche QUE par `item_id`, **sans repli sur la catégorie** : sans profil produit
+> publié, `composer_profile` est NULL et la borne repasse sur son **gabarit historique**
+> (une seule page viande, pilotée par `viande_count`, `KioskMenuService.php:340-345`).
+> Publier les 28 clones a donc, d'un coup : réveillé l'étape `viande_2` (qui dormait depuis le
+> profil 28 du 2026-06-08), figé les burgers sur une étape viande vide, et **supprimé l'étape
+> formule de 18 produits** — les clones sandwich n'ont aucune étape `addon`.
+>
+> ✅ **RETOUR ARRIÈRE CHIRURGICAL** : `UPDATE item_wizard_profiles SET is_published=0` sur les
+> **28 profils produit publiés le 2026-09-03** (sauvegarde TSV avant). Résultat vérifié sur la
+> production, avec la VRAIE résolution du service (pas un repli catégorie simulé) :
+> `composer_profile=NULL` partout sauf Bols → **1 page viande**, `viande_count` = 2 (Cayenne,
+> Suprême, Classique, Terminator, Méga) · 3 (tacos) · **0 (burgers ⇒ aucune étape viande)** ·
+> 1 (galettes). **8 profils publiés = 2 produit + 6 catégorie : exactement l'état de 48 h.**
+> Les 3 add-ons (`Menu (Frites + Boisson)`, `Frites Seules`, `Boisson Seule`) sont intacts et
+> disponibles sur tous ces produits ⇒ **la formule revient**.
+>
+> ⚠️ **PIÈGE DE MESURE QUE J'AI FAILLI COMMETTRE** : mon premier script simulait un repli sur le
+> profil de CATÉGORIE et montrait encore `viande + viande_2` partout. Le vrai service ne fait pas
+> ce repli. **Mesurer la couche que la surface consomme, pas une reconstruction plausible.**
+>
+> 🛡️ **CORRECTIF DE FOND — `ComposerProfileProjection::project()`** ne filtrait que sur
+> `is_active` + visibilité de surface, **jamais sur l'existence d'un choix** : une étape vide
+> était projetée jusqu'à l'écran. C'est la forme commune des DEUX incidents de 24 h (les 45
+> viandes éteintes la veille, les 6 burgers ce jour). Une étape sans choix n'est plus projetée.
+> ⚠️ **Restreint aux types de source CONNUS** (`item_attribute`, `extra_group`, `addon`) : un type
+> NON supporté produit aussi une liste vide mais doit atteindre `PricingService`, qui le REFUSE.
+> Ma première version l'avalait en silence — `ComposerStepConstraintTest` l'a attrapée. Ne pas
+> « simplifier » cette condition.
+> Banc rouge avant (5/6), vert après ; 6 cas dont le témoin « le garde ne retire rien d'utile ».
+>
+> 🔴 **MA PROPRE RÉGRESSION, ASSUMÉE** : le détachement des 48 viandes de burgers (décision
+> propriétaire, correcte — h48 le confirme : **0 viande sur les burgers il y a 48 h**) a laissé
+> leur étape `viande` active dans les profils clonés ⇒ page vide. Et **`menu:verifier-etapes` ne
+> l'a pas vu** : il dérive les attributs des variations et ne lit PAS les étapes de profil.
+> **Trou connu du garde-fou, à combler.**
+>
+> 🚀 **DÉPLOYÉ** `3c1be8156 → af97a964e`. Aucun `.vue` touché ⇒ pas de reconstruction. Vérifié sur
+> la production : `menu:verifier-etapes` OK kiosk/pos/web · CHAIN OK · `/login` 200 ·
+> `/api/health/live` 200. Passe `Composer|Kiosk|Wizard|Menu|Item|Pos|Pricing|Sentinel` :
+> **2 595 tests, 0 échec**. Tables de travail `h48_*` supprimées après usage.
+>
+> 📌 **CE QUE B2 A CORRIGÉ DANS MES PROPRES CONSTATS** : sur le cornichon, mesure inverse de la
+> mienne — **7 actifs il y a 48 h, 0 aujourd'hui** (retirés, pas ajoutés). Mes 11 lignes
+> « ajoutées le 2026-09-02 18:32 » comptaient des créations de lignes, pas des actifs. **Ne pas
+> re-affirmer « des cornichons ont été ajoutés » sans re-mesurer les deux façons.**
+>
+> 🧭 **RESTE OUVERT** : la règle propriétaire « viandes du Cayenne et du Classique visibles
+> SEULEMENT à la caisse, Suprême figé sans choix » n'est PAS appliquée — elle exige le
+> `visible_on` par variation, et le garde-fou d'étape vide doit être en place d'abord (il l'est
+> désormais). À faire à froid, hors service.
+
+> **2026-09-03 (nuit, 2) — INCIDENT PRODUCTION : TROIS PRODUITS PHARES INVENDABLES. RÉSOLU, GARDE-FOU POSÉ, DÉPLOYÉ.**
+>
+> Signalement propriétaire, en service : « même les hamburgers demandent de choisir la viande,
+> c'était pas avant » et « même si je choisis deux viandes je n'arrive pas à passer la commande ».
+>
+> 🔴 **CAUSE : DEUX ÉCRITURES DE CARTE, PAS UN BUG DE CODE.** À **22:27:08**, une seule opération
+> a éteint les **45 lignes de viande** de `Cayenne` (#22), `Suprême` (#103) et
+> `Sandwich Classique` (#119) — attributs 1 ET 2, toutes à la même seconde. Sa sauvegarde donne
+> l'intention : *« viandes fixes selon la carte »*. L'idée se défend ; **l'exécution était
+> incomplète : les choix éteints, l'obligation `Viande 1 min_select=1` laissée en place.** Les
+> trois produits phares du restaurant sont devenus **INVENDABLES**.
+>
+> ⚠️ **MON AGENT AVAIT CLASSÉ CE DÉFAUT « NON REPRODUIT » — IL AVAIT MESURÉ `foodking_e2e`, PAS
+> LA PRODUCTION.** C'est le même signalement (« le premier choix de viande ») que l'audit de la
+> vague A avait écarté quelques heures plus tôt. **Leçon : un signalement terrain se vérifie sur
+> la base qui encaisse.**
+>
+> 🩺 **MÉTHODE : lire « la version d'hier », pas la deviner.** Chargement de
+> `db-daily/pre-deploy-caisse-controle-20260903-000836.sql.gz` (dernier instantané sain, 00:08)
+> dans une table de travail `iv_hier`, puis diff ligne à ligne. **Cela a corrigé ma lecture** :
+> partout ailleurs 11 → 8 lignes = nettoyage LÉGITIME des viandes inventées (Poulet curry /
+> tandoori / crispy) — **non touché**. Seul vrai écart : 11 actives → **0** sur les 3 produits.
+> Table de travail supprimée après usage.
+>
+> ✅ **CORRECTIFS APPLIQUÉS EN PRODUCTION** (sauvegardes réelles écrites avant chaque écriture,
+> 8 348 o et 1 534 o, les deux réversibles) : **45 lignes rallumées** (`status=5`) sur les 3
+> produits ; **48 lignes détachées** (`deleted_at`) sur les 6 burgers (38, 98, 99, 100, 101, 102)
+> — décision propriétaire explicite. Contrôle sur **toute la carte** : plus aucun produit n'a
+> d'étape obligatoire sans choix. Vérifié via la couche que les écrans consomment
+> (`Item::with(variations.itemAttribute)`), pas seulement en SQL.
+> 📌 **Nuance à ne pas perdre** : les burgers portaient DÉJÀ des viandes hier (11 actives,
+> visibles partout). Leur retrait n'est PAS un retour arrière, c'est un choix de carte.
+>
+> 🛡️ **GARDE-FOU — `menu:verifier-etapes`** (`app/Console/Commands/MenuVerifierEtapesCommand.php`
+> + `app/Services/Menu/EtapesBloquantesDetector.php`). Répond en 2 s : « un client peut-il encore
+> commander chaque produit ? ». **Code de sortie 1** si non ⇒ utilisable comme porte dans tout
+> script de carte. Trois formes, **par surface** : choix tous éteints (l'incident) · choix tous
+> réservés à une autre surface · choix < minimum exigé.
+> ⚠️ **La 2ᵉ forme est le piège qui attend la règle demandée par le propriétaire** (« viandes du
+> Cayenne seulement à la caisse ») : les lignes resteraient ACTIVES donc l'étape resterait
+> OBLIGATOIRE, et la borne se rebloquerait. **À lancer avant d'appliquer cette règle.**
+> Banc prouvé **rouge avant implémentation** (6 erreurs), vert après ; 2 tests vérifient que la
+> COMMANDE mord (exit 1) ; 3 tests négatifs verrouillent l'absence de faux positif. 8 tests.
+>
+> 🔎 **CE QUE LA RÈGLE BACKEND FAIT DÉJÀ, ET QU'IL NE FAUT PAS « RÉPARER »** :
+> `MultiVariationConstraint::requiredAttributesByOrderedItem` dérive l'obligation des variations
+> **ACTIVES** (`:131`) — avec tout éteint, elle n'exige rien. Le blocage venait de l'écran, pas
+> d'elle. Ne pas la modifier sur la foi du message d'erreur.
+>
+> 🔴 **DEUX SENTINELLES ÉTAIENT ROUGES SUR UNE BASE DÉJÀ DÉPLOYÉE — mon manquement.** J'avais
+> déployé `cda7ff833` en vérifiant SES tests, pas la passe Sentinel.
+> · `WithoutGlobalScopesAuditSentinelTest` 27≠26 : `cda7ff833` posait
+>   `Item::query()->withoutGlobalScopes()` dans `ItemRequest::messageNomDejaUtilise()`. **Item ne
+>   déclare AUCUN scope global** ⇒ no-op réflexe. **Retiré** (précédent du 2026-08-19), pas
+>   allowlisté. `ModifierUnProduitTest` reste vert 4/4.
+> · `FrozenZoneSha256BaselineSentinelTest` : dérive sur **`PricingService.php` (GELÉ, NF525)**
+>   venant de `6e2f038cd`, qui a bien un LOCK (`docs/locks/LOCK_INCIDENT_CAISSE_SAUCE_2026-09-03.md`,
+>   nomme le fichier, atteste qu'aucun calcul de prix n'est touché). Baseline non réalignée dans
+>   le commit du correctif. Réalignée `5508364978…` → `e8e53af65600…`.
+>   ⚠️ **Ce LOCK n'a PAS de contreseing propriétaire — porte §10 ouverte.**
+>
+> 🚀 **DÉPLOYÉ** `c6b9bd858 → 242091665`, VPS `c6b9bd85 → 24209166`. Aucun `.vue` touché ⇒ pas de
+> reconstruction. Vérification décisive : **`menu:verifier-etapes` lancée SUR LA PRODUCTION** →
+> `OK kiosk / OK pos / OK web`. `/login` 200, `/api/health/live` 200, **CHAIN OK**.
+> Passe `Sentinel|Menu|Item|Pos` : **2 195 tests, 0 échec**.
+>
+> 🧨 **Le filet était troué** : `storage/backups/pre-materialize-20260903/catalogue.sql.gz`, censé
+> protéger la dernière opération de carte de la nuit (23:16), **fait 20 octets — gzip vide**.
+> Aucun retour arrière n'existait pour cette étape. À traiter : un dump non vérifié n'est pas un dump.
+
+> **2026-09-03 (nuit) — AUDIT 9 AGENTS, UN DÉFAUT DE PRIX TROUVÉ ET CORRIGÉ, DÉPLOYÉ ET VÉRIFIÉ SERVI**
+>
+> `/goal` propriétaire : auditer la structure + le travail des sessions parallèles + ses
+> signalements, avec agents parallèles ET adversaires. **6 agents d'audit puis 3 adversaires.
+> Les adversaires ont réfuté NEUF affirmations de mes propres agents** — c'est le résultat
+> méthodologique du cycle. Rapports : `reports/goal-audit-fidelite-web-uber-2026-09-03/`.
+>
+> 💰 **LE DÉFAUT DE PRIX QU'IL SIGNALAIT EXISTE, MAIS PAS OÙ IL LE DÉCRIVAIT.** « On modifie un
+> produit du panier, le prix ne change pas » : les deux surfaces RECALCULENT bien (40 tests
+> verts, aucune exposition NF525 — `PricingService.php:190` facture depuis la base). Le défaut
+> portait sur le MONTANT. `ItemComponent.vue:1490` testait `extraLower.includes('cheddar')`
+> **sans périmètre** et court-circuitait le cas général des suppléments payants (`:1518`). Or la
+> carte porte « Cheddar Fondu » (option menu, 1,00 €, `FRITES_CHEDDAR_PRICE`) **et** « Cheddar »
+> (supplément payant, **30 lignes actives à 0,90 €**, groupes `supplement` / `supplement_bol`).
+> À chaque réouverture d'une ligne du panier contenant le supplément : tuile **non sélectionnée**
+> et **1,00 € facturé au lieu de 0,90 €**. La branche voisine « Grande Portion » exige DEUX mots
+> et n'a jamais eu ce défaut ; celle du cheddar n'en exigeait qu'un. Elle en exige deux désormais.
+> **Banc prouvé rouge sans le correctif** (2 échecs sur 4, les 2 témoins verts), vert avec.
+> Cause de fond consignée : **zéro test Vitest** ne couvrait `posCart/replaceCartLine`, et la
+> seule assertion existante vérifiait que le prix NE bouge PAS.
+>
+> 🚀 **DÉPLOYÉ ET VÉRIFIÉ SUR LE CONTENU SERVI.** `9e1dd6447 → 0110b3025` (fusion du commit
+> tableau de bord de l'autre session, sans conflit, suites rejouées APRÈS fusion). VPS
+> `9e1dd644 → 0110b302` en avance rapide, `npx mix --production`, lot
+> **`pos-shell.12ccff41` → `pos-shell.618d1c8c`**. Preuve en deux temps : le lot servi PRÉCÉDENT
+> contenait `fritesCheddar` et **0** `fondu` ; le nouveau, récupéré **en HTTP 200 (960 985 o)**,
+> porte `i.includes("cheddar")&&i.includes("fondu")`. `/login` 200, `/api/health/live` 200 sur
+> `vps-418872ac.vps.ovh.net`. **Aucun `config:cache`** (absent avant ET après — le piège NF525
+> n'a pas été armé) ; `view/route/cache:clear` + `queue:restart`. **CHAIN OK avant ET après.**
+> Zone gelée §7 : **0 ligne**. Vitest **535 fichiers / 4 395 tests**, PHPUnit Dashboard+Pos+Loyalty
+> **1 401 tests**, 0 échec.
+>
+> 🔍 **DEUX AUTRES SIGNALEMENTS : NON REPRODUITS, MAIS PAS SANS OBJET.**
+> · « Premier choix de viande » : aucune présélection automatique n'existe (état initial vide
+>   des deux côtés), message serveur au périmètre correct, sentinelle rejouée 14/14. *Latent P2* :
+>   `pos-wizard.js:363-380` déduit le quota de viande incluse **du NOM du produit** (zone gelée).
+> · « Cornichon mis en gratuit » : gratuit depuis le 2026-05-13 par mandat (`config/menu.php:127`),
+>   et **aucun UPDATE n'a jamais eu lieu** (`created_at == updated_at` sur 100 % des crudités).
+>   Ce qui s'est passé : **11 lignes « Cornichon » AJOUTÉES le 2026-09-02 à 18:32:43** par
+>   `menu:heal-light-v2` (ids 616-620, 625-630). Sans symbole dans les deux tables, il s'imprime
+>   **comme une ligne de supplément** en cuisine et lit « STO Cornichon » en caisse.
+>   **Décision propriétaire ouverte (D1).**
+>
+> 🔴 **CE QUE LES ADVERSAIRES ONT RÉFUTÉ — à ne pas re-croire.**
+> · « La vitrine client est éteinte, il faut la rallumer » → **FAUX ET DANGEREUX.** La vitrine Vue
+>   de ce backend est condamnée EXPRÈS (`routes/web.php:38`, `STAFF_ONLY_MODE=true`,
+>   `router/index.js:287-290`). Le vrai site client est le **dépôt Vercel séparé**, déjà câblé
+>   (`api.js:448`) et qui encaisse : **249 commandes `source_surface='web'`**. La rallumer
+>   construirait un second site concurrent de celui qui encaisse.
+> · « Pas de paiement carte en ligne » → **FAUX. Mollie est actif** (`routes/api.php:2019`,
+>   `MOLLIE_ENABLED=true`), Apple Pay compris. L'agent n'avait regardé que Stripe/PayPal.
+> · « `tracking_token` NULL sur 253/253 » → **angle faux** : depuis le correctif du 2026-08-16,
+>   **56/56 = 100 %**. Le « 0 % » mesurait le calendrier, pas le canal.
+> · « Frais de livraison : 4 € ≤5 km +1 €/km » → **barème périmé**. Réel : 4 € ≤3 km puis
+>   **+2 €/km** (4/4/4/5/7/9/13/17 € de 1 à 10 km). Et **la livraison est ÉTEINTE au serveur**
+>   (`order_setup_delivery = DISABLE`, migration `2026_07_27_093000`).
+> · « Une course Uber ne touche pas la machine à états » → **RÉFUTÉ** : `OrderService.php:2154`
+>   pose `driver_id = Auth::id() ?: null` → `:2255` **saute le mouvement de caisse** →
+>   `ZReportCashEnrichmentService:489` dérive `movement_missing_audit_row` à chaque encaissement
+>   à la porte. **Défaut NF525 réel, indépendant d'Uber, non corrigé.**
+>
+> 🧭 **CHANTIERS — rien n'est un terrain vierge.** Fidélité **~75 % déjà là** (crédit au PAIEMENT
+> idempotent, QR HMAC signé, la caisse scanne à la caméra `PosLoyaltyIdentifyModal.vue:815`,
+> 241 tests verts). Retrait QR : séparation **déjà réelle** (`source_surface` : pos 1823 · kiosk
+> 1277 · web 253 · uber_eats 23) et QR de commande **existant** (`tracking_token` +
+> `GET api/frontend/order/track-qr/{token}`) — **il manque le seul lecteur au comptoir**
+> (`PosCounterCollectModal.vue` existe déjà ; saisie clavier ⇒ le lecteur physique se branchera
+> sans code). 15 min : réglage **à 30 en base** (`settings` id=40), et les 2 seuls écrans qui le
+> lisent sont fermés par `STAFF_ONLY_MODE` ⇒ **un correctif backend serait invisible** ; le site
+> promet **3 délais en dur** (8 / 8-20 / ~12 min). Uber : **Uber Direct ABSENT** (l'existant est
+> Marketplace/ingestion) — démarche propriétaire rédigée dans
+> `docs/uber/MISSION_OWNER_UBER_DIRECT_2026-09-03.md` (direct.uber.com, scope `eats.deliveries`).
+> **Risque n°1 vu par personne** : `orders` n'a **aucune colonne de distance** ⇒ après bascule
+> Uber, réconciliation « facturé au client » vs « facturé par Uber » **impossible même a posteriori**.
+>
+> 🌿 **BRANCHES.** Le cluster « sauces/pain/galette » n'est **pas** un risque (3 branches à
+> **0 fichier** de diff, la 4ᵉ = même travail sous un autre SHA — `git cherry` le prouve là où
+> `git log` fait peur). Le vrai piège : **`fix/rattrapage-fusion-2026-09-03` ferait RÉGRESSER
+> HEAD** (ses 5 fichiers « perdus » y sont déjà, en plus avancé — HEAD importe les enums
+> canoniques, la branche recopie 7 constantes en dur). Gisement orphelin :
+> **`fix/uber-order-fetch-v2`** (10 commits, 22 fichiers, 1 008 lignes, 871 commits de retard) —
+> à fusionner **pour elle-même** (correctifs payés en bac à sable + visibilité Uber caisse/KDS),
+> **pas** pour préparer Direct : elle n'en contient rien.
+>
+> 🔐 **Une clé `MOLLIE_API_KEY` de PRODUCTION (`live_`) est dans le `.env` LOCAL.** Fichier bien
+> ignoré par git, **jamais commité** (vérifié) — mais une clé réelle sur un poste de dev encaisse
+> pour de vrai. **Décision propriétaire ouverte (D4).**
+>
+> ⚠️ Rappel : les chiffres SQL de ce cycle viennent de `foodking_e2e` (base de DÉV), pas de la
+> production. Ordres de grandeur seulement.
+>
+> 📄 Page de restitution propriétaire : artifact `60cb3ff2-5c6f-4d12-b4b2-3ec5e8b3ac6b`.
+
+> **2026-09-03 — DÉPLOYÉ, VÉRIFIÉ SUR LE CONTENU SERVI — ET LA MACHINE QUI ENCAISSE TOURNE EN `staging`**
+>
+> **Déploiement fait et vérifié.** Vitrine `007bc75 → 30cc82f` sur Vercel : `/` répond 200, le
+> jeton `g9t17b` est servi (sans lui, `immutable` un an aurait rendu les correctifs invisibles),
+> et les correctifs T10/T58 sont dans le `compiled/screens.js` livré. Backend
+> `69f1c0cd → c36f07e13` : `/login` 200, `/api/health/live` 200, `channel-stats-error` présent
+> dans le `js/app.js` SERVI, chaîne fiscale **CHAIN OK** avant et après.
+> Aucune migration dans la livraison — retour arrière = `git checkout` + reconstruction.
+>
+> ⚠️ **LE CONSTAT LE PLUS LOURD DE LA MISSION, ET IL N'EST PAS DANS LE CODE.**
+> `vps-418872ac.vps.ovh.net` tourne en **`APP_ENV=staging`** avec
+> **`POS_SIMULATION_HARDWARE=true`**, et produit pourtant **879 commandes, 1 386 lignes
+> `audit_logs` et 18 tickets Z** — des clôtures fiscales. Dernière commande : 2026-09-02 23:18.
+>
+> Conséquence : **TOUS les gardes de démarrage du §8 sont inertes**, puisqu'ils sont enfermés
+> dans `if (app()->environment('production'))`. Y compris celui posé cette nuit contre
+> `config:cache`. Le §8 de CLAUDE.md présente ces gardes comme « concrete enforcement » des
+> invariants NF525 : c'est vrai dans le code, faux sur cette machine.
+> `/api/health/ready` annonce d'ailleurs `status: ok` alors que `restore_drill` est `degraded`.
+>
+> **Rien n'a été changé, et c'est délibéré.** `APP_ENV=production` ferait REFUSER le démarrage
+> (`POS_SIMULATION_HARDWARE must be false in production`) → service à terre. Et
+> `POS_SIMULATION_HARDWARE=false` n'est pas une option : les terminaux ne sont pas câblés à la
+> banque. Les deux valeurs se tiennent : `staging` est un contournement pour démarrer malgré du
+> matériel non câblé. Décision d'exploitation et de conformité, pas correctif.
+> Issues chiffrées : `reports/supervision/2026-09-03/FINDING-APP-ENV-STAGING.md`.
+>
+> 🔒 **NF525 — `config:cache` ne peut plus signer avec le mauvais secret.** Douze procédures du
+> dépôt le prescrivent ; aucun test ne le gardait. `AuditLogService::secretFor()` lit
+> `env('FISCAL_AUDIT_SECRET_BRANCH_{id}')` à l'exécution : cache chaud ⇒ `env()` null ⇒ repli
+> silencieux sur le secret par défaut, et `audit_logs` est append-only. Le fond (publier les
+> secrets en config) ferait échouer les branches SANS surcharge — le repli gelé exige une
+> chaîne : **chantier sous LOCK**. En attendant, la config recense les branches porteuses
+> (l'info survit au cache) et un garde refuse le démarrage. **Prouvé mordant** : sans cache
+> `env()` lisible + recensées `[1]` ; avec cache `env()` NULL + recensées `[1]` ⇒ il lève.
+> ⚠️ Il est inerte sur la machine actuelle, cf. le constat `staging` ci-dessus.
+>
+> 🩹 **Un défaut dans mon propre garde, corrigé avant qu'il ne serve** : son message conseillait
+> `php artisan config:clear`, or artisan DÉMARRE l'application et se heurterait au garde. Il dit
+> désormais `rm bootstrap/cache/config.php`.
+>
+> 🔧 **Trois versions de PHP pour une seule machine.** `composer.json` exige `^8.1.0`, la prod
+> tourne en 8.1.2, `deploy.sh` exigeait **8.4** et la procédure appelait **php8.2**. Le script
+> officiel REFUSAIT donc de tourner en production — son garde faisait son travail — d'où des
+> déploiements à la main, hors procédure. C'est ainsi que `config:cache` a fini par être lancé.
+> `composer.json` fait autorité, un banc y attache le socle, 17 appels `php8.2` corrigés.
+>
+> 💤 Les deux composants dashboard non montés portent désormais la mention dans leur propre
+> source : ni supprimés, ni montés — la décision produit reste ouverte, mais elle ne se
+> redécouvrira plus.
+
+> **2026-09-03 — CONVERGENCE : LA MOITIÉ DE CE QUE DEUX AUDITS AFFIRMAIENT ÉTAIT FAUX**
+>
+> Suites complètes **VERTES** : PHPUnit **5 991 / 0 échec** (6 incomplets, 36 sautés) ·
+> Vitest **531 fichiers, 4 375 tests / 0 rouge** · campagne navigateur de clôture **4/4** ·
+> 5 sentinelles de fraîcheur vertes · zone gelée **0 ligne** · `safety-check` PASS ·
+> `fiscal:verify-chain --all` **CHAIN OK** sur 6 branches. Journaux bruts dans
+> `reports/supervision/2026-09-03/`.
+>
+> 🔴 **CE QUE LA RE-VÉRIFICATION A COÛTÉ AUX AUDITS D'ORIGINE.** Sept affirmations de Codex
+> sont fausses sur ce HEAD : zone gelée prétendue modifiée (diff vide), `safety-check`
+> prétendu bloquant (PASS), trois sentinelles PHP prétendues rouges (vertes 9/9), campagne
+> caisse prétendue en échec (11/11), contrôles `pos-control-*` prétendus absents — ils sont
+> dans le morceau différé `pos-shell`, pas dans `pos-app` —, zéro route dashboard prétendue
+> non testée (0 réellement), message d'exception prétendu renvoyé brut (déjà traduit). Côté
+> vitrine, **19 des 41 tickets vérifiables étaient déjà corrigés**, 1 réfuté par la mesure,
+> 1 non reproductible. Cause commune : instantané mouvant + `grep` littéraux aveugles à la
+> concaténation d'URL et au découpage Webpack.
+>
+> 💣 **LE DÉFAUT LE PLUS COÛTEUX TENAIT EN UNE COMMANDE.** Quatre sentinelles Vitest rouges,
+> cinq échecs Playwright et « le tiroir existe mais n'est pas livré » avaient UNE cause : les
+> sources du 2 septembre 23h24 n'étaient pas compilées. `npm run production` a tout fermé.
+>
+> **NEUF P1 RÉELS FERMÉS**, chacun par un banc prouvé rouge sans son correctif (sorties
+> conservées dans `G*-bancs-mordent.txt`) : le tiroir de caisse jetait les commandes les plus
+> ANCIENNES au-delà de 100, sans rien dire · la relance outbox ne disait jamais combien ·
+> **2 150 claims orphelins** étaient chargés puis jetés sans être affichés · la purge comptait
+> une table et en supprimait une autre · l'audit de purge écrivait le nombre supprimé AVANT le
+> `DELETE` · un worker de notifications vivant affichait la file outbox « up » alors qu'elle
+> était morte · l'audit d'une bascule précédait la mutation · un dump corrompu était présenté
+> comme « réellement remonté » · six des neuf sorties d'échec du drill ne persistaient rien.
+>
+> 🔍 **CINQ TROUVAILLES EN PROPRE**, qu'aucun des deux audits n'avait vues. La carte sauvegarde
+> restait verte **29 minutes par jour** en contredisant la bande d'alertes du même écran ·
+> trois surfaces lisaient le dossier de sauvegardes avec DEUX motifs, rendant le rapprochement
+> structurellement impossible (rouge permanent, pire qu'un faux vert) · le sondage périodique
+> **effaçait** le message d'échec d'une bascule · un bouton promettait « Clôture du jour » sur
+> une surface NF525 alors que `eodSynthesis()` est une lecture pure — trouvé en LISANT la
+> capture · deux composants du tableau de bord ne sont montés nulle part, dont un gardé par
+> trois tests verts.
+>
+> Sur le tableau de bord, le vrai défaut n'était pas l'absence de tests : sur **cinq composants
+> sur six**, un échec réseau était indiscernable d'une journée creuse. `OrderStatistics` faisait
+> pire — une journée à zéro affiche « 0 », l'échec affichait du BLANC. Et `RealtimeReport`
+> levait son drapeau d'échec alors que les deux branches rendaient la même chose : un correctif
+> qui avait l'air appliqué et n'avait aucun effet.
+>
+> ⚠️ **UNE ERREUR DE MA PART** : le commit caisse a emporté six clés `fr.json` d'un autre
+> chantier — fichier transversal commité pendant qu'un agent y écrivait. Rien de cassé,
+> attribution fausse. Un fichier de traduction se commite en dernier, jamais avec un lot.
+>
+> **PORTES PROPRIÉTAIRE OUVERTES** : sort des 2 composants morts · production en **PHP 8.1**
+> contre un script qui installe **8.4** (recommandation : pré-vol qui REFUSE) · déploiement
+> vitrine, commit posé en local et **non poussé** · politique d'upsell (mesure faite : deux
+> murs et non trois, un écran groupé n'économise qu'UN clic sur six) · CGV « sur place » contre
+> accueil « tout à emporter ».
+>
+> **NON CORRIGÉ, PORTÉ** : 5 violations du garde de prix toutes ANTÉRIEURES (vérifiées au HEAD
+> d'ouverture) dont une signature en retard depuis le 10 mai · une sauvegarde de sécurité VIDE
+> prise avant une synchro le 30 août en production. Le « dump de 20 octets » de l'audit n'existe
+> pas en production : c'est un fichier local d'un octet, désormais rejeté par un banc.
+>
+> Détail complet : `reports/supervision/2026-09-03/RAPPORT-DE-CLOTURE.md`.
+
+> **2026-09-03 — DÉPLOIEMENT EN PRODUCTION : fait, vérifié sur le contenu servi — et un piège NF525 démontré**
+>
+> Production `f0da0bc8` → **`23c2ef26`**. Chaîne complète exécutée : fusion des 208 commits,
+> suites complètes, push, bascule serveur, reconstruction des assets, vérification.
+>
+> **PORTAIL** — PHPUnit **5964 tests / 24 246 assertions / 0 échec** (35 min) ·
+> Vitest **518 fichiers / 4284 tests / 0 échec** · zone gelée **15 fichiers / 0 divergent** ·
+> NF525 `CHAIN OK` avant ET après.
+>
+> **PREUVE DU CONTENU SERVI** (pas du fichier sur disque) — le manifeste ne référence plus que
+> `pos-shell.2e94ebe2.js`, le bundle que le build vient de produire, et ce bundle contient
+> `pos-control-drawer` (la nouvelle fonctionnalité caisse). `/login`, `/admin/pos`, `/kiosk/idle`
+> répondent **200** depuis l'internet. ⚠ L'app est servie sur `vps-418872ac.vps.ovh.net`, PAS sur
+> `lecayenne.fr` (qui est la vitrine Vercel) : tester sur le mauvais hôte rend des 404 trompeurs.
+>
+> **⛔ PIÈGE NF525 DÉMONTRÉ EN PRODUCTION** — `php artisan config:cache` fait passer
+> `fiscal:verify-chain --all` de `CHAIN OK` à **`TAMPER detected`** ; `config:clear` le ramène à
+> `CHAIN OK`. Cause : `AuditLogService.php:324` lit la clé DYNAMIQUE
+> `FISCAL_AUDIT_SECRET_BRANCH_{id}` via `env()`, nul dès que la config est en cache. Le piège
+> était **nommé dans le code** (`FiscalChainValidator.php:189`) mais jamais gardé — et **six
+> procédures du dépôt prescrivent `config:cache`**. Une commande encaissée pendant la fenêtre
+> serait signée avec le mauvais secret, et `audit_logs` est append-only : scission définitive.
+> **Aucun dégât** (0 commande, 0 écriture pendant la fenêtre) ; installation laissée sans cache.
+> Correctif NON fait : il exige de toucher `AuditLogService.php` (zone gelée §7) pour rendre sûr
+> le repli quand la branche manque du tableau. **LOCK + contreseing requis.**
+> Détail : `reports/chef-2026-09-03/PIEGE_CONFIG_CACHE_NF525.md`.
+>
+> **AUTRES ACQUIS** — la clé de déploiement `~/.ssh/gh_deploy` du VPS fonctionne (elle n'était pas
+> désignée, d'où « la prod ne peut pas tirer ») ; le code y a été poussé directement depuis le poste.
+> Le staging de 220 fichiers était **périmé à 94 %** (207 identiques à origin, 13 en retard) et
+> l'aurait fait régresser (CSP plus permissif, pré-remplissage du mot de passe de démo, ligne
+> `composition_snapshot` sans son annotation NF525) — écarté après sauvegarde en correctif.
+>
+> **EN ATTENTE** — migration `2026_08_28_120000_declare_le_tampon_halal_des_installations_existantes`
+> toujours non appliquée en production (antérieure à ce déploiement, décision propriétaire).
+
+
+> _(Fusion 2026-09-02 : les deux lignées du §2 sont conservées — celle d'`origin`,
+> qui est ce que la production sert, puis celle de la branche locale. Rien n'est perdu.)_
+
+> **2026-08-28 — AUDIT SUPERVISEUR DE LA CAISSE : CONVERGENCE, PUIS DÉPLOIEMENT VÉRIFIÉ**
+>
+> **DÉPLOYÉ EN PRODUCTION** — `dae9917d2` sur `pos/category-first-caisse-2026-06-23`, VPS à
+> l'arbre propre, assets recompilés sur place, caches vidés. Vérifié sur le CONTENU SERVI, pas
+> sur ce que je croyais avoir poussé : `/login` répond 200 avec `app.js`,
+> `authEndpoint:"/api/broadcasting/auth"` est bien RELATIF dans le bundle,
+> `Intl.NumberFormat` présent ×2 dans `pos-wizard.js`, `xl:flex-wrap` dans le bundle KDS,
+> en-tête `img-src … https://vps-418872ac.vps.ovh.net` dérivé de l'APP_URL de production.
+> NF525 : **CHAIN OK**.
+>
+> **CONVERGENCE ATTEINTE** — la règle demande deux rondes consécutives identiques ; il y en a
+> eu **trois**. Sur les cinq vagues : 0 requête en échec (contre 67 au départ), 0 violation de
+> politique (19), 0 erreur console (62), 0 libellé de traduction non résolu.
+>
+> **17 correctifs**, chacun tenu par un test tué par mutation — 24 mutants posés, 24 tués.
+> Le panier PERDAIT un ingrédient (deux lignes différentes s'affichaient à l'identique) · le
+> `×2` d'un supplément disparaissait en cuisine · la bannière de caisse annonçait 7,50 €
+> quand la page montrait 5,00 € (P0) · sept lignes « À encaisser » sur des commandes ANNULÉES ·
+> « 0 à encaisser » et « 2 à encaisser » à 40 px d'écart · trois boutons « Encaisser »
+> identiques pour trois montants · l'assistant affichait « €7.40 » sur une caisse française.
+>
+> 🔴 **CE QUE CET AUDIT A COÛTÉ À SES PROPRES AFFIRMATIONS** — c'est la partie qui sert le plus
+> à la suite, et chaque point a produit un garde-fou permanent, pas seulement un correctif :
+> **quatre défauts trouvés visaient des correctifs déjà livrés dans cette même mission** (dont
+> le P0 : j'avais restreint un chiffre à la période sans toucher au libellé) · **deux visaient
+> le harnais** (Playwright sans locale ni fuseau — aucune conclusion sur les dates n'était
+> fiable ; un compteur annonçant « 24 tables » sur une page qui en affiche une) · **un test
+> committé ne testait rien** (adresse absolue → autre origine → page NON connectée → « pas
+> d'en-tête d'admin » trivialement vrai ; il porte désormais un garde qui refuse de conclure
+> sans session) · **un constat porté deux rondes était FAUX** (« deux lots en 404 face client »
+> = artefact de worktree) · **la couverture se surestimait de 50 %** (5 états sur 10 étaient
+> des doublons au bit près, dont un IMPOSSIBLE à atteindre par construction) · **un détecteur
+> fabriquait 25 faux positifs** (il comptait les noms de routes de la Debugbar comme des clés
+> non résolues).
+>
+> 🔒 **ZONE GELÉE, PROCÉDURE COMPLÈTE** — `public/js/pos-wizard.js` touché sous
+> `plans/LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26.md`, committé SÉPARÉMENT puis cité par le
+> patch. Le hook a bloqué trois fois avant que la forme soit juste ; `--no-verify` n'a JAMAIS
+> été utilisé. Empreinte SHA-256 de la sentinelle alignée sur le seul fichier autorisé.
+> Justification : le gel porte sur LE DESIGN, le format d'un nombre n'en fait pas partie — et
+> ce fichier était le DERNIER endroit du produit encore en format anglais, le backend ayant
+> convergé le 2026-05-23.
+>
+> 💣 **UNE MINE DÉSAMORCÉE** — la CSP en `report_only` masquait que son durcissement aurait
+> BLOQUÉ `/api/broadcasting/auth` : cuisine et mur client cessant de recevoir les commandes, le
+> repli par sondage déjà désactivé, et les écrans continuant d'afficher « Mis à jour à
+> l'instant » sur des données figées. Deux corrections de natures différentes, et la
+> distinction est tout le sujet : l'adresse du temps réel n'avait AUCUNE raison d'être absolue
+> (rendue relative) ; celle des images de la roue l'est DÉLIBÉRÉMENT (vitrine servie par un
+> autre domaine), c'est la politique qui devait l'admettre. Le mode reste `report_only` : le
+> durcissement est une décision d'exploitation, et un test le verrouille.
+>
+> ⚠️ **FUSION AVEC LA CONSOLIDATION (121 commits)** — une autre session avait déjà intégré une
+> version antérieure de ce travail. Un seul conflit (`fr.json`, chacun ses clés) résolu HUNK
+> PAR HUNK. Et un piège exact de la mémoire : ma capture a rougi sur le libellé
+> « Suppléments » — non par régression, mais parce que l'autre session avait justement
+> DÉSAMBIGUÏSÉ `addons` → « Produits associés » et `extras` → « Suppléments ». C'était MON test
+> qui était périmé. Avant de valider, les 17 correctifs ont été vérifiés UN PAR UN par leur
+> marque dans le code, pas en lisant un compteur de tests.
+>
+> **Vérification** : Vitest **501 fichiers / 4046 verts** sur la base fusionnée. Zones gelées :
+> une seule touchée, sous LOCK. PHPUnit : 11 rouges **antérieurs** à ce travail — 10 passent en
+> isolation (ordonnancement), le 11ᵉ est réel mais daté du 2026-08-14 sur des routes que le
+> diff ne touche pas. Signalé, pas corrigé en douce.
+>
+> **RESTE, ET C'EST UNE DÉCISION PROPRIÉTAIRE** : AB-004. La mesure manquante est posée et dit
+> plus que le constat (141 px cachés en 1024×600, mais AUSSI 67 px en 1366×768 dès qu'il y a
+> une vraie composition). Le bandeau blanc est corrigé. Ce qui manque — rendre sa place au
+> corps du panier — rouvrirait un arbitrage DÉJÀ TRANCHÉ en faveur du champ « Nom du client »,
+> le nom qui s'imprime sur le ticket cuisine.
+>
+> Rapports : `reports/test-e2e/supervisor-caisse-2026-08-24/{RONDE-3,RONDE-4,CONVERGENCE_FINAL}.md`
+
+
+> **2026-08-28 — CONSOLIDATION : QUATRE LIGNES DE TRAVAIL RÉUNIES, ET QUATRE CORRECTIFS FAITS EN DOUBLE**
+>
+> Branche `release/consolidation-2026-08-28`, **138 commits** au-dessus de la ligne servie.
+> Réunit : `origin/pos/category-first-caisse` (38 commits caisse/borne d'autres sessions),
+> `goal/caisse-vision-2026-08-24` (20 correctifs, campagne AB + C/D), `goal/onboarding-commercant-2026-08-26`
+> (**les 14 missions ONB, 113 commits**), et le GOAL CONSOLIDATION du 2026-08-25 (commit local « big »).
+>
+> **CE QUI EST VÉRIFIÉ**
+> · `tests/Feature/Sentinels` : **83 échecs / 278 passés — EXACTEMENT les chiffres de la ligne servie**,
+>   suite jouée deux fois dans la même base pour établir la référence. Zéro régression. Les 83 sont
+>   environnementaux (base de test neuve, sans les données que ces bancs attendent) : la ligne servie
+>   les échoue à l'identique. Sans ce contrôle j'aurais lu « 84 échecs » et conclu au désastre.
+> · Vitest : **4034 tests, 498 fichiers, TOUT vert** (après recompilation des bundles).
+> · Zone gelée : backend **zéro ligne**. Frontend : `pos-wizard.js` seul, sous LOCK **APPROVED**
+>   (`LOCK_POS_WIZARD_FMT_MONETAIRE_FR_2026-08-26`, délégation propriétaire du 2026-08-26).
+> · NF525 : `fiscal:verify-chain --all` → **CHAIN OK sur les 6 succursales actives**.
+>
+> 🚫 **CE QUI EST VOLONTAIREMENT RESTÉ DEHORS — gate propriétaire.** Le commit local `6a2264085`
+> (carte de sauces canonique) touche `pos-wizard.js`, `pos-wizard.css` ET `admin-pos-v4.blade.php`
+> sous un LOCK qui porte encore « **brouillon, en attente de contreseing** ». CLAUDE.md §10 en fait
+> une décision humaine. Le LOCK lui-même est intégré pour être lisible avant signature.
+>
+> 🪤 **LE PIÈGE DE CETTE SESSION : une correction juste peut devenir FAUSSE en fusionnant.** ONB-10
+> avait corrigé le bandeau de caisse (« aujourd'hui » sur une somme qui ne l'était pas) en renommant
+> le libellé « depuis l'ouverture ». La ligne servie avait corrigé le même défaut autrement, en
+> séparant DEUX champs — `cash_collected` (depuis l'ouverture) et `cash_collected_in_period` (borné à
+> la période, FIX-3). Fusionnés, le libellé ONB se retrouvait collé au champ BORNÉ À LA PÉRIODE :
+> le défaut d'origine, avec un autre mot faux. **Les deux branches étaient vertes séparément.** Aucun
+> banc n'attrape ça. Quatre doublons de ce type trouvés (bandeau, identifiants de démo dans le bundle,
+> bornage SLA, seeder de permissions) — détail dans `CONSTATS_OUVERTS_2026-08-28.md` §F4.
+>
+> ⚠️ Deux bancs gardaient un DÉFAUT au lieu d'un acquis, et refusaient donc sa correction :
+> `kdsStationFiltreCouverture` affirmait que le filtre KDS n'offre pas « none » (ONB-08 l'a ajouté) ;
+> `libelleReconciliationCaisse` épinglait un libellé plutôt que l'appariement libellé/champ. Les deux
+> retournés, le second prouvé mordant (défaut réintroduit → 3 tests sur 4 tombent).
+>
+> 📌 Reste à faire, nommé : `audit-supervisor-waveA.spec.js` code en dur id=25 et id=27, **tous deux
+> en status 10 — non vendables** (relevé en base, pas deviné). Cliquet de dette relevé 24/56 → 28/65,
+> concession écrite en clair. Et les 11 constats ONB déjà ouverts, dont 5 gates propriétaire.
+
 > **2026-09-02 — GOAL `CAISSE_CONTRÔLE` : la caisse pilote enfin son service, sans changer de page**
 >
 > Branche `pos/category-first-caisse-2026-06-23`. Rien de commité : tout est dans l'arbre.

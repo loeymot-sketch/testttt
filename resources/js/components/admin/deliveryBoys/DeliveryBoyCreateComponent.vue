@@ -25,7 +25,11 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="phone" class="db-field-title">{{ $t('label.phone') }}</label>
+                        <!-- [ONB-06 2026-08-28] `users.phone` est NOT NULL depuis mai : le champ
+                             est obligatoire, il doit le DIRE. Sans l'asterisque, le
+                             commercant le laissait vide et recevait « erreur de base de
+                             donnees ». -->
+                        <label for="phone" class="db-field-title required">{{ $t('label.phone') }}</label>
                         <div :class="errors.phone ? 'invalid' : ''" class="db-field-control flex items-center">
                             <div class="w-fit flex-shrink-0 dropdown-group">
                                 <button type="button" class="flex items-center gap-1 dropdown-btn">

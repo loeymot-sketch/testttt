@@ -44,6 +44,40 @@ class BranchRequest extends FormRequest
             'zip_code'  => ['required', 'string'],
             'address'   => ['required', 'string', 'max:500'],
             'status'    => ['required', 'numeric', 'max:24'],
+
+            // [ONB-01 T-1.2.1 2026-08-27] Identité fiscale de l'établissement.
+            // Ces trois colonnes existent depuis la migration
+            // 2026_04_20_210000_add_fiscal_identity_to_branches et sont LUES par
+            // ReceiptDataService (pos_siret / pos_vat_intra / pos_legal_footer),
+            // mais elles n'avaient aucune règle ici. Or BranchService fait
+            // `Branch::create($request->validated())` : sans règle, un champ n'est
+            // JAMAIS enregistré. Conséquence : un nouveau commerçant imprimait un
+            // ticket sans SIRET — ce qui n'est pas tenable sur un ticket français.
+            // `nullable` et non `required` : les filiales déjà créées doivent
+            // continuer à s'enregistrer sans être bloquées rétroactivement.
+            'siret'         => ['nullable', 'string', 'regex:/^\d{14}$/'],
+            'vat_intra'     => ['nullable', 'string', 'max:16', 'regex:/^[A-Za-z]{2}[A-Za-z0-9 ]{2,14}$/'],
+            'legal_footer'  => ['nullable', 'string', 'max:500'],
+
+            // [ONB-01 / agent ROUGE 2026-08-27] Oubli du premier passage, trouvé en
+            // cherchant à casser le correctif : `register_id` est fillable sur le
+            // modèle (Branch.php:18) ET imprimé sur le ticket comme les trois autres
+            // (ReceiptDataService : 'pos_register_id'), mais n'avait aucune règle —
+            // donc jamais dans validated(), donc jamais enregistrable. J'avais comblé
+            // trois champs sur quatre et annoncé le trou bouché.
+            'register_id'   => ['nullable', 'string', 'max:32'],
+        ];
+    }
+
+    /**
+     * Messages en français : un commerçant doit comprendre ce qu'on lui demande
+     * sans traduire un message d'expression rationnelle.
+     */
+    public function messages(): array
+    {
+        return [
+            'siret.regex'     => __('validation.custom.siret.regex'),
+            'vat_intra.regex' => __('validation.custom.vat_intra.regex'),
         ];
     }
 }

@@ -46,6 +46,21 @@
                          veille + 3 depuis minuit = « 143 aujourd'hui »). Le mot bascule dès que
                          la fenêtre s'étend sur deux jours civils. -->
                     <span>{{ stats.todayCount }} {{ windowSpansTwoDays ? $t('pos.tracker.service_total') : $t('pos.tracker.today_total') }}</span>
+                    <!-- [GOAL G1 2026-09-03] LA TRONCATURE NE PEUT PLUS SE CACHER. Le compteur
+                         ci-dessus comptait les lignes REÇUES : sur une page de cent, il annonçait
+                         « 100 aujourd'hui » pour 137, et les 37 manquantes étaient les plus
+                         ANCIENNES. La borne serveur ne mord plus sur un service réel — si elle
+                         mordait, elle se dit ici, avec les deux nombres. -->
+                    <span
+                        v-if="troncatureService"
+                        class="pos-tracker-status-pill pos-tracker-status-pill--stale"
+                        role="status"
+                        data-testid="tracker-troncature-pill"
+                        title="Le service dépasse ce que cet écran peut charger d'un coup"
+                    >
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        {{ troncatureService.affichees }} affichées sur {{ troncatureService.total }}
+                    </span>
                     <!-- [COMMANDES EN SOUFFRANCE 2026-08-19] Le tableau ne montre que la journée
                          de SERVICE : tout ce qui traîne au-delà était devenu invisible (577 non
                          terminées mesurées le 2026-08-19, dont 486 payées, la plus ancienne du
@@ -322,7 +337,16 @@
                             -->
                             <div class="pos-tracker-card-customer" v-if="customerLabel(order) || customerPhone(order)">
                                 <i class="fa-solid fa-user" aria-hidden="true"></i>
-                                <span>{{ customerLabel(order) }}</span>
+                                <!--
+                                  [AUDIT-SUPERVISEUR 2026-08-26 · AB-015] « Karim Bensa... »
+                                  Ce nom est coupé par `text-overflow: ellipsis` et ne portait
+                                  AUCUN title : le nom entier n'existait qu'indirectement, dans
+                                  l'infobulle du lien téléphone voisin — donc inatteignable sur
+                                  une caisse tactile, où il n'y a pas de survol.
+                                  La donnée est déjà côté client ; il suffisait de la nommer.
+                                  C'est le nom que le caissier lit pour appeler le client.
+                                -->
+                                <span :title="customerLabel(order)">{{ customerLabel(order) }}</span>
                                 <a
                                     v-if="customerPhone(order)"
                                     class="pos-tracker-card-phone"
@@ -517,11 +541,25 @@
                                       [POS-V4-CASHIER-OPS 2026-05-02] One-click reprint.
                                       Loads full order then mounts ReceiptComponent inside this view.
                                     -->
+                                    <!--
+                                      [AUDIT-SUPERVISEUR 2026-08-26 · AB-009] DEUX CARRÉS DE 30 PX,
+                                      CÔTE À CÔTE, DONT L'UN ANNULE LA COMMANDE.
+                                      Ces boutons n'avaient qu'un `title` pour se distinguer — le
+                                      mécanisme le plus faible, et INATTEIGNABLE sur une caisse
+                                      tactile : il n'y a pas de survol au doigt. Rien à l'écran ne
+                                      séparait « imprimer » de « annuler ».
+                                      On ajoute un nom accessible EXPLICITE (plus de repli sur
+                                      `title`) et, sur l'action destructrice, un libellé VISIBLE —
+                                      le patron du bouton « Rembourser » quelques lignes plus bas.
+                                      Le numéro de commande entre dans le nom : trois boutons
+                                      « Annuler » identiques au lecteur d'écran ne valent pas mieux.
+                                    -->
                                     <button
                                         type="button"
                                         class="pos-tracker-card-btn"
                                         :disabled="reprintBusyId === order.id"
                                         :title="$t('pos.reprint_ticket_hint')"
+                                        :aria-label="`${$t('pos.reprint_ticket')} — ${order.order_serial_no || order.id}`"
                                         :data-testid="`tracker-reprint-${order.id}`"
                                         @click="requestReprint(order)"
                                     >
@@ -551,10 +589,12 @@
                                         type="button"
                                         class="pos-tracker-card-btn pos-tracker-card-btn--danger"
                                         :title="$t('pos.cancel_order_hint')"
+                                        :aria-label="`${$t('label.cancel')} — ${order.order_serial_no || order.id}`"
                                         :data-testid="`tracker-cancel-${order.id}`"
                                         @click="openCancelDialog(order)"
                                     >
                                         <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ $t('label.cancel') }}</span>
                                     </button>
                                     <button
                                         v-else-if="col.id !== 'delivered' && cancelBlockedReason(order) === 'sealed' && canRefundSealed"
@@ -996,24 +1036,6 @@ import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
-// [GOAL CAISSE CONTRÔLE 2026-09-02] Règles de lecture d'une commande, PARTAGÉES avec le tiroir de
-// contrôle de la caisse (`PosControlDrawer.vue`). Elles étaient des `methods:` d'ici ; les recopier
-// ailleurs garantissait la divergence — la troncature « +N » a déjà été corrigée DEUX fois
-// (FIX-6/A-006 puis A-016) et un doublon aurait raté la seconde.
-import {
-    BUDGET_COMPO as BUDGET_COMPO_PARTAGE,
-    nomProduit as nomProduitPartage,
-    resumeComposition as resumeCompositionPartage,
-    compoAffichee as compoAfficheePartage,
-    lignesCompletes as lignesCompletesPartage,
-    itemsPreview as itemsPreviewPartage,
-    extraItemsCount as extraItemsCountPartage,
-    aDuContenuAVoir as aDuContenuAVoirPartage,
-    listeNommee as listeNommeePartage,
-    ageCourt as ageCourtPartage,
-    heureCourte as heureCourtePartage,
-} from '../../../support/compositionCommande';
-import { canalDe, iconeCanal } from '../../../support/canalCommande';
 
 /**
  * [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Budget de la composition affichée sur la carte,
@@ -1024,12 +1046,8 @@ import { canalDe, iconeCanal } from '../../../support/canalCommande';
  * Valeur choisie pour ~2 lignes de 11 px dans une colonne de carte, et volontairement
  * généreuse : la composition la plus riche relevée en audit (« Galette · Algerienne ·
  * Bien cuit · +2 Cheddar · +Salade », 54 caractères) passe ENTIÈRE.
- *
- * [GOAL CAISSE CONTRÔLE 2026-09-02] La constante et les règles qui l'entourent vivent désormais
- * dans `resources/js/support/compositionCommande.js`. Ré-exportée ici À L'IDENTIQUE :
- * `tests/js/posTrackerCanalLisible.spec.js` l'importe depuis ce composant et doit le pouvoir.
  */
-export const BUDGET_COMPO = BUDGET_COMPO_PARTAGE;
+export const BUDGET_COMPO = 58;
 
 const POLL_WS_MS = 60000;
 // [MULTI-DEVICE 2026-08-07] 8 s → 5 s sur demande du propriétaire, qui accepte
@@ -1098,6 +1116,10 @@ export default {
             staleError: '',
             promoFlyerPrefill: '',
             orders: [],
+            // [GOAL G1 2026-09-03] `{ total, affichees }` si le serveur a écourté la journée,
+            // `null` sinon. Une troncature muette se lit « il n'y a que ça » — c'est très
+            // exactement ce que faisait l'ancienne page de cent.
+            troncatureService: null,
             filters: {
                 query: '',
                 source: 'all',
@@ -1470,7 +1492,26 @@ export default {
                     highlight: true,
                     orders: b.accept,
                     emptyIcon: '✓',
-                    emptyLabel: this.$t('pos.tracker.empty_accept'),
+                    /*
+                     * [AUDIT-SUPERVISEUR 2026-08-26 · AB-002] DEUX AFFIRMATIONS CONTRADICTOIRES
+                     * SUR L'ARGENT DÛ, À QUARANTE PIXELS D'ÉCART.
+                     *
+                     * Le bandeau annonçait « 2 commande(s) à encaisser hors de ce tableau »
+                     * pendant que cette colonne affichait « 0 » et « Aucune commande à
+                     * encaisser. » Les deux chiffres sont JUSTES — le bandeau compte les
+                     * commandes antérieures à la journée de service, la colonne montre la
+                     * journée — mais rien ne le disait, et un lecteur d'écran n'entendait que
+                     * « 0 À encaisser ».
+                     *
+                     * Le message vide porte désormais la même qualification que le bandeau.
+                     * L'état vide filtré du même composant le fait déjà (« Aucune commande
+                     * Téléphone dans « À encaisser » — filtre canal actif ») : on s'aligne.
+                     */
+                    emptyLabel: this.olderPendingCount > 0
+                        ? this.$t('pos.tracker.empty_accept_avec_anterieures', {
+                            count: this.olderPendingCount,
+                        })
+                        : this.$t('pos.tracker.empty_accept'),
                 },
                 {
                     id: 'preparing',
@@ -1819,32 +1860,33 @@ export default {
             this._fetchInFlight = true;
             this.loading = this.orders.length === 0;
             try {
-                const today = this._todayRange();
-                const res = await this.$store.dispatch('posOrder/lists', {
-                    // [POSPERF-07 2026-07-22] `paginate: 1` makes OrderService::list
-                    // HONOUR per_page — without it the backend runs ->get('*') and
-                    // returns EVERY order of the day (unbounded) with 8 eager
-                    // relations each. `lean: 1` swaps the heavy OrderResource
-                    // eager-load set (media/category/roles/branch/transaction.order),
-                    // which SimpleOrderResource never reads, for the tracker's real
-                    // needs (transaction/user/orderItems.orderItem) → lighter payload.
-                    // 100 most-recent (id desc) covers every active lane; only stale
-                    // DELIVERED rows beyond 100 fall off (they live in the muted lane).
-                    paginate: 1,
-                    per_page: 100,
-                    lean: 1,
-                    // [GOAL-CAISSE-VISION 2026-08-24] Le suivi est le SEUL écran qui
-                    // affiche la composition d'une commande. Il la demande donc
-                    // explicitement : sans ce drapeau, elle partait aussi vers
-                    // l'historique et le rapport de ventes, qui ne la montrent pas
-                    // (+60 Ko mesurés sur un export non borné, pour zéro usage).
+                //
+                // [GOAL G1 2026-09-03] LA BORNE DE CENT A DISPARU. Cet appel demandait
+                // `paginate: 1, per_page: 100` sur `admin/pos-order`. Le commentaire d'alors
+                // affirmait que « seules les DELIVERED périmées au-delà de 100 tombent » : c'était
+                // FAUX. `OrderService::list` trie `id desc`, donc au-delà de cent commandes dans
+                // le service, ce sont les PLUS ANCIENNES de TOUTES les voies qui tombaient — y
+                // compris une commande à encaisser oubliée depuis l'ouverture. Le compteur
+                // « X aujourd'hui » annonçait alors 100 pour 137, sans rien signaler.
+                //
+                // `admin/pos-order/service-day` borne SERVEUR à la journée de service (miroir de
+                // `posServiceDay.js`, plus aucune chance que client et serveur parlent de deux
+                // journées différentes) et renvoie `meta.total`. `avec_terminales` rajoute les
+                // annulées / rejetées / rendues : elles n'ont aucune voie sur le tableau, mais le
+                // compteur « X aujourd'hui » les compte, et il doit rester exact.
+                //
+                // [GOAL-CAISSE-VISION 2026-08-24] `composition` reste explicite : le suivi est le
+                // SEUL écran qui affiche le contenu d'une commande — sans ce drapeau il partait
+                // aussi vers l'historique et le rapport de ventes, qui ne le montrent pas
+                // (+60 Ko mesurés sur un export non borné, pour zéro usage).
+                const res = await this.$store.dispatch('posOrder/serviceDay', {
                     composition: 1,
-                    from_date: today.from,
-                    to_date: today.to,
+                    avec_terminales: 1,
                     vuex: false,
                 });
                 const data = res?.data?.data || [];
                 this.orders = Array.isArray(data) ? data : [];
+                this._retenirTroncature(res);
                 // [S2 F1 2026-07-29, révisé par auto-RED cycle 1] Ce fetch ne couvre
                 // que le JOUR COURANT alors que la file d'encaissement est all-time :
                 // une commande PENDING_COUNTER de la veille reste encaissable dans
@@ -1922,6 +1964,23 @@ export default {
          */
         _todayRange() {
             return serviceDayRange();
+        },
+        /**
+         * [GOAL G1 2026-09-03] Retient ce que le serveur DIT de sa propre réponse.
+         *
+         * Le serveur borne la journée par deux plafonds de sécurité (voir
+         * `PosOrderController::serviceDay`) qui ne mordent pas sur un service réel. S'ils
+         * mordaient, le tableau doit l'ANNONCER : c'est le SILENCE de l'ancienne borne de cent,
+         * pas la borne elle-même, qui faisait disparaître des commandes sans que personne
+         * puisse le savoir.
+         */
+        _retenirTroncature(res) {
+            const meta = res?.data?.meta;
+            const total = parseInt(meta?.total, 10);
+            const affichees = parseInt(meta?.shown, 10);
+            this.troncatureService = (Number.isFinite(total) && Number.isFinite(affichees) && total > affichees)
+                ? { total, affichees }
+                : null;
         },
         /**
          * [COMMANDES EN SOUFFRANCE 2026-08-19] Libellé de statut du panneau.
@@ -2252,14 +2311,38 @@ export default {
             this._olderPendingFetchedAt = 0;
             this.fetchOrders();
         },
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] L'heuristique de canal et ses pictogrammes vivent
-        // désormais dans `resources/js/support/canalCommande.js` : le tiroir de contrôle de la
-        // caisse doit classer les canaux À L'IDENTIQUE, et deux heuristiques parallèles auraient
-        // rejoué les deux régressions déjà payées ici (site client classé « caisse » jusqu'au
-        // 2026-07-20 ; téléphone/plateforme/livraison fondus dans « caisse » jusqu'au 2026-08-24).
-        // Le raisonnement complet est CONSERVÉ dans le module. Signature et sortie inchangées.
         sourceOf(o) {
-            return canalDe(o);
+            const surface = String(o.source_surface || o._origin || '').toLowerCase();
+            if (surface === 'kiosk') return 'kiosk';
+            if (surface === 'pos') return 'pos';
+            if (surface === 'online') return 'online';
+            // [WEB-TRACKER-VISIBILITY 2026-07-20] source_surface='web' (site client) = onglet 🌐.
+            // Avant : non reconnu → retombait sur l'heuristique order_type → classé 'pos' à tort.
+            if (surface === 'web') return 'online';
+            // [GOAL-CAISSE-VISION 2026-08-24] Trois canaux réels tombaient tous dans « Caisse ».
+            //
+            // TÉLÉPHONE (`source_surface='phone'`, créé par `OrderService.php:1273`) : le client
+            // n'est PAS là. Il faut pouvoir l'appeler, et il viendra payer au comptoir. Le
+            // confondre avec une vente au comptoir — client présent, déjà payé — c'est confondre
+            // deux situations opposées. Le mode existe depuis le 2026-07-07
+            // (`tests/Feature/Pos/PhoneOrderDeferredTest.php`) ; le suivi ne l'avait jamais su.
+            //
+            // PLATEFORME (Uber/Deliveroo) : commission de 30-35 %, ticket promo dédié — la carte
+            // proposait déjà le bouton (`isPlatformOrder`) tout en affichant « Caisse ».
+            //
+            // LIVRAISON : la commande part, elle ne sera pas retirée au comptoir.
+            if (surface === 'phone') return 'phone';
+            if (surface === 'uber_eats' || surface === 'uber' || surface === 'ubereats'
+                || surface === 'deliveroo' || surface === 'just_eat' || surface === 'justeat'
+                || surface === 'platform') return 'platform';
+            if (surface === 'delivery') return 'delivery';
+            const ot = parseInt(o.order_type, 10);
+            // Heuristics fallback when source_surface is missing
+            if (Number.isFinite(ot)) {
+                if (ot === 17 || ot === 18) return 'kiosk';
+                if (ot === 15 || ot === 20) return 'pos';
+            }
+            return 'pos';
         },
 
         /**
@@ -2296,12 +2379,39 @@ export default {
          * généreux : l'exemple relevé par la vague A (« Galette · Algerienne · Bien cuit ·
          * +2 Cheddar · +Salade », 54 caractères) passe désormais ENTIER.
          */
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] Règle de lecture PARTAGÉE — voir
-        // `resources/js/support/compositionCommande.js`. Le tiroir de contrôle de la caisse
-        // affiche les mêmes compositions ; un doublon aurait raté la seconde correction de la
-        // troncature (A-016). Le raisonnement d'origine est conservé dans le module.
         compoAffichee(item) {
-            return compoAfficheePartage(item, BUDGET_COMPO);
+            const complet = this.resumeComposition(item);
+            // [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Le budget était un nombre nu, enfermé
+            // ici. Conséquence : le superviseur a constaté que le marqueur « +N » — la
+            // pièce maîtresse de ce correctif — n'était rendu sur AUCUN des 10 états
+            // capturés, parce que la chaîne semée par le banc (54 caractères) passait sous
+            // le budget (58). Un chemin de code jamais rendu est un chemin non testé.
+            // La constante est désormais EXPORTÉE : le test construit une composition
+            // juste au-dessus et exerce réellement la branche de troncature.
+            const BUDGET = BUDGET_COMPO;
+            if (!complet || complet.length <= BUDGET) {
+                return { texte: complet, tronque: false, restants: 0 };
+            }
+
+            const morceaux = complet.split(' · ');
+            const gardes = [];
+            let longueur = 0;
+            for (const m of morceaux) {
+                const cout = gardes.length ? longueur + 3 + m.length : m.length;
+                if (gardes.length && cout > BUDGET) break;
+                gardes.push(m);
+                longueur = cout;
+            }
+            // Un premier morceau à lui seul plus long que le budget : on le garde quand même
+            // ENTIER plutôt que de couper au milieu d'un mot — mieux vaut une ligne un peu
+            // longue qu'un « Algérie… » qui ne veut rien dire.
+            if (gardes.length === 0) gardes.push(morceaux[0]);
+
+            return {
+                texte: gardes.join(' · '),
+                tronque: gardes.length < morceaux.length,
+                restants: morceaux.length - gardes.length,
+            };
         },
 
         /**
@@ -2338,27 +2448,20 @@ export default {
         },
 
         sourceIcon(o) {
-            return iconeCanal(canalDe(o));
+            const s = this.sourceOf(o);
+            if (s === 'kiosk') return '🖥️';
+            if (s === 'online') return '🌐';
+            // [GOAL-CAISSE-VISION 2026-08-24] Un pictogramme par canal réel. Le 📞
+            // dit au caissier l'essentiel en un coup d'œil : ce client n'est pas là.
+            if (s === 'phone') return '📞';
+            if (s === 'platform') return '🛵';
+            if (s === 'delivery') return '🚗';
+            return '🛒';
         },
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] L'ORDRE EST INVERSÉ, et c'est le correctif.
-        //
-        // Avant : `o.user.name` d'abord, `o.customer_name` en secours. Or `user` est le compte
-        // qui ANCRE la commande — sur une commande borne c'est le compte technique de la borne,
-        // sur une vente au comptoir c'est le CAISSIER. La carte annonçait donc « Admin Le
-        // Cayenne » ou le nom du caissier comme s'il s'agissait du client (constaté au navigateur
-        // le 2026-09-02). Un nom faux est pire qu'aucun nom : il fait chercher quelqu'un qui
-        // n'existe pas.
-        //
-        // `customer_name` est la projection SERVEUR qui, elle, connaît le canal
-        // (`SimpleOrderResource::displayCustomerName` — nom saisi pour la commande d'abord, repli
-        // sur le compte SEULEMENT quand le client est absent : web, en ligne, téléphone,
-        // livraison). C'est donc elle qui prime. Le repli sur `user` reste pour les charges utiles
-        // anciennes qui ne portent pas encore le champ.
         customerLabel(o) {
-            const duServeur = String(o.customer_name || '').trim();
-            if (duServeur) return duServeur;
             const u = o.user || {};
-            return u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
+            const n = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ');
+            return n || o.customer_name || '';
         },
 
         // [FLYER PROMO 2026-08-08] Ouvre la fenêtre « ticket promo » depuis la
@@ -2384,15 +2487,13 @@ export default {
         customerPhone(o) {
             return o.customer_phone || (o.user && o.user.phone) || '';
         },
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] Règle de lecture PARTAGÉE — voir
-        // `resources/js/support/compositionCommande.js`. Le tiroir de contrôle de la caisse
-        // affiche les mêmes compositions ; un doublon aurait raté la seconde correction de la
-        // troncature (A-016). Le raisonnement d'origine est conservé dans le module.
         itemsPreview(o) {
-            return itemsPreviewPartage(o);
+            const items = Array.isArray(o.order_items) ? o.order_items : [];
+            return items.slice(0, 3);
         },
         extraItemsCount(o) {
-            return extraItemsCountPartage(o);
+            const items = Array.isArray(o.order_items) ? o.order_items : [];
+            return Math.max(0, items.length - 3);
         },
 
         // ─────────────────────────────────────────────────────────────────────
@@ -2412,12 +2513,10 @@ export default {
          * ligne muette — une quantité, un vide, et un caissier incapable de dire ce
          * que le client tient dans la main.
          */
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] Règle de lecture PARTAGÉE — voir
-        // `resources/js/support/compositionCommande.js`. Le tiroir de contrôle de la caisse
-        // affiche les mêmes compositions ; un doublon aurait raté la seconde correction de la
-        // troncature (A-016). Le raisonnement d'origine est conservé dans le module.
         nomProduit(item) {
-            return nomProduitPartage(item, this.$t('label.deleted_item'));
+            if (!item) return this.$t('label.deleted_item');
+            const nom = String(item.item_name || item.name || '').trim();
+            return nom || this.$t('label.deleted_item');
         },
 
         /**
@@ -2426,12 +2525,31 @@ export default {
          * le détail intégral vit dans le panneau « Voir tout ».
          */
         resumeComposition(item) {
-            return resumeCompositionPartage(item);
+            if (!item) return '';
+            const morceaux = [];
+
+            (item.options || []).forEach((o) => {
+                const valeur = String(o?.value || '').trim();
+                if (!valeur) return;
+                morceaux.push(o.quantity > 1 ? `${valeur} ×${o.quantity}` : valeur);
+            });
+            (item.extras || []).forEach((e) => {
+                const nom = String(e?.name || '').trim();
+                if (!nom) return;
+                morceaux.push(e.quantity > 1 ? `+${e.quantity} ${nom}` : `+${nom}`);
+            });
+            (item.addons || []).forEach((a) => {
+                const nom = String(a?.name || '').trim();
+                if (!nom) return;
+                morceaux.push(a.quantity > 1 ? `+${a.quantity} ${nom}` : `+${nom}`);
+            });
+
+            return morceaux.join(' · ');
         },
 
         /** Toutes les lignes de la commande, telles qu'expédiées par le serveur. */
         lignesCompletes(o) {
-            return lignesCompletesPartage(o);
+            return o && Array.isArray(o.order_items) ? o.order_items : [];
         },
 
         /**
@@ -2440,12 +2558,26 @@ export default {
          * bouton qui n'ajoute rien est un bouton qui ment.
          */
         aDuContenuAVoir(o) {
-            return aDuContenuAVoirPartage(o);
+            const lignes = this.lignesCompletes(o);
+            if (lignes.length > 3) return true;
+            return lignes.some((l) => (
+                (l.options || []).length > 0
+                || (l.extras || []).length > 0
+                || (l.addons || []).length > 0
+                || (typeof l.instruction === 'string' && l.instruction.trim() !== '')
+            ));
         },
 
         /** « + 2 Cheddar, Salade » — liste nommée avec quantités implicites. */
         listeNommee(liste) {
-            return listeNommeePartage(liste);
+            return (Array.isArray(liste) ? liste : [])
+                .map((e) => {
+                    const nom = String(e?.name || '').trim();
+                    if (!nom) return '';
+                    return e.quantity > 1 ? `${e.quantity}× ${nom}` : nom;
+                })
+                .filter(Boolean)
+                .join(', ');
         },
 
         numeroCommande(o) {
@@ -2493,13 +2625,23 @@ export default {
         // same "19,00 €" string for the same numeric input. Behaviour is
         // byte-identical to the previous inline implementation (Intl
         // fr-FR EUR with NBSP separator + fallback).
-        // [GOAL CAISSE CONTRÔLE 2026-09-02] Partagé. Seule différence assumée avec la version
-        // d'origine : une date illisible rend '' au lieu de la chaîne « Invalid Date ».
         formatTime(iso) {
-            return heureCourtePartage(iso);
+            if (!iso) return '';
+            try {
+                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return ''; }
         },
         elapsedShort(iso) {
-            return ageCourtPartage(iso, this.$t('pos.tracker.now'));
+            if (!iso) return '';
+            const t = new Date(iso).getTime();
+            if (!Number.isFinite(t)) return '';
+            const diff = Math.max(0, Date.now() - t);
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return this.$t('pos.tracker.now');
+            if (mins < 60) return mins + ' min';
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h + 'h' + (m < 10 ? '0' + m : m);
         },
         // ── [CAISSE-WEB-INTEL 2026-08-06] Intelligence commandes web ─────────
         // Payée EN LIGNE (CB Mollie) : rien à encaisser — badge ✅ pour tuer le
@@ -3186,12 +3328,15 @@ export default {
    Et la couleur n'est jamais SEULE : chaque canal porte aussi un pictogramme de forme
    distincte (🛒 🖥️ 🌐 📞 🛵 🚗) plus un nom accessible — règle WCAG « pas d'information
    portée par la seule couleur ». */
-/* [GOAL CAISSE CONTRÔLE 2026-09-02] Les six teintes ont été PROMUES dans
-   `resources/css/pos-v5.css` (§ « Canaux de commande »), chargé globalement par `app.css`.
-   Motif : le tiroir de contrôle de la caisse affiche les mêmes canaux, et un `<style scoped>`
-   les lui rendait inatteignables — deux jeux de couleurs de canal auraient cohabité.
-   Le balisage et les classes de ce composant sont INCHANGÉS ; seules les déclarations ont
-   déménagé, à la valeur près. Le raisonnement A-002 ci-dessus reste vrai et y est recopié. */
+.pos-tracker-card-source--pos      { background: #DEE2E6; color: #343A40; box-shadow: inset 0 0 0 1px #9AA3AC; }
+.pos-tracker-card-source--kiosk    { background: #C3CEFF; color: #2A2377; box-shadow: inset 0 0 0 1px #8C9BF0; }
+/* [T-B ALERTE-WEB 2026-08-16 · GOAL owner] Rouge : même teinte que
+   `.pos-shortcuts__panel--web` (PosComponent.vue), identité « commande web »
+   cohérente sur tout l'écran caisse. Conservée. */
+.pos-tracker-card-source--online   { background: #FDECEA; color: #B3261E; box-shadow: inset 0 0 0 1px #F5B5AE; }
+.pos-tracker-card-source--phone    { background: #BFEBD3; color: #14532D; box-shadow: inset 0 0 0 1px #57B98A; }
+.pos-tracker-card-source--platform { background: #FFE8CC; color: #8A4B00; box-shadow: inset 0 0 0 1px #F0A952; }
+.pos-tracker-card-source--delivery { background: #E4CCFF; color: #5B1A93; box-shadow: inset 0 0 0 1px #B583E8; }
 
 /* Nom accessible du canal : lu par les lecteurs d'écran, invisible à l'œil. Défini
    localement plutôt que via `sr-only` de Tailwind — le style est `scoped`, on ne dépend

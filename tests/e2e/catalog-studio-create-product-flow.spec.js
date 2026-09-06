@@ -77,18 +77,32 @@ test.describe('Catalog Studio — create-product critical flow', () => {
       productCardForCleanup = fallbackProduct;
     }
 
+    // [ONB-03 2026-08-28] Le bouton composeur PAR PRODUIT n'apparait que si
+    // `wizard_per_item_demo` est leve. Il vaut false par defaut, et le routeur
+    // redirige alors vers le catalogue : exiger le bouton sans regarder le drapeau,
+    // c'etait exiger un bouton qui ne mene nulle part. On lit le drapeau reellement
+    // expose par le serveur, et on garde l'assertion des DEUX cotes.
+    const wizardParProduit = await page.evaluate(
+      () => window.foodkingConfig?.features?.wizard_per_item_demo === true,
+    );
+
     const wizardButton = productCardForCleanup.locator(
       '[data-testid^="catalog-studio-product-wizard-"]',
     );
-    await expect(wizardButton).toBeVisible();
-    await wizardButton.click();
 
-    const composerDrawer = page.getByTestId('catalog-studio-composer-overlay');
-    await expect(composerDrawer).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId('catalog-studio-composer-frame')).toBeVisible();
+    if (!wizardParProduit) {
+      await expect(wizardButton).toHaveCount(0);
+    } else {
+      await expect(wizardButton).toBeVisible();
+      await wizardButton.click();
 
-    await page.getByTestId('catalog-studio-composer-close').click();
-    await expect(composerDrawer).not.toBeVisible({ timeout: 10_000 });
+      const composerDrawer = page.getByTestId('catalog-studio-composer-overlay');
+      await expect(composerDrawer).toBeVisible({ timeout: 25_000 });
+      await expect(page.getByTestId('catalog-studio-composer-frame')).toBeVisible();
+
+      await page.getByTestId('catalog-studio-composer-close').click();
+      await expect(composerDrawer).not.toBeVisible({ timeout: 10_000 });
+    }
 
     try {
       const deleteCategoryBtn = newCategoryRow.locator(

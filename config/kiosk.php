@@ -316,6 +316,36 @@ $autoLoginTrustedIps = array_values(array_filter(array_map(
 )));
 
 return [
+
+    /*
+    |----------------------------------------------------------------------
+    | [ONB-05 2026-08-28] Trois cles appelees et jamais definies
+    |----------------------------------------------------------------------
+    |
+    | Les trois etaient lues par du code de production avec un repli SILENCIEUX.
+    | La plus visible : `rush_windows` retombait sur un tableau VIDE, donc
+    | `KioskMenuService::isRush()` rendait TOUJOURS faux et le bandeau « coup de
+    | feu » de `KioskWaitingComponent.vue:27` ne pouvait jamais s'afficher — une
+    | fonction livree et injoignable.
+    |
+    | Les valeurs ci-dessous reproduisent EXACTEMENT les replis d'alors : rien ne
+    | change de comportement, la molette devient simplement atteignable.
+    |
+    */
+
+    // Creneaux d'affluence, 'HH:MM-HH:MM' separes par des virgules.
+    // Exemple : KIOSK_RUSH_WINDOWS="11:45-14:00,18:30-21:30"
+    // Vide par defaut = aucun creneau, identique a aujourd'hui.
+    'rush_windows' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('KIOSK_RUSH_WINDOWS', ''))
+    ))),
+
+    // Commande borne payee et jamais retiree : delai avant nettoyage (6 h).
+    'stale_web_collect_ttl_minutes' => (int) env('KIOSK_STALE_COLLECT_TTL_MINUTES', 360),
+
+    // Mise en cache de la carte servie a la borne, en secondes.
+    'menu_cache_ttl' => (int) env('KIOSK_MENU_CACHE_TTL', 60),
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
     'auto_login_trusted_ips' => $autoLoginTrustedIps,
