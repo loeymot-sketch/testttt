@@ -135,6 +135,10 @@ donc aucune migration ni restauration de base n'est nécessaire.
 ## 8. Signature
 
 - Rédigé par : Claude (session `01GrTqufiiQqapiru57DCYK5`), 2026-09-05.
-- **Contresignature propriétaire : ☐** — requise par CLAUDE.md §10 (porte humaine) pour
-  toute modification de `public/js/pos-wizard.js`, classé **STRICT no-touch** en
-  CONSTITUTION §3.1.
+- **Contresignature propriétaire : ☑ OBTENUE le 2026-09-06.** Question posée explicitement
+  au propriétaire, avec les trois options (autoriser / laisser en l'état / voir d'abord une
+  capture) et le rappel que ce comportement date du 2026-03-21. Réponse retenue :
+  **« Autorise pos-wizard.js, applique »**.
+  Porte humaine de CLAUDE.md §10 satisfaite pour ce fichier, classé **STRICT no-touch** en
+  CONSTITUTION §3.1. Portée de l'autorisation : **ce seul correctif**, décrit au §4 —
+  elle ne vaut pas blanc-seing pour d'autres éditions du même fichier.
