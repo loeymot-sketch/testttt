@@ -3124,6 +3124,21 @@
         }
         if (lastItemData && lastItemData.extras) {
             crudites = lastItemData.extras.filter(function (extra) {
+                // [LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05 — contresigné 2026-09-06]
+                // Le GROUPE fait autorité (SSOT `item_extras.group_label`), exactement
+                // comme sur la borne (`kioskExtrasPartition.js:118-121`, mandat
+                // propriétaire du 2026-08-05 : les crudités PAYANTES s'affichent à côté
+                // des crudités, avec leur badge de prix). L'ancienne règle exigeait
+                // prix == 0 ET un nom dans une liste blanche qui ne contient ni
+                // « cornichon » ni « olive » : 57 crudités sur 132 (Maïs, Olives,
+                // Poivrons cuits à 0,90 €, sur 19 produits) tombaient dans le bac
+                // « ➕ Suppléments ». Le nom et le prix ne restent qu'un REPLI, pour les
+                // extras SANS groupe — sans groupe, il n'y a pas de vérité à préférer.
+                // Aucun prix n'est modifié : ces articles restent facturés par le serveur
+                // et l'étape affiche toujours leur badge « +0,90 € ».
+                var groupe = String(extra.group_label || '').toLowerCase();
+                if (groupe === 'crudite') return true;
+                if (groupe !== '') return false;
                 return extra.convert_price === 0 && isCruditeName(extra.name);
             });
             hasCrudites = crudites.length > 0;
