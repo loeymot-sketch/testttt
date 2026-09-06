@@ -47,6 +47,55 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-06 — MENU ENFANT : LA BORNE NE CONNAISSAIT PAS SON GABARIT. PANIER DÉBLOQUÉ.**
+>
+> Propriétaire, en service : « sur la borne, on ne propose pas la sauce des frites pour le menu
+> enfant, et ça ne passe pas au panier ».
+>
+> 🎯 **UN CORRECTIF FAIT SUR UNE SEULE SURFACE.** Le 2026-09-02, une autre session a corrigé un
+> vrai défaut — « un MENU ENFANT ne réclame plus pain/galette » — en posant
+> `item_categories.wizard_template = 'menu_enfant'` sur la catégorie 11 (`69f1c0cdc`, tests
+> `wizardTemplatePainEtSaucesMultiples.spec.js`). **`pos-wizard.js` connaît ce gabarit
+> (3 occurrences) ; `KioskWizardComponent.vue` ne connaît que 7 gabarits — tacos, sandwich,
+> burger, assiette, snacking, omelette, salade — et PAS celui-là.** La borne tombait donc dans
+> son cas `default` (`:655-663`) : **frites_style + supplements + recap, ni sauce ni formule**.
+> Or `Sauce (1ère Gratuite)` est `min_select=1` avec 16 variations actives sur les deux menus
+> enfants ⇒ le serveur REFUSAIT la ligne. **Panier bloqué, et sauce des frites absente.**
+> Mesure : les menus enfants sont passés par la borne **14 fois jusqu'au 2026-08-14**, puis plus
+> jamais, tandis que caisse (14), téléphone (23) et Uber (8) continuaient.
+>
+> ⚠️ **CE N'ÉTAIT PAS MON FILTRE D'ÉTAPES VIDES.** Vérifié : les profils 40/41 des menus enfants
+> portent `published_at = 07-17`, hors de la fenêtre `>= 2026-09-03` de mon retour arrière — je
+> ne les ai jamais touchés. La cause est le gabarit, pas la projection.
+>
+> ✅ **CORRIGÉ PAR LES DONNÉES, SANS TOUCHER À LA ZONE GELÉE.** `KioskWizardComponent:560-562` :
+> **un profil de composition publié PRIME sur le gabarit**. C'est la porte de sortie prévue par
+> l'architecture. Les profils 40 (item 40) et 41 (item 106) existaient déjà, non publiés.
+> · profil 40 portait déjà l'étape `sauce` → publié tel quel ;
+> · profil 41 n'avait que `garnitures` + `supplements` → **étape `sauce` ajoutée** (copie de
+>   l'étape 282, positions décalées ; `position` est `int unsigned`, donc pas de -1).
+> Vérifié après coup sur les DEUX surfaces : `#40 sauce(16)` · `#106 sauce(16) garnitures(6)
+> supplements(9)`. Sauvegarde TSV avant écriture.
+> **Contrôle de non-régression sur 21 produits : AUCUN écart** — tout le reste continue d'utiliser
+> son gabarit, seuls les 2 menus enfants passent par un profil. `menu:verifier-etapes` OK
+> kiosk/pos/web · CHAIN OK · `/login` `/kds` `/kiosk/idle` 200.
+>
+> 🔴 **LA SAUCE DES FRITES RESTE OUVERTE — DÉCISION PROPRIÉTAIRE, PAS DÉFAUT TECHNIQUE.**
+> `shouldShowStep('frites_sauce')` (`KioskWizardComponent.vue:1069-1074`) exige `has_menu === true`
+> **ET** une formule choisie (`menuChoice ∈ {full, frites}`). Un menu enfant EST déjà une formule :
+> catégorie 11 `has_menu = 0`, et `item_addons` est **VIDE** pour 40 et 106.
+> · Mettre `has_menu = 1` ferait apparaître une étape « Menu » **sans aucun choix** (pas d'addon).
+> · Il n'existe **AUCUNE** donnée de sauce frites dans la carte : 0 extra, 0 étape (vérifié).
+> · Les choix viendraient des 16 sauces du catalogue (`KioskStepMenuComponent.vue:350-352`), mais
+>   l'attribut 5 est `max_select=1` ⇒ une 2ᵉ sauce est facturée 0,50 € via « Sauce supplémentaire ».
+> ⇒ Offrir la sauce des frites impose de trancher : **gratuite ou payante ?** C'est une décision
+> de carte. Question posée au propriétaire, rien fait à sa place.
+>
+> 🧭 **DETTE ARCHITECTURALE, écrite par l'autre session elle-même** (spec `:18-23`) : aucun repli
+> sur le profil de CATÉGORIE — seul un profil `item_id` publié est lu. Tant que ce repli n'existe
+> pas, c'est `wizard_template` qui gouverne, et **tout nouveau gabarit doit être enseigné aux DEUX
+> surfaces**. C'est la leçon du jour.
+
 > **2026-09-05 (clôture) — LES 4 PLAINTES SONT TRANCHÉES. LE 5ᵉ POINT N'EST PAS « LA LOGIQUE D'AVANT ».**
 >
 > Le GOAL demandait « corrige tout ça **selon la logique d'avant** ». Bilan, chacun adossé à
