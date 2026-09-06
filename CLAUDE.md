@@ -93,7 +93,14 @@ correctness, coherence, reliability, and quality**.
 - **DB items table** = source officielle des produits (45 items V1 Le Cayenne)
 - **`config/menu.php`** = config menu structure si modifié post-reset
 - **`mobile/data/menu.js`** = mirror canonical mobile standalone
-- **`/Users/1millnonstop/Downloads/web/data/menu.js`** = mirror canonical web standalone
+- ⚠️ **`/Users/1millnonstop/Downloads/web/` EST UNE COPIE PÉRIMÉE — NE PAS L'UTILISER.**
+  Corrigé le 2026-09-06 : figée au 12 juillet, sans dépôt distant, `funnel.jsx` 46 Ko.
+  Le site RÉELLEMENT DÉPLOYÉ est **`/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`**
+  (distant `github.com/loeymot-sketch/Site-lecayenne`, `funnel.jsx` 177 Ko, dossier `compiled/`).
+  Ce leurre m'a fait conclure à tort « le site n'a pas bougé depuis le 24 août » alors que le
+  vrai dépôt avait été livré le 3 septembre. **Toujours vérifier `git remote -v` avant de
+  conclure quoi que ce soit sur le site.**
+- **`<dépôt déployé>/data/menu.js`** = mirror canonical web standalone
 - ⛔ **JAMAIS** inventer de produits (« Box Familiale », « Nashville », « Solo »...). Si un produit n'apparaît PAS dans la DB items table, il n'existe pas.
 - ⛔ JAMAIS deviner les noms catégorie — toujours `grep "Sandwich\|Tacos\|Bols"` la source
 
