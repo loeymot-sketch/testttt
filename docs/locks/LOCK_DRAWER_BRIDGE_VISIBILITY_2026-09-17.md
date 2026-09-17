@@ -2,9 +2,8 @@
 
 **ID :** `LOCK_DRAWER_BRIDGE_VISIBILITY_2026-09-17`
 **Date :** 2026-09-17
-**Statut :** **DRAFT — en attente de contresignature propriétaire.** Le fichier gelé n'est PAS
-committé (diff en attente dans l'arbre de travail). Rédigé dans le cadre de la clôture d'audit
-demandée par le propriétaire (« termine ce qui n'est pas fini ou pas déployé »).
+**Statut :** **APPROVED — contresigné, en cours d'application.** Rédigé dans le cadre de la
+clôture d'audit demandée par le propriétaire (« termine ce qui n'est pas fini ou pas déployé »).
 **Gate d'autorité :** aucune — c'est cette contresignature-ci qui en tient lieu (CLAUDE.md §7
 seconde branche : « gate explicite owner »).
 
@@ -100,13 +99,12 @@ chaîne fiscale, aucun autre composant POS.
 
 ## §9 Contresignature propriétaire (gate humaine)
 
-> **Rien n'est committé tant que cette section n'est pas remplie.**
+- **Propriétaire** : réponse directe en session, canal chat (session `f99fe4fa`)
+- **Décision** : [x] APPROUVÉ
+- **Horodatage** : 2026-09-17 (suite immédiate de la présentation du LOCK ci-dessus)
+- **Commentaires** : réponse verbatim — « approuvé, committe et déploie le tiroir-caisse »
 
-- **Propriétaire** : ___________________
-- **Décision** : [ ] APPROUVÉ  [ ] REJETÉ  [ ] À MODIFIER
-- **Horodatage** : ___________________
-- **Commentaires** : ___________________
-
-Après APPROUVÉ : le patch + la mise à jour de `frozen-zone-sha256-baseline.json` sont committés
-ensemble, avec ce LOCK cité dans le message de commit ; statut → `APPLIED` puis `CLOSED` une fois
-`FrozenZoneSha256BaselineSentinelTest` revérifié vert.
+Le patch + la mise à jour de `frozen-zone-sha256-baseline.json` sont committés ensemble dans ce
+même mouvement, avec ce LOCK cité dans le message de commit. Statut → `APPLIED` après commit,
+puis `CLOSED` une fois `FrozenZoneSha256BaselineSentinelTest` revérifié vert et le déploiement
+confirmé.
