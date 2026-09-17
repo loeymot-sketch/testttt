@@ -2,8 +2,9 @@
 
 **ID :** `LOCK_DRAWER_BRIDGE_VISIBILITY_2026-09-17`
 **Date :** 2026-09-17
-**Statut :** **APPROVED — contresigné, en cours d'application.** Rédigé dans le cadre de la
-clôture d'audit demandée par le propriétaire (« termine ce qui n'est pas fini ou pas déployé »).
+**Statut :** **CLOSED — déployé et vérifié en production.** Commit `63051f0cf`, fast-forward
+sur `/var/www/lecayenne` (`3e7e3236c..63051f0c`), `npm run production` rebuild serveur OK,
+chaîne fiscale et santé applicative vérifiées vertes après coup. Voir §10.
 **Gate d'autorité :** aucune — c'est cette contresignature-ci qui en tient lieu (CLAUDE.md §7
 seconde branche : « gate explicite owner »).
 
@@ -104,7 +105,23 @@ chaîne fiscale, aucun autre composant POS.
 - **Horodatage** : 2026-09-17 (suite immédiate de la présentation du LOCK ci-dessus)
 - **Commentaires** : réponse verbatim — « approuvé, committe et déploie le tiroir-caisse »
 
-Le patch + la mise à jour de `frozen-zone-sha256-baseline.json` sont committés ensemble dans ce
-même mouvement, avec ce LOCK cité dans le message de commit. Statut → `APPLIED` après commit,
-puis `CLOSED` une fois `FrozenZoneSha256BaselineSentinelTest` revérifié vert et le déploiement
-confirmé.
+Le patch + la mise à jour de `frozen-zone-sha256-baseline.json` ont été committés ensemble
+(`63051f0cf`), avec ce LOCK cité dans le message de commit.
+
+## §10 Preuve de déploiement (2026-09-17, cette session)
+
+- `git push origin pos/category-first-caisse-2026-06-23` → `3e7e3236c..63051f0cf`.
+- `ssh lecayenne` (`/var/www/lecayenne`) : working tree propre (seuls des backups JSON/TSV non
+  suivis, aucun fichier suivi modifié) → `git merge --ff-only` sans conflit →
+  `git log -1` confirme `63051f0c ... fix(pos): surface cash drawer bridge failure...`.
+- `npm run production` sur le serveur : webpack compile sans erreur, `mix-manifest.json` pointe
+  désormais vers `/js/pos-shell.c687effd.js`.
+- Vérification que le correctif est bien dans CE bundle précis (et pas seulement dans le
+  dictionnaire i18n, qui embarque toujours la clé même si elle n'est appelée nulle part) :
+  `cash_drawer_bridge_offline` apparaît **2 fois** dans `pos-shell.c687effd.js` (dictionnaire +
+  site d'appel), contre 1 seule avant ce déploiement (dictionnaire seul, code muet).
+- Après rebuild : `/api/health/ready` et `/api/healthz` toujours `ok` sur tous les sous-systèmes
+  y compris `fiscal_chain`; `/admin/pos` toujours HTTP 200.
+- Aucune migration, aucun cache Laravel touché (changement Vue pur, aucune raison de le faire).
+
+**FrozenZoneSha256BaselineSentinelTest** : vert en local avant push (vérifié cette session).

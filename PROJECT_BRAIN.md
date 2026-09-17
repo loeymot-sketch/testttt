@@ -47,6 +47,29 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-17 (suite) — LE TIROIR-CAISSE EST CLÔTURÉ : APPROUVÉ, COMMITTÉ, DÉPLOYÉ, VÉRIFIÉ.**
+>
+> Propriétaire, verbatim : « approuvé, committe et déploie le tiroir-caisse ». Séquence réelle,
+> pas déclarative :
+> · LOCK signé (`docs/locks/LOCK_DRAWER_BRIDGE_VISIBILITY_2026-09-17.md` §9-§10) ;
+> · empreinte SHA-256 de `PaymentComponent.vue` réalignée dans la baseline, sentinelle revérifiée
+>   verte AVANT commit ;
+> · suite Vitest complète relancée en réel : 4417 verts, 3 sautés, 6 échecs — tous dans
+>   `kdsSymbolicKidsMenu.spec.js` et `playwrightConfig.spec.js`, aucun rapport avec ce fichier,
+>   flaky d'une exécution à l'autre (7 puis 6 échecs sur les mêmes deux fichiers) ;
+> · `npm run production` local puis serveur, sans erreur ;
+> · commit `63051f0cf`, poussé sur `origin/pos/category-first-caisse-2026-06-23` ;
+> · `ssh lecayenne` (`/var/www/lecayenne`) : arbre de travail propre (18 backups non suivis,
+>   aucun fichier suivi modifié), `git merge --ff-only` sans conflit, `3e7e3236c..63051f0c` ;
+> · rebuild serveur, puis preuve que le correctif est dans le BON bundle (pas seulement la clé
+>   i18n, présente partout par construction) : `cash_drawer_bridge_offline` passe de 1 occurrence
+>   (dictionnaire seul) à 2 (dictionnaire + site d'appel réel) dans `pos-shell.c687effd.js` ;
+> · santé applicative et chaîne fiscale toujours `ok` après coup, `/admin/pos` toujours 200.
+>
+> Reste en dehors de cette clôture, sciemment : la vente espèces réelle de test (physique,
+> gérant sur place) et la question du purge/traitement de la file `notifications` (4 962 tâches
+> et grossit), toutes deux du ressort du propriétaire, pas de ce correctif.
+
 > **2026-09-17 — CLÔTURE DEMANDÉE PAR LE PROPRIÉTAIRE : OÙ SE SONT ARRÊTÉS TOUS LES AGENTS.**
 >
 > Propriétaire : « détermine où toutes les autres missions se sont arrêtées, termine ce qui n'est
