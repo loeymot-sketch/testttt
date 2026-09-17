@@ -877,11 +877,36 @@ export default {
                     });
                 }
 
-                if (Object.keys(item.item_variations.names).length > 0) {
+                // [Root cause 2026-09-17, propriétaire : mauvais libellés viande/sauce sur un
+                // Tacos multi-attributs commandé sur le site web] Cette boucle zippait
+                // `item_variations` (construit ci-dessus, indexé par ID d'attribut — JS trie
+                // ces clés numériquement) avec `.names` (indexé par NOM d'attribut — JS garde
+                // l'ordre d'INSERTION, donc l'ordre de clic du client) PAR POSITION. Les deux
+                // ordres ne coïncident que si le client clique ses attributs dans l'ordre
+                // croissant de leurs identifiants — sur un Tacos XL (Viande 1/2/3 = attributs
+                // 1/2/3, Sauce = attribut 5), cliquer la sauce avant la 3ᵉ viande décale déjà
+                // tout : chaque ligne affichait le nom d'un AUTRE attribut / une AUTRE viande
+                // que celle réellement choisie à cette ligne. `labelsByAttributeId` (ajouté à
+                // ItemComponent.vue::changeVariation) est indexé par le MÊME id que
+                // `item_variations` ci-dessus : on l'utilise en priorité, avec repli sur
+                // l'ancien zip positionnel pour les paniers déjà en cours (localStorage) ou les
+                // addons qui n'ont pas encore cette structure.
+                const labelsByAttributeId = item.item_variations.labelsByAttributeId || {};
+                if (Object.keys(labelsByAttributeId).length > 0) {
+                    item_variations.forEach((entry) => {
+                        const label = labelsByAttributeId[entry.item_attribute_id];
+                        if (label) {
+                            entry.variation_name = label.attribute_name;
+                            entry.name = label.variation_name;
+                        }
+                    });
+                } else if (Object.keys(item.item_variations.names).length > 0) {
                     let i = 0;
                     _.forEach(item.item_variations.names, (value, index) => {
-                        item_variations[i].variation_name = index;
-                        item_variations[i].name = value;
+                        if (item_variations[i]) {
+                            item_variations[i].variation_name = index;
+                            item_variations[i].name = value;
+                        }
                         i++;
                     });
                 }

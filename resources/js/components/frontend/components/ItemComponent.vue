@@ -326,7 +326,9 @@ export default {
                 convert_price: 0,
                 item_variations: {
                     variations: {},
-                    names: {}
+                    names: {},
+                    // [Root cause 2026-09-17, propriétaire] labelsByAttributeId ci-dessous.
+                    labelsByAttributeId: {}
                 },
                 item_extras: {
                     extras: [],
@@ -437,7 +439,8 @@ export default {
             this.temp.convert_price = 0;
             this.temp.item_variations = {
                 variations: {},
-                names: {}
+                names: {},
+                labelsByAttributeId: {}
             };
             this.temp.item_extras = {
                 extras: [],
@@ -458,6 +461,23 @@ export default {
             _.forEach(this.item.itemAttributes, (element) => {
                 if (element.id === attributeId) {
                     this.temp.item_variations.names[element.name] = variationName;
+                    // [Root cause 2026-09-17, propriétaire : mauvais libellés meat/sauce sur un
+                    // Tacos multi-viandes commandé sur le site web] `.names` est indexé par le
+                    // NOM de l'attribut ("Viande 1", "Sauce…") : JS conserve son ordre
+                    // d'INSERTION (le clic du client). `.variations` est indexé par l'ID de
+                    // l'attribut : JS trie les clés numériques par ORDRE CROISSANT, PAS par ordre
+                    // d'insertion. CheckoutComponent zippait les deux par POSITION — correct
+                    // seulement si le client cliquait ses attributs exactement dans l'ordre
+                    // croissant de leurs identifiants, ce qui n'a aucune raison d'être vrai (ex.
+                    // Tacos XL : Viande 1/2/3 = attributs 1/2/3, Sauce = attribut 5 — cliquer la
+                    // sauce avant la 3ᵉ viande suffit à décaler tous les libellés d'une position).
+                    // `labelsByAttributeId`, indexé par le MÊME id que `.variations`, permet de
+                    // reconstituer le bon couple (nom d'attribut, nom choisi) sans dépendre de
+                    // l'ordre d'insertion de `.names` — voir CheckoutComponent.vue::orderSubmit.
+                    this.temp.item_variations.labelsByAttributeId[attributeId] = {
+                        attribute_name: element.name,
+                        variation_name: variationName,
+                    };
                 }
             });
             this.totalPriceSetup();
