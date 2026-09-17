@@ -5900,18 +5900,32 @@ export default {
                 // /admin/pos/cash-drawer/open écrit un mouvement TYPE_DRAWER_OPEN (montant 0)
                 // rattaché à la session ouverte, donc à la chaîne d'audit NF525. On l'appelle
                 // désormais : la promesse affichée devient vraie.
+                //
+                // [Root cause 2026-09-17, capture propriétaire "tiroir ouvert mais non
+                // enregistré"] Ordre INVERSÉ par rapport à avant : on ouvre le tiroir
+                // D'ABORD via le pont local (kioskHardwareOpenDrawer, seul moyen fiable
+                // — le serveur Laravel tourne sur un VPS distinct du PC caisse, sa propre
+                // tentative TCP directe ne peut jamais aboutir), PUIS on rapporte au
+                // serveur ce qui vient d'être réellement constaté. Avant ce correctif, le
+                // serveur décidait seul de "traced" via sa sonde matérielle vouée à
+                // l'échec sur cette topologie — donc toujours non tracé, même quand le
+                // tiroir s'ouvrait vraiment.
+                const result = await Promise.resolve(kioskHardwareOpenDrawer());
+                const clientOpened = !(result && result.ok === false);
+                if (!clientOpened) {
+                    alertService.error(this.$t('pos.no_sale_error'));
+                    return;
+                }
+
                 let traced = false;
                 try {
-                    const { data } = await axios.post('admin/pos/cash-drawer/open', {});
+                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true });
                     traced = !!(data && (data.status === true || data.success === true));
                 } catch (_e) {
                     traced = false;
                 }
 
-                const result = await Promise.resolve(kioskHardwareOpenDrawer());
-                if (result && result.ok === false) {
-                    alertService.error(this.$t('pos.no_sale_error'));
-                } else if (traced) {
+                if (traced) {
                     alertService.info(this.$t('pos.no_sale_done'));
                 } else {
                     // Le tiroir s'est ouvert mais la trace n'est PAS partie : on ne laisse
