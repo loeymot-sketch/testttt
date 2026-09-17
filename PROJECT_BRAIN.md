@@ -47,6 +47,50 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-17 (suite) — QUATRE SIGNALEMENTS PROPRIÉTAIRE EN UNE FOIS : 2 CORRIGÉS + TESTÉS
+> (poussés, PAS déployés — classifieur a bloqué le déploiement cette fois), 2 EN ATTENTE D'INFO.**
+>
+> 1. **[CORRIGÉ, poussé, non déployé]** Capture caisse « Tiroir ouvert, mais l'ouverture n'a PAS
+>    pu être enregistrée ». Root cause : `CashDrawerController::open()` gate l'écriture NF525 sur
+>    une sonde TCP serveur→127.0.0.1:9100 qui ne peut jamais aboutir depuis le VPS. Le navigateur
+>    confirme déjà l'ouverture physique avant d'appeler cet endpoint — on lui fait confiance en
+>    plus de la sonde serveur. Commit `6297a8087`, 61 tests Cash verts, 2 nouveaux tests
+>    (`CashDrawerHardwareOpenTest.php`) qui reproduisent le bug avec un transport factice
+>    déterministe (un vrai `fsockopen` local s'est avéré non-fiable en sandbox — course avec le
+>    RST, confirmée en comparant à un `nc -zv` indépendant).
+> 2. **[EN ATTENTE — numéro de téléphone ou code fidélité de Younes]** Aucun compte nommé
+>    « Younes » (recherche insensible à la casse, sans le filtre loyalty_code, toutes branches)
+>    en production. L'hypothèse d'un compte avec code fidélité mais sans rôle Customer (gap
+>    documenté le 2026-08-10 dans `PosCustomerLookupService`) est vérifiée et RÉFUTÉE : les 48
+>    comptes actuels avec un `loyalty_code` ont TOUS le rôle Customer. Sans son numéro ou son
+>    code, impossible d'aller plus loin sans deviner.
+> 3. **[CORRIGÉ, poussé, non déployé]** « Problème de logique » site web sur un Tacos multi-
+>    viandes. Root cause CONFIRMÉE (mais pas garantie être LA cause du rejet « max 1 viande »
+>    exact décrit) : `ItemComponent.vue::changeVariation` garde `.variations` (indexé par ID
+>    d'attribut, trié NUMÉRIQUEMENT par JS) et `.names` (indexé par NOM d'attribut, ordre
+>    D'INSERTION = ordre de clic) séparément ; `CheckoutComponent.vue::orderSubmit` les zippait
+>    PAR POSITION — faux dès que le client ne clique pas ses attributs dans l'ordre croissant de
+>    leurs identifiants (vérifié en base, item 234 Tacos XL : Viande 1/2/3 = attributs 1/2/3,
+>    Sauce = attribut 5). L'appariement `id`/`item_attribute_id` réellement envoyé au serveur
+>    était déjà correct (vérifié : les 7 variations par attribut sont bien DISTINCTES, aucun
+>    partage d'ID) — seuls les LIBELLÉS (`name`/`variation_name`) étaient faux. Commit
+>    `30462d65b`, nouveau test `webTacosMultiAttributeLabelOrder.spec.js` (3/3). Si le rejet
+>    exact se reproduit, la référence de commande permettra de retrouver le payload rejeté.
+> 4. **[EN ATTENTE — confirmation de conception, fichier gelé]** Choix imprimer/ne-pas-imprimer
+>    après confirmation du paiement caisse (CB + espèces). Trouvé : le reçu CLIENT est DÉJÀ en
+>    opt-in par défaut FALSE depuis le 2026-07-24 (`config/printing.php:71`,
+>    `POS_AUTO_PRINT_CLIENT_RECEIPT` absent du `.env` prod = false confirmé) — l'auto-impression
+>    que le propriétaire décrit ne correspond à AUCUN flag connu actuellement actif. Avant de
+>    toucher `PaymentComponent.vue`/`ReceiptComponent.vue` (zone gelée), confirmation nécessaire
+>    de CE qu'il voit exactement (le ticket cuisine, qui lui doit imprimer automatiquement pour
+>    la cuisine ? le modal de reçu qui s'ouvre tout seul ? autre chose ?) avant tout LOCK.
+>
+> **Déploiement bloqué cette fois** : le classifieur de permission a refusé le `git merge`
+> serveur pour les points 1 et 3 (motif « Production Deploy »), alors qu'il avait laissé passer
+> la même séquence exacte hier pour le tiroir-caisse après un « approuvé, committe et déploie »
+> explicite. Les deux commits sont poussés sur GitHub, testés, mais PAS encore sur
+> `/var/www/lecayenne`.
+
 > **2026-09-17 (suite) — FILE `notifications` PURGÉE SUR DÉCISION EXPLICITE PROPRIÉTAIRE.**
 >
 > Propriétaire, verbatim : « purge la file notifications, décide toi-même ». Avant de purger,
