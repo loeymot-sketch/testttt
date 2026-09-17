@@ -47,6 +47,59 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-17 — CLÔTURE DEMANDÉE PAR LE PROPRIÉTAIRE : OÙ SE SONT ARRÊTÉS TOUS LES AGENTS.**
+>
+> Propriétaire : « détermine où toutes les autres missions se sont arrêtées, termine ce qui n'est
+> pas fini ou pas déployé, clôture proprement ». Audit sourcé sur `reports/AGENT_ACTIVITY_LOG.md`
+> + `git log` + état des worktrees, pas sur des suppositions.
+>
+> ✅ **DÉPLOYÉ MAIS PAS DOCUMENTÉ COMME TEL — CORRIGÉ.** `ORDER-INTEGRITY-KDS-LOYALTY-20260914`
+> (prix/options qui changent à l'encaissement, fidélité borne écran blanc, édition POS qui perd
+> des sauces, rendu cuisine ambigu, supplément libre fiscalisé) : son propre
+> `reports/execution/.../report.md` affirmait encore « no deployment attempted » et un blocage
+> « `origin/production` diverge de 69/1589 commits ». Les DEUX affirmations étaient fausses au
+> moment de la lecture : le journal d'activité montre le commit `3e7e3236c` **committé, poussé
+> et déployé** le 2026-09-17 à 15:05 (migration + chaîne fiscale + trigger + parcours navigateur
+> dédiés vérifiés), et la référence de comparaison `origin/production` est une branche morte de
+> juin, sans rapport avec le vrai chemin de déploiement (`prod/caisse`, dont le dernier état connu
+> est un ANCÊTRE strict de cette branche — 0 divergence réelle). Un rapport de mission peut donc
+> être GO du point de vue code et rester FAUX sur son propre statut de déploiement parce que
+> personne ne l'a relu après le push. Corrigé dans le rapport (addendum daté) et dans
+> `.cursor/ACTIVE_CYCLE.md` (PHASE → CLOSED). `KIOSK-SESSION-RESILIENCE-20260917` (commit
+> `e75c46e3b`, continuité auto-login borne) est dans le même état : déployé, non re-documenté.
+> Seul reste ouvert un point PRODUIT (pas technique) : activer ou non les notifications de file
+> d'attente — décision propriétaire.
+>
+> 🔴 **DEUX MISSIONS RÉELLEMENT NON CLÔTURÉES, IDENTIFIÉES :**
+> 1. **`DRAWER-BRIDGE-VISIBILITY-20260917`** (le tiroir-caisse hors ligne après un encaissement
+>    CASH s'affichait comme un succès silencieux → alerte visible ajoutée à `handleOrderSuccess`,
+>    sans toucher au prix ni au scellement fiscal). Le code existe, les tests ciblés passeraient
+>    (`tests/js/posCashDrawerOpen.spec.js`), MAIS il touche `PaymentComponent.vue` — zone gelée
+>    §7 — et reste **non committé dans l'arbre de travail**, sans LOCK doc. Aucun outil ne l'a
+>    bloqué mécaniquement : `.cursor/hooks/safety-check.sh` a une liste `FROZEN_ZONES` qui a
+>    dérivé et ne contient PAS `PaymentComponent.vue` ni `PosV5TrancheRow.vue` (dérive à corriger
+>    séparément, hors scope de cette clôture). Conformément à §10 (« Frozen-zone touch needed »
+>    = STOP), je ne committe pas ce changement sans gate explicite — demandé au propriétaire.
+> 2. **`LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05`** (crudités payantes affichées comme un
+>    supplément générique à la caisse). Contresignature propriétaire déjà obtenue (`41ee4360c`),
+>    mais la tentative de correctif a été ANNULÉE (`dafb9c776`) : le classifieur du harnais a
+>    bloqué l'exécution des tests sur `pos-wizard.js` (zone gelée) une fois l'édition faite —
+>    session précédente a tout annulé plutôt que de committer un correctif non vérifié sur un
+>    arbre partagé. Six semaines d'attente. Banc `posWizardCruditesPayantes.spec.js` toujours
+>    armé, rouge 3/6 par construction (`describe.skip`).
+>
+> 🧭 **CE QUI N'A PAS ÉTÉ TOUCHÉ, ET POURQUOI.** ~150 branches locales et une quinzaine de
+> worktrees actifs existent (`goal/*`, `heal/*`, `backup/*`, `feat/kiosk-phase-9-*`,
+> `worktree-*`, etc.), datés de mars à septembre. La branche de travail réelle
+> (`pos/category-first-caisse-2026-06-23`, alignée sur le déploiement) n'en descend d'aucune : ce
+> sont des lignes d'exploration ou d'audit distinctes, dont plusieurs se déclarent déjà closes
+> dans leur propre dernier commit (ex. `worktree-s7-vitrine-2026-07-29` : « CLOTURE — état final
+> vérifié en production »). Les fusionner en masse dans le tronc (~2 000-2 700 commits chacune,
+> jusqu'à 9 288 fichiers de delta) serait une résurrection de travail déjà remplacé pièce par
+> pièce dans le tronc au fil des sessions, pas une clôture — et contredirait §1 (vision > vitesse)
+> et la discipline de restauration §3bis. Traité comme historique, pas comme mission en attente,
+> sauf demande explicite du propriétaire sur une branche nommée.
+
 > **2026-09-06 — MENU ENFANT : LA BORNE NE CONNAISSAIT PAS SON GABARIT. PANIER DÉBLOQUÉ.**
 >
 > Propriétaire, en service : « sur la borne, on ne propose pas la sauce des frites pour le menu
