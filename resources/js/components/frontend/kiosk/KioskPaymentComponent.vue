@@ -254,7 +254,7 @@
       <div class="kiosk-pay-confirm-inner">
       <button type="button"
         class="kiosk-btn-confirm"
-        :disabled="!method || isElectronicMethodBlocked(method)"
+        :disabled="!method || quotePending || isElectronicMethodBlocked(method)"
         @click="confirmPayment"
         :aria-label="$t('kiosk.pay_screen.confirm', { amount: formatPrice(cartTotal) })"
         data-testid="kiosk-payment-confirm"
@@ -307,6 +307,7 @@ export default {
       tpeCanCancel:  false,
       _lastOrder:    null,
       _lastQuote:    null,
+      quotePending:  false,
       networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
       // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
@@ -324,7 +325,7 @@ export default {
   MAX_PAYMENT_FAILURES: 2,
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
-    ...mapGetters('kioskCart', ['total', 'subtotal', 'loyaltyDiscount', 'promoDiscount', 'branchId', 'orderType']),
+    ...mapGetters('kioskCart', ['total', 'subtotal', 'loyaltyDiscount', 'promoDiscount', 'branchId', 'orderType', 'orderQuote']),
     // [C39 heal 2026-07-06] Miroir du gate borne du panier : une remise fidélité/promo
     // n'est réellement facturée que si le flag kioskPromoEnabled est ON (sinon le payload
     // borne ne la transmet jamais — cf. KioskCartComponent.displayTotal / effectiveLoyaltyDiscount).
@@ -339,7 +340,7 @@ export default {
       const promo = this.kioskPromoEnabled ? (parseFloat(this.promoDiscount) || 0) : 0;
       return Math.max(0, (parseFloat(this.subtotal) || 0) - loyalty - promo);
     },
-    cartTotal() { return this._lastQuote?.total_ttc ?? this.displayFallbackTotal; },
+    cartTotal() { return this._lastQuote?.total_ttc ?? this.orderQuote?.total_ttc ?? this.displayFallbackTotal; },
     // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route all kiosk payments to counter.
     // Read from window.foodkingConfig.kiosk.paymentRouteAllToCounter (config/kiosk.php +
     // master.blade.php injection). When true, KioskPaymentComponent hides method
@@ -359,6 +360,16 @@ export default {
       this._kioskSpeech = useKioskSpeech({ store: this.$store });
     } catch (_) { this._kioskSpeech = null; }
     this.syncNetworkState();
+    // KioskCart obtains the signed quote before navigating here. Adopt it so
+    // the customer never sees local arithmetic first and a new total on confirm.
+    if (this.orderQuote?.total_ttc !== undefined) {
+      this._lastQuote = this.orderQuote;
+    } else {
+      this.quotePending = true;
+      this.refreshQuote()
+        .catch(() => { /* confirmPayment presents the actionable error on retry */ })
+        .finally(() => { this.quotePending = false; });
+    }
     window.addEventListener('online', this.syncNetworkState);
     window.addEventListener('offline', this.syncNetworkState);
     // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
@@ -463,7 +474,7 @@ export default {
     },
 
     async confirmPayment() {
-      if (!this.method || this.submitting) return;
+      if (!this.method || this.submitting || this.quotePending) return;
       if (this.isElectronicMethodBlocked(this.method)) {
         const msg = this.offlinePaymentMessage();
         this.error = msg;
@@ -608,6 +619,7 @@ export default {
         throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
       }
       this._lastQuote = quote;
+      this.$store.commit('kioskCart/SET_ORDER_QUOTE', quote);
       return quote;
     },
 

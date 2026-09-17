@@ -214,11 +214,11 @@ class TicketWidthSafeTest extends TestCase
 
         $headDoubleSize = false;
         foreach ($lines as $l) {
-            if (str_contains($l['text'], 'TAC') && $l['width'] === mb_strlen($l['text']) * 2) {
+            if (str_contains($l['text'], 'Tacos') && $l['width'] === mb_strlen($l['text']) * 2) {
                 $headDoubleSize = true;
             }
         }
-        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (TAC) doit être en double taille (2×)');
+        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (Tacos) doit être en double taille (2×)');
     }
 
     public function test_client_name_printed_on_client_and_kitchen_tickets_when_set(): void

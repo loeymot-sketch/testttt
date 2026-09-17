@@ -79,6 +79,45 @@ class QuoteBindingTest extends TestCase
         ]);
     }
 
+    public function test_pos_commit_persists_a_sealed_manual_supplement_as_a_fiscal_line(): void
+    {
+        config(['app.api_key' => 'test-api-key']);
+        [$operator, $payload, $branch] = $this->fixture();
+        $payload['items'] = json_encode([[
+            'line_type' => 'manual_supplement',
+            'manual_label' => 'Olives',
+            'manual_amount' => 1.25,
+            'quantity' => 2,
+        ]]);
+
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        $response = $this->actingAs($operator, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/admin/pos', array_merge($payload, [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+                'total' => $quote['total_ttc'],
+                'pos_received_amount' => $quote['total_ttc'],
+            ]));
+
+        $this->assertContains($response->status(), [200, 201], $response->getContent());
+        $orderId = (int) $response->json('data.id');
+        $this->assertSame(2.5, (float) Order::findOrFail($orderId)->total);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $orderId,
+            'branch_id' => $branch->id,
+            'item_id' => null,
+            'line_type' => 'manual_supplement',
+            'manual_label' => 'Supplément — Olives',
+            'quantity' => 2,
+            'total_price' => 2.5,
+        ]);
+    }
+
     public function test_pos_commit_rejects_quote_from_different_actor(): void
     {
         config(['app.api_key' => 'test-api-key']);

@@ -38,6 +38,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Manual supplement sale line
+    |--------------------------------------------------------------------------
+    |
+    | The cashier may add an optional label and a TTC unit amount. The browser
+    | only expresses that intent: PricingService validates the amount, applies
+    | this server-side VAT configuration and seals the line in the quote/order.
+    */
+    'manual_supplement' => [
+        'enabled' => filter_var(env('POS_MANUAL_SUPPLEMENT_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'max_unit_amount' => max(0.01, (float) env('POS_MANUAL_SUPPLEMENT_MAX_AMOUNT', 100)),
+        'tax_name' => (string) env('POS_MANUAL_SUPPLEMENT_TAX_NAME', 'TVA 10%'),
+        'tax_rate' => max(0.0, (float) env('POS_MANUAL_SUPPLEMENT_TAX_RATE', 10)),
+        'default_label' => (string) env('POS_MANUAL_SUPPLEMENT_DEFAULT_LABEL', 'Supplément'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | POS API rate-limit knobs (Wave O O-5 P-OWNER-5 heal 2026-05-20)
     |--------------------------------------------------------------------------
     |

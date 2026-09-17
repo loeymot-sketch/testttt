@@ -12,6 +12,7 @@ use App\Models\ItemAttribute;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\ItemWizardProfile;
+use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\CouponService;
@@ -125,6 +126,17 @@ final class PricingService
 
         if ($requestItems !== []) {
             foreach ($requestItems as $item) {
+                if ($this->isManualSupplement($item)) {
+                    [$row, $line] = $this->priceManualSupplement($req, $item);
+                    $itemsArray[$i] = $row;
+                    $lines[] = $line;
+                    $realSubtotal += $line->lineSubtotalExTax;
+                    $totalTax += $line->taxAmount;
+                    $i++;
+
+                    continue;
+                }
+
                 $dbItem = $dbItems[$item->item_id] ?? null;
                 if (! $dbItem) {
                     throw new \InvalidArgumentException(
@@ -368,6 +380,134 @@ final class PricingService
             $finalTotal,
             [],
         );
+    }
+
+    private function isManualSupplement(mixed $item): bool
+    {
+        return is_object($item)
+            && (string) ($item->line_type ?? OrderItem::LINE_TYPE_CATALOG) === OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT;
+    }
+
+    /**
+     * Price a free-form POS supplement from server policy, never from catalogue
+     * fallbacks or client-computed totals.
+     *
+     * @return array{0:array<string,mixed>,1:PricingLineResult}
+     */
+    private function priceManualSupplement(PricingRequest $req, object $item): array
+    {
+        if ($req->context !== 'pos') {
+            throw new \InvalidArgumentException('Le supplément libre est réservé à la caisse.', 422);
+        }
+        if (! (bool) config('pos.manual_supplement.enabled', true)) {
+            throw new \InvalidArgumentException('Le supplément libre est désactivé sur cette caisse.', 422);
+        }
+        if ($req->branchId <= 0) {
+            throw new \InvalidArgumentException('Une branche valide est requise pour le supplément libre.', 422);
+        }
+
+        $rawAmount = $item->manual_amount ?? null;
+        if (! is_numeric($rawAmount)) {
+            throw new \InvalidArgumentException('Le montant du supplément libre est invalide.', 422);
+        }
+        $unitAmount = (float) $rawAmount;
+        $roundedUnitAmount = round($unitAmount, 2);
+        $maxAmount = max(0.01, (float) config('pos.manual_supplement.max_unit_amount', 100));
+        if ($unitAmount <= 0 || $roundedUnitAmount > $maxAmount || abs($unitAmount - $roundedUnitAmount) > 0.000001) {
+            throw new \InvalidArgumentException(
+                'Le supplément libre doit être compris entre 0,01 € et '.number_format($maxAmount, 2, ',', ' ').' € avec deux décimales maximum.',
+                422
+            );
+        }
+
+        $quantity = max(1, (int) ($item->quantity ?? 1));
+        // Cashiers enter a TTC amount ("1 €" must add exactly 1 € to the
+        // amount due). In legacy HT test mode we derive the stored HT subtotal,
+        // while production TTC mode stores the entered amount unchanged.
+        $lineTotalTtc = round($roundedUnitAmount * $quantity, 2);
+        $defaultLabel = trim((string) config('pos.manual_supplement.default_label', 'Supplément')) ?: 'Supplément';
+        $description = trim((string) ($item->manual_label ?? ''));
+        $description = preg_replace('/\s+/u', ' ', $description) ?? $description;
+        $label = $description === ''
+            ? $defaultLabel
+            : $defaultLabel.' — '.$description;
+        $label = mb_substr($label, 0, 80);
+
+        $taxName = trim((string) config('pos.manual_supplement.tax_name', 'TVA 10%')) ?: 'TVA 10%';
+        $taxRate = max(0.0, (float) config('pos.manual_supplement.tax_rate', 10));
+        $taxType = TaxType::PERCENTAGE;
+        $taxAmount = $this->taxCalculator->lineTaxAmountFromTTC(
+            $lineTotalTtc,
+            $taxType,
+            $taxRate,
+            $req->roundLineTax
+        );
+        $lineSubtotal = (bool) config('pricing.tax_inclusive_prices', false)
+            ? $lineTotalTtc
+            : round($lineTotalTtc - $taxAmount, 2);
+        $storedUnitPrice = round($lineSubtotal / $quantity, 6);
+
+        $snapshot = [
+            'schema_version' => CompositionSnapshotBuilder::SCHEMA_VERSION,
+            'captured_at' => now()->toIso8601String(),
+            'line_type' => OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT,
+            'manual_supplement' => [
+                'label' => $label,
+                'quantity' => $quantity,
+                'unit_price_ttc' => $roundedUnitAmount,
+                'line_total_ttc' => $lineTotalTtc,
+                'tax_name' => $taxName,
+                'tax_rate' => $taxRate,
+                'tax_type' => $taxType,
+            ],
+            'lines' => [],
+            'extras' => [],
+            'addons' => [],
+        ];
+
+        $row = [
+            'order_id' => $req->orderId,
+            'branch_id' => $req->branchId,
+            'item_id' => null,
+            'line_type' => OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT,
+            'manual_label' => $label,
+            'quantity' => $quantity,
+            'discount' => 0,
+            'tax_name' => $taxName,
+            'tax_rate' => $taxRate,
+            'tax_type' => $taxType,
+            'tax_amount' => $taxAmount,
+            'price' => $storedUnitPrice,
+            'item_variations' => '[]',
+            'item_extras' => '[]',
+            'composition_snapshot' => json_encode($snapshot, JSON_UNESCAPED_UNICODE),
+            'instruction' => null,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => $lineSubtotal,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        return [
+            $row,
+            new PricingLineResult(
+                null,
+                $quantity,
+                $storedUnitPrice,
+                0,
+                0,
+                $lineSubtotal,
+                $taxName,
+                $taxRate,
+                $taxType,
+                $taxAmount,
+                '[]',
+                '[]',
+                null,
+                0,
+            ),
+        ];
     }
 
     /**

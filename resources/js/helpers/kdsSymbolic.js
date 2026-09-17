@@ -68,7 +68,8 @@ const SAUCE_TABLE = [
     [/burger/, 'Burg'],
     [/algerien/, 'ALG'],
     [/barbecue|bbq/, 'BBQ'],
-    [/harissa/, 'HAR'],
+    // Harissa = HH so it cannot be confused with Hannibal (HAN).
+    [/harissa/, 'HH'],
     [/fromage/, 'FRO'],
     [/spicy/, 'SPI'],
 ];
@@ -105,6 +106,7 @@ export function meatSymbol(name) {
 
 export function sauceSymbol(name) {
     const n = normalize(name);
+    if (/^(sans|pas\s+d[eu']|no|without)\s+sauces?\b/.test(n)) return 'X';
     for (const [re, sym] of SAUCE_TABLE) {
         if (re.test(n)) return sym;
     }
@@ -409,6 +411,23 @@ function produitAndSize(itemName) {
     return { produit: produitCode(raw), taille: '' };
 }
 
+function structuredSauceNames(orderItem, destination) {
+    const snapshot = orderItem?.composition_snapshot;
+    const values = snapshot?.sauce_destinations?.[destination];
+    if (!Array.isArray(values)) return [];
+    return values.map((value) => String(value || '').trim()).filter(Boolean);
+}
+
+function productSauceNames(orderItem) {
+    const structured = structuredSauceNames(orderItem, 'product');
+    return structured.length ? structured : extraSauceNames(orderItem?.instruction);
+}
+
+function friesSauceNamesForOrder(orderItem) {
+    const structured = structuredSauceNames(orderItem, 'fries');
+    return structured.length ? structured : fritesSauceNames(orderItem?.instruction);
+}
+
 /**
  * Decompose an order item into the symbolic slots.
  * @returns {{category, support, produit, taille, viandes:string[], crudites:string, sauces:string[], supplements:string[], menu:string}}
@@ -459,7 +478,7 @@ export function buildSymbolic(orderItem) {
     // [MEGA-BORNE 2026-07-22 owner] La/les sauce(s) EN PLUS du produit (extras génériques dont le
     // nom ne survit que dans l'instruction) remontent dans le slot Sauce(s) de la ligne 1, À CÔTÉ
     // de la 1ère incluse (« FRO MAY »). La sauce FRITES du menu reste en ligne 2. Jumeau PHP mainLine.
-    for (const extraSauce of extraSauceNames(orderItem?.instruction)) {
+    for (const extraSauce of productSauceNames(orderItem)) {
         const sym = sauceSymbol(extraSauce);
         if (sym) sauces.push(sym);
     }
@@ -476,8 +495,8 @@ export function buildSymbolic(orderItem) {
     // On masque autant d'unités que les deux canaux en expliquent, et on garde le reste VISIBLE :
     // une sauce facturée que rien n'explique ne doit jamais disparaître en silence.
     // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
-    let budgetSaucesExpliquees = extraSauceNames(orderItem?.instruction).length
-        + Math.max(0, fritesSauceNames(orderItem?.instruction).length - 1);
+    let budgetSaucesExpliquees = productSauceNames(orderItem).length
+        + Math.max(0, friesSauceNamesForOrder(orderItem).length - 1);
 
     for (const e of readExtras(orderItem)) {
         // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom ne disparaît PLUS.
@@ -514,8 +533,10 @@ export function buildSymbolic(orderItem) {
         }
     }
 
-    // Owner rule: tacos (and any galette product) show the support first, default G.
-    if (!support && (category === 'taco' || /galette/.test(normalize(orderItem?.item_name)))) {
+    // A taco is named directly. "G"/galette is redundant and causes service errors.
+    if (category === 'taco') {
+        support = '';
+    } else if (!support && /galette/.test(normalize(orderItem?.item_name))) {
         support = 'G';
     }
     // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » : pas de step pain actif (comme
@@ -556,7 +577,17 @@ export function buildSymbolic(orderItem) {
 
     const crudites = CRUDITE_ORDER.filter((c) => crud.has(c)).join('');
 
-    return { category, support, produit, taille, viandes, crudites, sauces, supplements, menu };
+    return {
+        category,
+        support,
+        produit: category === 'taco' ? 'Tacos' : produit,
+        taille,
+        viandes,
+        crudites,
+        sauces,
+        supplements,
+        menu,
+    };
 }
 
 /** Build the single Line-1 string ("G | SANDWICH | P | STO | SAM"). */
@@ -635,7 +666,7 @@ export function renderItemSymbolic(orderItem) {
             .filter((c) => c.length > 0)
         : [];
     const hasAllergen = allergenCodes.length > 0;
-    const fritesSym = fritesSauceSymbol(orderItem?.instruction);
+    const fritesSym = friesSauceNamesForOrder(orderItem).map((name) => sauceSymbol(name)).filter(Boolean).join(' ');
 
     // [KITCHEN-MENU 2026-06-30] Un item Menu/Formule → juste « MENU » (+ sauce frites
     // en symbole), AUCUN prix ni « Frites + Boisson » : c'est frites + boisson, rien à

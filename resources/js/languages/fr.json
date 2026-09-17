@@ -439,6 +439,7 @@
             "error_generic": "Impossible d'émettre le remboursement."
         },
         "print_bridge_offline": "Imprimante caisse injoignable (pont d'impression non lancé) — ticket NON imprimé. Vérifiez le pont, puis réimprimez.",
+        "cash_drawer_bridge_offline": "Paiement enregistré, mais le tiroir ne s'est pas ouvert : vérifiez le pont d'impression local de la caisse (127.0.0.1:9100).",
         "ticket_sent": "Ticket envoyé à l'impression…",
         "print_browser_manual": "Imprimer via le navigateur",
         "controle": {
@@ -2023,6 +2024,9 @@
         "item_duplicated": "Produit dupliqué en brouillon.",
         "empty_cart": "Votre panier est vide. Commandez quelque chose de délicieux !",
         "delivery_and_takeaway": "Livraison et emport temporairement désactivés.",
+        "order_takeaway": "Commander à emporter",
+        "confirm_takeaway": "Confirmer à emporter",
+        "delivery_coming_soon": "Livraison par nos livreurs bientôt.",
         "get_discount": "Obtenez une remise",
         "you_saved": "Vous économisez {amount}",
         "order_confirm": "Votre commande est confirmée",
@@ -2363,7 +2367,7 @@
             "placeholder_phone": "06 12 34 56 78",
             "label_phone": "Téléphone *",
             "label_email": "E-mail (facultatif)",
-            "placeholder_email": "vous@exemple.fr",
+            "placeholder_email": "vous{'@'}exemple.fr",
             "register_submit": "Créer mon compte",
             "back": "Retour",
             "member_badge": "Membre fidélité",

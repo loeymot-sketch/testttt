@@ -1385,8 +1385,13 @@ export default {
             const variationEntries = normalizeVariationEntries(cartLine.item_variations);
             if (variationEntries.length > 0) {
                 variationEntries.forEach((variationEntry) => {
-                    const attrName = variationEntry.variation_name || '';
-                    const varName = variationEntry.name || '';
+                    // Accepter les deux formes émises par le serveur : POS
+                    // (variation_name=attribut, name=valeur) et snapshot KDS
+                    // (attribute_name=attribut, variation_name=valeur).
+                    // Sans ce repli, une ligne à plusieurs sauces restaurait
+                    // la sauce par défaut du wizard et écrasait le choix client.
+                    const attrName = variationEntry.variation_name || variationEntry.attribute_name || variationEntry.attribute || '';
+                    const varName = variationEntry.name || (variationEntry.attribute_name ? variationEntry.variation_name : '') || '';
                     const attrLower = attrName.toLowerCase();
                     
                     // Pain / Galette — match by exact attrName first, then fallback
@@ -1468,12 +1473,21 @@ export default {
             const extraEntries = normalizeExtraEntries(cartLine.item_extras);
             if (extraEntries.length > 0) {
                 extraEntries.forEach((extraEntry) => {
-                    const extraName = extraEntry.name || '';
+                    const extraName = extraEntry.name || extraEntry.extra_name || '';
                     const extra = item.extras?.find(e => e.name === extraName);
                     if (!extra) return;
 
                     const extraLower = extraName.toLowerCase();
                     const isFree = parseFloat(extra.convert_price) <= 0;
+
+                    // The POS uses one generic billing extra for every sauce
+                    // after the first. It is not an actual sauce choice: the
+                    // immutable instruction restores those named flavours
+                    // below. Treating it as `s_<id>` makes an unchanged edit
+                    // look like a third sauce and adds €0.50 on every reopen.
+                    if (extraLower.includes('sauce suppl')) {
+                        return;
+                    }
 
                     // Sauce frites (menu)
                     if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) {
@@ -1577,21 +1591,39 @@ export default {
                 });
             }
 
-            // [P5-2 FIX] Restore sauceSingle from instruction text if not already set via variations
-            // Instruction format: "Sauce: <name>" on its own line
-            if (!restore.sauceSingle && cartLine.instruction) {
-                const sauceMatch = cartLine.instruction.match(/(?:^|\n)Sauce\s*:\s*(.+?)(?:\n|$)/i);
-                if (sauceMatch) {
-                    const sauceName = sauceMatch[1].trim();
-                    const sauceExtra = item.extras?.find(e => e.name === sauceName);
-                    if (sauceExtra) {
-                        restore.sauceSingle = sauceExtra.id;
-                        // Also add to sauceOrder if not already present
-                        const sKey = 's_' + sauceExtra.id;
-                        if (!restore.sauceOrder.includes(sKey)) {
-                            restore.sauces[sKey] = true;
-                            restore.sauceOrder.push(sKey);
+            // [ORDER-INTEGRITY 2026-09-16] The POS bills sauces after the first one
+            // through one catalogue extra named "Sauce supplémentaire". That billing
+            // line deliberately has no flavour name, while the generated immutable
+            // instruction has the complete intent: `Sauce : Andalouse, Algérienne`.
+            // Rebuild *every* named product sauce from that instruction, even if the
+            // first variation was already restored above. Otherwise reopening a line
+            // silently drops every paid sauce and a cashier sees only the generic
+            // billing label.
+            if (cartLine.instruction) {
+                // The compact ticket can put viandes and sauces on one physical
+                // line (`Viandes : … Sauce : …`), so do not require Sauce to begin
+                // a line here.
+                const sauceMatch = cartLine.instruction.match(/\bSauce\s*:\s*([^\n]+)/i);
+                const productSauceAttribute = item.itemAttributes?.find((attribute) => {
+                    const name = (attribute.name || '').toLowerCase();
+                    return name.includes('sauce') && !name.includes('frite');
+                });
+                const productSauces = productSauceAttribute && item.variations
+                    ? (item.variations[productSauceAttribute.id] || [])
+                    : [];
+
+                if (sauceMatch && productSauces.length > 0) {
+                    sauceMatch[1].split(',').map((name) => name.trim()).filter(Boolean).forEach((sauceName) => {
+                        const sauceVariation = productSauces.find((variation) => variation.name === sauceName);
+                        if (!sauceVariation) return;
+                        const key = 's_' + sauceVariation.id;
+                        if (!restore.sauceOrder.includes(key)) {
+                            restore.sauces[key] = true;
+                            restore.sauceOrder.push(key);
                         }
+                    });
+                    if (!restore.sauceSingle && restore.sauceOrder.length > 0) {
+                        restore.sauceSingle = Number(String(restore.sauceOrder[0]).replace(/^s_/, ''));
                     }
                 }
             }
@@ -1631,6 +1663,19 @@ export default {
             var quantity = parseInt(this.temp.quantity) > 0 ? parseInt(this.temp.quantity) : 1;
             var bridgedWizardTotal = parseFloat(this.$refs.itemVariationModal?.dataset?.wizardTotal || 0) || 0;
             var wizardCartDisplay = this.$refs.itemVariationModal?.dataset?.wizardCartDisplay || '';
+            // The generic paid extra is correct for server billing but is not a
+            // useful cashier instruction. Prefer the named, immutable wizard line
+            // already written to `temp.instruction` so the cart visibly shows each
+            // selected sauce and remains faithful after edit/reopen.
+            var selectedSauces = String(this.temp.instruction || '').match(/\bSauce\s*:\s*([^\n]+)/i);
+            if (selectedSauces && selectedSauces[1].trim()) {
+                var cartDisplayLines = String(wizardCartDisplay).split('\n').filter(Boolean);
+                var sauceLineIndex = cartDisplayLines.findIndex((line) => /^\s*sauce\s*:/i.test(line));
+                var namedSauceLine = 'Sauce: ' + selectedSauces[1].trim();
+                if (sauceLineIndex >= 0) cartDisplayLines[sauceLineIndex] = namedSauceLine;
+                else cartDisplayLines.push(namedSauceLine);
+                wizardCartDisplay = cartDisplayLines.join('\n');
+            }
             var wizardBundled = this.readWizardBundledAddons();
             var addonTotal = 0;
             var pos_line_addons = [];
@@ -1706,8 +1751,12 @@ export default {
                 cart_display: wizardCartDisplay,
             };
         },
-        addToCart: function () {
-            if (!this.canAddToCart) return;
+        addToCart: function (fromValidatedWizard = false) {
+            // The single-page wizard has already run its mandatory-step
+            // validation before emitting `wizard:add-to-cart`. Its DOM bridge
+            // updates Vue asynchronously, so applying the Vue guard a second
+            // time can reject a valid edit after the wizard has closed.
+            if (!fromValidatedWizard && !this.canAddToCart) return;
             var mainPayload = this.buildPosCartMainPayload();
             var editIdx = this.editingCartIndex;
             // [test-e2e fix A-004 round-1 2026-08-16] Capture the edit/add distinction
@@ -1715,6 +1764,11 @@ export default {
             // below can branch on it.
             var wasEdit = editIdx !== null && editIdx >= 0;
             var finishSuccess = () => {
+                // Close the native container before reactive reset/unmount work.
+                // The wizard overlay closes itself on a short timer; doing this
+                // first prevents an edit-confirm from exposing its stale Vue
+                // fallback modal after the line was already persisted.
+                appService.modalHide('#item-variation-modal');
                 this.editingCartIndex = null;
                 this.usePricedCartBase = false;
                 this.item = null;
@@ -1730,7 +1784,6 @@ export default {
                 // panier" ("Item added to cart") — misleading, since nothing was added,
                 // an existing line was updated in place. Branch the toast on wasEdit.
                 alertService.success(this.$t(wasEdit ? 'message.cart_line_updated' : 'message.add_to_cart'));
-                appService.modalHide('#item-variation-modal');
             };
             var finishError = () => {
                 if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
@@ -1803,12 +1856,22 @@ export default {
         const modal = this.$refs.itemVariationModal;
         if (modal) {
             modal.addEventListener('wizard:add-to-cart', () => {
+                // The frozen wizard owns the complete composition until it emits
+                // this event. Its hidden textarea can be updated too late for Vue
+                // on a fast cashier click, which used to persist only the generic
+                // paid extra "Sauce supplémentaire" and lose the selected flavour
+                // names. Read the rendered, non-price ticket synchronously before
+                // serialising the cart line; this is display/composition data only,
+                // never a client price source.
+                const wizardTicket = modal.querySelector('#pos-wizard-root .ticket-content')?.textContent?.trim();
+                if (wizardTicket) {
+                    this.temp.instruction = wizardTicket;
+                }
                 const wizardTotal = parseFloat(modal.dataset?.wizardTotal || 0);
                 if (wizardTotal > 0) {
                     this.temp.total_price = wizardTotal;
                 }
-                if (!this.canAddToCart) return;
-                this.addToCart();
+                this.addToCart(true);
             });
         }
     },

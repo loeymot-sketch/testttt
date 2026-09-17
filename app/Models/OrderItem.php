@@ -12,6 +12,9 @@ class OrderItem extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const LINE_TYPE_CATALOG = 'catalog';
+    public const LINE_TYPE_MANUAL_SUPPLEMENT = 'manual_supplement';
+
     protected static function boot()
     {
         parent::boot();
@@ -63,6 +66,8 @@ class OrderItem extends Model
         'order_id',
         'branch_id',
         'item_id',
+        'line_type',
+        'manual_label',
         'quantity',
         'discount',
         'tax_name',
@@ -90,6 +95,8 @@ class OrderItem extends Model
         'order_id'             => 'integer',
         'branch_id'            => 'integer',
         'item_id'              => 'integer',
+        'line_type'            => 'string',
+        'manual_label'          => 'string',
         'quantity'             => 'integer',
         'discount'             => 'decimal:6',
         'tax_name'             => 'string',

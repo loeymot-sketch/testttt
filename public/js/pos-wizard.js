@@ -4721,7 +4721,14 @@
             modalRoot.dispatchEvent(new CustomEvent('wizard:add-to-cart', { bubbles: false }));
 
             // Close wizard after a short delay to let Vue process the cart update
+            // Keep this teardown scoped to the wizard session that submitted.
+            // A cashier can reopen the just-added line immediately; without these
+            // references, this delayed callback removes that new wizard, leaving
+            // the native fallback modal open and unable to submit its edit.
+            var submittingWizard = wizardEl;
+            var submittingOriginalBody = originalBody;
             setTimeout(function () {
+                if (wizardEl !== submittingWizard || originalBody !== submittingOriginalBody) return;
                 if (originalBody) originalBody.style.display = 'none';
                 closeWizard(true);
             }, 200);

@@ -889,6 +889,17 @@ class OrderService
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
 
+                // A free-form supplement has no catalog item_id. Its fiscal
+                // calculation and persistence exist only in PricingService;
+                // never let the legacy branch reinterpret it as a catalog row.
+                if (! config('pricing.use_ssot_service', true)
+                    && collect($requestItems)->contains(fn ($item) => ($item->line_type ?? null) === OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT)) {
+                    throw new \InvalidArgumentException(
+                        'Le supplément libre nécessite le moteur de prix sécurisé.',
+                        422
+                    );
+                }
+
                 $posSsotPricingResult = null;
                 // [FIDÉLITÉ CAISSE 2026-08-19] Déclaré ICI (et pas dans la branche SSOT) pour que
                 // la trace d'audit plus bas puisse dire de quelle NATURE est la remise, même quand

@@ -315,7 +315,7 @@ final class OrderReceiptEscPosRenderer
         // cuisson — il ne doit plus lire la commande produit par produit pour cela.
         // Les mêmes portions alimentent la consommation de stock : un seul moteur, jamais deux.
         $cuisson = $this->portions->forOrder(array_map(static fn ($oi): array => [
-            'name' => (string) ($oi->name ?? optional($oi->orderItem)->name ?? ''),
+            'name' => (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? ''),
             'snapshot' => is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [],
             'quantity' => max(1, (int) ($oi->quantity ?? 1)),
             'instruction' => (string) ($oi->instruction ?? ''),
@@ -403,7 +403,7 @@ final class OrderReceiptEscPosRenderer
         // Filtre d'affichage uniquement : la ligne comptable reste intacte en base.
         $blocks = [];
         foreach ($this->bundledAddons->collapse($order->orderItems ?? collect()) as $oi) {
-            $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
+            $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $qty = max(1, (int) ($oi->quantity ?? 1));
             // [KITCHEN-QTY 2026-07-15 owner] Préfixe quantité affiché UNIQUEMENT si > 1
@@ -534,7 +534,7 @@ final class OrderReceiptEscPosRenderer
         $items = $order->orderItems ?? collect();
         $out = [];
         foreach ($items as $oi) {
-            $name = (string) ($oi->name ?? optional($oi->orderItem)->name ?? 'Article');
+            $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
             $comps = [];
             foreach (($snap['lines'] ?? []) as $l) {

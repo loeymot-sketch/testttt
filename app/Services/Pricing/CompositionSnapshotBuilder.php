@@ -184,7 +184,53 @@ final class CompositionSnapshotBuilder
             'lines'          => $lines,
             'extras'         => $extras,
             'addons'         => $addons,
+            // Kitchen routing must not infer a paid generic sauce from its label.
+            // The immutable order snapshot records where each selected sauce belongs;
+            // legacy orders without this key still use the display-only fallback.
+            'sauce_destinations' => $this->sauceDestinations($item),
         ];
+    }
+
+    /**
+     * @return array{product:list<string>,fries:list<string>}
+     */
+    private function sauceDestinations(object $item): array
+    {
+        $instruction = trim((string) ($item->instruction ?? ''));
+        if ($instruction === '') {
+            return ['product' => [], 'fries' => []];
+        }
+
+        $product = [];
+        if (preg_match('/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $match)
+            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $match)) {
+            $product = $this->splitSauceNames($match[1]);
+        } elseif (preg_match('/(?<![\p{L}])sauces?\s*:\s*([^\n]+)/iu', $instruction, $match)) {
+            // POS records all product sauces; the first is the included one.
+            $product = array_slice($this->splitSauceNames($match[1]), 1);
+        }
+
+        $fries = preg_match('/sauce\s*frites\s*:\s*([^\n]+)/iu', $instruction, $match)
+            ? $this->splitSauceNames($match[1])
+            : [];
+
+        return ['product' => $product, 'fries' => $fries];
+    }
+
+    /** @return list<string> */
+    private function splitSauceNames(string $raw): array
+    {
+        $withoutAmounts = preg_replace('/\([^)]*\)/u', '', $raw) ?? '';
+        $names = [];
+        foreach (explode(',', $withoutAmounts) as $part) {
+            $name = trim($part);
+            if ($name === '' || str_contains($name, ':')) {
+                break;
+            }
+            $names[] = $name;
+        }
+
+        return $names;
     }
 
     /**

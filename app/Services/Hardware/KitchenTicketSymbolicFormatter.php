@@ -46,7 +46,8 @@ final class KitchenTicketSymbolicFormatter
         ['/burger/', 'Burg'],
         ['/algerien/', 'ALG'],
         ['/barbecue|bbq/', 'BBQ'],
-        ['/harissa/', 'HAR'],
+        // Owner shorthand: Harissa must never be confused with Hannibal.
+        ['/harissa/', 'HH'],
         ['/fromage/', 'FRO'],
         ['/spicy/', 'SPI'],
     ];
@@ -110,6 +111,9 @@ final class KitchenTicketSymbolicFormatter
 
     public function sauceSymbol(?string $name): string
     {
+        if (preg_match('/^(sans|pas\s+d[eu\']|no|without)\s+sauces?\b/iu', $this->norm($name))) {
+            return 'X';
+        }
         $connue = $this->knownSauceSymbol($name);
         if ($connue !== '') {
             return $connue;
@@ -258,7 +262,7 @@ final class KitchenTicketSymbolicFormatter
         // Sauce(s) de la ligne 1, À CÔTÉ de la 1ère incluse (« FRO MAY ») — plus jamais une ligne
         // « + Sauce supplémentaire ». Le nom réel des extras ne survit que dans l'instruction
         // (extraSauceNames) → symbole. La sauce FRITES du menu reste, elle, en ligne 2 (menuLine).
-        foreach ($this->extraSauceNames($instruction) as $extraSauce) {
+        foreach ($this->productSauceNames($snapshot, $instruction) as $extraSauce) {
             $sym = $this->sauceSymbol($extraSauce);
             if ($sym !== '') {
                 $sauces[] = $sym;
@@ -276,8 +280,12 @@ final class KitchenTicketSymbolicFormatter
             }
         }
 
-        // Owner rule: tacos (and galette products) show the support first, default G.
-        if ($support === '' && (preg_match('/\btacos?\b/', $this->norm($itemName)) || str_contains($this->norm($itemName), 'galette'))) {
+        // Owner rule: a taco is named plainly for the kitchen. Do not prefix
+        // "Galette"/G: it is redundant and was regularly misread in service.
+        if ($isTacos) {
+            $support = '';
+            $produit = 'Tacos';
+        } elseif ($support === '' && str_contains($this->norm($itemName), 'galette')) {
             $support = 'G';
         }
         // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » n'a pas de step pain actif
@@ -333,8 +341,8 @@ final class KitchenTicketSymbolicFormatter
         // On tient donc un BUDGET de sauces payantes déjà expliquées ailleurs, et on ne masque
         // que ce nombre d'unités. Tout ce qui dépasse RESTE affiché : une sauce facturée que
         // rien n'explique ne doit jamais disparaître en silence.
-        $budgetSaucesExpliquees = count($this->extraSauceNames($instruction))
-            + max(0, count($this->fritesSauceNames($instruction)) - 1);
+        $budgetSaucesExpliquees = count($this->productSauceNames($snapshot, $instruction))
+            + max(0, count($this->fritesSauceNamesForSnapshot($snapshot, $instruction)) - 1);
 
         foreach (($snapshot['extras'] ?? []) as $e) {
             // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom n'est PLUS sauté.
@@ -419,6 +427,23 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return [];
+    }
+
+    /** @param array<string,mixed> $snapshot @return list<string> */
+    private function productSauceNames(array $snapshot, ?string $instruction): array
+    {
+        $structured = $snapshot['sauce_destinations']['product'] ?? null;
+        if (is_array($structured)) {
+            $names = array_values(array_filter(array_map(
+                static fn ($name): string => trim((string) $name),
+                $structured
+            ), static fn (string $name): bool => $name !== ''));
+            if ($names !== []) {
+                return $names;
+            }
+        }
+
+        return $this->extraSauceNames($instruction);
     }
 
     /**
@@ -589,6 +614,23 @@ final class KitchenTicketSymbolicFormatter
         return [];
     }
 
+    /** @param array<string,mixed> $snapshot @return list<string> */
+    private function fritesSauceNamesForSnapshot(array $snapshot, ?string $instruction): array
+    {
+        $structured = $snapshot['sauce_destinations']['fries'] ?? null;
+        if (is_array($structured)) {
+            $names = array_values(array_filter(array_map(
+                static fn ($name): string => trim((string) $name),
+                $structured
+            ), static fn (string $name): bool => $name !== ''));
+            if ($names !== []) {
+                return $names;
+            }
+        }
+
+        return $this->fritesSauceNames($instruction);
+    }
+
     /** @param array<string,mixed> $snapshot */
     public function menuLine(array $snapshot): string
     {
@@ -664,7 +706,7 @@ final class KitchenTicketSymbolicFormatter
         }
 
         if ($menu === 'MENU' || $menu === 'FRITES') {
-            $sym = $this->fritesSauceSymbol($instruction);
+            $sym = implode(' ', array_filter(array_map([$this, 'sauceSymbol'], $this->fritesSauceNamesForSnapshot($snapshot, $instruction))));
 
             return $sym !== '' ? $menu.' : '.$sym : $menu;
         }
@@ -679,7 +721,7 @@ final class KitchenTicketSymbolicFormatter
         // Le nettoyeur d'instruction supprime la ligne « Sauce frites : … » puisqu'elle est
         // censée être rendue ICI ; sans ce repli, le choix du client était purement perdu.
         if ($menu === '') {
-            $sym = $this->fritesSauceSymbol($instruction);
+            $sym = implode(' ', array_filter(array_map([$this, 'sauceSymbol'], $this->fritesSauceNamesForSnapshot($snapshot, $instruction))));
 
             return $sym !== '' ? 'FRITES : '.$sym : '';
         }

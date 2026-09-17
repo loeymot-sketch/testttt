@@ -436,6 +436,7 @@
             "error_generic": "Unable to issue the refund."
         },
         "print_bridge_offline": "Counter printer unreachable (print bridge not running) — ticket NOT printed. Check the bridge, then reprint.",
+        "cash_drawer_bridge_offline": "Payment was recorded, but the cash drawer did not open. Check the counter's local print bridge (127.0.0.1:9100).",
         "ticket_sent": "Ticket sent to the printer…",
         "print_browser_manual": "Print via browser",
         "controle": {
@@ -1989,6 +1990,9 @@
         "item_duplicated": "Item duplicated as a draft.",
         "empty_cart": "Good food is always cooking! Go ahead, order some yummy items from the menu.",
         "delivery_and_takeaway": "Delivery and takeaway is disable now. please wait sometime",
+        "order_takeaway": "Order takeaway",
+        "confirm_takeaway": "Confirm takeaway",
+        "delivery_coming_soon": "Delivery by our own drivers is coming soon.",
         "get_discount": "Get discount with your order",
         "discount_off": "Get {discount}{type} off on this orders",
         "you_saved": "You saved {amount}",
@@ -2302,7 +2306,7 @@
             "placeholder_phone": "06 12 34 56 78",
             "label_phone": "Phone *",
             "label_email": "Email (optional)",
-            "placeholder_email": "you@example.com",
+            "placeholder_email": "you{'@'}example.com",
             "register_submit": "Create my account",
             "back": "Back",
             "member_badge": "Loyalty member",

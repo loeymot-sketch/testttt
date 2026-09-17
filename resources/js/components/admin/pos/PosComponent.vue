@@ -1740,6 +1740,42 @@
                 />
             </div>
 
+            <section class="mb-3 rounded-lg border border-dashed border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] p-2" aria-label="Supplément libre">
+                <button
+                    type="button"
+                    class="w-full text-left text-xs font-bold text-[var(--pos-v5-ink)]"
+                    data-testid="pos-manual-supplement-toggle"
+                    @click="manualSupplement.open = !manualSupplement.open"
+                >+ Supplément libre</button>
+                <div v-if="manualSupplement.open" class="mt-2 grid grid-cols-[1fr_86px_auto] gap-2">
+                    <label class="sr-only" for="pos-manual-supplement-label">Libellé du supplément</label>
+                    <input
+                        id="pos-manual-supplement-label"
+                        v-model="manualSupplement.label"
+                        maxlength="80"
+                        type="text"
+                        placeholder="Ex. olives, maïs (facultatif)"
+                        data-testid="pos-manual-supplement-label"
+                        class="h-9 min-w-0 rounded-md border border-[var(--pos-v5-border)] bg-white px-2 text-xs"
+                    />
+                    <label class="sr-only" for="pos-manual-supplement-amount">Montant en euros</label>
+                    <input
+                        id="pos-manual-supplement-amount"
+                        v-model="manualSupplement.amount"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        placeholder="1,00 €"
+                        data-testid="pos-manual-supplement-amount"
+                        class="h-9 min-w-0 rounded-md border border-[var(--pos-v5-border)] bg-white px-2 text-xs"
+                        @keyup.enter.prevent="saveManualSupplement"
+                    />
+                    <button type="button" class="h-9 rounded-md bg-[var(--pos-v5-info)] px-3 text-xs font-bold text-white" data-testid="pos-manual-supplement-save" @click="saveManualSupplement">{{ manualSupplement.editIndex === null ? 'Ajouter' : 'Modifier' }}</button>
+                </div>
+                <p v-if="manualSupplement.error" class="mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]" role="alert">{{ manualSupplement.error }}</p>
+                <p v-else-if="manualSupplement.open" class="mt-1 text-[10px] text-[var(--pos-v5-ink-muted)]">Montant TTC contrôlé par le serveur, imprimé sur le ticket.</p>
+            </section>
+
             <!-- Action CTAs -->
             <div v-if="carts.length > 0" class="flex flex-col gap-2">
                 <PosV5Button
@@ -2492,6 +2528,13 @@ export default {
             webAccepting: {},
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
+            manualSupplement: {
+                open: false,
+                label: '',
+                amount: '',
+                editIndex: null,
+                error: '',
+            },
             // Copilot téléphone V1 : le call_id est seulement un contexte de saisie.
             // La commande reste créée exclusivement par phoneOrderSubmit.
             voiceOrderSelectedCallId: null,
@@ -6007,6 +6050,55 @@ export default {
                 })
                 .join(', ');
         },
+        parseManualSupplementAmount: function (raw) {
+            const normalized = String(raw ?? '').trim().replace(',', '.');
+            const value = Number(normalized);
+            return Number.isFinite(value) ? Math.round(value * 100) / 100 : NaN;
+        },
+        resetManualSupplement: function () {
+            this.manualSupplement = { open: false, label: '', amount: '', editIndex: null, error: '' };
+        },
+        openManualSupplement: function (index = null) {
+            const existing = index === null ? null : this.carts[index];
+            this.manualSupplement = {
+                open: true,
+                label: existing?.manual_label || '',
+                amount: existing?.manual_amount == null ? '' : String(existing.manual_amount).replace('.', ','),
+                editIndex: existing ? index : null,
+                error: '',
+            };
+        },
+        saveManualSupplement: function () {
+            const amount = this.parseManualSupplementAmount(this.manualSupplement.amount);
+            if (!Number.isFinite(amount) || amount <= 0 || amount > 100) {
+                this.manualSupplement.error = 'Saisissez un montant entre 0,01 € et 100,00 €.';
+                return;
+            }
+            const line = {
+                line_type: 'manual_supplement',
+                manual_label: String(this.manualSupplement.label || '').trim(),
+                manual_amount: amount,
+                name: String(this.manualSupplement.label || '').trim() || 'Supplément',
+                item_id: null,
+                quantity: 1,
+                discount: 0,
+                convert_price: amount,
+                item_variations: [],
+                item_extras: [],
+                item_variation_total: 0,
+                item_extra_total: 0,
+                instruction: '',
+                pos_line_addons: [],
+                cart_display: 'Supplément libre',
+            };
+            const editIndex = this.manualSupplement.editIndex;
+            const action = editIndex === null
+                ? this.$store.dispatch('posCart/lists', [line])
+                : this.$store.dispatch('posCart/replaceCartLine', { index: editIndex, item: line });
+            action.then(() => this.resetManualSupplement()).catch(() => {
+                this.manualSupplement.error = 'Impossible de mettre à jour le supplément.';
+            });
+        },
         /** 'YYYY-MM-DD' du fuseau LOCAL (toISOString() renverrait la veille en UTC+X). */
         _posLocalDateIso: function (date) {
             const pad = (n) => String(n).padStart(2, '0');
@@ -6063,6 +6155,10 @@ export default {
         editCartLine: function (index, options) {
             const line = this.carts[index];
             if (!line) return;
+            if (line.line_type === 'manual_supplement') {
+                this.openManualSupplement(index);
+                return;
+            }
             const duplicate = !!(options && options.duplicate);
             const doEdit = () => {
                 const host = this.$refs.posItemComponent;
@@ -6100,6 +6196,14 @@ export default {
         },
         /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
         buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {
+            if (row.line_type === 'manual_supplement') {
+                return {
+                    line_type: 'manual_supplement',
+                    manual_label: String(row.manual_label || '').trim(),
+                    manual_amount: Number(row.manual_amount),
+                    quantity: quantity,
+                };
+            }
             const item_variations = this.cartVariationEntries(row).map((variation) => ({
                 id: normalizeId(variation.id) || variation.id,
                 item_id: row.item_id,
@@ -6153,6 +6257,31 @@ export default {
                 });
             });
             return JSON.stringify(rows);
+        },
+        quotePosCartForPayment: async function () {
+            const fresh = {
+                ...this.checkoutProps.form,
+                discount: Number(this.posDiscount) || 0,
+                delivery_charge: Number(this.checkoutProps.form.delivery_charge) || 0,
+                items: this.buildFormItemsJson(),
+            };
+            delete fresh.quote_token;
+            delete fresh.quote_signature;
+            const response = await axios.post('admin/pos/quote', fresh);
+            const quote = response?.data?.data;
+            if (!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature) {
+                throw new Error('Réponse de devis invalide.');
+            }
+            this.patchPaymentForm({
+                items: fresh.items,
+                quote_token: quote.quote_token,
+                quote_signature: quote.signature,
+                subtotal: quote.subtotal,
+                discount: quote.discount,
+                delivery_charge: quote.delivery_charge,
+                total: quote.total_ttc,
+            });
+            return quote;
         },
         /**
          * [C4-CAISSE-TELEPHONE 2026-07-07] Mode « Commande téléphone ».
@@ -6311,19 +6440,13 @@ export default {
                     return alertService.error('Client comptoir indisponible. Rechargez la caisse puis réessayez.');
                 }
             }
-            this.checkoutProps.form.subtotal = this.subtotal;
-            // @pricing-allowed-block start
-            // [POS-V4 W0+ DISCOVERY 2026-04-26] Pre-modal display total — backend remains SSOT and recomputes server-side.
-            // Must match `grandTotal` / footer CTA: raw `+ form.delivery_charge` can mis-add if charge is a string
-            // (e.g. "19.5" + number → wrong total) and `form.discount` can drift from Vuex `posCart/discount`.
-            // Identical pattern to ItemComponent.totalPriceSetup (W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, decision D1).
-            // signoff-pending — date_limit: 2026-05-10
-            // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
-            // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
+            // The payment modal must only ever open with the server quote. Previously it
+            // displayed client arithmetic first, then PaymentComponent re-quoted after the
+            // cashier pressed confirm — the visible €23 → €22,20 jump reported in service.
+            // The browser supplies item IDs/quantities and an operator supplement intent only;
+            // PricingService remains the sole calculator for catalogue price, VAT and total.
             this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
             this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
-            this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
-            // @pricing-allowed-block end
             this.checkoutProps.form.items = this.buildFormItemsJson();
 
             // Auto-generate order token (like a fast-food: sequential number for on-site, customer name for delivery)
@@ -6362,6 +6485,13 @@ export default {
             if (_branchId == null || _branchId === '' || _branchId === 0) {
                 this.loading.isActive = false;
                 return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+            }
+            try {
+                await this.quotePosCartForPayment();
+            } catch (err) {
+                this.loading.isActive = false;
+                const msg = err?.response?.data?.message || err?.message || 'Impossible de confirmer le tarif serveur. Réessayez.';
+                return alertService.error(msg);
             }
             this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
 
