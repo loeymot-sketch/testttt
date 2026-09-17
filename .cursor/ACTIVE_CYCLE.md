@@ -18,12 +18,12 @@ clôturer celles qui ne le sont pas. Constat, sourcé sur `reports/AGENT_ACTIVIT
   hook mécanique ne l'a bloqué (le script `.cursor/hooks/safety-check.sh` ne liste pas ce fichier
   dans `FROZEN_ZONES` — dérive à corriger séparément). Ne PAS committer sans gate explicite
   propriétaire (§10 : « Frozen-zone touch needed » = STOP).
-- **LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05** — NON CLÔTURÉ depuis six semaines. Contresignature
-  propriétaire obtenue (`41ee4360c`) mais la tentative de correctif a été ANNULÉE (`dafb9c776`) :
-  le classifieur du harnais a bloqué l'exécution des tests sur le fichier gelé après l'édition.
-  Banc `posWizardCruditesPayantes.spec.js` toujours armé en `describe.skip`, rien perdu.
+- **LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05** — **CORRECTION** : d'abord signalé à tort comme
+  bloqué ici. En réalité CLÔTURÉ depuis `a5720abe9` (2026-09-06), sentinelle SHA-256 vérifiée
+  verte sur `pos-wizard.js`. La tentative annulée `dafb9c776` (2026-09-05) a simplement été
+  suivie d'un second essai réussi le lendemain, jamais relu avant d'écrire cette ligne.
 
-Voir `PROJECT_BRAIN.md` §2 entrée 2026-09-17 pour le détail complet.
+Voir `PROJECT_BRAIN.md` §2 entrée 2026-09-17 pour le détail complet (autocorrection incluse).
 
 ---
 

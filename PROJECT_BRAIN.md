@@ -70,23 +70,30 @@ Plateforme restaurant fast-food complète :
 > Seul reste ouvert un point PRODUIT (pas technique) : activer ou non les notifications de file
 > d'attente — décision propriétaire.
 >
-> 🔴 **DEUX MISSIONS RÉELLEMENT NON CLÔTURÉES, IDENTIFIÉES :**
-> 1. **`DRAWER-BRIDGE-VISIBILITY-20260917`** (le tiroir-caisse hors ligne après un encaissement
->    CASH s'affichait comme un succès silencieux → alerte visible ajoutée à `handleOrderSuccess`,
->    sans toucher au prix ni au scellement fiscal). Le code existe, les tests ciblés passeraient
->    (`tests/js/posCashDrawerOpen.spec.js`), MAIS il touche `PaymentComponent.vue` — zone gelée
->    §7 — et reste **non committé dans l'arbre de travail**, sans LOCK doc. Aucun outil ne l'a
->    bloqué mécaniquement : `.cursor/hooks/safety-check.sh` a une liste `FROZEN_ZONES` qui a
->    dérivé et ne contient PAS `PaymentComponent.vue` ni `PosV5TrancheRow.vue` (dérive à corriger
->    séparément, hors scope de cette clôture). Conformément à §10 (« Frozen-zone touch needed »
->    = STOP), je ne committe pas ce changement sans gate explicite — demandé au propriétaire.
-> 2. **`LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05`** (crudités payantes affichées comme un
->    supplément générique à la caisse). Contresignature propriétaire déjà obtenue (`41ee4360c`),
->    mais la tentative de correctif a été ANNULÉE (`dafb9c776`) : le classifieur du harnais a
->    bloqué l'exécution des tests sur `pos-wizard.js` (zone gelée) une fois l'édition faite —
->    session précédente a tout annulé plutôt que de committer un correctif non vérifié sur un
->    arbre partagé. Six semaines d'attente. Banc `posWizardCruditesPayantes.spec.js` toujours
->    armé, rouge 3/6 par construction (`describe.skip`).
+> ⚠️ **AUTOCORRECTION, MÊME SESSION.** Cette entrée disait initialement que
+> `LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05` restait bloqué. **Faux, vérifié après coup** :
+> `git log -S "contresigné 2026-09-06" -- public/js/pos-wizard.js` montre que le correctif A
+> ÉTÉ appliqué et committé le lendemain (`a5720abe9`, 2026-09-06 08:55, déjà visible dans le
+> `git log` lu en tout début d'audit — je ne l'avais pas recoupé avec le contenu réel du
+> fichier). Le SHA-256 actuel de `pos-wizard.js` correspond exactement à la baseline committée
+> par ce même commit ; `FrozenZoneSha256BaselineSentinelTest` est vert sur ce fichier. **Cette
+> mission est CLÔTURÉE depuis le 2026-09-06, pas ouverte.** Leçon retenue : recouper un `git log`
+> déjà lu contre le contenu réel du fichier avant d'affirmer qu'un correctif manque — exactement
+> le piège que `docs/PLAYWRIGHT_MCP_OPS.md §7` et CLAUDE.md §3ter demandent d'éviter.
+>
+> 🔴 **UNE SEULE MISSION RÉELLEMENT NON CLÔTURÉE, IDENTIFIÉE :**
+> **`DRAWER-BRIDGE-VISIBILITY-20260917`** (le tiroir-caisse hors ligne après un encaissement
+> CASH s'affichait comme un succès silencieux → alerte visible ajoutée à `handleOrderSuccess`,
+> sans toucher au prix ni au scellement fiscal). Le code existe, les tests ciblés passent 6/6
+> (`tests/js/posCashDrawerOpen.spec.js`, revérifié cette session), MAIS il touche
+> `PaymentComponent.vue` — zone gelée §7 — et reste **non committé dans l'arbre de travail**,
+> sans LOCK doc. Aucun outil ne l'a bloqué mécaniquement : `.cursor/hooks/safety-check.sh` a une
+> liste `FROZEN_ZONES` qui a dérivé et ne contient PAS `PaymentComponent.vue` ni
+> `PosV5TrancheRow.vue` (dérive à corriger séparément, hors scope de cette clôture). LOCK rédigé
+> en DRAFT (`docs/locks/LOCK_DRAWER_BRIDGE_VISIBILITY_2026-09-17.md`, empreintes SHA-256
+> mesurées, sentinelle confirmée rouge dessus et dessus seulement) : conformément à §10
+> (« Frozen-zone touch needed » = STOP), je ne committe pas ce changement sans contresignature
+> explicite du propriétaire — demandée.
 >
 > 🧭 **CE QUI N'A PAS ÉTÉ TOUCHÉ, ET POURQUOI.** ~150 branches locales et une quinzaine de
 > worktrees actifs existent (`goal/*`, `heal/*`, `backup/*`, `feat/kiosk-phase-9-*`,
