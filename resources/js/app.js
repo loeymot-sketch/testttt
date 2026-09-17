@@ -246,11 +246,25 @@ app.mount('#app');
 // (abilities preserved). (bootstrap.js's "no backend refresh-token endpoint" comment
 // was stale — the endpoint exists at routes/api.php:155.)
 const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+const refreshKioskMachineToken = () => {
+    try {
+        if (store.state.kioskCart?.kioskToken) {
+            return store.dispatch('kioskCart/refreshKioskToken').catch(() => false);
+        }
+    } catch (_) { /* never let kiosk token refresh break the app */ }
+    return Promise.resolve(false);
+};
+
+// On a browser restore, refresh immediately while the persisted token is still
+// valid. If the device slept longer than the TTL, the 401 path re-authenticates
+// from the encrypted kiosk grant instead of showing the unavailable page.
+refreshKioskMachineToken();
 setInterval(() => {
     try {
         if (store.state.auth && store.state.auth.authToken) {
             store.dispatch('refreshAuthToken').catch(() => {});
         }
+        refreshKioskMachineToken();
     } catch (_) { /* never let the refresh timer break the app */ }
 }, TOKEN_REFRESH_INTERVAL_MS);
 

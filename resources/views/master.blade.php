@@ -178,6 +178,7 @@
             request()->server('REMOTE_ADDR'),
             request()->query('machine_key'),
             (string) config('kiosk.auto_login_secret', ''),
+            request()->attributes->get(\App\Http\Middleware\RememberKioskAutoLoginGrant::ATTRIBUTE) === true,
         );
     @endphp
     <script>

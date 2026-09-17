@@ -353,6 +353,10 @@ return [
     // (l'IP/box change — fibre à venir). ?machine_key=<secret> == ce secret ⇒
     // auto-login. Vide = chemin secret désactivé. Voir App\Support\KioskAutoLoginGate.
     'auto_login_secret' => (string) env('KIOSK_AUTO_LOGIN_SECRET', ''),
+    // Une borne ouverte avec son lien machine reçoit un cookie HttpOnly chiffré,
+    // limité à l'appareil, afin qu'un rechargement / déploiement ne fasse pas
+    // perdre l'auto-login quand Vue retire `machine_key` de l'URL.
+    'auto_login_grant_minutes' => (int) env('KIOSK_AUTO_LOGIN_GRANT_MINUTES', 60 * 24 * 14),
     'auto_login_local_bypass' => env('APP_ENV') === 'local',
     'default_locale' => $defaultLocale,
     // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI côté
