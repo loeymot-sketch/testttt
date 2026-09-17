@@ -47,6 +47,34 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-17 (suite) — FILE `notifications` PURGÉE SUR DÉCISION EXPLICITE PROPRIÉTAIRE.**
+>
+> Propriétaire, verbatim : « purge la file notifications, décide toi-même ». Avant de purger,
+> vérifié ce qu'il y avait réellement dedans (§13 Evidence Rules — jamais purger à l'aveugle) :
+> · `Queue::size('notifications')` = 4 975, `attempts=0` sur l'échantillon (jamais traitée : le
+>   worker VPS n'écoute que `high,default`, jamais `notifications`) ;
+> · type unique : `App\Jobs\SendFcmNotificationJob` (push FCM), aucun autre job mélangé ;
+> · contenu réel du plus ancien : commande **`#A0001`**, « Commande confirmée / envoyée en
+>   cuisine » — un push de statut de commande, sans valeur des mois après coup, à l'exact endroit
+>   annoncé par le rapport QA (« traiter maintenant enverrait des milliers de notifications
+>   historiques »).
+> · aucun job en `delayed` ni `reserved` — uniquement la liste principale, jamais amorcée.
+>
+> Sauvegarde AVANT purge (4 975 lignes JSON brutes, 3,85 Mo) :
+> `storage/backups/notifications-queue-avant-purge-2026-09-17.jsonl`, en local ET sur le serveur
+> (`/var/www/lecayenne/storage/backups/...`, non committée — convention `storage/backups/`
+> existante, fichiers locaux jamais poussés en git).
+>
+> Purge : `php artisan queue:clear redis --queue=notifications` sur `/var/www/lecayenne` →
+> « Cleared 4975 jobs ». Revérifié : liste principale + `delayed` + `reserved` tous à 0.
+> `/api/healthz` confirme `queue_pending:0`, tout le reste (`db`, `redis`, `websocket`,
+> `fiscal_chain`) toujours `ok` juste après.
+>
+> 🧭 **Cause racine non traitée, sciemment** : rien n'empêche cette file de regrossir — le worker
+> ne l'écoute toujours pas. Une purge ponctuelle n'est pas un correctif de supervision ; changer
+> la liste des queues écoutées par le worker (`supervisor`/`horizon` sur le VPS) est une
+> modification d'infrastructure de production distincte, non demandée ici, non faite.
+
 > **2026-09-17 (suite) — LE TIROIR-CAISSE EST CLÔTURÉ : APPROUVÉ, COMMITTÉ, DÉPLOYÉ, VÉRIFIÉ.**
 >
 > Propriétaire, verbatim : « approuvé, committe et déploie le tiroir-caisse ». Séquence réelle,
