@@ -47,6 +47,51 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-17 (suite) — VRAI E2E + DÉPLOIEMENT : LE VRAI BUG ÉTAIT DANS UN AUTRE DÉPÔT.**
+>
+> Propriétaire : « test réel e2e et deploy ». En construisant l'E2E réel pour le point 3
+> (Tacos XL), découverte majeure : **le correctif posé plus tôt dans `testttt`
+> (`ItemComponent.vue`/`CheckoutComponent.vue`) touchait du CODE MORT.** `resources/js/router/
+> modules/frontendRoutes.js:1` : « [STOREFRONT-DELETE 2026-06-25] Pages vitrine Home/Menu/Offres
+> SUPPRIMÉES... `/home` `/menu` `/offers` redirigent vers `/login` ». Le vrai site que le
+> propriétaire utilise est un DÉPÔT SÉPARÉ (`github.com/loeymot-sketch/Site-lecayenne`,
+> `/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`), qui appelle le backend
+> testttt via API (contrairement à une note plus ancienne de ce document qui disait le
+> contraire — vérifié : `api.js` lit `<meta name="api-base-url">` = le VPS testttt).
+>
+> **Root cause réel, trouvé et corrigé dans CE dépôt séparé** (`api.js::resolveLine`) :
+> `var meatAttrs = ['1', '2']` figé, écrit quand Tacos L (2 viandes) était le plus grand tacos.
+> Tacos XL (3 viandes, créé le 2026-08-24) jamais enseigné à ce fichier. `pickVariation()` ne
+> vérifie pas `usedAttr` dans son repli : la 3ᵉ viande retombe sur l'attribut 1 déjà utilisé →
+> 2 variations sous le même `item_attribute_id` → serveur rejette avec exactement
+> « Sélectionnez au maximum 1 Viande 1 (actuel : 2). » — le message rapporté, mot pour mot.
+> Fixé en dérivant le nombre de tranches viande du nombre réel de viandes (pas un maximum codé).
+>
+> **Preuve E2E réelle, rouge puis verte** : appel direct de `window.LC.api.resolveLine()`
+> (exposé par `api.js`) contre le backend LOCAL testttt, sans compte ni OTP ni commande réelle.
+> Avant correctif (`git stash` du fix) : 5 lignes de payload au lieu de 4, collision confirmée.
+> Après correctif : 4 lignes, Mexicanos→attr1, Cordon Bleu→attr2, Viande Hachée→attr3,
+> Mayonnaise→attr5 — vérifié contre la vraie base (`ItemVariation::whereIn(...)`). Test permanent :
+> `Site lecayenne/tests-e2e/tacos-xl-3-meats-attribute-collision.local.js`.
+>
+> **Déployé** : commit `c81d70d` poussé sur `Site-lecayenne` (déclenche Vercel). Vérification
+> post-déploiement AMBIGUË : `curl` brut sur `lecayenne.fr/api.js` renvoie un challenge
+> anti-bot Vercel (`x-vercel-mitigated: challenge`), donc sans valeur ; un vrai navigateur
+> (Playwright) obtient le vrai fichier (92 572 octets, taille inchangée) mais SANS le marqueur
+> du correctif après ~5 minutes d'attente — `vercel.json` sert les `.js` en
+> `Cache-Control: public, max-age=31536000, immutable`, ce qui peut masquer un déploiement
+> réussi derrière un cache CDG immuable. **Non confirmé en direct** : à revérifier plus tard,
+> ou depuis le tableau de bord Vercel.
+>
+> **testttt (drawer-record + code mort ItemComponent) déployés sur le VPS** : commit `db0428a4`
+> fast-forward sur `/var/www/lecayenne`, rebuild serveur OK, `client_opened` présent dans le
+> bundle POS servi, santé applicative + chaîne fiscale toujours vertes.
+>
+> ⚠️ **Le correctif `ItemComponent.vue`/`CheckoutComponent.vue` dans testttt reste inoffensif
+> mais INUTILE** en pratique (code mort depuis le 2026-06-25) — gardé pour la valeur du test de
+> régression et parce qu'il ne coûte rien, pas parce qu'il corrige quoi que ce soit pour un
+> vrai client.
+
 > **2026-09-17 (suite) — QUATRE SIGNALEMENTS PROPRIÉTAIRE EN UNE FOIS : 2 CORRIGÉS + TESTÉS
 > (poussés, PAS déployés — classifieur a bloqué le déploiement cette fois), 2 EN ATTENTE D'INFO.**
 >
