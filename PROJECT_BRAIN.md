@@ -80,14 +80,18 @@ Plateforme restaurant fast-food complète :
 > s'être inscrit sans qu'on le retrouve, `grep guest_signup.email_login_failed` dans les logs
 > du jour dira si c'est cette cause.
 >
-> **3. Déploiement Vercel du site séparé (Site-lecayenne) : anomalie confirmée, non résolue.**
-> `vercel ls` (CLI authentifié) montre le déploiement de production le plus récent daté de
-> **4 jours**, alors qu'un push avait eu lieu la veille. L'intégration GitHub → Vercel ne
-> déclenche donc PAS de build pour ce dépôt actuellement — l'ancienne note mémoire
-> (« push suffit ») était fausse à cette date. `vercel deploy --prod` bloqué par le
-> classifieur de permission (motif « Production Deploy ») ; nécessite une autorisation
-> explicite du propriétaire pour cette commande précise, ou un re-branchement de
-> l'intégration côté dashboard Vercel.
+> **3. Déploiement Vercel du site séparé (Site-lecayenne) : résolu par déploiement manuel.**
+> `vercel ls` (CLI authentifié) montrait le déploiement de production le plus récent daté de
+> **4 jours**, alors qu'un push avait eu lieu la veille — l'intégration GitHub → Vercel ne
+> déclenche PAS de build pour ce dépôt (l'ancienne note mémoire « push suffit » était fausse à
+> cette date, corrigée dans [[site-vitrine-lecayenne-depot]]). Après autorisation explicite
+> propriétaire (« approuvé, redéploie le site avec vercel deploy --prod »), déploiement manuel
+> exécuté depuis ce dossier : `vercel deploy --prod --yes` → alias `www.lecayenne.fr` mis à
+> jour en ~15 s. Vérifié en direct (Playwright, pas `curl` qui se heurte au challenge anti-bot
+> Vercel) : le marqueur du correctif Tacos XL est bien présent dans `api.js` servi
+> (93 943 octets, contre 92 572 avant), page d'accueil rendue sans erreur JS. **Le correctif
+> Tacos XL 3 viandes est maintenant réellement en production**, pas seulement poussé sur
+> GitHub.
 
 > **2026-09-17 (suite) — VRAI E2E + DÉPLOIEMENT : LE VRAI BUG ÉTAIT DANS UN AUTRE DÉPÔT.**
 >
