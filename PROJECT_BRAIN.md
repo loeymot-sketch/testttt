@@ -47,6 +47,48 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-18 — AUDIT MAXIMAL PRODUIT PAR PRODUIT (39/39) + ROOT CAUSE FIDÉLITÉ TROUVÉE.**
+>
+> Propriétaire : « vérification maximale à toute commande, produit par produit... ainsi que le
+> système de fidélité... parfois client enregistré [je ne trouve pas son compte] ».
+>
+> **1. Audit des 39 produits du site, réel contre le backend local** (appel direct de
+> `window.LC.api.resolveLine()` pour chaque produit avec un état de personnalisation maximal
+> réaliste — viandes distinctes, sauce, suppléments, formule, viande extra). **39/39 verts** à
+> la fin. Deux échecs initiaux, tous deux expliqués et non-produits :
+> · `bol-frites`/`bol-riz` — mon propre banc utilisait le mauvais champ (`supplements`
+>   générique au lieu de `bol_supplements`/`supplementsBols`) : défaut de construction du
+>   test, pas du produit. Corrigé, vert.
+> · Tacos L a montré une collision d'attribut (3ᵉ viande fantôme) — **vérifié : dérive du
+>   SEUL environnement local**. La vraie base de production a `Tacos L: attrs=[1,2,5]` propre
+>   (contre `[1,2,3,5]` en local, un attribut 3 orphelin qui n'existe QUE dans ma base de dev).
+>   Aucune action requise en production ; noté pour éviter de refaire confiance à l'état de la
+>   base locale sans le confirmer contre la prod à l'avenir.
+>
+> **2. Root cause fidélité, trouvée et corrigée** — bien plus explicite que « Younes
+> introuvable » : `GuestSignupController::emailLogin()` écrit la ligne `otps` AVANT de tenter
+> `Mail::send()`. Si l'envoi échoue (SMTP injoignable, e-mail invalide, panne fournisseur), le
+> client voit un échec générique, AUCUN compte n'est jamais créé (`register()` n'est appelé
+> que depuis `verify()`, jamais atteint), et RIEN n'était journalisé nulle part. Reproduit en
+> local avec un SMTP injoignable : ligne `otps` écrite, 422 renvoyé, log vide. **C'est
+> l'explication la plus probable du symptôme "client enregistré introuvable" : il n'y a jamais
+> eu de compte, parce que l'envoi du code a échoué en silence, et le client a cru s'être
+> inscrit.** Fixé (`Log::warning`, phone + domaine e-mail + erreur — jamais l'adresse
+> complète), déployé sur le VPS, vérifié par une vraie requête HTTP locale (log réel produit).
+> N'explique pas nécessairement CE cas Younes précisément — toujours besoin de son numéro pour
+> confirmer QUE c'est bien ça — mais donne enfin un outil : la prochaine fois qu'un client dit
+> s'être inscrit sans qu'on le retrouve, `grep guest_signup.email_login_failed` dans les logs
+> du jour dira si c'est cette cause.
+>
+> **3. Déploiement Vercel du site séparé (Site-lecayenne) : anomalie confirmée, non résolue.**
+> `vercel ls` (CLI authentifié) montre le déploiement de production le plus récent daté de
+> **4 jours**, alors qu'un push avait eu lieu la veille. L'intégration GitHub → Vercel ne
+> déclenche donc PAS de build pour ce dépôt actuellement — l'ancienne note mémoire
+> (« push suffit ») était fausse à cette date. `vercel deploy --prod` bloqué par le
+> classifieur de permission (motif « Production Deploy ») ; nécessite une autorisation
+> explicite du propriétaire pour cette commande précise, ou un re-branchement de
+> l'intégration côté dashboard Vercel.
+
 > **2026-09-17 (suite) — VRAI E2E + DÉPLOIEMENT : LE VRAI BUG ÉTAIT DANS UN AUTRE DÉPÔT.**
 >
 > Propriétaire : « test réel e2e et deploy ». En construisant l'E2E réel pour le point 3
