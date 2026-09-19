@@ -418,7 +418,7 @@ export const kioskCart = {
             state.kioskToken = token || null;
             // [GAP-34-2] Re-inject kiosk token into Echo auth headers after kiosk login.
             if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
-                window._refreshEchoAuth();
+                window._refreshEchoAuth(state.kioskToken);
             }
             state.kioskMachineId = machineId || null;
         },
@@ -510,6 +510,32 @@ export const kioskCart = {
                 }
             })();
             return _inFlightKioskLogin;
+        },
+        /**
+         * Keep the physical kiosk token alive before Sanctum's 8-hour expiry.
+         * Unlike a re-login, this preserves the device identity and abilities
+         * server-side; it never needs machine credentials in the browser.
+         */
+        async refreshKioskToken({ commit, state }) {
+            const current = state.kioskToken;
+            if (!current) return false;
+
+            try {
+                const res = await axios.post('refresh-token', { token: current });
+                const fresh = res?.data?.token;
+                if (fresh && state.kioskToken === current) {
+                    commit('SET_KIOSK_TOKEN', {
+                        token: fresh,
+                        machineId: state.kioskMachineId,
+                    });
+                    return true;
+                }
+            } catch (_) {
+                // An expired token is handled by the 401 recovery path; never
+                // clear a usable persisted token because a transient refresh failed.
+            }
+
+            return false;
         },
         async kioskLogout({ commit, state }) {
             try {

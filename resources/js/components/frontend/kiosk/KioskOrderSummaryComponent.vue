@@ -19,7 +19,16 @@
 
       <!-- Pain -->
       <div v-if="selections.pain" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.bread_type') }}</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'pain')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.bread_type') })"
+            :data-testid="'kiosk-summary-edit-pain'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <img loading="lazy" decoding="async" v-if="getPainImage()" :src="getPainImage()" alt="" />
@@ -32,7 +41,16 @@
 
       <!-- Viandes (variations gratuites + extras payants : prix affiché par ligne) -->
       <div v-if="selections.totalViandes > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.meats') }} ({{ selections.totalViandes }})</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'viande')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.meats') })"
+            :data-testid="'kiosk-summary-edit-viande'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div v-for="row in viandeDisplayRows" :key="row.key" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <img loading="lazy" decoding="async" v-if="row.thumb" :src="row.thumb" alt="" />
@@ -48,7 +66,16 @@
 
       <!-- Sauces -->
       <div v-if="visibleSauceOrder.length > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ visibleSauceOrder.length }})</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.sauces') }} ({{ visibleSauceOrder.length }})</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'sauce')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.sauces') })"
+            :data-testid="'kiosk-summary-edit-sauce'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div v-for="(sauceId, index) in visibleSauceOrder" :key="sauceId" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <img loading="lazy" decoding="async" v-if="getSauceImage(sauceId)" :src="getSauceImage(sauceId)" alt="" />
@@ -62,7 +89,16 @@
 
       <!-- Garnitures -->
       <div v-if="selectedGarnituresCount > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.garnishes') }} ({{ selectedGarnituresCount }})</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.garnishes') }} ({{ selectedGarnituresCount }})</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'garnitures')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.garnishes') })"
+            :data-testid="'kiosk-summary-edit-garnitures'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div class="kiosk-summary-tags">
           <span v-for="id in selectedGarnitureIds" :key="id" class="kiosk-tag">
             <span class="kiosk-tag-thumb" aria-hidden="true">
@@ -76,7 +112,16 @@
 
       <!-- Suppléments -->
       <div v-if="selectedSupplements.length > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplementsTotalCount }})</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.supplements') }} ({{ selectedSupplementsTotalCount }})</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'supplements')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.supplements') })"
+            :data-testid="'kiosk-summary-edit-supplements'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div v-for="supplement in selectedSupplements" :key="supplement.id" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <img loading="lazy" decoding="async" v-if="supplement.thumb" :src="supplement.thumb" alt="" />
@@ -92,7 +137,16 @@
 
       <!-- Menu -->
       <div v-if="selections.menuChoice && selections.menuChoice !== 'none'" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.menu') }}</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.menu') }}</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'menu')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.menu') })"
+            :data-testid="'kiosk-summary-edit-menu'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <span>{{ getMenuEmoji() }}</span>
@@ -112,7 +166,16 @@
 
       <!-- Sauces frites -->
       <div v-if="fritesSauceRows.length > 0" class="kiosk-summary-section">
-        <h4>{{ $t('kiosk.wizard.summary.fry_sauces') }} ({{ fritesSauceRows.length }})</h4>
+        <div class="kiosk-summary-section-head">
+          <h4>{{ $t('kiosk.wizard.summary.fry_sauces') }} ({{ fritesSauceRows.length }})</h4>
+          <button
+            type="button"
+            class="kiosk-summary-edit"
+            @click="$emit('modifier', 'frites_sauce')"
+            :aria-label="$t('kiosk.wizard.summary.edit_section', { section: $t('kiosk.wizard.summary.fry_sauces') })"
+            :data-testid="'kiosk-summary-edit-frites_sauce'"
+          >{{ $t('kiosk.wizard.summary.edit') }}</button>
+        </div>
         <div v-for="(row, index) in fritesSauceRows" :key="row.key" class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
             <span>🍟</span>
@@ -187,7 +250,7 @@ export default {
     item: Object,
     selections: Object
   },
-  emits: ['update'],
+  emits: ['update', 'modifier'],
   computed: {
     selectedGarnituresCount() {
       return Object.values(this.selections.garnitures || {}).filter(Boolean).length;
@@ -526,6 +589,43 @@ export default {
   border: 1.5px solid var(--kiosk-border);
   border-radius: 16px;
   padding: 14px 16px;
+}
+
+/* [OWNER 2026-08-25] Chaque section du récap porte son propre « Modifier », qui
+   renvoie DIRECTEMENT à l'étape correspondante du wizard. Sans lui, corriger une
+   sauce obligeait à reparcourir tout le parcours depuis la première page. */
+.kiosk-summary-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.kiosk-summary-section-head h4 {
+  margin: 0;
+}
+.kiosk-summary-edit {
+  flex: 0 0 auto;
+  /* 44 px de haut : en dessous, le doigt manque la cible sur une borne tactile. */
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 2px solid var(--kiosk-primary-dark);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--kiosk-primary-dark);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.kiosk-summary-edit:active {
+  background: var(--kiosk-primary-dark);
+  color: var(--kiosk-text-on-red, #fff);
+}
+.kiosk-summary-edit:focus-visible {
+  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, currentColor);
+  outline-offset: 3px;
 }
 
 .kiosk-summary-section h4 {

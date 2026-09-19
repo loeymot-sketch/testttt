@@ -1,0 +1,151 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 9,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "P0 CONTESTE PUIS CONFIRME — la contradiction est lisible sur UNE SEULE image. Sur 01-cash-overview-load.png je lis, a 100 px d'ecart vertical : carte « CAISSE 0,00 € / 0 tx », table du jour avec une seule ligne espece « 03:55 N°A0032 Borne Espece 2,50 € », et JUSTE AU-DESSUS le bandeau « Reconciliation caisse · Caisse ouverte a: 20:56 · Fond de caisse: 50,00 € · Especes encaissees aujourd'hui: 8,50 € · Especes attendues au tiroir: 58,50 € ». Le mot « aujourd'hui » EST a l'ecran (fr.json:1301 cash_collected_today). Sur 02 la meme bande affiche 8,50 € pendant que « Repartition par mode » de la MEME page affiche « Espece 10 · 25,00 € » (02-...money.json champ reconciliation : \"...Especes encaissees aujourd'hui:8,50 €...\" et champ mode_breakdown : \"...Espece10 · 25,00 €\"). Sur 03 (periode 01/01/2026 -> 01/02/2026, GRAND TOTAL 0,00 €, 0 tx, etat vide « Aucune transaction trouvee pour les filtres actuels ») le bandeau affiche TOUJOURS 8,50 € encaisses et 58,50 € au tiroir : une periode sans un centime affiche 8,50 € d'especes. VERIFICATION BASE FAITE PAR MOI (mysql foodking_e2e) : 11 sessions status='open' ; #38 opened_at=2026-07-06 20:56:58 opening_amount=50.00 ; son UNIQUE cash_movement est id=418, amount=8.50, created_at=2026-07-11 14:29:24 ; 50,00+8,50=58,50 exactement les chiffres a l'ecran. Aggravant confirme : les mouvements especes du 2026-08-25 (id 506 et 507, 2.50 chacun) sont rattaches a la session #36, PAS a la #38 affichee — le tiroir montre n'est pas celui qui encaisse. CODE : CashOverviewController.php:420 « return $query->orderByDesc('opened_at')->first(); » filtre uniquement status=open, AUCUNE borne de date. La these de l'equipe est exacte sur les trois points (date, libelle, insensibilite au filtre) ; je ne trouve rien a lui retirer.",
+      "fix_hint": "app/Http/Controllers/Admin/CashOverviewController.php:397-421 resolveOpenCashSession() — borner la requete au jour courant (->whereDate('opened_at', today()) ou ->where('opened_at','>=',now()->startOfDay())) et retourner null si aucune session ouverte AUJOURD'HUI, pour que le bandeau se demonte au lieu de mentir. En complement, resources/js/languages/fr.json:1301 : « Especes encaissees aujourd'hui » -> « Especes encaissees depuis l'ouverture », et CashOverviewComponent.vue:580-588 formatTime() -> afficher la DATE quand opened_at n'est pas aujourd'hui (« Caisse ouverte le 06/07/2026 a 20:56 »). Ne PAS toucher a l'invariance au filtre : elle est deliberee et documentee (Fix C-014, CashOverviewController.php:218-226).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.png",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "DEFAUT REEL QUE L'EQUIPE A CLASSE EN BRUIT ALLOWLISTE. 02-...console.json et 06-...console.json contiennent, mot pour mot : « Connecting to 'http://127.0.0.1:9101/health' violates the following Content Security Policy directive: \\\"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\\\". The policy is report-only, so the violation has been logged but no further action has [been taken] » — plus trois entrees level=error ERR_CONNECTION_REFUSED sur http://127.0.0.1:9100/health et http://127.0.0.1:9101/health. Le port 9101 est le pont d'impression CUISINE, activement appele par le navigateur : resources/js/helpers/kitchenLocalPrinter.js:22 « const KITCHEN_BRIDGE_PORT = 9101; » et resources/js/helpers/posLocalPrinter.js:148 « return 'http://127.0.0.1:9101'; ». Or config/security.php:35 n'autorise que « http://127.0.0.1:9100 http://localhost:9100 » : le 9101 est ABSENT de connect-src. Aujourd'hui CSP_ENFORCE_MODE vaut 'report_only' (config/security.php:27) donc la violation est seulement journalisee ; le jour ou la CSP passe en 'enforce' pour la prod, le navigateur BLOQUE tout appel au pont cuisine — les tickets cuisine cessent d'etre imprimes, sans erreur metier visible. Ce n'est ni un websocket, ni Pusher, ni couvert par l'allowlist du protocole (qui vise « wss:// ERR_CONNECTION_REFUSED in dev »).",
+      "fix_hint": "config/security.php:35 — etendre connect-src au pont cuisine : « connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100 http://127.0.0.1:9101 http://localhost:9101; ». Verifier ensuite que la plage couvre bien les deux ponts documentes dans app/Rules/SafeRemoteHost.php:55 (9100 comptoir, 9101 cuisine) avant tout passage de CSP_ENFORCE_MODE a 'enforce'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-waveD/04-cash-sessions-report-load.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "L'equipe annonce ce defaut sur 3 jours ; j'ai reparse les 11 groupes-jours du DOM moi-meme (elle n'avait archive que le premier jour dans son .money.json) et il y en a CINQ, totalisant 11 sessions ouvertes comptees a zero : « lundi 6 juillet 2026 » Total ouverture 200,00 € / Total cloture 0,00 € (3 sessions Ouverte, cellules « — ») ; « lundi 22 juin 2026 » Total ouverture 150,00 € / Total cloture 0,00 € (1 session Ouverte) ; « samedi 13 juin 2026 » 200,00 € / 0,00 € (4 Ouverte) ; « dimanche 14 juin 2026 » 120,00 € / 10,00 € (1 des 2 ouverte) ; « vendredi 12 juin 2026 » 250,00 € / 109,40 € (2 des 4 ouvertes). Le cas « lundi 22 juin » se lit litteralement « 150,00 € sont entres, 0,00 € sont sortis ». Les cellules « Fonds final » affichent honnetement « — » ; c'est l'agregat d'en-tete qui convertit ce « — » en zero. CODE confirme a la ligne exacte : resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue:233 « bucket.totalClosing += Number(s.closing_amount || 0); » — null || 0 -> 0. J'ai envisage P0 (« un montant faux sur un ecran d'argent ») et je m'arrete a P1 en connaissance de cause : les lignes « Ouverte » et leurs « — » sont visibles sur le meme ecran, l'exploitant a de quoi se rattraper — ce n'est pas silencieux.",
+      "fix_hint": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue:233 — ne sommer que les sessions dont closing_amount n'est pas null, et compter a part celles qui restent ouvertes : « if (s.closing_amount !== null && s.closing_amount !== undefined) { bucket.totalClosing += Number(s.closing_amount); } else { bucket.openCount++; } ». Puis, ligne 65, rendre « — » (ou « 3 caisses encore ouvertes ») au lieu de formatMoney(0) quand bucket.openCount > 0.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Le rapport de capture affirme en §4 « CE QUI EST SAIN » : « Zero erreur console applicative — les seules entrees error sont les 404 english.png et le ERR_CONNECTION_REFUSED du websocket Pusher (allowliste). » C'est faux, et refute par ses propres artefacts. Aucune entree Pusher, aucune entree wss:// n'existe dans les 9 .console.json. Les ERR_CONNECTION_REFUSED sont des requetes HTTP vers http://127.0.0.1:9100/health et http://127.0.0.1:9101/health — les ponts d'impression comptoir et cuisine — auxquelles s'ajoutent deux violations CSP report-only (level=info). Cette mauvaise attribution a fait classer en « bruit allowliste » un defaut de configuration reel qui casse l'impression cuisine des que la CSP passe en enforce (cf. D-002). L'allowlist du protocole couvre « wss:// ERR_CONNECTION_REFUSED in dev » ; elle ne couvre pas un GET http vers un pont materiel.",
+      "fix_hint": "reports/test-e2e/supervisor-caisse-2026-08-24/round-1/wave-D-capture.md §4 — corriger la phrase et reclasser l'entree 9101 en defaut ouvert. Regle de methode : n'appliquer l'allowlist « websocket dev » qu'apres avoir lu le champ location.url de l'entree console, jamais sur la seule presence de ERR_CONNECTION_REFUSED.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Le rapport affirme en §« Aucune mutation » : « Les network.json ne contiennent aucune requete mutante (POST/PUT/PATCH/DELETE) : la vague est strictement en lecture. » Refute par l'artefact lui-meme : 01-cash-overview-load.network.json contient « {\\\"url\\\": \\\"http://127.0.0.1:8000/api/auth/login\\\", \\\"method\\\": \\\"POST\\\", \\\"status\\\": 201} », et « POST /api/auth/authcheck 200 » apparait sur les etats 01, 04, 05, 07 et 08, « POST /api/frontend/csp-report 204 » sur 02 et 06. Le POST /api/auth/login n'est pas anodin : il emet un personal access token et touche le cycle de vie des jetons par appareil decrit en CLAUDE.md §9 (revocation scopee device_id, plafond auth.max_devices_per_user). La conclusion « strictement en lecture » n'est donc pas etablie par les preuves fournies. Le reste du controle de non-mutation (comptes en base identiques avant/apres : 59 / 213 / 29) reste, lui, valable.",
+      "fix_hint": "reports/test-e2e/supervisor-caisse-2026-08-24/round-1/wave-D-capture.md §« Aucune mutation » — reformuler en « aucune requete mutante METIER ; l'authentification (POST /api/auth/login, POST /api/auth/authcheck) et le report CSP sont les seuls POST du run ». Le collecteur network ne retient que status>=400 ou duree>2000 ms : pour etayer une claim de non-mutation il faut un sink dedie sur request.method, pas une lecture du sink d'erreurs.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Absent du rapport de capture, qui ne comporte aucune section accessibilite. J'ai compte sur les 9 .dom.html (Debugbar retiree) : ZERO role=\"alert\", ZERO role=\"status\", ZERO aria-live sur les neuf etats, sans exception. Consequence concrete sur l'ecran d'argent : entre 01 et 02, un clic sur « Rechercher » remplace le grand total (15,60 € -> 247,70 €), les 4 cartes source, la repartition par mode et les 27 lignes de la table, sans qu'aucune region live n'annonce le changement — un utilisateur de lecteur d'ecran ne sait pas que les montants ont bouge. De meme, les deux bandeaux de 07-promo-flyer-load.png (« Les codes promo sont desactives sur le site. » et « Votre compte n'a pas encore acces a l'impression du ticket promo. ») sont de simples <div>, jamais annonces. Le bandeau « Reconciliation caisse » (section data-testid=\"cash-overview-reconciliation\") n'est pas davantage une region live.",
+      "fix_hint": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue — ajouter aria-live=\"polite\" sur le conteneur de synthese (data-testid=\"cash-overview-summary\" et sa section parente) et role=\"status\" sur le bandeau data-testid=\"cash-overview-reconciliation\" ; resources/js/components/admin/promo/PromoFlyerComponent.vue — role=\"alert\" sur le bandeau codes-desactives et sur l'avis d'acces refuse.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-waveD/04-cash-sessions-report-load.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Absent du rapport de capture. Compte fait par moi sur le DOM (Debugbar retiree) : 04-cash-sessions-report-load.dom.html contient 11 <table> et 121 <th>, avec ZERO attribut scope= et ZERO <caption>. Meme constat sur 01/02 (7 <th>, 0 scope) et sur 07/07b (7 <th>, 0 scope). Ce sont des tables d'argent a 10 colonnes (Session, Filiale, Caissier, Ouverte le, Fermee le, Fond de caisse, Fonds final, Ecart, Transactions, Statut) : sans scope=\"col\", un lecteur d'ecran ne rattache pas « 147,30 € » a « Fonds final » ni « 47,30 € » a « Ecart », et les 11 tables successives n'ont aucun nom accessible permettant de savoir de quelle journee il s'agit.",
+      "fix_hint": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue — ajouter scope=\"col\" sur chaque <th> de l'en-tete de table, et un <caption class=\"sr-only\"> reprenant le libelle du jour (day.label) pour nommer chacune des 11 tables. Meme correctif sur CashOverviewComponent.vue et PromoFlyerComponent.vue.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-waveD/06-uber-photo-captures-recentes.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Absent du rapport de capture. Les 20 lignes depliables de l'historique Uber sont bien de vrais boutons pleine largeur (bon point pour le tactile, commentaire du code : « La ligne ENTIERE est la cible : un doigt gras sur une tablette ne vise pas un chevron de 16 px. ») mais le markup capture est : <button type=\"button\" class=\"uber-cap-recent-row\" data-testid=\"uber-photo-history-row-29\"> ... <span class=\"uber-cap-recent-chevron\">-</span></button> — AUCUN aria-expanded, AUCUN aria-controls, et le chevron est un glyphe texte nu sans aria-hidden. Sur 06 la premiere ligne est visiblement depliee (<li class=\"is-open\">, detail « Aucune ligne lisible sur cette capture. » affiche) alors que rien dans l'arbre d'accessibilite ne distingue cette ligne des 19 autres. J'ai verifie les 4 occurrences d'aria-expanded du document : toutes appartiennent au shell (CSS vue-select et bouton du menu profil), aucune a l'historique.",
+      "fix_hint": "resources/js/components/admin/uberPhoto/UberPhotoCaptureComponent.vue — sur le <button class=\"uber-cap-recent-row\">, lier :aria-expanded=\"ouverte === c.id\" et :aria-controls=\"'uber-cap-detail-' + c.id\" (avec l'id correspondant sur le <div class=\"uber-cap-recent-detail\">), et marquer le <span class=\"uber-cap-recent-chevron\"> en aria-hidden=\"true\".",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-waveD/03-cash-overview-vide.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Absent du rapport de capture. En pied du bandeau « Reconciliation caisse », visible a l'ecran sur les etats 01, 02 ET 03, je lis : « Pour calculer l'ecart, saisir le comptage physique du tiroir (a venir). » (element data-testid=\"cash-overview-reconciliation-note\", fr.json:1303 cash_drawer_count_pending_note). Un marqueur « (a venir) » est livre en clair sur l'ecran dont le mandat proprietaire est precisement « detecter les ecarts (cash manquant) » : la fonction centrale de la surface est annoncee comme non implementee, entre parentheses, a l'exploitant. Les cles fr.json:1304-1307 (cash_diff « Ecart caisse », manquant, excedent, equilibre) existent deja et ne sont rendues nulle part sur les 9 etats — l'ecart n'est jamais calcule. C'est aggravant pour D-001 : le seul chiffre qui permettrait de contredire le tiroir perime est celui que l'ecran declare ne pas savoir produire.",
+      "fix_hint": "Arbitrage proprietaire requis : soit implementer la saisie du comptage physique (le bandeau expose deja opening_amount, cash_collected et expected_cash, il ne manque que le compte reel et la soustraction), soit retirer la phrase « (a venir) » de resources/js/languages/fr.json:1303 et ne rien promettre a l'ecran. En l'etat la surface annonce une fonction qu'elle n'a pas.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "test-e2e-waveD/07b-promo-flyer-historique.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "Confirme visuellement, tres net sur 07b et deja lisible sur 07 : sur les 100 lignes, le code promo bute directement contre le statut, sans une seule gouttiere — je lis « ADMINNOTCAPP-236H|Echec », « CAPE2E381786-68AH|Echec », « CAPE2E371786-DN28|Echec »... Le markup capture le confirme : <td class=\"font-mono font-bold\">CAPE2E381786-68AH <div class=\"text-xs font-normal text-rose-700\">annule</div></td> immediatement suivi de <td><span class=\"text-rose-700 font-medium\">Echec</span><div class=\"text-xs text-rose-700\">Code annule avant impression</div></td> — aucune classe de padding horizontal sur ces <td>. En dessous, le sous-texte « Code annule avant impression » deborde sous la colonne « Commande ». Precision honnete : ni l'un ni l'autre element n'est cliquable, donc ce n'est pas le chevauchement de cibles tactiles vise par la categorie 3 du protocole ; c'est une collision typographique. Elle porte neanmoins sur la chaine que le caissier dicte au telephone quand le ticket ne sort pas, et le code est en gras monospace juste contre un mot en rouge.",
+      "fix_hint": "resources/js/components/admin/promo/PromoFlyerComponent.vue — ajouter une gouttiere horizontale sur les cellules de la table historique (px-3 sur les <td> et <th>, ou pr-4 sur la colonne Code) et whitespace-nowrap sur la cellule Code pour l'empecher de se rapprocher du statut.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "test-e2e-waveD/07-promo-flyer-load.png",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "These de l'equipe VERIFIEE ET CONFIRMEE VISIBLE A L'ECRAN, ce qui etait le point a trancher. Sur 07-promo-flyer-load.png je lis en capitales dans les cartes de statistiques : « TICKETS IMPRIMES », « CODES UTILISES », « CHIFFRE RAMENE » (avec « dont offert : 0,00 € »), et 100 fois dans la table « annule » (en rouge sous chaque code) et « Code annule avant impression ». Sur 08-promo-flyer-settings.png, dans des champs EDITABLES : « c'est le meme restaurant, mais moins cher », « Meme cuisine, meme equipe : tu paies le repas, pas la commission », « Des points fidelite a chaque commande », « Paiement en ligne securise ». Sources confirmees ligne a ligne : resources/js/languages/fr.json:1538 \"flyer_stat_printed\": \"Tickets imprimes\", :1539 \"flyer_stat_used\": \"Codes utilises\", :1541 \"flyer_stat_revenue\": \"Chiffre ramene\", :1544 \"flyer_revoked\": \"annule\" ; cote serveur app/Services/Promo/PromoFlyerService.php:494 'last_error' => 'Code annule avant impression'. J'AJOUTE une occurrence que l'equipe a manquee : fr.json:1546 \"flyer_duplicate_warning\": \"Un code vient deja d'etre cree pour ce prenom :\" — quatre accents manquants de plus (deja/d'etre/cree/prenom), non observable dans cette vague car l'avertissement de doublon n'a pas ete declenche.",
+      "fix_hint": "resources/js/languages/fr.json:1538,1539,1541,1544,1546 — retablir les accents (Tickets imprimes -> imprimes accent aigu, Codes utilises -> utilises accent aigu, Chiffre ramene -> ramene accent aigu, annule -> annule accent aigu, et la chaine 1546 en entier) ; app/Services/Promo/PromoFlyerService.php:494 idem. Ce sont des libelles d'ECRAN : la couche ESC/POS translittere deja a l'impression (app/Services/Hardware/EscPosCommandBuilder.php:329, iconv //TRANSLIT//IGNORE), donc rien n'impose de stocker du francais fautif.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-012",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Trouve en recomptant moi-meme les chaines euro : un montant « 237,80 € » est present dans les NEUF etats et ne figure dans AUCUNE ligne du tableau de releve du rapport de capture, qui se presente pourtant comme le releve complet. Il est rendu sans le moindre libelle, en <h3 class=\"font-medium text-sm leading-6 capitalize mb-0.5\">237,80&nbsp;€</h3>, juste apres l'e-mail et le telephone de l'utilisateur dans le menu profil du bandeau. Source : resources/js/components/layouts/backend/BackendNavbarComponent.vue:143 « {{ authInfo.currency_balance }} ». P3 et non davantage parce que le menu profil est REPLIE sur les 9 captures : le montant n'est pas visible a l'ecran, je ne le constate que dans le DOM et le .money.json. Corollaire de methode : le collecteur collectMoney() est annonce comme parcourant « tous les noeuds de texte VISIBLES » — il a ici retenu un noeud d'un menu replie, et par ailleurs 134 chaines qui ne sont pas des montants du tout (timings Debugbar « 1.05ms », version « 8.2.30 », l'User-Agent Chrome complet). Le filtre de visibilite du collecteur ne tient pas ; cela ne remet pas en cause le verdict de format (le collecteur est trop inclusif, pas trop restrictif).",
+      "fix_hint": "resources/js/components/layouts/backend/BackendNavbarComponent.vue:143 — donner un libelle a ce montant (« Solde : {{ authInfo.currency_balance }} », ou un aria-label) au lieu d'un <h3> nu sous le telephone ; un montant sans nom dans un menu d'admin caisse n'est interpretable par personne. Cote spec : tests/e2e/audit-supervisor-waveD.spec.js collectMoney() — filtrer sur offsetParent !== null / getBoundingClientRect() non nul pour honorer la promesse « noeuds visibles », et restreindre au motif monetaire pour ne plus avaler la Debugbar.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 2,
+    "P2": 8,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 2,
+    "open_P2": 8,
+    "open_P3": 1
+  },
+  "verdict": "RED",
+  "notes": "CE QUE J'AI TENTE DE CASSER SANS Y ARRIVER. (1) LE P0 — j'ai cherche a demontrer que l'equipe avait mal lu son propre ecran. Echec sur toute la ligne : la contradiction est lisible sur UNE SEULE image (01 : bandeau 8,50 € contre carte CAISSE 0,00 €/0 tx et unique ligne espece 2,50 € ; 02 : bandeau 8,50 € contre « Espece 10 · 25,00 € »), le mot « aujourd'hui » est bien a l'ecran, et mes propres requetes SQL rendent exactement ses chiffres (11 sessions open, #38 ouverte le 2026-07-06 20:56:58, unique mouvement 8.50 du 2026-07-11, 50+8,50=58,50). CashOverviewController.php:420 se termine bien par orderByDesc('opened_at')->first() sans borne de date. Le P0 est REEL et bien calibre : aucun defaut d'audit a signaler de ce cote. J'ai meme confirme l'aggravant qu'elle avance (les especes du jour, ids 506/507, sont sur la session #36, pas la #38 affichee). (2) LE FORMAT MONETAIRE — j'ai refait le releve depuis les tableaux de points de code des 9 .money.json, sans faire confiance a son tableau. Je trouve exactement 38 chaines euro distinctes, comme elle. Zero violation : virgule decimale partout, U+00A0 avant € dans les 197 occurrences, U+202F en separateur de milliers (1 400,00 €), aucun « 19.40€ », aucun « 0.00 », aucun « € » prefixe, aucun « EUR ». Les NEGATIFS sont corrects (« -40,00 € » x9 et « -135,90 € » : U+002D puis U+00A0 avant €, ordre francais respecte) et les ZEROS aussi (« 0,00 € », 16 occurrences, jamais « 0 € » ni « -0,00 € »). Je n'ai pas trouve la faille de format que je cherchais. (3) L'ARITHMETIQUE DE cash-sessions-report — l'equipe la declare exacte sur les 11 groupes-jours en s'appuyant sur un script /tmp non versionne, donc invérifiable ; je l'ai reparse moi-meme depuis le DOM. Les 11 groupes passent : en-tete « Total ouverture » = somme des cellules Fond de caisse, « Total cloture » = somme des cellules Fonds final, et le compteur « Sessions: n » = le nombre de lignes, a 0,01 € pres partout. Claim confirmee. C'est en la reverifiant que j'ai trouve D-003 (5 jours affectes et non 3). (4) L'ARITHMETIQUE DE cash-overview — les 4 controles de l'etat 02 tiennent : 247,70 € = somme des 27 lignes = somme des 3 cartes source = 222,70+25,00 de la repartition par mode, et 27 tx = 17+10. Delta 0,00 € partout. (5) TRONCATURE DES CODES PROMO — mon soupcon le plus serieux apres coup d'oeil : sur 07b les 100 codes se terminent tous a la meme abscisse, colles a « Echec », ce qui ressemble beaucoup a une colonne coupee sans ellipse. REFUTE : dans le DOM chaque code fait exactement 17 caracteres (CAPE2E381786-68AH), aucune classe truncate/text-ellipsis/overflow-hidden, aucun attribut title — l'alignement est une coincidence de longueur, pas une troncature. La chaine que le caissier dicte est complete. (6) CLES i18N BRUTES — recherche du motif ^[a-z]+(\\.[a-z_]+){1,4}$ sur les noeuds de texte des 9 DOM (Debugbar, script et style retires) : zero occurrence sur les neuf etats. Rien a redire. (7) LE COMPTAGE 111 -> 100 — j'ai recompte depuis la seule table applicative du DOM : 100 lignes de donnees + 1 en-tete. Sa correction en cours de route est exacte, et l'aveu est a son credit. (8) CONTRASTE DU BANDEAU DE RECONCILIATION — je m'attendais a un texte ambre sur fond ambre en dessous du seuil AA. Les jetons sont text-amber-900 (#78350F) et text-amber-800 (#92400E) et text-gray-600 (#4B5563) sur bg-amber-50 (#FFFBEB), tous au-dessus de 7:1. Aucune constatation de contraste deposee. CE QUE JE N'AI PAS PU VERIFIER, ET QUE JE NE PRETENDS DONC PAS : sans dump de styles calcules ni axe-core dans les artefacts, je n'ai pas fait de balayage de contraste exhaustif — je me suis limite aux jetons Tailwind lisibles dans le DOM ; aucune constatation color_contrast n'est deposee, ni dans un sens ni dans l'autre. Je n'ai pas non plus pu mesurer scrollWidth/clientWidth (categorie 2 du protocole) faute de metriques de layout dans le quartet : mes constatations de collision (D-010) reposent sur le pixel et le markup, pas sur une mesure. LES DEUX DEFAUTS DITS LATENTS (D-10 groupement sur page courante, D-11 absence d'etat vide Uber) sont correctement etiquetes non observes par l'equipe et je ne les compte pas non plus. VERDICT RED : 1 P0 (D-001, le tiroir perime etiquete « aujourd'hui ») et 2 P1 ouverts (D-002 CSP amputee du pont cuisine 9101 — que l'equipe avait classe en bruit Pusher ; D-003 « Total cloture » sommant les caisses ouvertes a zero sur 5 journees). Le rapport de capture est honnete sur ses chiffres et rigoureux sur la monnaie ; ses deux faiblesses sont d'avoir allowliste sans lire l'URL (D-004) et d'avoir affirme une non-mutation que ses propres network.json contredisent (D-005), plus une absence totale de volet accessibilite (D-006, D-007, D-008)."
+}

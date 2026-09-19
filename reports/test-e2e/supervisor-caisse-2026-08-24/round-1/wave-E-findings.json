@@ -1,0 +1,107 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 19,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-waveE/02-kds-extras-instantane-v2-defaut.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Le correctif des extras n'a été appliqué QU'À LA DISPOSITION HÉRITÉE ; la disposition V2, qui est le DÉFAUT de production (config/kds.php v2_default_enabled=true, window.FK_KDS_V2_DEFAULT_ENABLED = true dans le DOM servi), perd toujours les extras — et les perd PLUS silencieusement qu'avant. Chaîne héritée réparée (KitchenDisplaySystemComponent.vue:2861-2865) : « extra.extra_name || extra.name || extra.item_name || 'Supplément' » — jamais vide. Chaîne V2 (kdsSymbolic.js:292-294) : « return e?.extra_name || e?.name || ''; » puis ligne 459 « if (!name) continue; » — l'extra DISPARAÎT, sans ligne ni marqueur. Exposition mesurée sur la base servie (foodking_e2e) : 226 lignes order_items portent des extras, dont 109 (48 %) contiennent au moins un extra SANS AUCUN champ de nom, p.ex. order_items.id=5904 item_extras=[{\"id\":269,\"quantity\":1},{\"id\":270,\"quantity\":1},{\"id\":271,\"quantity\":1}] et id=5901 avec quatre entrées dont trois anonymes. En hérité ces extras sortent « Supplément » ; en V2 ils ne sortent PAS. C'est exactement le défaut d'origine (« un produit remis au client sans ce qu'il a demandé »), toujours vivant sur l'écran par défaut. La règle de non-régression de l'équipe (/Extras\\s*:\\s*(,\\s*)+/) est structurellement incapable de le voir : la V2 n'émet aucun libellé « Extras: », donc aucune virgule vide à trouver. L'absence du motif ne prouve donc RIEN sur la V2.",
+      "fix_hint": "resources/js/helpers/kdsSymbolic.js:292-294 — aligner extraName() sur la chaîne réparée (extra_name || name || item_name || 'Supplément') ; et :459 supprimer le « continue » silencieux : un extra facturé ne doit jamais quitter la carte sans laisser de trace. Ajouter un test jumeau dans tests/js/kdsSymbolic.spec.js sur un extra {id, quantity} sans nom.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-waveE/02-kds-extras-instantane-v2-defaut.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Même commande, même ressource API, deux dispositions, deux contenus : la V2 (défaut production) affiche STRICTEMENT MOINS que l'héritée. Commande CF921 (#AUDC-ENC-DZGWR9). DOM hérité 03b-kds-herite-v2-0.dom.html : « Menu (Frites + Boisson) » / « Sauce: Algerienne » / « Extras: » « Cheddar » / « Suppléments: » « Frites , » « Coca-Cola 33cl » / « Sans oignons ». DOM V2 02-*.dom.html, innerText intégral de l'élément .kds-card : « [A] Nouvelle Borne / CUISSON 1F / N° CF921 / Attente 04:09 / 1 × MENU / ▸ 1× Coca-Cola 33cl / · Sans oignons ». L'extra CHEDDAR et la SAUCE ALGÉRIENNE n'apparaissent nulle part sur la carte V2 — ni en toutes lettres, ni en symbole (la légende 02b donne ALG pour Algérienne, et aucun ALG n'est rendu ; la ligne 1 est « 1 × MENU », sans slot sauce). Les frites, elles, sont bien portées par le bandeau CUISSON « 1F » (F = frites, kdsSymbolic.js renderCuisson / meatPortionsForItem). Ce n'est PAS une troncature : sous « · Sans oignons » la carte laisse ~150 px de blanc avant « EN ATTENTE ENCAISSEMENT » (visible sur 01, 02 et 03a, trois captures à des instants différents). Un cuisinier sur l'écran par défaut prépare donc ce menu SANS cheddar et SANS sauce algérienne, tous deux commandés.",
+      "fix_hint": "Extras : voir E-001 (kdsSymbolic.js:292-294 + :459). Sauce : canal DISTINCT des extras — la variation de groupe « Sauce » n'atteint pas le slot sauce de la ligne 1 pour un item conteneur de formule (« Menu (Frites + Boisson) »). Vérifier la détection de groupe dans kdsSymbolic.js buildSymbolic (~ligne 419, case 'sauce') pour les items formule, et couvrir par un test le cas « conteneur de menu portant sauce + extra ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-waveE/02b-kds-legende-symboles.png",
+      "category": "text_truncation",
+      "severity": "P1",
+      "evidence": "L'écran qui explique le symbole cache le supplément qu'il devait aider à lire. Sur la capture, légende « Afficher les noms » dépliée : la carte [B] N°6738 a sa ligne produit « 1× CAY | S » tranchée horizontalement à mi-hauteur par le bandeau sombre « Prêt », et la ligne supplément « ⭐ Cheddar ×2 » — présente et lisible sur 02 et 03a au même instant — n'est plus rendue nulle part dans le champ visible. La carte [A] a son bandeau « EN ATTENTE ENCAISSEMENT » coupé par le bord bas. Le contenu passe donc SOUS un pied de carte cliquable, sans défilement offert. Conséquence opératoire : le seul endroit où « S » se décode en « Salade » est précisément celui qui masque « ⭐ Cheddar ×2 ». L'équipe de capture a relevé ce fait (E-O1) et l'a laissé ouvert ; il reste bloquant car il escamote un supplément payé.",
+      "fix_hint": "KdsV2Grid.vue — la légende ne doit pas consommer la hauteur de la grille : la passer en surcouche (overlay) ou en panneau repliable hors flux, et garantir que .kds-card__body n'est jamais recouvert par .kds-card__footer (le pied est collé au-dessus du corps).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-waveE/05-B-roue-borne.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "evidence": "Écran FACE CLIENT avec deux images de lot cassées, sans repli. network.json : GET /storage/8/coca.png → 404 et GET /storage/7/frites.png → 404 ; console.json : deux entrées level=error correspondantes. Ce que je vois sur la capture : dans la colonne « À GAGNER », « Boisson » est un disque blanc/dégradé vide et « Frites » un disque entièrement blanc, tandis que Tiramisu, Tarte Daim et Cheese Burger portent une vraie photo ; sur la roue elle-même, les secteurs « Boisson » et « Frites » sont les deux seuls sans vignette, quand les cinq autres en ont une. Ces deux 404 ne sont PAS le bruit connu /storage/1/english.png. Côté client, deux des sept lots sont annoncés par une pastille vide — le lot paraît indisponible. Maintenu en P1 et non P0 : actif décoratif statique, aucune donnée fausse, et la dégradation reste lisible (les libellés « Boisson » et « Frites » s'affichent sous les pastilles).",
+      "fix_hint": "Restaurer les deux fichiers dans storage/app/public (ou repointer les enregistrements de lot vers un média existant) ; ajouter un repli au rendu de la vignette (onerror → visuel générique) pour qu'un média manquant n'affiche jamais un disque vide face client.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-waveE/04b-ecran-client-avec-commande.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Le mur destiné aux CLIENTS porte l'en-tête d'une session admin authentifiée. Ce que je lis réellement sur la capture : le logo « LE CAYENNE », un bouton « Tableau De Bord », le sélecteur « Français », un avatar et « Bonjour / Admin Le Cayenne » avec un chevron de menu déroulant. RECTIFICATION du rapport de capture (E-O5, qui affirme que l'écran « affiche » l'e-mail, « 237,80 € » et « Déconnexion ») : ces trois éléments ne sont PAS rendus à l'écran. Ils existent dans le DOM, à l'intérieur du menu déroulant REPLIÉ (grep du .dom.html : « admin@lecayenne.fr », « 237,80 », « Déconnexion » présents). L'affirmation de l'équipe est donc surévaluée sur la forme ; le défaut de fond tient : un écran exposé au public offre en un clic l'identité du personnel, l'accès au back-office (« Tableau De Bord ») et la déconnexion de la caisse.",
+      "fix_hint": "L'écran /admin/order-status-screen doit rendre sur une mise en page SANS chrome admin (layout dédié, ni en-tête ni menu utilisateur), comme les autres surfaces client. À défaut, masquer l'en-tête sur cette route.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-waveE/04b-ecran-client-avec-commande.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Identifiants de démonstration livrés EN CLAIR dans le HTML de CHAQUE page, y compris ce mur face client et la vitrine de la roue. Le .dom.html servi contient : « demo: false ? { adminEmail: \"admin@lecayenne.fr\", adminPassword: \"123456\", customerEmail: ..., branchManagerEmail: ..., posOperatorEmail: \"pos@lecayenne.fr\", posOperatorPassword: \"123456\", chefEmail: ..., chefPassword: \"123456\" } : null ». Le garde-fou est PUREMENT côté client : la condition rendue vaut « false », donc rien n'est affecté à l'exécution, mais les chaînes sont déjà parties sur le réseau et restent lisibles par un simple affichage du code source. Les adresses ne sont pas fictives (admin@lecayenne.fr, pos@lecayenne.fr sont les comptes du restaurant) et le commentaire du gabarit revendique l'inverse de ce qu'il fait : « [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle ». Ils ne sont pas dans le bundle : ils sont dans toutes les pages HTML.",
+      "fix_hint": "resources/views/master.blade.php:317-330 — déplacer le garde-fou CÔTÉ SERVEUR : entourer le bloc de @if(config('app.demo_mode')) … @endif pour que les littéraux ne soient jamais rendus quand le mode démo est éteint. Même correction à passer sur resources/views/master.blade.php.bak.w1b:130, ou supprimer ce .bak.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-007",
+      "state_artifact": "test-e2e-waveE/02-kds-extras-instantane-v2-defaut.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "La ligne la plus critique de la carte cuisine est la moins lisible. .kds-line__supplement (KdsOrderLine.vue:262) : color #CA8A04, font-size 15px, font-weight 800 ; fond de la carte .kds-card--has-supplements (KdsOrderCard.vue:1108-1110) : #FEF9C3. Rapport de contraste calculé = 2,73:1. WCAG AA exige 4,5:1 : à 15px, même en gras, le seuil « grand texte » (18,66px gras) n'est pas atteint, donc la tolérance 3:1 ne s'applique pas non plus. C'est « ⭐ Cheddar ×2 » — ce que le client a payé en plus — rendu en jaune sur jaune, sur un écran lu à distance en plein service. À comparer avec la ligne d'exclusion « · Sans oignons » (#92400E sur blanc) qui, elle, mesure 7,09:1 : le problème est localisé, pas systémique.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:262 — assombrir #CA8A04 vers ~#854D0E (≈5,9:1 sur #FEF9C3) en conservant la famille ambre, ou revoir le fond #FEF9C3. Vérifier aussi le rendu sur carte blanche (#CA8A04 sur #FFF = 2,94:1, également sous le seuil).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-008",
+      "state_artifact": "test-e2e-waveE/05-B-roue-historique.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "L'historique de la roue ne peut pas répondre à la question pour laquelle il existe. Sur la capture, colonne CODE : « — » sur 5 lignes sur 5, toutes à l'état « À remettre ». Colonne CLIENT : « Sarah ... » sans aucun chiffre sur 4 lignes sur 5, « Audit ...9901 » sur la cinquième — alors que la note de bas de tableau annonce « seuls ses quatre derniers chiffres le sont ». Or /admin/roue-lot (05-B-roue-lot.png) n'offre que DEUX recherches : « Chercher par le code » et « Chercher par le numéro ». Les quatre lots dus à « Sarah » ne sont donc atteignables par AUCUN des deux chemins. Cause lue dans le code : WheelReportService.php:280 alimente la colonne par « trim((string) ($t->coupon->code ?? '')) », c'est-à-dire le code du COUPON — nul pour un lot physique (Boisson, Tiramisu, Cheese Burger), qui n'a pas de coupon. En base, wheel_spins.claim_code porte pourtant 4YEXV7 / FMUHWU / YY9N7D / PUVWMN / NYCUXF pour exactement ces cinq lignes (phone NULL sur les quatre « Sarah »), et la chaîne « claim_code » n'apparaît NULLE PART dans app/, resources/ ni routes/ : une colonne remplie que plus aucun code ne lit.",
+      "fix_hint": "app/Services/Wheel/WheelReportService.php:280 — exposer un identifiant de réclamation pour les lots NON-coupon : soit rebrancher wheel_spins.claim_code et l'accepter dans la recherche de /admin/roue-lot, soit retirer la colonne pour ces lignes et rendre le téléphone obligatoire à l'enregistrement d'un lot physique. Trancher d'abord le statut de claim_code : colonne morte à supprimer, ou canal à rebrancher.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 4,
+    "P2": 2,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 4,
+    "open_P2": 2,
+    "open_P3": 0
+  },
+  "verdict": "RED",
+  "notes": "19 artefacts .png passés en revue (14 écrans distincts ouverts en vision + les 5 variantes 05-A qui sont la même page de garde, vérifiées équivalentes par taille d'octets et console/network vides). CE QUE J'AI TENTÉ DE CASSER SANS Y ARRIVER : (1) La thèse du « S par conception » — je la CONFIRME sur le fond : la légende 02b donne bien « S → Salade » en colonne Crudités, le repli est intentionnel (kdsSymbolic.js CRUDITE_TABLE, garniture gratuite price<=0) et le jumeau PHP existe. Je ne la retiens donc PAS comme défaut en soi. Ce que je retiens, c'est sa conséquence mesurée : le seul endroit où « S » se décode masque « ⭐ Cheddar ×2 » (E-003). (2) J'ai cru voir une fuite de libellé brut dans le DOM hérité (« without — replaced with --> Extras: ») : FAUX POSITIF de mon propre extracteur — la chaîne vit dans un commentaire HTML « <!-- [N4 FIX] Was <li> without <ul> — replaced with <div> --> » dont le « > » interne casse le découpage de balises. Rien n'est rendu. Non retenu. (3) J'ai cru la colonne « À GAGNER » de la vitrine tronquée (5 lots visibles sur 7, « Cheese Burger » coupé en bas) : c'est un DÉFILÉ automatique (classe .defile, @keyframes defiler et defiler-h pour le portrait). Le rognage est le fonctionnement normal d'un bandeau défilant. Non retenu. (4) Les frites du menu CF921 semblaient perdues en V2 : elles sont portées par le bandeau CUISSON « 1F » (F = frites, renderCuisson / meatPortionsForItem). Non retenu — seuls le cheddar et la sauce manquent vraiment (E-002). (5) Passe A de la roue (05-A-*) : la porte d'accès tient, les 6 URL directes redirigent proprement vers la saisie du code, jamais un JSON d'erreur ; aucun contournement trouvé. (6) Écran client 04a : états vides corrects sur les deux colonnes, copie explicite, aucun libellé brut, aucun undefined/NaN/[object Object]. (7) Aucune erreur pageerror sur les 19 captures ; les seules erreurs console non allowlistées sont les deux 404 de E-004. BRUIT NON SIGNALÉ conformément au protocole : 404 /storage/1/english.png, ERR_CONNECTION_REFUSED sur 9100/9101 (pont matériel local) et le websocket de diffusion, csp-report 204, Debugbar, et les commandes des vagues parallèles (bandeau « ANNULÉES — RETIRER DU PASSE »). VERDICT RED : deux P0 ouverts, tous deux sur l'écran de cuisine PAR DÉFAUT en production. La vague E a vérifié le chemin réparé et déclaré la victoire sur le chemin qui ne l'a pas été."
+}

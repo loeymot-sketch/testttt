@@ -6,7 +6,7 @@
             <h3 class="db-card-title">{{ $t("menu.payment_terminals") }}</h3>
             <div class="db-card-filter">
                 <button type="button" class="db-btn py-2 text-white bg-primary" @click="openCreate">
-                    <i class="lab lab-add"></i>
+                    <i class="lab lab-plus"></i>
                     <span>{{ $t("button.add") }}</span>
                 </button>
             </div>
@@ -31,7 +31,9 @@
                         <td class="db-table-body-td">{{ terminal.name }}</td>
                         <td class="db-table-body-td">{{ terminal.branch_name || '-' }}</td>
                         <td class="db-table-body-td">
-                            <span class="capitalize">{{ terminal.gateway_type }}</span>
+                            <!-- Plus de `capitalize` : les libellés sont désormais écrits
+                                 à la main, la CSS mettait une majuscule à chaque mot. -->
+                            <span>{{ libellePasserelle(terminal.gateway_type) }}</span>
                         </td>
                         <td class="db-table-body-td">{{ Number(terminal.fee_percent).toFixed(3) }}%</td>
                         <td class="db-table-body-td">{{ Number(terminal.fee_fixed).toFixed(2).replace('.', ',') }}&nbsp;€</td>
@@ -89,13 +91,14 @@
                             <label for="t_gateway" class="db-field-title required">{{ $t("label.gateway") }}</label>
                             <select v-model="form.gateway_type" id="t_gateway"
                                     class="db-field-control" :class="{ invalid: errors.gateway_type }">
-                                <option value="ingenico">Ingenico</option>
-                                <option value="verifone">Verifone</option>
-                                <option value="stripe">Stripe</option>
-                                <option value="senangpay">Senangpay</option>
-                                <option value="manual">Manual</option>
+                                <option v-for="p in passerelles" :key="p.valeur" :value="p.valeur">{{ p.libelle }}</option>
                             </select>
                             <small class="db-field-alert" v-if="errors.gateway_type">{{ errors.gateway_type[0] }}</small>
+                            <!-- Le libellé du tableau doit rester court (il élargit la
+                                 colonne et repousse les actions) : l'explication vit ici. -->
+                            <small class="text-gray-500" v-else-if="form.gateway_type === 'simulation'">
+                                Aucun matériel connecté : le paiement carte est saisi à la main en caisse.
+                            </small>
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
@@ -106,14 +109,16 @@
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
-                            <label for="t_fee_percent" class="db-field-title">{{ $t("label.fee_percent") }} (%)</label>
+                            <!-- [ONB-10] Pas de « (%) » ajouté ici : le libellé français
+                                 porte déjà l'unité, l'écran affichait « Frais (%) (%) ». -->
+                            <label for="t_fee_percent" class="db-field-title">{{ $t("label.fee_percent") }}</label>
                             <input v-model="form.fee_percent" type="number" step="0.001" min="0" max="99.999"
                                    id="t_fee_percent" class="db-field-control" :class="{ invalid: errors.fee_percent }" />
                             <small class="db-field-alert" v-if="errors.fee_percent">{{ errors.fee_percent[0] }}</small>
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
-                            <label for="t_fee_fixed" class="db-field-title">{{ $t("label.fee_fixed") }} (€)</label>
+                            <label for="t_fee_fixed" class="db-field-title">{{ $t("label.fee_fixed") }}</label>
                             <input v-model="form.fee_fixed" type="number" step="0.01" min="0" max="9999.99"
                                    id="t_fee_fixed" class="db-field-control" :class="{ invalid: errors.fee_fixed }" />
                             <small class="db-field-alert" v-if="errors.fee_fixed">{{ errors.fee_fixed[0] }}</small>
@@ -182,6 +187,24 @@ export default {
             editingId: null,
             errors: {},
             form: this.defaultForm(),
+            // [ONB-10 2026-08-27] Source unique des passerelles, partagée par le
+            // tableau et le sélecteur. Elle doit rester alignée sur
+            // PaymentTerminal::GATEWAY_TYPES côté serveur : toute valeur que le
+            // produit écrit en base sans figurer ici rend le terminal
+            // IMMODIFIABLE (champ obligatoire affiché vide, enregistrement 422).
+            // C'est exactement ce qui arrivait à « simulation », la passerelle de
+            // l'unique TPE réel du Cayenne. Le test TpeSimuleModifiableTest
+            // compare les deux listes et échoue si elles divergent.
+            // Les noms de marque restent tels quels ; seuls les libellés
+            // génériques sont en français.
+            passerelles: [
+                { valeur: "ingenico", libelle: "Ingenico" },
+                { valeur: "verifone", libelle: "Verifone" },
+                { valeur: "stripe", libelle: "Stripe" },
+                { valeur: "senangpay", libelle: "Senangpay" },
+                { valeur: "manual", libelle: "Saisie manuelle" },
+                { valeur: "simulation", libelle: "Simulation" },
+            ],
             search: {
                 paginate: 1,
                 page: 1,
@@ -200,6 +223,13 @@ export default {
         this.list();
     },
     methods: {
+        // Une passerelle inconnue est affichée telle quelle plutôt que masquée :
+        // mieux vaut que le commerçant voie une valeur brute qu'une case vide.
+        libellePasserelle(valeur) {
+            const p = this.passerelles.find((x) => x.valeur === valeur);
+
+            return p ? p.libelle : (valeur || "-");
+        },
         defaultForm() {
             return {
                 name: "",

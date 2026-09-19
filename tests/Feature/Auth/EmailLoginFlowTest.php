@@ -150,6 +150,44 @@ class EmailLoginFlowTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
+    /**
+     * [Root cause 2026-09-18, propriétaire : « parfois un client enregistré, je ne trouve pas
+     * son compte »] Reproduit en local : un e-mail-signup dont l'ENVOI DU CODE échoue (SMTP
+     * injoignable en environnement réel — bounce, provider en panne, adresse invalide) laisse
+     * une ligne `otps` déjà écrite AVANT l'échec de Mail::send(), renvoie 422 au client, et ne
+     * journalise RIEN nulle part. Le client ne reçoit jamais son code → `register()` (appelé
+     * uniquement depuis `verify()`) ne s'exécute jamais → AUCUN compte n'est créé. Le
+     * propriétaire, cherchant plus tard « il m'a dit qu'il s'était inscrit », ne trouve
+     * personne et n'a aucune trace pour comprendre pourquoi.
+     *
+     * Ce test verrouille la correction : l'échec doit au moins laisser une trace journalisée,
+     * exploitable pour retrouver CE numéro/e-mail précis quand le propriétaire signale le cas.
+     */
+    public function test_email_send_failure_during_signup_is_logged_for_later_investigation(): void
+    {
+        \Illuminate\Support\Facades\Log::spy();
+        \Illuminate\Support\Facades\Mail::shouldReceive('to')->once()->andReturnUsing(function () {
+            throw new \Exception('Connection could not be established with host "smtp.example.com:587": simulated SMTP outage');
+        });
+
+        $r = $this->emailLogin(['email' => 'client-perdu@example.com', 'first_name' => 'Perdu', 'phone' => '0699555099']);
+        $r->assertStatus(422);
+
+        // L'état dangereux existe bel et bien : un jeton a été écrit avant l'échec d'envoi.
+        $this->assertNotNull($this->tokenFor('0699555099'), 'sanity : la ligne otps existe malgré l\'échec');
+
+        // Aucun compte n'a pu être créé (verify() n'a jamais eu lieu) — exactement le symptôme
+        // rapporté : « client enregistré » introuvable, parce qu'il n'existe pas.
+        $this->assertNull(User::withoutGlobalScopes()->where('phone', '0699555099')->first());
+
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+            ->withArgs(function (string $message, array $context = []) {
+                return str_contains($message, 'guest_signup')
+                    && ($context['phone'] ?? null) === '0699555099';
+            })
+            ->once();
+    }
+
     /** (3b) Téléphone fourni sans prénom → 422 de validation, rien n'est envoyé. */
     public function test_signup_mode_requires_first_name_when_phone_is_given(): void
     {

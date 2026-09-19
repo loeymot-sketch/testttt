@@ -18,7 +18,42 @@ class PrinterRequest extends FormRequest
         $branchId = $this->resolvedBranchId();
 
         return [
-            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            // [ONB-10 2026-08-28] Obligatoire pour l'admin qui CRÉE.
+            //
+            // `printers.branch_id` porte une clé étrangère vers `branches.id`, et
+            // `resolveBranchId()` renvoie `validated('branch_id')` dès que l'acteur a
+            // `branch_id = 0` — le cas de l'administrateur. Sans valeur, l'insertion
+            // partait avec 0, aucune filiale ne porte cet identifiant, et le patron
+            // recevait « SQLSTATE[23000]: Integrity constraint violation » au lieu
+            // d'un message lui disant de choisir son établissement.
+            //
+            // Jumeau exact du défaut `phone` (obligatoire en base, facultatif dans la
+            // règle). En modification la valeur existante sert de repli, d'où le
+            // `isMethod('POST')`.
+            'branch_id' => [
+                // [ONB-10 2026-08-28, corrige le meme jour apres audit adverse]
+                //
+                // Premiere version : obligatoire des que l'acteur avait
+                // `branch_id = 0`. C'etait le compte PROPRIETAIRE, et l'ecran
+                // n'envoie pas ce champ ni n'affiche son erreur : le patron
+                // cliquait « Enregistrer » et rien ne se passait, sans un mot.
+                // J'avais remplace un defaut par un pire.
+                //
+                // On n'exige un choix que s'il y en a vraiment un. Avec une seule
+                // filiale — le cas de V1 LOCAL — `resolveBranchId()` la prend
+                // d'office : demander de choisir parmi un element unique est une
+                // corvee, pas une protection.
+                Rule::requiredIf(fn () => $this->isMethod('POST')
+                    && (int) ($this->user()?->branch_id ?? 0) === 0
+                    // `!== 1` et non `> 1` : sans AUCUNE filiale, le repli n'a rien
+                    // a prendre et l'insertion repartait a 0, donc en violation de
+                    // cle etrangere. On exige alors le champ pour que le refus soit
+                    // un message nomme plutot qu'un plantage.
+                    && \App\Models\Branch::query()->count() !== 1),
+                'nullable',
+                'integer',
+                'exists:branches,id',
+            ],
             'name' => [
                 'required',
                 'string',
@@ -54,9 +89,36 @@ class PrinterRequest extends FormRequest
             ],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'station' => ['nullable', 'string', Rule::in(['receipt', 'kitchen_hot', 'kitchen_cold', 'bar'])],
-            'width_chars' => ['nullable', 'integer', Rule::in([32, 48])],
-            'status' => ['nullable', 'integer', Rule::in([0, 1])],
+            // [ONB-10 2026-08-28] 42 MANQUAIT, alors que l'ecran le propose sous le
+            // libelle « 42 (80 mm SAGA) » — c'est-a-dire en NOMMANT le modele. Choisir
+            // la largeur de sa propre imprimante renvoyait un 422, et le champ n'avait
+            // aucun affichage d'erreur : le refus etait invisible.
+            //
+            // La largeur n'est qu'un nombre de caracteres par ligne pour le rendu
+            // ESC/POS : 42 est mecaniquement valide. On rend vrai ce que l'ecran
+            // promet, plutot que de retirer l'option et priver ces imprimantes du bon
+            // reglage.
+            'width_chars' => ['nullable', 'integer', Rule::in([32, 42, 48])],
+            // [ONB-10 2026-08-27] Était `Rule::in([0, 1])` — une convention booléenne
+            // que RIEN d'autre ne partageait. Les trois chemins d'impression du produit
+            // (KitchenTicketAutoPrinter, PosReceiptPrintController, et le listener
+            // d'encaissement comptoir) cherchent `status = App\Enums\Status::ACTIVE`,
+            // qui vaut 5 — et les imprimantes réelles du Cayenne sont bien à 5.
+            //
+            // Trois lectures incompatibles de la même colonne cohabitaient : le serveur
+            // n'acceptait que 0 ou 1, l'écran écrivait 5 pour « archivé » (donc 422 sur
+            // le bouton Archiver), et le contrôleur créait à 1 — une valeur qu'aucun
+            // chemin d'impression ne reconnaît. Voir ImprimanteCreeeDepuisEcranImprimeTest.
+            'status' => ['nullable', 'integer', Rule::in([\App\Enums\Status::ACTIVE, \App\Enums\Status::INACTIVE])],
             'options' => ['nullable', 'array'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'branch_id.required' => "Choisissez l'établissement auquel cette imprimante appartient.",
+            'branch_id.exists' => "Cet établissement n'existe pas.",
         ];
     }
 

@@ -227,18 +227,58 @@ describe('PosOrdersTracker — aging voie À encaisser (IMP-AGING)', () => {
     });
 });
 
-describe('PosOrdersTracker — POSPERF-07 requête bornée + lean', () => {
-    it('fetchOrders demande paginate:1 + per_page:100 + lean:1 (fin du ->get(*) illimité, payload allégé)', async () => {
+describe('PosOrdersTracker — requête bornée SERVEUR à la journée de service', () => {
+    // [GOAL G1 2026-09-03] CONTRAT REMPLACÉ, et il faut dire pourquoi.
+    //
+    // Ce banc épinglait `paginate:1 + per_page:100 + lean:1` — la borne POSPERF-07 de 2026-07-22,
+    // dont le but était juste (arrêter le `->get('*')` illimité) mais le moyen faux. Le tri par
+    // défaut d'`OrderService::list` est `id desc` : au-delà de cent commandes dans le service, la
+    // page de cent jetait les PLUS ANCIENNES de toutes les voies — dont une commande à encaisser
+    // oubliée depuis l'ouverture — et « X aujourd'hui » annonçait 100 pour 137, sans rien dire.
+    //
+    // Le nouvel endpoint borne SERVEUR (journée de service + états affichés, plafonds de sécurité
+    // avoués dans `meta`). Il n'y a donc plus ni `paginate` ni `per_page` à envoyer : les épingler
+    // encore reviendrait à verrouiller le défaut. Ce que ce banc épingle désormais, c'est qu'aucun
+    // plafond d'affichage ne repart du client.
+    it('fetchOrders demande la journée de service entière, sans plafond client', async () => {
         const dispatchImpl = vi.fn(() => Promise.resolve({ data: { data: [] } }));
         const { wrapper } = buildHarness({ dispatchImpl });
 
         await wrapper.vm.fetchOrders();
 
-        // paginate:1 fait honorer per_page côté backend (sinon ->get('*') = TOUTES
-        // les commandes du jour) ; lean:1 réduit la charge de relations.
         expect(dispatchImpl).toHaveBeenCalledWith(
-            'posOrder/lists',
-            expect.objectContaining({ paginate: 1, per_page: 100, lean: 1, vuex: false }),
+            'posOrder/serviceDay',
+            expect.objectContaining({ composition: 1, avec_terminales: 1, vuex: false }),
         );
+        const params = dispatchImpl.mock.calls.find((c) => c[0] === 'posOrder/serviceDay')[1];
+        expect(params.per_page).toBeUndefined();
+        expect(params.paginate).toBeUndefined();
+    });
+
+    it('annonce la troncature quand le serveur déclare avoir écourté la journée', async () => {
+        const dispatchImpl = vi.fn((action) => (action === 'posOrder/serviceDay'
+            ? Promise.resolve({ data: { data: [], meta: { total: 137, shown: 100, truncated: true } } })
+            : Promise.resolve({ data: { data: [] } })));
+        const { wrapper } = buildHarness({ dispatchImpl });
+
+        await wrapper.vm.fetchOrders();
+        await wrapper.vm.$nextTick();
+
+        const pilule = wrapper.find('[data-testid="tracker-troncature-pill"]');
+        expect(pilule.exists()).toBe(true);
+        expect(pilule.text()).toContain('100');
+        expect(pilule.text()).toContain('137');
+    });
+
+    it('se tait quand la journée est complète — un bandeau permanent serait du bruit', async () => {
+        const dispatchImpl = vi.fn((action) => (action === 'posOrder/serviceDay'
+            ? Promise.resolve({ data: { data: [], meta: { total: 12, shown: 12, truncated: false } } })
+            : Promise.resolve({ data: { data: [] } })));
+        const { wrapper } = buildHarness({ dispatchImpl });
+
+        await wrapper.vm.fetchOrders();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find('[data-testid="tracker-troncature-pill"]').exists()).toBe(false);
     });
 });

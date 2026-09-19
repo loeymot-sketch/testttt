@@ -1,0 +1,198 @@
+# G3 · T3.1 — preuve que le banc MORD avant correctif
+Date : 2026-09-03 02:24:06
+HEAD : 34519880d  branche : pos/category-first-caisse-2026-06-23
+Commande : php artisan test --filter=InterrupteurAuditApresMutationTest
+État du code : AUCUN correctif appliqué — InterrupteurController.php:94 écrit l'audit AVANT :110 regler()
+
+================ SORTIE BRUTE ================
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+   FAIL  Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest
+  ⨯ une bascule qui echoue ne laisse aucune ligne d audit
+  ✓ une bascule reussie laisse exactement une ligne fidele
+  ⨯ un interrupteur inconnu ne laisse aucune ligne d audit
+
+  ---
+
+  • Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest > une bascule qui echoue ne laisse aucune ligne d audit
+  une bascule qui n’a pas eu lieu ne doit laisser AUCUNE ligne dans audit_logs : la table est chaînée et append-only, une ligne fausse y reste six ans
+  Failed asserting that 1 is identical to 0.
+  
+  The following exception occurred during the last request:
+  
+  PDOException: SQLSTATE[HY000]: General error: 5 database is locked in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php:77
+  Stack trace:
+  #0 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php(94): Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest->panneDeBase()
+  #1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1617): Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest->test_une_bascule_qui_echoue_ne_laisse_aucune_ligne_d_audit()
+  #2 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1223): PHPUnit\Framework\TestCase->runTest()
+  #3 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestResult.php(729): PHPUnit\Framework\TestCase->runBare()
+  #4 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(973): PHPUnit\Framework\TestResult->run(Object(Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest))
+  #5 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestCase->run(Object(PHPUnit\Framework\TestResult))
+  #6 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #7 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #8 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/TestRunner.php(651): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #9 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(146): PHPUnit\TextUI\TestRunner->run(Object(PHPUnit\Framework\TestSuite), Array, Array, true)
+  #10 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(99): PHPUnit\TextUI\Command->run(Array, true)
+  #11 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/phpunit(107): PHPUnit\TextUI\Command::main()
+  #12 {main}
+  
+  Next Illuminate\Database\QueryException: SQLSTATE[HY000]: General error: 5 database is locked (SQL: update "settings" set "payload" = false where "group" = pilotage and "key" = split_payment.enabled) in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php:74
+  Stack trace:
+  #0 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php(94): Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest->panneDeBase()
+  #1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1617): Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest->test_une_bascule_qui_echoue_ne_laisse_aucune_ligne_d_audit()
+  #2 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1223): PHPUnit\Framework\TestCase->runTest()
+  #3 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestResult.php(729): PHPUnit\Framework\TestCase->runBare()
+  #4 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(973): PHPUnit\Framework\TestResult->run(Object(Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest))
+  #5 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestCase->run(Object(PHPUnit\Framework\TestResult))
+  #6 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #7 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #8 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/TestRunner.php(651): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #9 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(146): PHPUnit\TextUI\TestRunner->run(Object(PHPUnit\Framework\TestSuite), Array, Array, true)
+  #10 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(99): PHPUnit\TextUI\Command->run(Array, true)
+  #11 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/phpunit(107): PHPUnit\TextUI\Command::main()
+  #12 {main}
+  
+  ----------------------------------------------------------------------------------
+  
+  SQLSTATE[HY000]: General error: 5 database is locked (SQL: update "settings" set "payload" = false where "group" = pilotage and "key" = split_payment.enabled)
+
+  at tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php:107
+    103▕             $reponse->status() >= 400,
+    104▕             'une bascule qui échoue doit répondre une erreur, pas un succès (reçu : '.$reponse->status().')'
+    105▕         );
+    106▕ 
+  ➜ 107▕         $this->assertSame(
+    108▕             $lignesAvant,
+    109▕             $this->lignesDeBascule(),
+    110▕             'une bascule qui n’a pas eu lieu ne doit laisser AUCUNE ligne dans audit_logs : '
+    111▕             .'la table est chaînée et append-only, une ligne fausse y reste six ans'
+
+  • Tests\Feature\Pilotage\InterrupteurAuditApresMutationTest > un interrupteur inconnu ne laisse aucune ligne d audit
+  un interrupteur inconnu ne doit laisser aucune trace d’une bascule qui ne peut pas exister
+  Failed asserting that 1 is identical to 0.
+
+  at tests/Feature/Pilotage/InterrupteurAuditApresMutationTest.php:183
+    179▕         $this->actingAs($this->admin(), 'sanctum')
+    180▕             ->putJson('/api/admin/observability/interrupteurs/interrupteur-qui-n-existe-pas', ['actif' => true])
+    181▕             ->assertStatus(404);
+    182▕ 
+  ➜ 183▕         $this->assertSame(
+    184▕             $lignesAvant,
+    185▕             $this->lignesDeBascule(),
+    186▕             'un interrupteur inconnu ne doit laisser aucune trace d’une bascule qui ne peut pas exister'
+    187▕         );
+
+
+  Tests:  2 failed, 1 passed
+  Time:   1.03s
+
+
+================ FIN SORTIE ================
+
+############################################################
+# G3 · T3.4 — preuve que le banc VITEST mord sur l'ANCIEN texte
+############################################################
+Date : 2026-09-03 02:27:31
+Methode : le texte d'origine (<< Consigne dans le journal serveur, pas le journal fiscal
+NF525. >>) a ete remis TEMPORAIREMENT dans le .vue, vitest relance, puis le fichier
+restaure a l'octet pres (comparaison binaire verifiee ci-dessus).
+Commande : npx vitest run tests/js/systemHealthTexteAuditExact.spec.js
+
+================ SORTIE BRUTE (texte d'origine en place) ================
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/systemHealthTexteAuditExact.spec.js  (4 tests | 4 failed) 42ms
+   ❯ tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > nomme le journal d'audit et la table audit_logs
+     → expected 'Interrupteurs Prise en compte immédia…' to match /journal d'audit/i
+   ❯ tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > ne sous-vend plus la trace en la disant « journal serveur »
+     → expected 'Interrupteurs Prise en compte immédia…' not to match /journal serveur/i
+   ❯ tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > ne sur-vend pas : la mention NF525 reste une NÉGATION, jamais une revendication
+     → expected 'Interrupteurs Prise en compte immédia…' to match /n'est pas une écriture fiscale NF525/i
+   ❯ tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > dit ce qui rend la trace opposable — chaînée et non modifiable
+     → expected 'Interrupteurs Prise en compte immédia…' to match /signé en chaîne/i
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > nomme le journal d'audit et la table audit_logs
+AssertionError: expected 'Interrupteurs Prise en compte immédia…' to match /journal d'audit/i
+
+- Expected: 
+/journal d'audit/i
+
++ Received: 
+"Interrupteurs Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525."
+
+ ❯ tests/js/systemHealthTexteAuditExact.spec.js:87:23
+     85|         const texte = texteInterrupteurs(await monter());
+     86| 
+     87|         expect(texte).toMatch(/journal d'audit/i);
+       |                       ^
+     88|         expect(texte).toContain('audit_logs');
+     89|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > ne sous-vend plus la trace en la disant « journal serveur »
+AssertionError: expected 'Interrupteurs Prise en compte immédia…' not to match /journal serveur/i
+
+- Expected: 
+/journal serveur/i
+
++ Received: 
+"Interrupteurs Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525."
+
+ ❯ tests/js/systemHealthTexteAuditExact.spec.js:94:27
+     92|         const texte = texteInterrupteurs(await monter());
+     93| 
+     94|         expect(texte).not.toMatch(/journal serveur/i);
+       |                           ^
+     95|         expect(texte).not.toMatch(/journal applicatif/i);
+     96|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > ne sur-vend pas : la mention NF525 reste une NÉGATION, jamais une revendication
+AssertionError: expected 'Interrupteurs Prise en compte immédia…' to match /n'est pas une écriture fiscale NF525/i
+
+- Expected: 
+/n'est pas une écriture fiscale NF525/i
+
++ Received: 
+"Interrupteurs Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525."
+
+ ❯ tests/js/systemHealthTexteAuditExact.spec.js:102:23
+    100| 
+    101|         // La seule mention acceptable de NF525 ici est celle qui dit …
+    102|         expect(texte).toMatch(/n'est pas une écriture fiscale NF525/i);
+       |                       ^
+    103|         // Et jamais la revendication inverse.
+    104|         expect(texte).not.toMatch(/journal fiscal/i);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/js/systemHealthTexteAuditExact.spec.js > Cockpit — le bloc Interrupteurs nomme le journal où la bascule est réellement écrite > dit ce qui rend la trace opposable — chaînée et non modifiable
+AssertionError: expected 'Interrupteurs Prise en compte immédia…' to match /signé en chaîne/i
+
+- Expected: 
+/signé en chaîne/i
+
++ Received: 
+"Interrupteurs Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525."
+
+ ❯ tests/js/systemHealthTexteAuditExact.spec.js:110:23
+    108|         const texte = texteInterrupteurs(await monter());
+    109| 
+    110|         expect(texte).toMatch(/signé en chaîne/i);
+       |                       ^
+    111|         expect(texte).toMatch(/non modifiable/i);
+    112|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  02:27:31
+   Duration  741ms (transform 89ms, setup 8ms, collect 136ms, tests 42ms, environment 203ms, prepare 55ms)
+
+================ FIN SORTIE ================

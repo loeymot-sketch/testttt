@@ -100,7 +100,7 @@
                                     :data-testid="`delivery-cash-session-view-${session.id}`"
                                     @click="viewSession(session.id)"
                                 >
-                                    <i class="lab lab-eye-line"></i>
+                                    <i class="lab lab-view"></i>
                                     <span>{{ $t('button.view') }}</span>
                                 </button>
                             </td>

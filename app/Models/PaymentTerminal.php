@@ -35,12 +35,36 @@ class PaymentTerminal extends Model
     public const GATEWAY_VERIFONE  = 'verifone';
     public const GATEWAY_MANUAL    = 'manual';
 
+    /**
+     * [ONB-10 2026-08-27] TPE sans intégration matérielle — la caisse encaisse
+     * la carte de façon déclarative, le paiement est saisi à la main.
+     *
+     * Cette valeur n'a pas été inventée ici : `SimulatedTpeTerminal20260708Seeder`
+     * l'écrit en base depuis une décision du propriétaire du 2026-07-08, et c'est
+     * la passerelle de l'unique TPE réel du Cayenne. Elle manquait simplement à
+     * cette liste — donc le formulaire d'administration ne savait pas la
+     * représenter : la passerelle s'affichait VIDE à la modification, sur un
+     * champ obligatoire, et tout enregistrement partait en 422. Le seul moyen
+     * pour le commerçant de renommer son terminal ou d'en corriger les frais
+     * était de le déclarer « Ingenico » — c'est-à-dire de mentir sur son
+     * matériel, y compris dans la ventilation par terminal du rapport Z.
+     *
+     * `gateway_type` reste purement descriptif : aucune branche de logique ne le
+     * lit (vérifié sur `app/` et `resources/js/` — il est affiché, et recopié
+     * dans le payload du rapport Z par ZReportCashEnrichmentService). L'ajouter
+     * n'ouvre donc aucun contournement d'encaissement. Le garde-fou du matériel
+     * simulé en production reste `POS_SIMULATION_HARDWARE`, contrôlé au boot
+     * (AppServiceProvider).
+     */
+    public const GATEWAY_SIMULATION = 'simulation';
+
     public const GATEWAY_TYPES = [
         self::GATEWAY_STRIPE,
         self::GATEWAY_SENANGPAY,
         self::GATEWAY_INGENICO,
         self::GATEWAY_VERIFONE,
         self::GATEWAY_MANUAL,
+        self::GATEWAY_SIMULATION,
     ];
 
     protected $table = 'payment_terminals';

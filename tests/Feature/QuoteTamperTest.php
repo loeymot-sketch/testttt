@@ -47,6 +47,42 @@ class QuoteTamperTest extends TestCase
             ->assertStatus(401);
     }
 
+    public function test_manual_supplement_quote_seals_its_label_and_ttc_amount(): void
+    {
+        [$operator, $payload] = $this->fixture();
+        $payload['items'] = json_encode([[
+            'line_type' => 'manual_supplement',
+            'manual_label' => 'Olives',
+            'manual_amount' => 1.25,
+            'quantity' => 1,
+        ]]);
+
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        $sealed = OrderQuote::where('quote_token', $quote['quote_token'])->firstOrFail();
+        $this->assertSame('manual_supplement', $sealed->canonical_payload['modifiers'][0]['line_type']);
+        $this->assertSame('Olives', $sealed->canonical_payload['modifiers'][0]['manual_label']);
+        $this->assertSame(1.25, (float) $sealed->canonical_payload['modifiers'][0]['manual_amount']);
+
+        $tampered = $payload + [
+            'quote_token' => $quote['quote_token'],
+            'quote_signature' => $quote['signature'],
+        ];
+        $tampered['items'] = json_encode([[
+            'line_type' => 'manual_supplement',
+            'manual_label' => 'Double sauce',
+            'manual_amount' => 1.25,
+            'quantity' => 1,
+        ]]);
+
+        $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $tampered)
+            ->assertStatus(401);
+    }
+
     public function test_pos_commit_with_tampered_quote_intent_is_rejected(): void
     {
         config(['app.api_key' => 'test-api-key']);

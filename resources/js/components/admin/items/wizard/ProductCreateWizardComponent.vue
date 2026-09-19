@@ -80,7 +80,7 @@
                 data-testid="wizard-prev"
                 @click="goPrev"
             >
-                <i class="lab lab-arrow-left" aria-hidden="true"></i>
+                <i class="lab lab-back-bold" aria-hidden="true"></i>
                 {{ $t('label.previous') }}
             </button>
 
@@ -107,7 +107,7 @@
                 data-testid="wizard-finish"
                 @click="finishWizard"
             >
-                <i class="lab lab-check" aria-hidden="true"></i>
+                <i class="lab lab-tick-circle" aria-hidden="true"></i>
                 {{ $t('admin.product_wizard.finish') }}
             </button>
         </footer>

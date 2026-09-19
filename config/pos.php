@@ -38,6 +38,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Manual supplement sale line
+    |--------------------------------------------------------------------------
+    |
+    | The cashier may add an optional label and a TTC unit amount. The browser
+    | only expresses that intent: PricingService validates the amount, applies
+    | this server-side VAT configuration and seals the line in the quote/order.
+    */
+    'manual_supplement' => [
+        'enabled' => filter_var(env('POS_MANUAL_SUPPLEMENT_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'max_unit_amount' => max(0.01, (float) env('POS_MANUAL_SUPPLEMENT_MAX_AMOUNT', 100)),
+        'tax_name' => (string) env('POS_MANUAL_SUPPLEMENT_TAX_NAME', 'TVA 10%'),
+        'tax_rate' => max(0.0, (float) env('POS_MANUAL_SUPPLEMENT_TAX_RATE', 10)),
+        'default_label' => (string) env('POS_MANUAL_SUPPLEMENT_DEFAULT_LABEL', 'Supplément'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | POS API rate-limit knobs (Wave O O-5 P-OWNER-5 heal 2026-05-20)
     |--------------------------------------------------------------------------
     |
@@ -69,6 +86,7 @@ return [
         // réessayez plus tard ». 240/min = 20 écrans simultanés sur le même compte — très au-delà
         // de tout usage réel, tout en gardant une borne contre une boucle emballée.
         'print_queue_poll' => max(1, (int) env('POS_RATE_LIMIT_PRINT_QUEUE_POLL', 240)),
+        'customer_display' => max(1, (int) env('POS_RATE_LIMIT_CUSTOMER_DISPLAY', 240)),
     ],
 
     /*
@@ -258,15 +276,42 @@ return [
     | distribuer des codes nominatifs à usage unique sur ticket, sans autoriser
     | pour autant les remises libres au comptoir. Ce flag rend ça possible.
     |
-    | Effet : quand il vaut true, le pré-contrôle et l'application d'un coupon
-    | sont autorisés, que les remises manuelles soient coupées ou non. Quand il
-    | vaut false, on retombe exactement sur l'ancien comportement (les coupons
-    | suivent `manual_discount_enabled`) — aucune régression pour une
-    | installation qui ne connaît pas cette variable.
+    | ⚠️ EFFET RÉEL, corrigé le 2026-08-28 après vérification ligne à ligne.
     |
-    | Fiscalement : un coupon est une réduction de famille F1, dont le netting
-    | TVA du Z est déjà FIXÉ et prouvé (ZReportDiscountNettingTest) — le même
-    | argument qui a permis d'ouvrir la fidélité s'applique ici.
+    | Ce paragraphe promettait : « quand il vaut true, le pré-contrôle ET
+    | L'APPLICATION d'un coupon sont autorisés, que les remises manuelles soient
+    | coupées ou non ». **La seconde moitié est fausse**, et l'était depuis
+    | l'écriture du drapeau.
+    |
+    | Ce que le drapeau commande VRAIMENT (4 lecteurs, tous en amont) :
+    |   · `CouponController:55`      — le pré-contrôle public d'un code
+    |   · `FrontendOrderService:1099` — la surface borne/web
+    |   · `WheelService:813`          — l'émission d'un coupon par la roue
+    |   · `PromoFlyerController:83`   — le ticket promo nominatif
+    |
+    | Ce qu'il ne commande PAS : l'application en caisse.
+    | `OrderService::assertDiscretionaryDiscountAllowed` (7 sites d'appel, ligne
+    | 3700) ne lit QUE `pos.manual_discount_enabled`. Le drapeau dédié
+    | n'apparaît nulle part dans `OrderService.php` — vérifié par grep.
+    |
+    | Conséquence pour l'exploitant : mettre ce drapeau à true SANS ouvrir les
+    | remises manuelles ne débloque pas l'encaissement d'un coupon. Le client
+    | voit son code accepté au pré-contrôle, puis refusé au paiement.
+    |
+    | Ce n'est pas un défaut du garde. `plans/LOCK_ZREPORT_F1_DISCOUNT_NETTING_2026_05_31.md
+    | §7` désigne explicitement `manual_discount_enabled` comme l'interrupteur
+    | UNIQUE d'activation des remises. Le garde applique la décision ; c'est ce
+    | commentaire qui promettait autre chose.
+    |
+    | Le découplage réel — faire lire ce drapeau par la caisse — change ce qu'un
+    | interrupteur d'arrêt protège. C'est une décision propriétaire :
+    | `docs/gates/GATE_COUPONS_EN_CAISSE_2026-08-28.md`.
+    |
+    | Fiscalement : le défaut F1 invoqué par le docblock du garde
+    | (`OrderService:3715-3722`, daté du 2026-05-30) a été **corrigé le
+    | lendemain** sous clé propriétaire, et `ZReportDiscountNettingTest` le
+    | prouve (5 verts). L'obstacle fiscal n'existe plus ; il ne reste que la
+    | décision commerciale.
     */
     'coupon_codes_enabled' => filter_var(
         env('POS_COUPON_CODES_ENABLED', false),

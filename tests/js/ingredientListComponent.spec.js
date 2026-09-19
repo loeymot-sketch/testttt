@@ -64,9 +64,31 @@ describe('IngredientListComponent', () => {
         expect(fetch).toHaveBeenLastCalledWith(expect.anything(), { type: 'extra' });
     });
 
-    it('shows the empty state when no ingredients match the filter', () => {
+    /*
+     * [ONB 2026-08-28] Ce banc s'appelait « when no ingredients match THE FILTER »
+     * mais montait le composant sur l'onglet PAR DEFAUT — donc sans aucun filtre.
+     * Il mesurait le cas « rien du tout » en pretendant mesurer « rien qui
+     * corresponde », et epinglait la phrase qui confond precisement les deux.
+     *
+     * Un commercant qui vient d'installer n'a AUCUN ingredient et n'a pose AUCUN
+     * filtre : lui dire « trouve pour ce filtre » l'envoie chercher un filtre qui
+     * n'existe pas. On mesure desormais les deux branches, separement.
+     */
+    it("sans aucun ingrédient et sans filtre, l'écran ne parle pas de filtre", () => {
         const { wrapper } = mountList({ list: [] });
 
-        expect(wrapper.find('[data-testid="ingredient-empty"]').text()).toContain('Aucun ingrédient trouvé');
+        const texte = wrapper.find('[data-testid="ingredient-empty"]').text();
+
+        expect(texte).toContain('label.ingredient.empty_all');
+        expect(texte).not.toContain('empty_filtered');
+    });
+
+    it("sur un onglet sélectionné, l'écran renvoie bien vers « Tous »", async () => {
+        const { wrapper } = mountList({ list: [] });
+
+        await wrapper.findAll('button').find((button) => button.text() === 'Suppléments').trigger('click');
+
+        expect(wrapper.find('[data-testid="ingredient-empty"]').text())
+            .toContain('label.ingredient.empty_filtered');
     });
 });

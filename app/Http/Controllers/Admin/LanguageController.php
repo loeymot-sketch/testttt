@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\LanguageFileTextGetRequest;
+use App\Http\Requests\LanguageFileTextStoreRequest;
 use App\Http\Requests\LanguageRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\LanguageFileListResource;
@@ -98,7 +99,7 @@ class LanguageController extends AdminController
         }
     }
 
-    public function fileTextStore(Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
+    public function fileTextStore(LanguageFileTextStoreRequest $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
             $this->languageService->fileTextStore($request);

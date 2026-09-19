@@ -40,6 +40,13 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
 {
     private const ATTR_VIANDE_1 = 1;
     private const ATTR_VIANDE_2 = 2;
+
+    /**
+     * [OWNER TACOS-XL 2026-08-24] 3ᵉ emplacement de viande — jusque-là dormant en base (aucun
+     * article ne le portait). Il n'existe que pour le Tacos XL, dont les TROIS viandes sont
+     * comprises dans le prix. Voir {@see \App\Console\Commands\EnsureTacosXl3ViandesCommand}.
+     */
+    private const ATTR_VIANDE_3 = 3;
     private const ATTR_SAUCE = 5;
     private const ATTR_PAIN = 6;
     private const ATTR_SAUCE_BOL = 8;
@@ -86,6 +93,7 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         // 1) Attributs viande : exiger exactement 1 par groupe présent.
         $this->setAttribute(self::ATTR_VIANDE_1, 1, 1);
         $this->setAttribute(self::ATTR_VIANDE_2, 1, 1);
+        $this->setAttribute(self::ATTR_VIANDE_3, 1, 1);
         $this->setAttribute(self::ATTR_SAUCE, 1, 1);
         $this->setAttribute(self::ATTR_PAIN, 1, 1);
 
@@ -99,11 +107,22 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         $this->wireGarnitures($tacosM);         // [owner 2026-07-07] tacos AVEC crudités (revert du « sans crudités » 2026-06-23) : la borne n'affichait aucun choix de crudité → aligné sur sandwichs/burgers (Salade/Tomate/Oignon + Oignons cuits via OnionCuitExtra20260706Seeder)
         $this->wireSupplements($tacosM);
 
-        $tacosL = $this->upsertItem(null, 'Tacos L', 7.90, 5, 'Galette de blé, 2 viandes au choix, frites maison et sauce.');
+        // [OWNER 2026-08-24] 7,90 € → 8,90 €.
+        $tacosL = $this->upsertItem(null, 'Tacos L', 8.90, 5, 'Galette de blé, 2 viandes au choix, frites maison et sauce.');
         $this->wireMeatChoice($tacosL, 2);      // 2 viandes
         $this->wireSauces($tacosL);
         $this->wireGarnitures($tacosL);         // [owner 2026-07-07] tacos AVEC crudités (revert du « sans crudités » 2026-06-23)
         $this->wireSupplements($tacosL);
+
+        // [OWNER 2026-08-24] Le tacos TROIS viandes, nouveau à la carte. Le nom « XL » n'est pas
+        // décoratif : `pos-wizard.js` (gelé), `kioskTacosSize.js` et le ticket cuisine y lisent
+        // tous les trois « 3 viandes ». Les 3 viandes sont COMPRISES dans les 10,90 € (variations
+        // @0) ; la 4ᵉ reste l'extra payant « Viande supplémentaire » @2,50.
+        $tacosXl = $this->upsertItem(null, 'Tacos XL', 10.90, 5, 'Galette de blé, 3 viandes au choix, frites maison et sauce.');
+        $this->wireMeatChoice($tacosXl, 3);     // 3 viandes
+        $this->wireSauces($tacosXl);
+        $this->wireGarnitures($tacosXl);
+        $this->wireSupplements($tacosXl);
 
         // 4) BURGERS (cat 4) — compositions fixes, PAS de choix de viande.
         $burgers = [
@@ -362,7 +381,7 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
     /** Synchronise les viandes sur N attributs (Viande 1..N). */
     private function wireMeatChoice(Item $item, int $count): void
     {
-        $attrs = [self::ATTR_VIANDE_1, self::ATTR_VIANDE_2];
+        $attrs = [self::ATTR_VIANDE_1, self::ATTR_VIANDE_2, self::ATTR_VIANDE_3];
         for ($i = 0; $i < count($attrs); $i++) {
             if ($i < $count) {
                 $this->syncVariations($item->id, $attrs[$i], self::MEATS, 0.0);
@@ -376,6 +395,7 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
     {
         $this->syncVariations($item->id, self::ATTR_VIANDE_1, [], 0.0);
         $this->syncVariations($item->id, self::ATTR_VIANDE_2, [], 0.0);
+        $this->syncVariations($item->id, self::ATTR_VIANDE_3, [], 0.0);
     }
 
     private function wireSauces(Item $item): void

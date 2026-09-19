@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Enums\Status;
 use App\Models\Printer;
 use App\Services\Hardware\EscPosCommandBuilder;
 use App\Services\Hardware\EscPosPrinterService;
@@ -42,7 +43,7 @@ class EscPosOpenDrawerTest extends TestCase
             'port' => 9100,
             'station' => 'receipt',
             'width_chars' => 48,
-            'status' => 1,
+            'status' => Status::ACTIVE,
             'options' => null,
         ]);
 

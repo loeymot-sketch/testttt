@@ -388,7 +388,7 @@
                             data-testid="pos-cash-session-open"
                             :tone="cashSessionActive ? 'ready' : 'neutral'"
                             :title="cashSessionStale
-                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôture-la pour connaître ton écart.'
+                                ? 'Cette caisse est ouverte depuis ' + cashSessionDays + ' jours — elle n\'a jamais été comptée. Clôturez-la pour connaître votre écart.'
                                 : $t('label.cash_session_dialog_title')"
                             @click="openCashSessionDialog"
                         >
@@ -1740,6 +1740,42 @@
                 />
             </div>
 
+            <section class="mb-3 rounded-lg border border-dashed border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] p-2" aria-label="Supplément libre">
+                <button
+                    type="button"
+                    class="w-full text-left text-xs font-bold text-[var(--pos-v5-ink)]"
+                    data-testid="pos-manual-supplement-toggle"
+                    @click="manualSupplement.open = !manualSupplement.open"
+                >+ Supplément libre</button>
+                <div v-if="manualSupplement.open" class="mt-2 grid grid-cols-[1fr_86px_auto] gap-2">
+                    <label class="sr-only" for="pos-manual-supplement-label">Libellé du supplément</label>
+                    <input
+                        id="pos-manual-supplement-label"
+                        v-model="manualSupplement.label"
+                        maxlength="80"
+                        type="text"
+                        placeholder="Ex. olives, maïs (facultatif)"
+                        data-testid="pos-manual-supplement-label"
+                        class="h-9 min-w-0 rounded-md border border-[var(--pos-v5-border)] bg-white px-2 text-xs"
+                    />
+                    <label class="sr-only" for="pos-manual-supplement-amount">Montant en euros</label>
+                    <input
+                        id="pos-manual-supplement-amount"
+                        v-model="manualSupplement.amount"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        placeholder="1,00 €"
+                        data-testid="pos-manual-supplement-amount"
+                        class="h-9 min-w-0 rounded-md border border-[var(--pos-v5-border)] bg-white px-2 text-xs"
+                        @keyup.enter.prevent="saveManualSupplement"
+                    />
+                    <button type="button" class="h-9 rounded-md bg-[var(--pos-v5-info)] px-3 text-xs font-bold text-white" data-testid="pos-manual-supplement-save" @click="saveManualSupplement">{{ manualSupplement.editIndex === null ? 'Ajouter' : 'Modifier' }}</button>
+                </div>
+                <p v-if="manualSupplement.error" class="mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]" role="alert">{{ manualSupplement.error }}</p>
+                <p v-else-if="manualSupplement.open" class="mt-1 text-[10px] text-[var(--pos-v5-ink-muted)]">Montant TTC contrôlé par le serveur, imprimé sur le ticket.</p>
+            </section>
+
             <!-- Action CTAs -->
             <div v-if="carts.length > 0" class="flex flex-col gap-2">
                 <PosV5Button
@@ -1970,6 +2006,7 @@
     <PosControlDrawer
       :open="controlDrawerOpen"
       :orders="serviceOrders"
+      :troncature="serviceOrdersMeta"
       :anciennes-count="anciennesAEncaisser"
       :last-refresh="lastReadyRefresh"
       :tick="_lastRefreshTick"
@@ -2250,6 +2287,7 @@
 </template>
 <script>
 import axios from 'axios';
+import { typeDAdresse } from "../../../services/typeDAdresse";
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
@@ -2490,6 +2528,13 @@ export default {
             webAccepting: {},
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
+            manualSupplement: {
+                open: false,
+                label: '',
+                amount: '',
+                editIndex: null,
+                error: '',
+            },
             // Copilot téléphone V1 : le call_id est seulement un contexte de saisie.
             // La commande reste créée exclusivement par phoneOrderSubmit.
             voiceOrderSelectedCallId: null,
@@ -2554,6 +2599,10 @@ export default {
             // canaux confondus (`admin/pos-order`, composition compacte). Source unique des
             // quatre files du tiroir de contrôle ET du compteur cuisine du ticket.
             serviceOrders: [],
+            // [GOAL G1 2026-09-03] Ce que le serveur dit de sa propre réponse : total réel de la
+            // journée, nombre rendu, et si une borne a mordu. `null` tant qu'aucun chargement
+            // n'a abouti. Sert au bandeau du tiroir — une troncature ne doit jamais être muette.
+            serviceOrdersMeta: null,
             // Le tiroir : ouvert ou non, et sur quel onglet. Il ne mémorise pas le dernier
             // onglet d'une ouverture à l'autre — en coup de feu, un état persistant invisible
             // fait croire qu'on regarde la file argent alors qu'on regarde les livrées.
@@ -4770,19 +4819,22 @@ export default {
             if (this._serviceFetchInFlight) {
                 return this._serviceFetchInFlight;
             }
-            const jour = serviceDayRange();
-            const p = this.$store.dispatch('posOrder/lists', {
-                // Mêmes paramètres que le tableau de suivi (`PosOrdersTrackerComponent.fetchOrders`) :
-                // `paginate` fait HONORER `per_page` (sans lui le serveur renvoie TOUTE la journée),
-                // `lean` échange le jeu d'eager-loads lourd contre celui dont le suivi a besoin,
-                // `composition` demande explicitement le contenu compact des lignes — il ne part
-                // donc pas vers l'historique et le rapport de ventes, qui ne l'affichent pas.
-                paginate: 1,
-                per_page: 100,
-                lean: 1,
+            //
+            // [GOAL G1 2026-09-03] LA BORNE DE CENT A DISPARU. Cet appel demandait
+            // `paginate: 1, per_page: 100` sur `admin/pos-order`. `OrderService::list` trie
+            // `id desc` par défaut : au-delà de cent commandes dans le service, ce sont les PLUS
+            // ANCIENNES qui tombaient — celles qui traînent, celles qu'il faut voir — et rien ne
+            // le signalait. Devenaient faux en silence : les quatre files du tiroir, les deux
+            // pastilles de la barre, `activeOrdersStats`, `readyOrders`, et le rang cuisine
+            // annoncé au client (« vous êtes le 4ᵉ », sous-estimé).
+            //
+            // `admin/pos-order/service-day` borne SERVEUR à la journée de service et aux états
+            // des quatre files, sans plafond d'affichage, et renvoie `meta.total`. Le serveur
+            // calcule lui-même la fenêtre (miroir de `posServiceDay.js`) : plus aucune chance que
+            // le client et le serveur ne parlent pas de la même journée. `composition` reste
+            // explicite — le contenu compact des lignes ne part que vers les écrans qui l'affichent.
+            const p = this.$store.dispatch('posOrder/serviceDay', {
                 composition: 1,
-                from_date: jour.from,
-                to_date: jour.to,
                 // Pas de commit Vuex : cette liste n'appartient qu'à la caisse, et le store
                 // `posOrder/lists` est déjà la liste du tableau de suivi.
                 vuex: false,
@@ -4796,6 +4848,28 @@ export default {
             p.then(release, release);
             return p;
         },
+        /**
+         * [GOAL G1 2026-09-03] Retient ce que le serveur DIT de sa propre réponse.
+         *
+         * Le serveur borne la journée par deux plafonds de sécurité (voir
+         * `PosOrderController::serviceDay`). Ils ne mordent pas sur un service réel — mais s'ils
+         * mordaient, l'écran doit l'ANNONCER. Un compteur silencieusement faux est pire qu'une
+         * borne assumée : c'est très exactement le défaut que ce chantier ferme.
+         */
+        _retenirMetaService(res) {
+            const meta = res?.data?.meta;
+            if (!meta || typeof meta !== 'object') {
+                this.serviceOrdersMeta = null;
+                return;
+            }
+            const total = parseInt(meta.total, 10);
+            const affichees = parseInt(meta.shown, 10);
+            this.serviceOrdersMeta = {
+                total: Number.isFinite(total) ? total : 0,
+                affichees: Number.isFinite(affichees) ? affichees : 0,
+                tronquee: meta.truncated === true,
+            };
+        },
         async loadActiveOrdersStats() {
             try {
                 const res = await this._fetchServiceOrdersOnce();
@@ -4803,6 +4877,7 @@ export default {
                 // La liste de la journée de service — source unique des quatre files du tiroir
                 // de contrôle. Le tiroir ne fait AUCUNE requête : il lit ceci.
                 this.serviceOrders = Array.isArray(list) ? list : [];
+                this._retenirMetaService(res);
                 let active = 0;
                 let ready = 0;
                 for (let i = 0; i < list.length; i++) {
@@ -5309,6 +5384,7 @@ export default {
                 const res = await this._fetchServiceOrdersOnce();
                 const list = (res?.data?.data) || [];
                 if (Array.isArray(list)) this.serviceOrders = list;
+                this._retenirMetaService(res);
                 // [GOAL CAISSE CONTRÔLE 2026-09-02] Le filtre par TYPE de commande a disparu.
                 // Il existait parce que le flux amont (borne/à-emporter) n'apportait rien d'autre :
                 // le filtre côté client ne retirait donc jamais rien, mais il aurait CACHÉ les
@@ -5824,18 +5900,32 @@ export default {
                 // /admin/pos/cash-drawer/open écrit un mouvement TYPE_DRAWER_OPEN (montant 0)
                 // rattaché à la session ouverte, donc à la chaîne d'audit NF525. On l'appelle
                 // désormais : la promesse affichée devient vraie.
+                //
+                // [Root cause 2026-09-17, capture propriétaire "tiroir ouvert mais non
+                // enregistré"] Ordre INVERSÉ par rapport à avant : on ouvre le tiroir
+                // D'ABORD via le pont local (kioskHardwareOpenDrawer, seul moyen fiable
+                // — le serveur Laravel tourne sur un VPS distinct du PC caisse, sa propre
+                // tentative TCP directe ne peut jamais aboutir), PUIS on rapporte au
+                // serveur ce qui vient d'être réellement constaté. Avant ce correctif, le
+                // serveur décidait seul de "traced" via sa sonde matérielle vouée à
+                // l'échec sur cette topologie — donc toujours non tracé, même quand le
+                // tiroir s'ouvrait vraiment.
+                const result = await Promise.resolve(kioskHardwareOpenDrawer());
+                const clientOpened = !(result && result.ok === false);
+                if (!clientOpened) {
+                    alertService.error(this.$t('pos.no_sale_error'));
+                    return;
+                }
+
                 let traced = false;
                 try {
-                    const { data } = await axios.post('admin/pos/cash-drawer/open', {});
+                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true });
                     traced = !!(data && (data.status === true || data.success === true));
                 } catch (_e) {
                     traced = false;
                 }
 
-                const result = await Promise.resolve(kioskHardwareOpenDrawer());
-                if (result && result.ok === false) {
-                    alertService.error(this.$t('pos.no_sale_error'));
-                } else if (traced) {
+                if (traced) {
                     alertService.info(this.$t('pos.no_sale_done'));
                 } else {
                     // Le tiroir s'est ouvert mais la trace n'est PAS partie : on ne laisse
@@ -5974,6 +6064,55 @@ export default {
                 })
                 .join(', ');
         },
+        parseManualSupplementAmount: function (raw) {
+            const normalized = String(raw ?? '').trim().replace(',', '.');
+            const value = Number(normalized);
+            return Number.isFinite(value) ? Math.round(value * 100) / 100 : NaN;
+        },
+        resetManualSupplement: function () {
+            this.manualSupplement = { open: false, label: '', amount: '', editIndex: null, error: '' };
+        },
+        openManualSupplement: function (index = null) {
+            const existing = index === null ? null : this.carts[index];
+            this.manualSupplement = {
+                open: true,
+                label: existing?.manual_label || '',
+                amount: existing?.manual_amount == null ? '' : String(existing.manual_amount).replace('.', ','),
+                editIndex: existing ? index : null,
+                error: '',
+            };
+        },
+        saveManualSupplement: function () {
+            const amount = this.parseManualSupplementAmount(this.manualSupplement.amount);
+            if (!Number.isFinite(amount) || amount <= 0 || amount > 100) {
+                this.manualSupplement.error = 'Saisissez un montant entre 0,01 € et 100,00 €.';
+                return;
+            }
+            const line = {
+                line_type: 'manual_supplement',
+                manual_label: String(this.manualSupplement.label || '').trim(),
+                manual_amount: amount,
+                name: String(this.manualSupplement.label || '').trim() || 'Supplément',
+                item_id: null,
+                quantity: 1,
+                discount: 0,
+                convert_price: amount,
+                item_variations: [],
+                item_extras: [],
+                item_variation_total: 0,
+                item_extra_total: 0,
+                instruction: '',
+                pos_line_addons: [],
+                cart_display: 'Supplément libre',
+            };
+            const editIndex = this.manualSupplement.editIndex;
+            const action = editIndex === null
+                ? this.$store.dispatch('posCart/lists', [line])
+                : this.$store.dispatch('posCart/replaceCartLine', { index: editIndex, item: line });
+            action.then(() => this.resetManualSupplement()).catch(() => {
+                this.manualSupplement.error = 'Impossible de mettre à jour le supplément.';
+            });
+        },
         /** 'YYYY-MM-DD' du fuseau LOCAL (toISOString() renverrait la veille en UTC+X). */
         _posLocalDateIso: function (date) {
             const pad = (n) => String(n).padStart(2, '0');
@@ -6030,6 +6169,10 @@ export default {
         editCartLine: function (index, options) {
             const line = this.carts[index];
             if (!line) return;
+            if (line.line_type === 'manual_supplement') {
+                this.openManualSupplement(index);
+                return;
+            }
             const duplicate = !!(options && options.duplicate);
             const doEdit = () => {
                 const host = this.$refs.posItemComponent;
@@ -6067,6 +6210,14 @@ export default {
         },
         /** Construit un item commande POS (principal ou addon) pour le JSON checkout */
         buildPosCheckoutOrderRow: function (row, quantity, lineTotal) {
+            if (row.line_type === 'manual_supplement') {
+                return {
+                    line_type: 'manual_supplement',
+                    manual_label: String(row.manual_label || '').trim(),
+                    manual_amount: Number(row.manual_amount),
+                    quantity: quantity,
+                };
+            }
             const item_variations = this.cartVariationEntries(row).map((variation) => ({
                 id: normalizeId(variation.id) || variation.id,
                 item_id: row.item_id,
@@ -6120,6 +6271,31 @@ export default {
                 });
             });
             return JSON.stringify(rows);
+        },
+        quotePosCartForPayment: async function () {
+            const fresh = {
+                ...this.checkoutProps.form,
+                discount: Number(this.posDiscount) || 0,
+                delivery_charge: Number(this.checkoutProps.form.delivery_charge) || 0,
+                items: this.buildFormItemsJson(),
+            };
+            delete fresh.quote_token;
+            delete fresh.quote_signature;
+            const response = await axios.post('admin/pos/quote', fresh);
+            const quote = response?.data?.data;
+            if (!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature) {
+                throw new Error('Réponse de devis invalide.');
+            }
+            this.patchPaymentForm({
+                items: fresh.items,
+                quote_token: quote.quote_token,
+                quote_signature: quote.signature,
+                subtotal: quote.subtotal,
+                discount: quote.discount,
+                delivery_charge: quote.delivery_charge,
+                total: quote.total_ttc,
+            });
+            return quote;
         },
         /**
          * [C4-CAISSE-TELEPHONE 2026-07-07] Mode « Commande téléphone ».
@@ -6278,19 +6454,13 @@ export default {
                     return alertService.error('Client comptoir indisponible. Rechargez la caisse puis réessayez.');
                 }
             }
-            this.checkoutProps.form.subtotal = this.subtotal;
-            // @pricing-allowed-block start
-            // [POS-V4 W0+ DISCOVERY 2026-04-26] Pre-modal display total — backend remains SSOT and recomputes server-side.
-            // Must match `grandTotal` / footer CTA: raw `+ form.delivery_charge` can mis-add if charge is a string
-            // (e.g. "19.5" + number → wrong total) and `form.discount` can drift from Vuex `posCart/discount`.
-            // Identical pattern to ItemComponent.totalPriceSetup (W0_PRICING_SSOT_ITEMCOMPONENT_DECISION.md, decision D1).
-            // signoff-pending — date_limit: 2026-05-10
-            // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
-            // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
+            // The payment modal must only ever open with the server quote. Previously it
+            // displayed client arithmetic first, then PaymentComponent re-quoted after the
+            // cashier pressed confirm — the visible €23 → €22,20 jump reported in service.
+            // The browser supplies item IDs/quantities and an operator supplement intent only;
+            // PricingService remains the sole calculator for catalogue price, VAT and total.
             this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
             this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
-            this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
-            // @pricing-allowed-block end
             this.checkoutProps.form.items = this.buildFormItemsJson();
 
             // Auto-generate order token (like a fast-food: sequential number for on-site, customer name for delivery)
@@ -6329,6 +6499,13 @@ export default {
             if (_branchId == null || _branchId === '' || _branchId === 0) {
                 this.loading.isActive = false;
                 return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+            }
+            try {
+                await this.quotePosCartForPayment();
+            } catch (err) {
+                this.loading.isActive = false;
+                const msg = err?.response?.data?.message || err?.message || 'Impossible de confirmer le tarif serveur. Réessayez.';
+                return alertService.error(msg);
             }
             this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
 
@@ -6623,10 +6800,10 @@ export default {
                     this.checkoutProps.form.delivery_charge = 0;
                     this.checkoutProps.form.delivery_distance_km = null;
                     this.selectedAddress = {};
-                    if (this.address.form.label === this.$t("label.home")) {
+                    if (typeDAdresse(this.address.form.label) === labelEnum.HOME) {
                         this.address.status = false;
                         this.address.switchLabel = labelEnum.HOME;
-                    } else if (this.address.form.label === this.$t("label.work")) {
+                    } else if (typeDAdresse(this.address.form.label) === labelEnum.WORK) {
                         this.address.status = false;
                         this.address.switchLabel = labelEnum.WORK;
                     } else {

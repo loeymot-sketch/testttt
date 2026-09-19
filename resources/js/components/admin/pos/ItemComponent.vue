@@ -130,12 +130,14 @@
                             </p>
 
                             <div class="space-y-2">
-                                <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
+                                <template v-for="(variation, vIdx) in getAttributeVariations(itemAttribute)" :key="variation.id">
                                     <label v-if="!isMultiAttribute(itemAttribute)"
                                         :title="modifierUnavailableReason(variation)"
                                         :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
-                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
-                                        class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
+                                        :class="getVariationQuantity(variation.id) > 0
+                                            ? 'border-primary bg-[#FFE8DD] opt-choisie'
+                                            : ['border', teinteOption(vIdx)]"
+                                        class="w-full min-h-[72px] cursor-pointer py-3 px-3 gap-3 rounded-lg flex items-center border-2 transition opt-choix"
                                         :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <div class="custom-radio sm flex-shrink-0">
                                             <input :checked="getVariationQuantity(variation.id) > 0"
@@ -148,8 +150,8 @@
                                         </div>
                                         <img loading="lazy" decoding="async" v-if="variation.thumb" class="w-10 h-10 object-cover rounded flex-shrink-0" :src="variation.thumb" :alt="variation.name">
                                         <div class="flex-1 min-w-0">
-                                            <h3 class="block capitalize text-xs text-heading">
-                                                {{ textShortener(variation.name, 15) }}</h3>
+                                            <h3 class="block capitalize text-sm font-semibold text-heading">
+                                                {{ textShortener(variation.name, 18) }}</h3>
                                             <h4 v-if="variation.price > 0" class="block text-xs font-medium text-heading">
                                                 +{{ variation.currency_price }}
                                             </h4>
@@ -499,6 +501,35 @@ export default {
         },
     },
     methods: {
+        /**
+         * [PROPRIETAIRE 2026-08-28] UNE TEINTE STABLE PAR CHOIX.
+         *
+         * Sa demande : « les choix, on a dit de lui mettre plus grand pour occuper tout
+         * l'espace quand y en a, ainsi que mettre des couleurs, comme ca c'est plus facile
+         * a choisir pour le caissier ».
+         *
+         * Les options etaient toutes du meme gris tres pale (#F7F7FC) : rien ne les
+         * distinguait sinon un nom a relire a chaque commande, en 12 px. Les crudites de
+         * l'assistant, elles, sont deja colorees — c'est ce modele que le proprietaire
+         * voulait etendre.
+         *
+         * La teinte suit la POSITION, pas le nom : elle reste donc identique tant que la
+         * carte ne bouge pas, et la memoire du geste s'installe — « l'algerienne, c'est
+         * l'orange, deuxieme ligne ». Huit teintes qui tournent, assez pales pour qu'un
+         * texte sombre reste lisible dessus.
+         *
+         * Le choix RETENU garde son fond orange de marque : il doit rester le signal le
+         * plus fort de l'ecran, quelle que soit la teinte de repos de la pastille.
+         */
+        teinteOption(index) {
+            const TEINTES = [
+                'opt-t1', 'opt-t2', 'opt-t3', 'opt-t4',
+                'opt-t5', 'opt-t6', 'opt-t7', 'opt-t8',
+            ];
+
+            return TEINTES[Number(index) % TEINTES.length];
+        },
+
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
         },
@@ -1354,8 +1385,13 @@ export default {
             const variationEntries = normalizeVariationEntries(cartLine.item_variations);
             if (variationEntries.length > 0) {
                 variationEntries.forEach((variationEntry) => {
-                    const attrName = variationEntry.variation_name || '';
-                    const varName = variationEntry.name || '';
+                    // Accepter les deux formes émises par le serveur : POS
+                    // (variation_name=attribut, name=valeur) et snapshot KDS
+                    // (attribute_name=attribut, variation_name=valeur).
+                    // Sans ce repli, une ligne à plusieurs sauces restaurait
+                    // la sauce par défaut du wizard et écrasait le choix client.
+                    const attrName = variationEntry.variation_name || variationEntry.attribute_name || variationEntry.attribute || '';
+                    const varName = variationEntry.name || (variationEntry.attribute_name ? variationEntry.variation_name : '') || '';
                     const attrLower = attrName.toLowerCase();
                     
                     // Pain / Galette — match by exact attrName first, then fallback
@@ -1437,12 +1473,21 @@ export default {
             const extraEntries = normalizeExtraEntries(cartLine.item_extras);
             if (extraEntries.length > 0) {
                 extraEntries.forEach((extraEntry) => {
-                    const extraName = extraEntry.name || '';
+                    const extraName = extraEntry.name || extraEntry.extra_name || '';
                     const extra = item.extras?.find(e => e.name === extraName);
                     if (!extra) return;
 
                     const extraLower = extraName.toLowerCase();
                     const isFree = parseFloat(extra.convert_price) <= 0;
+
+                    // The POS uses one generic billing extra for every sauce
+                    // after the first. It is not an actual sauce choice: the
+                    // immutable instruction restores those named flavours
+                    // below. Treating it as `s_<id>` makes an unchanged edit
+                    // look like a third sauce and adds €0.50 on every reopen.
+                    if (extraLower.includes('sauce suppl')) {
+                        return;
+                    }
 
                     // Sauce frites (menu)
                     if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) {
@@ -1456,7 +1501,18 @@ export default {
                     else if (extraLower.includes('grande') && extraLower.includes('portion')) {
                         restore.fritesGrande = true;
                     }
-                    else if (extraLower.includes('cheddar')) {
+                    // [GOAL AUDIT 2026-09-03] `fritesCheddar` désigne l'option de MENU
+                    // « Cheddar Fondu » (pos-wizard.js:195 FRITES_CHEDDAR_PRICE, libellé
+                    // « Avec Cheddar Fondu » à :2120). La carte porte AUSSI un supplément
+                    // payant nommé simplement « Cheddar » (groupes `supplement` et
+                    // `supplement_bol`, 30 lignes à 0,90 €). Tester le seul mot « cheddar »
+                    // faisait tomber ce supplément ici : à la réouverture d'une ligne du
+                    // panier sa tuile revenait NON sélectionnée et la caisse facturait
+                    // 1,00 € au lieu de 0,90 €. On exige donc les DEUX mots, exactement
+                    // comme la branche « grande » + « portion » juste au-dessus, qui n'a
+                    // jamais eu ce défaut. Le supplément retombe alors sur le cas général
+                    // des suppléments payants plus bas.
+                    else if (extraLower.includes('cheddar') && extraLower.includes('fondu')) {
                         restore.fritesCheddar = true;
                     }
                     // [EDIT-RESTORE FIX 2026-08-16] Sauce (gratuite OU payante) — DOIT être
@@ -1520,7 +1576,14 @@ export default {
                     const isFree = parseFloat(extra.convert_price) <= 0;
                     if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) return;
                     if (extraLower.includes('grande') && extraLower.includes('portion')) return;
-                    if (extraLower.includes('cheddar')) return;
+                    // [GOAL AUDIT 2026-09-05] Ce test DOIT refléter exactement la
+                    // classification ci-dessus (« cheddar » ET « fondu »). Depuis le
+                    // correctif du supplément Cheddar, « cheddar » seul y désignait aussi
+                    // le supplément payant à 0,90 € : le miroir n'en était plus un. Sans
+                    // effet observable aujourd'hui (le supplément retombe de toute façon
+                    // hors des garnitures), mais une divergence entre les deux listes est
+                    // exactement ce qui a produit le défaut de facturation d'origine.
+                    if (extraLower.includes('cheddar') && extraLower.includes('fondu')) return;
                     if (extraLower.includes('sauce')) return;
                     const isGarniture = isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon');
                     if (!isGarniture) return; // paid supplement not selected — leave unset, not our concern here
@@ -1528,21 +1591,39 @@ export default {
                 });
             }
 
-            // [P5-2 FIX] Restore sauceSingle from instruction text if not already set via variations
-            // Instruction format: "Sauce: <name>" on its own line
-            if (!restore.sauceSingle && cartLine.instruction) {
-                const sauceMatch = cartLine.instruction.match(/(?:^|\n)Sauce\s*:\s*(.+?)(?:\n|$)/i);
-                if (sauceMatch) {
-                    const sauceName = sauceMatch[1].trim();
-                    const sauceExtra = item.extras?.find(e => e.name === sauceName);
-                    if (sauceExtra) {
-                        restore.sauceSingle = sauceExtra.id;
-                        // Also add to sauceOrder if not already present
-                        const sKey = 's_' + sauceExtra.id;
-                        if (!restore.sauceOrder.includes(sKey)) {
-                            restore.sauces[sKey] = true;
-                            restore.sauceOrder.push(sKey);
+            // [ORDER-INTEGRITY 2026-09-16] The POS bills sauces after the first one
+            // through one catalogue extra named "Sauce supplémentaire". That billing
+            // line deliberately has no flavour name, while the generated immutable
+            // instruction has the complete intent: `Sauce : Andalouse, Algérienne`.
+            // Rebuild *every* named product sauce from that instruction, even if the
+            // first variation was already restored above. Otherwise reopening a line
+            // silently drops every paid sauce and a cashier sees only the generic
+            // billing label.
+            if (cartLine.instruction) {
+                // The compact ticket can put viandes and sauces on one physical
+                // line (`Viandes : … Sauce : …`), so do not require Sauce to begin
+                // a line here.
+                const sauceMatch = cartLine.instruction.match(/\bSauce\s*:\s*([^\n]+)/i);
+                const productSauceAttribute = item.itemAttributes?.find((attribute) => {
+                    const name = (attribute.name || '').toLowerCase();
+                    return name.includes('sauce') && !name.includes('frite');
+                });
+                const productSauces = productSauceAttribute && item.variations
+                    ? (item.variations[productSauceAttribute.id] || [])
+                    : [];
+
+                if (sauceMatch && productSauces.length > 0) {
+                    sauceMatch[1].split(',').map((name) => name.trim()).filter(Boolean).forEach((sauceName) => {
+                        const sauceVariation = productSauces.find((variation) => variation.name === sauceName);
+                        if (!sauceVariation) return;
+                        const key = 's_' + sauceVariation.id;
+                        if (!restore.sauceOrder.includes(key)) {
+                            restore.sauces[key] = true;
+                            restore.sauceOrder.push(key);
                         }
+                    });
+                    if (!restore.sauceSingle && restore.sauceOrder.length > 0) {
+                        restore.sauceSingle = Number(String(restore.sauceOrder[0]).replace(/^s_/, ''));
                     }
                 }
             }
@@ -1582,6 +1663,19 @@ export default {
             var quantity = parseInt(this.temp.quantity) > 0 ? parseInt(this.temp.quantity) : 1;
             var bridgedWizardTotal = parseFloat(this.$refs.itemVariationModal?.dataset?.wizardTotal || 0) || 0;
             var wizardCartDisplay = this.$refs.itemVariationModal?.dataset?.wizardCartDisplay || '';
+            // The generic paid extra is correct for server billing but is not a
+            // useful cashier instruction. Prefer the named, immutable wizard line
+            // already written to `temp.instruction` so the cart visibly shows each
+            // selected sauce and remains faithful after edit/reopen.
+            var selectedSauces = String(this.temp.instruction || '').match(/\bSauce\s*:\s*([^\n]+)/i);
+            if (selectedSauces && selectedSauces[1].trim()) {
+                var cartDisplayLines = String(wizardCartDisplay).split('\n').filter(Boolean);
+                var sauceLineIndex = cartDisplayLines.findIndex((line) => /^\s*sauce\s*:/i.test(line));
+                var namedSauceLine = 'Sauce: ' + selectedSauces[1].trim();
+                if (sauceLineIndex >= 0) cartDisplayLines[sauceLineIndex] = namedSauceLine;
+                else cartDisplayLines.push(namedSauceLine);
+                wizardCartDisplay = cartDisplayLines.join('\n');
+            }
             var wizardBundled = this.readWizardBundledAddons();
             var addonTotal = 0;
             var pos_line_addons = [];
@@ -1657,8 +1751,12 @@ export default {
                 cart_display: wizardCartDisplay,
             };
         },
-        addToCart: function () {
-            if (!this.canAddToCart) return;
+        addToCart: function (fromValidatedWizard = false) {
+            // The single-page wizard has already run its mandatory-step
+            // validation before emitting `wizard:add-to-cart`. Its DOM bridge
+            // updates Vue asynchronously, so applying the Vue guard a second
+            // time can reject a valid edit after the wizard has closed.
+            if (!fromValidatedWizard && !this.canAddToCart) return;
             var mainPayload = this.buildPosCartMainPayload();
             var editIdx = this.editingCartIndex;
             // [test-e2e fix A-004 round-1 2026-08-16] Capture the edit/add distinction
@@ -1666,6 +1764,11 @@ export default {
             // below can branch on it.
             var wasEdit = editIdx !== null && editIdx >= 0;
             var finishSuccess = () => {
+                // Close the native container before reactive reset/unmount work.
+                // The wizard overlay closes itself on a short timer; doing this
+                // first prevents an edit-confirm from exposing its stale Vue
+                // fallback modal after the line was already persisted.
+                appService.modalHide('#item-variation-modal');
                 this.editingCartIndex = null;
                 this.usePricedCartBase = false;
                 this.item = null;
@@ -1681,7 +1784,6 @@ export default {
                 // panier" ("Item added to cart") — misleading, since nothing was added,
                 // an existing line was updated in place. Branch the toast on wasEdit.
                 alertService.success(this.$t(wasEdit ? 'message.cart_line_updated' : 'message.add_to_cart'));
-                appService.modalHide('#item-variation-modal');
             };
             var finishError = () => {
                 if (this.$refs.itemVariationModal?.dataset?.wizardTotal) {
@@ -1754,12 +1856,22 @@ export default {
         const modal = this.$refs.itemVariationModal;
         if (modal) {
             modal.addEventListener('wizard:add-to-cart', () => {
+                // The frozen wizard owns the complete composition until it emits
+                // this event. Its hidden textarea can be updated too late for Vue
+                // on a fast cashier click, which used to persist only the generic
+                // paid extra "Sauce supplémentaire" and lose the selected flavour
+                // names. Read the rendered, non-price ticket synchronously before
+                // serialising the cart line; this is display/composition data only,
+                // never a client price source.
+                const wizardTicket = modal.querySelector('#pos-wizard-root .ticket-content')?.textContent?.trim();
+                if (wizardTicket) {
+                    this.temp.instruction = wizardTicket;
+                }
                 const wizardTotal = parseFloat(modal.dataset?.wizardTotal || 0);
                 if (wizardTotal > 0) {
                     this.temp.total_price = wizardTotal;
                 }
-                if (!this.canAddToCart) return;
-                this.addToCart();
+                this.addToCart(true);
             });
         }
     },
@@ -1779,6 +1891,21 @@ export default {
 </script>
 
 <style scoped>
+/*
+ * [PROPRIETAIRE 2026-08-28] Les huit teintes des choix de personnalisation.
+ * Pales a dessein : le texte est sombre par-dessus, et le choix retenu (fond orange de
+ * marque) doit continuer de sauter aux yeux au milieu d'elles.
+ */
+.opt-choix { border-color: transparent; }
+.opt-t1 { background: #FFE8D6; border-color: #F0BF97 !important; }
+.opt-t2 { background: #DFEFE4; border-color: #A8D2B6 !important; }
+.opt-t3 { background: #DEEAF7; border-color: #A6C3E3 !important; }
+.opt-t4 { background: #F7E2EE; border-color: #E0AECB !important; }
+.opt-t5 { background: #FFF0C9; border-color: #EBD08C !important; }
+.opt-t6 { background: #E8E0F5; border-color: #C0B0E0 !important; }
+.opt-t7 { background: #D9EEEB; border-color: #9FCFC9 !important; }
+.opt-t8 { background: #FBE0DA; border-color: #EAB2A5 !important; }
+
 /* =============================================================================
    ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)
    -----------------------------------------------------------------------------

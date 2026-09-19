@@ -70,6 +70,7 @@ import labelEnum from "../../../../enums/modules/labelEnum";
 import PaginationTextComponent from "../../components/pagination/PaginationTextComponent";
 import PaginationBox from "../../components/pagination/PaginationBox";
 import PaginationSMBox from "../../components/pagination/PaginationSMBox";
+import { typeDAdresse } from "../../../../services/typeDAdresse";
 
 export default {
   name: "WaiterAddressList",
@@ -155,10 +156,10 @@ export default {
             longitude: address.longitude,
             label: address.label,
           };
-          if (this.address.form.label === this.$t("label.home")) {
+          if (typeDAdresse(this.address.form.label) === labelEnum.HOME) {
             this.address.status = false;
             this.address.switchLabel = labelEnum.HOME;
-          } else if (this.address.form.label === this.$t("label.work")) {
+          } else if (typeDAdresse(this.address.form.label) === labelEnum.WORK) {
             this.address.status = false;
             this.address.switchLabel = labelEnum.WORK;
           } else {

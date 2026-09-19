@@ -1,0 +1,152 @@
+{
+  "wave": "E",
+  "round": 2,
+  "states_reviewed": 19,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-waveE/02-kds-extras-instantane-v2-defaut.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "severity_corrigee_round_2": "P2",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "evidence": "FERMÉ EN CODE, ET MA GRAVITÉ DE ROUND 1 ÉTAIT FAUSSE — je la corrige. (1) Le trou est bouché : kdsSymbolic.js:475 lit désormais « const name = extraName(e) || EXTRA_SANS_NOM; » avec « export const EXTRA_SANS_NOM = 'Supplément'; » (:298) ; le « if (!name) continue; » a disparu. Jumeau PHP aligné : KitchenTicketSymbolicFormatter.php:73 « public const EXTRA_SANS_NOM = 'Supplément'; » et :348-351. Six tests de garde dans tests/js/kdsExtraJamaisEscamote.spec.js, VERTS chez moi (80 tests verts sur les 7 specs kds symboliques). (2) Mon chiffre d'exposition « 109 lignes sur 226 » était MÉTHODOLOGIQUEMENT FAUX : j'avais compté la colonne BRUTE order_items.item_extras, que readExtras() (kdsSymbolic.js:280-284) ne lit qu'EN REPLI. J'ai recompté selon la sémantique exacte de readExtras — instantané NF525 d'abord — et je reproduis le chiffre de l'implémenteur AU CHIFFRE PRÈS : 248 lignes renvoient au moins un extra résolu, 248 sur 248 par l'instantané, 0 par le repli brut, 602 extras résolus, **0 sans nom**. La colonne brute compte bien 135 lignes anonymes, mais aucune n'est jamais atteinte. Les DEUX ressources API confirment le même ordre côté serveur : KDSOrderItemsResource::resolveExtrasForKds() (:81-88) et OrderItemResource::resolveExtrasForApi() (:89-93) servent l'instantané d'abord. Exposition réelle aujourd'hui : NULLE. Le trou était réel en code, pas en production. Je maintiens qu'il devait être bouché ; je retire le P0.",
+      "fix_hint": "Rien à faire. Résiduel informatif : l'exposition redevient non nulle le jour où une ligne arrive sans composition_snapshot.extras — le repli existe et est désormais sûr."
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "reports/test-e2e/supervisor-caisse-2026-08-24/round-2/sonde-kds-legende-fermee.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "severity_corrigee_round_2": "P2",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "MOITIÉ FERMÉE (les extras), MOITIÉ OUVERTE (la sauce). L'IMPLÉMENTEUR A RAISON SUR LE MÉCANISME. J'ai reconstruit la forme CF921 sur l'écran RÉEL (commande semée SUPER2-CF921, supprimée après mesure) : ligne « Menu (Frites + Boisson) » portant une VARIATION de groupe Sauce = Algerienne, un extra nommé Cheddar, un extra anonyme, un addon Coca-Cola. Texte intégral RENDU par la carte V2 en production : « [A] EN COURS CAISSE CUISSON 1F N°6780 ATTENTE 00:13 | 1× MENU | ⭐ Cheddar⭐ Supplément | ▸ 1× Coca-Cola 33cl | · Sans oignons | 1× CAY | ⭐ Cheddar ×2⭐ Boursin⭐ Raclette⭐ Oignons frits | · Sans oignons, bien cuit… | Prêt ». (A) LES EXTRAS ARRIVENT ENFIN sur un conteneur de menu — c'était le trou B, réel, que je n'avais pas identifié : renderItemSymbolic() sortait tôt (« return { category, hasAllergen, lines }; ») avec la boisson et la note. Le correctif ajoute « for (const sup of s.supplements) lines.push({ type: 'supplement', … }) » dans la branche isMenuItem, et le jumeau papier passe de « 'supps' => [] » écrit en dur à « 'supps' => $this->symbolic->supplementLines($snap, $instruction) » (OrderReceiptEscPosRenderer.php:400). (B) LA SAUCE RESTE PERDUE. Sonde sur les helpers réels : renderItemSymbolic({item_name:'Menu (Frites + Boisson)', item_variations:[{attribute_name:'Sauce', name:'Algerienne'}]}) → [\"symbolic-main::MENU\"]. Témoin même sauce sur un produit simple → [\"symbolic-main::CAY | ALG\"]. La ligne 1 d'un conteneur de menu n'expose que MENU ou « MENU : <sauce frites> » (fritesSymbol, canal INSTRUCTION) ; le canal VARIATION n'y a aucun slot. Même trou sur le papier (menuBadge n'est pas appelé dans la branche isMenuItem). (C) CF921 EST BIEN IRREPRODUCTIBLE — je le confirme contre moi-même : 0 commande sur 3588 ne porte le sérial AUDC-ENC-DZGWR9, aucune colonne candidate (order_serial_no, queue_number, token, tracking_token, loyalty_customer_code) ne contient CF921. Et la forme est introuvable : sur 2119 lignes conteneur de menu (prédicat exact isMenuItem = /\\bmenu\\s*\\(|\\bformule\\b/), **0** porte une variation de groupe Sauce et **0** porte un extra. JE NE MAINTIENS DONC PAS LE P0 sur la moitié sauce : je ne peux pas démontrer, sur cette base, un produit servi sans ce que le client a demandé. C'est une incohérence de canal latente, pas une perte mesurée.",
+      "fix_hint": "Trancher explicitement : soit la variation Sauce sur un conteneur de menu est impossible par construction (alors l'écrire, et poser un test qui échoue si une telle ligne apparaît en base), soit elle est possible (alors la router vers le slot sauce de la ligne 1 comme pour un produit simple, dans kdsSymbolic.js renderItemSymbolic branche isMenuItem ET dans OrderReceiptEscPosRenderer.php:384-400). Aujourd'hui le code fait le premier choix sans le dire, et rien ne détecte le second cas."
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "reports/test-e2e/supervisor-caisse-2026-08-24/round-2/sonde-kds-legende-ouverte.png",
+      "category": "text_truncation",
+      "severity": "P1",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "NON CORRIGÉ, ET MAINTENANT CHIFFRÉ. Aucun fichier de cette voie n'a été touché : git show --stat d57fc8f08 ne liste, pour la vague E, que kdsSymbolic.js, master.blade.php et un spec — ni KdsV2Grid, ni KdsOrderCard. La capture 02b du round 2 ne reproduit PAS le symptôme, mais seulement parce que la commande semée tient en 2 lignes ; j'ai donc remesuré sur une carte réaliste (2 produits, 6 suppléments, 2 notes). Mesure prise dans le navigateur, légende « Afficher les noms » ouverte : .kds-card__body clientHeight = **52 px** pour scrollHeight = **260 px** — 80 % de la carte cuisine hors du cadre. dansLeCadreVisible = false pour ⭐ Cheddar, ⭐ Supplément, ▸ 1× Coca-Cola 33cl, · Sans oignons, ET pour la TOTALITÉ du second produit (1× CAY, ⭐ Cheddar ×2, ⭐ Boursin, ⭐ Raclette, ⭐ Oignons frits, sa note). Sur la capture on lit « 1× MENU » puis une ligne « ⭐ Cheddar ⭐ Supplément » tranchée horizontalement à mi-hauteur par le bandeau sombre « Prêt » — exactement le symptôme du round 1. RECTIFICATION de mon propre round 1 : j'avais écrit « sans défilement offert » ; c'est FAUX, .kds-card__body porte overflow-y:auto avec un pouce de défilement épaissi exprès (KdsOrderCard.vue:878-899). Le défaut n'est pas l'absence de défilement, c'est qu'en plein service le cuisinier voit une ligne sur six et que la ligne coupée est un supplément payé. Aggravation mécanique du round 2 : le correctif E-002 AJOUTE des lignes supplément sur les conteneurs de menu, donc de la hauteur, donc du contenu escamoté.",
+      "fix_hint": "KdsV2Grid.vue — sortir la légende du flux de la grille (surcouche ou panneau flottant) pour qu'elle ne prélève pas la hauteur des cartes ; ou, à défaut, réduire le nombre de colonnes/cartes visibles pendant que la légende est ouverte plutôt que d'écraser chaque carte à 52 px de corps utile."
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-waveE/05-B-roue-borne.png",
+      "category": "unexpected_4xx",
+      "severity": "P1",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "NON CORRIGÉ, ET LA CAUSE EST PLUS LARGE QUE CE QUE J'AVAIS DIT. Les deux 404 sont identiques à l'octet : 05-B-roue-borne.network.json → GET /storage/8/coca.png 404 et GET /storage/7/frites.png 404, avec les deux entrées console level=error jumelles. Visuellement inchangé : dans la colonne « À GAGNER », « Boisson » est un disque en dégradé vide et « Frites » un disque entièrement blanc, quand Tiramisu, Tarte Daim et Cheese Burger portent une vraie photo ; sur la roue, les secteurs « Boisson » et « Frites » sont les deux seuls sans vignette. CAUSE EXACTE, que je n'avais pas donnée au round 1 : ce ne sont pas des visuels de lot, ce sont les médias des ARTICLES du catalogue, et les enregistrements pointent à côté du disque — media#7 → App\\Models\\Item#2, collection « item », file_name = frites.png, fichier ABSENT, le dossier storage/app/public/7/ ne contient que boursin.png ; media#8 → App\\Models\\Item#3, file_name = coca.png, ABSENT, le dossier ne contient que raclette.png. Un téléversement ultérieur a remplacé le fichier sans mettre l'enregistrement à jour. PORTÉE PLUS LARGE : /storage/7/frites.png sort désormais en 404 sur QUATRE états, pas un — 01-kds-chargement, 03a-kds-v2-explicite, 04a-ecran-client (le mur face client) et 05-B-roue-borne. Je ne peux pas dire si c'était déjà le cas au round 1 : les artefacts du round 1 ont été régénérés et je n'avais relevé le fait que sur la vitrine. Maintenu P1 et non P0 : actif décoratif, aucune donnée fausse, les libellés « Boisson » et « Frites » restent affichés sous les pastilles vides.",
+      "fix_hint": "Réaligner les deux enregistrements media sur le disque (UPDATE media SET file_name='boursin.png' WHERE id=7 — ou re-téléverser frites.png/coca.png), puis vérifier l'ensemble de la table par un balayage file_exists. Et ajouter un repli au rendu de vignette (onerror → visuel générique) pour qu'un média manquant n'affiche jamais un disque vide face client."
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-waveE/04b-ecran-client-avec-commande.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "NON CORRIGÉ, à l'identique. Sur la capture 04b je lis toujours, en en-tête du mur destiné aux clients : le logo « LE CAYENNE », un bouton « Tableau De Bord », le sélecteur « Français », un avatar et « Bonjour / Admin Le Cayenne » avec chevron de menu déroulant. Le menu replié contient toujours l'identité et la sortie de session : le .dom.html donne 2 occurrences de « Tableau De Bord », 1 de « Déconnexion », 1 de « admin@lecayenne.fr », et l'extrait d'observations.json de l'équipe liste « admin@lecayenne.fr | +330600000000 | 250,90 € | Modifier Le Profil | Changer Le Mot De Passe | Appareils Connectés | Déconnexion ». Aucun fichier de layout n'apparaît dans le commit de correctifs. Le reste de l'écran est propre — « En préparation / N°777 » et « Prêt / Aucune commande prête », deux colonnes lisibles, aucun libellé brut (constat 04a identique en état vide).",
+      "fix_hint": "Rendre /admin/order-status-screen sur une mise en page SANS chrome admin (layout dédié, ni en-tête ni menu utilisateur), comme les autres surfaces client. À défaut, masquer l'en-tête sur cette route."
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-waveE/04b-ecran-client-avec-commande.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "evidence": "FERMÉ — vérifié PAR MOI-MÊME sur les nouveaux .dom.html, sans reprendre la parole de l'implémenteur. Trois recherches sur les 8 fichiers .dom.html du quartet régénéré : (1) le motif ternaire « demo: false ? » n'apparaît dans AUCUN fichier ; (2) aucune des clés porteuses de secret n'apparaît — recherche de adminPassword, posOperatorPassword, chefPassword, customerPassword, branchManagerPassword : zéro occurrence, tous fichiers confondus ; (3) le littéral du mot de passe de démonstration n'apparaît dans aucun fichier (recherche par sa valeur, non recopiée ici). Ce qui subsiste est inoffensif : « demo: false, » — un booléen nu, sans branche non prise — plus « wizard_per_item_demo: false » et « window.__FOODKING_RUNTIME__ = { demo: null } ». Les valeurs sont ABSENTES, pas masquées : Blade n'écrit plus les deux branches du ternaire. RÉSERVE, qui appartient à E-005 et non ici : « admin@lecayenne.fr » reste présent une fois par page, mais c'est le profil de la session admin ouverte dans le menu utilisateur, pas un identifiant codé en dur.",
+      "fix_hint": "Rien à faire. Garde utile : un test qui échoue si la clé demo du HTML servi est suivie d'autre chose qu'un littéral booléen."
+    },
+    {
+      "id": "E-007",
+      "state_artifact": "reports/test-e2e/supervisor-caisse-2026-08-24/round-2/sonde-kds-legende-fermee.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "NON CORRIGÉ, et désormais mesuré PAR LE NAVIGATEUR et non plus calculé sur le CSS. Sur la carte réelle, getComputedStyle de chaque .kds-line__supplement donne color = rgb(202,138,4), font-size = 15px, font-weight = 800, sur un fond effectif remonté à rgb(254,249,195) porté par « kds-card kds-card--has-supplements » : rapport = **2,74:1** (j'annonçais 2,73 au round 1 — écart d'arrondi, la mesure confirme). Le fichier est intact : KdsOrderLine.vue:260-265 porte toujours « color: #CA8A04; font-size: 15px; … font-weight: 800; ». WCAG AA exige 4,5:1, et à 15px le seuil « grand texte » (18,66px gras) n'est pas atteint, donc la tolérance 3:1 ne s'applique pas. Témoin sur la même carte : la ligne d'exclusion « · Sans oignons » mesure 6,60:1 et la ligne conteneuse .kds-line--supplement 4,41:1 — le défaut est bien localisé sur le texte du supplément. AGGRAVATION DU ROUND 2 : le correctif E-002 crée des lignes supplément là où il n'y en avait pas (conteneurs de menu), donc il multiplie les occurrences du texte le moins lisible de l'écran. Sur ma capture, six lignes ⭐ à 2,74:1 sur une seule carte.",
+      "fix_hint": "KdsOrderLine.vue:262 — assombrir #CA8A04 vers ~#854D0E (≈5,9:1 sur #FEF9C3) en conservant la famille ambre, ou revoir le fond #FEF9C3. Vérifier aussi sur carte blanche (#CA8A04 sur #FFF = 2,94:1, également sous le seuil)."
+    },
+    {
+      "id": "E-008",
+      "state_artifact": "test-e2e-waveE/05-B-roue-historique.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "evidence": "NON CORRIGÉ, à l'identique. Sur la capture régénérée, colonne CODE : « — » sur 5 lignes sur 5, toutes à l'état « À remettre » ; colonne CLIENT : « Sarah ... » sans aucun chiffre sur 4 lignes sur 5, « Audit ...9901 » sur la cinquième, alors que la note de bas de tableau annonce « seuls ses quatre derniers chiffres le sont ». Le code source est intact : WheelReportService.php:280 alimente toujours la colonne par « 'code' => trim((string) ($t->coupon->code ?? '')) », c'est-à-dire le code du COUPON — nul pour un lot physique. Et la colonne wheel_spins.claim_code, qui porte pourtant les codes, reste MORTE : la chaîne « claim_code » n'apparaît toujours NULLE PART dans app/, resources/ ni routes/ (recherche vide). Les quatre lots dus à « Sarah » restent donc hors d'atteinte des deux seules recherches offertes par /admin/roue-lot (« par le code », « par le numéro »).",
+      "fix_hint": "app/Services/Wheel/WheelReportService.php:280 — trancher d'abord le statut de wheel_spins.claim_code : colonne morte à supprimer, ou canal à rebrancher (et alors l'accepter dans la recherche de /admin/roue-lot). À défaut, retirer la colonne CODE pour ces lignes et rendre le téléphone obligatoire à l'enregistrement d'un lot physique."
+    },
+    {
+      "id": "E-009",
+      "state_artifact": "reports/test-e2e/supervisor-caisse-2026-08-24/round-2/sondes/sonde-vitest-waveE-round2.spec.js.txt",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "evidence": "CE QUE LE CORRECTIF A LAISSÉ : une TROISIÈME porte, en amont de celle qu'il vient de fermer. Sur le canal borne/web, le produit porte « + Menu (Frites + Boisson) (+2,50 €) » dans son instruction et le menu est une LIGNE SÉPARÉE ; collapseBundledAddonItems() replie alors la ligne de menu dans son parent. Or ce repli ne LÈGUE que les consignes de cuisine : kdsBundledAddons.js:197 « const consignes = kitchenDirectives(item && item.instruction); » puis :208-209 « const left = qty - consumed; if (left <= 0) return; // entièrement décrite par son parent → repliée ». La ligne est abandonnée AVEC SES EXTRAS. Sonde exécutée sur les helpers réels : collapseBundledAddonItems([{item_name:'Cayenne', instruction:'+ Menu (Frites + Boisson) (+2,50 €)'}, {item_name:'Menu (Frites + Boisson)', item_extras:[{extra_name:'Cheddar', quantity:2, unit_price:0.9}]}]) → une seule ligne restante, « Cayenne », SANS item_extras ; rendu cuisine = [\"symbolic-main::CAY\",\"symbolic-menu::MENU : ALG\"] — CHEDDAR PRÉSENT APRÈS REPLI ? **false**. Témoin, même paire sans revendication : [\"symbolic-main::CAY\"],[\"symbolic-main::MENU : ALG\",\"supplement::⭐ Cheddar ×2\"] — présent. Un extra ANONYME sur la ligne repliée disparaît pareillement (SUPPLÉMENT PRÉSENT ? false), ce qui annule aussi le correctif E-001 sur ce chemin. Le repli est bien appliqué par la carte de PRODUCTION : KdsOrderCard.vue:315 « return collapseBundledAddonItems((this.order && this.order.order_items) || []); » (idem KitchenDisplaySystemComponent.vue:1885 et KdsHistoryDrawer.vue:330). Jumeau PHP identiquement troué : KitchenBundledAddonCollapser.php:126-128 « $left = $qty - $consumed; if ($left <= 0) { continue; } » — donc le ticket imprimé aussi. Le message du commit affirme « Le repli des formules revendiquées (KitchenBundledAddonCollapser) ne déplace aucun extra : aucun doublon possible avec le bloc du parent » : ne pas déplacer les extras, ici, c'est les SUPPRIMER. EXPOSITION MESURÉE : la forme de repli est LIVE — 21 lignes produit sur 21 commandes réelles revendiquent « + Menu ( », et leurs 21 lignes conteneur de menu sont donc repliées ; aucune de ces 21 ne porte aujourd'hui d'extra, donc rien n'est perdu à cet instant. C'est pour cela que je pose P1 et non P0, par cohérence stricte avec la correction que je viens de m'appliquer sur E-001 : pas d'exposition mesurée, pas de P0. Le jour où une seule commande borne porte un extra sur sa ligne de menu, c'est un P0 immédiat — et le spec de garde ajouté au round 2 ne le verra pas, car il appelle renderItemSymbolic() directement, sans passer par le repli.",
+      "fix_hint": "kdsBundledAddons.js:208-209 et KitchenBundledAddonCollapser.php:126-128 — avant d'abandonner la ligne repliée, léguer ses extras au parent au même titre que ses consignes (concaténer item_extras / composition_snapshot.extras dans la copie du parent), ou refuser le repli d'une ligne qui porte des extras. Et étendre tests/js/kdsExtraJamaisEscamote.spec.js d'un cas qui passe par collapseBundledAddonItems() avant renderItemSymbolic()."
+    },
+    {
+      "id": "E-010",
+      "state_artifact": "reports/test-e2e/supervisor-caisse-2026-08-24/round-2/sonde-kds-legende-fermee.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "evidence": "EFFET DE BORD DU CORRECTIF, tel que l'implémenteur l'annonçait — je le confirme et je précise ce qu'il n'a pas dit. Oui, une ligne « Supplément » anonyme apparaît là où il n'y avait rien : sur ma carte de sonde, la ligne 1 du conteneur de menu affiche « ⭐ Cheddar⭐ Supplément ». Lisible pour un cuisinier ? À moitié. Le mot dit qu'il y a du travail en plus, ce qui vaut mieux que du blanc, mais il ne dit NI quoi NI combien de quoi, et la carte n'offre aucun moyen de le savoir : il faudra demander à la caisse. CE QUI N'A PAS ÉTÉ DIT : le repli met l'ÉTOILE sur un extra GRATUIT. Sonde sur les helpers réels avec un extra sans nom à unit_price 0 : renderItemSymbolic({item_name:'Cayenne', item_extras:[{id:269, quantity:1, unit_price:0, line_total:0}]}) → [\"symbolic-main::CAY\",\"supplement::⭐ Supplément\"]. Or l'étoile a une sémantique documentée dans le code même : « [K2-KDS 2026-07-05] Supplément payant signalé par une ÉTOILE ⭐ » (kdsSymbolic.js:692). Une garniture offerte se présente donc au cuisinier avec le marqueur du payant, et elle bascule au passage la carte entière en fond jaune .kds-card--has-supplements. La seule raison pour laquelle cela ne se voit pas en service est l'exposition nulle établie en E-001 : 0 extra résolu sans nom sur 602. Défaut latent, pas visible aujourd'hui.",
+      "fix_hint": "kdsSymbolic.js:475 — ne poser EXTRA_SANS_NOM que si le repli concerne un extra facturé (price > 0) ; pour un anonyme à prix nul, soit le replier dans les crudités comme les garnitures gratuites nommées, soit l'annoncer sans l'étoile. Et distinguer visuellement une ligne dont le nom est INCONNU d'une ligne nommée, pour que le cuisinier sache qu'il doit demander."
+    },
+    {
+      "id": "E-011",
+      "state_artifact": "test-e2e-waveE/02-kds-extras-instantane-v2-defaut.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "evidence": "LE MÊME DÉFAUT DE PREUVE QU'AU ROUND 1, SUR LE CHEMIN SUIVANT. Le quartet régénéré ne vérifie PAS le trou qui vient d'être bouché. La commande semée par tests/e2e/audit-supervisor-waveE.spec.js est item_id=22 avec un instantané [Salade, Cheddar ×2] : ce n'est PAS un conteneur de menu (isMenuItem = /\\bmenu\\s*\\(|\\bformule\\b/ ne matche pas). observations.json le dit lui-même : texteExact = « [A] EN COURS CAISSE N°6778 ATTENTE 00:16 1× CAY | S ⭐ Cheddar ×2 Prêt », lignesTypees = [symbolic-main « 1× CAY | S », supplement « ⭐ Cheddar ×2 »]. Aucune capture de la vague ne fait passer un extra par la branche isMenuItem — le trou B, réparé, n'est attesté visuellement NULLE PART dans les artefacts livrés. J'ai dû semer ma propre commande pour l'attester (sonde-kds-legende-fermee.png, où « 1× MENU » porte enfin « ⭐ Cheddar ⭐ Supplément »). La seule garde est tests/js/kdsExtraJamaisEscamote.spec.js, qui est un test unitaire : il n'exerce ni le repli des formules (cf. E-009), ni le rendu réel de la grille. Au round 1 j'écrivais « la vague a vérifié le chemin réparé et déclaré la victoire sur le chemin qui ne l'a pas été » ; au round 2 la vague vérifie encore le chemin qu'elle vérifiait déjà.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveE.spec.js — semer AUSSI une ligne item_id=1 « Menu (Frites + Boisson) » portant un extra, et une paire produit-revendiquant + ligne de menu portant un extra (forme de repli, E-009), puis affirmer la PRÉSENCE du nom d'extra dans le texte rendu de la carte, pas l'absence d'un motif hérité."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 5,
+    "P2": 6,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 4,
+    "open_P2": 5,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {
+    "E-001": "PASS",
+    "E-002": "PARTIAL",
+    "E-003": "FAIL",
+    "E-004": "FAIL",
+    "E-005": "FAIL",
+    "E-006": "PASS",
+    "E-007": "FAIL",
+    "E-008": "FAIL"
+  },
+  "verdict": "AMBER",
+  "notes": "ARBITRAGE DU DÉSACCORD — L'IMPLÉMENTEUR A RAISON, ET J'AVAIS TORT SUR DEUX POINTS. (1) Mon trou A décrivait bien un vrai trou de code, mais mon chiffre d'exposition était faux : j'avais compté order_items.item_extras, la colonne BRUTE, alors que readExtras() ne la lit qu'en repli et que les deux ressources API (KDSOrderItemsResource:81-88, OrderItemResource:89-93) résolvent l'instantané NF525 d'abord. Recompté selon la sémantique réelle, je retombe sur SON chiffre au chiffre près : 248 lignes portent des extras résolus, 248 sur 248 viennent de l'instantané, 0 du repli brut, et 0 extra résolu sur 602 est sans nom. Exposition NULLE. (2) Le vrai coupable de CF921 est bien son trou B, que je n'avais pas vu : la branche isMenuItem de renderItemSymbolic() sortait tôt sans supplément, et le jumeau papier écrivait 'supps' => [] en dur. Les deux sont fermés, je l'ai vérifié en semant une commande à la forme CF921 et en lisant la carte réelle : « 1× MENU / ⭐ Cheddar⭐ Supplément / ▸ 1× Coca-Cola 33cl / · Sans oignons ». (3) Il a raison aussi sur l'irreproductibilité de CF921 : 0 commande sur 3588 ne porte ce sérial, et sur 2119 lignes conteneur de menu, 0 porte une variation Sauce et 0 porte un extra. Je retire donc mes deux P0 : l'un fermé, l'autre sans exposition démontrable. J'ai vérifié ses DEUX aveux : la sauce d'un conteneur de menu reste bel et bien perdue (E-002-B, prouvé par sonde : « MENU » nu contre « CAY | ALG » sur le témoin), et l'extra gratuit sans nom devient bel et bien une ligne « Supplément » — avec, ce qu'il n'a pas dit, l'ÉTOILE du payant (E-010).\n\nCE QUE J'AI TENTÉ DE CASSER SANS Y ARRIVER. (a) La grille ne déborde pas : grilleDeborde = false et carteHorsGrille = false dans les deux états, légende fermée comme ouverte. La carte de cuisine n'est pas devenue plus haute au point de faire déborder la grille — le coût de hauteur est absorbé en interne par le corps qui se clippe, ce qui aggrave E-003 mais ne casse pas la mise en page. (b) Non-régression de la disposition héritée : 03b montre toujours « Cayenne / Extras: Salade, Cheddar » dans le panneau Préparations, et observations.json donne blocsExtrasRendus = [\"Extras: Salade, Cheddar\", \"Extras: Salade, Cheddar\"] avec motifVirgulesVides = false. (c) Suite symbolique complète : 80 tests verts sur 7 specs (kdsSymbolic, kdsSymbolicRender, kdsSaucesPlacement, kdsExtrasInstantaneNf525, kdsFormuleVisible, kdsBundledAddons, kdsExtraJamaisEscamote) — aucune régression introduite par le correctif. (d) L'écran client reste propre : 04a a ses deux états vides corrects et 04b affiche « N°777 » lisiblement ; aucun libellé brut, aucun undefined/NaN/[object Object] ; le seul défaut est le chrome admin de E-005, inchangé. (e) J'ai cherché si la viande d'un conteneur de menu était perdue comme la sauce : sonde MENU + viande Poulet → « MENU » nu en ligne 1, MAIS meatPortionsForItem() lit les variations quel que soit le nom de l'article, donc le bandeau CUISSON la compte. NON RETENU, comme les frites au round 1. (f) Passe A de la roue : les 6 URL directes redirigent toujours proprement vers la saisie du code (redirigeVersAccueil = true sur 5, la 6ᵉ étant la page de garde elle-même) ; aucun contournement. (g) Aucun pageerror sur les 19 captures.\n\nBRUIT CONNU, NON SIGNALÉ conformément au protocole : 404 /storage/1/english.png (média de langue, media#1 file_name=english.png absent), ERR_CONNECTION_REFUSED sur 9100/9101 (pont matériel local), le websocket de diffusion, csp-report 204, la barre Debugbar, le 302 sur /admin/roue/ouvrir (ouverture de la porte, attendue), et les commandes des vagues parallèles.\n\nHYGIÈNE DE LA SONDE : la commande semée pour la mesure porte le préfixe exclusif SUPER2-, elle a été supprimée en fin de course et je l'ai vérifié (0 ligne restante). Les deux specs de sonde ont été retirés de tests/ et archivés en texte sous round-2/sondes/ pour ne pas polluer la suite.\n\nVERDICT AMBER : zéro P0 ouvert — c'est un progrès réel sur le round 1, obtenu en partie contre mon propre diagnostic. Restent quatre P1 : trois jamais touchés (E-003 la légende qui écrase la carte à 52 px de corps utile, E-004 les deux médias 404 face client, E-005 le back-office à un clic sur le mur des clients) et un nouveau (E-009, le repli des formules qui détruit les extras de la ligne repliée et annule, sur le canal borne, le correctif même de ce round)."
+}

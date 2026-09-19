@@ -61,8 +61,17 @@
                                 <span>
                                     {{ $t('label.opening_total') }}: <strong>{{ formatMoney(day.totalOpening) }}</strong>
                                 </span>
-                                <span>
+                                <!-- [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Le total ne porte
+                                     QUE les caisses réellement clôturées. Celles qui sont
+                                     encore ouvertes sont annoncées à côté, jamais fondues
+                                     dans le chiffre sous forme de zéro. -->
+                                <span data-testid="cash-session-closing-total">
                                     {{ $t('label.closing_total') }}: <strong>{{ formatMoney(day.totalClosing) }}</strong>
+                                    <em v-if="day.sessionsOuvertes > 0"
+                                        class="not-italic opacity-75"
+                                        data-testid="cash-session-still-open">
+                                        — {{ libelleOuvertes(day.sessionsOuvertes) }}
+                                    </em>
                                 </span>
                             </div>
                         </header>
@@ -225,12 +234,29 @@ export default {
                         totalOpening: 0,
                         totalClosing: 0,
                         totalTransactions: 0,
+                        // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Combien de caisses de ce
+                        // jour ne sont PAS clôturées. Sans ce compte, leur absence de
+                        // clôture se lisait comme une clôture à zéro.
+                        sessionsOuvertes: 0,
                     });
                 }
                 const bucket = map.get(key);
                 bucket.sessions.push(s);
                 bucket.totalOpening += Number(s.opening_amount || 0);
-                bucket.totalClosing += Number(s.closing_amount || 0);
+                // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] `Number(null || 0)` valait 0 : une
+                // caisse ENCORE OUVERTE était comptée comme clôturée à 0,00 €. Mesuré par le
+                // superviseur sur 11 groupes-jours : 5 journées touchées, 11 sessions, et un
+                // jour qui se lisait littéralement « 150,00 € entrés, 0,00 € sortis ».
+                //
+                // Une caisse ouverte n'a pas de clôture — on ne l'invente pas. On somme ce
+                // qui est RÉELLEMENT clos et on annonce le reste : la cellule de détail
+                // disait déjà « — » honnêtement (ligne 99), c'est le total du jour qui
+                // fabriquait le zéro.
+                if (s.closing_amount === null || s.closing_amount === undefined) {
+                    bucket.sessionsOuvertes += 1;
+                } else {
+                    bucket.totalClosing += Number(s.closing_amount);
+                }
                 bucket.totalTransactions += Number(s.transactions_count || 0);
             }
             // Map iteration preserves insertion order; sessions arrive
@@ -242,6 +268,16 @@ export default {
         this.loadSessions();
     },
     methods: {
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Accord en nombre, par DEUX clés explicites.
+         * Pas de « caisse(s) ouverte(s) » : ce même audit a relevé un « prête(s) » ailleurs
+         * dans le produit et l'a qualifié d'aveu écrit d'un accord jamais fait. On ne
+         * reproduit pas le défaut qu'on vient de corriger. (`$tc` est indisponible :
+         * vue-i18n tourne en mode non-legacy.)
+         */
+        libelleOuvertes(n) {
+            return this.$t(n > 1 ? 'label.session_still_open_many' : 'label.session_still_open_one', { count: n });
+        },
         async loadSessions(page = 1) {
             this.loading = true;
             try {

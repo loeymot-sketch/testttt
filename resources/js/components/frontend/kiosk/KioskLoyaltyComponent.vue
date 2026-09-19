@@ -661,6 +661,17 @@ export default {
       try {
         const res = await axios.post('frontend/loyalty/register', payload);
         const data = res.data?.data || {};
+        // Existing phone/email is a conflict response without a customer payload.
+        // Never transition to balance with an empty loyalty code: that rendered a
+        // blank/unclickable kiosk state and looked like a white-page freeze.
+        if (res.data?.code === 'PHONE_EXISTS' || res.data?.code === 'EMAIL_EXISTS') {
+          this.registerError = res.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic');
+          return;
+        }
+        if (!data.loyalty_code) {
+          this.registerError = this.$t('kiosk.loyalty_screen.register_error_generic');
+          return;
+        }
         this.customer = {
           name:          data.name || payload.name,
           loyalty_point: parseInt(data.points ?? 0, 10),

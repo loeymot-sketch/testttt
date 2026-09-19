@@ -88,11 +88,25 @@ final class KioskMenuService
                     // [DBPERF-P1-01 heal 2026-05-29] Eager-load Item media
                     // (Spatie polymorphic). Wave D measured 89 queries on
                     // /api/frontend/menu cold path due to lazy
-                    // getFirstMediaUrl() on Item::thumb accessor. Only Item
-                    // implements HasMedia (verified app/Models/Item.php:15).
-                    // Variations/Extras do NOT have media — those N+1 hits
-                    // come from addonItem.thumb chain which loads Item media.
+                    // getFirstMediaUrl() on Item::thumb accessor.
+                    //
+                    // [ONB-07 2026-08-27] La suite du commentaire d'origine disait :
+                    // « Only Item implements HasMedia. Variations/Extras do NOT have
+                    // media ». C'est FAUX, et ca a coute cher : ItemVariation:15 et
+                    // ItemExtra:13 declarent tous deux `implements HasMedia`, et leurs
+                    // accesseurs appellent getFirstMediaUrl() (ItemVariation:184,
+                    // ItemExtra:124).
+                    //
+                    // Mesure de cette page, AVANT correctif : 788 requetes SQL en
+                    // 404 ms, dont 765 sur la table `media` — 433 pour ItemVariation,
+                    // 332 pour ItemExtra. Une requete par variante et par supplement.
+                    // Deux tentatives de correction precedentes ont chargé Item et
+                    // addonItem, en laissant ces deux-la de cote sur la foi du
+                    // commentaire. C'est l'ecran d'accueil de la borne, celui que le
+                    // client regarde en attendant.
                     'media',
+                    'variations.media',
+                    'extras.media',
                     'addons.addonItem.media',
                 ])
                 ->where('status', Status::ACTIVE)

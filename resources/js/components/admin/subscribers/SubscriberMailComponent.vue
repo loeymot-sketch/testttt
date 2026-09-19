@@ -92,7 +92,16 @@ export default {
                     .then((res) => {
                         appService.sideDrawerHide();
                         this.loading.isActive = false;
-                        alertService.successInfo(0, this.$t("message.email_send"));
+                        // [ONB-09 2026-08-28 - CORRECTIF INCOMPLET REPARE] Cette bulle
+                        // affichait une chaine i18n FIGEE, posee sans condition dans le
+                        // `.then()`. Le serveur avait beau repondre « Aucun abonne :
+                        // rien n'a ete envoye », l'ecran continuait d'annoncer un
+                        // succes. Mon correctif s'arretait au controleur ; il ne
+                        // parvenait jamais au commercant. Trouve par un agent adverse.
+                        alertService.successInfo(
+                            0,
+                            res?.data?.message || this.$t("message.email_send"),
+                        );
                         this.props.form = {
                             subject: "",
                             message: "",
