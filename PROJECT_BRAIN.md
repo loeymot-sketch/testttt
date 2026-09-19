@@ -47,6 +47,48 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-19 — DOUBLE COMPTE MÊME E-MAIL : ROOT CAUSE EXACTE TROUVÉE, CORRIGÉE, DÉPLOYÉE.**
+>
+> Propriétaire, verbatim : « je trouve pas de profil sur le site et je peux créer 2 compte avec
+> meme email ! c trop reducul ! corrige deep, et meme compte fidelitie ».
+>
+> **Root cause exacte** : `SignupController::register()` (formulaire « compte complet »
+> téléphone+mot de passe) ne cherchait un compte existant QUE par téléphone.
+> `SignupRequest` valide l'unicité de l'e-mail mais SEULEMENT parmi les comptes `is_guest=NO`
+> — exemption volontaire pour laisser CE MÊME formulaire mettre à niveau un compte invité
+> existant, mais reliée UNIQUEMENT à une preuve de téléphone. Un compte invité créé au
+> comptoir / à la borne / par e-mail-OTP du site (téléphone A, e-mail X) laissait donc un
+> client revenir sur ce formulaire avec un AUTRE téléphone (B) et le MÊME e-mail : recherche
+> par téléphone infructueuse, règle unique muette (l'ancien compte est invité), second compte
+> complet créé avec l'e-mail déjà porté par le premier. Deux comptes, deux soldes de fidélité,
+> un seul humain. `users.email` n'avait par ailleurs AUCUNE contrainte unique en base (index
+> simple, pas UNIQUE) — 5 autres chemins de création de compte vérifiés
+> (GuestSignupController, SocialAuthController, CustomerAccountProvisioner, CustomerService)
+> se sont révélés SAINS (chacun vérifie déjà l'e-mail avant d'écrire), seul celui-ci avait le
+> trou.
+>
+> **Corrigé « deep » comme demandé, sur les deux couches** :
+> 1. Application — `SignupController::register()` refuse explicitement si l'e-mail est déjà
+>    porté par un AUTRE compte que celui qu'on met à niveau par téléphone.
+> 2. Base de données — contrainte `UNIQUE` ajoutée sur `users.email` (migration
+>    `2026_09_19_175209`), mesurée sûre avant exécution (0 doublon, 0 chaîne vide, 13 NULL en
+>    prod), collation existante déjà insensible à la casse. Défense en profondeur : garantit
+>    qu'un 6ᵉ chemin, inconnu ou futur, ne pourra plus jamais dupliquer un e-mail en silence.
+>
+> **Preuve** : `tests/Feature/Auth/SignupDuplicateEmailTest.php` reproduit le bug exact (rouge
+> avant correctif : 201 au lieu de 422, second compte réellement créé en base), 3/3 verts
+> après. Insertion SQL brute avec casse différente rejetée par la contrainte — preuve qu'elle
+> mord réellement, pas seulement qu'elle existe. 197 tests Auth+Loyalty+Pos+Kiosk verts,
+> aucune régression.
+>
+> **Déployé** : commit `24079d4e`, migration exécutée sur le VPS (contrainte confirmée
+> `Non_unique=0` en direct), santé applicative + chaîne fiscale toujours vertes après.
+>
+> ⚠️ Ne règle pas nécessairement le cas Younes précis (toujours aucune trace de ce nom dans la
+> base), mais ferme le trou exact que le propriétaire vient de démontrer lui-même en le
+> reproduisant, et referme la classe de bug la plus probable derrière « client enregistré
+> introuvable » à l'avenir.
+
 > **2026-09-18 — AUDIT MAXIMAL PRODUIT PAR PRODUIT (39/39) + ROOT CAUSE FIDÉLITÉ TROUVÉE.**
 >
 > Propriétaire : « vérification maximale à toute commande, produit par produit... ainsi que le
