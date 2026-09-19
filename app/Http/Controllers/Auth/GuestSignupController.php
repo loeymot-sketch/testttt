@@ -191,7 +191,15 @@ class GuestSignupController extends Controller
             }
             $this->envoyerCodeParEmail($request);
 
-            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code')];
+            // [Root cause 2026-09-19] Cette branche (compte inconnu / première inscription
+            // par ce canal) est EXACTEMENT celle où envoyerCodeParEmail() peut avoir décidé,
+            // en silence et à raison (anti-usurpation), de n'envoyer le code NULLE PART — un
+            // numéro déjà rattaché à un compte AYANT DE LA VALEUR (points/commandes) sans
+            // e-mail au dossier. Le message reste volontairement IDENTIQUE dans les deux cas
+            // (anti-énumération inchangée : rien ne dit ICI si ce client est dans ce cas) mais
+            // donne désormais TOUJOURS un recours, plutôt que de promettre un code qui
+            // n'arrivera peut-être jamais sans qu'aucune suite ne soit possible.
+            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code_with_fallback')];
             $this->ajouterCodeDev($payload, (string) $request->post('phone'));
 
             return response($payload);

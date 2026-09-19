@@ -328,6 +328,15 @@ return [
         'code_is_expired' => 'Le code a expiré.',
         'you_can_reset_your_password' => 'Vous pouvez maintenant réinitialiser votre mot de passe.',
         'check_your_email_for_code' => 'Veuillez vérifier votre email pour le code.',
+        // [Root cause 2026-09-19, propriétaire : « plusieurs personnes ne reçoivent jamais le
+        // code par e-mail »] Un numéro déjà rattaché à un compte AYANT DE LA VALEUR (points ou
+        // commandes) sans e-mail au dossier bloque volontairement l'envoi (anti-usurpation,
+        // GuestSignupController::envoyerCodeParEmail) — sans jamais le dire, la réponse
+        // affirmait quand même « code envoyé ». La sécurité reste identique (aucune fuite
+        // d'information sur QUEL cas s'applique) ; le message, lui, donne désormais TOUJOURS un
+        // recours au client qui ne recevrait rien, sans jamais révéler s'il est dans ce cas ou
+        // simplement en train d'attendre normalement.
+        'check_your_email_for_code_with_fallback' => 'Veuillez vérifier votre email pour le code. Si tu ne reçois rien dans quelques minutes (pense aussi aux spams), passe au comptoir avec ton numéro de téléphone : on peut lier ton compte directement.',
         'check_your_phone_for_code' => 'Veuillez vérifier votre téléphone pour le code.',
         'email_send' => 'Email envoyé avec succès.',
         // [ONB-09 2026-08-28] L'envoi aux abonnés annonçait « Email envoyé »

@@ -347,6 +347,7 @@ return [
         'code_is_expired' => 'The code is expired.',
         'you_can_reset_your_password' => 'Now you can reset your password.',
         'check_your_email_for_code' => 'Please check your email for the code.',
+        'check_your_email_for_code_with_fallback' => 'Please check your email for the code. If you don\'t receive anything within a few minutes (check spam too), stop by the counter with your phone number and we can link your account directly.',
         'check_your_phone_for_code' => 'Please check your phone for the code.',
         'token_created_fail' => 'The token created fail.',
         'email_does_not_exist' => 'This email does not exist.',
