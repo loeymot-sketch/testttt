@@ -4468,23 +4468,39 @@
             });
 
             // Collect viandes deduped by id AND name (same fix as renderSinglePage)
+            //
+            // [Root cause 2026-09-20, audit externe — commande POS #2009261353/A0057, TACOS XL
+            // à 6 viandes créée à 17,90 € au lieu de 20,40 €, une viande disparue] Le backend
+            // attribue un id de variation DISTINCT par attribut viande pour le MÊME nom (vérifié
+            // en base : Mexicanos = id 777 sous « Viande 1 », 784 sous « Viande 2 », 791 sous
+            // « Viande 3 »). Ce bloc déduplique les viandes PAR NOM pour peupler les dropdowns
+            // (un seul, ne garde que l'id de l'attribut 1) — mais la ligne suivante lisait le
+            // COMPTE (`selections.viandes[key]`) UNIQUEMENT sous CET id gardé. Si le clic/la
+            // sélection réelle du client avait incrémenté le compte sous l'id d'un AUTRE attribut
+            // portant le MÊME nom (Viande 2 ou Viande 3), ce compte était introuvable sous l'id
+            // gardé → lu comme 0 → cette viande disparaissait de `selectedViandes`, silencieusement,
+            // sans qu'aucune erreur ne le signale. Fixé en SOMMANT le compte sur TOUS les ids
+            // partageant le même nom normalisé, pas seulement l'id survivant de la déduplication —
+            // même principe que la sommation multi-clé déjà en place ailleurs dans ce fichier
+            // (buildWizardInstruction, L2629 : `selections.viandes['v_'+v.id] + selections.viandes[v.key]`).
             if (viandeAttrs.length > 0 && lastItemData.variations) {
-                var seenSyncIds = {};
                 var seenSyncNames = {};
                 var allSyncVariations = [];
+                var syncCountsByName = {};
                 viandeAttrs.forEach(function (attr) {
                     (lastItemData.variations[attr.id] || []).forEach(function (v) {
                         var normName = normalizeStr(v.name || '');
-                        if (!seenSyncIds[v.id] && !seenSyncNames[normName]) {
-                            seenSyncIds[v.id] = true;
+                        var thisCount = selections.viandes['v_' + v.id] || 0;
+                        syncCountsByName[normName] = (syncCountsByName[normName] || 0) + thisCount;
+                        if (!seenSyncNames[normName]) {
                             seenSyncNames[normName] = true;
                             allSyncVariations.push(v);
                         }
                     });
                 });
                 allSyncVariations.forEach(function (variation) {
-                    var key = 'v_' + variation.id;
-                    var count = selections.viandes[key] || 0;
+                    var normName = normalizeStr(variation.name || '');
+                    var count = syncCountsByName[normName] || 0;
                     for (var i = 0; i < count; i++) selectedViandes.push(variation.name);
                 });
             }
