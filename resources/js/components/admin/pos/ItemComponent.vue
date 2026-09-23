@@ -644,8 +644,21 @@ export default {
             const maxSelect = normalizeQuantity(attribute && attribute.max_select, 1);
             const allowRepeat = Boolean(attribute && attribute.allow_repeat);
             const isMulti = maxSelect > 1 || allowRepeat;
-            const minSelectRaw = normalizeId(attribute && attribute.min_select);
-            const minSelect = minSelectRaw === null ? (isMulti ? 0 : 1) : Math.min(minSelectRaw, maxSelect);
+            // [Root cause 2026-09-23, test-e2e caisse dupliquer/modifier] `normalizeId` est
+            // conçu pour des clés étrangères (jamais légitimement 0) et traite TOUT 0 comme
+            // absent (`normalized <= 0` -> null). `min_select=0` est pourtant une valeur
+            // valide et courante ("optionnel, aucun minimum") — ex. "Viande 2"/"Viande 3"
+            // (créneaux de viande additionnelle). Réutiliser `normalizeId` ici convertissait
+            // silencieusement min_select=0 en `null`, qui retombait ensuite sur le défaut
+            // `(isMulti ? 0 : 1)` = 1 pour un attribut à choix unique — un attribut réellement
+            // optionnel était donc TOUJOURS traité comme requis, peu importe sa vraie valeur.
+            const rawMinSelect = attribute ? attribute.min_select : null;
+            const minSelectRaw = (rawMinSelect === null || rawMinSelect === undefined || rawMinSelect === '')
+                ? null
+                : Math.max(0, Math.floor(Number(rawMinSelect)));
+            const minSelect = (minSelectRaw === null || !Number.isFinite(minSelectRaw))
+                ? (isMulti ? 0 : 1)
+                : Math.min(minSelectRaw, maxSelect);
 
             return {
                 minSelect,
@@ -863,7 +876,17 @@ export default {
 
                 const firstAvailable = variations.find((variation) => !this.isModifierUnavailable(variation));
 
-                if (!config.isMulti && firstAvailable) {
+                // [Root cause 2026-09-23, test-e2e caisse dupliquer/modifier] Ce garde ne
+                // vérifiait QUE `!config.isMulti` — tout attribut à choix unique (max_select<=1)
+                // recevait un défaut, MÊME quand min_select=0 (optionnel). Repro réelle : un
+                // Tacos M avec "Viande 2"/"Viande 3" (créneaux de viande additionnelle
+                // optionnels, min_select=0) se voyait pré-remplir "Poulet mariné"/"Cordon Bleu"
+                // — jamais choisis par le client — AVANT même le premier clic. Ça finissait
+                // dans composition_snapshot (immuable) et sur le ticket cuisine : 3 viandes
+                // facturées 0€ mais réellement PRÉPARÉES en trop. Un attribut optionnel doit
+                // rester VIDE tant que le client ne l'a pas choisi — seul un attribut réellement
+                // requis (min_select > 0) justifie un défaut pré-rempli.
+                if (!config.isMulti && config.minSelect > 0 && firstAvailable) {
                     this.setVariationQuantity(attribute, firstAvailable, 1);
                 }
             });
