@@ -2706,6 +2706,11 @@ export default {
       return true;
     },
     _applyOrderBuckets(rows) {
+      // [KDS-ITEM-READY-SYNC 2026-09-23] Unique point d'entrée de TOUT
+      // rafraîchissement du board (poll, WS, chargement initial) — resynchronise
+      // la pastille "prêt" par article depuis le serveur ici, pour qu'un second
+      // écran/appareil converge vers le même état sans action de l'utilisateur.
+      this.$store.dispatch('kds/hydrateFromOrders', Array.isArray(rows) ? rows : []);
       const visibleRows = (Array.isArray(rows) ? rows : []).filter((item) => this._isVisibleInCurrentBoard(item));
       // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
       // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since

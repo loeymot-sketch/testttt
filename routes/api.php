@@ -1794,6 +1794,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/reopen/{order}', [KitchenDisplaySystemController::class, 'reopen'])
             ->middleware(['idempotency', 'throttle:kds-bump'])
             ->name('reopen');
+        // [KDS-ITEM-READY-SYNC 2026-09-23] Pastille "prêt" PAR ARTICLE — SSOT
+        // serveur (audit finding #4 : c'était localStorage-only, invisible d'un
+        // second écran/appareil). Distinct de `change-status` (agrégat commande)
+        // et de `recall`/`reopen` (statut commande) : ne touche jamais OrderStatus.
+        Route::post('/items/{orderItem}/bump', [KitchenDisplaySystemController::class, 'itemBump'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-bump');
+        Route::post('/items/{orderItem}/recall', [KitchenDisplaySystemController::class, 'itemRecall'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-recall');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.

@@ -50,6 +50,9 @@ class OrderItemResource extends JsonResource
             'total_convert_price'              => AppLibrary::convertAmountFormat($this->total_price),
             'total_currency_price'             => AppLibrary::currencyAmountFormat($this->total_price),
             'instruction'                      => $this->instruction,
+            // [KDS-ITEM-READY-SYNC 2026-09-23] SSOT serveur de la pastille "prêt"
+            // par article — remplace le localStorage-only côté kds.js.
+            'kitchen_bumped_at'                => $this->kitchen_bumped_at?->toIso8601String(),
             'kds_station'                      => $this->orderItem?->kds_station ?? 'none',
             // [FR-ENV-SAFE 2026-06-27] env('CURRENCY') null sous config:cache → label tax fixe vide.
             // Défaut FR-safe (même classe que AppLibrary date/money). Cf. R4 env-config-cache.
