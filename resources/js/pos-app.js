@@ -44,6 +44,7 @@ import 'vue-next-select/dist/index.css';
 import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
+import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
 applySharedAxiosDefaults(axios, store);
 // [GOAL-OPS-SWAP W1 2026-08-12] Jumeau de app.js — installé ici AUSSI, et pas
 // « plus tard » : une entrée corrigée et l'autre pas, c'est la divergence
@@ -68,6 +69,13 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
+            // [SESSION-EXPIRED-OVERLAY 2026-09-23] Avant même de rediriger : le
+            // burst d'autres requêtes déjà en vol va continuer à échouer pendant
+            // les quelques centaines de ms avant que la navigation n'ait
+            // réellement lieu — sans cet overlay, chaque widget affiche son
+            // propre "0"/"chargement infini" pendant cette fenêtre (constat prod
+            // 23/09, /admin/pos-v4).
+            showSessionExpiredOverlay();
             store.dispatch('logout').catch(() => {});
             window.location.href = '/login';
         }

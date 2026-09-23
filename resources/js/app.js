@@ -38,6 +38,7 @@ import VueApexCharts from "vue3-apexcharts";
 import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
+import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
 
 
 /* Start tooltip alert code */
@@ -201,6 +202,15 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
+            // [SESSION-EXPIRED-OVERLAY 2026-09-23] router.push est une navigation
+            // SPA asynchrone — contrairement au hard-redirect de pos-app.js, le
+            // burst d'autres 401 déjà en vol reste visible plus longtemps pendant
+            // la transition. Constat prod 23/09 (/admin/pos-v4, 12+ 401 en ~2s
+            // incluant /api/auth/logout) : Stock/Vue caisse bloqués sur
+            // "chargement", Historique/Transactions "aucune donnée" — pas un bug
+            // d'auth (la redirection fonctionne), l'absence d'un état explicite
+            // pendant cette fenêtre transitoire.
+            showSessionExpiredOverlay();
             store.dispatch('logout').catch(() => {});
             router.push({ name: 'auth.login' }).catch(() => {});
         }
