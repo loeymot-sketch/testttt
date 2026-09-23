@@ -502,22 +502,28 @@
                                       → le CTA Encaisser ci-dessus prend le relais. FR direct.
                                     -->
                                     <template v-else-if="col.id === 'accept' && isWebPending(order) && canProcessWebOrders">
-                                        <!-- [CAISSE-WEB-INTEL 2026-08-06] Temps de préparation RÉEL choisi
-                                             à l'acceptation (persisté via preparation_time, lu par le suivi
-                                             client) — fini le défaut global aveugle de 15 min. -->
-                                        <select
-                                            class="pos-tracker-prep-select"
+                                        <!-- [CAISSE-WEB-INTEL 2026-08-06, champ libre 2026-09-23] Temps de
+                                             préparation RÉEL choisi à l'acceptation (persisté via
+                                             preparation_time, désormais VRAIMENT lu par le suivi client —
+                                             OrderTrackingService::estimateFor — au lieu de l'estimation
+                                             générique du branch entier). [2026-09-23 owner] Passé de 3
+                                             presets (15/25/40) à un champ libre : "je mets par exemple 17
+                                             minutes" — le caissier doit pouvoir annoncer N'IMPORTE QUEL
+                                             temps précis, pas seulement 3 valeurs figées. -->
+                                        <input
+                                            type="number"
+                                            class="pos-tracker-prep-input"
                                             :value="webPrepChoice[order.id] ?? 15"
                                             :data-testid="`tracker-prep-${order.id}`"
-                                            title="Temps de préparation annoncé au client"
-                                            aria-label="Temps de préparation"
-                                            @change="webPrepChoice = { ...webPrepChoice, [order.id]: parseInt($event.target.value, 10) }"
+                                            title="Temps de préparation annoncé au client (minutes)"
+                                            aria-label="Temps de préparation en minutes"
+                                            min="1"
+                                            max="180"
+                                            step="1"
+                                            inputmode="numeric"
+                                            @input="webPrepChoice = { ...webPrepChoice, [order.id]: parseInt($event.target.value, 10) }"
                                             @click.stop
-                                        >
-                                            <option :value="15">15 min</option>
-                                            <option :value="25">25 min</option>
-                                            <option :value="40">40 min</option>
-                                        </select>
+                                        /><span class="pos-tracker-prep-unit" aria-hidden="true">min</span>
                                         <button
                                             type="button"
                                             class="pos-tracker-card-btn pos-tracker-card-btn--cash"
@@ -3985,21 +3991,28 @@ export default {
     font-weight: 600;
     color: var(--pos-tracker-text);
 }
-/* [CAISSE-WEB-INTEL 2026-08-06] Select temps de préparation (accept web). */
-.pos-tracker-prep-select {
+/* [CAISSE-WEB-INTEL 2026-08-06, champ libre 2026-09-23] Temps de préparation (accept web). */
+.pos-tracker-prep-input {
     height: 30px;
-    padding: 0 6px;
+    width: 52px;
+    padding: 0 4px;
     border-radius: 8px;
     border: 1px solid var(--pos-tracker-border);
     background: #fff;
     color: var(--pos-tracker-text);
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
+    text-align: center;
 }
-.pos-tracker-prep-select:focus-visible {
+.pos-tracker-prep-input:focus-visible {
     outline: 2px solid var(--pos-tracker-amber);
     outline-offset: 1px;
+}
+.pos-tracker-prep-unit {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pos-tracker-text);
+    margin-right: 4px;
 }
 
 /* [CAISSE-WEB-INTEL 2026-08-06] Chips raisons d'annulation 1-geste. */

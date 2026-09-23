@@ -129,6 +129,83 @@ class OrderTrackingTest extends TestCase
     }
 
     /** @test */
+    public function commande_pending_pas_encore_acceptee_garde_l_estimation_generique_10_15(): void
+    {
+        // [2026-09-23 owner] Avant l'accept caisse, le client voit TOUJOURS la
+        // fourchette générique constante (WaitEstimateEndpointTest) — même si
+        // preparation_time porte déjà le défaut settings posé à la création
+        // (OrderService.php:428 etc.), on l'ignore tant que la caisse n'a pas
+        // explicitement validé la commande.
+        $order = $this->makeOrder(['status' => OrderStatus::PENDING, 'preparation_time' => 15]);
+        $result = $this->track($order->tracking_token);
+
+        $this->assertSame(10, $result['wait_low']);
+        $this->assertSame(15, $result['wait_high']);
+    }
+
+    /** @test */
+    public function commande_acceptee_a_l_instant_montre_le_temps_fixe_par_le_caissier(): void
+    {
+        // [CAISSE-WEB-INTEL 2026-08-06, consommé enfin 2026-09-23] Le caissier
+        // fixe 25 min à l'accept (PosOrdersTrackerComponent) — le suivi client
+        // doit REMPLACER la fourchette générique par CETTE valeur précise,
+        // pas continuer d'appeler la formule générique du branch entier.
+        $order = $this->makeOrder([
+            'status' => OrderStatus::ACCEPT,
+            'preparation_time' => 25,
+            'accepted_at' => now(),
+        ]);
+        $result = $this->track($order->tracking_token);
+
+        $this->assertSame(25, $result['wait_low']);
+        $this->assertSame(25, $result['wait_high']);
+    }
+
+    /** @test */
+    public function commande_acceptee_puis_x_minutes_ecoulees_decompte_depuis_le_temps_fixe(): void
+    {
+        $order = $this->makeOrder([
+            'status' => OrderStatus::ACCEPT,
+            'preparation_time' => 25,
+            'accepted_at' => now()->subMinutes(10),
+        ]);
+        $result = $this->track($order->tracking_token);
+
+        $this->assertSame(15, $result['wait_low']);
+        $this->assertSame(15, $result['wait_high']);
+    }
+
+    /** @test */
+    public function commande_en_retard_sur_le_temps_fixe_plafonne_a_0_jamais_negatif(): void
+    {
+        $order = $this->makeOrder([
+            'status' => OrderStatus::PREPARING,
+            'preparation_time' => 25,
+            'accepted_at' => now()->subMinutes(40),
+        ]);
+        $result = $this->track($order->tracking_token);
+
+        $this->assertSame(0, $result['wait_low']);
+        $this->assertSame(0, $result['wait_high']);
+    }
+
+    /** @test */
+    public function commande_acceptee_sans_preparation_time_fixe_retombe_sur_l_estimation_generique(): void
+    {
+        // Colonne au défaut migration (0) : jamais fixée explicitement par le
+        // caissier (chemin d'accept hors tracker web, ou avant ce correctif).
+        $order = $this->makeOrder([
+            'status' => OrderStatus::ACCEPT,
+            'preparation_time' => 0,
+            'accepted_at' => now(),
+        ]);
+        $result = $this->track($order->tracking_token);
+
+        $this->assertSame(10, $result['wait_low']);
+        $this->assertSame(15, $result['wait_high']);
+    }
+
+    /** @test */
     public function commande_prete_ne_donne_plus_de_position_ni_de_fourchette(): void
     {
         $order = $this->makeOrder(['status' => OrderStatus::PREPARED]);

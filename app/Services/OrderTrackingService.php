@@ -124,7 +124,7 @@ class OrderTrackingService
             $almostReady = $positionAhead <= self::ALMOST_READY_THRESHOLD;
         }
 
-        $estimate = $ready ? null : app(WaitEstimateService::class)->estimate((int) $order->branch_id);
+        $estimate = $ready ? null : $this->estimateFor($order, $status, $now);
 
         return [
             'found' => true,
@@ -139,6 +139,36 @@ class OrderTrackingService
             'wait_high' => $estimate['wait_high'] ?? null,
             'server_time' => $now->toIso8601String(),
         ];
+    }
+
+    /**
+     * [2026-09-23 owner] Avant l'accept caisse (PENDING), le client voit la
+     * fourchette générique constante (WaitEstimateService). Une fois la
+     * commande ACCEPT/PREPARING, le caissier a fixé `preparation_time` à
+     * l'accept (PosOrdersTrackerComponent, "CAISSE-WEB-INTEL 2026-08-06") —
+     * c'est CETTE valeur précise qui prime, en décompte depuis `accepted_at`
+     * (jamais négatif). `preparation_time` au défaut migration (0) = jamais
+     * fixé explicitement → on retombe sur la fourchette générique.
+     *
+     * @return array{wait_low:int,wait_high:int}
+     */
+    private function estimateFor(Order|FrontendOrder $order, int $status, \Illuminate\Support\Carbon $now): array
+    {
+        $inCashierReviewedFlow = in_array($status, [OrderStatus::ACCEPT, OrderStatus::PREPARING], true);
+        $preparationTime = (int) ($order->preparation_time ?? 0);
+
+        if ($inCashierReviewedFlow && $preparationTime > 0 && $order->accepted_at) {
+            // Timestamps bruts (jamais diffInSeconds signé — sens ambigu selon
+            // l'appelant/l'objet receveur, source de bugs de sens ailleurs dans
+            // ce dépôt) : elapsed > 0 si `now` est après `accepted_at`.
+            $elapsedSeconds = $now->getTimestamp() - $order->accepted_at->getTimestamp();
+            $elapsedMinutes = (int) floor($elapsedSeconds / 60);
+            $remaining = max(0, $preparationTime - max(0, $elapsedMinutes));
+
+            return ['wait_low' => $remaining, 'wait_high' => $remaining];
+        }
+
+        return app(WaitEstimateService::class)->estimate((int) $order->branch_id);
     }
 
     /**
