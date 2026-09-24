@@ -45,6 +45,7 @@ import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
+import { startNewVersionWatcher } from './shared/new-version-banner';
 applySharedAxiosDefaults(axios, store);
 // [GOAL-OPS-SWAP W1 2026-08-12] Jumeau de app.js — installé ici AUSSI, et pas
 // « plus tard » : une entrée corrigée et l'autre pas, c'est la divergence
@@ -53,6 +54,10 @@ installBlobErrorNormalizer(axios);
 // [GOAL-OPS-SWAP W3 2026-08-12] Jumeau de app.js — la caisse V4 partage
 // exactement le même défaut de rafale à l'ouverture. Voir shared/inflight-dedupe.js.
 installInFlightGetDedupe(axios);
+// [Root cause 2026-09-24 · owner] Un onglet caisse laissé ouvert avant un
+// déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
+// shared/new-version-banner.js. Best-effort, jamais bloquant.
+startNewVersionWatcher();
 
 // 401 RESPONSE handler — POS-only variant.
 // Divergence vs app.js intentional: pos-app.js has no `auth.login` named route

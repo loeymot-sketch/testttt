@@ -2275,6 +2275,40 @@
       @cancel="onCounterCollectCancel"
     />
     <!--
+      [PRINT-DECISION-COUNTER-COLLECT 2026-09-24 · owner] Même question que la vente
+      directe (ReceiptComponent::showPrintDecisionPrompt) — plus jamais d'impression
+      automatique du ticket client à l'encaissement d'une commande téléphone/web.
+    -->
+    <div
+      v-if="counterCollectPrintDecisionOrderId"
+      class="pos-v5-print-decision"
+      role="dialog"
+      :aria-label="$t('pos.print_decision_title') || 'Imprimer le ticket ?'"
+    >
+      <p class="pos-v5-print-decision-title">
+        {{ $t('pos.print_decision_title') || 'Imprimer le ticket client ?' }}
+      </p>
+      <div class="pos-v5-print-decision-actions">
+        <button
+          type="button"
+          @click="confirmCounterCollectPrint"
+          data-testid="counter-collect-print-decision-yes"
+          class="pos-v5-receipt-btn pos-v5-receipt-btn--client"
+        >
+          <span aria-hidden="true">🧾</span>
+          {{ $t('pos.print_decision_yes') || 'Oui, imprimer' }}
+        </button>
+        <button
+          type="button"
+          @click="declineCounterCollectPrint"
+          data-testid="counter-collect-print-decision-no"
+          class="pos-v5-receipt-btn pos-v5-receipt-btn--ghost"
+        >
+          {{ $t('pos.print_decision_no') || 'Non merci' }}
+        </button>
+      </div>
+    </div>
+    <!--
       [OWNER 2026-08-19] SONNERIE D'ARRIVÉE. La caisse n'avait qu'un sinus de synthèse de
       0,4 s : structurellement inaudible derrière un comptoir en service. On réutilise le
       carillon DÉJÀ livré et éprouvé de l'écran cuisine — aucun fichier de plus à déployer,
@@ -2561,6 +2595,9 @@ export default {
             // state object (commit eb43fa180) — the new modal owns its own
             // submitting state.
             counterCollectOrder: null,
+            // [PRINT-DECISION-COUNTER-COLLECT 2026-09-24] Commande encaissée en attente
+            // d'une réponse "imprimer ou non" — voir onCounterCollectConfirmed.
+            counterCollectPrintDecisionOrderId: null,
             // [Wave X X2 P-OWNER 2026-05-21] Ready-to-deliver orders for
             // the POS main-page notification shortcuts (above products grid).
             // Loaded from OSS list + filtered to PREPARED + scoped to KIOSK
@@ -5310,27 +5347,35 @@ export default {
             // shortcut block (both bound to kioskCashOrders).
             this.counterCollectOrder = null;
 
-            // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
-            // CLIENT à l'encaissement — LANCÉ EN PREMIER, en PARALLÈLE des reloads (avant, le
-            // print attendait 3 awaits de refresh → +1-3 s de latence papier). Fire-and-forget :
-            // octets ESC/POS serveur (SSOT NF525) POSTés au pont local (réponse 202 immédiate).
-            // Best-effort : ne bloque jamais l'encaissement (déjà persisté) si le pont est absent.
+            // [PRINT-DECISION-COUNTER-COLLECT 2026-09-24 · owner] « je veux pas que ça
+            // imprime toujours, c'est du gaspillage de papier » — l'encaissement d'une
+            // commande téléphone/web différée imprimait TOUJOURS le ticket client sans
+            // demander, contrairement à la vente directe qui pose la question depuis le
+            // 2026-09-21 (ReceiptComponent::showPrintDecisionPrompt). Même choix explicite
+            // ici : plus d'impression automatique, la question est posée juste en dessous.
             const orderId = payload?.orderId ?? payload?.order_id ?? null;
-            const printPromise = orderId
-                ? axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } })
-                    .then((res) => {
-                        const b64 = res?.data?.escpos_b64;
-                        return b64 ? printEscPosViaCaisseBridge(b64) : null;
-                    })
-                    .catch(() => null) /* pont d'impression indisponible : ignoré (l'encaissement a réussi) */
-                : Promise.resolve(null);
-            this._lastCounterCollectPrint = printPromise; // observabilité/test
+            if (orderId) {
+                this.counterCollectPrintDecisionOrderId = orderId;
+            }
 
             try {
                 await this.loadKioskCashOrders();
                 await this.loadActiveOrdersStats();
                 await this.loadReadyOrders();
             } catch (_) { /* silent — toast already raised */ }
+        },
+        /** [PRINT-DECISION-COUNTER-COLLECT 2026-09-24] « Oui, imprimer » — réutilise le
+         * pipeline d'impression déjà écrit (printAEncaisserTicket : escpos SSOT NF525 +
+         * pont caisse + toast résultat), pas de logique dupliquée. */
+        confirmCounterCollectPrint() {
+            const orderId = this.counterCollectPrintDecisionOrderId;
+            this.counterCollectPrintDecisionOrderId = null;
+            if (!orderId) return;
+            this.printAEncaisserTicket({ id: orderId }, 'client');
+        },
+        /** [PRINT-DECISION-COUNTER-COLLECT 2026-09-24] « Non merci » — aucune impression. */
+        declineCounterCollectPrint() {
+            this.counterCollectPrintDecisionOrderId = null;
         },
         // [owner 2026-07-08 #2b] Imprimer le ticket CUISINE ou CLIENT d'une commande
         // « à encaisser » SANS l'encaisser (lancer la prépa avant que le client paie).
@@ -8231,5 +8276,63 @@ export default {
     border-left-color: var(--pos-v5-border-strong, #D9C9B8);
     background: var(--pos-v5-bg-subtle, #F7F3EC);
     color: var(--pos-v5-ink-muted, #8A8278);
+}
+
+/* [PRINT-DECISION-COUNTER-COLLECT 2026-09-24] Même bandeau que le prompt de
+   ReceiptComponent (mêmes tokens --pos-v5-*), mais positionné en overlay fixe
+   ici : contrairement à la vente directe, il n'y a pas de modale-hôte encore
+   ouverte au moment où la question doit apparaître (le modal d'encaissement
+   vient de se fermer). */
+.pos-v5-print-decision {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pos-v5-space-3, 12px);
+    padding: var(--pos-v5-space-4, 16px) 20px;
+    background: var(--pos-v5-bg-panel, #fff);
+    border: 1px solid var(--pos-v5-border, #e5e5e5);
+    border-radius: var(--pos-v5-radius-md, 10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    text-align: center;
+}
+.pos-v5-print-decision-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--pos-v5-ink, #1a1a1a);
+    margin: 0;
+}
+.pos-v5-print-decision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--pos-v5-space-3, 12px);
+}
+.pos-v5-receipt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--pos-v5-radius-md, 10px);
+    border: 1px solid transparent;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    appearance: none;
+    min-height: 36px;
+}
+.pos-v5-receipt-btn--ghost {
+    background: var(--pos-v5-bg-subtle, #f2f2f2);
+    color: var(--pos-v5-ink-soft, #555);
+    border-color: var(--pos-v5-border, #e5e5e5);
+}
+.pos-v5-receipt-btn--client {
+    background: var(--pos-v5-success, #1a7f37);
+    color: #fff;
 }
 </style>

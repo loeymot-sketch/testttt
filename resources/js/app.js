@@ -39,6 +39,7 @@ import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
+import { startNewVersionWatcher } from './shared/new-version-banner';
 
 
 /* Start tooltip alert code */
@@ -77,6 +78,10 @@ installBlobErrorNormalizer(axios);
 // Fusionne les GET identiques EN VOL. Ne met RIEN en cache, ne touche jamais
 // une mutation. Banc : tests/js/inflightGetDedupe.spec.js
 installInFlightGetDedupe(axios);
+// [Root cause 2026-09-24 · owner] Un onglet caisse/admin laissé ouvert avant
+// un déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
+// shared/new-version-banner.js. Best-effort, jamais bloquant.
+startNewVersionWatcher();
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)
