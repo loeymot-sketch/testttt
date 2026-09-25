@@ -243,13 +243,13 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
   const isDelivered = !!real && real.status === 'delivered';
   // [GOAL-SYNC 2026-07-08] earn ratio 100% via config (contrat §2) : points_per_euro
   // (nom API backend GET /api/frontend/loyalty/config) prioritaire, sinon earn_ratio
-  // (couche data locale), sinon 1 pt/€ (défaut backend) — plus de 10 pt/€ hardcodé.
+  // (couche data locale), sinon 10 pt/€ (défaut backend, relevé le 2026-09-25).
   // Estimation = Math.floor(total × ratio) (FLOOR, aligné backend ; l'EARN réel est
   // crédité côté backend au statut PREPARED/DELIVERED). [FISCAL GATE 2026-07-07] le reçu
   // fiscal NF525 ne s'affiche que si la commande est réglée (payment_status === 'paid').
   const isPaid = !!real && real.payment_status === 'paid';
   const loyCfg = (window.LC && window.LC.loyalty && window.LC.loyalty.config) || {};
-  const earnRatio = Number(loyCfg.points_per_euro != null ? loyCfg.points_per_euro : loyCfg.earn_ratio) || 1;
+  const earnRatio = Number(loyCfg.points_per_euro != null ? loyCfg.points_per_euro : loyCfg.earn_ratio) || 10;
   const pointsCredited = real
     ? (Number(real.points_earned != null ? real.points_earned : real.points_earned_estimate) || Math.floor((Number(total) || 0) * earnRatio))
     : 0;

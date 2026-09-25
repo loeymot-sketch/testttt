@@ -22,9 +22,9 @@ const CATS = window.CATS;
 const ITEMS = window.ITEMS;
 
 // [GOAL-SYNC 2026-07-08] Config fidélité RÉELLE (contrat §2) — les taux viennent de la data
-// layer alignée sur GET /api/frontend/loyalty/config (points_per_euro=1, points_for_1_euro_
+// layer alignée sur GET /api/frontend/loyalty/config (points_per_euro=10, points_for_1_euro_
 // discount=100). Plus AUCUN ratio hardcodé dans les écrans. Supporte les deux formes de
-// LC.loyalty.config (objet legacy / fonction) ; fallback = vérité backend (1 pt/€, 100 pts = 1 €).
+// LC.loyalty.config (objet legacy / fonction) ; fallback = vérité backend (10 pt/€, 100 pts = 1 €).
 function lcLoyaltyCfg() {
   const L = (window.LC && window.LC.loyalty) || null;
   const c = L ? (typeof L.config === 'function' ? L.config() : L.config) : null;
@@ -33,7 +33,7 @@ function lcLoyaltyCfg() {
 function lcEarnRatio() {
   const c = lcLoyaltyCfg();
   const r = Number(c.earn_ratio != null ? c.earn_ratio : c.points_per_euro);
-  return (isFinite(r) && r > 0) ? r : 1;
+  return (isFinite(r) && r > 0) ? r : 10;
 }
 function lcRedeemRatio() {
   const c = lcLoyaltyCfg();
@@ -1153,7 +1153,7 @@ function ScreenProfile({ go }) {
 function LoyaltyRedeemPanel({ balance, authed, preset, loyaltyCode, go, onRedeemed }) {
   const redeemRatio = lcRedeemRatio();
   const cfg = lcLoyaltyCfg();
-  const minPts = Math.max(redeemRatio, Number(cfg.min_redeem_points) || redeemRatio);
+  const minPts = Math.max(redeemRatio, Number(cfg.min_redeem_points) || 1000);
   const safeBalance = Number(balance) || 0;
   const maxPts = Math.floor(safeBalance / redeemRatio) * redeemRatio; // plafond = solde
   const canRedeem = maxPts >= minPts;
@@ -1551,7 +1551,7 @@ function ScreenLoyalty({ go }) {
                 sur l'onglet Réductions avec le montant présélectionné. */}
             {tab === 'points' && !isEmpty && (
               <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
-                {(Array.isArray(config.tiers) && config.tiers.length ? config.tiers : [100, 250, 500, 1000, 2000]).map(tier => {
+                {(Array.isArray(config.tiers) && config.tiers.length ? config.tiers : [1000, 2000]).map(tier => {
                   const tierEuros = (tier / redeemRatio).toFixed(2).replace('.', ',');
                   const unlocked = balance >= tier;
                   const missing = unlocked ? 0 : tier - balance;
@@ -1643,7 +1643,7 @@ function ScreenLoyalty({ go }) {
         {!isOptedOut && (
           <div style={{ padding: '24px 20px 0' }}>
             <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
-            {/* [GOAL-SYNC 2026-07-08] Taux dérivés de la config RÉELLE (1 pt/€ · 100 pts = 1 €) */}
+            {/* [GOAL-SYNC 2026-07-08] Taux dérivés de la config RÉELLE (10 pt/€ · 100 pts = 1 €) */}
             <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
               {earnRatio} pt{earnRatio > 1 ? 's' : ''} par € dépensé · {redeemRatio} pts = 1 € de réduction{config.expires_after_days ? ' · Validité ' + config.expires_after_days + ' jours' : ''}
             </div>
