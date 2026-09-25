@@ -534,11 +534,24 @@ export default {
       } catch (_) {}
     },
 
+    // [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Sur le numpad tactile
+    // (le SEUL moyen de taper ce champ à la borne — jamais de clavier physique),
+    // un numéro FR complet (10 chiffres) déclenche la vérification tout seul :
+    // encore un tap économisé, sur celui qui compte le plus (la toute première
+    // interaction). Restreint au numpad (jamais au champ texte v-model, utilisé
+    // par les tests et un éventuel clavier externe) pour ne jamais auto-soumettre
+    // une saisie encore en cours par un autre moyen. Ne se déclenche jamais deux
+    // fois pour la même frappe (loading déjà vrai) ni sur un CODE fidélité
+    // numérique (8 caractères chez nous, jamais 10 — cf. looksLikePhoneNumber).
     handleNumpad(key) {
       if (key === 'del') {
         this.code = this.code.slice(0, -1);
-      } else if (this.code.length < 20) {
-        this.code += key;
+        return;
+      }
+      if (this.code.length >= 20) return;
+      this.code += key;
+      if (!this.loading && this.code.length === 10 && this.looksLikePhoneNumber(this.code)) {
+        this.checkLoyalty();
       }
     },
 
@@ -561,6 +574,23 @@ export default {
       // attendu d'un clavier matériel avec "Enter".
       if (this.vkeybActiveField === 'registerName' && this.registerPhone === '') {
         this.vkeybActiveField = 'registerPhone';
+        return;
+      }
+      /*
+       * [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Parcours rapide
+       * (téléphone déjà connu, phoneCapturedFromCheck) : le prénom est le SEUL
+       * champ requis. Sans cette garde, ✓ après le prénom route vers l'email —
+       * TOUJOURS vide à ce stade puisqu'il est facultatif et pas encore visité —
+       * forçant un second ✓ juste pour le sauter. Ça défait exactement
+       * l'optimisation "un seul champ" : ✓ doit soumettre directement. Le client
+       * qui VEUT ajouter un email le fait en touchant CE champ lui-même avant de
+       * valider — cette garde ne s'applique qu'au routage automatique de ✓.
+       */
+      if (this.vkeybActiveField === 'registerName' && this.phoneCapturedFromCheck) {
+        this.vkeybActiveField = null;
+        if (this.registerName.trim() && this.registerPhone.trim() && !this.registerLoading) {
+          this.submitRegister();
+        }
         return;
       }
       if (this.vkeybActiveField === 'registerPhone' && this.registerEmail === '') {
@@ -624,6 +654,10 @@ export default {
           this.registerError = null;
           this.phoneCapturedFromCheck = true;
           this.step = 'register';
+          // [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Le clavier virtuel
+          // s'ouvre tout seul sur le prénom — un tap de moins que devoir toucher le
+          // champ soi-même pour l'unique information encore à saisir.
+          this.$nextTick(() => { this.vkeybActiveField = 'registerName'; });
         } else {
           const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
           this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
@@ -641,6 +675,7 @@ export default {
       this.registerPhone = '';
       this.registerEmail = '';
       this.registerError = null;
+      this.vkeybActiveField = null;
       this.step = 'register';
     },
 
@@ -652,6 +687,11 @@ export default {
         this.registerPhone = '';
       }
       this.phoneCapturedFromCheck = false;
+      // [OPTIM SOUSCRIPTION 2026-09-25] Le clavier virtuel a pu s'ouvrir tout seul
+      // sur le prénom (auto-focus) ou être en cours d'usage : le laisser ouvert en
+      // quittant l'écran d'inscription le ferait flotter, orphelin, par-dessus la
+      // saisie du numéro (KsVirtualKeyboard est monté hors du v-if de step).
+      this.vkeybActiveField = null;
       this.step = 'input';
     },
 
@@ -755,6 +795,10 @@ export default {
         this.discountValue = 0;
         this.code = data.loyalty_code || '';
         this.showToast(this.$t('kiosk.loyalty_screen.toast_welcome', { name: this.customer.name }), 'success', 3500);
+        // [OPTIM SOUSCRIPTION 2026-09-25] Le clavier virtuel a pu s'auto-ouvrir sur
+        // le prénom — le fermer avant de quitter l'écran, sinon il flotte par-dessus
+        // le solde (KsVirtualKeyboard est monté hors du v-if de step).
+        this.vkeybActiveField = null;
         this.step = 'balance';
         // [PHASE-6.4] Analytics : registration réussie (anonyme — pas de phone/email ici).
         try { kioskAnalytics.track('loyalty_scanned', { registration: true }); } catch (_) {}

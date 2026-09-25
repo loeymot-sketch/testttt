@@ -27,6 +27,15 @@ const { test, expect } = require('@playwright/test');
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8766';
 const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 
+// [Root cause 2026-09-25] `.ks-vkeyb` (clavier virtuel) est conçu pour l'écran
+// borne réel 1080x1920 portrait (commentaire CSS du composant : "Les chiffres
+// 1080x1920 : le clavier occupe ~30% de la hauteur borne"). Au viewport
+// Playwright par défaut (1280x720, paysage), sa touche "OK" atterrissait hors
+// du viewport testé — jamais un défaut produit, un test qui simulait le mauvais
+// écran. Repro confirmée : le clic bouclait indéfiniment sur "element is
+// outside of the viewport" jusqu'au timeout, avant ce fix.
+test.use({ viewport: { width: 1080, height: 1920 } });
+
 // Même helper que kiosk-loyalty-register-e2e.spec.js : les champs register sont
 // `readonly` (le clavier virtuel maison les pilote), donc on pose la valeur via
 // le native setter + events, comme le ferait le clavier — sans dépendre de sa
@@ -102,13 +111,20 @@ test('borne : numéro inconnu (vrai /check) → un seul champ (prénom) → comp
   await expect(page.getByTestId('kiosk-loyalty-register-phone'), 'le téléphone ne doit jamais être redemandé').toHaveCount(0);
   await expect(page.getByTestId('kiosk-loyalty-register-name')).toBeVisible();
 
-  // 4) Il tape SEULEMENT son prénom (email volontairement laissé vide — reste optionnel,
-  //    ne doit jamais bloquer la souscription).
+  // 4) Le clavier virtuel s'est ouvert TOUT SEUL sur le prénom (pas de tap requis
+  //    pour y accéder). Il tape SEULEMENT son prénom (email volontairement laissé
+  //    vide — reste optionnel, ne doit jamais bloquer la souscription).
+  await expect(page.getByTestId('kiosk-vkeyb'), 'le clavier virtuel doit s\'ouvrir tout seul (2e tap économisé)').toBeVisible({ timeout: 5000 });
   await setInputValue(page, 'kiosk-loyalty-register-name', firstName);
 
-  const submitBtn = page.locator('.kiosk-loyalty-step .kiosk-btn-primary.full');
-  await expect(submitBtn).toContainText(/créer mon compte/i);
-  await submitBtn.click();
+  // [Root cause 2026-09-25] Le clavier virtuel n'a pas de "tap outside pour
+  // fermer" — il recouvre le bouton "Créer mon compte" tant qu'il est ouvert.
+  // Le geste réel du client est donc de valider avec le ✓ du clavier, pas avec
+  // le bouton en dessous (repro : cliquer ce bouton pendant que le clavier est
+  // ouvert boucle indéfiniment sur "élément intercepté"). onVkeybSubmit() a été
+  // corrigé pour soumettre DIRECTEMENT depuis le prénom quand le téléphone est
+  // déjà connu (sinon ✓ routait vers l'email vide, un détour inutile).
+  await page.getByTestId('kiosk-vkeyb-submit').click();
 
   // Consentement RGPD requis avant le premier POST /register.
   await expect(page.getByTestId('kiosk-consent-modal')).toBeVisible({ timeout: 8000 });
@@ -125,4 +141,32 @@ test('borne : numéro inconnu (vrai /check) → un seul champ (prénom) → comp
   expect(registerRequestBody, 'le /loyalty/register doit avoir été appelé').toBeTruthy();
   expect(registerRequestBody.phone, 'le téléphone envoyé au serveur doit être EXACTEMENT celui tapé au départ, jamais redemandé/modifié').toBe(phone);
   expect(registerRequestBody.name, 'le prénom saisi doit être transmis').toBe(firstName);
+});
+
+// [OPTIM SOUSCRIPTION 2026-09-25 · test-e2e et optimise] Le numpad tactile est le
+// SEUL moyen réel de taper ce champ à la borne (pas de clavier physique) — ce test
+// tape chaque chiffre en cliquant les vrais boutons du DOM, pas en posant la valeur
+// directement, pour prouver le vrai geste tactile plutôt que le raccourci de test.
+test('borne : le numpad déclenche la vérification tout seul au 10e chiffre (sans toucher "Vérifier")', async ({ page, request }) => {
+  await loginAndOpenLoyalty(page, request);
+
+  const suffix = String(Date.now()).slice(-8);
+  const phone = `06${suffix}`.slice(0, 10);
+
+  let checkRequestFired = false;
+  page.on('response', (res) => {
+    if (/\/frontend\/loyalty\/check$/.test(res.url())) checkRequestFired = true;
+  });
+
+  for (const digit of phone) {
+    await page.locator('.kiosk-numpad-btn', { hasText: new RegExp(`^${digit}$`) }).click();
+  }
+  // Volontairement AUCUN clic sur "Vérifier" — le 10e chiffre doit avoir suffi.
+
+  await expect(page.getByTestId('kiosk-loyalty-phone-confirm'), 'le numpad seul doit avoir déclenché la vérification et basculé sur l\'inscription').toBeVisible({ timeout: 8000 });
+  expect(checkRequestFired, 'le vrai /loyalty/check doit être parti tout seul au 10e chiffre').toBe(true);
+  await expect(page.getByTestId('kiosk-loyalty-phone-confirm')).toContainText(phone);
+
+  // Bonus : le clavier virtuel s'est ouvert tout seul sur le prénom (2e tap économisé).
+  await expect(page.getByTestId('kiosk-loyalty-register-name')).toBeVisible();
 });
