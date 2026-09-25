@@ -17,9 +17,12 @@
 // (repro : `php artisan cache:clear` n'a même pas suffi à le lever avant la
 // prochaine minute). kiosk-loyalty-register-e2e.spec.js avait DÉJÀ documenté ce
 // piège et mockait /register pour cette raison précise — corrigé ici en suivant
-// la même convention. Le /check réel, lui, a un throttle plus large (10/min) et
-// est la partie que ce test doit prouver de bout en bout (c'est lui qui décide
-// d'ouvrir l'inscription rapide) ; /register est déjà prouvé par ailleurs
+// la même convention. Un unique scénario de cette spec garde le /check réel et
+// prouve la bascule 404 → inscription rapide. Le scénario numpad ci-dessous
+// intercepte son 404 : quatre checks dans une même campagne partagent la même
+// borne E2E et peuvent légitimement atteindre le throttle:10,1. Il teste le
+// geste tactile et la transition Vue, pas une seconde fois le rate limiter ;
+// /register est déjà prouvé par ailleurs
 // (KioskRegisterKeepsEmailTest côté serveur, kiosk-loyalty-register-e2e.spec.js
 // côté UI).
 const { test, expect } = require('@playwright/test');
@@ -153,9 +156,16 @@ test('borne : le numpad déclenche la vérification tout seul au 10e chiffre (sa
   const suffix = String(Date.now()).slice(-8);
   const phone = `06${suffix}`.slice(0, 10);
 
-  let checkRequestFired = false;
-  page.on('response', (res) => {
-    if (/\/frontend\/loyalty\/check$/.test(res.url())) checkRequestFired = true;
+  // Le premier scénario garde l'appel réel. Ici, une réponse 404 déterministe
+  // isole le pavé tactile de la protection anti-enumération du serveur.
+  let checkedCode = null;
+  await page.route('**/api/frontend/loyalty/check', async (route) => {
+    checkedCode = route.request().postDataJSON()?.code || null;
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Non trouvé' }),
+    });
   });
 
   for (const digit of phone) {
@@ -164,7 +174,7 @@ test('borne : le numpad déclenche la vérification tout seul au 10e chiffre (sa
   // Volontairement AUCUN clic sur "Vérifier" — le 10e chiffre doit avoir suffi.
 
   await expect(page.getByTestId('kiosk-loyalty-phone-confirm'), 'le numpad seul doit avoir déclenché la vérification et basculé sur l\'inscription').toBeVisible({ timeout: 8000 });
-  expect(checkRequestFired, 'le vrai /loyalty/check doit être parti tout seul au 10e chiffre').toBe(true);
+  expect(checkedCode, 'le numpad doit avoir soumis automatiquement ses dix chiffres au 10e tap').toBe(phone);
   await expect(page.getByTestId('kiosk-loyalty-phone-confirm')).toContainText(phone);
 
   // Bonus : le clavier virtuel s'est ouvert tout seul sur le prénom (2e tap économisé).
