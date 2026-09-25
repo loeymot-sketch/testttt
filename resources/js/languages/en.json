@@ -2335,7 +2335,12 @@
             "toast_saved": "Loyalty saved — points credited after the order",
             "toast_welcome": "Welcome {name}! Loyalty account created.",
             "register_error_generic": "Could not sign up. Try again.",
-            "consent_required": "Sign-up cancelled. Your consent is required to create a loyalty account."
+            "consent_required": "Sign-up cancelled. Your consent is required to create a loyalty account.",
+            "quick_register_sub": "This number isn't registered yet — just your first name and you're in!",
+            "quick_register_submit": "Create my loyalty account",
+            "not_my_number": "That's not my number",
+            "label_first_name": "First name *",
+            "placeholder_first_name": "Your first name"
         },
         "app": {
             "init_loading": "Starting…",

@@ -2396,7 +2396,12 @@
             "toast_saved": "Fidélité enregistrée — points crédités après la commande",
             "toast_welcome": "Bienvenue {name} ! Compte fidélité créé.",
             "register_error_generic": "Inscription impossible. Réessayez.",
-            "consent_required": "Inscription annulée. Votre consentement est requis pour créer un compte fidélité."
+            "consent_required": "Inscription annulée. Votre consentement est requis pour créer un compte fidélité.",
+            "quick_register_sub": "Ce numéro n'est pas encore inscrit — juste votre prénom et c'est fait !",
+            "quick_register_submit": "Créer mon compte fidélité",
+            "not_my_number": "Ce n'est pas mon numéro",
+            "label_first_name": "Prénom *",
+            "placeholder_first_name": "Votre prénom"
         },
         "app": {
             "init_loading": "Démarrage en cours…",
