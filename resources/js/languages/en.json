@@ -310,8 +310,8 @@
         "cancel_order_error": "Impossible d'annuler cette commande.",
         "cancel_order_reason_required": "Saisissez un motif d'annulation (min. 3 caractères).",
         "cancel_kiosk_cash": {
-            "title": "Cancel this kiosk order?",
-            "warning": "This action is irreversible. The paid order will be canceled.",
+            "title": "Cancel this order?",
+            "warning": "This action is irreversible.",
             "reason_required": "Reason required (min 3 characters)",
             "confirm_btn": "Yes, cancel the order",
             "back_btn": "Back"
