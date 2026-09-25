@@ -116,7 +116,9 @@ test.describe('KDS — interface cuisine', () => {
     await expect(bumpInfoToggle).toHaveAttribute('aria-expanded', 'false');
 
     // Step 6 — Si carte commande visible : tenter status transition réelle.
-    const orderCard = page.locator('[data-kds-order-card]').first();
+    // V2 rend les cartes via KdsOrderCard (`.kds-card`, role=region) alors que
+    // l'attribut data-kds-order-card n'existe que dans le layout legacy.
+    const orderCard = page.locator('.kds-card').first();
     const hasCard = await orderCard.isVisible({ timeout: 4_000 }).catch(() => false);
 
     if (hasCard) {
@@ -125,12 +127,19 @@ test.describe('KDS — interface cuisine', () => {
         hasText: /prêt|preparing|preparation|en préparation|prepared|done|terminé/i,
       }).first();
       if (await statusBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        const orderId = await orderCard.getAttribute('data-order-id');
         await statusBtn.click({ timeout: 5_000 });
-        await page.waitForTimeout(1_500);
 
-        // Business assertion : la carte a soit changé de colonne, soit reflète un nouveau status
-        const newText = await orderCard.innerText().catch(() => '');
-        expect(newText.length).toBeGreaterThan(0);
+        // Une transition réussie retire la carte de la file active et la place
+        // dans « Récemment servies ». Ne pas relire l'ancien locator : il est
+        // volontairement détaché après la mutation.
+        if (orderId) {
+          await expect(page.getByText(new RegExp(`Commande N°${orderId} servie`))).toBeVisible({
+            timeout: 10_000,
+          });
+        } else {
+          await expect(page.getByText(/Récemment servies/i)).toBeVisible({ timeout: 10_000 });
+        }
       }
     } else {
       // Pas de commandes en cuisine en environnement de test : le toolbar et

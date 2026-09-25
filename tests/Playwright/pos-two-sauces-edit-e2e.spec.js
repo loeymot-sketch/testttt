@@ -44,7 +44,17 @@ test.describe('caisse : deux sauces survivent à la modification', () => {
     const modal = page.locator('#item-variation-modal');
     const sauceSection = modal.locator('.sauce-section');
     await expect(modal).toBeVisible({ timeout: 10_000 });
+    // Le support est obligatoire pour un sandwich : remplir explicitement le
+    // fixture, plutôt que de dépendre d'un ancien défaut implicite du wizard.
+    const painButton = modal.locator('.pain-section button').filter({ hasText: /Pain/i }).first();
+    await expect(painButton).toBeVisible();
+    await painButton.click();
     await modal.locator('.viande-section .wizard-viande-tile').filter({ hasText: /poulet marin/i }).first()
+      .locator('.viande-tile-add').click();
+    // Cayenne exige deux viandes. Le correctif POS récent supprime à juste titre
+    // la viande fantôme par défaut : le fixture doit donc sélectionner les deux
+    // choix explicitement avant de vérifier la conservation des deux sauces.
+    await modal.locator('.viande-section .wizard-viande-tile').filter({ hasText: /viande hachée/i }).first()
       .locator('.viande-tile-add').click();
 
     const andalouse = sauceSection.locator('.sauce-chip').filter({ hasText: /andalouse/i }).first();
