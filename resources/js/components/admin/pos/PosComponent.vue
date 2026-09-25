@@ -542,6 +542,9 @@
                 :data-testid="`pos-shortcut-ready-${o.id}`"
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
+                     quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
+                <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <button
                   type="button"
@@ -609,6 +612,9 @@
                 :data-testid="`pos-shortcut-cash-${o.id}`"
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
+                     quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
+                <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Libellé « Tél » distinct pour une commande
                      téléphone (source_surface='phone') dans la file « à encaisser ». -->
                 <span
@@ -716,6 +722,9 @@
                 :data-testid="`pos-shortcut-web-${o.id}`"
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
+                     quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
+                <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <!-- [C1 2026-07-18] Accept INLINE (chemin principal) + Détails (gestion complète). -->
                 <span class="pos-shortcuts__actions">
@@ -793,6 +802,9 @@
                 :data-testid="`pos-shortcut-web-paid-${o.id}`"
               >
                 <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
+                     quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
+                <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <span class="pos-shortcuts__actions">
                   <button
@@ -2063,6 +2075,7 @@
             >
               <div class="kiosk-cash-order-head">
                 <span class="kiosk-cash-order-num">N° {{ order.queue_number || order.order_serial_no }}</span>
+                <span v-if="shortcutDateBadge(order)" class="pos-shortcuts__date-badge" :data-testid="`kiosk-cash-date-${order.id}`">{{ shortcutDateBadge(order) }}</span>
                 <div class="kiosk-cash-order-head-actions">
                   <button
                     type="button"
@@ -5564,6 +5577,29 @@ export default {
                 return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             } catch (_) { return ''; }
         },
+        /**
+         * [ULTRA-AUDIT 2026-09-26 · P0-18/A2] `queue_number` ("N°A0043") est un compteur
+         * QUOTIDIEN par branche (OrderService::allocateQueueNumber — remise à zéro chaque
+         * business_date, par conception, PAS un bug). Une commande non encaissée depuis
+         * plusieurs jours peut donc rester dans CETTE MÊME file "à encaisser" qu'une commande
+         * fraîche portant le numéro court IDENTIQUE — les 5 cartes courtes de ce panneau
+         * (`pos-shortcuts__num`) n'affichaient QUE ce numéro, sans date, aucun moyen de les
+         * distinguer sans ouvrir chaque commande. Retourne '' pour une commande du jour
+         * (cas normal, pas de bruit visuel) ; sinon "jj/mm" pour lever l'ambiguïté.
+         */
+        shortcutDateBadge(o) {
+            const iso = o && o.created_at;
+            if (!iso) return '';
+            try {
+                const d = new Date(iso);
+                const today = new Date();
+                const sameDay = d.getFullYear() === today.getFullYear()
+                    && d.getMonth() === today.getMonth()
+                    && d.getDate() === today.getDate();
+                if (sameDay) return '';
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            } catch (_) { return ''; }
+        },
         // ──────────────────────────────────────────────────────────────────
         onlyNumber: function (e) {
             return appService.onlyNumber(e);
@@ -7536,6 +7572,21 @@ export default {
   color: var(--pos-v5-muted, #555);
   font-weight: 600;
   text-align: right;
+  white-space: nowrap;
+}
+/* [ULTRA-AUDIT 2026-09-26 · P0-18/A2] Badge date (rouge, alerte) — n'apparaît QUE si une
+   commande de la file "à encaisser" n'est pas du jour, pour ne jamais confondre deux
+   commandes qui partagent le même N° court (compteur quotidien remis à zéro par branche). */
+.pos-shortcuts__date-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 /* [C4-CAISSE-TELEPHONE 2026-07-07] Badge « Tél » dans la file à encaisser (indigo, distinct). */
