@@ -245,5 +245,15 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   (`PHASE: CLOSED` dans l’en-tête, `PHASE: EXECUTE` dans la table). Ces points
   empêchent une clôture formelle honnête; ils ne constituent pas un échec des
   tests produit ci-dessus.
+- **Diagnostic borne réseau (26/09/2026)** : la sonde HTTPS forcée IPv4
+  retourne `kioskAutoLogin: null`, tandis que la sonde IPv6 autorisée retourne
+  bien un payload d’auto-connexion (valeurs sensibles masquées dans ce
+  rapport). Le comportement observé est donc cohérent avec la liste blanche
+  IPv6 configurée, et non avec une page blanche applicative. La borne doit
+  utiliser le chemin réseau autorisé ou son URL `machine_key`; aucune ouverture
+  globale IPv4 n’a été ajoutée.
+- Le contrat backend correspondant a été rejoué immédiatement :
+  `KioskAutoLoginGateTest` **10/10** (IP publique bloquée, allowlist IPv6,
+  chemin secret, reload grant, anti-spoof `X-Forwarded-For`, hors-route).
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
