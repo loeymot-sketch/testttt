@@ -269,5 +269,15 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   explicites; les avertissements observés (`menu.roue`, `min_hint`) sont donc
   recensés pour nettoyage dédié, mais n’ont pas provoqué d’échec fonctionnel
   dans la campagne exhaustive.
+- **Garde-fous architecture/performance (26/09/2026)** :
+  `pos:lint:status` passe (**38 fichiers**). `pos:lint:pricing` reste en échec
+  sur **4 occurrences** (un calcul d’écart d’encaissement dans
+  `PosCounterCollectModal.vue` et trois blocs de calcul borne sans sign-off
+  conforme); aucune modification n’a été improvisée hors plan. Le contrôle
+  bundle retourne **17 dépassements** sur des artefacts `kiosk-errors`,
+  `kiosk-shell` et `kiosk-wizard-step` (les bundles POS/admin n’ont pas de
+  dépassement budgété). Ces deux alertes sont désormais explicitement
+  tracées comme travaux de correction/gate, distincts des tests fonctionnels
+  verts.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
