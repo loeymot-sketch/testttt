@@ -1413,8 +1413,22 @@ export default {
                     // (attribute_name=attribut, variation_name=valeur).
                     // Sans ce repli, une ligne à plusieurs sauces restaurait
                     // la sauce par défaut du wizard et écrasait le choix client.
-                    const attrName = variationEntry.variation_name || variationEntry.attribute_name || variationEntry.attribute || '';
-                    const varName = variationEntry.name || (variationEntry.attribute_name ? variationEntry.variation_name : '') || '';
+                    //
+                    // [ULTRA-AUDIT 2026-09-26 · P0-01] `attribute_name` DOIT être vérifié
+                    // EN PREMIER, jamais `variation_name`. Ce dernier existe dans LES DEUX
+                    // formes mais ne PORTE PAS le même sens selon laquelle : forme POS,
+                    // c'est l'attribut ("Viande 2") ; forme snapshot KDS, c'est la VALEUR
+                    // ("Poulet mariné"). L'ancien ordre testait `variation_name` d'abord —
+                    // pour une entrée snapshot KDS, ça affectait donc la VALEUR à `attrName`
+                    // ("poulet mariné" ne contient jamais "viande"), la branche de
+                    // correspondance entière était silencieusement sautée, et le choix
+                    // disparaissait de la restauration. Repro terrain (rapport propriétaire) :
+                    // Tacos XL 3 viandes ajouté puis rouvert via "Modifier" → la modale ne
+                    // rechargeait qu'UNE seule viande. `attribute_name` n'existe QUE dans la
+                    // forme snapshot (jamais posé par `setVariationQuantity`, ligne ~785),
+                    // donc le vérifier en premier ne casse jamais la forme POS native.
+                    const attrName = variationEntry.attribute_name || variationEntry.variation_name || variationEntry.attribute || '';
+                    const varName = variationEntry.attribute_name ? variationEntry.variation_name : (variationEntry.name || '');
                     const attrLower = attrName.toLowerCase();
                     
                     // Pain / Galette — match by exact attrName first, then fallback
