@@ -204,6 +204,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   **16/16**. Aucun identifiant de démonstration n’est servi en production et
   les en-têtes de sécurité restent conformes.
 
+- **Suite sécurité Feature complète** : `php artisan test
+  tests/Feature/Security --no-coverage` passe **221/221 en 68,86 s**.
+  Couverture : authz admin/POS, tokens borne, IDOR, rate limits, CORS/CSP,
+  uploads, secrets, PII fidélité, anti-SSRF mail/impression et protections
+  d’installation.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
