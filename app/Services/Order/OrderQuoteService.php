@@ -78,7 +78,7 @@ class OrderQuoteService
         $items = $this->safeJsonDecode((string) $request->input('items', '[]'));
         $items = is_array($items) ? $items : [];
 
-        $this->assertVariationPresenceConstraints($items);
+        $this->assertVariationPresenceConstraints($items, $branchId);
 
         $pricing = $this->calculatePricing($request, $surface, $branchId, $items, $actor);
         $this->assertManualDiscountAllowed($request, $surface, $pricing, $actor);
@@ -229,20 +229,30 @@ class OrderQuoteService
      *
      * @param  array<int, object>  $items  stdClass items from safeJsonDecode
      */
-    private function assertVariationPresenceConstraints(array $items): void
+    private function assertVariationPresenceConstraints(array $items, int $branchId): void
     {
         if ($items === []) {
             return;
         }
 
-        $normalized = array_map([$this, 'itemForVariationRule'], $items);
+        // A POS manual supplement deliberately has no catalogue item_id and no
+        // variations. It is priced and authorized by PricingService, not by the
+        // catalogue-composer constraint.
+        $normalized = array_filter(
+            array_map([$this, 'itemForVariationRule'], $items),
+            static fn (array $item): bool => $item !== []
+        );
+        if ($normalized === []) {
+            return;
+        }
 
         $errors = [];
         \App\Rules\MultiVariationConstraint::validateCollectionKeyedByItemIndex(
             $normalized,
             function (int $index, string $message) use (&$errors): void {
                 $errors["items.{$index}.item_variations"][] = $message;
-            }
+            },
+            $branchId,
         );
 
         if ($errors !== []) {
@@ -262,6 +272,9 @@ class OrderQuoteService
             $item = (array) $item;
         }
         if (! is_array($item)) {
+            return [];
+        }
+        if (($item['line_type'] ?? 'catalog') === \App\Models\OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT) {
             return [];
         }
 
@@ -665,7 +678,12 @@ class OrderQuoteService
     {
         return array_map(function ($item): array {
             return [
+                // The manual label/amount are fiscal intent too: a signed quote
+                // must not be reusable with a different free-form supplement.
+                'line_type' => (string) ($item->line_type ?? 'catalog'),
                 'item_id' => (int) ($item->item_id ?? 0),
+                'manual_label' => trim((string) ($item->manual_label ?? '')),
+                'manual_amount' => $this->money($item->manual_amount ?? 0),
                 'variations' => $this->normalizeForCanonical($item->item_variations ?? []),
                 'extras' => $this->normalizeForCanonical($item->item_extras ?? []),
                 'addons' => $this->normalizeForCanonical($item->item_addons ?? []),

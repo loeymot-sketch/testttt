@@ -1,0 +1,79 @@
+# G3 · T3.5 — attestation de la chaîne NF525 après correctif
+Date : 2026-09-03 02:29:16
+HEAD : 34519880d  branche : pos/category-first-caisse-2026-06-23
+Base : DB_CONNECTION=mysql  DB_DATABASE=foodking_e2e (arbre de développement)
+Correctif en place : InterrupteurController::update() — regler() PUIS audit, dans une
+transaction ; AuditLogService (zone gelée) non touché.
+
+## 1. php artisan fiscal:verify-chain --all — AVANT la bascule de contrôle
+  + branch=1 CHAIN OK
+  + branch=2 CHAIN OK
+  + branch=7 CHAIN OK
+  + branch=8 CHAIN OK
+  + branch=9 CHAIN OK
+  + branch=10 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (6 total)
+
+## 2. Aller-retour RÉEL sur l'interrupteur « wheel », par le contrôleur corrigé
+Deux appels successifs à update() (activation, puis retour à l'état initial), acteur
+Admin réel de la base. Objectif : montrer un AJOUT, jamais une réécriture.
+
+Acteur : #1 admin@lecayenne.fr (branch_id=1)
+wheel avant : false
+PUT actif=true -> HTTP 200
+PUT actif=false -> HTTP 200
+
+--- AVANT ---
+count(*)            = 8709
+MAX(id)             = 8764
+dernier current_hash= c1ce6b18e3055d9c080baca522583d9e408efb239f7388a061196f840db42156
+
+--- APRÈS 2 bascules (aller-retour) ---
+count(*)            = 8711   (delta 2)
+MAX(id)             = 8766   (delta 2)
+dernier current_hash= d40a1dcf4051b7a9904f93f0c9cfeb3352c9f0d9fcbebdc69aa67b8679303dd0
+
+--- LA LIGNE DE TÊTE D'AVANT (id 8764) A-T-ELLE BOUGÉ ? ---
+action      : INCHANGÉ
+prev_hash   : INCHANGÉ
+current_hash: INCHANGÉ
+
+wheel après aller-retour : false (initial false)
+
+--- LES 2 LIGNES AJOUTÉES ---
+id=8765 branch=1 user=1 action=pilotage.interrupteur.bascule
+   payload = {"ip": "127.0.0.1", "par": "admin@lecayenne.fr", "apres": true, "avant": false, "interrupteur": "wheel", "correlation_id": "g3-t35-attestation"}
+   prev    = c1ce6b18e3055d9c080baca5...
+   current = 4a53e0ca0a6888558354df63...
+id=8766 branch=1 user=1 action=pilotage.interrupteur.bascule
+   payload = {"ip": "127.0.0.1", "par": "admin@lecayenne.fr", "apres": false, "avant": true, "interrupteur": "wheel", "correlation_id": "g3-t35-attestation"}
+   prev    = 4a53e0ca0a6888558354df63...
+   current = d40a1dcf4051b7a9904f93f0...
+
+## 3. php artisan fiscal:verify-chain --all — APRÈS les deux bascules
+  + branch=1 CHAIN OK
+  + branch=2 CHAIN OK
+  + branch=7 CHAIN OK
+  + branch=8 CHAIN OK
+  + branch=9 CHAIN OK
+  + branch=10 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (6 total)
+
+## Lecture
+- count(*) : 8709 -> 8711, soit +2 — exactement le nombre de bascules réussies.
+- MAX(id)  : 8764 -> 8766, +2 — aucun identifiant réutilisé.
+- MAX(current_hash) change parce qu'une NOUVELLE tête a été ajoutée, pas parce qu'une
+  ligne existante aurait été resignée : la ligne de tête d'avant (id 8764) a ses trois
+  colonnes action / prev_hash / current_hash INCHANGÉES après l'opération.
+- Le chaînage est continu : prev_hash de la 1re ligne ajoutée == current_hash de la
+  tête précédente, et prev_hash de la 2e == current_hash de la 1re (visible ci-dessus).
+- CHAIN OK sur les 6 branches actives, avant ET après.
+- « wheel » est revenu à son état initial (false) : cette vérification n'a rien laissé
+  de modifié dans la configuration du restaurant.
+
+## Ce que cette attestation NE prouve pas
+- Elle porte sur la base de développement foodking_e2e, pas sur la production.
+- Elle atteste l'AJOUT et la non-réécriture ; la preuve que l'ÉCHEC ne laisse aucune
+  ligne est apportée par le banc (InterrupteurAuditApresMutationTest, cas 1), pas ici :
+  provoquer une vraie panne d'écriture sur la base réelle n'aurait rien prouvé de plus
+  et aurait été risqué.

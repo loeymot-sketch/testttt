@@ -63,7 +63,16 @@ class OrderDetailsResource extends JsonResource
             'order_datetime' => AppLibrary::datetime($this->order_datetime),
             'order_date' => AppLibrary::date($this->order_datetime),
             'order_time' => AppLibrary::time($this->order_datetime),
-            'delivery_date' => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
+            // [C-003 2026-08-25] `delivery_date` était calculé INCONDITIONNELLEMENT
+            // depuis `order_datetime` : les DEUX branches du ternaire rendaient une
+            // date non vide, donc le champ FABRIQUAIT un créneau de retrait à partir
+            // de la date de saisie — une donnée que personne n'a jamais posée. Le
+            // garde `v-if="order.delivery_date || order.delivery_time"` de la fiche
+            // (PosOrderShowComponent.vue:54) était par construction toujours vrai, et
+            // le commentaire du 2026-07-29 qui promettait « la ligne disparaît si
+            // aucun créneau n'est posé » était infaisable. Un champ ne doit jamais
+            // inventer sa valeur pour justifier son libellé.
+            'delivery_date' => $this->resolvePickupSlotDate(),
             'delivery_time' => AppLibrary::deliveryTime($this->delivery_time),
             // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible d'une commande programmée
             // (NULL = ASAP). ISO 8601 comme created_at — le client web/app affiche
@@ -172,6 +181,36 @@ class OrderDetailsResource extends JsonResource
             'operator_name' => $receipt['operator_name'],
             'payments_breakdown' => $this->buildPaymentsBreakdown(),
         ];
+    }
+
+    /**
+     * [C-003 2026-08-25] Date du créneau de retrait/livraison — `null` s'il n'y
+     * a PAS de créneau.
+     *
+     * Deux marques, et deux seulement, attestent qu'un créneau a réellement été
+     * posé sur une commande :
+     *   1. `is_advance_order = YES` — commande prise pour le lendemain ;
+     *      la date du créneau est J+1 (comportement historique conservé).
+     *   2. `delivery_time` interprétable comme « HH:MM - HH:MM » — créneau
+     *      explicite sur la commande du jour ; la date du créneau est celle de
+     *      la commande. `AppLibrary::deliveryTime()` rend '' dès que la valeur
+     *      n'a pas cette forme : une heure illisible n'est pas un créneau.
+     *
+     * Hors de ces deux cas — commande borne, caisse, à emporter immédiate, soit
+     * la quasi-totalité du parc V1 LOCAL — aucun créneau n'existe, et le champ
+     * doit rester vide plutôt que de recopier la date de saisie.
+     */
+    private function resolvePickupSlotDate(): ?string
+    {
+        if ($this->is_advance_order == Ask::YES) {
+            return AppLibrary::increaseDate($this->order_datetime, 1);
+        }
+
+        if (AppLibrary::deliveryTime($this->delivery_time) !== '') {
+            return AppLibrary::date($this->order_datetime);
+        }
+
+        return null;
     }
 
     /**

@@ -23,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
@@ -190,11 +191,35 @@ class GuestSignupController extends Controller
             }
             $this->envoyerCodeParEmail($request);
 
-            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code')];
+            // [Root cause 2026-09-19] Cette branche (compte inconnu / première inscription
+            // par ce canal) est EXACTEMENT celle où envoyerCodeParEmail() peut avoir décidé,
+            // en silence et à raison (anti-usurpation), de n'envoyer le code NULLE PART — un
+            // numéro déjà rattaché à un compte AYANT DE LA VALEUR (points/commandes) sans
+            // e-mail au dossier. Le message reste volontairement IDENTIQUE dans les deux cas
+            // (anti-énumération inchangée : rien ne dit ICI si ce client est dans ce cas) mais
+            // donne désormais TOUJOURS un recours, plutôt que de promettre un code qui
+            // n'arrivera peut-être jamais sans qu'aucune suite ne soit possible.
+            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code_with_fallback')];
             $this->ajouterCodeDev($payload, (string) $request->post('phone'));
 
             return response($payload);
         } catch (Exception $exception) {
+            // [Root cause 2026-09-18, propriétaire : « parfois un client enregistré, je ne
+            // trouve pas son compte »] envoyerCodeParEmail() écrit la ligne `otps` AVANT de
+            // tenter l'envoi du code par e-mail. Si l'envoi échoue (SMTP injoignable, e-mail
+            // invalide, panne du fournisseur), on atterrit ici SANS AUCUNE trace journalisée
+            // nulle part : le client voit un échec générique, aucun compte n'est jamais créé
+            // (register() n'est appelé que depuis verify(), jamais atteint ici), et le
+            // propriétaire n'a rien pour retrouver le cas quand un client dit s'être inscrit.
+            // On journalise le strict nécessaire pour retrouver CE numéro précis a posteriori —
+            // jamais l'e-mail en clair (même discipline que PosCustomerLookupService : ne pas
+            // transformer ce journal en carnet d'adresses).
+            Log::warning('guest_signup.email_login_failed', [
+                'phone' => (string) $request->post('phone'),
+                'email_domain' => Str::after((string) $request->post('email'), '@') ?: null,
+                'error' => $exception->getMessage(),
+            ]);
+
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }

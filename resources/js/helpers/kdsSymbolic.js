@@ -68,7 +68,8 @@ const SAUCE_TABLE = [
     [/burger/, 'Burg'],
     [/algerien/, 'ALG'],
     [/barbecue|bbq/, 'BBQ'],
-    [/harissa/, 'HAR'],
+    // Harissa = HH so it cannot be confused with Hannibal (HAN).
+    [/harissa/, 'HH'],
     [/fromage/, 'FRO'],
     [/spicy/, 'SPI'],
 ];
@@ -105,6 +106,7 @@ export function meatSymbol(name) {
 
 export function sauceSymbol(name) {
     const n = normalize(name);
+    if (/^(sans|pas\s+d[eu']|no|without)\s+sauces?\b/.test(n)) return 'X';
     for (const [re, sym] of SAUCE_TABLE) {
         if (re.test(n)) return sym;
     }
@@ -252,7 +254,24 @@ export function extraDisplayName(name, instruction) {
 
 /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
 function splitSauceList(raw) {
-    return String(raw).split(',').map((s) => s.trim()).filter(Boolean);
+    // [INCIDENT TICKET CUISINE 2026-09-05] Jumeau strict de
+    // KitchenTicketSymbolicFormatter::splitSauceList (PHP). Une instruction enchaîne les
+    // rubriques sur UNE seule ligne — « Sauce : Mayonnaise, Supplément : Œuf (+0,90 €) ».
+    // Découper naïvement sur la virgule coupait aussi celle du PRIX : « 90 € » devenait
+    // un faux nom de sauce, imprimé en tête du ticket cuisine (commande 929 : « MAY 90 »),
+    // et son jeton parasite masquait la vraie ligne « + Sauce supplémentaire ».
+    //  1. on retire les montants entre parenthèses — leur virgule ne sépare rien ;
+    //  2. on s'arrête à la première rubrique suivante : un segment portant un « : » est un
+    //     nouveau libellé, plus une sauce. Aucun nom de sauce de la carte n'en contient.
+    const sansMontants = String(raw).replace(/\([^)]*\)/gu, '');
+    const out = [];
+    for (const piece of sansMontants.split(',')) {
+        const name = piece.trim();
+        if (!name) continue;
+        if (name.includes(':')) break;
+        out.push(name);
+    }
+    return out;
 }
 
 /**
@@ -288,6 +307,14 @@ function readAddons(orderItem) {
     if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) return snap.addons;
     return Array.isArray(orderItem?.item_addons) ? orderItem.item_addons : [];
 }
+
+/**
+ * [FIX-1 2026-08-25 · P0 cuisine] Repli d'un extra dont l'entrée ne porte AUCUN champ de nom.
+ * Même mot que le gabarit KDS hérité (`kdsExtraDisplayName`, corrigé le 2026-08-24) pour que
+ * les deux écrans nomment la même chose de la même façon.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::EXTRA_SANS_NOM.
+ */
+export const EXTRA_SANS_NOM = 'Supplément';
 
 function extraName(e) {
     return e?.extra_name || e?.name || '';
@@ -384,6 +411,23 @@ function produitAndSize(itemName) {
     return { produit: produitCode(raw), taille: '' };
 }
 
+function structuredSauceNames(orderItem, destination) {
+    const snapshot = orderItem?.composition_snapshot;
+    const values = snapshot?.sauce_destinations?.[destination];
+    if (!Array.isArray(values)) return [];
+    return values.map((value) => String(value || '').trim()).filter(Boolean);
+}
+
+function productSauceNames(orderItem) {
+    const structured = structuredSauceNames(orderItem, 'product');
+    return structured.length ? structured : extraSauceNames(orderItem?.instruction);
+}
+
+function friesSauceNamesForOrder(orderItem) {
+    const structured = structuredSauceNames(orderItem, 'fries');
+    return structured.length ? structured : fritesSauceNames(orderItem?.instruction);
+}
+
 /**
  * Decompose an order item into the symbolic slots.
  * @returns {{category, support, produit, taille, viandes:string[], crudites:string, sauces:string[], supplements:string[], menu:string}}
@@ -434,7 +478,7 @@ export function buildSymbolic(orderItem) {
     // [MEGA-BORNE 2026-07-22 owner] La/les sauce(s) EN PLUS du produit (extras génériques dont le
     // nom ne survit que dans l'instruction) remontent dans le slot Sauce(s) de la ligne 1, À CÔTÉ
     // de la 1ère incluse (« FRO MAY »). La sauce FRITES du menu reste en ligne 2. Jumeau PHP mainLine.
-    for (const extraSauce of extraSauceNames(orderItem?.instruction)) {
+    for (const extraSauce of productSauceNames(orderItem)) {
         const sym = sauceSymbol(extraSauce);
         if (sym) sauces.push(sym);
     }
@@ -451,12 +495,20 @@ export function buildSymbolic(orderItem) {
     // On masque autant d'unités que les deux canaux en expliquent, et on garde le reste VISIBLE :
     // une sauce facturée que rien n'explique ne doit jamais disparaître en silence.
     // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
-    let budgetSaucesExpliquees = extraSauceNames(orderItem?.instruction).length
-        + Math.max(0, fritesSauceNames(orderItem?.instruction).length - 1);
+    let budgetSaucesExpliquees = productSauceNames(orderItem).length
+        + Math.max(0, friesSauceNamesForOrder(orderItem).length - 1);
 
     for (const e of readExtras(orderItem)) {
-        const name = extraName(e);
-        if (!name) continue;
+        // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom ne disparaît PLUS.
+        // Le code lisait `extraName(e)` puis `if (!name) continue;` : l'entrée était sautée —
+        // aucune ligne, aucun marqueur, du blanc à sa place. Le gabarit hérité, lui, rendait
+        // « Supplément » (corrigé le 2026-08-24) : l'écran de PRODUCTION affichait donc STRICTEMENT
+        // MOINS que l'ancien. Un cuisinier qui ne voit pas un supplément sert un produit faux ;
+        // annoncer un supplément sans savoir le nommer reste infiniment moins grave que de
+        // l'escamoter. La forme brute existe en base (`item_extras` = [{"id":269,"quantity":1}]) et
+        // elle est servie dès que l'instantané NF525 ne porte pas d'extras.
+        // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
+        const name = extraName(e) || EXTRA_SANS_NOM;
         const cs = cruditeSymbol(name);
         const price = Number(e?.unit_price ?? e?.line_total ?? 0) || 0;
         // Only FREE garnitures (price 0) fold into the crudités slot; a paid extra
@@ -481,8 +533,10 @@ export function buildSymbolic(orderItem) {
         }
     }
 
-    // Owner rule: tacos (and any galette product) show the support first, default G.
-    if (!support && (category === 'taco' || /galette/.test(normalize(orderItem?.item_name)))) {
+    // A taco is named directly. "G"/galette is redundant and causes service errors.
+    if (category === 'taco') {
+        support = '';
+    } else if (!support && /galette/.test(normalize(orderItem?.item_name))) {
         support = 'G';
     }
     // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » : pas de step pain actif (comme
@@ -523,7 +577,17 @@ export function buildSymbolic(orderItem) {
 
     const crudites = CRUDITE_ORDER.filter((c) => crud.has(c)).join('');
 
-    return { category, support, produit, taille, viandes, crudites, sauces, supplements, menu };
+    return {
+        category,
+        support,
+        produit: category === 'taco' ? 'Tacos' : produit,
+        taille,
+        viandes,
+        crudites,
+        sauces,
+        supplements,
+        menu,
+    };
 }
 
 /** Build the single Line-1 string ("G | SANDWICH | P | STO | SAM"). */
@@ -602,7 +666,7 @@ export function renderItemSymbolic(orderItem) {
             .filter((c) => c.length > 0)
         : [];
     const hasAllergen = allergenCodes.length > 0;
-    const fritesSym = fritesSauceSymbol(orderItem?.instruction);
+    const fritesSym = friesSauceNamesForOrder(orderItem).map((name) => sauceSymbol(name)).filter(Boolean).join(' ');
 
     // [KITCHEN-MENU 2026-06-30] Un item Menu/Formule → juste « MENU » (+ sauce frites
     // en symbole), AUCUN prix ni « Frites + Boisson » : c'est frites + boisson, rien à
@@ -615,6 +679,15 @@ export function renderItemSymbolic(orderItem) {
             category: s.category,
             hasAllergen,
         });
+        // [FIX-1 2026-08-25 · P0 cuisine, constat E-002] Les SUPPLÉMENTS d'une ligne « conteneur
+        // de menu » atteignent enfin la cuisine. Cette branche retournait tôt avec la boisson et
+        // la note mais SANS aucun supplément : un cheddar facturé sur une ligne « Menu (Frites +
+        // Boisson) » n'était affiché nulle part. La règle owner [KITCHEN-MENU 2026-06-30] visait
+        // le DÉTAIL de la formule (« Frites + Boisson ») et le prix — jamais un extra payé, qui
+        // est du travail à faire en plus. Le badge MENU reste inchangé.
+        for (const sup of s.supplements) {
+            lines.push({ type: 'supplement', label: String(sup).replace(/^\+\s*/, '⭐ ') });
+        }
         // [W3-FIX-C] Boisson de la formule visible sous le badge MENU.
         for (const d of drinkAddonLabels(orderItem)) {
             lines.push({ type: 'menu_child', label: d });

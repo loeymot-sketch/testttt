@@ -23,11 +23,11 @@ class XReportController extends Controller
     {
         $user = $request->user();
         abort_unless($user && $user->can('pos-manage-fiscal'), Response::HTTP_FORBIDDEN,
-            'pos-manage-fiscal permission required.');
+            trans('all.message.droit_fiscal_requis'));
 
         $branchId = (int) ($user->branch_id ?? 0);
         abort_if($branchId <= 0, Response::HTTP_UNPROCESSABLE_ENTITY,
-            'Fiscal operation requires the authenticated user to be pinned to a branch.');
+            trans('all.message.caisse_sans_etablissement'));
 
         // [ULTRA-AUDIT 2026-07-02] Valider from/to avant Carbon::parse — sinon une date
         // malformée levait InvalidFormatException non catchée → HTTP 500 (fuite de trace si

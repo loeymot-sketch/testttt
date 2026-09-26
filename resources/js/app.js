@@ -38,6 +38,8 @@ import VueApexCharts from "vue3-apexcharts";
 import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
+import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
+import { startNewVersionWatcher } from './shared/new-version-banner';
 
 
 /* Start tooltip alert code */
@@ -76,6 +78,10 @@ installBlobErrorNormalizer(axios);
 // Fusionne les GET identiques EN VOL. Ne met RIEN en cache, ne touche jamais
 // une mutation. Banc : tests/js/inflightGetDedupe.spec.js
 installInFlightGetDedupe(axios);
+// [Root cause 2026-09-24 · owner] Un onglet caisse/admin laissé ouvert avant
+// un déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
+// shared/new-version-banner.js. Best-effort, jamais bloquant.
+startNewVersionWatcher();
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)
@@ -201,6 +207,15 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
+            // [SESSION-EXPIRED-OVERLAY 2026-09-23] router.push est une navigation
+            // SPA asynchrone — contrairement au hard-redirect de pos-app.js, le
+            // burst d'autres 401 déjà en vol reste visible plus longtemps pendant
+            // la transition. Constat prod 23/09 (/admin/pos-v4, 12+ 401 en ~2s
+            // incluant /api/auth/logout) : Stock/Vue caisse bloqués sur
+            // "chargement", Historique/Transactions "aucune donnée" — pas un bug
+            // d'auth (la redirection fonctionne), l'absence d'un état explicite
+            // pendant cette fenêtre transitoire.
+            showSessionExpiredOverlay();
             store.dispatch('logout').catch(() => {});
             router.push({ name: 'auth.login' }).catch(() => {});
         }
@@ -246,11 +261,25 @@ app.mount('#app');
 // (abilities preserved). (bootstrap.js's "no backend refresh-token endpoint" comment
 // was stale — the endpoint exists at routes/api.php:155.)
 const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+const refreshKioskMachineToken = () => {
+    try {
+        if (store.state.kioskCart?.kioskToken) {
+            return store.dispatch('kioskCart/refreshKioskToken').catch(() => false);
+        }
+    } catch (_) { /* never let kiosk token refresh break the app */ }
+    return Promise.resolve(false);
+};
+
+// On a browser restore, refresh immediately while the persisted token is still
+// valid. If the device slept longer than the TTL, the 401 path re-authenticates
+// from the encrypted kiosk grant instead of showing the unavailable page.
+refreshKioskMachineToken();
 setInterval(() => {
     try {
         if (store.state.auth && store.state.auth.authToken) {
             store.dispatch('refreshAuthToken').catch(() => {});
         }
+        refreshKioskMachineToken();
     } catch (_) { /* never let the refresh timer break the app */ }
 }, TOKEN_REFRESH_INTERVAL_MS);
 

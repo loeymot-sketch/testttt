@@ -162,7 +162,7 @@ class PromoFlyerController extends Controller
             if ($doublon) {
                 return new JsonResponse([
                     'duplicate' => true,
-                    'message'   => 'Un code vient deja d\'etre cree pour ce prenom.',
+                    'message'   => 'Un code vient déjà d\'être créé pour ce prénom.',
                     'flyer'     => $this->present($doublon),
                 ], 200);
             }
@@ -287,7 +287,7 @@ class PromoFlyerController extends Controller
         $this->service->revoke($model);
 
         return new JsonResponse([
-            'message' => 'Code annule.',
+            'message' => 'Code annulé.',
             'flyer'   => $this->present($model->fresh()),
         ], 200);
     }

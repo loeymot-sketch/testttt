@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 /**
  * Attach console + network listeners to a page. Returns the buffers + a snap()
@@ -91,6 +92,28 @@ function attachMegaAuditRecorder(page, screenshotDir) {
   page.on('pageerror', onPageError);
   page.on('response', onResponse);
 
+  /*
+   * [AUDIT-SUPERVISEUR 2026-08-26 · AB-011] REGISTRE DES ETATS DEJA VUS.
+   *
+   * Ce que le superviseur a mesure sur la vague A : CINQ des dix « etats » captures etaient
+   * des doublons au bit pres. `05-voir-tout-ligne-simple`, `06-carte-telephone` et
+   * `07-carte-plateforme` partageaient une seule et meme empreinte ; `10-couloir-vide`
+   * repetait `01-tableau`.
+   *
+   * La campagne annoncait donc dix etats de couverture et en avait sept. Pire : l'etat cense
+   * demontrer la non-regression du correctif du panneau « Voir tout » n'avait JAMAIS ouvert
+   * ce panneau — la page n'avait pas bouge entre trois appels successifs.
+   *
+   * Un audit qui se croit large parce qu'il a beaucoup de fichiers est un audit qui ment sur
+   * sa propre couverture. On refuse desormais silencieusement de mentir : deux etats dont le
+   * DOM est identique sont signales, nommement, dans la sortie de la campagne.
+   *
+   * On SIGNALE, on ne fait pas echouer : la capture doit produire ses artefacts meme quand
+   * la scene n'a pas bouge — c'est au superviseur de juger, pas a l'enregistreur. Mais le
+   * doublon ne peut plus passer inapercu.
+   */
+  const empreintesVues = new Map();
+
   async function snap(name) {
     const base = path.join(screenshotDir, name);
     await page.screenshot({ path: `${base}.png`, fullPage: false });
@@ -100,7 +123,23 @@ function attachMegaAuditRecorder(page, screenshotDir) {
       // 500KB to 2MB; large POS shells exceeded the lower limit causing late-DOM
       // elements (e.g. data-testid="pos-grand-total", cart lines) to fall past
       // the cut, defeating adversarial reviewer audit of the captured artifact.
-      fs.writeFileSync(`${base}.dom.html`, html.substring(0, 2_000_000));
+      const tronque = html.substring(0, 2_000_000);
+      fs.writeFileSync(`${base}.dom.html`, tronque);
+
+      // [AB-011] Le DOM de cet etat est-il celui d'un etat deja capture ?
+      const empreinte = crypto.createHash('md5').update(tronque).digest('hex');
+      if (empreintesVues.has(empreinte)) {
+        const jumeau = empreintesVues.get(empreinte);
+        // eslint-disable-next-line no-console
+        console.log(
+          `[COUVERTURE] « ${name} » a EXACTEMENT le meme DOM que « ${jumeau} ». `
+          + 'Ces deux etats n\'en font qu\'un : la scene n\'a pas bouge entre les deux appels. '
+          + 'Tout constat tire de l\'un vaut pour l\'autre, et un correctif cense etre demontre '
+          + 'ici ne l\'est PAS.'
+        );
+      } else {
+        empreintesVues.set(empreinte, name);
+      }
     } catch (_e) { /* ignore */ }
     fs.writeFileSync(`${base}.console.json`, JSON.stringify(consoleBuffer, null, 2));
     fs.writeFileSync(`${base}.network.json`, JSON.stringify(networkBuffer, null, 2));

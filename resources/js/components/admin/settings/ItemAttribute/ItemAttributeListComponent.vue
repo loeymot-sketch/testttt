@@ -31,8 +31,11 @@
                             {{ itemAttribute.name }}
                         </td>
                         <td class="db-table-body-td">
+                            <!-- [ONB-10 2026-08-27] Affichait « 0 - 1 » : l'encodage min/max
+                                 du développeur. Rien n'indiquait lequel des deux nombres était
+                                 le minimum, ni que « 0 » voulait dire « facultatif ». -->
                             <span class="text-xs font-semibold text-slate-600">
-                                {{ itemAttribute.min_select ?? 0 }} - {{ itemAttribute.max_select ?? 1 }}
+                                {{ regleLisible(itemAttribute) }}
                             </span>
                         </td>
                         <td class="db-table-body-td">
@@ -92,6 +95,7 @@ import appService from "../../../../services/appService";
 import statusEnum from "../../../../enums/modules/statusEnum";
 import TableLimitComponent from "../../components/TableLimitComponent";
 import SmDeleteComponent from "../../components/buttons/SmDeleteComponent";
+import { regleDeChoix } from "../../../../services/regleDeChoix";
 import SmModalEditComponent from "../../components/buttons/SmModalEditComponent";
 import ENV from "../../../../config/env";
 
@@ -153,6 +157,15 @@ export default {
         },
     },
     methods: {
+        // [ONB-10 2026-08-27] La règle vit dans une fonction pure hors du composant
+        // pour être exercée cas par cas (tests/js/regleDeChoix.spec.js).
+        regleLisible: function (itemAttribute) {
+            return regleDeChoix(
+                itemAttribute.min_select,
+                itemAttribute.max_select,
+                this.$t,
+            );
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

@@ -193,6 +193,27 @@ export const posOrder = {
                 });
             });
         },
+        /**
+         * [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée SERVEUR aux états des quatre
+         * files du tiroir de contrôle (`PosOrderController::serviceDay`).
+         *
+         * Remplace `lists({ paginate: 1, per_page: 100 })` sur les deux surfaces de contrôle de la
+         * caisse. Cette page de cent, triée `id desc` par le défaut d'`OrderService::list`, jetait
+         * les commandes les PLUS ANCIENNES du service — celles qui traînent, celles qu'il faut
+         * voir — et rien ne le signalait.
+         *
+         * Aucun commit Vuex : cette liste appartient à la surface qui la demande. La réponse
+         * porte `meta.total` / `meta.truncated`, que l'écran DOIT afficher si une borne mord.
+         */
+        serviceDay: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                let url = 'admin/pos-order/service-day';
+                if (payload) {
+                    url = url + appService.requestHandler(payload);
+                }
+                axios.get(url).then(resolve).catch(reject);
+            });
+        },
         save: function (context, payload) {
             return new Promise((resolve, reject) => {
                 const idempotencyKey = payload?.idempotency_key

@@ -5,7 +5,8 @@
 // reports/goal-web-app-sync/CONTRACTS.md §2) :
 //
 //   • CONFIG n'est PLUS hardcodée à 10 pt/€ : défauts = valeurs backend LIVE
-//     (points_per_euro=1, points_for_1_euro_discount=100, min_redeem_points=100)
+//     (points_per_euro=10, points_for_1_euro_discount=100, min_redeem_points=1000
+//     — barème relevé par le propriétaire le 2026-09-25, 1000 pts = 10 €)
 //     puis resynchronisée au chargement via LC.mobileApi.loyaltyConfig()
 //     (GET /api/frontend/loyalty/config, PUBLIC). Event 'lc:loyalty-changed'
 //     émis après sync → les écrans re-rendent.
@@ -32,17 +33,21 @@
   'use strict';
 
   // ───────────────────────────────────────────────────────────────────────
-  // CONFIG — MUTABLE. Défauts = valeurs backend LIVE 2026-07-08 (settings
-  // group loyalty_setup vérifiées tinker : 1 / 100 / 100). Resynchronisée au
-  // runtime via refreshConfig() — plus jamais de taux hardcodé divergent.
+  // CONFIG — MUTABLE. Défauts = valeurs backend LIVE (settings group
+  // loyalty_setup vérifiées tinker le 2026-09-25 : 10 / 100 / 1000 — barème
+  // relevé par le propriétaire, 1000 pts = 10 €). Resynchronisée au runtime
+  // via refreshConfig() — plus jamais de taux hardcodé divergent.
   // ───────────────────────────────────────────────────────────────────────
   const CONFIG = {
-    earn_ratio: 1,               // 1 € dépensé = 1 pt (backend points_per_euro — LIVE)
-    points_per_euro: 1,          // alias nom API backend (consommé par screens-modals)
+    earn_ratio: 10,              // 1 € dépensé = 10 pts (backend points_per_euro — LIVE)
+    points_per_euro: 10,         // alias nom API backend (consommé par screens-modals)
     redeem_ratio: 100,           // 100 points = 1 € (backend points_for_1_euro_discount)
     points_for_1_euro_discount: 100, // alias nom API backend
-    min_redeem_points: 100,      // minimum pour utiliser (valeur LIVE DB)
-    tiers: [100, 250, 500, 1000, 2000], // jalons d'affichage (backend loyalty_tiers)
+    min_redeem_points: 1000,     // minimum pour utiliser (valeur LIVE DB)
+    // Jalons d'affichage (backend loyalty_tiers) : seuls les paliers ATTEIGNABLES au-dessus
+    // du plancher réel — un jalon sous le plancher (100/250/500) promet un rendez-vous que
+    // rien ne peut honorer (même défaut que celui corrigé côté site web ce jour).
+    tiers: [1000, 2000],
     // [GOAL-SYNC 2026-07-08] welcome_bonus : AUCUN trigger backend n'existe —
     // 0 honnête (l'ancien 25 était un mensonge client-side). Champ conservé
     // pour compat écrans ; à retirer avec la copy « pts offerts ».
@@ -117,7 +122,7 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────
-  // Modèle points→€ — helpers PURS (contrat §2 : 100 pts = 1 €, min 100,
+  // Modèle points→€ — helpers PURS (contrat §2 : 100 pts = 1 €, min 1000,
   // redeem = multiple de 100 obligatoire sur POST /loyalty/redeem).
   // ───────────────────────────────────────────────────────────────────────
 

@@ -108,7 +108,13 @@ describe('pos-wizard — repli catalogue boissons (LOCK_POSWIZARD_KIOSKWIZARD_OW
         wizard.querySelector('.formule-card[data-value="addon_1"]').click();
         await tick(10);
         const before = wizard.querySelector('.sticky-total .total-value').textContent.trim();
-        expect(before).toBe('€9.90'); // 7,40 + 2,50 (Menu)
+        // [AB-003 2026-08-26] L'assertion épinglait « €9.90 » — le format ANGLAIS — alors que
+        // le titre de ce test et le commentaire de cette ligne disent tous deux « 9,90 € ».
+        // Elle ne détectait donc pas le défaut : elle le VERROUILLAIT, dans un fichier gelé.
+        // Le montant est inchangé (7,40 + 2,50) ; seul son rendu devient français, aligné sur
+        // `AppLibrary::currencyAmountFormat` (backend, depuis 2026-05-23) et sur le reste de
+        // l'interface. Espace insécable avant le symbole.
+        expect(before).toBe('9,90\u00A0€'); // 7,40 + 2,50 (Menu)
 
         wizard.querySelector('.boisson-opt[data-id="124"]').click();
         await tick(10);

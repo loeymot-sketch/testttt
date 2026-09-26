@@ -42,10 +42,13 @@ class KioskMachineRequest extends FormRequest
 
     public function messages(): array
     {
+        // [ONB-10 2026-08-28] Ces trois messages etaient en ANGLAIS BRUT et
+        // s'affichaient tels quels sur l'ecran des bornes. Le produit est FR-locked
+        // en administration (ADR-007) : ils ne passent par aucun mecanisme i18n.
         return [
-            'machine_id.required' => 'The machine field is required',
-            'branch_id.required' => 'The branch field is required',
-            'user_id.required' => 'The user field is required',
+            'machine_id.required' => "L'identifiant de la borne est obligatoire.",
+            'branch_id.required' => "Choisissez l'etablissement auquel cette borne appartient.",
+            'user_id.required' => 'Choisissez le compte que cette borne utilisera pour se connecter.',
         ];
     }
 }

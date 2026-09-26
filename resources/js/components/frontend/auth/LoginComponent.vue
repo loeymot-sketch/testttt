@@ -181,8 +181,17 @@ export default {
                     } else if (typeof data === 'string') {
                         this.errors = { validation: data };
                     } else {
+                        // [ONB-11 2026-08-28] Le repli etait « Network error — check API
+                        // URL and x-api-key. » : de l'anglais, et du vocabulaire de
+                        // developpeur, sur le TOUT PREMIER ecran du produit. On demandait
+                        // a un restaurateur de verifier une « API URL » et une
+                        // « x-api-key ». `err.message` d'axios n'est pas meilleur : il
+                        // vaut « Network Error », en anglais lui aussi.
+                        //
+                        // Le message du SERVEUR passe toujours en premier quand il existe :
+                        // lui sait ce qui a echoue.
                         this.errors = {
-                            validation: data?.message || err.message || 'Network error — check API URL and x-api-key.',
+                            validation: data?.message || this.$t('message.login_unreachable'),
                         };
                     }
                 })
@@ -196,23 +205,47 @@ export default {
         setupCredit: function (e) {
             // [SEC-30-2] Demo credentials read from runtime config (injected server-side)
             // Never hardcode real restaurant credentials in the JS bundle.
-            const demo = window.__FOODKING_RUNTIME__?.demo || {};
-            if (e === 'admin') {
-                this.form.email = demo.adminEmail || 'admin@lecayenne.fr';
-                this.form.password = demo.adminPassword || '123456';
-            } else if (e === 'customer') {
-                this.form.email = demo.customerEmail || 'walkingcustomer@example.com';
-                this.form.password = demo.customerPassword || '123456';
-            } else if (e === 'branchManager') {
-                this.form.email = demo.branchManagerEmail || 'branchmanager@example.com';
-                this.form.password = demo.branchManagerPassword || '123456';
-            } else if (e === 'posOperator') {
-                this.form.email = demo.posOperatorEmail || 'pos@lecayenne.fr';
-                this.form.password = demo.posOperatorPassword || '123456';
-            } else if (e === 'chef') {
-                this.form.email = demo.chefEmail || 'chef@example.com';
-                this.form.password = demo.chefPassword || '123456';
+            //
+            // [SEC E-006 2026-08-25] The literal `|| '<password>'` fallbacks that used to sit
+            // on every line below were compiled by webpack straight into public/js/app.js and
+            // public/js/pos-app.js — bundles served, unauthenticated, to anyone who asks. That
+            // defeated the server-side DEMO flag entirely: turning demo mode off removed the
+            // values from the HTML but left them in the JavaScript. There is no fallback any
+            // more. If the server did not inject a demo block, these buttons do nothing.
+            const demo = window.__FOODKING_RUNTIME__?.demo;
+            if (!demo) {
+                return;
             }
+
+            const fields = {
+                admin:         ['adminEmail', 'adminPassword'],
+                customer:      ['customerEmail', 'customerPassword'],
+                branchManager: ['branchManagerEmail', 'branchManagerPassword'],
+                posOperator:   ['posOperatorEmail', 'posOperatorPassword'],
+                chef:          ['chefEmail', 'chefPassword'],
+            }[e];
+
+            if (!fields) {
+                return;
+            }
+
+            const email = demo[fields[0]];
+            const motDePasse = demo[fields[1]];
+
+            // [ONB-12 2026-08-27 · retenu à la fusion du 2026-08-28] Le même défaut a
+            // été trouvé deux fois, par deux voies indépendantes — SEC E-006 sur la
+            // ligne servie, ONB-12 sur la voie onboarding. La structure retenue est
+            // celle de la ligne servie, déjà en service ; on lui ajoute la garde PAR
+            // COMPTE d'ONB-12, qui couvre un cas que le repli `|| ''` laissait passer :
+            // si la configuration d'exécution fournit un bloc démo INCOMPLET, remplir
+            // l'adresse et laisser le mot de passe vide produit un échec de connexion
+            // que personne ne sait expliquer. Ne rien remplir est un échec visible.
+            if (!email || !motDePasse) {
+                return;
+            }
+
+            this.form.email = email;
+            this.form.password = motDePasse;
         }
     }
 }

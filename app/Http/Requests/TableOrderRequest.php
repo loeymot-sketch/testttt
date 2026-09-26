@@ -59,11 +59,11 @@ class TableOrderRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if (request('order_type') == OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } elseif (request('order_type') == OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } elseif (blank(request('order_type'))) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             }
 
             $this->validateOrderItemVariationsAfter($validator);

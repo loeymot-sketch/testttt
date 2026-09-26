@@ -103,6 +103,51 @@ const PUCE_OPTION = '↳';
  * @param {string|null|undefined} instruction
  * @returns {string[]}
  */
+/**
+ * [AUDIT-SUPERVISEUR 2026-08-25 · E-009] Les extras d'une ligne, lus avec LA MÊME
+ * priorité que le rendu (`kdsSymbolic.readExtras`) : l'instantané NF525 d'abord,
+ * l'ancienne colonne ensuite. Lire dans un autre ordre ici produirait un legs qui
+ * ne correspond pas à ce que l'écran affiche.
+ */
+function extrasDeLaLigne(item) {
+    const snap = item && item.composition_snapshot;
+    if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) return snap.extras;
+    return (item && Array.isArray(item.item_extras)) ? item.item_extras : [];
+}
+
+/** Clé de dédoublonnage d'un extra : son nom, quelle que soit la forme qui le porte. */
+function extraKey(e) {
+    const nom = String((e && (e.extra_name || e.name || e.item_name)) || '').trim().toLowerCase();
+    return nom || JSON.stringify(e || {});
+}
+
+/**
+ * Rend une COPIE du parent portant ses extras + ceux hérités d'une ligne repliée,
+ * écrits dans la source que le rendu lira réellement. Jamais de mutation de l'objet
+ * source : la ligne comptable reste intacte (aucun effet prix / TVA / fiscal).
+ */
+function avecExtrasHerites(parent, herites) {
+    const snap = parent && parent.composition_snapshot;
+    const snapPorte = !!(snap && Array.isArray(snap.extras) && snap.extras.length > 0);
+    const actuels = snapPorte ? snap.extras : ((parent && Array.isArray(parent.item_extras)) ? parent.item_extras : []);
+
+    const vus = new Set(actuels.map(extraKey));
+    const ajouts = [];
+    herites.forEach((e) => {
+        const cle = extraKey(e);
+        if (vus.has(cle)) return;
+        vus.add(cle);
+        ajouts.push(e);
+    });
+    if (ajouts.length === 0) return parent;
+
+    const fusionnes = [...actuels, ...ajouts];
+
+    return snapPorte
+        ? { ...parent, composition_snapshot: { ...snap, extras: fusionnes } }
+        : { ...parent, item_extras: fusionnes };
+}
+
 function kitchenDirectives(instruction) {
     const raw = typeof instruction === 'string' ? instruction : '';
     const bracket = raw.indexOf('[');
@@ -194,13 +239,23 @@ export function collapseBundledAddonItems(orderItems) {
         //    de formule était SEULE à porter : sa sauce frites, sa boisson. Résultat mesuré
         //    en base : plus aucun badge « MENU » sur l'écran cuisine, et un menu complet
         //    affiché « FRITES » — voire rien du tout. On ne jette plus, on transmet.
+        // [AUDIT-SUPERVISEUR 2026-08-25 · E-009] Les EXTRAS de la ligne repliée étaient
+        // perdus eux aussi. Le legs ne transmettait que les consignes d'instruction :
+        // un Cheddar payé, porté par une ligne de formule repliée, disparaissait de
+        // l'écran de cuisine — ce qui ANNULAIT sur le chemin de production le correctif
+        // posé la veille dans `kdsSymbolic`. Vérifié vivant sur 21 commandes réelles.
+        // Un supplément facturé ne peut pas être effacé par un repli d'AFFICHAGE : le
+        // repli existe pour alléger la lecture, pas pour retirer de l'information payée.
         const consignes = kitchenDirectives(item && item.instruction);
+        const extrasLegues = extrasDeLaLigne(item);
         const slots = claimers.get(name) || [];
         for (let k = 0; k < consumed; k += 1) {
             const parent = slots.shift();
-            if (parent === undefined || consignes.length === 0) continue;
-            if (!legs.has(parent)) legs.set(parent, []);
-            legs.get(parent).push(...consignes);
+            if (parent === undefined) continue;
+            if (consignes.length === 0 && extrasLegues.length === 0) continue;
+            if (!legs.has(parent)) legs.set(parent, { consignes: [], extras: [] });
+            legs.get(parent).consignes.push(...consignes);
+            legs.get(parent).extras.push(...extrasLegues);
         }
 
         const left = qty - consumed;
@@ -209,22 +264,33 @@ export function collapseBundledAddonItems(orderItems) {
     });
 
     // 4. Appliquer les legs sur des COPIES — jamais sur l'objet source.
-    legs.forEach((lignes, parentIndex) => {
+    legs.forEach((legue, parentIndex) => {
         if (!out.has(parentIndex)) return;
-        const parent = out.get(parentIndex);
+        let parent = out.get(parentIndex);
+
+        // 4a. Consignes d'instruction (comportement d'origine, inchangé).
         const instruction = (parent && typeof parent.instruction === 'string') ? parent.instruction : '';
         const deja = new Set(kitchenDirectives(instruction).map(directiveKey));
-
         const ajouts = [];
-        lignes.forEach((ligne) => {
+        legue.consignes.forEach((ligne) => {
             const cle = directiveKey(ligne);
             if (deja.has(cle)) return;
             deja.add(cle);
             ajouts.push(ligne);
         });
-        if (ajouts.length === 0) return;
+        if (ajouts.length > 0) {
+            parent = { ...parent, instruction: appendDirectives(instruction, ajouts) };
+        }
 
-        out.set(parentIndex, { ...parent, instruction: appendDirectives(instruction, ajouts) });
+        // 4b. [E-009] Extras hérités. On les écrit dans la source que le rendu LIRA
+        // réellement : `kdsSymbolic.readExtras()` préfère `composition_snapshot.extras`
+        // quand il est non vide, et retombe sinon sur `item_extras`. Écrire dans la
+        // mauvaise des deux reviendrait à croire le défaut corrigé sans qu'il le soit.
+        if (legue.extras.length > 0) {
+            parent = avecExtrasHerites(parent, legue.extras);
+        }
+
+        out.set(parentIndex, parent);
     });
 
     return Array.from(out.values());

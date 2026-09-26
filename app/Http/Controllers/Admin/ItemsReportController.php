@@ -34,7 +34,18 @@ class ItemsReportController extends AdminController
     public function index(PaginateRequest $request) : \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return ItemReportResource::collection($this->itemService->itemReport($request));
+            /*
+             * [ONB-07 2026-08-28] Le total accompagne la liste.
+             *
+             * Sans lui, l'écran ne peut totaliser que ce qu'il a reçu — c'est-à-dire
+             * dix lignes sur quarante-cinq — sous le même libellé « Total » que
+             * l'export, qui totalise tout. Le calculer ici garantit qu'il porte sur
+             * le MÊME périmètre filtré que la liste.
+             */
+            return ItemReportResource::collection($this->itemService->itemReport($request))
+                ->additional([
+                    'total_unites_vendues' => $this->itemService->totalUnitesVenduesDuRapport($request),
+                ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

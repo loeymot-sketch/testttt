@@ -81,6 +81,29 @@ class SignupController extends Controller
         // amont par la règle unique is_guest=NO de SignupRequest).
         $existing = User::where('phone', $phone)->first();
 
+        // [Root cause 2026-09-19, propriétaire : « je peux créer 2 compte avec meme email »]
+        // SignupRequest n'exige l'unicité de l'e-mail que parmi les comptes is_guest=NO — une
+        // exemption VOULUE pour laisser ce même formulaire mettre à niveau un compte invité déjà
+        // porteur de cet e-mail, PAR TÉLÉPHONE (juste au-dessus). Mais rien ne relie l'exemption
+        // à une preuve de téléphone : un compte invité créé au comptoir / à la borne / par
+        // e-mail-OTP (téléphone A, e-mail X) laissait un client revenir ici avec un AUTRE
+        // téléphone (B) et le MÊME e-mail — recherche par téléphone infructueuse, règle unique
+        // muette (l'ancien compte est invité), second compte complet créé avec l'e-mail déjà
+        // porté par le premier. Deux comptes, deux soldes de points, un seul humain. `users.email`
+        // n'a par ailleurs aucune contrainte unique en base (index simple, pas UNIQUE) — rien
+        // n'aurait arrêté l'écriture même via un autre chemin. Vérifié ici, sur TOUT compte
+        // (invité ou non, y compris supprimé) porteur de cet e-mail mais PAS déjà celui qu'on
+        // s'apprête à mettre à niveau.
+        $email = $request->post('email');
+        if (filled($email)) {
+            $emailOwnerId = User::withTrashed()
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])
+                ->value('id');
+            if ($emailOwnerId !== null && (! $existing || (int) $emailOwnerId !== (int) $existing->id)) {
+                return response(['status' => false, 'message' => trans('all.message.code_is_invalid')], 422);
+            }
+        }
+
         if ($existing) {
             // On n'écrase un compte que si c'est un INVITÉ ET que le téléphone vient d'être PROUVÉ
             // (claim légitime). Sinon (invité non prouvé, ou vérification désactivée) → refus : jamais de
@@ -88,7 +111,7 @@ class SignupController extends Controller
             if ((int) $existing->is_guest === Ask::YES && $phoneVerified) {
                 $existing->name = $name;
                 $existing->username = Str::slug($name);
-                $existing->email = $request->post('email');
+                $existing->email = $email;
                 $existing->password = Hash::make($request->post('password'));
                 $existing->is_guest = Ask::NO;
                 $existing->save();

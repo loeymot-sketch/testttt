@@ -298,17 +298,17 @@ class PosOrderRequest extends FormRequest
             $orderTypeInt = (int) request('order_type', 0);
             if ($orderTypeInt === OrderType::DINING_TABLE
                 && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
-                $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+                $validator->errors()->add('order_type', trans('all.message.sur_place_desactive'));
 
                 return;
             }
 
             if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } elseif ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } elseif (blank(request('order_type'))) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             }
             // [AUDIT-P1-B] NOTE: This validation uses the client-sent 'total' as a preliminary check.
             // The server recalculates the real total in OrderService::posOrderStore.

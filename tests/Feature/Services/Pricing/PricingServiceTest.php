@@ -431,6 +431,44 @@ class PricingServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(0.0, $out->total);
     }
 
+    public function test_pos_manual_supplement_is_a_server_taxed_fiscal_line_and_its_entered_amount_stays_ttc(): void
+    {
+        // The legacy HT mode is deliberately enabled by setUp. A cashier's
+        // "1,25 €" still means exactly 1,25 € due at checkout, never 1,38 €.
+        $request = PricingRequest::forPos(42, $this->branch->id, [(object) [
+            'line_type' => 'manual_supplement',
+            'manual_label' => 'Olives',
+            'manual_amount' => 1.25,
+            'quantity' => 2,
+        ]], 0, 0, 0.0, 0.0);
+
+        $out = $this->service->calculateOrder($request, $this->couponService);
+
+        $this->assertSame(2.50, $out->total);
+        $this->assertSame(0.23, $out->totalTax);
+        $this->assertSame(2.27, $out->subtotal);
+        $this->assertSame(null, $out->lines[0]->itemId);
+        $this->assertSame('Supplément — Olives', $out->orderItemInsertRows[0]['manual_label']);
+        $this->assertSame('manual_supplement', $out->orderItemInsertRows[0]['line_type']);
+        $this->assertSame(null, $out->orderItemInsertRows[0]['item_id']);
+        $this->assertSame(2.27, $out->orderItemInsertRows[0]['total_price']);
+        $this->assertSame(2.50, json_decode($out->orderItemInsertRows[0]['composition_snapshot'], true)['manual_supplement']['line_total_ttc']);
+    }
+
+    public function test_manual_supplement_is_refused_outside_the_pos_surface(): void
+    {
+        $request = PricingRequest::forKiosk(1, $this->branch->id, [(object) [
+            'line_type' => 'manual_supplement',
+            'manual_amount' => 1.00,
+            'quantity' => 1,
+        ]], 0, 0, 0.0);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('réservé à la caisse');
+
+        $this->service->calculateOrder($request, $this->couponService);
+    }
+
     /* -----------------------------------------------------------------
      * Insert-row contract
      * ---------------------------------------------------------------*/

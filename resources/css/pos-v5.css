@@ -1029,6 +1029,36 @@
     opacity: 0.6;
 }
 
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-25 · AB-004] SUR UN ÉCRAN BAS, CE BLOC NE MONTRAIT QUE SON
+ * REMPLISSAGE.
+ *
+ * Mesuré à 1024×600, panier vide : le corps du panier dispose de 31 px et ce bloc en
+ * réclame 172 (32 px de marge + icône 48 px + sa marge + deux lignes + 32 px). Le caissier
+ * voyait donc un bandeau BLANC de 31 px là où le gabarit 1366 affiche l'assiette et
+ * « Aucun article. Sélectionnez un produit dans la grille. » Un vide muet se lit comme une
+ * panne ; un vide qui se nomme se lit comme un état.
+ *
+ * Pourquoi ne PAS rendre sa place au corps : le plancher est retiré ICI VOLONTAIREMENT
+ * (règle `:has(.pos-v5-cart__empty)` ci-dessus, 2026-08-25). Panier vide, le corps ne
+ * protège aucune ligne de vente, et les 108 px qu'il prenait manquaient exactement au champ
+ * « Nom du client » — le nom qui s'imprime sur le ticket cuisine, mandat propriétaire. On ne
+ * revient pas là-dessus : on fait tenir le message dans la place qui reste.
+ *
+ * L'icône disparaît, les marges se resserrent : le bloc passe sous 32 px et la PHRASE
+ * devient ce qu'on voit. Au-dessus de 700 px de haut, rien ne change.
+ */
+@media (max-height: 700px) {
+    .pos-v5-cart__empty {
+        padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
+        line-height: 1.25;
+    }
+
+    .pos-v5-cart__empty-icon {
+        display: none;
+    }
+}
+
 /* =============================================================================
    7. CART ITEMS LIST (cards verticales — meilleure densité que table)
    ============================================================================= */

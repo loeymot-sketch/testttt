@@ -20,7 +20,7 @@
       to avoid fighting transition-group on enter/leave).
   -->
   <div
-    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     role="region"
     :aria-label="$t('label.preparing')"
   >
@@ -47,7 +47,7 @@
   </div>
 
   <!-- Colonne PRÊT -->
-  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     :class="newReadyFlash ? 'oss-ready-flash' : ''"
     role="region"
     :aria-label="$t('label.ready')">

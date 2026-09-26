@@ -5,6 +5,20 @@ use Illuminate\Support\Facades\Facade;
 return [
 
     /*
+    | [ONB-05 2026-08-28] Symbole de devise, lu par la borne.
+    |
+    | `KioskMenuService.php:186` et `PricingPreviewService.php:220` appellent
+    | `config('app.currency_symbol', '€')` — une cle qu'AUCUN fichier ne
+    | definissait. La borne affichait donc toujours l'euro, en ignorant la devise
+    | choisie dans Reglages > Site (`site_default_currency_symbol`).
+    |
+    | Le defaut reste l'euro : rien ne change tant que la variable n'est pas posee.
+    | ⏳ Faire lire le REGLAGE de l'ecran plutot qu'une variable d'environnement
+    | reste a faire — c'est un chantier de propagation, pas une cle manquante.
+    */
+    'currency_symbol' => env('APP_CURRENCY_SYMBOL', '€'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
@@ -287,6 +301,9 @@ return [
         App\Providers\RouteServiceProvider::class,
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Binding lecteur factures IA (mock↔OpenAI).
         App\Providers\PurchasingServiceProvider::class,
+        // [ONB-04 2026-08-27] Extraction de carte par photo. Même motif que le
+        // fournisseur ci-dessus : bouchon par défaut, réel derrière deux verrous.
+        App\Providers\AssistantServiceProvider::class,
         // [UBER-PHOTO 2026-08-10] Lecteur de ticket Uber photographié (doublure locale par défaut).
         App\Providers\UberVisionServiceProvider::class,
     ],

@@ -187,6 +187,7 @@ export default {
     },
     mounted() {
         this.list();
+        this.ouvrirDepuisLUrl();
     },
     methods: {
         statusClass: function (status) {
@@ -214,6 +215,61 @@ export default {
                 this.loading.isActive = false;
             });
         },
+        /**
+         * [ONB-02 2026-08-28] Ouvre la fiche d'une categorie designee par l'URL.
+         *
+         * Le crayon « modifier » du Studio catalogue
+         * (`CatalogStudioComponent.vue:534`) route vers cet ecran avec
+         * `?edit=<id>`, et son commentaire affirme ouvrir la modale « via le state
+         * Vuex partage ». C'etait FAUX : `mounted()` n'appelait que `list()`, le
+         * parametre n'etait lu par personne, et la seule ouverture possible restait
+         * le clic dans le tableau.
+         *
+         * Le commercant cliquait donc sur « modifier » a cote de « Tacos », se
+         * retrouvait ejecte sur un autre ecran, et rien ne s'ouvrait. Il devait
+         * retrouver sa categorie a la main dans une liste paginee — une action
+         * nommee « modifier » qui change de page sans rien modifier.
+         *
+         * On attend le chargement de la liste : la modale a besoin de l'objet
+         * complet (`wizard_template`, `has_menu`...), pas seulement de
+         * l'identifiant.
+         */
+        ouvrirDepuisLUrl: function () {
+            const demande = this.$route?.query?.edit;
+
+            if (!demande) {
+                return;
+            }
+
+            const identifiant = Number(demande);
+
+            if (!Number.isFinite(identifiant) || identifiant <= 0) {
+                return;
+            }
+
+            // `list()` est asynchrone ; on ouvre des que la categorie apparait.
+            const arret = this.$watch(
+                () => this.itemCategories,
+                (categories) => {
+                    const trouvee = (categories || []).find(
+                        (c) => Number(c.id) === identifiant,
+                    );
+
+                    if (!trouvee) {
+                        return;
+                    }
+
+                    arret();
+                    this.edit(trouvee);
+
+                    // On retire le parametre : rafraichir la page ne doit pas
+                    // rouvrir la modale indefiniment.
+                    this.$router.replace({ query: {} }).catch(() => {});
+                },
+                { immediate: true, deep: true },
+            );
+        },
+
         edit: function (itemCategory) {
             appService.modalShow("#categoryModal");
             this.loading.isActive = true;

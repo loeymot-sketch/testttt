@@ -44,7 +44,59 @@ class StockRuptureDashboardController extends AdminController
         parent::__construct();
 
         $this->middleware(['permission:items_show'])->only('lastSummary', 'lowAlerts', 'catalogOverview');
-        $this->middleware(['permission:items_create'])->only('run');
+        $this->middleware(['permission:items_create'])->only('run', 'definirLeSeuil');
+    }
+
+    /**
+     * [ONB-08 2026-08-28] Enregistre le seuil d'alerte d'une ligne de stock.
+     *
+     * ═══ POURQUOI CETTE METHODE N'EXISTAIT PAS, ET CE QUE CA COUTAIT ═══
+     *
+     * `threshold_low` etait LU a deux endroits — `lowAlerts()` ci-dessous, qui
+     * filtre `whereNotNull('threshold_low')`, et `NotifyStockLowOnStockLevelChanged`,
+     * qui declenche la notification de stock bas. Mais **rien ne l'ecrivait** :
+     * aucune route, aucun ecran, aucune commande. 55 lignes en base, 0 seuil.
+     *
+     * La section « alertes stock bas » du tableau de bord ne pouvait donc
+     * STRUCTURELLEMENT rien afficher, et l'alerte etait muette — non pas parce que
+     * tout allait bien, mais parce que personne ne pouvait dire a partir de quand
+     * ca n'allait plus.
+     *
+     * C'est le jumeau exact du seuil des matieres premieres. Le motif — une chaine
+     * complete sauf l'ecran ou un humain saisit la verite — en est a son sixieme
+     * exemplaire cette semaine.
+     *
+     * `null` est accepte et signifie « pas de surveillance » : un seuil qu'on ne
+     * peut pas retirer serait un piege, et c'est aussi la valeur de depart.
+     */
+    public function definirLeSeuil(
+        \App\Http\Requests\Admin\SeuilDeStockRequest $request,
+        StockLevel $stockLevel
+    ): JsonResponse {
+        // Le scope de branche s'applique deja au modele, mais un identifiant
+        // devine ne doit pas franchir la frontiere d'un etablissement.
+        $this->authorizeBranchScope($request, (int) $stockLevel->branch_id);
+
+        $seuil = $request->validated('threshold_low');
+
+        $stockLevel->threshold_low = $seuil === null || $seuil === '' ? null : (int) $seuil;
+        $stockLevel->save();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'id' => (int) $stockLevel->id,
+                'branch_id' => (int) $stockLevel->branch_id,
+                'on_hand' => (int) $stockLevel->on_hand,
+                'threshold_low' => $stockLevel->threshold_low === null
+                    ? null
+                    : (int) $stockLevel->threshold_low,
+                // Ce que le commercant veut vraiment savoir en enregistrant :
+                // est-ce que ce produit est DEJA sous son seuil ?
+                'en_alerte' => $stockLevel->threshold_low !== null
+                    && (int) $stockLevel->on_hand <= (int) $stockLevel->threshold_low,
+            ],
+        ]);
     }
 
     public function lastSummary(Request $request): JsonResponse

@@ -44,6 +44,8 @@ import 'vue-next-select/dist/index.css';
 import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
+import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
+import { startNewVersionWatcher } from './shared/new-version-banner';
 applySharedAxiosDefaults(axios, store);
 // [GOAL-OPS-SWAP W1 2026-08-12] Jumeau de app.js — installé ici AUSSI, et pas
 // « plus tard » : une entrée corrigée et l'autre pas, c'est la divergence
@@ -52,6 +54,10 @@ installBlobErrorNormalizer(axios);
 // [GOAL-OPS-SWAP W3 2026-08-12] Jumeau de app.js — la caisse V4 partage
 // exactement le même défaut de rafale à l'ouverture. Voir shared/inflight-dedupe.js.
 installInFlightGetDedupe(axios);
+// [Root cause 2026-09-24 · owner] Un onglet caisse laissé ouvert avant un
+// déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
+// shared/new-version-banner.js. Best-effort, jamais bloquant.
+startNewVersionWatcher();
 
 // 401 RESPONSE handler — POS-only variant.
 // Divergence vs app.js intentional: pos-app.js has no `auth.login` named route
@@ -68,6 +74,13 @@ axios.interceptors.response.use(
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);
+            // [SESSION-EXPIRED-OVERLAY 2026-09-23] Avant même de rediriger : le
+            // burst d'autres requêtes déjà en vol va continuer à échouer pendant
+            // les quelques centaines de ms avant que la navigation n'ait
+            // réellement lieu — sans cet overlay, chaque widget affiche son
+            // propre "0"/"chargement infini" pendant cette fenêtre (constat prod
+            // 23/09, /admin/pos-v4).
+            showSessionExpiredOverlay();
             store.dispatch('logout').catch(() => {});
             window.location.href = '/login';
         }
@@ -111,8 +124,45 @@ const router = createRouter({
         { path: '/admin/dashboard', name: 'admin.dashboard', redirect: { name: 'admin.pos.v4' } },
         { path: '/admin/pos', name: 'admin.pos', redirect: { name: 'admin.pos.v4' } },
         { path: '/admin/pos/floorplan', name: 'admin.pos.floorplan', redirect: { name: 'admin.pos.v4.floorplan' } },
-        { path: '/admin/profile/edit-profile', name: 'admin.profile.editProfile', redirect: { name: 'admin.pos.v4' } },
-        { path: '/admin/profile/change-password', name: 'admin.profile.changePassword', redirect: { name: 'admin.pos.v4' } },
+        /*
+         * [AUDIT-SUPERVISEUR 2026-08-25 - ronde 3] LES TROIS ENTREES DU MENU « BONJOUR ... »
+         * ETAIENT MORTES SUR LE POSTE DE CAISSE, PAR DEUX MECANISMES DIFFERENTS.
+         *
+         * Point de depart : 20 erreurs de console sur /admin/pos-v4, toutes un `resolve()` de
+         * routeur en echec, sans message. Cette coquille monte `DefaultComponent`, donc la
+         * navbar d'admin, dont le menu utilisateur resout trois routes de profil.
+         *
+         * 1. « Appareils connectes » n'etait PAS enregistree ici : `resolve()` levait, le lien
+         *    ne portait aucune adresse. C'est la source des 20 erreurs.
+         *
+         * 2. « Modifier le profil » et « Changer le mot de passe » etaient bien enregistrees -
+         *    mais en REDIRECTION VERS LA CAISSE. Le nom se resolvait (donc aucune erreur, donc
+         *    invisible dans les journaux), le lien portait une adresse, et le clic ramenait le
+         *    caissier exactement d'ou il venait. Un lien qui ne fait rien en silence est pire
+         *    qu'un lien casse : rien n'indique que la demande a ete avalee.
+         *
+         * Les trois passent desormais la main a l'application d'admin par une navigation de
+         * page entiere - le patron deja adopte juste en dessous pour les memes raisons : ces
+         * ecrans vivent dans le bundle COMPLET, pas dans le lot allege de la caisse.
+         */
+        {
+            path: '/admin/profile/edit-profile',
+            name: 'admin.profile.editProfile',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/profile/change-password',
+            name: 'admin.profile.changePassword',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/profile/devices',
+            name: 'admin.profile.devices',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
         // [rush-sync WB-R1-01 heal 2026-05-13] Compatibility stubs for route
         // names referenced by PosComponent.vue (tracker, customer screen,
         // pos-orders list/show). These pages live in the FULL app bundle, NOT

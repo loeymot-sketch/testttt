@@ -12,9 +12,24 @@ class ThemeRequest extends FormRequest
      *
      * @return bool
      */
+    /**
+     * [ONB-13 C7 2026-08-28] Defense en profondeur — etait `return true;`.
+     *
+     * Miroir exact de la permission que porte la route : ThemeController:19
+     * (`permission:settings` sur `update`).
+     *
+     * Second verrou : si la route est un jour recablee sans son middleware, la
+     * regle refuse encore. Meme motif que `EmployeeRequest`.
+     */
     public function authorize(): bool
     {
-        return true;
+        $utilisateur = $this->user();
+
+        if ($utilisateur === null) {
+            return false;
+        }
+
+        return $utilisateur->can('settings');
     }
 
     /**

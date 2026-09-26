@@ -6,11 +6,13 @@ use App\Enums\TaxType;
 use App\Enums\Status;
 use App\Libraries\AppLibrary;
 use App\Models\Item;
+use App\Services\Composer\ComposerTemplateService;
 use App\Models\ItemAddon;
 use App\Models\ItemAttribute;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\ItemWizardProfile;
+use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\CouponService;
@@ -124,6 +126,17 @@ final class PricingService
 
         if ($requestItems !== []) {
             foreach ($requestItems as $item) {
+                if ($this->isManualSupplement($item)) {
+                    [$row, $line] = $this->priceManualSupplement($req, $item);
+                    $itemsArray[$i] = $row;
+                    $lines[] = $line;
+                    $realSubtotal += $line->lineSubtotalExTax;
+                    $totalTax += $line->taxAmount;
+                    $i++;
+
+                    continue;
+                }
+
                 $dbItem = $dbItems[$item->item_id] ?? null;
                 if (! $dbItem) {
                     throw new \InvalidArgumentException(
@@ -369,6 +382,134 @@ final class PricingService
         );
     }
 
+    private function isManualSupplement(mixed $item): bool
+    {
+        return is_object($item)
+            && (string) ($item->line_type ?? OrderItem::LINE_TYPE_CATALOG) === OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT;
+    }
+
+    /**
+     * Price a free-form POS supplement from server policy, never from catalogue
+     * fallbacks or client-computed totals.
+     *
+     * @return array{0:array<string,mixed>,1:PricingLineResult}
+     */
+    private function priceManualSupplement(PricingRequest $req, object $item): array
+    {
+        if ($req->context !== 'pos') {
+            throw new \InvalidArgumentException('Le supplément libre est réservé à la caisse.', 422);
+        }
+        if (! (bool) config('pos.manual_supplement.enabled', true)) {
+            throw new \InvalidArgumentException('Le supplément libre est désactivé sur cette caisse.', 422);
+        }
+        if ($req->branchId <= 0) {
+            throw new \InvalidArgumentException('Une branche valide est requise pour le supplément libre.', 422);
+        }
+
+        $rawAmount = $item->manual_amount ?? null;
+        if (! is_numeric($rawAmount)) {
+            throw new \InvalidArgumentException('Le montant du supplément libre est invalide.', 422);
+        }
+        $unitAmount = (float) $rawAmount;
+        $roundedUnitAmount = round($unitAmount, 2);
+        $maxAmount = max(0.01, (float) config('pos.manual_supplement.max_unit_amount', 100));
+        if ($unitAmount <= 0 || $roundedUnitAmount > $maxAmount || abs($unitAmount - $roundedUnitAmount) > 0.000001) {
+            throw new \InvalidArgumentException(
+                'Le supplément libre doit être compris entre 0,01 € et '.number_format($maxAmount, 2, ',', ' ').' € avec deux décimales maximum.',
+                422
+            );
+        }
+
+        $quantity = max(1, (int) ($item->quantity ?? 1));
+        // Cashiers enter a TTC amount ("1 €" must add exactly 1 € to the
+        // amount due). In legacy HT test mode we derive the stored HT subtotal,
+        // while production TTC mode stores the entered amount unchanged.
+        $lineTotalTtc = round($roundedUnitAmount * $quantity, 2);
+        $defaultLabel = trim((string) config('pos.manual_supplement.default_label', 'Supplément')) ?: 'Supplément';
+        $description = trim((string) ($item->manual_label ?? ''));
+        $description = preg_replace('/\s+/u', ' ', $description) ?? $description;
+        $label = $description === ''
+            ? $defaultLabel
+            : $defaultLabel.' — '.$description;
+        $label = mb_substr($label, 0, 80);
+
+        $taxName = trim((string) config('pos.manual_supplement.tax_name', 'TVA 10%')) ?: 'TVA 10%';
+        $taxRate = max(0.0, (float) config('pos.manual_supplement.tax_rate', 10));
+        $taxType = TaxType::PERCENTAGE;
+        $taxAmount = $this->taxCalculator->lineTaxAmountFromTTC(
+            $lineTotalTtc,
+            $taxType,
+            $taxRate,
+            $req->roundLineTax
+        );
+        $lineSubtotal = (bool) config('pricing.tax_inclusive_prices', false)
+            ? $lineTotalTtc
+            : round($lineTotalTtc - $taxAmount, 2);
+        $storedUnitPrice = round($lineSubtotal / $quantity, 6);
+
+        $snapshot = [
+            'schema_version' => CompositionSnapshotBuilder::SCHEMA_VERSION,
+            'captured_at' => now()->toIso8601String(),
+            'line_type' => OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT,
+            'manual_supplement' => [
+                'label' => $label,
+                'quantity' => $quantity,
+                'unit_price_ttc' => $roundedUnitAmount,
+                'line_total_ttc' => $lineTotalTtc,
+                'tax_name' => $taxName,
+                'tax_rate' => $taxRate,
+                'tax_type' => $taxType,
+            ],
+            'lines' => [],
+            'extras' => [],
+            'addons' => [],
+        ];
+
+        $row = [
+            'order_id' => $req->orderId,
+            'branch_id' => $req->branchId,
+            'item_id' => null,
+            'line_type' => OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT,
+            'manual_label' => $label,
+            'quantity' => $quantity,
+            'discount' => 0,
+            'tax_name' => $taxName,
+            'tax_rate' => $taxRate,
+            'tax_type' => $taxType,
+            'tax_amount' => $taxAmount,
+            'price' => $storedUnitPrice,
+            'item_variations' => '[]',
+            'item_extras' => '[]',
+            'composition_snapshot' => json_encode($snapshot, JSON_UNESCAPED_UNICODE),
+            'instruction' => null,
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => $lineSubtotal,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        return [
+            $row,
+            new PricingLineResult(
+                null,
+                $quantity,
+                $storedUnitPrice,
+                0,
+                0,
+                $lineSubtotal,
+                $taxName,
+                $taxRate,
+                $taxType,
+                $taxAmount,
+                '[]',
+                '[]',
+                null,
+                0,
+            ),
+        ];
+    }
+
     /**
      * [T05] Validate per-attribute constraints (min_select / max_select / allow_repeat)
      * defined on `item_attributes` table (T01 columns).
@@ -600,7 +741,7 @@ final class PricingService
             }
 
             $projected = $this->composerProfileProjection()->project($profile, $item, $surface);
-            $this->assertComposerSelectionsBelongToPublishedProfile($line, $projected);
+            $this->assertComposerSelectionsBelongToPublishedProfile($line, $projected, $item, $surface);
             foreach (($projected['steps'] ?? []) as $step) {
                 if (! in_array($step['source_type'] ?? '', ['item_attribute', 'extra_group', 'addon'], true)) {
                     throw new \InvalidArgumentException(
@@ -656,16 +797,51 @@ final class PricingService
         }
     }
 
-    private function assertComposerSelectionsBelongToPublishedProfile(object $line, array $projected): void
-    {
+    /**
+     * [INCIDENT CAISSE 2026-09-03] Le profil contraint ce qu'il DÉCRIT — pas le reste.
+     *
+     * Signalé par le propriétaire, capture à l'appui : au moment d'encaisser, la caisse
+     * refusait avec « le choix #450 n'appartient pas au profil publié ». Ticket construit,
+     * montant affiché, monnaie calculée — et paiement impossible.
+     *
+     * Mesuré sur le catalogue réel : le wizard facture la 2ᵉ sauce 0,50 € via un extra
+     * générique « Sauce supplémentaire » qui appartient bien à l'article
+     * (LOCK_CAISSE_SAUCE_SEAL du 2026-07-16), et qui porte le groupe `sauce`. Or le profil
+     * publié ne décrit d'étapes `extra_group` que pour `crudite` et `supplement` : les
+     * sauces GRATUITES passent par une étape `item_attribute`, si bien qu'aucune étape ne
+     * couvre l'extra PAYANT du groupe `sauce`.
+     *
+     * Sur le MÊME article, « Viande supplémentaire » (groupe `supplement`) passait donc et
+     * « Sauce supplémentaire » (groupe `sauce`) bloquait la vente. La seule différence était
+     * qu'une étape existait pour l'un et pas pour l'autre — un détail de configuration qui
+     * décidait si le restaurant pouvait encaisser.
+     *
+     * Ce que ce garde protège réellement, c'est l'INJECTION : un client ne doit pas pouvoir
+     * facturer une option qui n'est pas vendue avec ce produit, ni une option retirée de la
+     * carte. Cette frontière-là est conservée intégralement. Ce qui change : quand le profil
+     * ne décrit AUCUNE étape pour une famille (ou, pour les extras, pour un groupe donné),
+     * on retombe sur la frontière du catalogue — l'option doit appartenir à l'article, être
+     * active et visible sur cette surface. Quand le profil décrit la famille, sa liste fait
+     * foi, inchangée : une option retirée d'une étape publiée reste refusée
+     * (`ProfilePublishMidCartRejectionTest`).
+     */
+    private function assertComposerSelectionsBelongToPublishedProfile(
+        object $line,
+        array $projected,
+        ?Item $item = null,
+        string $surface = 'pos'
+    ): void {
         $allowedByPayload = [
             'item_variations' => [],
             'item_extras' => [],
             'item_addons' => [],
         ];
+        $famillesDecrites = [];
+        $groupesExtrasDecrits = [];
 
         foreach (($projected['steps'] ?? []) as $step) {
-            $payloadKey = match ($step['source_type'] ?? '') {
+            $sourceType = $step['source_type'] ?? '';
+            $payloadKey = match ($sourceType) {
                 'item_attribute' => 'item_variations',
                 'extra_group' => 'item_extras',
                 'addon' => 'item_addons',
@@ -673,6 +849,16 @@ final class PricingService
             };
             if ($payloadKey === null) {
                 continue;
+            }
+            $famillesDecrites[$payloadKey] = true;
+            if ($sourceType === 'extra_group') {
+                $ref = mb_strtolower(trim((string) ($step['source_ref'] ?? '')));
+                if ($ref === '') {
+                    $ref = mb_strtolower(trim((string) ($step['step_key'] ?? '')));
+                }
+                if ($ref !== '') {
+                    $groupesExtrasDecrits[$ref] = true;
+                }
             }
             foreach (($step['choices'] ?? []) as $choice) {
                 $id = $choice['id'] ?? null;
@@ -688,14 +874,90 @@ final class PricingService
                 if ($id === null) {
                     continue;
                 }
-                if (! isset($allowedIds[(string) $id])) {
-                    throw new \InvalidArgumentException(
-                        "Composition : le choix #{$id} n'appartient pas au profil publié.",
-                        422
-                    );
+                if (isset($allowedIds[(string) $id])) {
+                    continue;
                 }
+                if ($this->choixCouvertParLeCatalogue($payloadKey, (int) $id, $item, $surface, $famillesDecrites, $groupesExtrasDecrits)) {
+                    continue;
+                }
+
+                throw new \InvalidArgumentException(
+                    "Composition : le choix #{$id} n'appartient pas au profil publié.",
+                    422
+                );
             }
         }
+    }
+
+    /**
+     * Le repli : l'option appartient-elle à l'article vendu, est-elle active et visible, et
+     * le profil publié se tait-il à son sujet ? Les trois conditions sont nécessaires.
+     */
+    private function choixCouvertParLeCatalogue(
+        string $payloadKey,
+        int $id,
+        ?Item $item,
+        string $surface,
+        array $famillesDecrites,
+        array $groupesExtrasDecrits
+    ): bool {
+        if ($item === null) {
+            return false;
+        }
+
+        if ($payloadKey === 'item_extras') {
+            $extra = $item->extras->firstWhere('id', $id);
+            if ($extra === null || (int) $extra->status !== Status::ACTIVE || ! $extra->isVisibleOn($surface)) {
+                return false;
+            }
+            $groupe = mb_strtolower(trim((string) ($extra->group_label ?? '')));
+            $groupe = $groupe === '' ? 'default' : $groupe;
+
+            // Le groupe est-il décrit par une étape publiée ? Si oui, la liste de l'étape
+            // fait foi et l'absence de cet extra est une décision, pas un trou.
+            foreach (array_keys($groupesExtrasDecrits) as $ref) {
+                if ($this->groupeExtraCorrespond($groupe, (string) $ref)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Variations et produits ajoutés : repli uniquement si le profil ne décrit AUCUNE
+        // étape de cette famille.
+        if (isset($famillesDecrites[$payloadKey])) {
+            return false;
+        }
+
+        if ($payloadKey === 'item_variations') {
+            $variation = $item->variations->firstWhere('id', $id);
+
+            return $variation !== null && (int) $variation->status === Status::ACTIVE;
+        }
+
+        if ($payloadKey === 'item_addons') {
+            return $item->addons->contains(fn ($addon): bool => (int) $addon->id === $id
+                || (int) ($addon->addon_item_id ?? 0) === $id);
+        }
+
+        return false;
+    }
+
+    /** Même correspondance que la projection : égalité, `default`, ou alias déclaré. */
+    private function groupeExtraCorrespond(string $groupe, string $ref): bool
+    {
+        if ($ref === '') {
+            return false;
+        }
+        if ($groupe === $ref) {
+            return true;
+        }
+        if ($ref === 'default' && $groupe === 'default') {
+            return true;
+        }
+
+        return in_array($groupe, ComposerTemplateService::EXTRA_GROUP_ALIASES[$ref] ?? [], true);
     }
 
     private function composerSelectedCountsForStep(object $line, array $step): array

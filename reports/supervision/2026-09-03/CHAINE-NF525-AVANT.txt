@@ -1,0 +1,21 @@
+Relevé de la chaîne d'audit NF525 AVANT les correctifs d'ordre audit/mutation
+(G2/T2.4 — purge outbox ; G3/T3.2 — bascule d'interrupteur)
+
+Date : 2026-09-03, 03h05
+HEAD : 23c2ef26c
+
+$ php artisan fiscal:verify-chain --all
+  + branch=1  CHAIN OK
+  + branch=2  CHAIN OK
+  + branch=7  CHAIN OK
+  + branch=8  CHAIN OK
+  + branch=9  CHAIN OK
+  + branch=10 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (6 total)
+
+audit_logs : lignes=8705  max_id=8760  dernier current_hash=8319ac79daa9db9e...
+
+Attendu après les correctifs : la chaîne reste OK, le compte AUGMENTE (les bancs écrivent),
+et aucune ligne existante n'est réécrite. Les deux correctifs déplacent l'APPEL à l'audit
+après le fait qu'il atteste ; ils ne touchent pas au mécanisme de chaînage, qui est en zone
+gelée (app/Services/Fiscal/AuditLogService.php).

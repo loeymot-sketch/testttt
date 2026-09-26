@@ -1,0 +1,98 @@
+import { describe, expect, it } from 'vitest';
+import { renderItemSymbolic } from '../../resources/js/helpers/kdsSymbolic.js';
+import { collapseBundledAddonItems } from '../../resources/js/helpers/kdsBundledAddons.js';
+
+/** SONDE ADVERSE round 2 — vague E. */
+function labels(item) {
+    return renderItemSymbolic(item).lines.map((l) => `${l.type}::${l.label ?? JSON.stringify(l)}`);
+}
+
+describe('SONDE round 2 — rendu', () => {
+    it('CF921 : conteneur de menu + sauce variation + extra nomme', () => {
+        const item = {
+            item_name: 'Menu (Frites + Boisson)',
+            quantity: 1,
+            item_variations: [{ attribute_name: 'Sauce', name: 'Algerienne' }],
+            item_extras: [{ extra_id: 53, extra_name: 'Cheddar', quantity: 1, unit_price: 0.9, line_total: 0.9 }],
+            item_addons: [{ role: 'menu_boisson', addon_name: 'Coca-Cola 33cl', quantity: 1 }],
+            instruction: 'Sans oignons',
+        };
+        console.log('CF921 =>', JSON.stringify(labels(item)));
+        expect(true).toBe(true);
+    });
+
+    it('extra GRATUIT sans nom (prix 0) sur produit simple', () => {
+        console.log('EXTRA GRATUIT ANONYME =>', JSON.stringify(labels({
+            item_name: 'Cayenne', quantity: 1,
+            item_extras: [{ id: 269, quantity: 1, unit_price: 0, line_total: 0 }],
+        })));
+        expect(true).toBe(true);
+    });
+
+    it('sauce variation sur conteneur de menu SEULE', () => {
+        console.log('MENU+SAUCE SEULE =>', JSON.stringify(labels({
+            item_name: 'Menu (Frites + Boisson)', quantity: 1,
+            item_variations: [{ attribute_name: 'Sauce', name: 'Algerienne' }],
+        })));
+        expect(true).toBe(true);
+    });
+
+    it('temoin produit simple : sauce rendue', () => {
+        console.log('TEMOIN PRODUIT SIMPLE =>', JSON.stringify(labels({
+            item_name: 'Cayenne', quantity: 1,
+            item_variations: [{ attribute_name: 'Sauce', name: 'Algerienne' }],
+        })));
+        expect(true).toBe(true);
+    });
+});
+
+describe('SONDE round 2 — LE REPLI DES FORMULES REVENDIQUEES', () => {
+    /**
+     * Chemin borne/web : le produit porte « + Menu (Frites + Boisson) (+2,50 €) » dans son
+     * instruction, et le menu est une LIGNE SEPAREE. collapseBundledAddonItems replie la
+     * ligne de menu dans son parent. QUE DEVIENT L'EXTRA PORTE PAR LA LIGNE DE MENU ?
+     */
+    const produitParent = {
+        id: 1, item_name: 'Cayenne', quantity: 1,
+        instruction: '+ Menu (Frites + Boisson) (+2,50 €)',
+    };
+    const ligneMenuAvecExtra = {
+        id: 2, item_name: 'Menu (Frites + Boisson)', quantity: 1,
+        instruction: '↳ Sauce frites: Algerienne',
+        item_extras: [{ extra_id: 53, extra_name: 'Cheddar', quantity: 2, unit_price: 0.9, line_total: 1.8 }],
+    };
+
+    it('le repli conserve-t-il le Cheddar facture sur la ligne de menu ?', () => {
+        const apres = collapseBundledAddonItems([produitParent, ligneMenuAvecExtra]);
+        console.log('APRES REPLI — lignes restantes =', JSON.stringify(apres.map((i) => ({
+            nom: i.item_name, qty: i.quantity, instruction: i.instruction, extras: i.item_extras,
+        })), null, 1));
+        const rendu = apres.map((i) => labels(i));
+        console.log('APRES REPLI — rendu cuisine =', JSON.stringify(rendu));
+        const tout = JSON.stringify(rendu);
+        console.log('CHEDDAR PRESENT APRES REPLI ?', /Cheddar/.test(tout));
+        expect(true).toBe(true);
+    });
+
+    it('temoin : SANS repli (le parent ne revendique rien), le Cheddar est bien la', () => {
+        const apres = collapseBundledAddonItems([
+            { ...produitParent, instruction: '' },
+            ligneMenuAvecExtra,
+        ]);
+        const tout = JSON.stringify(apres.map((i) => labels(i)));
+        console.log('TEMOIN SANS REPLI =>', tout);
+        console.log('CHEDDAR PRESENT SANS REPLI ?', /Cheddar/.test(tout));
+        expect(true).toBe(true);
+    });
+
+    it('meme sonde avec un extra ANONYME sur la ligne de menu repliee', () => {
+        const apres = collapseBundledAddonItems([
+            produitParent,
+            { ...ligneMenuAvecExtra, item_extras: [{ id: 269, quantity: 1, unit_price: 0.9, line_total: 0.9 }] },
+        ]);
+        const tout = JSON.stringify(apres.map((i) => labels(i)));
+        console.log('REPLI + EXTRA ANONYME =>', tout);
+        console.log('SUPPLEMENT PRESENT ?', /Supplément/.test(tout));
+        expect(true).toBe(true);
+    });
+});

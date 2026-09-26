@@ -1,0 +1,36 @@
+Preuve que le garde NF525 contre `config:cache` mord — 2026-09-03
+
+Mesure locale, avec une surcharge `FISCAL_AUDIT_SECRET_BRANCH_1` ajoutée temporairement
+au .env (restauré ensuite, vérifié à 0 surcharge).
+
+  SANS cache de configuration
+    env('FISCAL_AUDIT_SECRET_BRANCH_1') : lisible
+    config('fiscal.audit_secret_branch_ids') : [1]
+    → le garde ne se déclenche pas. Correct.
+
+  AVEC cache de configuration (php artisan config:cache)
+    env('FISCAL_AUDIT_SECRET_BRANCH_1') : NULL
+    config('fiscal.audit_secret_branch_ids') : [1]      ← a SURVÉCU au cache
+    app()->configurationIsCached() : OUI
+    → les trois conditions du garde sont réunies : il lève.
+
+C'est exactement l'état où AuditLogService::secretFor() retomberait sur le secret par
+défaut et signerait la chaîne avec le mauvais secret, sans rien dire.
+
+CORRECTION D'UN DÉFAUT DANS MON PROPRE GARDE
+Le message conseillait `php artisan config:clear`. Or artisan DÉMARRE l'application :
+la commande se serait heurtée au garde elle-même, et l'exploitant se serait retrouvé
+sans issue au moment précis où il est bloqué. Le message dit désormais
+`rm bootstrap/cache/config.php`, et dit explicitement que `config:clear` ne marche pas.
+
+ÉTAT EN PRODUCTION (vérifié le 2026-09-03)
+  config en cache : non
+  branches recensées : [1]
+  chaîne fiscale : CHAIN OK
+Le garde est donc inerte aujourd'hui, et armé si quelqu'un lance `config:cache`.
+
+DEUX ERREURS D'INSTRUMENT DE MA PART, CONSIGNÉES
+1. Ma première mesure a rendu « env(): NULL » même SANS cache — donc un faux positif qui
+   aurait « prouvé » n'importe quoi. Cause : le .env de ce dépôt ne finit PAS par un saut
+   de ligne, et mon `>> .env` avait collé la variable à `UBER_VISION_ENABLED=true`.
+2. Corrigé avec `printf '\n...'`. La mesure ci-dessus est celle qui vaut.

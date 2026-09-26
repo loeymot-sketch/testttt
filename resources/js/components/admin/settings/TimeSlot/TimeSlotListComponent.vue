@@ -12,7 +12,7 @@
           :key="dayEnum">
           <!-- Slot weekenday name -->
           <p class="capitalize pt-5 sm:pt-0 w-24 flex-shrink-0 text-sm text-[#374151]">
-            {{ dayEnum.name }}
+            {{ $t("label." + dayEnum.key, dayEnum.name) }}
           </p>
 
           <!-- Slot content group -->

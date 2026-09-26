@@ -151,7 +151,7 @@
                     {{ $t("label.flyer_history_empty") }}
                 </div>
                 <div v-else class="table-responsive">
-                    <table class="table">
+                    <table class="table flyer-table">
                         <thead>
                             <tr>
                                 <th>{{ $t("label.customer") }}</th>
@@ -376,3 +376,24 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-25 · D-004] LE CODE PROMO TOUCHAIT LE STATUT, SANS UN PIXEL.
+ *
+ * Mesuré au pixel sur la capture : on lisait « ADMINNOTCAPP-236HÉchec »,
+ * « CAPE2E381786-68AHÉchec », et le même collage sur ~24 lignes consécutives. Le code
+ * n'était PAS tronqué — le DOM porte bien la valeur complète — c'est la cellule qui
+ * n'avait AUCUNE marge, contrairement aux tableaux du reste du produit.
+ *
+ * Le code promo est précisément la chose que le caissier peut avoir à relire ou à dicter
+ * au téléphone. Deux mots soudés y sont plus coûteux qu'ailleurs.
+ *
+ * On reprend la marge de cellule du reste du produit (12 px / 8 px), sur CE tableau
+ * uniquement — jamais sur `.table` global, qui habille tous les tableaux du produit.
+ */
+.flyer-table th,
+.flyer-table td {
+    padding: 8px 12px;
+}
+</style>

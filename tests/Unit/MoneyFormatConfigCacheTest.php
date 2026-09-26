@@ -26,7 +26,21 @@ class MoneyFormatConfigCacheTest extends TestCase
 
             $this->assertSame('8.80', AppLibrary::flatAmountFormat(8.80), 'flatAmountFormat ne doit pas arrondir à l\'entier');
             $this->assertSame(7.9, AppLibrary::convertAmountFormat(7.90), 'convertAmountFormat doit garder les décimales');
-            $this->assertSame('1,427.75', AppLibrary::reportCurrencyAmountFormat(1427.75), 'reportCurrencyAmountFormat (totaux de rapport) ne doit pas arrondir');
+            // [ONB-07 2026-08-28] Attendu passé de `1,427.75` à `1 427,75`.
+            //
+            // Le but de CE test est que les décimales survivent à `config:cache` —
+            // le littéral anglo-saxon y était incident, pas voulu. Le formateur
+            // rendait des montants au format `1,234.56` sur un PDF français, quand
+            // l'écran affiche `1 234,56 €` : « 1,234.56 » se lit « 1,23 » pour un
+            // œil français, soit un facteur mille sur un document comptable.
+            //
+            // L'intention d'origine est conservée et même renforcée : on vérifie
+            // toujours les deux décimales, et désormais aussi la convention.
+            $this->assertSame(
+                "1\u{202F}427,75",
+                AppLibrary::reportCurrencyAmountFormat(1427.75),
+                'reportCurrencyAmountFormat (totaux de rapport) ne doit pas arrondir'
+            );
         } finally {
             if ($orig !== false) {
                 putenv("CURRENCY_DECIMAL_POINT={$orig}");

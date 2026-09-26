@@ -142,7 +142,11 @@
           <div class="kiosk-cart-item-info">
             <div class="kiosk-cart-item-name-row">
               <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
-              <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
+              <!-- [OWNER 2026-08-25] Rouvre le produit sur SON RÉCAP, d'où chaque ligne
+                   peut être modifiée séparément. La ligne du panier n'est jamais
+                   supprimée : elle est remplacée à la validation, restaurée à l'abandon.
+                   Le libellé est écrit, et la cible fait 44 px : un crayon gris de 16 px
+                   dans un cercle de 34 px ne se voit pas et se rate au doigt. -->
               <button type="button"
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
@@ -153,6 +157,7 @@
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
+                <span class="kiosk-cart-edit-label">{{ $t('kiosk.wizard.summary.edit') }}</span>
               </button>
             </div>
             <!-- [GAP-22-2] Afficher les sélections wizard (variations, extras) -->
@@ -1031,17 +1036,31 @@ export default {
   gap: 0.4rem;
 }
 
+/* [OWNER 2026-08-25] Le point d'entrée de la modification. Il portait un crayon gris
+   de 16 px dans un cercle de 34 px, sans texte : sous le minimum tactile de 44 px, et
+   rien n'annonçait au client qu'il POUVAIT modifier son article. Désormais nommé. */
 .kiosk-cart-edit-btn {
   flex-shrink: 0;
-  background: var(--kiosk-surface-alt);
-  border: 1px solid var(--kiosk-border);
-  border-radius: 50%;
-  color: var(--kiosk-text-mute);
-  width: 34px; height: 34px;
-  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 2px solid var(--kiosk-primary-dark);
+  border-radius: 999px;
+  color: var(--kiosk-primary-dark);
+  min-height: 44px;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  padding: 0;
+}
+.kiosk-cart-edit-label {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.kiosk-cart-edit-btn:active {
+  background: var(--kiosk-primary-dark);
+  color: var(--kiosk-text-on-red, #fff);
 }
 .kiosk-cart-edit-btn:hover {
   background: var(--kiosk-primary-soft);

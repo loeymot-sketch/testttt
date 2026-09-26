@@ -21,9 +21,16 @@
  *   2. le créneau est libéré au règlement, succès COMME échec (sinon le poll reste bloqué) ;
  *   3. les deux chargeurs passent par le coalesceur et ne redispatchent jamais en direct.
  *
+ * RECIBLÉ À NOUVEAU — GOAL G1 (2026-09-03).
+ * Le point 4 ci-dessous épinglait `paginate` + `per_page: 100`. Cette borne CLIENT, posée sur le
+ * tri `id desc` par défaut d'`OrderService::list`, jetait les commandes les PLUS ANCIENNES du
+ * service dès la 101ᵉ — celles qui traînent, celles que le tiroir de contrôle existe pour
+ * montrer — et rien ne le signalait. La borne vit maintenant côté SERVEUR
+ * (`PosOrderController::serviceDay` : journée de service + états affichés), et elle s'avoue
+ * (`meta.total` / `meta.truncated`). Épingler encore le plafond client aurait verrouillé le défaut.
+ *
  * CE QU'IL PROTÈGE EN PLUS depuis 2026-09-02 :
- *   4. la requête est BORNÉE (`paginate` + `per_page`) — sans `paginate`, le serveur ignore
- *      `per_page` et renvoie toute la journée avec ses eager-loads ;
+ *   4. la requête ne porte AUCUN plafond d'affichage côté client ;
  *   5. elle demande la COMPOSITION (le tiroir de contrôle montre le contenu des commandes) ;
  *   6. elle ne commite PAS dans Vuex (`vuex: false`) : le store `posOrder/lists` appartient au
  *      tableau de suivi, la caisse n'a pas à le lui écraser sous les pieds.
@@ -46,14 +53,8 @@ function makeFetchOnce() {
         if (this._serviceFetchInFlight) {
             return this._serviceFetchInFlight;
         }
-        const jour = this.serviceDayRange();
-        const p = this.$store.dispatch('posOrder/lists', {
-            paginate: 1,
-            per_page: 100,
-            lean: 1,
+        const p = this.$store.dispatch('posOrder/serviceDay', {
             composition: 1,
-            from_date: jour.from,
-            to_date: jour.to,
             vuex: false,
         });
         this._serviceFetchInFlight = p;
@@ -70,7 +71,6 @@ function makeFetchOnce() {
 const contexte = (dispatch) => ({
     _serviceFetchInFlight: null,
     $store: { dispatch },
-    serviceDayRange: () => ({ from: '2026-09-02', to: '2026-09-02' }),
 });
 
 describe('PosComponent._fetchServiceOrdersOnce — dédoublonnage POSPERF-03', () => {
@@ -91,20 +91,20 @@ describe('PosComponent._fetchServiceOrdersOnce — dédoublonnage POSPERF-03', (
         expect(ctx._serviceFetchInFlight).toBeNull(); // créneau libéré au règlement
     });
 
-    it('interroge la liste des commandes de caisse, bornée à la journée de service', () => {
+    it('interroge le flux borné SERVEUR à la journée de service, sans plafond client', () => {
         const dispatch = vi.fn(() => Promise.resolve({ data: { data: [] } }));
         const ctx = contexte(dispatch);
         makeFetchOnce().call(ctx);
 
-        expect(dispatch).toHaveBeenCalledWith('posOrder/lists', expect.objectContaining({
-            paginate: 1,
-            per_page: 100,
-            lean: 1,
+        expect(dispatch).toHaveBeenCalledWith('posOrder/serviceDay', expect.objectContaining({
             composition: 1,
-            from_date: '2026-09-02',
-            to_date: '2026-09-02',
             vuex: false,
         }));
+        // [GOAL G1 2026-09-03] Aucun plafond d'affichage ne repart du client : c'est lui qui
+        // jetait les commandes les plus anciennes du service, en silence.
+        const params = dispatch.mock.calls[0][1];
+        expect(params.per_page).toBeUndefined();
+        expect(params.paginate).toBeUndefined();
     });
 
     it('le tick suivant redemande — la coalescence ne franchit jamais un cycle', async () => {
@@ -133,17 +133,18 @@ describe('PosComponent.vue — câblage réel', () => {
         expect(SOURCE).toMatch(/_fetchServiceOrdersOnce\s*\(\)\s*\{[\s\S]*?this\._serviceFetchInFlight[\s\S]*?\}/);
     });
 
-    it('la requête est bornée, allégée, avec composition, et sans commit Vuex', () => {
+    it('la requête est bornée SERVEUR, avec composition, sans plafond client ni commit Vuex', () => {
         const corps = SOURCE.match(/_fetchServiceOrdersOnce\s*\(\)\s*\{[\s\S]+?\n {8}\},/);
         expect(corps).not.toBeNull();
-        expect(corps[0]).toMatch(/posOrder\/lists/);
-        expect(corps[0]).toMatch(/paginate:\s*1/);
-        expect(corps[0]).toMatch(/per_page:\s*100/);
-        expect(corps[0]).toMatch(/lean:\s*1/);
+        expect(corps[0]).toMatch(/posOrder\/serviceDay/);
         expect(corps[0]).toMatch(/composition:\s*1/);
-        expect(corps[0]).toMatch(/from_date:\s*jour\.from/);
-        expect(corps[0]).toMatch(/to_date:\s*jour\.to/);
         expect(corps[0]).toMatch(/vuex:\s*false/);
+        // [GOAL G1 2026-09-03] Le plafond client est mort et doit le rester : `per_page: 100`
+        // sur un tri `id desc` jetait les commandes les PLUS ANCIENNES du service — celles qui
+        // traînent — sans rien signaler. La borne vit désormais côté serveur, et elle s'avoue.
+        // Ancré en début de ligne : la charge envoyée, jamais un mot cité dans un commentaire.
+        expect(corps[0]).not.toMatch(/^\s*per_page\s*:/m);
+        expect(corps[0]).not.toMatch(/^\s*paginate\s*:/m);
     });
 
     it('loadActiveOrdersStats passe par le coalesceur, jamais par un dispatch direct', () => {

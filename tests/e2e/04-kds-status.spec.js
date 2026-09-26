@@ -65,22 +65,22 @@ test.describe('KDS — interface cuisine', () => {
   });
 
   // -------------------------------------------------------------------
-  // P0-13 : KDS interaction adversarial — vraie navigation + status transition
+  // P0-13 : KDS interaction adversarial — vrais contrôles de la barre + tentative transition
   //
   // Steps :
   //   1. Login chef → surface KDS
-  //   2. Assertion forte : container KDS aria-live OU bannière visibles
-  //   3. Click NON-conditional sur filtre status PREPARING (filter chip)
-  //   4. Click NON-conditional sur filtre status PREPARED
-  //   5. Click NON-conditional sur reset filtres
+  //   2. Assertion forte : barre KDS durable, commune aux layouts V2 et legacy
+  //   3. Ouvre/ferme l'historique du jour (lecture seule)
+  //   4. Ouvre/referme la légende des symboles cuisine
+  //   5. Déplie/replie l'information de bump locale
   //   6. Si une carte order est visible (data-kds-order-card="...") :
   //      → click sur orderStatus button (PREPARING/PREPARED) si présent
-  //      → sinon : assertion qu'au moins le grid columns existe
+  //      → sinon : assertion de la barre et de l'état vide KDS
   //
-  // Acceptance : ≥3 clicks non-conditionnels (filtres KDS), ≥1 toBeVisible
-  // sur élément réel, ≥1 assertion business (URL stable + grid OU empty state).
+  // Acceptance : ≥3 interactions non-conditionnelles de la barre, ≥1 toBeVisible
+  // sur élément réel, ≥1 assertion business (URL stable + état vide ou carte).
   // -------------------------------------------------------------------
-  test('KDS adversarial — filter clicks + status transition attempt', async ({ page }) => {
+  test('KDS adversarial — toolbar actions + status transition attempt', async ({ page }) => {
     await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
     await page.waitForTimeout(3_000);
@@ -88,53 +88,37 @@ test.describe('KDS — interface cuisine', () => {
     const jsErrors = [];
     page.on('pageerror', (err) => jsErrors.push(err.message));
 
-    // Step 2 — assertion DOM forte : container KDS principal présent
-    // KDS aria-live region OU sync-mode banner OU grid columns selon état WS.
-    const kdsRoot = page.locator('[data-testid="kds-aria-live"], .grid.md\\:grid-cols-3, [data-testid="kds-sync-mode-banner"]').first();
-    await expect(kdsRoot).toBeVisible({ timeout: 15_000 });
+    // Step 2 — ancrage durable : l'ancienne grille md:grid-cols-3 n'existe plus
+    // en V2 et aria-live est intentionnellement sr-only. La toolbar est visible
+    // dans les deux layouts et porte des test ids stables.
+    const toolbar = page.getByTestId('kds-toolbar');
+    await expect(toolbar).toBeVisible({ timeout: 15_000 });
 
-    // Step 3-5 — Click NON-conditional sur 3 filtres status (chips dans header KDS).
-    // Les filtres sont des <button> avec text "Toutes / Confirmées / En préparation / Prêtes".
-    // En cas de header différent : on cible par regex i18n.
-    const filterPreparing = page.getByRole('button', { name: /préparation|preparing|en cours/i }).first();
-    const filterPrepared = page.getByRole('button', { name: /prêt|prête|prepared|done/i }).first();
-    const filterAll = page.getByRole('button', { name: /toutes|all|reset/i }).first();
+    // Step 3 — historique : ouverture et fermeture sans muter une commande.
+    await page.getByTestId('kds-history-button').click();
+    await expect(page.getByTestId('kds-history-drawer')).toBeVisible();
+    await page.getByTestId('kds-history-close').click();
+    await expect(page.getByTestId('kds-history-drawer')).toBeHidden();
 
-    // Step 2b — Fill NON-conditional dans le champ de recherche KDS (form input réel)
-    const searchInput = page.locator('input[type="text"][placeholder*="commande" i], input[type="text"][placeholder*="search" i], .header-search-field').first();
-    if (await searchInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await searchInput.fill('123');
-      await page.waitForTimeout(400);
-      await searchInput.fill(''); // reset
-      await page.waitForTimeout(300);
-    }
+    // Step 4 — légende de production : les codes HH/X doivent rester accessibles.
+    const legendToggle = page.getByTestId('kds-legend-toggle');
+    await legendToggle.click();
+    await expect(legendToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByTestId('kds-symbol-legend')).toBeVisible();
+    await legendToggle.click();
+    await expect(legendToggle).toHaveAttribute('aria-expanded', 'false');
 
-    // Click 1 — filtre PREPARING
-    if (await filterPreparing.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await filterPreparing.click({ timeout: 5_000 });
-      await page.waitForTimeout(700);
-    } else {
-      // Fallback : un click sur n'importe quel button visible dans la barre header KDS
-      const anyHeaderBtn = page.locator('button').filter({ hasText: /./ }).first();
-      await expect(anyHeaderBtn).toBeVisible({ timeout: 5_000 });
-      await anyHeaderBtn.click({ timeout: 5_000 });
-      await page.waitForTimeout(700);
-    }
-
-    // Click 2 — filtre PREPARED
-    if (await filterPrepared.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await filterPrepared.click({ timeout: 5_000 });
-      await page.waitForTimeout(700);
-    }
-
-    // Click 3 — reset filtres ou filtre "Toutes"
-    if (await filterAll.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await filterAll.click({ timeout: 5_000 });
-      await page.waitForTimeout(700);
-    }
+    // Step 5 — information locale de bump, puis remise de l'écran dans son état initial.
+    const bumpInfoToggle = page.getByTestId('kds-bump-info-toggle');
+    await bumpInfoToggle.click();
+    await expect(bumpInfoToggle).toHaveAttribute('aria-expanded', 'true');
+    await bumpInfoToggle.click();
+    await expect(bumpInfoToggle).toHaveAttribute('aria-expanded', 'false');
 
     // Step 6 — Si carte commande visible : tenter status transition réelle.
-    const orderCard = page.locator('[data-kds-order-card]').first();
+    // V2 rend les cartes via KdsOrderCard (`.kds-card`, role=region) alors que
+    // l'attribut data-kds-order-card n'existe que dans le layout legacy.
+    const orderCard = page.locator('.kds-card').first();
     const hasCard = await orderCard.isVisible({ timeout: 4_000 }).catch(() => false);
 
     if (hasCard) {
@@ -143,18 +127,26 @@ test.describe('KDS — interface cuisine', () => {
         hasText: /prêt|preparing|preparation|en préparation|prepared|done|terminé/i,
       }).first();
       if (await statusBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        const orderId = await orderCard.getAttribute('data-order-id');
         await statusBtn.click({ timeout: 5_000 });
-        await page.waitForTimeout(1_500);
 
-        // Business assertion : la carte a soit changé de colonne, soit reflète un nouveau status
-        const newText = await orderCard.innerText().catch(() => '');
-        expect(newText.length).toBeGreaterThan(0);
+        // Une transition réussie retire la carte de la file active et la place
+        // dans « Récemment servies ». Ne pas relire l'ancien locator : il est
+        // volontairement détaché après la mutation.
+        if (orderId) {
+          await expect(page.getByText(new RegExp(`Commande N°${orderId} servie`))).toBeVisible({
+            timeout: 10_000,
+          });
+        } else {
+          await expect(page.getByText(/Récemment servies/i)).toBeVisible({ timeout: 10_000 });
+        }
       }
     } else {
-      // Pas de commandes en cuisine en environnement de test : assertion qu'au moins
-      // le squelette KDS (grid + filtres) est rendu correctement.
-      const gridShell = page.locator('.grid');
-      await expect(gridShell.first()).toBeVisible({ timeout: 5_000 });
+      // Pas de commandes en cuisine en environnement de test : le toolbar et
+      // l'état vide constituent la surface exploitable, sans dépendre du nombre
+      // de colonnes configurable du layout V2.
+      await expect(toolbar).toBeVisible();
+      await expect(page.getByText(/Aucune commande en cours/i)).toBeVisible();
     }
 
     // Step 7 — assertion business finale : URL toujours sur KDS, pas de crash.

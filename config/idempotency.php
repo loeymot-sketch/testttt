@@ -40,6 +40,19 @@ return [
         // c'est elle qui l'a attrapé.
         'api/admin/pos-loyalty/customers',
         'api/admin/pos-order/*/attach-loyalty',
+        // [ONB-13 T-3.1.1 2026-08-27] Les DEUX routes qui ecrivent reellement les points
+        // manquaient a l'appel du 12/08 : celui-ci a ajoute `customers` et `attach-loyalty`
+        // et oublie `credit-manual` et `deduct-manual`. Meme famille, meme risque, oubliees.
+        // Elles portaient bien l'intergiciel, mais sans figurer ici la cle restait
+        // FACULTATIVE : un double appui creditait ou debitait deux fois. La sentinelle
+        // IdempotencyRequiredRoutesCoverageTest etait ROUGE — verifie en la lancant, pas
+        // en la supposant. La modale POS envoie deja X-Idempotency-Key sur les deux :
+        // rendre l'exigence obligatoire ne casse aucun appelant existant.
+        'api/admin/pos-loyalty/credit-manual',
+        'api/admin/pos-loyalty/deduct-manual',
+        // Meme situation pour l'ajustement de matiere premiere : un rejeu doublait
+        // l'ajustement de stock. RawMaterialAdjustComponent envoie deja l'en-tete.
+        'api/admin/raw-materials/*/adjust',
         'api/admin/pos',
         'api/admin/pos-order/change-payment-status/*',
         'api/admin/pos-order/select-delivery-boy/*',
@@ -110,6 +123,10 @@ return [
         // Identique au pattern change-status/* ci-dessus + même defense-in-depth
         // (idempotency + throttle:kds-bump) au router.
         'api/admin/kds-order/recall/*',
+        // Item-level bump/recall mutate the same order state and therefore
+        // require the idempotency key just like the order-level KDS routes.
+        'api/admin/kds-order/items/*/bump',
+        'api/admin/kds-order/items/*/recall',
         // [REMETTRE-EN-PRÉPARATION 2026-08-13] Même oubli que `recall/*` juste au-dessus, à cinq
         // ans d'écart : la route est câblée avec l'intergiciel d'idempotence dans routes/api.php
         // mais je ne l'avais pas déclarée ici. La sentinelle l'a attrapée — c'est précisément son

@@ -150,6 +150,44 @@ class EmailLoginFlowTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
     }
 
+    /**
+     * [Root cause 2026-09-18, propriétaire : « parfois un client enregistré, je ne trouve pas
+     * son compte »] Reproduit en local : un e-mail-signup dont l'ENVOI DU CODE échoue (SMTP
+     * injoignable en environnement réel — bounce, provider en panne, adresse invalide) laisse
+     * une ligne `otps` déjà écrite AVANT l'échec de Mail::send(), renvoie 422 au client, et ne
+     * journalise RIEN nulle part. Le client ne reçoit jamais son code → `register()` (appelé
+     * uniquement depuis `verify()`) ne s'exécute jamais → AUCUN compte n'est créé. Le
+     * propriétaire, cherchant plus tard « il m'a dit qu'il s'était inscrit », ne trouve
+     * personne et n'a aucune trace pour comprendre pourquoi.
+     *
+     * Ce test verrouille la correction : l'échec doit au moins laisser une trace journalisée,
+     * exploitable pour retrouver CE numéro/e-mail précis quand le propriétaire signale le cas.
+     */
+    public function test_email_send_failure_during_signup_is_logged_for_later_investigation(): void
+    {
+        \Illuminate\Support\Facades\Log::spy();
+        \Illuminate\Support\Facades\Mail::shouldReceive('to')->once()->andReturnUsing(function () {
+            throw new \Exception('Connection could not be established with host "smtp.example.com:587": simulated SMTP outage');
+        });
+
+        $r = $this->emailLogin(['email' => 'client-perdu@example.com', 'first_name' => 'Perdu', 'phone' => '0699555099']);
+        $r->assertStatus(422);
+
+        // L'état dangereux existe bel et bien : un jeton a été écrit avant l'échec d'envoi.
+        $this->assertNotNull($this->tokenFor('0699555099'), 'sanity : la ligne otps existe malgré l\'échec');
+
+        // Aucun compte n'a pu être créé (verify() n'a jamais eu lieu) — exactement le symptôme
+        // rapporté : « client enregistré » introuvable, parce qu'il n'existe pas.
+        $this->assertNull(User::withoutGlobalScopes()->where('phone', '0699555099')->first());
+
+        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+            ->withArgs(function (string $message, array $context = []) {
+                return str_contains($message, 'guest_signup')
+                    && ($context['phone'] ?? null) === '0699555099';
+            })
+            ->once();
+    }
+
     /** (3b) Téléphone fourni sans prénom → 422 de validation, rien n'est envoyé. */
     public function test_signup_mode_requires_first_name_when_phone_is_given(): void
     {
@@ -157,6 +195,56 @@ class EmailLoginFlowTest extends TestCase
         $this->emailLogin(['email' => 'mourad@example.com', 'phone' => '0699555003'])
             ->assertStatus(422)->assertJsonValidationErrors(['first_name']);
         Mail::assertNothingSent();
+    }
+
+    /**
+     * [Root cause 2026-09-19, propriétaire : « plusieurs personnes n'arrivent pas à créer un
+     * compte, ils mettent les e-mails, ils reçoivent jamais le code par e-mail »]
+     *
+     * envoyerCodeParEmail() décide, à raison (anti-usurpation, GAP « channel-confusion »), de
+     * n'envoyer AUCUN e-mail quand le TÉLÉPHONE saisi appartient déjà à un compte invité AYANT
+     * DE LA VALEUR (points fidélité ou commandes) mais SANS e-mail au dossier — livrer vers
+     * l'e-mail que l'appelant vient de taper prouverait la possession du TÉLÉPHONE, jamais de
+     * l'E-MAIL, et ouvrirait un vol de compte. Le défaut n'est pas cette garde (à garder telle
+     * quelle) : c'est que la réponse mentait quand même « code envoyé », sans aucun recours
+     * pour le VRAI client (celui qui a réellement ce téléphone) qui essaie juste d'ajouter son
+     * adresse à son propre compte. Reproduit ici exactement comme au comptoir : un compte
+     * invité avec des points, un téléphone, aucun e-mail.
+     */
+    public function test_a_phone_already_holding_loyalty_value_without_an_email_gets_an_honest_fallback_message(): void
+    {
+        Mail::fake();
+
+        $existing = User::create([
+            'name' => 'Client Comptoir Sans Email',
+            'username' => 'client-comptoir-sanse-2',
+            'email' => null,
+            'phone' => '0699555099',
+            'country_code' => '33',
+            'branch_id' => 0,
+            'is_guest' => Ask::YES,
+            'password' => bcrypt('whatever'),
+        ]);
+        $existing->loyalty_points = 250;
+        $existing->save();
+
+        $response = $this->emailLogin([
+            'email' => 'nouveau.mail.reel@example.com',
+            'first_name' => 'VraiClient',
+            'phone' => '0699555099',
+        ]);
+
+        // La sécurité ne change pas : la réponse reste "réussie" en apparence (anti-énumération
+        // — rien ne doit distinguer ce cas d'un envoi normal pour un appelant extérieur).
+        $response->assertStatus(200)->assertJsonPath('sent', true);
+
+        // ...MAIS aucun e-mail ne part réellement, et le client a maintenant un VRAI recours au
+        // lieu d'attendre indéfiniment un code qui n'arrivera jamais.
+        Mail::assertNothingSent();
+        $response->assertJsonPath('message', trans('all.message.check_your_email_for_code_with_fallback'));
+        // Preuve indépendante que le message n'est plus le message "silencieux" d'avant : le
+        // recours (comptoir/counter) est bien un texte NOUVEAU, distinct de l'ancien.
+        $this->assertNotSame(trans('all.message.check_your_email_for_code'), $response->json('message'));
     }
 
     /** (4) La casse de l'e-mail ne compte pas. */

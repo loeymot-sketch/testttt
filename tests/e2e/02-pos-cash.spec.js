@@ -99,66 +99,69 @@ test.describe('POS Cash — commande complète', () => {
         await submitBtn.click({ timeout: 3_000 });
         await page.waitForTimeout(1_500);
       }
-      // Close dialog si présent (mode active)
-      const closeBtn = page.locator('[data-testid="cash-session-close"]').first();
-      if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await closeBtn.click({ timeout: 2_000 });
-        await page.waitForTimeout(500);
-      }
     }
 
-    // Step 3 — Click NON-conditional sur la première tile produit disponible
-    const tiles = page.locator('.pos-v5-tile, .pos-item-tile').filter({
-      hasNot: page.locator('.pos-item-86-badge, .pos-v5-tile__overlay'),
-    });
-    await expect(tiles.first()).toBeVisible({ timeout: 10_000 });
-    await tiles.first().click({ timeout: 5_000 });
-    await page.waitForTimeout(1_500);
-
-    // Step 4 — wizard éventuel : valider via CTA "Ajouter" (DESIGN PROTÉGÉ)
-    const addCta = page.locator('.pos-v5-item-add-cta, .pos-v4-item-wizard-footer button').filter({
-      hasText: /ajouter au panier|ajouter|add to cart/i,
-    }).first();
-    if (await addCta.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await addCta.click({ timeout: 5_000 });
-      await page.waitForTimeout(800);
+    // Une session déjà active n'affiche pas le formulaire d'ouverture, mais son
+    // dialogue modal bloque tout de même les tuiles catalogue. Refermer dans
+    // les deux états avant d'exercer la vente.
+    const closeBtn = page.locator('[data-testid="cash-session-close"]').first();
+    if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await closeBtn.click({ timeout: 2_000 });
+      await page.waitForTimeout(500);
     }
 
-    // Step 5 — Click NON-conditional sur le bouton Payer (forme V5)
+    // Step 3 — Le POS est désormais « catégorie d'abord ». Cayenne (ID seed
+    // stable 22) exerce le vrai composeur avant l'encaissement.
+    const categoryGrid = page.getByTestId('pos-category-grid');
+    await expect(categoryGrid).toBeVisible({ timeout: 10_000 });
+    await categoryGrid.getByTestId('pos-category-tile').filter({ hasText: /sandwich/i }).first().click();
+
+    const cayenne = page.locator('[data-pos-item-id="22"]').first();
+    await expect(cayenne).toBeVisible({ timeout: 10_000 });
+    await cayenne.click({ timeout: 5_000 });
+
+    const modal = page.locator('#item-variation-modal');
+    await expect(modal).toBeVisible({ timeout: 10_000 });
+    const painButton = modal.locator('.pain-section button').filter({ hasText: /Pain/i }).first();
+    await expect(painButton).toBeVisible();
+    await painButton.click();
+    await modal.locator('.viande-section .wizard-viande-tile').filter({ hasText: /poulet marin/i }).first()
+      .locator('.viande-tile-add').click();
+    await modal.locator('.viande-section .wizard-viande-tile').filter({ hasText: /viande hachée/i }).first()
+      .locator('.viande-tile-add').click();
+    const andalouse = modal.locator('.sauce-section .sauce-chip').filter({ hasText: /andalouse/i }).first();
+    await expect(andalouse).toBeVisible();
+    await andalouse.click();
+    await modal.locator('button[data-action="add-to-cart"]').first().click();
+    await expect(modal).toBeHidden({ timeout: 10_000 });
+    await expect(page.locator('article.pos-v5-cart-item').filter({ hasText: /cayenne/i }).first()).toBeVisible();
+
+    // Step 4 — Click NON-conditional sur le bouton Payer (forme V5)
     const payBtn = page.locator('[data-testid="pos-v5-pay"]').first();
-    if (!(await payBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-      // Si le bouton n'apparaît pas (panier vide en environnement non amorcé),
-      // on marque le test comme partiel adversarial : on a quand même cliqué tile + valid CTA.
-      // Assertion finale : aucun crash + grid toujours visible.
-      const visibleText = await page.locator('body').innerText();
-      expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);
-      await expect(grid).toBeVisible();
-      test.fixme(true, 'pos-v5-pay non visible : env catalogue vide ou panier non amorcé. Suite payment + ticket à reprendre en V1.0.1 avec dataset seed.');
-      return;
-    }
+    await expect(payBtn).toBeVisible({ timeout: 10_000 });
     await payBtn.click({ timeout: 5_000 });
     await page.waitForTimeout(1_200);
 
-    // Step 6 — Click NON-conditional sur mode cash
+    // Step 5 — Click NON-conditional sur mode cash
     const cashModeBtn = page.locator('[data-testid="pos-payment-mode-cash"]').first();
     await expect(cashModeBtn).toBeVisible({ timeout: 8_000 });
     await cashModeBtn.click({ timeout: 5_000 });
     await page.waitForTimeout(500);
 
-    // Step 7 — Fill montant tendered (input numérique payment)
+    // Step 6 — Fill montant tendered (input numérique payment)
     const tenderedInput = page.locator('input[type="number"], input[name*="tendered" i], input[name*="received" i]').first();
     if (await tenderedInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await tenderedInput.fill('20');
       await page.waitForTimeout(400);
     }
 
-    // Step 8 — Click NON-conditional sur Confirmer paiement
+    // Step 7 — Click NON-conditional sur Confirmer paiement
     const confirmPay = page.locator('[data-testid="pos-payment-confirm"]').first();
     await expect(confirmPay).toBeVisible({ timeout: 8_000 });
     await confirmPay.click({ timeout: 5_000 });
     await page.waitForTimeout(2_000);
 
-    // Step 9 — Business state : confirmation OU ticket OU retour grille panier vide
+    // Step 8 — Business state : confirmation OU ticket OU retour grille panier vide
     // Plusieurs surfaces possibles : modal ticket, toast, retour grid.
     const visibleText = await page.locator('body').innerText();
     expect(visibleText).not.toMatch(/Whoops|Fatal error|Server Error/i);
