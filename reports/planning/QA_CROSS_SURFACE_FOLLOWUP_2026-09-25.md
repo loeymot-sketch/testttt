@@ -231,5 +231,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   libres fiscalisés, stock, tiroir et clôture, fidélité/points, reçus,
   commandes web/téléphone/livraison, tickets cuisine, remboursements,
   autorisations et isolation de branche. Aucun échec ni skip dans cette suite.
+- **Re-sonde web publique (26/09/2026)** : les routes `/login`, `/kiosk/login`,
+  `/admin/dashboard`, `/admin/settings/kiosk-setup` et `/api/healthz` répondent
+  toutes **HTTP 200** depuis l’extérieur. Le VPS est toujours sur `763fe5e1`
+  et `php8.1-fpm` est actif. Cette sonde confirme la disponibilité HTTP, sans
+  se substituer à une session authentifiée ni à un test de paiement réel.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
