@@ -289,3 +289,19 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   autorisation explicite.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
+- **Campagne PHPUnit globale (26/09/2026)** : `php artisan test --no-coverage`
+  a exécuté **6 117 tests**, dont **6 079 passés**, **36 skips**, **6
+  incomplets** et **2 échecs**, en **1320,63 s**. Les deux échecs à traiter
+  sont : (1) `I18n\\LeJournalDActiviteDitLeStatutPasSaCleTest`, dette arabe
+  `ar/all.php` à 89 clés brutes contre un plafond documenté de 88; (2)
+  `Idempotency\\IdempotencyRequiredRoutesCoverageTest`, les routes KDS
+  `api/admin/kds-order/items/{orderItem}/bump` et `/recall` sont munies du
+  middleware d’idempotence mais absentes de `idempotency.required_routes`.
+  Ces deux points restent ouverts et empêchent de qualifier la campagne
+  globale PASS.
+- Les **6 tests incomplets** correspondent aux scénarios de charge S72/S73
+  qui exigent encore une fixture HTTP `payment-confirm` kiosk; les **36
+  skips** sont documentés par les tests (MySQL-only, contraintes SQLite,
+  CategoryUpdated non émis, surfaces de pricing gelées et onboarding
+  structurel). Aucun échec POS/Kiosk ciblé ni régression prix/KDS n’a été
+  observé dans les campagnes dédiées précédentes.
