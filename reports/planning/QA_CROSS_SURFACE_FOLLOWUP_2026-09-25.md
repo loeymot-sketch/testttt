@@ -210,6 +210,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   uploads, secrets, PII fidélité, anti-SSRF mail/impression et protections
   d’installation.
 
+- **Suite Feature `KioskPhase1`** : **93 tests passés**, **1 skip documenté**
+  (SQLite ne rejoue pas `ON DELETE SET NULL` sur une FK ajoutée par
+  `ALTER TABLE`). Les endpoints menu/preview, prix SSOT, isolation de branche,
+  cache, événements, consentement fidélité, allergènes, migrations et upsell
+  sont verts; le skip est environnemental et ne masque pas un échec applicatif.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
