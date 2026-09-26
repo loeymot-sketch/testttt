@@ -279,5 +279,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   dépassement budgété). Ces deux alertes sont désormais explicitement
   tracées comme travaux de correction/gate, distincts des tests fonctionnels
   verts.
+- **Rebuild bundle (26/09/2026)** : `npm run production` sous Node 20 compile
+  en **20,99 s**; les artefacts courants générés sont sous budget
+  (`kiosk-errors` 19 KB, `kiosk-shell` 280 KB, `kiosk-wizard-step` 130 KB).
+  Le script global continue toutefois de remonter les mêmes **17 anciens
+  fichiers hashés** (90/740–769/396 KB) laissés dans `public/js`; le finding
+  est donc un problème de purge/retention des artefacts historiques, pas une
+  régression du bundle courant. Aucun fichier ancien n’a été supprimé sans
+  autorisation explicite.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
