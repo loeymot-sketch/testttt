@@ -1,10 +1,10 @@
 # Triage — Rapport d'audit externe "Codex" (24/09/2026)
 
 Source : `/Users/1millnonstop/Documents/Codex/2026-09-20/x20-teste-moi/plans/RAPPORT_DEV_CAISSE_2026-09-24.md` (1619 lignes).
-Couverture de lecture : lignes 1-1039 lues intégralement (table structurée P0-01→P1-76 COMPLÈTE aux lignes 1-122, puis ~35 sections "Retest live" narratives lignes 124-1039 qui approfondissent/prouvent les mêmes items + ajoutent quelques défauts racine nouveaux). Lignes 1040-1619 (~35%) **non lues en détail** faute de budget — thème observé jusque-là (messagerie/RGPD, sections narratives) suggère une continuation des catégories déjà identifiées, mais ceci n'est pas vérifié : à relire si un défaut inattendu semble manquer.
+Couverture de lecture : **100% du rapport source lu (lignes 1-1619)**. Table structurée P0-01→P1-76 complète aux lignes 1-122, puis ~50 sections "Retest live" narratives lignes 124-1619 qui approfondissent/prouvent les mêmes items. La deuxième moitié (lignes 1040-1619 : TPE/readiness, fidélité, identité entreprise, stock, messagerie/RGPD, KDS/écran client, wizards produit par produit, sessions de caisse, borne) ne contenait qu'UN défaut racine réellement nouveau (A20) — tout le reste reconfirme ou approfondit A1-A19/C/D déjà identifiés.
 
 **Total items numérotés** : 76 (P0-01 à P0-19 + P1-01 à P1-76, numérotation non strictement séquentielle — des P0 apparaissent aussi après P1-36).
-**Défauts racine après regroupement** : ~19 (section A ci-dessous).
+**Défauts racine après regroupement** : 20 (section A ci-dessous — A1 à A20).
 **Nécessitant une décision propriétaire (pas un bug)** : 8 (section C).
 **Contradictions internes au rapport lui-même** : 3 (section D).
 
@@ -86,6 +86,13 @@ Refs : P1-08, P1-36 + sections "canaux de commande", "historique, canaux désact
 
 ### A19. Menu enfant "Sans sauce" combinable avec des sauces payantes (option censée être exclusive)
 Refs : P1-11, P1-65, P1-76 (message d'erreur résiduel qui fuite d'une étape à l'autre du wizard). Défaut logique de configuration, pas de sync.
+**Addendum lecture 1040-1619** : reconfirmé sur Galette Normale ("Sauce pour les frites" : Mayonnaise + Sans sauce simultanés, +0,50€) et sur Tacos XL (panier persistant, 4 sauces + Sans sauce). Même défaut racine, aucune nouvelle cause.
+**Note annexe (pas un nouveau défaut racine)** : fiche catalogue (Cayenne, Suprême) annonce une composition signature fixe alors que le tunnel impose un choix Pain/Galette non mentionné dans le descriptif court — décision de contenu marketing vs contrat produit, à trancher par le propriétaire, distinct du bug technique A4/A19.
+
+### A20. Sessions de caisse concurrentes jamais clôturées (78+ jours, fonds non rattachés)
+**NOUVEAU, non couvert par A1-A19.** Refs (déjà dans la table originale mais non regroupés) : P1-61, P1-67 + sections "Rapport quotidien des sessions de caisse", "rapprochement caisse et session non clôturée". Deux sessions de caisse (branche 1) restent simultanément au statut `Ouverte` : session #1 ouverte le 25/06/2026 (53 transactions, fond initial 110€), session #2 ouverte le 08/07/2026 (242 transactions, fond initial 50€, 78+ jours). Aucune règle n'empêche l'ouverture d'une nouvelle session tant que la précédente n'est pas comptée/clôturée ; `4 360,90€` d'espèces attendues s'accumulent depuis l'ouverture sans qu'aucun X/Z ne les rattache. Un "Aucun écart" affiché sur le périmètre du jour peut donner une fausse impression de régularité alors que la session sous-jacente n'est jamais clôturée.
+**Fichiers à investiguer** : module `CashDrawerSession` (déjà dans la liste BranchScope §9 CLAUDE.md), écran "Rapport Caisses Quotidien" / "Vue Caisse Unifiée" admin, service d'ouverture de session caisse (vérifier s'il y a une contrainte "une seule session active par branche/poste" au niveau applicatif ou juste UI).
+**Probable bug technique corrigeable** (pas seulement une décision) : si le code permet réellement d'ouvrir une 2e session sans avoir clôturé la 1ère, c'est un vrai trou de contrôle métier — à vérifier avant de le classer "décision propriétaire uniquement".
 
 ---
 
