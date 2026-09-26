@@ -194,6 +194,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `SsotInjectionHardeningTest` **6/6**, `KioskMachineTokenProfileBlockTest`
   **5/5** et `KioskTokenAdminBlockSentinelTest` **2/2** : **47/47**.
 
+- **Build final local** : `npm run production` avec Node `20.20.2` compile
+  sans erreur (Laravel Mix, 20,9 s); `git diff --check` reste propre et aucun
+  fichier applicatif ciblé n’est laissé non committé.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
