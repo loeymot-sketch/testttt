@@ -179,6 +179,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `LoyaltyRegisterNeRemetPasLeSoldeAZeroTest` **3/3** et
   `LoyaltyRegisterNoLeakTest` **4/4**. Total de cette passe : **65/65**.
 
+- **Contrôle final de livraison (26/09/2026)** : `git diff --check` est
+  propre; le VPS sert `763fe5e1`, PHP-FPM est actif, aucun build concurrent ne
+  reste actif et `/api/healthz` répond `status=ok` (DB, Redis, WebSocket,
+  chaîne fiscale).
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
