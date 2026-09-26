@@ -184,6 +184,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   reste actif et `/api/healthz` répond `status=ok` (DB, Redis, WebSocket,
   chaîne fiscale).
 
+- **Sonde HTTP finale IPv4** : `/` redirige normalement (**302**), `/login`,
+  `/kiosk/login`, `/admin/dashboard` et `/api/healthz` répondent **200**.
+  La réponse santé confirme encore DB, Redis, WebSocket et chaîne fiscale OK.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
