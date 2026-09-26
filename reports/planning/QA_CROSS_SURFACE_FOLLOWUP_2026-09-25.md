@@ -103,6 +103,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   cette vérification a été interrompu sans toucher à l’autre ni aux fichiers
   temporaires. Aucun reset destructif ni purge de sauvegardes n’a été exécuté.
 
+- **Build et smoke post-déploiement** : `npm run production` distant a compilé
+  avec succès (Laravel Mix, 78,9 s), aucun processus de build ne reste actif,
+  puis PHP-FPM a été rechargé. Les sondes finales restent conformes : IPv4
+  public → `kioskAutoLogin: null`, IPv6 autorisée → payload présent, URL
+  `machine_key` → payload présent, `/api/healthz` → `status=ok`.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
