@@ -225,5 +225,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
 - Aucun nouveau changement applicatif n'est requis par cette passe QA.
+- **Suite Feature `Pos` complète (26/09/2026)** : `php artisan test
+  tests/Feature/Pos --no-coverage` passe **386/386 en 98,50 s**. La passe
+  couvre les encaissements cash/carte et mixtes, devis scellés et suppléments
+  libres fiscalisés, stock, tiroir et clôture, fidélité/points, reçus,
+  commandes web/téléphone/livraison, tickets cuisine, remboursements,
+  autorisations et isolation de branche. Aucun échec ni skip dans cette suite.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
