@@ -1433,6 +1433,7 @@
         "cash_status_open": "Ouverte",
         "cash_status_closed": "Fermée",
         "cash_status_reconciled": "Réconciliée",
+        "cash_session_open_since_hours": "Ouverte depuis {hours} h — à régulariser",
         "cash_variance_reason": "Motif de l'écart",
         "all_sources": "Toutes les sources",
         "all_methods": "Tous les modes",

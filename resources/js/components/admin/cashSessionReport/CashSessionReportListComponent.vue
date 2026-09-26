@@ -116,6 +116,22 @@
                                                 {{ $t('label.cash_status_' + s.status) }}
                                             </span>
                                             <!--
+                                                [ULTRA-AUDIT 2026-09-26 · A20] Une session OPEN peut
+                                                légitimement le rester longtemps entre deux vérifications,
+                                                mais 78 jours sans comptage/clôture (constaté en recette)
+                                                doit se voir ICI, pas seulement se calculer en silence côté
+                                                serveur. Seuil 24h : au-delà d'une journée d'exploitation,
+                                                une session encore ouverte est anormale dans ce mandat V1
+                                                mono-restaurant.
+                                            -->
+                                            <span
+                                                v-if="s.status === 'open' && s.open_since_hours >= 24"
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 ml-1"
+                                                data-testid="cash-session-stale-badge"
+                                            >
+                                                ⚠️ {{ $t('label.cash_session_open_since_hours', { hours: s.open_since_hours }) }}
+                                            </span>
+                                            <!--
                                                 [P0 CLÔTURE-BLOQUÉE 2026-08-15 · GOAL_CONFORT_MAX] Une session
                                                 CLOSED-non-réconciliée (2e appel /reconcile échoué — écart >
                                                 seuil sans la permission cash.reconcile.variance.override)
