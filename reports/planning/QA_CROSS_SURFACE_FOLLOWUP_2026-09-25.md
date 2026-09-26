@@ -109,6 +109,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   public → `kioskAutoLogin: null`, IPv6 autorisée → payload présent, URL
   `machine_key` → payload présent, `/api/healthz` → `status=ok`.
 
+- **Re-smoke E2E après déploiement** : le premier lancement local a été refusé
+  avant exécution par Node `18.20.7` (Playwright exige Node `>=20`). Avec le
+  runtime Node `20.20.2` déjà installé, la même commande officielle a produit
+  **22/22 pass**, zéro skip et zéro flaky en 1,5 min : auth/F5 (2), POS cash
+  complet (4), borne (5), KDS (4), rupture stock multi-branche (7).
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
