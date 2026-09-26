@@ -188,6 +188,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `/kiosk/login`, `/admin/dashboard` et `/api/healthz` répondent **200**.
   La réponse santé confirme encore DB, Redis, WebSocket et chaîne fiscale OK.
 
+- **Robustesse borne/API backend** : `KioskAutoLoginGateTest` **10/10**,
+  `KioskLoginEnumerationTest` **4/4**, `KioskPaymentConfirmAmountTest`
+  **6/6**, `PaymentReconcileTest` **9/9**, `RevocationJetonBorneTest` **5/5**,
+  `SsotInjectionHardeningTest` **6/6**, `KioskMachineTokenProfileBlockTest`
+  **5/5** et `KioskTokenAdminBlockSentinelTest` **2/2** : **47/47**.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
