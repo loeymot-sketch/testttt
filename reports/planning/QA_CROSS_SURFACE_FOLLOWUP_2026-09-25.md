@@ -216,6 +216,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   cache, événements, consentement fidélité, allergènes, migrations et upsell
   sont verts; le skip est environnemental et ne masque pas un échec applicatif.
 
+- **Suite Feature `Kiosk` complète** : **62/62 pass** en 12,18 s. Couverture
+  du nettoyage/remboursement fidélité, promotion finale, garde auto-login,
+  disponibilité/upsell, paiement exact et réconciliation idempotente,
+  révocation de jeton, images du wizard et performance N+1 du menu.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
