@@ -115,6 +115,14 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   **22/22 pass**, zéro skip et zéro flaky en 1,5 min : auth/F5 (2), POS cash
   complet (4), borne (5), KDS (4), rupture stock multi-branche (7).
 
+- **Audit indépendant Claude terminal** : les preuves fonctionnelles et le
+  déploiement sont confirmés, mais le verdict de clôture reste **NEEDS_FIX /
+  ESCALATE** pour la gouvernance du cycle : `ACTIVE_CYCLE.md` et le rapport
+  historique portent des phases contradictoires, et une mission
+  `DRAWER-BRIDGE-VISIBILITY-20260917` touche une zone gelée sans gate
+  propriétaire. Aucun fichier de gouvernance ni zone gelée n’a été modifié
+  dans cette passe.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
