@@ -236,5 +236,14 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   toutes **HTTP 200** depuis l’extérieur. Le VPS est toujours sur `763fe5e1`
   et `php8.1-fpm` est actif. Cette sonde confirme la disponibilité HTTP, sans
   se substituer à une session authentifiée ni à un test de paiement réel.
+- **Contrôle de gouvernance (26/09/2026)** : `npm run verify:boucle` est
+  conditionnellement vert (binaires Claude/Codex présents; les smoke API
+  facturés sont volontairement non lancés). `git diff --check` est propre.
+  `check-execute-delegation.sh` reste en avertissement à **45/209 (21 %)**,
+  et l’artefact d’audit historique reste `AUDIT_VERDICT: REWORK` tandis que
+  `.cursor/ACTIVE_CYCLE.md` conserve des métadonnées contradictoires
+  (`PHASE: CLOSED` dans l’en-tête, `PHASE: EXECUTE` dans la table). Ces points
+  empêchent une clôture formelle honnête; ils ne constituent pas un échec des
+  tests produit ci-dessus.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
