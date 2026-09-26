@@ -2,7 +2,6 @@ key,fr_value,en_value
 a11y.receipt_preview,Aperçu du ticket,Aperçu du ticket
 a11y.remove_item,Retirer {item} du panier,Retirer {item} du panier
 a11y.skip_to_cart,Aller au panier,Aller au panier
-admin.help.variation.title,Variation,Variation
 admin.item_preview.load_error,Impossible de charger l'aperçu. Réessayez plus tard.,Impossible de charger l'aperçu. Réessayez plus tard.
 admin.item_preview.no_kiosk_data,Article non disponible sur la borne pour cette succursale.,Article non disponible sur la borne pour cette succursale.
 admin.item_preview.no_pos_data,Article non disponible sur la caisse pour cette succursale.,Article non disponible sur la caisse pour cette succursale.
@@ -45,6 +44,7 @@ kiosk.wizard.frites_sauce.mayo,Mayonnaise,Mayonnaise
 kiosk.wizard.summary.sauces,Sauces,Sauces
 label.accept,Acceptée,Acceptée
 label.action,Action,Action
+label.assistant_mission_title,Assistant,Assistant
 label.back,Retour,Retour
 label.composer.inactive,Inactive,Inactive
 label.composer.is_active,Active,Active
@@ -67,13 +67,12 @@ label.dinein_orders,Sur place,Sur place
 label.dismiss,Fermer,Fermer
 label.done,Terminées,Terminées
 label.encaisser_mode_mobile,Mobile,Mobile
-label.extras,Extras,Extras
 label.facebook,Facebook,Facebook
 label.floorplan,Plan de salle,Plan de salle
+label.grand_total,Grand total,Grand total
 label.hello,Bonjour,Bonjour
 label.images,Images,Images
 label.ingredient.column_actions,Actions,Actions
-label.ingredient.tab_addon,Add-ons,Add-ons
 label.instagram,Instagram,Instagram
 label.instruction,Instruction,Instruction
 label.itemAddon.role_dessert,Dessert,Dessert
@@ -94,6 +93,7 @@ label.longitude,Longitude,Longitude
 label.message,Message,Message
 label.messages,Messages,Messages
 label.minute,minutes,minutes
+label.mode_mobile,Mobile,Mobile
 label.notification,Notification,Notification
 label.occupied,Occupée,Occupée
 label.online,En ligne,En ligne
@@ -127,12 +127,12 @@ label.transactions,Transactions,Transactions
 label.twitter,Twitter,Twitter
 label.unpaid,Non payé,Non payé
 label.youtube,Youtube,Youtube
+menu.assistant_mission_title,Assistant,Assistant
 menu.catalog,Catalogue,Catalogue
 menu.communications,Communications,Communications
 menu.cookies,Cookies,Cookies
 menu.coupons,Coupons,Coupons
 menu.customers,Clients,Clients
-menu.extras,Extras,Extras
 menu.item,Article,Article
 menu.items,Articles,Articles
 menu.k_d_s,Écran cuisine,Écran cuisine
@@ -152,6 +152,32 @@ pos.cancel_order_cancel,Garder la commande,Garder la commande
 pos.cancel_order_confirm,Confirmer l'annulation,Confirmer l'annulation
 pos.cancel_order_done,Commande annulée.,Commande annulée.
 pos.cancel_order_error,Impossible d'annuler cette commande.,Impossible d'annuler cette commande.
+pos.controle.actualiser,Actualiser,Actualiser
+pos.controle.annonce,"{encaisser} à encaisser, {pretes} prêtes","{encaisser} à encaisser, {pretes} prêtes"
+pos.controle.article,article,article
+pos.controle.articles,articles,articles
+pos.controle.bouton,Commandes,Commandes
+pos.controle.bouton_hint,"Voir les commandes à encaisser, en cuisine, prêtes et livrées — sans quitter la caisse","Voir les commandes à encaisser, en cuisine, prêtes et livrées — sans quitter la caisse"
+pos.controle.commandee_a,commandée à {heure},commandée à {heure}
+pos.controle.cuisine_libre,Cuisine libre,Cuisine libre
+pos.controle.cuisine_ticket,{n} en cuisine · la plus ancienne depuis {m} min · vous serez le {rang},{n} en cuisine · la plus ancienne depuis {m} min · vous serez le {rang}
+pos.controle.donnees_figees,Données figées depuis {n} min — vérifiez le réseau,Données figées depuis {n} min — vérifiez le réseau
+pos.controle.fermer,Fermer,Fermer
+pos.controle.onglet_cuisine,En cuisine,En cuisine
+pos.controle.onglet_livrees,Livrées,Livrées
+pos.controle.onglet_pretes,Prêtes,Prêtes
+pos.controle.ouvrir_encaissement,Ouvrir l'encaissement,Ouvrir l'encaissement
+pos.controle.page_complete,Ouvrir la page complète,Ouvrir la page complète
+pos.controle.plus_anciennes,"{n} plus anciennes, avant aujourd'hui","{n} plus anciennes, avant aujourd'hui"
+pos.controle.rang_cuisine,{rang} sur {total} en cuisine,{rang} sur {total} en cuisine
+pos.controle.sous_titre_cuisine,Dans l'ordre où la cuisine les prépare,Dans l'ordre où la cuisine les prépare
+pos.controle.sous_titre_encaisser,"Paiement au comptoir — borne, caisse, téléphone, web","Paiement au comptoir — borne, caisse, téléphone, web"
+pos.controle.ticket_conserve,Votre ticket en cours est conservé — {n} {articles} · {montant},Votre ticket en cours est conservé — {n} {articles} · {montant}
+pos.controle.ticket_vide,Aucun ticket en cours,Aucun ticket en cours
+pos.controle.titre,Contrôle des commandes,Contrôle des commandes
+pos.controle.verifie_min,Vérifié il y a {n} min,Vérifié il y a {n} min
+pos.controle.verifie_sec,Vérifié il y a {n} s,Vérifié il y a {n} s
+pos.controle.voir_tout,Voir tout,Voir tout
 pos.discard,Supprimer,Supprimer
 pos.kiosk_counter_collect_short,À encaisser,À encaisser
 pos.low_stock.button_hint,Articles en stock faible — préparer la liste d'achat pour demain.,Articles en stock faible — préparer la liste d'achat pour demain.
@@ -205,6 +231,7 @@ pos.tracker.stale_refresh,Rafraîchir la liste des commandes en souffrance,Rafra
 pos.tracker.today_total,aujourd'hui,aujourd'hui
 studio.all_categories,Toutes les catégories,Toutes les catégories
 studio.eyebrow,Pilotage catalogue,Pilotage catalogue
+studio.product_composer_button,Composer / wizard,Composer / wizard
 studio.products_count,{n} articles,{n} articles
 studio.stock_link,Tableau de stock,Tableau de stock
 studio.subtitle,"Catégories, articles, parcours et stock","Catégories, articles, parcours et stock"

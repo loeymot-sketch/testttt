@@ -262,5 +262,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   documentés** en 194,03 s. Aucune suite n’échoue; les avertissements Vue,
   mocks réseau locaux et imprimante hors papier sont non bloquants et déjà
   attendus par les tests.
+- **Audit i18n complémentaire (26/09/2026)** : `npm run i18n:audit` termine
+  sans erreur de parsing (80 fichiers Laravel). Il signale 11 clés FR Vue et
+  5 clés FR Laravel manquantes, principalement des clés dynamiques construites
+  par suffixe (`status_`, `channel_`, `permission_`) ainsi que des repliés
+  explicites; les avertissements observés (`menu.roue`, `min_hint`) sont donc
+  recensés pour nettoyage dédié, mais n’ont pas provoqué d’échec fonctionnel
+  dans la campagne exhaustive.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
