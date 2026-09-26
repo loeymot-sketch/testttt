@@ -147,6 +147,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   POS 1, deux sauces conservées après modification 1). Aucun mock réseau pour
   les parcours fidélité et aucune page blanche observée.
 
+- **Parité KDS JS finale** : un test historique attendait encore `TAC` dans
+  le champ de surface `buildSymbolic().produit`, alors que le contrat courant
+  rend explicitement `Tacos` (le code interne PHP bas niveau reste `TAC`).
+  L’assertion de test a été réalignée, puis `kdsCustomization`,
+  `kdsSymbolicViandeName` et `kdsSymbolicKidsMenu` passent **56/56**; le
+  contrat PHP `KitchenTicketBolBaseTest` passe **4/4**.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
