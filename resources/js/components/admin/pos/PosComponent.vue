@@ -1186,7 +1186,11 @@
                         <span>{{ $t('label.takeaway') }}</span>
                     </label>
 
+                    <!-- [ULTRA-AUDIT 2026-09-26 · A18] Gardé par `order_setup_delivery`
+                         (Réglages > Configuration des commandes), même pattern que Dine-In
+                         juste au-dessus — jamais sélectionnable si Livraison est désactivée. -->
                     <label
+                        v-if="deliveryEnabled"
                         ref="deliveryOrderLabel"
                         for="delivery"
                         data-orderdelivery="#orderdelivery"
@@ -2368,6 +2372,7 @@ import PosCounterCollectModal from "./PosCounterCollectModal.vue";
 import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
+import activityEnum from "../../../enums/modules/activityEnum";
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
@@ -3188,6 +3193,21 @@ export default {
             const t = typeof raw;
             if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
             return String(raw) === '1' || raw === true;
+        },
+        /**
+         * [ULTRA-AUDIT 2026-09-26 · A18] Le bouton "Livraison" du sélecteur de type de
+         * commande n'avait JAMAIS eu de garde de flag (contrairement à "Sur place",
+         * gardé par `dineInEnabled` juste au-dessus) — il restait sélectionnable même
+         * réglage `order_setup_delivery` sur DISABLE (Réglages > Configuration des
+         * commandes > Livraison). `order_setup_delivery` est exposé par SettingResource
+         * en valeur brute de `App\Enums\Activity` (ENABLE=5 / DISABLE=10), pas le même
+         * conventionnement booléen que `pos_dine_in_enabled` — comparaison numérique
+         * explicite, jamais de coercion `String(...) === '1'` qui serait fausse ici.
+         */
+        deliveryEnabled: function () {
+            const s = this.setting || {};
+            const raw = s.order_setup_delivery;
+            return Number(raw) === activityEnum.ENABLE;
         },
         /**
          * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
@@ -5764,7 +5784,11 @@ export default {
             this.checkoutProps.form.token = "";
 
             this.$nextTick(() => {
-                if (savedOrderType === orderTypeEnum.DELIVERY) {
+                // [ULTRA-AUDIT 2026-09-26 · A18] Une commande parkée AVANT que Livraison
+                // ne soit désactivée ne doit pas la restaurer telle quelle — même garde que
+                // Dine-In juste en dessous, sinon elle réapparaît sélectionnée hors du
+                // sélecteur (qui, lui, la masque déjà via `deliveryEnabled`).
+                if (savedOrderType === orderTypeEnum.DELIVERY && this.deliveryEnabled) {
                     this.deliveryOrder();
                 } else if (savedOrderType === orderTypeEnum.DINING_TABLE && this.dineInEnabled) {
                     this.dineInOrder();
