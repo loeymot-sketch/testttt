@@ -123,6 +123,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   propriétaire. Aucun fichier de gouvernance ni zone gelée n’a été modifié
   dans cette passe.
 
+- **Contrats backend/UI revalidés** : `MollieStructureTest` **22/22**,
+  `AvailabilityServiceTest` **12/12**, `CashSessionReportControllerTest`
+  **10/10**, et `cashSessionReportStaleBadge.spec.js` **5/5**.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
