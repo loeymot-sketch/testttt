@@ -198,6 +198,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   sans erreur (Laravel Mix, 20,9 s); `git diff --check` reste propre et aucun
   fichier applicatif ciblé n’est laissé non committé.
 
+- **Sécurité HTML/CSP/CORS** : `DemoCredentialsNotServedInHtmlTest` **4/4**,
+  `AucunIdentifiantEnDurDansLeFrontTest` **2/2**,
+  `ContentSecurityPolicyHeaderTest` **6/6** et `CorsTest` **4/4** :
+  **16/16**. Aucun identifiant de démonstration n’est servi en production et
+  les en-têtes de sécurité restent conformes.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
