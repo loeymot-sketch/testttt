@@ -142,6 +142,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   Harissa → `HH`, les sauces multiples, l’absence de sauce, les sauces frites,
   les suppléments payants et le libellé tacos.
 
+- **Campagne transverse post-déploiement** : **11/11 Playwright pass** en
+  37,5 s (KDS 4, fidélité borne réelle/erreur/inscription 5, supplément libre
+  POS 1, deux sauces conservées après modification 1). Aucun mock réseau pour
+  les parcours fidélité et aucune page blanche observée.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
