@@ -305,3 +305,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   CategoryUpdated non émis, surfaces de pricing gelées et onboarding
   structurel). Aucun échec POS/Kiosk ciblé ni régression prix/KDS n’a été
   observé dans les campagnes dédiées précédentes.
+- **Remédiation ciblée (26/09/2026)** : ajout du libellé arabe manquant
+  `label.oss_main_aria` (la dette i18n revient à 88, sous le cliquet) et
+  déclaration des deux routes KDS item-level (`items/*/bump` et
+  `items/*/recall`) dans `idempotency.required_routes`. Vérification : familles
+  I18n + Idempotency **8/8**, sentinelle de couverture idempotence **1/1**, et
+  `KdsItemReadySyncTest` **7/7**. Les deux échecs de la campagne globale sont
+  ainsi corrigés; une campagne globale complète reste à rejouer pour produire
+  un nouveau bilan indépendant.

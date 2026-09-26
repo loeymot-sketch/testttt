@@ -123,6 +123,10 @@ return [
         // Identique au pattern change-status/* ci-dessus + même defense-in-depth
         // (idempotency + throttle:kds-bump) au router.
         'api/admin/kds-order/recall/*',
+        // Item-level bump/recall mutate the same order state and therefore
+        // require the idempotency key just like the order-level KDS routes.
+        'api/admin/kds-order/items/*/bump',
+        'api/admin/kds-order/items/*/recall',
         // [REMETTRE-EN-PRÉPARATION 2026-08-13] Même oubli que `recall/*` juste au-dessus, à cinq
         // ans d'écart : la route est câblée avec l'intergiciel d'idempotence dans routes/api.php
         // mais je ne l'avais pas déclarée ici. La sentinelle l'a attrapée — c'est précisément son

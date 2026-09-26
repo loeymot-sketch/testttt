@@ -21,6 +21,7 @@ return [
     ],
 
     'label'   => [
+        'oss_main_aria' => 'شاشة حالة الطلبات — الطلبات قيد التحضير والجاهزة',
         // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
         'fee_percent' => 'الرسوم (%)',
         'fee_fixed' => 'رسوم ثابتة',
