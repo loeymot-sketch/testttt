@@ -134,6 +134,14 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `AUDIT_VERDICT: PENDING_EXTERNAL_REVIEW`. Ces écarts sont documentés comme
   réserves d’audit, sans modification automatique des artefacts de cycle.
 
+- **Lisibilité cuisine / suppléments revalidée** :
+  `KitchenTicketSymbolicFormatterTest` **20/20**,
+  `KitchenTicketVirguleDuPrixTest` **7/7**,
+  `KitchenFormuleVisibleTest` **20/20** et
+  `KitchenSymbolPhpJsParityTest` **5/5**. Les assertions couvrent notamment
+  Harissa → `HH`, les sauces multiples, l’absence de sauce, les sauces frites,
+  les suppléments payants et le libellé tacos.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
