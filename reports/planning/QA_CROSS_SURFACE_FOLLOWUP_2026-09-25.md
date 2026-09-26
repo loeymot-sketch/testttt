@@ -85,6 +85,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   Les tests locaux restent verts (`KioskAutoLoginGateTest` 10/10,
   `KioskAutoLoginGateResolverTest` 17/17,
   `KioskMachineAndTerminalIndexGatedTest` 6/6).
+  Vérification complémentaire depuis le VPS : l’URL `machine_key` configurée
+  produit bien un payload (clé non imprimée), tandis qu’une requête IPv4 sans
+  clé produit `null`. Le correctif restant est donc opérationnel côté borne
+  (URL de démarrage/liaison réseau), pas un changement de calcul de commande.
 
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
