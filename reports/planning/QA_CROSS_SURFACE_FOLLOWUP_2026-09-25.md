@@ -167,6 +167,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   SSOT serveur, suppléments et quantités, deux/trois/quatre viandes, devis
   scellé, anti-tampering et supplément libre fiscalisé.
 
+- **Emporter / livraison revalidé** : `checkoutTakeawayCopy` (2),
+  `posDeliveryFlag` (6), `posOrderShowLabelWithoutValue` (9),
+  `kioskIdleKeyboardStart` (3) et `posOrderShowComposition` (9) passent
+  **29/29**. Les libellés « Confirmer à emporter » et « Livraison par nos
+  livreurs bientôt. » sont présents, et la livraison désactivée reste masquée.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
