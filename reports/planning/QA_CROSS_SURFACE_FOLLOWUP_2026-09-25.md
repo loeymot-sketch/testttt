@@ -160,6 +160,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   sauces, la séparation sauce/supplément et la restauration après modification
   restent couvertes.
 
+- **Prix / total backend revalidé** : `PricingIntegrityTest` **1/1**,
+  `PosPricingSsotProofTest` **1/1**, `PosKioskPricingParityTest` **4/4**,
+  `KioskQuoteIntegrityTest` **2/2**, `PricingServiceTest` **23/23** et
+  `PricingServiceMultiQtyTest` **12/12** : **43/43**. Cela couvre le prix
+  SSOT serveur, suppléments et quantités, deux/trois/quatre viandes, devis
+  scellé, anti-tampering et supplément libre fiscalisé.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
