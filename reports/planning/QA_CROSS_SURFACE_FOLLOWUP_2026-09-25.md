@@ -65,6 +65,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 - Build production : `npm run production` compilé avec succès.
 - Contrats backend complémentaires : `MollieStructureTest` `22/22` et
   `AvailabilityServiceTest` `12/12`.
+- Supervision caisse : `CashSessionReportControllerTest` `10/10` et
+  `cashSessionReportStaleBadge.spec.js` `5/5`.
 - Test production antérieur de la borne : ouverture de `/kiosk/login` suivie
   automatiquement de `/kiosk/idle` avec le menu affiché.
 
