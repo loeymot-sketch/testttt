@@ -127,6 +127,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `AvailabilityServiceTest` **12/12**, `CashSessionReportControllerTest`
   **10/10**, et `cashSessionReportStaleBadge.spec.js` **5/5**.
 
+- **Gouvernance mesurée** : `check-execute-delegation.sh` trouve
+  `45/209` rapports `RUN_*.md` avec la sentinelle (`21%`, seuil d’alerte
+  `<50%`). `ACTIVE_CYCLE.md` contient toujours l’en-tête `CLOSED` mais une
+  table méta `PHASE: EXECUTE`; le rapport historique garde
+  `AUDIT_VERDICT: PENDING_EXTERNAL_REVIEW`. Ces écarts sont documentés comme
+  réserves d’audit, sans modification automatique des artefacts de cycle.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
