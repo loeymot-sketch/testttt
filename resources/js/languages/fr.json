@@ -1341,7 +1341,7 @@
         "items_board": "Préparations",
         "json": "Json",
         "kiosk": "Borne",
-        "kiosk_admin_pin_hint": "Laissez vide pour conserver le code PIN actuel. Par défaut : 1234.",
+        "kiosk_admin_pin_hint": "Laissez vide pour conserver le code PIN actuel. Aucun code par défaut n'est appliqué tant qu'aucun n'est saisi ici.",
         "kiosk_idle_video_hint": "Laissez vide pour utiliser le fond animé par défaut.",
         "kiosk_tap_hint_placeholder": "Touchez l'écran pour commander",
         "kiosk_welcome_subtitle_placeholder": "Commandez en quelques touches",

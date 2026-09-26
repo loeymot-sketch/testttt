@@ -1196,7 +1196,7 @@
         "kiosk_halal_stamp_hint": "Shows the stamp on the idle screen. Only tick it if it is accurate.",
         "kiosk_tap_hint_placeholder": "Touchez l'écran pour commander",
         "kiosk_admin_pin": "Admin PIN (4 digits)",
-        "kiosk_admin_pin_hint": "Leave empty to keep the current PIN. Default: 1234.",
+        "kiosk_admin_pin_hint": "Leave empty to keep the current PIN. No default is ever applied until one is entered here.",
         "in_minute": "( In Minute )",
         "digit_after_decimal_point": "Digit After Decimal Point",
         "ex": "( Ex: 0.00 )",
