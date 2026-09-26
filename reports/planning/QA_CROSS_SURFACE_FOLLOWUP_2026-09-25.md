@@ -72,20 +72,19 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 
 ## Risques et suite
 
-- **BLOCAGE SÉCURITÉ PRODUCTION (26/09/2026)** : une sonde HTTPS anonyme sur
-  `https://vps-418872ac.vps.ovh.net/kiosk/login` reçoit encore un objet
-  `kioskAutoLogin` non nul dans le HTML public. Les valeurs ont été
-  volontairement masquées dans ce rapport et ne sont pas reproduites ici.
-  Cela contredit le contrat de `KioskAutoLoginGate` (payload nul pour une IP
-  publique non approuvée). Les tests locaux de garde restent verts
-  (`KioskAutoLoginGateTest` 10/10, `KioskAutoLoginGateResolverTest` 17/17,
-  `KioskMachineAndTerminalIndexGatedTest` 6/6) : le signal pointe donc vers
-  une dérive de configuration/cache ou de déploiement sur le VPS, pas vers un
-  échec de la logique testée. **Ne pas déclarer la production conforme ni
-  fermer le gate avant correction côté environnement** : vérifier
-  `APP_ENV`, `KIOSK_AUTO_LOGIN_TRUSTED_IPS` et, si nécessaire,
-  `KIOSK_REQUIRE_MACHINE_LOGIN=true`, puis purger/reconstruire le cache de
-  configuration selon la procédure de déploiement sans exposer de secrets.
+- **VÉRIFICATION PRODUCTION — garde réseau (26/09/2026)** : le VPS est en
+  `APP_ENV=staging`, sans cache de configuration, avec une seule plage IPv6
+  de confiance. La sonde HTTPS forcée en IPv4 reçoit `kioskAutoLogin: null`;
+  la même sonde forcée en IPv6 (depuis la plage autorisée) reçoit un payload
+  non nul. Les valeurs ont été volontairement masquées et ne sont pas
+  reproduites ici. La garde fonctionne donc comme codée, mais la borne reste
+  indisponible si elle sort de cette plage IPv6 ou arrive en IPv4. Pour une
+  borne distante, utiliser le lien `machine_key` secret prévu par le runbook
+  (ou ajouter son IP/CIDR réel à l’allowlist) puis refaire le smoke sur la
+  borne; ne pas élargir l’allowlist à `0.0.0.0/0` ou `::/0`.
+  Les tests locaux restent verts (`KioskAutoLoginGateTest` 10/10,
+  `KioskAutoLoginGateResolverTest` 17/17,
+  `KioskMachineAndTerminalIndexGatedTest` 6/6).
 
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
