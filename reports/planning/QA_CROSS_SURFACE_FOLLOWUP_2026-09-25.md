@@ -154,6 +154,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `kdsSymbolicViandeName` et `kdsSymbolicKidsMenu` passent **56/56**; le
   contrat PHP `KitchenTicketBolBaseTest` passe **4/4**.
 
+- **État panier / édition revalidé** : `kioskWizardEditRestore` (7),
+  `posCart` (3), `multiSauceNames` (9), `kioskModifierDepuisRecap` (11) et
+  `kioskExtrasPartition` (17) passent, soit **47/47**. La conservation des
+  sauces, la séparation sauce/supplément et la restauration après modification
+  restent couvertes.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
