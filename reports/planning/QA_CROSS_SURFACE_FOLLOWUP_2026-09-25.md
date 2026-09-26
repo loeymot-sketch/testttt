@@ -255,5 +255,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 - Le contrat backend correspondant a été rejoué immédiatement :
   `KioskAutoLoginGateTest` **10/10** (IP publique bloquée, allowlist IPv6,
   chemin secret, reload grant, anti-spoof `X-Forwarded-For`, hors-route).
+- **Passe Vitest exhaustive (26/09/2026)** : `npm test` sous Node système
+  18.20.7 produisait un faux négatif de 5 assertions `playwrightConfig` et
+  une erreur ESM/jsdom, car Playwright exige Node >=20. Rejouée avec Node
+  `20.20.2`, la campagne complète passe **556 fichiers, 4509 tests, 3 skips
+  documentés** en 194,03 s. Aucune suite n’échoue; les avertissements Vue,
+  mocks réseau locaux et imprimante hors papier sont non bloquants et déjà
+  attendus par les tests.
 - La clôture formelle du cycle complet reste soumise aux audits/gates déjà
   ouverts ; ce rapport atteste uniquement la campagne fonctionnelle ci-dessus.
