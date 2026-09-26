@@ -72,6 +72,21 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 
 ## Risques et suite
 
+- **BLOCAGE SÉCURITÉ PRODUCTION (26/09/2026)** : une sonde HTTPS anonyme sur
+  `https://vps-418872ac.vps.ovh.net/kiosk/login` reçoit encore un objet
+  `kioskAutoLogin` non nul dans le HTML public. Les valeurs ont été
+  volontairement masquées dans ce rapport et ne sont pas reproduites ici.
+  Cela contredit le contrat de `KioskAutoLoginGate` (payload nul pour une IP
+  publique non approuvée). Les tests locaux de garde restent verts
+  (`KioskAutoLoginGateTest` 10/10, `KioskAutoLoginGateResolverTest` 17/17,
+  `KioskMachineAndTerminalIndexGatedTest` 6/6) : le signal pointe donc vers
+  une dérive de configuration/cache ou de déploiement sur le VPS, pas vers un
+  échec de la logique testée. **Ne pas déclarer la production conforme ni
+  fermer le gate avant correction côté environnement** : vérifier
+  `APP_ENV`, `KIOSK_AUTO_LOGIN_TRUSTED_IPS` et, si nécessaire,
+  `KIOSK_REQUIRE_MACHINE_LOGIN=true`, puis purger/reconstruire le cache de
+  configuration selon la procédure de déploiement sans exposer de secrets.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
