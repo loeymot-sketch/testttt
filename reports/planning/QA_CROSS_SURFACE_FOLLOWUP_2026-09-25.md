@@ -90,6 +90,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   clé produit `null`. Le correctif restant est donc opérationnel côté borne
   (URL de démarrage/liaison réseau), pas un changement de calcul de commande.
 
+- **Déploiement** : le VPS sert le commit applicatif `c3dafb06` sur la branche
+  attendue; le HEAD local actuel ne contient ensuite que les commits de
+  rapport QA. L’arbre distant comporte 43 fichiers de sauvegarde/temporaire
+  non suivis : aucun `reset`, nettoyage ou redéploiement forcé n’a été lancé.
+  Les deux familles IPv4/IPv6 de `/api/healthz` répondent `status=ok` avec
+  chaîne fiscale et dépendances vertes.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
