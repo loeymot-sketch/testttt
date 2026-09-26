@@ -173,6 +173,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   **29/29**. Les libellés « Confirmer à emporter » et « Livraison par nos
   livreurs bientôt. » sont présents, et la livraison désactivée reste masquée.
 
+- **Fidélité revalidée** : six suites Vitest passent **52/52** (consentement,
+  solde/remise, inscription rapide sans page blanche, rattachement POS,
+  rachat), puis `KioskRegisterKeepsEmailTest` **6/6**,
+  `LoyaltyRegisterNeRemetPasLeSoldeAZeroTest` **3/3** et
+  `LoyaltyRegisterNoLeakTest` **4/4**. Total de cette passe : **65/65**.
+
 - La protection `throttle:10,1` de vérification fidélité demeure active : le
   test du numpad isole sa réponse afin de ne pas masquer un 429 légitime de la
   route réellement testée dans le scénario dédié.
