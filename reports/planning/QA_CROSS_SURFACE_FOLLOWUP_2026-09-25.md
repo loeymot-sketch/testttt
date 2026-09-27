@@ -564,3 +564,9 @@ la clôture reste interdite tant que le provisioning de borne, le gate frozen et
 la décision de contenu public ne sont pas traités/validés par leurs propriétaires.
 
 Plan de reprise borné : [`QA_LOOP_NEXT_ACTION_2026-09-27.md`](QA_LOOP_NEXT_ACTION_2026-09-27.md).
+
+**Attente vérifiée (27/09/2026, 18:05 CEST)** : un nouveau contrôle externe
+confirme `kioskAutoLogin: null` sur `/kiosk/login`; `/api/healthz` reste `status=ok`
+avec DB/Redis/WebSocket/fiscal chain OK et `queue_pending=0`; le site public sert
+toujours « la livraison passe par Uber Eats ». Aucun changement de déploiement ou
+de copie publique n’est intervenu depuis le contrôle précédent.
