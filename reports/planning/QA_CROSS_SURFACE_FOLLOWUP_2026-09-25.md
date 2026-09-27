@@ -765,3 +765,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
 - **Inscription fidélité complète revalidée (27/09/2026, 18:56 CEST)** :
   `kiosk-loyalty-register-e2e.spec.js` passe **1/1 en 4,0 s**; la réponse
   `register` rend bien le solde et aucun écran blanc n’apparaît après création.
+- **Sécurité/isolation backend revalidée (27/09/2026)** : `Feature/Security`
+  passe **221/221**, `KioskSecurityTest` **6/6** et `Feature/KioskMultiBranch`
+  **8/8**. Les autorisations, clés API, anti-fuite fidélité, tokens borne,
+  `branch_id` et allowlist de locale restent conformes.

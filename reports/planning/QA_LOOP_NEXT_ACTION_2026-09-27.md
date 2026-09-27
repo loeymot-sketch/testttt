@@ -45,6 +45,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   restent validés.
 - **Inscription post-register (27/09/2026, 18:56 CEST)** : **1/1 test en
   4,0 s**; le solde revient après `register`, sans page blanche.
+- **Sécurité/isolation (27/09/2026)** : **221/221 + 6/6 + 8/8 tests passés**
+  pour sécurité générale, borne et multi-branche.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
