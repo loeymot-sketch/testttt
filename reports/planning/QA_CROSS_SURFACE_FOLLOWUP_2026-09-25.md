@@ -447,3 +447,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   manifest est absent ou illisible. `node --check` est vert et le contrôle
   corrigé passe : `app.js` 2 401/5 000 KB, `kiosk-errors` 19/50 KB,
   `kiosk-shell` 280/350 KB, `kiosk-wizard-step` 130/150 KB, sans dépassement.
+- **Smoke E2E critique local (27/09/2026, Node 20)** : `npm run test:e2e:smoke`
+  démarre le serveur Laravel local et passe **22/22 en 1 min 30 s**. Les
+  parcours auth/F5, POS cash, borne, KDS et synchronisation des ruptures de
+  stock sont verts, sans skip ni flaky observé. Le parcours borne interactif
+  distant reste séparément bloqué par le provisioning `kioskAutoLogin` absent.
