@@ -854,3 +854,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   fichiers Laravel sans erreur**; les clés manquantes connues restent la dette
   déclarée (Vue fr 11/en 112/ar 644/de 922/bn 923; Laravel fr 5/en 21/ar
   62/de 89/bn 86).
+- **Smoke E2E complet revalidé (27/09/2026, 19:34–19:36 CEST)** :
+  `npm run test:e2e:smoke` passe **22/22 en 1,5 min** avec Node 20.20.2;
+  auth/F5 POS, caisse, borne, KDS et synchronisation rupture multi-branche
+  sont verts. Les avertissements PHP de dépréciation restent non bloquants.
+- **Healthz après smoke (27/09/2026, 19:36 CEST)** : HTTP 200 avec DB, Redis,
+  WebSocket, fiscalité et `queue_pending=0`.

@@ -95,6 +95,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   (**86/38 fichiers**), bundles **15/15**; i18n parse **80 fichiers Laravel
   sans erreur**. Les clés manquantes restent une dette connue et le sign-off
   pricing est averti jusqu’au 27/10, sans échec actuel.
+- **Smoke E2E complet (27/09/2026, 19:34–19:36 CEST)** : **22/22 passés en
+  1,5 min** avec Node 20.20.2; POS/F5, caisse, borne, KDS et rupture de stock
+  multi-branche validés.
+- **Healthz post-smoke (19:36 CEST)** : HTTP 200 et `queue_pending=0`.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
