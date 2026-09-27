@@ -59,6 +59,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Release guards (27/09/2026)** : pricing/status lint verts (**86/38 fichiers**),
   bundles **15/15**; i18n parse les **80 fichiers Laravel** sans erreur, avec
   dette de clés connue et sign-off pricing encore en attente jusqu’au 27/10.
+- **Backend global (27/09/2026)** : **6 080 passés, 36 skipped, 6 incomplets,
+  1 échec** en 1 301,71 s; le seul échec reste le sentinel frozen-zone
+  `KioskWizardComponent.vue`. Ne pas toucher à la baseline sans gate propriétaire.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

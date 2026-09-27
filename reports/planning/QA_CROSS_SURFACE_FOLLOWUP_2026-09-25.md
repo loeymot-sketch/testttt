@@ -791,3 +791,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   bundles**. L’audit i18n parse **80 fichiers Laravel sans erreur**; la dette de
   clés manquantes reste connue. Le pricing lint conserve l’avertissement de
   sign-off jusqu’au **27/10/2026**, sans échec actuel.
+- **Suite backend globale revalidée (27/09/2026)** : `php artisan test` termine
+  **6 080 tests passés, 36 skipped, 6 incomplets, 1 échec** en 1 301,71 s.
+  L’unique échec est le sentinel frozen-zone sur
+  `KioskWizardComponent.vue` (hash baseline inchangé, drift déjà documenté);
+  les incomplets correspondent aux gates/owner-finalize explicites du plan.
+  Aucun baseline frozen n’a été modifié sans sign-off humain.
