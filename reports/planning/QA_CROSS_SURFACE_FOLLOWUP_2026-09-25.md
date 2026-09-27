@@ -570,3 +570,9 @@ confirme `kioskAutoLogin: null` sur `/kiosk/login`; `/api/healthz` reste `status
 avec DB/Redis/WebSocket/fiscal chain OK et `queue_pending=0`; le site public sert
 toujours « la livraison passe par Uber Eats ». Aucun changement de déploiement ou
 de copie publique n’est intervenu depuis le contrôle précédent.
+- **Fidélité navigateur local (27/09/2026, Playwright Chromium)** :
+  `kiosk-loyalty-inscription-rapide-2026-09-25.spec.js` passe **2/2 tests en
+  5,8 s**. Le premier reproduit le vrai `/loyalty/check` pour un numéro inconnu,
+  bascule automatiquement sur le prénom seul, crée le compte sans ressaisie du
+  téléphone et sans erreur/page blanche; le second vérifie que le numpad lance
+  automatiquement la vérification au 10e chiffre.
