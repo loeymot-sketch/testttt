@@ -715,6 +715,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   et l’acceptation contrôlée de la rotation. Le probe curl sans en-tête observé
   pendant l’audit distant est donc un rejet de sécurité attendu, pas un défaut
   d’authentification utilisateur.
+- **Retest auth POS après expiration du rate-limit (27/09/2026, sans retry)** :
+  le scénario unique `login POS → F5` reçoit toujours HTTP 400
+  `Identifiants invalides ou compte bloqué`. Le compte distant n’a donc pas
+  été réactivé/provisionné depuis le dernier audit; aucun nouveau rate-limit
+  n’a été déclenché par ce contrôle isolé.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
