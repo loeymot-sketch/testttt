@@ -615,3 +615,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   tandis que `tests/e2e/01-auth-refresh.spec.js` reste **0/2** avec le même
   HTTP 400 « Identifiants invalides ou compte bloqué ». Le provisioning borne
   est donc résolu; l’auth POS distante reste le blocage externe actif.
+- **Recontrôle copie publique (27/09/2026)** : la page publique sert toujours
+  deux occurrences de « livraison passe par Uber Eats » et aucune occurrence
+  de « Livraison par nos livreurs bientôt ». Le code checkout FoodKing reste
+  cohérent; seule la surface publique déployée demeure à corriger.
