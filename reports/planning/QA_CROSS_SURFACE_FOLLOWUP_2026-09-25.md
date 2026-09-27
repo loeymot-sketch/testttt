@@ -674,6 +674,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   combiné formatter/Kitchen/liaison quote passe **126/126 tests, 228
   assertions**. Les libellés HH/X/tacos, le placement des sauces par produit
   ou frites et l’impression du supplément libre restent conformes.
+- **Re-run navigateur POS des cas signalés (27/09/2026)** : les deux scénarios
+  ciblés passent **2/2 en 11,3 s** : supplément libre nommé ajouté au total,
+  puis réouverture d’une ligne Cayenne en conservant les sauces Andalouse et
+  Algérienne après confirmation. Aucun écrasement de sauce ni divergence de
+  montant n’est observé.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
