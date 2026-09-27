@@ -860,3 +860,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   sont verts. Les avertissements PHP de dépréciation restent non bloquants.
 - **Healthz après smoke (27/09/2026, 19:36 CEST)** : HTTP 200 avec DB, Redis,
   WebSocket, fiscalité et `queue_pending=0`.
+- **Backend invariants revalidés séparément (27/09/2026)** : Kiosk **62/62**,
+  Loyalty **93/93**, Pricing **31/31**, Order **109/109**, Outbox **81/81** et
+  Security **221/221** passent. Les tests couvrent prix scellés au centime,
+  fidélité/inscription et idempotence, statuts/OrderService parity,
+  dispatch post-commit, isolation `branch_id` et protections d’accès.

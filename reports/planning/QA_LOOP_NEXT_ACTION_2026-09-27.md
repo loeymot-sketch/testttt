@@ -99,6 +99,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   1,5 min** avec Node 20.20.2; POS/F5, caisse, borne, KDS et rupture de stock
   multi-branche validés.
 - **Healthz post-smoke (19:36 CEST)** : HTTP 200 et `queue_pending=0`.
+- **Backend invariants (27/09/2026)** : **62/62 Kiosk, 93/93 Loyalty,
+  31/31 Pricing, 109/109 Order, 81/81 Outbox, 221/221 Security**; prix,
+  fidélité, statuts, dispatch post-commit et isolation multi-branche restent
+  verts.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
