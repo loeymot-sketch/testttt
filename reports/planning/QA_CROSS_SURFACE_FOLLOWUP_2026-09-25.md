@@ -368,3 +368,16 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   session, branche, coupons, stock, tirage cryptographique et confidentialité
   restent vertes. Ces lots complètent la couverture borne/compte fidélité;
   le bilan global indépendant reste à rejouer avant clôture formelle.
+- **Test navigateur distant réel (27/09/2026)** : `/kiosk/login` répond
+  **HTTP 200**, mais l'écran reste bloqué sur « Borne indisponible pour le
+  moment ». Le HTML public injecte `kioskAutoLogin: null`; les logs console
+  confirment `Auto-login indisponible (identifiants machine absents)` et les
+  appels de rattrapage retournent **401**. Le healthz reste sain (DB, Redis,
+  WebSocket, chaîne fiscale et file OK), donc le défaut est le
+  **provisionnement de la borne distante** : allowlist IP/CIDR ou lien
+  `?machine_key=` non configuré côté déploiement. Les tests de sécurité du gate
+  restent **10/10** (`KioskAutoLoginGateTest`); il ne faut pas désactiver ce
+  gate. Action de déploiement restante : renseigner les `KIOSK_MACHINE_*` et
+  `KIOSK_AUTO_LOGIN_TRUSTED_IPS`/`KIOSK_AUTO_LOGIN_SECRET` selon la borne,
+  exécuter `foodking:ensure-kiosk-machine`, vider le cache de configuration,
+  puis rejouer le parcours navigateur jusqu'à `/kiosk/idle`.
