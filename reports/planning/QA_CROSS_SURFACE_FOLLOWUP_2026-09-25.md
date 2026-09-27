@@ -705,6 +705,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
 - **Dispatch/outbox revalidé (27/09/2026)** : le lot Outbox, sémantique de
   livraison et KDS passe **81/81 tests, 248 assertions**. Les événements et
   jobs restent émis après commit, avec idempotence et synchronisation attendues.
+- **Paiement/fiscalité/caisses revalidés (27/09/2026)** : le lot combiné
+  `tests/Feature/Fiscal`, `Payment` et `Pos` termine **315 tests, 1 006
+  assertions**, sans échec (8 tests explicitement skipped). Le seeder de menu
+  affiche seulement ses avertissements de fixtures/catégories inconnues,
+  sans échec de test ni erreur de chaîne fiscale.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
