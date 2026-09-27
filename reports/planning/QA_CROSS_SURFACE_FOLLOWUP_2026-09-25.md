@@ -909,3 +909,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `b7bc1763181e…`, tandis que l’arbre local comporte des modifications non
   committées : la copie corrigée n’est donc pas poussée/déployée. Aucun push
   externe n’a été effectué par l’audit.
+- **Inspection du diff externe (27/09/2026)** : les changements présents dans
+  les trois pages ciblées sont des ajustements de navigation/accessibilité,
+  `dateModified` et cache-bust des scripts; le texte de livraison reste
+  explicitement Uber Eats. Le dépôt externe étant déjà dirty, l’audit s’arrête
+  avant toute sélection, commit ou déploiement propriétaire.

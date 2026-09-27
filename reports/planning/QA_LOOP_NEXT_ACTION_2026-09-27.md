@@ -130,6 +130,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   Eats. `origin/main` = `b7bc1763181e…`; les changements corrigés sont dans
   l’arbre externe dirty et ne sont pas déployés. Action propriétaire : commit,
   push et redeploy Vercel, puis recontrôle HTML.
+- **Diff externe inspecté (27/09/2026)** : les modifications non committées de
+  `index.html`, `commander.html` et `livraison-henin-beaumont.html` concernent
+  surtout l’UX (cibles `/#menu`, zones tactiles, dates/cache-bust); elles ne
+  remplacent pas la phrase « livraison passe par Uber Eats ». Aucun patch
+  public prêt à pousser n’est donc confirmé par cet audit; ne pas sélectionner
+  ni committer l’arbre externe dirty sans validation du propriétaire.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
