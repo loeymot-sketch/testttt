@@ -555,6 +555,7 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 | Fidélité navigateur locale | 5/5 scénarios (inscription, numpad, solde, erreur, email) | PASS |
 | Cuisine HH/X/tacos/sauces | 44 + 20 tests ciblés verts | PASS |
 | Production HTTP/healthz | routes 200, santé OK, file 0 | PASS |
+| Kiosk public distant | 4/4 checks publics, 1 scénario interactif skipped | PASS_WITH_PROVISIONING_SKIP |
 | Borne distante interactive | auto-login machine absent | NEEDS_DEPLOY_CONFIG |
 | Frozen-zone sentinel | drift commentaire-only, lock owner non signé | NEEDS_OWNER_GATE |
 | Site public contenu livraison | texte Uber Eats encore servi | NEEDS_PUBLIC_COPY_DEPLOY |
@@ -582,3 +583,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `kiosk-loyalty-register-e2e.spec.js` passent **3/3 tests en 7,7 s** : solde
   réel affiché, code inconnu rendu en erreur explicite sans page blanche, et
   inscription avec email suivie de l’affichage du solde.
+- **Smoke Kiosk distant ciblé (27/09/2026)** : `tests/e2e/03-kiosk-wizard.spec.js`
+  contre `https://vps-418872ac.vps.ovh.net` passe **4/4 contrôles publics en
+  12,1 s** (accessibilité, message de configuration, absence d’erreur fatale,
+  configuration pricing). Le cinquième scénario interactif reste skipped,
+  explicitement à cause de l’auto-login machine absent; aucun échec silencieux.
