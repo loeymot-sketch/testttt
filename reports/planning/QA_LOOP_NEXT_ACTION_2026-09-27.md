@@ -62,6 +62,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Backend global (27/09/2026)** : **6 080 passés, 36 skipped, 6 incomplets,
   1 échec** en 1 301,71 s; le seul échec reste le sentinel frozen-zone
   `KioskWizardComponent.vue`. Ne pas toucher à la baseline sans gate propriétaire.
+- **Forensic frozen recheck (27/09/2026)** : hash réel `f8ecb111…06465` contre
+  baseline `fcbe3755…256ac`; l’écart est limité au commit `c21628767`, qui ne
+  fait que normaliser trois commentaires de sign-off pricing. Le lock owner
+  reste non signé : verdict **NEEDS_OWNER_ACTION**, aucune baseline modifiée.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

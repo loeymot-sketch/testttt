@@ -797,3 +797,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `KioskWizardComponent.vue` (hash baseline inchangé, drift déjà documenté);
   les incomplets correspondent aux gates/owner-finalize explicites du plan.
   Aucun baseline frozen n’a été modifié sans sign-off humain.
+- **Forensic frozen recheck (27/09/2026)** : le hash réel de
+  `KioskWizardComponent.vue` reste `f8ecb111…06465`, contre la baseline
+  `fcbe3755…256ac`. L’écart provient uniquement du commit documentaire
+  `c21628767` (normalisation de trois marqueurs `@pricing-allowed-block`), sans
+  changement de logique métier ni de fichier de baseline. Le lock
+  `LOCK_KIOSK_FRITES_SAUCE_BILLING_2026-07-29.md` conserve son sign-off owner
+  non coché; le sentinel reste donc **NEEDS_OWNER_ACTION** et ne doit pas être
+  “réparé” par une mise à jour automatique de baseline.
