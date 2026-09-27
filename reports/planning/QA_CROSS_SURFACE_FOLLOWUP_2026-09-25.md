@@ -734,3 +734,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   Le probe simultané `/api/healthz` répond **200** avec DB, Redis, WebSocket,
   chaîne fiscale OK et `queue_pending=0`. La copie publique reste séparément
   non conforme : le HTML de `lecayenne.fr` mentionne toujours Uber Eats.
+- **Contrôle réel Chrome du panier public (27/09/2026)** : ajout d’un Tacos M
+  affiché à **6,90 €** dans un panier contenant déjà un Tacos L à **17,30 €**;
+  le panier affiche **sous-total/total 24,20 €**, soit la somme exacte des deux
+  lignes. Le contrôle s’est arrêté avant « Passer commande »; aucune commande
+  réelle ni paiement n’a été déclenché.

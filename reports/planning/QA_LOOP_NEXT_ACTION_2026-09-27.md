@@ -27,6 +27,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   repasse **5/5 en 19,7 s** sur le VPS et `/api/healthz` reste 200; aucun
   incident borne n’est reproduit. Le texte public Uber Eats reste le blocage
   contenu distinct.
+- **Panier public contrôlé dans Chrome (27/09/2026)** : Tacos L 17,30 € +
+  Tacos M 6,90 € donnent un total affiché de 24,20 €; vérification arrêtée
+  avant paiement.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
