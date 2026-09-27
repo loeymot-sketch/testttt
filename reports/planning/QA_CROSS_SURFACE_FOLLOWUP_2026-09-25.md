@@ -840,3 +840,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   l’autorité du total serveur, l’emporter/livraison, les tickets client/cuisine,
   sauces multiples et frites, viandes supplémentaires, libellés tacos sans
   taille, largeur ESC/POS et tiroir caisse.
+- **Restore-drill contract revalidé localement (27/09/2026)** :
+  `SystemHealthRestoreDrillTest` **17/17**, `RestoreDrillAttesteFichierCourantTest`
+  **5/5** et `CockpitEtReadinessMemeAgeSauvegardeTest` **5/5** passent.
+  Le code distingue correctement drill absent, périmé, empreinte/fichier
+  différent et preuve fraîche. En production, `/api/health/ready` reste
+  `restore_drill=degraded` car aucune preuve fraîche n’est enregistrée; aucune
+  restauration n’a été exécutée automatiquement.

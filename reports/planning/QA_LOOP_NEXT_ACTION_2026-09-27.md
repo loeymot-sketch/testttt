@@ -87,6 +87,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Frontend/tickets (27/09/2026)** : `Feature/Frontend` **58/58 en 11,48 s**
   et `Feature/Hardware` **164/164 en 12,24 s**; sauces HH/X, suppléments,
   tacos, frites, viandes, tickets et tiroir restent verts.
+- **Restore-drill (27/09/2026)** : contrats locaux verts (**17/17 + 5/5 +
+  5/5**), mais la prod reste `degraded` tant qu’un drill de restauration
+  mesuré et attesté n’est pas fourni. Ne pas lancer d’opération destructive
+  depuis l’agent.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
