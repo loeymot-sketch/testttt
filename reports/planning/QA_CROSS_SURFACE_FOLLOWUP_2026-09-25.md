@@ -762,3 +762,6 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   respectivement **62/62**, **93/93** et **31/31 tests passés**. Les garanties
   de paiement au centime, suppléments/sauces, fidélité (inscription, solde,
   remboursement/idempotence) et isolation/auto-login borne restent vertes.
+- **Inscription fidélité complète revalidée (27/09/2026, 18:56 CEST)** :
+  `kiosk-loyalty-register-e2e.spec.js` passe **1/1 en 4,0 s**; la réponse
+  `register` rend bien le solde et aucun écran blanc n’apparaît après création.

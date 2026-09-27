@@ -43,6 +43,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Backend Kiosk/Loyalty/Pricing (27/09/2026)** : **62/62 + 93/93 + 31/31
   tests passés**; prix au centime, suppléments, fidélité et auto-login borne
   restent validés.
+- **Inscription post-register (27/09/2026, 18:56 CEST)** : **1/1 test en
+  4,0 s**; le solde revient après `register`, sans page blanche.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
