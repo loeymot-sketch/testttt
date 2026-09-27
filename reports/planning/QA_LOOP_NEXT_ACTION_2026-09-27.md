@@ -78,6 +78,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Queue distante (27/09/2026, 19:30 CEST)** : `queue_pending=2` persiste
   après quatre mesures et le test borne; surveiller le worker/outbox sans
   purge manuelle.
+- **Readiness/sondes (27/09/2026, 19:31 CEST)** : `/api/health/live` et
+  `/api/health/ready` sont HTTP 200; `restore_drill` reste `degraded` faute de
+  restauration mesurée. `/api/health` voit 0 job tandis que `/api/healthz` en
+  voit 2 : corrélation de configuration/déploiement à faire avant toute action.
+- **Fidélité borne (27/09/2026, 19:31 CEST)** : **4/4 en 6,8 s** sur les
+  scénarios réels solde/erreur/inscription/auto-check, plus **1/1** register.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
