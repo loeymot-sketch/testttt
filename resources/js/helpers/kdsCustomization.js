@@ -19,6 +19,7 @@
 
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 import { claimedFormuleBadge } from './kdsBundledAddons.js';
+import { extraDisplayName } from './kdsSymbolic.js';
 
 // Group keys are surfaced to i18n via `label.kds_group_<key>`.
 // Heuristic-keyword regex per group. The first match wins.
@@ -206,10 +207,6 @@ export function kdsVariationLine(v) {
         return `${group}: ${value}`;
     }
     return value || group || '';
-}
-
-function extraLabel(e) {
-    return e?.name || e?.extra_name || '';
 }
 
 function addonLabel(a) {
@@ -442,12 +439,26 @@ export function renderItem(orderItem) {
     }
 
     // Paid supplements — yellow italic, "+" prefix.
+    // [GOAL 2026-09-27 · owner « les sauces au bon endroit, frites ou sandwich »] Les wizards
+    // (FROZEN) facturent une sauce/viande EN PLUS via un ItemExtra GÉNÉRIQUE sans nom
+    // ("Sauce supplémentaire" / "Viande supplémentaire") — l'identité réelle ne vit que
+    // dans l'instruction libre ("Sauces en plus : Andalouse"). Ce renderer affichait la
+    // ligne générique brute : le cuisinier voyait "+ Sauce supplémentaire" sans savoir
+    // laquelle, ni pour quel composant (sandwich vs frites). `extraDisplayName`
+    // (kdsSymbolic.js, jumeau strict de KitchenTicketSymbolicFormatter::extraDisplayName
+    // côté PHP) résout le nom réel depuis l'instruction ("Sauce supplémentaire : Andalouse")
+    // — tout extra déjà nommé (Cheddar…) ressort inchangé. Contrairement au plateau live
+    // (renderItemSymbolic), cette vue n'a pas de "ligne 1" qui affiche déjà la sauce en
+    // plus ailleurs : jamais de suppression/budget ici, chaque extra reste sa propre ligne.
     for (const e of readExtras(orderItem)) {
-        const label = extraLabel(e);
-        if (!label) continue;
+        const rawName = e?.name || e?.extra_name || '';
+        if (!rawName) continue;
+        const display = extraDisplayName(rawName, orderItem?.instruction);
         const q = parseInt(e?.quantity, 10);
-        const suffix = Number.isFinite(q) && q > 1 ? ` ×${q}` : '';
-        lines.push({ type: 'supplement', label: `+ ${label}${suffix}` });
+        // Un nom RÉSOLU énumère déjà chaque occurrence (ex. "Andalouse, Américaine") : le
+        // suffixe ×N ne reste que pour un extra resté générique (rien à énumérer).
+        const suffix = Number.isFinite(q) && q > 1 && display === rawName ? ` ×${q}` : '';
+        lines.push({ type: 'supplement', label: `+ ${display}${suffix}` });
     }
 
     // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
