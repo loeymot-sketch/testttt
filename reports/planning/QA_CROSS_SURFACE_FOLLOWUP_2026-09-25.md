@@ -323,3 +323,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   80 fichiers Laravel sans erreur; les clés manquantes restantes sont
   recensées comme dette de traduction (notamment locales Vue non françaises),
   sans régression de parsing.
+- **Campagne KDS bornée (27/09/2026)** : les suites KDS/Kds incluant bump,
+  recall, synchronisation temps réel, snapshot, isolation de branche et
+  commandes non released passent **91/91 en 23,37 s**. Les campagnes POS et
+  Pricing dédiées précédentes restent respectivement **386/386** et **43/43**;
+  aucun changement ne les a touchées depuis leur dernier passage.
