@@ -452,3 +452,16 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   parcours auth/F5, POS cash, borne, KDS et synchronisation des ruptures de
   stock sont verts, sans skip ni flaky observé. Le parcours borne interactif
   distant reste séparément bloqué par le provisioning `kioskAutoLogin` absent.
+- **Fidélité ciblée (27/09/2026)** : `vendor/bin/phpunit --no-coverage
+  tests/Feature/Loyalty tests/Feature/Security/LoyaltyRegisterNoLeakTest.php`
+  passe **93/93 tests et 340 assertions en 22,10 s**. Le lot couvre
+  l’inscription email/téléphone, la conservation de l’email borne, la
+  connexion web, les variantes de téléphone, les cycles earn/redeem/refund et
+  les contrôles de fuite inter-branche.
+- **Test navigateur distant réel (27/09/2026)** : ouverture de
+  `https://vps-418872ac.vps.ovh.net/kiosk/login` dans Chrome affiche de façon
+  reproductible « Borne indisponible pour le moment ». Le log applicatif
+  associé est explicite : `[Kiosk] Auto-login indisponible (identifiants
+  machine absents)`; les seuls autres warnings observés proviennent d’une
+  extension Chrome tierce. Le défaut restant est donc le provisioning distant,
+  non un crash JavaScript de la page.
