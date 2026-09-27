@@ -555,16 +555,16 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 | Fidélité navigateur locale | 5/5 scénarios (inscription, numpad, solde, erreur, email) | PASS |
 | Cuisine HH/X/tacos/sauces | 44 + 20 tests ciblés verts | PASS |
 | Production HTTP/healthz | routes 200, santé OK, file 0 | PASS |
-| Kiosk public distant | 4/4 checks publics, 1 scénario interactif skipped | PASS_WITH_PROVISIONING_SKIP |
-| Borne distante interactive | auto-login machine absent | NEEDS_DEPLOY_CONFIG |
+| Kiosk public distant | 5/5 scénarios Playwright, navigation catégories/produits incluse | PASS |
+| Borne distante interactive | auto-login provisionné, parcours interactif vert | PASS |
 | Auth POS distante/F5 | 0/2 : HTTP 400 identifiants invalides/compte bloqué | NEEDS_REMOTE_AUTH_PROVISIONING |
 | Frozen-zone sentinel | drift commentaire-only, lock owner non signé | NEEDS_OWNER_GATE |
 | Site public contenu livraison | texte Uber Eats encore servi | NEEDS_PUBLIC_COPY_DEPLOY |
 | i18n global | dette de clés, parsing sans erreur | NEEDS_DEBT_BATCH |
 
 **Verdict global : NEEDS_FIX/GATE.** Les parcours applicatifs testés sont verts;
-la clôture reste interdite tant que le provisioning de borne, le gate frozen et
-la décision de contenu public ne sont pas traités/validés par leurs propriétaires.
+la clôture reste interdite tant que le compte POS distant, le gate frozen et la
+décision de contenu public ne sont pas traités/validés par leurs propriétaires.
 
 Plan de reprise borné : [`QA_LOOP_NEXT_ACTION_2026-09-27.md`](QA_LOOP_NEXT_ACTION_2026-09-27.md).
 
@@ -591,10 +591,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   réel affiché, code inconnu rendu en erreur explicite sans page blanche, et
   inscription avec email suivie de l’affichage du solde.
 - **Smoke Kiosk distant ciblé (27/09/2026)** : `tests/e2e/03-kiosk-wizard.spec.js`
-  contre `https://vps-418872ac.vps.ovh.net` passe **4/4 contrôles publics en
-  12,1 s** (accessibilité, message de configuration, absence d’erreur fatale,
-  configuration pricing). Le cinquième scénario interactif reste skipped,
-  explicitement à cause de l’auto-login machine absent; aucun échec silencieux.
+  contre `https://vps-418872ac.vps.ovh.net` passe désormais **5/5 scénarios en
+  19,2 s**, y compris la navigation interactive catégories/produits. Le
+  provisioning auto-login est maintenant actif sur le déploiement; aucune
+  valeur sensible n’est reproduite dans ce rapport.
 - **Auth POS distante/F5 (27/09/2026)** : `tests/e2e/01-auth-refresh.spec.js`
   exécuté contre `https://vps-418872ac.vps.ovh.net` échoue **0/2 scénarios**,
   y compris après retry Playwright. Les deux tentatives reçoivent
@@ -610,3 +610,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   passe **93/93, 340 assertions** en 23,5 s; `tests/Feature/Pricing` passe
   **31/31, 79 assertions** en 7,6 s. Les invariants borne, fidélité et
   calcul/prix restent verts localement après le dernier contrôle distant.
+- **Re-run distant après changement de provisioning** : le scénario borne est
+  désormais **5/5 PASS** (le parcours catégories/produits n’est plus skipped),
+  tandis que `tests/e2e/01-auth-refresh.spec.js` reste **0/2** avec le même
+  HTTP 400 « Identifiants invalides ou compte bloqué ». Le provisioning borne
+  est donc résolu; l’auth POS distante reste le blocage externe actif.

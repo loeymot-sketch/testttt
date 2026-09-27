@@ -10,8 +10,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - Pricing/status lint et budget des bundles actifs : verts.
 - Parcours fidélité, suppléments, deux sauces, KDS et libellés cuisine : verts.
 - Production HTTP/healthz : verte.
-- Borne distante : auto-login machine absent; le bouton Réessayer reste proprement
-  sur l’état indisponible.
+- Borne distante : provisioning auto-login maintenant actif; le parcours
+  interactif catégories/produits passe 5/5 en distant.
 - Sentinel frozen : drift limité à trois commentaires, mais lock propriétaire
   `LOCK_KIOSK_FRITES_SAUCE_BILLING_2026-07-29.md` non signé.
 - Site public : copie livraison encore « Uber Eats », contrairement aux clés
@@ -20,15 +20,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   « Identifiants invalides ou compte bloqué » avec le compte E2E configuré;
   aucun test F5 distant ne peut être déclaré vert sans compte de test actif.
 
-## Prochaine action A — provisioning borne (déploiement, hors code)
+## Prochaine action A — borne (revalidation après provisioning)
 
-1. Propriétaire renseigne les `KIOSK_MACHINE_*` et la confiance IP/secret du VPS
-   selon la borne physique; ne jamais transmettre ces secrets dans le dépôt.
-2. Exécuter côté serveur `php artisan foodking:ensure-kiosk-machine`, puis
-   `php artisan config:clear`.
-3. Rejouer en navigateur `/kiosk/login` → auto-login → `/kiosk/idle`.
-4. Preuves de clôture : DOM idle, console sans warning `Auto-login indisponible`,
-   test interactif catégories/produit non skipped, et healthz toujours 200.
+1. Conserver les secrets `KIOSK_MACHINE_*` hors dépôt et surveiller le
+   provisioning lors des prochains redéploiements.
+2. Rejouer périodiquement `/kiosk/login` → auto-login → `/kiosk/idle`.
+3. Preuves actuelles : test interactif catégories/produits **5/5**, healthz
+   toujours 200; aucun secret n’est stocké dans le rapport.
 
 ## Prochaine action B — contenu public
 
