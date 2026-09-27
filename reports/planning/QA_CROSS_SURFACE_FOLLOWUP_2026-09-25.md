@@ -520,3 +520,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   (« Livraison par nos livreurs bientôt. »). Il existe donc une divergence
   entre le contenu public déployé et le texte demandé; elle reste à valider et
   déployer sur la surface publique concernée.
+- **Réessai borne en navigateur réel (27/09/2026, Chrome)** : après ouverture
+  de `/kiosk/login`, le clic sur **Réessayer** revient en 1,5 s au même état
+  « Borne indisponible pour le moment », sans page blanche, écran vide ni
+  spinner persistant. Le journal répète uniquement le diagnostic serveur
+  `Auto-login indisponible (identifiants machine absents)` (et les warnings
+  d’extension Chrome tiers); le comportement d’erreur est donc stable et
+  explicite, le provisioning restant le seul défaut fonctionnel.
