@@ -655,6 +655,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   navigation catégories/produits; `/api/healthz` répond **200** et confirme
   DB, Redis, WebSocket, chaîne fiscale OK et `queue_pending=0`. La borne reste
   stable malgré le rate-limit qui protège séparément l’auth POS.
+- **Parité frontend cuisine/suppléments revalidée (27/09/2026, 18:30 CEST)** :
+  `kdsSymbolic.spec.js`, `kioskFritesSauceBilling.spec.js` et
+  `checkoutTakeawayCopy.spec.js` passent **39/39 tests**. Les symboles HH/X,
+  l’affectation sauce-produit/sauce-frites, le calcul supplément frites et les
+  libellés à emporter restent alignés côté miroir JavaScript.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
