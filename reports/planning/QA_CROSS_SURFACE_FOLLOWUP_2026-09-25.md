@@ -634,3 +634,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `tests/Feature/Delivery` passe **50/50 tests, 135 assertions**. Les libellés
   à emporter, erreurs de géocodage, indicateurs livraison et calculs de frais
   restent cohérents côté frontend et serveur.
+- **Smoke E2E local complet revalidé (27/09/2026, Node 20)** :
+  `npm run test:e2e:smoke` passe **22/22 tests en 1 min 30 s**, sans retry,
+  couvrant auth/F5 POS, caisse cash, borne, KDS et synchronisation des
+  ruptures avec isolation inter-branche. Les seuls messages non bloquants sont
+  les dépréciations PHP d’une dépendance tierce au démarrage du serveur local.
