@@ -557,6 +557,7 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 | Production HTTP/healthz | routes 200, santé OK, file 0 | PASS |
 | Kiosk public distant | 4/4 checks publics, 1 scénario interactif skipped | PASS_WITH_PROVISIONING_SKIP |
 | Borne distante interactive | auto-login machine absent | NEEDS_DEPLOY_CONFIG |
+| Auth POS distante/F5 | 0/2 : HTTP 400 identifiants invalides/compte bloqué | NEEDS_REMOTE_AUTH_PROVISIONING |
 | Frozen-zone sentinel | drift commentaire-only, lock owner non signé | NEEDS_OWNER_GATE |
 | Site public contenu livraison | texte Uber Eats encore servi | NEEDS_PUBLIC_COPY_DEPLOY |
 | i18n global | dette de clés, parsing sans erreur | NEEDS_DEBT_BATCH |
@@ -588,3 +589,13 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   12,1 s** (accessibilité, message de configuration, absence d’erreur fatale,
   configuration pricing). Le cinquième scénario interactif reste skipped,
   explicitement à cause de l’auto-login machine absent; aucun échec silencieux.
+- **Auth POS distante/F5 (27/09/2026)** : `tests/e2e/01-auth-refresh.spec.js`
+  exécuté contre `https://vps-418872ac.vps.ovh.net` échoue **0/2 scénarios**,
+  y compris après retry Playwright. Les deux tentatives reçoivent
+  `POST /api/auth/login` en **HTTP 400** avec `Identifiants invalides ou compte
+  bloqué` pour le compte de test configuré (`pos@lecayenne.fr`). Le navigateur
+  reste sur `/login` et affiche l’erreur explicite; aucun crash/page blanche
+  n’est observé. Cette preuve ne permet pas de valider F5 distant et requiert
+  un compte POS de test actif/provisionné ou des secrets E2E distants valides;
+  elle ne justifie pas de modifier le code d’authentification sans accès au
+  compte de déploiement.
