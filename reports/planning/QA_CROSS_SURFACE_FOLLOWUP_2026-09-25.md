@@ -623,3 +623,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   contient les cinq scénarios du smoke borne avec `ok=true` et sans scénario
   skipped. La réussite distante n’est donc pas seulement issue du résumé
   console; elle est également présente dans le rapport JSON persisté.
+- **Diagnostic compte E2E (local, sans exposer de secret)** : la base locale
+  contient `pos@lecayenne.fr` avec statut canonique actif `5`, `branch_id=1` et
+  le mot de passe fixture accepté par `Hash::check`. Le même compte est rejeté
+  par le VPS en HTTP 400; l’écart est donc confirmé côté données/configuration
+  de déploiement distante, pas dans le middleware local de login.

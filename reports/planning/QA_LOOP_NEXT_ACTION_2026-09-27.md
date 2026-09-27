@@ -19,6 +19,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - Auth POS distante/F5 : les deux scénarios reçoivent HTTP 400
   « Identifiants invalides ou compte bloqué » avec le compte E2E configuré;
   aucun test F5 distant ne peut être déclaré vert sans compte de test actif.
+  La fixture locale correspondante est active (`status=5`, branche 1) et
+  accepte le mot de passe de test; l’action est donc strictement distante.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
