@@ -724,3 +724,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
   non vert uniquement à cause des clés manquantes, pas d’une erreur de parsing.
+- **Suite frontend complète revalidée (27/09/2026, Vitest)** : `npm test --
+  --run` termine **556 fichiers, 4 511 tests passés, 3 skipped** en 192,0 s.
+  Les avertissements observés (stubs Vue, clés i18n de fixtures et appels
+  happy-dom vers `localhost:3000`) sont non bloquants et aucun test n’échoue.
