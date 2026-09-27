@@ -349,3 +349,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `tests/Feature/Outbox` **81/81 en 18,39 s** et `tests/Feature/Queue`
   **13/13 en 1,27 s**. Encaissement fiscal, remboursements cash/carte,
   fidélité, outbox après commit, déduplication et budgets de retry sont verts.
+- **Lots catalogue/composition (27/09/2026)** : `tests/Feature/Catalog` passe
+  **48/48** avec **3 skips documentés** (gap CategoryUpdated), `tests/Feature/Menu`
+  **164/164** avec **10 skips documentés**, et `tests/Feature/Composer`
+  **109/109** avec **2 skips gelés** liés au contrôle de version pricing.
+  Les projections POS/borne, suppléments, disponibilité, prix et profils
+  composer sont verts; les skips restent explicitement rattachés à leurs gates.
