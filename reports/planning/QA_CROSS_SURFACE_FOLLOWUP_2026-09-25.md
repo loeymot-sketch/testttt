@@ -743,3 +743,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   Tacos M de quantité 1 à 2 recalculé à **13,80 €**, avec total **31,10 €**;
   retour à quantité 1 restauré à **24,20 €**. Aucun écart de prix ni perte de
   personnalisation n’a été observé.
+- **Checkout public vérifié dans Chrome (27/09/2026)** : l’étape
+  `#payment` affiche bien le mode **« À emporter »**, le créneau de retrait,
+  le paiement au comptoir et le bouton « Confirmer ma commande 24,20 € ».
+  Le mode livraison pointe encore explicitement vers **Uber Eats**; le texte
+  cible « livraison par nos livreurs bientôt » n’est donc pas déployé. Le test
+  s’est arrêté avant saisie d’email, confirmation ou paiement.

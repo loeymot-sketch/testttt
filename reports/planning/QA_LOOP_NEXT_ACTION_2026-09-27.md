@@ -32,6 +32,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   avant paiement.
 - **Quantité panier contrôlée (27/09/2026)** : Tacos M ×2 affiche 13,80 € et
   total 31,10 €, puis le retour à ×1 restaure 24,20 €.
+- **Checkout public contrôlé (27/09/2026)** : `#payment` confirme le mode
+  « À emporter », le retrait et le paiement au comptoir; la livraison pointe
+  toujours vers Uber Eats et reste à remplacer par le texte validé.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
