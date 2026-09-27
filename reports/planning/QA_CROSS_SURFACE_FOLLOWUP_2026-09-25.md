@@ -393,3 +393,16 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   **8/8**. L’allowlist de locale, la priorité header/query, les refus 400
   structurés et les événements d’observabilité sont validés sans fuite de
   branche.
+- **Campagne PHPUnit globale indépendante (27/09/2026)** : `php artisan test
+  --no-coverage` termine en **1 311,03 s** avec **6 080 passés, 36 skips,
+  6 incomplets et 1 échec**. Les deux échecs historiques (dette i18n et
+  couverture idempotence KDS) ne réapparaissent plus. L’unique échec est le
+  sentinel `FrozenZoneSha256BaselineSentinelTest` :
+  `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` réel
+  (`f8ecb111…`) ne correspond pas à la baseline (`fcbe3755…`). L’écart est
+  traçable au commit `c21628767` (trois annotations de commentaire de
+  pricing), mais aucune baseline n’a été mise à jour dans ce cycle. Aucun
+  fichier frozen ni baseline n’a été modifié pour faire passer le test; le
+  verdict global reste donc **NEEDS_FIX/GATE** jusqu’à contreseing propriétaire
+  et mise à jour atomique de la baseline, ou retour explicite à la version
+  approuvée.
