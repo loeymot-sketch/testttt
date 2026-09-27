@@ -538,6 +538,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `checkoutTakeawayCopy.spec.js` passent ensemble **39/39 tests** en 1,61 s.
   Les symboles cuisine, le calcul de sauce frites et les libellés à emporter
   sont donc cohérents côté miroir JS.
+- **Preuve UI publique Chrome (27/09/2026)** : le DOM visible de
+  `lecayenne.fr/#menu` affiche « Commande en ligne, retrait sur place » et le
+  lien « Aussi sur Uber Eats », sans « Livraison par nos livreurs bientôt ».
+  Cette observation visuelle confirme le drift de contenu déjà détecté par
+  HTTP; aucun panier ou compte utilisateur n’a été modifié pendant le test.
 
 ## Synthèse de décision — état courant au 27/09/2026
 
