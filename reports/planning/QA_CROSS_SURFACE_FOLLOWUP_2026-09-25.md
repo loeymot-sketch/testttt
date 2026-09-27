@@ -344,3 +344,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `tests/Feature/Delivery` **50/50 en 12,41 s**. Les exports PDF/tableur,
   compteurs dashboard, SLA, frais/zones de livraison, PII et isolation de
   branche restent conformes.
+- **Lots paiement/dispatch (27/09/2026)** : `tests/Feature/Payment` passe
+  **86/86 en 22,47 s**, `tests/Feature/Refund` **33/33 en 8,25 s**,
+  `tests/Feature/Outbox` **81/81 en 18,39 s** et `tests/Feature/Queue`
+  **13/13 en 1,27 s**. Encaissement fiscal, remboursements cash/carte,
+  fidélité, outbox après commit, déduplication et budgets de retry sont verts.
