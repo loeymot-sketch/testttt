@@ -573,6 +573,12 @@ confirme `kioskAutoLogin: null` sur `/kiosk/login`; `/api/healthz` reste `status
 avec DB/Redis/WebSocket/fiscal chain OK et `queue_pending=0`; le site public sert
 toujours « la livraison passe par Uber Eats ». Aucun changement de déploiement ou
 de copie publique n’est intervenu depuis le contrôle précédent.
+- **Recontrôle HTTP distant (27/09/2026, 18:11 CEST)** : `/api/healthz` répond
+  toujours **200** (`status=ok`, DB/Redis/WebSocket/fiscal chain OK,
+  `queue_pending=0`); les shells `/login`, `/admin/dashboard` et `/kiosk/login`
+  répondent tous **200**. Ce contrôle confirme la disponibilité réseau et du
+  serveur, mais ne transforme pas les blocages d’authentification/provisioning
+  en PASS fonctionnel.
 - **Fidélité navigateur local (27/09/2026, Playwright Chromium)** :
   `kiosk-loyalty-inscription-rapide-2026-09-25.spec.js` passe **2/2 tests en
   5,8 s**. Le premier reproduit le vrai `/loyalty/check` pour un numéro inconnu,
