@@ -30,6 +30,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Panier public contrôlé dans Chrome (27/09/2026)** : Tacos L 17,30 € +
   Tacos M 6,90 € donnent un total affiché de 24,20 €; vérification arrêtée
   avant paiement.
+- **Quantité panier contrôlée (27/09/2026)** : Tacos M ×2 affiche 13,80 € et
+  total 31,10 €, puis le retour à ×1 restaure 24,20 €.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

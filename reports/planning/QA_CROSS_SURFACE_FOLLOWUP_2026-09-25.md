@@ -739,3 +739,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   le panier affiche **sous-total/total 24,20 €**, soit la somme exacte des deux
   lignes. Le contrôle s’est arrêté avant « Passer commande »; aucune commande
   réelle ni paiement n’a été déclenché.
+- **Variation de quantité vérifiée dans Chrome (27/09/2026)** : passage du
+  Tacos M de quantité 1 à 2 recalculé à **13,80 €**, avec total **31,10 €**;
+  retour à quantité 1 restauré à **24,20 €**. Aucun écart de prix ni perte de
+  personnalisation n’a été observé.
