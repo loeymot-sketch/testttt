@@ -21,6 +21,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   aucun test F5 distant ne peut être déclaré vert sans compte de test actif.
   La fixture locale correspondante est active (`status=5`, branche 1) et
   accepte le mot de passe de test; l’action est donc strictement distante.
+  Le dernier re-run a déclenché le rate-limit distant (HTTP 429, fenêtre 600 s);
+  ne pas relancer avant expiration ou changement de compte E2E.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

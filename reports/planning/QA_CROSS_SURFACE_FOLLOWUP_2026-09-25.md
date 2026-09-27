@@ -644,6 +644,12 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `pos:lint:status` reste OK sur **38 fichiers**, et `perf:bundle-check` reste
   OK sur les **15 bundles** du manifest, dont `kiosk-shell` 280 KB et
   `kiosk-wizard-step` 130 KB sous leurs budgets.
+- **Re-run auth POS distant (27/09/2026)** : le premier essai retourne toujours
+  HTTP 400 « Identifiants invalides ou compte bloqué »; les retries suivants
+  sont maintenant correctement arrêtés par le rate-limit distant en HTTP 429
+  avec une fenêtre de 600 s. Cela confirme qu’il ne faut pas boucler sur le
+  compte fixture : attendre la fenêtre ou provisionner un compte POS E2E dédié,
+  puis rejouer une seule fois.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
