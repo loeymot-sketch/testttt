@@ -66,6 +66,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   baseline `fcbe3755…256ac`; l’écart est limité au commit `c21628767`, qui ne
   fait que normaliser trois commentaires de sign-off pricing. Le lock owner
   reste non signé : verdict **NEEDS_OWNER_ACTION**, aucune baseline modifiée.
+- **Reprobe runtime (27/09/2026, 19:28 CEST)** : VPS HTTP 200 et sous-systèmes
+  critiques `ok`; `queue_pending=1` sur trois mesures consécutives. Surveiller
+  le worker/outbox, sans relancer ni purger manuellement une file de production.
+- **Reprobe contenu public (27/09/2026, 19:28 CEST)** : Uber Eats est toujours
+  affiché dans le HTML; la copie « livraison par nos livreurs bientôt » reste
+  un blocage de déploiement distinct.
+- **Healthz local (27/09/2026)** : `HealthzEndpointTest` **7/7 passés**.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

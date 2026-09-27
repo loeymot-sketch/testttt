@@ -805,3 +805,15 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `LOCK_KIOSK_FRITES_SAUCE_BILLING_2026-07-29.md` conserve son sign-off owner
   non coché; le sentinel reste donc **NEEDS_OWNER_ACTION** et ne doit pas être
   “réparé” par une mise à jour automatique de baseline.
+- **Reprobe runtime VPS (27/09/2026, 19:28 CEST)** : `/api/healthz` répond
+  toujours HTTP **200** avec DB, Redis, WebSocket et chaîne fiscale à `ok`.
+  `queue_pending` est toutefois à **1** sur trois mesures espacées de 2 s
+  (auparavant 0) : ce n’est pas une panne HTTP, mais cela doit être surveillé
+  côté worker/outbox avant de conclure à un retour à zéro.
+- **Reprobe copie publique (27/09/2026, 19:28 CEST)** : le HTML contient
+  toujours « la livraison passe par Uber Eats » et « Pour être livré… Uber
+  Eats ». Le texte validé « livraison par nos livreurs bientôt » n’est donc
+  toujours pas déployé.
+- **Contrat healthz local (27/09/2026)** : `HealthzEndpointTest` passe **7/7**;
+  la forme JSON, l’énumération d’état, le compteur de queue et la commande
+  CLI restent conformes.
