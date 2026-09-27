@@ -406,3 +406,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   verdict global reste donc **NEEDS_FIX/GATE** jusqu’à contreseing propriétaire
   et mise à jour atomique de la baseline, ou retour explicite à la version
   approuvée.
+- **Reproductibilité du gate (27/09/2026)** : le test ciblé
+  `FrozenZoneSha256BaselineSentinelTest` reproduit l’échec en **0,15 s** avec
+  exactement le même couple `fcbe3755…` (baseline) / `f8ecb111…` (réel).
+  Aucun lock contresigné exploitable n’a été trouvé pour autoriser une
+  synchronisation automatique; la baseline et le fichier frozen restent donc
+  volontairement inchangés.
