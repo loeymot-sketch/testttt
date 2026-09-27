@@ -339,3 +339,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `tests/Feature/Webhooks` **31/31 en 7,24 s**. Les invariants dispatch après
   commit, outbox/rejeu, canaux client, expiration des commandes web et
   idempotence/signatures webhook sont verts.
+- **Lots pilotage (27/09/2026)** : `tests/Feature/Reports` passe **29/29 en
+  5,41 s**, `tests/Feature/Dashboard` **96/96 en 21,91 s** et
+  `tests/Feature/Delivery` **50/50 en 12,41 s**. Les exports PDF/tableur,
+  compteurs dashboard, SLA, frais/zones de livraison, PII et isolation de
+  branche restent conformes.
