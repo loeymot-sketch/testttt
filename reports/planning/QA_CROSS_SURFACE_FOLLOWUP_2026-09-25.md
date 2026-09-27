@@ -328,3 +328,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   commandes non released passent **91/91 en 23,37 s**. Les campagnes POS et
   Pricing dédiées précédentes restent respectivement **386/386** et **43/43**;
   aucun changement ne les a touchées depuis leur dernier passage.
+- **Lots backend bornés (27/09/2026)** : `tests/Feature/Loyalty` passe
+  **93/93 en 23,03 s**, `tests/Feature/Order` passe **109/109 en 26,23 s**,
+  et `tests/Feature/Security` passe **221/221 en 70,78 s**. Aucun skip ni
+  échec dans ces trois lots. Ces résultats remplacent les anciennes mesures
+  partielles et confirment les invariants fidélité, transitions de commande,
+  prix serveur, autorisations, CSP/CORS et protections anti-rejeu.
