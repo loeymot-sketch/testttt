@@ -313,3 +313,13 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `KdsItemReadySyncTest` **7/7**. Les deux échecs de la campagne globale sont
   ainsi corrigés; une campagne globale complète reste à rejouer pour produire
   un nouveau bilan indépendant.
+- **Revalidation distante (27/09/2026)** : les routes publiques `/login`,
+  `/kiosk/login`, `/admin/dashboard`, `/admin/settings/kiosk-setup` et
+  `/api/healthz` répondent **HTTP 200**. Le healthz distant confirme
+  `status=ok`, DB/Redis/WebSocket/fiscal chain `ok` et `queue_pending=0`.
+  La revalidation ne simule pas une session authentifiée ni un paiement.
+- **Rejeu ciblé (27/09/2026)** : I18n + Idempotency + KDS item sync restent
+  verts (**8 + 1 + 7 tests**, soit **16/16**). `npm run i18n:audit` parse les
+  80 fichiers Laravel sans erreur; les clés manquantes restantes sont
+  recensées comme dette de traduction (notamment locales Vue non françaises),
+  sans régression de parsing.
