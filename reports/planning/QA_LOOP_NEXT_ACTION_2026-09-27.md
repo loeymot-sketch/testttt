@@ -107,6 +107,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   4 511 passés, 3 skipped** en **193,29 s**, sans échec. Les warnings de
   stubs Vue/i18n et réseau happy-dom sont non bloquants.
 - **Healthz post-Vitest (19:41 CEST)** : HTTP 200 et `queue_pending=0`.
+- **Copie publique (27/09/2026, 19:42 CEST)** : `checkoutTakeawayCopy.spec.js`
+  local **2/2**, mais `lecayenne.fr` sert toujours « Uber Eats ». Identifier
+  la surface externe et déployer la copie validée avant de fermer ce point.
+- **Healthz associé (19:42 CEST)** : HTTP 200 et `queue_pending=0`.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

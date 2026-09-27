@@ -871,3 +871,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   happy-dom vers `localhost:3000` restent non bloquants; aucun test n’échoue.
 - **Healthz après Vitest (27/09/2026, 19:41 CEST)** : HTTP 200, services
   critiques OK et `queue_pending=0`.
+- **Écart copie public revalidé (27/09/2026, 19:42 CEST)** : le test local
+  `checkoutTakeawayCopy.spec.js` passe **2/2**, mais le HTML réellement servi
+  par `lecayenne.fr` contient encore plusieurs mentions « Uber Eats » et
+  « la livraison passe par Uber Eats ». C’est une divergence de déploiement /
+  surface externe, pas un échec du composant FoodKing versionné; elle reste
+  ouverte jusqu’à identification et déploiement de la copie propriétaire.
+- **Healthz public associé (27/09/2026, 19:42 CEST)** : VPS HTTP 200 et
+  `queue_pending=0`.
