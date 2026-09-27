@@ -769,3 +769,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   passe **221/221**, `KioskSecurityTest` **6/6** et `Feature/KioskMultiBranch`
   **8/8**. Les autorisations, clés API, anti-fuite fidélité, tokens borne,
   `branch_id` et allowlist de locale restent conformes.
+- **Commande et dispatch revalidés (27/09/2026)** : `Feature/Order` passe
+  **109/109 tests** et `Feature/Outbox` **81/81 tests**. Les snapshots de prix,
+  transitions `OrderStatus`, parité OrderService/FrontendOrderService,
+  idempotence et dispatch strictement après commit restent verts.

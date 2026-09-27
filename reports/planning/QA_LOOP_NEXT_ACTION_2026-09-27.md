@@ -47,6 +47,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   4,0 s**; le solde revient après `register`, sans page blanche.
 - **Sécurité/isolation (27/09/2026)** : **221/221 + 6/6 + 8/8 tests passés**
   pour sécurité générale, borne et multi-branche.
+- **Commande/outbox (27/09/2026)** : **109/109 + 81/81 tests passés**;
+  snapshots de prix, statuts, idempotence et dispatch post-commit validés.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
