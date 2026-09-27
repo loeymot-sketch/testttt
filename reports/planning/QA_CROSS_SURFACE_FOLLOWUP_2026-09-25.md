@@ -879,3 +879,14 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   ouverte jusqu’à identification et déploiement de la copie propriétaire.
 - **Healthz public associé (27/09/2026, 19:42 CEST)** : VPS HTTP 200 et
   `queue_pending=0`.
+- **Source du site public identifiée (27/09/2026, 19:43 CEST)** : la page
+  provient du dépôt externe `~/Downloads/lecayenne-web-deploy/Site lecayenne`
+  (remote `loeymot-sketch/Site-lecayenne`), pas de ce dépôt FoodKing. Les
+  mentions Uber Eats sont présentes dans `index.html` et `commander.html`.
+  L’arbre externe contient déjà des modifications non committées; aucune
+  édition n’a été faite par cet audit.
+- **Audit SEO local de la surface externe (27/09/2026, 19:43 CEST)** :
+  `node tests-e2e/verif-seo.mjs` obtient **17 contrôles réussis, 1 échec**.
+  L’échec est la similarité `bol-frites.html ↔ bol-riz.html` (81%); les pages,
+  sitemap, 41 URLs, 39 prix et numéro public unique passent. Ce point et la
+  copie Uber Eats restent à traiter dans le dépôt externe propriétaire.

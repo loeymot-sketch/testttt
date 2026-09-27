@@ -111,6 +111,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   local **2/2**, mais `lecayenne.fr` sert toujours « Uber Eats ». Identifier
   la surface externe et déployer la copie validée avant de fermer ce point.
 - **Healthz associé (19:42 CEST)** : HTTP 200 et `queue_pending=0`.
+- **Source publique identifiée (27/09/2026, 19:43 CEST)** : le site vient du
+  dépôt externe `~/Downloads/lecayenne-web-deploy/Site lecayenne`, où
+  `index.html`/`commander.html` portent encore Uber Eats. L’arbre est déjà
+  dirty; aucune modification automatique effectuée.
+- **SEO externe (27/09/2026, 19:43 CEST)** : **17 contrôles OK, 1 échec**
+  (`bol-frites.html`/`bol-riz.html` similarité 81%). À corriger et retester
+  dans le dépôt externe après validation propriétaire.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
