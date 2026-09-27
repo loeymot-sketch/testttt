@@ -749,3 +749,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   Le mode livraison pointe encore explicitement vers **Uber Eats**; le texte
   cible « livraison par nos livreurs bientôt » n’est donc pas déployé. Le test
   s’est arrêté avant saisie d’email, confirmation ou paiement.
+- **Smoke E2E complète revalidée localement (27/09/2026, 18:54 CEST)** :
+  `npm run test:e2e:smoke` termine **22/22 tests passés en 1,5 min** couvrant
+  auth/F5 POS, caisse, borne, KDS et synchronisation de rupture de stock
+  multi-branche. Les avertissements PHP de dépréciation restent non bloquants.

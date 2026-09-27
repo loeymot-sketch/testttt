@@ -35,6 +35,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Checkout public contrôlé (27/09/2026)** : `#payment` confirme le mode
   « À emporter », le retrait et le paiement au comptoir; la livraison pointe
   toujours vers Uber Eats et reste à remplacer par le texte validé.
+- **Smoke E2E locale complète (27/09/2026, 18:54 CEST)** : **22/22 tests
+  passés en 1,5 min**, incluant POS/F5, caisse, borne, KDS et isolation de
+  rupture de stock multi-branche.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
