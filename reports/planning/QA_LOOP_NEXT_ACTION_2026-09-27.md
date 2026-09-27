@@ -103,6 +103,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   31/31 Pricing, 109/109 Order, 81/81 Outbox, 221/221 Security**; prix,
   fidélité, statuts, dispatch post-commit et isolation multi-branche restent
   verts.
+- **Vitest complet (27/09/2026, 19:38–19:41 CEST)** : **556 fichiers,
+  4 511 passés, 3 skipped** en **193,29 s**, sans échec. Les warnings de
+  stubs Vue/i18n et réseau happy-dom sont non bloquants.
+- **Healthz post-Vitest (19:41 CEST)** : HTTP 200 et `queue_pending=0`.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

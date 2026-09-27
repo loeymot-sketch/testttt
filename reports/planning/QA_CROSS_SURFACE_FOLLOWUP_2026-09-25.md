@@ -865,3 +865,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   Security **221/221** passent. Les tests couvrent prix scellés au centime,
   fidélité/inscription et idempotence, statuts/OrderService parity,
   dispatch post-commit, isolation `branch_id` et protections d’accès.
+- **Suite frontend complète revalidée (27/09/2026, 19:38–19:41 CEST)** :
+  `npm test -- --run` termine **556 fichiers, 4 511 tests passés, 3 skipped
+  (4 514 total)** en **193,29 s**. Les warnings Vue/i18n et tentatives
+  happy-dom vers `localhost:3000` restent non bloquants; aucun test n’échoue.
+- **Healthz après Vitest (27/09/2026, 19:41 CEST)** : HTTP 200, services
+  critiques OK et `queue_pending=0`.
