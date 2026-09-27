@@ -118,6 +118,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **SEO externe (27/09/2026, 19:43 CEST)** : **17 contrôles OK, 1 échec**
   (`bol-frites.html`/`bol-riz.html` similarité 81%). À corriger et retester
   dans le dépôt externe après validation propriétaire.
+- **Comportement app/site externe (27/09/2026, 19:44 CEST)** :
+  `verify-app-behaviour.mjs` **13/13 passés** sur serveur local temporaire;
+  paiement/app-versus-web et API HTTPS conformes.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

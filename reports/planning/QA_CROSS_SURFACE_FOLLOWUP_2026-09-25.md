@@ -890,3 +890,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   L’échec est la similarité `bol-frites.html ↔ bol-riz.html` (81%); les pages,
   sitemap, 41 URLs, 39 prix et numéro public unique passent. Ce point et la
   copie Uber Eats restent à traiter dans le dépôt externe propriétaire.
+- **Comportement site/app externe vérifié (27/09/2026, 19:44 CEST)** : en
+  servant l’arbre externe localement, `tools/verify-app-behaviour.mjs` passe
+  **13/13 contrôles** : pont natif iOS, paiement coupé dans l’app, paiement
+  actif dans le navigateur, API HTTPS, absence d’erreurs JS et fournisseurs
+  sociaux correctement séparés. Ce contrôle ne modifie aucun fichier.
