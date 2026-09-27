@@ -421,3 +421,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   le message métier « Identifiants invalides ou compte bloqué ». Les contrôles
   d’authentification et de refus sont donc cohérents; cela ne lève pas le
   provisioning réel de la borne, qui exige ses identifiants machine.
+- **Garde-fous statiques (27/09/2026)** : `npm run pos:lint:pricing` est **OK**
+  (86 fichiers; avertissement de sign-off toléré jusqu’au 27/10/2026) et
+  `npm run pos:lint:status` est **OK** (38 fichiers). `npm run i18n:audit`
+  parse les **80 fichiers Laravel sans erreur**, mais retourne le code 1 pour
+  la dette de clés manquantes (Vue : fr 11, en 112, ar 644, de 922, bn 923;
+  Laravel : fr 5, en 21, ar 62, de 89, bn 86). Cette dette est distincte du
+  correctif i18n ciblé déjà validé et reste à traiter par lot dédié.
