@@ -381,3 +381,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `KIOSK_AUTO_LOGIN_TRUSTED_IPS`/`KIOSK_AUTO_LOGIN_SECRET` selon la borne,
   exécuter `foodking:ensure-kiosk-machine`, vider le cache de configuration,
   puis rejouer le parcours navigateur jusqu'à `/kiosk/idle`.
+- **Complément Kiosk (27/09/2026)** : `tests/Feature/Kiosk` passe **62/62 en
+  12,72 s**. Playwright Chromium Node 20 contre le VPS passe **4/4 en 8,9 s**
+  sur la surface publique (`/kiosk/login` accessible, message visible,
+  aucune erreur JavaScript fatale, configuration `kioskMenuPricing` présente).
+  Le scénario interactif catégories/produit est **1 skipped** car la page
+  redirige vers `/kiosk/login` sans auto-login; ce skip est attendu et relie
+  directement le test E2E au défaut de provisioning décrit ci-dessus.
