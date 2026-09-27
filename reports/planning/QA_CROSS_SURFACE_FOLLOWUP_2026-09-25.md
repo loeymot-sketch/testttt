@@ -777,3 +777,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **200** avec DB, Redis, WebSocket, fiscalité OK et `queue_pending=0`. Le HTML
   public n’a pas changé : le checkout et le footer mentionnent toujours Uber
   Eats; aucun déploiement de la copie « livreurs bientôt » n’est constaté.
+- **Frontend et hardware revalidés (27/09/2026)** : `Feature/Frontend` passe
+  **58/58 tests** et `Feature/Hardware` **164/164 tests**. La source serveur
+  reste l’autorité du total attendu, tandis que tickets cuisine/client,
+  sauces HH/X, viandes, frites et largeur ESC/POS restent conformes.

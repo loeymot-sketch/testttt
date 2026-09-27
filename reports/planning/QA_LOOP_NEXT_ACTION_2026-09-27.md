@@ -51,6 +51,8 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   snapshots de prix, statuts, idempotence et dispatch post-commit validés.
 - **Reprobe VPS/public (27/09/2026, 18:59 CEST)** : healthz toujours 200 et
   services critiques OK; le contenu livraison reste inchangé (« Uber Eats »).
+- **Frontend/hardware (27/09/2026)** : **58/58 + 164/164 tests passés**;
+  tickets, sauces, viandes, frites et total serveur restent validés.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
