@@ -527,3 +527,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `Auto-login indisponible (identifiants machine absents)` (et les warnings
   d’extension Chrome tiers); le comportement d’erreur est donc stable et
   explicite, le provisioning restant le seul défaut fonctionnel.
+- **Cohérence checkout à emporter/livraison (27/09/2026)** : le composant
+  `CheckoutComponent.vue` référence bien `order_takeaway`,
+  `confirm_takeaway` et `delivery_coming_soon`; `tests/js/checkoutTakeawayCopy.spec.js`
+  passe **2/2 tests** avec les textes français attendus. L’écart « Uber Eats »
+  constaté précédemment est donc limité à la surface publique `lecayenne.fr`,
+  pas au checkout FoodKing versionné.
