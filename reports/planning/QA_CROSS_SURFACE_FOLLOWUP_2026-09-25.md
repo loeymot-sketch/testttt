@@ -639,3 +639,12 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   couvrant auth/F5 POS, caisse cash, borne, KDS et synchronisation des
   ruptures avec isolation inter-branche. Les seuls messages non bloquants sont
   les dépréciations PHP d’une dépendance tierce au démarrage du serveur local.
+- **Garde-fous release revalidés (27/09/2026)** : `pos:lint:pricing` reste OK
+  sur **86 fichiers** (warning sign-off prévu jusqu’au 27/10/2026),
+  `pos:lint:status` reste OK sur **38 fichiers**, et `perf:bundle-check` reste
+  OK sur les **15 bundles** du manifest, dont `kiosk-shell` 280 KB et
+  `kiosk-wizard-step` 130 KB sous leurs budgets.
+- **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
+  sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
+  922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
+  non vert uniquement à cause des clés manquantes, pas d’une erreur de parsing.
