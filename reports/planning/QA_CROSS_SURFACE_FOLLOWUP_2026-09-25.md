@@ -786,3 +786,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **86/86** et `Feature/Pos` **386/386**. Les contrôles NF525, paiements
   idempotents, split tender, tiroir, fidélité caisse et totaux serveur restent
   verts; les skips dépendent uniquement de MySQL/MariaDB non utilisé localement.
+- **Garde-fous release revalidés (27/09/2026)** : pricing lint (**86 fichiers**)
+  et status lint (**38 fichiers**) sont verts; le bundle check valide **15/15
+  bundles**. L’audit i18n parse **80 fichiers Laravel sans erreur**; la dette de
+  clés manquantes reste connue. Le pricing lint conserve l’avertissement de
+  sign-off jusqu’au **27/10/2026**, sans échec actuel.

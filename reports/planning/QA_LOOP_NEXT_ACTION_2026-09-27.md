@@ -56,6 +56,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Fiscalité/paiement/caisse (27/09/2026)** : **307 tests fiscaux passés
   (8 skips MySQL), 86/86 paiement et 386/386 POS**; NF525, split tender,
   tiroir, fidélité caisse et totaux serveur restent verts.
+- **Release guards (27/09/2026)** : pricing/status lint verts (**86/38 fichiers**),
+  bundles **15/15**; i18n parse les **80 fichiers Laravel** sans erreur, avec
+  dette de clés connue et sign-off pricing encore en attente jusqu’au 27/10.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
