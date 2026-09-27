@@ -1996,7 +1996,7 @@ export default {
       // bas) jamais envoyé → écran 7,40 € mais order scellé 6,90 € = fuite revenu +
       // composition_snapshot sous-facturé (risque NF525). Items sans cet extra (frites/bols) →
       // sauce en plus GRATUITE (aucun mécanisme backend) donc display == sealed.
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-15 (déblocage frozen compo)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-15 (déblocage frozen compo)
       const extraSauceN = Math.max(0, this.selections.sauceOrder.length - 1);
       if (extraSauceN > 0) {
         const ssExtra = (item.extras || []).find(e =>
@@ -2020,7 +2020,7 @@ export default {
       // la facturait jamais (manque à gagner + composition_snapshot sous-facturé). Le SITE
       // facture et scelle déjà ce surcoût (api.js) : cette ligne restaure la parité.
       // Items sans cet extra → aucun push, sauce frites gratuite (display == sealed).
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-29 (plainte suppléments non calculés)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-29 (plainte suppléments non calculés)
       const extraFritesSauceN = Math.max(0, (this.selections.fritesSauceOrder || []).length - 1);
       if (extraFritesSauceN > 0) {
         const fsExtra = (item.extras || []).find(e =>
@@ -2084,7 +2084,7 @@ export default {
       // dans l'instruction « Viandes en plus : … » (buildInstruction, résolu au ticket cuisine). Le
       // backend PricingService SCELLE le prix depuis la DB → display == sealed. Miroir EXACT du bloc
       // « Sauce supplémentaire » ci-dessus.
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-24 (LOCK viande suppl unifié)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-24 (LOCK viande suppl unifié)
       const viandeSupplN = viandeMeta.reduce((n, v) => (
         v && v.source === 'variation' ? n + (parseInt(v.supplCount || 0, 10) || 0) : n
       ), 0);
