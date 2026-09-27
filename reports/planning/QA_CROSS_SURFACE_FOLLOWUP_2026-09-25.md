@@ -660,6 +660,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `checkoutTakeawayCopy.spec.js` passent **39/39 tests**. Les symboles HH/X,
   l’affectation sauce-produit/sauce-frites, le calcul supplément frites et les
   libellés à emporter restent alignés côté miroir JavaScript.
+- **Revalidation serveur KDS/pricing (27/09/2026)** : le lot combiné KDS,
+  pricing, régression supplément borne et preuve de prix serveur passe
+  **91/91 tests, 305 assertions**. Le scénario bump d’une commande non
+  libérée reste bien bloqué en HTTP 422, sans changement d’état (contrôle
+  d’autorisation attendu).
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
