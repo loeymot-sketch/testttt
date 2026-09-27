@@ -773,3 +773,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **109/109 tests** et `Feature/Outbox` **81/81 tests**. Les snapshots de prix,
   transitions `OrderStatus`, parité OrderService/FrontendOrderService,
   idempotence et dispatch strictement après commit restent verts.
+- **Reprobe distant (27/09/2026, 18:59 CEST)** : `/api/healthz` répond encore
+  **200** avec DB, Redis, WebSocket, fiscalité OK et `queue_pending=0`. Le HTML
+  public n’a pas changé : le checkout et le footer mentionnent toujours Uber
+  Eats; aucun déploiement de la copie « livreurs bientôt » n’est constaté.
