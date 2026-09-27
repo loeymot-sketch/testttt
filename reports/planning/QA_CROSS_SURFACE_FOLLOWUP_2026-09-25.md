@@ -847,3 +847,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   différent et preuve fraîche. En production, `/api/health/ready` reste
   `restore_drill=degraded` car aucune preuve fraîche n’est enregistrée; aucune
   restauration n’a été exécutée automatiquement.
+- **Release guards revalidés (27/09/2026, 19:34 CEST)** : pricing lint
+  (**86 fichiers**) et status lint (**38 fichiers**) sont verts; le pricing
+  lint conserve seulement l’avertissement de sign-off jusqu’au **27/10/2026**.
+  Le contrôle de budget valide **15/15 bundles**. L’audit i18n parse **80
+  fichiers Laravel sans erreur**; les clés manquantes connues restent la dette
+  déclarée (Vue fr 11/en 112/ar 644/de 922/bn 923; Laravel fr 5/en 21/ar
+  62/de 89/bn 86).

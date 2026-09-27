@@ -91,6 +91,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   5/5**), mais la prod reste `degraded` tant qu’un drill de restauration
   mesuré et attesté n’est pas fourni. Ne pas lancer d’opération destructive
   depuis l’agent.
+- **Release guards (27/09/2026, 19:34 CEST)** : pricing/status lint verts
+  (**86/38 fichiers**), bundles **15/15**; i18n parse **80 fichiers Laravel
+  sans erreur**. Les clés manquantes restent une dette connue et le sign-off
+  pricing est averti jusqu’au 27/10, sans échec actuel.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
