@@ -552,6 +552,7 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 | Frontend/Vitest | 4 509 tests passés, 3 skips | PASS |
 | E2E critique local | 22/22 sur deux exécutions indépendantes | PASS |
 | POS suppléments/deux sauces | 2/2 parcours navigateur verts | PASS |
+| Fidélité navigateur locale | 5/5 scénarios (inscription, numpad, solde, erreur, email) | PASS |
 | Cuisine HH/X/tacos/sauces | 44 + 20 tests ciblés verts | PASS |
 | Production HTTP/healthz | routes 200, santé OK, file 0 | PASS |
 | Borne distante interactive | auto-login machine absent | NEEDS_DEPLOY_CONFIG |
