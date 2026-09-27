@@ -440,3 +440,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   contrôlés passent ou n’ont pas de budget déclaré. Aucun fichier bundle n’a
   été supprimé et aucun budget n’a été relevé automatiquement; ce point reste
   une action build dédiée (nettoyage/agrégation des artefacts ou budget validé).
+- **Correction du contrôle bundles (27/09/2026)** : la cause était un faux
+  positif du script qui parcourait 313 anciens fichiers hashés ignorés par Git.
+  `tools/perf/check_bundle_budget.mjs` filtre maintenant sur les **15 fichiers
+  référencés par `public/mix-manifest.json`**, avec repli conservateur si le
+  manifest est absent ou illisible. `node --check` est vert et le contrôle
+  corrigé passe : `app.js` 2 401/5 000 KB, `kiosk-errors` 19/50 KB,
+  `kiosk-shell` 280/350 KB, `kiosk-wizard-step` 130/150 KB, sans dépassement.
