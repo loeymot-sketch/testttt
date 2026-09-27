@@ -533,3 +533,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   passe **2/2 tests** avec les textes français attendus. L’écart « Uber Eats »
   constaté précédemment est donc limité à la surface publique `lecayenne.fr`,
   pas au checkout FoodKing versionné.
+- **Parité frontend JavaScript (27/09/2026)** : les suites
+  `kdsSymbolic.spec.js`, `kioskFritesSauceBilling.spec.js` et
+  `checkoutTakeawayCopy.spec.js` passent ensemble **39/39 tests** en 1,61 s.
+  Les symboles cuisine, le calcul de sauce frites et les libellés à emporter
+  sont donc cohérents côté miroir JS.
