@@ -489,3 +489,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   1 min 30 s**. Les deux runs successifs sont donc reproductibles; aucun flaky,
   aucun échec auth/POS/borne/KDS/stock. Les seuls warnings restent les
   dépréciations `${var}` d’une dépendance PHP tierce au démarrage du serveur.
+- **Garde-fous release revalidés (27/09/2026)** : `npm run pos:lint:pricing`
+  passe sur **86 fichiers** (warning de sign-off jusqu’au 27/10/2026),
+  `npm run pos:lint:status` passe sur **38 fichiers**, et
+  `npm run perf:bundle-check` passe sur les **15 bundles référencés** du
+  manifest. La sentinelle `FrozenZoneSha256BaselineSentinelTest` reste le seul
+  échec ciblé, reproduit avec le même hash baseline/réel pour
+  `KioskWizardComponent.vue`; baseline et fichier frozen laissés inchangés en
+  attente du gate propriétaire.
