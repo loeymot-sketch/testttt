@@ -471,3 +471,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   modification d’une ligne Cayenne en conservant simultanément les sauces
   Andalouse et Algérienne. Le serveur émet seulement des avertissements PHP
   de dépréciation dans une dépendance tierce, sans échec de parcours.
+- **Libellés et placement cuisine (27/09/2026)** : les suites ciblées
+  `KitchenTicket*` passent **44/44 tests, 102 assertions**; le formateur
+  symbolique passe **20/20 tests, 78 assertions**. Les sorties scellées
+  vérifient Harissa=`HH`, sans sauce=`X`, tacos sans taille, sauces produit
+  regroupées sur la ligne 1, sauces frites dans le badge menu, et absence de
+  « Sauce supplémentaire » anonyme dès que le nom est récupérable.
