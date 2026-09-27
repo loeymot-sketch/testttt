@@ -360,3 +360,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   en 31,54 s** et `tests/Feature/Settings` **49/49 en 20,44 s**. Les
   migrations/rehearsals, health/readiness, corrélation, CSP reports, sécurité
   des réglages et diffusion multi-branches sont verts.
+- **Lots OSS/onboarding/roue (27/09/2026)** : `tests/Feature/OSS` passe
+  **16/16 en 4,40 s**. `tests/Feature/Onboarding` passe **222 tests** avec
+  **4 incomplets** en **55,39 s**; les incomplets sont les scénarios
+  structurels explicitement marqués par la suite et aucun échec n'est relevé.
+  `tests/Feature/Wheel` passe **253/253 en 64,27 s**. Les protections de
+  session, branche, coupons, stock, tirage cryptographique et confidentialité
+  restent vertes. Ces lots complètent la couverture borne/compte fidélité;
+  le bilan global indépendant reste à rejouer avant clôture formelle.
