@@ -605,3 +605,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   un compte POS de test actif/provisionné ou des secrets E2E distants valides;
   elle ne justifie pas de modifier le code d’authentification sans accès au
   compte de déploiement.
+- **Revalidation backend ciblée (27/09/2026)** : la suite `tests/Feature/Kiosk`
+  passe **62/62 tests, 156 assertions** en 13,2 s; `tests/Feature/Loyalty`
+  passe **93/93, 340 assertions** en 23,5 s; `tests/Feature/Pricing` passe
+  **31/31, 79 assertions** en 7,6 s. Les invariants borne, fidélité et
+  calcul/prix restent verts localement après le dernier contrôle distant.
