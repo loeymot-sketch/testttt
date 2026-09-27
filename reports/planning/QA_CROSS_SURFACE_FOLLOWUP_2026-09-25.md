@@ -334,3 +334,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   échec dans ces trois lots. Ces résultats remplacent les anciennes mesures
   partielles et confirment les invariants fidélité, transitions de commande,
   prix serveur, autorisations, CSP/CORS et protections anti-rejeu.
+- **Lots intégration (27/09/2026)** : `tests/Feature/Sync` passe **29/29 en
+  5,69 s**, `tests/Feature/Web` **8/8 en 2,36 s** et
+  `tests/Feature/Webhooks` **31/31 en 7,24 s**. Les invariants dispatch après
+  commit, outbox/rejeu, canaux client, expiration des commandes web et
+  idempotence/signatures webhook sont verts.
