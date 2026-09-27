@@ -757,3 +757,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   deux specs Playwright dédiées terminent **4/4 en 7,3 s**. Solde réel, code
   inconnu avec erreur claire, inscription téléphone sans ressaisie et
   vérification automatique au 10e chiffre passent; aucune page blanche.
+- **Contrats backend sensibles revalidés (27/09/2026)** : les suites
+  `Feature/Kiosk`, `Feature/Loyalty` et `Feature/Pricing` terminent
+  respectivement **62/62**, **93/93** et **31/31 tests passés**. Les garanties
+  de paiement au centime, suppléments/sauces, fidélité (inscription, solde,
+  remboursement/idempotence) et isolation/auto-login borne restent vertes.

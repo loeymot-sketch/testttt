@@ -40,6 +40,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   rupture de stock multi-branche.
 - **Fidélité/inscription locale (27/09/2026, 18:54 CEST)** : **4/4 tests en
   7,3 s**, sans page blanche sur solde réel, code inconnu ou inscription.
+- **Backend Kiosk/Loyalty/Pricing (27/09/2026)** : **62/62 + 93/93 + 31/31
+  tests passés**; prix au centime, suppléments, fidélité et auto-login borne
+  restent validés.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
