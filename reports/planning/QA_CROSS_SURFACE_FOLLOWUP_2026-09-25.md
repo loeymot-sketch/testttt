@@ -576,3 +576,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   bascule automatiquement sur le prénom seul, crée le compte sans ressaisie du
   téléphone et sans erreur/page blanche; le second vérifie que le numpad lance
   automatiquement la vérification au 10e chiffre.
+- **Variantes fidélité navigateur (27/09/2026)** : les specs
+  `kiosk-loyalty-check-reel-2026-09-25.spec.js` et
+  `kiosk-loyalty-register-e2e.spec.js` passent **3/3 tests en 7,7 s** : solde
+  réel affiché, code inconnu rendu en erreur explicite sans page blanche, et
+  inscription avec email suivie de l’affichage du solde.
