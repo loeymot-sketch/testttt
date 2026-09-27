@@ -477,3 +477,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   vérifient Harissa=`HH`, sans sauce=`X`, tacos sans taille, sauces produit
   regroupées sur la ligne 1, sauces frites dans le badge menu, et absence de
   « Sauce supplémentaire » anonyme dès que le nom est récupérable.
+- **Supplément libre et prix scellé (27/09/2026)** : le lot ciblé
+  `QuoteBinding`/pricing/supplément passe **7/7 tests, 37 assertions**. Il
+  confirme que le supplément libre reste lié au devis serveur et ne peut pas
+  modifier silencieusement le montant au moment de la validation.
+- **Synchronisation KDS ciblée (27/09/2026)** : les suites de synchronisation
+  d’items, board release, timing et autorisations cuisine passent **16/16 tests,
+  45 assertions**; aucune divergence de statut ou fuite d’accès détectée.
