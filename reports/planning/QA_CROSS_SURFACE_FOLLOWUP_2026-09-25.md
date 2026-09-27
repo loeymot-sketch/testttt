@@ -484,3 +484,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 - **Synchronisation KDS ciblée (27/09/2026)** : les suites de synchronisation
   d’items, board release, timing et autorisations cuisine passent **16/16 tests,
   45 assertions**; aucune divergence de statut ou fuite d’accès détectée.
+- **Re-run de stabilité E2E (27/09/2026, Node 20)** : une seconde exécution
+  indépendante de `npm run test:e2e:smoke` passe à nouveau **22/22 tests en
+  1 min 30 s**. Les deux runs successifs sont donc reproductibles; aucun flaky,
+  aucun échec auth/POS/borne/KDS/stock. Les seuls warnings restent les
+  dépréciations `${var}` d’une dépendance PHP tierce au démarrage du serveur.
