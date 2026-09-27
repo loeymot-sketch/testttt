@@ -428,3 +428,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   la dette de clés manquantes (Vue : fr 11, en 112, ar 644, de 922, bn 923;
   Laravel : fr 5, en 21, ar 62, de 89, bn 86). Cette dette est distincte du
   correctif i18n ciblé déjà validé et reste à traiter par lot dédié.
+- **Suite frontend complète (27/09/2026, Node 20)** : `npm test -- --run`
+  passe **556 fichiers, 4 509 tests passés et 3 skips** (4 512 tests
+  collectés) en **193,74 s**. Les avertissements Vue/console observés sont
+  limités aux fixtures et chemins d’erreur explicitement testés; aucun échec
+  Vitest, aucune régression wizard/POS/KDS/borne.
