@@ -834,3 +834,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
 - **Fidélité borne locale (27/09/2026, 19:31 CEST)** : les specs solde réel,
   code inconnu, inscription sans ressaisie et auto-vérification au 10e chiffre
   passent **4/4 en 6,8 s**; l’inscription post-register reste **1/1**.
+- **Surfaces frontend et tickets revalidées (27/09/2026)** :
+  `tests/Feature/Frontend` passe **58/58 en 11,48 s** et
+  `tests/Feature/Hardware` **164/164 en 12,24 s**. Les contrôles couvrent
+  l’autorité du total serveur, l’emporter/livraison, les tickets client/cuisine,
+  sauces multiples et frites, viandes supplémentaires, libellés tacos sans
+  taille, largeur ESC/POS et tiroir caisse.

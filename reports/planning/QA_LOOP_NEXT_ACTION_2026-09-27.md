@@ -84,6 +84,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   voit 2 : corrélation de configuration/déploiement à faire avant toute action.
 - **Fidélité borne (27/09/2026, 19:31 CEST)** : **4/4 en 6,8 s** sur les
   scénarios réels solde/erreur/inscription/auto-check, plus **1/1** register.
+- **Frontend/tickets (27/09/2026)** : `Feature/Frontend` **58/58 en 11,48 s**
+  et `Feature/Hardware` **164/164 en 12,24 s**; sauces HH/X, suppléments,
+  tacos, frites, viandes, tickets et tiroir restent verts.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
