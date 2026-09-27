@@ -136,6 +136,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   remplacent pas la phrase « livraison passe par Uber Eats ». Aucun patch
   public prêt à pousser n’est donc confirmé par cet audit; ne pas sélectionner
   ni committer l’arbre externe dirty sans validation du propriétaire.
+- **Sonde live relancée (27/09/2026, 19:48 CEST)** :
+  `https://vps-418872ac.vps.ovh.net/api/healthz` répond HTTP **200** avec
+  `db=ok`, `redis=ok`, `websocket=ok`, `fiscal_chain=ok` et `queue_pending=0`.
+  Le HTML live de `lecayenne.fr` contient toujours **4** mentions « Uber Eats »;
+  les phrases cibles « livraison par nos livreurs bientôt » et
+  « commander/confirmer à emporter » sont absentes. Le défaut public est donc
+  toujours reproductible après le dernier audit.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

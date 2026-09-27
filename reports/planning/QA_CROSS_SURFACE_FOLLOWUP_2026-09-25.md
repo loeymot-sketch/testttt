@@ -914,3 +914,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `dateModified` et cache-bust des scripts; le texte de livraison reste
   explicitement Uber Eats. Le dépôt externe étant déjà dirty, l’audit s’arrête
   avant toute sélection, commit ou déploiement propriétaire.
+- **Recontrôle live (27/09/2026, 19:48 CEST)** : la sonde VPS reste saine
+  (HTTP 200, DB/Redis/WebSocket/fiscalité OK, queue à 0), mais le site public
+  renvoie encore quatre occurrences « Uber Eats » et zéro occurrence des
+  formulations de livraison/emporter demandées. Ce contrôle confirme que la
+  correction n’est pas publiée, malgré le code FoodKing local validé.
