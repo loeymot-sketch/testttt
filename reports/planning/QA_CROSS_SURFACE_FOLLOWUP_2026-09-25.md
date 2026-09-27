@@ -433,3 +433,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   collectés) en **193,74 s**. Les avertissements Vue/console observés sont
   limités aux fixtures et chemins d’erreur explicitement testés; aucun échec
   Vitest, aucune régression wizard/POS/KDS/borne.
+- **Budget bundles (27/09/2026)** : `npm run perf:bundle-check` est en échec
+  sur **17 artefacts**. Dépassements mesurés : `kiosk-errors` **90 KB / 50 KB**
+  (2 fichiers), `kiosk-shell` **741–769 KB / 350 KB** (13 fichiers), et
+  `kiosk-wizard-step` **396 KB / 150 KB** (2 fichiers). Les autres bundles
+  contrôlés passent ou n’ont pas de budget déclaré. Aucun fichier bundle n’a
+  été supprimé et aucun budget n’a été relevé automatiquement; ce point reste
+  une action build dédiée (nettoyage/agrégation des artefacts ou budget validé).
