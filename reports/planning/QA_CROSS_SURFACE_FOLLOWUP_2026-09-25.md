@@ -562,3 +562,5 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
 **Verdict global : NEEDS_FIX/GATE.** Les parcours applicatifs testés sont verts;
 la clôture reste interdite tant que le provisioning de borne, le gate frozen et
 la décision de contenu public ne sont pas traités/validés par leurs propriétaires.
+
+Plan de reprise borné : [`QA_LOOP_NEXT_ACTION_2026-09-27.md`](QA_LOOP_NEXT_ACTION_2026-09-27.md).
