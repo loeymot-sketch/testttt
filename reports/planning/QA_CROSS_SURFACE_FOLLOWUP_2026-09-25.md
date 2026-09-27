@@ -665,6 +665,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **91/91 tests, 305 assertions**. Le scénario bump d’une commande non
   libérée reste bien bloqué en HTTP 422, sans changement d’état (contrôle
   d’autorisation attendu).
+- **Fidélité borne revalidée (27/09/2026, Playwright Chromium)** : les trois
+  specs inscription/check/register passent **5/5 en 10,4 s**. Le solde réel,
+  l’erreur claire pour code inconnu, l’inscription téléphone sans ressaisie,
+  l’auto-check au 10e chiffre et l’affichage post-register restent verts, sans
+  page blanche.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
