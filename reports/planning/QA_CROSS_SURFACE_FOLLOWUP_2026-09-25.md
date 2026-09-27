@@ -497,3 +497,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   échec ciblé, reproduit avec le même hash baseline/réel pour
   `KioskWizardComponent.vue`; baseline et fichier frozen laissés inchangés en
   attente du gate propriétaire.
+- **Analyse du drift frozen (27/09/2026)** : `c21628767` ne modifie que trois
+  commentaires d’annotations pricing (`owner gate DATE` → `owner — date:`),
+  sans ligne exécutable. Toutefois, le lock cité
+  `plans/LOCK_KIOSK_FRITES_SAUCE_BILLING_2026-07-29.md` conserve son sign-off
+  propriétaire **non coché** (« rebuild bundles + validation borne réelle »).
+  Le sentinel rouge est donc un blocage de gouvernance réel, pas une raison de
+  régénérer automatiquement la baseline; aucun fichier frozen ni baseline n’a
+  été modifié.
