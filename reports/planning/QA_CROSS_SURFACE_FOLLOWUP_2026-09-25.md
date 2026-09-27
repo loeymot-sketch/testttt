@@ -412,3 +412,12 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   Aucun lock contresigné exploitable n’a été trouvé pour autoriser une
   synchronisation automatique; la baseline et le fichier frozen restent donc
   volontairement inchangés.
+- **Matrice HTTP distante (27/09/2026)** : `/login`, `/kiosk/login`,
+  `/admin/dashboard` et `/admin/settings/kiosk-setup` répondent **200**;
+  `/api/healthz` répond **200** avec l’état sain déjà relevé. Avec l’en-tête
+  applicatif public mais sans session, `/api/frontend/menu` et un POST
+  `/api/frontend/pricing/preview` répondent **401** (`Unauthenticated`), et un
+  POST `/api/auth/kiosk-login` avec identifiants factices répond **400** avec
+  le message métier « Identifiants invalides ou compte bloqué ». Les contrôles
+  d’authentification et de refus sont donc cohérents; cela ne lève pas le
+  provisioning réel de la borne, qui exige ses identifiants machine.
