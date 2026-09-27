@@ -697,6 +697,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   passe **164/164 tests, 483 assertions**. Les formats de ticket, symboles,
   imprimante et contrats d’affichage cuisine restent conformes aux attentes
   borne/caisse/KDS.
+- **Sécurité et isolation revalidées (27/09/2026)** : `KioskMultiBranch` passe
+  **8/8 tests, 24 assertions**, `KioskSecurity` **10/10, 36 assertions**, et
+  `tests/Feature/Security` **221/221, 3 583 assertions**. L’isolation
+  `branch_id`, les contrôles d’accès et les protections anti-fuite restent
+  verts.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
