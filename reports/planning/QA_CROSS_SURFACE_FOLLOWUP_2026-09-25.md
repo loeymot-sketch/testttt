@@ -728,3 +728,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   --run` termine **556 fichiers, 4 511 tests passés, 3 skipped** en 192,0 s.
   Les avertissements observés (stubs Vue, clés i18n de fixtures et appels
   happy-dom vers `localhost:3000`) sont non bloquants et aucun test n’échoue.
+- **Revalidation web distante borne (27/09/2026, 18:49 CEST)** :
+  `tests/e2e/03-kiosk-wizard.spec.js` passe encore **5/5 en 19,7 s** sur
+  `https://vps-418872ac.vps.ovh.net`, y compris le parcours catégories/produits.
+  Le probe simultané `/api/healthz` répond **200** avec DB, Redis, WebSocket,
+  chaîne fiscale OK et `queue_pending=0`. La copie publique reste séparément
+  non conforme : le HTML de `lecayenne.fr` mentionne toujours Uber Eats.

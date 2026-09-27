@@ -23,6 +23,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   accepte le mot de passe de test; l’action est donc strictement distante.
   Le dernier re-run a déclenché le rate-limit distant (HTTP 429, fenêtre 600 s);
   ne pas relancer avant expiration ou changement de compte E2E.
+- **Revalidation web distante (27/09/2026, 18:49 CEST)** : le wizard borne
+  repasse **5/5 en 19,7 s** sur le VPS et `/api/healthz` reste 200; aucun
+  incident borne n’est reproduit. Le texte public Uber Eats reste le blocage
+  contenu distinct.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
