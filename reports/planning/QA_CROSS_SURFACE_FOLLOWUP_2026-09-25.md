@@ -505,3 +505,11 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   Le sentinel rouge est donc un blocage de gouvernance réel, pas une raison de
   régénérer automatiquement la baseline; aucun fichier frozen ni baseline n’a
   été modifié.
+- **Recontrôle production + i18n (27/09/2026, 17:59 CEST)** :
+  `/api/healthz` répond **200** avec `status=ok`, DB/Redis/WebSocket/
+  `fiscal_chain=ok` et `queue_pending=0`; `/login`, `/kiosk/login`,
+  `/admin/dashboard` et `/admin/settings/kiosk-setup` répondent également **200**.
+  `npm run i18n:audit` retrouve les mêmes compteurs (Vue fr 11, en 112, ar 644,
+  de 922, bn 923; Laravel fr 5, en 21, ar 62, de 89, bn 86), parse les 80
+  fichiers Laravel sans erreur et reste en code 1 uniquement pour cette dette
+  de clés manquantes.
