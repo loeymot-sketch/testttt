@@ -781,3 +781,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **58/58 tests** et `Feature/Hardware` **164/164 tests**. La source serveur
   reste l’autorité du total attendu, tandis que tickets cuisine/client,
   sauces HH/X, viandes, frites et largeur ESC/POS restent conformes.
+- **Fiscalité, paiement et caisse revalidés (27/09/2026)** : `Feature/Fiscal`
+  passe **307 tests** avec **8 skips MySQL explicites**, `Feature/Payment`
+  **86/86** et `Feature/Pos` **386/386**. Les contrôles NF525, paiements
+  idempotents, split tender, tiroir, fidélité caisse et totaux serveur restent
+  verts; les skips dépendent uniquement de MySQL/MariaDB non utilisé localement.

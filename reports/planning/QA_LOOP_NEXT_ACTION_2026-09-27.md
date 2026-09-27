@@ -53,6 +53,9 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   services critiques OK; le contenu livraison reste inchangé (« Uber Eats »).
 - **Frontend/hardware (27/09/2026)** : **58/58 + 164/164 tests passés**;
   tickets, sauces, viandes, frites et total serveur restent validés.
+- **Fiscalité/paiement/caisse (27/09/2026)** : **307 tests fiscaux passés
+  (8 skips MySQL), 86/86 paiement et 386/386 POS**; NF525, split tender,
+  tiroir, fidélité caisse et totaux serveur restent verts.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
