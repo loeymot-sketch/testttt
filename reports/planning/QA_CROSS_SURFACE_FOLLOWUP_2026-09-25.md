@@ -670,6 +670,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   l’erreur claire pour code inconnu, l’inscription téléphone sans ressaisie,
   l’auto-check au 10e chiffre et l’affichage post-register restent verts, sans
   page blanche.
+- **Sortie cuisine et supplément libre revalidés (27/09/2026)** : le lot
+  combiné formatter/Kitchen/liaison quote passe **126/126 tests, 228
+  assertions**. Les libellés HH/X/tacos, le placement des sauces par produit
+  ou frites et l’impression du supplément libre restent conformes.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
