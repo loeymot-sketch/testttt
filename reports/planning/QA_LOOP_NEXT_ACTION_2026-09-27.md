@@ -121,6 +121,10 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
 - **Comportement app/site externe (27/09/2026, 19:44 CEST)** :
   `verify-app-behaviour.mjs` **13/13 passés** sur serveur local temporaire;
   paiement/app-versus-web et API HTTPS conformes.
+- **HTTP publication externe (27/09/2026)** : cinq ressources critiques en
+  **200**, HTTP→HTTPS en **308**, CSP/HSTS/nosniff actifs. Vercel sert une
+  réponse en cache (`HIT`, âge ~6 330 s); purger/redéployer la surface externe
+  est nécessaire pour remplacer la copie Uber Eats.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

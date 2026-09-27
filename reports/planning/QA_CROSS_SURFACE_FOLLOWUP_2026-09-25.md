@@ -895,3 +895,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **13/13 contrôles** : pont natif iOS, paiement coupé dans l’app, paiement
   actif dans le navigateur, API HTTPS, absence d’erreurs JS et fournisseurs
   sociaux correctement séparés. Ce contrôle ne modifie aucun fichier.
+- **Publication HTTP externe (27/09/2026)** : `/`, `/commander.html`,
+  `api.js`, `compiled/racine.js` et `sw.js` répondent tous **200** avec les
+  types MIME attendus; HTTP→HTTPS répond **308**. Les en-têtes CSP, HSTS,
+  `nosniff`, `frame-ancestors` et permissions sont présents. Le CDN sert une
+  copie Vercel en cache (`x-vercel-cache: HIT`, âge observé 6 330 s), ce qui
+  renforce le constat de décalage de déploiement de la copie Uber Eats.
