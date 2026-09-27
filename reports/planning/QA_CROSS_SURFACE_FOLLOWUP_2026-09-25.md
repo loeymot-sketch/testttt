@@ -702,6 +702,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `tests/Feature/Security` **221/221, 3 583 assertions**. L’isolation
   `branch_id`, les contrôles d’accès et les protections anti-fuite restent
   verts.
+- **Dispatch/outbox revalidé (27/09/2026)** : le lot Outbox, sémantique de
+  livraison et KDS passe **81/81 tests, 248 assertions**. Les événements et
+  jobs restent émis après commit, avec idempotence et synchronisation attendues.
 - **Audit i18n revalidé (27/09/2026)** : les 80 fichiers Laravel sont parsés
   sans erreur; la dette connue reste inchangée (Vue fr 11/en 112/ar 644/de
   922/bn 923; Laravel fr 5/en 21/ar 62/de 89/bn 86). Le code de l’audit reste
