@@ -465,3 +465,9 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   machine absents)`; les seuls autres warnings observés proviennent d’une
   extension Chrome tierce. Le défaut restant est donc le provisioning distant,
   non un crash JavaScript de la page.
+- **Parcours navigateur POS local (27/09/2026, Playwright Chromium)** : les
+  deux scénarios réels ciblés passent **2/2 en 10,9 s** : ajout d’un supplément
+  libre nommé (`Olives`, 1,25 €) avec total cohérent, puis réouverture et
+  modification d’une ligne Cayenne en conservant simultanément les sauces
+  Andalouse et Algérienne. Le serveur émet seulement des avertissements PHP
+  de dépréciation dans une dépendance tierce, sans échec de parcours.
