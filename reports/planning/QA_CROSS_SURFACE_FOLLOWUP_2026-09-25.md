@@ -388,3 +388,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   Le scénario interactif catégories/produit est **1 skipped** car la page
   redirige vers `/kiosk/login` sans auto-login; ce skip est attendu et relie
   directement le test E2E au défaut de provisioning décrit ci-dessus.
+- **Kiosk multi-branche/sécurité (27/09/2026)** : les lots
+  `KioskMultiBranch`, `KioskPhase5`, `KioskPhase7` et `KioskSecurity` passent
+  **8/8**. L’allowlist de locale, la priorité header/query, les refus 400
+  structurés et les événements d’observabilité sont validés sans fuite de
+  branche.
