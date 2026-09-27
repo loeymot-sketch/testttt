@@ -619,3 +619,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   deux occurrences de « livraison passe par Uber Eats » et aucune occurrence
   de « Livraison par nos livreurs bientôt ». Le code checkout FoodKing reste
   cohérent; seule la surface publique déployée demeure à corriger.
+- **Vérification artefact Playwright** : `reports/antigravity/playwright-latest.json`
+  contient les cinq scénarios du smoke borne avec `ok=true` et sans scénario
+  skipped. La réussite distante n’est donc pas seulement issue du résumé
+  console; elle est également présente dans le rapport JSON persisté.
