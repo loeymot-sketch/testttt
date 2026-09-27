@@ -513,3 +513,10 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   de 922, bn 923; Laravel fr 5, en 21, ar 62, de 89, bn 86), parse les 80
   fichiers Laravel sans erreur et reste en code 1 uniquement pour cette dette
   de clés manquantes.
+- **Contrôle contenu public (27/09/2026)** : le site public
+  `https://www.lecayenne.fr/` affiche encore « tout se prend à emporter ; la
+  livraison passe par Uber Eats ». Le dépôt contient pourtant déjà les clés
+  FoodKing `order_takeaway`, `confirm_takeaway` et `delivery_coming_soon`
+  (« Livraison par nos livreurs bientôt. »). Il existe donc une divergence
+  entre le contenu public déployé et le texte demandé; elle reste à valider et
+  déployer sur la surface publique concernée.
