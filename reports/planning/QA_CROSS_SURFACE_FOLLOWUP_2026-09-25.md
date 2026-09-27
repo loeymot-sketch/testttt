@@ -538,3 +538,22 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   `checkoutTakeawayCopy.spec.js` passent ensemble **39/39 tests** en 1,61 s.
   Les symboles cuisine, le calcul de sauce frites et les libellés à emporter
   sont donc cohérents côté miroir JS.
+
+## Synthèse de décision — état courant au 27/09/2026
+
+| Domaine | Preuve actuelle | Verdict |
+|---|---|---|
+| Backend ciblé fidélité/prix/KDS | 93 + 152 + 16 tests ciblés verts | PASS |
+| Frontend/Vitest | 4 509 tests passés, 3 skips | PASS |
+| E2E critique local | 22/22 sur deux exécutions indépendantes | PASS |
+| POS suppléments/deux sauces | 2/2 parcours navigateur verts | PASS |
+| Cuisine HH/X/tacos/sauces | 44 + 20 tests ciblés verts | PASS |
+| Production HTTP/healthz | routes 200, santé OK, file 0 | PASS |
+| Borne distante interactive | auto-login machine absent | NEEDS_DEPLOY_CONFIG |
+| Frozen-zone sentinel | drift commentaire-only, lock owner non signé | NEEDS_OWNER_GATE |
+| Site public contenu livraison | texte Uber Eats encore servi | NEEDS_PUBLIC_COPY_DEPLOY |
+| i18n global | dette de clés, parsing sans erreur | NEEDS_DEBT_BATCH |
+
+**Verdict global : NEEDS_FIX/GATE.** Les parcours applicatifs testés sont verts;
+la clôture reste interdite tant que le provisioning de borne, le gate frozen et
+la décision de contenu public ne sont pas traités/validés par leurs propriétaires.
