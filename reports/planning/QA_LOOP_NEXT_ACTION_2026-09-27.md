@@ -125,6 +125,11 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   **200**, HTTP→HTTPS en **308**, CSP/HSTS/nosniff actifs. Vercel sert une
   réponse en cache (`HIT`, âge ~6 330 s); purger/redéployer la surface externe
   est nécessaire pour remplacer la copie Uber Eats.
+- **Cache vs déploiement (27/09/2026)** : URL normale et cache-bustée ont le
+  même SHA `91ea556e…332c48bf`, ETag/date identiques et quatre mentions Uber
+  Eats. `origin/main` = `b7bc1763181e…`; les changements corrigés sont dans
+  l’arbre externe dirty et ne sont pas déployés. Action propriétaire : commit,
+  push et redeploy Vercel, puis recontrôle HTML.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

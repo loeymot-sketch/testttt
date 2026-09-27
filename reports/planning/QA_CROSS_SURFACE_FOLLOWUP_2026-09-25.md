@@ -901,3 +901,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `nosniff`, `frame-ancestors` et permissions sont présents. Le CDN sert une
   copie Vercel en cache (`x-vercel-cache: HIT`, âge observé 6 330 s), ce qui
   renforce le constat de décalage de déploiement de la copie Uber Eats.
+- **Diagnostic cache/déploiement final (27/09/2026)** : la réponse normale et
+  la réponse cache-bustée de `index.html` ont le même SHA-256
+  `91ea556e…332c48bf`, le même ETag et la même date `last-modified`; les deux
+  restent `x-vercel-cache: HIT` et contiennent quatre mentions Uber Eats.
+  Le dépôt externe local et `origin/main` pointent tous deux sur
+  `b7bc1763181e…`, tandis que l’arbre local comporte des modifications non
+  committées : la copie corrigée n’est donc pas poussée/déployée. Aucun push
+  externe n’a été effectué par l’audit.
