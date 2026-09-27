@@ -753,3 +753,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `npm run test:e2e:smoke` termine **22/22 tests passés en 1,5 min** couvrant
   auth/F5 POS, caisse, borne, KDS et synchronisation de rupture de stock
   multi-branche. Les avertissements PHP de dépréciation restent non bloquants.
+- **Fidélité/inscription revalidée localement (27/09/2026, 18:54 CEST)** : les
+  deux specs Playwright dédiées terminent **4/4 en 7,3 s**. Solde réel, code
+  inconnu avec erreur claire, inscription téléphone sans ressaisie et
+  vérification automatique au 10e chiffre passent; aucune page blanche.
