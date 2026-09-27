@@ -628,3 +628,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   le mot de passe fixture accepté par `Hash::check`. Le même compte est rejeté
   par le VPS en HTTP 400; l’écart est donc confirmé côté données/configuration
   de déploiement distante, pas dans le middleware local de login.
+- **Revalidation livraison/checkout (27/09/2026)** : les tests Vitest
+  `checkoutTakeawayCopy`, `checkoutGeocodeError`, `posDeliveryFlag` et
+  `deliveryCharge` passent **24/24 tests**; la suite backend
+  `tests/Feature/Delivery` passe **50/50 tests, 135 assertions**. Les libellés
+  à emporter, erreurs de géocodage, indicateurs livraison et calculs de frais
+  restent cohérents côté frontend et serveur.
