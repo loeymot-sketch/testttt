@@ -355,3 +355,8 @@ services de commande : ils rendent les preuves E2E conformes aux flux actuels.
   **109/109** avec **2 skips gelés** liés au contrôle de version pricing.
   Les projections POS/borne, suppléments, disponibilité, prix et profils
   composer sont verts; les skips restent explicitement rattachés à leurs gates.
+- **Lots plateforme (27/09/2026)** : `tests/Feature/Migrations` passe **8/8**
+  avec **1 skip SQLite documenté**, `tests/Feature/Observability` **134/134
+  en 31,54 s** et `tests/Feature/Settings` **49/49 en 20,44 s**. Les
+  migrations/rehearsals, health/readiness, corrélation, CSP reports, sécurité
+  des réglages et diffusion multi-branches sont verts.
