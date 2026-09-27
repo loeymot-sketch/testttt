@@ -73,6 +73,11 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   affiché dans le HTML; la copie « livraison par nos livreurs bientôt » reste
   un blocage de déploiement distinct.
 - **Healthz local (27/09/2026)** : `HealthzEndpointTest` **7/7 passés**.
+- **Borne distante (27/09/2026, 19:29 CEST)** : avec Node **20.20.2** requis
+  par Playwright, `03-kiosk-wizard.spec.js` passe **5/5 en 19,9 s**.
+- **Queue distante (27/09/2026, 19:30 CEST)** : `queue_pending=2` persiste
+  après quatre mesures et le test borne; surveiller le worker/outbox sans
+  purge manuelle.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

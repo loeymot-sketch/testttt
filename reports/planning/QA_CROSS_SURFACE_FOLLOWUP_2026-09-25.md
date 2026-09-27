@@ -817,3 +817,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
 - **Contrat healthz local (27/09/2026)** : `HealthzEndpointTest` passe **7/7**;
   la forme JSON, l’énumération d’état, le compteur de queue et la commande
   CLI restent conformes.
+- **Revalidation borne distante (27/09/2026, 19:29 CEST)** : après activation
+  explicite de Node **20.20.2** (Node 18 est refusé par Playwright),
+  `03-kiosk-wizard.spec.js` repasse **5/5 en 19,9 s** sur le VPS, sans crash
+  JavaScript et avec navigation catégories/produits fonctionnelle.
+- **Queue après revalidation borne (27/09/2026, 19:30 CEST)** : `/api/healthz`
+  reste HTTP 200, mais `queue_pending=2` (stable sur quatre mesures puis après
+  le test). La borne est fonctionnelle; le backlog outbox/worker devient une
+  action de supervision distincte et ne doit pas être purgé manuellement.
