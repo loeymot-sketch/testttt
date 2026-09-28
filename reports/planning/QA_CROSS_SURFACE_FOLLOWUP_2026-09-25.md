@@ -919,7 +919,350 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   renvoie encore quatre occurrences « Uber Eats » et zéro occurrence des
   formulations de livraison/emporter demandées. Ce contrôle confirme que la
   correction n’est pas publiée, malgré le code FoodKing local validé.
-
+- **Rejeu navigateur VPS (28/09/2026, 02:00 CEST)** : les quatre contrôles
+  exécutables de la suite kiosk distante passent; le scénario de navigation
+  reste ignoré car le provisioning borne manque. `/admin/dashboard` renvoie
+  vers `/login` sans erreur JavaScript quand aucune session n’est présente.
+  La borne live affiche encore son écran d’indisponibilité, ce qui reste un
+  défaut de disponibilité à résoudre hors simple santé API.
+- **Readiness sémantiquement trompeuse (28/09/2026)** : la sonde `/api/health/ready`
+  conserve HTTP 200/status `ok` malgré `restore_drill=degraded`. Le rapport
+  classe ce point comme risque opérationnel distinct : la supervision peut
+  annoncer « prêt » alors que la restauration de secours n’a jamais été
+  mesurée.
+- **Contrôle anti-régression pricing/paiement (28/09/2026)** : les huit suites
+  frontend critiques passent **51/51**; le sous-ensemble backend pricing passe
+  **31/31**. Aucun écart de total ou de supplément n’est reproduit localement,
+  mais ce résultat ne remplace pas une transaction réelle sur caisse avec un
+  compte POS provisionné.
+- **Vérification post-rapport (28/09/2026, 02:01 CEST)** : aucune publication
+  externe n’est intervenue; `HEAD` local et `origin/main` restent identiques,
+  l’arbre externe conserve 58 changements non committés, et le site live sert
+  toujours quatre mentions Uber Eats. Les en-têtes de sécurité sont conformes,
+  mais le cache Vercel stable sert encore l’ancienne copie.
+- **Scan supply-chain (28/09/2026)** : l’audit npm révèle **21 vulnérabilités**
+  (dont 3 critiques et 11 hautes) et l’audit Composer **8 advisories**. Ce
+  nouveau risque n’est pas couvert par les tests fonctionnels verts; il faut
+  une mission sécurité dédiée, avec matrice d’impact et mise à niveau testée,
+  avant de lancer `npm audit fix --force` ou une mise à jour Laravel majeure.
+- **Versions à prioriser (28/09/2026)** : le scan rattache le risque aux
+  dépendances directes `firebase@9.23.0`, `swiper@11.2.10`, `vue3-quill@0.3.1`
+  / `quill@1.3.7`, et aux paquets PHP `laravel/framework v9.52.21`,
+  `maatwebsite/excel 3.1.67`, `spatie/laravel-medialibrary 10.15.0` et
+  `firebase/php-jwt v6.11.1`. Cette cartographie fournit au développeur les
+  points d’entrée sans modifier le lockfile pendant l’audit.
+- **Sécurité/routage live (28/09/2026)** : la suite Security locale est verte
+  à **221/221**. En revanche, des chemins API inexistants sondés sans session
+  renvoient le shell HTML avec HTTP 200 (`/api/orders`, `/api/settings`,
+  `/api/kiosk/config`) au lieu d’un statut API explicite; observation à
+  traiter comme défaut de contrat/monitoring, sans preuve actuelle de fuite de
+  données.
+- **Fallback API confirmé (28/09/2026)** : les chemins non déclarés dans
+  `route:list --path=api` retournent toujours le shell SPA en HTTP 200, même
+  avec `Accept: application/json`. Ce n’est pas une fuite démontrée, mais une
+  réponse non typée qui peut provoquer des erreurs silencieuses côté clients et
+  monitoring.
+- **Revalidation métier (28/09/2026)** : Order **109/109**, Loyalty **93/93**
+  et Outbox **81/81** passent sur des exécutions séparées. Les invariants
+  critiques restent verts en local, sans preuve équivalente d’un encaissement
+  réel sur le compte POS de production encore manquant.
+- **E2E critique frais (28/09/2026, 02:51–02:53 CEST)** : **22/22** scénarios
+  passent en 1,5 min sur POS/F5, caisse, borne, KDS et rupture multi-branche.
+  Aucune régression fonctionnelle détectée; les avertissements observés sont
+  des dépréciations PHP non bloquantes.
+- **A11y/guards/i18n (28/09/2026)** : A11y ciblé **27/27**, guards pricing/status
+  et bundles **15/15** passent. En revanche, l’audit i18n échoue sur une dette
+  connue (Vue jusqu’à 923 clés manquantes selon langue, Laravel jusqu’à 89);
+  les tests A11y montrent aussi des appels vers `localhost:3000` refusés,
+  masqués par les mocks. À traiter comme dette de qualité d’environnement et
+  de traduction, pas comme un faux PASS complet.
+- **Kiosk/restore (28/09/2026)** : Kiosk backend **62/62** et contrats santé/
+  restauration frontend **18/18** passent. Les scénarios couvrent paiement,
+  réconciliation, revocation de jeton, auto-login et isolation; la disponibilité
+  réelle de la borne reste cependant non prouvée tant que le provisioning VPS
+  n’est pas activé.
+- **Fiscalité/branches/deploy (28/09/2026)** : Fiscal **307 passés / 8 skipped**,
+  Branch **20/20**, Deploy **5/5**. Les skips sont explicitement MySQL-only et
+  un scénario de split tender reste verrouillé par M6-002. La seed menu signale
+  en outre des catégories inconnues et des libellés anglais : dette catalogue
+  à traiter séparément malgré les tests verts.
+- **Sonde post-rapport (28/09/2026, 02:57 CEST)** : aucune publication externe
+  depuis le dernier audit; SHA/ETag du HTML restent inchangés, Uber Eats est
+  toujours présent quatre fois, et la readiness VPS reste dégradée sur le
+  restore drill malgré HTTP 200.
+- **Régression Vitest complète (28/09/2026, 02:58–03:01 CEST)** : la suite
+  globale termine **NEEDS_FIX** avec **554 fichiers passés, 1 fichier en échec**;
+  **4 497 tests passent, 5 échouent, 3 sont ignorés**, et Vitest signale **1
+  erreur non gérée**. Les cinq échecs sont tous dans
+  `tests/js/playwrightConfig.spec.js` : l’exécution globale utilise Node
+  **18.20.7**, alors que Playwright exige Node **20+**. L’erreur non gérée est
+  un conflit CommonJS/ESM de `html-encoding-sniffer` → `@exodus/bytes` via
+  jsdom. Les autres tests fonctionnels restent verts, mais les warnings
+  répétés (router-link non résolu, `ECONNREFUSED 127.0.0.1:3000`, props KDS
+  invalides et clés i18n absentes) confirment des risques de harness et
+  d’environnement à traiter séparément.
+- **Rejeu global sous Node 20 (28/09/2026, 03:02–03:06 CEST)** : après
+  alignement explicite sur Node **20.20.2**, la suite complète passe
+  **556/556 fichiers, 4 511/4 514 tests**, avec **3 skips et zéro erreur non
+  gérée**. Les cinq échecs précédents et le conflit jsdom ESM/CJS ne se
+  reproduisent donc pas sous le runtime supporté. Des warnings demeurent
+  (router-link/vue-select non résolus, appels `localhost:3000` refusés,
+  actions Vuex inconnues et clés i18n absentes) : ils ne cassent pas les tests,
+  mais justifient une passe de nettoyage du harness et une vérification avec
+  backend réellement démarré.
+- **Sonde live API (28/09/2026, 03:06 CEST)** : `/api/healthz` reste HTTP
+  200 avec DB/Redis/WebSocket/fiscal chain OK et queue à 0. `/api/health/ready`
+  reste HTTP 200 mais expose explicitement `restore_drill=degraded` (« jamais
+  mesurée »). Les chemins `/api/orders`, `/api/settings` et
+  `/api/kiosk/config`, absents du routage Laravel, répondent encore HTTP 200
+  `text/html` (shell SPA) même avec `Accept: application/json`; le contrat API
+  live reste donc ambigu et doit être corrigé ou surveillé explicitement.
+- **Rejeu surface publique (28/09/2026, 03:07 CEST)** : `lecayenne.fr` répond
+  HTTP 200 avec cache Vercel HIT et les headers CSP/HSTS/nosniff/
+  frame-ancestors/Permissions-Policy. Le HTML contient encore **4** mentions
+  « Uber Eats » et **0** occurrence des formulations emporter/livraison
+  demandées : le défaut de contenu publié est directement observable malgré
+  la santé technique du domaine.
+- **Garde-fou invariants (28/09/2026, 03:08 CEST)** : `bash
+  scripts/check-invariants.sh -v` échoue sur **3/6 invariants, 19 occurrences
+  brutes**. Le signal le plus concret est `FrontendOrderService.php:175`, qui
+  lit `branch_id` depuis la requête pour le namespace d’idempotence : c’est une
+  dérogation documentée pour les guests mais un risque réel d’isolation à
+  revalider côté métier. Les 3 hits de dispatch catalogue dans `ItemService`
+  sont entourés par `DispatchableAfterCommit` (risque principalement de faux
+  positif du guard); les 15 hits audit incluent imports/commentaires et des
+  chemins qui écrivent déjà `AuditLogService`/`ActionLog`, mais le guard ne
+  distingue pas ces cas. La CI ne peut donc pas être considérée propre sans
+  soit corriger le code branch-id, soit formaliser les exceptions et améliorer
+  le guard.
+- **Suite PHPUnit Feature complète (28/09/2026, après 03:08 CEST)** : **5 709
+  tests passent**, **1 échoue**, **4 sont incomplets** et **36 sont ignorés**.
+  L’échec est le sentinel de baseline frozen :
+  `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` diverge du
+  SHA autorisé (`fcbe3755…` attendu, `f8ecb111…` observé). Aucun revert ni
+  mise à jour de baseline n’a été effectué : le fichier est hors périmètre
+  sans lock/sign-off propriétaire. Les incomplets/skips confirment les limites
+  déjà vues (couverture MySQL/MariaDB absente sous SQLite, harness websockets,
+  gates frozen coupon/composer/category et onboarding réel).
+- **Contrôle métier ciblé dans la même suite** : les preuves de prix backend
+  restent vertes (`PosKioskPricingParity`, `KioskFritesSauceBilling`,
+  `PricingService`, supplément manuel fiscalisé), ainsi que les parcours de
+  fidélité/signup et les protections branch/auth. Cela ne remplace pas un
+  encaissement réel sur le POS distant, toujours non provisionné.
+- **Suite PHPUnit Unit (28/09/2026, 03:32 CEST)** : **367/367 tests passent**
+  en 8,61 s. Le contrôle bundle passe aussi : 15 bundles dans les budgets,
+  dont `kiosk-shell` 280 KB/350 KB et `kiosk-wizard-step` 130 KB/150 KB.
+- **Requête live avec la clé publique exposée par `/login` (28/09/2026,
+  03:31 CEST)** : les routes déclarées API (`guest-signup`, quote POS,
+  loyalty config) répondent **302 `/login` en HTML**, même avec
+  `Accept: application/json` et `X-API-Key` extrait de la page. Le code local
+  prévoit au contraire un `400` JSON pour clé absente/invalide et un `503` JSON
+  pour installation incomplète. Cela révèle un écart de déploiement/routage
+  (route cache ou middleware réellement servi) à diagnostiquer sur le VPS;
+  un client SPA peut donc recevoir une page de login au lieu d’une erreur API.
+- **Suite Load/Rush midi (28/09/2026, 03:34 CEST)** : **4/6 scénarios
+  passent**, **2 restent incomplets**. Les trous ne sont pas des faux tests :
+  `s72` ne couvre pas encore le parcours HTTP réel kiosk `/payment-confirm`
+  avec `source_surface`/`transaction_id`, et `s73` ne prouve pas encore la
+  monotonie mélangée POS+kiosk via HTTP. Les invariants POS, multi-branches,
+  outbox et clôture Z restent verts, mais la couverture de concurrence réelle
+  borne→paiement reste incomplète.
+- **Dépendances (28/09/2026, 03:33 CEST)** : `composer audit` signale **8
+  advisories** (dont Laravel, Laravel Excel et Media Library) et `npm audit
+  --omit=dev --audit-level=high` **21 vulnérabilités** (**3 critiques, 11
+  hautes, 5 modérées, 2 basses**). Plusieurs correctifs npm nécessitent des
+  upgrades majeurs et un paquet Quill reste sans correctif : pas de mise à
+  niveau automatique appliquée.
+- **Dérive d’artefacts live (28/09/2026, 03:36 CEST)** : le HTML VPS sert
+  `app.js?id=274114…`, `vendor.js?id=f9fe8…`, `manifest.js?id=e6b5…` et
+  `app.css?id=b919…`, alors que le `public/mix-manifest.json` local pointe
+  vers `ae40…`, `293c…`, `a68c…` et `561b…`. Les dates live sont également
+  hétérogènes (vendor du 02/09, CSS du 17/09, app du 27/09). Les tests locaux
+  ne valident donc pas exactement le bundle servi par le VPS; une incohérence
+  de déploiement/cache peut expliquer les pages blanches et contrats API
+  divergents.
+- **Correction du contrat API live (28/09/2026, 03:40 CEST)** : re-test avec
+  la clé réellement extraite de `/login` et la méthode correcte : guest signup
+  sans email renvoie **422 JSON**, loyalty config **200 JSON**, et quote POST
+  sans session renvoie **401 JSON**. La conclusion précédente « ces routes
+  renvoient toutes 302 » est donc supersédée. Le défaut reproductible restant
+  est plus ciblé : un GET sur une route POST API renvoie **200 HTML SPA** au
+  lieu d’un 405/JSON explicite, ce qui peut masquer une erreur de méthode au
+  monitoring ou à un client mal configuré.
+- **E2E Chromium réel VPS — borne (28/09/2026, 03:45 CEST)** : sous Node
+  20.20.2, `tests/e2e/03-kiosk-wizard.spec.js` donne **4 passés / 1 skipped**.
+  Login borne, rendu visible, absence d’erreur JS fatale et configuration
+  `kioskMenuPricing` passent. Le parcours tactile catégories→produit reste
+  skip car aucune `KioskMachine` provisionnée n’active l’écran idle; ce n’est
+  pas une preuve de fonctionnement de la borne en production.
+- **E2E Chromium surface publique (28/09/2026, 03:50 CEST)** : homepage HTTP
+  200, menu hash `/#menu` fonctionnel, zéro erreur console/page et zéro
+  réponse réseau ≥400 sur le parcours observé. Les pages statiques
+  `/carte.html`, `/horaires.html`, CGV et confidentialité répondent 200.
+  En revanche, `/menu` en URL directe répond **404** : ce n’est pas le chemin
+  utilisé par la navigation actuelle (hash + `carte.html`), mais c’est une
+  faiblesse de lien profond/SEO à corriger ou documenter.
+- **CTA commande public (28/09/2026, 03:55 CEST)** : Chromium a cliqué les
+  cinq boutons visibles libellés « Commander »/« Voir le menu ». **Tous**
+  aboutissent à `https://www.lecayenne.fr/#menu`; aucun n’ouvre un checkout,
+  un choix emporter ou une étape de paiement. Le panier s’ouvre mais reste
+  vide. C’est un défaut fonctionnel direct : le CTA promet de commander mais
+  ne lance qu’une navigation catalogue.
+- **Page dédiée commande/livraison (28/09/2026, 04:00 CEST)** :
+  `/commander.html` et `/livraison-henin-beaumont.html` répondent 200, mais
+  leurs liens « Commander en ligne » ont tous `href="/"`; ils renvoient à la
+  vitrine au lieu d’un formulaire/checkout. Le texte promet pourtant une
+  composition en ligne et un paiement carte. La livraison est correctement
+  expliquée comme Uber Eats, mais aucun parcours de commande à emporter n’est
+  réellement raccordé.
+- **Correction après parcours complet (28/09/2026, 04:08 CEST)** : le CTA
+  homepage qui scrolle vers `/#menu` n’est pas un checkout mort : Chromium a
+  réellement ajouté un Tacos M (Mexicanos + Harissa), vérifié le total **6,90
+  €**, ouvert le panier, traversé upsell boisson/dessert et atteint l’écran
+  retrait/paiement sans erreur JS ni réponse réseau ≥400. Aucun email/code ni
+  commande n’a été soumis. Le défaut reste limité aux pages dédiées dont le
+  CTA `href="/"` boucle vers l’accueil au lieu de conserver le contexte
+  `/commander.html`; l’alerte « parcours public totalement absent » est donc
+  supersédée.
+- **Fidélité/inscription publique (28/09/2026, 04:15 CEST)** : depuis le
+  bouton Fidélité → « Créer mon compte », Chromium affiche bien l’étape 1/2,
+  le champ email et la promesse de code. Une adresse invalide affiche une
+  erreur française explicite (« il faut un @ et un point »), sans page blanche,
+  exception JS ni appel réseau ≥400. Le code réel/email n’a volontairement pas
+  été demandé pour éviter un envoi ou une création de compte externe.
+- **Scénario prix adversarial public (28/09/2026, 04:22 CEST)** : Tacos M +
+  Mexicanos + Harissa + Andalouse supplémentaire + Cheddar. Le total passe
+  de **6,90 € → 7,40 € → 8,30 €** aux étapes attendues et reste **8,30 €**
+  dans le panier; la ligne conserve les quatre choix et affiche **+83 pts**.
+  Aucun log JS ni réseau ≥400. Le défaut de variation de prix signalé par le
+  propriétaire n’est pas reproduit dans ce cas réel, mais le paiement effectif
+  n’a pas été envoyé.
+- **Revalidation KDS/cuisine ciblée (28/09/2026, 03:42 CEST)** : les règles
+  demandées sont couvertes et vertes : JS symbolique **48/48** (Harissa→HH,
+  sans sauce→X, sauces frites multi-choix, quantités de suppléments), PHP
+  cuisine **26/26** (double sauce, placement produit/frites, tacos sans taille,
+  absence de ligne « supplément sauce » fantôme). Cela confirme la logique
+  locale; la sortie imprimée sur matériel réel reste à vérifier après
+  provisioning de la borne/imprimante.
+- **Paiement public — modes visibles (28/09/2026, 03:52 CEST)** : l'écran live
+  `/#payment` montre `Payer sur place` et `Carte bancaire (en ligne)` comme
+  radios distinctes; le total reste **24,20 €** et le bouton de confirmation
+  est visible. Le clic automatisé carte n'a pas été validé car Chrome a
+  signalé l'élément hors viewport; aucune commande ni paiement n'a été soumis.
+  Refaire ce cas sur une session fraîche avec viewport maîtrisé avant de
+  déclarer la branche carte E2E verte.
+- **Wave B public historique (28/09/2026, 03:57 CEST)** : le test Chromium
+  legacy échoue car les sélecteurs hero/Facebook/galerie ne trouvent aucun
+  élément sur le site actuel; aucune erreur console ou HTTP 4xx/5xx n'est
+  observée. À classer comme test obsolète ou contenu public retiré après
+  validation produit, pas comme preuve de panne du checkout.
+- **Dashboard admin VPS (28/09/2026, 03:59 CEST)** : le smoke login/dashboard
+  n'a pas terminé après plus de quatre minutes et a été interrompu; aucune
+  assertion de rendu ou de non-doublage `/api/api/` ne peut être déclarée
+  verte. Le VPS `/api/health` répond toutefois 200 JSON avec DB/Redis/queue OK
+  et `version: dev`, ce qui laisse un risque de configuration de déploiement.
+- **Matrice HTTP publique (28/09/2026, 04:00 CEST)** : les pages vitrines,
+  commande, livraison, carte, horaires et légales sont HTTP 200; le deep-link
+  `/menu` reste HTTP 404. Les CTA `Commander en ligne` des pages dédiées
+  ciblent `/`, ce qui confirme la dette de routage/contexte déjà observée.
+- **Assets et sécurité HTTP (28/09/2026, 04:03 CEST)** : scan direct des 35
+  assets de la vitrine : **35/35 HTTP 200**, aucun asset transformé en HTML.
+  La vitrine envoie HSTS/CSP/nosniff; le VPS `/login` n'envoie pas HSTS, CSP
+  ou nosniff et son `/api/health` n'envoie pas HSTS/CSP/Permissions-Policy.
+  C'est un écart de hardening à corriger côté reverse-proxy/déploiement.
+- **Cookies VPS (28/09/2026, 04:04 CEST)** : sous HTTPS, les cookies de session
+  et XSRF ont `SameSite=Lax` mais pas `Secure`; seul le cookie de session est
+  `HttpOnly`. À corriger côté configuration Laravel/proxy, sans reproduire ni
+  stocker les valeurs sensibles dans le rapport.
+- **Bundles/CORS live (28/09/2026, 04:07 CEST)** : les replis localhost restent
+  présents dans `api.js`/`menu.js`, mais les metas live pointent bien vers le
+  backend HTTPS et les assets relatifs, donc aucun mixed-content runtime n'a
+  été observé. Le CORS accepte l'origine publique attendue; son préflight
+  répond toutefois `Allow-Methods: POST` pour tous les endpoints, y compris
+  santé GET, avec `text/html` sur 204 : dette de contrat à corriger/monitorer.
+- **Garde pricing/status/i18n (28/09/2026, 04:12 CEST)** : pricing et
+  OrderStatus sont verts, avec un warning de sign-off pricing daté du
+  27/10/2026; budgets bundles **15/15**. L'audit i18n est rouge : nombreuses
+  clés manquantes (Vue FR 11, EN 112, AR 644, DE 922, BN 923; Laravel FR 5,
+  EN 21, AR 62, DE 89, BN 86). À traiter avant d'affirmer la couverture
+  multilingue complète.
+- **Routes auth live (28/09/2026, 04:16 CEST)** : les endpoints réellement
+  utilisés par le frontend (`/api/auth/guest-signup/email-otp|email-login|verify`)
+  renvoient bien 422 JSON sur payload vide; loyalty config est 200 JSON et
+  quote POST sans session est 401 JSON. L'ancien test d'un chemin
+  `/api/frontend/loyalty/guest-signup` a été reclassé comme route erronée,
+  pas comme défaut du signup.
+- **Readiness et realtime live (28/09/2026, 04:20 CEST)** : le VPS renvoie
+  `/api/health/ready` HTTP 200/`ok` malgré `broadcast=log` et un
+  `restore_drill=degraded`; `/api/healthz` renvoie websocket `ok` avec le même
+  driver. Cela masque un risque réel de synchronisation KDS/POS et de reprise
+  après sinistre. `/api/health/live` répond seulement `OK` en HTML, contrat à
+  uniformiser.
+- **Rate-limit/CORS live (28/09/2026, 04:24 CEST)** : le signup email invalide
+  est limité après cinq essais (429 + `Retry-After: 59`) sans envoi réel;
+  les origines étrangères n'obtiennent pas de header CORS lisible. Les
+  réponses health sont privées et non mises en cache. Ces contrôles de défense
+  passent.
+- **Mobile public (28/09/2026, 04:30 CEST)** : viewport Chromium 390×844 :
+  homepage HTTP 200, aucun console/page error ni HTTP >=400, aucun débordement
+  horizontal; Menu ouvre bien `/#menu` et rend 9 catégories/39 produits.
+- **Personnalisation mobile (28/09/2026, 04:34 CEST)** : Tacos M → viande
+  Mexicanos → étape sauce fonctionne sur 390×844; choix et prix 6,90 € visibles,
+  zéro erreur JS/HTTP >=400 et aucun overflow. La suite panier multi-sauce reste
+  à exécuter séparément.
+- **Deux sauces mobile (28/09/2026, 04:39 CEST)** : Mexicanos + Harissa +
+  Andalouse conserve `2 sélectionnés`, facture une sauce supplémentaire à
+  **+0,50 €** (total **7,40 €**) et ouvre l'étape suppléments sans overflow ni
+  erreur. La suite a été arrêtée avant soumission après un sélecteur emoji trop
+  strict; aucun effet externe.
+- **Panier mobile multi-sauce complet (28/09/2026, 04:45 CEST)** : après la
+  vérification serveur, le panier conserve 1 Tacos M avec `Mexicanos, Harissa,
+  Andalouse`; total **7,40 €**, **+74 pts**, bouton `Passer commande` présent.
+  Aucun crash/réseau >=400 et aucune commande envoyée.
+- **Modification article (28/09/2026, 04:52 CEST)** : la conservation des
+  deux sauces est prouvée avant édition dans le panier. Le contrôle `MODIFIER`
+  visible n'est pas exposé par un rôle/bouton stable au harnais Playwright;
+  l'édition réelle et le risque de suppression de sauce restent non vérifiés,
+  donc non classés comme corrigés.
+- **POS deux sauces + édition (28/09/2026, 04:12 CEST)** : la spec Playwright
+  ciblée passe **1/1** en local; deux sauces sont conservées après reopen +
+  confirmation, prix/détail identiques et panier nettoyé avant paiement. Le
+  VPS POS physique reste à vérifier séparément; le run local confirme la
+  logique applicative.
+- **Supplément manuel POS (28/09/2026, 04:13 CEST)** : la spec dédiée passe
+  **1/1**; `Olives` à `1,25` apparaît dans la ligne panier et le grand total.
+  Cela confirme le besoin de supplément libre nommé côté caisse en local; le
+  ticket imprimé et le VPS physique restent à vérifier séparément.
+- **Backend tickets/impression (28/09/2026, 04:13 CEST)** : **21/21 PHPUnit
+  ciblés passés** (receipt controller, flux client/cuisine, bytes ESC/POS,
+  idempotence encaissement/impression). Les specs navigateur historiques
+  `caisse-print-decision` utilisent encore `127.0.0.1:8766`, écart de harness
+  à corriger avant de les considérer comme preuve web.
+- **Pricing/quote/isolation backend (28/09/2026, 04:15 CEST)** : **27/27 tests
+  ciblés verts** : supplément manuel scellé fiscalement, anti-tamper/replay,
+  remise calculée côté serveur, contraintes de variation, isolation branche
+  POS/KDS et branch_id kiosk forcé par la machine.
+- **KDS/borne/tickets backend (28/09/2026, 04:17 CEST)** : **19/19 PHPUnit
+  ciblés verts** : authz tickets cuisine/client, board et historique, bytes
+  ESC/POS borne, encaissement différé et isolation inter-branches. La preuve
+  imprimante physique reste hors environnement automatisé.
+- **E2E impression navigateur (28/09/2026, 04:14 CEST)** : **4/4 tests
+  passés** sur le serveur local port 8766 : espèces/carte et encaissement
+  téléphone respectent le choix imprimer/non-imprimer, et `Oui, imprimer`
+  émet réellement `/escpos`. La preuve ne couvre pas encore le VPS ni le
+  périphérique imprimante réel.
+- **Fidélité borne E2E (28/09/2026, 04:16 CEST)** : **4/4 tests passés** :
+  inscription rapide sans retaper le téléphone, numpad auto-submit au 10e
+  chiffre, solde réel correct et erreur claire pour code inconnu. Aucun envoi
+  d'email réel; le register est mocké seulement pour isoler le parcours UI.
+- **Inscription fidélité complète (28/09/2026, 04:18 CEST)** : **1/1 PASS en
+  2,5 s** avec prénom/téléphone/email, consentement et solde visible après
+  register; aucun écran blanc ni erreur console. Le POST register est mocké
+  dans cette spec pour éviter une notification externe.
+- **Fidélité backend (28/09/2026, 04:20 CEST)** : **51/51 tests ciblés verts**
+  sur OTP email/guest, inscription borne, canonicalisation téléphone 06/+33,
+  liaison web, unicité et anti-fuite PII. Les collisions et comptes existants
+  sont refusés proprement sans divulguer email, téléphone ou code tiers.
 ---
 
 ## Suite donnée (2026-09-28) — corrections livrées
