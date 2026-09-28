@@ -1419,3 +1419,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `/sw.js`, `/service-worker.js` et `/kiosk/service-worker.js` répondent
   `404 JSON`, tandis que `/offline.html` retombe sur la SPA `200` : aucun
   fallback offline dédié n'est installé pour sécuriser ce cas de veille.
+- **Suite backend prix/quote ciblée (28/09/2026, 19:34 CEST)** : exécution
+  PHPUnit fichier par fichier sur `PricingIntegrityTest`, `QuoteTamperTest`,
+  `KioskQuoteIntegrityTest`, `KioskQuoteForgesBranchIdSilentlyOverriddenTest`,
+  `QuoteDiscountAuthoritativeTest`, `Pricing/KioskFritesSauceBillingTest`,
+  `Pricing/NewSupplementsBilledTest`,
+  `Order/SubmitRevalidatesChoiceAvailabilityThroughPricingTest`,
+  `Branch/OrderBranchIsolationTest`, `Frontend/FrontendBranchOrderTest` et
+  `PosPricingSsotProofTest` : **23 tests, 68 assertions, 0 échec**. Les
+  protections serveur contre totaux forgés, rejeu/quote, dérive de branche,
+  double comptage sauces/suppléments et choix indisponibles restent vertes.
