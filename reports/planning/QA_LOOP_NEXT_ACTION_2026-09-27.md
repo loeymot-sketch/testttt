@@ -897,3 +897,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   pool est petit, mais le défaut deviendrait un coût/volume non borné après
   enrichissement du catalogue). Validation stricte `integer|min:1|max:12` à
   ajouter avant la requête.
+- **Paramètre branche dupliqué (28/09/2026, 06:16 CEST)** :
+  `frontend/item?branch_id=1&branch_id=999999` renvoie Fanta Citron comme
+  disponible, alors que l'ordre inverse (`999999&branch_id=1`) le marque en
+  rupture. Le parseur prend donc le dernier scalaire et permet de contourner
+  une URL correctement générée en lui ajoutant un second paramètre; la
+  branche doit être normalisée/rejetée lorsqu'elle apparaît plusieurs fois,
+  puis vérifiée côté serveur avant projection.
