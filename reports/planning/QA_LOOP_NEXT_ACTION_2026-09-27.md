@@ -748,3 +748,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   active. Les branches testées sont actuellement vides, donc aucune fuite de
   comptage n'est prouvée en production, mais ce paramètre est un risque
   d'isolation multi-branches dès qu'une seconde branche aura des commandes.
+- **Suite locale wait-estimate (28/09/2026, 04:50 CEST)** :
+  `WaitEstimateEndpointTest` passe **11/11** (file, statuts, stale, branche
+  différente, JSON et throttle). La suite ne couvre toutefois pas un
+  `branch_id` arbitraire ou invalide fourni par un client public; le risque
+  signalé reste donc non verrouillé par test malgré les scénarios nominaux
+  verts.
