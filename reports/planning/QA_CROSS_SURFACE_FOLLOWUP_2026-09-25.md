@@ -1023,3 +1023,29 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   « Uber Eats » et **0** occurrence des formulations emporter/livraison
   demandées : le défaut de contenu publié est directement observable malgré
   la santé technique du domaine.
+- **Garde-fou invariants (28/09/2026, 03:08 CEST)** : `bash
+  scripts/check-invariants.sh -v` échoue sur **3/6 invariants, 19 occurrences
+  brutes**. Le signal le plus concret est `FrontendOrderService.php:175`, qui
+  lit `branch_id` depuis la requête pour le namespace d’idempotence : c’est une
+  dérogation documentée pour les guests mais un risque réel d’isolation à
+  revalider côté métier. Les 3 hits de dispatch catalogue dans `ItemService`
+  sont entourés par `DispatchableAfterCommit` (risque principalement de faux
+  positif du guard); les 15 hits audit incluent imports/commentaires et des
+  chemins qui écrivent déjà `AuditLogService`/`ActionLog`, mais le guard ne
+  distingue pas ces cas. La CI ne peut donc pas être considérée propre sans
+  soit corriger le code branch-id, soit formaliser les exceptions et améliorer
+  le guard.
+- **Suite PHPUnit Feature complète (28/09/2026, après 03:08 CEST)** : **5 709
+  tests passent**, **1 échoue**, **4 sont incomplets** et **36 sont ignorés**.
+  L’échec est le sentinel de baseline frozen :
+  `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` diverge du
+  SHA autorisé (`fcbe3755…` attendu, `f8ecb111…` observé). Aucun revert ni
+  mise à jour de baseline n’a été effectué : le fichier est hors périmètre
+  sans lock/sign-off propriétaire. Les incomplets/skips confirment les limites
+  déjà vues (couverture MySQL/MariaDB absente sous SQLite, harness websockets,
+  gates frozen coupon/composer/category et onboarding réel).
+- **Contrôle métier ciblé dans la même suite** : les preuves de prix backend
+  restent vertes (`PosKioskPricingParity`, `KioskFritesSauceBilling`,
+  `PricingService`, supplément manuel fiscalisé), ainsi que les parcours de
+  fidélité/signup et les protections branch/auth. Cela ne remplace pas un
+  encaissement réel sur le POS distant, toujours non provisionné.

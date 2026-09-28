@@ -313,5 +313,21 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   contenu reste hors demande : **4** « Uber Eats », aucune formulation emporter
   / livraison par nos livreurs. C’est une preuve live de non-déploiement du
   copy attendu, pas un défaut que les tests locaux peuvent masquer.
+- **Invariant guard (28/09/2026, 03:08 CEST)** : le script CI retourne **FAIL
+  (3 invariants / 19 hits)**. Le hit critique est la lecture de `branch_id`
+  depuis le payload dans `FrontendOrderService:175`; les événements Item sont
+  techniquement protégés par le trait `DispatchableAfterCommit`, et les hits
+  d’audit mélangent code réel, imports et commentaires. À traiter comme
+  risque de sécurité/isolation et comme dette de précision du guard, sans
+  auto-approuver ces violations.
+- **PHPUnit Feature complet (28/09/2026, après 03:08 CEST)** : **5 709 passés,
+  1 échec, 4 incomplets, 36 skipped**. L’échec bloquant est le sentinel
+  `FrozenZoneSha256BaselineSentinelTest` :
+  `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` a dérivé
+  de la baseline (`fcbe3755…` → `f8ecb111…`). Comme aucun LOCK/sign-off n’est
+  fourni, la baseline n’a pas été modifiée et le fichier n’a pas été revert.
+  Les 4 incomplets et 36 skips sont documentés par les contraintes SQLite,
+  websockets réels et gates frozen/onboarding. Les tests pricing/suppléments,
+  fidélité et isolation de branche passent dans cette même exécution.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
