@@ -681,3 +681,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   confirme que le problème de contrat n'est pas généralisé à toutes les routes
   déclarées, mais concentré sur ce health endpoint et les mauvaises méthodes
   tombant dans le catch-all.
+- **Scan POST protégés (28/09/2026, 04:38 CEST)** : 98 routes POST statiques
+  nécessitant une authentification ont été appelées avec un corps vide et la
+  clé publique, sans session. Zéro 200 HTML, zéro 5xx et aucune mutation : les
+  garde-fous d'authentification rejettent correctement ces appels.
