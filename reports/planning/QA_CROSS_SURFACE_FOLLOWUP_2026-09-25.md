@@ -945,3 +945,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   nouveau risque n’est pas couvert par les tests fonctionnels verts; il faut
   une mission sécurité dédiée, avec matrice d’impact et mise à niveau testée,
   avant de lancer `npm audit fix --force` ou une mise à jour Laravel majeure.
+- **Versions à prioriser (28/09/2026)** : le scan rattache le risque aux
+  dépendances directes `firebase@9.23.0`, `swiper@11.2.10`, `vue3-quill@0.3.1`
+  / `quill@1.3.7`, et aux paquets PHP `laravel/framework v9.52.21`,
+  `maatwebsite/excel 3.1.67`, `spatie/laravel-medialibrary 10.15.0` et
+  `firebase/php-jwt v6.11.1`. Cette cartographie fournit au développeur les
+  points d’entrée sans modifier le lockfile pendant l’audit.

@@ -180,6 +180,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   `spatie/laravel-medialibrary` et `firebase/php-jwt`, dont plusieurs hautes.
   Aucun `audit fix` automatique n’a été lancé : plusieurs corrections exigent
   des changements majeurs et une revue de compatibilité/gate.
+- **Cartographie des versions (28/09/2026)** : les versions directement
+  concernées incluent `firebase@9.23.0`, `swiper@11.2.10` et `vue3-quill@0.3.1`
+  qui embarque `quill@1.3.7`; côté PHP, `laravel/framework v9.52.21`,
+  `maatwebsite/excel 3.1.67`, `spatie/laravel-medialibrary 10.15.0` et
+  `firebase/php-jwt v6.11.1` (tiré par Google API/Auth). Les mises à niveau
+  doivent être traitées comme une mission sécurité séparée, pas comme un simple
+  nettoyage automatique du lockfile.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
