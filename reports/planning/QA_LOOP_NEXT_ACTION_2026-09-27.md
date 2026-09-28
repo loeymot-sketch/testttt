@@ -836,3 +836,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   rejet au quote, mais acceptent explicitement le fallback « global » quand
   aucun `branch_id` n'est fourni; aucun test ne couvre un ID invalide comme
   `999999`, d'où l'écart live nouvellement démontré.
+- **Requête réellement utilisée par la vitrine (28/09/2026, 05:05 CEST)** :
+  Chromium confirme que `www.lecayenne.fr` appelle actuellement
+  `frontend/item?branch_id=1`; l'affichage live voit donc les ruptures de la
+  branche 1. Le risque reste conditionnel à une perte/altération de ce
+  paramètre, mais il est exploitable par URL directe et n'est pas neutralisé
+  par l'API catalogue elle-même.
