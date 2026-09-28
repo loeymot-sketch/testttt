@@ -1394,3 +1394,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `kiosk-upsell?limit=1` renvoie 1 élément, `limit=-1` en renvoie **18**, et
   les doublons `limit=1&limit=-1`/inverse suivent encore la dernière valeur;
   une borne haute/basse stricte reste nécessaire.
+- **Copie livraison/emporter recontrôlée (28/09/2026, 19:18 CEST)** : les pages
+  publiques `/`, `/carte.html`, `/commander.html` et
+  `/livraison-henin-beaumont.html` indiquent toujours « à emporter » et une
+  livraison via **Uber Eats**; aucune mention « livré par nos livreurs bientôt »
+  n'est déployée. Le lien livraison répond `200`, mais le contenu actuel
+  contredit donc la copie métier demandée pour annoncer la future livraison
+  interne. Le parcours à emporter reste correctement explicité.
