@@ -1049,3 +1049,14 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `PricingService`, supplément manuel fiscalisé), ainsi que les parcours de
   fidélité/signup et les protections branch/auth. Cela ne remplace pas un
   encaissement réel sur le POS distant, toujours non provisionné.
+- **Suite PHPUnit Unit (28/09/2026, 03:32 CEST)** : **367/367 tests passent**
+  en 8,61 s. Le contrôle bundle passe aussi : 15 bundles dans les budgets,
+  dont `kiosk-shell` 280 KB/350 KB et `kiosk-wizard-step` 130 KB/150 KB.
+- **Requête live avec la clé publique exposée par `/login` (28/09/2026,
+  03:31 CEST)** : les routes déclarées API (`guest-signup`, quote POS,
+  loyalty config) répondent **302 `/login` en HTML**, même avec
+  `Accept: application/json` et `X-API-Key` extrait de la page. Le code local
+  prévoit au contraire un `400` JSON pour clé absente/invalide et un `503` JSON
+  pour installation incomplète. Cela révèle un écart de déploiement/routage
+  (route cache ou middleware réellement servi) à diagnostiquer sur le VPS;
+  un client SPA peut donc recevoir une page de login au lieu d’une erreur API.

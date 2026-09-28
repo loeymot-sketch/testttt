@@ -329,5 +329,14 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Les 4 incomplets et 36 skips sont documentés par les contraintes SQLite,
   websockets réels et gates frozen/onboarding. Les tests pricing/suppléments,
   fidélité et isolation de branche passent dans cette même exécution.
+- **Unit + bundle (28/09/2026, 03:32 CEST)** : PHPUnit Unit **367/367** et
+  contrôle de budget des 15 bundles passent. Le budget n’est donc pas la
+  cause du blocage borne observé.
+- **Contrat API live (28/09/2026, 03:31 CEST)** : malgré la clé API publique
+  lue dans `/login`, `guest-signup`, quote POS et loyalty config renvoient
+  **302 vers `/login` avec HTML** au lieu du JSON attendu. Le dépôt local
+  contient bien `ApiKeyMiddleware`/`Installed` qui devraient renvoyer JSON :
+  écart probable entre code déployé, route cache et VPS à corriger avant tout
+  test réel de souscription ou de panier.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
