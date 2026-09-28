@@ -718,3 +718,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   GET statiques explicitement exemptées d'auth ont été sondées sans clé. Seuls
   `/api/login` (401 JSON attendu) et `/api/health/live` (200 HTML déjà signalé)
   sont notables; aucune route publique inattendue n'expose de données métier.
+- **Catch-all API inconnu (28/09/2026, 04:45 CEST)** : quatre chemins
+  volontairement inexistants (`/api/definitely-not-a-route`, frontend, admin,
+  v1) répondent tous **200 `text/html`** malgré `Accept: application/json`.
+  Le catch-all SPA masque donc aussi les fautes de chemin, pas seulement les
+  mauvaises méthodes; cela peut faire croire à un client/monitoring qu'une API
+  existe et dégrade fortement la détection d'incidents.
