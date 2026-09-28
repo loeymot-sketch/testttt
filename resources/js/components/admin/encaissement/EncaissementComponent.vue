@@ -16,6 +16,31 @@
                     </div>
                     <div class="enc-header-actions">
                         <span class="enc-count-chip">{{ orders.length }}</span>
+                        <!--
+                          [CAISSE 2026-09-29 · demande propriétaire] « Si je veux vraiment commencer
+                          une nouvelle journée, j'ai grand nombre de commandes en attente, je veux
+                          tout supprimer. »
+
+                          Le bouton ne touche QUE les journées PASSÉES (plancher de service à 5 h,
+                          côté serveur). Un « tout vider » littéral emporterait le client qui arrive
+                          à la porte, avec un plat déjà parti en cuisine.
+
+                          Il annonce d'abord le compte EXACT (appel à blanc), puis attend un second
+                          clic. On n'affiche jamais « vider » sans dire combien : un caissier ne peut
+                          pas consentir à un chiffre qu'il ne connaît pas.
+                        -->
+                        <button
+                            v-if="staleCount === null || staleCount > 0"
+                            class="db-btn py-2 enc-purge-btn"
+                            :class="staleCount === null ? 'enc-purge-btn--idle' : 'enc-purge-btn--armed'"
+                            :disabled="purging"
+                            data-testid="enc-purge-stale"
+                            @click.prevent="purgeStale"
+                        >
+                            <span v-if="purging">Nettoyage…</span>
+                            <span v-else-if="staleCount === null">Nettoyer les jours passés</span>
+                            <span v-else>Annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }} des jours passés ?</span>
+                        </button>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
                             <i class="lab lab-refresh-line lab-font-size-16"></i>
                             <span>{{ $t('button.refresh') }}</span>
@@ -44,6 +69,30 @@
 
                     <div v-else class="enc-grid">
                         <div v-for="order in orders" :key="order.id" class="enc-ticket">
+                            <!--
+                              [CAISSE 2026-09-29 · demande propriétaire] « Je veux pas cliquer sur
+                              chacune et mettre le justificatif pour pouvoir annuler : directement X
+                              et ça s'annule. »
+
+                              Le backend l'acceptait DÉJÀ : POST counter-collect/{id}/cancel valide
+                              `reason` en `nullable`. Ce qui manquait n'était pas la permission, c'était
+                              le bouton — cet écran n'en avait aucun, et la seule autre interface câblée
+                              sur cet endpoint (le panneau borne-espèces de la caisse) ré-imposait un
+                              motif de 3 caractères CÔTÉ CLIENT, alors que le serveur ne le demande pas.
+
+                              Confirmation en DEUX TEMPS : pas de modale, rien à taper, mais un doigt
+                              qui ripe sur la carte d'un client en train d'arriver ne lui annule pas sa
+                              commande. Le second clic doit tomber dans les 4 s.
+
+                              [HEAL visuel 2026-09-29] Première version : croix en `position:absolute`
+                              au coin de la carte. Capture relue — elle CHEVAUCHAIT le badge de date
+                              (« 25/0… » tronqué) et, une fois armée, recouvrait le numéro de commande
+                              d'un bloc rouge. Le caissier perdait de vue l'identifiant au moment
+                              précis où il confirme une annulation. La croix est donc maintenant un
+                              élément NORMAL de la ligne d'en-tête (qui est déjà en flex), et l'état
+                              armé s'affiche sur une bande dédiée sous l'en-tête : plus aucun
+                              recouvrement possible, quelle que soit la largeur du libellé.
+                            -->
                             <div class="enc-ticket-top">
                                 <span class="enc-origin-badge" :class="originBadge(order).cls">
                                     {{ originBadge(order).label }}
@@ -64,6 +113,37 @@
                                     class="enc-queue-date-badge"
                                     :data-testid="`enc-queue-date-${order.id}`"
                                 >{{ queueDateBadge(order) }}</span>
+                                <button
+                                    class="enc-cancel-x"
+                                    :class="{ 'enc-cancel-x--armed': pendingCancelId === order.id }"
+                                    :disabled="cancellingId === order.id"
+                                    title="Annuler cette commande (client non venu)"
+                                    :aria-label="`Annuler la commande ${order.order_serial_no || order.id} — client non venu`"
+                                    :data-testid="`enc-cancel-${order.id}`"
+                                    @click.prevent="cancelOrder(order)"
+                                >
+                                    <span v-if="cancellingId === order.id">…</span>
+                                    <span v-else aria-hidden="true">✕</span>
+                                </button>
+                            </div>
+                            <!-- Bande de confirmation : n'existe QUE sur la carte armée. -->
+                            <div
+                                v-if="pendingCancelId === order.id"
+                                class="enc-cancel-confirm"
+                                :data-testid="`enc-cancel-confirm-${order.id}`"
+                                role="alert"
+                            >
+                                <span class="enc-cancel-confirm-txt">Annuler cette commande ?</span>
+                                <button
+                                    class="enc-cancel-yes"
+                                    :data-testid="`enc-cancel-yes-${order.id}`"
+                                    @click.prevent="cancelOrder(order)"
+                                >Oui, client non venu</button>
+                                <button
+                                    class="enc-cancel-no"
+                                    :data-testid="`enc-cancel-no-${order.id}`"
+                                    @click.prevent="abortCancel"
+                                >Non</button>
                             </div>
                             <div class="enc-ticket-customer">{{ customerName(order) }}</div>
                             <!--
@@ -180,6 +260,12 @@ export default {
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
+            // [CAISSE 2026-09-29] Annulation directe (croix) + nettoyage des jours passés.
+            pendingCancelId: null,   // commande dont la croix est ARMÉE (2e clic attendu)
+            pendingCancelTimer: null,
+            cancellingId: null,      // requête en vol, pour ne pas double-annuler
+            staleCount: null,        // null = pas encore compté ; 0 = rien à nettoyer
+            purging: false,
         };
     },
     mounted() {
@@ -191,8 +277,15 @@ export default {
         // orders + counter-collected ones reflect sub-second; the 20s poll above
         // stays as the WS-down fallback (mirrors KDS/OSS/tracker pattern).
         this.subscribeEcho();
+        // [CAISSE 2026-09-29] Compte à blanc : le bouton de nettoyage ne s'affiche
+        // que s'il a réellement quelque chose à faire.
+        this.refreshStaleCount();
     },
     beforeUnmount() {
+        if (this.pendingCancelTimer) {
+            clearTimeout(this.pendingCancelTimer);
+            this.pendingCancelTimer = null;
+        }
         if (this.pollTimer) {
             clearInterval(this.pollTimer);
             this.pollTimer = null;
@@ -209,6 +302,89 @@ export default {
         },
     },
     methods: {
+        /**
+         * [CAISSE 2026-09-29] La croix : annule UNE commande, sans motif à saisir.
+         *
+         * Premier clic = arme le bouton (« Confirmer ? ») pendant 4 s ; second clic =
+         * annule. Pas de `window.confirm` : une modale native bloque la page entière,
+         * et le propriétaire veut justement aller vite.
+         *
+         * Le motif envoyé est FIXE. Le serveur l'accepte en `nullable`, mais laisser
+         * une trace vide dans la chaîne d'audit serait un cadeau empoisonné à qui
+         * relira l'historique dans six mois : « Client non venu » dit ce qui s'est
+         * réellement passé, sans rien demander au caissier.
+         */
+        /** Désarme la croix : « Non » sur la bande de confirmation. */
+        abortCancel() {
+            if (this.pendingCancelTimer) clearTimeout(this.pendingCancelTimer);
+            this.pendingCancelTimer = null;
+            this.pendingCancelId = null;
+        },
+        cancelOrder(order) {
+            if (!order || this.cancellingId === order.id) return;
+
+            if (this.pendingCancelId !== order.id) {
+                this.pendingCancelId = order.id;
+                if (this.pendingCancelTimer) clearTimeout(this.pendingCancelTimer);
+                this.pendingCancelTimer = setTimeout(() => { this.pendingCancelId = null; }, 4000);
+                return;
+            }
+
+            if (this.pendingCancelTimer) clearTimeout(this.pendingCancelTimer);
+            this.pendingCancelId = null;
+            this.cancellingId = order.id;
+
+            axios.post(`admin/pos/counter-collect/${order.id}/cancel`, {
+                reason: 'Client non venu',
+            }).then(() => {
+                // Retrait immédiat de la carte : le caissier doit VOIR la file
+                // raccourcir. Le fetch qui suit fait foi.
+                this.orders = this.orders.filter((o) => o.id !== order.id);
+            }).catch(() => {
+                // Un échec ne doit jamais se déguiser en succès : on laisse la carte
+                // en place et on relit la file, qui dira la vérité.
+                this.fetchError = true;
+            }).finally(() => {
+                this.cancellingId = null;
+                this.fetchPending(true);
+                this.refreshStaleCount();
+            });
+        },
+        /**
+         * Compte, sans rien changer, les commandes des journées PASSÉES encore dans la
+         * file. Sert à n'afficher le bouton de nettoyage que s'il a quelque chose à
+         * faire, et à annoncer un chiffre exact avant d'agir.
+         */
+        refreshStaleCount() {
+            return axios.post('admin/pos/counter-collect/cancel-stale', { dry_run: true })
+                .then((res) => { this.staleCount = Number(res.data?.count ?? 0); })
+                .catch(() => { /* le bouton reste au repos ; jamais bloquant */ });
+        },
+        /**
+         * Premier clic : compte et annonce. Second clic : annule réellement.
+         * Le serveur borne lui-même au plancher de journée de service — le service en
+         * cours ne peut pas être emporté, même si cette interface se trompait.
+         */
+        purgeStale() {
+            if (this.purging) return;
+
+            if (this.staleCount === null) {
+                this.purging = true;
+                return this.refreshStaleCount().finally(() => {
+                    this.purging = false;
+                    if (this.staleCount === 0) this.staleCount = null;
+                });
+            }
+
+            this.purging = true;
+            axios.post('admin/pos/counter-collect/cancel-stale', {})
+                .then(() => { this.staleCount = null; })
+                .catch(() => { this.fetchError = true; })
+                .finally(() => {
+                    this.purging = false;
+                    this.fetchPending(true);
+                });
+        },
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
             return axios.get('admin/pos/counter-collect/pending').then((res) => {
@@ -446,6 +622,59 @@ export default {
     gap: 0.5rem;
     box-shadow: var(--pos-v5-shadow-sm);
 }
+/* [CAISSE 2026-09-29] Croix d'annulation directe.
+   Élément NORMAL de la ligne d'en-tête (jamais en position:absolute — la première
+   version recouvrait le badge de date et le numéro de commande, constaté en
+   capture). Discrète au repos : elle ne doit pas concurrencer « Encaisser », qui
+   reste l'action normale. Largeur FIXE, donc aucun débordement possible. */
+.enc-cancel-x {
+    flex: 0 0 auto;
+    margin-left: auto;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--pos-v5-border);
+    border-radius: 999px;
+    background: #fff;
+    color: #9a9a9a;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.enc-cancel-x:hover { color: #c0392b; border-color: #c0392b; background: #fdf2f1; }
+.enc-cancel-x--armed { background: #c0392b; border-color: #c0392b; color: #fff; }
+.enc-cancel-x:disabled { opacity: .55; cursor: default; }
+/* Bande de confirmation : sous l'en-tête, pleine largeur de la carte. Elle pousse
+   le contenu vers le bas au lieu de le masquer. */
+.enc-cancel-confirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #c0392b;
+    border-radius: var(--pos-v5-radius-md);
+    background: #fdf2f1;
+}
+.enc-cancel-confirm-txt { font-size: 0.8rem; font-weight: 600; color: #8e2a1f; }
+.enc-cancel-yes,
+.enc-cancel-no {
+    border: none;
+    border-radius: var(--pos-v5-radius-md);
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.enc-cancel-yes { background: #c0392b; color: #fff; }
+.enc-cancel-no { background: #fff; color: #6b6b6b; border: 1px solid var(--pos-v5-border); }
+/* Bouton de nettoyage des journées passées : neutre tant qu'il n'a pas compté,
+   rouge une fois qu'il annonce un nombre — le second clic est destructif. */
+.enc-purge-btn { border: 1px solid var(--pos-v5-border); border-radius: var(--pos-v5-radius-md); }
+.enc-purge-btn--idle { background: #fff; color: #6b6b6b; }
+.enc-purge-btn--armed { background: #c0392b; color: #fff; font-weight: 700; }
+.enc-purge-btn:disabled { opacity: .6; cursor: default; }
 .enc-ticket-top { display: flex; align-items: center; justify-content: space-between; }
 .enc-origin-badge {
     display: inline-flex;
