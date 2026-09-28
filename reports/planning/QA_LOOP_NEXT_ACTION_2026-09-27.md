@@ -1268,3 +1268,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   réseau d'écriture n'a été observé. Le défaut « une sauce disparaît lors de
   l'édition » n'est pas reproduit sur ce parcours web nominal; il reste à
   rejouer dans la caisse authentifiée et sur le ticket KDS.
+- **Fidélité — rendu et validation locale (28/09/2026, 18:22 CEST)** : le
+  bouton « Fidélité » ouvre bien le parcours `#loyalty`, puis « Créer mon
+  compte » affiche le formulaire email en deux étapes sans erreur console ni
+  page blanche. Une saisie invalide `not-an-email` est bloquée nativement avec
+  le message français attendu, et aucun appel réseau d'écriture n'est émis.
+  La soumission d'une adresse valide reste volontairement non exécutée pour
+  ne pas envoyer d'email ni créer de compte de test.
