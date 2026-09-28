@@ -491,3 +491,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   viewport 390, sans erreur JS ni HTTP >=400. Le cas mobile multi-sauce reste
   à compléter jusqu'au panier, mais aucun blocage n'est reproduit aux étapes
   1–2.
+- **Deux sauces mobile (28/09/2026, 04:39 CEST)** : en sélectionnant Mexicanos,
+  puis Harissa et Andalouse, l'étape sauce affiche `2 sélectionnés`,
+  `Sauce en plus : +0,50 € chacune (× 1)` et le total **7,40 €**; l'étape 3
+  suppléments s'ouvre à 390 px sans overflow ni erreurs JS/HTTP. La tentative
+  d'automatisation de la suite a ciblé un libellé emoji exact et a été arrêtée
+  sans soumettre de commande; ce n'est pas classé comme panne produit.

@@ -1210,3 +1210,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   Mexicanos → étape sauce fonctionne sur 390×844; choix et prix 6,90 € visibles,
   zéro erreur JS/HTTP >=400 et aucun overflow. La suite panier multi-sauce reste
   à exécuter séparément.
+- **Deux sauces mobile (28/09/2026, 04:39 CEST)** : Mexicanos + Harissa +
+  Andalouse conserve `2 sélectionnés`, facture une sauce supplémentaire à
+  **+0,50 €** (total **7,40 €**) et ouvre l'étape suppléments sans overflow ni
+  erreur. La suite a été arrêtée avant soumission après un sélecteur emoji trop
+  strict; aucun effet externe.
