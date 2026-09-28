@@ -1180,3 +1180,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   été observé. Le CORS accepte l'origine publique attendue; son préflight
   répond toutefois `Allow-Methods: POST` pour tous les endpoints, y compris
   santé GET, avec `text/html` sur 204 : dette de contrat à corriger/monitorer.
+- **Garde pricing/status/i18n (28/09/2026, 04:12 CEST)** : pricing et
+  OrderStatus sont verts, avec un warning de sign-off pricing daté du
+  27/10/2026; budgets bundles **15/15**. L'audit i18n est rouge : nombreuses
+  clés manquantes (Vue FR 11, EN 112, AR 644, DE 922, BN 923; Laravel FR 5,
+  EN 21, AR 62, DE 89, BN 86). À traiter avant d'affirmer la couverture
+  multilingue complète.

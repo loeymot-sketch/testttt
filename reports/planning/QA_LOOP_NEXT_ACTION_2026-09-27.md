@@ -451,3 +451,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   les réponses OPTIONS annoncent `Allow-Methods: POST` même pour `/api/health`
   GET et renvoient un content-type HTML sur 204; à aligner pour des clients
   stricts, sans impact reproduit sur le checkout actuel.
+- **Gardes dépôt (28/09/2026, 04:12 CEST)** : pricing guard et OrderStatus
+  guard passent (86 et 38 fichiers); le pricing guard émet toutefois un
+  avertissement `signoff-pending` jusqu'au 27/10/2026. Le contrôle budgets
+  bundles passe 15/15. L'audit i18n échoue : 11 clés FR Vue, 112 EN, 644 AR,
+  922 DE, 923 BN manquantes (et 5/21/62/89/86 côté Laravel). Ce n'est pas un
+  crash du checkout observé, mais c'est une dette de traduction mesurable qui
+  peut laisser des libellés vides sur les surfaces non françaises.
