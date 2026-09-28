@@ -1252,3 +1252,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   slugs correspondants ont un prix visible égal au prix API (aucun écart
   détecté); cette vérification statique ne remplace toutefois pas le quote
   serveur d'un panier avec suppléments.
+- **Wizard client runtime avec supplément (28/09/2026, 18:14 CEST)** : le
+  parcours public permet de sélectionner une seconde sauce (total **7,40 →
+  7,90 €**), puis d'ajouter les frites (**+1,90 €**) et une sauce côté frites;
+  le récapitulatif conserve explicitement `Sauce pour les frites: Ketchup`,
+  total **9,30 €**, et le panier local affiche `Cayenne · Ajouter Frites,
+  Ketchup` après environ 4 s. Aucun appel non-GET ni erreur console n'a été
+  observé. Le calcul client nominal sauces/frites est donc cohérent sur ce
+  scénario; l'encaissement serveur reste à couvrir avec un compte E2E valide.
