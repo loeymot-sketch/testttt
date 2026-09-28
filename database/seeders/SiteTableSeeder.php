@@ -50,7 +50,26 @@ class SiteTableSeeder extends Seeder
             'site_language_switch' => Activity::ENABLE,
             'site_app_debug' => Activity::DISABLE,
             'site_auto_update' => Activity::DISABLE,
-            'site_online_payment_gateway' => $envService->getValue('DEMO') ? Activity::ENABLE : Activity::DISABLE,
+            // [INCIDENT PRODUCTION 2026-09-28] Cette ligne a tué le paiement en ligne.
+            //
+            // Elle posait DISABLE sur toute installation NON-démo. Tant que rien ne lisait
+            // ce réglage, c'était sans effet. Le 2026-09-26, le commit 633349c1f a ajouté
+            // un garde légitime dans MolliePaymentController — « seule une désactivation
+            // EXPLICITE ferme désormais le chemin ». Sauf qu'aucune désactivation explicite
+            // n'avait eu lieu : le seeder fermait la capacité tout seul. Résultat mesuré en
+            // production : site_online_payment_gateway = 10, et carte + Apple Pay + Google
+            // Pay refusés en 503 AVANT tout appel à Mollie — donc aucune erreur Mollie dans
+            // les journaux pour mettre sur la piste. Dernier paiement réussi : 22/09.
+            //
+            // On aligne désormais le seeder sur le défaut du garde lui-même
+            // (Settings::get(..., Activity::ENABLE)) : une capacité offerte par l'interface
+            // ne doit pas se fermer sans décision. Le propriétaire garde la main — une
+            // désactivation explicite reste respectée (test de non-régression dédié).
+            //
+            // Cela ne peut PAS faire encaisser à tort : le contrôleur refuse toujours en 503
+            // « Mollie non configuré. » tant que la clé d'API n'est pas posée. Les deux
+            // gardes sont indépendants.
+            'site_online_payment_gateway' => Activity::ENABLE,
             'site_default_sms_gateway' => 0,
             'site_guest_login' => Activity::ENABLE,
             'site_default_phone_digit_length' => 10,
