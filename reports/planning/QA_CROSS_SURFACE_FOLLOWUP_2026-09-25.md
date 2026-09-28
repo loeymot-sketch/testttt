@@ -930,3 +930,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   classe ce point comme risque opérationnel distinct : la supervision peut
   annoncer « prêt » alors que la restauration de secours n’a jamais été
   mesurée.
+- **Contrôle anti-régression pricing/paiement (28/09/2026)** : les huit suites
+  frontend critiques passent **51/51**; le sous-ensemble backend pricing passe
+  **31/31**. Aucun écart de total ou de supplément n’est reproduit localement,
+  mais ce résultat ne remplace pas une transaction réelle sur caisse avec un
+  compte POS provisionné.

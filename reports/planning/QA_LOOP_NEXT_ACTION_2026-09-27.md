@@ -155,6 +155,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   HTTP 200 tout en signalant `restore_drill=degraded` (« restauration jamais
   mesurée »). Le statut HTTP `ok` ne doit donc pas être interprété comme une
   readiness opérationnelle complète; un drill attesté reste requis.
+- **Régression ciblée prix/paiement (28/09/2026, 02:00 CEST)** : huit suites
+  Vitest couvrant preview pricing, modifications depuis le récapitulatif,
+  payload panier, crudités payantes, plan B paiement, retry, ticket et montant
+  facturé passent **51/51 en 4,70 s**. Le sous-ensemble PHPUnit
+  `tests/Feature/Pricing` passe **31/31 en 8,29 s**, y compris sauces,
+  suppléments, quantités, TVA TTC et refus d’extras invalides.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
