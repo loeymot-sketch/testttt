@@ -1483,3 +1483,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   lien externe Uber Eats, refusé par la protection anti-bot de la plateforme;
   ce n'est pas une erreur du site Le Cayenne, mais le lien externe ne peut pas
   être validé automatiquement au-delà de sa présence.
+- **Suite caisse/encaissement/ticket ciblée (28/09/2026, 19:52 CEST)** :
+  `PosWalkinCounterCollect`, protection race, idempotence encaissement+ticket,
+  split payment, queue caisse, flux impression, renderer ESC/POS, wire-in
+  ticket et lignes fiscales : **10 fichiers, 62 tests, 226 assertions, 0
+  échec**. Les montants libres, encaissements concurrents, réimpressions et
+  lignes fiscales restent couverts côté backend; aucun défaut de total serveur
+  n'est introduit par ces chemins.
