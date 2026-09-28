@@ -869,3 +869,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   vérifiée sur les appels authentifiés (pas uniquement le catalogue public),
   car une application locale peut alors faire des requêtes avec les cookies
   du VPS si un opérateur y est connecté.
+- **Fuzz du paramètre de branche (28/09/2026, 06:08 CEST)** : les valeurs
+  `0`, `-1`, `foo`, `null` et espace sur `frontend/item?branch_id=...`
+  répondent HTTP 200 et remettent l'article 114 en `is_available:true`, au
+  lieu de rejeter la branche ou de conserver la disponibilité de la branche
+  active. `1.0` et `01` sont implicitement normalisés vers la branche 1,
+  tandis que `1,999999` retombe aussi sur 1. Le défaut est donc un fail-open
+  de validation/type et pas seulement le cas d'un ID numérique inexistant;
+  il faut une validation stricte (entier positif, branche existante et
+  autorisée par la surface) avant toute requête de disponibilité.
