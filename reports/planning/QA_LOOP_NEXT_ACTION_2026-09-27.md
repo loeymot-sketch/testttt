@@ -1316,3 +1316,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   multi-sélection ordinaire; si la règle métier attend un choix exclusif, ce
   comportement explique un total et un ticket incohérents et doit être corrigé
   puis couvert par un test E2E dédié.
+- **Panier frites + édition réelle Chrome (28/09/2026, 18:52 CEST)** : après
+  reprise automatique de la borne, le parcours `Frites → Petite Frites →
+  Ketchup` conserve le prix **2,50 €**. Le récapitulatif affiche `SAUCES (1) —
+  Ketchup Gratuite`, l'ajout au panier garde `Ketchup €2,50 par unité`, et
+  l'ouverture de la ligne en mode modification (`/kiosk/wizard/33?edit=1`)
+  recharge encore `SAUCES Ketchup` et **2,50 €**. Le défaut de sauce perdue
+  n'est donc pas reproduit sur ce scénario borne réel; le cas « Sans sauce »
+  multi-sélection reste le défaut séparé à corriger.
