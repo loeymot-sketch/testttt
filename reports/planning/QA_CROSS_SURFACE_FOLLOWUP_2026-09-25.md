@@ -935,3 +935,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **31/31**. Aucun écart de total ou de supplément n’est reproduit localement,
   mais ce résultat ne remplace pas une transaction réelle sur caisse avec un
   compte POS provisionné.
+- **Vérification post-rapport (28/09/2026, 02:01 CEST)** : aucune publication
+  externe n’est intervenue; `HEAD` local et `origin/main` restent identiques,
+  l’arbre externe conserve 58 changements non committés, et le site live sert
+  toujours quatre mentions Uber Eats. Les en-têtes de sécurité sont conformes,
+  mais le cache Vercel stable sert encore l’ancienne copie.

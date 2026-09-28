@@ -161,6 +161,16 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   facturé passent **51/51 en 4,70 s**. Le sous-ensemble PHPUnit
   `tests/Feature/Pricing` passe **31/31 en 8,29 s**, y compris sauces,
   suppléments, quantités, TVA TTC et refus d’extras invalides.
+- **Revalidation après transmission aux développeurs (28/09/2026, 02:01 CEST)** :
+  le dépôt externe reste sur `b7bc1763181e…`, identique à `origin/main`, avec
+  **58** entrées dirty; aucune des trois pages ciblées ne contient les phrases
+  de livraison/emporter demandées. Le HTML live conserve le SHA
+  `91ea556e…332c48bf`, quatre mentions « Uber Eats » et zéro phrase cible.
+  Le changement n’a donc pas été publié depuis le dernier rapport.
+- **Sécurité HTTP revalidée (28/09/2026)** : CSP, HSTS, `nosniff`,
+  `frame-ancestors`/SAMEORIGIN et Permissions-Policy sont présents; Vercel
+  répond toujours `x-vercel-cache: HIT` avec ETag/date inchangés. La protection
+  transport est saine, mais ce cache stable confirme le décalage de contenu.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
