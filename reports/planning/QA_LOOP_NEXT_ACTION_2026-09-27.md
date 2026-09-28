@@ -1033,6 +1033,15 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   d'envoi ne s'ouvre donc qu'après le payload complet, même si la règle
   `ValidPhone` accepte encore certaines séquences absurdes lorsqu'il est
   complet.
+- **Throttle des lectures publiques spoofable (28/09/2026, 07:42 CEST)** :
+  `branch/lat-long` (120/min), `frontend/item` (120/min),
+  `item/kiosk-upsell` (120/min) et `oss-order` (60/min) remettent chacun leur
+  compteur à la valeur initiale lorsqu'on change seulement
+  `X-Forwarded-For`. Aucun plafond global n'est annoncé sur ces routes de
+  lecture. Ce n'est pas une fuite d'authentification, mais un bot peut
+  contourner les budgets par-IP et amplifier la charge DB/cache; appliquer le
+  même modèle de plafond global que l'OTP aux endpoints les plus coûteux, ou
+  faire corriger la confiance proxy en amont.
 - **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
   confirme qu'un plafond global `login-global` de 30/min existe en plus du
   bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
