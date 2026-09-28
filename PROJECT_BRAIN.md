@@ -47,6 +47,35 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-28 — base `d9a95ac77` → branche `qa/corrige-rapports-2026-09-28`,
+> 8 commits, AUCUN PUSH.** Worktree `.claude/worktrees/qa-corrige-2026-09-28`
+> (assets compilés sur place : `npm run production` est requis dans tout worktree
+> frais, les bundles étant volontairement hors index de version depuis `85e5b4daa`).
+>
+> Directive owner « corrige » sur les 3 rapports QA → **9 défauts corrigés avec
+> preuves, part importante du rapport Codex réfutée ou déjà corrigée, 10 points
+> escaladés**. Détail : `reports/planning/QA_CORRECTIONS_2026-09-28.md`, synthèse
+> en §3.
+>
+> **État des suites sur cette branche** : Vitest **560 fichiers / 4 544 passés /
+> 3 skips / 0 échec**. Garde-fous release verts (pricing 86 fichiers, status 38,
+> budget bundles). **Diff zone gelée §7 contre la base réelle : VIDE.**
+>
+> ⚠️ **Le seul échec backend global reste la sentinelle frozen-zone** sur
+> `KioskWizardComponent.vue` (réel `f8ecb111…` vs baseline `fcbe3755…`), et il
+> est désormais **caractérisé comme un deadlock entre deux garde-fous** :
+> `pos:lint:pricing` exige le littéral `date:` dans l'annotation de sign-off, la
+> sentinelle de hash exige l'inverse — satisfaire l'un casse l'autre. Le lock de
+> juillet cité par les rapports QA comme blocage est **déjà inclus dans la
+> baseline autorisée le 2026-09-16** : il n'est donc pas le blocage.
+> **Décision owner requise** (3 options en §2.1 du rapport de corrections) —
+> baseline et fichier gelé laissés strictement intacts.
+>
+> ⚠️ **Argent client encore exposé sur la CAISSE** : « Sans sauce » y compte
+> toujours comme sauce payante (`public/js/pos-wizard.js`, gelé §7, 6 sites de
+> décompte). Corrigé sur la borne sans gate ; la caisse exige un LOCK owner, dont
+> ce bloc a déjà deux précédents (2026-07-15, 2026-07-29). **Priorité n°1.**
+
 > **2026-09-19 — DOUBLE COMPTE MÊME E-MAIL : ROOT CAUSE EXACTE TROUVÉE, CORRIGÉE, DÉPLOYÉE.**
 >
 > Propriétaire, verbatim : « je trouve pas de profil sur le site et je peux créer 2 compte avec
@@ -4312,6 +4341,65 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**QA — CORRECTION DES TROIS RAPPORTS (2026-09-28)** — branche
+`qa/corrige-rapports-2026-09-28`, base `d9a95ac77`, worktree
+`.claude/worktrees/qa-corrige-2026-09-28`, aucun push. Directive owner :
+« corrige » `QA_LOOP_NEXT_ACTION_2026-09-27`, `QA_CROSS_SURFACE_FOLLOWUP_2026-09-25`
+et `RAPPORT_DEV_CAISSE_2026-09-24` (19 P0 + 76 P1 + 3 blocages).
+Rapport complet : `reports/planning/QA_CORRECTIONS_2026-09-28.md`.
+
+**9 défauts corrigés**, chacun rouge avant correctif : P0-10 le **rapport X
+fiscal était inatteignable** pour le compte admin (422 « compte non rattaché »
+alors que la liste Z avait déjà sa relaxation lecture seule et que le X est
+read-only par contrat — résolu sans inventer d'agrégat inter-branches, garde
+anti-IDOR testé) · P1-11/P1-65 **« Sans sauce » facturée 0,50 €**, de l'argent
+réel scellé par PricingService faute d'exclusivité — corrigé **en amont du code
+gelé**, sans gate · P0-16 boisson **épuisée vendable** sur la borne (le backend
+envoyait `is_available`, la grille le jetait ; le wizard POS gelé filtrait déjà
+bien) · P0-18 numéro court **ambigu entre jours** à l'encaissement (correctif
+POS du 26/09 jamais porté sur l'écran dédié) · P1-30 « Actif » sur un produit en
+rupture au Catalogue · P0-15 tableau de bord **aveugle aux matières premières**
+(les deux écrans ne lisaient pas la même table) · route de **suppression nue**
+(ni throttle ni idempotence, derrière un commentaire qui affirmait le contraire)
+· libellé lecteur d'écran KDS contradictoire · banc `posDeliveryFlag` **au
+mauvais périmètre** (n'importait pas le composant, restait vert sans le garde).
+
+**Une part importante du rapport Codex est RÉFUTÉE ou DÉJÀ CORRIGÉE** —
+plusieurs par des commits **postérieurs** à sa date de recette : P0-12 (double
+garde serveur fail-closed), P0-09/P1-13/P1-57 (suppression douce + 3 couches de
+permission + 409 si scellé par un Z clos + trigger DB + chaîne NF525 — **§8 non
+violé**), P1-25 (invariant owner verrouillé par sentinelle), P1-52 (plancher
+effectif = 100 par conception), P0-13, P1-08/P1-36 (corrigé le 26/09), P1-65 sur
+le panier public (protégé depuis le 31/07), P0-15 dans sa formulation (corrigé
+le 02/09). Cause racine commune à la famille disponibilité : le SSOT serveur est
+sain, **trois surfaces clientes** jetaient le champ qu'il envoie déjà.
+
+**Précision de gouvernance sur le gate frozen** (les deux rapports QA
+l'affirmaient de travers) : le lock cité comme blocage porte sur le changement
+de **juillet**, déjà **inclus** dans la baseline courante autorisée le
+**2026-09-16** — il n'a donc jamais bloqué cette baseline. Le blocage réel est
+que `pos:lint:pricing` (qui exige le littéral `date:`) et la sentinelle de hash
+**s'excluent mutuellement** : satisfaire l'un casse l'autre. 3 options posées,
+**aucune prise**, baseline et fichier gelé intacts.
+
+**10 escalades owner**, rien changé en silence : « Sans sauce » à la **caisse**
+(`pos-wizard.js` gelé, 6 sites de décompte — argent client, à traiter en
+premier) · deadlock lint/sentinelle · listener d'impression serveur qui ignore
+le flag (dormant seulement parce que la table Imprimantes est vide ; un test
+verrouille le comportement actuel) · aucune sonde imprimante/paiement dans le
+readiness · suppression sans motif (les 3 traces enregistrent `reason: null`) +
+sans garde de statut + sans diffusion d'annulation au KDS · P0-14 recomptage
+matières · `APP_ENV=staging` en prod · sémantique stock article à 0 sans seuil ·
+`posDineInFlag.spec.js` même défaut de périmètre · compte E2E POS distant ·
+copie publique « Uber Eats » (surface externe, arbre déjà dirty).
+
+**Preuves** : Vitest **560 fichiers / 4 544 passés / 3 skips / 0 échec**.
+Garde-fous release verts (pricing 86, status 38, budget bundles). **Diff zone
+gelée §7 contre la base réelle : VIDE** (mesurer contre `main` donnait un faux
+positif de 14 fichiers — `main` est très en retard sur cette base). 3 bancs
+**prouvés mordants** par réintroduction volontaire du défaut, dont l'assertion
+d'argent « Sans sauce ». Aucun test rendu vert en affaiblissant son assertion.
 
 **GOAL_CONFORT_MAX_ET_BASE_PROUVEE — 7/7 vagues fermées 2026-08-15** (commits `bf94a73e1`→
 `e8923b10a`→`0835adbb0`→`ee9803008`→`b04a274de`→`a64484c18`→`1e0965ed2`→`421b34032`→
