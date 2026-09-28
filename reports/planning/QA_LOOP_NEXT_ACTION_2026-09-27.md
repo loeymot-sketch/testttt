@@ -1470,3 +1470,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   serveur/ticket confirment `HH`/`X`, la séparation sauces sandwich/frites,
   les suppléments nommés et la cohérence de cuisson; le rendu live KDS reste
   non vérifiable sans session admin renouvelée.
+- **Suite backend fidélité complète ciblée (28/09/2026, 19:32 CEST)** :
+  `LoyaltyApiTest`, `LoyaltyRegisterAllowsWebLoginTest`,
+  `KioskRegisterKeepsEmailTest`, `LoyaltyPhoneVariantsTest` et
+  `LoyaltyRegisterNoLeakTest` passent : **29 tests, 95 assertions, 0 échec**.
+  Elles couvrent le login web, la conservation email, les variantes téléphone
+  et la non-divulgation PII; aucune ne couvre l'obligation de consentement sur
+  `/register`, ce qui laisse intact le défaut production déjà reproduit.
