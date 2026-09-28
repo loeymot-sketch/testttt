@@ -1524,3 +1524,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `0,1` donnent deux tailles de catalogue différentes). Les `GET` API
   inconnus/fidélité continuent de retomber sur le HTML SPA (`200`) au lieu d’un
   `404` JSON, comportement à clarifier pour les clients API.
+- **Passe Vitest complète (28/09/2026, 19:13–19:17 CEST)** : sous Node 18,
+  **554 fichiers / 4 497 tests passent**, 3 tests sont ignorés, mais les 5
+  tests de `playwrightConfig.spec.js` échouent uniquement parce que Playwright
+  exige Node 20+ (erreur runtime `Node.js 18.20.7`). Le même fichier relancé
+  sous Node `v20.20.2` passe **5/5**. Conclusion : aucun échec fonctionnel
+  confirmé; la commande CI doit imposer Node 20+ pour rendre le plein run vert.
