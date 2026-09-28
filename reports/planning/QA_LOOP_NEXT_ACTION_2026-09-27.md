@@ -766,6 +766,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   C'est un contrat d'erreur copié du domaine commande; un client catalogue
   peut afficher un message faux ou router vers le mauvais écran. Les IDs
   valides 1 et 121 répondent correctement 200.
+- **Assets catalogue live (28/09/2026, 04:54 CEST)** : 58 URLs d'images
+  distinctes renvoyées par `frontend/item` (thumb/cover/preview, y compris les
+  chemins `/storage/...` relatifs) ont été résolues sur le domaine VPS et
+  répondent toutes HEAD 200. Aucun produit live ne pointe vers une image
+  cassée dans cet échantillon.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
