@@ -1221,3 +1221,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Un appel API mal routé n'est donc pas détectable par le statut ou le type
   attendu et peut être parsé comme une réponse vide/page; le fallback SPA
   devrait exclure `/api/*` et renvoyer `404 application/json`.
+- **Smoke site public réel (28/09/2026, 17:59 CEST)** : la page d'accueil
+  `https://www.lecayenne.fr/` charge en Chromium sans erreur console, et les
+  8 liens internes réellement rendus répondent tous correctement. En revanche
+  `/menu` renvoie une page « Page introuvable » `404` avec une erreur console;
+  la page de carte fonctionnelle est `/carte.html`. Tout ancien bouton,
+  favori ou QR code pointant vers `/menu` casse donc l'accès à la carte, même
+  si la navigation actuelle n'utilise plus ce chemin.
