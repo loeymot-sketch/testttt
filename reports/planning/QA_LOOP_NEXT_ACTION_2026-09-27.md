@@ -1079,3 +1079,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   règle dédiée est 1000/min). Aucun contenu de rapport n'est renvoyé; la
   surface est donc cohérente avec son usage navigateur et ne constitue pas un
   nouveau contournement d'authentification.
+- **Backend Frontend + Hardware complet ciblé (28/09/2026, 08:20 CEST)** :
+  `tests/Feature/Frontend` passe **58/58** et `tests/Feature/Hardware`
+  **164/164**. Prix serveur, fidélité, livraison, droits borne, tickets
+  cuisine/client, HH/X, sauces multiples, viandes, frites, tiroir caisse,
+  split tender et largeurs ESC/POS restent verts côté backend.
