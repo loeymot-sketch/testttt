@@ -1073,3 +1073,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   avant parsing, Mollie 400 `invalid_payload`, Uber 401 signature invalide.
   Les parseurs et gardes d'authentification restent donc robustes sur ce
   périmètre.
+- **CSP report endpoint (28/09/2026, 08:12 CEST)** : le POST anonyme prévu
+  pour `Content-Security-Policy-Report-Only` reste accessible sans clé,
+  répond 204 et est limité par le middleware global (120/min observé; la
+  règle dédiée est 1000/min). Aucun contenu de rapport n'est renvoyé; la
+  surface est donc cohérente avec son usage navigateur et ne constitue pas un
+  nouveau contournement d'authentification.
