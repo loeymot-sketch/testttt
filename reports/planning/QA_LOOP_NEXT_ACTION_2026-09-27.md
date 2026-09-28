@@ -241,6 +241,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   des warnings : 12 catégories attendues sont inconnues et trois libellés
   contiennent « Sandwich/Burger »; l’intégrité technique passe, mais la
   couverture catalogue/traduction réelle n’est pas complète.
+- **Recontrôle publication/santé (28/09/2026, 02:57 CEST)** : le HTML public
+  conserve le SHA `91ea556e…332c48bf`, quatre mentions « Uber Eats » et zéro
+  phrase cible; le dépôt externe reste identique à `origin/main` avec **58**
+  fichiers dirty. Le VPS reste healthz 200/queue 0, tandis que readiness 200
+  conserve `restore_drill=degraded`. Aucun changement développeur n’est visible
+  sur la surface déployée.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

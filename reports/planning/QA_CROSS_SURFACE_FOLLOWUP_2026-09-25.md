@@ -986,3 +986,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   un scénario de split tender reste verrouillé par M6-002. La seed menu signale
   en outre des catégories inconnues et des libellés anglais : dette catalogue
   à traiter séparément malgré les tests verts.
+- **Sonde post-rapport (28/09/2026, 02:57 CEST)** : aucune publication externe
+  depuis le dernier audit; SHA/ETag du HTML restent inchangés, Uber Eats est
+  toujours présent quatre fois, et la readiness VPS reste dégradée sur le
+  restore drill malgré HTTP 200.
