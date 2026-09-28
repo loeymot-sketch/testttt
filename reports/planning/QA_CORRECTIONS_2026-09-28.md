@@ -304,6 +304,16 @@ pour cette famille.
 
 ## 4. Preuves
 
+- **PHPUnit complet** : **6 138 tests, 1 seul échec, 36 skips, 6 incomplets.**
+  L'unique échec est **la sentinelle frozen-zone déjà connue** (§2.1), avec les
+  mêmes hashes qu'avant mon intervention — donc **zéro régression et zéro nouvel
+  échec**. Baseline de référence : 6 080 passés / 36 skips / 6 incomplets /
+  1 échec ; mêmes compteurs, +21 tests backend neufs.
+  ⚠️ Une première passe donnait **19 échecs** : **contamination d'environnement**.
+  Elle avait démarré avant `npm run production`, donc `mix()` ne trouvait pas le
+  manifest et les vues partaient en **500** (56 occurrences de `mix-manifest`
+  dans le journal). Le run propre en compte **0**. Ne jamais lancer un build en
+  parallèle d'une suite déjà démarrée : le résultat devient non interprétable.
 - **Vitest complet (Node 20.20.2)** : **560 fichiers, 4 544 passés, 3 skips,
   0 échec** (baseline 4 511 — les 33 tests neufs de ce lot en plus).
   ⚠️ Une première passe montrait 10 échecs : **artefact d'environnement**, pas

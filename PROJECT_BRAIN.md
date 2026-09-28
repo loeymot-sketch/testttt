@@ -57,9 +57,18 @@ Plateforme restaurant fast-food complète :
 > escaladés**. Détail : `reports/planning/QA_CORRECTIONS_2026-09-28.md`, synthèse
 > en §3.
 >
-> **État des suites sur cette branche** : Vitest **560 fichiers / 4 544 passés /
-> 3 skips / 0 échec**. Garde-fous release verts (pricing 86 fichiers, status 38,
-> budget bundles). **Diff zone gelée §7 contre la base réelle : VIDE.**
+> **État des suites sur cette branche** : PHPUnit **6 138 tests, 1 SEUL échec,
+> 36 skips, 6 incomplets** — l'unique échec est la sentinelle frozen-zone déjà
+> connue, hashes inchangés, donc **zéro régression et zéro nouvel échec**
+> (baseline de référence 6 080 / 36 / 6 / 1 : mêmes compteurs, +21 tests backend
+> neufs). Vitest **560 fichiers / 4 544 passés / 3 skips / 0 échec**. Garde-fous
+> release verts (pricing 86 fichiers, status 38, budget bundles).
+> **Diff zone gelée §7 contre la base réelle : VIDE.**
+>
+> ⚠️ Piège d'environnement rencontré et documenté : une première passe PHPUnit
+> donnait **19 échecs** parce qu'elle avait démarré **avant** `npm run production`
+> (`mix()` sans manifest → vues en **500**, 56 occurrences dans le journal). Le
+> run propre en compte **0**. Compiler AVANT de lancer, jamais en parallèle.
 >
 > ⚠️ **Le seul échec backend global reste la sentinelle frozen-zone** sur
 > `KioskWizardComponent.vue` (réel `f8ecb111…` vs baseline `fcbe3755…`), et il
