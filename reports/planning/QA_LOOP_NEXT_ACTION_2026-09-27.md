@@ -822,3 +822,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
   Aucun endpoint métier ne répond 200 sans authentification; l'anomalie de
   format est bien isolée à `health/live`.
+- **Quote final contre branche forgée (28/09/2026, 05:03 CEST)** : la suite
+  ciblée `KioskQuoteForgesBranchId`, `KioskQuoteIntegrity`, `QuoteBinding` et
+  `QuoteTamper` passe **16/16 tests, 54 assertions**. Le quote kiosk remplace
+  la branche client par celle de la machine et le commit refuse replay,
+  changement d'items, totals falsifiés et cross-branch. Le défaut branch_id
+  reste donc un affichage/upsell dangereux, mais le garde-fou de commande
+  réelle est confirmé vert.
