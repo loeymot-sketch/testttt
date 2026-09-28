@@ -1060,3 +1060,16 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   pour installation incomplète. Cela révèle un écart de déploiement/routage
   (route cache ou middleware réellement servi) à diagnostiquer sur le VPS;
   un client SPA peut donc recevoir une page de login au lieu d’une erreur API.
+- **Suite Load/Rush midi (28/09/2026, 03:34 CEST)** : **4/6 scénarios
+  passent**, **2 restent incomplets**. Les trous ne sont pas des faux tests :
+  `s72` ne couvre pas encore le parcours HTTP réel kiosk `/payment-confirm`
+  avec `source_surface`/`transaction_id`, et `s73` ne prouve pas encore la
+  monotonie mélangée POS+kiosk via HTTP. Les invariants POS, multi-branches,
+  outbox et clôture Z restent verts, mais la couverture de concurrence réelle
+  borne→paiement reste incomplète.
+- **Dépendances (28/09/2026, 03:33 CEST)** : `composer audit` signale **8
+  advisories** (dont Laravel, Laravel Excel et Media Library) et `npm audit
+  --omit=dev --audit-level=high` **21 vulnérabilités** (**3 critiques, 11
+  hautes, 5 modérées, 2 basses**). Plusieurs correctifs npm nécessitent des
+  upgrades majeurs et un paquet Quill reste sans correctif : pas de mise à
+  niveau automatique appliquée.

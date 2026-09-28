@@ -338,5 +338,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   contient bien `ApiKeyMiddleware`/`Installed` qui devraient renvoyer JSON :
   écart probable entre code déployé, route cache et VPS à corriger avant tout
   test réel de souscription ou de panier.
+- **Load/Rush midi (28/09/2026, 03:34 CEST)** : **4 passés / 2 incomplets**.
+  Les scénarios `s72` et `s73` ne prouvent pas encore le paiement HTTP kiosk
+  ni la monotonie POS+kiosk mixte; la couverture concurrence inter-surfaces
+  reste donc un risque ouvert malgré les invariants POS et multi-branches verts.
+- **Audit dépendances (28/09/2026, 03:33 CEST)** : Composer **8 advisories**;
+  npm production **21 vulnérabilités (3 critiques, 11 hautes, 5 modérées,
+  2 basses)**. Aucun `audit fix` n’a été lancé car plusieurs corrections sont
+  breaking et Quill n’a pas de correctif disponible.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
