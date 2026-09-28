@@ -1275,3 +1275,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   le message français attendu, et aucun appel réseau d'écriture n'est émis.
   La soumission d'une adresse valide reste volontairement non exécutée pour
   ne pas envoyer d'email ni créer de compte de test.
+- **Accessibilité formulaire fidélité mobile (28/09/2026, 18:27 CEST)** : après
+  ouverture du menu mobile puis du formulaire, axe détecte **11 violations
+  sérieuses `color-contrast`** (eyebrow, titre, étapes, bouton, label, texte
+  de confiance et lien CGV) ainsi qu'une violation modérée `heading-order`.
+  Le champ email est correctement labellisé « EMAIL », mais ce formulaire
+  reste non conforme pour les utilisateurs malvoyants; corriger les couleurs
+  et la hiérarchie Hn avant validation UX.
