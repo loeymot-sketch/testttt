@@ -638,3 +638,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `Retry-After`, `X-RateLimit-Limit: 5` et `Remaining: 0`. Le throttle est
   effectif; la fenêtre IP partagée doit simplement être prise en compte dans
   les tests E2E parallèles.
+- **Authz admin/KDS/POS live (28/09/2026, 04:31 CEST)** : avec et sans clé
+  publique mais sans session Sanctum, les routes réelles dashboard, KDS,
+  online-order, POS-order et customer renvoient bien 401 JSON; aucune donnée
+  métier n'est exposée. Le endpoint public `frontend/order/wait-estimate`
+  répond 200 avec une estimation neutre. En revanche, un GET accidentel sur
+  `admin/pos/kitchen-tickets/pending` (route POST) retombe en 200 HTML SPA,
+  confirmant que le masquage des mauvaises méthodes touche aussi les surfaces
+  POS/KDS.
