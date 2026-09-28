@@ -1260,3 +1260,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Ketchup` après environ 4 s. Aucun appel non-GET ni erreur console n'a été
   observé. Le calcul client nominal sauces/frites est donc cohérent sur ce
   scénario; l'encaissement serveur reste à couvrir avec un compte E2E valide.
+- **Conservation sauces après ajout panier (28/09/2026, 18:18 CEST)** : un
+  scénario avec sauce sandwich supplémentaire `Mayonnaise` + frites + sauce
+  frites `Ketchup` affiche **9,80 €** au récapitulatif puis, après ajout au
+  panier et attente de la vérification, conserve `Mayonnaise, Ajouter Frites,
+  Ketchup` et le même sous-total/total **9,80 €**. Aucun crash ni appel
+  réseau d'écriture n'a été observé. Le défaut « une sauce disparaît lors de
+  l'édition » n'est pas reproduit sur ce parcours web nominal; il reste à
+  rejouer dans la caisse authentifiée et sur le ticket KDS.
