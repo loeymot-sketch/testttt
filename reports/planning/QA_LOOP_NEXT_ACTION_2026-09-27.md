@@ -531,3 +531,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   obligatoire, anti-tamper/replay, remise backend, isolation cashier/KDS,
   intégrité quote kiosk et override du `branch_id` forgé). Aucun total client
   falsifié ni fuite inter-branche n'est accepté par ces scénarios.
+- **KDS/borne/tickets (28/09/2026, 04:17 CEST)** : **19/19 PHPUnit passés** :
+  autorisation chef vs caisse sur bytes cuisine/client, board actif et ordre
+  stable, historique du jour borné à 50 avec fuseau Paris, endpoint ESC/POS
+  borne client+cuisine, et encaissement borne différé. Isolation de branche et
+  refus sans auth confirmés; aucun test matériel réel d'imprimante n'est inclus.

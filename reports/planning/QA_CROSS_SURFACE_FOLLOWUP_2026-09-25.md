@@ -1242,3 +1242,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   ciblés verts** : supplément manuel scellé fiscalement, anti-tamper/replay,
   remise calculée côté serveur, contraintes de variation, isolation branche
   POS/KDS et branch_id kiosk forcé par la machine.
+- **KDS/borne/tickets backend (28/09/2026, 04:17 CEST)** : **19/19 PHPUnit
+  ciblés verts** : authz tickets cuisine/client, board et historique, bytes
+  ESC/POS borne, encaissement différé et isolation inter-branches. La preuve
+  imprimante physique reste hors environnement automatisé.
