@@ -1213,3 +1213,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   un client, proxy ou service worker peut donc être interprétée comme une
   page et laisser le wizard sans données sans erreur HTTP explicite; normaliser
   ou refuser les chemins non canoniques.
+- **Négociation d'erreur API (28/09/2026, 18:01 CEST)** : même avec
+  `Accept: application/json` (et la valeur Axios complète), les routes
+  inconnues `/api/frontend/unknown`, `/api/health/nope` et les ressources
+  frontend inexistantes renvoient la SPA HTML `200` de 20,9 kB. Seules les
+  routes admin authentifiées renvoient `401` JSON lorsqu'Accept est JSON.
+  Un appel API mal routé n'est donc pas détectable par le statut ou le type
+  attendu et peut être parsé comme une réponse vide/page; le fallback SPA
+  devrait exclure `/api/*` et renvoyer `404 application/json`.
