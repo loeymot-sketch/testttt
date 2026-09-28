@@ -646,3 +646,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `admin/pos/kitchen-tickets/pending` (route POST) retombe en 200 HTML SPA,
   confirmant que le masquage des mauvaises méthodes touche aussi les surfaces
   POS/KDS.
+- **Contrat authentification live (28/09/2026, 04:32 CEST)** : `POST
+  /api/auth/login` avec la clé publique valide renvoie 422 JSON pour des
+  identifiants invalides/incomplets; sans clé il renvoie 400 JSON. `POST
+  /api/auth/logout` sans session renvoie 401 JSON. Le formulaire web `/login`
+  n'est pas un endpoint de soumission (POST direct = 405 JSON), ce qui est
+  cohérent avec le login SPA qui appelle l'API; aucun faux écran de succès ni
+  session créée.
