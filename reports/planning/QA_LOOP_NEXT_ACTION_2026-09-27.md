@@ -1308,3 +1308,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   explicite. Enfin `/api/frontend/unknown` avec `Accept: application/json`
   renvoie `200 text/html` (SPA) au lieu d'un `404 application/json`, défaut
   persistant pouvant masquer une erreur de route au frontend.
+- **Régression fonctionnelle « sans sauce » observée en borne (28/09/2026,
+  18:47 CEST)** : dans le scénario réel déjà composé avec Ketchup + Harissa,
+  toucher « Sans sauce » ne désélectionne pas les deux sauces existantes. Le
+  récapitulatif reste « Ketchup, Harissa +1 » et le total monte de **7,90 à
+  8,40 €**. Le composant traite actuellement « Sans sauce » comme une sauce
+  multi-sélection ordinaire; si la règle métier attend un choix exclusif, ce
+  comportement explique un total et un ticket incohérents et doit être corrigé
+  puis couvert par un test E2E dédié.
