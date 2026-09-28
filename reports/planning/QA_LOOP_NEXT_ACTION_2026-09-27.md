@@ -968,3 +968,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   le plafond 3/heure. Les payloads invalides n'ont déclenché aucun email, mais
   le vecteur de spam/réinitialisation est également sensible à la confiance
   `X-Forwarded-For`.
+- **Guest email-login — séquence téléphone synthétique acceptée (28/09/2026,
+  06:51 CEST)** : le payload `email=a@b.co`, `first_name=Test`,
+  `phone=0000000000` a passé la validation et répondu `sent:true`; la règle
+  locale `ValidPhone` impose seulement 9–15 chiffres nationaux et accepte donc
+  une suite de zéros. L'appel a déclenché le chemin d'envoi d'un code vers
+  `a@b.co` (adresse de test), ce qui doit être vérifié/nettoyé par le
+  développeur côté fournisseur mail. Aucune session ni compte n'a été créé.
+  Ajouter un rejet des séquences évidentes (`000…`, répétitions) et ne pas
+  annoncer `sent:true` avant confirmation du transport est recommandé.
