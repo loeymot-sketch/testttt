@@ -556,3 +556,82 @@ câblé. À câbler avec hachage + limitation d'essais, ou à retirer.
 **Bilan des deux lots : 13 défauts corrigés avec preuves, 13 points escaladés,
 aucune zone gelée touchée, aucune baseline modifiée, aucun test rendu vert en
 affaiblissant son assertion.**
+
+---
+
+## 9. DÉPLOYÉ EN PRODUCTION — fait et vérifié (2026-09-28)
+
+**Production : HEAD `77ed8de2`, contenant les correctifs (`90474f870` prouvé
+ancêtre du HEAD déployé, vérifié sur le serveur).**
+
+### Ce qui a été évalué AVANT de déployer
+
+La production était **210 commits en retard** sur la branche. Vérifié avant
+d'agir : ces 210 commits sont **tous `docs` (156) et `qa` (55)** — **zéro
+fichier de code applicatif** hors `reports/docs/plans/tests`, et **zéro
+migration**. La production n'avait donc aucun retard fonctionnel : ce
+déploiement ne livre que les correctifs de cette branche. C'est ce constat qui a
+rendu l'opération cadrée plutôt qu'aveugle.
+
+### Fusion
+
+`tools/deploy-lecayenne.sh` cible `pos/category-first-caisse-2026-06-23` en dur,
+donc fusion préalable. Les seuls conflits sont les deux rapports QA que la
+session parallèle alimente en continu — résolus **hunk par hunk en gardant les
+deux côtés** (leurs observations chronologiques, puis ma section de clôture),
+vérifiés par script : deux blocs intégralement présents, zéro marqueur résiduel.
+Le distant a avancé trois fois pendant l'opération ; il a fallu resserrer le
+cycle fusion→push pour gagner la course.
+
+### Résultat du déploiement
+
+```
+== NF525 chain : SWEEP COMPLETE — CHAIN OK on every active branch (1 total)
+== couverture queues OK — chaque file non vide a un worker qui l'écoute
+== bundles complets (fraîcheur prouvée par la gate hash-servi)
+== healthz loopback https://127.0.0.1:443 → 200
+== contenu OK : /kiosk/idle sert app.js?id=d19e6551… (bundle frais)
+== CORS OK : site-lecayenne.vercel.app reçoit Access-Control-Allow-Origin
+== ✅ Déploiement OK — HEAD 77ed8de2 · triggers vérifiés · healthz vert ·
+   contenu frais · CORS web OK · couverture queues OK.
+```
+
+`REVIEWED_SHA=90474f870` a été passé au script : il **avorte** si le HEAD
+déployé ne contient pas ce commit. Il ne l'a pas fait.
+
+### Vérification indépendante du CODE SERVI
+
+Le script dit « OK » ; j'ai vérifié **moi-même ce que la production sert**, en
+récupérant les bundles depuis le manifest public :
+
+| Correctif | Marqueur cherché dans le bundle SERVI | Résultat |
+|---|---|---|
+| P1-11 « Sans sauce » (argent) | `aucune sauce` / `pas de sauce` dans `kiosk-wizard-step.02a2779b.js` | **présent** |
+| P0-18 numéro court daté | `enc-queue-date-badge` dans `admin-shell.3bff92d5.js` | **présent** |
+| P1-30 rupture au Catalogue | `catalog-studio-rupture-pill` | **présent** |
+| P1-49 actions TPE nommées | `payment-terminal-delete-` | **présent** |
+
+`/api/healthz` après déploiement : **HTTP 200**, `db`/`redis`/`websocket`/
+`fiscal_chain` = `ok`, `queue_pending` = 0 — identique à la base de comparaison
+capturée avant l'opération.
+
+### ⚠️ Anomalie relevée DANS le script de déploiement (non corrigée)
+
+```
+bash: line 120: [: WRONGTYPE Operation against a key holding the wrong kind of
+value: integer expression expected
+```
+
+Le contrôle de profondeur de file compare un message d'erreur Redis
+(`WRONGTYPE`) comme s'il s'agissait d'un entier : une clé Redis n'a pas le type
+attendu par la commande utilisée. Conséquence : **ce contrôle-là ne contrôle
+rien** sur cette clé — il ne casse pas le déploiement, mais il ne peut pas non
+plus signaler une file qui s'accumule. Non corrigé ici (hors périmètre des trois
+rapports, et le script est l'outil qui venait de déployer — le modifier dans la
+même passe aurait été imprudent). **À traiter.**
+
+### Reste hors de portée
+
+Le **site vitrine** (`lecayenne.fr`) n'est PAS concerné par ce déploiement : il
+vit dans un dépôt séparé, son arbre porte 15+ fichiers non commités d'un autre
+travail, et l'action B qui le visait est **fautive** (§6). Rien n'y a été touché.

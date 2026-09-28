@@ -47,6 +47,53 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-28 — DÉPLOYÉ EN PRODUCTION. HEAD prod = `77ed8de2`**, contenant les
+> correctifs QA (`90474f870` prouvé ancêtre, vérifié sur le serveur).
+>
+> Évalué AVANT d'agir : la prod était **210 commits en retard**, mais ces 210
+> commits sont **tous `docs`/`qa`** — **zéro code applicatif, zéro migration**.
+> Aucun retard fonctionnel : le déploiement ne livre que les correctifs.
+>
+> `tools/deploy-lecayenne.sh 90474f870` → **✅ OK** : chaîne NF525
+> « SWEEP COMPLETE — CHAIN OK on every active branch », triggers d'immuabilité
+> vérifiés, healthz 200, bundles frais (gate hash-servi), CORS web OK,
+> couverture des queues OK. Le `REVIEWED_SHA` aurait fait avorter le script si
+> le correctif n'était pas dans ce qui partait.
+>
+> **Vérifié indépendamment du script — le CODE SERVI** : `aucune sauce` /
+> `pas de sauce` présents dans `kiosk-wizard-step.02a2779b.js` (le correctif
+> d'ARGENT P1-11 est live), et `enc-queue-date-badge`,
+> `catalog-studio-rupture-pill`, `payment-terminal-delete-` présents dans
+> `admin-shell.3bff92d5.js`. `/api/healthz` post-déploiement identique à la base
+> capturée avant : 200, `fiscal_chain: ok`, file à 0.
+>
+> ⚠️ **Anomalie DANS le script de déploiement, non corrigée** : son contrôle de
+> profondeur de file compare un message d'erreur Redis (`WRONGTYPE`) comme un
+> entier (`deploy.log` ligne 31). Ce contrôle-là ne contrôle donc rien sur cette
+> clé : il ne casse pas le déploiement, mais il ne peut pas signaler une file qui
+> s'accumule. À traiter.
+>
+> ⚠️ Le **site vitrine** n'est pas concerné (dépôt séparé, arbre dirty d'un autre
+> travail) et l'action B qui le visait est **fautive** — voir §6 du rapport.
+>
+> **HARNAIS E2E — deux défauts d'instrument corrigés, plus graves que les défauts
+> du rapport** : (1) `npm run test:e2e:full` était **MUET** — une spec lisait une
+> variable d'environnement au niveau module sans garde, l'exception tuait la
+> COLLECTE entière ; après correctif **1 376 tests / 384 fichiers** se collectent
+> (avant : rien). (2) **28 specs mesuraient un AUTRE arbre** : URL de base en
+> constante dure, échappant à `PLAYWRIGHT_BASE_URL` **et** à la garde d'arbre du
+> global-setup, qui ne valide que l'URL configurée. Prouvé : même commande, avant
+> 30 références à `:8766` / 0 à `:8000`, après l'inverse. Deux sentinelles neuves
+> empêchent la récidive, toutes deux prouvées mordantes.
+>
+> **Campagnes par surface (désormais lisibles)** : E2E critique **22/22** ;
+> caisse/POS **9/9** ; borne 11 verts + **1 échec PRÉEXISTANT** (différentiel
+> fait : échoue à l'identique avec mes correctifs borne remis à la base) ; KDS
+> 7 verts + 7 échecs, dont au moins un prouvé obsolète (assertion sur une chaîne
+> d'UI disparue, 22 ms sans navigateur, ne dépend d'aucune URL). Ces échecs sont
+> **listés, pas rafistolés** : réécrire une assertion obsolète sans comprendre le
+> changement produit masquerait une régression réelle.
+
 > **2026-09-28 — base `d9a95ac77` → branche `qa/corrige-rapports-2026-09-28`,
 > 8 commits, AUCUN PUSH.** Worktree `.claude/worktrees/qa-corrige-2026-09-28`
 > (assets compilés sur place : `npm run production` est requis dans tout worktree
