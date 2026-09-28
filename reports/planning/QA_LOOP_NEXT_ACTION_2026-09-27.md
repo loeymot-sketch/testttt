@@ -697,3 +697,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   **500 JSON `Server Error`** pour un slug inexistant. Le contrôleur local
   appelle le service avec un modèle nul, ce qui explique une erreur serveur au
   lieu d'un 404/422 maîtrisé; défaut produit reproductible à corriger.
+- **Fuzz slug offre (28/09/2026, 04:41 CEST)** : le 500 de
+  `frontend/offer/show/{slug}` se reproduit pour slug inconnu, guillemets,
+  espaces encodés, Unicode et `null`; la réponse reste générique sans stack
+  trace, mais le statut 500 est incorrect pour une ressource publique absente.
+  Les tokens de suivi invalides continuent de tomber en HTML SPA; `%00` est
+  bloqué proprement par nginx en 400.
