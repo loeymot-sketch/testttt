@@ -573,3 +573,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   WebSocket Pusher `127.0.0.1:6001` refusés (service realtime local non lancé),
   à traiter comme risque d'infrastructure séparé; elles n'empêchent pas le
   rendu HTTP du dashboard.
+- **Smoke VPS après reprise (28/09/2026, 04:24 CEST)** : `GET /admin/dashboard`
+  répond **200 HTML**, `GET /api/health` répond **200 JSON** (`status: ok`) et
+  la vitrine `https://www.lecayenne.fr/` répond **200 HTML**. Cela confirme que
+  les surfaces HTTP sont joignables; cela ne clôt pas le risque temps réel
+  Pusher ni le mismatch d'artefacts/hash déjà signalé.
