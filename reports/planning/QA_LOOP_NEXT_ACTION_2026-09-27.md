@@ -578,3 +578,19 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   la vitrine `https://www.lecayenne.fr/` répond **200 HTML**. Cela confirme que
   les surfaces HTTP sont joignables; cela ne clôt pas le risque temps réel
   Pusher ni le mismatch d'artefacts/hash déjà signalé.
+- **Matrice routes re-testée (28/09/2026, 04:25 CEST)** : sur le VPS backoffice,
+  `/` et `/menu` redirigent vers `/login` (302), tandis que `/admin/dashboard`
+  reste servi en HTML 200; ce domaine n'est donc pas la vitrine publique.
+  Sur `www.lecayenne.fr`, `/` et les pages statiques (`carte.html`,
+  `commander.html`, `livraison-henin-beaumont.html`) répondent 200, mais
+  `/menu` répond toujours 404. Les pages commander/livraison contiennent
+  plusieurs CTA `href="/"`, qui renvoient l'utilisateur à l'accueil plutôt
+  qu'au parcours de commande : défaut UX/routage reproductible, non corrigé.
+- **Headers/cookies VPS re-testés (28/09/2026, 04:25 CEST)** : `/login` émet
+  les cookies `XSRF-TOKEN` et `le_cayenne_session` avec `SameSite=Lax`, mais
+  sans attribut `Secure`; `/login` n'expose pas HSTS, CSP, ni
+  `X-Content-Type-Options`. `/api/health` n'expose que `Referrer-Policy`.
+  À comparer à la vitrine `www` qui expose déjà `Permissions-Policy` et
+  `Referrer-Policy`. Risque de durcissement/déploiement incomplet à traiter
+  côté reverse-proxy/production, sans modifier les secrets ni contourner le
+  contrôle de sécurité dans ce cycle.
