@@ -203,6 +203,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   les transitions d’état, l’isolation par branche, les prix scellés et le
   dispatch après commit. Aucun échec actuel; la transaction POS réelle reste
   non vérifiée faute de compte de test provisionné.
+- **Smoke E2E complet frais (28/09/2026, 02:51–02:53 CEST)** : les cinq
+  surfaces critiques passent **22/22 en 1,5 min** sous Node 20.20.2 : auth/F5
+  POS, caisse cash, borne, KDS et synchronisation rupture multi-branche. Les
+  scénarios adversariaux de panier, statuts et quota quotidien passent aussi.
+  Les seuls messages restent des dépréciations PHP du serveur de test, sans
+  échec fonctionnel.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

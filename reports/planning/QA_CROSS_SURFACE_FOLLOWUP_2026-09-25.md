@@ -961,3 +961,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   et Outbox **81/81** passent sur des exécutions séparées. Les invariants
   critiques restent verts en local, sans preuve équivalente d’un encaissement
   réel sur le compte POS de production encore manquant.
+- **E2E critique frais (28/09/2026, 02:51–02:53 CEST)** : **22/22** scénarios
+  passent en 1,5 min sur POS/F5, caisse, borne, KDS et rupture multi-branche.
+  Aucune régression fonctionnelle détectée; les avertissements observés sont
+  des dépréciations PHP non bloquantes.
