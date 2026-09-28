@@ -908,3 +908,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   paramètre rend l'article disponible dans `item/details/114` et le repropose
   dans `item/kiosk-upsell`; ce n'est donc pas un comportement limité à la
   liste principale.
+- **Écran OSS public — branche non validée (28/09/2026, 06:20 CEST)** :
+  `oss-order/popular-items?branch_id=1` renvoie le top habituel (Cayenne,
+  menus, burgers), alors que `branch_id=999999` ou un doublon
+  `1&branch_id=999999` bascule silencieusement vers un autre jeu de 9
+  produits. `oss-order` lui-même passe d'une file active à une liste vide
+  pour 999999. Ce n'est pas une fuite PII observée, mais c'est une
+  incohérence de branche sur l'écran cuisine/public : une borne ou un écran
+  mal paramétré peut afficher une file ou des produits qui ne correspondent
+  pas à sa branche au lieu d'un refus explicite.
