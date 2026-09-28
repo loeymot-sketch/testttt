@@ -438,3 +438,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   pas HSTS/CSP/Permissions-Policy. La vitrine Vercel possède ces protections;
   l'écart d'en-têtes entre vitrine et VPS est un risque de durcissement/deploy,
   même sans erreur fonctionnelle visible.
+- **Cookies VPS (28/09/2026, 04:04 CEST)** : la réponse HTTPS `/login` pose
+  `XSRF-TOKEN` et `le_cayenne_session` avec `SameSite=Lax`, mais aucun des deux
+  n'a l'attribut `Secure`. La session est bien `HttpOnly`; l'absence de
+  `Secure` reste un défaut de durcissement à corriger dans la configuration
+  Laravel/proxy avant exposition production.

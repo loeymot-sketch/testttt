@@ -1170,3 +1170,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   La vitrine envoie HSTS/CSP/nosniff; le VPS `/login` n'envoie pas HSTS, CSP
   ou nosniff et son `/api/health` n'envoie pas HSTS/CSP/Permissions-Policy.
   C'est un écart de hardening à corriger côté reverse-proxy/déploiement.
+- **Cookies VPS (28/09/2026, 04:04 CEST)** : sous HTTPS, les cookies de session
+  et XSRF ont `SameSite=Lax` mais pas `Secure`; seul le cookie de session est
+  `HttpOnly`. À corriger côté configuration Laravel/proxy, sans reproduire ni
+  stocker les valeurs sensibles dans le rapport.
