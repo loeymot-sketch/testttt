@@ -443,3 +443,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   n'a l'attribut `Secure`. La session est bien `HttpOnly`; l'absence de
   `Secure` reste un défaut de durcissement à corriger dans la configuration
   Laravel/proxy avant exposition production.
+- **Scan bundles et CORS (28/09/2026, 04:07 CEST)** : les bundles live
+  contiennent encore des replis `127.0.0.1:8766`, mais les metas déployées
+  remplacent correctement la base par le VPS HTTPS et `menu-image-base` par
+  `assets/menu/`; aucun appel localhost n'est prouvé dans le runtime observé.
+  Le CORS restreint bien l'origine à `https://www.lecayenne.fr`. Écart restant :
+  les réponses OPTIONS annoncent `Allow-Methods: POST` même pour `/api/health`
+  GET et renvoient un content-type HTML sur 204; à aligner pour des clients
+  stricts, sans impact reproduit sur le checkout actuel.

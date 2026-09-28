@@ -1174,3 +1174,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   et XSRF ont `SameSite=Lax` mais pas `Secure`; seul le cookie de session est
   `HttpOnly`. À corriger côté configuration Laravel/proxy, sans reproduire ni
   stocker les valeurs sensibles dans le rapport.
+- **Bundles/CORS live (28/09/2026, 04:07 CEST)** : les replis localhost restent
+  présents dans `api.js`/`menu.js`, mais les metas live pointent bien vers le
+  backend HTTPS et les assets relatifs, donc aucun mixed-content runtime n'a
+  été observé. Le CORS accepte l'origine publique attendue; son préflight
+  répond toutefois `Allow-Methods: POST` pour tous les endpoints, y compris
+  santé GET, avec `text/html` sur 204 : dette de contrat à corriger/monitorer.
