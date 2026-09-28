@@ -861,3 +861,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   C'est une dérive de configuration qui peut masquer des régressions en E2E et
   doit être traitée par une source de secret de test dédiée, sans copier la
   clé de production dans les fixtures.
+- **CORS sur endpoint authentifié (28/09/2026, 06:05 CEST)** :
+  `GET /api/frontend/loyalty/balance` depuis `http://localhost:3000` renvoie
+  bien 401 sans session, mais avec `Access-Control-Allow-Origin` égal à
+  localhost et `Access-Control-Allow-Credentials: true`; la même requête
+  depuis `https://evil.example` n'expose pas ces headers. La règle doit être
+  vérifiée sur les appels authentifiés (pas uniquement le catalogue public),
+  car une application locale peut alors faire des requêtes avec les cookies
+  du VPS si un opérateur y est connecté.
