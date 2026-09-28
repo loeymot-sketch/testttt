@@ -1192,3 +1192,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   quote POST sans session est 401 JSON. L'ancien test d'un chemin
   `/api/frontend/loyalty/guest-signup` a été reclassé comme route erronée,
   pas comme défaut du signup.
+- **Readiness et realtime live (28/09/2026, 04:20 CEST)** : le VPS renvoie
+  `/api/health/ready` HTTP 200/`ok` malgré `broadcast=log` et un
+  `restore_drill=degraded`; `/api/healthz` renvoie websocket `ok` avec le même
+  driver. Cela masque un risque réel de synchronisation KDS/POS et de reprise
+  après sinistre. `/api/health/live` répond seulement `OK` en HTML, contrat à
+  uniformiser.

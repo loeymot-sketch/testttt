@@ -465,3 +465,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   authentifié répond 401 JSON. Le précédent essai sur
   `/api/frontend/loyalty/guest-signup` était une route inexistante et ne doit
   pas être interprété comme panne du parcours fidélité.
+- **Readiness/temps réel VPS (28/09/2026, 04:20 CEST)** : `/api/health/ready`
+  répond **200 `status: ok`** tout en exposant `broadcast_config.broadcast=log`
+  (pas de broadcast temps réel) et `restore_drill.status=degraded` (aucune
+  restauration mesurée). `/api/healthz` annonce aussi websocket `ok` malgré le
+  driver `log`. Le contrat de readiness est donc trop permissif et peut
+  déclarer la caisse/KDS saine alors que les événements temps réel et la preuve
+  de restauration ne sont pas opérationnels. `/api/health/live` renvoie par
+  ailleurs `OK` avec un content-type HTML au lieu d'un JSON uniforme.
