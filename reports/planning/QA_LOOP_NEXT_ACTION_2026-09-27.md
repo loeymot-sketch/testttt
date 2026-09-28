@@ -1146,3 +1146,17 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `https://localhost`; une origine externe arbitraire n'est pas accordée.
   Le risque est donc limité aux postes locaux/compromis mais reste ouvert,
   notamment pour les routes authentifiées consommées depuis un navigateur.
+- **Bypass de limite par paramètres dupliqués (28/09/2026, 05:31 CEST)** :
+  `/api/frontend/item/kiosk-upsell` accepte le dernier `limit` au lieu de
+  rejeter les doublons : `limit=1&limit=-1` renvoie **16** suggestions,
+  alors que `limit=-1&limit=1` n'en renvoie qu'une. Le même comportement
+  existe avec `999999`. Un client peut donc contourner une limite validée,
+  augmenter la charge et exposer tout le pool d'upsell; normaliser/rejeter
+  les paramètres répétés avant validation.
+- **OSS branch fail-open confirmé (28/09/2026, 05:31 CEST)** :
+  `/api/frontend/oss-order` renvoie les trois commandes actives de la branche
+  1 pour `branch_id=0` ou `foo`; `branch_id=999999` renvoie une liste vide.
+  Sur `oss-order/popular-items`, la branche invalide change aussi la liste,
+  et `branch_id=1&branch_id=999999` prend la dernière valeur. Le contrat doit
+  refuser toute branche absente/invalide et toute clé répétée, plutôt que
+  choisir implicitement une branche.
