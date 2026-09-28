@@ -801,6 +801,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Fanta Citron `is_available:false / stock_rupture`, tandis que le même appel
   avec `branch_id=999999` renvoie `is_available:true`. Le problème touche donc
   la liste **et** le détail avant panier, pas seulement un badge de catalogue.
+- **Kiosk upsell branch bypass (28/09/2026, 05:00 CEST)** :
+  `item/kiosk-upsell?branch_id=1` exclut Fanta Citron en rupture, mais la même
+  route avec `branch_id=999999` le propose comme upsell 1-tap (`is_available:
+  true`). C'est le chemin le plus dangereux pour la borne : un client peut
+  sélectionner automatiquement un produit indisponible avant le quote.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
