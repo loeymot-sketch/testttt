@@ -796,6 +796,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   branche 999999 les efface. Une valeur de surface inconnue est, elle,
   correctement ignorée sans élargir le catalogue. Le défaut est donc bien le
   fallback d'ID de branche, pas le filtre de canal.
+- **Détail item branché (28/09/2026, 04:59 CEST)** : la preuve se reproduit
+  sur la fiche produit elle-même : `item/details/114?branch_id=1` renvoie
+  Fanta Citron `is_available:false / stock_rupture`, tandis que le même appel
+  avec `branch_id=999999` renvoie `is_available:true`. Le problème touche donc
+  la liste **et** le détail avant panier, pas seulement un badge de catalogue.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
