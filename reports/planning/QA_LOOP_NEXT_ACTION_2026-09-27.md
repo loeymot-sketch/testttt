@@ -1515,3 +1515,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   La couverture locale confirme le consentement côté parcours prévu, mais ne
   neutralise pas le contournement observé sur l’endpoint production `/register`
   sans consentement explicite.
+- **Robustesse HTTP production (28/09/2026, 19:11 CEST)** : trois probes
+  `/api/health` consécutives et CORS officiel répondent correctement (`200` /
+  `204`, credentials autorisés); l’origine non autorisée ne reçoit aucun
+  `allow-origin`. Les payloads webhook invalides sont rejetés (`Uber 401`,
+  Mollie `400 invalid_payload`). Les paramètres `branch_id` dupliqués restent
+  toutefois acceptés et le dernier paramètre contrôle le résultat (`1,0` et
+  `0,1` donnent deux tailles de catalogue différentes). Les `GET` API
+  inconnus/fidélité continuent de retomber sur le HTML SPA (`200`) au lieu d’un
+  `404` JSON, comportement à clarifier pour les clients API.
