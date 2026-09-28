@@ -1102,3 +1102,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   En revanche, `/menu` en URL directe répond **404** : ce n’est pas le chemin
   utilisé par la navigation actuelle (hash + `carte.html`), mais c’est une
   faiblesse de lien profond/SEO à corriger ou documenter.
+- **CTA commande public (28/09/2026, 03:55 CEST)** : Chromium a cliqué les
+  cinq boutons visibles libellés « Commander »/« Voir le menu ». **Tous**
+  aboutissent à `https://www.lecayenne.fr/#menu`; aucun n’ouvre un checkout,
+  un choix emporter ou une étape de paiement. Le panier s’ouvre mais reste
+  vide. C’est un défaut fonctionnel direct : le CTA promet de commander mais
+  ne lance qu’une navigation catalogue.

@@ -368,5 +368,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   confidentialité sont 200. Le deep-link `/menu` est toutefois **404** alors
   que c’est une URL attendue intuitivement : dette SEO/compatibilité à traiter
   séparément du contenu public non déployé.
+- **CTA « Commander » (28/09/2026, 03:55 CEST)** : les cinq boutons publics
+  portant « Commander » ou « Voir le menu » redirigent tous vers `/#menu`;
+  aucun ne démarre un checkout, le choix à emporter ou le paiement. Le panier
+  peut s’ouvrir mais reste vide. Le parcours commande public est donc
+  fonctionnellement absent, au-delà du défaut de wording déjà signalé.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
