@@ -601,3 +601,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   navigateur tolère souvent ce préflight simple, mais le contrat est incohérent
   et peut casser des sondes/clients stricts. À corriger côté middleware CORS,
   sans affaiblir la liste d'origines autorisées.
+- **Copy livraison/emporter revalidé (28/09/2026, 04:27 CEST)** : la vitrine
+  contient bien `à emporter`, mais le texte live précise encore que la
+  livraison passe par **Uber Eats** et ne contient ni `livreur` ni la mention
+  attendue « livré par nos livreurs bientôt ». Le rapport ancien qui disait
+  « aucune formulation emporter » est donc corrigé : le défaut actuel est la
+  promesse de livraison interne absente, pas l'emporter.
