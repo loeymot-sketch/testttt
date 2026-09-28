@@ -1084,3 +1084,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   **164/164**. Prix serveur, fidélité, livraison, droits borne, tickets
   cuisine/client, HH/X, sauces multiples, viandes, frites, tiroir caisse,
   split tender et largeurs ESC/POS restent verts côté backend.
+- **Backend Loyalty + Order revalidé (28/09/2026, 08:31 CEST)** :
+  `tests/Feature/Loyalty` passe **93/93** et `tests/Feature/Order` **109/109**.
+  Inscription, canonicalisation téléphone, solde/rachat, clawback idempotent,
+  snapshots de prix, statuts, outbox post-commit, tracking, commandes
+  programmées et rejet des choix indisponibles restent verts.
