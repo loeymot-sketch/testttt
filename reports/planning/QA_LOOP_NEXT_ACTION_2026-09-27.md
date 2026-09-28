@@ -1497,3 +1497,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   0 échec**. Le backend reste la source de vérité pour prix, devise, remise et
   total; les scénarios de rejeu/expiration et les montants falsifiés sont
   rejetés par les tests.
+- **Recheck réel VPS (28/09/2026, 19:09 CEST)** : `/api/health` et
+  `/api/health/ready` répondent `200`; DB, Redis, worker, scheduler, backup et
+  restore sont `ok`, avec file globale vide. Le contrôle de branche reste
+  toutefois non conforme : `/api/frontend/item?branch_id=1`, `0`, `foo` et
+  `999999` répondent tous `200` avec un catalogue exploitable, donc les valeurs
+  invalides ne sont toujours pas rejetées/isolées. Les trois service workers
+  publics répondent `404` JSON tandis que `/offline.html` répond `200` HTML.
