@@ -24,7 +24,12 @@ class SiteTableSeeder extends Seeder
         $envService = new EnvEditor();
         Settings::group('site')->set([
             'site_date_format' => 'd-m-Y',
-            'site_time_format' => 'h:i A',
+            // [QA 2026-09-28 · P1-43] Semait 'h:i A' (12 h en-US) alors que la valeur
+            // canonique est 'H:i' — 24 h FR, verrou ADR-007 rappele dans AppLibrary.
+            // Toute nouvelle installation partait donc en 12 h, pendant que le ticket
+            // imprime, le KDS et les exports formatent en dur en 24 h : choisir 12 h
+            // scindait reellement le produit.
+            'site_time_format' => 'H:i',
             'site_default_timezone' => 'Europe/Paris',
             'site_default_branch' => 1,
             'site_default_currency' => 1,

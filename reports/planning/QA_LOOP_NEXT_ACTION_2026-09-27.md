@@ -213,3 +213,39 @@ baseline actuelle autorisée le **2026-09-16** — il n'a donc jamais bloqué ce
 baseline. Le vrai blocage est que `pos:lint:pricing` et la sentinelle de hash
 **s'excluent mutuellement**. Trois options sont posées dans le rapport de
 corrections §2.1 ; aucune n'a été prise.
+
+### ⛔ CORRECTION DE L'ACTION B (2026-09-28) — l'instruction elle-même est fautive
+
+L'action B demande de déployer « **Livraison par nos livreurs bientôt** » à la
+place de la mention Uber Eats. **Ne pas l'exécuter en l'état.** Vérifié dans le
+dépôt externe (`main` à `b7bc176`) :
+
+1. `index.html:85` porte
+   `<!-- [OWNER 2026-07-29] Boutique Uber Eats officielle — le code après /le-cayenne/ est l'identifiant STABLE de l'enseigne -->`
+   avec l'URL réelle de la boutique. C'est une **décision propriétaire vivante** :
+   retirer la mention **supprimerait un canal de vente réel**.
+2. La copie actuelle est **exacte** (`commander.html:584` : « Le Cayenne n'assure
+   pas de livraison en propre — pour être livré, la boutique est disponible sur
+   Uber Eats »).
+3. La copie demandée serait **fausse** : elle promet publiquement une livraison en
+   propre qui n'existe pas, alors que le réglage `LIVRAISON` est désactivé. C'est
+   exactement le défaut que le rapport Codex dénonce ailleurs (P1-46, P1-68) —
+   l'appliquer **créerait** le défaut qu'on reproche.
+4. `delivery_coming_soon` est cohérente **dans le checkout**, pour expliquer
+   pourquoi le mode livraison n'est pas sélectionnable. Ce n'est pas la même
+   affirmation que celle destinée au public : **les deux textes ne sont pas
+   interchangeables**.
+
+**Il n'y a donc pas d'écart de conformité à corriger ici**, mais un éventuel
+choix commercial (retirer Uber Eats du site ou non) qui appartient au
+propriétaire. Aucune modification n'a été faite sur la surface externe — d'autant
+qu'elle porte 15+ fichiers non commités d'un autre travail et qu'un push sur
+`main` y déclenche un déploiement Vercel immédiat.
+
+### Déploiement (2026-09-28)
+
+Branche `qa/corrige-rapports-2026-09-28` **poussée sur `origin`**. Production
+saine avant tout déploiement (healthz 200, `fiscal_chain: ok`, file à 0).
+Deux permissions manquent pour aller jusqu'au bout — `git merge` sur la branche
+suivie par la production, et `ssh lecayenne`. Commandes exactes et vérifications
+post-déploiement : `QA_CORRECTIONS_2026-09-28.md` §7.

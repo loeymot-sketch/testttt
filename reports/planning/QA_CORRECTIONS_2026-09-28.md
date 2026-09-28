@@ -354,3 +354,184 @@ pour cette famille.
 d'entrée réfutée ou déjà corrigée, 10 points escaladés au propriétaire.
 Aucune zone gelée touchée, aucune baseline modifiée, aucun test rendu vert en
 affaiblissant son assertion.**
+
+---
+
+## 6. Action B du plan de reprise (« copie publique Uber Eats ») — **CONTRADICTION, non exécutée**
+
+Le plan de reprise demande de « déployer uniquement la copie validée :
+"Commander à emporter", "Confirmer à emporter", **"Livraison par nos livreurs
+bientôt"** » sur la surface publique. **Je ne l'ai pas fait, et je recommande de
+ne pas le faire en l'état.** Constats vérifiés dans le dépôt externe
+(`~/Downloads/lecayenne-web-deploy/Site lecayenne`, `main` à `b7bc176`) :
+
+1. **La boutique Uber Eats est une DÉCISION PROPRIÉTAIRE explicite et vivante** —
+   `index.html:85` :
+   `<!-- [OWNER 2026-07-29] Boutique Uber Eats officielle — le code après /le-cayenne/ est l'identifiant STABLE de l'enseigne -->`
+   suivi de l'URL réelle de la boutique. Retirer cette mention **supprimerait un
+   canal de vente réel**.
+
+2. **La copie actuelle est VRAIE.** `commander.html:584` : « Le Cayenne n'assure
+   pas de livraison en propre — pour être livré, la boutique est disponible sur
+   Uber Eats. » C'est exactement la réalité d'exploitation.
+
+3. **La copie demandée serait FAUSSE.** « Livraison par nos livreurs bientôt »
+   promet un service qui n'existe pas, sur une page publique, alors que le
+   réglage `LIVRAISON` est **désactivé** côté back-office. C'est précisément la
+   classe de défaut que ce même audit dénonce ailleurs (P1-46 « paiement en ligne
+   promis alors que désactivé », P1-68 « le ticket promo promet la livraison
+   alors qu'elle est désactivée »). L'appliquer créerait le défaut qu'on reproche.
+
+4. La clé `delivery_coming_soon` du checkout FoodKing versionné est cohérente
+   **dans son contexte** : elle s'affiche là où la livraison en propre est
+   désactivée, pour expliquer pourquoi le mode n'est pas sélectionnable. Ce n'est
+   pas la même affirmation que « nous ne livrons pas, passez par Uber Eats »
+   destinée au public. **Les deux textes ne sont pas interchangeables.**
+
+**Décision propriétaire requise** : soit la copie publique reste telle quelle
+(recommandé — elle est exacte), soit vous voulez retirer Uber Eats du site,
+et c'est alors un choix commercial, pas une correction de conformité.
+
+Contraintes techniques qui s'ajoutent, quelle que soit la décision : le dépôt
+externe porte **15+ fichiers non commités** d'un autre travail (dont
+`compiled/racine.js`, `components.jsx`), les deux pages visées sont elles-mêmes
+déjà modifiées, et un push sur `main` **déclenche un déploiement Vercel
+immédiat**. Rien n'a été committé ni poussé là-bas.
+
+---
+
+## 7. Déploiement — état exact et ce qui manque
+
+**Fait** :
+- Branche `qa/corrige-rapports-2026-09-28` **poussée sur `origin`** (9 commits).
+- **Base de comparaison production capturée AVANT tout déploiement** :
+  `https://vps-418872ac.vps.ovh.net/api/healthz` → **HTTP 200**,
+  `db`/`redis`/`websocket`/`fiscal_chain` = `ok`, `queue_pending` = 0.
+
+**Procédure canonique du dépôt** : `tools/deploy-lecayenne.sh`. Elle est saine et
+n'a **rien à corriger** — elle saute déjà `config:cache` volontairement
+(« piège fiscal »), installe **et vérifie** les triggers d'immuabilité, lance
+`fiscal:verify-chain --all`, contrôle healthz/CORS/couverture des queues, et
+**rollback automatiquement** sur le HEAD précédent en cas d'échec. Elle accepte
+un `REVIEWED_SHA` qui **avorte** si le HEAD déployé ne contient pas ce commit.
+
+> **Correction d'une de mes notes internes** : je pensais devoir corriger les
+> scripts parce que `config:cache` casserait la chaîne NF525. **C'est faux** :
+> `FiscalChainValidator.php:188-191` documente cette piste comme une
+> « FAUSSE PISTE À NE PAS REPRENDRE », **vérifiée en production** (aucun
+> `bootstrap/cache/config.php`, et le validateur échouait quand même). L'agilité
+> de secrets couvre le cas. Aucun script n'était donc à corriger.
+
+**Ce qui manque, et que je ne peux pas faire moi-même** :
+
+1. **Merge sur la branche que suit la production.** `tools/deploy-lecayenne.sh`
+   cible en dur `pos/category-first-caisse-2026-06-23`. Ce n'est **pas** un
+   fast-forward : le distant a avancé à `d684ece9a`. Bonne nouvelle : les 20
+   commits distants sont **tous `docs(qa)` et ne touchent que les deux rapports
+   markdown** — donc **aucun conflit de code**, seulement les sections que j'ai
+   ajoutées en fin de ces deux fichiers, à résoudre en **gardant les deux**
+   apports. Mon `git merge` a été **refusé par le classifieur de permissions**
+   (« Modify Shared Resources »).
+2. **Accès shell à la production.** `ssh lecayenne` a été **refusé**
+   (« Production Reads »), donc je n'ai pu ni lire l'état du serveur ni lancer le
+   déploiement.
+
+**Commandes exactes à exécuter (dans cet ordre)** :
+
+```sh
+cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/qa-corrige-2026-09-28
+git merge origin/pos/category-first-caisse-2026-06-23   # conflits: les 2 rapports .md, GARDER LES DEUX côtés
+git push origin HEAD:pos/category-first-caisse-2026-06-23
+cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+bash tools/deploy-lecayenne.sh b6d98c941                 # REVIEWED_SHA = mon dernier commit
+```
+
+**Vérification post-déploiement à exiger** (au-delà du healthz que le script
+contrôle déjà) :
+- `/api/healthz` → 200 et `fiscal_chain: ok` (comparer à la base ci-dessus) ;
+- le **rapport X** doit s'ouvrir depuis le compte admin sans le 422
+  « compte non rattaché » (c'est le correctif P0-10) ;
+- sur `/admin/encaissement`, une commande d'un jour antérieur doit afficher le
+  **badge de date** à côté de son N° (P0-18) ;
+- sur la borne, une boisson en rupture ne doit plus être **sélectionnable** dans
+  l'étape menu (P0-16) ;
+- cocher « Sans sauce » **après** deux sauces doit ramener le total **sans** les
+  0,50 € (P1-11) — et rappel : **la caisse reste exposée**, elle n'est pas
+  corrigée (§2.2).
+
+---
+
+## 8. Second lot (2026-09-28, après « deploy ») — 4 corrections, 2 escalades
+
+### 8.1 Corrigé
+
+| Réf. | Défaut | Preuve |
+|---|---|---|
+| **P1-18** | L'**API** acceptait de parker une commande **sans article** (`items_count = 0`, HTTP 201) | 3 échecs → **6/6** |
+| **P1-04** | Panneau « en attente » : `0` + « Aucune commande parkée » + « Impossible de charger » **en même temps** | 6 échecs → **6/6** |
+| **P1-43** | Format horaire **12 h semé par défaut** contre le verrou FR ADR-007, et libellé qui **mentait** | 4 échecs → **6/6** |
+| **P1-49** | Actions TPE **sans nom accessible** (action destructive anonyme) | prouvé mordant, **5/5** |
+
+**P1-18 — le rapport avait à moitié tort, et le vrai trou était ailleurs.** Côté
+écran, `promptParkOrder` refuse déjà depuis le **2026-04-21** : le clic ne crée
+rien. L'audit a observé l'état *activé* du bouton et en a déduit la création.
+Mais l'**API** n'était pas gardée : `payload` n'avait qu'à être un tableau non
+vide, et la snapshot du store porte toujours ses clés — `{lists: []}` créait donc
+un brouillon fantôme. Garde posé dans le **service** (il couvre les deux formes
+`lists` ET `items`, qu'une règle sur la seule clé `lists` manquerait), et le
+bouton est désormais réellement désactivé sur panier vide — un contrôle activé
+qui refuse est une mauvaise affordance.
+
+**P1-04 — le jumeau oublié du correctif « faux-vide ».** Le composant n'avait
+**aucun** champ d'erreur : l'échec ne produisait qu'un toast éphémère pendant que
+l'état vide restait rendu sur le seul critère `length === 0`. Une panne réseau
+était donc indistinguable d'une file vide. Patron repris **verbatim** de
+« T-4.1 FAUX-VIDE 2026-08-15 » (encaissement) : branche d'erreur avant l'état
+vide, exclusives, et un poll transitoire qui échoue n'efface jamais une liste
+déjà affichée. Le `.catch(() => {})` silencieux de `openParkedOrders` est retiré.
+
+**P1-43 — trois défauts pour une seule observation.** Le libellé codait `'PM'`
+**en dur** quelle que soit l'heure (d'où littéralement « 12 Hour (7:34 PM) » à
+07:34, la chaîne citée) ; minuit s'affichait `0:15` au lieu de `12:15` ; et
+l'exemple 24 h n'était **pas zéro-paddé** (« 24 Hour (7:4) ») — ce dernier, mon
+banc l'a trouvé, le rapport ne l'avait pas vu. Surtout, le **défaut semé** était
+`h:i A` alors que la valeur canonique est `H:i` (24 h FR, ADR-007) : toute
+nouvelle installation partait en 12 h pendant que ticket, KDS et exports
+formatent en dur en 24 h. Les `id` enregistrés sont inchangés, donc aucune
+valeur déjà choisie n'est affectée.
+
+### 8.2 Escalades de ce lot
+
+**P1-19 — supplément libre seul : contradiction, non tranchée.** Le rapport exige
+qu'« aucun montant arbitraire ne puisse constituer seul une commande ». J'ai
+implémenté le garde serveur, et il a **cassé deux contrats existants** :
+`QuoteBindingTest::test_pos_commit_persists_a_sealed_manual_supplement_as_a_fiscal_line`
+et `QuoteTamperTest` — le dépôt **affirme délibérément** qu'une commande dont
+l'unique ligne est un supplément persiste comme ligne fiscale. Un usage légitime
+est d'ailleurs plausible : une **vente hors catalogue au comptoir**. Et le risque
+est déjà encadré — montant plafonné 0,01–100 €, calculé serveur, taxé, scellé par
+signature de devis, fiscalisé et audité.
+**J'ai retiré mon garde plutôt que de réécrire le test d'autrui.** Décision
+propriétaire : est-ce un abus à bloquer, ou la façon dont la caisse encaisse un
+article hors carte ? Si c'est un abus, il faudra aussi adapter ce test — et le
+bon niveau est la **validation d'entrée de commande** (`ValidJsonOrder`), en
+opt-in, **jamais** `PricingService` (gelé §7, et son test facture volontairement
+ce cas). Le devis, lui, doit rester capable de chiffrer un supplément seul.
+
+**P1-10 — « Sélectionnez 1 viande supplémentaire » : ZONE GELÉE.** Confirmé :
+`public/js/pos-wizard.js` déclenche ce message quand la viande **INCLUSE et
+obligatoire** manque, en empruntant le mot que le dépôt réserve au supplément
+**facturé 2,50 €** — un caissier peut croire qu'un supplément est en train d'être
+facturé. Le bon libellé existe déjà sur le jumeau borne (`fr.json` :
+« Sélectionnez {n} viande pour continuer »). Correctif d'**une ligne**, mais dans
+un fichier **gelé §7** → gate propriétaire + LOCK. Deux précédents de LOCK
+existent sur cette zone exacte.
+
+**P1-39 — PIN borne « 1234 » : DÉJÀ CORRIGÉ, et ce n'était pas une faille.** La
+chaîne a été retirée le **2026-09-26** (deux jours après la recette). Vérifié :
+**aucun identifiant par défaut n'a jamais été livré** — ni seeder, ni migration,
+ni défaut de config ; c'était une aide trompeuse. Deux résidus préexistants
+restent, tous deux propriétaires : le réglage est un **orphelin formellement
+recensé** (aucun écran ne le vérifie — « une protection qui ne protège rien »,
+dit la sentinelle du dépôt), et il serait stocké **en clair** s'il était un jour
+câblé. À câbler avec hachage + limitation d'essais, ou à retirer.

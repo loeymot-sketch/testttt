@@ -1080,11 +1080,19 @@
 
                 <!-- Park / Parked shortcuts -->
                 <div class="grid grid-cols-2 gap-2">
+                    <!-- [QA 2026-09-28 · P1-18] Le bouton était actionnable sur un panier
+                         VIDE. `promptParkOrder` refusait déjà (depuis le 2026-04-21) en
+                         affichant `pos.park_requires_items`, donc rien n'était créé — mais
+                         un contrôle activé qui refuse est une mauvaise affordance, et
+                         l'audit externe en a justement tiré la fausse conclusion qu'un
+                         brouillon vide était créé. Le garde du gestionnaire est conservé
+                         en défense en profondeur. -->
                     <PosV5Button
                         variant="secondary"
                         size="md"
-                        :disabled="parkingInFlight"
+                        :disabled="parkingInFlight || carts.length === 0"
                         :loading="parkingInFlight"
+                        data-testid="pos-park-order"
                         @click="promptParkOrder"
                     >
                         <template #icon>⏸</template>
@@ -5726,7 +5734,16 @@ export default {
         },
         openParkedOrders() {
             this.showParkedOrders = true;
-            this.$store.dispatch('posParked/fetchList').then().catch(() => {});
+            // [QA 2026-09-28 · P1-04] Ce `.catch(() => {})` avalait la panne en
+            // SILENCE : une file non chargée s'affichait comme une file vide. Le
+            // panneau a désormais son propre état d'erreur exclusif ; on se contente
+            // de ne pas laisser une promesse rejetée non gérée, sans masquer le
+            // diagnostic (le composant refetch lui-même via son watch `open`).
+            this.$store.dispatch('posParked/fetchList').catch((erreur) => {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[POS] chargement des commandes en attente échoué', erreur);
+                }
+            });
         },
         async promptParkOrder() {
             if (this.parkingInFlight) {
