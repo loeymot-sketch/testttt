@@ -776,6 +776,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   JSON. En revanche, `GET /api/auth/authcheck` (route POST) retombe en 200 HTML
   SPA, encore une occurrence du masquage des mauvaises méthodes sur un chemin
   d'authentification.
+- **Projection catalogue publique (28/09/2026, 04:56 CEST)** : la réponse
+  `frontend/item` expose au navigateur des identifiants internes (`tax_id`,
+  `item_type`, `status`, `kds_station`, `order`, IDs de catégorie) en plus du
+  prix et du contenu. Aucune donnée personnelle n'est visible et ces champs
+  peuvent être nécessaires à l'admin, mais leur présence sur la route publique
+  élargit la surface d'information; à arbitrer comme durcissement API (DTO
+  public séparé) plutôt qu'une panne fonctionnelle.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
