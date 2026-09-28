@@ -736,3 +736,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   ni POST/paiement; les pages navigables utilisent réseau-d'abord et le cache
   seulement en filet hors ligne. Aucun stale-cache ou erreur console n'a été
   reproduit sur la session fraîche; ce contrôle est PASS.
+- **Fallback offline deep-link (28/09/2026, 04:48 CEST)** : après avoir
+  préchauffé uniquement `/`, puis coupé le réseau, une navigation vers
+  `/carte.html` reçoit 200 mais le document de fallback est la homepage
+  (`<title>Le Cayenne…>` au lieu de `La carte du Cayenne…`). Le service worker
+  masque donc une page indisponible par une page différente, sans bannière
+  hors-ligne; risque UX/SEO indirect à corriger ou à signaler explicitement.
