@@ -1101,3 +1101,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   renvoie maintenant 18 suggestions (dont Fanta Citron), confirmant que la
   limite négative reste sans borne basse et que le fail-open est toujours en
   production.
+- **Surveillance sondes 15 s (28/09/2026, 08:25 CEST)** : cinq séries
+  rapprochées gardent `/api/health`, `/api/health/ready` et `/api/healthz` en
+  200, avec restore drill `ok`; toutefois `healthz.queue_pending` passe de 0 à
+  1 sur les deux dernières mesures tandis que readiness reste `ok`. Cela ne
+  constitue pas une panne, mais confirme une file intermittente non reflétée
+  par le statut readiness; le monitoring doit alerter sur une persistance et
+  non sur une mesure isolée.
