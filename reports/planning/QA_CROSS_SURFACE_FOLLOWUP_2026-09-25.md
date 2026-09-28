@@ -1224,3 +1224,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   visible n'est pas exposé par un rôle/bouton stable au harnais Playwright;
   l'édition réelle et le risque de suppression de sauce restent non vérifiés,
   donc non classés comme corrigés.
+- **POS deux sauces + édition (28/09/2026, 04:12 CEST)** : la spec Playwright
+  ciblée passe **1/1** en local; deux sauces sont conservées après reopen +
+  confirmation, prix/détail identiques et panier nettoyé avant paiement. Le
+  VPS POS physique reste à vérifier séparément; le run local confirme la
+  logique applicative.

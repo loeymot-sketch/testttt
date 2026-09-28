@@ -509,3 +509,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   (aucun rôle/bouton accessible stable); la perte de sauces pendant une vraie
   modification reste donc un cas ouvert à valider manuellement ou via un
   sélecteur dédié.
+- **Régression POS deux sauces + édition (28/09/2026, 04:12 CEST)** : le test
+  Playwright dédié `pos-two-sauces-edit-e2e.spec.js` passe **1/1 en 12,3 s**
+  sur Laravel local : Andalouse + Algérienne survivent à l'ouverture du panier,
+  la réouverture de l'éditeur et la confirmation, prix et détail inchangés.
+  Le test vide le panier avant paiement. Le serveur local émet seulement des
+  warnings PHP de dépréciation `smartisan/laravel-settings`; aucun échec métier.
