@@ -984,3 +984,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   invalides non mutantes de `subscriber` (type tableau, entier, null, longueur
   >100) restent correctement rejetées, mais la règle `email` manquante demeure
   non résolue pour les chaînes mal formées.
+- **Webhook Mollie — contrat de méthode (28/09/2026, 07:03 CEST)** : le POST
+  public sans ID répond proprement 400 JSON `invalid_payload`, et un ID
+  inconnu est ignoré sans création de paiement (`200 unknown_payment_ignored`).
+  En revanche, `GET /api/webhook/mollie` et `OPTIONS` retombent en 200 HTML
+  SPA au lieu d'un 405/204 explicite; un monitoring ou un scanner peut donc
+  croire que le webhook est disponible sur la mauvaise méthode. Aucun paiement
+  ni commande n'a été touché.
