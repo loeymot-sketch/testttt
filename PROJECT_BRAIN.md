@@ -4352,7 +4352,7 @@ Plateforme restaurant fast-food complète :
 ## §3 LAST DONE — Auto-managed
 
 **QA — SECOND LOT + DÉPLOIEMENT PARTIEL (2026-09-28)** — branche
-`qa/corrige-rapports-2026-09-28` **poussée sur le distant** (12 commits).
+`qa/corrige-rapports-2026-09-28` **poussée sur le distant** (11 commits au moment de cette note).
 Suite de la directive owner « corrige », puis « deploy ».
 
 **4 défauts de plus corrigés**, chacun rouge avant correctif : P1-18 l'**API**
