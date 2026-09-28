@@ -760,3 +760,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   d'items observés sont identiques entre ces valeurs (aucune fuite distincte
   démontrée sur la base live actuelle), mais l'absence de validation/branche
   autorisée élargit le même risque d'isolation déjà relevé sur wait-estimate.
+- **Erreur catalogue item inexistant (28/09/2026, 04:52 CEST)** :
+  `frontend/item/details/999999` et `item/upsell/999999` renvoient bien 404,
+  mais le JSON porte `code: ORDER_NOT_FOUND` et `message: Commande introuvable`.
+  C'est un contrat d'erreur copié du domaine commande; un client catalogue
+  peut afficher un message faux ou router vers le mauvais écran. Les IDs
+  valides 1 et 121 répondent correctement 200.
