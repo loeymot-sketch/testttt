@@ -1001,3 +1001,19 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   répétés (router-link non résolu, `ECONNREFUSED 127.0.0.1:3000`, props KDS
   invalides et clés i18n absentes) confirment des risques de harness et
   d’environnement à traiter séparément.
+- **Rejeu global sous Node 20 (28/09/2026, 03:02–03:06 CEST)** : après
+  alignement explicite sur Node **20.20.2**, la suite complète passe
+  **556/556 fichiers, 4 511/4 514 tests**, avec **3 skips et zéro erreur non
+  gérée**. Les cinq échecs précédents et le conflit jsdom ESM/CJS ne se
+  reproduisent donc pas sous le runtime supporté. Des warnings demeurent
+  (router-link/vue-select non résolus, appels `localhost:3000` refusés,
+  actions Vuex inconnues et clés i18n absentes) : ils ne cassent pas les tests,
+  mais justifient une passe de nettoyage du harness et une vérification avec
+  backend réellement démarré.
+- **Sonde live API (28/09/2026, 03:06 CEST)** : `/api/healthz` reste HTTP
+  200 avec DB/Redis/WebSocket/fiscal chain OK et queue à 0. `/api/health/ready`
+  reste HTTP 200 mais expose explicitement `restore_drill=degraded` (« jamais
+  mesurée »). Les chemins `/api/orders`, `/api/settings` et
+  `/api/kiosk/config`, absents du routage Laravel, répondent encore HTTP 200
+  `text/html` (shell SPA) même avec `Accept: application/json`; le contrat API
+  live reste donc ambigu et doit être corrigé ou surveillé explicitement.

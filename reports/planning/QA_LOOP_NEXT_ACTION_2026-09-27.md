@@ -256,6 +256,18 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   reste largement verte, mais ces deux défauts d’outillage empêchent un PASS
   global honnête et doivent être rejoués sous Node 20+ après alignement des
   dépendances.
+- **Vitest complet revalidé sous Node 20.20.2 (28/09/2026, 03:02–03:06 CEST)** :
+  **556 fichiers passent, 4 511 tests passent, 3 skipped, zéro erreur non
+  gérée**. Les cinq erreurs observées sous Node 18 sont donc un défaut de
+  runtime de la machine d’audit, pas une régression applicative. Les warnings
+  indirects restent à surveiller : composants Vue non enregistrés, connexions
+  `127.0.0.1:3000` refusées, actions Vuex inconnues et clés i18n manquantes.
+- **Recontrôle API live (28/09/2026, 03:06 CEST)** : healthz HTTP 200 et queue
+  vide; readiness HTTP 200 mais `restore_drill` reste `degraded` car jamais
+  mesuré. Trois chemins API non déclarés (`/api/orders`, `/api/settings`,
+  `/api/kiosk/config`) renvoient le HTML SPA en HTTP 200 au lieu d’une réponse
+  JSON/404 explicite, y compris sous `Accept: application/json`. Risque direct
+  pour les clients et le monitoring, sans fuite de données observée.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
