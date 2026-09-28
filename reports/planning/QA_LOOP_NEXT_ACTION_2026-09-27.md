@@ -927,3 +927,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   de test dans la base de production : le développeur doit les supprimer via
   la procédure d'administration/audit prévue, sans suppression aveugle par
   l'agent.
+- **Throttle abonnement (28/09/2026, 06:25 CEST)** : après cinq tentatives,
+  la même route répond correctement 429 avec `X-RateLimit-Limit: 5`,
+  `Remaining: 0` et `Retry-After`; le défaut porte sur la validation du
+  contenu, pas sur l'anti-spam.
