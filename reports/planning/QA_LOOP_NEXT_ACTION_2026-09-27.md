@@ -669,3 +669,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   inattendue n'a été découvert dans ce périmètre. Les quatre icônes PWA du
   manifest répondent également 200 en `image/png`. Le 404 `/menu` reste donc
   un deep-link isolé non référencé par les liens HTML crawlé.
+- **SEO canonical live (28/09/2026, 04:36 CEST)** : `/`, `carte.html`,
+  `commander.html` et `livraison-henin-beaumont.html` portent chacun un
+  canonical et un `og:url` cohérents avec leur URL HTTPS; aucun canonical
+  croisé ou HTTP n'a été détecté dans cet échantillon.
