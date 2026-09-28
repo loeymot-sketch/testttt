@@ -742,3 +742,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   (`<title>Le Cayenne…>` au lieu de `La carte du Cayenne…`). Le service worker
   masque donc une page indisponible par une page différente, sans bannière
   hors-ligne; risque UX/SEO indirect à corriger ou à signaler explicitement.
+- **Branche publique wait-estimate (28/09/2026, 04:49 CEST)** : le query
+  `branch_id` accepte `0`, négatif, texte et IDs arbitraires, toujours en 200
+  JSON; le code local caste directement la valeur et ne vérifie pas la branche
+  active. Les branches testées sont actuellement vides, donc aucune fuite de
+  comptage n'est prouvée en production, mais ce paramètre est un risque
+  d'isolation multi-branches dès qu'une seconde branche aura des commandes.
