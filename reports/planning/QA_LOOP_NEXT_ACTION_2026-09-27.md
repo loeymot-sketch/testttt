@@ -1463,3 +1463,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   11 clés manquent en français, 112 en anglais, 644 en arabe, 922 en allemand
   et 923 en bengali (côté Laravel : 5/21/62/89/86). Cette dette de traduction
   reste à corriger avant une validation UX multilingue.
+- **Suite backend KDS/ticket ciblée (28/09/2026, 19:25 CEST)** : 12 fichiers
+  couvrant placement sauces, tacos, viandes supplémentaires, bases de bols,
+  menus, autorisation KDS, timings, filtre branche, transitions et parité
+  cuisson PHP/JS : **95 tests, 160 assertions, 0 échec**. Les contrats
+  serveur/ticket confirment `HH`/`X`, la séparation sauces sandwich/frites,
+  les suppléments nommés et la cohérence de cuisson; le rendu live KDS reste
+  non vérifiable sans session admin renouvelée.
