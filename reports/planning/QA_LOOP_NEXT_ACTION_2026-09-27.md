@@ -497,3 +497,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   suppléments s'ouvre à 390 px sans overflow ni erreurs JS/HTTP. La tentative
   d'automatisation de la suite a ciblé un libellé emoji exact et a été arrêtée
   sans soumettre de commande; ce n'est pas classé comme panne produit.
+- **Panier mobile multi-sauce complet (28/09/2026, 04:45 CEST)** : après
+  `Ajouter au panier` puis attente de la vérification serveur, le panier contient
+  exactement **1 article Tacos M**, `Mexicanos, Harissa, Andalouse`, sous-total
+  et total **7,40 €**, fidélité **+74 pts**, bouton `Passer commande` visible.
+  Aucun écran blanc, erreur JS ou HTTP >=400; aucune commande n'a été confirmée.

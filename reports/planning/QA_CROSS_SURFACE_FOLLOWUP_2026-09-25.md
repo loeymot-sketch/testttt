@@ -1215,3 +1215,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **+0,50 €** (total **7,40 €**) et ouvre l'étape suppléments sans overflow ni
   erreur. La suite a été arrêtée avant soumission après un sélecteur emoji trop
   strict; aucun effet externe.
+- **Panier mobile multi-sauce complet (28/09/2026, 04:45 CEST)** : après la
+  vérification serveur, le panier conserve 1 Tacos M avec `Mexicanos, Harissa,
+  Andalouse`; total **7,40 €**, **+74 pts**, bouton `Passer commande` présent.
+  Aucun crash/réseau >=400 et aucune commande envoyée.
