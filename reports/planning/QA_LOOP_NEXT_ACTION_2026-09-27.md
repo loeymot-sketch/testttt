@@ -1123,3 +1123,26 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   replay audit, fan-out catalogue et seuil readiness restent verts. Le
   risque live de queue intermittente reste donc un sujet de monitoring, pas
   une régression reproduite par la suite applicative.
+- **Smoke E2E live POS/KDS interrompu sur défaut d'accès (28/09/2026,
+  05:30 CEST)** : sur 19 tests planifiés, les quatre premiers scénarios
+  d'authentification/POS échouent avant le parcours métier : `POST /api/auth/login`
+  renvoie `400 Identifiants invalides ou compte bloqué`; les retries passent
+  ensuite en `429` avec `retry_after=600`. Le helper de retry tente en plus un
+  `php artisan tinker` local pour purger les buckets, ce qui ne réinitialise
+  pas le rate-limit VPS. La suite a été arrêtée (15 tests non lancés) afin de
+  ne pas prolonger le verrouillage. Action dev : fournir un compte E2E VPS
+  dédié/valide et un reset de rate-limit côté serveur, ou désactiver les
+  retries destructifs en environnement live.
+- **Matrice publique live re-sondée (28/09/2026, 05:28 CEST)** : avec la clé
+  publique déployée, featured/popular/details/upsell/kiosk-upsell,
+  catégorie, OSS et wait-estimate répondent tous en JSON `200`; sans clé ou
+  avec une clé aléatoire, les endpoints frontend répondent bien `400 Clé API
+  invalide`. Les champs `tax_id`, `kds_station` et catégories techniques
+  restent toutefois visibles dans la projection publique; aucune divergence
+  `flat_price`/`convert_price` n'a été trouvée sur les 32 lignes sondées.
+- **Préflight CORS live (28/09/2026, 05:29 CEST)** : `OPTIONS` sur
+  `/api/frontend/subscriber` accorde encore `Access-Control-Allow-Origin`
+  et `Access-Control-Allow-Credentials: true` à `http://localhost:3000` et
+  `https://localhost`; une origine externe arbitraire n'est pas accordée.
+  Le risque est donc limité aux postes locaux/compromis mais reste ouvert,
+  notamment pour les routes authentifiées consommées depuis un navigateur.
