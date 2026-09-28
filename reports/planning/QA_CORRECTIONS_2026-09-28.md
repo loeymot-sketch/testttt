@@ -703,3 +703,55 @@ corrigés plus haut : reproduire, qualifier, puis décider.
    faire ignorer les 7 vrais.
 2. Qualifier les 7 restants un par un, en commençant par la borne (c'est la
    seule qui touche un parcours client payant).
+
+---
+
+## 11. Observation de production post-déploiement — `queue_pending` 0 → 10
+
+Relevé en poussant la vérification au-delà du « déploiement OK » : `queue_pending`
+est passé de **0 avant** à **10 après**, et **stable sur 4 mesures** espacées de
+12 s (il ne se vide pas).
+
+### Ce que c'est réellement
+
+| Fait | Valeur |
+|---|---|
+| File concernée | `notifications` (clé réelle `le_cayenne_database_queues:notifications`) |
+| En attente | 7 · différés 1 · réservés 0 |
+| Type de travail | `App\Jobs\SendFcmNotificationJob` — notifications push |
+| Worker | **présent** et écoute bien `high,default,notifications` |
+| Travaux en échec les plus récents | **2026-09-23**, soit **5 jours AVANT ce déploiement** |
+
+**Ce n'est donc pas causé par le déploiement**, et cela ne touche **ni les
+commandes, ni la fiscalité, ni l'impression** : uniquement l'envoi de
+notifications push, qui échoue sur cette installation. Le passage 0 → 10 au
+moment du déploiement s'explique par le `queue:restart` du script, qui relibère
+les travaux en vol, plus les notifications générées depuis.
+
+C'est exactement le phénomène que le dépôt documente déjà dans
+`HealthzController::probeQueuePending` : « `notifications` — bien réelle,
+alimentée par `SendFcmNotificationJob` — n'y figurait pas : **1 490 travaux y ont
+pourri** pendant que cette sonde renvoyait "0 en attente" ». La sonde a depuis
+été corrigée pour les compter ; ce qui reste, c'est que **ces travaux échouent**.
+
+### ⚠️ Mon premier relevé était FAUX — et c'est instructif
+
+J'ai d'abord mesuré `redis-cli LLEN queues:notifications` → **0**, et j'ai failli
+en conclure que healthz mentait. **C'est mon instrument qui était au mauvais
+périmètre** : Laravel préfixe ses clés (`le_cayenne_database_`), donc
+j'interrogeais une clé inexistante. La sonde healthz avait raison.
+
+Même piège que les 28 specs recâblées plus haut, et que le banc `posDeliveryFlag`
+— mesurer à côté de la cible et croire le résultat. Vérifié avec
+`redis-cli --scan --pattern "*queues:*"` avant de conclure.
+
+### Ce que je recommande
+
+1. **Décider du sort de `SendFcmNotificationJob`** : sur une installation V1
+   LOCAL sans identifiants push cloud, ces travaux ne peuvent pas aboutir. Soit
+   désactiver l'émission, soit poser les identifiants — sinon la file se
+   remplira indéfiniment, et c'est déjà arrivé à 1 490.
+2. **Réparer le contrôle de file du script de déploiement** (§9) : son
+   comparateur casse sur une erreur Redis `WRONGTYPE`, donc il a annoncé
+   « couverture queues OK » sans pouvoir voir cette accumulation. Un garde qui ne
+   garde rien est pire que pas de garde.
