@@ -829,3 +829,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   changement d'items, totals falsifiés et cross-branch. Le défaut branch_id
   reste donc un affichage/upsell dangereux, mais le garde-fou de commande
   réelle est confirmé vert.
+- **Suites disponibilité locales (28/09/2026, 05:04 CEST)** : les tests
+  `PublicMenuAvailabilityChannel`, `ItemDetailsBranchAvailability`,
+  `OrderRejectsUnavailableBranchItem` et `KioskUpsellRequiredAttributeExclusion`
+  passent **17/17, 49 assertions**. Ils couvrent la branche fournie et le
+  rejet au quote, mais acceptent explicitement le fallback « global » quand
+  aucun `branch_id` n'est fourni; aucun test ne couvre un ID invalide comme
+  `999999`, d'où l'écart live nouvellement démontré.
