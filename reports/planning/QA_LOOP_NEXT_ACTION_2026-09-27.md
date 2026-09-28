@@ -1013,3 +1013,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Correctif exploitable : faire écraser ce header par le reverse-proxy
   (ou restreindre `TrustProxies`) avant l'application, puis conserver
   `X-Real-IP` comme contrôle secondaire seulement si sa provenance est fiable.
+- **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
+  confirme qu'un plafond global `login-global` de 30/min existe en plus du
+  bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
+  En revanche, le verrouillage par identifiant/IP reste contournable par
+  rotation de `X-Forwarded-For` et l'attaquant conserve jusqu'à 30 essais/min
+  sur le même compte avant le plafond global. Le rapport classe ce point en
+  « lockout distribué affaibli », tandis que newsletter et forgot-password
+  n'ont pas ce plafond global équivalent.
