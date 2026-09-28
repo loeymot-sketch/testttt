@@ -1238,3 +1238,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   idempotence encaissement/impression). Les specs navigateur historiques
   `caisse-print-decision` utilisent encore `127.0.0.1:8766`, écart de harness
   à corriger avant de les considérer comme preuve web.
+- **Pricing/quote/isolation backend (28/09/2026, 04:15 CEST)** : **27/27 tests
+  ciblés verts** : supplément manuel scellé fiscalement, anti-tamper/replay,
+  remise calculée côté serveur, contraintes de variation, isolation branche
+  POS/KDS et branch_id kiosk forcé par la machine.

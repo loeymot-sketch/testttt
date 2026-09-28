@@ -526,3 +526,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   confirme les bytes ESC/POS et le non-double-compteur côté backend. Les specs
   navigateur d'impression historiques codent encore le port `8766`; elles
   doivent être réalignées sur le port standard avant un verdict E2E navigateur.
+- **Pricing/quote/isolation (28/09/2026, 04:15 CEST)** : **27/27 PHPUnit
+  ciblés passés** (quote binding et supplément manuel fiscal, variation
+  obligatoire, anti-tamper/replay, remise backend, isolation cashier/KDS,
+  intégrité quote kiosk et override du `branch_id` forgé). Aucun total client
+  falsifié ni fuite inter-branche n'est accepté par ces scénarios.
