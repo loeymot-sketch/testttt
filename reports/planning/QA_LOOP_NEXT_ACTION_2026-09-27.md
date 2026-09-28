@@ -1233,3 +1233,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   mentions et commande) répondent tous sans 4xx/5xx; `/commander.html` charge
   sans erreur console ni appel API en échec. Le parcours public nominal est
   donc vert; le défaut reste circonscrit à l'ancien alias direct `/menu`.
+- **Audit accessibilité axe (28/09/2026, 18:05 CEST)** : l'accueil présente
+  une violation **sérieuse** `color-contrast` sur l'onglet actif « Accueil »
+  (ratio 4,14:1, attendu 4,5:1). `/carte.html` et `/commander.html` présentent
+  chacun une violation `region` modérée : le bandeau adresse/horaire
+  `.sx-bandeau` n'est contenu dans aucun landmark. Les parcours fonctionnels
+  passent, mais ces défauts dégradent l'accessibilité clavier/lecteur d'écran
+  et doivent être corrigés avant une validation UX complète.
