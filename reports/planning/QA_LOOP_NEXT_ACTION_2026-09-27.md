@@ -812,6 +812,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   (cache, URL directe ou bug d'intercepteur) contourne donc aussi les ruptures;
   le backend doit imposer/résoudre la branche au lieu de traiter l'absence comme
   « disponibilité globale ».
+- **Kiosk upsell sans branche (28/09/2026, 05:02 CEST)** : un appel sans
+  `branch_id` a effectivement inclus l'article 114 en rupture dans les 12
+  suggestions 1-tap; avec la branche 1 il est exclu. La sélection étant
+  aléatoire, ce résultat a été observé sur une réponse live et confirme le
+  risque d'exposition côté borne dès qu'un paramètre est perdu.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
