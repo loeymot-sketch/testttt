@@ -1359,3 +1359,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `Mexicanos + Cordon Bleu` affiche `VIANDES Mexicanos, Cordon Bleu` et garde
   le prix de base **8,90 €**. Aucune chaîne « galette tacos » n'est affichée;
   la description catalogue indique seulement « Galette de blé ».
+- **Défaut critique fidélité — consentement contournable (28/09/2026,
+  19:02 CEST)** : après le rate-limit (qui répond correctement `429` puis
+  `Retry-After: 3`), un POST réel vers `/api/frontend/loyalty/register` avec
+  `name=QA`, téléphone synthétique `0699999987`, adresse non distribuable
+  `qa-invalid-20260928@example.invalid` et **sans champ `consent`** a répondu
+  `200` et a créé le compte (`loyalty_code: 860A66E4`, 0 point). Une adresse et
+  un téléphone invalides sont correctement rejetés en `422`, mais l'absence
+  de consentement n'empêche pas la création lorsque les autres champs passent.
+  Aucun email réel n'a été envoyé grâce au domaine `.invalid`; le compte de
+  test créé doit être neutralisé/supprimé via une procédure admin contrôlée.
