@@ -965,3 +965,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   passent en 1,5 min sur POS/F5, caisse, borne, KDS et rupture multi-branche.
   Aucune régression fonctionnelle détectée; les avertissements observés sont
   des dépréciations PHP non bloquantes.
+- **A11y/guards/i18n (28/09/2026)** : A11y ciblé **27/27**, guards pricing/status
+  et bundles **15/15** passent. En revanche, l’audit i18n échoue sur une dette
+  connue (Vue jusqu’à 923 clés manquantes selon langue, Laravel jusqu’à 89);
+  les tests A11y montrent aussi des appels vers `localhost:3000` refusés,
+  masqués par les mocks. À traiter comme dette de qualité d’environnement et
+  de traduction, pas comme un faux PASS complet.

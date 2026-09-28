@@ -209,6 +209,17 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   scénarios adversariaux de panier, statuts et quota quotidien passent aussi.
   Les seuls messages restent des dépréciations PHP du serveur de test, sans
   échec fonctionnel.
+- **Accessibilité et release guards (28/09/2026, 02:53 CEST)** : les suites
+  axe/composables/drawer/checkout passent **27/27**; pricing lint (86 fichiers),
+  status lint (38 fichiers) et bundle budget (15/15) passent. Les tests A11y
+  émettent toutefois des erreurs réseau `ECONNREFUSED 127.0.0.1:3000` et un
+  fallback IndexedDB→localStorage; ils restent verts grâce aux mocks, mais un
+  environnement réel sans API disponible peut donc masquer un écran dégradé.
+- **Dette i18n quantifiée (28/09/2026, 02:53 CEST)** : `npm run i18n:audit`
+  termine en échec contrôlé : Vue manque fr 11/en 112/ar 644/de 922/bn 923
+  clés; Laravel manque fr 5/en 21/ar 62/de 89/bn 86. Les 80 fichiers Laravel
+  sont parsés sans erreur, mais cette dette peut produire des libellés anglais
+  ou des clés brutes sur des parcours non couverts.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
