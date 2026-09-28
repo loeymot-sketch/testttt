@@ -998,3 +998,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `OPTIONS` fait de même sur toutes ces routes. Les autres verbes mutationnels
   renvoient bien 405 JSON et `TRACE` est bloqué par nginx. Le masquage reste
   donc concentré sur GET/OPTIONS, mais touche directement auth et paiement.
+- **Dépendances re-auditées (28/09/2026, 07:13 CEST)** : `npm audit --omit=dev`
+  reste à **21 vulnérabilités** (3 critiques, 11 hautes, 5 modérées, 2
+  faibles), dont `protobufjs` et `swiper` critiques; `composer audit` recense
+  toujours 4 paquets advisories (Laravel, JWT, Excel et MediaLibrary). Aucun
+  changement de risque n'est visible depuis le précédent rapport : ce point
+  reste une dette de mise à niveau à traiter séparément du correctif branche.
