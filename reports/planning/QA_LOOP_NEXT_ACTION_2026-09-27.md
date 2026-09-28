@@ -878,3 +878,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   de validation/type et pas seulement le cas d'un ID numérique inexistant;
   il faut une validation stricte (entier positif, branche existante et
   autorisée par la surface) avant toute requête de disponibilité.
+- **Propagation du fail-open (28/09/2026, 06:09 CEST)** : le même fuzz sur
+  `item/details/114` confirme `is_available:true` pour `0`, `foo`, `null` et
+  `999999`; sur `item/kiosk-upsell`, `0` et `foo` reproposent également
+  Fanta Citron en 1-tap. Le problème traverse donc les trois projections
+  publiques et ne peut pas être traité uniquement dans le composant de liste.
