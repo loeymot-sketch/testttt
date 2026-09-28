@@ -47,6 +47,43 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-28 (soir) — SITE VITRINE DÉPLOYÉ ET VÉRIFIÉ EN LIGNE.**
+> `main` du dépôt `Site-lecayenne` avancé en **avance rapide** `b7bc176 → 0fdf0bc`
+> (3 commits, aucune fusion), sur instruction explicite du propriétaire
+> (« vas-y push toi même sur main ») — gate CLAUDE.md §10 satisfaite.
+> Vercel a déployé ; vérifié sur le **contenu SERVI**, pas sur l'étiquette :
+> `api.js` porte `_tracking` (×2), `compiled/funnel.js` porte `formaterAttente`
+> (×3) et **0** occurrence de « devant toi » / « en cuisine devant »,
+> `styles-mobile.css` porte `safe-area-inset-top` (×2).
+> Contrôle navigateur sur la prod, iPhone 13 : `.lc-nav padding-top = 12px`,
+> « Mon compte » à 20 px du haut (8 px avant), **0 erreur console**, pas de
+> bandeau de configuration. Capture relue.
+>
+> Contenu livré : page de suivi (le bloc `tracking` du serveur n'était plus
+> jeté par `api.js`), aucun compteur de commandes nulle part, chiffre d'attente
+> précis réservé au cas « 1 commande devant » (sinon fourchette élargie vers le
+> haut uniquement), badge issu de `status_label`, ticket de retrait chiffré,
+> sondage qui ne meurt plus sur une réponse vide, barre de nav sous l'encoche,
+> repli paiement qui journalise enfin le motif serveur.
+>
+> ⚠️ **BACKEND NON DÉPLOYÉ — et c'est délibéré.** Prod reste à `77ed8de2`
+> (healthz : db/redis/websocket/fiscal_chain ok, queue 0). Deux raisons :
+> (1) la branche de release `pos/category-first-caisse-2026-06-23` a **divergé**
+> — une autre session y a poussé `e4d4dabea` + `5a66dadea`, **docs uniquement,
+> zéro fichier applicatif** — et mon correctif n'y est pas ; lancer le script
+> aurait déployé leur documentation, pas mon travail ;
+> (2) déploiement en pleine heure de service sur une caisse qui encaisse, pour
+> un delta sans effet d'exécution.
+> Mon seul changement applicatif backend est `SiteTableSeeder` + son test : un
+> **seeder ne s'exécute qu'à l'installation**, il ne répare donc PAS une base
+> existante.
+>
+> 🔴 **LE PAIEMENT EN LIGNE EST TOUJOURS FERMÉ EN PRODUCTION.** Le seul geste
+> qui le rallume est propriétaire : `/admin/settings/site` →
+> « Passerelle de paiement en ligne » → Activer. Les lectures et écritures en
+> production me sont refusées. Rappel utile : sur cet écran l'erreur s'affiche
+> **en haut** et le bouton est en bas — remonter vérifier après avoir cliqué.
+
 > **2026-09-28 — DÉPLOYÉ EN PRODUCTION. HEAD prod = `77ed8de2`**, contenant les
 > correctifs QA (`90474f870` prouvé ancêtre, vérifié sur le serveur).
 >
