@@ -626,3 +626,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   dans les bundles publics; la seule occurrence est un commentaire HTML
   documentaire. Ce risque précis n'est donc pas actif sur la vitrine, malgré
   les fallbacks localhost présents dans le code source local.
+- **Méthodes HTTP dangereuses (28/09/2026, 04:29 CEST)** : `TRACE /api/health`
+  est refusé par nginx (405), `PUT` et `DELETE` retournent 405 JSON, et
+  `HEAD /api/health` reste 200 JSON sans corps. Aucun verbe inattendu n'est
+  ouvert sur ce endpoint; le défaut reste limité aux mauvaises méthodes GET
+  qui tombent dans le catch-all HTML.
