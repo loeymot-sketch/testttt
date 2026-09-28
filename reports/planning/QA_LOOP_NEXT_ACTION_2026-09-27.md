@@ -1112,3 +1112,14 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   supplémentaires espacées de 5 s reviennent toutes à `healthz.queue_pending=0`
   avec HTTP 200. Le pic à 1 était transitoire et ne constitue pas un backlog
   persistant; aucune action de purge ou de redémarrage n'a été effectuée.
+- **Paiement revalidé (28/09/2026, 08:55 CEST)** : `php artisan test
+  tests/Feature/Payment --no-coverage` passe **86/86**. Idempotence,
+  confirmations Mollie, remboursements, wallet, webhooks et branches de
+  caisse restent verts localement; aucun correctif produit n'a été appliqué
+  pendant cette vérification.
+- **Outbox post-commit revalidé (28/09/2026, 08:56 CEST)** :
+  `php artisan test tests/Feature/Outbox --no-coverage` passe **81/81**.
+  Dispatch après commit, rescue/retry des claims expirés, dead-letter,
+  replay audit, fan-out catalogue et seuil readiness restent verts. Le
+  risque live de queue intermittente reste donc un sujet de monitoring, pas
+  une régression reproduite par la suite applicative.
