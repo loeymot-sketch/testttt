@@ -806,6 +806,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   route avec `branch_id=999999` le propose comme upsell 1-tap (`is_available:
   true`). C'est le chemin le plus dangereux pour la borne : un client peut
   sélectionner automatiquement un produit indisponible avant le quote.
+- **Catalogue sans branch_id (28/09/2026, 05:01 CEST)** : le même article 114
+  est `is_available:true` quand `branch_id` est absent, `false/stock_rupture`
+  avec la branche 1, puis `true` avec 999999. Le client qui perd le paramètre
+  (cache, URL directe ou bug d'intercepteur) contourne donc aussi les ruptures;
+  le backend doit imposer/résoudre la branche au lieu de traiter l'absence comme
+  « disponibilité globale ».
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
