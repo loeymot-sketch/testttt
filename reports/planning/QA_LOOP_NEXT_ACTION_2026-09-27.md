@@ -1004,3 +1004,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   toujours 4 paquets advisories (Laravel, JWT, Excel et MediaLibrary). Aucun
   changement de risque n'est visible depuis le précédent rapport : ce point
   reste une dette de mise à niveau à traiter séparément du correctif branche.
+- **Attribution proxy isolée (28/09/2026, 07:18 CEST)** : sur le throttle
+  `subscriber`, changer `X-Forwarded-For` remet le compteur à 4 à chaque
+  requête; changer `X-Real-IP` consomme au contraire le même bucket
+  (`4,3,2`), et `Client-IP`/`Forwarded` ne modifient pas l'IP effective.
+  La faille est donc précisément la confiance Laravel/proxy dans
+  `X-Forwarded-For`, pas un contournement générique de tous les headers.
+  Correctif exploitable : faire écraser ce header par le reverse-proxy
+  (ou restreindre `TrustProxies`) avant l'application, puis conserver
+  `X-Real-IP` comme contrôle secondaire seulement si sa provenance est fiable.
