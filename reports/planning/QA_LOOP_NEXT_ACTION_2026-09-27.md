@@ -562,3 +562,14 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   téléphone (7), liaison compte web (7), unicité téléphone (2) et absence de
   fuite PII (4). Les conflits email, comptes invités et formats 06/+33 sont
   explicitement couverts; aucune donnée d'un autre compte n'est divulguée.
+- **Admin dashboard smoke (28/09/2026, 04:24 CEST)** : le test historique
+  `tests/e2e/09-admin-dashboards-ui.spec.js` reste non fiable tel quel : il
+  attend un bouton accessible nommé `Login`, alors que l'interface rend
+  `Connexion`; le runner a donc attendu jusqu'à être tué, sans verdict produit.
+  Rejeu direct corrigé sur `127.0.0.1:8766` avec `#formEmail`,
+  `#formPassword` et `Connexion` : redirection réelle vers
+  `/admin/dashboard`, titre `Le Cayenne`, chrome admin et contenu dashboard
+  visibles, zéro URL `/api/api/`. Les seules erreurs console sont les
+  WebSocket Pusher `127.0.0.1:6001` refusés (service realtime local non lancé),
+  à traiter comme risque d'infrastructure séparé; elles n'empêchent pas le
+  rendu HTTP du dashboard.
