@@ -196,6 +196,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   une fuite observée, mais c’est un risque d’observabilité/client (un appel API
   peut recevoir une page HTML valide en HTTP 200). À clarifier dans le routage
   API avant de conclure à une protection live complète.
+- **Intégrité métier fraîche (28/09/2026)** : les suites PHPUnit passent
+  `tests/Feature/Order` **109/109 en 24,25 s**, `tests/Feature/Loyalty`
+  **93/93 en 22,25 s** et `tests/Feature/Outbox` **81/81 en 17,84 s**.
+  Elles couvrent l’idempotence des paiements/points, la parité des services,
+  les transitions d’état, l’isolation par branche, les prix scellés et le
+  dispatch après commit. Aucun échec actuel; la transaction POS réelle reste
+  non vérifiée faute de compte de test provisionné.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

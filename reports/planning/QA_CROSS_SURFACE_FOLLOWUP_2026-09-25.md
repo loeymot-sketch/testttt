@@ -957,3 +957,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `/api/kiosk/config`) au lieu d’un statut API explicite; observation à
   traiter comme défaut de contrat/monitoring, sans preuve actuelle de fuite de
   données.
+- **Revalidation métier (28/09/2026)** : Order **109/109**, Loyalty **93/93**
+  et Outbox **81/81** passent sur des exécutions séparées. Les invariants
+  critiques restent verts en local, sans preuve équivalente d’un encaissement
+  réel sur le compte POS de production encore manquant.
