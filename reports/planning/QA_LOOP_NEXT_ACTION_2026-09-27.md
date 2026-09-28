@@ -1376,3 +1376,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   l'endpoint opt-in distinct. Le code de `/loyalty/register` valide seulement
   `phone`, `name`, `email` (aucun `consent`), ce qui explique précisément le
   `200` observé en production et constitue une couverture manquante à corriger.
+- **Méthodes HTTP fidélité (28/09/2026, 19:10 CEST)** : `PUT
+  /api/frontend/loyalty/register` est correctement refusé en `405 JSON`, et un
+  POST invalide reste `422 JSON` après refroidissement du throttle. En revanche
+  `GET` et `OPTIONS` sur cette route renvoient `200 text/html` (SPA), avec
+  `Allow: GET,HEAD,POST` pour OPTIONS et CORS credentials activé. Un client qui
+  emploie la mauvaise méthode peut donc recevoir la page complète au lieu d'un
+  contrat API `405/204`; le comportement est cohérent avec le défaut général
+  de fallback SPA observé sur `/api/*`.
