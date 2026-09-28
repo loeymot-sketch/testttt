@@ -689,3 +689,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   PUT/PATCH/DELETE protégées ont été sollicitées sans session; zéro 200 HTML,
   zéro 5xx et aucune écriture observée. La surface mutationnelle testée est
   correctement refusée avant validation métier.
+- **Scan GET paramétrés (28/09/2026, 04:40 CEST)** : 107 routes avec
+  paramètres ont été sondées avec des IDs/tokens inexistants. Quatre routes
+  renvoient 200 HTML SPA au lieu d'une réponse API d'absence/autorisation :
+  `admin/ingredients/{id}`, son endpoint `usage`, et les deux suivis publics
+  `order/track`/`track-qr`. Surtout, `frontend/offer/show/{slug}` renvoie une
+  **500 JSON `Server Error`** pour un slug inexistant. Le contrôleur local
+  appelle le service avec un modèle nul, ce qui explique une erreur serveur au
+  lieu d'un 404/422 maîtrisé; défaut produit reproductible à corriger.
