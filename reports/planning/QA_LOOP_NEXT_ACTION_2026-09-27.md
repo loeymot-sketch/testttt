@@ -1282,3 +1282,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Le champ email est correctement labellisé « EMAIL », mais ce formulaire
   reste non conforme pour les utilisateurs malvoyants; corriger les couleurs
   et la hiérarchie Hn avant validation UX.
+- **Revalidation Vitest complète (28/09/2026, 18:44 CEST)** : `npm test -- --run`
+  termine avec **556 fichiers passés**, **4 511 tests passés**, **3 tests
+  ignorés**, **0 échec** (durée 217,96 s). Les sorties stderr observées sont
+  des avertissements de montage/mocks (composants Vue non enregistrés,
+  `ECONNREFUSED` vers le serveur local `:3000`, IndexedDB indisponible) et ne
+  correspondent à aucun test rouge. Cette passe confirme l'absence de
+  régression locale sur les contrats POS, borne, prix, sauces, KDS,
+  fidélité, paiement et accessibilité couverts par Vitest.
