@@ -917,3 +917,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   incohérence de branche sur l'écran cuisine/public : une borne ou un écran
   mal paramétré peut afficher une file ou des produits qui ne correspondent
   pas à sa branche au lieu d'un refus explicite.
+- **Validation abonnement newsletter (28/09/2026, 06:24 CEST)** : le POST
+  public `/api/frontend/subscriber` accepte `not-an-email` et `a@b.co` en
+  HTTP 201 et crée réellement deux abonnés (IDs live 1 et 2 dans la réponse).
+  La FormRequest locale confirme la cause : `email` est seulement
+  `required|string|max:100|unique`, sans règle `email`; la validation du
+  parcours fidélité ne couvre donc pas cette surface d'inscription parallèle.
+  Le test a utilisé des données synthétiques et a laissé ces deux enregistrements
+  de test dans la base de production : le développeur doit les supprimer via
+  la procédure d'administration/audit prévue, sans suppression aveugle par
+  l'agent.
