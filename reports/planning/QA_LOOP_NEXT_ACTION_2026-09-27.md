@@ -931,3 +931,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   la même route répond correctement 429 avec `X-RateLimit-Limit: 5`,
   `Remaining: 0` et `Retry-After`; le défaut porte sur la validation du
   contenu, pas sur l'anti-spam.
+- **Contrat d'erreur public systématiquement faux (28/09/2026, 06:32 CEST)** :
+  les IDs/slugs inexistants de `branch/show`, `language/show`, `page/show`,
+  `page-info` et `item/details` répondent 404 mais avec
+  `code: ORDER_NOT_FOUND` et `message: Commande introuvable`. Le défaut déjà
+  observé sur les offres est transversal au model binding frontend : un
+  client peut afficher une erreur de commande pour une branche, une langue ou
+  une page absente, et les intégrateurs ne peuvent pas distinguer les domaines
+  via le code d'erreur.
