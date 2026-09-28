@@ -724,3 +724,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Le catch-all SPA masque donc aussi les fautes de chemin, pas seulement les
   mauvaises méthodes; cela peut faire croire à un client/monitoring qu'une API
   existe et dégrade fortement la détection d'incidents.
+- **E2E navigateur pages légales (28/09/2026, 04:46 CEST)** : Chromium et un
+  User-Agent Chrome reproduisent des **404** sur les anciens aliases
+  `/mentions-legales.html`, `/politique-confidentialite.html` et
+  `/conditions-generales.html`. Les URLs canoniques réellement liées,
+  `/legal/mentions.html`, `/legal/privacy.html` et `/legal/cgv.html`, répondent
+  200. Le rapport précédent qui comptait les anciens aliases comme 200 était
+  donc obsolète; toute campagne/SEO qui utilise ces trois URLs casse encore.
