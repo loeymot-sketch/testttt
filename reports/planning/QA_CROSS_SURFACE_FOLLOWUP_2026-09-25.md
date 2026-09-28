@@ -1198,3 +1198,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   driver. Cela masque un risque réel de synchronisation KDS/POS et de reprise
   après sinistre. `/api/health/live` répond seulement `OK` en HTML, contrat à
   uniformiser.
+- **Rate-limit/CORS live (28/09/2026, 04:24 CEST)** : le signup email invalide
+  est limité après cinq essais (429 + `Retry-After: 59`) sans envoi réel;
+  les origines étrangères n'obtiennent pas de header CORS lisible. Les
+  réponses health sont privées et non mises en cache. Ces contrôles de défense
+  passent.

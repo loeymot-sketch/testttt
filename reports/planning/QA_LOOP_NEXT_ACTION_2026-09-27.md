@@ -473,3 +473,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   déclarer la caisse/KDS saine alors que les événements temps réel et la preuve
   de restauration ne sont pas opérationnels. `/api/health/live` renvoie par
   ailleurs `OK` avec un content-type HTML au lieu d'un JSON uniforme.
+- **Abus contrôlés / CORS (28/09/2026, 04:24 CEST)** : 7 requêtes invalides
+  consécutives sur `guest-signup/email-login` donnent 422 jusqu'à la 5e puis
+  429 avec `Retry-After: 59`; le throttle est donc actif sans envoyer d'email.
+  Les origines `https://evil.example` et `null` reçoivent 200 mais aucun
+  `Access-Control-Allow-Origin`, donc le navigateur ne peut pas lire la
+  réponse. Les health-checks sont `no-cache, private` et varient bien par
+  Origin.
