@@ -1067,3 +1067,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `invalid_payload` sans ID valide; le collecteur CSP accepte les rapports et
   répond 204 sans exposer de contenu. Aucun webhook n'a créé/modifié de
   commande ou paiement.
+- **Payloads HTTP malformés (28/09/2026, 08:07 CEST)** : JSON tronqué,
+  scalaire `null`, texte brut et formulaire URL-encoded sur login, OTP,
+  quote et webhooks ne produisent aucun 5xx : auth renvoie 422, quote 401
+  avant parsing, Mollie 400 `invalid_payload`, Uber 401 signature invalide.
+  Les parseurs et gardes d'authentification restent donc robustes sur ce
+  périmètre.
