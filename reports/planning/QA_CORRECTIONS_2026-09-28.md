@@ -635,3 +635,71 @@ même passe aurait été imprudent). **À traiter.**
 Le **site vitrine** (`lecayenne.fr`) n'est PAS concerné par ce déploiement : il
 vit dans un dépôt séparé, son arbre porte 15+ fichiers non commités d'un autre
 travail, et l'action B qui le visait est **fautive** (§6). Rien n'y a été touché.
+
+---
+
+## 10. État réel des campagnes E2E — et le prérequis qui manquait
+
+Une fois la collecte réparée (§ ci-dessus) et les 28 specs recâblées sur l'arbre
+configuré, les campagnes deviennent lisibles. Elles l'étaient d'autant moins que
+**le diffuseur temps-réel n'était pas démarré** et que rien ne le prescrit dans
+le chemin E2E courant.
+
+### Le partage environnement / produit, mesuré
+
+| Surface | Sans diffuseur temps-réel | Avec `soketi` sur `:6001` |
+|---|---|---|
+| E2E critique (`test:e2e:smoke`) | **22/22** | **22/22** |
+| Caisse / POS (7 fichiers) | **9/9** | **9/9** |
+| KDS / cuisine | 7 verts, **7 échecs** | **11 verts, 3 échecs** |
+| Tracker · synchro · wizard · promo | 5 verts, **5 échecs** | **7 verts, 3 échecs** |
+| Borne | 11 verts, 1 échec | 11 verts, **1 échec** |
+
+**6 des 13 échecs initiaux étaient purement environnementaux** : un diffuseur
+Pusher absent sur `:6001`, dont l'absence se lisait comme un défaut produit
+(`WebSocket connection … ERR_CONNECTION_REFUSED` dans la console, puis une
+assertion métier qui tombe).
+
+### Le prérequis à documenter
+
+Le dépôt a déjà l'outil : `scripts/ci-bootstrap-websockets-harness.sh`, dont
+l'en-tête explique précisément le risque (« sans un vrai serveur protocole
+Pusher sur 6001, le chemin de diffusion n'est JAMAIS exercé »). `soketi` est
+installé sur cette machine et `soketi.json` est versionné ; un
+`soketi start --config=soketi.json` suffit.
+
+**Ce qui manque n'est pas l'outil, c'est la prescription** : ni
+`npm run test:e2e:smoke` ni `test:e2e:full` ne l'exigent ni ne le signalent, et
+une spec qui échoue faute de diffuseur ne le dit pas — elle échoue sur une
+assertion métier. D'où 6 faux signalements sur 13.
+
+### Les 7 échecs restants — listés, PAS rafistolés
+
+- **Borne** `borne-e2e-logique-2026-07-21` — « un supplément payant doit être
+  sélectionné ». **Préexistant, prouvé** : échoue à l'identique avec mes deux
+  correctifs borne remis à la version de base `d9a95ac77` et recompilés. Reste
+  rouge avec le diffuseur actif, donc ce n'est pas l'environnement. La spec
+  clique des tuiles **à l'aveugle** (`rows[0]` en repli) : à qualifier —
+  obsolescence de sélecteur ou vrai défaut de l'étape suppléments.
+- **KDS** `KdsMultiScreenPlaywrightTest` — assère `toContain('Voir plus')` sur
+  `KitchenDisplaySystemComponent.vue`. **Obsolescence prouvée** : tourne en
+  22 ms **sans navigateur**, ne dépend d'aucune URL, et lit deux fichiers que je
+  n'ai pas touchés — elle échouait donc déjà. C'est un test de contrat de source
+  déguisé en spec Playwright.
+- **5 autres** répartis sur KDS et tracker/synchro/wizard/promo, à qualifier un
+  par un.
+
+**Pourquoi je ne les corrige pas dans cette passe** : réécrire une assertion
+obsolète sans comprendre le changement produit qui l'a périmée reviendrait à
+**masquer une éventuelle régression réelle** — exactement le défaut que ce
+rapport reproche ailleurs. Chacun mérite le même traitement que les défauts
+corrigés plus haut : reproduire, qualifier, puis décider.
+
+### Recommandation
+
+1. Faire de `soketi` un **prérequis explicite** du chemin E2E (démarrage dans
+   les scripts `test:e2e:*`, ou échec immédiat avec un message clair si `:6001`
+   ne répond pas). Sans ça, 6 échecs sur 13 sont du bruit, et le bruit finit par
+   faire ignorer les 7 vrais.
+2. Qualifier les 7 restants un par un, en commençant par la borne (c'est la
+   seule qui touche un parcours client payant).
