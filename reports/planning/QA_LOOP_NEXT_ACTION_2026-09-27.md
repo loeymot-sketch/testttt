@@ -187,6 +187,15 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   `firebase/php-jwt v6.11.1` (tiré par Google API/Auth). Les mises à niveau
   doivent être traitées comme une mission sécurité séparée, pas comme un simple
   nettoyage automatique du lockfile.
+- **Sécurité applicative fraîche (28/09/2026)** : `php artisan test
+  tests/Feature/Security` passe **221/221 en 67,79 s**; permissions admin,
+  rotation de clés, rate limits, anti-hijack signup, CSP et désactivation
+  super-admin restent verts. En sondage live sans session, plusieurs chemins
+  `/api/*` non reconnus (`/api/orders`, `/api/settings`, `/api/kiosk/config`)
+  renvoient HTTP 200 avec le shell HTML au lieu d’un 404/401 JSON; ce n’est pas
+  une fuite observée, mais c’est un risque d’observabilité/client (un appel API
+  peut recevoir une page HTML valide en HTTP 200). À clarifier dans le routage
+  API avant de conclure à une protection live complète.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

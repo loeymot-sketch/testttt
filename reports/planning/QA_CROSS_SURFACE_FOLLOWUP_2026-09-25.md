@@ -951,3 +951,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `maatwebsite/excel 3.1.67`, `spatie/laravel-medialibrary 10.15.0` et
   `firebase/php-jwt v6.11.1`. Cette cartographie fournit au développeur les
   points d’entrée sans modifier le lockfile pendant l’audit.
+- **Sécurité/routage live (28/09/2026)** : la suite Security locale est verte
+  à **221/221**. En revanche, des chemins API inexistants sondés sans session
+  renvoient le shell HTML avec HTTP 200 (`/api/orders`, `/api/settings`,
+  `/api/kiosk/config`) au lieu d’un statut API explicite; observation à
+  traiter comme défaut de contrat/monitoring, sans preuve actuelle de fuite de
+  données.
