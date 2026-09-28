@@ -196,6 +196,13 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   une fuite observée, mais c’est un risque d’observabilité/client (un appel API
   peut recevoir une page HTML valide en HTTP 200). À clarifier dans le routage
   API avant de conclure à une protection live complète.
+- **Confirmation fallback API (28/09/2026)** : `php artisan route:list --path=api`
+  ne déclare pas `/api/orders`, `/api/settings` ni `/api/kiosk/config`; sur le
+  VPS, ces trois chemins répondent **200 HTML**, y compris avec
+  `Accept: application/json`. Le comportement vient donc du fallback SPA,
+  pas d’une route métier exposée, mais le contrat HTTP reste ambigu et doit
+  être corrigé ou explicitement documenté pour éviter qu’un client croit avoir
+  reçu une réponse API valide.
 - **Intégrité métier fraîche (28/09/2026)** : les suites PHPUnit passent
   `tests/Feature/Order` **109/109 en 24,25 s**, `tests/Feature/Loyalty`
   **93/93 en 22,25 s** et `tests/Feature/Outbox` **81/81 en 17,84 s**.

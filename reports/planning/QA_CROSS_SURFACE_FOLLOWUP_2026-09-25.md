@@ -957,6 +957,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `/api/kiosk/config`) au lieu d’un statut API explicite; observation à
   traiter comme défaut de contrat/monitoring, sans preuve actuelle de fuite de
   données.
+- **Fallback API confirmé (28/09/2026)** : les chemins non déclarés dans
+  `route:list --path=api` retournent toujours le shell SPA en HTTP 200, même
+  avec `Accept: application/json`. Ce n’est pas une fuite démontrée, mais une
+  réponse non typée qui peut provoquer des erreurs silencieuses côté clients et
+  monitoring.
 - **Revalidation métier (28/09/2026)** : Order **109/109**, Loyalty **93/93**
   et Outbox **81/81** passent sur des exécutions séparées. Les invariants
   critiques restent verts en local, sans preuve équivalente d’un encaissement
