@@ -1251,3 +1251,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   téléphone respectent le choix imprimer/non-imprimer, et `Oui, imprimer`
   émet réellement `/escpos`. La preuve ne couvre pas encore le VPS ni le
   périphérique imprimante réel.
+- **Fidélité borne E2E (28/09/2026, 04:16 CEST)** : **4/4 tests passés** :
+  inscription rapide sans retaper le téléphone, numpad auto-submit au 10e
+  chiffre, solde réel correct et erreur claire pour code inconnu. Aucun envoi
+  d'email réel; le register est mocké seulement pour isoler le parcours UI.

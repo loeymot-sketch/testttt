@@ -543,3 +543,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Les deux tests d'encaissement téléphone passent aussi **2/2 en 41,9 s** :
   aucune impression automatique, refus sans impression, et impression explicite
   via `/escpos`. Le VPS et l'imprimante physique restent hors de cette preuve.
+- **Fidélité borne E2E (28/09/2026, 04:16 CEST)** : les specs dédiées passent
+  **4/4** (inscription rapide 2/2 en 4,6 s; contrôle solde réel 2/2 en 3,1 s).
+  Numéro inconnu : bascule automatique vers prénom unique, numpad qui déclenche
+  au 10e chiffre, sans retaper le téléphone. Code réel : solde exact affiché;
+  code inconnu : erreur visible, jamais page blanche. Aucun email réel envoyé
+  (register mocké uniquement dans le scénario d'inscription pour éviter le
+  throttle externe).
