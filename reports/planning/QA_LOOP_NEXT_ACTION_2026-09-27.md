@@ -949,3 +949,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   bord, configurer correctement les proxies de confiance et tester la clé IP
   effective. Les payloads étaient vides, donc aucune donnée n'a été créée dans
   ce sous-test.
+- **Comparaison OTP (28/09/2026, 06:39 CEST)** : le même test sur
+  `/api/auth/guest-signup/email-otp` avec six `X-Forwarded-For` distincts
+  consomme correctement un seul bucket (`Remaining: 4,3,2,1,0`, puis 429).
+  Le limiteur OTP global anti-spoof fonctionne; la faille est spécifique au
+  throttle `subscriber` et ne doit pas être « corrigée » en affaiblissant le
+  garde OTP.
