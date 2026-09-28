@@ -1504,3 +1504,14 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `999999` répondent tous `200` avec un catalogue exploitable, donc les valeurs
   invalides ne sont toujours pas rejetées/isolées. Les trois service workers
   publics répondent `404` JSON tandis que `/offline.html` répond `200` HTML.
+- **Régression frontend ciblée (28/09/2026, 19:10 CEST)** : 12 fichiers Vitest
+  couvrant fidélité/consentement, inscription sans page blanche, sauces frites,
+  panier, édition de récapitulatif, suppléments, bol multi-sauces et affichage
+  KDS : **176 tests, 0 échec**. `KioskWizard.spec.js` passe ses 97 tests; le
+  seul message est le warning de mock `axios unavailable`, sans échec de test.
+- **Contrats backend fidélité/consentement (28/09/2026, 19:10 CEST)** :
+  `LoyaltyConsentTest`, `LoyaltyOptInEndpointTest`, `LoyaltyApiTest` et
+  `LoyaltyRegisterAllowsWebLoginTest` : **23 tests, 65 assertions, 0 échec**.
+  La couverture locale confirme le consentement côté parcours prévu, mais ne
+  neutralise pas le contournement observé sur l’endpoint production `/register`
+  sans consentement explicite.
