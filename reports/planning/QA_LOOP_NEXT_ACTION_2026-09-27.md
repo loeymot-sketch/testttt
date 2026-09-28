@@ -703,3 +703,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   trace, mais le statut 500 est incorrect pour une ressource publique absente.
   Les tokens de suivi invalides continuent de tomber en HTML SPA; `%00` est
   bloqué proprement par nginx en 400.
+- **Suivi token valide/invalide (28/09/2026, 04:42 CEST)** : avec un token de
+  48 caractères au format contractuel mais inexistant, `order/track` renvoie
+  correctement `200 {found:false}` et `track-qr` renvoie 404 JSON. Les retours
+  HTML observés précédemment concernent seulement les tokens de longueur ou
+  caractères hors contrainte, qui sont interceptés par le catch-all SPA; c'est
+  une dette de contrat HTTP/monitoring, pas une fuite de commande.
