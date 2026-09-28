@@ -663,3 +663,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   reste conditionnel car les smoke tests API Claude/Codex sont désactivés par
   défaut (`VERIFY_BILLING_FULL=1` requis). Ce n'est pas un défaut produit,
   mais une limite de traçabilité de la validation agentique actuelle.
+- **Crawl liens publics/PWA (28/09/2026, 04:35 CEST)** : 22 ressources
+  same-origin issues des pages publiques (pages menu, légales, horaires,
+  manifest et assets) répondent 200; aucun lien interne mort ou redirection
+  inattendue n'a été découvert dans ce périmètre. Les quatre icônes PWA du
+  manifest répondent également 200 en `image/png`. Le 404 `/menu` reste donc
+  un deep-link isolé non référencé par les liens HTML crawlé.
