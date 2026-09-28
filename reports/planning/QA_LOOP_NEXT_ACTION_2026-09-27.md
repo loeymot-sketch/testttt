@@ -1429,3 +1429,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `PosPricingSsotProofTest` : **23 tests, 68 assertions, 0 échec**. Les
   protections serveur contre totaux forgés, rejeu/quote, dérive de branche,
   double comptage sauces/suppléments et choix indisponibles restent vertes.
+- **Contrat webhooks recontrôlé (28/09/2026, 19:40 CEST)** : les POST
+  malformés restent correctement fail-closed (`/api/webhooks/uber` → `401
+  JSON invalid_signature`; `/api/webhook/mollie` → `400 JSON invalid_payload`).
+  En revanche les méthodes `GET` et `OPTIONS` sur ces deux URLs retombent sur
+  la SPA en `200 text/html` (`Allow: GET,HEAD,POST` pour OPTIONS), au lieu d'un
+  `405`/`204` strict de webhook. Une sonde ou un proxy utilisant la mauvaise
+  méthode peut donc recevoir une page HTML et masquer la mauvaise intégration.
