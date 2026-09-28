@@ -363,5 +363,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   possède pas de borne provisionnée. La page login, le montage Vue, l’absence
   d’erreur fatale et `kioskMenuPricing` sont vérifiés, mais la navigation et
   l’ajout panier tactile restent non vérifiés en environnement réel.
+- **E2E public Chromium (28/09/2026, 03:50 CEST)** : homepage et hash menu
+  fonctionnels, aucun log console critique; `carte.html`, horaires, CGV et
+  confidentialité sont 200. Le deep-link `/menu` est toutefois **404** alors
+  que c’est une URL attendue intuitivement : dette SEO/compatibilité à traiter
+  séparément du contenu public non déployé.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**

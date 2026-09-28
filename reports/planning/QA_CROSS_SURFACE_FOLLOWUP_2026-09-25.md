@@ -1095,3 +1095,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `kioskMenuPricing` passent. Le parcours tactile catégories→produit reste
   skip car aucune `KioskMachine` provisionnée n’active l’écran idle; ce n’est
   pas une preuve de fonctionnement de la borne en production.
+- **E2E Chromium surface publique (28/09/2026, 03:50 CEST)** : homepage HTTP
+  200, menu hash `/#menu` fonctionnel, zéro erreur console/page et zéro
+  réponse réseau ≥400 sur le parcours observé. Les pages statiques
+  `/carte.html`, `/horaires.html`, CGV et confidentialité répondent 200.
+  En revanche, `/menu` en URL directe répond **404** : ce n’est pas le chemin
+  utilisé par la navigation actuelle (hash + `carte.html`), mais c’est une
+  faiblesse de lien profond/SEO à corriger ou documenter.
