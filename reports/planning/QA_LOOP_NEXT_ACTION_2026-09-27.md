@@ -556,3 +556,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Aucun écran blanc, erreur page/console, ni commande/notification réelle
   (endpoint register intercepté pour isoler l'UI; contrat serveur couvert par
   les tests Feature).
+- **Contrats fidélité serveur (28/09/2026, 04:20 CEST)** : **51/51 PHPUnit
+  ciblés passés** : email OTP (18), durcissement guest OTP (6), scope token
+  (1), inscription borne/conservation email (6), variantes/canonicalisation
+  téléphone (7), liaison compte web (7), unicité téléphone (2) et absence de
+  fuite PII (4). Les conflits email, comptes invités et formats 06/+33 sont
+  explicitement couverts; aucune donnée d'un autre compte n'est divulguée.

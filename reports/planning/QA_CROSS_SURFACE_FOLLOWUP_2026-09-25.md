@@ -1259,3 +1259,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   2,5 s** avec prénom/téléphone/email, consentement et solde visible après
   register; aucun écran blanc ni erreur console. Le POST register est mocké
   dans cette spec pour éviter une notification externe.
+- **Fidélité backend (28/09/2026, 04:20 CEST)** : **51/51 tests ciblés verts**
+  sur OTP email/guest, inscription borne, canonicalisation téléphone 06/+33,
+  liaison web, unicité et anti-fuite PII. Les collisions et comptes existants
+  sont refusés proprement sans divulguer email, téléphone ou code tiers.
