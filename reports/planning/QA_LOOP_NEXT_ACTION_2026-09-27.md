@@ -519,3 +519,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   e2e.spec.js` passe **1/1 en 7,3 s** en local. Le caissier saisit `Olives` et
   `1,25`, la ligne panier affiche le libellé et le montant, et le grand total
   contient `1,25`. Le flux reste avant paiement et ne crée aucun effet externe.
+- **Impression/ticket backend (28/09/2026, 04:13 CEST)** : suites ciblées
+  PHPUnit **21/21 passées** : ReceiptPrintController 10/10 (idempotence,
+  audit, isolation de branche, auth), PosReceiptPrintFlow 3/3 (client/cuisine),
+  PosTicketBytesEndpoint 3/3 et CounterCollectAndPrintIdempotency 5/5. Cela
+  confirme les bytes ESC/POS et le non-double-compteur côté backend. Les specs
+  navigateur d'impression historiques codent encore le port `8766`; elles
+  doivent être réalignées sur le port standard avant un verdict E2E navigateur.

@@ -1233,3 +1233,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   **1/1**; `Olives` à `1,25` apparaît dans la ligne panier et le grand total.
   Cela confirme le besoin de supplément libre nommé côté caisse en local; le
   ticket imprimé et le VPS physique restent à vérifier séparément.
+- **Backend tickets/impression (28/09/2026, 04:13 CEST)** : **21/21 PHPUnit
+  ciblés passés** (receipt controller, flux client/cuisine, bytes ESC/POS,
+  idempotence encaissement/impression). Les specs navigateur historiques
+  `caisse-print-decision` utilisent encore `127.0.0.1:8766`, écart de harness
+  à corriger avant de les considérer comme preuve web.
