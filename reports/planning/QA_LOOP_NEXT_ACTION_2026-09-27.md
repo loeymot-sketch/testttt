@@ -1339,3 +1339,16 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   assertions confirment localement `Harissa → HH`, `Sans sauce → X`, tacos sans
   taille en KDS, placement des sauces frites par canal, absence de double
   comptage, plafonds viande XL et supplément manuel soumis au prix serveur.
+- **Suite reprise authentification (28/09/2026, 18:50 CEST)** : les tests
+  `authProactiveTokenRefresh`, `paymentComponent401Retry`,
+  `sessionExpiredOverlay`, `authLogoutInterceptor`,
+  `routerPermissionRequired`, `aucuneBoucleDeRedirectionSurUnRoleSansDroit`
+  et `kioskAuthInterceptor` passent : **7 fichiers, 32 tests, 0 échec**.
+  La couverture locale des réactions 401/refresh est donc verte, mais le test
+  Chrome admin réel reste bloqué par une session effectivement expirée.
+- **Re-sondage production (28/09/2026, 18:50 CEST)** : `/api/health` et
+  `/api/health/ready` répondent encore `200`; DB, Redis, worker, scheduler,
+  backup et restore sont `ok`, et la file est revenue à `0`. Le health expose
+  toujours `version: "dev"`. `/kiosk/login` répond `200 text/html`; le contrat
+  API invalide persiste : `/api/frontend/unknown` avec `Accept: application/json`
+  répond `200 text/html` (20 906 octets) au lieu d'un `404 JSON`.
