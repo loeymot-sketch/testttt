@@ -1161,3 +1161,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   assertion de rendu ou de non-doublage `/api/api/` ne peut être déclarée
   verte. Le VPS `/api/health` répond toutefois 200 JSON avec DB/Redis/queue OK
   et `version: dev`, ce qui laisse un risque de configuration de déploiement.
+- **Matrice HTTP publique (28/09/2026, 04:00 CEST)** : les pages vitrines,
+  commande, livraison, carte, horaires et légales sont HTTP 200; le deep-link
+  `/menu` reste HTTP 404. Les CTA `Commander en ligne` des pages dédiées
+  ciblent `/`, ce qui confirme la dette de routage/contexte déjà observée.

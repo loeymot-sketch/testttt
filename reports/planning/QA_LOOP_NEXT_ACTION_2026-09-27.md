@@ -425,3 +425,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   DB/Redis/queue indiqués OK, mais le champ `version` vaut **dev** sur le VPS.
   C'est un signal de configuration/déploiement à traiter avant une clôture
   production, même si le endpoint de santé est vert.
+- **Matrice HTTP publique (28/09/2026, 04:00 CEST)** : revalidation directe
+  Node fetch : `/`, `/#menu`, `commander.html`, `livraison-henin-beaumont.html`,
+  `carte.html`, `horaires.html` et les cinq pages légales répondent 200; `/menu`
+  répond encore **404**. Les deux pages commande/livraison contiennent des
+  CTA `Commander en ligne` avec `href="/"`, donc la promesse de commande
+  contextuelle boucle vers l'accueil au lieu de conserver le parcours.
