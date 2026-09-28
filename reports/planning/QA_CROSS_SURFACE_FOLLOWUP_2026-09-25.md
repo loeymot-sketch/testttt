@@ -1246,3 +1246,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   ciblés verts** : authz tickets cuisine/client, board et historique, bytes
   ESC/POS borne, encaissement différé et isolation inter-branches. La preuve
   imprimante physique reste hors environnement automatisé.
+- **E2E impression navigateur (28/09/2026, 04:14 CEST)** : **4/4 tests
+  passés** sur le serveur local port 8766 : espèces/carte et encaissement
+  téléphone respectent le choix imprimer/non-imprimer, et `Oui, imprimer`
+  émet réellement `/escpos`. La preuve ne couvre pas encore le VPS ni le
+  périphérique imprimante réel.

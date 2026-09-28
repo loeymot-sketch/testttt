@@ -536,3 +536,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   stable, historique du jour borné à 50 avec fuseau Paris, endpoint ESC/POS
   borne client+cuisine, et encaissement borne différé. Isolation de branche et
   refus sans auth confirmés; aucun test matériel réel d'imprimante n'est inclus.
+- **E2E impression navigateur réel (28/09/2026, 04:14 CEST)** : après
+  réutilisation du serveur local attendu sur `127.0.0.1:8766`, les deux tests
+  espèces/carte passent **2/2 en 40,4 s** : la question d'impression apparaît,
+  `Non merci` n'imprime pas et `Oui, imprimer` déclenche la vraie requête.
+  Les deux tests d'encaissement téléphone passent aussi **2/2 en 41,9 s** :
+  aucune impression automatique, refus sans impression, et impression explicite
+  via `/escpos`. Le VPS et l'imprimante physique restent hors de cette preuve.
