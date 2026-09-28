@@ -1095,3 +1095,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   anti-SSRF mail/imprimante, coupons publics, OTP, rate limits, PII et
   isolation fidélité restent verts. Les défauts live `X-Forwarded-For` des
   surfaces non couvertes par ces tests restent toutefois ouverts.
+- **Reprobe critique VPS (28/09/2026, 08:49 CEST)** : aucune correction live
+  visible : `branch_id=foo` et le doublon `1&999999` rendent toujours les
+  trois ruptures disponibles; l'upsell avec branche invalide et `limit=-1`
+  renvoie maintenant 18 suggestions (dont Fanta Citron), confirmant que la
+  limite négative reste sans borne basse et que le fail-open est toujours en
+  production.
