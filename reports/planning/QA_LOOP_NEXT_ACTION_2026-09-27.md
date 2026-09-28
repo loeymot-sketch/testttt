@@ -1290,3 +1290,21 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   correspondent à aucun test rouge. Cette passe confirme l'absence de
   régression locale sur les contrats POS, borne, prix, sauces, KDS,
   fidélité, paiement et accessibilité couverts par Vitest.
+- **Smoke E2E borne réel Chrome (28/09/2026, 18:45 CEST)** : `/kiosk/login`
+  s'auto-connecte et redirige vers `/kiosk/idle`; l'écran « Bienvenue ! Le
+  Cayenne » est rendu. Le bouton de démarrage ouvre les catégories, puis la
+  personnalisation Cayenne s'ouvre sans écran blanc. Le scénario galette +
+  poulet mariné + Ketchup + Harissa affiche le récapitulatif « SAUCES Ketchup,
+  Harissa », marque la première gratuite et la seconde à **+0,50 €**, avec un
+  total stable **7,40 → 7,90 €**. La borne déployée est donc fonctionnelle sur
+  ce chemin réel; cette passe n'a pas encaissé de commande réelle.
+- **Contrôle déploiement/API (28/09/2026, 18:44–18:45 CEST)** : `/api/health`
+  et `/api/health/ready` répondent `200` et restent stables sur six sondes,
+  avec DB/Redis/worker/backup/restore `ok`; le health public annonce toutefois
+  encore `version: "dev"` et `notifications_size: 1`. Les routes HTML
+  `/kiosk/login` et `/admin/wizard-pages` renvoient toujours des cookies
+  `XSRF-TOKEN`/session sans attribut `Secure`, sans en-tête HSTS visible.
+  `/js/manifest.js` et `/mix-manifest.json` n'ont aucun `Cache-Control`/`Expires`
+  explicite. Enfin `/api/frontend/unknown` avec `Accept: application/json`
+  renvoie `200 text/html` (SPA) au lieu d'un `404 application/json`, défaut
+  persistant pouvant masquer une erreur de route au frontend.
