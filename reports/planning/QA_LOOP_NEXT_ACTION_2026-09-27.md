@@ -352,5 +352,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Le vendor date du 02/09 tandis que l’app date du 27/09 : le déploiement est
   probablement partiel ou son cache incohérent. Toute validation web doit
   désormais être rattachée au hash effectivement servi.
+- **Revalidation API corrigée (28/09/2026, 03:40 CEST)** : avec la clé live et
+  la méthode attendue, guest signup invalide donne **422 JSON**, loyalty config
+  **200 JSON**, quote POST non authentifié **401 JSON**. L’alerte précédente
+  « 302 généralisés » est annulée. Reste un problème de contrat pour les
+  mauvaises méthodes : GET sur des routes POST API revient en **200 HTML SPA**
+  au lieu d’un 405/JSON explicite, ce qui reste un risque de monitoring.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**

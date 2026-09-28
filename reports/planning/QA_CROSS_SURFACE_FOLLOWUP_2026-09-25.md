@@ -1081,3 +1081,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   ne valident donc pas exactement le bundle servi par le VPS; une incohérence
   de déploiement/cache peut expliquer les pages blanches et contrats API
   divergents.
+- **Correction du contrat API live (28/09/2026, 03:40 CEST)** : re-test avec
+  la clé réellement extraite de `/login` et la méthode correcte : guest signup
+  sans email renvoie **422 JSON**, loyalty config **200 JSON**, et quote POST
+  sans session renvoie **401 JSON**. La conclusion précédente « ces routes
+  renvoient toutes 302 » est donc supersédée. Le défaut reproductible restant
+  est plus ciblé : un GET sur une route POST API renvoie **200 HTML SPA** au
+  lieu d’un 405/JSON explicite, ce qui peut masquer une erreur de méthode au
+  monitoring ou à un client mal configuré.
