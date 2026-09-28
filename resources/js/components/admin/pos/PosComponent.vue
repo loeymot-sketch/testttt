@@ -2344,6 +2344,8 @@ import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
 // l'écran cuisine et l'écran de statut.
 import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
+// [QA 2026-09-28 P0-18] Règle partagée avec /admin/encaissement — une seule définition.
+import { queueNumberDateBadge } from '../../../helpers/queueNumberDateBadge';
 import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent.vue";
@@ -5606,19 +5608,15 @@ export default {
          * (`pos-shortcuts__num`) n'affichaient QUE ce numéro, sans date, aucun moyen de les
          * distinguer sans ouvrir chaque commande. Retourne '' pour une commande du jour
          * (cas normal, pas de bruit visuel) ; sinon "jj/mm" pour lever l'ambiguïté.
+         *
+         * [QA 2026-09-28 P0-18] La règle a été EXTRAITE dans
+         * `resources/js/helpers/queueNumberDateBadge.js` pour que l'écran dédié
+         * `/admin/encaissement` la partage au lieu d'en recopier une 3e version.
+         * Comportement inchangé ; cette méthode reste le point d'entrée du
+         * gabarit et de `posShortcutDateBadgeAmbiguity.spec.js`.
          */
         shortcutDateBadge(o) {
-            const iso = o && o.created_at;
-            if (!iso) return '';
-            try {
-                const d = new Date(iso);
-                const today = new Date();
-                const sameDay = d.getFullYear() === today.getFullYear()
-                    && d.getMonth() === today.getMonth()
-                    && d.getDate() === today.getDate();
-                if (sameDay) return '';
-                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            } catch (_) { return ''; }
+            return queueNumberDateBadge(o);
         },
         // ──────────────────────────────────────────────────────────────────
         onlyNumber: function (e) {

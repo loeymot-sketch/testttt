@@ -49,6 +49,21 @@
                                     {{ originBadge(order).label }}
                                 </span>
                                 <span class="enc-queue" v-if="order.queue_number">N°{{ order.queue_number }}</span>
+                                <!--
+                                  [QA 2026-09-28 · P0-18] Le numéro court est un compteur
+                                  QUOTIDIEN par branche, et cette file n'a volontairement PAS
+                                  de filtre de journée (une commande non encaissée doit rester
+                                  visible). Deux commandes de jours différents peuvent donc
+                                  porter le MÊME N° ici — le rapport l'observe en vrai
+                                  (A0041 = 22/09 à 10,80 € ET 24/09 à 11,50 €). Sans date, le
+                                  caissier encaisse potentiellement la mauvaise commande.
+                                  Vide pour une commande du jour : aucun bruit visuel.
+                                -->
+                                <span
+                                    v-if="queueDateBadge(order)"
+                                    class="enc-queue-date-badge"
+                                    :data-testid="`enc-queue-date-${order.id}`"
+                                >{{ queueDateBadge(order) }}</span>
                             </div>
                             <div class="enc-ticket-customer">{{ customerName(order) }}</div>
                             <!--
@@ -134,6 +149,8 @@ import axios from "axios";
 import { printEscPosViaCaisseBridge } from "../../../helpers/posLocalPrinter";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { adminPriceMixin } from "../../../helpers/formatPrice";
+// [QA 2026-09-28 P0-18] Règle partagée avec PosComponent — une seule définition.
+import { queueNumberDateBadge } from "../../../helpers/queueNumberDateBadge";
 // [C-001 2026-08-25] Normaliseur CANONIQUE de composition — le même que la fiche
 // commande et que le ticket client. Il absorbe l'ancienne forme
 // (`{variation_name, name}`) ET celle de l'instantané NF525
@@ -243,6 +260,14 @@ export default {
         unsubscribeEcho() {
             try { this._eventSub?.unsubscribe(); } catch (_) { /* noop */ }
             this._eventSub = null;
+        },
+        /**
+         * [QA 2026-09-28 · P0-18 / triage A2] Lève l'ambiguïté du numéro court.
+         * Délègue au helper PARTAGÉ avec PosComponent.shortcutDateBadge : une
+         * seule définition de la règle, pas une troisième copie à la main.
+         */
+        queueDateBadge(order) {
+            return queueNumberDateBadge(order);
         },
         // Origin resolver — source_surface is the reliable signal. Today the
         // pending endpoint returns Borne (kiosk) orders; once delta-(B) routes
@@ -438,6 +463,20 @@ export default {
     font-weight: 800;
     color: #9a3412;
     font-variant-numeric: tabular-nums;
+}
+/* [QA 2026-09-28 P0-18] Badge de date accolé au numéro court : discret mais
+   lisible avec le client en face. Rendu uniquement hors du jour courant. */
+.enc-queue-date-badge {
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.3rem;
+    border: 1px solid #fed7aa;
+    border-radius: 0.25rem;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 .enc-ticket-customer { font-weight: 600; color: var(--pos-v5-ink); }
 .enc-ticket-items { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft); }
