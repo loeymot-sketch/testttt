@@ -431,3 +431,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   répond encore **404**. Les deux pages commande/livraison contiennent des
   CTA `Commander en ligne` avec `href="/"`, donc la promesse de commande
   contextuelle boucle vers l'accueil au lieu de conserver le parcours.
+- **Intégrité assets + en-têtes (28/09/2026, 04:03 CEST)** : les 35 assets
+  référencés par la homepage publique (JS/CSS/fonts/images) répondent tous 200,
+  sans HTML servi à la place d'un asset. En revanche, le VPS `/login` ne
+  renvoie ni HSTS, ni CSP, ni `X-Content-Type-Options`, et `/api/health` n'a
+  pas HSTS/CSP/Permissions-Policy. La vitrine Vercel possède ces protections;
+  l'écart d'en-têtes entre vitrine et VPS est un risque de durcissement/deploy,
+  même sans erreur fonctionnelle visible.

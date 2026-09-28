@@ -1165,3 +1165,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   commande, livraison, carte, horaires et légales sont HTTP 200; le deep-link
   `/menu` reste HTTP 404. Les CTA `Commander en ligne` des pages dédiées
   ciblent `/`, ce qui confirme la dette de routage/contexte déjà observée.
+- **Assets et sécurité HTTP (28/09/2026, 04:03 CEST)** : scan direct des 35
+  assets de la vitrine : **35/35 HTTP 200**, aucun asset transformé en HTML.
+  La vitrine envoie HSTS/CSP/nosniff; le VPS `/login` n'envoie pas HSTS, CSP
+  ou nosniff et son `/api/health` n'envoie pas HSTS/CSP/Permissions-Policy.
+  C'est un écart de hardening à corriger côté reverse-proxy/déploiement.
