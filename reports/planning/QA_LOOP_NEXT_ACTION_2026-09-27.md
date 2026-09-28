@@ -358,5 +358,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   « 302 généralisés » est annulée. Reste un problème de contrat pour les
   mauvaises méthodes : GET sur des routes POST API revient en **200 HTML SPA**
   au lieu d’un 405/JSON explicite, ce qui reste un risque de monitoring.
+- **E2E réel VPS borne (28/09/2026, 03:45 CEST)** : Playwright Chromium sous
+  Node 20.20.2 passe **4/5** tests; le cinquième est skipped car le VPS ne
+  possède pas de borne provisionnée. La page login, le montage Vue, l’absence
+  d’erreur fatale et `kioskMenuPricing` sont vérifiés, mais la navigation et
+  l’ajout panier tactile restent non vérifiés en environnement réel.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**

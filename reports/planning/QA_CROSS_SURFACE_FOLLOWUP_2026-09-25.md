@@ -1089,3 +1089,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   est plus ciblé : un GET sur une route POST API renvoie **200 HTML SPA** au
   lieu d’un 405/JSON explicite, ce qui peut masquer une erreur de méthode au
   monitoring ou à un client mal configuré.
+- **E2E Chromium réel VPS — borne (28/09/2026, 03:45 CEST)** : sous Node
+  20.20.2, `tests/e2e/03-kiosk-wizard.spec.js` donne **4 passés / 1 skipped**.
+  Login borne, rendu visible, absence d’erreur JS fatale et configuration
+  `kioskMenuPricing` passent. Le parcours tactile catégories→produit reste
+  skip car aucune `KioskMachine` provisionnée n’active l’écran idle; ce n’est
+  pas une preuve de fonctionnement de la borne en production.
