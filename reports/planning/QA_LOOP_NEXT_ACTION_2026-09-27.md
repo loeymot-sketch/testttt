@@ -1324,3 +1324,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   recharge encore `SAUCES Ketchup` et **2,50 €**. Le défaut de sauce perdue
   n'est donc pas reproduit sur ce scénario borne réel; le cas « Sans sauce »
   multi-sélection reste le défaut séparé à corriger.
+- **Accès KDS après session longue (28/09/2026, 18:56 CEST)** : l'ouverture
+  réelle de `https://vps-418872ac.vps.ovh.net/admin/kitchen-display-system`
+  avec la session Chrome existante ne reste pas sur l'écran cuisine : le garde
+  redirige vers `/admin/dashboard`, puis la page affiche le bandeau
+  `Session expirée — reconnexion…` et plusieurs panneaux `Unauthenticated`
+  (SLA, répartition, compteurs, ventes). Il n'y a pas de page blanche, mais le
+  KDS est effectivement inaccessible après expiration de session; un E2E KDS
+  authentifié ne peut pas être validé sans renouveler un compte admin valide.
