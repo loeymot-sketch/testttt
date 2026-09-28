@@ -1332,3 +1332,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   (SLA, répartition, compteurs, ventes). Il n'y a pas de page blanche, mais le
   KDS est effectivement inaccessible après expiration de session; un E2E KDS
   authentifié ne peut pas être validé sans renouveler un compte admin valide.
+- **Suite ciblée contrats métier (28/09/2026, 18:49 CEST)** : Vitest ciblé
+  `kdsSymbolic`, `kdsSaucesPlacement`, `kioskFritesSauceBilling`,
+  `posWizardFritesSauce`, `posWizardTacosXlTroisViandes` et
+  `posManualSupplement` : **6 fichiers, 55 tests passés, 0 échec**. Les
+  assertions confirment localement `Harissa → HH`, `Sans sauce → X`, tacos sans
+  taille en KDS, placement des sauces frites par canal, absence de double
+  comptage, plafonds viande XL et supplément manuel soumis au prix serveur.
