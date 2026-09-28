@@ -1228,3 +1228,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   la page de carte fonctionnelle est `/carte.html`. Tout ancien bouton,
   favori ou QR code pointant vers `/menu` casse donc l'accès à la carte, même
   si la navigation actuelle n'utilise plus ce chemin.
+- **Parcours public carte/commande (28/09/2026, 18:03 CEST)** : les 52 liens
+  internes extraits de `/carte.html` (produits, catégories, allergènes,
+  mentions et commande) répondent tous sans 4xx/5xx; `/commander.html` charge
+  sans erreur console ni appel API en échec. Le parcours public nominal est
+  donc vert; le défaut reste circonscrit à l'ancien alias direct `/menu`.
