@@ -766,3 +766,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   C'est un contrat d'erreur copié du domaine commande; un client catalogue
   peut afficher un message faux ou router vers le mauvais écran. Les IDs
   valides 1 et 121 répondent correctement 200.
+- **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
+  routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
+  3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
+  Aucun endpoint métier ne répond 200 sans authentification; l'anomalie de
+  format est bien isolée à `health/live`.
