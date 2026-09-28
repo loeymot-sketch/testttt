@@ -1026,6 +1026,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   indisponibles, les suppléments inactifs, les replays et les totaux falsifiés;
   le défaut live reste donc une projection catalogue/upsell fail-open, pas un
   contournement du commit de commande.
+- **Email-login sans prénom — garde avant envoi (28/09/2026, 07:35 CEST)** :
+  cinq numéros synthétiques (`0000000000`, `1111111111`, `1234567890`,
+  `9999999999`, `0612345678`) envoyés sans prénom sont tous rejetés 422 avec
+  le message demandant le prénom; aucun email n'est parti. Le chemin
+  d'envoi ne s'ouvre donc qu'après le payload complet, même si la règle
+  `ValidPhone` accepte encore certaines séquences absurdes lorsqu'il est
+  complet.
 - **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
   confirme qu'un plafond global `login-global` de 30/min existe en plus du
   bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
