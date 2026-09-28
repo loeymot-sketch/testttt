@@ -991,3 +991,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   SPA au lieu d'un 405/204 explicite; un monitoring ou un scanner peut donc
   croire que le webhook est disponible sur la mauvaise méthode. Aucun paiement
   ni commande n'a été touché.
+- **Balayage verbes sensibles revalidé (28/09/2026, 07:09 CEST)** : `GET` sur
+  `/api/auth/login`, `/api/auth/guest-signup/email-otp`,
+  `/api/auth/forgot-password`, `frontend/order/quote` et
+  `frontend/order/{id}/mollie-checkout` retombe encore en `200 text/html` SPA;
+  `OPTIONS` fait de même sur toutes ces routes. Les autres verbes mutationnels
+  renvoient bien 405 JSON et `TRACE` est bloqué par nginx. Le masquage reste
+  donc concentré sur GET/OPTIONS, mais touche directement auth et paiement.
