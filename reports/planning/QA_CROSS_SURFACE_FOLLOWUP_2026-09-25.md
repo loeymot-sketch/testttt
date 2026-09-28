@@ -1151,3 +1151,13 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   signalé l'élément hors viewport; aucune commande ni paiement n'a été soumis.
   Refaire ce cas sur une session fraîche avec viewport maîtrisé avant de
   déclarer la branche carte E2E verte.
+- **Wave B public historique (28/09/2026, 03:57 CEST)** : le test Chromium
+  legacy échoue car les sélecteurs hero/Facebook/galerie ne trouvent aucun
+  élément sur le site actuel; aucune erreur console ou HTTP 4xx/5xx n'est
+  observée. À classer comme test obsolète ou contenu public retiré après
+  validation produit, pas comme preuve de panne du checkout.
+- **Dashboard admin VPS (28/09/2026, 03:59 CEST)** : le smoke login/dashboard
+  n'a pas terminé après plus de quatre minutes et a été interrompu; aucune
+  assertion de rendu ou de non-doublage `/api/api/` ne peut être déclarée
+  verte. Le VPS `/api/health` répond toutefois 200 JSON avec DB/Redis/queue OK
+  et `version: dev`, ce qui laisse un risque de configuration de déploiement.

@@ -408,3 +408,20 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   confirmation, aucun paiement Mollie et aucune donnée sensible n'ont été
   envoyés. Ce n'est pas classé comme régression fonctionnelle, mais le test
   carte reste à refaire sur une session fraîche/viewport maîtrisé.
+- **Régression/obsolescence du test public Wave B (28/09/2026, 03:57 CEST)** :
+  `tests/e2e/_audit-B-home-legal-2026-07-21.spec.js` a été rejoué sur
+  `https://www.lecayenne.fr` avec Chromium Node 20.20.2. Le test échoue sur
+  les sélecteurs historiques `hero`, bouton Facebook et galerie (0 élément),
+  alors que le parcours public moderne testé séparément fonctionne et qu'aucun
+  log console ni HTTP 4xx/5xx n'a été observé. Les assertions sont donc
+  obsolètes ou signalent une disparition de contenu à arbitrer; les cinq tests
+  légaux n'ont pas produit de verdict exploitable car la suite est sérialisée
+  derrière l'échec B1.
+- **Dashboard admin live non concluant (28/09/2026, 03:59 CEST)** :
+  `09-admin-dashboards-ui.spec.js` est resté bloqué plus de quatre minutes
+  pendant le flux login/chargement VPS; le processus a été arrêté pour éviter
+  un faux résultat. Il faut un run borné sur session authentifiée fraîche.
+- **Health live (28/09/2026, 03:59 CEST)** : `/api/health` répond 200 JSON,
+  DB/Redis/queue indiqués OK, mais le champ `version` vaut **dev** sur le VPS.
+  C'est un signal de configuration/déploiement à traiter avant une clôture
+  production, même si le endpoint de santé est vert.
