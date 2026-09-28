@@ -940,3 +940,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   l’arbre externe conserve 58 changements non committés, et le site live sert
   toujours quatre mentions Uber Eats. Les en-têtes de sécurité sont conformes,
   mais le cache Vercel stable sert encore l’ancienne copie.
+- **Scan supply-chain (28/09/2026)** : l’audit npm révèle **21 vulnérabilités**
+  (dont 3 critiques et 11 hautes) et l’audit Composer **8 advisories**. Ce
+  nouveau risque n’est pas couvert par les tests fonctionnels verts; il faut
+  une mission sécurité dédiée, avec matrice d’impact et mise à niveau testée,
+  avant de lancer `npm audit fix --force` ou une mise à jour Laravel majeure.

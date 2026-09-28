@@ -171,6 +171,15 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   `frame-ancestors`/SAMEORIGIN et Permissions-Policy sont présents; Vercel
   répond toujours `x-vercel-cache: HIT` avec ETag/date inchangés. La protection
   transport est saine, mais ce cache stable confirme le décalage de contenu.
+- **Audit dépendances (28/09/2026)** : `npm audit --omit=dev --audit-level=high`
+  signale **21 vulnérabilités** (3 critiques, 11 hautes, 5 moyennes, 2 faibles),
+  dont `protobufjs` (exécution de code), `swiper` (prototype pollution),
+  `websocket-driver`, `ws`, `socket.io-parser`, `fast-uri`, `postcss` et
+  `nanoid`; `quill` reste sans correctif disponible. `composer audit` signale
+  **8 advisories** sur `laravel/framework`, `maatwebsite/excel`,
+  `spatie/laravel-medialibrary` et `firebase/php-jwt`, dont plusieurs hautes.
+  Aucun `audit fix` automatique n’a été lancé : plusieurs corrections exigent
+  des changements majeurs et une revue de compatibilité/gate.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
