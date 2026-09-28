@@ -143,6 +143,18 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   les phrases cibles « livraison par nos livreurs bientôt » et
   « commander/confirmer à emporter » sont absentes. Le défaut public est donc
   toujours reproductible après le dernier audit.
+- **Rejeu distant et navigation protégée (28/09/2026, 02:00 CEST)** : avec
+  Node 20.20.2, `03-kiosk-wizard.spec.js` sur le VPS passe **4/5**, le cinquième
+  scénario étant **skipped** car la borne n’est pas provisionnée. Un navigateur
+  headless sans session confirme `/login` sans erreur JS, et `/admin/dashboard`
+  redirige correctement vers `/login`. `/kiosk/login` affiche toutefois
+  « Borne momentanément indisponible » : disponibilité produit toujours non
+  démontrée en production.
+- **Écart de readiness (28/09/2026, 02:00 CEST)** : `/api/health` et
+  `/api/healthz` sont OK avec des files à zéro, mais `/api/health/ready` répond
+  HTTP 200 tout en signalant `restore_drill=degraded` (« restauration jamais
+  mesurée »). Le statut HTTP `ok` ne doit donc pas être interprété comme une
+  readiness opérationnelle complète; un drill attesté reste requis.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

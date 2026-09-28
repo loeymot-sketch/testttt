@@ -919,3 +919,14 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   renvoie encore quatre occurrences « Uber Eats » et zéro occurrence des
   formulations de livraison/emporter demandées. Ce contrôle confirme que la
   correction n’est pas publiée, malgré le code FoodKing local validé.
+- **Rejeu navigateur VPS (28/09/2026, 02:00 CEST)** : les quatre contrôles
+  exécutables de la suite kiosk distante passent; le scénario de navigation
+  reste ignoré car le provisioning borne manque. `/admin/dashboard` renvoie
+  vers `/login` sans erreur JavaScript quand aucune session n’est présente.
+  La borne live affiche encore son écran d’indisponibilité, ce qui reste un
+  défaut de disponibilité à résoudre hors simple santé API.
+- **Readiness sémantiquement trompeuse (28/09/2026)** : la sonde `/api/health/ready`
+  conserve HTTP 200/status `ok` malgré `restore_drill=degraded`. Le rapport
+  classe ce point comme risque opérationnel distinct : la supervision peut
+  annoncer « prêt » alors que la restauration de secours n’a jamais été
+  mesurée.
