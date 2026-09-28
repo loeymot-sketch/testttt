@@ -1436,3 +1436,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   la SPA en `200 text/html` (`Allow: GET,HEAD,POST` pour OPTIONS), au lieu d'un
   `405`/`204` strict de webhook. Une sonde ou un proxy utilisant la mauvaise
   méthode peut donc recevoir une page HTML et masquer la mauvaise intégration.
+- **Régression wizard borne ciblée (28/09/2026, 19:00 CEST)** : Vitest sur
+  `KioskWizard`, `kioskWizardEditRestore`, `kioskWizardMultiViande`,
+  `kioskWizardOnionCuit`, `kioskWizardComposerProfile` et
+  `kioskCartSendPayload` : **6 fichiers, 121 tests passés, 0 échec**. Les
+  transitions du wizard, restauration d'édition, viandes multiples, oignon
+  cru/cuit et payload panier restent cohérents localement; cela ne neutralise
+  pas les anomalies live déjà observées (« Sans sauce » et branche fail-open).
