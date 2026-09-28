@@ -714,3 +714,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   le 500 live n'était donc pas protégé par une régression automatisée. Une
   correction devra ajouter au minimum le cas 404/422 avant de considérer le
   endpoint couvert.
+- **Scan routes publiques sans clé (28/09/2026, 04:44 CEST)** : les 5 routes
+  GET statiques explicitement exemptées d'auth ont été sondées sans clé. Seuls
+  `/api/login` (401 JSON attendu) et `/api/health/live` (200 HTML déjà signalé)
+  sont notables; aucune route publique inattendue n'expose de données métier.
