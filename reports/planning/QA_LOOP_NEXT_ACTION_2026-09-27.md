@@ -1443,3 +1443,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   transitions du wizard, restauration d'édition, viandes multiples, oignon
   cru/cuit et payload panier restent cohérents localement; cela ne neutralise
   pas les anomalies live déjà observées (« Sans sauce » et branche fail-open).
+- **Audit dépendances production (28/09/2026, 19:06 CEST)** : `npm audit
+  --omit=dev --json` échoue encore (exit 1) avec **21 vulnérabilités** dans
+  l'arbre installé : 3 critiques, 11 hautes, 5 modérées et 2 faibles (291
+  dépendances de production). Ce point reste bloquant pour une validation de
+  déploiement « sans faute » et doit être traité séparément des tests
+  fonctionnels verts.
