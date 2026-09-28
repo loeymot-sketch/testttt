@@ -842,3 +842,22 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   branche 1. Le risque reste conditionnel à une perte/altération de ce
   paramètre, mais il est exploitable par URL directe et n'est pas neutralisé
   par l'API catalogue elle-même.
+- **CORS production trop permissif (28/09/2026, 06:03 CEST)** : avec la clé
+  API actuellement injectée dans le HTML public, `OPTIONS` sur le catalogue
+  accepte `http://localhost:3000`, `http://localhost:5173`,
+  `http://127.0.0.1:3000`, `http://127.0.0.1:9100` et même `https://localhost`,
+  en renvoyant `Access-Control-Allow-Origin` égal à l'origine et
+  `Access-Control-Allow-Credentials: true`. Les origines externes arbitraires
+  (`evil.example`, `evil.localhost`) sont correctement refusées. Cela ne
+  permet pas à un site distant de lire la réponse, mais une application
+  locale compromise peut effectuer des appels credentialed vers le VPS si un
+  opérateur y possède une session; les origines localhost doivent être
+  limitées au profil de développement et exclues de la configuration de
+  production.
+- **Clé publique déployée différente du dépôt local (28/09/2026, 06:02 CEST)** :
+  le HTML VPS injecte une clé API qui n'est pas celle des `.env` locaux/
+  fixtures historiques. Les appels avec l'ancienne clé retournent 400
+  `Clé API invalide`, tandis que la clé injectée permet les routes publiques.
+  C'est une dérive de configuration qui peut masquer des régressions en E2E et
+  doit être traitée par une source de secret de test dédiée, sans copier la
+  clé de production dans les fixtures.
