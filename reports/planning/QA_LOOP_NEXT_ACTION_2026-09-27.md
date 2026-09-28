@@ -1477,6 +1477,26 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Elles couvrent le login web, la conservation email, les variantes téléphone
   et la non-divulgation PII; aucune ne couvre l'obligation de consentement sur
   `/register`, ce qui laisse intact le défaut production déjà reproduit.
+- **Smoke liens commande public (28/09/2026, 19:45 CEST)** : extraction de
+  `commander.html` puis requête des **21 liens** non téléphoniques : **20
+  réponses `200`**, aucun lien interne en erreur. Le seul `403` concerne le
+  lien externe Uber Eats, refusé par la protection anti-bot de la plateforme;
+  ce n'est pas une erreur du site Le Cayenne, mais le lien externe ne peut pas
+  être validé automatiquement au-delà de sa présence.
+- **Suite caisse/encaissement/ticket ciblée (28/09/2026, 19:52 CEST)** :
+  `PosWalkinCounterCollect`, protection race, idempotence encaissement+ticket,
+  split payment, queue caisse, flux impression, renderer ESC/POS, wire-in
+  ticket et lignes fiscales : **10 fichiers, 62 tests, 226 assertions, 0
+  échec**. Les montants libres, encaissements concurrents, réimpressions et
+  lignes fiscales restent couverts côté backend; aucun défaut de total serveur
+  n'est introduit par ces chemins.
+- **Suite robustesse quote/commande (28/09/2026, 20:03 CEST)** :
+  `PriceChangeSnapshotTest`, garde du total attendu web, expiration et replay
+  idempotent de quote, total négatif, interdiction des totaux client POS,
+  origine devise et remise autoritaire : **8 fichiers, 22 tests, 71 assertions,
+  0 échec**. Le backend reste la source de vérité pour prix, devise, remise et
+  total; les scénarios de rejeu/expiration et les montants falsifiés sont
+  rejetés par les tests.
 ---
 
 ## Suite donnée (2026-09-28) — corrections livrées
