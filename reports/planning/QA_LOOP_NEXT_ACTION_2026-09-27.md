@@ -1240,3 +1240,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `.sx-bandeau` n'est contenu dans aucun landmark. Les parcours fonctionnels
   passent, mais ces défauts dégradent l'accessibilité clavier/lecteur d'écran
   et doivent être corrigés avant une validation UX complète.
+- **Responsive mobile (28/09/2026, 18:07 CEST)** : aux dimensions 375×812,
+  accueil, carte et commande n'ont aucun débordement horizontal (`scrollWidth`
+  égal à `clientWidth`) ni erreur JavaScript; les règles axe de nommage des
+  liens/boutons, attributs ARIA et taille des cibles passent. Les seules
+  violations restent le contraste de l'accueil et les landmarks du bandeau,
+  déjà consignées.
