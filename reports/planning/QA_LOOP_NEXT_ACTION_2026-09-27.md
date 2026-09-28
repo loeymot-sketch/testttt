@@ -1205,3 +1205,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `Disallow:` vide : les robots peuvent donc crawler `/admin/*`, `/api/*` et
   indexer des écrans de connexion. Publier un sitemap XML valide et interdire
   les surfaces privées améliore le contrat HTTP et évite du bruit d'indexation.
+- **Normalisation URL API (28/09/2026, 17:59 CEST)** : le chemin canonique
+  `/api/frontend/item/featured-items` renvoie bien JSON `200`, mais les
+  variantes `//api/...`, `/api//frontend/...`, `/api/frontend//item/...`,
+  `/api/frontend/item;foo/...` et un suffixe encodé renvoient la SPA HTML
+  `200` au lieu d'un `404`/JSON déterministe. Une URL API mal concaténée par
+  un client, proxy ou service worker peut donc être interprétée comme une
+  page et laisser le wizard sans données sans erreur HTTP explicite; normaliser
+  ou refuser les chemins non canoniques.
