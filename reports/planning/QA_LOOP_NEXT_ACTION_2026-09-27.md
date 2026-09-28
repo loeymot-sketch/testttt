@@ -227,6 +227,12 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   clés; Laravel manque fr 5/en 21/ar 62/de 89/bn 86. Les 80 fichiers Laravel
   sont parsés sans erreur, mais cette dette peut produire des libellés anglais
   ou des clés brutes sur des parcours non couverts.
+- **Borne et restauration revalidées (28/09/2026, 02:54 CEST)** :
+  `tests/Feature/Kiosk` passe **62/62 en 12,58 s** (auto-login, paiement,
+  reconciliation, jetons, disponibilité, upsell et isolation); les contrats
+  santé/restore ciblés Vitest passent **18/18 en 1,91 s**. Cela confirme la
+  robustesse logique locale, mais ne lève pas l’indisponibilité de la borne
+  live faute de provisioning machine.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 

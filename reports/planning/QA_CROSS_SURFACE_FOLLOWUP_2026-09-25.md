@@ -976,3 +976,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   les tests A11y montrent aussi des appels vers `localhost:3000` refusés,
   masqués par les mocks. À traiter comme dette de qualité d’environnement et
   de traduction, pas comme un faux PASS complet.
+- **Kiosk/restore (28/09/2026)** : Kiosk backend **62/62** et contrats santé/
+  restauration frontend **18/18** passent. Les scénarios couvrent paiement,
+  réconciliation, revocation de jeton, auto-login et isolation; la disponibilité
+  réelle de la borne reste cependant non prouvée tant que le provisioning VPS
+  n’est pas activé.
