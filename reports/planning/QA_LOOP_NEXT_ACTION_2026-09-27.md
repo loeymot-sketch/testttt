@@ -1160,3 +1160,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   et `branch_id=1&branch_id=999999` prend la dernière valeur. Le contrat doit
   refuser toute branche absente/invalide et toute clé répétée, plutôt que
   choisir implicitement une branche.
+- **Spoof du schéma/port via proxy (28/09/2026, 05:32 CEST)** : en envoyant
+  `X-Forwarded-Proto: http`, la page `/login` génère des URLs absolues `http://`
+  pour les scripts, CSS et images; `X-Forwarded-Port: 80` génère même des URLs
+  `https://...:80`. Avec la confiance proxy globale déjà observée, un proxy
+  mal configuré ou un client pouvant injecter ces headers peut provoquer du
+  mixed-content, casser le chargement de la borne et expliquer des écrans
+  « indisponible » après une longue veille. Le frontal doit écraser/filtrer
+  ces headers et fixer le schéma canonique HTTPS.
