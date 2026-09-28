@@ -594,3 +594,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `Referrer-Policy`. Risque de durcissement/déploiement incomplet à traiter
   côté reverse-proxy/production, sans modifier les secrets ni contourner le
   contrôle de sécurité dans ce cycle.
+- **Préflight CORS (28/09/2026, 04:26 CEST)** : pour `/api/health`,
+  `/api/health/ready`, `loyalty/config` et `order/quote`, la réponse OPTIONS
+  est 204 mais annonce systématiquement `Access-Control-Allow-Methods: POST`,
+  y compris pour les health-checks GET; le content-type reste HTML. Le
+  navigateur tolère souvent ce préflight simple, mais le contrat est incohérent
+  et peut casser des sondes/clients stricts. À corriger côté middleware CORS,
+  sans affaiblir la liste d'origines autorisées.
