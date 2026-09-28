@@ -550,3 +550,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   code inconnu : erreur visible, jamais page blanche. Aucun email réel envoyé
   (register mocké uniquement dans le scénario d'inscription pour éviter le
   throttle externe).
+- **Inscription fidélité complète borne (28/09/2026, 04:18 CEST)** : la spec
+  `kiosk-loyalty-register-e2e.spec.js` passe **1/1 en 2,5 s** avec prénom,
+  téléphone, email, consentement RGPD et affichage du solde après register.
+  Aucun écran blanc, erreur page/console, ni commande/notification réelle
+  (endpoint register intercepté pour isoler l'UI; contrat serveur couvert par
+  les tests Feature).

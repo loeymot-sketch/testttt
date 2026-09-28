@@ -1255,3 +1255,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   inscription rapide sans retaper le téléphone, numpad auto-submit au 10e
   chiffre, solde réel correct et erreur claire pour code inconnu. Aucun envoi
   d'email réel; le register est mocké seulement pour isoler le parcours UI.
+- **Inscription fidélité complète (28/09/2026, 04:18 CEST)** : **1/1 PASS en
+  2,5 s** avec prénom/téléphone/email, consentement et solde visible après
+  register; aucun écran blanc ni erreur console. Le POST register est mocké
+  dans cette spec pour éviter une notification externe.
