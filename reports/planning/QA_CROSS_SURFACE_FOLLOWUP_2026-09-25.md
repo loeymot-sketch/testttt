@@ -1108,3 +1108,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   un choix emporter ou une étape de paiement. Le panier s’ouvre mais reste
   vide. C’est un défaut fonctionnel direct : le CTA promet de commander mais
   ne lance qu’une navigation catalogue.
+- **Page dédiée commande/livraison (28/09/2026, 04:00 CEST)** :
+  `/commander.html` et `/livraison-henin-beaumont.html` répondent 200, mais
+  leurs liens « Commander en ligne » ont tous `href="/"`; ils renvoient à la
+  vitrine au lieu d’un formulaire/checkout. Le texte promet pourtant une
+  composition en ligne et un paiement carte. La livraison est correctement
+  expliquée comme Uber Eats, mais aucun parcours de commande à emporter n’est
+  réellement raccordé.

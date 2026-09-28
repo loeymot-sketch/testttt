@@ -373,5 +373,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   aucun ne démarre un checkout, le choix à emporter ou le paiement. Le panier
   peut s’ouvrir mais reste vide. Le parcours commande public est donc
   fonctionnellement absent, au-delà du défaut de wording déjà signalé.
+- **Pages commande/livraison (28/09/2026, 04:00 CEST)** : les pages dédiées
+  sont 200 mais les CTA « Commander en ligne » pointent tous vers `/`; aucune
+  composition de produit ni paiement n’est accessible malgré le texte qui les
+  promet. La livraison Uber Eats est seulement documentée, pas intégrée au
+  flux de commande interne.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
