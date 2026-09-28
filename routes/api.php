@@ -1466,7 +1466,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware('throttle:60,1')
             ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
-        Route::delete('/{order}', [PosOrderController::class, 'destroy']);
+        // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
+        // aucun middleware, alors que TOUTES ses voisines mutantes du même groupe
+        // portent ['throttle:pos-order-update','idempotency'] — et que le client
+        // ENVOIE déjà l'en-tête (store/modules/posOrder.js, buildIdempotencyHeaders).
+        // La protection anti-rejeu était donc INERTE, et un commentaire du client
+        // affirmait une protection inexistante. IdempotencyKeyMiddleware traite bien
+        // DELETE (voir sa liste de méthodes), le câblage est donc réel.
+        Route::delete('/{order}', [PosOrderController::class, 'destroy'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('destroy');
         Route::get('/export', [PosOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
         // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.

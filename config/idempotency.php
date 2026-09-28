@@ -113,6 +113,13 @@ return [
         'api/admin/pos/cash-drawer/sessions/*/reconcile',
         'api/admin/pos-order/*/refund-with-counter-entry',
         'api/admin/pos-order/change-status/*',
+        // [QA 2026-09-28 · addendum triage C] Suppression d'une commande (DELETE
+        // api/admin/pos-order/{order}) : route DESTRUCTIVE laissée nue, alors que
+        // toutes ses voisines mutantes portaient déjà le middleware et que le
+        // client envoyait déjà l'en-tête — la protection anti-rejeu était inerte.
+        // Le motif ne comporte qu'un segment, il ne peut donc pas viser
+        // change-status/* ni */refund-with-counter-entry (deux segments).
+        'api/admin/pos-order/*',
         'api/admin/online-order/change-status/*',
         'api/admin/table-order/change-status/*',
         'api/admin/kds-order/change-status/*',
