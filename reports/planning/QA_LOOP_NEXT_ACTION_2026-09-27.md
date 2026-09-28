@@ -384,6 +384,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   ou JS. Aucun email/code/ordre n’a été envoyé. Le problème est UX/deep-link :
   les CTA des pages dédiées repartent vers `/` au lieu de garder le contexte;
   le précédent verdict « checkout totalement absent » est annulé.
+- **Fidélité/inscription publique (28/09/2026, 04:15 CEST)** : le parcours
+  Fidélité → Créer un compte ouvre correctement l’étape 1/2. Une adresse
+  invalide est rejetée avec un message français explicite, sans page blanche,
+  erreur JS ou réponse réseau ≥400. L’envoi d’un vrai code n’a pas été déclenché
+  afin de ne pas créer de compte ou envoyer un email réel.
 - **KDS/cuisine (28/09/2026, 03:42 CEST)** : suite ciblée **48/48 tests JS**
   et **26/26 tests PHP** passés. HH, X, sauces frites séparées, suppléments
   quantifiés et tacos sans taille sont donc verrouillés en tests locaux. Il

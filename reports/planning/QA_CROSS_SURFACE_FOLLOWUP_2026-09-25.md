@@ -1124,6 +1124,12 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   CTA `href="/"` boucle vers l’accueil au lieu de conserver le contexte
   `/commander.html`; l’alerte « parcours public totalement absent » est donc
   supersédée.
+- **Fidélité/inscription publique (28/09/2026, 04:15 CEST)** : depuis le
+  bouton Fidélité → « Créer mon compte », Chromium affiche bien l’étape 1/2,
+  le champ email et la promesse de code. Une adresse invalide affiche une
+  erreur française explicite (« il faut un @ et un point »), sans page blanche,
+  exception JS ni appel réseau ≥400. Le code réel/email n’a volontairement pas
+  été demandé pour éviter un envoi ou une création de compte externe.
 - **Revalidation KDS/cuisine ciblée (28/09/2026, 03:42 CEST)** : les règles
   demandées sont couvertes et vertes : JS symbolique **48/48** (Harissa→HH,
   sans sauce→X, sauces frites multi-choix, quantités de suppléments), PHP
