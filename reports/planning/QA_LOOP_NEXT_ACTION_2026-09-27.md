@@ -1198,3 +1198,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   (mode polling). La panne de page blanche n'est donc pas reproductible sans
   session authentifiée; un test avec un compte VPS E2E dédié reste nécessaire
   pour couvrir le bootstrap wizard après expiration/veille.
+- **Routes de fichiers/SEO (28/09/2026, 17:57 CEST)** : les fichiers
+  sensibles testés (`.env*`, `.git/HEAD`, `storage/app/.gitignore`) sont bien
+  bloqués (`403`) et aucun secret n'est servi. En revanche `/sitemap.xml`
+  renvoie une SPA HTML `200` au lieu d'un XML, et `public/robots.txt` contient
+  `Disallow:` vide : les robots peuvent donc crawler `/admin/*`, `/api/*` et
+  indexer des écrans de connexion. Publier un sitemap XML valide et interdire
+  les surfaces privées améliore le contrat HTTP et évite du bruit d'indexation.
