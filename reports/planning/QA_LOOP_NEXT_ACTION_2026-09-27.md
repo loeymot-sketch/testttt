@@ -685,3 +685,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   nécessitant une authentification ont été appelées avec un corps vide et la
   clé publique, sans session. Zéro 200 HTML, zéro 5xx et aucune mutation : les
   garde-fous d'authentification rejettent correctement ces appels.
+- **Scan mutations protégées (28/09/2026, 04:39 CEST)** : 16 routes statiques
+  PUT/PATCH/DELETE protégées ont été sollicitées sans session; zéro 200 HTML,
+  zéro 5xx et aucune écriture observée. La surface mutationnelle testée est
+  correctement refusée avant validation métier.
