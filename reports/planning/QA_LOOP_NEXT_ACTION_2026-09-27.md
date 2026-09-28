@@ -658,3 +658,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   final, HTTP, port explicite, casse différente et domaine suffixé malveillant
   ne reçoivent aucun `Access-Control-Allow-Origin`. La réponse varie bien sur
   `Origin`; aucune fuite CORS n'a été reproduite.
+- **Vérification boucle locale (28/09/2026, 04:34 CEST)** : `npm run
+  verify:boucle` passe la validation de cycle et trouve `claude` installé, mais
+  reste conditionnel car les smoke tests API Claude/Codex sont désactivés par
+  défaut (`VERIFY_BILLING_FULL=1` requis). Ce n'est pas un défaut produit,
+  mais une limite de traçabilité de la validation agentique actuelle.
