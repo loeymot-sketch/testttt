@@ -1477,3 +1477,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Elles couvrent le login web, la conservation email, les variantes téléphone
   et la non-divulgation PII; aucune ne couvre l'obligation de consentement sur
   `/register`, ce qui laisse intact le défaut production déjà reproduit.
+- **Smoke liens commande public (28/09/2026, 19:45 CEST)** : extraction de
+  `commander.html` puis requête des **21 liens** non téléphoniques : **20
+  réponses `200`**, aucun lien interne en erreur. Le seul `403` concerne le
+  lien externe Uber Eats, refusé par la protection anti-bot de la plateforme;
+  ce n'est pas une erreur du site Le Cayenne, mais le lien externe ne peut pas
+  être validé automatiquement au-delà de sa présence.
