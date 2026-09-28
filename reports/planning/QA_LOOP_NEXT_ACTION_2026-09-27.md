@@ -771,6 +771,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   chemins `/storage/...` relatifs) ont été résolues sur le domaine VPS et
   répondent toutes HEAD 200. Aucun produit live ne pointe vers une image
   cassée dans cet échantillon.
+- **Auth auxiliaire (28/09/2026, 04:55 CEST)** : `broadcasting/auth` sans
+  session renvoie correctement 401 JSON; `refresh-token` sans clé renvoie 400
+  JSON. En revanche, `GET /api/auth/authcheck` (route POST) retombe en 200 HTML
+  SPA, encore une occurrence du masquage des mauvaises méthodes sur un chemin
+  d'authentification.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
