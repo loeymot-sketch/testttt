@@ -1449,3 +1449,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   dépendances de production). Ce point reste bloquant pour une validation de
   déploiement « sans faute » et doit être traité séparément des tests
   fonctionnels verts.
+- **Audit Composer production (28/09/2026, 19:12 CEST)** : `composer audit
+  --format=json` signale **8 avis sur 4 paquets** : `firebase/php-jwt` (faible),
+  `laravel/framework` (4 avis, dont une haute), `maatwebsite/excel` (haute) et
+  `spatie/laravel-medialibrary` (haute + modérée). Aucun paquet abandonné n'est
+  déclaré, mais les versions déployées restent à mettre à niveau avant une
+  validation sécurité complète.
