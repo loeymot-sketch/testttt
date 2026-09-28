@@ -1384,3 +1384,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   emploie la mauvaise méthode peut donc recevoir la page complète au lieu d'un
   contrat API `405/204`; le comportement est cohérent avec le défaut général
   de fallback SPA observé sur `/api/*`.
+- **Isolation branche + limites upsell recontrôlées (28/09/2026, 19:15 CEST)** :
+  avec la clé publique déployée, `/api/frontend/item` renvoie 57 articles pour
+  `branch_id=1`, `0`, `-1`, `foo`, `null` et `999999`. Les articles réellement
+  en rupture à la branche 1 (Fanta Citron 114, Glace 49, Bol Riz 45) passent à
+  `is_available=true` avec les valeurs invalides; un `branch_id` inconnu ne
+  produit donc pas d'erreur fermée et permet un catalogue fail-open. Les
+  paramètres dupliqués suivent la dernière valeur (`0→1` et `1→0`). Enfin
+  `kiosk-upsell?limit=1` renvoie 1 élément, `limit=-1` en renvoie **18**, et
+  les doublons `limit=1&limit=-1`/inverse suivent encore la dernière valeur;
+  une borne haute/basse stricte reste nécessaire.
