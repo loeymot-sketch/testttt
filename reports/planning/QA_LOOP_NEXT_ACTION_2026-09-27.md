@@ -673,3 +673,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `commander.html` et `livraison-henin-beaumont.html` portent chacun un
   canonical et un `og:url` cohérents avec leur URL HTTPS; aucun canonical
   croisé ou HTTP n'a été détecté dans cet échantillon.
+- **Scan systématique routes API (28/09/2026, 04:37 CEST)** : 183 routes GET
+  statiques déclarées ont été sondées avec `Accept: application/json` et la
+  clé publique; aucune réponse 5xx n'est apparue et 182 réponses étaient
+  non-HTML/attendues. L'unique anomalie est `/api/health/live`, qui répond
+  encore 200 `text/html` (`OK`) au lieu d'un JSON de santé uniforme. Cela
+  confirme que le problème de contrat n'est pas généralisé à toutes les routes
+  déclarées, mais concentré sur ce health endpoint et les mauvaises méthodes
+  tombant dans le catch-all.
