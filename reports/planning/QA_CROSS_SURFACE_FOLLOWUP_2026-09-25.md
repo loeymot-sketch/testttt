@@ -990,3 +990,14 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   depuis le dernier audit; SHA/ETag du HTML restent inchangés, Uber Eats est
   toujours présent quatre fois, et la readiness VPS reste dégradée sur le
   restore drill malgré HTTP 200.
+- **Régression Vitest complète (28/09/2026, 02:58–03:01 CEST)** : la suite
+  globale termine **NEEDS_FIX** avec **554 fichiers passés, 1 fichier en échec**;
+  **4 497 tests passent, 5 échouent, 3 sont ignorés**, et Vitest signale **1
+  erreur non gérée**. Les cinq échecs sont tous dans
+  `tests/js/playwrightConfig.spec.js` : l’exécution globale utilise Node
+  **18.20.7**, alors que Playwright exige Node **20+**. L’erreur non gérée est
+  un conflit CommonJS/ESM de `html-encoding-sniffer` → `@exodus/bytes` via
+  jsdom. Les autres tests fonctionnels restent verts, mais les warnings
+  répétés (router-link non résolu, `ECONNREFUSED 127.0.0.1:3000`, props KDS
+  invalides et clés i18n absentes) confirment des risques de harness et
+  d’environnement à traiter séparément.

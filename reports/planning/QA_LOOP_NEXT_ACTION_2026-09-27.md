@@ -247,6 +247,15 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   fichiers dirty. Le VPS reste healthz 200/queue 0, tandis que readiness 200
   conserve `restore_drill=degraded`. Aucun changement développeur n’est visible
   sur la surface déployée.
+- **Vitest complet (28/09/2026, 02:58–03:01 CEST)** : **554 fichiers verts,
+  1 en échec; 4 497 tests passés, 5 échoués, 3 skipped; 1 erreur non gérée**.
+  Les cinq échecs sont regroupés dans `tests/js/playwrightConfig.spec.js` et
+  proviennent du runtime local Node **18.20.7**, incompatible avec Playwright
+  (Node 20 minimum). L’erreur non gérée vient de l’interopérabilité ESM/CJS
+  `html-encoding-sniffer`/`@exodus/bytes` chargée par jsdom. La suite métier
+  reste largement verte, mais ces deux défauts d’outillage empêchent un PASS
+  global honnête et doivent être rejoués sous Node 20+ après alignement des
+  dépendances.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
