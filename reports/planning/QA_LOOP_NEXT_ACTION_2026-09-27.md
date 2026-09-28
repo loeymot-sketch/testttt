@@ -1176,3 +1176,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   chemin staging/dev sur une URL publique (polling, bannières, cadence temps
   réel, instrumentation). Il faut aligner `APP_ENV`/version/build au déploiement
   réel et refuser le démarrage si l'identité d'environnement est incohérente.
+- **Intégrité des assets wizard (28/09/2026, 05:36 CEST)** : les 18 assets
+  référencés par `/admin/wizard-pages` (app/vendor/manifest, `pos-wizard.js`,
+  version beacon, CSS et thèmes) répondent tous HTTP 200 avec le type MIME
+  attendu; les 11 bundles JavaScript passent `node --check` sous Node 20.
+  La page blanche n'est donc pas due à un fichier JS tronqué ou à un 404
+  d'asset sur le chemin HTTPS normal; il faut chercher le runtime/session,
+  le schéma proxy et la configuration d'environnement.
