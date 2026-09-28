@@ -631,3 +631,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `HEAD /api/health` reste 200 JSON sans corps. Aucun verbe inattendu n'est
   ouvert sur ce endpoint; le défaut reste limité aux mauvaises méthodes GET
   qui tombent dans le catch-all HTML.
+- **Validation API avec clé publique (28/09/2026, 04:30 CEST)** : les payloads
+  vides/`null`/malformés de `guest-signup/email-otp` sont rejetés en 422 JSON
+  avec les champs obligatoires détaillés; aucune notification ou inscription
+  n'est créée. Après cinq essais contrôlés, le serveur renvoie bien 429 avec
+  `Retry-After`, `X-RateLimit-Limit: 5` et `Remaining: 0`. Le throttle est
+  effectif; la fenêtre IP partagée doit simplement être prise en compte dans
+  les tests E2E parallèles.
