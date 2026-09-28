@@ -485,3 +485,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   document 390 = viewport 390 (aucun overflow horizontal). Le bouton Menu
   ouvre `/#menu`, affiche les 9 catégories et 39 produits; aucun écran blanc
   n'a été reproduit sur ce parcours mobile.
+- **Personnalisation mobile (28/09/2026, 04:34 CEST)** : sur le même viewport,
+  Tacos M → Personnaliser → Mexicanos → Continuer ouvre bien l'étape sauce;
+  les 15 choix de sauce et le prix 6,90 € restent visibles, largeur 390 =
+  viewport 390, sans erreur JS ni HTTP >=400. Le cas mobile multi-sauce reste
+  à compléter jusqu'au panier, mais aucun blocage n'est reproduit aux étapes
+  1–2.
