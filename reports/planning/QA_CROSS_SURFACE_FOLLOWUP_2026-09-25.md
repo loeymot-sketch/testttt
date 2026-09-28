@@ -1229,3 +1229,7 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   confirmation, prix/détail identiques et panier nettoyé avant paiement. Le
   VPS POS physique reste à vérifier séparément; le run local confirme la
   logique applicative.
+- **Supplément manuel POS (28/09/2026, 04:13 CEST)** : la spec dédiée passe
+  **1/1**; `Olives` à `1,25` apparaît dans la ligne panier et le grand total.
+  Cela confirme le besoin de supplément libre nommé côté caisse en local; le
+  ticket imprimé et le VPS physique restent à vérifier séparément.

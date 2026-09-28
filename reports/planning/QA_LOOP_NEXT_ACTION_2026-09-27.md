@@ -515,3 +515,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   la réouverture de l'éditeur et la confirmation, prix et détail inchangés.
   Le test vide le panier avant paiement. Le serveur local émet seulement des
   warnings PHP de dépréciation `smartisan/laravel-settings`; aucun échec métier.
+- **Supplément manuel POS (28/09/2026, 04:13 CEST)** : `pos-manual-supplement-
+  e2e.spec.js` passe **1/1 en 7,3 s** en local. Le caissier saisit `Olives` et
+  `1,25`, la ligne panier affiche le libellé et le montant, et le grand total
+  contient `1,25`. Le flux reste avant paiement et ne crée aucun effet externe.
