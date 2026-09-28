@@ -1246,3 +1246,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   liens/boutons, attributs ARIA et taille des cibles passent. Les seules
   violations restent le contraste de l'accueil et les landmarks du bandeau,
   déjà consignées.
+- **Parité prix site public/API (28/09/2026, 18:10 CEST)** : 24 pages
+  `plat/*.html` ont été chargées en Chromium puis comparées aux 57 articles
+  renvoyés par `/api/frontend/item` avec la clé publique déployée. Les 24
+  slugs correspondants ont un prix visible égal au prix API (aucun écart
+  détecté); cette vérification statique ne remplace toutefois pas le quote
+  serveur d'un panier avec suppléments.
