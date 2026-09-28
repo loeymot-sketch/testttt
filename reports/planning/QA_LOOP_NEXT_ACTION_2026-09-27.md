@@ -502,3 +502,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   exactement **1 article Tacos M**, `Mexicanos, Harissa, Andalouse`, sous-total
   et total **7,40 €**, fidélité **+74 pts**, bouton `Passer commande` visible.
   Aucun écran blanc, erreur JS ou HTTP >=400; aucune commande n'a été confirmée.
+- **Conservation avant modification (28/09/2026, 04:52 CEST)** : le panier
+  nouvellement rempli conserve bien `Mexicanos, Harissa, Andalouse`, total
+  **7,40 €** et **+74 pts** après la vérification serveur. Le clic sur le
+  contrôle visuel `MODIFIER` n'a pas pu être rendu déterministe par le harnais
+  (aucun rôle/bouton accessible stable); la perte de sauces pendant une vraie
+  modification reste donc un cas ouvert à valider manuellement ou via un
+  sélecteur dédié.

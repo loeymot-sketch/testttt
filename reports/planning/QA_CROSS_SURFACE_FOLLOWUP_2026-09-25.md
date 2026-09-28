@@ -1219,3 +1219,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   vérification serveur, le panier conserve 1 Tacos M avec `Mexicanos, Harissa,
   Andalouse`; total **7,40 €**, **+74 pts**, bouton `Passer commande` présent.
   Aucun crash/réseau >=400 et aucune commande envoyée.
+- **Modification article (28/09/2026, 04:52 CEST)** : la conservation des
+  deux sauces est prouvée avant édition dans le panier. Le contrôle `MODIFIER`
+  visible n'est pas exposé par un rôle/bouton stable au harnais Playwright;
+  l'édition réelle et le risque de suppression de sauce restent non vérifiés,
+  donc non classés comme corrigés.
