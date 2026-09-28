@@ -981,3 +981,8 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   réconciliation, revocation de jeton, auto-login et isolation; la disponibilité
   réelle de la borne reste cependant non prouvée tant que le provisioning VPS
   n’est pas activé.
+- **Fiscalité/branches/deploy (28/09/2026)** : Fiscal **307 passés / 8 skipped**,
+  Branch **20/20**, Deploy **5/5**. Les skips sont explicitement MySQL-only et
+  un scénario de split tender reste verrouillé par M6-002. La seed menu signale
+  en outre des catégories inconnues et des libellés anglais : dette catalogue
+  à traiter séparément malgré les tests verts.

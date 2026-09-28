@@ -233,6 +233,14 @@ Source : `reports/planning/QA_CROSS_SURFACE_FOLLOWUP_2026-09-25.md` et
   santé/restore ciblés Vitest passent **18/18 en 1,91 s**. Cela confirme la
   robustesse logique locale, mais ne lève pas l’indisponibilité de la borne
   live faute de provisioning machine.
+- **Fiscalité/branches/déploiement (28/09/2026, 02:55 CEST)** : suites
+  PHPUnit fraîches : Fiscal **307 passés, 8 skipped en 69,93 s**, Branch
+  **20/20**, Deploy **5/5**. Les 8 skips exigent MySQL/MariaDB pour vérifier
+  les triggers `SIGNAL`; un test supplémentaire reste conditionné au LOCK
+  M6-002 non contresigné (split `order_payments`). La seed de menu émet aussi
+  des warnings : 12 catégories attendues sont inconnues et trois libellés
+  contiennent « Sandwich/Burger »; l’intégrité technique passe, mais la
+  couverture catalogue/traduction réelle n’est pas complète.
 
 ## Prochaine action A — borne (revalidation après provisioning)
 
