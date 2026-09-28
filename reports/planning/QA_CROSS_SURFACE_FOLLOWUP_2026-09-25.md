@@ -1073,3 +1073,11 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   hautes, 5 modérées, 2 basses**). Plusieurs correctifs npm nécessitent des
   upgrades majeurs et un paquet Quill reste sans correctif : pas de mise à
   niveau automatique appliquée.
+- **Dérive d’artefacts live (28/09/2026, 03:36 CEST)** : le HTML VPS sert
+  `app.js?id=274114…`, `vendor.js?id=f9fe8…`, `manifest.js?id=e6b5…` et
+  `app.css?id=b919…`, alors que le `public/mix-manifest.json` local pointe
+  vers `ae40…`, `293c…`, `a68c…` et `561b…`. Les dates live sont également
+  hétérogènes (vendor du 02/09, CSS du 17/09, app du 27/09). Les tests locaux
+  ne valident donc pas exactement le bundle servi par le VPS; une incohérence
+  de déploiement/cache peut expliquer les pages blanches et contrats API
+  divergents.

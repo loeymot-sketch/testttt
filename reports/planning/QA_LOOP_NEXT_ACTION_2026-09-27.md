@@ -346,5 +346,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   npm production **21 vulnérabilités (3 critiques, 11 hautes, 5 modérées,
   2 basses)**. Aucun `audit fix` n’a été lancé car plusieurs corrections sont
   breaking et Quill n’a pas de correctif disponible.
+- **Artefacts live vs local (28/09/2026, 03:36 CEST)** : les hashes Mix du VPS
+  (`app 274114…`, `vendor f9fe8…`, `manifest e6b5…`, `css b919…`) ne
+  correspondent pas au manifeste local (`ae40…`, `293c…`, `a68c…`, `561b…`).
+  Le vendor date du 02/09 tandis que l’app date du 27/09 : le déploiement est
+  probablement partiel ou son cache incohérent. Toute validation web doit
+  désormais être rattachée au hash effectivement servi.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
