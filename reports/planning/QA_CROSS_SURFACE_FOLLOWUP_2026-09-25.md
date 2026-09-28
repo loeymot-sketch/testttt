@@ -1144,3 +1144,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   absence de ligne « supplément sauce » fantôme). Cela confirme la logique
   locale; la sortie imprimée sur matériel réel reste à vérifier après
   provisioning de la borne/imprimante.
+- **Paiement public — modes visibles (28/09/2026, 03:52 CEST)** : l'écran live
+  `/#payment` montre `Payer sur place` et `Carte bancaire (en ligne)` comme
+  radios distinctes; le total reste **24,20 €** et le bouton de confirmation
+  est visible. Le clic automatisé carte n'a pas été validé car Chrome a
+  signalé l'élément hors viewport; aucune commande ni paiement n'a été soumis.
+  Refaire ce cas sur une session fraîche avec viewport maîtrisé avant de
+  déclarer la branche carte E2E verte.

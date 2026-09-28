@@ -399,3 +399,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   manque encore la vérification sur l’imprimante/écran physique provisionné.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
+
+- **Paiement public — modes visibles (28/09/2026, 03:52 CEST)** : l'écran live
+  `/#payment` expose bien les deux options `Payer sur place` et `Carte bancaire
+  (en ligne)` sous forme de radios, avec le total affiché à **24,20 €** et le
+  bouton de confirmation présent. Le clic automatisé sur la radio carte a
+  échoué car l'élément était hors viewport dans la session Chrome; aucune
+  confirmation, aucun paiement Mollie et aucune donnée sensible n'ont été
+  envoyés. Ce n'est pas classé comme régression fonctionnelle, mais le test
+  carte reste à refaire sur une session fraîche/viewport maîtrisé.
