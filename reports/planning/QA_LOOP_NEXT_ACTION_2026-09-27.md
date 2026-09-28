@@ -1168,3 +1168,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   mixed-content, casser le chargement de la borne et expliquer des écrans
   « indisponible » après une longue veille. Le frontal doit écraser/filtrer
   ces headers et fixer le schéma canonique HTTPS.
+- **Identité d'environnement incohérente (28/09/2026, 05:34 CEST)** : le
+  HTML public de `/admin/wizard-pages` expose `appEnv: "staging"` sur le VPS
+  de production, tandis que `/api/health` annonce `version: "dev"`. Le code
+  frontend utilise explicitement `appEnv !== "production"` pour des diagnostics
+  et certains fallback de synchronisation; la borne peut donc prendre un
+  chemin staging/dev sur une URL publique (polling, bannières, cadence temps
+  réel, instrumentation). Il faut aligner `APP_ENV`/version/build au déploiement
+  réel et refuser le démarrage si l'identité d'environnement est incohérente.
