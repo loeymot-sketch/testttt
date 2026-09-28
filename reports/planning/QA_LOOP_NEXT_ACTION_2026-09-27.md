@@ -977,3 +977,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   développeur côté fournisseur mail. Aucune session ni compte n'a été créé.
   Ajouter un rejet des séquences évidentes (`000…`, répétitions) et ne pas
   annoncer `sent:true` avant confirmation du transport est recommandé.
+- **Revalidation après transmission (28/09/2026, 06:58 CEST)** : les défauts
+  de branche et d'upsell ne sont pas corrigés sur le VPS : `branch_id=foo` et
+  `branch_id=1&branch_id=999999` rendent encore les trois articles en rupture
+  disponibles; `limit=-1` renvoie encore 16 suggestions. Les réponses
+  invalides non mutantes de `subscriber` (type tableau, entier, null, longueur
+  >100) restent correctement rejetées, mais la règle `email` manquante demeure
+  non résolue pour les chaînes mal formées.
