@@ -458,3 +458,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   922 DE, 923 BN manquantes (et 5/21/62/89/86 côté Laravel). Ce n'est pas un
   crash du checkout observé, mais c'est une dette de traduction mesurable qui
   peut laisser des libellés vides sur les surfaces non françaises.
+- **Contrats auth live revalidés (28/09/2026, 04:16 CEST)** : les vraies routes
+  publiques `/api/auth/guest-signup/email-otp`, `email-login` et `verify`
+  répondent 422 JSON avec corps vide (validation serveur explicite); loyalty
+  config répond 200 JSON avec la clé publique attendue; quote POST non
+  authentifié répond 401 JSON. Le précédent essai sur
+  `/api/frontend/loyalty/guest-signup` était une route inexistante et ne doit
+  pas être interprété comme panne du parcours fidélité.

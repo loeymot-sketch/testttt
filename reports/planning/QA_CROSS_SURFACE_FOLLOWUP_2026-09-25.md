@@ -1186,3 +1186,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   clés manquantes (Vue FR 11, EN 112, AR 644, DE 922, BN 923; Laravel FR 5,
   EN 21, AR 62, DE 89, BN 86). À traiter avant d'affirmer la couverture
   multilingue complète.
+- **Routes auth live (28/09/2026, 04:16 CEST)** : les endpoints réellement
+  utilisés par le frontend (`/api/auth/guest-signup/email-otp|email-login|verify`)
+  renvoient bien 422 JSON sur payload vide; loyalty config est 200 JSON et
+  quote POST sans session est 401 JSON. L'ancien test d'un chemin
+  `/api/frontend/loyalty/guest-signup` a été reclassé comme route erronée,
+  pas comme défaut du signup.
