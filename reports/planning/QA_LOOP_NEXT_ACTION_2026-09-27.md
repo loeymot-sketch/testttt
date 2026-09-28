@@ -1352,3 +1352,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   toujours `version: "dev"`. `/kiosk/login` répond `200 text/html`; le contrat
   API invalide persiste : `/api/frontend/unknown` avec `Accept: application/json`
   répond `200 text/html` (20 906 octets) au lieu d'un `404 JSON`.
+- **Parcours Tacos réel Chrome (28/09/2026, 18:58 CEST)** : la catégorie
+  client est bien intitulée `TACOS`, les produits sont `Tacos M`, `Tacos L`
+  et `Tacos XL`, et l'ouverture de `Tacos L` affiche directement `TACOS L`
+  puis l'étape `QUELLE VIANDE ?` (2 viandes incluses). La sélection
+  `Mexicanos + Cordon Bleu` affiche `VIANDES Mexicanos, Cordon Bleu` et garde
+  le prix de base **8,90 €**. Aucune chaîne « galette tacos » n'est affichée;
+  la description catalogue indique seulement « Galette de blé ».
