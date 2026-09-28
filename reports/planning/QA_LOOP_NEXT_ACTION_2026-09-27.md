@@ -1490,3 +1490,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   échec**. Les montants libres, encaissements concurrents, réimpressions et
   lignes fiscales restent couverts côté backend; aucun défaut de total serveur
   n'est introduit par ces chemins.
+- **Suite robustesse quote/commande (28/09/2026, 20:03 CEST)** :
+  `PriceChangeSnapshotTest`, garde du total attendu web, expiration et replay
+  idempotent de quote, total négatif, interdiction des totaux client POS,
+  origine devise et remise autoritaire : **8 fichiers, 22 tests, 71 assertions,
+  0 échec**. Le backend reste la source de vérité pour prix, devise, remise et
+  total; les scénarios de rejeu/expiration et les montants falsifiés sont
+  rejetés par les tests.
