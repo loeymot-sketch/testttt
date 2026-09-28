@@ -1410,3 +1410,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   externe est donc correct, mais les origines de développement restent
   acceptées avec credentials sur la production et doivent être retirées ou
   limitées hors environnement de staging.
+- **Proxy/veille borne recontrôlé (28/09/2026, 19:27 CEST)** : en envoyant
+  `X-Forwarded-Proto: http`, la page `/kiosk/login` génère des assets absolus
+  `http://vps-418872ac...`; avec `X-Forwarded-Port: 80`, elle génère
+  `https://vps-418872ac...:80`. Le proxy de confiance accepte donc des valeurs
+  client qui peuvent produire des assets bloqués après une reprise réseau. Le
+  HTTPS normal génère bien des URLs `https://` sans port. Les chemins
+  `/sw.js`, `/service-worker.js` et `/kiosk/service-worker.js` répondent
+  `404 JSON`, tandis que `/offline.html` retombe sur la SPA `200` : aucun
+  fallback offline dédié n'est installé pour sécuriser ce cas de veille.
