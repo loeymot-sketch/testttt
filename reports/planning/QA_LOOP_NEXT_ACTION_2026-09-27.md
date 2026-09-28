@@ -883,3 +883,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `999999`; sur `item/kiosk-upsell`, `0` et `foo` reproposent également
   Fanta Citron en 1-tap. Le problème traverse donc les trois projections
   publiques et ne peut pas être traité uniquement dans le composant de liste.
+- **Sondes VPS revalidées (28/09/2026, 06:11 CEST)** : `/api/health`,
+  `/api/health/ready` et `/api/healthz` répondent tous 200 avec DB, Redis,
+  worker, websocket, chaîne fiscale et `queue_pending=0`; le restore drill est
+  maintenant `ok` (`daily-2026-09-28.sql.gz`, vérifié il y a 0,0 h). Les
+  alertes historiques de queue/restore doivent donc être remplacées par cette
+  mesure courante, sans conclure à une panne persistante.
