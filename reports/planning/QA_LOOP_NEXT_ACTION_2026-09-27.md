@@ -709,3 +709,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   HTML observés précédemment concernent seulement les tokens de longueur ou
   caractères hors contrainte, qui sont interceptés par le catch-all SPA; c'est
   une dette de contrat HTTP/monitoring, pas une fuite de commande.
+- **Couverture test offre (28/09/2026, 04:43 CEST)** : aucune spec sous
+  `tests/` ne cible actuellement `frontend/offer/show` ou un slug inexistant;
+  le 500 live n'était donc pas protégé par une régression automatisée. Une
+  correction devra ajouter au minimum le cas 404/422 avant de considérer le
+  endpoint couvert.
