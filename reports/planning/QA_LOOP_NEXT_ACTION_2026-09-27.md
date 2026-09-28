@@ -184,3 +184,32 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
 - Validation finale : `playwright-critical-flow` puis relecture du rapport principal.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
+
+---
+
+## Suite donnée (2026-09-28) — corrections livrées
+
+Traité sur la branche `qa/corrige-rapports-2026-09-28`. Verdict par item,
+correctifs et escalades : **[`QA_CORRECTIONS_2026-09-28.md`](QA_CORRECTIONS_2026-09-28.md)**.
+
+État des trois actions bornées de ce document :
+
+- **Action A — borne** : le défaut de disponibilité trouvé au passage est
+  corrigé (une boisson **épuisée** restait sélectionnable dans l'étape menu :
+  le backend envoyait bien `is_available`, la grille de boissons le jetait).
+  Le provisioning distant reste, lui, une action de déploiement.
+- **Action B — contenu public** : confirmé **hors de ce dépôt** (surface externe
+  `Site lecayenne`, distant `loeymot-sketch/Site-lecayenne`), arbre déjà dirty
+  avec des modifications sans rapport. Le checkout FoodKing versionné est
+  conforme. **Rien committé là-bas** : un push y déclenche un déploiement.
+- **Action C — compte E2E POS distant** : inchangé, action propriétaire. La
+  fixture locale est active et accepte le mot de passe, donc l'écart est
+  strictement côté déploiement. Ne pas boucler : rate-limit 429, fenêtre 600 s.
+
+**Gate frozen** : baseline et fichier gelé laissés **intacts**. Une précision de
+gouvernance a toutefois été établie et change la décision : le lock cité ici
+comme blocage porte sur le changement de **juillet**, déjà **inclus** dans la
+baseline actuelle autorisée le **2026-09-16** — il n'a donc jamais bloqué cette
+baseline. Le vrai blocage est que `pos:lint:pricing` et la sentinelle de hash
+**s'excluent mutuellement**. Trois options sont posées dans le rapport de
+corrections §2.1 ; aucune n'a été prise.
