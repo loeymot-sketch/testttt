@@ -791,6 +791,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   donc contourner l'overlay de rupture par un ID de branche inexistant; ce
   n'est plus seulement un risque théorique, mais une divergence live
   reproductible à corriger/valider côté quote serveur.
+- **Rejeu surface catalogue (28/09/2026, 04:58 CEST)** : le phénomène est
+  indépendant de `surface=web|pos`; branche 1 conserve les trois ruptures,
+  branche 999999 les efface. Une valeur de surface inconnue est, elle,
+  correctement ignorée sans élargir le catalogue. Le défaut est donc bien le
+  fallback d'ID de branche, pas le filtre de canal.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
