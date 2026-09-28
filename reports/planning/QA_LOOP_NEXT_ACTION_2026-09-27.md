@@ -607,3 +607,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   attendue « livré par nos livreurs bientôt ». Le rapport ancien qui disait
   « aucune formulation emporter » est donc corrigé : le défaut actuel est la
   promesse de livraison interne absente, pas l'emporter.
+- **Contrat méthode API re-testé (28/09/2026, 04:28 CEST)** : sans clé
+  publique, les POST `guest-signup/email-otp` et `loyalty/config` refusent
+  proprement en JSON (400), et `POST order/quote` envoie 401 JSON. En revanche,
+  les GET sur les deux routes POST (`/api/frontend/order/quote` et
+  `/api/auth/guest-signup/email-otp`) renvoient encore **200 HTML SPA** au lieu
+  de 405 JSON. C'est une détection directe d'une erreur de méthode masquée,
+  gênante pour les sondes et intégrations strictes; aucune commande n'a été
+  créée.
