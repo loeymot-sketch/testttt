@@ -1369,3 +1369,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   de consentement n'empêche pas la création lorsque les autres champs passent.
   Aucun email réel n'a été envoyé grâce au domaine `.invalid`; le compte de
   test créé doit être neutralisé/supprimé via une procédure admin contrôlée.
+- **Confirmation code/tests fidélité (28/09/2026, 19:05 CEST)** :
+  `LoyaltyRegisterNoLeakTest` passe **4/4** et couvre uniquement la fuite PII,
+  les conflits et la création sans consentement; `LoyaltyOptInEndpointTest`
+  passe **6/6** et rejette bien l'absence ou le refus de consentement, mais sur
+  l'endpoint opt-in distinct. Le code de `/loyalty/register` valide seulement
+  `phone`, `name`, `email` (aucun `consent`), ce qui explique précisément le
+  `200` observé en production et constitue une couverture manquante à corriger.
