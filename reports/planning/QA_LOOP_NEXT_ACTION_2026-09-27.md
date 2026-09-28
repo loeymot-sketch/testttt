@@ -1191,3 +1191,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   un bundle périmé après déploiement et afficher une page blanche jusqu'au
   redémarrage. Publier le manifeste en `no-store` (ou versionner tous les
   assets, y compris `pos-wizard.js`) et purger le cache au déploiement.
+- **Smoke navigateur runtime (28/09/2026, 17:55 CEST)** : Chromium headless
+  ouvre `/admin/wizard-pages`, est correctement redirigé vers `/login` sans
+  session et ne remonte aucune `pageerror`, requête échouée ou réponse HTTP
+  en erreur; seul un warning WebSocket indique `MIX_PUSHER_APP_KEY` absent
+  (mode polling). La panne de page blanche n'est donc pas reproductible sans
+  session authentifiée; un test avec un compte VPS E2E dédié reste nécessaire
+  pour couvrir le bootstrap wizard après expiration/veille.
