@@ -1108,3 +1108,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   constitue pas une panne, mais confirme une file intermittente non reflétée
   par le statut readiness; le monitoring doit alerter sur une persistance et
   non sur une mesure isolée.
+- **Résolution queue revalidée (28/09/2026, 08:26 CEST)** : six mesures
+  supplémentaires espacées de 5 s reviennent toutes à `healthz.queue_pending=0`
+  avec HTTP 200. Le pic à 1 était transitoire et ne constitue pas un backlog
+  persistant; aucune action de purge ou de redémarrage n'a été effectuée.
