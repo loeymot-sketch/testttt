@@ -1020,6 +1020,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `window.foodkingConfig.kioskMenuPricing` et les garde-fous de navigation
   restent verts. Le parcours public interactif n'est donc pas le point de
   rupture actuel; les défauts API branch/rate-limit restent indépendants.
+- **Garde-fou quote/disponibilité revalidé (28/09/2026, 07:31 CEST)** : les
+  huit suites PHPUnit ciblées passent **33 tests / 103 assertions**. Elles
+  confirment que le quote final impose la branche borne, rejette les articles
+  indisponibles, les suppléments inactifs, les replays et les totaux falsifiés;
+  le défaut live reste donc une projection catalogue/upsell fail-open, pas un
+  contournement du commit de commande.
 - **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
   confirme qu'un plafond global `login-global` de 30/min existe en plus du
   bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
