@@ -1062,3 +1062,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   suppression des doublons d'instructions, restauration sauce gratuite,
   supplément cheddar et couloirs livraison KDS. Les comportements HH/X,
   sauces multiples et édition caisse restent verts côté frontend.
+- **Webhooks externes re-sondés (28/09/2026, 08:01 CEST)** : trois payloads
+  invalides sur Uber renvoient 401 `invalid_signature`; Mollie renvoie 400
+  `invalid_payload` sans ID valide; le collecteur CSP accepte les rapports et
+  répond 204 sans exposer de contenu. Aucun webhook n'a créé/modifié de
+  commande ou paiement.
