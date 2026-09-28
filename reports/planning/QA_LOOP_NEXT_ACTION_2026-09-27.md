@@ -731,3 +731,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `/legal/mentions.html`, `/legal/privacy.html` et `/legal/cgv.html`, répondent
   200. Le rapport précédent qui comptait les anciens aliases comme 200 était
   donc obsolète; toute campagne/SEO qui utilise ces trois URLs casse encore.
+- **Service worker public (28/09/2026, 04:47 CEST)** : Chromium installe et
+  active `sw.js` sur le scope `/`. Le script n'intercepte ni API cross-origin,
+  ni POST/paiement; les pages navigables utilisent réseau-d'abord et le cache
+  seulement en filet hors ligne. Aucun stale-cache ou erreur console n'a été
+  reproduit sur la session fraîche; ce contrôle est PASS.
