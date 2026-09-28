@@ -1115,3 +1115,10 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   composition en ligne et un paiement carte. La livraison est correctement
   expliquée comme Uber Eats, mais aucun parcours de commande à emporter n’est
   réellement raccordé.
+- **Revalidation KDS/cuisine ciblée (28/09/2026, 03:42 CEST)** : les règles
+  demandées sont couvertes et vertes : JS symbolique **48/48** (Harissa→HH,
+  sans sauce→X, sauces frites multi-choix, quantités de suppléments), PHP
+  cuisine **26/26** (double sauce, placement produit/frites, tacos sans taille,
+  absence de ligne « supplément sauce » fantôme). Cela confirme la logique
+  locale; la sortie imprimée sur matériel réel reste à vérifier après
+  provisioning de la borne/imprimante.

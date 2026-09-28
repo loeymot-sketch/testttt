@@ -378,5 +378,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   composition de produit ni paiement n’est accessible malgré le texte qui les
   promet. La livraison Uber Eats est seulement documentée, pas intégrée au
   flux de commande interne.
+- **KDS/cuisine (28/09/2026, 03:42 CEST)** : suite ciblée **48/48 tests JS**
+  et **26/26 tests PHP** passés. HH, X, sauces frites séparées, suppléments
+  quantifiés et tacos sans taille sont donc verrouillés en tests locaux. Il
+  manque encore la vérification sur l’imprimante/écran physique provisionné.
 
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
