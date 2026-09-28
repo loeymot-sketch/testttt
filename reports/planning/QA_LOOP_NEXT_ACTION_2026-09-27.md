@@ -904,3 +904,7 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   une URL correctement générée en lui ajoutant un second paramètre; la
   branche doit être normalisée/rejetée lorsqu'elle apparaît plusieurs fois,
   puis vérifiée côté serveur avant projection.
+- **Propagation du doublon (28/09/2026, 06:17 CEST)** : le même ajout de
+  paramètre rend l'article disponible dans `item/details/114` et le repropose
+  dans `item/kiosk-upsell`; ce n'est donc pas un comportement limité à la
+  liste principale.
