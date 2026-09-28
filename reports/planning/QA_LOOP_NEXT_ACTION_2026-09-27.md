@@ -378,6 +378,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   composition de produit ni paiement n’est accessible malgré le texte qui les
   promet. La livraison Uber Eats est seulement documentée, pas intégrée au
   flux de commande interne.
+- **Correction E2E commande public (28/09/2026, 04:08 CEST)** : le parcours
+  réel depuis `/#menu` fonctionne : Tacos M + Mexicanos + Harissa, panier à
+  **6,90 €**, upsells, puis écran retrait/paiement atteint sans erreur réseau
+  ou JS. Aucun email/code/ordre n’a été envoyé. Le problème est UX/deep-link :
+  les CTA des pages dédiées repartent vers `/` au lieu de garder le contexte;
+  le précédent verdict « checkout totalement absent » est annulé.
 - **KDS/cuisine (28/09/2026, 03:42 CEST)** : suite ciblée **48/48 tests JS**
   et **26/26 tests PHP** passés. HH, X, sauces frites séparées, suppléments
   quantifiés et tacos sans taille sont donc verrouillés en tests locaux. Il

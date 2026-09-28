@@ -1115,6 +1115,15 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   composition en ligne et un paiement carte. La livraison est correctement
   expliquée comme Uber Eats, mais aucun parcours de commande à emporter n’est
   réellement raccordé.
+- **Correction après parcours complet (28/09/2026, 04:08 CEST)** : le CTA
+  homepage qui scrolle vers `/#menu` n’est pas un checkout mort : Chromium a
+  réellement ajouté un Tacos M (Mexicanos + Harissa), vérifié le total **6,90
+  €**, ouvert le panier, traversé upsell boisson/dessert et atteint l’écran
+  retrait/paiement sans erreur JS ni réponse réseau ≥400. Aucun email/code ni
+  commande n’a été soumis. Le défaut reste limité aux pages dédiées dont le
+  CTA `href="/"` boucle vers l’accueil au lieu de conserver le contexte
+  `/commander.html`; l’alerte « parcours public totalement absent » est donc
+  supersédée.
 - **Revalidation KDS/cuisine ciblée (28/09/2026, 03:42 CEST)** : les règles
   demandées sont couvertes et vertes : JS symbolique **48/48** (Harissa→HH,
   sans sauce→X, sauces frites multi-choix, quantités de suppléments), PHP
