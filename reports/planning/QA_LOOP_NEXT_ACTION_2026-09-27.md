@@ -754,3 +754,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `branch_id` arbitraire ou invalide fourni par un client public; le risque
   signalé reste donc non verrouillé par test malgré les scénarios nominaux
   verts.
+- **Catalogue public et branch_id (28/09/2026, 04:51 CEST)** : les endpoints
+  publics `frontend/item`, `featured-items` et `popular-items` acceptent eux
+  aussi `branch_id=0`, `2`, `999999` ou texte et renvoient 200 JSON. Les jeux
+  d'items observés sont identiques entre ces valeurs (aucune fuite distincte
+  démontrée sur la base live actuelle), mais l'absence de validation/branche
+  autorisée élargit le même risque d'isolation déjà relevé sur wait-estimate.
