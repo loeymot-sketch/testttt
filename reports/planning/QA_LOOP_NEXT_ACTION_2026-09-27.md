@@ -1455,3 +1455,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `spatie/laravel-medialibrary` (haute + modérée). Aucun paquet abandonné n'est
   déclaré, mais les versions déployées restent à mettre à niveau avant une
   validation sécurité complète.
+- **Gates build statiques (28/09/2026, 19:20 CEST)** : `perf:bundle-check`
+  passe pour les 15 bundles référencés; `pos:lint:status` passe et
+  `composer validate --strict --no-check-publish` confirme un `composer.json`
+  valide. `pos:lint:pricing` passe mais émet l'avertissement connu
+  `signoff-pending` jusqu'au 27/10/2026. L'audit i18n est encore incomplet :
+  11 clés manquent en français, 112 en anglais, 644 en arabe, 922 en allemand
+  et 923 en bengali (côté Laravel : 5/21/62/89/86). Cette dette de traduction
+  reste à corriger avant une validation UX multilingue.
