@@ -1183,3 +1183,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   La page blanche n'est donc pas due à un fichier JS tronqué ou à un 404
   d'asset sur le chemin HTTPS normal; il faut chercher le runtime/session,
   le schéma proxy et la configuration d'environnement.
+- **Cache de manifeste non borné (28/09/2026, 05:38 CEST)** :
+  `/mix-manifest.json` répond 200 avec `ETag`/`Last-Modified` mais sans
+  `Cache-Control` ni `Expires`; les JS/CSS référencés manuellement sont dans
+  le même cas. Le beacon ajoute bien un query-buster et `cache: no-store`,
+  mais une borne conservant un cache heuristique peut garder un manifeste ou
+  un bundle périmé après déploiement et afficher une page blanche jusqu'au
+  redémarrage. Publier le manifeste en `no-store` (ou versionner tous les
+  assets, y compris `pos-wizard.js`) et purger le cache au déploiement.
