@@ -1057,3 +1057,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   sur le même compte avant le plafond global. Le rapport classe ce point en
   « lockout distribué affaibli », tandis que newsletter et forgot-password
   n'ont pas ce plafond global équivalent.
+- **Batterie cuisine/caisse (28/09/2026, 07:54 CEST)** : six suites Vitest
+  ciblées passent **40/40 tests** : séparation frites/menu, synchro KDS,
+  suppression des doublons d'instructions, restauration sauce gratuite,
+  supplément cheddar et couloirs livraison KDS. Les comportements HH/X,
+  sauces multiples et édition caisse restent verts côté frontend.
