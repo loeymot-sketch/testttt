@@ -1401,3 +1401,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   n'est déployée. Le lien livraison répond `200`, mais le contenu actuel
   contredit donc la copie métier demandée pour annoncer la future livraison
   interne. Le parcours à emporter reste correctement explicité.
+- **CORS production recontrôlé (28/09/2026, 19:22 CEST)** : le préflight
+  `OPTIONS /api/frontend/loyalty/register` renvoie `204` avec
+  `Access-Control-Allow-Credentials: true` pour `https://www.lecayenne.fr`,
+  mais aussi pour `http://localhost:3000`, `http://localhost:5173`,
+  `http://127.0.0.1:3000` et `https://localhost`, avec `x-api-key` autorisé.
+  L'origine arbitraire `https://evil.example` n'est pas autorisée. Le filtrage
+  externe est donc correct, mais les origines de développement restent
+  acceptées avec credentials sur la production et doivent être retirées ou
+  limitées hors environnement de staging.
