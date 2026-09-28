@@ -939,3 +939,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   client peut afficher une erreur de commande pour une branche, une langue ou
   une page absente, et les intégrateurs ne peuvent pas distinguer les domaines
   via le code d'erreur.
+- **Contournement du throttle par `X-Forwarded-For` (28/09/2026, 06:36 CEST)** :
+  après expiration de la fenêtre, huit POST invalides sur
+  `/api/frontend/subscriber` avec huit adresses `X-Forwarded-For` différentes
+  ont tous reçu 422 et `X-RateLimit-Remaining: 4`; aucun n'a atteint 429.
+  Le limiteur fait donc confiance à un en-tête client forgeable (ou au proxy
+  qui le relaie sans écrasement). Un bot peut multiplier les buckets et
+  contourner le plafond de 5/min; il faut supprimer les en-têtes entrants au
+  bord, configurer correctement les proxies de confiance et tester la clé IP
+  effective. Les payloads étaient vides, donc aucune donnée n'a été créée dans
+  ce sous-test.
