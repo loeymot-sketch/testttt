@@ -653,3 +653,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   n'est pas un endpoint de soumission (POST direct = 405 JSON), ce qui est
   cohérent avec le login SPA qui appelle l'API; aucun faux écran de succès ni
   session créée.
+- **CORS origines proches (28/09/2026, 04:33 CEST)** : l'origine publique
+  `https://www.lecayenne.fr` et son alias HTTPS apex sont autorisés; slash
+  final, HTTP, port explicite, casse différente et domaine suffixé malveillant
+  ne reçoivent aucun `Access-Control-Allow-Origin`. La réponse varie bien sur
+  `Origin`; aucune fuite CORS n'a été reproduite.
