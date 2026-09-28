@@ -621,3 +621,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `localhost:9100/9101` et `127.0.0.1`. La vitrine publique, elle, expose une
   CSP active. Ce décalage peut masquer une régression de sécurité ou des
   dépendances locales oubliées sur la borne/caisse.
+- **Scan mixed-content public (28/09/2026, 04:29 CEST)** : aucun script/CSS
+  réellement chargé depuis `http://localhost` ou `127.0.0.1` n'a été trouvé
+  dans les bundles publics; la seule occurrence est un commentaire HTML
+  documentaire. Ce risque précis n'est donc pas actif sur la vitrine, malgré
+  les fallbacks localhost présents dans le code source local.
