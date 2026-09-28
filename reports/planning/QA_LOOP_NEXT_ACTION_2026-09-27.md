@@ -1042,6 +1042,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   contourner les budgets par-IP et amplifier la charge DB/cache; appliquer le
   même modèle de plafond global que l'OTP aux endpoints les plus coûteux, ou
   faire corriger la confiance proxy en amont.
+- **Régression panier/prix ciblée (28/09/2026, 07:49 CEST)** : les suites
+  Vitest `posCartEditRestoreFreeSauce`,
+  `posCartEditRestoreCheddarSupplement`, `kioskPricingPreview` et
+  `kioskCartSendPayload` passent **30/30 tests**. La restauration des sauces,
+  le supplément cheddar, le calcul d'aperçu et le payload borne restent verts
+  localement; aucun défaut frontend de total n'est réintroduit par les
+  derniers changements testés.
 - **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
   confirme qu'un plafond global `login-global` de 30/min existe en plus du
   bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
