@@ -1130,6 +1130,13 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   erreur française explicite (« il faut un @ et un point »), sans page blanche,
   exception JS ni appel réseau ≥400. Le code réel/email n’a volontairement pas
   été demandé pour éviter un envoi ou une création de compte externe.
+- **Scénario prix adversarial public (28/09/2026, 04:22 CEST)** : Tacos M +
+  Mexicanos + Harissa + Andalouse supplémentaire + Cheddar. Le total passe
+  de **6,90 € → 7,40 € → 8,30 €** aux étapes attendues et reste **8,30 €**
+  dans le panier; la ligne conserve les quatre choix et affiche **+83 pts**.
+  Aucun log JS ni réseau ≥400. Le défaut de variation de prix signalé par le
+  propriétaire n’est pas reproduit dans ce cas réel, mais le paiement effectif
+  n’a pas été envoyé.
 - **Revalidation KDS/cuisine ciblée (28/09/2026, 03:42 CEST)** : les règles
   demandées sont couvertes et vertes : JS symbolique **48/48** (Harissa→HH,
   sans sauce→X, sauces frites multi-choix, quantités de suppléments), PHP

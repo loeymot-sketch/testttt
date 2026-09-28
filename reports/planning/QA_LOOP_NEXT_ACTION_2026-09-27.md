@@ -389,6 +389,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   invalide est rejetée avec un message français explicite, sans page blanche,
   erreur JS ou réponse réseau ≥400. L’envoi d’un vrai code n’a pas été déclenché
   afin de ne pas créer de compte ou envoyer un email réel.
+- **Prix adversarial public (28/09/2026, 04:22 CEST)** : scénario réel Tacos M
+  avec viande, sauce incluse, seconde sauce et Cheddar : **6,90 → 7,40 →
+  8,30 €**, panier stable à **8,30 €**, choix conservés et +83 points.
+  Aucun crash/HTTP ≥400; encaissement réel non déclenché.
 - **KDS/cuisine (28/09/2026, 03:42 CEST)** : suite ciblée **48/48 tests JS**
   et **26/26 tests PHP** passés. HH, X, sauces frites séparées, suppléments
   quantifiés et tacos sans taille sont donc verrouillés en tests locaux. Il
