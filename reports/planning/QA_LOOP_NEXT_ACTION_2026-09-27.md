@@ -1013,6 +1013,13 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Correctif exploitable : faire écraser ce header par le reverse-proxy
   (ou restreindre `TrustProxies`) avant l'application, puis conserver
   `X-Real-IP` comme contrôle secondaire seulement si sa provenance est fiable.
+- **E2E borne live revalidé (28/09/2026, 07:25 CEST)** : avec Node 20.20.2,
+  `tests/e2e/03-kiosk-wizard.spec.js` sur le VPS passe **4 tests**, avec **1
+  skip** attendu sur la navigation lorsque la machine de test n'est pas
+  provisionnée. Login borne, absence d'écran blanc/erreur JS,
+  `window.foodkingConfig.kioskMenuPricing` et les garde-fous de navigation
+  restent verts. Le parcours public interactif n'est donc pas le point de
+  rupture actuel; les défauts API branch/rate-limit restent indépendants.
 - **Nuance limiteur login (28/09/2026, 07:20 CEST)** : la lecture du code
   confirme qu'un plafond global `login-global` de 30/min existe en plus du
   bucket `email|IP`; le risque n'est donc pas un débit totalement illimité.
