@@ -962,3 +962,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   par le client; un attaquant peut tester un même identifiant à travers des
   IP forgées sans atteindre le verrouillage attendu. Aucun compte réel n'a
   été utilisé et toutes les tentatives ont été rejetées.
+- **Forgot-password — même dérive proxy (28/09/2026, 06:46 CEST)** : cinq
+  POST vides sur `/api/auth/forgot-password` avec cinq IP déclarées distinctes
+  ont tous gardé `X-RateLimit-Remaining: 2` et reçu 422, au lieu de partager
+  le plafond 3/heure. Les payloads invalides n'ont déclenché aucun email, mais
+  le vecteur de spam/réinitialisation est également sensible à la confiance
+  `X-Forwarded-For`.
