@@ -1089,3 +1089,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Inscription, canonicalisation téléphone, solde/rachat, clawback idempotent,
   snapshots de prix, statuts, outbox post-commit, tracking, commandes
   programmées et rejet des choix indisponibles restent verts.
+- **Suite sécurité complète (28/09/2026, 08:42 CEST)** :
+  `tests/Feature/Security` passe **221/221**. Authz admin/KDS/POS, rotation
+  de clé API, CORS/CSP, upload, Firebase, idempotence, tokens borne,
+  anti-SSRF mail/imprimante, coupons publics, OTP, rate limits, PII et
+  isolation fidélité restent verts. Les défauts live `X-Forwarded-For` des
+  surfaces non couvertes par ces tests restent toutefois ouverts.
