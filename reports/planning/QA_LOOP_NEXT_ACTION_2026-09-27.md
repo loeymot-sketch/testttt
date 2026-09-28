@@ -783,6 +783,14 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   peuvent être nécessaires à l'admin, mais leur présence sur la route publique
   élargit la surface d'information; à arbitrer comme durcissement API (DTO
   public séparé) plutôt qu'une panne fonctionnelle.
+- **Preuve branch-isolation catalogue (28/09/2026, 04:57 CEST)** : la branche
+  live valide est uniquement `1` (`branch/show/2` et `999999` renvoient 404).
+  Pourtant `frontend/item?branch_id=1` marque 3 articles indisponibles
+  (Fanta Citron, Glace, Bol Riz — `stock_rupture`), alors que les mêmes items
+  deviennent `is_available:true` avec `branch_id=2` ou `999999`. Un client peut
+  donc contourner l'overlay de rupture par un ID de branche inexistant; ce
+  n'est plus seulement un risque théorique, mais une divergence live
+  reproductible à corriger/valider côté quote serveur.
 - **Matrice GET sans clé exhaustive (28/09/2026, 04:53 CEST)** : sur les 183
   routes GET statiques déclarées, les réponses sans clé sont 153×401, 26×400,
   3×200 JSON (`health`, `ready`, `healthz`) et 1×200 HTML (`health/live`).
