@@ -955,3 +955,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   Le limiteur OTP global anti-spoof fonctionne; la faille est spécifique au
   throttle `subscriber` et ne doit pas être « corrigée » en affaiblissant le
   garde OTP.
+- **Login humain — bucket IP forgeable (28/09/2026, 06:44 CEST)** : sept
+  tentatives avec le même compte fictif et sept `X-Forwarded-For` distincts
+  ont toutes reçu 400, mais `X-RateLimit-Remaining` est resté à 9 à chaque
+  fois. Le limiteur `login-lockout` semble donc créer un bucket par IP déclarée
+  par le client; un attaquant peut tester un même identifiant à travers des
+  IP forgées sans atteindre le verrouillage attendu. Aucun compte réel n'a
+  été utilisé et toutes les tentatives ont été rejetées.
