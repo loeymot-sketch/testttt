@@ -615,3 +615,9 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   de 405 JSON. C'est une détection directe d'une erreur de méthode masquée,
   gênante pour les sondes et intégrations strictes; aucune commande n'a été
   créée.
+- **CSP VPS re-testée (28/09/2026, 04:29 CEST)** : le backoffice renvoie
+  uniquement `Content-Security-Policy-Report-Only`, donc la politique n'est
+  pas bloquante en production; elle autorise en outre des connexions vers
+  `localhost:9100/9101` et `127.0.0.1`. La vitrine publique, elle, expose une
+  CSP active. Ce décalage peut masquer une régression de sécurité ou des
+  dépendances locales oubliées sur la borne/caisse.
