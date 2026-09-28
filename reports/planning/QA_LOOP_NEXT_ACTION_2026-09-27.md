@@ -480,3 +480,8 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   `Access-Control-Allow-Origin`, donc le navigateur ne peut pas lire la
   réponse. Les health-checks sont `no-cache, private` et varient bien par
   Origin.
+- **Responsive mobile public (28/09/2026, 04:30 CEST)** : Chromium 390×844
+  charge la homepage en 200, sans erreur JS ni réponse >=400, avec largeur
+  document 390 = viewport 390 (aucun overflow horizontal). Le bouton Menu
+  ouvre `/#menu`, affiche les 9 catégories et 39 produits; aucun écran blanc
+  n'a été reproduit sur ce parcours mobile.

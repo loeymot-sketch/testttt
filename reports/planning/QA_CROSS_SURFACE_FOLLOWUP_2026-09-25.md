@@ -1203,3 +1203,6 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   les origines étrangères n'obtiennent pas de header CORS lisible. Les
   réponses health sont privées et non mises en cache. Ces contrôles de défense
   passent.
+- **Mobile public (28/09/2026, 04:30 CEST)** : viewport Chromium 390×844 :
+  homepage HTTP 200, aucun console/page error ni HTTP >=400, aucun débordement
+  horizontal; Menu ouvre bien `/#menu` et rend 9 catégories/39 produits.
