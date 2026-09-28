@@ -535,3 +535,24 @@ restent, tous deux propriétaires : le réglage est un **orphelin formellement
 recensé** (aucun écran ne le vérifie — « une protection qui ne protège rien »,
 dit la sentinelle du dépôt), et il serait stocké **en clair** s'il était un jour
 câblé. À câbler avec hachage + limitation d'essais, ou à retirer.
+
+### 8.3 Preuves du second lot
+
+- **PHPUnit complet** : **6 144 tests, 1 seul échec, 36 skips, 6 incomplets**,
+  **0** contamination Mix. L'unique échec reste la **sentinelle frozen-zone
+  connue** (§2.1), hashes inchangés → **zéro régression** introduite par ce lot
+  (passe précédente : 6 138 / 1 échec ; +6 tests neufs, mêmes compteurs).
+- **Vitest complet** : **563 fichiers, 4 561 passés, 3 skips, 0 échec**.
+- Suites ciblées : `Feature/Pos` **392/392**, `Feature/Settings` **49/49**,
+  `Feature/Onboarding` **226** (4 incomplets documentés), `Feature/Hardware`
+  **164/164**.
+- Voisins **restaurés au vert** après retrait du garde P1-19 : `QuoteTamperTest`
+  4/4, `QuoteBindingTest` 5/5, `PricingServiceTest` 23/23, `PosParkedOrderTest`
+  8/8, `ParkedOrderAdminBranchZeroSentinelTest` 5/5.
+- Garde-fous release verts. **Diff zone gelée §7 contre la base : VIDE.**
+- Banc `tpeBoutonsNommes` **prouvé mordant** (aria-label neutralisés → 3 échecs,
+  restaurés → 5/5).
+
+**Bilan des deux lots : 13 défauts corrigés avec preuves, 13 points escaladés,
+aucune zone gelée touchée, aucune baseline modifiée, aucun test rendu vert en
+affaiblissant son assertion.**

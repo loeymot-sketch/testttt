@@ -4351,6 +4351,56 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**QA — SECOND LOT + DÉPLOIEMENT PARTIEL (2026-09-28)** — branche
+`qa/corrige-rapports-2026-09-28` **poussée sur le distant** (12 commits).
+Suite de la directive owner « corrige », puis « deploy ».
+
+**4 défauts de plus corrigés**, chacun rouge avant correctif : P1-18 l'**API**
+acceptait de parker une commande **sans article** (`items_count = 0`, HTTP 201) —
+l'écran, lui, était déjà gardé depuis le 2026-04-21, donc cette moitié du
+signalement est RÉFUTÉE ; l'audit avait déduit la création depuis l'état activé
+du bouton · P1-04 le panneau « en attente » affichait `0` + « Aucune commande
+parkée » + « Impossible de charger » **simultanément** (jumeau oublié du patron
+T-4.1 FAUX-VIDE de l'encaissement) · P1-43 le format horaire **12 h était semé
+par défaut** contre le verrou FR ADR-007, et le libellé codait « PM » en dur
+(d'où « 12 Hour (7:34 PM) » à 07:34) — mon banc a trouvé en plus un exemple 24 h
+non zéro-paddé, absent du rapport · P1-49 les actions du tableau TPE n'avaient
+**aucun nom accessible** sur une action destructive.
+
+**3 escalades de ce lot, rien changé en silence** : P1-19 (supplément libre seul)
+— j'ai implémenté le garde et il a **cassé deux contrats existants**
+(`QuoteBindingTest`, `QuoteTamperTest`) : le dépôt affirme **délibérément**
+qu'une commande à ligne unique « supplément » persiste comme ligne fiscale, et
+une vente hors catalogue au comptoir est un usage légitime plausible. Garde
+**retiré** plutôt que de réécrire le test d'autrui → décision owner ·
+P1-10 (« viande supplémentaire » employé pour une viande **incluse**) confirmé
+mais dans `public/js/pos-wizard.js`, **gelé §7** → gate + LOCK ·
+P1-39 (PIN « 1234 ») **déjà corrigé le 2026-09-26** et ce ne fut **jamais** une
+faille : aucun identifiant par défaut n'a été livré.
+
+**Action B du plan de reprise — CONTRADICTION, non exécutée.** Remplacer la
+mention Uber Eats par « Livraison par nos livreurs bientôt » **supprimerait un
+canal de vente réel** (`index.html:85` porte
+`[OWNER 2026-07-29] Boutique Uber Eats officielle` + l'URL de la boutique) et
+remplacerait une copie **vraie** par une **promesse publique fausse** — alors que
+le réglage LIVRAISON est désactivé. C'est exactement le défaut que le rapport
+dénonce ailleurs (P1-46, P1-68). Aucune modification sur la surface externe.
+
+**Correction d'une de mes propres notes** : `config:cache` n'est PAS un bloqueur
+NF525. `FiscalChainValidator.php:188-191` documente cette piste comme une
+« FAUSSE PISTE À NE PAS REPRENDRE », **vérifiée en production**. Les 20 procédures
+de déploiement qui le prescrivent avaient raison ; `tools/deploy-lecayenne.sh`
+saute d'ailleurs `config:cache` volontairement et n'avait rien à corriger.
+
+**Déploiement : partiel.** Branche poussée, base de comparaison production
+capturée (healthz 200, `fiscal_chain: ok`, file à 0). **Deux permissions
+manquent** : `git merge` sur `pos/category-first-caisse-2026-06-23` (refusé —
+« Modify Shared Resources » ; ce n'est PAS un fast-forward, le distant a avancé à
+`d684ece9a`, mais ses 20 commits sont **tous `docs(qa)` et ne touchent que deux
+rapports .md**, donc aucun conflit de code) et `ssh lecayenne` (refusé —
+« Production Reads »). Commandes exactes et vérifications post-déploiement :
+`reports/planning/QA_CORRECTIONS_2026-09-28.md` §7.
+
 **QA — CORRECTION DES TROIS RAPPORTS (2026-09-28)** — branche
 `qa/corrige-rapports-2026-09-28`, base `d9a95ac77`, worktree
 `.claude/worktrees/qa-corrige-2026-09-28`, aucun push. Directive owner :
