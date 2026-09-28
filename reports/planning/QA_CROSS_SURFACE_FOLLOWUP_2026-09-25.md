@@ -1017,3 +1017,9 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   `/api/kiosk/config`, absents du routage Laravel, répondent encore HTTP 200
   `text/html` (shell SPA) même avec `Accept: application/json`; le contrat API
   live reste donc ambigu et doit être corrigé ou surveillé explicitement.
+- **Rejeu surface publique (28/09/2026, 03:07 CEST)** : `lecayenne.fr` répond
+  HTTP 200 avec cache Vercel HIT et les headers CSP/HSTS/nosniff/
+  frame-ancestors/Permissions-Policy. Le HTML contient encore **4** mentions
+  « Uber Eats » et **0** occurrence des formulations emporter/livraison
+  demandées : le défaut de contenu publié est directement observable malgré
+  la santé technique du domaine.

@@ -308,4 +308,10 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
 - Contenu public : cycle séparé, surface à identifier avant toute modification.
 - Validation finale : `playwright-critical-flow` puis relecture du rapport principal.
 
+- **Rejeu public HTTP (28/09/2026, 03:07 CEST)** : le site public est sain
+  techniquement (HTTP 200, cache HIT, headers de sécurité présents), mais son
+  contenu reste hors demande : **4** « Uber Eats », aucune formulation emporter
+  / livraison par nos livreurs. C’est une preuve live de non-déploiement du
+  copy attendu, pas un défaut que les tests locaux peuvent masquer.
+
 **VERDICT QA LOOP : NEEDS_OWNER_ACTION**
