@@ -889,3 +889,11 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   maintenant `ok` (`daily-2026-09-28.sql.gz`, vérifié il y a 0,0 h). Les
   alertes historiques de queue/restore doivent donc être remplacées par cette
   mesure courante, sans conclure à une panne persistante.
+- **Fuzz `limit` upsell (28/09/2026, 06:14 CEST)** :
+  `item/kiosk-upsell?limit=-1` renvoie **16 éléments**, alors que la borne
+  supérieure documentée est 12; `0`, `foo` et `null` renvoient une liste vide,
+  `1.5` est tronqué à 1. Le `min((int)$limit, 12)` laisse donc les valeurs
+  négatives sans borne basse et peut supprimer le `LIMIT` SQL (aujourd'hui le
+  pool est petit, mais le défaut deviendrait un coût/volume non borné après
+  enrichissement du catalogue). Validation stricte `integer|min:1|max:12` à
+  ajouter avant la requête.
