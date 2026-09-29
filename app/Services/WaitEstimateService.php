@@ -9,20 +9,23 @@ use App\Models\TimeSlot;
 use Carbon\Carbon;
 
 /**
- * [GOAL WEB COMMANDE Wave D 2026-07-28, formule owner révisée 2026-08-16]
- * Estimation d'attente retrait pour le site web, dérivée de la file RÉELLE
- * cuisine (caisse/KDS).
+ * [GOAL WEB COMMANDE Wave D 2026-07-28, formule owner révisée 2026-08-16,
+ * puis figée 2026-09-23] Estimation d'attente retrait pour le site web,
+ * affichée AVANT que la caisse ait accepté la commande.
  *
- * [T-C TEMPS-ATTENTE 2026-08-16 · GOAL owner] Nouvelle formule PAR PALIERS
- * (remplace l'ancienne formule linéaire +5min/tranche de 3, qui décalait tout
- * d'un cran vers le haut par rapport à ce que l'owner voulait — ex. 3
- * commandes donnait 20-25 au lieu de 15-20 attendu, et plafonnait à 30-35 au
- * lieu de 25-30). Règle owner (dictée, bornes ≤N choisies pour rendre les
- * paliers non chevauchants — "1 à 3", "3 à 5", "plus de 5" laissait un
- * chevauchement à l'exact valeur 3) :
- *   - file ≤ 3 commandes actives devant  → 15-20 min
- *   - file 4 à 5 commandes               → 20-25 min
- *   - file > 5 commandes                 → 25-30 min (plafond dur, jamais plus)
+ * [T-C TEMPS-ATTENTE 2026-09-23 · GOAL owner] La formule par paliers (§tag
+ * TIERS, en vigueur du 2026-08-16 au 2026-09-23) annonçait 20-30 min dès
+ * quelques commandes actives — l'owner a explicitement demandé de ne plus
+ * jamais faire ça : « je veux confirmer que le temps d'attente approximatif
+ * c'est 10 à 15 minutes » (constant, quelle que soit la file). Un retard
+ * cuisine réel sur UNE commande précise doit désormais se refléter via
+ * `Order::preparation_time`, fixé par le caissier à l'ACCEPT (voir
+ * OrderTrackingService::forOrder(), qui prend le relais de cette estimation
+ * générique une fois la commande acceptée) — jamais via cette formule
+ * générique elle-même.
+ *
+ * `queue_count` reste calculé (visibilité staff, contrat API existant/testé)
+ * mais n'entre plus dans le calcul de `wait_low`/`wait_high`.
  *
  * File « devant » = sémantique SSOT KitchenReleaseRule (le MÊME contrat que le
  * board KDS — leçon unreleased-order-bump : ne jamais re-définir la file) :
@@ -37,12 +40,8 @@ use Carbon\Carbon;
  */
 class WaitEstimateService
 {
-    /** [T-C] Paliers owner : [seuil_max_commandes => [low, high]], triés croissant. */
-    public const TIERS = [
-        3 => [15, 20],
-        5 => [20, 25],
-    ];
-    public const OVERFLOW_TIER = [25, 30];
+    /** [T-C 2026-09-23] Fourchette générique constante — voir doc de classe. */
+    public const DEFAULT_WAIT = [10, 15];
     public const QUEUE_WINDOW_MINUTES = 120;
     // [T-C PLANCHER-JAMAIS-ZERO] Owner : « on va jamais dire que y a aucune
     // commande, toujours y a deux commandes avant vous minimum ». Plancher
@@ -73,13 +72,7 @@ class WaitEstimateService
 
         $queueCount = $query->count();
 
-        [$low, $high] = self::OVERFLOW_TIER;
-        foreach (self::TIERS as $maxCount => $range) {
-            if ($queueCount <= $maxCount) {
-                [$low, $high] = $range;
-                break;
-            }
-        }
+        [$low, $high] = self::DEFAULT_WAIT;
 
         return [
             'queue_count' => $queueCount,

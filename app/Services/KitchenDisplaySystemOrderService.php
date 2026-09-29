@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderStatusTransition;
 use App\Enums\OrderType;
 use App\Enums\OrderStatus;
@@ -655,6 +656,78 @@ class KitchenDisplaySystemOrderService
     }
 
     /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Marque UN article prêt — SSOT serveur,
+     * indépendant du statut de la commande (kds.js décide séparément, une fois
+     * TOUS les articles bumpés, d'appeler `changeStatus`). Idempotent : rebump
+     * un article déjà marqué est un no-op silencieux (pas d'erreur, pas de
+     * double horodatage).
+     *
+     * Isolation de branche sous verrou, même schéma que `recall()`/`reopen()` :
+     * `OrderItem` porte déjà `BranchScope` (liaison implicite → 404 cross-branche
+     * avant d'atteindre ce code), ce re-check couvre la fenêtre étroite entre
+     * liaison et relecture sous verrou.
+     *
+     * @throws HttpException 403 (autre branche)
+     */
+    public function bumpItem(OrderItem $orderItem): array
+    {
+        $user = auth()->user();
+        $userBranchId = (int) ($user->branch_id ?? 0);
+
+        return DB::transaction(function () use ($orderItem, $userBranchId) {
+            /** @var OrderItem $locked */
+            $locked = OrderItem::query()->whereKey($orderItem->id)->lockForUpdate()->firstOrFail();
+
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cet article appartient à une autre succursale.');
+            }
+
+            if ($locked->kitchen_bumped_at === null) {
+                $locked->kitchen_bumped_at = now();
+                $locked->save();
+            }
+
+            return ['kitchen_bumped_at' => $locked->kitchen_bumped_at->toIso8601String()];
+        });
+    }
+
+    /**
+     * [KDS-ITEM-READY-SYNC 2026-09-23] Annule le bump d'un article — miroir
+     * serveur du délai de grâce 60s déjà appliqué côté client (kds.js), pour
+     * qu'un appel API direct ne puisse pas contourner la fenêtre.
+     *
+     * @throws HttpException 422 (pas bumpé / fenêtre expirée), 403 (autre branche)
+     */
+    public function recallItem(OrderItem $orderItem): array
+    {
+        $user = auth()->user();
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        $windowSeconds = 60;
+
+        return DB::transaction(function () use ($orderItem, $userBranchId, $windowSeconds) {
+            /** @var OrderItem $locked */
+            $locked = OrderItem::query()->whereKey($orderItem->id)->lockForUpdate()->firstOrFail();
+
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cet article appartient à une autre succursale.');
+            }
+
+            if ($locked->kitchen_bumped_at === null) {
+                abort(422, "Cet article n'a pas été marqué prêt.");
+            }
+
+            if ($locked->kitchen_bumped_at->lt(Carbon::now()->subSeconds($windowSeconds))) {
+                abort(422, 'Fenêtre de rappel expirée (60 s).');
+            }
+
+            $locked->kitchen_bumped_at = null;
+            $locked->save();
+
+            return ['recalled' => true];
+        });
+    }
+
+    /**
      * [REMETTRE-EN-PRÉPARATION 2026-08-13 · owner] La commande validée trop tôt REDEVIENT en
      * préparation.
      *
@@ -971,6 +1044,13 @@ class KitchenDisplaySystemOrderService
                     'item_addons' => $addons,
                     'instruction' => $instruction,
                     'allergens_hash' => $allergensHash,
+                    // [AUDIT AVAL 2026-09-29 · P0] Sans ces deux clés, TOUS les suppléments
+                    // libres partageaient la même empreinte (item_id NULL, variations/extras
+                    // vides, instruction NULL) : « Sauce blanche » ×1 et « Emballage » ×1
+                    // fusionnaient en UNE ligne « Sauce blanche ×2 » sur l'onglet par défaut,
+                    // et le second disparaissait de la cuisine.
+                    'line_type' => $item['line_type'] ?? 'catalog',
+                    'manual_label' => $item['manual_label'] ?? null,
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();

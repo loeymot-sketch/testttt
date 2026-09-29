@@ -26,15 +26,36 @@ class CashDrawerController extends AdminController
     {
         $data = $request->validate([
             'printer_id' => ['nullable', 'integer', 'min:1'],
+            'client_opened' => ['nullable', 'boolean'],
         ]);
 
         $branchId = (int) (auth()->user()?->branch_id ?? 0);
         $userId = (int) (auth()->id() ?? 0);
         $printerId = isset($data['printer_id']) ? (int) $data['printer_id'] : null;
+        $clientOpened = (bool) ($data['client_opened'] ?? false);
 
         $result = $this->printerService->openDrawer($printerId, $branchId);
+        $serverConfirmed = (bool) ($result['success'] ?? false);
 
-        $status = ($result['success'] ?? false) ? 200 : 422;
+        // [Root cause 2026-09-17, owner-reported "tiroir ouvert mais non
+        // enregistré"] $serverConfirmed alone used to gate the whole response.
+        // EscPosPrinterService::openDrawer() opens a raw TCP socket to
+        // $printer->host:$printer->port FROM THE LARAVEL PROCESS. This
+        // deployment runs Laravel on a remote VPS while the print bridge
+        // (127.0.0.1:9100) runs on the counter's own PC — two different
+        // machines, so that socket can never connect here and $serverConfirmed
+        // is always false in production. The browser already calls
+        // kioskHardware.openDrawer() (the local-bridge path, LOCK_DRAWER_BRIDGE_
+        // VISIBILITY_2026-09-17) BEFORE this endpoint and knows for a fact
+        // whether the physical drawer opened — trust that report too, so a
+        // structurally-doomed server-side probe doesn't silently defeat the
+        // whole anti-theft forensic trail this endpoint exists for (see the
+        // 2026-08-01/d945570b0 comment below). A genuine single-box deployment
+        // where the server probe can succeed keeps working unchanged; either
+        // side confirming is sufficient, neither is required on its own.
+        $hardwareConfirmed = $serverConfirmed || $clientOpened;
+
+        $status = $hardwareConfirmed ? 200 : 422;
 
         // [Sprint 5B Z10-NEW-001 / F-7] NF525 forensic trail — every hardware
         // drawer pop is recorded as a TYPE_DRAWER_OPEN movement against the
@@ -43,7 +64,7 @@ class CashDrawerController extends AdminController
         // recordMovement (Sprint 1D writes audit_logs on every movement).
         // No-op when there's no open session (manager-mode drawer-test
         // before shift), recorded as a warning so forensic gaps surface.
-        if (($result['success'] ?? false) && $branchId > 0 && $userId > 0) {
+        if ($hardwareConfirmed && $branchId > 0 && $userId > 0) {
             try {
                 $session = $this->cashDrawerService->findOpenSessionForUser($branchId, $userId);
                 if ($session) {
@@ -53,7 +74,12 @@ class CashDrawerController extends AdminController
                         amount: 0.0,
                         direction: CashMovement::DIRECTION_IN,
                         orderId: null,
-                        notes: 'Hardware drawer pop via printer_id=' . ($printerId ?? 'default'),
+                        notes: sprintf(
+                            'Hardware drawer pop via printer_id=%s (server_probe=%s, client_confirmed=%s)',
+                            $printerId ?? 'default',
+                            $serverConfirmed ? 'ok' : 'failed',
+                            $clientOpened ? 'yes' : 'no',
+                        ),
                         strict: false,
                     );
                 } else {
@@ -73,6 +99,13 @@ class CashDrawerController extends AdminController
             }
         }
 
-        return response()->json($result, $status);
+        // `success` reflects the merged confirmation (server probe OR client
+        // report), not just the server-side attempt; `server_hardware_success`
+        // keeps the raw probe result available for diagnostics.
+        return response()->json(array_merge($result, [
+            'success' => $hardwareConfirmed,
+            'server_hardware_success' => $serverConfirmed,
+            'client_confirmed' => $clientOpened,
+        ]), $status);
     }
 }

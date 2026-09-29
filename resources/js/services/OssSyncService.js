@@ -6,7 +6,11 @@ const STATE = Object.freeze({
 });
 
 const DEFAULTS = Object.freeze({
-    intervalMsWhenConnected: 60_000,
+    // [AUDIT AVAL 2026-09-29 · P1] 60 s → 15 s : « connecté » ne veut pas dire « les
+    // événements arrivent » (le KDS a été resserré pour cette raison exacte). Un mur
+    // ouvert sous un compte succursale pouvait être 60 s derrière la cuisine, sans
+    // bannière (suppress-transient).
+    intervalMsWhenConnected: 15_000,
     // [test-e2e round-2 cluster-6 D-002 2026-05-10] Tightened from 5000 → 2000
     // so that the SYNC-2 8s budget (POS pay → OSS visible) is met by the
     // polling fallback alone when the broadcast queue is idle in dev

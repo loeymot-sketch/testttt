@@ -82,6 +82,15 @@ class UserMassAssignmentTest extends TestCase
     /** @test */
     public function test_public_signup_strips_branch_id_is_guest_status(): void
     {
+        // [AUDIT SÉCURITÉ 2026-09-29] La branche LÉGITIME d'un client public est la branche
+        // par défaut du site — plus `0`, qui est la valeur sentinelle « admin » de
+        // BranchScope (aucun filtre) et faisait traverser le rempart anti-borne à un
+        // compte auto-inscrit. L'invariant de ce test ne change pas : la valeur reste
+        // contrôlée par le SERVEUR, jamais par le payload. Il devient même plus fort :
+        // ni la branche forgée, ni la sentinelle admin.
+        $defaultBranch = Branch::factory()->create();
+        \Smartisan\Settings\Facades\Settings::group('site')->set('site_default_branch', $defaultBranch->id);
+
         // Create a branch the attacker tries to forge into.
         $forgedBranch = Branch::factory()->create();
 
@@ -111,10 +120,12 @@ class UserMassAssignmentTest extends TestCase
 
         // THE LOAD-BEARING INVARIANTS (Z6-05):
         // No attacker payload value may influence these three fields.
+        $this->assertNotSame($forgedBranch->id, (int) $user->branch_id, 'attacker forgery payload (branch_id=' . $forgedBranch->id . ') must be ignored.');
+        $this->assertNotSame(0, (int) $user->branch_id, 'branch_id 0 est la sentinelle ADMIN de BranchScope : jamais pour un client.');
         $this->assertSame(
-            0,
+            (int) $defaultBranch->id,
             (int) $user->branch_id,
-            'branch_id MUST be server-controlled (0 for public signup) — '
+            'branch_id MUST be server-controlled (site default branch for public signup) — '
             . 'attacker forgery payload (branch_id=' . $forgedBranch->id . ') ignored.'
         );
         $this->assertSame(

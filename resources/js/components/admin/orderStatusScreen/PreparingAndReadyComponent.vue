@@ -20,7 +20,7 @@
       to avoid fighting transition-group on enter/leave).
   -->
   <div
-    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+    class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     role="region"
     :aria-label="$t('label.preparing')"
   >
@@ -47,7 +47,7 @@
   </div>
 
   <!-- Colonne PRÊT -->
-  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
+  <div class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[100dvh] overflow-hidden"
     :class="newReadyFlash ? 'oss-ready-flash' : ''"
     role="region"
     :aria-label="$t('label.ready')">
@@ -317,6 +317,14 @@ export default {
           },
           {
             broadcastAs: 'OrderCreated',
+            handler: () => { this.list(); },
+          },
+          // [AUDIT AVAL 2026-09-29 · P1] Le mur filtre sur le paiement (applyBoardRelease-
+          // Filter) : c'est l'ENCAISSEMENT comptoir qui rend une commande visible — et il
+          // n'était pas écouté ici (le KDS, lui, lie OrderPaidAtCounter). Sans cette liaison,
+          // une commande encaissée n'apparaissait qu'au sondage suivant.
+          {
+            broadcastAs: 'OrderPaidAtCounter',
             handler: () => { this.list(); },
           },
         ]);

@@ -1,0 +1,3191 @@
+==========================================================================
+G1 — PREUVE QUE LES BANCS MORDENT (état AVANT correctif)
+Date : 2026-09-03T01:57:43+02:00
+HEAD : 23c2ef26c
+==========================================================================
+
+### T1.1 + T1.4 — tests/js/posControlDrawerAuDelaDeCent.spec.js (Vitest)
+### Attendu : ROUGE. La caisse ne reçoit que 100 commandes sur 137.
+
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+stderr | tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le tiroir avoue la troncature quand le serveur en déclare une
+[Vue warn]: Extraneous non-props attributes (troncature) were passed to component but could not be automatically inherited because component renders fragment or text or teleport root nodes. 
+  at <PosControlDrawer open=true orders= [
+  {
+    id: 1,
+    queue_number: 'K1',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T16:44:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 2,
+    queue_number: 'K2',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:45:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 3,
+    queue_number: 'K3',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:46:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 4,
+    queue_number: 'K4',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:47:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 5,
+    queue_number: 'K5',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:48:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 6,
+    queue_number: 'K6',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:49:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 7,
+    queue_number: 'K7',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:50:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 8,
+    queue_number: 'K8',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:51:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 9,
+    queue_number: 'K9',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:52:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 10,
+    queue_number: 'K10',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:53:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 11,
+    queue_number: 'K11',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:54:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 12,
+    queue_number: 'K12',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T16:55:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 13,
+    queue_number: 'K13',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:56:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 14,
+    queue_number: 'K14',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:57:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 15,
+    queue_number: 'K15',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:58:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 16,
+    queue_number: 'K16',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:59:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 17,
+    queue_number: 'K17',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:00:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 18,
+    queue_number: 'K18',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:01:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 19,
+    queue_number: 'K19',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:02:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 20,
+    queue_number: 'K20',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:03:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 21,
+    queue_number: 'K21',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:04:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 22,
+    queue_number: 'K22',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:05:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 23,
+    queue_number: 'K23',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:06:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 24,
+    queue_number: 'K24',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:07:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 25,
+    queue_number: 'K25',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:08:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 26,
+    queue_number: 'K26',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:09:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 27,
+    queue_number: 'K27',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:10:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 28,
+    queue_number: 'K28',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:11:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 29,
+    queue_number: 'K29',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:12:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 30,
+    queue_number: 'K30',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:13:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 31,
+    queue_number: 'K31',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:14:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 32,
+    queue_number: 'K32',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:15:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 33,
+    queue_number: 'K33',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:16:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 34,
+    queue_number: 'K34',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:17:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 35,
+    queue_number: 'K35',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:18:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 36,
+    queue_number: 'K36',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:19:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 37,
+    queue_number: 'K37',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:20:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 38,
+    queue_number: 'K38',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:21:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 39,
+    queue_number: 'K39',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:22:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 40,
+    queue_number: 'K40',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:23:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 41,
+    queue_number: 'K41',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:24:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 42,
+    queue_number: 'K42',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:25:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 43,
+    queue_number: 'K43',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:26:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 44,
+    queue_number: 'K44',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:27:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 45,
+    queue_number: 'K45',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:28:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 46,
+    queue_number: 'K46',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:29:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 47,
+    queue_number: 'K47',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:30:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 48,
+    queue_number: 'K48',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:31:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 49,
+    queue_number: 'K49',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:32:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 50,
+    queue_number: 'K50',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:33:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 51,
+    queue_number: 'K51',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:34:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 52,
+    queue_number: 'K52',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:35:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 53,
+    queue_number: 'K53',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:36:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 54,
+    queue_number: 'K54',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:37:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 55,
+    queue_number: 'K55',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:38:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 56,
+    queue_number: 'K56',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:39:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 57,
+    queue_number: 'K57',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:40:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 58,
+    queue_number: 'K58',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:41:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 59,
+    queue_number: 'K59',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:42:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 60,
+    queue_number: 'K60',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:43:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 61,
+    queue_number: 'K61',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:44:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 62,
+    queue_number: 'K62',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:45:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 63,
+    queue_number: 'K63',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:46:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 64,
+    queue_number: 'K64',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:47:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 65,
+    queue_number: 'K65',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:48:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 66,
+    queue_number: 'K66',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:49:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 67,
+    queue_number: 'K67',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:50:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 68,
+    queue_number: 'K68',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:51:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 69,
+    queue_number: 'K69',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:52:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 70,
+    queue_number: 'K70',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:53:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 71,
+    queue_number: 'K71',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:54:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 72,
+    queue_number: 'K72',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:55:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 73,
+    queue_number: 'K73',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:56:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 74,
+    queue_number: 'K74',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:57:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 75,
+    queue_number: 'K75',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:58:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 76,
+    queue_number: 'K76',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:59:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 77,
+    queue_number: 'K77',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:00:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 78,
+    queue_number: 'K78',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:01:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 79,
+    queue_number: 'K79',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:02:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 80,
+    queue_number: 'K80',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:03:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 81,
+    queue_number: 'K81',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:04:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 82,
+    queue_number: 'K82',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:05:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 83,
+    queue_number: 'K83',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:06:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 84,
+    queue_number: 'K84',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:07:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 85,
+    queue_number: 'K85',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:08:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 86,
+    queue_number: 'K86',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:09:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 87,
+    queue_number: 'K87',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:10:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 88,
+    queue_number: 'K88',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:11:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 89,
+    queue_number: 'K89',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:12:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 90,
+    queue_number: 'K90',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:13:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 91,
+    queue_number: 'K91',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:14:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 92,
+    queue_number: 'K92',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:15:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 93,
+    queue_number: 'K93',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:16:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 94,
+    queue_number: 'K94',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:17:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 95,
+    queue_number: 'K95',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:18:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 96,
+    queue_number: 'K96',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:19:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 97,
+    queue_number: 'K97',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:20:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 98,
+    queue_number: 'K98',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:21:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 99,
+    queue_number: 'K99',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:22:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 100,
+    queue_number: 'K100',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:23:00.000Z',
+    order_items: [ [Object] ]
+  }
+] troncature= { total: 137, affichees: 100 }  ... > 
+  at <VTUROOT>
+
+stderr | tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > aucun bandeau de troncature quand la journée est complète
+[Vue warn]: Extraneous non-props attributes (troncature) were passed to component but could not be automatically inherited because component renders fragment or text or teleport root nodes. 
+  at <PosControlDrawer open=true orders= [
+  {
+    id: 1,
+    queue_number: 'K1',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T16:44:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 2,
+    queue_number: 'K2',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:45:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 3,
+    queue_number: 'K3',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:46:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 4,
+    queue_number: 'K4',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:47:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 5,
+    queue_number: 'K5',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:48:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 6,
+    queue_number: 'K6',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:49:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 7,
+    queue_number: 'K7',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:50:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 8,
+    queue_number: 'K8',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:51:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 9,
+    queue_number: 'K9',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:52:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 10,
+    queue_number: 'K10',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:53:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 11,
+    queue_number: 'K11',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:54:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 12,
+    queue_number: 'K12',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T16:55:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 13,
+    queue_number: 'K13',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:56:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 14,
+    queue_number: 'K14',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:57:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 15,
+    queue_number: 'K15',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:58:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 16,
+    queue_number: 'K16',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T16:59:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 17,
+    queue_number: 'K17',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:00:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 18,
+    queue_number: 'K18',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:01:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 19,
+    queue_number: 'K19',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:02:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 20,
+    queue_number: 'K20',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:03:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 21,
+    queue_number: 'K21',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:04:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 22,
+    queue_number: 'K22',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:05:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 23,
+    queue_number: 'K23',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:06:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 24,
+    queue_number: 'K24',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:07:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 25,
+    queue_number: 'K25',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:08:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 26,
+    queue_number: 'K26',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:09:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 27,
+    queue_number: 'K27',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:10:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 28,
+    queue_number: 'K28',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:11:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 29,
+    queue_number: 'K29',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:12:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 30,
+    queue_number: 'K30',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:13:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 31,
+    queue_number: 'K31',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:14:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 32,
+    queue_number: 'K32',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:15:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 33,
+    queue_number: 'K33',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:16:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 34,
+    queue_number: 'K34',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:17:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 35,
+    queue_number: 'K35',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:18:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 36,
+    queue_number: 'K36',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:19:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 37,
+    queue_number: 'K37',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:20:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 38,
+    queue_number: 'K38',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:21:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 39,
+    queue_number: 'K39',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:22:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 40,
+    queue_number: 'K40',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:23:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 41,
+    queue_number: 'K41',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:24:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 42,
+    queue_number: 'K42',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:25:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 43,
+    queue_number: 'K43',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:26:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 44,
+    queue_number: 'K44',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:27:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 45,
+    queue_number: 'K45',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:28:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 46,
+    queue_number: 'K46',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:29:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 47,
+    queue_number: 'K47',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:30:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 48,
+    queue_number: 'K48',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:31:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 49,
+    queue_number: 'K49',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:32:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 50,
+    queue_number: 'K50',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:33:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 51,
+    queue_number: 'K51',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:34:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 52,
+    queue_number: 'K52',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:35:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 53,
+    queue_number: 'K53',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:36:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 54,
+    queue_number: 'K54',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:37:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 55,
+    queue_number: 'K55',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:38:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 56,
+    queue_number: 'K56',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:39:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 57,
+    queue_number: 'K57',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:40:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 58,
+    queue_number: 'K58',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:41:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 59,
+    queue_number: 'K59',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:42:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 60,
+    queue_number: 'K60',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:43:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 61,
+    queue_number: 'K61',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:44:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 62,
+    queue_number: 'K62',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:45:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 63,
+    queue_number: 'K63',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:46:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 64,
+    queue_number: 'K64',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:47:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 65,
+    queue_number: 'K65',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:48:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 66,
+    queue_number: 'K66',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:49:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 67,
+    queue_number: 'K67',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T17:50:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 68,
+    queue_number: 'K68',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:51:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 69,
+    queue_number: 'K69',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:52:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 70,
+    queue_number: 'K70',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:53:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 71,
+    queue_number: 'K71',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:54:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 72,
+    queue_number: 'K72',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:55:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 73,
+    queue_number: 'K73',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:56:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 74,
+    queue_number: 'K74',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:57:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 75,
+    queue_number: 'K75',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:58:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 76,
+    queue_number: 'K76',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T17:59:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 77,
+    queue_number: 'K77',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:00:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 78,
+    queue_number: 'K78',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:01:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 79,
+    queue_number: 'K79',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:02:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 80,
+    queue_number: 'K80',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:03:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 81,
+    queue_number: 'K81',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:04:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 82,
+    queue_number: 'K82',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:05:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 83,
+    queue_number: 'K83',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:06:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 84,
+    queue_number: 'K84',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:07:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 85,
+    queue_number: 'K85',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:08:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 86,
+    queue_number: 'K86',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:09:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 87,
+    queue_number: 'K87',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:10:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 88,
+    queue_number: 'K88',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:11:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 89,
+    queue_number: 'K89',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:12:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 90,
+    queue_number: 'K90',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:13:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 91,
+    queue_number: 'K91',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:14:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 92,
+    queue_number: 'K92',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:15:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 93,
+    queue_number: 'K93',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:16:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 94,
+    queue_number: 'K94',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:17:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 95,
+    queue_number: 'K95',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:18:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 96,
+    queue_number: 'K96',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:19:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 97,
+    queue_number: 'K97',
+    status: 8,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:20:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 98,
+    queue_number: 'K98',
+    status: 13,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:21:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 99,
+    queue_number: 'K99',
+    status: 7,
+    payment_status: 5,
+    pos_payment_method: 1,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: false,
+    cash_pending_amount: null,
+    total: 14.9,
+    created_at: '2026-09-03T18:22:00.000Z',
+    order_items: [ [Object] ]
+  },
+  {
+    id: 100,
+    queue_number: 'K100',
+    status: 4,
+    payment_status: 15,
+    pos_payment_method: 6,
+    order_type: 25,
+    source_surface: 'kiosk',
+    is_cash_pending: true,
+    cash_pending_amount: '14.90',
+    total: 14.9,
+    created_at: '2026-09-03T18:23:00.000Z',
+    order_items: [ [Object] ]
+  },
+  ... 37 more items
+] troncature= { total: 137, affichees: 137 }  ... > 
+  at <VTUROOT>
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js  (5 tests | 4 failed) 121ms
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la plus ancienne commande à encaisser du service arrive jusqu’à la caisse
+     → expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la pastille « à encaisser » compte le service entier, pas une page de cent
+     → expected 9 to be 13 // Object.is equality
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le chargement des commandes prêtes ne retronque pas la journée
+     → expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le tiroir avoue la troncature quand le serveur en déclare une
+     → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la plus ancienne commande à encaisser du service arrive jusqu’à la caisse
+AssertionError: expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:200:21
+    198| 
+    199|         const ids = wrapper.vm.serviceOrders.map((o) => o.id);
+    200|         expect(ids).toContain(1);
+       |                     ^
+    201|     });
+    202| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la pastille « à encaisser » compte le service entier, pas une page de cent
+AssertionError: expected 9 to be 13 // Object.is equality
+
+- Expected
++ Received
+
+- 13
++ 9
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:209:59
+    207|         await wrapper.vm.loadActiveOrdersStats();
+    208| 
+    209|         expect(wrapper.vm.filesControle.encaisser.length).toBe(CASH_PE…
+       |                                                           ^
+    210|         // La doyenne est bien en TÊTE de la file (tri plus-ancienne-d…
+    211|         expect(wrapper.vm.filesControle.encaisser[0].id).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le chargement des commandes prêtes ne retronque pas la journée
+AssertionError: expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:221:59
+    219|         await wrapper.vm.loadReadyOrders();
+    220| 
+    221|         expect(wrapper.vm.serviceOrders.map((o) => o.id)).toContain(1);
+       |                                                           ^
+    222|     });
+    223| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le tiroir avoue la troncature quand le serveur en déclare une
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:233:34
+    231| 
+    232|         const bandeau = wrapper.find('[data-testid="pos-control-tronca…
+    233|         expect(bandeau.exists()).toBe(true);
+       |                                  ^
+    234|         expect(bandeau.text()).toContain('100');
+    235|         expect(bandeau.text()).toContain(String(TOTAL_SERVICE));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed (5)
+   Start at  01:57:44
+   Duration  2.33s (transform 1.14s, setup 20ms, collect 1.78s, tests 121ms, environment 154ms, prepare 41ms)
+
+
+==========================================================================
+### T1.2 — tests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php (PHPUnit)
+### Attendu : ROUGE. L'endpoint borné à la journée de service n'existe pas.
+==========================================================================
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest[39m
+  [31;1m⨯[39;22m[39m [2mla journee de service arrive entiere au dela de cent commandes[22m[39m
+  [31;1m⨯[39;22m[39m [2mles quatre files du tiroir sont completes[22m[39m
+  [31;1m⨯[39;22m[39m [2mune commande annulee nentre dans aucune file[22m[39m
+  [31;1m⨯[39;22m[39m [2mune commande dune autre branche nentre pas[22m[39m
+  [31;1m⨯[39;22m[39m [2mune commande hors journee de service nentre pas[22m[39m
+  [31;1m⨯[39;22m[39m [2mun plafond qui mord est avoue et le total reste vrai[22m[39m
+  [31;1m⨯[39;22m[39m [2mun compte sans droit caisse est refuse[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mla journee de service arrive entiere au dela de cent commandes[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m117[39m
+    113▕ 
+    114▕         $res = $this->journee();
+    115▕ 
+    116▕         $res->assertOk();
+  ➜ 117▕         $ids = array_column($res->json('data'), 'id');
+    118▕         $this->assertCount(self::TOTAL, $ids,
+    119▕             'La caisse doit recevoir les '.self::TOTAL.' commandes du service, pas une page de cent.');
+    120▕         $this->assertSame(self::TOTAL, $res->json('meta.total'),
+    121▕             'meta.total doit être le VRAI total du service — un compteur faux est pire qu’une borne assumée.');
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mles quatre files du tiroir sont completes[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m133[39m
+    129▕     public function test_les_quatre_files_du_tiroir_sont_completes(): void
+    130▕     {
+    131▕         $this->semerLaJournee();
+    132▕ 
+  ➜ 133▕         $lignes = $this->journee()->assertOk()->json('data');
+    134▕ 
+    135▕         $parStatut = static fn (int $statut) => count(array_filter($lignes, static fn ($l) => (int) $l['status'] === $statut));
+    136▕ 
+    137▕         $this->assertSame(self::A_ENCAISSER, count(array_filter($lignes, static fn ($l) => $l['is_cash_pending'] === true)),
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mune commande annulee nentre dans aucune file[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m153[39m
+    149▕         $rendue  = $this->commande(['status' => OrderStatus::RETURNED]);
+    150▕ 
+    151▕         $res = $this->journee();
+    152▕ 
+  ➜ 153▕         $ids = array_column($res->assertOk()->json('data'), 'id');
+    154▕         $this->assertNotContains((int) $annulee->id, $ids);
+    155▕         $this->assertNotContains((int) $rejetee->id, $ids);
+    156▕         $this->assertNotContains((int) $rendue->id, $ids);
+    157▕         $this->assertSame(0, $res->json('meta.total'),
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mune commande dune autre branche nentre pas[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m174[39m
+    170▕             'is_advance_order' => Ask::NO,
+    171▕             'order_datetime'   => now(),
+    172▕         ]);
+    173▕ 
+  ➜ 174▕         $ids = array_column($this->journee()->assertOk()->json('data'), 'id');
+    175▕ 
+    176▕         $this->assertContains((int) $mienne->id, $ids);
+    177▕         $this->assertNotContains((int) $autre->id, $ids, 'Isolation branche : aucune fuite cross-branch.');
+    178▕     }
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mune commande hors journee de service nentre pas[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m186[39m
+    182▕     {
+    183▕         $dujour  = $this->commande(['status' => OrderStatus::PREPARED]);
+    184▕         $ancienne = $this->commande(['status' => OrderStatus::PREPARED, 'order_datetime' => now()->subDays(3)]);
+    185▕ 
+  ➜ 186▕         $ids = array_column($this->journee()->assertOk()->json('data'), 'id');
+    187▕ 
+    188▕         $this->assertContains((int) $dujour->id, $ids);
+    189▕         $this->assertNotContains((int) $ancienne->id, $ids);
+    190▕     }
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mun plafond qui mord est avoue et le total reste vrai[39;22m
+[39;1m  Invalid JSON was returned from the route.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m200[39m
+    196▕ 
+    197▕         $res = $this->journee('?plafond=5');
+    198▕ 
+    199▕         $res->assertOk();
+  ➜ 200▕         $this->assertTrue($res->json('meta.truncated'),
+    201▕             'Une troncature muette se lit « il n’y a que ça » — c’est le défaut d’origine.');
+    202▕         $this->assertSame(self::TOTAL, $res->json('meta.total'),
+    203▕             'Le total annoncé reste le VRAI total du service, jamais la taille de la page.');
+    204▕         $this->assertSame($res->json('meta.shown'), count($res->json('data')),
+
+  [31;1m• Tests\Feature\Pos\PosControlDrawerJourneeCompleteTest [39;22m> [31;1mun compte sans droit caisse est refuse[39;22m
+[39;1m  Expected response status code [403] but received 200.
+  Failed asserting that 403 is identical to 200.[39;22m
+
+  at [32mtests/Feature/Pos/PosControlDrawerJourneeCompleteTest.php[39m:[32m218[39m
+    214▕ 
+    215▕         $this->actingAs($intrus, 'sanctum')
+    216▕             ->withHeader('x-api-key', config('app.api_key'))
+    217▕             ->getJson('/api/admin/pos-order/service-day')
+  ➜ 218▕             ->assertForbidden();
+    219▕     }
+    220▕ }
+    221▕
+
+
+  [37;1mTests:  [39;22m[31;1m7 failed[39;22m
+  [37;1mTime:   [39;22m[39m2.19s[39m
+
+
+
+==========================================================================
+### T1.5 — tests/Feature/Sentinels/EnumsJsPhpConvergenceSentinelTest.php (PHPUnit)
+### §2 rougit tel quel (les 13 recopies existent).
+### §1 : la parité TIENT aujourd'hui (V-13 est une DETTE, pas une panne). Pour prouver
+###      que l'instrument mesure, orderStatusEnum.PREPARED a été muté 8 -> 9 le temps
+###      de cette exécution, puis RESTAURÉ.
+==========================================================================
+
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Sentinels\EnumsJsPhpConvergenceSentinelTest[39m
+  [31;1m⨯[39;22m[39m [2mles enums js valent exactement les enums php[22m[39m
+  [31;1m⨯[39;22m[39m [2mles modules des files importent les enums au lieu de les recopier[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Sentinels\EnumsJsPhpConvergenceSentinelTest [39;22m> [31;1mles enums js valent exactement les enums php[39;22m
+[39;1m  Divergence entre App\Enums\OrderStatus et resources/js/enums/modules/orderStatusEnum.js. Les quatre files de la caisse décident du sort d'une commande sur ces nombres : un écart ici vide une file en silence, sans erreur, sans message, un soir de service.
+  Failed asserting that two arrays are identical.[39;22m
+
+  at [32mtests/Feature/Sentinels/EnumsJsPhpConvergenceSentinelTest.php[39m:[32m80[39m
+     76▕ 
+     77▕             ksort($php);
+     78▕             ksort($js);
+     79▕ 
+  ➜  80▕             $this->assertSame(
+     81▕                 $php,
+     82▕                 $js,
+     83▕                 "Divergence entre {$interface} et {$module}. Les quatre files de la caisse décident ".
+     84▕                 "du sort d'une commande sur ces nombres : un écart ici vide une file en silence, ".
+  [31m--- Expected[39m
+  [32m+++ Actual[39m
+  @@ @@
+       'DELIVERED' => 13
+       'OUT_FOR_DELIVERY' => 10
+       'PENDING' => 1
+  [31m-    'PREPARED' => 8[39m
+  [32m+    'PREPARED' => 9[39m
+       'PREPARING' => 7
+       'REJECTED' => 19
+       'RETURNED' => 22
+   )
+  [31;1m• Tests\Feature\Sentinels\EnumsJsPhpConvergenceSentinelTest [39;22m> [31;1mles modules des files importent les enums au lieu de les recopier[39;22m
+[39;1m  resources/js/support/filesControle.js doit IMPORTER les enums canoniques (resources/js/enums/modules/) plutôt que recopier des nombres à la main.
+  Failed asserting that '/**\n
+   * [GOAL CAISSE CONTRÔLE 2026-09-02] Les quatre files de la caisse — définition UNIQUE.\n
+   *\n
+   * POURQUOI CE MODULE EXISTE\n
+
+==========================================================================
+### T1.1 + T1.4 — RE-PREUVE avec le banc dans sa forme FINALE
+### (le premier jet n'avait pas le stub Teleport ; §4 aurait pu rougir pour
+###  une mauvaise raison. Les 4 fichiers de production du frontend ont été
+###  remis à l'état HEAD via 'git show HEAD:<f> > <f>' — l'index n'est pas
+###  touché — puis restaurés depuis une copie.)
+==========================================================================
+
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js  (6 tests | 5 failed) 185ms
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la plus ancienne commande à encaisser du service arrive jusqu’à la caisse
+     → expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la pastille « à encaisser » compte le service entier, pas une page de cent
+     → expected 9 to be 13 // Object.is equality
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le chargement des commandes prêtes ne retronque pas la journée
+     → expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le tiroir avoue la troncature quand le serveur en déclare une
+     → expected false to be true // Object.is equality
+   ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la caisse retient ce que le serveur dit de sa propre réponse
+     → expected undefined to deeply equal { total: 137, affichees: 100, …(1) }
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la plus ancienne commande à encaisser du service arrive jusqu’à la caisse
+AssertionError: expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:200:21
+    198| 
+    199|         const ids = wrapper.vm.serviceOrders.map((o) => o.id);
+    200|         expect(ids).toContain(1);
+       |                     ^
+    201|     });
+    202| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la pastille « à encaisser » compte le service entier, pas une page de cent
+AssertionError: expected 9 to be 13 // Object.is equality
+
+- Expected
++ Received
+
+- 13
++ 9
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:209:59
+    207|         await wrapper.vm.loadActiveOrdersStats();
+    208| 
+    209|         expect(wrapper.vm.filesControle.encaisser.length).toBe(CASH_PE…
+       |                                                           ^
+    210|         // La doyenne est bien en TÊTE de la file (tri plus-ancienne-d…
+    211|         expect(wrapper.vm.filesControle.encaisser[0].id).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le chargement des commandes prêtes ne retronque pas la journée
+AssertionError: expected [ 137, 136, 135, 134, 133, 132, …(94) ] to include 1
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:221:59
+    219|         await wrapper.vm.loadReadyOrders();
+    220| 
+    221|         expect(wrapper.vm.serviceOrders.map((o) => o.id)).toContain(1);
+       |                                                           ^
+    222|     });
+    223| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > le tiroir avoue la troncature quand le serveur en déclare une
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:233:34
+    231| 
+    232|         const bandeau = wrapper.find('[data-testid="pos-control-tronca…
+    233|         expect(bandeau.exists()).toBe(true);
+       |                                  ^
+    234|         expect(bandeau.text()).toContain('100');
+    235|         expect(bandeau.text()).toContain(String(TOTAL_SERVICE));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/js/posControlDrawerAuDelaDeCent.spec.js > G1 — la caisse voit toute la journée de service, au-delà de cent commandes > la caisse retient ce que le serveur dit de sa propre réponse
+AssertionError: expected undefined to deeply equal { total: 137, affichees: 100, …(1) }
+
+- Expected: 
+Object {
+  "affichees": 100,
+  "total": 137,
+  "tronquee": true,
+}
+
++ Received: 
+undefined
+
+ ❯ tests/js/posControlDrawerAuDelaDeCent.spec.js:263:46
+    261|         await wrapper.vm.loadActiveOrdersStats();
+    262| 
+    263|         expect(wrapper.vm.serviceOrdersMeta).toEqual({
+       |                                              ^
+    264|             total: TOTAL_SERVICE, affichees: 100, tronquee: true,
+    265|         });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 1 passed (6)
+   Start at  02:05:43
+   Duration  2.02s (transform 983ms, setup 8ms, collect 1.43s, tests 185ms, environment 125ms, prepare 38ms)
+

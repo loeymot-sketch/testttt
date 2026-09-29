@@ -115,7 +115,7 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="site_copyright" class="db-field-title required">
+                        <label for="site_copyright" class="db-field-title">
                             {{ $t("label.copyright") }}
                         </label>
                         <input v-model="form.site_copyright" v-bind:class="errors.site_copyright ? 'invalid' : ''"
@@ -126,7 +126,7 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="site_google_map_key" class="db-field-title required">
+                        <label for="site_google_map_key" class="db-field-title">
                             {{ $t("label.google_map_key") }}
                         </label>
                         <input v-model="form.site_google_map_key"

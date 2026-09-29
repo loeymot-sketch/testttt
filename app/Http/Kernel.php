@@ -37,6 +37,9 @@ class Kernel extends HttpKernel
     protected $middlewareGroups = [
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
+            // Must run after EncryptCookies so only a genuine encrypted grant
+            // can keep kiosk auto-login alive through an SPA reload.
+            \App\Http\Middleware\RememberKioskAutoLoginGrant::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,

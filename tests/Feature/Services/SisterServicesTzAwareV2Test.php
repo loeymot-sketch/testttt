@@ -233,7 +233,25 @@ class SisterServicesTzAwareV2Test extends TestCase
      */
     public function test_dashboard_realtimeReport_binds_paris_today(): void
     {
-        [, , , $now] = $this->pinParisWinterNow();
+        // [AUDIT-COMPTA 2026-08-29] Instant choisi POUR QUE LE BANC PUISSE ÉCHOUER.
+        //
+        // `pinParisWinterNow()` fige midi UTC — 13h à Paris : les deux fuseaux tombent le
+        // MÊME jour. Tant que la borne était un horodatage (`00:00:00` contre `23:00:00`)
+        // l'heure suffisait à discriminer. Depuis que `realtimeReport` compare une DATE,
+        // cet instant ne prouve plus rien : j'ai vérifié en réintroduisant le bug UTC —
+        // les six contrôles restaient verts.
+        //
+        // On fige donc 23h30 UTC = 00h30 à Paris (heure d'hiver, UTC+1). Les dates
+        // divergent alors : Paris est le 16, UTC le 15. C'est exactement la fenêtre pour
+        // laquelle la règle du jour métier existe — Le Cayenne sert jusqu'à 00h30.
+        $now = CarbonImmutable::parse('2026-01-15 23:30:00', 'UTC');
+        Carbon::setTestNow($now);
+        CarbonImmutable::setTestNow($now);
+
+        $this->assertSame('2026-01-16', Carbon::today(config('app.timezone'))->toDateString(),
+            'Instant mal choisi : Paris doit être le 16 pour que le banc discrimine.');
+        $this->assertSame('2026-01-15', CarbonImmutable::now('UTC')->toDateString(),
+            'Instant mal choisi : UTC doit être le 15 pour que le banc discrimine.');
 
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['branch_id' => 0]);
@@ -252,10 +270,23 @@ class SisterServicesTzAwareV2Test extends TestCase
             app(DashboardService::class)->realtimeReport();
         });
 
+        // [AUDIT-COMPTA 2026-08-29] La propriété gardée est INCHANGÉE — la borne du jour
+        // doit être celle de Paris, jamais la borne décalée en UTC. Seule sa FORME a changé.
+        //
+        // `realtimeReport` filtrait sur une fenêtre `order_datetime >= 2026-01-15 00:00:00`.
+        // Il partage désormais `scopeJourMetier` avec la tuile « Ventes du jour » :
+        // `COALESCE(business_date, DATE(order_datetime)) = '2026-01-15'`. Les deux tuiles
+        // affichaient sinon le CA du jour avec 104,90 € d'écart sur le même écran.
+        //
+        // On vérifie donc la même chose sur la forme date : le jour de Paris est lié, le
+        // jour UTC (2026-01-14 à 00h30 Paris en hiver) ne l'est jamais. Le piège que cette
+        // sentinelle a été écrite pour attraper reste attrapé.
+        // Paris est le 16, UTC le 15 : lier le 15 signifierait que le jour a été calculé en
+        // UTC — le piège exact que cette sentinelle existe pour attraper, sous sa forme date.
         $this->assertBindingsContainParisNotUtcConverted(
             $queries,
-            '2026-01-15 00:00:00',
-            '2026-01-14 23:00:00',
+            '2026-01-16',
+            '2026-01-15',
             'DashboardService::realtimeReport'
         );
     }

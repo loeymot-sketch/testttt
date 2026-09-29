@@ -559,7 +559,13 @@ export default {
       if (this.submitting) return;
       const base = this.cashFieldPristine ? 0 : this.cashReceivedNumber;
       this.cashFieldPristine = false;
+      // @pricing-allowed-block start
+      // Additionne les coupures tapées par le caissier pour préremplir "espèces reçues" —
+      // arithmétique sur l'argent physiquement posé au comptoir, jamais un prix produit/commande
+      // (le total scellé reste calculé et vérifié côté backend ailleurs dans ce flux).
+      // signoff-pending — date_limit: 2026-10-27
       const total = Math.round((base + Number(amount)) * 100) / 100;
+      // @pricing-allowed-block end
       this.cashReceivedRaw = String(total.toFixed(2)).replace('.', ',');
     },
     // [PRINT-AENCAISSER 2026-07-03] Imprime le ticket CLIENT ou CUISINE de la commande

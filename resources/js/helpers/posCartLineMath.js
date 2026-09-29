@@ -11,6 +11,9 @@ export function parsePositiveInt(value, fallback) {
 /** Unité « principal » : convert + variations + extras (hors qty panier) */
 export function rowUnitMain(row) {
     if (!row) return 0;
+    if (row.line_type === 'manual_supplement') {
+        return parseFloat(row.manual_amount) || 0;
+    }
     return (
         (parseFloat(row.convert_price) || 0) +
         (parseFloat(row.item_variation_total) || 0) +

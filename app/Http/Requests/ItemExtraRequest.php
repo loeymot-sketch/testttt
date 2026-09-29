@@ -13,9 +13,29 @@ class ItemExtraRequest extends FormRequest
      *
      * @return bool
      */
+    /**
+     * [ONB-13 C7 2026-08-28] Defense en profondeur — etait `return true;`.
+     *
+     * Miroir EXACT de la permission que porte la route : ItemExtraController:22-23 (items_show en lecture, items_edit en ecriture).
+     *
+     * Ce n'est pas la garde principale — le middleware du controleur garde deja
+     * l'acces. C'est le second verrou : si une route est un jour recablee sans son
+     * middleware, la regle refuse encore. Meme motif que `EmployeeRequest` et
+     * `AdministratorRequest`.
+     *
+     * On accepte la famille de capacites entiere (lecture ET ecriture) parce que
+     * les regles s'appliquent aux deux verbes : etre plus strict ici refuserait des
+     * requetes que le middleware laisse legitimement passer.
+     */
     public function authorize(): bool
     {
-        return true;
+        $utilisateur = $this->user();
+
+        if ($utilisateur === null) {
+            return false;
+        }
+
+        return $utilisateur->can('items_edit') || $utilisateur->can('items_show');
     }
 
     /**

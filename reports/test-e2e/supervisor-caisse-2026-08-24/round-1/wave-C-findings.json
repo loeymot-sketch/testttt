@@ -1,0 +1,195 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 9,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-waveC/05-encaissement-file-non-vide.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "MEME COMMANDE, DEUX SURFACES, DEUX VERITES. La carte d'encaissement du ticket N°C98A2 (AUDC-ENC-DTWF1D, order 6751) affiche exactement, sur l'image : « Borne / N°C98A2 / Admin Le Cayenne / 1× Menu (Frites + Boisson) / 14,60 € / Encaisser ». Rien d'autre. Or cette commande porte le MEME composition_snapshot que celle de l'etat 3 : le spec la seme par la MEME branche else de seedOrder() (audit-supervisor-waveC.spec.js:191-217, la garde est `if ($variant === 'nu')` — 'riche' ET 'enc' tombent ensemble dans le else) : Sauce Algerienne, Cheddar x2 (line_total 1.00), Frites (1.20), Coca-Cola 33cl (1.20), instruction « Sans oignons ». Sur la fiche (03-detail-composition-zoom.png) ces 4 lignes s'affichent ; sur la carte d'encaissement, ZERO. Et la donnee est deja dans la reponse : routes/api.php:988 renvoie OrderDetailsResource::collection, OrderDetailsResource.php:130 delegue a OrderItemResource, qui expose item_variations / item_extras / item_addons / composition_snapshot (OrderItemResource.php:33-36) ET instruction (ligne 50). Le template la jette : EncaissementComponent.vue:54-61 ne rend que `{{ it.quantity }}× {{ itemName(it) }}`. Consequence operationnelle : l'ecran ou le caissier est FACE au client au moment de prendre l'argent est le seul des trois a ne pas savoir dire de quoi les 14,60 € sont faits — et « Sans oignons » y est invisible aussi. Le motif inscrit par la vague (« un client demandant pourquoi 3 € de plus ? recevait une fiche muette ») s'applique plus fort ici que sur la fiche qui a ete corrigee. L'equipe de capture a presente cet etat comme propre sans voir que son ticket etait la meme commande que sa fiche vitrine.",
+      "fix_hint": "resources/js/components/admin/encaissement/EncaissementComponent.vue:54-61 — sous le `<li>{{ it.quantity }}× {{ itemName(it) }}</li>`, rendre la composition deja presente dans `it` (it.item_addons / it.item_extras / it.item_variations / it.instruction) via le meme normaliseur que la fiche (posReceiptBuilder.js normalizeReceiptAddons). Aucun changement backend : la charge utile porte deja tout (OrderItemResource.php:33-36 et :50). Attention au `.slice(0, 4)` ligne 55 : compter les lignes rendues, pas les order_items, sinon la carte se rallonge sans borne.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-waveC/07-historique-chargement.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "CONFIRME A L'OEIL ET AU PIXEL, ET PIRE QUE DECRIT. (a) L'en-tete : au zoom x6 sur la bande (1040,318)-(1260,360) je lis les glyphes de DATE et ACTION imprimes l'un sur l'autre, D-A-C-T-I-E-O-N — le mot rendu est bien « DACTIEON ». (b) La colonne DATE n'est pas « transparente une ligne sur deux », elle est ILLISIBLE SUR 10/10 LIGNES, de deux manieres opposees. Mesure pixel a x=1170 (zone DATE, sous la cellule collante) : y=385 -> (249,250,251), y=499 -> (249,250,251), y=613 -> (249,250,251) : sur les rangs IMPAIRS la zebrure #f9fafb est repeinte par la cellule collante et la date a totalement DISPARU (au zoom, ces lignes ne montrent que les deux icones, aucun chiffre). y=442 -> (26,26,26), y=556 -> (26,26,26), y=670 -> (26,26,26) : sur les rangs PAIRS (fond blanc, donc `background: inherit` = rien) la date s'imprime A TRAVERS les boutons — je lis « 02:18, 08 » avec l'icone oeil qui barre le « 1 », puis « 03:56, 08 », puis « 06:05, 08 », chacune coupee au bord droit. Cause exacte confirmee : HistoriqueListComponent.vue:675-679 `.hist-action-col { position: sticky; right: 0; z-index: 2; background: inherit; }` et resources/css/app.css:463 `.db-table.stripe .db-table-body-tr { @apply odd:!bg-[#f9fafb] }` — le `<tr>` pair n'a aucun fond a heriter, le `<thead>` non plus. Le commentaire du code juste au-dessus (« Sticky la garde toujours atteignable, sans masquer de donnee ») affirme exactement l'inverse de ce que l'image montre. Meme defaut sur 08-historique-remboursements.png (rangs pairs : « 06:25, 24-08⊙20 ») et sur 08bis ou l'unique resultat n'affiche que « 23:22, » — une virgule pendante.",
+      "fix_hint": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue:675-679 — remplacer `background: inherit` par un fond OPAQUE reel et zebre : `.hist-action-col { background: #fff; }` + `.db-table.stripe .db-table-body-tr:nth-child(odd) .hist-action-col { background: #f9fafb; }` + `thead .hist-action-col { background: var(--fond-thead); }` (le hover devra etre re-declare de la meme facon). Cela rend la superposition invisible mais MASQUE toujours la date : corriger aussi l'ordre des colonnes (placer DATE avant N° FISCAL) ou reduire N° COMMANDE, sinon la colonne DATE de l'historique reste inaccessible sans scroll horizontal a 1280px.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-waveC/03-detail-commande-composee.png",
+      "category": "empty_state",
+      "severity": "P1",
+      "evidence": "NON VU PAR L'EQUIPE DE CAPTURE. Sur l'image (zoom de la bande (290,230)-(780,340)) je lis « Heure de retrait: 25-08-2026 ». Un libelle qui promet une HEURE, suivi d'une DATE sans heure — et qui repete la date deja affichee 3 lignes plus haut (« 02:18, 25-08-2026 »). Le DOM le confirme mot pour mot : `<li class=\"text-xs\">Heure de retrait: <span class=\"text-heading\">25-08-2026 </span></li>` — l'espace final prouve que `delivery_time` est vide. Et ce n'est PAS un artefact de semis : la garde est `v-if=\"order.delivery_date || order.delivery_time\"` (PosOrderShowComponent.vue:54) alors que `delivery_date` n'est JAMAIS vide — OrderDetailsResource.php:66 le calcule inconditionnellement : `$this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime)`. Les deux branches renvoient une date non vide pour toute commande, donc la garde est TOUJOURS vraie et la ligne se rend sur 100 % des commandes. Le commentaire pose le 2026-07-29 juste au-dessus de cette garde affirme « la ligne disparait si aucun creneau n'est pose » : cette phrase est structurellement infaisable telle que le code est ecrit. C'est la troisieme instance de la meme famille « un libelle qui survit a l'absence de sa valeur » sur CETTE fiche, et elle a survecu aux deux corrections precedentes (Extras orphelin, Instruction orpheline) parce que personne n'a regarde d'ou venait `delivery_date`.",
+      "fix_hint": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:54 — la garde doit porter sur le CRENEAU, pas sur une date derivee : `v-if=\"order.delivery_time\"` (ou `v-if=\"isAdvanceOrder && (order.delivery_date || order.delivery_time)\"`). Alternative cote API : app/Http/Resources/OrderDetailsResource.php:66 ne doit renvoyer `delivery_date` que si un creneau existe reellement (`$this->is_advance_order == Ask::YES ? ... : null`) au lieu de recopier `order_datetime`, qui est deja expose ligne 63.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-waveC/03-detail-commande-composee.png",
+      "category": "empty_state",
+      "severity": "P1",
+      "evidence": "CONFIRME SUR L'IMAGE (l'equipe de capture ne citait que le DOM). Au zoom de la bande (290,230)-(780,340) je lis deux libelles nus, suivis de RIEN : « Type de paiement: » puis « Type de commande: », la ou les deux lignes suivantes portent bien une valeur (« Heure de retrait: 25-08-2026 », « Reference interne: AUDC-RICHE-V6F2WH »). Le DOM : `<li class=\"text-xs\">Type de commande: <span class=\"text-heading\"></span></li>` — span vide. Cause verifiee en lisant le code : PosOrderShowComponent.vue:740-746, `orderTypeEnumArray` ne mappe que DELIVERY, TAKEAWAY et DINING_TABLE ; POS et KIOSK sont absents, donc `orderTypeEnumArray[order.order_type]` renvoie undefined. Je maintiens P1 et non P2 : POS et KIOSK sont les DEUX SEULS types produits par le V1 LOCAL Le Cayenne (borne + caisse), donc ce champ est vide sur la totalite du parc, pas sur un cas de bord — et la liste d'ou l'on ouvre cette fiche, elle, sait les nommer (« Borne » / « POS » lisibles sur 01-liste-pos-orders.png), ce qui rend l'incoherence visible en deux clics.",
+      "fix_hint": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:740-746 — ajouter `[orderTypeEnum.POS]: this.$t('label.pos')` et `[orderTypeEnum.KIOSK]: this.$t('label.kiosk')` en reprenant la table deja correcte de PosOrderListComponent.vue:254-259 (facteur commun a extraire plutot qu'a dupliquer une troisieme fois). Ajouter en plus une garde `v-if` ligne 43-46 pour que le libelle disparaisse si la valeur reste inconnue — sinon un futur enum reintroduit le meme trou.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-waveC/04-detail-commande-sans-composition.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "« Type de paiement: » se rend sans aucune garde, sur les DEUX fiches capturees (03 et 04) : image + DOM identiques, `Type de paiement: <span class=\"text-heading\"> <!--v-if--></span>`. Le code : PosOrderShowComponent.vue:29-41, `{{ posPaymentMethodEnumArray[order.pos_payment_method] }}` est rendu nu, sans `v-if`, contrairement aux lignes Extras / Supplements / Instruction voisines qui en ont toutes une. Je borne le constat comme l'equipe de capture : le semis a mis `pos_payment_method` a NULL pour les variantes riche/nu, donc je n'affirme RIEN sur la frequence en production. Le constat solide est structurel — aucune garde ne protege ce libelle — et il est aggrave par un cas reel non simule : la variante enc porte `PosPaymentMethod::COUNTER_DEFERRED`, c'est-a-dire precisement une commande qui n'a pas encore de mode de paiement choisi.",
+      "fix_hint": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:29-41 — envelopper le `<li>` dans `v-if=\"posPaymentMethodEnumArray[order.pos_payment_method]\"`, meme forme que la garde des lignes de composition voisines.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-waveC/03-detail-composition-zoom.png",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "CE QUI A ETE LIVRE AUJOURD'HUI, ATTAQUE SUR L'IMAGE. Oui, la ligne « Supplements: Frites, Coca-Cola 33cl » est bien VISIBLE sur le gros plan, pas seulement dans le DOM — la reclamation de l'equipe de capture tient. Mais elle est desormais collee sous une ligne « Extras: Cheddarx2 », et sur l'image ces deux lignes sont typographiquement IDENTIQUES (meme taille, meme couleur, meme indentation, meme deux-points). Or « extras » et « supplements » sont des synonymes en francais courant : rien sur cette fiche ne dit au caissier que l'un designe un ajout paye a la carte et l'autre un composant de formule. Ce n'est pas une fuite de cle pointee (le regex `^[a-z]+(\\.[a-z_]+){1,4}$` ne matche rien sur les 9 DOM — je l'ai passe, zero occurrence) : c'est une chaine ANGLAISE non traduite dans une interface FR-only (ADR-007 locale FR immuable), resources/js/languages/fr.json:477 `\"extras\": \"Extras\"` en face de fr.json:462 `\"addons\": \"Supplements\"`. La vague a ajoute la seconde ligne sans resoudre la collision avec la premiere.",
+      "fix_hint": "resources/js/languages/fr.json:477 et :1156 — traduire `label.extras` en francais distinctif, p.ex. « Ajouts payants » ou « Options » ; garder `label.addons` = « Supplements » pour les composants de formule. Alternativement, differencier visuellement les deux lignes dans PosOrderShowComponent.vue (une puce ou une couleur par famille) pour qu'un caissier distingue les deux d'un coup d'oeil.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-waveC/01-liste-pos-orders.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Au zoom x5 sur la bande (1150,420)-(1280,600) je lis « En preparatio » sur trois lignes consecutives : la pastille verte est TRANCHEE en plein mot par le bord de la carte, et son extremite arrondie droite est coupee net. Il n'y a ni points de suspension ni infobulle : le DOM du `<td>` STATUT donne `<span class=\"py-0.5 px-2 rounded-full text-[10px] ... whitespace-nowrap text-green-900 bg-green-100\">En preparation</span>` — `whitespace-nowrap`, AUCUN `text-overflow: ellipsis`, AUCUN attribut `title`. C'est un cran pire que la categorie 2 du protocole, qui suppose au moins un « ... » : ici rien ne signale au caissier qu'il manque du texte, et deux statuts pourraient se confondre sur leur prefixe. (Je precise que le contraste, lui, est bon : mesure au pixel, les libelles assourdis (110,113,145) de la fiche donnent 4,74:1 sur blanc, au-dessus du seuil AA 4,5:1. Aucun defaut de contraste a signaler sur cette vague.)",
+      "fix_hint": "resources/js/components/admin/posOrders/PosOrderListComponent.vue — colonne STATUT : ajouter `:title=\"orderStatusEnumArray[order.status]\"` sur la pastille et laisser la cellule respirer (`min-width` sur le `<th>` STATUT), ou raccourcir le libelle metier (« Preparation »). Le `whitespace-nowrap` global vient de resources/css/app.css:462 `.db-table` : ne pas le retirer la, corriger au niveau de la cellule.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-waveC/01-liste-pos-orders.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "REMEDIATION APPLIQUEE A UNE SURFACE ET PAS A SA JUMELLE. Sur l'image de /admin/pos-orders a 1280px, le dernier en-tete visible est « STATUT » (x~1215) et la colonne ACTION est ENTIEREMENT hors cadre — invisible sans geste supplementaire. Le DOM confirme 8 colonnes se terminant par « Action » (les `<th>` « Date ↕ / Method / URL / Data » de la barre Debugbar sont exclus du comptage), et cette cellule contient DEUX actions dont une DESTRUCTIVE : `<a href=\"/admin/pos-orders/show/6605\" aria-label=\"Voir\">` et `<button class=\"db-table-action delete\" aria-label=\"Supprimer\" title=\"Supprimer\">`. Or `grep -n \"sticky\\|action-col\" resources/js/components/admin/posOrders/PosOrderListComponent.vue` ne retourne RIEN : le correctif « colonne ACTION collee a droite » pose le 2026-07-29 sur HistoriqueListComponent.vue (:675-679) n'a jamais ete porte sur /admin/pos-orders, qui est pourtant la liste que le caissier ouvre depuis l'entree de menu « Commandes Caisse ». Meme classe de defaut, meme resolution d'ecran de caisse citee dans le commentaire du correctif (1280x800), une seule des deux surfaces reparee.",
+      "fix_hint": "resources/js/components/admin/posOrders/PosOrderListComponent.vue — porter la meme colonne collante que l'historique, MAIS avec le fond opaque corrige de C-002 (ne pas recopier `background: inherit`, qui est precisement le bug). Verifier ensuite qu'a 1280px la colonne DATE de cette liste ne passe pas sous la colonne collante comme elle le fait sur l'historique.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "test-e2e-waveC/05-encaissement-file-non-vide.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "La file d'encaissement est un conteneur a statut DYNAMIQUE : EncaissementComponent.vue:121 `this.pollTimer = setInterval(() => this.fetchPending(true), 20000)` plus trois abonnements Echo lignes 184-186 (`OrderCreated`, `OrderPaidAtCounter`, `OrderStatusChanged`) qui re-fetchent. La pastille compteur — visible sur l'image, elle affiche « 3 » — et la grille de tickets sont donc reecrites en permanence sans action de l'utilisateur. Or `grep -n \"aria-live\\|role=\\\"status\\\"\\|aria-busy\" resources/js/components/admin/encaissement/EncaissementComponent.vue resources/js/components/admin/orderHistory/HistoriqueListComponent.vue` retourne ZERO occurrence sur les deux fichiers, et la pastille est un `<span>` nu : EncaissementComponent.vue:18 `<span class=\"enc-count-chip\">{{ orders.length }}</span>`. Aucune annonce quand une commande borne arrive dans la file ni quand elle en sort. Le rafraichissement silencieux (`fetchPending(true)` n'active pas `loading.isActive`, lignes 144-149) est un choix documente et je ne le conteste pas — c'est l'absence de region live qui est le defaut.",
+      "fix_hint": "resources/js/components/admin/encaissement/EncaissementComponent.vue:18 — `<span class=\"enc-count-chip\" role=\"status\" aria-live=\"polite\" :aria-label=\"$t('label.encaisser_queue_count', { n: orders.length })\">`. Et poser `aria-live=\"polite\"` sur le conteneur `.enc-grid` (ligne 45) ou, mieux, une region visuellement masquee qui annonce les seules variations (« +1 commande a encaisser ») plutot que de relire les 3 tickets a chaque tick de 20 s.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "test-e2e-waveC/05-encaissement-file-non-vide.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "L'EQUIPE DE CAPTURE A CORRIGE LE CHIFFRE SUR LEQUEL ON L'AVAIT PRISE, ET EN A LAISSE TROIS AUTRES. `lignes_pending_counter_brutes` est UNE SEULE ET MEME REQUETE, ecrite une fois dans le spec (audit-supervisor-waveC.spec.js:277-279 : `DB::table('orders')->whereNull('deleted_at')->where('payment_status', PENDING_COUNTER)->count()`), appelee trois fois dans une passe de 40,9 s. Les valeurs publiees dans _facts.json divergent : `pending_before_seed` = 75, `pending_after_seed` = 76, et `states.06.lignes_pending_counter_brutes` = 48. La table `orders` aurait donc perdu 28 lignes PENDING_COUNTER entre le beforeAll et l'etat 6 — alors que le nettoyage AUDC- ne s'execute qu'a la fin et que le rapport presente « 75 -> 76 » comme un delta maitrise de +1. En parallele, le commentaire du spec ligne 240 affirme toujours « Mesure le 2026-08-25 : 178 lignes PENDING_COUNTER en base » : c'est le chiffre que le rapport declare publiquement avoir corrige (« mon premier comptage disait 178. Il etait FAUX »), et il est reste code en dur dans le spec livre. Quatre valeurs (48, 75, 76, 178) pour un comptage identique dans un meme jeu d'artefacts : soit un tiers a mute la table pendant la passe — auquel cas la mesure avant/apres n'est pas reproductible et le rapport ne peut pas la presenter comme telle — soit _facts.json melange deux executions. Dans les deux cas la piece a conviction se contredit elle-meme.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveC.spec.js:240 — supprimer la valeur 178 codee en dur du commentaire (elle est fausse et publiee). Ligne 277-279 : horodater chaque mesure (`'mesure_at' => now()->toIso8601String()`) et, si l'ecart 76 -> 48 se reproduit, ne plus publier de delta avant/apres sur une table partagee sans verrou, ou restreindre le comptage aux lignes du prefixe AUDC-.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "test-e2e-waveC/05b-encaissement-ticket-audc.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "LA VAGUE ANNONCE « 9 quartets », ELLE EN A HUIT. `05-encaissement-file-non-vide.png` et `05b-encaissement-ticket-audc.png` sont BYTE-A-BYTE IDENTIQUES : md5 = 67d279590db20c446ad0306100cfa71c pour les deux PNG, et c62bc3f31857bcb7fd17754e9262a12b pour les deux .dom.html (tailles identiques a l'octet : 135 418 et 491 320). Les .console.json et .network.json de 05b contiennent `[]`. L'etat 05b n'est donc pas un etat distinct : c'est le meme instant re-serialise sous un autre nom, et le « gros plan » 05-encaissement-ticket-audc-zoom.png est une decoupe de ces memes pixels. Combine a l'etat 6 jamais atteint, la couverture reelle de la vague est de 8 etats distincts sur les 10 annonces au plan.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveC.spec.js — supprimer l'appel `rec.snap('05b-encaissement-ticket-audc')` ou le faire porter sur un etat reellement different (file apres encaissement d'un ticket, p.ex.), et corriger le decompte « 9 quartets » du rapport de vague en « 8 etats distincts + 1 doublon ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "test-e2e-waveC/07-historique-chargement.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Ligne 1 de l'historique, visible sur l'image : « AUDC-ENC-DTWF1D / Borne / N°C98A2 / 14,60 € / A encaisser / — » — paiement NON encaisse, colonne N° FISCAL a « — ». Le bouton de reimpression de cette ligne est pourtant ACTIF : le DOM donne `<button type=\"button\" class=\"hist-reprint-btn\" title=\"Imprime a nouveau le ticket caisse + cuisine pour cette commande (duplicata).\" aria-label=\"...\" data-testid=\"historique-reprint-6751\">`, sans attribut `disabled`. La seule condition de desactivation du composant est l'etat occupe : HistoriqueListComponent.vue:173 `:disabled=\"reprintBusyId === order.id\"`. Aucune garde sur `payment_status` ni sur `fiscal_sequence_no`. L'ecran propose donc un « duplicata » d'un document qui n'a jamais ete emis (commande non payee, non scellee) ; le meme bouton est actif ligne 4 sur une commande « Annulee / Rembourse ». BORNE DE MON CONSTAT : je n'ai pas inspecte ce que l'imprimante emet reellement — je constate uniquement que l'action est offerte sans condition et que son propre libelle la qualifie de duplicata. C'est le controle qui est a verifier, pas le contenu que j'affirmerais sans preuve.",
+      "fix_hint": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue:173 — etendre la garde : `:disabled=\"reprintBusyId === order.id || !order.fiscal_sequence_no\"`, avec une infobulle expliquant pourquoi (« aucun ticket n'a encore ete emis pour cette commande »). Faire trancher par l'owner le cas « commande annulee / remboursee » : soit desactive, soit reimprime avec une surcharge visible « DUPLICATA / ANNULE » — decision NF525-adjacente, ne pas la prendre en autonomie.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "test-e2e-waveC/08bis-historique-contrepassation.png",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "L'equipe de capture a range les trois `net::ERR_CONNECTION_REFUSED` de l'etat 08bis sous « pont d'impression absent en dev, attendu » et s'est arretee la. Le meme fichier console contient autre chose : deux entrees `\"Connecting to 'http://127.0.0.1:9101/health' violates the following Content Security Policy directive: \\\"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\\\". The policy is report-only, so the violation has been logged but no further action has been taken.\"`, emises par `http://127.0.0.1:8000/js/pos-wizard.js?v=9-1787545265` ligne 203. Verifie dans le code : config/security.php:35 declare `connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100` — le port 9100 est autorise, le 9101 NE L'EST PAS. En dev la politique est report-only donc la sonde passe quand meme ; sous une CSP appliquee en production, cette connexion sera BLOQUEE par le navigateur, et non plus refusee par un pont absent. Ce n'est donc pas du bruit de dev : c'est un ecart de configuration que le mode report-only masque exactement jusqu'au jour du deploiement.",
+      "fix_hint": "config/security.php:35 — ajouter `http://127.0.0.1:9101 http://localhost:9101` a `connect-src` (ou aligner la sonde sur 9100). NE PAS toucher public/js/pos-wizard.js : CLAUDE.md §7 le declare frozen — le correctif appartient a la config CSP. A verifier avant de basculer la CSP de report-only a enforce, sinon la sonde de sante du pont d'impression tombe silencieusement en production.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "test-e2e-waveC/08bis-historique-contrepassation.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Au zoom x2/x4 sur l'unique ligne de resultat je lis : « RTN-310526971 | Borne | — | stress-kiosk-1 | -12,00 € | Rembourse ↩ #971 | 2238 | 23:22, ». Le montant de contre-ecriture `-12,00 €` est rendu dans EXACTEMENT la meme graisse et la meme couleur d'encre que les montants positifs des autres etats (13,10 €, 14,60 €, 8,90 €) : sur un ecran d'historique fiscal, le seul signal distinguant une contrepassation d'une vente est un tiret de 4 px de large, sans rappel de couleur, sans fond, sans pictogramme dans la colonne MONTANT. Le tag `↩ #971` et le badge « Rembourse » portent l'information, mais ils vivent dans la colonne PAIEMENT, pas dans celle que l'oeil balaye pour totaliser. Deux constats de forme s'ajoutent sur cet etat : la ligne est coupee par le bas du cadre (y~674 sur 720) et la barre Debugbar mord dessus, et sa colonne DATE se reduit a « 23:22, » — virgule pendante, cf. C-002.",
+      "fix_hint": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue, cellule MONTANT — appliquer une classe conditionnelle sur montant negatif (`:class=\"{ 'hist-amount--negative': amount < 0 }\"`) avec une couleur distincte du corps de texte et non porteuse de sens a elle seule (garder le signe). Pour la capture : reduire le zoom ou masquer la Debugbar afin que l'unique ligne de preuve de cet etat ne soit pas coupee par le bas du cadre.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "test-e2e-waveC/05-encaissement-file-non-vide.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "L'etat vide de /admin/encaissement n'est atteste par AUCUNE image de cette vague — l'equipe de capture le declare elle-meme, honnetement, et je confirme qu'elle n'a pose aucun stub : `_facts.json` porte `unreachable: [\"06-encaissement-vide\"]`, aucun fichier `06-*` n'existe sur le disque, et la branche de simulation du spec (lignes 490-497, qui aurait bascule ses PROPRES lignes AUDC- en PAID) n'a pas ete prise puisque `file_hors_audc` = 2. Je le porte quand meme comme defaut ouvert parce que le rapport decrit ce qui « aurait ete rendu » (icone ✅, texte « Aucune commande a encaisser ») a partir du code seul, et que la vague ne peut donc rien attester visuellement de cet ecran. Verification que j'ai pu faire en lecture de code, et qui est le seul element factuel disponible : EncaissementComponent.vue:40-43 rend bien un bloc distinct `data-test=\"enc-empty-real\"` separe de `data-test=\"enc-fetch-error\"` (lignes 32-38), et le texte `label.encaisser_queue_empty` = « Aucune commande a encaisser » fait 28 caracteres, donc au-dessus du seuil de 20 de la categorie 5 du protocole. L'etat vide reel n'a en revanche aucun CTA la ou l'etat d'erreur en a un — ce qui est defendable, mais non verifie a l'ecran.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveC.spec.js:486-505 — rendre l'etat atteignable sans detruire de donnee partagee : capturer la file vide sur une base de test dediee, ou filtrer la requete de l'ecran sur un marqueur de session. Ne PAS stubber le reseau (l'equipe a eu raison de refuser). Tant que 06 n'est pas capture, la vague ne doit pas etre declaree verte sur la surface /admin/encaissement.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "test-e2e-waveC/03-detail-composition-zoom.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Deux notations opposees pour la meme donnee, sur deux ecrans que le caissier compare a la suite, et cette fois LES DEUX SONT SUR IMAGE (l'equipe de capture n'opposait que la fiche a un ticket qu'elle n'a pas capture, donc son constat n'etait pas image). Fiche, gros plan 03 : « Extras: Cheddarx2 » — multiplicateur en SUFFIXE, colle, sans espace. Carte d'encaissement, image 05 : « 2× Coca-Cola 33cl », « 1× Menu (Frites + Boisson) » — multiplicateur en PREFIXE, avec espace. Meme produit, meme session, deux grammaires. Cosmetique isolement, mais c'est la troisieme divergence de vocabulaire relevee entre ces deux surfaces (avec C-001 la composition absente et C-006 Extras/Supplements), toutes sur le meme trajet caissier.",
+      "fix_hint": "Choisir une notation unique et la centraliser : le prefixe `{qty}× {nom}` de EncaissementComponent.vue:56 est le plus lisible et deja utilise par le ticket. L'aligner dans le rendu des extras de PosOrderShowComponent.vue (bloc de composition) plutot que de dupliquer une troisieme forme.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 4,
+    "P2": 11,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 4,
+    "open_P2": 11,
+    "open_P3": 1
+  },
+  "verdict": "RED",
+  "notes": "CE QUE J'AI TENTE DE CASSER SANS Y ARRIVER. (1) Les supplements de formule : la plaidoirie tient. Ils sont VISIBLES sur l'image 03-detail-composition-zoom.png, pas seulement dans le DOM — « Supplements: Frites, Coca-Cola 33cl » se lit d'un coup d'oeil, sous le libelle francais, sans cle brute. Je n'ai pas pu contester ce point ; je l'ai contourne en attaquant la surface d'a cote (C-001). (2) Integrite numerique : j'ai croise les trois surfaces sur les trois commandes semees. AUDC-ENC = 14,60 € en liste (01), 14,60 € en encaissement (05), 14,60 € en historique (07). AUDC-RICHE = 14,60 € en liste, ligne 14,60 € + Sous-Total 14,60 € + Remise 0,00 € + Total 14,60 € sur la fiche, 14,60 € en historique. AUDC-NU = 8,90 € partout. Aucune divergence. Je me suis explicitement INTERDIT de deduire un bug de prix de l'ecart 8,90 -> 14,60 entre les variantes : le spec fixe ces deux montants en dur (lignes 154-158 et 184-185) independamment du composition_snapshot, donc l'ecart est un artefact de semis et non un calcul de l'application. Toute accusation de mauvais calcul aurait ete un faux positif. (3) Contraste WCAG : mesure au pixel, pas d'oeil. Texte assourdi des libelles de fiche et des valeurs de composition = (110,113,145) sur blanc, ratio 4,74:1 — au-dessus du seuil AA 4,5:1. Badge « A encaisser » = (146,64,14) sur zebrure #f9fafb, 6,78:1. Badge « Paye » = (6,95,70) sur #ecfdf5. Aucun defaut de contraste sur cette vague : je n'en ai pas trouve un seul. (4) Fuites i18n : regex `^[a-z]+(\\.[a-z_]+){1,4}$` passe sur les 9 DOM, hors <script>/<style>. ZERO occurrence. Aucune cle pointee ne fuit. (5) Accessibilite des actions de tableau : j'esperais des boutons-icones nus. Ils sont corrects — `<a class=\"db-table-action view\" aria-label=\"Voir\">` avec `<i aria-hidden=\"true\">`, `<button aria-label=\"Supprimer\" title=\"Supprimer\">`, et le bouton de reimpression porte un `title` ET un `aria-label` de phrase complete. Rien a redire. (6) ARIA des listes deroulantes de filtre (etat 02) : j'ai verifie chaque `<li role=\"option\">` ; l'option retenue porte bien `aria-selected=\"true\"` (« Livre », vs82-option-2) et toutes les autres `false`. Correct. (7) 4xx/5xx : les seuls status >= 400 des 9 etats sont les 404 `/storage/1/english.png` (bruit connu, non signale) ; tout le reste est 200/201/204. Aucune requete > 2 000 ms, donc aucun defaut d'etat de chargement a reprocher. (8) Le filtre de statut de l'etat 02 fait ce qu'il annonce : 10/10 lignes « Livre », AUDC-ENC (Acceptee) disparait bien. Je n'ai pas pu le prendre en defaut. (9) L'etat 04 tient : ni « Extras: », ni « Instruction: », ni « Supplements: » orphelins, 0 <ul> de composition, 0 testid addons. Les gardes de contenu ajoutees par les vagues precedentes fonctionnent — c'est justement ce qui rend C-003 remarquable, la seule ligne de ce bloc d'en-tete qui n'a pas ete gardee est celle dont le commentaire affirme qu'elle l'est. VERDICT RED sur 4 P1, dont deux que l'equipe de capture n'avait pas vus (C-001 composition absente de l'ecran d'encaissement alors que la charge utile la porte deja ; C-003 « Heure de retrait » qui ne peut structurellement jamais afficher d'heure) et deux qu'elle avait vus mais sous-estimes (C-002 : la colonne DATE de l'historique n'est pas transparente une ligne sur deux, elle est illisible sur 10/10 lignes ; C-004 : vide sur la totalite du parc V1, pas sur un cas de bord)."
+}

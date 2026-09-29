@@ -155,6 +155,28 @@ class RouteServiceProvider extends ServiceProvider
             return $limits;
         });
 
+        // [AUDIT SÉCURITÉ 2026-09-29 · P1] `forgot-password` était en `throttle:3,60` nu
+        // (clé domaine|IP, rotatable). Or chaque appel SUPPRIME le code de réinitialisation
+        // en attente : en boucle sur l'adresse du propriétaire, un anonyme (a) inonde sa
+        // boîte et (b) l'empêche définitivement de terminer une réinitialisation — le seul
+        // chemin de récupération, pendant le service. Seau par ADRESSE (la primitive
+        // « effacer le code de la victime » disparaît) + couche globale sans clé IP.
+        RateLimiter::for('forgot-password', function (Request $request) {
+            $email = $request->input('email');
+            $id = is_string($email) && $email !== '' ? Str::lower(trim($email)) : 'anon';
+            $tropDeTentatives = function () {
+                return response()->json([
+                    'message' => 'Trop de demandes. Patiente une heure avant de redemander un code.',
+                    'retry_after' => 3600,
+                ], 429);
+            };
+
+            return [
+                Limit::perMinutes(60, 3)->by('pwreset-email:'.$id)->response($tropDeTentatives),
+                Limit::perMinute(10)->by('pwreset-global')->response($tropDeTentatives),
+            ];
+        });
+
         RateLimiter::for('kiosk-orders', function (Request $request) {
             $userKey = $request->user()?->id ?? 'guest';
 
@@ -238,8 +260,33 @@ class RouteServiceProvider extends ServiceProvider
             // default, raised to 1000/min in local dev via O5). The stacked
             // admin-mutation ceiling here is the safety net against accidental
             // burst, not the primary cap.
+
+            /*
+             * [AUDIT-SUPERVISEUR 2026-08-25 - ronde 3] UN FILET PLUS SERRE QUE CE QU'IL PROTEGE
+             * N'EST PAS UN FILET : C'EST LE PLAFOND.
+             *
+             * Les trois branches ci-dessous se decrivent elles-memes comme « the safety net
+             * against accidental burst, not the primary cap ». Elles rendaient pourtant un 120
+             * ECRIT EN DUR, insensible a toute configuration — pendant que les plafonds
+             * primaires qu'elles sont censees doubler (`pos-order-create`, `pos-order-update`,
+             * `kds-bump`) sont, eux, reglables et montes a 1000/min sur ce poste.
+             *
+             * Resultat : l'exploitant regle `ADMIN_MUTATION_RATE_LIMIT=1000`, croit avoir
+             * desserre la caisse, et la caisse reste a 120/min par appareil. C'est ce qui a
+             * produit les deux 429 mesures sur l'afficheur client pendant les captures — et
+             * c'est de la meme famille que la plainte de production du 2026-08-13
+             * (« beaucoup d'erreur trop de request »).
+             *
+             * 120/min par appareil est atteignable en coup de feu : un article par seconde
+             * emet deja le calcul du prix ET la poussee vers l'afficheur, soit 120/min a deux
+             * requetes, avant meme les sondages d'impression (24/min) et le suivi (12/min).
+             *
+             * On garde 120 comme PLANCHER — la valeur livree, donc aucun changement de
+             * comportement par defaut — et on laisse le filet remonter avec le reglage qu'il
+             * double. Il reste un plafond dans tous les cas.
+             */
             if ($request->is('api/admin/pos/*') || $request->is('api/admin/pos')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA hits
@@ -252,7 +299,7 @@ class RouteServiceProvider extends ServiceProvider
             // dedicated `kds-bump` limiter below is the primary cap;
             // admin-mutation here is the safety net against accidental burst.
             if ($request->is('api/admin/kds-order/change-status/*')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             // [Wave Y RATE-LIMIT 2026-05-21] Owner-facing rapid CTA family —
@@ -266,7 +313,7 @@ class RouteServiceProvider extends ServiceProvider
             // chain insert is inside controller TX, not in the throttle).
             if ($request->is('api/admin/online-order/change-status/*')
                 || $request->is('api/admin/table-order/change-status/*')) {
-                return Limit::perMinute(120)->by($this->throttleKeyParAppareil($request));
+                return Limit::perMinute(max(120, $adminMutationCap))->by($this->throttleKeyParAppareil($request));
             }
 
             return Limit::perMinute($adminMutationCap)->by($this->throttleKeyParAppareil($request));
@@ -333,6 +380,46 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
         });
 
+        /*
+         * [AUDIT-SUPERVISEUR 2026-08-25 · ronde 3] L'AFFICHEUR CLIENT, MEME CAUSE QUE CI-DESSUS.
+         *
+         * CE QUI A ETE MESURE
+         * -------------------
+         * Sur la campagne de captures de la caisse : 2 reponses 429 sur
+         * `POST /api/admin/pos/customer-display`, seules requetes en echec de tout le jeu.
+         *
+         * POURQUOI
+         * --------
+         * Cette route tombait dans le seau `api/admin/pos/*` (120/min), PARTAGE avec toutes
+         * les mutations de la caisse. Or chaque changement de panier emet DEUX requetes : le
+         * calcul du prix cote serveur, et cette poussee vers l'afficheur. A un article par
+         * seconde — un coup de feu ordinaire — les deux ensemble atteignent le plafond.
+         *
+         * POURQUOI CA COMPTE MALGRE LE « best-effort »
+         * --------------------------------------------
+         * L'echec est avale en silence par `.catch(() => {})`, donc le caissier ne voit rien
+         * et la trace fiscale est intacte. Mais l'afficheur, LUI, reste sur le montant
+         * precedent : le client lit un total qui n'est pas le sien. Si c'est la DERNIERE
+         * poussee de la vente qui est refusee, l'ecart tient jusqu'au prochain changement de
+         * panier — c'est-a-dire pendant le paiement.
+         *
+         * POURQUOI UN SEAU A PART PLUTOT QU'UN PLAFOND PLUS HAUT
+         * ------------------------------------------------------
+         * Le meme raisonnement qu'au 2026-08-13, et pour les memes raisons : ce n'est pas une
+         * mutation. Aucune ecriture en base, rien de fiscal, idempotente (le dernier gagne),
+         * a cadence FIXE et connue — l'emission est freinee a 350 ms cote caisse, soit 171/min
+         * au grand maximum theorique pour un ecran. Monter `api/admin/pos/*` desserrerait la
+         * protection de l'encaissement et du paiement pour un probleme qui ne vient pas d'eux.
+         *
+         * 240/min couvre le maximum theorique d'un ecran avec de la marge, et reste un
+         * plafond : une boucle emballee demeure bornee.
+         */
+        RateLimiter::for('customer-display', function (Request $request) {
+            $perMinute = max(1, (int) config('pos.rate_limit.customer_display', 240));
+
+            return Limit::perMinute($perMinute)->by($this->throttleKeyParAppareil($request));
+        });
+
         RateLimiter::for('pos-loyalty-lookup', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.loyalty_lookup', 30));
 
@@ -383,13 +470,23 @@ class RouteServiceProvider extends ServiceProvider
             $identifier = Str::lower(trim($rawIdentifier));
             $key = 'kiosk:'.$identifier.'|'.$request->ip();
             $maxAttempts = max(1, (int) config('kiosk.login_rate_limit', 30));
-
-            return Limit::perMinute($maxAttempts)->by($key)->response(function () {
+            $tropDeTentatives = function () {
                 return response()->json([
                     'message' => 'Too many kiosk login attempts. Please try again shortly.',
                     'retry_after' => 60,
                 ], 429);
-            });
+            };
+
+            // [AUDIT SÉCURITÉ 2026-09-29 · P1] Seul limiteur d'identifiants du fichier SANS
+            // couche globale. Avec TrustProxies `$proxies = '*'`, `$request->ip()` est fourni
+            // par l'attaquant (X-Forwarded-For) : un seau NEUF à chaque requête, les 30/min
+            // ne se déclenchent jamais → force brute non bornée sur le mot de passe machine
+            // (défaut connu `kiosk123`), et chaque essai coûte un bcrypt-12 à la caisse.
+            // Même remède que login-lockout / otp-send / wheel-pin : une couche sans clé IP.
+            return [
+                Limit::perMinute($maxAttempts)->by($key)->response($tropDeTentatives),
+                Limit::perMinute(60)->by('kiosk-login-global')->response($tropDeTentatives),
+            ];
         });
 
         // [Sprint H5-B Z4-P2-05 2026-05-17] Public OSS endpoints
@@ -429,9 +526,15 @@ class RouteServiceProvider extends ServiceProvider
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
 
+            // [ONB-11 2026-08-28] Le message etait en anglais, et surtout il ne DISAIT
+            // pas le delai — `retry_after` etait calcule juste en dessous et jamais
+            // montre. Un commercant qui se trompe de mot de passe dix fois au comptoir
+            // un vendredi soir lisait « Too many login attempts. Please try again
+            // later. » sans savoir s'il devait attendre une minute ou rappeler
+            // quelqu'un. On traduit, et on donne la minute.
             $tooMany = function () use ($decayMinutes) {
                 return response()->json([
-                    'message' => 'Too many login attempts. Please try again later.',
+                    'message' => trans('auth.trop_de_tentatives', ['minutes' => $decayMinutes]),
                     'retry_after' => $decayMinutes * 60,
                 ], 429);
             };
@@ -444,6 +547,11 @@ class RouteServiceProvider extends ServiceProvider
             // quelques logins/h), borne le brute-force distribué.
             return [
                 Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response($tooMany),
+                // [AUDIT SÉCURITÉ 2026-09-29 · P1] Le seau « par compte » était clé
+                // `<email>|<IP>` : une rotation de X-Forwarded-For le contournait, et il ne
+                // restait que le global (30/min = 1 800 essais/h sur un compte NOMMÉ). Ce seau
+                // par identifiant SEUL survit à la rotation d'IP — même motif que `otp-id:`.
+                Limit::perMinutes($decayMinutes, $maxAttempts)->by('login-id:'.$identifier)->response($tooMany),
                 Limit::perMinute(30)->by('login-global')->response($tooMany),
             ];
         });

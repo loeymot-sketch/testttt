@@ -34,6 +34,21 @@ class KioskAutoLoginGateResolverTest extends TestCase
         $this->assertSame($this->payload, KioskAutoLoginGate::resolvePayload($this->payload, true, true, [], '203.0.113.9'));
     }
 
+    public function test_persistent_encrypted_grant_emits_payload_without_repeating_machine_key(): void
+    {
+        $this->assertSame(
+            $this->payload,
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.9', null, 'secret', true),
+        );
+    }
+
+    public function test_untrusted_request_without_grant_stays_blocked(): void
+    {
+        $this->assertNull(
+            KioskAutoLoginGate::resolvePayload($this->payload, true, false, [], '203.0.113.9', null, 'secret', false),
+        );
+    }
+
     public function test_exact_ipv4_in_allowlist_emits_payload(): void
     {
         $this->assertSame($this->payload, KioskAutoLoginGate::resolvePayload($this->payload, true, false, ['192.168.1.10', '192.168.1.11'], '192.168.1.10'));

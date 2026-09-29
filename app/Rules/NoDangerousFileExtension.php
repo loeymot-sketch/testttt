@@ -96,8 +96,17 @@ class NoDangerousFileExtension implements Rule
     /**
      * Get the validation error message.
      */
+    /**
+     * [ONB 2026-08-28] Ce message etait ECRIT EN DUR EN ANGLAIS, dans un produit
+     * dont la locale FR est figee (ADR-007).
+     *
+     * Il se declenche quand un commercant depose un fichier au mauvais format —
+     * c'est-a-dire au moment ou il a le plus besoin de comprendre ce qu'on lui
+     * reproche. « The file contains a forbidden file extension. » ne lui dit ni
+     * ce qui a ete refuse, ni quoi deposer a la place.
+     */
     public function message(): string
     {
-        return 'The :attribute contains a forbidden file extension.';
+        return trans('all.message.extension_de_fichier_interdite');
     }
 }

@@ -220,6 +220,11 @@ return [
         'terminator'     => 'sandwich-terminator.png',
         'tacos-m'        => 'tacos-cayenne.png',
         'tacos-l'        => 'tacos-cayenne.png',
+        // [OWNER TACOS-XL 2026-08-24] Le tacos 3 viandes — « mettre la même photo » que ses
+        // aînés. Ce n'est pas un oubli de visuel dédié : les trois tailles montrent le même
+        // tacos, seule la garniture change. Sans cette ligne, le nouveau produit tomberait sur
+        // `item-default.svg` et sortirait en gris sur la borne, la caisse et le web.
+        'tacos-xl'       => 'tacos-cayenne.png',
         'chicken-burger' => 'chicken_burger.png',
         'cheese-burger'  => 'cheese-burger.png',
         'double-cheese'  => 'double-cheese.png',

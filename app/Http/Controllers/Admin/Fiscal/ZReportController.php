@@ -76,7 +76,24 @@ class ZReportController extends Controller
      * important part is that the payload carries the signature so any
      * PDF renderer produces a verifiable document.
      */
-    public function pdf(Request $request, ZReport $zReport): JsonResponse
+    /**
+     * [AUDIT-COMPTA 2026-08-29] Édite le rapport Z en PDF — pour de vrai.
+     *
+     * Cette méthode s'appelait `pdf`, était déclarée `: JsonResponse` et renvoyait du
+     * JSON. L'écran (`ZReportListComponent.vue:121`) le demande en binaire et l'enregistre
+     * sous `rapport-z-<n>.pdf` : le fichier téléchargé faisait 793 octets et commençait par
+     * `{"data":{"z_repo`. Aucun lecteur de PDF ne l'ouvrait. Ce n'était pas une régression
+     * — le document n'avait jamais été écrit ; seule sa promesse existait, dans le nom de
+     * la route, celui de la méthode, le bouton et le nom du fichier.
+     *
+     * Un rapport Z est la pièce remise au comptable et conservée six ans (NF525) : elle
+     * doit être lisible sans l'application.
+     *
+     * NF525 — LECTURE SEULE stricte, comme `DashboardController::eodPdf` : aucune
+     * allocation de séquence fiscale, aucune écriture dans `audit_logs`, aucune touche à
+     * la chaîne HMAC. Éditer un Z n'est pas le clôturer.
+     */
+    public function pdf(Request $request, ZReport $zReport): mixed
     {
         $this->authorizeFiscal();
 
@@ -84,14 +101,20 @@ class ZReportController extends Controller
         abort_if((int) $zReport->branch_id !== $branchId, Response::HTTP_FORBIDDEN);
 
         $verified = $this->service->verifySignature($zReport);
+        $generated_at = now()->timezone(config('app.timezone'))->format('d/m/Y à H:i:s');
 
-        return response()->json([
-            'data' => [
-                'z_report'  => $zReport,
-                'verified'  => $verified,
-                'generated_at' => now()->toIso8601String(),
-            ],
-        ]);
+        $company = app(\App\Services\CompanyService::class)->list();
+        $copyright = \Smartisan\Settings\Facades\Settings::group('site')->get('site_copyright') ?? '';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.z_report', compact(
+            'zReport', 'verified', 'generated_at', 'company', 'copyright',
+        ))->setPaper('a4');
+
+        return response()->streamDownload(
+            fn () => print ($pdf->output()),
+            'rapport-z-' . $zReport->sequence_no . '.pdf',
+            ['Content-Type' => 'application/pdf'],
+        );
     }
 
     private function authorizeFiscal(): void

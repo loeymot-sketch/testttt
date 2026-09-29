@@ -279,6 +279,54 @@ class Order extends Model implements BroadcastableOrder
         return $this->hasMany(OrderPayment::class, 'order_id');
     }
 
+    /**
+     * [CAISSE 2026-09-29] La file d'encaissement, en UNE seule définition.
+     *
+     * Transcription STRICTE du prédicat de `GET admin/pos/counter-collect/pending`
+     * (routes/api.php:1058-1130) : même `payment_status`, même exclusion des
+     * statuts terminaux, mêmes cinq origines légitimes (borne, caisse différée,
+     * téléphone, web à emporter, et le filet anti-NULL pour les données héritées).
+     *
+     * Pourquoi un scope plutôt qu'une deuxième requête : le propriétaire demande
+     * un vidage groupé de cette file. Une requête rédigée à part finirait par
+     * diverger de celle qui AFFICHE la file — et un vidage qui mord plus large que
+     * ce que le caissier voit à l'écran annulerait des commandes invisibles, donc
+     * des ventes. Une seule définition, deux consommateurs.
+     *
+     * La route d'affichage n'est délibérément PAS réécrite pour l'utiliser : la
+     * toucher ferait courir un risque à la file de production pour un gain de
+     * style. L'équivalence des deux est donc prouvée par test
+     * (FileEncaissementVidageGroupeTest).
+     */
+    public function scopeCounterCollectQueue($query)
+    {
+        return $query
+            ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+            ->whereNotIn('status', [
+                OrderStatus::CANCELED,
+                OrderStatus::REJECTED,
+                OrderStatus::RETURNED,
+            ])
+            ->where(function ($q) {
+                $q->where(function ($k) {
+                    $k->where('source_surface', 'kiosk')
+                        ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                })->orWhere(function ($p) {
+                    $p->where('source_surface', 'pos')
+                        ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                })->orWhere(function ($tel) {
+                    $tel->where('source_surface', 'phone')
+                        ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                })->orWhere(function ($web) {
+                    $web->where('source_surface', 'web')
+                        ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                })->orWhere(function ($n) {
+                    $n->whereNull('source_surface')
+                        ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                });
+            });
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', OrderStatus::PENDING);

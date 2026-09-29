@@ -94,7 +94,14 @@
                     <div v-if="openId === material.id" class="rma-panel" :data-testid="'rma-panel-' + material.id">
                         <form v-if="canAdjust" class="rma-form" @submit.prevent="submitAdjust(material)">
                             <label class="rma-field">
-                                <span class="rma-field-label">{{ $t('admin.raw_material_adjust.field_target') }}</span>
+                                <!-- [ONB-08 2026-08-28] L'unité est ajoutée au libellé du
+                                     champ. Elle n'apparaissait que dans l'en-tête de la
+                                     carte, au-dessus : un patron qui compte « 9 kg de
+                                     poulet » tapait 9 et posait 9 GRAMMES. -->
+                                <span class="rma-field-label">
+                                    {{ $t('admin.raw_material_adjust.field_target') }}
+                                    <template v-if="material.unit"> ({{ material.unit }})</template>
+                                </span>
                                 <input
                                     v-model.number="form.target_on_hand"
                                     type="number"
@@ -181,6 +188,7 @@
 <script>
 import appService from '../../../services/appService';
 import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
+import { preRemplissageComptage } from '../../../services/preRemplissageComptage';
 
 /**
  * [GOAL_CAYENNE_FINITION_2026-08-13 / §6 Vague 5] axios est global (bootstrap
@@ -249,7 +257,21 @@ export default {
             }
             this.openId = material.id;
             this.formError = '';
-            this.form = { target_on_hand: this.roundQty(material.on_hand), reason: '', note: '' };
+            // [ONB-08 2026-08-28] Était `roundQty(material.on_hand)` — le stock COURANT.
+            // Or le stock théorique peut être négatif (il est décrémenté à la vente
+            // sans plancher, et personne ne saisit les réceptions : « Poulet −9600 g »
+            // sur la base de travail). Le formulaire se pré-remplissait donc avec une
+            // valeur qu'il REFUSE lui-même trois lignes plus bas (garde `< 0`) : le
+            // commerçant ouvrait le panneau, cliquait Enregistrer, et s'entendait dire
+            // que sa propre valeur pré-remplie était invalide.
+            //
+            // Zéro est aussi le bon point de départ métier : on saisit ici ce qu'on a
+            // COMPTÉ sur l'étagère, et un comptage physique n'est jamais négatif.
+            this.form = {
+                target_on_hand: preRemplissageComptage(material.on_hand),
+                reason: '',
+                note: '',
+            };
             this.loadHistory(material.id);
         },
         async loadHistory(rawMaterialId) {

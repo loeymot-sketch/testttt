@@ -945,13 +945,20 @@ export default {
         },
         handleOrderSuccess: async function (orderResponse, submittedForm) {
             // [POS-9.1.12] Open the physical cash drawer the moment a CASH
-            // payment is accepted. The hardware bridge is a no-op when no
-            // bridge is exposed (web-only POS), so this is safe in dev.
-            // Audit POS-GA-F-19.
+            // payment is accepted. A failed local bridge must not undo a
+            // sealed payment, but it must be visible to the cashier: silently
+            // swallowing it left a real till closed while the sale looked OK.
             if (submittedForm.pos_payment_method === this.posPaymentMethodEnum.CASH) {
                 try {
-                    Promise.resolve(openDrawer()).catch(() => {});
-                } catch (e) { /* defensive: never block the receipt path */ }
+                    const drawerResult = await openDrawer();
+                    if (!drawerResult || drawerResult.ok === false) {
+                        alertService.error(this.$t('pos.cash_drawer_bridge_offline'));
+                    }
+                } catch (_e) {
+                    // Never block the fiscal receipt after payment, while still
+                    // telling the operator that the physical action failed.
+                    alertService.error(this.$t('pos.cash_drawer_bridge_offline'));
+                }
             }
 
             appService.modalHide('#orderpayment');

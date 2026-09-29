@@ -109,9 +109,9 @@ class KitchenTicketTacosSauceTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Curry'],
             ],
         ];
-        // Avant : « G | TAC | L | K P | CURY ». Après : plus de « L » (les 2 viandes portent l'info).
-        $this->assertSame('G | TAC | K P | CURY', $this->f->mainLine('Tacos L', $snap));
-        $this->assertSame('G | TAC | K P | CURY', $this->f->mainLine('Tacos XL', $snap));
+        // Avant : « Tacos | L | K P | CURY ». Après : plus de « L » (les 2 viandes portent l'info).
+        $this->assertSame('Tacos | K P | CURY', $this->f->mainLine('Tacos L', $snap));
+        $this->assertSame('Tacos | K P | CURY', $this->f->mainLine('Tacos XL', $snap));
     }
 
     /** @test */
@@ -125,7 +125,7 @@ class KitchenTicketTacosSauceTest extends TestCase
                 ['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise'],
             ],
         ];
-        $this->assertSame('G | TAC | Mex | MAY', $this->f->mainLine('Tacos', $snap));
+        $this->assertSame('Tacos | Mex | MAY', $this->f->mainLine('Tacos', $snap));
     }
 
     /** @test */
@@ -149,7 +149,7 @@ class KitchenTicketTacosSauceTest extends TestCase
         $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
 
         // Produit + viandes (K P) présents ; les 2 sauces en symbole (ALG, AND) ; pas de supplément sauce.
-        $this->assertStringContainsString('TAC', $kitchen);
+        $this->assertStringContainsString('Tacos', $kitchen);
         $this->assertStringContainsString('ALG', $kitchen, '1ère sauce (symbole) en ligne 1');
         $this->assertStringContainsString('AND', $kitchen, 'sauce en plus (symbole) en ligne 1');
         $this->assertStringNotContainsString('Sauce suppl', $kitchen, 'la sauce ne doit plus être un supplément');

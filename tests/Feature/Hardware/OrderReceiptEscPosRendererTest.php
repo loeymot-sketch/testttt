@@ -277,11 +277,11 @@ class OrderReceiptEscPosRendererTest extends TestCase
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($this->makeOrder());
         $this->assertStringContainsString('CUISINE', $bytes);
-        // [KITCHEN-SYMBOLS 2026-06-28 / T2+T3-CUISINE 2026-07-05] Tacos L → code 3 lettres « TAC ».
+        // [ORDER-INTEGRITY-KDS-LOYALTY-20260914] Tacos L → libellé complet « Tacos ».
         // La ligne produit est en DOUBLE TAILLE : une compo longue (2 viandes) s'enroule
         // proprement sur 2 lignes (jamais coupée au milieu d'un symbole) → on vérifie les
         // SEGMENTS (robuste à l'enroulement) plutôt que la chaîne contiguë.
-        $this->assertStringContainsString('TAC', $bytes);
+        $this->assertStringContainsString('Tacos', $bytes);
         // [KITCHEN-QTY 2026-07-15] Segments vérifiés séparément (robuste à l'enroulement) : sans
         // le préfixe « 1 x » (retiré à qty=1), la ligne double-taille s'enroule à un autre endroit
         // et « Cordon » / « Frec » peuvent tomber sur 2 lignes — les deux viandes restent présentes.

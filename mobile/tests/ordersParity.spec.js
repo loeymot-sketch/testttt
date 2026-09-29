@@ -54,10 +54,12 @@ check(!!O, 'window.LC.orders populated');
 check(!!L && !!L.config, 'window.LC.loyalty.config populated');
 
 if (M && O && L) {
-  // [GOAL-SYNC 2026-07-08] nouveau canon : 1 pt/€ (backend points_per_euro=1), plus 10.
+  // [2026-09-25] Barème relevé par le propriétaire : 10 pt/€ (backend points_per_euro=10).
+  // Historique : le canon était 1 pt/€ jusqu'au 2026-07-08 puis 10 — cette assertion vérifiait
+  // encore l'ancien canon 1, ce qui aurait laissé passer une régression vers l'ancien taux.
   const ratio = L.config.earn_ratio;
-  check(ratio === 1, 'earn_ratio = 1 pt/€ (got ' + ratio + ')');
-  check(L.config.points_per_euro === 1, 'points_per_euro = 1 (alias API backend, got ' + L.config.points_per_euro + ')');
+  check(ratio === 10, 'earn_ratio = 10 pt/€ (got ' + ratio + ')');
+  check(L.config.points_per_euro === 10, 'points_per_euro = 10 (alias API backend, got ' + L.config.points_per_euro + ')');
 
   const allOrders = [].concat(O.active || [], O.history || []);
   check(allOrders.length > 0, 'orders present (got ' + allOrders.length + ')');

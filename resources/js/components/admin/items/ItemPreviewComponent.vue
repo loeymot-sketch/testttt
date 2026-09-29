@@ -52,7 +52,7 @@
                     :disabled="loading"
                     @click="refreshAll"
                 >
-                    <i class="lab lab-refresh" aria-hidden="true"></i>
+                    <i class="lab lab-reset" aria-hidden="true"></i>
                     {{ $t('label.refresh') }}
                 </button>
             </div>
@@ -66,7 +66,7 @@
             >
                 <header class="mb-3 flex items-center justify-between">
                     <h4 class="text-sm font-semibold text-slate-800">
-                        <i class="lab lab-cashier" aria-hidden="true"></i>
+                        <i class="lab lab-pos" aria-hidden="true"></i>
                         {{ $t('admin.item_preview.surface_pos') }}
                     </h4>
                     <span class="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
@@ -205,7 +205,7 @@
             role="alert"
             data-testid="admin-item-preview-parity-warning"
         >
-            <i class="lab lab-warning" aria-hidden="true"></i>
+            <i class="lab lab-info" aria-hidden="true"></i>
             {{ parityWarning }}
         </div>
 

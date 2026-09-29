@@ -26,11 +26,18 @@
                             <i class="lab lab-calendar-line lab-font-size-16"></i>
                             <span class="text-xs">{{ order.order_datetime }}</span>
                         </li>
-                        <li class="text-xs">
+                        <!--
+                            [AUDIT-SUPERVISEUR 2026-08-25 · C-003] La ligne s'affichait meme
+                            quand la valeur etait absente : « Type de paiement: » suivi de RIEN,
+                            sur une commande pourtant marquee « Payé » et « Livré ». Le `v-if`
+                            existant ne protegeait que la parenthese de note, pas la ligne.
+                            Une etiquette sans valeur ne renseigne pas : elle inquiete.
+                        -->
+                        <li class="text-xs" v-if="libellePaiement">
                             {{ $t('label.payment_type') }}:
 
                             <span class="text-heading">
-                                {{ posPaymentMethodEnumArray[order.pos_payment_method] }}
+                                {{ libellePaiement }}
 
                                 <span
                                     v-if="order.pos_payment_method !== enums.posPaymentMethodEnum.CASH && order.pos_payment_note">
@@ -50,12 +57,21 @@
                           commande À EMPORTER et sur une commande BORNE, qui ne sont jamais
                           livrées : c'est le créneau de RETRAIT. Le libellé suit désormais le
                           type de commande, et la ligne disparaît si aucun créneau n'est posé.
+
+                          [C-003 2026-08-25] La seconde moitié de cette promesse était FAUSSE :
+                          `delivery_date` n'était JAMAIS vide (OrderDetailsResource:66 le
+                          calculait inconditionnellement depuis `order_datetime`), donc la
+                          ligne se rendait sur 100 % des commandes et affichait « Heure de
+                          retrait: 25-08-2026 » — un libellé qui promet une heure, suivi d'une
+                          date déjà lisible trois lignes plus haut. La racine est corrigée
+                          dans la ressource ; le garde s'appuie désormais sur le texte
+                          RÉELLEMENT rendu, blancs compris.
                         -->
-                        <li class="text-xs" v-if="order.delivery_date || order.delivery_time">{{
+                        <li class="text-xs" v-if="pickupSlotText" data-testid="pos-order-show-pickup-slot">{{
                             isDeliveryOrder ? $t('label.delivery_time') : $t('label.pickup_time')
                         }}:
                             <span class="text-heading">
-                                {{ order.delivery_date }} {{ order.delivery_time }}
+                                {{ pickupSlotText }}
                             </span>
                         </li>
                         <!-- [WT-D-R1-07 2026-05-20] Internal token reference
@@ -253,7 +269,7 @@
                           d'où le « Extras: , » orphelin. Le normaliseur écarte déjà les
                           entrées sans nom.
                         -->
-                        <ul v-if="normalizedExtras(item).length > 0 || unnamedExtrasCount(item) > 0 || hasInstruction(item)"
+                        <ul v-if="normalizedExtras(item).length > 0 || unnamedExtrasCount(item) > 0 || normalizedAddons(item).length > 0 || hasInstruction(item)"
                             class="flex flex-col gap-1.5 mt-2">
                             <!--
                               [S2 V6 2026-07-29] Filet d'honnêteté : le normaliseur écarte les
@@ -265,7 +281,7 @@
                               correctif de symptôme.
                             -->
                             <li class="flex gap-1" v-if="normalizedExtras(item).length > 0">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
                                     <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
                                         {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span><span
@@ -274,11 +290,29 @@
                                 </p>
                             </li>
                             <li class="flex gap-1" v-else-if="unnamedExtrasCount(item) > 0">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs text-[#6E7191]">{{ $t('label.unnamed_extras', { count: unnamedExtrasCount(item) }) }}</p>
                             </li>
+                            <!--
+                              [GOAL-CAISSE-VISION 2026-08-24] Les SUPPLÉMENTS DE FORMULE (addons).
+                              Ils étaient facturés (`CompositionSnapshotBuilder.php:166-177`) ET
+                              imprimés sur le ticket client (`ReceiptComponent.vue:162-170`), mais
+                              cette fiche — celle que le caissier ouvre quand un client conteste —
+                              n'en portait AUCUNE trace : `grep -c addon` y valait 0. Un client
+                              demandant « pourquoi 3 € de plus ? » recevait une fiche muette.
+                              Même normaliseur que le ticket, donc même vérité.
+                            -->
+                            <li class="flex gap-1" v-if="normalizedAddons(item).length > 0">
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{ $t('label.addons') }}:</h3>
+                                <p class="text-xs" data-testid="pos-order-show-addons">
+                                    <span v-for="(addon, index) in normalizedAddons(item)" :key="index">
+                                        {{ addon.name }}<span v-if="addon.quantity > 1"> ×{{ addon.quantity }}</span><span
+                                            v-if="index + 1 < normalizedAddons(item).length">,&nbsp;</span>
+                                    </span>
+                                </p>
+                            </li>
                             <li class="flex gap-1" v-if="hasInstruction(item)">
-                                <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
+                                <h3 class="text-xs w-fit whitespace-nowrap">{{
                                     $t('label.instruction')
                                 }}:</h3>
                                 <p class="text-xs">{{ item.instruction }}</p>
@@ -469,7 +503,8 @@ import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 // [S2 V6 2026-07-29] Normaliseurs canoniques legacy↔instantané NF525, partagés
 // avec le ticket — une seule vérité pour lire une composition (DISCIPLINE §9).
-import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
+import { normalizeReceiptVariations, normalizeReceiptExtras, normalizeReceiptAddons } from "../../../helpers/posReceiptBuilder";
+import { orderTypeLabels, posPaymentMethodLabels } from "../../../helpers/orderEnumLabels";
 import PosOrderMapComponent from "./PosOrderMapComponent";
 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem modal
 // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). Mounted
@@ -711,20 +746,52 @@ export default {
                 [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
             }
         },
-        posPaymentMethodEnumArray: function () {
-            return {
-                [posPaymentMethodEnum.CASH]: this.$t("label.cash"),
-                [posPaymentMethodEnum.CARD]: this.$t("label.card"),
-                [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
-                [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+        // [C-004 (voisin) 2026-08-25] Même famille que ci-dessous : TICKET_RESTAURANT (5)
+        // et COUNTER_DEFERRED (6) manquaient, donc « Type de paiement: » se rendait NU
+        // sur toute commande borne Plan B en attente d'encaissement — c'est-à-dire le
+        // mode de paiement le plus fréquent du parc. Une carte d'AFFICHAGE doit couvrir
+        // TOUT l'enum ; seuls les SÉLECTEURS ont le droit d'être partiels.
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · C-003] Le libelle du mode de paiement, ou rien.
+         *
+         * `posPaymentMethodEnumArray[order.pos_payment_method]` rend `undefined` des que le
+         * mode est nul ou inconnu. Le gabarit affichait alors l'etiquette suivie du vide.
+         * On decide ICI si la ligne a quelque chose a dire, et le gabarit s'efface sinon.
+         */
+        libellePaiement: function () {
+            const m = this.order && this.order.pos_payment_method;
+            if (m === null || m === undefined || m === '') {
+                return '';
             }
+
+            return this.posPaymentMethodEnumArray[m] || '';
         },
+        posPaymentMethodEnumArray: function () {
+            return posPaymentMethodLabels(this.$t.bind(this));
+        },
+        // [C-004 2026-08-25] POS (15) et KIOSK (25) — les deux SEULS types produits par
+        // le V1 LOCAL Le Cayenne — étaient absents : « Type de commande: » était vide sur
+        // la TOTALITÉ du parc, pas sur un cas de bord. La LISTE d'où l'on ouvre cette
+        // fiche sait les nommer depuis toujours (PosOrderListComponent.vue:254-259) ;
+        // l'incohérence était visible en deux clics.
+        // [C-017 2026-08-25] Ce tableau vivait ici en copie manuelle — la 5ᵉ du dépôt.
+        // Il lit désormais LE facteur commun : une valeur ajoutée à l'énumération est
+        // nommée partout d'un coup, ou nulle part, mais jamais sur trois écrans sur quatre.
         orderTypeEnumArray: function () {
-            return {
-                [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
-                [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
-            }
+            return orderTypeLabels(this.$t.bind(this));
+        },
+        /**
+         * [C-003 2026-08-25] Le texte du créneau de retrait/livraison, ou '' s'il
+         * n'y en a pas. La racine du défaut est corrigée côté ressource
+         * (`OrderDetailsResource::resolvePickupSlotDate` ne fabrique plus une
+         * date depuis `order_datetime`) ; ce computed est le second étage : il
+         * refuse aussi une valeur réduite à des blancs, pour qu'AUCUNE forme de
+         * vide ne puisse ressusciter le libellé.
+         */
+        pickupSlotText: function () {
+            const date = String(this.order?.delivery_date ?? '').trim();
+            const time = String(this.order?.delivery_time ?? '').trim();
+            return [date, time].filter(Boolean).join(' ');
         },
         // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,
         // NOT the order number. Suppress it from the visible detail summary
@@ -758,6 +825,15 @@ export default {
         },
         normalizedExtras(item) {
             return normalizeReceiptExtras(item?.item_extras);
+        },
+        /**
+         * [GOAL-CAISSE-VISION 2026-08-24] Suppléments de formule (menu : frites,
+         * boisson…). Même normaliseur que le ticket client — c'est la condition
+         * pour que la fiche et le papier racontent la MÊME commande. `item_addons`
+         * est expédié par `OrderItemResource:37` et n'existe que dans l'instantané.
+         */
+        normalizedAddons(item) {
+            return normalizeReceiptAddons(item?.item_addons);
         },
         /**
          * Nombre de suppléments présents dans la donnée mais que le normaliseur

@@ -7,7 +7,7 @@
             <div class="db-card-filter">
                 <button type="button" class="db-btn py-2 text-white bg-primary" @click="openCreate"
                         data-testid="printer-add-btn">
-                    <i class="lab lab-add"></i>
+                    <i class="lab lab-plus"></i>
                     <span>{{ $t("button.add") }}</span>
                 </button>
             </div>
@@ -32,8 +32,11 @@
                         <td class="db-table-body-td">{{ printer.host }}:{{ printer.port }}</td>
                         <td class="db-table-body-td">{{ printer.width_chars }} car.</td>
                         <td class="db-table-body-td">
-                            <span :class="Number(printer.status) === 1 ? 'text-green-600' : 'text-gray-400'">
-                                {{ Number(printer.status) === 1 ? $t('label.active') : $t('label.archived') }}
+                            <!-- [ONB-10 2026-08-27] 5 = App\Enums\Status::ACTIVE. Cet écran testait
+                                 `=== 1` et affichait donc « Archivé », en gris, pour les deux
+                                 imprimantes bien actives du Cayenne. -->
+                            <span :class="imprimanteActive(printer.status) ? 'text-green-600' : 'text-gray-400'">
+                                {{ imprimanteActive(printer.status) ? $t('label.active') : $t('label.archived') }}
                             </span>
                         </td>
                         <td class="db-table-body-td">
@@ -131,6 +134,37 @@
                                 <option :value="42">42 (80 mm SAGA)</option>
                                 <option :value="48">48 (80 mm)</option>
                             </select>
+                            <!--
+                                [ONB-10 2026-08-28] Ce champ n'affichait AUCUNE erreur,
+                                alors que tous ses voisins en ont une. Le serveur
+                                refusait « 42 » et le commercant ne voyait rien : il
+                                cliquait, et rien ne se passait.
+                            -->
+                            <small class="db-field-alert" v-if="errors.width_chars"
+                                data-testid="printer-width-error">{{ errors.width_chars[0] }}</small>
+                        </div>
+
+                        <!-- [ONB-10 2026-08-28] LE CHAMP QUI MANQUAIT.
+                             Le serveur peut exiger l'établissement quand il y en a
+                             plusieurs. Sans ce champ NI son message, le patron
+                             cliquait « Enregistrer » et rien ne se passait — un refus
+                             muet sur un champ invisible. C'est exactement le défaut
+                             que cet écran corrigeait pour la largeur. -->
+                        <div class="form-col-12 sm:form-col-6" v-if="filiales.length > 1">
+                            <label for="p_branch" class="db-field-title required">
+                                {{ $t('label.branch') }}
+                            </label>
+                            <select
+                                v-model="form.branch_id"
+                                id="p_branch"
+                                class="db-field-control"
+                                data-testid="printer-branch"
+                            >
+                                <option :value="null">—</option>
+                                <option v-for="f in filiales" :key="f.id" :value="f.id">{{ f.name }}</option>
+                            </select>
+                            <small class="db-field-alert" v-if="errors.branch_id"
+                                data-testid="printer-branch-error">{{ errors.branch_id[0] }}</small>
                         </div>
 
                         <div class="form-col-12">
@@ -138,7 +172,11 @@
                             <div class="db-field-radio-group">
                                 <div class="db-field-radio">
                                     <div class="custom-radio">
-                                        <input :value="1" v-model.number="form.status" id="p_active"
+                                        <!-- [ONB-10 2026-08-27] 5 = App\Enums\Status::ACTIVE, la
+                                             valeur que les chemins d'impression cherchent. Cet écran
+                                             écrivait 1 pour « actif » et 5 pour « archivé » : les deux
+                                             conventions étaient inversées sur la valeur 5. -->
+                                        <input :value="5" v-model.number="form.status" id="p_active"
                                                type="radio" class="custom-radio-field">
                                         <span class="custom-radio-span"></span>
                                     </div>
@@ -146,7 +184,7 @@
                                 </div>
                                 <div class="db-field-radio">
                                     <div class="custom-radio">
-                                        <input :value="5" v-model.number="form.status" type="radio"
+                                        <input :value="10" v-model.number="form.status" type="radio"
                                                id="p_archived" class="custom-radio-field">
                                         <span class="custom-radio-span"></span>
                                     </div>
@@ -178,6 +216,7 @@
 import axios from 'axios';
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
+import { statutImprimante, imprimanteActive } from '../../../../services/statutImprimante';
 
 /**
  * [AUDIT-A P1-2 2026-08-06] Gestion des IMPRIMANTES — le CRUD + test-print API
@@ -187,7 +226,10 @@ import alertService from "../../../../services/alertService";
  */
 const EMPTY_FORM = {
     name: '', station: 'kitchen_hot', type: 'escpos_tcp',
-    host: '', port: 9100, width_chars: 48, status: 1,
+    host: '', port: 9100, width_chars: 48, status: 5, // [ONB-10] 5 = App\Enums\Status::ACTIVE
+    // [ONB-10 2026-08-28] `null` et non `0` : le serveur se replie sur la
+    // filiale unique quand il n'y en a qu'une, et n'exige un choix que sinon.
+    branch_id: null,
 };
 
 export default {
@@ -202,13 +244,39 @@ export default {
             editingId: null,
             testingId: null,
             form: { ...EMPTY_FORM },
+            filiales: [],
             errors: {},
         };
     },
     mounted() {
         this.fetch();
+        this.chargerLesFiliales();
     },
     methods: {
+        /**
+         * [ONB-10 2026-08-28] Charge les établissements pour offrir le choix.
+         *
+         * Le sélecteur ne s'affiche que s'il y en a PLUSIEURS : avec un seul, le
+         * serveur le prend d'office et demander de choisir parmi un élément unique
+         * serait une corvée sans objet.
+         */
+        async chargerLesFiliales() {
+            try {
+                const res = await axios.get('admin/setting/branch');
+                const liste = res?.data?.data || res?.data || [];
+                this.filiales = (Array.isArray(liste) ? liste : [])
+                    .filter((f) => f && f.id && f.name)
+                    .map((f) => ({ id: f.id, name: f.name }));
+            } catch (_) {
+                this.filiales = [];
+            }
+        },
+
+        // Le gabarit ne voit pas les imports de module : on expose la normalisation
+        // en méthode, sinon `imprimanteActive` y vaut `undefined` au rendu.
+        imprimanteActive,
+        statutImprimante,
+
         stationLabel(station) {
             const map = {
                 receipt: this.$t('label.station_receipt'),
@@ -241,7 +309,11 @@ export default {
             this.form = {
                 name: printer.name, station: printer.station, type: printer.type || 'escpos_tcp',
                 host: printer.host, port: Number(printer.port) || 9100,
-                width_chars: Number(printer.width_chars) || 48, status: Number(printer.status) || 1,
+                width_chars: Number(printer.width_chars) || 48,
+                // [ONB-10 2026-08-28] Normalisé : une valeur héritée (1, posée par le
+                // défaut de schéma) ne correspondait à aucun bouton radio, et le
+                // formulaire s'ouvrait vide.
+                status: statutImprimante(printer.status),
             };
             this.errors = {};
             this.modalActive = true;

@@ -81,6 +81,50 @@
                     tabindex="-1"
                     data-testid="receipt-hidden-print-button-kitchen">_</button>
             </div>
+            <!-- [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+                 Avant ce bloc, le ticket client ne s'imprimait déjà JAMAIS automatiquement
+                 (RECEIPT-NO-AUTO 2026-07-24) — mais le choix restait IMPLICITE : les boutons
+                 « Ticket client » / « Ticket cuisine » étaient simplement disponibles dans la
+                 barre d'outils, sans qu'aucune décision explicite ne soit demandée. Le
+                 propriétaire veut une VRAIE question, posée à chaque encaissement frais (CB ET
+                 espèces — ce bloc ne distingue pas le moyen de paiement, comme le reste du
+                 composant), avant de laisser le caissier passer à la vente suivante. Ne concerne
+                 QUE le ticket CLIENT (le ticket cuisine reste sur son propre bouton, toujours
+                 disponible : il sert la préparation, pas une remise au client, et n'a jamais été
+                 dans le périmètre de la demande). Gated sur `clearCartOnClose` : un re-print
+                 depuis le tracker (PosOrdersTrackerComponent) n'est pas un encaissement frais et
+                 ne redemande pas. -->
+            <div
+                v-if="showPrintDecisionPrompt"
+                class="hidden-print pos-v5-print-decision"
+                role="dialog"
+                :aria-label="$t('pos.print_decision_title') || 'Imprimer le ticket ?'"
+            >
+                <p class="pos-v5-print-decision-title">
+                    {{ $t('pos.print_decision_title') || 'Imprimer le ticket client ?' }}
+                </p>
+                <div class="pos-v5-print-decision-actions">
+                    <button
+                        type="button"
+                        @click="choosePrintClient"
+                        :disabled="printingClient"
+                        :aria-busy="printingClient"
+                        data-testid="receipt-print-decision-yes"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--client"
+                    >
+                        <span aria-hidden="true">🧾</span>
+                        {{ $t('pos.print_decision_yes') || 'Oui, imprimer' }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="choosePrintDecline"
+                        data-testid="receipt-print-decision-no"
+                        class="pos-v5-receipt-btn pos-v5-receipt-btn--ghost"
+                    >
+                        {{ $t('pos.print_decision_no') || 'Non merci' }}
+                    </button>
+                </div>
+            </div>
             <div class="modal-body max-h-[75vh] overflow-y-auto space-y-6 px-2 pb-4">
                 <!-- Aperçu ticket CLIENT (composition structurée uniquement — fiscal / caisse) -->
                 <div>
@@ -387,6 +431,11 @@ export default {
     data() {
         return {
             localPrintCount: null,
+            // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+            // Id de la commande pour laquelle le caissier a DÉJÀ répondu à la question (Oui ou
+            // Non) — évite de reposer la question si le composant se re-rend avec la MÊME
+            // commande (ex. mise à jour de receipt_print_count après un clic manuel ultérieur).
+            printDecisionAnsweredForOrderId: null,
             // [PRINT-INSTANT 2026-07-06] Verrous PAR ticket (client / cuisine) : les deux
             // pipelines peuvent tourner EN PARALLÈLE (plus de série 10-25 s) et un
             // double-clic sur le même bouton reste dédupliqué.
@@ -437,6 +486,16 @@ export default {
         // tracker). Clé absente (ex. config POS trimmée) → false → pas d'auto.
         autoPrintClientReceipt: function () {
             return !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+        },
+        // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »] Une
+        // question explicite, pas seulement un bouton disponible — uniquement pour un
+        // encaissement FRAIS (clearCartOnClose=true, jamais un re-print du tracker), et une
+        // seule fois par commande (voir printDecisionAnsweredForOrderId).
+        showPrintDecisionPrompt: function () {
+            return !!(this.clearCartOnClose
+                && !this.autoPrintClientReceipt
+                && this.order?.id
+                && this.printDecisionAnsweredForOrderId !== this.order.id);
         },
         company: function () {
             return this.$store.getters['company/lists'];
@@ -612,6 +671,19 @@ export default {
             this.$nextTick(() => {
                 this.handlePrintClientClick();
             });
+        },
+        // [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »]
+        // Les deux réponses à la question posée par showPrintDecisionPrompt.
+        choosePrintClient() {
+            if (this.order?.id) {
+                this.printDecisionAnsweredForOrderId = this.order.id;
+            }
+            this.handlePrintClientClick();
+        },
+        choosePrintDecline() {
+            if (this.order?.id) {
+                this.printDecisionAnsweredForOrderId = this.order.id;
+            }
         },
         /**
          * Ticket client : incrément NF525 + audit via POST print-receipt.
@@ -858,6 +930,30 @@ export default {
     padding: var(--pos-v5-space-3) var(--pos-v5-space-4) !important;
     background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%) !important;
     border-bottom: 1px solid var(--pos-v5-border) !important;
+}
+
+/* [Root cause 2026-09-21, owner : « demande imprimer ou non après paiement »] */
+.pos-v5-print-decision {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pos-v5-space-3);
+    padding: var(--pos-v5-space-4);
+    background: var(--pos-v5-bg-panel) !important;
+    border-bottom: 1px solid var(--pos-v5-border) !important;
+    text-align: center;
+}
+.pos-v5-print-decision-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--pos-v5-ink);
+    margin: 0;
+}
+.pos-v5-print-decision-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--pos-v5-space-3);
 }
 
 .pos-v5-receipt-btn {

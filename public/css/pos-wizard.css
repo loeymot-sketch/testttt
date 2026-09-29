@@ -1659,6 +1659,74 @@
     width: 100%;
 }
 
+/*
+ * [PROPRIETAIRE 2026-08-28] CHAQUE SAUCE PORTE SA PROPRE COULEUR.
+ *
+ * Le premier essai faisait tourner huit teintes par POSITION. Refuse, et a juste titre :
+ * « pourquoi t'as mis le curry en rouge ? je voudrais mieux mettre selon les couleurs de
+ * chaque chose — ce qui est blanche ca reste blanc, harissa c'est rouge, algerienne c'est
+ * orange ». Une teinte arbitraire n'apprend rien ; une teinte juste se reconnait sans lire.
+ *
+ * Les familles, du plus clair au plus fonce :
+ *   blanches   — blanche, mayonnaise, fromagere      (creme)
+ *   jaunes     — curry, moutarde                     (curry = jaune, pas rouge)
+ *   oranges    — algerienne, andalouse, americaine, samourai
+ *   rouges     — harissa, ketchup, hannibal, spicy, piquante
+ *   bruns      — barbecue, burger
+ *   neutre     — sans sauce, et toute sauce inconnue de cette liste
+ *
+ * Une sauce absente d'ici garde le fond blanc par defaut : mieux vaut sobre que faux.
+ */
+.sauce-chip.sauce--blanche,
+.sauce-chip.sauce--sauce-blanche { background: #FFFFFF; border-color: #D9DBE9; }
+.sauce-chip.sauce--mayonnaise    { background: #FFFCEF; border-color: #E8DFB8; }
+.sauce-chip.sauce--fromagere-maison,
+.sauce-chip.sauce--fromagere     { background: #FFF6D6; border-color: #E6CE86; }
+
+.sauce-chip.sauce--curry         { background: #FFE59B; border-color: #E0BA46; }
+.sauce-chip.sauce--moutarde      { background: #FFE07A; border-color: #DDB531; }
+
+.sauce-chip.sauce--algerienne    { background: #FFD3A6; border-color: #E9A25C; }
+.sauce-chip.sauce--andalouse     { background: #FFC9AE; border-color: #E79466; }
+.sauce-chip.sauce--americaine    { background: #FFC2A8; border-color: #E68B60; }
+.sauce-chip.sauce--samourai      { background: #FFB398; border-color: #E2764F; }
+
+.sauce-chip.sauce--harissa       { background: #FF9C9C; border-color: #D95050; }
+.sauce-chip.sauce--ketchup       { background: #FFA3A0; border-color: #DC5A55; }
+.sauce-chip.sauce--hannibal      { background: #FF9090; border-color: #D34848; }
+.sauce-chip.sauce--spicy-maison,
+.sauce-chip.sauce--piquante      { background: #FF8C8C; border-color: #CF4242; }
+
+.sauce-chip.sauce--barbecue      { background: #DEBFA1; border-color: #B98F63; }
+.sauce-chip.sauce--burger        { background: #E5CBB2; border-color: #C09A74; }
+
+.sauce-chip.sauce--sans-sauce    { background: #EDEDF2; border-color: #C6C6D0; color: #5A5A6E; }
+
+/*
+ * [PROPRIETAIRE 2026-08-28] LES CINQ SAUCES OUBLIEES.
+ *
+ * Le proprietaire : « non pas encore ! ». Il avait raison : cinq sauces de la carte
+ * restaient BLANCHES parce que j'avais ecrit la table de couleurs de memoire au lieu de
+ * LIRE la carte. Les vrais noms, releves dans `item_variations` (attribut 5) :
+ *
+ *   Cayenne, Poivre, Tandoori   — jamais prevues
+ *   Spicy                       — j'avais ecrit « spicy maison », pas « spicy » tout court
+ *   Sauce fromagere maison      — le doublon prefixe « Sauce »
+ *
+ * Les teintes suivent la meme regle que les autres : celle de la sauce reelle. Le piment
+ * de Cayenne est rouge, le tandoori brique, la sauce au poivre grise-brune.
+ *
+ * Lecon, ecrite ici pour la prochaine fois : une table de correspondance se construit en
+ * LISANT les donnees, jamais en les devinant. Cinq oublis sur dix-neuf, c'est le taux
+ * d'erreur d'une liste ecrite de tete.
+ */
+.sauce-chip.sauce--cayenne       { background: #FF8F8F; border-color: #CE4040; }
+.sauce-chip.sauce--spicy         { background: #FF8C8C; border-color: #CF4242; }
+.sauce-chip.sauce--tandoori      { background: #F5A26B; border-color: #CC7233; }
+.sauce-chip.sauce--poivre        { background: #CFC7BC; border-color: #9E9284; }
+.sauce-chip.sauce--sauce-fromagere-maison { background: #FFF6D6; border-color: #E6CE86; }
+
+
 .sauce-chip:hover {
     border-color: #1B1B3A;
     transform: translateY(-1px);

@@ -460,7 +460,7 @@ class OrderService
                     // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -591,7 +591,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
@@ -889,6 +889,17 @@ class OrderService
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
 
+                // A free-form supplement has no catalog item_id. Its fiscal
+                // calculation and persistence exist only in PricingService;
+                // never let the legacy branch reinterpret it as a catalog row.
+                if (! config('pricing.use_ssot_service', true)
+                    && collect($requestItems)->contains(fn ($item) => ($item->line_type ?? null) === OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT)) {
+                    throw new \InvalidArgumentException(
+                        'Le supplément libre nécessite le moteur de prix sécurisé.',
+                        422
+                    );
+                }
+
                 $posSsotPricingResult = null;
                 // [FIDÉLITÉ CAISSE 2026-08-19] Déclaré ICI (et pas dans la branche SSOT) pour que
                 // la trace d'audit plus bas puisse dire de quelle NATURE est la remise, même quand
@@ -985,7 +996,7 @@ class OrderService
                     // at order time, not read through a live FK join later).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1146,7 +1157,7 @@ class OrderService
                     // non-SSOT legacy path (feature flag `pricing.use_ssot_service=false`).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -1644,7 +1655,7 @@ class OrderService
                     // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1791,7 +1802,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -3477,10 +3488,41 @@ class OrderService
         return in_array($requestedDirection, ['asc', 'desc'], true) ? $requestedDirection : 'desc';
     }
 
+    /**
+     * [ONB-07 2026-08-28] Les colonnes NUMÉRIQUES doivent être comparées à l'identique,
+     * jamais avec `LIKE`.
+     *
+     * `payment_status` est un `tinyInteger`. Filtrer « Payé » posait
+     * `payment_status LIKE '%5%'` — et `PENDING_COUNTER` vaut **15**, donc
+     * `15 LIKE '%5%'` est VRAI. Mesuré sur la base réelle : le filtre « Payé »
+     * ramenait **3 017** commandes au lieu de 2 774, dont **243 en attente
+     * d'encaissement**.
+     *
+     * Le commerçant qui filtre « Payé » pour savoir ce qu'il a réellement encaissé
+     * obtenait une liste et un compte gonflés de commandes non encaissées — et le
+     * tableur comme le PDF héritaient du même jeu de lignes. La tuile « Revenus »,
+     * elle, les excluait : deux chiffres contradictoires issus du même filtre.
+     *
+     * Le même piège vaut pour toute colonne d'énumération : `order_type`,
+     * `payment_method`, `status`, `source`. On les compare à l'identique.
+     */
+    private const COLONNES_A_COMPARER_EXACTEMENT = [
+        'payment_status',
+        'status',
+        'order_type',
+        'source',
+    ];
+
     private function applyOrderFilter($query, string $key, $value): void
     {
         if ($key === 'branch_id') {
             $query->where('branch_id', '=', (int) $value);
+
+            return;
+        }
+
+        if (in_array($key, self::COLONNES_A_COMPARER_EXACTEMENT, true) && is_numeric($value)) {
+            $query->where($key, '=', (int) $value);
 
             return;
         }

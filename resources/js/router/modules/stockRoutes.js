@@ -14,7 +14,30 @@ const UnifiedStockViewComponent = () =>
 const RawMaterialAdjustComponent = () =>
     import(/* webpackChunkName: "admin-shell" */ "../../components/admin/stock/RawMaterialAdjustComponent");
 
+// [ONB-08 2026-08-28] Declarer ses matieres premieres.
+//
+// Le domaine n'exposait que `movements` (lecture) et `adjust` (correction de
+// quantite) : les seules sources de creation etaient un seeder et une commande
+// console. Un nouveau commercant ne pouvait declarer AUCUN ingredient.
+//
+// ⚠️ Le commentaire de `RawMaterialAdjustComponent` ci-dessus affirme etre « la
+// seule porte d'ecriture manquante du domaine matiere premiere ». C'etait faux :
+// la declaration en etait une autre, et elle manquait depuis plus longtemps.
+const RawMaterialListComponent = () =>
+    import(/* webpackChunkName: "admin-shell" */ "../../components/admin/stock/RawMaterialListComponent");
+
 export default [
+    {
+        path: "/admin/stock/matieres",
+        name: "admin.stock.raw-materials",
+        component: RawMaterialListComponent,
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "items",
+            breadcrumb: "raw_materials_title",
+        },
+    },
     {
         path: "/admin/stock/rupture",
         name: "admin.stock.rupture",

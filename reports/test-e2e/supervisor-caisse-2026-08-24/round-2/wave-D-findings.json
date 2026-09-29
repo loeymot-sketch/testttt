@@ -1,0 +1,198 @@
+{
+  "wave": "D",
+  "round": 2,
+  "states_reviewed": 9,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "TROIS QUARTS FERMÉS, LE QUART QUI COMPTE EST OUVERT — ET C'ÉTAIT LE CŒUR DU P0. CE QUI EST RÉELLEMENT FERMÉ, vérifié à l'image : (a) le mot « aujourd'hui » a DISPARU — le libellé lit « Espèces encaissées sur la période: » sur 01 et 02, et fr.json n'expose plus `cash_collected_today` à cet endroit ; (b) le tiroir est DATÉ et son âge annoncé — « Caisse ouverte à: 06/07/2026 19:26 » plus un badge « ouvert depuis 50 jours », là où le round 1 ne montrait qu'une pendule « 20:56 » ; (c) sur la période vide, LE BANDEAU SE TAIT VRAIMENT — 03-cash-overview-vide.dom.html ne contient AUCUNE occurrence de `cash-overview-reconciliation` (grep = 0), l'écran n'affiche que les 4 cartes à 0,00 € et l'état vide. Sur ce point la promesse est tenue à la lettre. CE QUI N'EST PAS FERMÉ, ET QUE LA CONSIGNE ME DEMANDAIT PRÉCISÉMENT DE VÉRIFIER : LE MONTANT DU BANDEAU CONTREDIT TOUJOURS LA « RÉPARTITION PAR MODE » DE LA MÊME PAGE, SUR LA MÊME IMAGE. Sur 02 (période 08/23→08/24) je lis, à 230 px d'écart vertical : bandeau « Espèces encaissées sur la période: 25,00 € » et, juste dessous, « Répartition par mode : Carte 17 · 222,70 € » — UNE SEULE pastille, AUCUNE espèce. La page annonce donc 25,00 € d'espèces encaissées sur une période où son propre relevé n'enregistre pas un centime en espèces. DOM à l'appui : `data-testid=\"cash-overview-reconciliation-collected\"` = « 25,00 € » et `data-testid=\"cash-overview-mode-breakdown\"` ne contient que `cash-overview-mode-card`. Sur 01 (période 08/25→08/25) même contradiction, à l'échelle du double : bandeau « 5,00 € » contre « Espèce 1 · 2,50 € ». Les deux nombres portent MAINTENANT la même étiquette de période — avant le correctif on pouvait au moins plaider deux fenêtres différentes ; désormais les deux disent « la période » et ne sont toujours pas d'accord. La note explicative ajoutée (« Tiroir ouvert le 06/07/2026 19:26 et jamais clôturé — « Espèces attendues au tiroir » cumule 140,40 € de mouvements depuis l'ouverture ») n'aide pas ici : elle explique le champ ATTENDU (240,40 = 100,00 fond + 140,40 mouvements, arithmétique que j'ai vérifiée en base et qui est juste), pas le champ ENCAISSÉ. J'ai remonté la chaîne jusqu'au bout et le mécanisme est établi, pas supposé : `cash_collected_in_period` (CashOverviewController.php:257-262) somme les `CashMovement` de la session dans la fenêtre, sans jointure sur `orders` ; la « Répartition par mode » vient de `summarize()` sur une requête `Transaction` avec `whereHas('order')` (:135-144), qui est une jointure INTERNE. Les 10 mouvements de 2,50 € du 23-24/08 (cash_movements #496→#505, session #36) ont bien un `transactions` jumeau `counter_cash` chacun — mais leurs commandes n'existent plus, donc le tableau les jette et le bandeau les garde. Le détail chiffré est déposé en D-013. TANT QUE DEUX MONTANTS D'ESPÈCES CONTRADICTOIRES COEXISTENT SUR UN ÉCRAN D'ARGENT SANS QU'AUCUN ÉLÉMENT NE LES RÉCONCILIE, LE P0 RESTE OUVERT.",
+      "fix_hint": "Deux voies, et il faut choisir explicitement. (A) Rendre les deux chiffres comparables : faire lire au bandeau la MÊME source que la « Répartition par mode » (le bucket `cash` de `summarize()`), et réserver `cash_movements` au seul champ « attendues au tiroir ». (B) Assumer que ce sont deux registres différents et le DIRE à l'écran : renommer en « Espèces entrées au tiroir sur la période » et afficher l'ÉCART avec le bucket espèces du relevé — c'est littéralement le mandat owner « détecter écarts (cash manquant) », et la clé `label.cash_diff` (fr.json:1312) existe déjà sans être rendue nulle part. Dans les deux cas, corriger d'abord D-013 : sans cela, l'option A propagerait l'erreur au lieu de la lever.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-waveD/03-cash-overview-vide.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ. config/security.php:35 déclare encore `connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100` : le port 9101, pont d'impression CUISINE, reste ABSENT. Les nouveaux artefacts le confirment sur DEUX états (03-cash-overview-vide et 06-uber-photo-captures-recentes), avec le texte mot pour mot : « Connecting to 'http://127.0.0.1:9101/health' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100\". The policy is report-only, so the violation has been logged but no further action has been taken. » — plus les ERR_CONNECTION_REFUSED sur 9100 et 9101. Le 9101 est bien appelé par l'application (resources/js/helpers/kitchenLocalPrinter.js:22, resources/js/helpers/posLocalPrinter.js:148) et documenté comme pont cuisine (app/Rules/SafeRemoteHost.php:55). `CSP_ENFORCE_MODE` vaut toujours 'report_only' (config/security.php:27) : le jour du passage en 'enforce', le navigateur BLOQUE l'appel au pont cuisine et les tickets cuisine cessent d'être imprimés sans erreur métier visible. Ce n'est ni un websocket, ni Pusher, ni couvert par l'allowlist du protocole.",
+      "fix_hint": "config/security.php:35 — `connect-src 'self' ws: wss: https: http://127.0.0.1:9100 http://localhost:9100 http://127.0.0.1:9101 http://localhost:9101;`. À faire AVANT tout passage de CSP_ENFORCE_MODE à 'enforce'. Même constat que C-013 : une seule ligne ferme les deux.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-waveD/04-cash-sessions-report-load.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "TOUJOURS OUVERT, STRICTEMENT INCHANGÉ — comme la consigne le laissait attendre, ce défaut n'était pas au périmètre des correctifs, et je le confirme donc plutôt que de le supposer. J'ai re-parsé les 11 groupes-jours du nouveau DOM : cinq journées portent encore un « Total clôture » qui compte les caisses ouvertes pour zéro. « lundi 6 juillet 2026 » : Sessions 6→3 lignes, Total ouverture 200,00 €, Total clôture 0,00 €, les 3 lignes en statut « Ouverte » avec « Fonds final: — ». « lundi 22 juin 2026 » : 1 session, 150,00 € / 0,00 €, statut Ouverte — l'en-tête se lit littéralement « 150,00 € sont entrés, 0,00 € sont sortis ». « samedi 13 juin 2026 » : 4 Ouverte, 200,00 € / 0,00 €. « dimanche 14 juin 2026 » : 1 des 2 ouverte, 120,00 € / 10,00 €. « vendredi 12 juin 2026 » : 2 des 4 ouvertes, 250,00 € / 109,40 €. Onze sessions ouvertes comptées à zéro, sur cinq journées. La cellule affiche honnêtement « — » ; c'est l'agrégat d'en-tête qui convertit ce « — » en zéro, et la ligne responsable est identique au round 1 : CashSessionReportListComponent.vue:233 `bucket.totalClosing += Number(s.closing_amount || 0);` — `null || 0` → 0. Je maintiens P1 et non P0 en connaissance de cause : les lignes « Ouverte » et leurs « — » sont sur le même écran, l'exploitant a de quoi se rattraper.",
+      "fix_hint": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue:233 — ne sommer que les sessions dont `closing_amount` n'est pas null, compter à part celles qui restent ouvertes, puis (ligne 65) rendre « — » ou « 3 caisses encore ouvertes » au lieu de `formatMoney(0)` quand `openCount > 0`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.console.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT : le texte fautif n'a pas été touché. `git log --oneline -- reports/test-e2e/supervisor-caisse-2026-08-24/round-1/wave-D-capture.md` s'arrête au commit de capture 06e4d9083, antérieur au commit de correctifs d57fc8f08. La phrase du §4 « CE QUI EST SAIN » est intacte à la ligne 373 : « Zéro erreur console applicative — les seules entrées `error` sont les 404 `english.png` et le `ERR_CONNECTION_REFUSED` du websocket Pusher (allowlisté). » Elle reste réfutée par les artefacts, y compris les NOUVEAUX : aucune entrée Pusher, aucune entrée `wss://` dans les 9 `.console.json` du round 2 ; les ERR_CONNECTION_REFUSED sont des GET HTTP vers 127.0.0.1:9100/health et 127.0.0.1:9101/health, les ponts d'impression comptoir et cuisine. C'est cette mauvaise attribution qui a fait classer D-002 en bruit allowlisté, et D-002 est toujours ouvert.",
+      "fix_hint": "reports/test-e2e/supervisor-caisse-2026-08-24/round-1/wave-D-capture.md:373 — corriger la phrase. Règle de méthode à graver : n'appliquer l'allowlist « websocket dev » qu'après avoir lu le champ `location.url` de l'entrée console, jamais sur la seule présence de ERR_CONNECTION_REFUSED.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.network.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT : même fichier, même commit, texte inchangé. Le §« Aucune mutation » (ligne 26) affirme toujours « aucune requête mutante (POST/PUT/PATCH/DELETE) : la vague est strictement en lecture », alors que 01-cash-overview-load.network.json du round 2 contient encore `{\"url\": \"http://127.0.0.1:8000/api/auth/login\", \"method\": \"POST\", \"status\": 201}`. Le POST /api/auth/login n'est pas anodin : il émet un personal access token et touche le cycle de vie des jetons par appareil décrit en CLAUDE.md §9. Le contrôle de non-mutation en base reste valable ; c'est la formulation qui ne l'est pas.",
+      "fix_hint": "Reformuler en « aucune requête mutante MÉTIER ; l'authentification et le report CSP sont les seuls POST du run ». Côté outillage : le collecteur réseau ne retient que status>=400 ou durée>2000 ms — pour étayer une claim de non-mutation il faut un sink dédié sur `request.method`, pas une lecture du sink d'erreurs.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ, ET AGGRAVÉ PAR LE CORRECTIF. J'ai recompté sur les 9 nouveaux DOM (Debugbar retirée) : ZÉRO `role=\"alert\"`, ZÉRO `role=\"status\"`, ZÉRO `aria-live`, sur les neuf états sans exception. Or le correctif D-001 vient d'AJOUTER deux bandeaux d'alerte non annoncés : `data-testid=\"cash-overview-stale-drawers\"` (« 10 tiroir(s) resté(s) ouvert(s)… à régulariser ») et le nouveau `data-testid=\"cash-overview-reconciliation-lifetime-note\"`, tous deux de simples `<div>`. Le premier apparaît et disparaît selon la période choisie — un utilisateur de lecteur d'écran qui clique « Rechercher » ne saura jamais qu'une alerte sur 10 tiroirs abandonnés vient de s'afficher ou de s'effacer. Le reste du constat tient : entre 01 et 02, le grand total passe de 28,70 € à 222,70 €, les 4 cartes source, la répartition par mode et les lignes de la table changent, sans aucune annonce.",
+      "fix_hint": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue — `aria-live=\"polite\"` sur `data-testid=\"cash-overview-summary\"`, `role=\"status\"` sur `cash-overview-reconciliation`, et `role=\"alert\"` sur les DEUX nouvelles sections `cash-overview-stale-drawers` et `cash-overview-unrecorded-cash` (celle-ci est déjà écrite mais ne s'est affichée sur aucun état). Idem sur PromoFlyerComponent pour les deux bandeaux de 07.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-waveD/04-cash-sessions-report-load.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ. Compte refait sur les nouveaux DOM : 04-cash-sessions-report-load.dom.html contient 11 `<table>` et 110 `<th>`, avec ZÉRO `scope=` et ZÉRO `<caption>`. Idem sur 01/02 (1 table, 6 `<th>`, 0 scope) et sur 07/07b (1 table, 6 `<th>`, 0 scope). Ce sont des tables d'argent à 10 colonnes (Session, Filiale, Caissier, Ouverte le, Fermée le, Fond de caisse, Fonds final, Écart, Transactions, Statut) : sans `scope=\"col\"`, un lecteur d'écran ne rattache pas « 147,30 € » à « Fonds final » ni « 47,30 € » à « Écart », et les 11 tables successives n'ont aucun nom accessible permettant de savoir de quelle journée il s'agit.",
+      "fix_hint": "CashSessionReportListComponent.vue — `scope=\"col\"` sur chaque `<th>` d'en-tête et un `<caption class=\"sr-only\">{{ day.label }}</caption>` pour nommer chacune des 11 tables. Même correctif sur CashOverviewComponent et PromoFlyerComponent.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-waveD/06-uber-photo-captures-recentes.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ. Les 20 lignes dépliables de l'historique Uber restent de vrais boutons pleine largeur (bon point tactile conservé) mais sans état accessible : `grep aria-expanded` renvoie 4 occurrences sur le DOM de 06, et je les ai réidentifiées une à une — elles appartiennent toutes au shell (CSS vue-select, bouton du menu profil), aucune à l'historique ; `aria-controls` : 1 occurrence, du shell également. Sur l'image, la première ligne est visiblement DÉPLIÉE (détail « Aucune ligne lisible sur cette capture. » / « Jamais envoyée en cuisine — rien à réimprimer. ») alors que rien dans l'arbre d'accessibilité ne la distingue des 19 autres, et le chevron reste un glyphe texte nu sans `aria-hidden`.",
+      "fix_hint": "UberPhotoCaptureComponent.vue — sur `<button class=\"uber-cap-recent-row\">`, lier `:aria-expanded=\"ouverte === c.id\"` et `:aria-controls=\"'uber-cap-detail-' + c.id\"` (avec l'id correspondant sur le détail), et marquer le chevron `aria-hidden=\"true\"`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "MOITIÉ FERMÉE, ET LA FERMETURE EST ACCIDENTELLE PLUS QUE DÉLIBÉRÉE. (a) LA PHRASE N'EST PLUS À L'ÉCRAN : `grep -c \"à venir\"` renvoie 0 sur les DOM de 01, 02 et 03. Le pied du bandeau affiche désormais la note de durée de vie (« Tiroir ouvert le 06/07/2026 19:26 et jamais clôturé — … »). (b) MAIS LA PROMESSE EST INTACTE DANS LE PRODUIT, à une condition d'affichage près : fr.json:1311 porte toujours `\"cash_drawer_count_pending_note\": \"Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).\"`, et CashOverviewComponent.vue:198 la rend toujours, dans le `v-else` de la nouvelle note : `<span v-else>{{ $t('label.cash_drawer_count_pending_note') }}</span>`. Le `v-if` gagne uniquement parce que le tiroir sélectionné dans CES captures est antérieur à la fenêtre. Dès qu'un tiroir est ouvert DANS la période affichée — c'est-à-dire le cas normal d'exploitation, une caisse ouverte le matin consultée le soir — le `v-else` reprend la main et « (à venir) » réapparaît. (c) LE FOND N'A PAS BOUGÉ : `grep -rn \"cash_diff\" resources/js/` renvoie une seule ligne, la DÉFINITION fr.json:1312 « Écart caisse ». La clé n'est rendue nulle part. L'écart n'est toujours calculé sur aucun écran, et c'est aggravant pour D-001 : le seul chiffre qui permettrait de trancher entre 25,00 € et 0,00 € d'espèces est celui que la surface déclare ne pas savoir produire.",
+      "fix_hint": "Arbitrage owner, inchangé : soit implémenter la saisie du comptage physique (le bandeau expose déjà `opening_amount`, `cash_collected_in_period` et `expected_cash` — il ne manque que le compte réel et la soustraction), soit retirer la phrase de fr.json:1311 et ne rien promettre. En l'état la surface annonce toujours une fonction qu'elle n'a pas ; elle le fait simplement dans une branche moins souvent rendue.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "test-e2e-waveD/07-promo-flyer-load.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ, ET VISIBLE DÈS L'ÉTAT 07 SANS ZOOM. Sur 07-promo-flyer-load.png je lis, ligne après ligne, « ADMINNOTCAPP-236H|Échec », « CAPE2E381786-68AH|Échec », « CAPE2E371786-DN28|Échec », « CAPE2E361786-8RBB|Échec » : le code promo en gras monospace bute directement contre le mot « Échec » en rouge, sans une seule gouttière. Le markup est inchangé : `<td class=\"font-mono font-bold\">CAPE2E381786-68AH<div class=\"text-xs font-normal text-rose-700\">annule</div></td>` immédiatement suivi de `<td><span class=\"text-rose-700 font-medium\">Échec</span>…</td>`, aucune classe de padding horizontal. Précision honnête maintenue : ni l'un ni l'autre élément n'est cliquable — ce n'est pas le chevauchement de cibles tactiles visé par la catégorie 3, c'est une collision typographique. Elle porte néanmoins sur la chaîne de 17 caractères que le caissier dicte au téléphone quand le ticket ne sort pas.",
+      "fix_hint": "PromoFlyerComponent.vue — gouttière horizontale sur les cellules de la table historique (`px-3` sur `<td>`/`<th>`, ou `pr-4` sur la colonne Code) et `whitespace-nowrap` sur la cellule Code.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "test-e2e-waveD/07-promo-flyer-load.png",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "TOUJOURS OUVERT, INCHANGÉ, ET RELU SUR LA NOUVELLE IMAGE. Dans les cartes de statistiques de 07 je lis en capitales « TICKETS IMPRIMES », « CODES UTILISES », « CHIFFRE RAMENE » (avec « dont offert : 0,00 € ») — trois accents aigus manquants ; et dans la table, sous chaque code, « annule » en rouge et « Code annule avant impression », répétés sur les 100 lignes. Sources inchangées : fr.json:1538 `flyer_stat_printed`, :1539 `flyer_stat_used`, :1541 `flyer_stat_revenue`, :1544 `flyer_revoked` ; côté serveur app/Services/Promo/PromoFlyerService.php:494 `'last_error' => 'Code annule avant impression'`. L'occurrence supplémentaire que j'avais relevée au round 1 (fr.json:1546 `flyer_duplicate_warning`, quatre accents manquants) n'est toujours pas corrigée et reste non observable dans cette vague. Ce sont des libellés d'ÉCRAN : la couche ESC/POS translittère déjà à l'impression (EscPosCommandBuilder.php:329, `iconv //TRANSLIT//IGNORE`), rien n'impose de stocker du français fautif.",
+      "fix_hint": "resources/js/languages/fr.json:1538,1539,1541,1544,1546 et app/Services/Promo/PromoFlyerService.php:494 — rétablir les accents. Aucun impact impression.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-012",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.money.json",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "TOUJOURS OUVERT, avec un chiffre différent — ce qui confirme que c'est bien une donnée vivante et non un artefact. Le montant sans libellé du menu profil vaut désormais 250,90 € (contre 237,80 € au round 1) et je le retrouve exactement 9 fois dans les 9 `.money.json`, soit une fois par état. Le markup est inchangé : BackendNavbarComponent.vue:143 `<h3 class=\"font-medium text-sm leading-6 capitalize mb-0.5\">{{ authInfo.currency_balance }}</h3>`, un montant nu posé sous le téléphone de l'utilisateur, sans nom. P3 maintenu : le menu profil est replié sur les 9 captures, je ne le constate que dans le DOM et le `.money.json`. Le corollaire de méthode tient aussi : le collecteur `collectMoney()` est annoncé comme parcourant « tous les nœuds de texte VISIBLES » et retient toujours des nœuds repliés ; sur l'état 01, 14 de ses 28 entrées ne sont pas des montants du tout (« 28.14ms », « 8.2.30 », « 7430003046.4549306195 », l'User-Agent Chrome complet, les timings Debugbar). Le filtre de visibilité ne tient toujours pas — ce qui ne remet pas en cause le verdict de format, le collecteur étant trop inclusif et non trop restrictif.",
+      "fix_hint": "BackendNavbarComponent.vue:143 — donner un libellé (« Solde : … ») ou un `aria-label`. Côté spec : `collectMoney()` doit filtrer sur `offsetParent !== null` / `getBoundingClientRect()` non nul pour honorer sa promesse, et restreindre au motif monétaire pour ne plus avaler la Debugbar.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "D-013",
+      "state_artifact": "test-e2e-waveD/02-cash-overview-filtre-periode.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "NOUVEAU — LE GRAND TOTAL DE L'ÉCRAN D'ARGENT EST FAUX, ET LA PAGE PORTE ELLE-MÊME LA PREUVE DU MANQUE. Ce n'est pas une déduction : je l'ai reproduit en base, requête par requête, avec le code du contrôleur. ÉTAT 02, période 08/23→08/24, aucun filtre source ni mode (« Toutes les sources », « Tous les modes » à l'écran). Vérité en base : `transactions` type='payment' sur la fenêtre = 27 lignes / 247,70 € (17 `counter_card` = 222,70 € et 10 `counter_cash` = 25,00 €). Ce que l'écran affiche : GRAND TOTAL 222,70 €, « 17 tx », BORNE 222,70 € / 17 tx, « Répartition par mode : Carte 17 · 222,70 € » — les 10 encaissements ESPÈCES ont disparu, soit 25,00 € et 10 transactions. ÉTAT 01, période 08/25 : vérité en base 4 lignes / 31,20 € ; l'écran affiche GRAND TOTAL 28,70 € / 3 tx et « Espèce 1 · 2,50 € » — une ligne `counter_cash` de 2,50 € manque. REPRODUCTION EXACTE, avec le builder du contrôleur : `Transaction::whereBetween(created_at)->where(type,'payment')` donne 27 lignes / 247,70 € ; en ajoutant le seul `->whereHas('order', fn($q) => $q->withoutGlobalScope(BranchScope::class))` de CashOverviewController.php:135-144, on tombe à 17 lignes / 222,70 €, et les 10 lignes perdues sont EXACTEMENT les 10 `counter_cash` à 2,50 € (tx #1113, #1114, #1115, #1124, #1133, #1135, #1137, #1140, #1143, #1146, commandes #6617→#6658). Cause : `whereHas` est une jointure INTERNE sur `orders` — toute ligne de paiement dont la commande n'est plus présente est SILENCIEUSEMENT retirée du grand total, des cartes par source ET de la répartition par mode. Le bandeau de réconciliation, lui, lit `cash_movements` sans jointure (:249-262) et conserve les mêmes 25,00 € : c'est la source mécanique de la contradiction D-001. PORTÉE MESURÉE SUR CETTE BASE : 22 lignes de paiement orphelines pour 97,40 €, et 40 `cash_movements` orphelins pour 177,00 €, invisibles pour cette page. CE QUE JE NE PRÉTENDS PAS : je n'ai PAS établi que c'est l'application qui a supprimé ces commandes — la base d'audit en a perdu beaucoup (ids 6612→6751 largement absents) et je n'attribue pas cette suppression. Ce que j'affirme et qui suffit : `Order` utilise SoftDeletes (app/Models/Order.php:17) et `whereHas('order')` applique le scope de suppression douce par défaut — j'ai vérifié en base qu'AUCUNE commande soft-supprimée ne porte de paiement aujourd'hui, donc je ne peux pas l'exhiber, mais par lecture de code toute suppression d'une commande depuis l'admin retirera de la même façon son encaissement du total. Sur un écran dont le mandat owner est « détecter les écarts (cash manquant) », faire disparaître 25,00 € d'espèces du total sans le moindre signal est exactement le défaut que cette page existe pour empêcher.",
+      "fix_hint": "app/Http/Controllers/Admin/CashOverviewController.php:135-144 — (1) au minimum, `->withTrashed()` dans la closure `whereHas` pour que la suppression douce d'une commande ne fasse plus disparaître son encaissement des totaux ; (2) pour les lignes réellement orphelines, ne PAS les jeter en silence : les compter à part et les afficher dans un bandeau dédié (« N encaissements sans commande rattachée : X € »), sur le modèle du bandeau TRAP-3 déjà écrit juste en dessous — sinon on remplace un mensonge par une omission. (3) Poser un test de non-régression qui compare `summarize()` au comptage brut de `transactions` sur la fenêtre et échoue sur tout écart. NB : `summarizeUnrecordedCash()` (:362-398) porte le MÊME `whereHas('order')` — le détecteur d'écart est aveugle aux mêmes lignes que le total qu'il est censé contrôler.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-014",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "NOUVEAU — LE BLOC « TIROIRS RESTÉS OUVERTS » DIT COMBIEN ET LESQUELS, JAMAIS COMBIEN D'ARGENT. Le bloc ajouté par le correctif est clair dans sa forme (bandeau orange, titre « Tiroirs restés ouverts », ids énumérés) et je ne le trouve PAS anxiogène : il est factuel, borné à la période, et il répond à la question « pourquoi aucun tiroir ? » qu'aurait laissée ouverte le simple fait de taire la réconciliation. Son défaut est ailleurs, et il est net : il affiche « 10 tiroir(s) resté(s) ouvert(s) sans aucune activité sur la période (le plus ancien depuis le 12/06/2026) — fond de caisse non clôturé, à régulariser » puis « Sessions concernées : #23, #24, #25, #26, #27, #28, #29, #32, #37, #38 — leur fond de caisse n'est rattaché à aucune clôture », SANS jamais donner le montant immobilisé. Ce montant est 650,00 € (somme vérifiée en base des `opening_amount` des 10 sessions : 50+100+50+50+50+50+50+150+50+50). Et il était à portée de main : CashOverviewController.php:595 sélectionne déjà `['id', 'opened_at', 'opening_amount']` — la colonne est LUE puis jetée, ni sommée dans le payload (:604-611) ni citée dans le message. Sur l'écran dont le mandat est « détecter les écarts (cash manquant) », le nombre d'ids n'est pas actionnable ; le total en euros l'est. Un exploitant qui lit ce bandeau ne sait pas s'il cherche 50 € ou 650 €.",
+      "fix_hint": "app/Http/Controllers/Admin/CashOverviewController.php:604-611 — ajouter `'locked_amount' => round($rows->sum('opening_amount'), 2)` au payload et l'inclure dans le message (« … — 650,00 € de fond de caisse non rattachés à une clôture »). La donnée est déjà chargée ligne 595 ; c'est une somme, pas une requête de plus.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-015",
+      "state_artifact": "test-e2e-waveD/01-cash-overview-load.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "NOUVEAU — MARQUEURS DE PLURIEL ENTRE PARENTHÈSES DANS UN MESSAGE OÙ LE NOMBRE EST CONNU. Sur 01 et 02 je lis « 10 tiroir(s) resté(s) ouvert(s) sans aucune activité sur la période ». La chaîne est construite côté serveur, CashOverviewController.php:608 : `$count.' tiroir(s) resté(s) ouvert(s) sans aucune activité sur la période'`. `$count` est disponible sur la ligne juste au-dessus (:601) : le pluriel peut être accordé, il ne l'est pas. Trois « (s) » dans une phrase de quinze mots, sur un écran d'argent d'un produit FR-only (ADR-007). P3 : purement cosmétique, aucune ambiguïté de lecture.",
+      "fix_hint": "CashOverviewController.php:608 — accorder avec `$count > 1` (« 10 tiroirs restés ouverts » / « 1 tiroir resté ouvert »), ou déplacer la phrase dans fr.json avec la pluralisation vue-i18n plutôt que de la construire en PHP. Remarque de cohérence, non déposée en constat : ce bloc et le bandeau TRAP-3 voisin écrivent leur français EN DUR dans le template (CashOverviewComponent.vue:219, :228-229, :252) au lieu de passer par `$t()`, contrairement au reste du même composant — le nouveau bloc suit la convention locale de son voisin, je ne le lui reproche donc pas ici.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 2,
+    "P2": 9,
+    "P3": 2,
+    "open_P0": 2,
+    "open_P1": 2,
+    "open_P2": 9,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "D-001": "PARTIAL",
+    "D-002": "FAIL",
+    "D-003": "FAIL",
+    "D-004": "FAIL",
+    "D-005": "FAIL",
+    "D-006": "FAIL",
+    "D-007": "FAIL",
+    "D-008": "FAIL",
+    "D-009": "PARTIAL",
+    "D-010": "FAIL",
+    "D-011": "FAIL",
+    "D-012": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "CE QUE J'AI TENTÉ DE CASSER SANS Y ARRIVER, ROUND 2. (1) J'AI D'ABORD ESSAYÉ DE DÉCLARER LE P0 FERMÉ. Trois de ses quatre reproches sont réellement réparés et je l'ai vérifié sans complaisance : « aujourd'hui » n'est plus à l'écran, le tiroir est daté et son âge annoncé en clair (« ouvert depuis 50 jours »), et sur la période vide le bandeau se tait POUR DE BON — `grep -c cash-overview-reconciliation` = 0 sur 03-cash-overview-vide.dom.html, ce n'est pas un bandeau à zéro, c'est une section absente. J'ai aussi vérifié la sélection en 3 temps : le tiroir retenu est la session #36 (ouverte le 2026-07-06 19:26:48, fond 100,00 €), c'est-à-dire le seul des 11 tiroirs ouverts qui a réellement bougé de l'argent dans la fenêtre — les 10 autres sont nommés dans le bloc dédié, sans doublon. Et l'arithmétique interne du bandeau est JUSTE : `expected` 240,40 € = 100,00 € de fond + 140,40 € de mouvements, somme que j'ai recalculée mouvement par mouvement sur les 40 lignes de la session #36. Je n'ai rien à retirer à cette partie du correctif. (2) C'EST EN CHERCHANT À CONFIRMER LA COHÉRENCE QUE J'AI TROUVÉ LE CONTRAIRE. La consigne demandait explicitement de vérifier que le montant du bandeau s'accorde avec la « Répartition par mode ». Il ne s'accorde pas : 25,00 € contre zéro espèce sur 02, 5,00 € contre 2,50 € sur 01. Je ne me suis pas arrêté au constat visuel : j'ai rejoué le builder du contrôleur (27 lignes / 247,70 € sans la jointure, 17 lignes / 222,70 € avec) et identifié les 10 lignes perdues une par une. Le bandeau n'est PAS le menteur cette fois — c'est le TABLEAU qui sous-déclare. Le correctif a rendu le bandeau honnête et a laissé le total faux : le P0 a changé de côté, il n'a pas disparu. (3) LE FORMAT MONÉTAIRE TIENT TOUJOURS, RELEVÉ INTÉGRALEMENT DEPUIS LES POINTS DE CODE. J'ai reparsé les 9 `.money.json` du round 2 : 36 chaînes euro distinctes (contre 38 au round 1 — les données ont changé, pas les règles), ZÉRO violation. Virgule décimale partout, U+00A0 avant € sur les 36 sans exception, U+202F en séparateur de milliers (« 1 000,00 € », « 1 400,00 € »), aucun point décimal, aucun « € » préfixé, aucun « EUR ». Les négatifs sont corrects (« -40,00 € » ×9, « -135,90 € » : U+002D puis U+00A0 avant €) et les zéros aussi (« 0,00 € » ×18, jamais « 0 € » ni « -0,00 € »). Les nouveaux montants introduits par le correctif (« 240,40 € », « 140,40 € », « 5,00 € », « 25,00 € », « 100,00 € ») respectent tous la règle. Je n'ai pas trouvé la faille de format que je cherchais. (4) L'ARITHMÉTIQUE DES ÉCRANS, RECALCULÉE : sur 01, 13,10 + 2,50 + 13,10 = 28,70 € = GRAND TOTAL = carte BORNE, et « Carte 2 · 26,20 € » + « Espèce 1 · 2,50 € » = 28,70 € — la page est PARFAITEMENT cohérente AVEC ELLE-MÊME ; c'est avec la réalité qu'elle ne l'est pas (D-013). Sur 02, 17 tx × 13,10 = 222,70 € = GRAND TOTAL = BORNE = « Carte 17 ». Sur 04, les 11 groupes-jours passent : « Total ouverture » = somme des cellules Fond de caisse sur les 11, et « Sessions: n » = nombre de lignes. Le seul agrégat faux est « Total clôture » sur les 5 journées de D-003, et il l'est de la même façon qu'au round 1. (5) LE NOUVEAU BLOC « TIROIRS RESTÉS OUVERTS » : je m'attendais à du bruit anxiogène et je ne l'ai pas trouvé. Il est borné à la période (il ne s'affiche PAS sur l'état 03, où aucun tiroir n'est antérieur à la fenêtre), il exclut correctement le tiroir déjà montré dans le bandeau (`excludeSessionId`, :586-588), il est en lecture seule et il le dit. Son défaut n'est pas l'excès, c'est le manque : il ne chiffre pas les 650,00 € qu'il désigne (D-014). (6) CE QUE J'AI REFUSÉ DE DÉPOSER, PAR HONNÊTETÉ : (a) je n'accuse PAS l'application d'avoir supprimé les commandes orphelines — la base d'audit a perdu ~140 ids entre les deux rounds et je n'ai aucune preuve de qui les a effacées ; mon constat D-013 porte uniquement sur ce que le contrôleur fait des lignes de paiement qui restent. (b) Je n'ai PAS reproché au nouveau bloc son français écrit en dur dans le template : le bandeau TRAP-3 voisin fait pareil depuis juin, c'est la convention locale du fichier, pas une régression du correctif. (c) Je n'ai déposé AUCUN constat de contraste : sans dump de styles calculés ni axe-core dans les artefacts je m'en tiens aux jetons Tailwind lisibles dans le DOM, et ceux du bandeau (text-amber-900 #78350F, text-amber-800 #92400E sur bg-amber-50 #FFFBEB) comme ceux du nouveau bloc (text-orange-800 sur bg-orange-50) sont largement au-dessus du seuil. (d) La différence entre « Fond de caisse: 100,00 € », « sur la période: 5,00 € » et « attendues au tiroir: 240,40 € » — quatre montants dont aucune paire ne s'additionne visiblement — m'a paru attaquable, mais la note de bas de bandeau donne bien la clé (100,00 + 140,40 = 240,40) : j'ai renoncé à en faire un constat. VERDICT ROUGE : 2 P0 ouverts (D-001 dont la contradiction persiste sous une nouvelle forme, D-013 qui en est la cause et qui rend FAUX le grand total lui-même) et 2 P1 (D-002 la CSP amputée du pont cuisine, D-003 « Total clôture » qui compte les caisses ouvertes pour zéro — aucun des deux n'a été touché). Le correctif du bandeau est un vrai progrès de véracité ; il n'a pas atteint le fond du problème, qui n'était pas dans le bandeau mais dans la requête d'à côté."
+}

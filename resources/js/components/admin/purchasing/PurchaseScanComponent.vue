@@ -2,9 +2,14 @@
     <div class="purchase-scan">
         <header class="ps-head">
             <h1 class="ps-title">Scan de facture</h1>
+            <!-- [ONB-10 2026-08-28] Disait « Photographie une facture… tu valides d'un
+                 tap » : un tutoiement et un mot anglais, sur un écran où le reste de
+                 l'interface vouvoie. La sentinelle RegistreDeLangueCoherentTest ne
+                 balaye que le fichier de langue — cette chaîne était écrite en dur
+                 dans le composant et lui échappait. Voir ChainesEnDurVouvoientTest. -->
             <p class="ps-sub">
-                Photographie une facture fournisseur — l'IA propose les entrées en stock,
-                tu valides d'un tap.
+                Photographiez une facture fournisseur — l'IA propose les entrées en stock,
+                vous validez d'une touche.
             </p>
         </header>
 
@@ -12,7 +17,7 @@
         <div v-if="!openaiEnabled" class="ps-banner ps-banner--demo" data-testid="demo-banner">
             <i class="fa-solid fa-flask"></i>
             <span>
-                Mode démo (lecture simulée) — pose ta clé OpenAI pour lire les vraies factures.
+                Mode démo : les lignes proposées sont fictives. La lecture réelle des factures s'active sur la machine, pas depuis cette page — demandez-la à la personne qui a installé votre caisse.
             </span>
         </div>
 

@@ -416,6 +416,14 @@ class FrontendOrderService
                         ->filter()
                         ->unique()
                         ->toArray();
+
+                    $addonIds = collect($requestItems)
+                        ->pluck('item_addons')
+                        ->flatten(1)
+                        ->pluck('id')
+                        ->filter()
+                        ->unique()
+                        ->toArray();
                     
                     $dbVariations = !empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
@@ -423,6 +431,9 @@ class FrontendOrderService
                     
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+                    $dbAddons = !empty($addonIds)
+                        ? \App\Models\ItemAddon::with('addonItem')->whereIn('id', $addonIds)->get()->keyBy('id')
                         : collect();
 
                     // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
@@ -512,8 +523,26 @@ class FrontendOrderService
                                 }
                             }
 
+                            $calcAddonTotal = 0.0;
+                            if (!empty($item->item_addons)) {
+                                foreach ($item->item_addons as $addon) {
+                                    $addonId = $addon->id ?? 0;
+                                    $dbAddon = $dbAddons[$addonId] ?? null;
+                                    if (!$dbAddon || (int) $dbAddon->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Addon ID {$addonId} introuvable ou invalide pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcAddonTotal += $this->pricingService->menuRoleAdjustedAddonPrice(
+                                        (string) ($addon->role ?? ''),
+                                        (float) ($dbAddon->addonItem?->price ?? 0)
+                                    ) * max(1, (int) ($addon->quantity ?? 1));
+                                }
+                            }
+
                             $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
-                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity, 2);
+                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal + $calcAddonTotal) * $verifiedQuantity, 2);
                             $realSubtotal += $verifiedTotalPrice;
 
                             $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
@@ -529,7 +558,7 @@ class FrontendOrderService
                             }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras, null, $dbAddons);
 
                             $itemsArray[$i] = [
                                 'order_id' => $this->frontendOrder->id,

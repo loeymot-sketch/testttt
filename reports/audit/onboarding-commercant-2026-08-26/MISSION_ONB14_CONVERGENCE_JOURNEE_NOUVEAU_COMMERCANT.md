@@ -1,0 +1,145 @@
+# MISSION ONB-14 — CONVERGENCE « JOURNÉE D'UN NOUVEAU COMMERÇANT » · Rapport de mission
+- GOAL : `plans/GOAL_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT_2026-08-26.md` · Index : `plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md`
+- État des lieux daté du **2026-08-26** — **dernier GOAL (vague D)** : ne démarre qu'après la vague C
+- Port : **8814** · Base **dédiée** `foodking_onb14` · Voie : TRANSVERSE, **aucun code produit**
+
+## 0. COMMENT LANCER
+```
+Tu es le chef de mission du GOAL ONB-14 (convergence : journée d'un nouveau commerçant). AVANT TOUT : vérifie dans plans/GOAL_INDEX_ONBOARDING_COMMERCANT_2026-08-26.md
+et PROJECT_BRAIN.md §2 que la vague C est close (ONB-01..13 fusionnés dans HEAD, ou différés par écrit — gate G-DIFF) ; sinon STOP. Lis : CONSTITUTION.md, CLAUDE.md §3ter,
+§6, §8, §13, SYNC_CONTRACT.md, docs/PLAYWRIGHT_MCP_OPS.md §7, PROJECT_BRAIN.md §2, l'index (§2, §3, §5, §7), reports/audit/onboarding-commercant-2026-08-26/
+MISSION_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT.md, plans/GOAL_ONB14_CONVERGENCE_JOURNEE_NOUVEAU_COMMERCANT_2026-08-26.md, tests/e2e/boucle-quotidienne.spec.js,
+tests/Feature/BoucleQuotidienneTest.php, tests/Playwright/global-setup.js, tests/e2e/helpers/*, tous les MISSION_ONB*.md §8 (fiches ouvertes). Pré-vol §0.1 : worktree
+.claude/worktrees/onb14-convergence depuis le HEAD de fin de vague C, .env avec APP_URL=http://127.0.0.1:8814 ET DB_DATABASE=foodking_onb14 (créée vide, installée par
+`php artisan foodking:installer --etablissement="Chez Nadia"` de ONB-12, dump état zéro), garde d'identité Playwright autorisant 8814 (1 ligne, déclarée), worker dédié,
+soketi ou repli scrutation, chaîne NF525 attestée. ⛔ Aucun fichier produit modifié ici ; jamais la base partagée ni :8766 ; jamais une commande supprimée ; jamais un
+sélecteur inventé. Puis « lance le GOAL » : W1 (données Nadia + spec + jumeau PHP MySQL) → W2 cycle 1 → registre des renvois → corrections par les sessions
+propriétaires → cycles suivants → deux cycles identiques → clôture (BRAIN, SYSTEM_MAP, ligne G0 contresignée, G-PUSH). QA visuel + ROUGE visuel + Jalonneur + Fiscal ;
+aucun implémenteur. Compte rendu : FIXÉ (rien ici) / VÉRIFIÉ (12 étapes × 2 cycles) / BLOQUÉ (renvois ouverts).
+```
+
+## 1. CONTEXTE ET VISION
+Le programme existe pour une preuve : un établissement **qui n'est pas Le Cayenne** se règle, vend, cuisine, encaisse, clôture et lit ses chiffres, sans développeur. Ce GOAL joue cette
+journée sur une installation vierge, deux fois à l'identique, et renvoie chaque échec à son propriétaire. Il clôt le programme (rapport final, BRAIN, CONSTITUTION si G0, étiquette).
+
+## 2. ÉTAT CONNU LE 2026-08-26
+| Fait | Preuve |
+|---|---|
+| Boucle quotidienne **Le Cayenne** verte : `tests/e2e/boucle-quotidienne.spec.js` 4/4 (navigateur réel) + `tests/Feature/BoucleQuotidienneTest.php` L0-L7 + L5bis (5 canaux) | BRAIN §4 (15/08) |
+| Garde d'identité Playwright : `:8000` rejeté, `:8766` accepté (`global-setup.js:64-113`) ; comptes `:126-151` | code |
+| Helpers réutilisables : `admin-auth.js` (`loginAdmin`, `X-API-KEY`), `login.js` (`#formEmail`, `#formPassword`, `loginAsPosOperator`, `loginAsChefOperator`, `loginAsKiosk`), `kiosk-auth.js`, `kiosk-order.js` (`resolveSimpleOrderableItem`), `place-order.js`, `idempotency-key.js`, `process-audit.js`, `sync-journey-trace.js`, `central-management-selectors.js` | `ls tests/e2e/helpers` (17) |
+| Dette de dérive du harnais : sélecteurs morts 23, routes mortes 1, idempotence 0, specs KDS V1 14 (cliquets) | BRAIN 25/08 |
+| Pièges d'instrument : `reducedMotion` inerte, `F1-F12` inertes, produit inexistant, serveur mono-requête, `:8000` ≠ `:8766` | `docs/PLAYWRIGHT_MCP_OPS.md §7`, CLAUDE.md §3ter |
+| Aucune journée « autre établissement » jamais jouée ; installation vierge inexistante avant ONB-12 | Z0 §8 |
+
+## 3. CE QUI A DÉJÀ ÉTÉ FAIT
+- 2026-08-15 V3 : boucle quotidienne + jumeau PHP + purge de 91 specs vacantes + sentinelle `noVacuousSpecSentinel` ; V7 convergence (diff gelé 0, chaîne OK).
+- 2026-08-25 : vagues D/F E2E rejouées, causes réelles documentées (`VAGUE_D_CAUSES_REELLES_2026-08-25.md`), 18 specs sans `X-Idempotency-Key` corrigées, garde d'identité posée.
+- Règle de convergence (`test-e2e`) : deux cycles consécutifs aux constats identiques.
+
+## 4. ANCRAGES CODE (lecture)
+| Rôle | Fichier | Note |
+|---|---|---|
+| Modèle de journée | `tests/e2e/boucle-quotidienne.spec.js`, `tests/Feature/BoucleQuotidienneTest.php` | à ne pas modifier |
+| Harnais | `tests/Playwright/global-setup.js:64-113,126-151` · `playwright.config.js:12-41` (`PLAYWRIGHT_BASE_URL`) | 1 ligne déclarée pour 8814 |
+| Helpers | `tests/e2e/helpers/{admin-auth,login,kiosk-auth,kiosk-order,place-order,idempotency-key,process-audit,sync-journey-trace,central-management-selectors}.js` | réutilisés tels quels |
+| Fiscal | `php artisan fiscal:verify-chain --all` · `z_reports`, `audit_logs` · `FiscalInstallImmutabilityTriggersCommand` (installation) | MySQL requis |
+| Impression | récepteur `nc -l 9100` ; `OrderReceiptEscPosRenderer` (lecture) | preuve par les octets |
+| À créer | `tests/e2e/helpers/onboarding-journee.js`, `tests/e2e/onboarding-journee-nouveau-commercant.spec.js`, `tests/Feature/Onboarding/JourneeNouveauCommercantTest.php`, `CONVERGENCE_ONB14_<n>.md`, `REGISTRE_RENVOIS_ONB14.md`, `RAPPORT_FINAL_PROGRAMME.md` | |
+
+## 5. BASES CHIFFRÉES
+À l'ouverture de la vague D (à figer W0) : PHPUnit / Vitest / chaîne NF525 de `foodking_e2e` (référence) ; état zéro de `foodking_onb14` (dump) ; liste des GOAL fusionnés / différés (G-DIFF).
+
+## 6. DÉCISIONS PROPRIÉTAIRE EN ATTENTE
+| Gate | Question | Recommandation | Si non tranché |
+|---|---|---|---|
+| G-DIFF | Quels GOAL sont différés à l'ouverture de la vague D ? (chaque étape dépendante devient « documentée non prouvée ») | liste explicite | W0 bloquée |
+| G-DATA | Base dédiée `foodking_onb14` | oui | W0 bloquée |
+| G0 | Ligne constitutionnelle (écrite ici après contreseing) | oui | clôture partielle |
+| G-PUSH | Étiquette + poussée | après deux cycles identiques | pas de poussée |
+
+## 7. RISQUES, PIÈGES, INSTRUMENTS
+- Un seul cycle vert ne vaut rien (garde anti-flaky) ; deux cycles aux constats **différents** = non convergé.
+- Les corrections se font dans les sessions propriétaires : ce GOAL attend, fusionne, rejoue — jamais de « petit fix » ici.
+- Chaque commande de la journée est réelle sur `foodking_onb14` : rejouer = restaurer le dump état zéro, pas supprimer.
+- Sélecteurs : uniquement des `data-testid` existants (23 sélecteurs morts en mémoire) ; sinon fiche au propriétaire.
+- `reducedMotion` → `page.emulateMedia()` ; pas de `keyboard.press('F1')` ; 1 navigateur ; timeouts 60 s ; `resolveSimpleOrderableItem` pour tout article.
+- KDS V2 par défaut : `data-kds-order-card` (V1) est mort — viser les sélecteurs V2 (`VAGUE_D_CAUSES_REELLES_2026-08-25.md`).
+- `:8000` = autre worktree ; `:8766` = arbre principal ; ta session = **:8814**, base **`foodking_onb14`**.
+
+## 8. JOURNAL DE MISSION (rempli par la session)
+
+### 8.1 ÉTAT : **LIVRÉ EN PARTIE** — le parcours tient, quatre manques restent nommés
+
+Cette mission a d'abord été classée « bloquée, en cascade derrière G0 ». **C'était une
+erreur de lecture, corrigée le 2026-08-28.**
+
+G0 porte sur la formulation de `CONSTITUTION.md §1` et sur le droit de remonter
+« multi-marque » comme bloquant. Il ne dit rien de la capacité d'un banc à partir d'une
+base vide. Or `RefreshDatabase` **donne** exactement l'installation vierge que la
+mission réclame : sans le menu, sans les rôles, sans les résidus de tests de Le Cayenne.
+
+Autrement dit : le seul environnement où « l'installation vierge » existe aujourd'hui,
+c'est le banc. S'en priver au nom d'un gate qui ne le couvre pas, c'était confondre le
+blocage d'une mission avec le blocage de tout son contenu.
+
+### 8.2 Le parcours, et ce qu'il a coûté de vrai
+
+`tests/Feature/Onboarding/LaJourneeDunNouveauCommercantTest.php` enchaîne **sept
+maillons dans l'ordre réel**, chacun repartant de ce que le précédent a produit :
+
+| # | Étape | Ce qui est vérifié |
+|---|---|---|
+| 1 | Identité fiscale | SIRET, TVA, n° de caisse — et ils survivent à un second enregistrement |
+| 2 | Taxe | taux strictement positif, sinon facturation à 0 % en silence |
+| 3 | Catégorie + produit | allergènes (champ ET pivot), canaux, poste de cuisine |
+| 4 | Matière première | avec son seuil d'alerte, qui n'avait aucun chemin d'écriture |
+| 5 | Embauche | téléphone obligatoire dit comme tel, sans trace SQL |
+| 6 | Imprimante | à la largeur 42 que l'écran nomme |
+| 7 | Mission locale | « ajoutez la sauce Algérienne à tous les tacos » — propose avant d'écrire |
+
+Puis la seule vérification qui compte pour le patron : **son produit est vendable à la
+borne**, actif, taxé, avec ses allergènes et l'option que le chatbot a posée.
+
+**Un maillon prouvé isolément ne dit rien de la chaîne.** C'est toute la différence
+entre « chaque écran marche » et « on peut ouvrir », et le parcours l'a démontré en
+trouvant deux défauts que onze missions d'audit isolé n'avaient pas vus :
+
+1. **Deux clés d'authentification manquaient en `en`, trois en `ar`.** Émises par
+   **huit** règles — toutes les créations de compte et le changement de mot de passe.
+   Laravel ne se rabat pas sur le français : il rend la clé. Le patron lisait
+   `auth.password_confirmation_mismatch` dans son formulaire d'embauche. Et ce n'est
+   pas théorique : le middleware déduit la langue de l'en-tête `Accept-Language` du
+   navigateur et déclare `fr`, `en`, `ar` servies.
+
+2. **`PrinterRequest` déclarait `branch_id` nullable** alors que la colonne porte une
+   clé étrangère et que `resolveBranchId()` renvoie la valeur saisie dès que l'acteur
+   est l'admin. Le patron recevait `SQLSTATE[23000]: FOREIGN KEY constraint failed`.
+   **Jumeau exact du défaut `phone`** : obligatoire en base, facultatif dans la règle.
+
+### 8.3 Ce que le parcours NE couvre pas, et le dit
+
+Un banc vert sur sept maillons laisserait croire le parcours complet. Il ne l'est pas.
+`test_les_quatre_manques_structurels_sont_toujours_la` les surveille et **échoue le jour
+où l'un est comblé**, pour qu'on relise le parcours au lieu de l'oublier :
+
+- **Les horaires d'ouverture n'existent nulle part** — ni table, ni route, ni écran.
+- **Les frais de livraison** sont lus par `DeliveryFeeService` et réglables nulle part.
+- **L'adresse d'une imprimante réelle reste indéclarable** (toute adresse LAN refusée).
+- **Le wizard de catégorie n'est appliqué nulle part** (ONB-03, zone gelée).
+
+Ces quatre-là bloqueraient la convergence **même avec G0 signé**. Deux exigent du neuf,
+un exige une signature.
+
+### 8.4 Un garde-fou, né d'une erreur de la session
+
+Le parcours vérifie que **toute URL visée est enregistrée** avant de mesurer sa réponse.
+En écrivant ce banc j'ai visé `api/admin/branch/show` — la vraie route est
+`api/admin/setting/branch/show`. Un `assertNotSame(422, …)` aurait été **satisfait par
+le 404** qui en résulte. C'est arrivé la nuit précédente sur le banc des imprimantes, et
+personne ne l'aurait vu.
+
+La leçon est générale et vaut au-delà de cette mission : **une assertion négative est
+presque toujours trop faible — elle est satisfaite par tous les échecs sauf un.**
+
+**État final ONB-14 : parcours de bout en bout LIVRÉ et vert (47 assertions), deux défauts réels trouvés et corrigés en le parcourant, quatre manques structurels nommés et surveillés. Le second cycle « deux journées identiques » et la chaîne commande→KDS→Z restent à couvrir.**

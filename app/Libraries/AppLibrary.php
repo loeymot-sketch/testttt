@@ -464,7 +464,24 @@ class AppLibrary
     {
         // [MONEY-FIX 2026-06-25] `?? 2` : voir flatAmountFormat — évite l'arrondi
         // entier des totaux de rapport sous config:cache.
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', ',');
+        //
+        // [ONB-07 2026-08-28] Les séparateurs étaient `'.', ','` — le format
+        // anglo-saxon. Un commerçant français lisait « 1,234.56 » au bas de son PDF
+        // de ventes, là où son écran affiche « 1 234,56 € » (`currencyAmountFormat`
+        // passe par `NumberFormatter('fr_FR')`). Deux formats pour la même somme,
+        // dans le même produit, sur des documents qu'il compare.
+        //
+        // Pire qu'inélégant : « 1,234.56 » se lit « 1,23 » pour un œil français —
+        // un facteur mille sur un document remis au comptable.
+        //
+        // Espace insécable fine (U+202F) comme séparateur de milliers, virgule
+        // décimale : la convention française, et celle que l'écran applique déjà.
+        return number_format(
+            $amount,
+            (int) (env('CURRENCY_DECIMAL_POINT') ?: 2),
+            ',',
+            "\u{202F}"
+        );
     }
 
     public static function textShortener($text, $number = 30)

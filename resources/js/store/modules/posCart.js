@@ -127,6 +127,11 @@ function buildExtraSignature(extras) {
 /** Same merge signature as `lists` mutation (item_id, variations, extras, instruction, bundled addons). */
 function samePosLineMergeSignature(a, b) {
     if (!a || !b) return false;
+    if ((a.line_type || 'catalog') !== (b.line_type || 'catalog')) return false;
+    if ((a.line_type || 'catalog') === 'manual_supplement') {
+        return String(a.manual_label || '').trim() === String(b.manual_label || '').trim()
+            && Number(a.manual_amount || 0) === Number(b.manual_amount || 0);
+    }
     if (normalizeCartItemId(a.item_id) !== normalizeCartItemId(b.item_id)) return false;
     if ((a.instruction || '') !== (b.instruction || '')) return false;
     if (buildVariationSignature(a.item_variations) !== buildVariationSignature(b.item_variations)) {
@@ -219,6 +224,9 @@ function shapePosListItem(pay) {
     const normalized = migrateLegacySelections(_.cloneDeep(pay));
 
     return {
+        line_type: pay.line_type || 'catalog',
+        manual_label: pay.manual_label || '',
+        manual_amount: pay.manual_amount == null ? null : Number(pay.manual_amount),
         discount: pay.discount,
         image: pay.image,
         instruction: pay.instruction,
@@ -427,29 +435,9 @@ export const posCart = {
                         _.forEach(state.lists, (list, listKey) => {
                             migrateLegacySelections(state.lists[listKey]);
 
-                            if (list.item_id === shapedPay.item_id) {
-                                const sameVariations =
-                                    buildVariationSignature(state.lists[listKey].item_variations) ===
-                                    buildVariationSignature(shapedPay.item_variations);
-                                const sameExtras =
-                                    buildExtraSignature(state.lists[listKey].item_extras) ===
-                                    buildExtraSignature(shapedPay.item_extras);
-
-                                if (!sameVariations || !sameExtras) {
-                                    newChecker.push(false);
-                                } else {
-                                    // [V-1 FIX] Check instruction before merging — different instructions = separate items
-                                    var sameInstruction = (state.lists[listKey].instruction || '') === (shapedPay.instruction || '');
-                                    var sameBundled =
-                                        posLineAddonsSignature(state.lists[listKey].pos_line_addons) ===
-                                        posLineAddonsSignature(shapedPay.pos_line_addons);
-                                    if (sameInstruction && sameBundled) {
-                                        newChecker.push(true);
-                                        state.lists[listKey].quantity += shapedPay.quantity;
-                                    } else {
-                                        newChecker.push(false);
-                                    }
-                                }
+                            if (samePosLineMergeSignature(state.lists[listKey], shapedPay)) {
+                                newChecker.push(true);
+                                state.lists[listKey].quantity += shapedPay.quantity;
                             } else {
                                 newChecker.push(false);
                             }

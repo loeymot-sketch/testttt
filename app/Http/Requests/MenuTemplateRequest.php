@@ -12,9 +12,21 @@ class MenuTemplateRequest extends FormRequest
      *
      * @return bool
      */
+    /**
+     * [ONB-13 C7 2026-08-28] Defense en profondeur — etait `return true;`.
+     *
+     * Miroir exact de la permission que porte la route : MenuTemplateController:29.
+     * Second verrou si une route est un jour recablee sans son middleware.
+     */
     public function authorize(): bool
     {
-        return true;
+        $utilisateur = $this->user();
+
+        if ($utilisateur === null) {
+            return false;
+        }
+
+        return $utilisateur->can('settings');
     }
 
     /**

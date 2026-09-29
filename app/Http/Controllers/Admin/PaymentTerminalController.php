@@ -114,6 +114,21 @@ class PaymentTerminalController extends AdminController
             return $userBranchId;
         }
 
-        return (int) $request->validated('branch_id');
+        $choisie = (int) $request->validated('branch_id');
+
+        if ($choisie > 0) {
+            return $choisie;
+        }
+
+        // [ONB-10 2026-08-28] Repli sur la filiale UNIQUE — jumeau du correctif
+        // imprimante. En V1 LOCAL il n'y a qu'un etablissement, et le proprietaire
+        // n'a aucune raison d'avoir a le designer.
+        //
+        // Pas de `withoutGlobalScopes()` : `Branch` ne porte pas `BranchScope`
+        // (auto-reference, exempte §9), seulement `SoftDeletes`. Le contourner
+        // ferait compter les filiales SUPPRIMEES.
+        return \App\Models\Branch::query()->count() === 1
+            ? (int) \App\Models\Branch::query()->value('id')
+            : 0;
     }
 }

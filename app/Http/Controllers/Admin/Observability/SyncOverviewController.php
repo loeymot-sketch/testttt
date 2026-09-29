@@ -62,6 +62,37 @@ class SyncOverviewController extends AdminController
     /** [Codex P1-K] Borne d'une purge : au-delà, on rejoue le bouton. */
     private const DRAIN_BATCH_CAP = 500;
 
+    /**
+     * [G2 2026-09-03 · T2.3] Seuil par défaut de la purge — le MÊME que celui qu'annonce
+     * le compteur `purgeable_failed_jobs` du cockpit. Deux valeurs écrites séparément
+     * finissent par diverger, et alors le bouton promet autre chose que ce qu'il fait.
+     */
+    private const DRAIN_DEFAULT_OLDER_THAN_HOURS = 24;
+
+    /**
+     * [G2 2026-09-03 · T2.5 / T2.6] La file et le nombre d'essais sont LUS SUR LE JOB,
+     * jamais recopiés ici. `DispatchDomainEventsJob::__construct` appelle `onQueue(...)`
+     * et la classe déclare `$tries` + sa courbe de backoff : si l'un des deux change, la
+     * mesure suit sans qu'on ait à s'en souvenir. Une sonde qui recopie une constante
+     * finit par surveiller une file que plus personne n'utilise.
+     */
+    private static function outboxJobBlueprint(): DispatchDomainEventsJob
+    {
+        return new DispatchDomainEventsJob(0);
+    }
+
+    private static function outboxQueueName(): string
+    {
+        $queue = self::outboxJobBlueprint()->queue;
+
+        return is_string($queue) && $queue !== '' ? $queue : 'default';
+    }
+
+    private static function outboxJobTries(): int
+    {
+        return max(1, (int) self::outboxJobBlueprint()->tries);
+    }
+
     public function __construct()
     {
         parent::__construct();
@@ -362,9 +393,34 @@ class SyncOverviewController extends AdminController
             ->map($rowShape)
             ->all();
 
-        $terminalQuery = DB::table('domain_events')->whereNull('dispatched_at')->whereNotNull('last_error');
+        // [G2 2026-09-03 · T2.6 · défaut V-10] « Terminal » exige des essais ÉPUISÉS.
+        // Le job écrit `last_error` ET relâche le claim dès la PREMIÈRE des `$tries`
+        // tentatives (Phase 3b, DispatchDomainEventsJob) : compter tout `last_error`
+        // comme terminal gonflait ce chiffre de tous les événements en cours de reprise
+        // automatique — la courbe [1,5,15,60,300] leur laisse encore ~6 min.
+        // Exception : une violation de contrat est terminale dès le premier essai, parce
+        // que le job appelle `$this->fail()` — un payload malformé ne guérit pas au rejeu
+        // (sentinelle PayloadMismatchFailOnceSentinelTest).
+        $tries = self::outboxJobTries();
+        $terminalQuery = DB::table('domain_events')
+            ->whereNull('dispatched_at')
+            ->whereNotNull('last_error')
+            ->where(function ($q) use ($tries) {
+                $q->where('attempts', '>=', $tries)
+                    ->orWhere('last_error', 'like', 'contract_violation%');
+            });
         $terminalCount = (clone $terminalQuery)->count();
         $contractViolations = (clone $terminalQuery)->where('last_error', 'like', 'contract_violation%')->count();
+
+        // [G2 2026-09-03 · T2.3 · défaut V-04] Le compteur qui gouverne le bouton
+        // « Rejouer » doit être celui de ce que le bouton rejouera VRAIMENT : la même
+        // sélection que `outboxRetryFailed`, pas le compteur d'échecs terminaux (qui
+        // inclut les violations de contrat, non rejouables, et exclut les événements
+        // encore dans leur courbe de reprise, eux parfaitement rejouables à la main
+        // quand le worker est mort).
+        $replayableQuery = DB::table('domain_events');
+        self::applyReplayableCriteria($replayableQuery);
+        $replayableCount = $replayableQuery->count();
 
         $claimedQuery = DB::table('domain_events')->whereNotNull('dispatched_at')->whereNull('broadcast_at');
         $inFlightCount = (clone $claimedQuery)->where('dispatched_at', '>=', $claimStaleCutoff)->count();
@@ -395,9 +451,16 @@ class SyncOverviewController extends AdminController
             ->values()
             ->all();
 
-        $queueHigh = $this->describeQueueLane('high', $now);
+        $outboxQueue = self::outboxQueueName();
+        $queueHigh = $this->describeQueueLane($outboxQueue, $now);
         $failedJobsSummary = $this->describeFailedJobs();
-        $health = $this->probeHealth($now);
+        // [G2 2026-09-03 · T2.3 + T2.7] Ce que la purge supprimerait MAINTENANT, mesuré
+        // par le MÊME helper que la purge elle-même : le bouton ne peut donc plus
+        // promettre un nombre que l'action ne tiendra pas.
+        $purgeableCandidates = $this->outboxFailedJobCandidates(
+            $now->copy()->subHours(self::DRAIN_DEFAULT_OLDER_THAN_HOURS)->format('Y-m-d H:i:s')
+        );
+        $health = $this->probeHealth($now, $outboxQueue);
 
         return response()->json([
             'generated_at' => $now->toISOString(),
@@ -408,6 +471,19 @@ class SyncOverviewController extends AdminController
             'terminal_failures' => [
                 'count' => $terminalCount,
                 'contract_violations' => $contractViolations,
+                'attempts_threshold' => $tries,
+            ],
+            // Compteurs d'ACTION (ce qu'un clic ferait), distincts des compteurs d'ÉTAT.
+            'replayable_events' => [
+                'count' => $replayableCount,
+                'max_age_days' => self::RETRY_FAILED_MAX_AGE_DAYS,
+            ],
+            'purgeable_failed_jobs' => [
+                'count' => $purgeableCandidates->count(),
+                'older_than_hours' => self::DRAIN_DEFAULT_OLDER_THAN_HOURS,
+                // La purge traite au plus DRAIN_BATCH_CAP candidats par clic : au-delà,
+                // le compte affiché est un plancher, pas un total.
+                'capped' => $purgeableCandidates->count() >= self::DRAIN_BATCH_CAP,
             ],
             'in_flight' => [
                 'count' => $inFlightCount,
@@ -460,14 +536,9 @@ class SyncOverviewController extends AdminController
         }
 
         try {
-            $events = DomainEvent::query()
-                ->whereNull('dispatched_at')
-                ->whereNotNull('last_error')
-                ->where('last_error', 'not like', 'contract_violation%')
-                ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS))
-                ->orderBy('id')
-                ->limit($batch)
-                ->get();
+            $query = DomainEvent::query();
+            self::applyReplayableCriteria($query);
+            $events = $query->orderBy('id')->limit($batch)->get();
 
             $result = $replay->replay($events, 'admin:outbox:retry-failed', $request->user()?->id);
         } finally {
@@ -497,7 +568,7 @@ class SyncOverviewController extends AdminController
      */
     public function outboxDrainFailed(Request $request, AuditLogService $auditLog): JsonResponse
     {
-        $olderThan = (int) ($request->input('older_than_hours', 24));
+        $olderThan = (int) ($request->input('older_than_hours', self::DRAIN_DEFAULT_OLDER_THAN_HOURS));
         if ($olderThan < 1) {
             return response()->json([
                 'message' => 'older_than_hours must be >= 1 — refusing to drain recent failed jobs.',
@@ -509,13 +580,7 @@ class SyncOverviewController extends AdminController
         }
 
         $cutoff = now()->subHours($olderThan)->format('Y-m-d H:i:s');
-        $candidates = DB::table('failed_jobs')
-            ->where('failed_at', '<', $cutoff)
-            ->orderBy('id')
-            ->limit(self::DRAIN_BATCH_CAP)
-            ->get()
-            ->filter(fn ($row) => self::isOutboxFailedJob($row))
-            ->values();
+        $candidates = $this->outboxFailedJobCandidates($cutoff);
 
         if ($candidates->isEmpty()) {
             return response()->json(['deleted' => 0, 'older_than_hours' => $olderThan, 'exported_to' => null]);
@@ -533,43 +598,123 @@ class SyncOverviewController extends AdminController
             'rows' => $candidates->map(fn ($row) => (array) $row)->all(),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
+        // [G2 2026-09-03 · T2.4 · défaut V-05] L'audit n'atteste QUE le fait accompli.
+        //
+        // Avant : `'deleted' => count($ids)` était écrit AVANT le `DELETE`. Un `DELETE`
+        // partiel (candidats disparus entre la sélection et la suppression — cron
+        // `queue:prune-failed`, autre opérateur) ou en échec laissait une ligne
+        // `audit_logs` IMMUABLE et SIGNÉE EN CHAÎNE affirmant une suppression qui n'avait
+        // pas eu lieu. Une trace NF525 qui ment est pire qu'une trace absente : elle est
+        // opposable, et la chaîne HMAC interdit de la corriger a posteriori.
+        //
+        // Maintenant : suppression PUIS audit du nombre réel, les deux dans la MÊME
+        // transaction. L'audit échoue ⇒ la suppression est annulée — l'invariant « pas
+        // d'audit, pas de suppression » (OutboxWebActionsAreAuditedTest) est conservé,
+        // et l'écriture d'audit reste un simple AJOUT, jamais une correction.
         try {
-            $auditLog->write([
-                'branch_id' => 0,
-                'user_id' => $actorId,
-                'action' => 'outbox.drain',
-                'resource' => 'failed_jobs',
-                'resource_id' => null,
-                'payload' => [
-                    'command' => 'admin:outbox:drain-failed',
-                    'older_than_hours' => $olderThan,
-                    'cutoff' => $cutoff,
-                    'deleted' => count($ids),
-                    'failed_job_ids' => $ids,
-                    'uuids' => $candidates->pluck('uuid')->map(fn ($u) => (string) $u)->all(),
-                    'exported_to' => $exportPath,
-                ],
-            ]);
+            $deleted = DB::transaction(function () use ($ids, $auditLog, $actorId, $olderThan, $cutoff, $candidates, $exportPath): int {
+                $deleted = (int) DB::table('failed_jobs')->whereIn('id', $ids)->delete();
+
+                $auditLog->write([
+                    'branch_id' => 0,
+                    'user_id' => $actorId,
+                    'action' => 'outbox.drain',
+                    'resource' => 'failed_jobs',
+                    'resource_id' => null,
+                    'payload' => [
+                        'command' => 'admin:outbox:drain-failed',
+                        'older_than_hours' => $olderThan,
+                        'cutoff' => $cutoff,
+                        // Le nombre RÉELLEMENT supprimé, constaté et non prédit…
+                        'deleted' => $deleted,
+                        // …et, distinctement, ce qui avait été sélectionné : l'écart entre
+                        // les deux est en soi une information forensique.
+                        'candidates' => count($ids),
+                        'failed_job_ids' => $ids,
+                        'uuids' => $candidates->pluck('uuid')->map(fn ($u) => (string) $u)->all(),
+                        'exported_to' => $exportPath,
+                    ],
+                ]);
+
+                return $deleted;
+            });
         } catch (\Throwable $e) {
-            Log::channel('fiscal')->error('Outbox drain refused: audit_log write failed', [
+            Log::channel('fiscal')->error('Outbox drain annulée : suppression ou trace d\'audit en échec', [
                 'actor_id' => $actorId,
                 'failed_job_ids' => $ids,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'message' => "Purge refusée : la trace d'audit n'a pas pu être écrite. Rien n'a été supprimé.",
+                'message' => "Purge annulée : la suppression n'a pas pu être menée à son terme, ou sa trace d'audit n'a pas pu être écrite. Rien n'a été supprimé.",
                 'exported_to' => $exportPath,
             ], 500);
         }
 
-        $deleted = DB::table('failed_jobs')->whereIn('id', $ids)->delete();
-
         return response()->json([
-            'deleted' => (int) $deleted,
+            'deleted' => $deleted,
             'older_than_hours' => $olderThan,
             'exported_to' => $exportPath,
         ]);
+    }
+
+    /**
+     * [G2 2026-09-03 · T2.3] Sélection unique des événements que la RELANCE MANUELLE
+     * traitera : pendants, porteurs d'un `last_error`, hors violations de contrat (les
+     * rejouer n'écrit que des lignes d'audit inutiles) et dans la fenêtre d'âge.
+     *
+     * Ni plafond ni plancher sur `attempts` — c'est délibéré et documenté
+     * (GOAL-2026-05-29 F5 v2) : rejouer un événement qui a épuisé ses relances
+     * automatiques APRÈS réparation de l'infrastructure est l'usage premier de ce bouton,
+     * et rejouer un événement encore dans sa courbe de reprise est légitime quand le
+     * worker est mort — précisément le cas où l'on ouvre ce cockpit.
+     *
+     * Utilisée par `outboxRetryFailed` (l'action) ET par `outboxOverview` (le compteur du
+     * bouton) : deux expressions séparées finiraient par diverger, et alors le bouton
+     * promettrait autre chose que ce qu'il fait.
+     *
+     * @param  \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder  $query
+     */
+    private static function applyReplayableCriteria($query): void
+    {
+        $query->whereNull('dispatched_at')
+            ->whereNotNull('last_error')
+            ->where('last_error', 'not like', 'contract_violation%')
+            ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS));
+    }
+
+    /**
+     * [G2 2026-09-03 · T2.7 · défaut V-11] Les travaux `failed_jobs` que la PURGE
+     * supprimera — filtre AVANT la borne.
+     *
+     * Avant : `->orderBy('id')->limit(DRAIN_BATCH_CAP)` puis filtre PHP sur la classe.
+     * Le plafond s'appliquait donc à des lignes quelconques : 500 travaux en échec
+     * étrangers plus anciens (un listener stock, une notification) consommaient tout le
+     * lot et aucun candidat outbox n'était jamais atteint. Le bouton répondait
+     * « 0 supprimé » indéfiniment, sans dire pourquoi.
+     *
+     * Le `LIKE` sur le nom court de la classe est un PRÉ-FILTRE portable (MySQL traite
+     * `\` comme échappement dans `LIKE`, et le payload JSON double déjà les
+     * antislashes : chercher le nom pleinement qualifié serait fragile des deux côtés).
+     * Le verdict exact reste `isOutboxFailedJob()`, en PHP, sur les lignes ramenées.
+     *
+     * Utilisée par `outboxDrainFailed` (l'action) ET par `outboxOverview` (le compteur du
+     * bouton) : même ensemble, donc même promesse.
+     */
+    private function outboxFailedJobCandidates(string $cutoff): \Illuminate\Support\Collection
+    {
+        if (! Schema::hasTable('failed_jobs')) {
+            return collect();
+        }
+
+        return DB::table('failed_jobs')
+            ->where('failed_at', '<', $cutoff)
+            ->where('payload', 'like', '%'.class_basename(DispatchDomainEventsJob::class).'%')
+            ->orderBy('id')
+            ->limit(self::DRAIN_BATCH_CAP)
+            ->get()
+            ->filter(fn ($row) => self::isOutboxFailedJob($row))
+            ->values();
     }
 
     /**
@@ -645,18 +790,26 @@ class SyncOverviewController extends AdminController
         ];
     }
 
-    private function probeHealth(\Illuminate\Support\Carbon $now): array
+    private function probeHealth(\Illuminate\Support\Carbon $now, string $outboxQueue): array
     {
         // queue:work heuristic — last reserved job within 90s OR a domain_event
         // was actually DELIVERED (broadcast_at) in the same window.
         // [GOAL DASHBOARD-CONTRÔLE 2026-09-02 · Codex P1-J] Avant : `dispatched_at`, qui
         // n'est que le CLAIM. Un worker tué juste après le claim laissait la sonde en UP
         // pendant 90 s alors qu'aucun client n'avait rien reçu.
+        // [G2 2026-09-03 · T2.5 · défaut V-06] …et la sonde acceptait N'IMPORTE QUELLE
+        // ligne `jobs` réservée, sans condition sur `queue`. Le projet a plusieurs files
+        // vivantes (`config('queue.monitored_queues')` : default, high, notifications ;
+        // 1 490 travaux dormaient sur `notifications` le 2026-08-25). Un worker de
+        // notifications bien portant suffisait donc à afficher le worker OUTBOX « en
+        // service » alors que sa file était morte — exactement le cas où l'on ouvre cet
+        // écran. La sonde est bornée à la file que le job utilise réellement.
         $queueWorkUp = false;
         $queueLastSignalAgo = null;
 
         if (Schema::hasTable('jobs')) {
             $reserved = DB::table('jobs')
+                ->where('queue', $outboxQueue)
                 ->whereNotNull('reserved_at')
                 ->orderByDesc('reserved_at')
                 ->value('reserved_at');
@@ -714,7 +867,9 @@ class SyncOverviewController extends AdminController
             'queue_work' => [
                 'status' => $queueWorkUp ? 'up' : 'down',
                 'last_signal_age_seconds' => $queueLastSignalAgo,
-                'method' => 'heuristic_jobs_reserved_or_event_delivered_within_90s',
+                // La méthode NOMME la file sondée : une sonde qui ne dit pas ce qu'elle
+                // regarde ne peut pas être contredite.
+                'method' => 'heuristic_jobs_reserved_on_queue_'.$outboxQueue.'_or_event_delivered_within_90s',
             ],
             'websockets_serve' => [
                 'status' => $wsUp ? 'up' : 'down',
@@ -747,25 +902,28 @@ class SyncOverviewController extends AdminController
         // donnait 26, donc « 26 > 26 » était faux et la carte restait verte pendant que
         // HealthController::checkBackupAge, qui compare en décimal, déclarait `degraded`.
         // Deux écrans, deux vérités, pour le même fichier.
-        $dossier = storage_path('backups'.DIRECTORY_SEPARATOR.'db-daily');
+        // [G4 2026-09-03 · T4.1] Le « dernier fichier » est désigné par UNE seule règle,
+        // partagée avec /health/ready : deux glob() écrits séparément finissent par
+        // désigner deux fichiers différents, et alors les deux surfaces se contredisent.
+        $cheminDernier = RestoreDrillResult::cheminSauvegardeCourante();
         $dernier = null;
         $ageHeuresExact = null;
         $ageHeures = null;
-        if (is_dir($dossier)) {
-            $fichiers = glob($dossier.DIRECTORY_SEPARATOR.'*.sql.gz') ?: [];
-            if ($fichiers !== []) {
-                usort($fichiers, fn ($a, $b) => filemtime($b) <=> filemtime($a));
-                $dernier = basename($fichiers[0]);
-                $ageHeuresExact = (time() - filemtime($fichiers[0])) / 3600;
-                $ageHeures = (int) round($ageHeuresExact);
-            }
+        if ($cheminDernier !== null) {
+            $dernier = basename($cheminDernier);
+            $ageHeuresExact = (time() - (int) @filemtime($cheminDernier)) / 3600;
+            $ageHeures = (int) round($ageHeuresExact);
         }
 
         // [2026-09-02 · Codex P1-A] Le RÉSULTAT de la restauration de vérification (5 h),
         // et plus seulement la date du fichier. Une sauvegarde fraîche mais non
         // restaurable ne vaut rien ; jusqu'ici son verdict finissait dans un fichier de
         // log que personne n'ouvre.
-        $restauration = RestoreDrillResult::current();
+        // [G4 2026-09-03 · T4.1 · défaut V-08] …et il faut encore que ce verdict parle DE
+        // CE FICHIER. Publier côte à côte « dernier fichier » et « dernière restauration »
+        // sans les rapprocher laissait un dump corrompu arrivé après un drill vert
+        // s'afficher comme « réellement remonté ».
+        $restauration = RestoreDrillResult::rapprocher(RestoreDrillResult::current(), $cheminDernier);
 
         // Battement du planificateur : s'il s'arrête, TOUT s'arrête en silence —
         // sauvegardes, relances de file, vérification de la chaîne fiscale.
@@ -865,8 +1023,16 @@ class SyncOverviewController extends AdminController
             'mesure_attendu_max_min' => 30,
             'sauvegarde' => [
                 'dernier_fichier' => $dernier,
-                'age_heures'      => $ageHeures,
+                // [G4 2026-09-03 · T4.4 · défaut N-01] La valeur DÉCIMALE, plus l'arrondi.
+                // Publier `(int) round(26,33) === 26` alors que le seuil publié vaut 26
+                // laissait l'écran conclure « 26 <= 26 », donc VERT, pendant que la bande
+                // d'alertes du même écran — calculée en décimal juste au-dessus — disait
+                // que la sauvegarde était en retard. 29 minutes de contradiction par jour.
+                'age_heures'      => $ageHeuresExact === null ? null : round($ageHeuresExact, 2),
                 'attendu_max_h'   => 26,
+                // …et surtout : le VERDICT, décidé ici. L'écran affiche, il ne recalcule
+                // plus. Un seuil recopié dans deux langages finit toujours par diverger.
+                'fraiche'         => $ageHeuresExact !== null && $ageHeuresExact <= 26,
                 // Le fichier existe-t-il ET a-t-il été restauré avec succès récemment ?
                 'restauration'    => $restauration,
             ],
