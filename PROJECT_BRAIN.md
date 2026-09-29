@@ -47,6 +47,60 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-30 00:02 — AUDIT EN PROFONDEUR (caisse + site) : CORRIGÉ, TESTÉ, DÉPLOYÉ.**
+> Backend **HEAD prod = `96aa53a4`** (`tools/deploy-lecayenne.sh 5e5dc4a1c` : snapshot,
+> rien à migrer, triggers 10/10, chaîne NF525 CHAIN OK, `config:cache` sauté, healthz
+> vert, bundles frais, CORS OK). Site **`main` = `b9e1f64`**, Vercel en ligne, contenu
+> SERVI vérifié fichier par fichier. Vérification indépendante prod : healthz ok, et le
+> nouveau limiteur `forgot-password` répond 400,400,400 puis **429** (seau par adresse).
+>
+> **Méthode** : 5 audits parallèles en lecture seule (caisse-argent, tunnel site,
+> sécurité, site perf/PWA/SEO, aval cuisine/ticket/écrans), chaque constat re-vérifié
+> ligne à ligne, **deux reproduits par l'écran avant correction** (remise caisse →
+> déconnexion ; supplément libre par le geste réel du caissier). Zéro ligne de zone
+> gelée touchée (diff des 15 fichiers §7 depuis 9fff27add : vide).
+>
+> **Livré côté caisse/cuisine (commits 8c8d51eaf…d5a3f851f)** : remise = déconnexion
+> (401 métier → 409 + coupe-circuit V1 au devis) ; « sans vente » non journalisé (clé
+> d'idempotence) ; nettoyage groupé armé au chargement (deux temps réels, prouvés) ;
+> plancher du vidage aligné sur le tableau (purge MOINS) ; libellé supplément libre
+> réduit à « SUP » en cuisine (ticket + carte, jumeaux) ; suppléments fusionnés sur le
+> board ; filtre programmées sur le ticket cuisine ; TVA ticket groupée par taux ;
+> mur client 15 s + écoute OrderPaidAtCounter ; erreurs SQL masquées désormais
+> journalisées ; `insertRows` défensif.
+> **Sécurité** : kiosk-login sans couche globale ; login par compte contournable ;
+> forgot-password inondable + verrouillage permanent ; semeur borne inerte en staging ;
+> inscription publique en branch_id 0 (sentinelle admin).
+> **Site (b9e1f64)** : repli comptoir mensonger sur panne carte (P0 de l'incident
+> 26-28/09) ; coche Apple Pay sans preuve ; 409 d'idempotence insoluble ; retour 3DS
+> sans vérité de paiement ; 401 checkout ; sondage attente ; **9 fichiers servis
+> périmés sous `immutable` 1 an** (Galette Normale, « dès 100 pts ») ; pages légales
+> sous jetons d'août ; qrcode sans jeton ; SW figé ; llms.txt ; et l'outil de contrôle
+> lui-même (non récursif, règle qui se désarmait) → règle fondée sur l'historique,
+> prouvée mordante 10→0.
+>
+> **Suites** : PHPUnit **6123 passés / 4 échecs** — 3 bancs qui figeaient l'ANCIEN
+> comportement, alignés et reverts un par un ; 1 = dérive d'empreinte gelée
+> (ci-dessous). Caisse 403+, cuisine/KDS/ticket 321, auth/sécu 338, Vitest 536+27+18.
+>
+> ⚠️ **GitHub bloque les poussées : « You must verify your email address »**
+> (compte-niveau, github.com/settings/emails). Sans effet sur le déploiement (le VPS
+> tire avec sa propre clé de dépôt ; la release distante contenait déjà le lot). Les
+> derniers commits locaux (docs) ne sont PAS poussés tant que l'email n'est pas vérifié.
+>
+> **DÉCISIONS PROPRIÉTAIRE (gates §10/§12)** :
+> · `PaymentComponent.vue:942` (GELÉ) retire `discount` de la commande → toute remise
+>   manuelle restera impossible même flag ouvert ; LOCK requis pour le vrai correctif.
+> · `public/js/pos-wizard.js` (GELÉ) : 9 `innerHTML` sans échappement, chemin persistant
+>   via l'instruction restaurée → LOCK (le motif `textContent` existe déjà l.3866).
+> · OSS n'affiche pas ACCEPT+PAID (56 commandes invisibles du mur) — épinglé par test.
+> · Identifiants borne `kiosk-lecayenne/kiosk123` : rotation en prod à faire par le
+>   propriétaire (lecture SSH refusée) + révoquer les jetons vivants.
+> · Empreinte gelée `KioskWizardComponent.vue` (3 lignes de commentaire, c21628767) à
+>   contresigner. · Cron `schedule:run` absent (purge automatique inerte). · Journée de
+>   service 00 h vs 05 h à trancher. · Dine-in `show` public sans PII AVANT activation.
+> · Nom produit non scellé dans le snapshot (renommage réécrit l'historique).
+
 > **2026-09-29 — BACKEND DÉPLOYÉ ET VÉRIFIÉ. HEAD prod = `faa81531`.**
 >
 > `tools/deploy-lecayenne.sh 8d9fcd707` → OK : snapshot de base pris, rien à
