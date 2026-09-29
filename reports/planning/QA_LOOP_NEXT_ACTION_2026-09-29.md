@@ -67,3 +67,14 @@ gate de sécurité; sans cette configuration, la borne restera indisponible.
 - Les contrats locaux couvrent bien la reprise réseau, les races de file et les
   erreurs globales; ils ne peuvent toutefois pas rendre l’auto-login production
   disponible tant que le gate VPS n’est pas provisionné.
+
+## PHPUnit complet (29/09/2026)
+
+- Suite complète : **6 123 tests, 24 726 assertions**.
+- Résultat : **1 échec**, 36 tests ignorés et 6 incomplets.
+- L’unique échec est `FrozenZoneSha256BaselineSentinelTest` sur
+  `resources/js/components/frontend/kiosk/KioskWizardComponent.vue` : hash
+  attendu `fcbe3755…ee256ac`, hash actuel `f8ecb111…e06465`. Cette zone est
+  gelée; aucune modification ni mise à jour de baseline ne doit être faite sans
+  LOCK/gate contresigné. Le résultat ne révèle pas un nouvel échec fonctionnel
+  de prix ou de commande.
