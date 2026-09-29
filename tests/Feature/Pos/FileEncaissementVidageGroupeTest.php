@@ -120,23 +120,85 @@ class FileEncaissementVidageGroupeTest extends TestCase
         $this->assertSame(PaymentStatus::PENDING_COUNTER, (int) $voisine->payment_status);
     }
 
-    /** `dry_run` doit compter sans rien changer — c'est ce qui alimente la confirmation chiffrée. */
-    public function test_le_comptage_a_blanc_ne_change_rien(): void
+    /** Le comptage doit compter sans rien changer — il alimente la confirmation chiffrée. */
+    public function test_le_comptage_ne_change_rien(): void
     {
         [$operator, $branch] = $this->caissier();
         $this->commandeTelephoneEnAttente($branch, now()->subDays(2));
         $this->commandeTelephoneEnAttente($branch, now()->subDays(4));
 
         $reponse = $this->actingAs($operator, 'sanctum')
-            ->postJson('/api/admin/pos/counter-collect/cancel-stale', ['dry_run' => true]);
+            ->getJson('/api/admin/pos/counter-collect/stale-count');
 
         $reponse->assertOk();
         $this->assertSame(2, $reponse->json('count'));
         $this->assertSame(
             2,
             Order::where('payment_status', PaymentStatus::PENDING_COUNTER)->count(),
-            'Un comptage à blanc qui modifie quoi que ce soit est un piège.'
+            'Un comptage qui modifie quoi que ce soit est un piège.'
         );
+    }
+
+    /**
+     * Le comptage et l'annulation doivent désigner le MÊME ensemble. S'ils
+     * divergent, l'écran annonce un nombre et en annule un autre — la pire chose
+     * qu'un bouton de masse puisse faire.
+     */
+    public function test_le_comptage_annonce_exactement_ce_que_l_annulation_fait(): void
+    {
+        [$operator, $branch] = $this->caissier();
+        $this->commandeTelephoneEnAttente($branch, now()->subDays(2));
+        $this->commandeTelephoneEnAttente($branch, now()->subDays(4));
+        $this->commandeTelephoneEnAttente($branch, now());            // service en cours
+        $fiscalisee = $this->commandeTelephoneEnAttente($branch, now()->subDays(5));
+        $fiscalisee->forceFill(['fiscal_sequence_no' => 99])->saveQuietly();
+
+        $annonce = $this->actingAs($operator, 'sanctum')
+            ->getJson('/api/admin/pos/counter-collect/stale-count')
+            ->assertOk()
+            ->json('count');
+
+        $fait = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/counter-collect/cancel-stale')
+            ->assertOk()
+            ->json('canceled');
+
+        $this->assertSame(2, $annonce);
+        $this->assertSame($annonce, $fait, 'Annoncé ≠ fait : le bouton mentirait.');
+    }
+
+    /**
+     * L'ANNULATION est déclarée dans `config('idempotency.required_routes')` : sans
+     * l'en-tête, le middleware refuse. Ce test fige le contrat côté serveur — c'est
+     * exactement le défaut qui a fait échouer ma première version de la croix, que
+     * le contrôle navigateur n'avait pas vu (il armait le bouton sans confirmer).
+     */
+    public function test_l_annulation_par_commande_exige_une_cle_d_idempotence(): void
+    {
+        config(['idempotency.enabled' => true]);
+        [$operator, $branch] = $this->caissier();
+        $commande = $this->commandeTelephoneEnAttente($branch, now()->subDays(2));
+
+        $sansCle = $this->actingAs($operator, 'sanctum')
+            ->postJson("/api/admin/pos/counter-collect/{$commande->id}/cancel", [
+                'reason' => 'Client non venu',
+            ]);
+
+        $this->assertSame(
+            422,
+            $sansCle->status(),
+            "La route est déclarée à clé obligatoire : un écran qui n'envoie pas "
+            . "l'en-tête ne peut RIEN annuler. " . $sansCle->getContent()
+        );
+
+        $avecCle = $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', "enc-cancel-{$commande->id}")
+            ->postJson("/api/admin/pos/counter-collect/{$commande->id}/cancel", [
+                'reason' => 'Client non venu',
+            ]);
+
+        $this->assertContains($avecCle->status(), [200, 201], $avecCle->getContent());
+        $this->assertSame(OrderStatus::CANCELED, (int) $commande->refresh()->status);
     }
 
     /**

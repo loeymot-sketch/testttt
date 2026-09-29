@@ -334,8 +334,18 @@ export default {
             this.pendingCancelId = null;
             this.cancellingId = order.id;
 
+            // [HEAL 2026-09-29] `counter-collect/*/cancel` figure dans
+            // `config('idempotency.required_routes')` : SANS l'en-tête, le middleware
+            // répond 422 « Header X-Idempotency-Key requis » et la croix ne marche
+            // pas du tout. Défaut trouvé par la suite complète AVANT tout déploiement,
+            // pas par l'écran — le contrôle navigateur n'avait fait qu'ARMER la croix,
+            // jamais confirmer, donc il ne l'aurait pas vu.
+            // Clé STABLE par commande : un second clic ou un rejeu réseau rejoue la
+            // réponse mise en cache au lieu d'annuler une deuxième fois.
             axios.post(`admin/pos/counter-collect/${order.id}/cancel`, {
                 reason: 'Client non venu',
+            }, {
+                headers: { 'X-Idempotency-Key': `enc-cancel-${order.id}` },
             }).then(() => {
                 // Retrait immédiat de la carte : le caissier doit VOIR la file
                 // raccourcir. Le fetch qui suit fait foi.
@@ -356,7 +366,9 @@ export default {
          * faire, et à annoncer un chiffre exact avant d'agir.
          */
         refreshStaleCount() {
-            return axios.post('admin/pos/counter-collect/cancel-stale', { dry_run: true })
+            // GET : un comptage ne mute rien, il n'a donc pas à porter de clé
+            // d'idempotence (le POST d'annulation, lui, en exige une).
+            return axios.get('admin/pos/counter-collect/stale-count')
                 .then((res) => { this.staleCount = Number(res.data?.count ?? 0); })
                 .catch(() => { /* le bouton reste au repos ; jamais bloquant */ });
         },
@@ -377,7 +389,13 @@ export default {
             }
 
             this.purging = true;
-            axios.post('admin/pos/counter-collect/cancel-stale', {})
+            // Clé propre à CE lot : un rejeu réseau rejoue la même opération, mais un
+            // nettoyage lancé plus tard est bien une nouvelle opération (sinon le
+            // second resservirait la réponse du premier et ne nettoierait rien).
+            const cleLot = `enc-purge-${Date.now()}`;
+            axios.post('admin/pos/counter-collect/cancel-stale', {}, {
+                headers: { 'X-Idempotency-Key': cleLot },
+            })
                 .then(() => { this.staleCount = null; })
                 .catch(() => { this.fetchError = true; })
                 .finally(() => {

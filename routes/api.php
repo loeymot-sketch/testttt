@@ -1365,39 +1365,37 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
          * `dry_run` renvoie le compte SANS rien changer : l'interface s'en sert pour
          * annoncer un chiffre exact avant de demander confirmation.
          */
+        /**
+         * Comptage SEUL des commandes des journées passées. Route GET distincte, et
+         * c'est délibéré : le comptage ne mute rien, il n'a donc rien à faire derrière
+         * l'intergiciel d'idempotence — lequel EXIGE une clé sur les routes déclarées
+         * (`config/idempotency.php`) et renverrait 422 à un simple comptage. Une
+         * lecture est un GET ; la confondre avec l'écriture obligeait l'écran à forger
+         * une clé pour savoir combien de lignes il allait proposer d'annuler.
+         */
+        Route::get('/counter-collect/stale-count', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query((int) (auth()->user()?->branch_id ?? 0));
+
+            return response([
+                'status' => true,
+                'count' => $requete->count(),
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.stale-count');
         Route::post('/counter-collect/cancel-stale', function (\Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
             $validated = $request->validate([
-                'dry_run' => ['nullable', 'boolean'],
                 'reason' => ['nullable', 'string', 'max:255'],
             ]);
 
-            $tz = config('app.timezone');
-            $maintenant = \Carbon\Carbon::now($tz);
-            $plancher = $maintenant->copy()->startOfDay()->setTime(5, 0);
-            if ($maintenant->hour < 5) {
-                $plancher->subDay();
-            }
-
-            $requete = \App\Models\Order::query()
-                ->counterCollectQueue()
-                ->whereNull('fiscal_sequence_no')
-                ->where('order_datetime', '<', $plancher)
-                ->orderBy('created_at');
-
-            $branchId = (int) (auth()->user()?->branch_id ?? 0);
-            if ($branchId > 0) {
-                $requete->where('branch_id', $branchId);
-            }
-
-            if ($validated['dry_run'] ?? false) {
-                return response([
-                    'status' => true,
-                    'count' => $requete->count(),
-                    'floor' => $plancher->toIso8601String(),
-                ]);
-            }
+            // Même définition que le comptage (GET stale-count) — une seule source,
+            // sinon l'écran annonce un nombre et en annule un autre.
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query(
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
 
             $motif = $validated['reason'] ?? 'Client non venu — vidage de la file (journées passées)';
             $service = app(\App\Services\PaymentService::class);

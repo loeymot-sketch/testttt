@@ -96,6 +96,13 @@ return [
         // double cash-drawer-open, double order-status-change).
         'api/admin/pos/counter-collect/*/confirm',
         'api/admin/pos/counter-collect/*/cancel',
+        // [CAISSE 2026-09-29] Annulation GROUPÉE des commandes des journées passées.
+        // C'est l'écriture la plus lourde de cet écran : un rejeu réseau sur un
+        // second lot annulerait des commandes d'une AUTRE journée que celle que le
+        // caissier avait sous les yeux quand il a confirmé. La clé rend le rejeu
+        // inoffensif. (Le COMPTAGE est une route GET distincte, sans clé : une
+        // lecture n'a pas à en porter.)
+        'api/admin/pos/counter-collect/cancel-stale',
         'api/admin/pos/collect-kiosk-cash/*',
         // [SEC MISSION-12 2026-07-31] Sortie de stock (repas perso / perte) : décrémente le stock →
         // un rejeu réseau doit être idempotent (sinon double-décrément + double trace). La modale envoie
