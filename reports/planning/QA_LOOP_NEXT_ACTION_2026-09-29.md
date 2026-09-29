@@ -48,3 +48,12 @@
 La correction nécessite l’accès de déploiement au VPS et le secret/choix
 d’exploitation de la borne. Aucun correctif de code ne doit contourner cette
 gate de sécurité; sans cette configuration, la borne restera indisponible.
+
+## Recheck live complémentaire (29/09/2026)
+
+- Deux nouveaux onglets Chrome, avec et sans `machine_key=invalid-test`,
+  affichent le même écran d’indisponibilité; aucun payload auto-login n’est
+  injecté (`kioskAutoLogin: null`).
+- `POST /api/auth/kiosk-login` répond correctement `422` pour payload vide et
+  `400` pour des identifiants invalides : l’API est joignable et fail-closed,
+  mais la borne ne reçoit simplement aucun credential autorisé.
