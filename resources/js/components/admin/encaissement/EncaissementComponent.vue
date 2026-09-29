@@ -32,14 +32,19 @@
                         <button
                             v-if="staleCount === null || staleCount > 0"
                             class="db-btn py-2 enc-purge-btn"
-                            :class="staleCount === null ? 'enc-purge-btn--idle' : 'enc-purge-btn--armed'"
+                            :class="purgeArmed ? 'enc-purge-btn--armed' : 'enc-purge-btn--idle'"
                             :disabled="purging"
                             data-testid="enc-purge-stale"
+                            :data-armed="purgeArmed ? '1' : '0'"
                             @click.prevent="purgeStale"
                         >
+                            <!-- [AUDIT CAISSE 2026-09-29] L'état ARMÉ est porté par `purgeArmed`, pas par
+                                 « a-t-on déjà compté » : le rouge et le mot « Confirmer » n'apparaissent
+                                 qu'après le premier clic, et disparaissent après 4 s. -->
                             <span v-if="purging">Nettoyage…</span>
                             <span v-else-if="staleCount === null">Nettoyer les jours passés</span>
-                            <span v-else>Annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }} des jours passés ?</span>
+                            <span v-else-if="purgeArmed">Confirmer : annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }}</span>
+                            <span v-else>Annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }} des jours passés</span>
                         </button>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
                             <i class="lab lab-refresh-line lab-font-size-16"></i>
@@ -266,6 +271,8 @@ export default {
             cancellingId: null,      // requête en vol, pour ne pas double-annuler
             staleCount: null,        // null = pas encore compté ; 0 = rien à nettoyer
             purging: false,
+            purgeArmed: false,       // 1er clic = armé 4 s ; 2e clic = exécute
+            purgeArmTimer: null,
         };
     },
     mounted() {
