@@ -47,6 +47,60 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-29 — BACKEND DÉPLOYÉ ET VÉRIFIÉ. HEAD prod = `faa81531`.**
+>
+> `tools/deploy-lecayenne.sh 8d9fcd707` → OK : snapshot de base pris, rien à
+> migrer, triggers d'immuabilité **10/10**, chaîne NF525 « SWEEP COMPLETE —
+> CHAIN OK », `config:cache` volontairement sauté (piège fiscal), healthz vert,
+> bundles frais (gate hash-servi), CORS web OK, couverture des queues OK.
+>
+> **Vérifié indépendamment du script** : `8d9fcd707` prouvé ancêtre du HEAD
+> déployé ; `OrderItem::insertRows` présent dans le code déployé ; les deux
+> routes neuves répondent **401** en production (donc elles existent et sont
+> protégées) alors qu'une route inexistante renvoie 200 (page SPA) — le
+> contraste prouve la sonde discriminante.
+>
+> **Ce qui part** : (1) P0 caisse — un panier MIXTE (produit + supplément libre)
+> faisait échouer l'INSERT groupé des lignes (`all VALUES must have the same
+> number of terms`), donc AUCUNE commande créée, donc rien au ticket ni en
+> cuisine. (2) Croix d'annulation sans justificatif + nettoyage des journées
+> passées sur l'écran d'encaissement, avec garde fiscale
+> (`whereNull(fiscal_sequence_no)`) et plancher de journée de service.
+>
+> **Campagnes** : PHPUnit **6111 passés / 3 échecs** — 2 étaient les miens
+> (corrigés, reverts : 25 tests d'idempotence + 8 tests d'encaissement verts),
+> 1 est la dérive d'empreinte de zone gelée ci-dessous. Caisse **403 verts**.
+> Vitest **4567 verts**. E2E critique 21/22, E2E caisse 13/17 — **tous les
+> échecs E2E prouvés étrangers à ce lot** : 3 reproduits à l'identique sur
+> l'arbre principal (différentiel), 2 sont des pannes de harnais (commande de
+> nettoyage de fixtures, page fermée pendant une capture).
+>
+> ⚠️ **DÉRIVE DE ZONE GELÉE, NON CORRIGÉE — décision propriétaire requise.**
+> `FrozenZoneSha256BaselineSentinelTest` échoue sur
+> `KioskWizardComponent.vue`. Origine : commit `c21628767` (27/09, compte du
+> propriétaire) — **3 lignes de COMMENTAIRE** (reformatage d'annotation de lint
+> `owner gate` → `owner — date:`), **zéro ligne exécutable**, avec les LOCK
+> cités. Seule la mise à jour de `frozen-zone-sha256-baseline.json` a été
+> oubliée. La dérive est **déjà sur la branche de release et en production** :
+> ce déploiement ne l'aggrave pas. Je ne mets PAS à jour l'empreinte moi-même —
+> contresigner une zone gelée est une gate §10 propriétaire.
+>
+> ⚠️ **Le nettoyage automatique des commandes en attente ne tourne pas.**
+> `CleanupStalePendingKioskOrders` (voie téléphone, TTL 6 h) est planifié et
+> testé, mais **aucun cron n'appelle `schedule:run`** sur la machine : une
+> commande du 26/09 était encore dans la file le 29/09. Une ligne de cron rend
+> la purge vivante — c'est le correctif de fond, la croix n'est que le geste
+> manuel.
+>
+> ⚠️ **La file d'encaissement est plafonnée à 200, les plus ANCIENNES d'abord.**
+> Au-delà, ce sont les plus RÉCENTES qui disparaissent de l'écran : un client
+> qui vient payer devient invisible du caissier.
+>
+> 🔴 **Paiement en ligne : état non vérifié.** La route est derrière
+> `auth:sanctum` (sonde anonyme = 401 dans les deux cas) et les lectures en
+> production me sont refusées. Le réglage `/admin/settings/site` →
+> « Passerelle de paiement en ligne » reste à contrôler par le propriétaire.
+
 > **2026-09-28 (soir) — SITE VITRINE DÉPLOYÉ ET VÉRIFIÉ EN LIGNE.**
 > `main` du dépôt `Site-lecayenne` avancé en **avance rapide** `b7bc176 → 0fdf0bc`
 > (3 commits, aucune fusion), sur instruction explicite du propriétaire
