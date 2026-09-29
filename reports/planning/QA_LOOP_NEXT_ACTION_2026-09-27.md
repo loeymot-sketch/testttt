@@ -1530,3 +1530,12 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   exige Node 20+ (erreur runtime `Node.js 18.20.7`). Le même fichier relancé
   sous Node `v20.20.2` passe **5/5**. Conclusion : aucun échec fonctionnel
   confirmé; la commande CI doit imposer Node 20+ pour rendre le plein run vert.
+- **Test réel borne fraîche (29/09/2026, 02:29 CEST)** : une nouvelle session
+  Chrome sur `/kiosk/idle` est redirigée vers `/kiosk/login`; l’écran affiche
+  « Borne momentanément indisponible » et le bouton « Réessayer » reproduit le
+  même état. Le HTML public expose `kioskAutoLogin: null`. Le code confirme que
+  la garde de sécurité annule volontairement les identifiants hors IP de confiance
+  ou `machine_key`; la borne ne peut donc pas démarrer en mode public depuis le
+  VPS sans configuration d’exploitation (`KIOSK_AUTO_LOGIN_TRUSTED_IPS`/clé
+  machine). Ce n’est pas une page blanche, mais une indisponibilité bloquante
+  pour la borne réelle à corriger côté déploiement sécurisé.
