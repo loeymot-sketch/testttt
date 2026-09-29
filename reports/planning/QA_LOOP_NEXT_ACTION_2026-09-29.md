@@ -57,3 +57,13 @@ gate de sécurité; sans cette configuration, la borne restera indisponible.
 - `POST /api/auth/kiosk-login` répond correctement `422` pour payload vide et
   `400` pour des identifiants invalides : l’API est joignable et fail-closed,
   mais la borne ne reçoit simplement aucun credential autorisé.
+
+## Résilience idle/offline (29/09/2026)
+
+- 10 suites Vitest ciblées (`kioskAuthInterceptor`, erreurs globales, démarrage
+  clavier idle, warning idle, timeouts, référence offline, file offline,
+  migration, race de synchronisation et V2) : **64 tests, 0 échec** sous Node
+  `v20.20.2`.
+- Les contrats locaux couvrent bien la reprise réseau, les races de file et les
+  erreurs globales; ils ne peuvent toutefois pas rendre l’auto-login production
+  disponible tant que le gate VPS n’est pas provisionné.
