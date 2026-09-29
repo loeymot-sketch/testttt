@@ -42,6 +42,29 @@ class QueryExceptionLibrary
                 return trans('all.message.resource_already_used');
             }
 
+            // [DÉTAIL CACHÉ 2026-09-29] Cette branche MASQUAIT l'erreur SQL au client
+            // (correct) mais ne la journalisait NULLE PART (pas correct) — alors que la
+            // branche TECHNIQUES ci-dessous, elle, journalise avant de masquer.
+            //
+            // Constaté en reproduisant le geste du caissier : une base locale en retard
+            // de migration faisait échouer TOUTE commande avec supplément libre ; le
+            // caissier voyait « Une erreur de base de données s'est produite », et le
+            // journal ne contenait RIEN. Impossible de distinguer un schéma en retard,
+            // un INSERT multi-lignes hétérogène ou une contrainte violée — sur le chemin
+            // de l'argent, c'est une heure de diagnostic perdue à chaque incident.
+            //
+            // On journalise le SQLSTATE, le code pilote et le message pilote (« Column
+            // 'line_type' not found », « all VALUES must have the same number of terms »)
+            // — pas la requête liée, pour ne pas copier des données client dans le
+            // journal. Le message au client ne change pas.
+            Log::error('[erreur base de données masquée au client] ' . get_class($e), [
+                'sqlstate'   => $e->errorInfo[0] ?? null,
+                'code'       => $e->errorInfo[1] ?? null,
+                'pilote'     => isset($e->errorInfo[2]) ? mb_substr((string) $e->errorInfo[2], 0, 300) : null,
+                'fichier'    => $e->getFile(),
+                'ligne'      => $e->getLine(),
+            ]);
+
             return config('app.debug') ? $e->getMessage() : trans('all.message.database_error_message');
         }
 
