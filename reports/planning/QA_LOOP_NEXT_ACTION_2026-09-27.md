@@ -1580,6 +1580,16 @@ Deux permissions manquent pour aller jusqu'au bout — `git merge` sur la branch
 suivie par la production, et `ssh lecayenne`. Commandes exactes et vérifications
 post-déploiement : `QA_CORRECTIONS_2026-09-28.md` §7.
 
+- **Test réel borne fraîche (29/09/2026, 02:29 CEST)** : une nouvelle session
+  Chrome sur `/kiosk/idle` est redirigée vers `/kiosk/login`; l’écran affiche
+  « Borne momentanément indisponible » et le bouton « Réessayer » reproduit le
+  même état. Le HTML public expose `kioskAutoLogin: null`. Le code confirme que
+  la garde de sécurité annule volontairement les identifiants hors IP de confiance
+  ou `machine_key`; la borne ne peut donc pas démarrer en mode public depuis le
+  VPS sans configuration d’exploitation (`KIOSK_AUTO_LOGIN_TRUSTED_IPS`/clé
+  machine). Ce n’est pas une page blanche, mais une indisponibilité bloquante
+  pour la borne réelle à corriger côté déploiement sécurisé.
+
 - **Passe Vitest complète (28/09/2026, 19:13–19:17 CEST)** : sous Node 18,
   **554 fichiers / 4 497 tests passent**, 3 tests sont ignorés, mais les 5
   tests de `playwrightConfig.spec.js` échouent uniquement parce que Playwright
