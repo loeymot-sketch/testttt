@@ -6039,7 +6039,17 @@ export default {
 
                 let traced = false;
                 try {
-                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true });
+                    // [AUDIT CAISSE 2026-09-29 · P1] `cash-drawer/open` figure dans
+                    // config('idempotency.required_routes') : sans en-tête, 422 « Header
+                    // X-Idempotency-Key requis » → `traced` restait faux, toast rouge à
+                    // CHAQUE ouverture sans vente, et AUCUN CashMovement DRAWER_OPEN écrit —
+                    // le vecteur de détournement le plus direct d'une caisse n'était pas
+                    // journalisé, alors que le commentaire ci-dessus promettait l'inverse.
+                    // Clé FRAÎCHE par geste : chaque ouverture est un événement réel à tracer
+                    // (une clé fixe ferait rejouer la première trace au lieu d'en écrire une).
+                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true }, {
+                        headers: { 'X-Idempotency-Key': 'nosale-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) },
+                    });
                     traced = !!(data && (data.status === true || data.success === true));
                 } catch (_e) {
                     traced = false;

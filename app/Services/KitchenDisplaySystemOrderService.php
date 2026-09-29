@@ -1044,6 +1044,13 @@ class KitchenDisplaySystemOrderService
                     'item_addons' => $addons,
                     'instruction' => $instruction,
                     'allergens_hash' => $allergensHash,
+                    // [AUDIT AVAL 2026-09-29 · P0] Sans ces deux clés, TOUS les suppléments
+                    // libres partageaient la même empreinte (item_id NULL, variations/extras
+                    // vides, instruction NULL) : « Sauce blanche » ×1 et « Emballage » ×1
+                    // fusionnaient en UNE ligne « Sauce blanche ×2 » sur l'onglet par défaut,
+                    // et le second disparaissait de la cuisine.
+                    'line_type' => $item['line_type'] ?? 'catalog',
+                    'manual_label' => $item['manual_label'] ?? null,
                 ]);
             })->map(function ($groupedItems) {
                 $firstItem = $groupedItems->first();

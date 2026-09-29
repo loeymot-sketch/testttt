@@ -388,6 +388,22 @@ export default {
                 });
             }
 
+            // [AUDIT CAISSE 2026-09-29 · P1 — DÉFAUT DE MA PROPRE VERSION] Le comptage
+            // se fait au montage (`mounted` → refreshStaleCount), donc `staleCount` est
+            // déjà un nombre quand le caissier arrive : le bouton s'affichait armé
+            // d'emblée et le PREMIER clic annulait — alors que le docbloc et le CSS
+            // promettaient une confirmation en deux temps. Et l'annulation est
+            // irréversible (CANCELED + REFUNDED, résurrection interdite). Le premier
+            // clic ARME désormais pour 4 s, comme la croix ; seul le second exécute.
+            if (!this.purgeArmed) {
+                this.purgeArmed = true;
+                if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
+                this.purgeArmTimer = setTimeout(() => { this.purgeArmed = false; }, 4000);
+                return;
+            }
+            if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
+            this.purgeArmed = false;
+
             this.purging = true;
             // Clé propre à CE lot : un rejeu réseau rejoue la même opération, mais un
             // nettoyage lancé plus tard est bien une nouvelle opération (sinon le

@@ -412,6 +412,28 @@ final class OrderReceiptEscPosRenderer
             $qtyPrefix = $qty > 1 ? $qty.' x ' : '';
             $instruction = (string) ($oi->instruction ?? '');
 
+            // [AUDIT AVAL 2026-09-29 · P0] SUPPLÉMENT LIBRE : libellé COMPLET, jamais le moteur
+            // symbolique — et AVANT la branche menu (« Supplément — Formule du midi » y devenait
+            // « MENU »). `produitCode()` réduit un nom à ses 3 premières lettres significatives ;
+            // or tout supplément libre commence par « Supplément — … » (PricingService), donc
+            // le papier cuisine imprimait « SUP » pour « Supplément — Sauce blanche maison »
+            // comme pour « Supplément — Viande hachée en plus », et « Supplément — Tacos en
+            // plus » devenait « Tacos » : le cuisinier préparait un taco entier. Le ticket
+            // CLIENT, lui, imprimait déjà le libellé complet — c'est la cuisine qui le perdait.
+            // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche manual_supplement.
+            if ((string) ($oi->line_type ?? 'catalog') === \App\Models\OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT) {
+                $suppNote = $this->symbolic->cleanInstruction($instruction, $name, []);
+                $blocks[] = [
+                    'head' => $qtyPrefix.trim($name),
+                    'menu' => null,
+                    'supps' => [],
+                    'drinks' => [],
+                    'notes' => array_values(array_filter(array_map('trim', explode("\n", $suppNote)))),
+                ];
+
+                continue;
+            }
+
             if ($this->symbolic->isMenuItem($name)) {
                 // Item Menu/Formule = SKU séparé → ligne propre, claire et symbolique :
                 // « N x MENU : <sauce frites> », jamais le détail « Frites + Boisson » ni un prix.
@@ -834,7 +856,12 @@ final class OrderReceiptEscPosRenderer
             $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
             $name = (string) ($oi->tax_name ?? 'TVA');
             $type = (int) ($oi->tax_type ?? 0);
-            $key = $type.'|'.$rate.'|'.$name;
+            // [AUDIT AVAL 2026-09-29 · P1] Par (type, taux) — plus par NOM. Les lignes
+            // catalogue portent le nom de taxe du catalogue (« VAT » en base) et le
+            // supplément libre « TVA 10% » (config) : même taux, deux groupes, et le
+            // ticket imprimait DEUX lignes « TVA 10% : … » indiscernables (seul le taux
+            // est imprimé, ligne ~205). Un ticket fiscal français ventile par TAUX.
+            $key = $type.'|'.$rate;
             if (! isset($groups[$key])) {
                 $groups[$key] = ['name' => $name, 'rate' => $rate, 'ht' => 0.0, 'tax' => 0.0];
             }

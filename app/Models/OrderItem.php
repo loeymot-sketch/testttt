@@ -68,13 +68,32 @@ class OrderItem extends Model
             return false;
         }
 
-        foreach ($rows as $i => $row) {
-            // `+` n'écrase JAMAIS une clé présente : une ligne supplément garde
-            // son propre `line_type` / `manual_label`.
-            $rows[$i] = $row + [
-                'line_type' => self::LINE_TYPE_CATALOG,
-                'manual_label' => null,
-            ];
+        // [AUDIT AVAL 2026-09-29] Ne normaliser QUE si le lot contient réellement une
+        // ligne supplément. Sinon, un lot 100 % catalogue repart tel quel — sans
+        // `line_type` ni `manual_label` — exactement comme avant ce correctif.
+        // Pourquoi : normaliser toujours couplait TOUTE commande caisse à la
+        // migration `2026_09_15_000001` ; sur une base où elle manque (constaté sur
+        // la base de dev locale), la caisse ne prenait plus AUCUNE commande
+        // (« Unknown column 'line_type' »), supplément ou pas. Le correctif reste
+        // entier pour les paniers mixtes, et cesse d'être un point de défaillance
+        // pour les autres.
+        $contientUnSupplement = false;
+        foreach ($rows as $row) {
+            if ((string) ($row['line_type'] ?? self::LINE_TYPE_CATALOG) === self::LINE_TYPE_MANUAL_SUPPLEMENT) {
+                $contientUnSupplement = true;
+                break;
+            }
+        }
+
+        if ($contientUnSupplement) {
+            foreach ($rows as $i => $row) {
+                // `+` n'écrase JAMAIS une clé présente : une ligne supplément garde
+                // son propre `line_type` / `manual_label`.
+                $rows[$i] = $row + [
+                    'line_type' => self::LINE_TYPE_CATALOG,
+                    'manual_label' => null,
+                ];
+            }
         }
 
         $reference = array_keys($rows[array_key_first($rows)]);

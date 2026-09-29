@@ -132,6 +132,11 @@ class KitchenTicketQueueController extends Controller
             ->orderBy('created_at');
 
         KitchenReleaseRule::applyBoardReleaseFilter($query);
+        // [AUDIT AVAL 2026-09-29 · P1] Seul chemin sur six à ne PAS appliquer le filtre
+        // des commandes programmées : une commande téléphone prise à 18 h pour 21 h
+        // sortait sur papier à 18 h 00, puis JAMAIS à l'heure (hors de la fenêtre
+        // `created_at` à 20 h 40). Même SSOT que le board et le mur client.
+        KitchenReleaseRule::applyScheduledBoardFilter($query, now());
 
         $candidates = $query->limit(self::MAX_PAR_CYCLE)->get();
 

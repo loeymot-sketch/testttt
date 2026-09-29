@@ -126,7 +126,15 @@ class OrderQuoteService
         $hasClientQuote = $request->filled('quote_token') || $request->filled('quote_signature');
         if ((in_array($surface, [self::SURFACE_POS, self::SURFACE_KIOSK], true) || $hasClientQuote)
             && (! $request->filled('quote_token') || ! $request->filled('quote_signature'))) {
-            throw new HttpException(401, 'Order quote token and signature are required together.');
+            // [AUDIT CAISSE 2026-09-29 · P0] 409 et non 401 : un refus MÉTIER du devis
+            // (absent, invalide, signature ou intention divergente) n'est pas un défaut
+            // d'authentification. Or les deux intercepteurs axios (pos-app.js, app.js)
+            // traitent TOUT 401 comme « session expirée » → déconnexion et /login en
+            // pleine vente. Reproduit par l'écran le 2026-09-29 : remise appliquée →
+            // « intent mismatch » 401 → caissier éjecté, zéro commande. Le 410 de
+            // l'expiration reste distinct. `Unauthenticated` (401) plus bas est, lui,
+            // un vrai défaut d'authentification et ne change pas.
+            throw new HttpException(409, 'Order quote token and signature are required together.');
         }
 
         $quote = $this->quote($request, $surface, $orderId);
@@ -528,6 +536,22 @@ class OrderQuoteService
             return;
         }
 
+        // [AUDIT CAISSE 2026-09-29 · P0/P1-7] Le coupe-circuit V1 des remises manuelles
+        // (`pos.manual_discount_enabled`, défaut false — correction fiscale TVA/HT en
+        // attente dans les zones gelées) ne vivait qu'AU COMMIT (OrderService::
+        // assertDiscretionaryDiscountAllowed). Le devis acceptait donc la remise et
+        // annonçait le total remisé ; le refus tombait après l'encaissement. Pire : la
+        // commande partait SANS `discount` (PaymentComponent le retire, zone gelée),
+        // donc le commit ne voyait jamais ce coupe-circuit — il tombait sur un
+        // « intent mismatch » 401 qui DÉCONNECTAIT le caissier (reproduit par l'écran
+        // le 2026-09-29). Refuser ici, au devis, c'est refuser AVANT la modale de
+        // paiement, avec le message prévu, et avant qu'un centime ne change de main.
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw ValidationException::withMessages([
+                'discount' => 'Les remises manuelles sont désactivées sur cette caisse (correction fiscale TVA/HT en attente). Retire la remise pour encaisser.',
+            ]);
+        }
+
         if ($pricing->subtotal <= 0.0 || $discount > $pricing->subtotal) {
             throw ValidationException::withMessages([
                 'discount' => 'Remise impossible : le sous-total n\'est pas encore calculé. Relance l\'encaissement.',
@@ -567,7 +591,7 @@ class OrderQuoteService
             ->first();
 
         if (! $quote || (int) $quote->branch_id !== $branchId) {
-            throw new HttpException(401, 'Invalid order quote.');
+            throw new HttpException(409, 'Invalid order quote.');
         }
 
         if ($quote->isExpired()) {
@@ -576,11 +600,11 @@ class OrderQuoteService
 
         $requestSignature = (string) $request->input('quote_signature', '');
         if ($requestSignature === '' || ! hash_equals($quote->hmac_signature, $requestSignature)) {
-            throw new HttpException(401, 'Order quote signature mismatch.');
+            throw new HttpException(409, 'Order quote signature mismatch.');
         }
 
         if (! hash_equals($quote->intent_hash, $intentHash) || ! hash_equals($quote->hmac_signature, $signature)) {
-            throw new HttpException(401, 'Order quote intent mismatch.');
+            throw new HttpException(409, 'Order quote intent mismatch.');
         }
 
         return $quote;

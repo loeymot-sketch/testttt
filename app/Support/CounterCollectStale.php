@@ -43,7 +43,18 @@ final class CounterCollectStale
     {
         $now ??= Carbon::now(config('app.timezone'));
 
-        $plancher = $now->copy()->startOfDay()->setTime(self::SERVICE_DAY_START_HOUR, 0);
+        // [AUDIT CAISSE 2026-09-29 · P1] Première version : plancher à 05 h 00, copié sur
+        // le panneau « En souffrance ». Mais le TABLEAU de suivi (PosOrderController::
+        // fenetreDuService) fait démarrer le service à 00 h 00 (recul d'un jour avant
+        // 5 h) : à 06 h, une commande téléphone de 01 h 30 était donc affichée comme
+        // « du service en cours » ET incluse dans le vidage groupé — un clic l'annulait
+        // alors que le client peut arriver. Vérifié en base : 1 921 commandes entre
+        // 00 h et 05 h, dont 13 en attente d'encaissement. On aligne le vidage sur la
+        // définition la MOINS destructrice, celle du tableau : minuit, avec le même
+        // recul avant 5 h. Le vidage ne peut plus toucher ce que le tableau montre
+        // comme le service en cours. (Trancher 00 h vs 05 h partout est une décision
+        // propriétaire ; ici on choisit de purger MOINS, jamais plus.)
+        $plancher = $now->copy()->startOfDay();
         if ($now->hour < self::SERVICE_DAY_START_HOUR) {
             $plancher->subDay();
         }

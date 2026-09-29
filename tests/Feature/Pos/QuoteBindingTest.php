@@ -32,7 +32,7 @@ class QuoteBindingTest extends TestCase
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $payload)
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
 
         $this->assertSame(0, Order::count());
     }
@@ -141,7 +141,7 @@ class QuoteBindingTest extends TestCase
                 'total' => $quote['total_ttc'],
                 'pos_received_amount' => $quote['total_ttc'],
             ]))
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
 
         $this->assertSame(0, Order::count());
         $this->assertNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));

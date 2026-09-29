@@ -192,7 +192,8 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
         Route::post('/', [ForgotPasswordController::class, 'forgotPassword'])
-            ->middleware('throttle:3,60');
+            // [AUDIT SÉCURITÉ 2026-09-29] limiteur nommé : par adresse + global (voir RouteServiceProvider).
+            ->middleware('throttle:forgot-password');
         Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
             ->middleware('throttle:5,1');
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
