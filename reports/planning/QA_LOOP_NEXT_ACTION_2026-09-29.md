@@ -78,3 +78,11 @@ gate de sécurité; sans cette configuration, la borne restera indisponible.
   gelée; aucune modification ni mise à jour de baseline ne doit être faite sans
   LOCK/gate contresigné. Le résultat ne révèle pas un nouvel échec fonctionnel
   de prix ou de commande.
+
+## Garde-fous release (29/09/2026)
+
+- `pos:lint:pricing` : **OK**, 86 fichiers analysés; avertissement connu
+  `signoff-pending` jusqu’au 27/10/2026.
+- `pos:lint:status` : **OK**, 38 fichiers analysés.
+- `perf:bundle-check` : **OK**, bundles kiosk/admin dans leurs budgets.
+- `composer validate --strict --no-check-publish` : **OK**.
