@@ -47,6 +47,24 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-30 — BORNE : COQUE SOMBRE + 18 VISUELS RECOMPOSÉS SUR LE DÉCOR LE CAYENNE.**
+> Owner : « la page toute blanche fait bizarre… la barre latérale au noir, ça donne plus de
+> classe » + « les produits sans arrière-plan, rajoute ce fond-là comme le sandwich, à part les
+> boissons ». Fait : (1) `KioskCategoriesComponent.vue` — bloc CSS scoped : fond de page
+> #141414, bandeau/barre latérale/barre du bas #1A1A1A, cartes catégorie #242424, texte blanc ;
+> cartes PRODUIT toujours blanches ; aucun token global `--kiosk-*` touché, mode dark toujours
+> désactivé. (2) 18 PNG de `public/images/menu/` composés sur le décor 1536×1024 (script
+> Python PIL, ombre portée, alpha intérieur durci) + vignettes WebP régénérées
+> (`images:generate-pos-thumbs`). Boissons volontairement laissées en détouré sur blanc.
+> (3) `config/menu_images.php` : slug `cheddar` manquant → le supplément affichait l'icône
+> par défaut. **NON FAIT, à refaire à la source** : raclette, fromage (emmental), champignons,
+> boursin — leurs détourés ont des TROUS semi-transparents intérieurs (invisibles sur blanc,
+> décor visible au travers) ; 3 tentatives de réparation alpha (durcissement, dé-mattage vert,
+> remplissage blanc) toutes rejetées visuellement. Tarte Daim : fin liseré vert de matte sur
+> la croûte, mineur. Preuves : PHPUnit images 17/17, Vitest catalogue 26/26, zone gelée diff 0,
+> captures Playwright lues (Sandwichs, Burgers, Desserts, Boissons) sur :8766 arbre principal.
+> Les 4 sources originales sont dans git (aucun fichier supprimé), pas de push.
+
 > **2026-09-19 — DOUBLE COMPTE MÊME E-MAIL : ROOT CAUSE EXACTE TROUVÉE, CORRIGÉE, DÉPLOYÉE.**
 >
 > Propriétaire, verbatim : « je trouve pas de profil sur le site et je peux créer 2 compte avec
@@ -4312,6 +4330,10 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**2026-09-30 — Borne : coque sombre du catalogue + 18 visuels produits recomposés sur le décor
+Le Cayenne + slug `cheddar` ajouté à `config/menu_images.php`.** 4 détourés troués à la source
+(raclette, fromage, champignons, boursin) laissés tels quels — voir §2.
 
 **GOAL_CONFORT_MAX_ET_BASE_PROUVEE — 7/7 vagues fermées 2026-08-15** (commits `bf94a73e1`→
 `e8923b10a`→`0835adbb0`→`ee9803008`→`b04a274de`→`a64484c18`→`1e0965ed2`→`421b34032`→
