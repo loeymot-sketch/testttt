@@ -47,6 +47,35 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-30 (après-midi) — GOAL ACTIF : `plans/GOAL_STORES_FINITION_APP_2026-09-30.md`**
+> (finition de l'application pour l'App Store et Google Play, E2E complet, 8 vagues, 10 gates).
+> **Vague en cours : W0** (pré-vol, gates longs, arbitrages, doc, émulateur).
+>
+> **Fait établi par ancrage** : l'application des stores = le site `lecayenne.fr` empaqueté par
+> Capacitor 8 (`Site lecayenne/app/`, `fr.lecayenne.app`) — `testttt/mobile/` est un prototype
+> hors chemin ; CLAUDE.md / CONSTITUTION / SYSTEM_MAP corrigés (commit de ce bloc).
+> Paquet `app/www` en retard de 27 jours sur le site (31+ fichiers) ; pont natif câblé sans
+> appelant (Apple 4.2) ; suppression de compte refusée avec commande ouverte (Apple 5.1.1(v)) ;
+> aucune signature Android ; pas de version minimale ; backend prêt en prod (routes, CORS
+> `https://localhost`, certificat → 21/11/2026) ; `verify-app-behaviour` 13/13.
+>
+> **Pré-vol E2E 10/10** : serveurs DÉTACHÉS `:8000` (arbre qa), `:8899` (site), `:6001` (soketi)
+> — lanceur `~/.claude/jobs/48fdb176/tmp/lancer-serveurs-locaux.sh` ; 0 migration en attente ;
+> workers 1 ; aides `tests/e2e/helpers/` ; `reports/test-e2e/stores-finition-2026-09-30/`.
+>
+> **Déploiement backend du lot QA (fusion `5a7c57e9a` = P0-01 + santé impression + borne +
+> SAGA)** : bundle sur le VPS, gardes pré-validées, **lancement réservé au propriétaire**
+> (classificateur) : `! bash ~/.claude/jobs/48fdb176/tmp/lancer-deploy-direct.sh`. GitHub
+> refuse toujours les poussées du compte (« verify your email », SSH et HTTPS, 2 dépôts).
+>
+> **Arbitrages posés au propriétaire (G8), défauts appliqués en attendant** : « bientôt »
+> réseaux → retirer ; paiement app = comptoir ; notification locale + haptique = oui ;
+> suppression après commande comptoir non commencée = autorisée (annulation puis effacement) ;
+> commandes d'examen `TEST-` auto-annulées H+2.
+>
+> **Suite complète** : PHPUnit 6 138 / 1 échec (dérive gelée `KioskWizardComponent.vue` à
+> contresigner) ; Vitest 4 596 verts sur la fusion. Zéro ligne de zone gelée touchée.
+
 > **2026-09-30 — DEUX RAPPORTS TRAITÉS : 3 corrigés (prouvés), 2 réfutés (prouvés).**
 > Voir `reports/planning/QA_CORRECTIONS_2026-09-30.md`.
 > Périmètre : `RAPPORT_DEV_CAISSE_2026-09-24` (8 P0) + `QA_LOOP_NEXT_ACTION_2026-09-29`.

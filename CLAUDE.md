@@ -92,7 +92,7 @@ correctness, coherence, reliability, and quality**.
 ### Single Source of Truth (SSOT) — menu data
 - **DB items table** = source officielle des produits (45 items V1 Le Cayenne)
 - **`config/menu.php`** = config menu structure si modifié post-reset
-- **`mobile/data/menu.js`** = mirror canonical mobile standalone
+- ~~`mobile/data/menu.js`~~ = miroir du prototype `mobile/`, hors chemin (2026-09-30)
 - ⚠️ **`/Users/1millnonstop/Downloads/web/` EST UNE COPIE PÉRIMÉE — NE PAS L'UTILISER.**
   Corrigé le 2026-09-06 : figée au 12 juillet, sans dépôt distant, `funnel.jsx` 46 Ko.
   Le site RÉELLEMENT DÉPLOYÉ est **`/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`**
@@ -106,10 +106,20 @@ correctness, coherence, reliability, and quality**.
 
 ### Codebases (3 séparés, mandats distincts owner)
 - **Backend testttt** (ici) = V1 LOCAL Le Cayenne, single restaurant FR
-- **Mobile RN** (`mobile/`) = STANDALONE separated, NO API wireup V1 (owner mandate)
-- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = STANDALONE separated, NO API wireup V1
+- **Application des stores (Apple / Google)** = le site `lecayenne.fr` **empaqueté par
+  Capacitor 8** dans `/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/app/`
+  (`fr.lecayenne.app`, procédure `app/PUBLICATION.md`, plan
+  `plans/GOAL_STORES_FINITION_APP_2026-09-30.md`). **Câblée au backend testttt en production**
+  (routes `guest-signup/email-login`, `social/*`, `delete-account`, CORS `https://localhost`).
+  Son paquet `app/www` se périme à chaque correctif du site : `npm run check:www` avant tout build.
+- ⛔ **`mobile/` N'EST PAS l'application** — corrigé le 2026-09-30 après ancrage : prototype
+  navigateur de mai 2026 (React UMD + Babel à la volée, données locales, `api/client.js` jamais
+  branché, ni `package.json` ni `ios/`/`android/`). Ce document l'appelait « Mobile RN,
+  standalone, NO API wireup » : c'était faux. Hors chemin store ; ne pas y faire cibler un audit.
+- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = copie PÉRIMÉE (cf. ci-dessus), jamais.
 
-⛔ **JAMAIS wire mobile/web aux APIs du backend testttt** sauf demande explicite owner. Composer_profile hardcoded mirror = pattern accepté pour future wireup mécanique.
+⛔ **JAMAIS wire le prototype `mobile/` aux APIs du backend testttt.** Le site (et donc l'application
+des stores) **est** câblé au backend : c'est le seul client mobile réel.
 
 ### Design palette mandate
 - **Kiosk + POS + Admin (backend testttt)** : palette Cayenne brand

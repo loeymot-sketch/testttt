@@ -35,7 +35,7 @@ Détail des fichiers possédés (file:line) → **`SYSTEM_MAP.md`**. Voies **dis
 1. **BORNE (kiosk)** — commande client libre-service. Bundles `kiosk-*`. Wizard kiosk auditable.
 2. **CAISSE (POS)** — terminal principal : paiement, encaissement, tiroir, fiscal. Bundle `pos-shell` + wizard POS Vanilla JS (frozen strict).
 3. **KDS + OSS** — écran cuisine (bump/recall) + écran statut client. Bundles `admin-kds` / `admin-oss`.
-4. **WEB + APP (client, standalone)** — site `/Users/1millnonstop/Downloads/web` + mobile `mobile/` (standalone, **NO API wireup V1**) + storefront client servi par ce backend (`resources/js/components/frontend/{home,menu,account,checkout,...}` non-kiosk).
+4. **WEB + APP (client)** — site `lecayenne.fr` (dépôt `/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`, déployé par push `main` → Vercel) **= l'application des stores**, empaquetée par Capacitor 8 dans son dossier `app/` (`fr.lecayenne.app`), câblée au backend de ce dépôt en production. `testttt/mobile/` = prototype navigateur hors chemin (corrigé 2026-09-30). Storefront client servi par ce backend (`resources/js/components/frontend/{home,menu,account,checkout,...}` non-kiosk).
 5. **CENTRAL** — produits/catégories, dashboard, historique, réglages, utilisateurs, rapports. Bundles `admin-shell` / `admin-reports`.
 
 ## 5. ZONES PARTAGÉES (transverses — lock + gate, JAMAIS en parallèle, jamais par un agent-système seul)
