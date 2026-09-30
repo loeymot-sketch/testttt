@@ -388,6 +388,10 @@ import {
     normalizeVariationEntries,
 } from "../../../helpers/posNormalizeIds";
 import { extractCashierNote } from "../../../helpers/posWizardInstruction";
+// [P0-01 2026-09-30] Id sous lequel l'assistant de caisse AFFICHE une viande (les ids
+// diffèrent par attribut pour un même nom ; le wizard dédoublonne par nom). Voir l'en-tête
+// du helper pour la mesure et la cause racine.
+import { idViandeCanonique } from "../../../helpers/posViandeCanonique";
 // [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Un produit sans aucune option n'a rien
 // à demander : il rejoint le panier en un seul appui. Voir helpers/posQuickAdd.js.
 import { itemHasNoChoices } from "../../../helpers/posQuickAdd";
@@ -1366,6 +1370,24 @@ export default {
             }
         },
         /**
+         * [P0-01 2026-09-30] Id CANONIQUE d'une viande : celui du PREMIER attribut viande
+         * qui porte ce nom.
+         *
+         * Le wizard (zone gelée) construit ses tuiles en dédoublonnant les variations par
+         * nom sur l'ensemble des attributs « Viande N », et ne conserve que l'id rencontré
+         * en premier. C'est sous CET id qu'il lit le compte d'une viande. Toute restauration
+         * qui emploie l'id d'un autre attribut désigne la bonne viande pour la base mais
+         * une tuile inexistante pour l'écran — et disparaît donc en silence.
+         *
+         * On reproduit ici, à l'identique, l'ordre de déduplication du wizard. Repli sur
+         * l'id d'origine si aucun attribut ne correspond : mieux vaut l'ancien comportement
+         * qu'une clé inventée.
+         */
+        /** Relais de test vers le helper pur `posViandeCanonique` (voir son en-tête). */
+        idViandeCanonique: function (item, nomViande, idParDefaut) {
+            return idViandeCanonique(item, nomViande, idParDefaut);
+        },
+        /**
          * [EDIT-RESTORE] Reconstruit les selections wizard à partir d'une ligne panier
          * pour pré-remplir le wizard lors de l'édition.
          */
@@ -1463,7 +1485,14 @@ export default {
                         if (viandeAttr && item.variations && item.variations[viandeAttr.id]) {
                             const viandeVar = item.variations[viandeAttr.id].find(v => v.name === varName);
                             if (viandeVar) {
-                                const key = 'v_' + viandeVar.id;
+                                // [P0-01 · RAPPORT_DEV_CAISSE_2026-09-24 — reproduit par l'écran 2026-09-30]
+                                // Les ids de variation diffèrent PAR ATTRIBUT pour un même nom de
+                                // viande, alors que les tuiles du wizard (zone gelée) sont
+                                // dédoublonnées par nom sur le premier attribut : restaurer l'id
+                                // d'un attribut secondaire désignait une tuile inexistante et la
+                                // viande disparaissait de l'écran, en silence. Mesure, cause racine
+                                // et remède : helpers/posViandeCanonique.js.
+                                const key = 'v_' + idViandeCanonique(item, viandeVar.name, viandeVar.id);
                                 restore.viandes[key] = (restore.viandes[key] || 0) + normalizeQuantity(variationEntry.quantity, 1);
                             }
                         }

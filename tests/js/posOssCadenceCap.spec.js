@@ -151,7 +151,11 @@ describe('OssSyncService cadence cap (Wave 3c KDS-ADV3C-08 P1)', () => {
         });
         const svc = new OssSyncService();
         const cfg = svc._runtimeConfig();
-        expect(cfg.intervalMsWhenConnected).toBe(60_000);
+        // [AUDIT AVAL 2026-09-29] Défaut connecté 60 s → 15 s : « connecté » ne veut pas
+        // dire « les événements arrivent » (le KDS a été resserré pour cette raison exacte),
+        // et le mur authentifié n'affiche aucune bannière (suppress-transient). L'invariant
+        // de ce banc — « une valeur illisible retombe sur le DÉFAUT » — est inchangé.
+        expect(cfg.intervalMsWhenConnected).toBe(15_000);
         expect(cfg.intervalMsWhenDisconnected).toBe(2_000);
     });
 });
