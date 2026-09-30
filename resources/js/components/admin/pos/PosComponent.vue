@@ -376,6 +376,33 @@
                             <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
                         </PosV5Button>
                         <!--
+                          [AFFICHEUR-CLIENT 2026-09-30] Afficheur client SAGA (2×20) : le total
+                          du panier s'y affiche à chaque ajout. Un clic l'appaire une fois ;
+                          Chrome s'en souvient, la caisse se reconnecte seule ensuite.
+                          Masqué si le navigateur n'a pas Web Serial.
+                        -->
+                        <PosV5Button
+                            v-if="customerDisplayState.status !== 'unsupported'"
+                            variant="ghost"
+                            size="md"
+                            data-testid="pos-customer-display-connect"
+                            :tone="customerDisplayState.status === 'connected' ? 'ready' : 'neutral'"
+                            :loading="customerDisplayState.status === 'connecting'"
+                            :title="customerDisplayState.status === 'connected'
+                                ? 'Afficheur client branché : le total du panier s\'y affiche. Cliquer pour changer de port.'
+                                : (customerDisplayState.error || 'Brancher l\'afficheur client (total du panier face au client)')"
+                            :aria-label="customerDisplayState.status === 'connected' ? 'Afficheur client branché' : 'Brancher l\'afficheur client'"
+                            @click="connectCustomerDisplay"
+                        >
+                            <template #icon>📟</template>
+                            <span class="hidden lg:inline">Afficheur</span>
+                            <span
+                                v-if="customerDisplayState.status === 'error'"
+                                class="pos-v4-cash-stale"
+                                aria-hidden="true"
+                            >!</span>
+                        </PosV5Button>
+                        <!--
                           [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
                           gestion de session caisse (fond de caisse, mouvements, clôture).
                           Variant ghost + tone "ready" quand session active = halo subtil
@@ -2468,6 +2495,7 @@ import { applyCaisseZoom, clearCaisseZoom, resolveCaisseZoom } from "../../../he
 // que `menu_extras` n'expose pas. Voir helpers/posCartCompactDisplay.js.
 import { compactCompositionSegments, compactBundledExtras, compactBundledName } from "../../../helpers/posCartCompactDisplay";
 import VoiceOrderAssistantPanel from "./VoiceOrderAssistantPanel.vue";
+import { customerDisplay } from "../../../helpers/posCustomerDisplay";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2681,6 +2709,8 @@ export default {
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
             noSaleBusy: false,
+            // [AFFICHEUR-CLIENT 2026-09-30] État du port série de l'afficheur SAGA (Web Serial).
+            customerDisplayState: customerDisplay().getState(),
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
             // CTA state. `currentLoyaltyOrder` is the latest order object
             // captured from the `order:confirmed` event (PaymentComponent →
@@ -3503,6 +3533,12 @@ export default {
         if (this._cdTimer) {
             clearTimeout(this._cdTimer);
         }
+        // [AFFICHEUR-CLIENT 2026-09-30] Le port reste ouvert (instance unique) ; seul
+        // l'abonnement de ce composant est retiré.
+        if (this._cdUnsubscribe) {
+            this._cdUnsubscribe();
+            this._cdUnsubscribe = null;
+        }
         // [UX-RESET-06 2026-07-22] Stoppe le timer de confirmation « Annuler ».
         if (this._resetConfirmTimer) {
             clearTimeout(this._resetConfirmTimer);
@@ -3601,7 +3637,14 @@ export default {
         // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
         // [CUSTOMER-DISPLAY 2026-06-28] Écran client en veille au démarrage (accueil).
-        this.pushCustomerDisplay(this.grandTotal);
+        // [AFFICHEUR-CLIENT 2026-09-30] Reprend d'abord, sans geste, le port série déjà
+        // autorisé dans ce Chrome, puis affiche le total courant (ou l'accueil).
+        this._cdUnsubscribe = customerDisplay().onChange((s) => {
+            this.customerDisplayState = s;
+        });
+        customerDisplay().autoConnect().finally(() => {
+            this.pushCustomerDisplay(this.grandTotal);
+        });
         if (this.voiceAssistantMode) {
             this.scheduleVoiceOrderLinkRetry(1800);
         }
@@ -3964,9 +4007,32 @@ export default {
             }
             this._cdTimer = setTimeout(() => {
                 const t = Number(total) || 0;
+                // [AFFICHEUR-CLIENT 2026-09-30] Le serveur (cloud Linux) n'atteint pas l'USB
+                // du PC caisse : c'est ce Chrome qui écrit sur le port série de la SAGA.
+                // Le POST serveur ne reste qu'en secours (installation Windows mono-poste),
+                // et seulement si le port n'est pas déjà tenu ici — sinon conflit « port occupé ».
+                const display = customerDisplay();
+                display.setWelcome(this.setting?.company_name || '', 'Soyez le bienvenu !');
+                if (display.isConnected()) {
+                    display.showTotal(t);
+                    return;
+                }
                 const payload = t > 0 ? { mode: 'total', total: t } : { mode: 'welcome' };
                 axios.post('admin/pos/customer-display', payload).catch(() => {});
             }, 350);
+        },
+        /**
+         * [AFFICHEUR-CLIENT 2026-09-30] Clic « Afficheur » : appaire le port série de la SAGA.
+         * Chrome n'autorise le choix d'un port que sur un geste ; ensuite il s'en souvient et
+         * la caisse se reconnecte seule à chaque ouverture (autoConnect au montage).
+         */
+        async connectCustomerDisplay() {
+            const display = customerDisplay();
+            display.setWelcome(this.setting?.company_name || '', 'Soyez le bienvenu !');
+            const ok = await display.connect();
+            if (ok) {
+                display.showTotal(this.grandTotal);
+            }
         },
         // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
         /**
