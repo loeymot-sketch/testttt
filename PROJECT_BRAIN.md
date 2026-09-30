@@ -47,6 +47,67 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-09-30 — DEUX RAPPORTS TRAITÉS : 3 corrigés (prouvés), 2 réfutés (prouvés).**
+> Voir `reports/planning/QA_CORRECTIONS_2026-09-30.md`.
+> Périmètre : `RAPPORT_DEV_CAISSE_2026-09-24` (8 P0) + `QA_LOOP_NEXT_ACTION_2026-09-29`.
+>
+> **Suite complète : 6 138 passés / 1 échec** — l'unique échec est la dérive
+> d'empreinte gelée `KioskWizardComponent.vue` (3 lignes de COMMENTAIRE, commit
+> `c21628767` du 27/09, **déjà en production**), qui attend une contresignature
+> propriétaire. Les 3 échecs de la veille (bancs figeant l'ancien comportement) sont
+> alignés et reverts. Vitest **4 583 verts**. **Zéro ligne de zone gelée touchée**
+> (diff des 15 fichiers §7 depuis `96aa53a42` : vide).
+>
+> **P0-01 — le risque n°1 du rapport caisse, REPRODUIT PUIS CORRIGÉ.** « Modifier »
+> sur un Tacos XL à 3 viandes n'en rechargeait qu'UNE, tout en affichant « 3/3
+> incluses ». Le correctif du 26/09 (`c3dafb064`) avait traité une AUTRE cause ; le
+> défaut restait. Cause racine prouvée en base : le backend donne un id de variation
+> DIFFÉRENT par attribut pour le même nom (Mexicanos = 777/784/791), alors que le
+> wizard (GELÉ) dédoublonne ses tuiles PAR NOM et ne connaît que 777/778/779 — deux
+> clés sur trois ne désignaient aucune tuile. Correctif hors zone gelée :
+> `helpers/posViandeCanonique.js`. Banc navigateur **3 → 1 avant, 3 → 3 après**.
+> Note : ma 1ʳᵉ version utilisait `this.` et cassait 3 bancs —
+> `buildWizardRestorePayload` est appelée NON LIÉE (fonction pure par conception).
+>
+> **P0-07/P0-08 — l'écran de santé caisse était aveugle aux imprimantes** (zéro
+> occurrence de `printer` dans le contrôleur) : « Tout va bien » avec la table vide.
+> Contrôle `impression` ajouté, plafonné à l'ambre (l'écran cuisine reste la voie de
+> secours), `unknown` si le contrôle échoue. Le TPE simulé n'est PAS signalé : état V1
+> assumé et documenté (§3bis).
+>
+> **Borne — un refus d'auto-login ne laissait AUCUNE trace.** Le garde est correct et
+> n'a pas été touché. `KioskAutoLoginGate::motifDeRefus()` nomme la première condition
+> manquante, journalisée 1×/min, SANS jamais laisser fuir le secret, le mot de passe
+> machine ni l'adresse (test dédié). Vérifié en production : `/kiosk/idle` → 200,
+> `kioskAutoLogin: null`.
+>
+> **RÉFUTÉS avec preuve** : P0-06 (« Ventes du jour » compte le chiffre RÉALISÉ,
+> `payment_status = PAID` ; la supervision montre les commandes EN COURS — la vraie
+> divergence entre tuiles, 104,90 € mesurés, avait été corrigée le 29/08) ; P0-02
+> (mêmes 5 commandes décrites deux fois : la file d'encaissement n'a volontairement
+> aucun filtre de journée). P0-03/P0-04 = configuration de déploiement, le repli KDS
+> est prévu et le socket déjà surveillé.
+>
+> ⚠️ **GitHub bloque TOUJOURS les poussées** : « You must verify your email address »
+> (github.com/settings/emails). Les commits du 30/09 (`4eb8a4821`, `63042000e`,
+> `c3b31290f`, `589ed6ab4`, `bbbc67e06`) sont **locaux**. Sans effet sur le
+> déploiement (le VPS tire avec sa propre clé) mais le lot du jour n'est PAS déployé.
+>
+> **État déployé au 30/09 00:02** : backend `96aa53a4`, site `main` = `b9e1f64`.
+> Le lot du 30/09 (P0-01, santé impression, borne) n'est PAS encore en production.
+>
+> **DÉCISIONS PROPRIÉTAIRE (gates §10/§12)** — inchangées, plus une :
+> · Remise manuelle : le vrai correctif est dans `PaymentComponent.vue`, **GELÉ** → LOCK.
+> · `public/js/pos-wizard.js` (GELÉ) : 9 `innerHTML` sans échappement → LOCK.
+> · Empreinte gelée `KioskWizardComponent.vue` à contresigner (seul échec de la suite).
+> · **Borne : poser `KIOSK_AUTO_LOGIN_SECRET` ou le CIDR réel sur le VPS — ET tourner
+>   `kiosk123` en même temps.** Un secret d'auto-login posé sur un mot de passe machine
+>   public laisserait la porte ouverte : les deux gestes vont ensemble.
+> · OSS n'affiche pas ACCEPT+PAID (56 commandes invisibles du mur) — épinglé par test.
+> · Cron `schedule:run` absent (purge automatique inerte). · Journée de service 00 h vs
+>   05 h à trancher. · Dine-in `show` public sans PII AVANT activation. · Nom produit
+>   non scellé dans le snapshot.
+
 > **2026-09-30 00:02 — AUDIT EN PROFONDEUR (caisse + site) : CORRIGÉ, TESTÉ, DÉPLOYÉ.**
 > Backend **HEAD prod = `96aa53a4`** (`tools/deploy-lecayenne.sh 5e5dc4a1c` : snapshot,
 > rien à migrer, triggers 10/10, chaîne NF525 CHAIN OK, `config:cache` sauté, healthz
