@@ -508,13 +508,18 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
 - FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
-  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 64`
-  vérifié dans le code le 2026-08-15** (`tests/Feature/Sentinels/
-  FormRequestAuthzDriftSentinelTest.php:67`) — le cliquet a déjà été
-  resserré deux fois depuis la dernière note ici (69 → 66 → **64**,
-  historique complet : 77 initial Wave 8 → 74 post Wave 5H → 69 post
-  BUILD-6 → 66 → 64). V1.0.2 BACKLOG : continuer le chip-away par vague
-  de commits et resserrer `RETURN_TRUE_BASELINE` à chaque fois.
+  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 52`,
+  relu dans le code le 2026-10-01** (`tests/Feature/Sentinels/
+  FormRequestAuthzDriftSentinelTest.php:83`). Historique : 77 initial
+  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 → 66 → 64 → **52**.
+  V1.0.2 BACKLOG : continuer le chip-away par vague de commits et
+  resserrer `RETURN_TRUE_BASELINE` à chaque fois.
+  ⚠️ **Ce nombre avait dérivé : ce document annonçait 64 quand le code
+  était à 52.** Cette mémoire est relue à chaque démarrage de session, par
+  chaque agent : un chiffre faux ici se propage partout et fait croire qu'il
+  reste 12 FormRequests à traiter qui l'ont déjà été. Le cliquet descend à
+  chaque vague — **relire la constante avant de la citer**, ne jamais la
+  recopier depuis ce document.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating
