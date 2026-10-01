@@ -110,6 +110,8 @@ class Order extends Model implements BroadcastableOrder
         'creator_id' => 'integer',
         // [KITCHEN-TIMING 2026-07-03] horodatages du temps réel de préparation cuisine
         'accepted_at' => 'datetime',
+        // [B2-R2-02 · 2026-10-01] Le caissier a choisi le temps de préparation (sinon : défaut).
+        'preparation_time_confirmed_at' => 'datetime',
         'preparing_at' => 'datetime',
         'prepared_at' => 'datetime',
     ];

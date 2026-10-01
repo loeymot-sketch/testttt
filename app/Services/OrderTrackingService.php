@@ -167,8 +167,13 @@ class OrderTrackingService
         // (53 erreurs en production du 25 au 28/09). On lit la date quelle que soit sa forme, ici,
         // plutôt que d'ajouter le cast au modèle : cela changerait le JSON qu'il sert ailleurs.
         $accepteeLe = $this->instant($order->accepted_at ?? null);
+        // [E2E stores · revue adverse B2-R2-02 · 2026-10-01] `preparation_time` porte DÈS LA CRÉATION
+        // le défaut des réglages (30 min en production) : il ne vaut temps du caissier que si celui-ci
+        // l'a réellement choisi à l'acceptation (`preparation_time_confirmed_at`). Sinon, la
+        // fourchette générique (décision propriétaire du 2026-09-23) reste affichée.
+        $confirmeParLaCaisse = $this->instant($order->preparation_time_confirmed_at ?? null) !== null;
 
-        if ($inCashierReviewedFlow && $preparationTime > 0 && $accepteeLe) {
+        if ($inCashierReviewedFlow && $preparationTime > 0 && $accepteeLe && $confirmeParLaCaisse) {
             // Timestamps bruts (jamais diffInSeconds signé — sens ambigu selon
             // l'appelant/l'objet receveur, source de bugs de sens ailleurs dans
             // ce dépôt) : elapsed > 0 si `now` est après `accepted_at`.

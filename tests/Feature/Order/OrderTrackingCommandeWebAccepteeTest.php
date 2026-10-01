@@ -64,6 +64,8 @@ class OrderTrackingCommandeWebAccepteeTest extends TestCase
             'order_datetime' => now()->subMinutes(6),
             'preparation_time' => 15,
             'accepted_at' => now()->subMinutes(5),
+            // Temps choisi par le caissier (B2-R2-02) : c'est lui que le suivi décompte.
+            'preparation_time_confirmed_at' => now()->subMinutes(5),
         ]);
     }
 
