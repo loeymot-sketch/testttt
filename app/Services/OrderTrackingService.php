@@ -161,11 +161,18 @@ class OrderTrackingService
         $inCashierReviewedFlow = in_array($status, [OrderStatus::ACCEPT, OrderStatus::PREPARING], true);
         $preparationTime = (int) ($order->preparation_time ?? 0);
 
-        if ($inCashierReviewedFlow && $preparationTime > 0 && $order->accepted_at) {
+        // [E2E stores · vague B · 2026-10-01 · P0] `FrontendOrder` — le modèle de la route du client —
+        // ne convertit PAS `accepted_at` en date (`Order` le fait) : on recevait une chaîne, et
+        // `getTimestamp()` sur une chaîne rendait 500 au suivi de toute commande web acceptée
+        // (53 erreurs en production du 25 au 28/09). On lit la date quelle que soit sa forme, ici,
+        // plutôt que d'ajouter le cast au modèle : cela changerait le JSON qu'il sert ailleurs.
+        $accepteeLe = $this->instant($order->accepted_at ?? null);
+
+        if ($inCashierReviewedFlow && $preparationTime > 0 && $accepteeLe) {
             // Timestamps bruts (jamais diffInSeconds signé — sens ambigu selon
             // l'appelant/l'objet receveur, source de bugs de sens ailleurs dans
             // ce dépôt) : elapsed > 0 si `now` est après `accepted_at`.
-            $elapsedSeconds = $now->getTimestamp() - $order->accepted_at->getTimestamp();
+            $elapsedSeconds = $now->getTimestamp() - $accepteeLe->getTimestamp();
             $elapsedMinutes = (int) floor($elapsedSeconds / 60);
             $remaining = max(0, $preparationTime - max(0, $elapsedMinutes));
 
@@ -185,6 +192,25 @@ class OrderTrackingService
     }
 
     /** HH:MM de l'heure de retrait programmée si elle est STRICTEMENT à venir, sinon null. */
+    /**
+     * Une date de la base, quelle que soit la forme sous laquelle le modèle la rend : objet date
+     * (attribut converti) ou chaîne brute (attribut non converti). Illisible ⇒ null.
+     */
+    private function instant(mixed $valeur): ?\Carbon\CarbonInterface
+    {
+        if ($valeur instanceof \Carbon\CarbonInterface) {
+            return $valeur;
+        }
+        if (! is_string($valeur) || trim($valeur) === '') {
+            return null;
+        }
+        try {
+            return \Illuminate\Support\Carbon::parse($valeur, config('app.timezone'));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function heureProgrammee(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
     {
         $prevue = $order->scheduled_at ?? null;
