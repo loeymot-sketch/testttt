@@ -2047,6 +2047,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->middleware('throttle:30,1')
         ->name('order.wait-estimate');
 
+    // [STORES T-3.3.2 · 2026-10-01] Version minimale de l'application des stores — PUBLIC
+    // (lue au lancement, avant toute connexion), lecture seule, aucune donnée client.
+    // 60/min : des clients derrière une même adresse d'opérateur mobile la lisent chacun
+    // à l'ouverture ; un 429 n'y bloque rien (l'application ne bloque que sur une réponse lue).
+    Route::get('app/config', [\App\Http\Controllers\Frontend\AppConfigController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('app.config');
+
     // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
     // tracking_token opaque — PUBLIC (lien envoyé/affiché au client, pas de
     // login), lecture seule, throttle 30/min (même discipline que wait-estimate,
@@ -2100,7 +2108,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // réclame déjà, mais un écran se contourne en fermant l'app — le refus vit donc
         // ici. Sans effet sur la BORNE (jeton `kiosk-token`) ni sur les clients venus par
         // le parcours téléphone, dont le compte est créé À PARTIR de leur numéro.
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'require_customer_phone', 'idempotency']);
+        // [STORES T-3.3.2 · 2026-10-01] `app_version` en tête : une application périmée reçoit
+        // « mets à jour » avant toute autre exigence, et sans toucher à la clé d'idempotence.
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'app_version', 'require_customer_phone', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
         // [P0 2026-08-07] Jumelles de mollie-checkout : elles portent aussi une commande, donc
         // même garde de branche dérivée du serveur. Ces deux méthodes ne lisent PAS `branch_id`
