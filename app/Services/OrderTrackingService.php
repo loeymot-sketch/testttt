@@ -137,6 +137,10 @@ class OrderTrackingService
             'ready' => $ready,
             'wait_low' => $estimate['wait_low'] ?? null,
             'wait_high' => $estimate['wait_high'] ?? null,
+            // [GOAL STORES 2026-10-01] Heure de retrait PROGRAMMÉE (HH:MM), si elle est à venir.
+            // Sans elle, une commande passée à 3 h pour 18 h 20 affichait « prête dans ~10-15
+            // min » sur sa page de suivi — et le rappel de l'application sonnait dans 10 min.
+            'prevue_pour' => $this->heureProgrammee($order, $now),
             'server_time' => $now->toIso8601String(),
         ];
     }
@@ -168,7 +172,27 @@ class OrderTrackingService
             return ['wait_low' => $remaining, 'wait_high' => $remaining];
         }
 
+        // [GOAL STORES 2026-10-01] Commande programmée à venir : le temps restant va jusqu'à
+        // l'heure choisie — jamais la fourchette générique « dès que prêt », qui ne la concerne
+        // pas. (Le rappel natif de l'application lit ces minutes : il sonne donc à l'heure.)
+        if ($this->heureProgrammee($order, $now) !== null) {
+            $minutes = (int) ceil(($order->scheduled_at->getTimestamp() - $now->getTimestamp()) / 60);
+
+            return ['wait_low' => $minutes, 'wait_high' => $minutes];
+        }
+
         return app(WaitEstimateService::class)->estimate((int) $order->branch_id);
+    }
+
+    /** HH:MM de l'heure de retrait programmée si elle est STRICTEMENT à venir, sinon null. */
+    private function heureProgrammee(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
+    {
+        $prevue = $order->scheduled_at ?? null;
+        if (! $prevue instanceof \Carbon\CarbonInterface) {
+            return null;
+        }
+
+        return $prevue->greaterThan($now) ? $prevue->copy()->timezone(config('app.timezone'))->format('H:i') : null;
     }
 
     /**
