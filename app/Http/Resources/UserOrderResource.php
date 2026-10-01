@@ -19,6 +19,9 @@ class UserOrderResource extends JsonResource
         return [
             'id'                             => $this->id,
             'order_serial_no'                => $this->order_serial_no,
+            // [E2E stores · vague B · O-B6 · 2026-10-01] Numéro APPELÉ au comptoir et sur l'écran
+            // client (« N°A0051 ») : l'application l'affiche au suivi ouvert depuis « Mes commandes ».
+            'queue_number'                   => $this->queue_number,
             'user_id'                        => $this->user_id,
             'branch_id'                      => $this->branch_id,
             'branch_name'                    => optional($this->branch)->name,
