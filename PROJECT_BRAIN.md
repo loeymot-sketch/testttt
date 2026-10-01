@@ -47,6 +47,42 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-01 (nuit) — GOAL STORES, vague W1 quasi close, W2 (E2E) en cours.**
+> Site : worktree `site-wt-stores-2026-09-30`, branche `app/natif-honnete-2026-09-30`,
+> commits `cac473a` → `9ec0dc3` (LOCAUX, GitHub refuse toujours les poussées du compte).
+>
+> **Défaut majeur trouvé SUR ÉMULATEUR (Android 36)** : depuis le 19/08, AUCUNE fonction
+> native ne marchait dans l'app — `app-native.js` appelait `Capacitor.registerPlugin`,
+> absent sans `@capacitor/core`. Liens externes morts, bouton retour, bandeau hors
+> connexion, connexion Apple : inertes. Les bancs étaient verts (faux pont trop généreux).
+> Corrigé + instruments réalignés sur le pont RÉEL + `tools/verify-app-device.py`
+> (28/28 sur appareil). Mémoire `pont-capacitor-sans-registerplugin`.
+>
+> Aussi livré (site) : rappel local à l'heure estimée + alerte « prête » (non exactes —
+> sinon Android 14 ouvre « Alarmes et rappels »), SCHEDULE_EXACT_ALARM retirée, haptique,
+> tiroir fermé par RETOUR (il quittait l'app), bandeau hors ligne en bas et non bloquant,
+> zéro « bientôt » DANS L'APP (site inchangé), 1 réglage de notification réel au lieu de 4
+> faux, texte « paiement en ligne bientôt » corrigé (faux : actif), fiche store exacte (plus
+> de « avec Google »), signature Android prête (clés exclues du dépôt — elles ne l'étaient
+> pas), 4 bancs périmés réparés (3 Apple Pay depuis le 13/08, 1 suivi). Batterie site 32/34
+> (2 = besoin d'un backend local, verts à part 24/24 + 16/16). Backend : suppression de
+> compte après commande comptoir non commencée (`673db0952`).
+>
+> **En cours** : 3 agents de capture E2E (A compte/suppression, B chemin doré site→KDS→
+> caisse→écran client, C parcours visuel app+site) contre backend local :8000 (4 processus,
+> base `foodking_e2e`, `MAIL_MAILER=log` — passé de smtp à log le 01/10 pour ne pas envoyer
+> de vrais e-mails pendant les bancs).
+>
+> **Trouvé, à traiter après la capture** : hors service (02 h 35), l'API de production
+> annonce « 10-15 min » et accepte une commande « dès que prêt » (garde horaire seulement
+> pour les commandes programmées, OrderRequest:402) ; le tunnel retombe sur « ~15-20 min »
+> codé en dur sans estimation. Affichage = à corriger ; accepter/refuser l'immédiat hors
+> service = DÉCISION PROPRIÉTAIRE (recommandation : programmation seule).
+>
+> Le travail NON COMMITÉ d'une autre session dans `Site lecayenne` (routage par hash,
+> racine.jsx…) casse les 5 bancs « roue » (verts sur la version en ligne) : ne pas le
+> déployer en l'état.
+
 > **2026-09-30 (après-midi) — GOAL ACTIF : `plans/GOAL_STORES_FINITION_APP_2026-09-30.md`**
 > (finition de l'application pour l'App Store et Google Play, E2E complet, 8 vagues, 10 gates).
 > **Vague en cours : W0** (pré-vol, gates longs, arbitrages, doc, émulateur).
