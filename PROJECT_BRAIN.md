@@ -47,6 +47,26 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-01 (matin) — GOAL STORES, W2 E2E : round 1 clos, round 2 en cours.**
+> Backend (branche `qa/corrige-rapports-2026-09-28`, LOCAL — GitHub refuse toujours les poussées) :
+> `5242f2449` hors service, `b32b92d90` + `9bf44bd39` version minimale de l'app, **`1f33aef6e` P0 :
+> suivi d'une commande web acceptée → 500** (53 erreurs en PRODUCTION du 25 au 28/09, `FrontendOrder`
+> ne caste pas `accepted_at`), `d1f33574c` fiche caisse « demain » pour une commande programmée ce soir
+> (`App\Support\CreneauRetrait`) + `queue_number` dans « Mes commandes ».
+> Site (worktree `site-wt-stores-2026-09-30`, branche `app/natif-honnete-2026-09-30`) : `4050155`
+> hors service + suppression, `de1ff84` lot du 01/10 (écran « Mise à jour nécessaire », garde « onglet
+> périmé » MORTE depuis le 08/08 réparée, numéro APPELÉ « N°A0051 » dans l'app, titres d'inscription
+> illisibles, recours comptoir, après connexion on reste au paiement, téléphone « 06 06… »), `1576a09`
+> bancs. Preuves : batterie site 34/34, bancs du lot 43+35+12+21+64, comportement 17/17, appareil 28/28.
+> **E2E** : vague A capturée + revue adverse (0 P0, 2 P1 corrigés) ; vague B : 3 défauts prouvés, tous
+> corrigés (rapport `reports/test-e2e/stores-finition-2026-09-30/round-1/vague-B-capture.md`) ; vagues
+> B et C rejouées sur le code final (round 2) puis revue adverse.
+> **Décisions propriétaire en attente** : déployer (vérifier l'e-mail GitHub, ou déploiement direct) ;
+> refuser « au plus vite » hors service côté serveur ? ; commandes de l'examinateur Apple/Google
+> (bac à sable ou refus poli) ; débit du code de connexion 3/5 min PAR ADRESSE IP (clients partageant
+> une connexion) ; complément silencieux d'attribut requis par `api.js` (risque latent si le catalogue
+> diverge du menu du site).
+
 > **2026-10-01 (nuit) — GOAL STORES, vague W1 quasi close, W2 (E2E) en cours.**
 > Site : worktree `site-wt-stores-2026-09-30`, branche `app/natif-honnete-2026-09-30`,
 > commits `cac473a` → `9ec0dc3` (LOCAUX, GitHub refuse toujours les poussées du compte).

@@ -1,0 +1,152 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 36,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/04-A1-compte-cree.png (same in 20-A6-compte-cree.png, 28-A5-compte-cree.png; viewport 390x844 @2x)",
+      "category": "color_contrast (escalated to P1: headline effectively invisible)",
+      "severity": "P1",
+      "evidence": "On the account-created screen, the headline 'TE' (h1) and the subtitle 'COMPTE PRÊT' (h2) are cream on yellow. Measured contrast is about 1.28:1 (#FBF7F0 on #FFD93D), so the text is close to invisible. This is the first screen a new user sees after signing up, including the App Store reviewer. Cause, proved in the DOM and in the CSS: the DOM of 04, 20 and 28 has <body class=\"lcx-nuit\">, while 09-A2-reconnecte, where the text is black, has a bare <body>. The class comes from screens.jsx:2100 (useNuit, set while the home page is mounted). styles-v7-braise.css:69 gives '.lcx-nuit { color: var(--x-creme) }' (#FBF7F0, styles-v7-braise.css:57). In account-v2.jsx:852-853, the h1 'Te <span>voilà</span>' and the h2 'Compte prêt'/'Compte retrouvé' have NO colour of their own and inherit that cream. Their siblings at :851 (eyebrow) and :854 (paragraph) do pin color:'var(--ink)'. The success container (account-v2.jsx:838) has background 'var(--yellow)' = #FFD93D (styles.css:11). Reproduced 9/9: body.lcx-nuit is present on 04, 20 and 28 in A-run1, A-run2 and A. The bench passed only because it reads innerText ('Compte prêt' is in the DOM). It is the same class of defect as the one already fixed for .lc-acc-title (styles.css:930, 'test-e2e fix E-002 round-4': inherited lcx-nuit cream at 1.07:1). The capture report does not mention it.",
+      "fix_hint": "account-v2.jsx:852-853: add color:'var(--ink)' to both lc-display headings, as the sibling eyebrow and paragraph already do. Or add a scoped CSS rule for the success panel. Then re-capture sign-up starting from the home page, in both site and app mode."
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/03-A1-code.png + 03-A1-code.network.json + 03-A1-code.dom.html (same in 19-A6-code)",
+      "category": "other:false_text_on_critical_path (server recourse dropped by the UI)",
+      "severity": "P1",
+      "evidence": "The sign-up email-login response carries a fallback recourse that the UI drops. 03-A1-code.network.json has POST /api/auth/guest-signup/email-login 200 with body message 'Veuillez vérifier votre email pour le code. Si tu ne reçois rien dans quelques minutes (pense aussi aux spams), passe au comptoir avec ton numéro de téléphone : on peut lier ton compte directement.' 03-A1-code.dom.html contains 0 occurrences of 'passe au comptoir'. account-v2.jsx:328-331 reads only r.dev_code, never r.message, and line 777 always states 'Code à 4 chiffres envoyé par e-mail à <typed email>'. The backend shows two branches where that sentence is FALSE while the response still says sent:true (GuestSignupController.php:202). (1) The phone belongs to a guest account that has another e-mail: the code goes to THAT e-mail ($deliverTo = $existing->email, :344). (2) The phone belongs to a phone-only guest account with points or orders: nothing is sent at all ($deliverTo = null, :348). Branch 2 is exactly the existing loyal customer created at the counter or by the wheel (CustomerAccountProvisioner.php:124 is_guest=YES, used by PosLoyaltyController and WheelController) who installs the app. The only mitigation, account-v2.jsx:811-813, shows the restaurant phone number only after a 30-second countdown and at least one resend. Not reproduced at runtime: the bench never seeds a pre-existing phone account, so neither branch was exercised. Proof = network body vs DOM (message dropped) + code (branches).",
+      "fix_hint": "Show the server's r.message (or a neutral line such as 'Le code part à l'adresse liée à ton compte ; rien reçu ? passe au comptoir…') on the code screen from the first display, and do not assert the destination address when the typed e-mail is new. Add a bench scenario: seed a guest account with phone 069x…, no e-mail and loyalty_points>0, then sign up in the app with a fresh e-mail and that phone. Assert that no mail goes out (log mailer) and that the recourse is visible."
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/17-A6-email-seul.png (button 'Se connecter avec Apple', iOS bridge)",
+      "category": "other:coverage_gap",
+      "severity": "P2",
+      "evidence": "The Apple button is shown on iOS without any configuration (app-native.js:555 'if (plateforme === 'ios') liste.push('apple')'). app/PUBLICATION.md:441-446 recommends it to the reviewer as 'Option 1 (la plus simple)'. Yet no bench in tests-e2e exercises it: `grep -ln \"SocialLogin\\|connexionSociale\\|Se connecter avec Apple\" tests-e2e/*.js` returns nothing. This means connexionSociale() (app-native.js:474-495: initialize options with useProperTokenExchange:true, mapping of result.idToken), the POST to social/apple, and the phone-required screen are untested end to end, even with the simulated bridge. The backend has unit tests (tests/Feature/Auth/SocialAuthTest.php); the client wiring has none. History shows how this goes wrong: the native bridge was dead for 6 weeks while the benches were green. This is not a proven product defect.",
+      "fix_hint": "Add an app-mode scenario with the exact-shape bridge that answers SocialLogin.initialize/login with a realistic Capgo payload. Assert the request body sent to /api/auth/social/apple and the phone-attachment screen. Then do one real-device check (PUBLICATION.md §10 step 7) before submission."
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/36-A5-refus-suppression.png + 36-A5-refus-suppression.network.json",
+      "category": "other:store_compliance_risk (owner decision)",
+      "severity": "P2",
+      "evidence": "The reviewer note in app/PUBLICATION.md:469-471 promises: 'Elle fonctionne aussi juste après une commande d'essai non retirée : la commande, jamais commencée, est annulée automatiquement'. A5 proves the opposite as soon as the kitchen starts the order: 422 'Impossible de supprimer ton compte pour l'instant : une commande est en préparation ou déjà réglée…'. The threshold is PREPARING for takeaway (FrontendOrderService.php:1023-1028). By owner rule the kitchen prepares BEFORE counter payment, so a reviewer test order placed during service (18:00-00:30 Paris) can be started by staff, and the reviewer, who cannot collect it, is then locked out of account deletion (Guideline 5.1.1(v)). The refusal itself is by design and correctly shown in role=alert; the risk is the gap between that rule and the reviewer note.",
+      "fix_hint": "Owner gate. Either make the reviewer note state the condition and ask the staff to cancel any test order, or let deletion cancel an unpaid pay-at-counter order even after PREPARING, with the staff notified."
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/36-A5-refus-suppression.network.json (rolled-back deletion)",
+      "category": "other:latent_side_effect_escapes_rollback",
+      "severity": "P2",
+      "evidence": "In A5, deletion first cancels order 7556 inside DB::transaction (DeactivateController.php:22 outer transaction, :56 cancelAllOwnCancellableForAccountDeletion, then FrontendOrderService.php:921 nested transaction), then refuses with 422, and the transaction rolls back. During that cancellation, SendOrderMail, SendOrderSms and SendOrderPush are dispatched (FrontendOrderService.php:992-994). They use plain Illuminate Dispatchable (app/Events/SendOrderMail.php:6,11 and the same for Sms and Push), not the project's DispatchableAfterCommit, and their listeners are synchronous (app/Listeners/SendOrderMailNotification.php has no ShouldQueue; OrderMailNotificationBuilder::mail() calls Mail::to()->send). They therefore run BEFORE the rollback. Only OrderStatusChanged and OrderCanceled are deferred (comment at :986). This contradicts the project's own rule in app/Events/Concerns/DispatchableAfterCommit.php: 'MUST NOT fire while a write transaction is still pending'. Whenever the 'order_canceled_message' mail/SMS/push alert is ON, a customer whose deletion is refused would receive 'commande annulée' for an order that is still live. The capture report admits it could not observe this (notification_alerts.mail=10 locally), and the production switch state was not checked.",
+      "fix_hint": "Defer the three notification dispatches with DB::afterCommit (or move them to DispatchableAfterCommit) in cancelOwnOrderBeforeAcceptance. Add a feature test: alert ON + Mail::fake, call delete-account with one PREPARING and one PENDING order, then assertNothingSent."
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/05-A1-connecte.png (also 21-A6-connecte.png)",
+      "category": "other:false_text (CTA destination mismatch)",
+      "severity": "P2",
+      "evidence": "The success button reads 'Commencer à commander' (account-v2.jsx:860, onClick onAuthed()). The handler is racine.jsx:682 'onAuthed={()=>{ setIsAuth(true); setRoute('loyalty'); }}', so the user lands on 'MON COMPTE LE CAYENNE' (Fidélité page, URL /#loyalty in resultats.json for 05 and 21), not on the menu. The label promises ordering and the result is the loyalty and QR page, on the first path an App Store reviewer takes.",
+      "fix_hint": "Either route to 'menu' when the CTA says 'Commencer à commander', or rename the CTA, for example 'Voir mon compte'."
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/14-A4-confirmation-suppression.png (also 26-A4app-confirmation-suppression.png)",
+      "category": "other:missing_disclosure_irreversible_action",
+      "severity": "P2",
+      "evidence": "In A4 the client has an open, unretrieved order (0110267553). The two-step confirmation text (loyalty-v2.jsx:212-216) says only 'Ton nom, ton e-mail et ton numéro sont effacés, et tes points de fidélité sont perdus. C’est définitif. Tes tickets de caisse restent conservés…'. Nothing tells the client that the order in progress will be CANCELLED, yet the server cancels it (order 7553 1→16). The new post-reload message (loyalty-v2.jsx:180 flash 'Ton compte a été supprimé. Tes informations personnelles sont effacées.') does not say it either. A customer waiting for food who deletes the account loses the order without warning.",
+      "fix_hint": "When the client has an open cancellable order, add one line to the confirmation box (for example 'Ta commande en cours n° … sera annulée'), and mention it in the flash."
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/02-A1-depliage-identite.dom.html",
+      "category": "other:bench_bypasses_real_input + validation_gap",
+      "severity": "P2",
+      "evidence": "The phone field is pre-filled with a VALUE, not a placeholder: DOM '<input id=\"acc-phone\" … placeholder=\"06 12 34 56 78\" value=\"06 \">' (account-v2.jsx:196 phone:'06 '). The bench uses locator.fill(), which replaces the value, so it never tests a user typing a full number after the prefix ('06 0612345678'). That 12-digit value passes the client check (account-v2.jsx:289, only '< 9 digits' is rejected) and the server rule ValidPhone. ValidPhone.php:55-58 allows 9..12 national digits, with site_default_phone_digit_length=10 read from the local DB. The phone is the loyalty key and the call-back number. Storage was not executed end to end.",
+      "fix_hint": "Bench: use pressSequentially after a click, as a user would. Product: normalise or strip a duplicated leading 0X prefix and enforce exactly 10 digits for FR numbers (or start the field empty with only a placeholder)."
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/24-A6-cmd-paiement.png (also 06, 10, 12, 22)",
+      "category": "element_overlap (non-clickable, visual)",
+      "severity": "P3",
+      "evidence": "Page content is legible through the sticky header: 'PAIEMENT AU' and 'Commande envoyée…' appear behind 'Réseaux/Itinéraire' in 24, and 'UTILISE TES POINTS' behind 'Accueil/Menu/Avis' in 06, 10 and 22. Cause: .lc-nav background rgba(250,247,242,0.85) with blur 18px (styles.css:134-140). On the home page (body.lcx-nuit), the same translucency turns the header muddy grey (07, 15, 27).",
+      "fix_hint": "Raise the nav opacity to about 0.96, or use a solid --paper when the page has scrolled under it."
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/02-A1-depliage-identite.png (also 16, 18)",
+      "category": "other:copy",
+      "severity": "P3",
+      "evidence": "Grammar: '1 € = 10 points cumulé dès ta 1ʳᵉ commande' should read 'cumulés' (account-v2.jsx:655).",
+      "fix_hint": "Change 'cumulé' to 'cumulés'."
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/24-A6-cmd-paiement.dom.html",
+      "category": "other:copy_in_app",
+      "severity": "P3",
+      "evidence": "In app mode, 'Payer sur place' is the ONLY payment mode, yet it still carries the '★ Conseillé' badge (funnel.jsx:2029). DOM text sequence: 'Paiement / ★ Conseillé / 💵 / Payer sur place'. Recommending the only option reads oddly.",
+      "fix_hint": "Hide m.recommended when the list has a single mode."
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/26-A4app-confirmation-suppression.png",
+      "category": "empty_state (app context)",
+      "severity": "P3",
+      "evidence": "The app profile still shows a 'CARTES ENREGISTRÉES' section with the empty state 'Aucune carte enregistrée'. The app never takes a card; its subtitle is already app-specific ('Dans l'application, tu règles au comptoir…'). A reviewer may look for a place to add a card.",
+      "fix_hint": "Hide the saved-cards section in app mode."
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/15-A4-apres-suppression.dom.html (also 27)",
+      "category": "numeric_integrity (cross-surface, minor)",
+      "severity": "P3",
+      "evidence": "The home page says 'Ouvert 7j/7 · 18h – minuit' (screens.jsx:852), while the backend service window is 18:00–00:30 (config/kds.php:99-100, OrderRequest.php:363-366). The same fact differs between surfaces.",
+      "fix_hint": "Align the copy with the configured window, or state the last pickup slot."
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/13-A3-confirmation.png (also 04, 09, 20, 25, 28, 31, 34)",
+      "category": "aria_keyboard (motion)",
+      "severity": "P3",
+      "evidence": "The confetti animation (styles-v4.css:535-545, 3 s, 24 pieces) is NOT covered by the prefers-reduced-motion block (styles-v4.css:728-730, which only covers .lcf-track-ready), although that block's comment claims WCAG 2.3.3 compliance. In the captures, pieces cross the body text ('Prés▬nte', 'caiss▬' in 13, 25, 31, 34). This is transient, because the animation ends at opacity 0.",
+      "fix_hint": "Add '.lcf-confetti { display:none }' under prefers-reduced-motion."
+    },
+    {
+      "id": "A-015",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/07-A2-deconnecte.png",
+      "category": "other:residual_open (from capture report, not in fixed list)",
+      "severity": "P3",
+      "evidence": "The capture report notes that 'Se déconnecter' leaves the pending local reminder in place. The fix in commit 4050155 only covers deletion: annulerTousLesRappels is called from AccountDangerZone doDelete (loyalty-v2.jsx:176), not from the logout handler (loyalty-v2.jsx:146-147, which only calls LC.api.logout and onLogout). On a shared device, the next user receives the previous user's 'ta commande devrait bientôt être prête'.",
+      "fix_hint": "Call LC.native.annulerTousLesRappels() on logout as well, or decide explicitly to keep it."
+    },
+    {
+      "id": "A-016",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/13-A3-confirmation.png (ASAP order accepted at 02:50, 'Prêt dans ~10-15 min')",
+      "category": "other:residual_server_side (O-1)",
+      "severity": "P3",
+      "evidence": "The closed-restaurant fix (site 79d7dde) is client-side only. The backend still accepts an ASAP order outside the service window: OrderRequest.php:374-376 'if (blank($raw) …) return; // ASAP — comportement historique intact'. A tab or old client that loaded the payment page while the restaurant was open can still submit 'Dès que prêt' after closing and get a ~10-15 min promise. The context file accepts the front-end fix; this note records only the server-side residue.",
+      "fix_hint": "Optional: reject ASAP orders when service_ouvert=false server-side, with a French 422 that the payment page already displays."
+    },
+    {
+      "id": "A-017",
+      "state_artifact": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/A/12-A3-paiement.png, 24-A6-cmd-paiement.png, 30-A5-cmd1-paiement.png, 33-A5-cmd2-paiement.png",
+      "category": "other:audit_integrity (instrument)",
+      "severity": "P3",
+      "evidence": "Three instrument issues. (a) The payment captures are viewport-only (fullPage:false, spec line 269) and scrolled to the bottom bar. None shows the payment-mode block, so the report's visual claims for 12 and 24 (« Payer sur place » conseillé et sélectionné, « SEUL mode ») are backed by the DOM only, not by the image. (b) The report's HEAL 5 says captures wait for animations to finish, but snap() waits 700 ms (spec line 263) while the confetti runs 3 s plus up to 1.08 s of delay; confetti is visible in 8 captures. (c) The app-mode « bientôt » assertion (spec lines 707-708) runs before path P, so the A5 states 28-36 are collected but never asserted. Their values are all empty in resultats.json, so no defect was missed this time.",
+      "fix_hint": "Payment snap: use cible:'[aria-label=\"Mode de paiement\"]'. Wait for animationend, or use emulateMedia reduced-motion, on confirmation and success states. Move the « bientôt » assertion to the end of the script."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 6, "P3": 9,
+    "open_P0": 0, "open_P1": 2, "open_P2": 6, "open_P3": 9
+  },
+  "round_to_round_closures": {
+    "D-A-01": "PASS",
+    "D-A-02": "PASS"
+  },
+  "verdict": "RED"
+}
