@@ -53,19 +53,19 @@
                                     <p class="text-xs leading-5 text-heading">{{ item.total_without_tax_currency_price }}
                                     </p>
                                 </div>
-                                <p v-if="Object.keys(item.item_variations).length !== 0"
+                                <p v-if="normalizedVariations(item).length !== 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}
-                                        <span v-if="index + 1 < Object.keys(item.item_variations).length">, </span>
+                                    <span v-for="(variation, index) in normalizedVariations(item)" :key="index">
+                                        {{ variation.label }}: {{ variation.name }}
+                                        <span v-if="index + 1 < normalizedVariations(item).length">, </span>
                                     </span>
                                 </p>
-                                <p v-if="item.item_extras.length > 0"
+                                <p v-if="normalizedExtras(item).length > 0"
                                     class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                     {{ $t('label.extras') }}:
-                                    <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}
-                                        <span v-if="index + 1 < item.item_extras.length">, </span>
+                                    <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
+                                        {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span>
+                                        <span v-if="index + 1 < normalizedExtras(item).length">, </span>
                                     </span>
                                 </p>
                                 <p v-if="item.instruction" class="text-xs leading-5 font-normal text-heading max-w-[200px]">
@@ -196,6 +196,7 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
 import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
+import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "OnlineOrderReceiptComponent",
@@ -245,6 +246,12 @@ export default {
         },
     },
     methods: {
+        normalizedVariations(item) {
+            return normalizeReceiptVariations(item?.item_variations);
+        },
+        normalizedExtras(item) {
+            return normalizeReceiptExtras(item?.item_extras);
+        },
         // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
         safePhone(phone) {
             return safePhone(phone);

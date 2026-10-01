@@ -584,7 +584,8 @@ export default {
         },
         async onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
-            alertService.success(this.$t('label.encaisser_success', { order: '' }));
+            // [E2E stores · B2-R2-07 · 2026-10-01] PosCounterCollectModal affiche DÉJÀ son toast
+            // (avec le numéro) sur chaque chemin de succès : celui-ci doublait, au numéro vide.
             // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
             // CLIENT via le pont ESC/POS — lancé AVANT/EN PARALLÈLE du refresh de la liste
             // (fire-and-forget, plus d'await en série). Best-effort — pont 202 immédiat.

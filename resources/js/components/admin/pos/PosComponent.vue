@@ -4833,8 +4833,10 @@ export default {
             }
 
             try {
+                // [B2-R2-09] Même libellé que le sondage (numéro appelé, sinon série).
+                const affiche = this._libelleCommande(normalized.payload, orderId);
                 const label = orderId
-                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
+                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: affiche })) || ('Nouvelle commande ' + affiche)
                     : (this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande';
                 alertService.info(label);
             } catch (e) { /* defensive */ }
@@ -5315,13 +5317,20 @@ export default {
                     .map(o => o && (o.id != null ? o.id : o.order_id))
                     .filter(v => v != null)
                     .map(String);
+                // [E2E stores · B2-R2-09 · 2026-10-01] Libellé AFFICHÉ de chaque commande : le numéro
+                // appelé, sinon la série — jamais l'id en base (un 3ᵉ numéro que rien d'autre n'affiche).
+                const libelles = {};
+                (list || []).forEach(o => {
+                    const id = o && (o.id != null ? o.id : o.order_id);
+                    if (id != null) libelles[String(id)] = this._libelleCommande(o, id);
+                });
                 const firstSeed = !this._pollSeeded[seedKey];
                 let fresh = 0; let lastId = null;
                 ids.forEach(id => {
                     if (firstSeed) { this._notifiedOrderIds.add(id); return; }
                     if (!this._notifiedOrderIds.has(id)) {
                         this._notifiedOrderIds.add(id);
-                        fresh += 1; lastId = id;
+                        fresh += 1; lastId = libelles[id] || id;
                     }
                 });
                 this._pollSeeded[seedKey] = true;
@@ -5333,6 +5342,12 @@ export default {
                 if (fresh > 0) this._signalNewOrder(lastId, fresh, origin);
             } catch (_) { /* defensive — jamais casser un poll */ }
         },
+        /** « N°A0054 » si la commande a un numéro de file, sinon « #<série> », sinon « #<id> ». */
+        _libelleCommande(o, id) {
+            if (o && o.queue_number) return 'N°' + o.queue_number;
+            if (o && o.order_serial_no) return '#' + o.order_serial_no;
+            return '#' + id;
+        },
         /** Toast + beep « nouvelle commande » (réutilise le beep WebAudio et le setting d'opt-out). */
         _signalNewOrder(orderId, count, origin) {
             try {
@@ -5341,7 +5356,7 @@ export default {
                     label = (this.$t && this.$t('message.new_pos_orders_count', { count })) || (count + ' nouvelles commandes');
                 } else {
                     label = orderId
-                        ? ((this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId))
+                        ? ((this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande ' + orderId))
                         : ((this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande');
                 }
                 alertService.info(label);

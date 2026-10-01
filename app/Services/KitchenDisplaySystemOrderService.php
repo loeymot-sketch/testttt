@@ -291,7 +291,7 @@ class KitchenDisplaySystemOrderService
             $appTz = config('app.timezone');
 
             $query = Order::query()
-                ->select(['id', 'order_serial_no', 'scheduled_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
+                ->select(['id', 'order_serial_no', 'queue_number', 'scheduled_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
                 ->with('user')
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses());
 
@@ -311,6 +311,9 @@ class KitchenDisplaySystemOrderService
                     return [
                         'id'              => (int) $order->id,
                         'order_serial_no' => $order->order_serial_no,
+                        // [E2E stores · B2-R2-08 · 2026-10-01] Le numéro APPELÉ (« N°A0055 »), celui
+                        // que la caisse, l'écran client et l'application affichent.
+                        'queue_number'    => $order->queue_number,
                         'scheduled_at'    => $order->scheduled_at?->toIso8601String(),
                         // [FIX SCHEDULED-STALE P3] Y-m-d Paris-local (cast datetime,
                         // app TZ) — désambiguïsation multi-jours côté bandeau.
