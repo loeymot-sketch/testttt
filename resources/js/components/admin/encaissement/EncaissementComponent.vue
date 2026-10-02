@@ -23,6 +23,41 @@
                     </div>
                 </div>
 
+                <!--
+                  [GOAL CAISSE/CUISINE #3 2026-10-02] File « en attente d'encaissement » : par DÉFAUT la
+                  journée de service courante seulement (nouveau jour = liste vide). Les commandes d'hier et
+                  d'avant, jamais encaissées, vivent dans « Jours précédents » — d'où on peut les purger
+                  (une par une ou toutes), après confirmation. Une purge ANNULE (jamais de suppression d'une
+                  commande payée / fiscalisée) et laisse une trace d'audit.
+                -->
+                <div class="enc-scope-bar" role="tablist" :aria-label="$t('label.enc_scope_aria')">
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'today' }"
+                        :aria-selected="scope === 'today' ? 'true' : 'false'"
+                        data-testid="enc-scope-today"
+                        @click="setScope('today')"
+                    >{{ $t('label.enc_scope_today') }}</button>
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'previous' }"
+                        :aria-selected="scope === 'previous' ? 'true' : 'false'"
+                        data-testid="enc-scope-previous"
+                        @click="setScope('previous')"
+                    >
+                        {{ $t('label.enc_scope_previous') }}
+                        <span v-if="previousCount > 0" class="enc-scope-badge" data-testid="enc-previous-count">{{ previousCount }}</span>
+                    </button>
+                    <button
+                        v-if="scope === 'previous' && orders.length > 0"
+                        type="button"
+                        class="enc-purge-all-btn"
+                        data-testid="enc-purge-all"
+                        @click="askPurge(null)"
+                    >{{ $t('label.enc_purge_all', { n: orders.length }) }}</button>
+                </div>
+                <p v-if="scope === 'previous'" class="enc-scope-hint" data-testid="enc-previous-hint">{{ $t('label.enc_previous_hint') }}</p>
+
                 <div class="enc-body">
                     <!-- [T-4.1 FAUX-VIDE 2026-08-15] Un fetch en échec avec orders=[] affichait le
                          MÊME ✅ vert que "0 commande à encaisser" réel — le caissier ne pouvait pas
@@ -39,7 +74,7 @@
 
                     <div v-else-if="orders.length === 0" class="enc-empty" data-test="enc-empty-real">
                         <div class="enc-empty-icon">✅</div>
-                        <p class="enc-empty-title">{{ $t('label.encaisser_queue_empty') }}</p>
+                        <p class="enc-empty-title">{{ scope === 'previous' ? $t('label.enc_previous_empty') : $t('label.encaisser_queue_empty') }}</p>
                     </div>
 
                     <div v-else class="enc-grid">
@@ -105,9 +140,32 @@
                                 >
                                     {{ $t('label.encaisser') }}
                                 </button>
+                                <button
+                                    v-if="scope === 'previous'"
+                                    type="button"
+                                    class="enc-purge-btn"
+                                    :aria-label="`${$t('label.enc_purge_one')} ${order.order_serial_no || order.id}`"
+                                    :data-testid="`enc-purge-${order.id}`"
+                                    @click.prevent="askPurge(order)"
+                                >{{ $t('label.enc_purge_one') }}</button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- [GOAL #3 2026-10-02] Confirmation OBLIGATOIRE avant toute purge. -->
+        <div v-if="purgeTarget" class="enc-confirm-overlay" data-testid="enc-purge-confirm" @click.self="cancelPurge">
+            <div class="enc-confirm" role="alertdialog" aria-modal="true" :aria-label="$t('label.enc_purge_title')">
+                <h4 class="enc-confirm-title">{{ $t('label.enc_purge_title') }}</h4>
+                <p class="enc-confirm-body" data-testid="enc-purge-summary">{{ purgeSummary }}</p>
+                <p class="enc-confirm-note">{{ $t('label.enc_purge_note') }}</p>
+                <label class="enc-confirm-label" for="encPurgeReason">{{ $t('label.enc_purge_reason') }}</label>
+                <input id="encPurgeReason" v-model="purgeReason" class="enc-confirm-input" type="text" maxlength="255" data-testid="enc-purge-reason" />
+                <div class="enc-confirm-actions">
+                    <button type="button" class="enc-confirm-cancel" data-testid="enc-purge-cancel" :disabled="purging" @click="cancelPurge">{{ $t('button.cancel') }}</button>
+                    <button type="button" class="enc-confirm-ok" data-testid="enc-purge-ok" :disabled="purging || purgeReason.trim().length < 3" @click="confirmPurge">{{ $t('label.enc_purge_confirm') }}</button>
                 </div>
             </div>
         </div>
@@ -160,6 +218,12 @@ export default {
             loading: { isActive: false },
             orders: [],
             fetchError: false,
+            // [GOAL #3 2026-10-02] 'today' (défaut) | 'previous' ; compteur du badge fourni par l'API.
+            scope: 'today',
+            previousCount: 0,
+            purgeTarget: null, // { order: Order|null } — null order = toutes les anciennes
+            purgeReason: '',
+            purging: false,
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
@@ -183,6 +247,18 @@ export default {
         this.unsubscribeEcho();
     },
     computed: {
+        purgeSummary() {
+            const t = this.purgeTarget;
+            if (!t) return '';
+            if (t.order) {
+                return this.$t('label.enc_purge_summary_one', {
+                    order: t.order.order_serial_no || t.order.id,
+                    amount: this.formatPrice(this.orderAmount(t.order)),
+                });
+            }
+            const total = this.orders.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
+            return this.$t('label.enc_purge_summary_all', { n: this.orders.length, amount: this.formatPrice(total) });
+        },
         // [RECEIPT-NO-AUTO 2026-07-24] Flag OPT-IN d'auto-impression du reçu CLIENT
         // (défaut FALSE). Spec owner : à l'encaissement, on n'imprime PLUS le ticket
         // client automatiquement — les boutons manuels de la modale (printTicket)
@@ -194,8 +270,9 @@ export default {
     methods: {
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
-            return axios.get('admin/pos/counter-collect/pending').then((res) => {
+            return axios.get('admin/pos/counter-collect/pending', { params: { scope: this.scope || 'today' } }).then((res) => {
                 this.orders = res.data?.data || [];
+                this.previousCount = Number(res.data?.meta?.previous_count || 0);
                 this.fetchError = false;
                 this.loading.isActive = false;
             }).catch(() => {
@@ -204,6 +281,47 @@ export default {
                 this.fetchError = true;
                 this.loading.isActive = false;
             });
+        },
+        setScope(scope) {
+            if (scope !== 'today' && scope !== 'previous') return;
+            this.scope = scope;
+            this.orders = [];
+            return this.fetchPending();
+        },
+        // [GOAL #3 2026-10-02] Demande de purge : `order` = une commande, null = toutes les anciennes.
+        askPurge(order) {
+            this.purgeReason = this.$t('label.enc_purge_reason_default');
+            this.purgeTarget = { order: order || null };
+        },
+        cancelPurge() {
+            if (this.purging) return;
+            this.purgeTarget = null;
+        },
+        async confirmPurge() {
+            if (!this.purgeTarget || this.purging || this.purgeReason.trim().length < 3) return;
+            const one = this.purgeTarget.order;
+            const body = {
+                confirm: true,
+                reason: this.purgeReason.trim(),
+                ...(one ? { ids: [one.id] } : { all: true }),
+            };
+            const minute = Math.floor(Date.now() / 60000);
+            this.purging = true;
+            try {
+                const res = await axios.post('admin/pos/counter-collect/purge-previous', body, {
+                    headers: { 'X-Idempotency-Key': `pos-purge-previous-${one ? one.id : 'all'}-${minute}` },
+                });
+                const purged = Number(res.data?.purged || 0);
+                const skipped = Array.isArray(res.data?.skipped) ? res.data.skipped.length : 0;
+                if (purged > 0) alertService.success(this.$t('label.enc_purge_done', { n: purged }));
+                if (skipped > 0) alertService.warning(this.$t('label.enc_purge_skipped', { n: skipped }));
+                this.purgeTarget = null;
+                await this.fetchPending();
+            } catch (err) {
+                alertService.error(err?.response?.data?.message || this.$t('label.enc_purge_error'));
+            } finally {
+                this.purging = false;
+            }
         },
         // [F-W5-01 sync heal 2026-06-03] Echo subscription mirrors KDS/OSS/tracker:
         // branch staff (branch_id>0) get sub-second updates; admin (branch 0) keeps
@@ -274,7 +392,7 @@ export default {
             return normalizeReceiptVariations(it?.item_variations);
         },
         normalizedExtras(it) {
-            return normalizeReceiptExtras(it?.item_extras);
+            return normalizeReceiptExtras(it?.item_extras, it?.instruction);
         },
         normalizedAddons(it) {
             return normalizeReceiptAddons(it?.item_addons);
@@ -366,6 +484,37 @@ export default {
 </script>
 
 <style scoped>
+/* [GOAL #3 2026-10-02] Filtre « Aujourd'hui | Jours précédents » + purge. Texte ≥ 7:1, cibles ≥ 44 px. */
+.enc-scope-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem var(--pos-v5-space-5) 0; flex-wrap: wrap; }
+.enc-scope-tab {
+    min-height: 44px; padding: 0 1.1rem; border-radius: 9999px; border: 2px solid #111827;
+    background: #fff; color: #111827; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;
+}
+.enc-scope-tab.is-active { background: #111827; color: #fff; }
+.enc-scope-badge {
+    display: inline-flex; min-width: 1.6rem; height: 1.6rem; padding: 0 0.4rem; align-items: center; justify-content: center;
+    border-radius: 9999px; background: #B91C1C; color: #fff; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.enc-purge-all-btn {
+    margin-inline-start: auto; min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #7F1D1D;
+    background: #7F1D1D; color: #fff; font-weight: 700; cursor: pointer;
+}
+.enc-scope-hint { padding: 0.5rem var(--pos-v5-space-5) 0; color: #374151; font-size: 0.9rem; }
+.enc-purge-btn {
+    min-height: 44px; padding: 0 0.9rem; border-radius: 0.5rem; border: 2px solid #7F1D1D; background: #fff; color: #7F1D1D; font-weight: 700; cursor: pointer;
+}
+.enc-ticket-bottom { flex-wrap: wrap; gap: 0.5rem; }
+.enc-confirm-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1200; padding: 1rem; }
+.enc-confirm { background: #fff; color: #111827; border-radius: 0.75rem; padding: 1.25rem 1.5rem; max-width: 30rem; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+.enc-confirm-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 0.5rem; }
+.enc-confirm-body { font-weight: 700; margin-bottom: 0.4rem; }
+.enc-confirm-note { color: #374151; font-size: 0.9rem; margin-bottom: 0.75rem; }
+.enc-confirm-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+.enc-confirm-input { width: 100%; min-height: 44px; border: 2px solid #111827; border-radius: 0.5rem; padding: 0 0.75rem; }
+.enc-confirm-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.enc-confirm-cancel { min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #111827; background: #fff; color: #111827; font-weight: 700; cursor: pointer; }
+.enc-confirm-ok { min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #7F1D1D; background: #7F1D1D; color: #fff; font-weight: 700; cursor: pointer; }
+.enc-confirm-ok:disabled, .enc-confirm-cancel:disabled { opacity: 0.55; cursor: not-allowed; }
 .enc-card {
     border-radius: var(--pos-v5-radius-lg);
     box-shadow: var(--pos-v5-shadow-md);

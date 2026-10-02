@@ -16,6 +16,7 @@
  *
  * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
  */
+import { extraDisplayName } from './kdsSymbolic.js';
 import { KIOSK_HARDWARE } from '../config/kioskHardware';
 import kioskHardware from '../services/kioskHardware';
 import { printEscPosViaCaisseBridge } from './posLocalPrinter';
@@ -417,7 +418,8 @@ export function kioskItemCompositionText(item) {
   // Extras : crudités gratuites + suppléments (tous décrits ; pas de prix sur le cartItem).
   const extras = (item.item_extras || [])
     .map((e) => {
-      const n = String((e && e.name) || '').trim();
+      // [GOAL #4 2026-10-02] nomme la « Sauce supplémentaire » générique (instruction de la ligne)
+      const n = extraDisplayName(String((e && e.name) || ''), item.instruction).trim();
       if (!n) return '';
       return n + (e && e.quantity > 1 ? ` x${e.quantity}` : '');
     })

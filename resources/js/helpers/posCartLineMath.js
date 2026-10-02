@@ -8,16 +8,28 @@ export function parsePositiveInt(value, fallback) {
     return n > 0 ? n : fallback;
 }
 
-/** Unité « principal » : convert + variations + extras (hors qty panier) */
+/**
+ * [GOAL CAISSE/CUISINE #5 2026-10-02] Valeur des extras OFFERTS d'une ligne (par unité d'article).
+ * AFFICHAGE seulement : `unit_price` vient du catalogue chargé par le wizard, il n'est JAMAIS envoyé
+ * au backend (PricingService reste l'autorité — l'offert part comme ids dans `item_extras_offered`).
+ */
+export function offeredValue(row) {
+    const offered = row && Array.isArray(row.item_extras_offered) ? row.item_extras_offered : [];
+    return offered.reduce((sum, e) => sum + (parseFloat(e && e.unit_price) || 0) * (parseInt(e && e.quantity, 10) || 0), 0);
+}
+
+/** Unité « principal » : convert + variations + extras (hors qty panier), moins l'offert */
 export function rowUnitMain(row) {
     if (!row) return 0;
     if (row.line_type === 'manual_supplement') {
         return parseFloat(row.manual_amount) || 0;
     }
-    return (
+    return Math.max(
+        0,
         (parseFloat(row.convert_price) || 0) +
         (parseFloat(row.item_variation_total) || 0) +
-        (parseFloat(row.item_extra_total) || 0)
+        (parseFloat(row.item_extra_total) || 0) -
+        offeredValue(row)
     );
 }
 

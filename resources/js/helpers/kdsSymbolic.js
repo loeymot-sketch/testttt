@@ -204,7 +204,9 @@ export function extraSauceNames(instruction) {
     if (typeof instruction !== 'string' || instruction.trim() === '') return [];
     // Borne/web write ONLY the extras.
     let m = instruction.match(/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/i)
-        || instruction.match(/extra\s+sauces?\s*:\s*([^\n.]+)/i);
+        || instruction.match(/extra\s+sauces?\s*:\s*([^\n.]+)/i)
+        // [GOAL #4 2026-10-02] libellé arabe de ar.json (kiosk.wizard.instruction.sauces_extra)
+        || instruction.match(/صلصات\s+إضافية\s*:\s*([^\n.]+)/u);
     if (m) return splitSauceList(m[1]);
     // Caisse writes ALL sauces (1st = free variation, rest = paid extras). "Sauce frites :"
     // never matches ("Sauce" is not immediately followed by ":"). Alternation avoids a
@@ -268,11 +270,25 @@ function splitSauceList(raw) {
     for (const piece of sansMontants.split(',')) {
         const name = piece.trim();
         if (!name) continue;
-        if (name.includes(':')) break;
+        if (name.includes(':')) {
+            // [GOAL #4 2026-10-02] CAUSE RACINE du « sauce supplémentaire sans nom » : la caisse colle
+            // la rubrique suivante à la dernière sauce par une ESPACE — « …, Harissa Supplément :
+            // Cheddar ». Jeter tout le morceau faisait disparaître la dernière sauce dès qu'un
+            // supplément suivait. On garde ce qui PRÉCÈDE la rubrique.
+            const m = name.match(RUBRIQUE_COLLEE);
+            if (m && m[1].trim()) out.push(m[1].trim());
+            break;
+        }
         out.push(name);
     }
     return out;
 }
+
+/**
+ * Rubriques écrites APRÈS la liste de sauces sur la même ligne. Jumeau strict de
+ * KitchenTicketSymbolicFormatter::RUBRIQUE_COLLEE (PHP) — à faire bouger ensemble.
+ */
+const RUBRIQUE_COLLEE = /^(.+?)\s+(?:suppl[ée]ments?|viandes?(?:\s+en\s+plus)?|formule|sauce\s+frites|sauces?\s+en\s+plus|extra\s+sauces?|pain|boissons?|crudit[ée]s?|garnitures?|accompagnements?|menu|avec|sans|note)\s*:/iu;
 
 /**
  * [MULTIVIANDE 2026-07-24] Split a "A, B, C" meat list → trimmed, "+"-stripped (legacy caisse
@@ -420,7 +436,10 @@ function structuredSauceNames(orderItem, destination) {
 
 function productSauceNames(orderItem) {
     const structured = structuredSauceNames(orderItem, 'product');
-    return structured.length ? structured : extraSauceNames(orderItem?.instruction);
+    // [GOAL #4 2026-10-02] `sauce_destinations` est scellé (immuable) et a pu être écrit TRONQUÉ par
+    // l'ancien découpage : la relecture de l'instruction l'emporte quand elle est plus complète.
+    const reread = extraSauceNames(orderItem?.instruction);
+    return structured.length && reread.length <= structured.length ? structured : (reread.length ? reread : structured);
 }
 
 function friesSauceNamesForOrder(orderItem) {
@@ -700,6 +719,7 @@ export function renderItemSymbolic(orderItem) {
         if (hasAllergen) {
             lines.push({ type: 'allergen', codes: allergenCodes });
         }
+        flagSupplementOnMain(lines, s.supplements);
         return { category: s.category, hasAllergen, lines };
     }
 
@@ -759,7 +779,19 @@ export function renderItemSymbolic(orderItem) {
         lines.push({ type: 'allergen', codes: allergenCodes });
     }
 
+    flagSupplementOnMain(lines, s.supplements);
     return { category: s.category, hasAllergen, lines };
+}
+
+/**
+ * [GOAL CAISSE/CUISINE #7 2026-10-02] La ligne produit qui porte au moins un supplément est
+ * marquée : l'écran la fait commencer par un « # » gras (jumeau du ticket imprimé, où la ligne
+ * produit commence par « # »). Pur affichage — aucune donnée de commande n'est modifiée.
+ */
+function flagSupplementOnMain(lines, supplements) {
+    if (!Array.isArray(supplements) || supplements.length === 0) return;
+    const main = lines.find((l) => l.type === 'symbolic-main');
+    if (main) main.hasSupplement = true;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

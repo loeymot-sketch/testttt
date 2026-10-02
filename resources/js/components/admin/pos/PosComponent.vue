@@ -1593,6 +1593,29 @@
                         </p>
                     </template>
 
+                    <!--
+                      [GOAL CAISSE/CUISINE #5 2026-10-02] Bouton « Offert » : sur chaque supplément / sauce
+                      payant de la ligne. Il met la ligne à 0 € POUR CE CLIENT ; le prix réel reste calculé
+                      par le backend (le panier n'envoie que des identifiants). Rebasculer = « Annuler l'offert ».
+                    -->
+                    <div v-if="cartOfferableExtras(cart).length > 0" class="pos-v5-cart-item__offer" data-testid="pos-cart-offer-list">
+                        <div v-for="extra in cartOfferableExtras(cart)" :key="'offer-' + index + '-' + extra.id" class="pos-v5-cart-item__offer-row">
+                            <span class="pos-v5-cart-item__offer-name" :class="extra.offered ? 'is-offered' : ''">
+                                {{ extra.name }}<template v-if="extra.quantity > 1"> ×{{ extra.quantity }}</template>
+                                <strong v-if="extra.offered" class="pos-v5-cart-item__offer-badge">{{ $t('pos.offered_badge') }}</strong>
+                            </span>
+                            <button
+                                type="button"
+                                class="pos-v5-cart-item__offer-btn"
+                                :class="extra.offered ? 'is-on' : ''"
+                                :aria-pressed="extra.offered ? 'true' : 'false'"
+                                :aria-label="$t('pos.offer_extra_aria', { name: extra.name })"
+                                data-testid="pos-cart-offer-extra"
+                                @click.stop.prevent="toggleExtraOffered(index, extra)"
+                            >{{ extra.offered ? $t('pos.offer_extra_undo') : $t('pos.offer_extra') }}</button>
+                        </div>
+                    </div>
+
                     <!-- Menu bundled + extras menu (formules) -->
                     <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="pos-v5-cart-item__bundled">
                         <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi" class="pos-v5-cart-item__bundled-line">
@@ -2581,6 +2604,8 @@ export default {
             scheduledDatePickerOpen: false,
             // Kiosk cash orders notification
             kioskCashOrders: [],
+            // [GOAL #3 2026-10-02] Nombre de commandes d'AVANT la journée de service jamais encaissées (serveur).
+            previousPendingCount: 0,
             kioskCashLoading: false,
             showKioskCashPanel: false,
             // [UX-RESET-06 2026-07-22] Confirmation 2-taps du bouton « Annuler » (vider panier) :
@@ -3179,11 +3204,13 @@ export default {
             const jour = serviceDayRange();
             const debut = new Date(`${jour.from}T00:00:00`).getTime();
             if (!Number.isFinite(debut)) return 0;
-            return (Array.isArray(this.kioskCashOrders) ? this.kioskCashOrders : [])
+            const dansLaListe = (Array.isArray(this.kioskCashOrders) ? this.kioskCashOrders : [])
                 .filter((o) => {
                     const t = Date.parse(o?.created_at ?? '');
                     return Number.isFinite(t) && t < debut;
                 }).length;
+            // [GOAL #3 2026-10-02] Le compteur serveur fait foi : la liste ne contient plus les anciennes.
+            return Math.max(dansLaListe, Number(this.previousPendingCount) || 0);
         },
         /** Profondeur de la file cuisine pour le ticket en cours — mesures, jamais prévision. */
         attenteCuisineTicket: function () {
@@ -5215,6 +5242,10 @@ export default {
             try {
                 const res = await axios.get('admin/pos/counter-collect/pending');
                 const all = res?.data?.data || [];
+                // [GOAL CAISSE/CUISINE #3 2026-10-02] La file ne renvoie plus que la journée de service
+                // courante ; les anciennes jamais encaissées sont COMPTÉES à part (meta.previous_count)
+                // pour que le pied du tiroir continue d'annoncer « N plus anciennes ».
+                this.previousPendingCount = Number(res?.data?.meta?.previous_count || 0);
                 this.kioskCashOrders = all
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
                 // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
@@ -6404,6 +6435,13 @@ export default {
                 name: extra.name || undefined,
                 quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
             }));
+            // [GOAL CAISSE/CUISINE #5 2026-10-02] « Offert » : on n'envoie QUE des ids et une quantité.
+            // Jamais de prix (le backend ignore tout montant client) : PricingService reste la source de
+            // vérité, il ne voit pas ces extras dans `item_extras` donc les facture 0.
+            const item_extras_offered = normalizeExtraEntries(row.item_extras_offered).map((extra) => ({
+                id: normalizeId(extra.id) || extra.id,
+                quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
+            }));
             return {
                 item_id: row.item_id,
                 item_price: row.convert_price,
@@ -6416,7 +6454,19 @@ export default {
                 item_extra_total: row.item_extra_total,
                 item_variations: item_variations,
                 item_extras: item_extras,
+                ...(item_extras_offered.length > 0 ? { item_extras_offered: item_extras_offered } : {}),
             };
+        },
+        /** [GOAL #5 2026-10-02] Extras payants ou offerts d'une ligne, avec leur état « Offert ». */
+        cartOfferableExtras: function (cart) {
+            const offered = normalizeExtraEntries(cart && cart.item_extras_offered).map((e) => ({ ...e, offered: true }));
+            const paid = normalizeExtraEntries(cart && cart.item_extras)
+                .filter((e) => parseFloat(e.unit_price) > 0)
+                .map((e) => ({ ...e, offered: false }));
+            return [...paid, ...offered];
+        },
+        toggleExtraOffered: function (index, extra) {
+            this.$store.dispatch('posCart/toggleExtraOffered', { index: index, extraId: extra.id });
         },
         /**
          * [C4-CAISSE-TELEPHONE 2026-07-07] Sérialise le panier (principaux + addons bundle) au

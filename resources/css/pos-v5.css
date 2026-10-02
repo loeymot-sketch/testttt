@@ -1225,6 +1225,61 @@
     color: var(--pos-v5-danger);
 }
 
+/* [GOAL CAISSE/CUISINE #5 2026-10-02] Bouton « Offert » : une rangée par supplément / sauce payant.
+   Cible tactile ≥ 36 px de haut ; état actif = fond sombre + texte blanc (jamais de jaune). */
+.pos-v5-cart-item__offer {
+    margin-top: var(--pos-v5-space-1);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.pos-v5-cart-item__offer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.pos-v5-cart-item__offer-name {
+    font-size: 12px;
+    font-weight: var(--pos-v5-weight-medium);
+    color: var(--pos-v5-ink);
+    line-height: var(--pos-v5-leading-snug);
+}
+.pos-v5-cart-item__offer-name.is-offered {
+    text-decoration: line-through;
+    color: var(--pos-v5-ink-muted);
+}
+.pos-v5-cart-item__offer-badge {
+    margin-inline-start: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #111827;
+    color: #FFFFFF;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+    text-decoration: none;
+    display: inline-block;
+}
+.pos-v5-cart-item__offer-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1.5px solid #111827;
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: #111827;
+    font-size: 12px;
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+}
+.pos-v5-cart-item__offer-btn.is-on {
+    background: #111827;
+    color: #FFFFFF;
+}
+.pos-v5-cart-item__offer-btn:focus-visible {
+    outline: 3px solid #1D4ED8;
+    outline-offset: 2px;
+}
+
 .pos-v5-cart-item__bundled {
     margin-top: var(--pos-v5-space-1);
 }
@@ -1859,4 +1914,26 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* [GOAL CAISSE/CUISINE #2 2026-10-02] Écran de paiement : 4 onglets (Espèces, Carte bleue, Titres-resto,
+   Multi-paiement). Sélecteur plus spécifique que la règle scopée du composant gelé (0,2,0). */
+nav.pos-v4-payment-methods.pos-v5-payment-methods.pos-v5-payment-methods--4col {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+nav.pos-v5-payment-methods--4col .pos-v5-payment-method {
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding-inline: 4px !important;
+    text-align: center;
+}
+nav.pos-v5-payment-methods--4col .pos-v5-payment-method-label {
+    font-size: 0.78rem;
+    line-height: 1.15;
+    text-align: center;
+    /* Jamais de coupure en plein mot (« Espèc/es ») : on ne casse qu'entre les mots. */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
 }

@@ -47,6 +47,23 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-02 — CAISSE/CUISINE : 7 CORRECTIFS (/goal owner), PREUVES À L'APPUI.** Branche `pos/category-first-caisse-2026-06-23`,
+> base `0ccb1dbb1`, rien poussé ni déployé. Détail et chiffres : voir le rapport de fin de session.
+> (1) Catégorie « Sauces supplémentaires » hors menu (`channels=["pos"]`, 13 sauces canoniques de `config/pos_sauces.php`, 0,50 €) —
+> migration de données `2026_10_02_090000`, aucun produit existant touché. (2) Écran de paiement : onglets Espèces / Carte bleue /
+> Titres-resto / Multi-paiement + CB partielle → reste par un autre moyen (`PaymentComponent.vue` **gelé**, LOCK
+> `docs/locks/LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE_2026-10-02.md`, contreseing formel à obtenir) ; même chose dans la modale
+> « à encaisser » (non gelée). (3) File « en attente d'encaissement » : jour courant par défaut (`CounterCollectQueue`), filtre
+> « Jours précédents », purge confirmée une par une / toutes (`StaleCounterOrderPurger` : CANCELED/REJECTED ou soft-delete PREPARED, JAMAIS de
+> DELETE, garde `fiscal_sequence_no IS NULL` sous verrou, audit `order.counter_pending_purged`). (4) **Cause racine des sauces sans nom** : la
+> caisse écrit « Sauce : A, B Supplément : X » avec une ESPACE ; `splitSauceList` jetait la dernière sauce — corrigé PHP + JS (+ lecture du
+> `sauce_destinations` scellé tronqué + libellé arabe). (5) Bouton « Offert » : sidecar `item_extras_offered` (ids seulement), PricingService
+> inchangé, audit `order.line_offered`, ligne « OFFERT » sur ticket/reçu. (6) Prix frites : le wizard gelé n'envoyait « Grande Portion »,
+> « Cheddar Fondu » et la 2ᵉ sauce frites de la formule qu'en TEXTE → désormais ids d'extras (`posFormulaBilling.js`, API addons
+> `addon_item_extras`). (7) Cuisine : « # » gras sur la ligne produit à supplément, suppléments blanc/noir (ticket GS B + KDS), fond jaune retiré,
+> contraste ≥ 7:1. ⚠ Défaut ANTÉRIEUR non lié : `FrozenZoneSha256BaselineSentinelTest` rouge sur `KioskWizardComponent.vue` (baseline périmée
+> depuis `c21628767`).
+
 > **2026-09-30 — BORNE : COQUE SOMBRE + 18 VISUELS RECOMPOSÉS SUR LE DÉCOR LE CAYENNE.**
 > Owner : « la page toute blanche fait bizarre… la barre latérale au noir, ça donne plus de
 > classe » + « les produits sans arrière-plan, rajoute ce fond-là comme le sandwich, à part les

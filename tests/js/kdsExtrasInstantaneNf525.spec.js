@@ -60,6 +60,6 @@ describe('KDS legacy — les extras de l\'instantané NF525 redeviennent lisible
 
         expect(source).not.toContain('{{ extra.name }}');
         // Les 5 sites d'affichage passent tous par l'assistant.
-        expect(source.split('kdsExtraDisplayName(extra)').length - 1).toBeGreaterThanOrEqual(5);
+        expect(source.split('kdsExtraDisplayName(extra').length - 1).toBeGreaterThanOrEqual(5);
     });
 });

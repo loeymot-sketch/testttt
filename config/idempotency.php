@@ -38,6 +38,10 @@ return [
         // relançait le crédit. Le crochet et l'exigence sont deux choses distinctes — la sentinelle
         // `IdempotencyRequiredRoutesCoverageTest` existe précisément pour attraper cet écart, et
         // c'est elle qui l'a attrapé.
+        // [GOAL CAISSE/CUISINE #3 2026-10-02] Purge des anciennes commandes jamais payées : écriture
+        // destructive-logique (annulation + audit). EncaissementComponent envoie déjà la clé ; un
+        // double appui ne doit pas relancer la purge.
+        'api/admin/pos/counter-collect/purge-previous',
         'api/admin/pos-loyalty/customers',
         'api/admin/pos-order/*/attach-loyalty',
         // [ONB-13 T-3.1.1 2026-08-27] Les DEUX routes qui ecrivent reellement les points

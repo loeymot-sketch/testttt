@@ -465,7 +465,11 @@ final class OrderReceiptEscPosRenderer
             // en général sur une ligne. Enroulée à la MOITIÉ de la largeur (double-largeur = 2 col
             // physiques/caractère) → JAMAIS coupée par l'imprimante, elle passe à la ligne proprement.
             $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
-            foreach (EscPosCommandBuilder::wrapIndented($blk['head'], $halfW, '  ') as $headLine) {
+            // [GOAL CAISSE/CUISINE #7 2026-10-02] La ligne produit qui porte au moins un supplément
+            // COMMENCE par un « # » gras : le cuisinier voit d'un coup d'œil qu'il y a un extra à
+            // lire dessous (jumeau écran : KdsOrderLine « kds-line__hash »).
+            $headText = $blk['supps'] !== [] ? '# '.$blk['head'] : $blk['head'];
+            foreach (EscPosCommandBuilder::wrapIndented($headText, $halfW, '  ') as $headLine) {
                 $b .= EscPosCommandBuilder::textLine($headLine);
             }
             // Retour en double HAUTEUR (grand mais pleine largeur) pour le détail menu/suppléments.
@@ -480,10 +484,13 @@ final class OrderReceiptEscPosRenderer
             // [T3-CUISINE 2026-07-05] Suppléments en GRAS + étoile « * » → le cuisinier voit tout
             // de suite qu'il y a un extra (owner). Étoile ASCII (les emojis ne s'encodent pas CP858).
             foreach ($blk['supps'] as $sup) {
-                $star = preg_replace('/^\+\s*/', '* ', (string) $sup);
+                // [GOAL CAISSE/CUISINE #7 2026-10-02] LECTURE INVERSÉE : gras BLANC sur cadre NOIR
+                // (GS B). Le cadre ne couvre que les caractères imprimés → un espace de chaque côté
+                // fait le bandeau. Plus d'étoile : le cadre noir est le signal.
+                $label = trim((string) preg_replace('/^\+\s*/', '', (string) $sup));
                 $b .= EscPosCommandBuilder::bold(true);
-                foreach (EscPosCommandBuilder::wrapIndented($star, $w - 2, '  ') as $supLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$supLine);
+                foreach (EscPosCommandBuilder::wrapIndented($label, $w - 6, '') as $supLine) {
+                    $b .= '  '.EscPosCommandBuilder::invert(true).' '.$supLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
@@ -555,7 +562,13 @@ final class OrderReceiptEscPosRenderer
                 // recovered sauce name(s) so the 2nd+ sauce is visible on the client ticket
                 // (parity with the payment screen). Price-neutral — amount unchanged.
                 $en = $this->symbolic->extraDisplayName($en, (string) ($oi->instruction ?? ''));
-                $extras[] = ['name' => $en, 'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0)];
+                $extras[] = [
+                    'name' => $en,
+                    'amount' => (float) ($e['line_total'] ?? $e['unit_price'] ?? 0),
+                    // [GOAL #5 2026-10-02] « OFFERT » : la ligne reste visible à 0 € avec la mention.
+                    'offered' => ! empty($e['offered']),
+                    'quantity' => max(1, (int) ($e['quantity'] ?? 1)),
+                ];
             }
             $addons = [];
             foreach (($snap['addons'] ?? []) as $a) {
@@ -614,8 +627,12 @@ final class OrderReceiptEscPosRenderer
             $compo[] = $pos !== false ? mb_substr($c, $pos + 2) : $c;
         }
         $paid = [];
+        $offered = [];
         foreach ($line['extras'] as $e) {
-            if (($e['amount'] ?? 0) > 0) {
+            if (! empty($e['offered'])) {
+                // Jamais fondue dans la compo : une ligne offerte doit se VOIR, avec « OFFERT ».
+                $offered[] = $e;
+            } elseif (($e['amount'] ?? 0) > 0) {
                 $paid[] = $e;
             } else {
                 $compo[] = $e['name'];
@@ -630,6 +647,10 @@ final class OrderReceiptEscPosRenderer
         }
         foreach ($paid as $e) {
             $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'], $this->money((float) $e['amount']), $w);
+        }
+        foreach ($offered as $e) {
+            $qtyLabel = ((int) ($e['quantity'] ?? 1)) > 1 ? ' x'.(int) $e['quantity'] : '';
+            $b .= EscPosCommandBuilder::lineItemKV('   + '.$e['name'].$qtyLabel, 'OFFERT', $w);
         }
         foreach ($line['addons'] as $a) {
             // [MENU-ROLE-CLIENT 2026-07-23] Pour un addon de formule (role menu_*), imprime un
