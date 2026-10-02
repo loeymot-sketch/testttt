@@ -800,7 +800,7 @@
         "test_print_sent": "Ticket de test envoyé à l'imprimante",
         "test_print_failed": "Échec du test d'impression — vérifiez l'adresse et que l'imprimante est allumée",
         "cash_drawer_open": "Ouvrir le tiroir-caisse",
-        "encaisser_mode_title": "Encaisser la commande borne",
+        "encaisser_mode_title": "Encaisser la commande",
         "encaisser_mode_hint": "Le client a sélectionné paiement au comptoir. Choisissez le mode encaissé.",
         "encaisser_mode_cash": "Espèce",
         "encaisser_mode_cash_sub": "Ouvre le tiroir (simulation)",

@@ -18,7 +18,7 @@
                     <tbody>
                         <tr>
                             <td class="text-xs text-left py-0.5 text-heading">{{ $t('button.order') }}
-                                #{{ order.order_serial_no }}
+                                <template v-if="order.queue_number">N°{{ order.queue_number }} · </template>#{{ order.order_serial_no }}
                             </td>
                         </tr>
                         <tr>
@@ -138,10 +138,10 @@
                             <tr>
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.payment_type') }}:</td>
                                 <td v-if="order.transaction" class="pt-1 pb-1">{{ paymentMethodLabel(order.transaction.payment_method) }}</td>
-                                <td v-else class="pt-1 pb-1">{{ enums.paymentTypeEnumArray[order.payment_method] }}</td>
+                                <td v-else class="pt-1 pb-1">{{ libellePaiement(order) }}</td>
                             </tr>
                             <tr>
-                                <td class="pt-1 pb-1 pr-1">{{ $t('label.delivery_time') }}:</td>
+                                <td class="pt-1 pb-1 pr-1">{{ order.order_type === enums.orderTypeEnum.DELIVERY ? $t('label.delivery_time') : $t('label.pickup_time') }}:</td>
                                 <td class="pt-1 pb-1">{{ order.delivery_date }} {{ order.delivery_time }}</td>
                             </tr>
                         </tbody>
@@ -246,6 +246,14 @@ export default {
         },
     },
     methods: {
+        // [B4-R4-02 · 2026-10-02] Même règle que la fiche : « Paiement au comptoir » pour une commande
+        // à emporter réglée sur place, jamais « à la livraison ».
+        libellePaiement(order) {
+            if (order?.payment_method === paymentTypeEnum.CASH_ON_DELIVERY && order?.order_type !== orderTypeEnum.DELIVERY) {
+                return this.$t("label.pay_at_counter");
+            }
+            return this.enums.paymentTypeEnumArray[order?.payment_method];
+        },
         normalizedVariations(item) {
             return normalizeReceiptVariations(item?.item_variations);
         },

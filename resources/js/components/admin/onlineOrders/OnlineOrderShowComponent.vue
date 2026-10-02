@@ -5,8 +5,12 @@
             <div class="flex flex-wrap gap-y-5 items-end justify-between">
                 <div>
                     <div class="flex flex-wrap items-start gap-y-2 gap-x-6 mb-5">
+                        <!-- [E2E stores · B4-R4-01 · 2026-10-02] Le numéro APPELÉ (« N°A0032 »), celui
+                             que l'écran client, l'encaissement et l'application affichent ; la série
+                             reste en référence. -->
                         <p class="text-2xl font-medium">{{ $t('label.order_id') }}:
-                            <span class="text-heading">
+                            <span class="text-heading" v-if="order.queue_number">N°{{ order.queue_number }}</span>
+                            <span :class="order.queue_number ? 'text-sm text-paragraph ml-2' : 'text-heading'">
                                 #{{ order.order_serial_no }}
                             </span>
                         </p>

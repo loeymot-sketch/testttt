@@ -118,6 +118,13 @@
                                     class="enc-queue-date-badge"
                                     :data-testid="`enc-queue-date-${order.id}`"
                                 >{{ queueDateBadge(order) }}</span>
+                                <!-- [E2E stores · B2-R2-11 · 2026-10-02] Commande PROGRAMMÉE : l'heure de
+                                     retrait choisie par le client (même règle que la fiche, serveur). -->
+                                <span
+                                    v-if="order.scheduled_at && order.delivery_time"
+                                    class="enc-queue-date-badge"
+                                    :data-testid="`enc-scheduled-${order.id}`"
+                                >⏰ {{ order.delivery_time }}</span>
                                 <button
                                     class="enc-cancel-x"
                                     :class="{ 'enc-cancel-x--armed': pendingCancelId === order.id }"
