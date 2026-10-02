@@ -2,7 +2,7 @@
 
 **ID :** `LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE_2026-10-02.md`
 **Date :** 2026-10-02
-**Statut :** **AUTORISÉ PAR LE `/goal` DU PROPRIÉTAIRE (2026-10-02, point 2) — contreseing formel à confirmer au retour du propriétaire (§10).** Rien n'est poussé ni déployé.
+**Statut :** **CONTRESIGNÉ PAR LE PROPRIÉTAIRE (2026-10-02, dans le chat) — §10 APPROVED.** Rien n'est poussé ni déployé.
 **Portée :** chirurgicale — 1 fichier gelé, additif uniquement.
 
 ## Fichier gelé touché (CLAUDE.md §7)
@@ -72,4 +72,4 @@ contournement hors de la zone gelée n'existe sans changer le flux de caisse pro
 > Gate humaine — à signer par le propriétaire. L'autorisation de portée vient du `/goal` du 2026-10-02 ;
 > la confirmation nominative est demandée au retour, comme pour les LOCK précédents.
 
-- [ ] Propriétaire : ____________________   Date : __________
+- [x] Propriétaire : **validé dans le chat** (réponse « Oui, je valide » à la question de contreseing)   Date : 2026-10-02

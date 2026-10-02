@@ -6,7 +6,7 @@
         "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc.",
         "last_authorized_update": "2026-09-16 — docs/locks/LOCK_ORDER_INTEGRITY_KDS_LOYALTY_2026-09-16.md, fondé sur le gate propriétaire docs/gates/GATE_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md. Correctifs bornés : supplément libre fiscalisé côté serveur et round-trip POS multi-sauces."
     },
-    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "fcbe3755aa9c118e7bf1feafac293b993073262126228e09c861eae69ee256ac",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "f8ecb1118ffeae715a60bccbc58a025d157dbfcd43260ab3e4c41171ebe06465",
     "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
     "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "b2845a326baaee0051439e8cd8a88cf1962d8704686703bf81f8cbb4f3fad2ff",
     "resources/js/components/admin/pos/PaymentComponent.vue": "6315ced9d7eb39a1ee1a3bec9b1ba40fa20e9ebcf602f700c96a31403c400eb1",
