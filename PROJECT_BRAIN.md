@@ -47,6 +47,25 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-02 (nuit) — demande propriétaire « continue test-e2e et deploy » : BLOQUÉE par la session.**
+> Le processus Claude ne joint plus les services macOS (`whoami` → 501, ssh → « No user exists for
+> uid 501 », Chromium « bootstrap (141) ») : ni navigateur, ni émulateur, ni SSH (prod, GitHub).
+> Relancer Claude Code depuis un Terminal, puis dans l'ordre :
+> 1. `launchctl print gui/$(id -u)` doit répondre ; `ssh lecayenne true` doit passer.
+> 2. Tests : banc `tests-e2e/lot-i-2026-10-02.spec.js` sur la copie :8896 (lot I appliqué) puis sur
+>    :8898 (doit rougir), appliquer `tmp/patch-site-lot-i.py` au worktree, recompiler, bumper,
+>    batterie + rejeu B/C (round 5) + revue adverse → 2ᵉ round propre = convergence.
+> 3. Déploiement BACKEND d'abord (route version minimale + migration `preparation_time_confirmed_at`) :
+>    comparer `git rev-parse HEAD` du VPS à `origin/pos/category-first-caisse-2026-06-23` ; si un
+>    commit serveur n'est sur aucune branche → le fusionner localement d'abord (mémoire
+>    `deploiement-direct-sans-github`). Si GitHub refuse encore (« verify your email ») : bundle +
+>    variante à garde d'ascendance, lancée PAR LE PROPRIÉTAIRE avec `!`. Vérifier ensuite : hash servi,
+>    `php artisan migrate:status`, `fiscal:verify-chain`, `/api/frontend/app/config` en JSON.
+> 4. Puis SITE : fusionner `app/natif-honnete-2026-09-30` dans la branche déployée du dépôt du site
+>    (vérifier `git remote -v` ; NE PAS embarquer le travail non commité d'une autre session),
+>    `node tools/release-gates.mjs --prod` tout vert, pousser (Vercel déploie).
+> 5. Applications : `npm run build:www` + `cap sync`, paquets signés (clé du propriétaire).
+
 > **2026-10-02 (soir) — GOAL STORES, round 4 : vague B VERTE (0 P0, 0 P1), vague C application
 > VERTE (0 P0, 0 P1), revue site en cours.** Site `aebc92f` (lots C à H + portes de publication
 > `tools/release-gates.mjs`), backend `3c5fcfbd0` (fiche/facture/encaissement d'une commande web).
