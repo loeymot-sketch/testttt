@@ -47,6 +47,21 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-02 (soir) — GOAL STORES, round 4 : vague B VERTE (0 P0, 0 P1), vague C application
+> VERTE (0 P0, 0 P1), revue site en cours.** Site `aebc92f` (lots C à H + portes de publication
+> `tools/release-gates.mjs`), backend `3c5fcfbd0` (fiche/facture/encaissement d'une commande web).
+> Paquet Android du code final : 28/28 sur émulateur. Commandes de test non payées annulées en base
+> locale (aucune à numéro fiscal touchée).
+> **Prêt, NON appliqué** (`tmp/patch-site-lot-i.py`, appliqué seulement sur la copie :8896) : statut
+> du suivi annoncé aux lecteurs d'écran, points fidélité plafonnés au montant de la commande
+> (l'écran promettait 1 200 pts −12 € sur un dessert à 3,50 € ; le serveur, lui, débitait 350 pts),
+> noms de suppléments plus coupés au milieu des mots à 320 px (régression du lot G), logo lisible
+> à 320 px. Banc `tests-e2e/lot-i-2026-10-02.spec.js` écrit, PAS encore exécuté.
+> **Blocage d'environnement** : depuis le `/login` du 02/10 au soir, la session ne peut plus lancer
+> Chromium ni l'émulateur (macOS : « 141 Reentrancy avoided », mémoire `session-sans-services-macos`).
+> Relancer Claude Code depuis un Terminal, puis : banc lot I sur :8896 et :8898, appliquer le lot I,
+> rejouer B et C (round 5), revue adverse, convergence.
+
 > **2026-10-02 — GOAL STORES, W2 E2E : rounds 2 et 3 corrigés, round 4 en cours.**
 > Backend (LOCAL, rien de poussé ni déployé) : `a4c408a59` suivi « ~30 min » après acceptation
 > (le défaut des réglages, 30 min en prod, était pris pour un temps du caissier ; **migration**
