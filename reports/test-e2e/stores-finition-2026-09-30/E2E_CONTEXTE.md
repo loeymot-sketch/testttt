@@ -94,3 +94,21 @@ Correctifs livrés depuis le round 1 (tous prouvés par un banc qui rougit sans 
   éjecté du paiement vers la fidélité) ; téléphone « 06 06… » rattrapé, trop long refusé (A-008).
 
 Ce qui ne doit PLUS être signalé comme ouvert : O-B5, O-B6, F-B2, A-001, A-002, A-006, A-008, O-2, O-3, O-4.
+
+## Round 4 — 2026-10-02 (après les revues adverses du round 2)
+Site `2a73e94` (lots C à H), backend `5fa5f3b85` (+ assets recompilés). Corrigé ET prouvé par un banc
+qui rougit sur le code d'avant — à ne PLUS signaler comme ouvert :
+- Vague B : B2-R2-01 (titre de confirmation au numéro appelé), B2-R2-02 (« ~30 min » après
+  acceptation : backend `a4c408a59`, migration `preparation_time_confirmed_at`), B2-R2-03 à -09
+  (fiche caisse web : composition + Cheddar, statut de paiement, « Paiement au comptoir » /
+  « Heure de retrait », plus de 403 livreurs, plus de toast en double, bandeau cuisine et toast
+  caisse au « N°A00xx »), B2-R2-10 (« Envoyée au restaurant »), -12 (pas de QR sur une commande
+  annulée), -13 (« prête ! » insécable).
+- Vague C : C-001/CW-002 (boisson épuisée non proposée en formule), C-002/CW-006 (un seul délai),
+  C-003/CW-003/CW-004 (rien de collant sous l'en-tête, bureau compris), C-004/CW-005 (« dépensés »
+  = commandes retirées), C-005 à C-011 (logo, prix d'un choix, bandeau hors ligne, aide du créneau
+  fermé, lien d'évitement des pages légales, « PARTI ! » lisible), C-009/CW-012 (barre d'action de
+  la fiche produit), CW-007 (pied de page sous la barre de paiement), CW-009 (filtre XL).
+- RÉFUTÉ : C-012 (boutons − / + du panier : zone tactile 44×44 par ::after, styles.css:1103).
+- Décision propriétaire, PAS un défaut à corriger ici : CW-001 (la page allergènes promet un
+  récapitulatif d'allergènes que l'assistant n'affiche pas — données de correspondance devinées).

@@ -47,6 +47,22 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-02 — GOAL STORES, W2 E2E : rounds 2 et 3 corrigés, round 4 en cours.**
+> Backend (LOCAL, rien de poussé ni déployé) : `a4c408a59` suivi « ~30 min » après acceptation
+> (le défaut des réglages, 30 min en prod, était pris pour un temps du caissier ; **migration**
+> `preparation_time_confirmed_at` à jouer au déploiement), `5fa5f3b85` fiche caisse d'une commande
+> web (composition + Cheddar invisibles, statut vide, « livraison » pour un retrait, 403 livreurs)
+> et un seul numéro « N°A00xx » partout (cuisine, caisse). Suites touchées vertes (~1 400 PHPUnit,
+> 1 498 Vitest caisse/cuisine) ; seul rouge = dérive KioskWizard connue.
+> Site (worktree `site-wt-stores-2026-09-30`) : `d0acc91` → `2a73e94` (lots C à H : numéro appelé
+> au titre, QR masqué si annulée, boisson épuisée non commandable en formule, un seul délai,
+> catégories et colonnes collantes sous l'en-tête RÉEL, « dépensés » exact, pied de page dégagé,
+> lien d'évitement, contraste, logo 320 px, bandeau hors ligne, barre d'action de la fiche produit,
+> filtre XL). Bancs neufs : finitions-store 21, collants 11 (rouges sur le code d'avant).
+> **Décisions propriétaire en attente** : allergènes (CW-001 : la page légale promet un récapitulatif
+> que l'assistant n'affiche pas), déploiement, « au plus vite » hors service, commandes
+> d'examinateur, débit du code par IP, complément silencieux d'attribut requis.
+
 > **2026-10-01 (matin) — GOAL STORES, W2 E2E : round 1 clos, round 2 en cours.**
 > Backend (branche `qa/corrige-rapports-2026-09-28`, LOCAL — GitHub refuse toujours les poussées) :
 > `5242f2449` hors service, `b32b92d90` + `9bf44bd39` version minimale de l'app, **`1f33aef6e` P0 :
