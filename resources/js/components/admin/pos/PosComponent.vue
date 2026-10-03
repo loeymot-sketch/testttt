@@ -6386,6 +6386,13 @@ export default {
             };
         },
         saveManualSupplement: function () {
+            // [GOAL REMARQUES 2026-10-03 · R-038 · Codex P1-19] Un supplément libre COMPLÈTE une commande :
+            // sans aucun produit au panier, il ferait une vente « Supplément — X » toute seule. Refusé.
+            const aUnProduit = (this.carts || []).some((l) => l && l.line_type !== 'manual_supplement');
+            if (this.manualSupplement.editIndex === null && !aUnProduit) {
+                this.manualSupplement.error = 'Ajoutez d\'abord un produit : un supplément libre complète une commande.';
+                return;
+            }
             const amount = this.parseManualSupplementAmount(this.manualSupplement.amount);
             if (!Number.isFinite(amount) || amount <= 0 || amount > 100) {
                 this.manualSupplement.error = 'Saisissez un montant entre 0,01 € et 100,00 €.';
