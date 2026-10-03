@@ -318,6 +318,7 @@
         "offer_extra": "Free",
         "offer_extra_undo": "Undo free",
         "offered_badge": "FREE",
+        "loyalty_detach_aria": "Remove the customer from this sale",
         "offer_extra_aria": "Make {name} free for this customer",
         "cancel_kiosk_cash": {
             "title": "Cancel this order?",

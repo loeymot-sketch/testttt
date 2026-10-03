@@ -1183,6 +1183,16 @@
                         >— {{ checkoutProps.form.loyalty_redeem_points }} pts déduits sur cette vente</span>
                     </template>
                 </span>
+                <!-- [GOAL REMARQUES 2026-10-03 · R-015] « je veux annuler […] ça reste pour toute la
+                     commande » : retirer le client de CETTE vente, sans vider le panier. -->
+                <button
+                    type="button"
+                    class="pos-v5-loyalty__retirer"
+                    data-testid="pos-loyalty-detach"
+                    :aria-label="$t('pos.loyalty_detach_aria')"
+                    :title="$t('pos.loyalty_detach_aria')"
+                    @click="retirerClientFidelite"
+                >✕</button>
             </div>
 
             <!--
@@ -7083,6 +7093,17 @@ export default {
                     alertService.error(err.response.data.message);
                 });
         },
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-015] Retire le client (et sa fidélité) de la vente en cours, sans
+         * toucher au panier. Un rachat de points armé tombe avec lui : il déduirait les points d'un client
+         * qui n'est plus rattaché. Le reste du nettoyage (pastille, code fidélité, adresse) est celui de
+         * changingUser() quand aucun client n'est choisi — une seule définition.
+         */
+        retirerClientFidelite() {
+            this.checkoutProps.form.customer_id = null;
+            this.checkoutProps.form.loyalty_redeem_points = null;
+            this.changingUser();
+        },
         changingUser: function () {
             if (this.checkoutProps.form.customer_id !== null) {
                 this.clearAddresses = false;
@@ -7696,6 +7717,22 @@ export default {
 }
 .pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
   color: #991B1B;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-015] ✕ « Retirer le client » sur la pastille fidélité. */
+.pos-v5-loyalty__retirer {
+  margin-inline-start: auto;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.pos-v5-loyalty__retirer:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 .pos-shortcuts__head {
   display: flex;

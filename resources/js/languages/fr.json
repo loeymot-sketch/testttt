@@ -320,6 +320,7 @@
         "offer_extra": "Offert",
         "offer_extra_undo": "Annuler l'offert",
         "offered_badge": "OFFERT",
+        "loyalty_detach_aria": "Retirer le client de cette vente",
         "offer_extra_aria": "Offrir {name} à ce client",
         "cancel_kiosk_cash": {
             "title": "Annuler cette commande ?",
