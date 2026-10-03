@@ -83,7 +83,6 @@ return [
 
         // ── Galette (cat 2)
         'galette-cayenne' => 'galette.png',
-        'galette-normale' => 'galette.png',
         // [AUDIT 2026-08-12] Créée le jour même, elle n'avait aucune entrée ici : l'accesseur
         // `Item::getThumbAttribute()` ne lit que `items` + `addons`, jamais `categories`. Une
         // entrée manquante ne casse rien et ne lève aucune erreur — elle sert simplement la
