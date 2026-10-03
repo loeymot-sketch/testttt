@@ -290,6 +290,12 @@
             :order="encaisseOrder"
             @confirmed="onEncaisseConfirmed"
             @cancel="encaisseOrder = null" />
+        <!-- [GOAL REMARQUES 2026-10-03 · R-048] « Imprimer le ticket client ? » après l'encaissement —
+             jamais d'impression automatique (sauf option explicite autoPrintClientReceipt). -->
+        <PosQuestionImpressionTicket
+            v-if="questionImpressionOrderId"
+            :order-id="questionImpressionOrderId"
+            @fermer="questionImpressionOrderId = null" />
     </div>
 </template>
 
@@ -298,6 +304,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import CaisseSecondaryNav from "../pos/CaisseSecondaryNav.vue";
 import PosCounterCollectModal from "../pos/PosCounterCollectModal.vue";
+import PosQuestionImpressionTicket from "../pos/PosQuestionImpressionTicket.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import axios from "axios";
@@ -327,6 +334,7 @@ export default {
         LoadingComponent,
         BreadcrumbComponent,
         PosCounterCollectModal,
+        PosQuestionImpressionTicket,
     },
     data() {
         return {
@@ -337,6 +345,7 @@ export default {
             scope: 'today',
             previousCount: 0,
             ratees: [], // [R-059] commandes téléphone annulées < 24 h (lecture seule)
+            questionImpressionOrderId: null, // [R-048] commande dont on propose d'imprimer le ticket client
             purgeTarget: null, // { order: Order|null } — null order = toutes les anciennes
             purgeReason: '',
             purging: false,
@@ -711,6 +720,9 @@ export default {
                         return b64 ? printEscPosViaCaisseBridge(b64) : null;
                     })
                     .catch(() => null); /* pont indisponible : ignoré (l'encaissement a réussi) */
+            } else if (orderId) {
+                // [GOAL REMARQUES 2026-10-03 · R-048] Par défaut : la QUESTION, comme à la caisse.
+                this.questionImpressionOrderId = orderId;
             }
             this.fetchPending();
         },

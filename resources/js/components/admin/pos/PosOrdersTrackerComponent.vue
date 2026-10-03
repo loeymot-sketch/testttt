@@ -992,6 +992,12 @@
             @confirmed="onEncaisseConfirmed"
             @cancel="encaisseOrder = null"
         />
+        <!-- [GOAL REMARQUES 2026-10-03 · R-048] « Imprimer le ticket client ? » après l'encaissement. -->
+        <PosQuestionImpressionTicket
+            v-if="questionImpressionOrderId"
+            :order-id="questionImpressionOrderId"
+            @fermer="questionImpressionOrderId = null"
+        />
 
         <!-- [BOUTON SCELLÉ 2026-08-19] Contrepartie comptable d'une commande scellée.
              Composant EXISTANT réutilisé tel quel (PosRefundModal) : il porte déjà la clé
@@ -1036,6 +1042,7 @@ import PosRefundModal from './PosRefundModal.vue';
 // must be self-sufficient for encashment (its Encaisser CTA was previously a
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
+import PosQuestionImpressionTicket from './PosQuestionImpressionTicket.vue';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
 import PosStockOutflowModal from './PosStockOutflowModal.vue';
 import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
@@ -1101,7 +1108,7 @@ const SCHEDULED_LEAD_MIN = 20;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal, PosRefundModal },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosQuestionImpressionTicket, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal, PosRefundModal },
     mixins: [adminPriceMixin],
     data() {
         return {
@@ -1190,6 +1197,7 @@ export default {
             // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
             // via the shared PosCounterCollectModal (null = modal closed).
             encaisseOrder: null,
+            questionImpressionOrderId: null, // [R-048] commande dont on propose d'imprimer le ticket client
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
@@ -2311,8 +2319,12 @@ export default {
         // the counter-collect; clear it + refresh so the now-paid order leaves
         // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
         // fetchOrders, but we refresh immediately for local responsiveness).
-        onEncaisseConfirmed() {
+        onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
+            // [GOAL REMARQUES 2026-10-03 · R-048] Le Suivi n'imprimait rien et ne demandait rien : même
+            // question que la caisse, jamais d'impression automatique.
+            const orderId = payload?.orderId ?? payload?.order_id ?? null;
+            if (orderId) this.questionImpressionOrderId = orderId;
             // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
             // on invalide le TTL du compteur d'anciennes commandes pour que le
             // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.

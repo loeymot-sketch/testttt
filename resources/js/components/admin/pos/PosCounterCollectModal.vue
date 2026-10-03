@@ -251,7 +251,7 @@
           >
             <span v-if="submitting" class="cc-spinner" aria-hidden="true"></span>
             <span v-else aria-hidden="true">✓</span>
-            {{ submitting ? $t('label.processing') : $t('button.confirm_and_print') }}
+            {{ submitting ? $t('label.processing') : $t('button.confirm_collect') }}
           </button>
         </div>
       </div>

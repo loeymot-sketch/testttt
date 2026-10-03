@@ -1938,6 +1938,7 @@
         "add_chef": "Add Chef",
         "add_kiosk_machine": "Add Kiosk Machine",
         "confirm_and_print": "Confirm & Print Receipt",
+        "confirm_collect": "Confirm payment",
         "transfer_table": "Transférer la table",
         "release_table": "Libérer la table",
         "kds_bump": "Marquer prêt",

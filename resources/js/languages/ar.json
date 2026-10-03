@@ -184,6 +184,10 @@
         "offer_extra_undo": "إلغاء المجاني",
         "offered_badge": "مجاني",
         "offer_extra_aria": "جعل {name} مجانيًا لهذا العميل",
+        "print_ticket_client": "إيصال العميل",
+        "print_decision_title": "طباعة إيصال العميل؟",
+        "print_decision_yes": "نعم، اطبع",
+        "print_decision_no": "لا، شكرًا",
         "cancel_kiosk_cash": {
             "title": "إلغاء طلب الكشك هذا؟",
             "warning": "هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء الطلب المدفوع.",
@@ -1344,6 +1348,7 @@
         "add_chef": "أضف شيف",
         "add_kiosk_machine": "إضافة آلة كشك",
         "confirm_and_print": "تأكيد وطباعة الإيصال",
+        "confirm_collect": "تأكيد التحصيل",
         "transfer_table": "نقل الطاولة",
         "release_table": "تحرير الطاولة",
         "kds_bump": "جاهز",
