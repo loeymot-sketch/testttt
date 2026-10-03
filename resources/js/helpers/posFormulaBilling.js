@@ -33,7 +33,10 @@ export function formulaOptionExtras(menuRestore, catalogAddon, lineItemId) {
         const found = catalog.find((extra) => norm(extra && extra.name) === name);
         const id = found ? normalizeId(found.id) : null;
         if (id !== null) {
-            out.push({ id, item_id: lineItemId, name: found.name, quantity: 1 });
+            // [GOAL REMARQUES 2026-10-03 · R-041] `unit_price` = prix CATALOGUE, pour l'affichage et pour
+            // savoir si l'option est « offrable » (même règle que les extras du produit). Il n'est JAMAIS
+            // envoyé : la ligne de commande ne transmet que id / item_id / name / quantity.
+            out.push({ id, item_id: lineItemId, name: found.name, quantity: 1, unit_price: Number(found.price) || 0 });
         }
     });
     return out;

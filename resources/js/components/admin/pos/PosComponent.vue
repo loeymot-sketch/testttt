@@ -1690,6 +1690,25 @@
                                 class="pos-v5-cart-item__bundled-extras"
                                 data-testid="pos-cart-bundled-extras"
                             >{{ cartBundledExtras(cart, bundled).join(' · ') }}</span>
+                            <!-- [GOAL REMARQUES 2026-10-03 · R-041] « Offert » aussi sur les options de
+                                 FORMULE (Grande Portion, Cheddar Fondu) — même bouton que les extras. -->
+                            <div v-if="addonOfferableExtras(bundled).length > 0" class="pos-v5-cart-item__offer" data-testid="pos-cart-offer-addon-list">
+                                <div v-for="extra in addonOfferableExtras(bundled)" :key="'offer-a-' + index + '-' + bi + '-' + extra.id" class="pos-v5-cart-item__offer-row">
+                                    <span class="pos-v5-cart-item__offer-name" :class="extra.offered ? 'is-offered' : ''">
+                                        {{ extra.name }}
+                                        <strong v-if="extra.offered" class="pos-v5-cart-item__offer-badge">{{ $t('pos.offered_badge') }}</strong>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        class="pos-v5-cart-item__offer-btn"
+                                        :class="extra.offered ? 'is-on' : ''"
+                                        :aria-pressed="extra.offered ? 'true' : 'false'"
+                                        :aria-label="$t('pos.offer_extra_aria', { name: extra.name })"
+                                        data-testid="pos-cart-offer-addon-extra"
+                                        @click.stop.prevent="toggleAddonExtraOffered(index, bi, extra)"
+                                    >{{ extra.offered ? $t('pos.offer_extra_undo') : $t('pos.offer_extra') }}</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -6572,6 +6591,13 @@ export default {
                 .filter((e) => parseFloat(e.unit_price) > 0)
                 .map((e) => ({ ...e, offered: false }));
             return [...paid, ...offered];
+        },
+        /** [GOAL REMARQUES 2026-10-03 · R-041] Options payantes ou offertes d'une ligne FORMULE. */
+        addonOfferableExtras: function (bundled) {
+            return this.cartOfferableExtras(bundled);
+        },
+        toggleAddonExtraOffered: function (index, addonIndex, extra) {
+            this.$store.dispatch('posCart/toggleAddonExtraOffered', { index: index, addonIndex: addonIndex, extraId: extra.id });
         },
         toggleExtraOffered: function (index, extra) {
             this.$store.dispatch('posCart/toggleExtraOffered', { index: index, extraId: extra.id });

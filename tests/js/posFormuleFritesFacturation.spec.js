@@ -154,9 +154,11 @@ describe('helper — options de formule facturables', () => {
     const catalog = parent.addons[0];
 
     it('Grande Portion + Cheddar Fondu → deux ids d\'extras sur la ligne formule', () => {
+        // [GOAL REMARQUES 2026-10-03 · R-041] + `unit_price` (prix catalogue, AFFICHAGE / « offrable »
+        // seulement — jamais transmis : voir le cas « la ligne envoyée » de posOffertOptionFormule.spec).
         expect(formulaOptionExtras({ fritesGrande: true, fritesCheddar: true }, catalog, 1)).toEqual([
-            { id: 234, item_id: 1, name: 'Grande Portion', quantity: 1 },
-            { id: 235, item_id: 1, name: 'Cheddar Fondu', quantity: 1 },
+            { id: 234, item_id: 1, name: 'Grande Portion', quantity: 1, unit_price: 1 },
+            { id: 235, item_id: 1, name: 'Cheddar Fondu', quantity: 1, unit_price: 1 },
         ]);
     });
     it('rien de coché → rien n\'est ajouté (aucun prix inventé)', () => {

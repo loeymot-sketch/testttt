@@ -114,6 +114,24 @@ class OffertSurSupplementTest extends TestCase
         $this->assertEqualsWithDelta(8.00, (float) $q['total_ttc'], 0.0001, 'les 2 cheddars offerts ne coûtent rien');
     }
 
+    /**
+     * [GOAL REMARQUES 2026-10-03 · T-3.7 R-041] Une OPTION DE FORMULE (« Grande Portion » de la ligne
+     * « Menu (Frites + Boisson) ») offerte : la ligne formule est une ligne à part entière, l'option
+     * appartient à SON produit — le serveur l'accepte et la facture 0, sans aucun prix client.
+     */
+    public function test_une_option_de_formule_offerte_ne_coute_rien(): void
+    {
+        $formule = Item::factory()->create(['item_category_id' => $this->item->item_category_id, 'tax_id' => $this->item->tax_id, 'price' => 2.50, 'status' => Status::ACTIVE, 'name' => 'Menu (Frites + Boisson)']);
+        $grande = ItemExtra::create(['item_id' => $formule->id, 'name' => 'Grande Portion', 'price' => 1.00, 'status' => Status::ACTIVE]);
+        $ligneFormule = fn (array $l) => array_merge(['item_id' => $formule->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []], $l);
+
+        $payee = $this->quote(json_encode([$ligneFormule(['item_extras' => [['id' => $grande->id, 'quantity' => 1]]])]))->assertOk()->json('data');
+        $offerte = $this->quote(json_encode([$ligneFormule(['item_extras_offered' => [['id' => $grande->id, 'quantity' => 1]]])]))->assertOk()->json('data');
+
+        $this->assertEqualsWithDelta(3.50, (float) $payee['total_ttc'], 0.0001, 'référence : formule 2,50 + Grande Portion 1,00');
+        $this->assertEqualsWithDelta(2.50, (float) $offerte['total_ttc'], 0.0001, 'Grande Portion offerte : 0 €');
+    }
+
     public function test_offert_partiel_une_unite_payee_une_offerte(): void
     {
         $items = $this->items([

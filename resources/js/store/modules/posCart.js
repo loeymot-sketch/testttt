@@ -340,6 +340,11 @@ export const posCart = {
             context.commit('toggleExtraOffered', payload);
             context.commit('subtotal');
         },
+        // [GOAL REMARQUES 2026-10-03 · R-041] « Offert » sur une option de FORMULE (Grande Portion, Cheddar Fondu).
+        toggleAddonExtraOffered: function (context, payload) {
+            context.commit('toggleAddonExtraOffered', payload);
+            context.commit('subtotal');
+        },
         /**
          * [P12_POS_CART_PRUNE / F-VERIFY-01-02] Remove cart lines whose item_id
          * matches an item flagged unavailable by the ItemAvailabilityChanged
@@ -509,6 +514,41 @@ export const posCart = {
 
             line.item_extras = paid;
             line.item_extras_offered = offered;
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-041] Même bascule que toggleExtraOffered, sur une option de la
+         * ligne FORMULE (`pos_line_addons[addonIndex]`). La ligne formule part au serveur comme une ligne
+         * à part entière (buildPosCheckoutOrderRow) : son `item_extras_offered` est validé par
+         * OfferedExtras (l'option appartient au produit formule) et vaut 0 € par construction.
+         */
+        toggleAddonExtraOffered: function (state, payload) {
+            const line = state.lists[payload && payload.index];
+            const addon = line && Array.isArray(line.pos_line_addons) ? line.pos_line_addons[payload.addonIndex] : null;
+            const extraId = normalizeId(payload && payload.extraId);
+            if (!addon || extraId === null) return;
+
+            const paid = normalizeExtraEntries(addon.item_extras);
+            const offered = normalizeExtraEntries(addon.item_extras_offered);
+            const offeredAt = offered.findIndex((e) => e.id === extraId);
+
+            if (offeredAt !== -1) {
+                const back = offered.splice(offeredAt, 1)[0];
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt !== -1) {
+                    paid[paidAt] = { ...paid[paidAt], quantity: paid[paidAt].quantity + back.quantity };
+                } else {
+                    paid.push(back);
+                }
+            } else {
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt === -1 || !(parseFloat(paid[paidAt].unit_price) > 0)) return;
+                offered.push(paid.splice(paidAt, 1)[0]);
+            }
+
+            addon.item_extras = paid;
+            addon.item_extras_offered = offered;
             saveCartToStorage(state);
             state.restoredFromStorage = false;
         },
