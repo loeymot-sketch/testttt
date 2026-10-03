@@ -1803,7 +1803,10 @@ export default {
                     pos_line_addons.push(line);
                 });
             // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"
-            } else if (this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
+            // [GOAL REMARQUES 2026-10-03 · revue de convergence 2 · R-002] Jamais sur le chemin WIZARD : à la
+            // modification, openEditFromCart recharge `this.addons` ; si le caissier choisit « Sans formule »
+            // le wizard n'envoie aucune ligne formule et l'ancienne restait facturée. Le wizard fait foi.
+            } else if (bridgedWizardTotal <= 0 && this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
                 _.forEach(this.addons, (addon, parentKey) => {
                     const catalogAddon = this.getAddonById(parentKey);
                     if (!catalogAddon || this.isAddonUnavailable(catalogAddon)) return;
@@ -1837,7 +1840,18 @@ export default {
             // itemQuantity ») : la formule se retire donc × quantité. Le chemin Vue (sans wizard) ajoute ses
             // addons UNE fois (temp.total_price) : il garde la soustraction simple.
             var addonsParUnite = bridgedWizardTotal > 0 && wizardBundled.length > 0;
-            var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal * (addonsParUnite ? quantity : 1));
+            // [GOAL REMARQUES 2026-10-03 · revue de convergence 2 · R-037] Le total du wizard (zone gelée)
+            // n'inclut pas les sauces FRITES au-delà de la 1ʳᵉ, mais withFritesSauceSupplements() envoie l'extra
+            // « Sauce supplémentaire » que le serveur facture : on l'ajoute à l'affichage, sinon le panier
+            // annonce moins que le montant encaissé. Mêmes conditions que withFritesSauceSupplements().
+            var surchargeSaucesFrites = 0;
+            if (bridgedWizardTotal > 0 && extraFritesSauces > 0) {
+                var sauceExtraFrites = findSauceSupplementExtra(this.item && this.item.extras);
+                if (sauceExtraFrites && normalizeId(sauceExtraFrites.id) !== null && !this.isModifierUnavailable(sauceExtraFrites)) {
+                    surchargeSaucesFrites = extraFritesSauces * (parseFloat(sauceExtraFrites.convert_price) || 0) * quantity;
+                }
+            }
+            var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal * (addonsParUnite ? quantity : 1)) + surchargeSaucesFrites;
             var mainUnitTotal = quantity > 0 ? (mainLineTotal / quantity) : 0;
             var adjustedBaseConvertPrice = Math.max(
                 0,

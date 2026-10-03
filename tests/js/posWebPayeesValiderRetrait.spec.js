@@ -83,6 +83,13 @@ describe('Caisse — « Web payées » : valider le retrait d\'une commande du s
         expect(ids).toEqual([52, 53]);
     });
 
+    it('[revue de convergence 2 · P2] 5ᵉ de « Web payées » (le panneau n\'en montre que 4) : elle RESTE dans « Prêt »', () => {
+        const w = monter();
+        w.vm.paidWebOrders = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 61 }];
+        const cinquieme = { id: 61, source_surface: 'web', order_type: orderTypeEnum.TAKEAWAY, payment_status: 5, status: orderStatusEnum.PREPARED };
+        expect(w.vm.estPretAuComptoir(cinquieme)).toBe(true);
+    });
+
     it('[revue de convergence · P1] absente de « Web payées » (commande à l\'avance, fenêtre de 8 h), elle RESTE dans « Prêt » — jamais invisible', () => {
         const w = monter();
         w.vm.paidWebOrders = [];

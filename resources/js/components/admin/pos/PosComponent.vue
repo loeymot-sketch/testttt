@@ -7215,8 +7215,11 @@ export default {
             // [Revue de convergence · P1] … et SEULEMENT si « Web payées » la montre vraiment : ce panneau ne
             // couvre que 8 h (oss.stale_window_hours) ; une commande programmée pour ce soir, absente de
             // « Web payées », disparaissait des DEUX panneaux. Absente là-bas → elle reste ici.
+            // [Revue de convergence 2 · P2] « montre » = parmi les 4 lignes RÉELLEMENT affichées (le panneau fait
+            // slice(0, 4)) et seulement si le caissier voit ce panneau (canProcessWebOrders).
             if (site && paiement === paymentStatusEnum.PAID && parseInt(o.order_type, 10) !== orderTypeEnum.DELIVERY
-                && (this.paidWebOrders || []).some((p) => p && p.id === o.id)) return false;
+                && this.canProcessWebOrders
+                && (this.paidWebOrders || []).slice(0, 4).some((p) => p && p.id === o.id)) return false;
             return true;
         },
         estPrete(o) {

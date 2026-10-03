@@ -231,6 +231,33 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
         expect(sauce.quantity).toBe(2);
     });
 
+    // [GOAL REMARQUES 2026-10-03 · revue de convergence 2 · R-037] Le total du WIZARD n'inclut pas les sauces
+    // frites au-delà de la 1ʳᵉ (pos-wizard.js, zone gelée), mais l'extra « Sauce supplémentaire » part au
+    // serveur qui le facture : le panier annonçait MOINS que le montant encaissé (22,00 contre 24,00 à q=2).
+    it('2ᵉ et 3ᵉ sauces frites : le panier affiche ce que le serveur facture', () => {
+        // Total wizard RÉEL : Tacos M 8,50 + formule 2,50 — sans les 2 × 0,50 des sauces frites.
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] })], 22);
+        vm.temp.quantity = 2;
+
+        const payload = vm.buildPosCartMainPayload();
+
+        // Facturé : 2 × (8,50 + 2 × 0,50) + 2 × 2,50 = 24,00
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 2 })).toBeCloseTo(24, 6);
+    });
+
+    // [Revue de convergence 2 · R-002 « le prix ne changeait pas »] « Sans formule » à la modification : le
+    // wizard n'envoie plus de ligne formule, mais le payload retombait sur les anciennes formules (this.addons
+    // rechargées par openEditFromCart) — la formule restait facturée.
+    it('« Modifier » puis « Sans formule » : la formule quitte le panier et la facture', () => {
+        const vm = vmWithWizard([], 8.5);
+        vm.addons = { 7: { name: 'Menu (Frites + Boisson)', item_id: 1, quantity: 1, total_price: 2.5, convert_price: 2.5, item_variations: [], item_extras: [] } };
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.pos_line_addons).toEqual([]);
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 1 })).toBeCloseTo(8.5, 6);
+    });
+
     it('1 seule sauce frites → rien à facturer (la 1ère est offerte)', () => {
         const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1'] })], 8.5);
 
