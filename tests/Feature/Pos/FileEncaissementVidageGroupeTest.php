@@ -206,6 +206,10 @@ class FileEncaissementVidageGroupeTest extends TestCase
      * transcription du prédicat de la route d'affichage, qui n'a délibérément pas
      * été réécrite. Si les deux divergent un jour, le vidage mordra sur des
      * commandes que le caissier ne voit pas — ce test est le seul filet.
+     *
+     * Depuis le lot du 02/10 (R-061), la file s'affiche par défaut sur la seule journée de
+     * service ; la comparaison porte donc sur `scope=all` (même prédicat, sans fenêtre de date),
+     * qui est l'ensemble que le scope doit désigner.
      */
     public function test_le_scope_voit_exactement_ce_que_la_file_affiche(): void
     {
@@ -215,7 +219,7 @@ class FileEncaissementVidageGroupeTest extends TestCase
 
         $affichees = collect(
             $this->actingAs($operator, 'sanctum')
-                ->getJson('/api/admin/pos/counter-collect/pending')
+                ->getJson('/api/admin/pos/counter-collect/pending?scope=all')
                 ->assertOk()
                 ->json('data')
         )->pluck('id')->sort()->values()->all();

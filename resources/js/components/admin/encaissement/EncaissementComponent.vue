@@ -16,36 +16,6 @@
                     </div>
                     <div class="enc-header-actions">
                         <span class="enc-count-chip">{{ orders.length }}</span>
-                        <!--
-                          [CAISSE 2026-09-29 · demande propriétaire] « Si je veux vraiment commencer
-                          une nouvelle journée, j'ai grand nombre de commandes en attente, je veux
-                          tout supprimer. »
-
-                          Le bouton ne touche QUE les journées PASSÉES (plancher de service à 5 h,
-                          côté serveur). Un « tout vider » littéral emporterait le client qui arrive
-                          à la porte, avec un plat déjà parti en cuisine.
-
-                          Il annonce d'abord le compte EXACT (appel à blanc), puis attend un second
-                          clic. On n'affiche jamais « vider » sans dire combien : un caissier ne peut
-                          pas consentir à un chiffre qu'il ne connaît pas.
-                        -->
-                        <button
-                            v-if="staleCount === null || staleCount > 0"
-                            class="db-btn py-2 enc-purge-btn"
-                            :class="purgeArmed ? 'enc-purge-btn--armed' : 'enc-purge-btn--idle'"
-                            :disabled="purging"
-                            data-testid="enc-purge-stale"
-                            :data-armed="purgeArmed ? '1' : '0'"
-                            @click.prevent="purgeStale"
-                        >
-                            <!-- [AUDIT CAISSE 2026-09-29] L'état ARMÉ est porté par `purgeArmed`, pas par
-                                 « a-t-on déjà compté » : le rouge et le mot « Confirmer » n'apparaissent
-                                 qu'après le premier clic, et disparaissent après 4 s. -->
-                            <span v-if="purging">Nettoyage…</span>
-                            <span v-else-if="staleCount === null">Nettoyer les jours passés</span>
-                            <span v-else-if="purgeArmed">Confirmer : annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }}</span>
-                            <span v-else>Annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }} des jours passés</span>
-                        </button>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
                             <i class="lab lab-refresh-line lab-font-size-16"></i>
                             <span>{{ $t('button.refresh') }}</span>
@@ -336,14 +306,11 @@ export default {
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
-            // [CAISSE 2026-09-29] Annulation directe (croix) + nettoyage des jours passés.
+            // [CAISSE 2026-09-29] Annulation directe (croix). (Le nettoyage des jours passés vit dans
+            // l'onglet « Jours précédents » depuis le 02/10 — un seul chemin, R-061.)
             pendingCancelId: null,   // commande dont la croix est ARMÉE (2e clic attendu)
             pendingCancelTimer: null,
             cancellingId: null,      // requête en vol, pour ne pas double-annuler
-            staleCount: null,        // null = pas encore compté ; 0 = rien à nettoyer
-            purging: false,
-            purgeArmed: false,       // 1er clic = armé 4 s ; 2e clic = exécute
-            purgeArmTimer: null,
         };
     },
     mounted() {
@@ -357,7 +324,6 @@ export default {
         this.subscribeEcho();
         // [CAISSE 2026-09-29] Compte à blanc : le bouton de nettoyage ne s'affiche
         // que s'il a réellement quelque chose à faire.
-        this.refreshStaleCount();
     },
     beforeUnmount() {
         if (this.pendingCancelTimer) {
@@ -447,67 +413,7 @@ export default {
             }).finally(() => {
                 this.cancellingId = null;
                 this.fetchPending(true);
-                this.refreshStaleCount();
             });
-        },
-        /**
-         * Compte, sans rien changer, les commandes des journées PASSÉES encore dans la
-         * file. Sert à n'afficher le bouton de nettoyage que s'il a quelque chose à
-         * faire, et à annoncer un chiffre exact avant d'agir.
-         */
-        refreshStaleCount() {
-            // GET : un comptage ne mute rien, il n'a donc pas à porter de clé
-            // d'idempotence (le POST d'annulation, lui, en exige une).
-            return axios.get('admin/pos/counter-collect/stale-count')
-                .then((res) => { this.staleCount = Number(res.data?.count ?? 0); })
-                .catch(() => { /* le bouton reste au repos ; jamais bloquant */ });
-        },
-        /**
-         * Premier clic : compte et annonce. Second clic : annule réellement.
-         * Le serveur borne lui-même au plancher de journée de service — le service en
-         * cours ne peut pas être emporté, même si cette interface se trompait.
-         */
-        purgeStale() {
-            if (this.purging) return;
-
-            if (this.staleCount === null) {
-                this.purging = true;
-                return this.refreshStaleCount().finally(() => {
-                    this.purging = false;
-                    if (this.staleCount === 0) this.staleCount = null;
-                });
-            }
-
-            // [AUDIT CAISSE 2026-09-29 · P1 — DÉFAUT DE MA PROPRE VERSION] Le comptage
-            // se fait au montage (`mounted` → refreshStaleCount), donc `staleCount` est
-            // déjà un nombre quand le caissier arrive : le bouton s'affichait armé
-            // d'emblée et le PREMIER clic annulait — alors que le docbloc et le CSS
-            // promettaient une confirmation en deux temps. Et l'annulation est
-            // irréversible (CANCELED + REFUNDED, résurrection interdite). Le premier
-            // clic ARME désormais pour 4 s, comme la croix ; seul le second exécute.
-            if (!this.purgeArmed) {
-                this.purgeArmed = true;
-                if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
-                this.purgeArmTimer = setTimeout(() => { this.purgeArmed = false; }, 4000);
-                return;
-            }
-            if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
-            this.purgeArmed = false;
-
-            this.purging = true;
-            // Clé propre à CE lot : un rejeu réseau rejoue la même opération, mais un
-            // nettoyage lancé plus tard est bien une nouvelle opération (sinon le
-            // second resservirait la réponse du premier et ne nettoierait rien).
-            const cleLot = `enc-purge-${Date.now()}`;
-            axios.post('admin/pos/counter-collect/cancel-stale', {}, {
-                headers: { 'X-Idempotency-Key': cleLot },
-            })
-                .then(() => { this.staleCount = null; })
-                .catch(() => { this.fetchError = true; })
-                .finally(() => {
-                    this.purging = false;
-                    this.fetchPending(true);
-                });
         },
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
@@ -869,10 +775,6 @@ export default {
 .enc-cancel-no { background: #fff; color: #6b6b6b; border: 1px solid var(--pos-v5-border); }
 /* Bouton de nettoyage des journées passées : neutre tant qu'il n'a pas compté,
    rouge une fois qu'il annonce un nombre — le second clic est destructif. */
-.enc-purge-btn { border: 1px solid var(--pos-v5-border); border-radius: var(--pos-v5-radius-md); }
-.enc-purge-btn--idle { background: #fff; color: #6b6b6b; }
-.enc-purge-btn--armed { background: #c0392b; color: #fff; font-weight: 700; }
-.enc-purge-btn:disabled { opacity: .6; cursor: default; }
 .enc-ticket-top { display: flex; align-items: center; justify-content: space-between; }
 .enc-origin-badge {
     display: inline-flex;
