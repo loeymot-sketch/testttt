@@ -77,8 +77,17 @@ describe('Caisse — « Web payées » : valider le retrait d\'une commande du s
             { id: 52, source_surface: 'kiosk', order_type: orderTypeEnum.TAKEAWAY, payment_status: 5, status: pret, created_at: '2026-10-03T12:01:00Z' },
             { id: 53, source_surface: 'web', order_type: orderTypeEnum.DELIVERY, payment_status: 5, status: pret, created_at: '2026-10-03T12:02:00Z' },
         ];
+        // Elle n'est retirée de « Prêt » que si « Web payées » la montre VRAIMENT.
+        w.vm.paidWebOrders = [{ id: 51 }];
         const ids = liste.filter((o) => w.vm.estPretAuComptoir(o)).map((o) => o.id);
         expect(ids).toEqual([52, 53]);
+    });
+
+    it('[revue de convergence · P1] absente de « Web payées » (commande à l\'avance, fenêtre de 8 h), elle RESTE dans « Prêt » — jamais invisible', () => {
+        const w = monter();
+        w.vm.paidWebOrders = [];
+        const programmee = { id: 61, source_surface: 'web', order_type: orderTypeEnum.TAKEAWAY, payment_status: 5, status: orderStatusEnum.PREPARED };
+        expect(w.vm.estPretAuComptoir(programmee)).toBe(true);
     });
 
     it('valider le retrait passe la commande en LIVRÉE puis rafraîchit le panneau', async () => {

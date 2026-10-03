@@ -1229,8 +1229,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 ->where('payment_status', \App\Enums\PaymentStatus::PAID)
                 // [GOAL REMARQUES 2026-10-03 · R-016] Propriétaire : « lors de retrait de commande par site
                 // Web […] séparés et je pourrais les valider […] il y aura ces points ». Une commande À
-                // EMPORTER prête RESTE ici, où le caissier valide le retrait (→ livrée → points). Une
-                // LIVRAISON prête suit le circuit livreur et sort du panneau, comme avant.
+                // EMPORTER prête RESTE ici, où le caissier valide le retrait (→ livrée ; ses points sont
+                // crédités dès « prête » par AwardLoyaltyPointsOnDelivery). Une LIVRAISON prête suit le
+                // circuit livreur et sort du panneau, comme avant.
                 ->where(function ($q) {
                     $q->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
                         ->orWhere(function ($pret) {

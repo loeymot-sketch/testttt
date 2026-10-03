@@ -34,6 +34,7 @@ import {
     findSauceSupplementExtra,
     formulaOptionExtras,
 } from '../../resources/js/helpers/posFormulaBilling';
+import { computePosCartLineDisplayTotal } from '../../resources/js/helpers/posCartLineMath';
 
 function _unusedCartState() {
     return {
@@ -204,6 +205,20 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
 
         expect(payload.pos_line_addons[0].total_price).toBeCloseTo(4.5, 6); // 2,50 formule + 2 × 1,00
         expect(payload.convert_price).toBeCloseTo(8.5, 6); // le Tacos M à son prix, sans les options
+    });
+
+    // [GOAL REMARQUES 2026-10-03 · revue de convergence · P0] Quantité 2 au wizard : le total wizard vaut
+    // (sandwich + formule + options) × 2 mais le code ne retirait la formule qu'UNE fois — le panier affichait
+    // plus que le montant facturé (22,00 € facturés, 24,50 € affichés sans option).
+    it('quantité 2 : le total du panier = le total du wizard = le facturé', () => {
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: true, fritesCheddar: true, sauceFritesOrder: [] })], 26);
+        vm.temp.quantity = 2;
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.convert_price).toBeCloseTo(8.5, 6);
+        expect(payload.pos_line_addons[0].total_price).toBeCloseTo(4.5, 6);
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 2 })).toBeCloseTo(26, 6);
     });
 
     it('3 sauces frites → 2 « Sauce supplémentaire » facturées sur le produit parent', () => {

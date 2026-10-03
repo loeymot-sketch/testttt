@@ -863,8 +863,8 @@
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <span class="pos-shortcuts__actions">
                   <!-- [GOAL REMARQUES 2026-10-03 · R-016] Commande du site PRÊTE : le caissier valide le
-                       retrait (→ livrée → points de fidélité). En cuisine : pas de bouton (transition
-                       illégale tant que la cuisine n'a pas fini). -->
+                       retrait (→ livrée ; les points d'une commande à emporter sont crédités dès « prête »).
+                       En cuisine : pas de bouton (transition illégale tant que la cuisine n'a pas fini). -->
                   <button
                     v-if="estPrete(o)"
                     type="button"
@@ -7197,8 +7197,9 @@ export default {
          */
         /**
          * [GOAL REMARQUES 2026-10-03 · R-016] Valider le retrait d'une commande du site prête : même chemin
-         * que « Livrée » du panneau Prêt (posOrder/changeStatus → DELIVERED, idempotent) — c'est ce passage
-         * qui crédite les points (AwardLoyaltyPointsOnDelivery). Puis le panneau « Web payées » est relu.
+         * que « Livrée » du panneau Prêt (posOrder/changeStatus → DELIVERED, idempotent). Points de fidélité :
+         * pour une commande À EMPORTER, AwardLoyaltyPointsOnDelivery les crédite déjà au passage en PRÊTE
+         * (revue de convergence) — ce bouton clôt la commande, sans double crédit. Puis « Web payées » est relu.
          */
         /**
          * Commande à montrer dans « Prêt » : prête, non remboursée — SAUF une commande du SITE payée à
@@ -7211,7 +7212,11 @@ export default {
             const paiement = parseInt(o.payment_status ?? 0, 10);
             if (s !== orderStatusEnum.PREPARED || paiement === paymentStatusEnum.REFUNDED) return false;
             const site = ['web', 'delivery'].includes(String(o.source_surface || '').toLowerCase());
-            if (site && paiement === paymentStatusEnum.PAID && parseInt(o.order_type, 10) !== orderTypeEnum.DELIVERY) return false;
+            // [Revue de convergence · P1] … et SEULEMENT si « Web payées » la montre vraiment : ce panneau ne
+            // couvre que 8 h (oss.stale_window_hours) ; une commande programmée pour ce soir, absente de
+            // « Web payées », disparaissait des DEUX panneaux. Absente là-bas → elle reste ici.
+            if (site && paiement === paymentStatusEnum.PAID && parseInt(o.order_type, 10) !== orderTypeEnum.DELIVERY
+                && (this.paidWebOrders || []).some((p) => p && p.id === o.id)) return false;
             return true;
         },
         estPrete(o) {
@@ -7228,14 +7233,11 @@ export default {
         retirerClientFidelite() {
             const form = this.checkoutProps.form;
             form.loyalty_redeem_points = null;
-            // [Revue vague 3 · P2-2] En LIVRAISON, le client porte l'adresse : le retirer laissait une
-            // adresse armée appartenant à personne, et la commande échouait au paiement (422). On ne retire
-            // alors QUE la fidélité ; le client et son adresse restent.
-            if (form.order_type === orderTypeEnum.DELIVERY) {
-                form.loyalty_customer_code = null;
-                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
-                return;
-            }
+            // [Revue vague 3 · P2-2 puis revue de convergence · P1] Retirer le client retire TOUT ce qui lui
+            // appartient : son adresse et la distance de livraison (sinon adresse orpheline → 422 au paiement),
+            // et sa fidélité. Garder le client en livraison ne suffisait pas : le serveur re-déduit le code
+            // fidélité du client (OrderService) et lui créditait les points. En livraison, le caissier
+            // re-choisit donc le client ou saisit l'adresse ; le panier, lui, ne bouge pas.
             form.customer_id = null;
             form.address_id = null;
             form.delivery_distance_km = null;

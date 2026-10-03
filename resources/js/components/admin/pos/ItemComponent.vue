@@ -1832,7 +1832,12 @@ export default {
             }
 
             var effectiveLineTotal = bridgedWizardTotal > 0 ? bridgedWizardTotal : (parseFloat(this.temp.total_price) || 0);
-            var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal);
+            // [GOAL REMARQUES 2026-10-03 · revue de convergence · P0] Le total du WIZARD vaut
+            // (produit + formule + options) × quantité (pos-wizard.js : « addonTotal must be multiplied by
+            // itemQuantity ») : la formule se retire donc × quantité. Le chemin Vue (sans wizard) ajoute ses
+            // addons UNE fois (temp.total_price) : il garde la soustraction simple.
+            var addonsParUnite = bridgedWizardTotal > 0 && wizardBundled.length > 0;
+            var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal * (addonsParUnite ? quantity : 1));
             var mainUnitTotal = quantity > 0 ? (mainLineTotal / quantity) : 0;
             var adjustedBaseConvertPrice = Math.max(
                 0,

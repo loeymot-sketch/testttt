@@ -298,6 +298,7 @@
              jamais d'impression automatique (sauf option explicite autoPrintClientReceipt). -->
         <PosQuestionImpressionTicket
             v-if="questionImpressionOrderId"
+            :key="questionImpressionOrderId"
             :order-id="questionImpressionOrderId"
             @fermer="questionImpressionOrderId = null" />
     </div>

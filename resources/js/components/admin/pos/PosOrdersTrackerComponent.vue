@@ -995,6 +995,7 @@
         <!-- [GOAL REMARQUES 2026-10-03 · R-048] « Imprimer le ticket client ? » après l'encaissement. -->
         <PosQuestionImpressionTicket
             v-if="questionImpressionOrderId"
+            :key="questionImpressionOrderId"
             :order-id="questionImpressionOrderId"
             @fermer="questionImpressionOrderId = null"
         />

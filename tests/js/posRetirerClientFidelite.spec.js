@@ -76,7 +76,10 @@ describe('Caisse — retirer le client fidélité de la vente en cours (R-015)',
         expect(storeMock.commit.mock.calls.map((c) => c[0]).filter((n) => /posCart\/(reset|clear|remove)/.test(n))).toEqual([]);
     });
 
-    it('[revue vague 3 · P2-2] en LIVRAISON, le client et son adresse restent ; seule la fidélité part', () => {
+    // [Revue de convergence · P1] Garder le client en livraison ne retirait PAS la fidélité : le serveur
+    // re-déduit le code fidélité du client (OrderService) et crédite les points. En livraison, le ✕
+    // détache donc TOUT (client, adresse, distance, fidélité) : le caissier re-saisit l'adresse.
+    it('[revue de convergence · P1] en LIVRAISON, le ✕ détache tout — aucun point ne part au client retiré, aucune adresse orpheline', () => {
         const w = monter();
         w.vm.checkoutProps.form.order_type = orderTypeEnum.DELIVERY;
         w.vm.checkoutProps.form.customer_id = 17;
@@ -87,8 +90,8 @@ describe('Caisse — retirer le client fidélité de la vente en cours (R-015)',
 
         w.vm.retirerClientFidelite();
 
-        expect(w.vm.checkoutProps.form.customer_id).toBe(17);
-        expect(w.vm.checkoutProps.form.address_id).toBe(99);
+        expect(w.vm.checkoutProps.form.customer_id).toBeNull();
+        expect(w.vm.checkoutProps.form.address_id).toBeNull();
         expect(w.vm.checkoutProps.form.loyalty_customer_code).toBeNull();
         expect(w.vm.checkoutProps.form.loyalty_redeem_points).toBeNull();
         expect(w.vm.selectedCustomerLoyalty.code).toBeNull();
