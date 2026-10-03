@@ -87,6 +87,26 @@ describe('buildWizardRestorePayload — le supplément « Cheddar » (0,90 €) 
         expect(restore.fritesGrande).toBe(true);
     });
 
+    // [GOAL REMARQUES 2026-10-03 · revue de convergence 4 · R-070/R-002] La caisse colle « Supplément : » à
+    // la dernière sauce par une ESPACE (« Sauce : Algérienne, Samouraï Supplément : Cheddar (+0,90 €) »). Le
+    // découpage par virgule donnait « Samouraï Supplément : Cheddar (+0 » : à la modification, la 2ᵉ sauce
+    // disparaissait du wizard — perdue au ticket cuisine et 0,50 € non facturés.
+    it('« Modifier » restaure TOUTES les sauces même quand un supplément suit sur la même ligne', () => {
+        const item = {
+            itemAttributes: [{ id: 5, name: 'Sauce (1ère Gratuite)' }],
+            variations: { 5: [{ id: 11, name: 'Algérienne' }, { id: 12, name: 'Samouraï' }, { id: 13, name: 'Harissa' }] },
+            extras: [{ id: 301, name: 'Cheddar', convert_price: 0.9, group_label: 'supplement' }],
+        };
+        for (const instruction of [
+            'TACOS M\nPain Sauce : Algérienne, Samouraï Supplément : Cheddar (+0,90 €)',
+            'TACOS M\nPain Viandes : Poulet mariné - Salade, Tomate Sauce : Algérienne, Samouraï, Harissa Supplément : Cheddar (+€0.90)',
+        ]) {
+            const restore = buildWizardRestorePayload({ instruction, quantity: 1, item_variations: [], item_extras: [] }, item);
+            const attendu = instruction.includes('Harissa') ? ['s_11', 's_12', 's_13'] : ['s_11', 's_12'];
+            expect(restore.sauceOrder, instruction).toEqual(attendu);
+        }
+    });
+
     it('le supplément Cheddar payant n\'atterrit JAMAIS dans les garnitures', () => {
         // Verrouille le MIROIR d'exclusion (ItemComponent.vue ~:1565), qui doit refléter
         // exactement la chaîne de classification. Une divergence entre les deux listes est

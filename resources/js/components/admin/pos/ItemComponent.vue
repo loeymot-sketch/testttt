@@ -1695,7 +1695,15 @@ export default {
                     : [];
 
                 if (sauceMatch && productSauces.length > 0) {
-                    sauceMatch[1].split(',').map((name) => name.trim()).filter(Boolean).forEach((sauceName) => {
+                    // [GOAL REMARQUES 2026-10-03 · revue de convergence 4 · R-070/R-002] La caisse colle la
+                    // rubrique suivante à la dernière sauce par une ESPACE (« …, Samouraï Supplément : Cheddar
+                    // (+0,90 €) ») : on coupe la liste à la première rubrique collée et on retire les montants,
+                    // sinon la dernière sauce ne correspondait à rien et disparaissait à la modification.
+                    // Même règle que l'écran cuisine (kdsSymbolic.splitSauceList, RUBRIQUE_COLLEE).
+                    const listeSauces = sauceMatch[1]
+                        .split(/\s+(?=(?:Suppléments?|Viandes?|Crudités?|Formule|BOISSON|Pain|Sauce\s+frites)\s*:)/i)[0]
+                        .replace(/\([^)]*\)/g, '');
+                    listeSauces.split(',').map((name) => name.trim()).filter(Boolean).forEach((sauceName) => {
                         const sauceVariation = productSauces.find((variation) => variation.name === sauceName);
                         if (!sauceVariation) return;
                         const key = 's_' + sauceVariation.id;
