@@ -1118,6 +1118,28 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
             return response()->json(['status' => true] + $result);
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-previous');
+        // [GOAL REMARQUES 2026-10-03 · R-060] « Dans l'attente je veux tout supprimer » : les commandes
+        // TÉLÉPHONE du jour jamais encaissées, en un geste confirmé, sans motif à taper (motif par défaut
+        // « Client non venu »). Borne et site JAMAIS touchés ; même service, mêmes gardes NF525, audit écrit.
+        Route::post('/counter-collect/purge-phone-today', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+            ]);
+            $reason = trim((string) ($validated['reason'] ?? ''));
+
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                null,
+                mb_strlen($reason) >= 3 ? $reason : 'Client non venu',
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0),
+                \App\Services\Pos\StaleCounterOrderPurger::PERIMETRE_TELEPHONE_DU_JOUR
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-phone-today');
         // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
         // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
         // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client

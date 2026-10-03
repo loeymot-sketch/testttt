@@ -36,16 +36,26 @@ class StaleCounterOrderPurger
 {
     public const AUDIT_ACTION = 'order.counter_pending_purged';
 
+    /** Périmètre historique : les commandes des JOURS PRÉCÉDENTS (toutes origines). */
+    public const PERIMETRE_JOURS_PRECEDENTS = 'previous';
+
     /**
-     * @param  int[]|null  $ids  null = toutes les anciennes de la file.
+     * [GOAL REMARQUES 2026-10-03 · R-060] Les commandes TÉLÉPHONE de la journée de service en cours
+     * (« Dans l'attente je veux tout supprimer »). Jamais la borne ni le site : ces clients peuvent être
+     * devant le comptoir. Mêmes gardes sous verrou que les jours précédents.
+     */
+    public const PERIMETRE_TELEPHONE_DU_JOUR = 'phone_today';
+
+    /**
+     * @param  int[]|null  $ids  null = toutes les commandes du périmètre.
      * @return array{purged:int, skipped:array<int,array{id:int,reason:string}>}
      */
-    public function purge(?array $ids, string $reason, ?User $actor, int $branchId = 0): array
+    public function purge(?array $ids, string $reason, ?User $actor, int $branchId = 0, string $perimetre = self::PERIMETRE_JOURS_PRECEDENTS): array
     {
-        $candidates = CounterCollectQueue::applyScope(
-            CounterCollectQueue::query($branchId),
-            CounterCollectQueue::SCOPE_PREVIOUS
-        );
+        $candidates = $perimetre === self::PERIMETRE_TELEPHONE_DU_JOUR
+            ? CounterCollectQueue::applyScope(CounterCollectQueue::query($branchId), CounterCollectQueue::SCOPE_TODAY)
+                ->where('source_surface', 'phone')
+            : CounterCollectQueue::applyScope(CounterCollectQueue::query($branchId), CounterCollectQueue::SCOPE_PREVIOUS);
 
         $eligibleIds = $candidates->pluck('id')->map(fn ($v) => (int) $v)->all();
 
@@ -56,7 +66,9 @@ class StaleCounterOrderPurger
 
         foreach ($targets as $id) {
             if (! in_array($id, $eligibleIds, true)) {
-                $skipped[] = ['id' => $id, 'reason' => 'hors de la file des jours précédents (déjà payée, du jour, ou introuvable)'];
+                $skipped[] = ['id' => $id, 'reason' => $perimetre === self::PERIMETRE_TELEPHONE_DU_JOUR
+                    ? 'hors des commandes téléphone du jour en attente (déjà payée, autre origine, ou introuvable)'
+                    : 'hors de la file des jours précédents (déjà payée, du jour, ou introuvable)'];
 
                 continue;
             }

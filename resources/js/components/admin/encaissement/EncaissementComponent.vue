@@ -55,6 +55,15 @@
                         data-testid="enc-purge-all"
                         @click="askPurge(null)"
                     >{{ $t('label.enc_purge_all', { n: orders.length }) }}</button>
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-060] « Dans l'attente je veux tout supprimer » : les
+                         commandes TÉLÉPHONE du jour, d'un geste confirmé. Jamais la borne ni le site. -->
+                    <button
+                        v-if="scope === 'today' && phoneOrders.length > 0"
+                        type="button"
+                        class="enc-purge-all-btn"
+                        data-testid="enc-purge-phone"
+                        @click="askPurgePhoneToday"
+                    >{{ $t('label.enc_purge_phone', { n: phoneOrders.length }) }}</button>
                 </div>
                 <p v-if="scope === 'previous'" class="enc-scope-hint" data-testid="enc-previous-hint">{{ $t('label.enc_previous_hint') }}</p>
 
@@ -337,9 +346,18 @@ export default {
         this.unsubscribeEcho();
     },
     computed: {
+        // [GOAL REMARQUES 2026-10-03 · R-060] Commandes TÉLÉPHONE de la file du jour (seules concernées
+        // par « Supprimer les commandes téléphone »).
+        phoneOrders() {
+            return this.orders.filter((o) => String(o.source_surface || '').toLowerCase() === 'phone');
+        },
         purgeSummary() {
             const t = this.purgeTarget;
             if (!t) return '';
+            if (t.phoneToday) {
+                const totalTel = this.phoneOrders.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
+                return this.$t('label.enc_purge_summary_phone', { n: this.phoneOrders.length, amount: this.formatPrice(totalTel) });
+            }
             if (t.order) {
                 return this.$t('label.enc_purge_summary_one', {
                     order: t.order.order_serial_no || t.order.id,
@@ -440,6 +458,12 @@ export default {
             this.purgeReason = this.$t('label.enc_purge_reason_default');
             this.purgeTarget = { order: order || null };
         },
+        // [GOAL REMARQUES 2026-10-03 · R-060] Toutes les commandes téléphone du jour : même fenêtre de
+        // confirmation, motif pré-rempli « Client non venu » (rien à taper).
+        askPurgePhoneToday() {
+            this.purgeReason = this.$t('label.enc_purge_reason_phone_default');
+            this.purgeTarget = { order: null, phoneToday: true };
+        },
         cancelPurge() {
             if (this.purging) return;
             this.purgeTarget = null;
@@ -447,17 +471,24 @@ export default {
         async confirmPurge() {
             if (!this.purgeTarget || this.purging || this.purgeReason.trim().length < 3) return;
             const one = this.purgeTarget.order;
-            const body = {
-                confirm: true,
-                reason: this.purgeReason.trim(),
-                ...(one ? { ids: [one.id] } : { all: true }),
-            };
+            const phoneToday = !!this.purgeTarget.phoneToday;
+            const body = phoneToday
+                ? { confirm: true, reason: this.purgeReason.trim() }
+                : {
+                    confirm: true,
+                    reason: this.purgeReason.trim(),
+                    ...(one ? { ids: [one.id] } : { all: true }),
+                };
             const minute = Math.floor(Date.now() / 60000);
             this.purging = true;
             try {
-                const res = await axios.post('admin/pos/counter-collect/purge-previous', body, {
-                    headers: { 'X-Idempotency-Key': `pos-purge-previous-${one ? one.id : 'all'}-${minute}` },
-                });
+                const res = phoneToday
+                    ? await axios.post('admin/pos/counter-collect/purge-phone-today', body, {
+                        headers: { 'X-Idempotency-Key': `pos-purge-phone-today-${minute}` },
+                    })
+                    : await axios.post('admin/pos/counter-collect/purge-previous', body, {
+                        headers: { 'X-Idempotency-Key': `pos-purge-previous-${one ? one.id : 'all'}-${minute}` },
+                    });
                 const purged = Number(res.data?.purged || 0);
                 const skipped = Array.isArray(res.data?.skipped) ? res.data.skipped.length : 0;
                 if (purged > 0) alertService.success(this.$t('label.enc_purge_done', { n: purged }));
