@@ -79,7 +79,11 @@
                 <div class="enc-body">
                     <!-- [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées : LECTURE SEULE, aucun bouton. -->
                     <div v-if="scope === 'missed'" class="enc-missed" data-testid="enc-missed-list">
-                        <div v-if="ratees.length === 0" class="enc-empty" data-testid="enc-missed-empty">
+                        <!-- [Revue vague 2 · P3] Une panne réseau ne se déguise jamais en « aucune commande ratée ». -->
+                        <div v-if="fetchError && ratees.length === 0" class="enc-empty enc-error" data-testid="enc-missed-error">
+                            <p class="enc-empty-title">{{ $t('label.encaisser_queue_error') }}</p>
+                        </div>
+                        <div v-else-if="ratees.length === 0" class="enc-empty" data-testid="enc-missed-empty">
                             <p class="enc-empty-title">{{ $t('label.enc_missed_empty') }}</p>
                         </div>
                         <div v-for="r in ratees" :key="r.id" class="enc-missed-row" :data-testid="`enc-missed-${r.id}`">
@@ -270,11 +274,11 @@
 
         <!-- [GOAL #3 2026-10-02] Confirmation OBLIGATOIRE avant toute purge. -->
         <div v-if="purgeTarget" class="enc-confirm-overlay" data-testid="enc-purge-confirm" @click.self="cancelPurge">
-            <div class="enc-confirm" role="alertdialog" aria-modal="true" :aria-label="$t('label.enc_purge_title')">
-                <h4 class="enc-confirm-title">{{ $t('label.enc_purge_title') }}</h4>
+            <div class="enc-confirm" role="alertdialog" aria-modal="true" :aria-label="purgeTitre">
+                <h4 class="enc-confirm-title">{{ purgeTitre }}</h4>
                 <p class="enc-confirm-body" data-testid="enc-purge-summary">{{ purgeSummary }}</p>
                 <p class="enc-confirm-note">{{ $t('label.enc_purge_note') }}</p>
-                <label class="enc-confirm-label" for="encPurgeReason">{{ $t('label.enc_purge_reason') }}</label>
+                <label class="enc-confirm-label" for="encPurgeReason">{{ purgeTarget && purgeTarget.phoneToday ? $t('label.enc_purge_reason_phone') : $t('label.enc_purge_reason') }}</label>
                 <input id="encPurgeReason" v-model="purgeReason" class="enc-confirm-input" type="text" maxlength="255" data-testid="enc-purge-reason" />
                 <div class="enc-confirm-actions">
                     <button type="button" class="enc-confirm-cancel" data-testid="enc-purge-cancel" :disabled="purging" @click="cancelPurge">{{ $t('button.cancel') }}</button>
@@ -385,8 +389,22 @@ export default {
     computed: {
         // [GOAL REMARQUES 2026-10-03 · R-060] Commandes TÉLÉPHONE de la file du jour (seules concernées
         // par « Supprimer les commandes téléphone »).
+        // [Revue adverse vague 2 · P1-2] … SAUF une commande à l'avance dont le créneau n'est pas encore
+        // passé : ce client viendra (même règle que le serveur).
         phoneOrders() {
-            return this.orders.filter((o) => String(o.source_surface || '').toLowerCase() === 'phone');
+            const maintenant = Date.now();
+            return this.orders.filter((o) => {
+                if (String(o.source_surface || '').toLowerCase() !== 'phone') return false;
+                const creneau = o.scheduled_at ? Date.parse(o.scheduled_at) : NaN;
+                return !(Number.isFinite(creneau) && creneau > maintenant);
+            });
+        },
+        // [Revue vague 2 · P3] « Supprimer les commandes téléphone ? » — pas « Purger les commandes jamais
+        // encaissées » ni « Motif (obligatoire) » : le propriétaire ne veut aucun justificatif à taper.
+        purgeTitre() {
+            return this.purgeTarget && this.purgeTarget.phoneToday
+                ? this.$t('label.enc_purge_phone_title')
+                : this.$t('label.enc_purge_title');
         },
         purgeSummary() {
             const t = this.purgeTarget;
@@ -519,7 +537,14 @@ export default {
         // confirmation, motif pré-rempli « Client non venu » (rien à taper).
         askPurgePhoneToday() {
             this.purgeReason = this.$t('label.enc_purge_reason_phone_default');
-            this.purgeTarget = { order: null, phoneToday: true };
+            // [Revue adverse vague 2] On fige ICI les commandes montrées (seules celles-là partiront) et une
+            // clé d'idempotence propre à CETTE confirmation (un double appui rejoue, un nouveau geste non).
+            this.purgeTarget = {
+                order: null,
+                phoneToday: true,
+                ids: this.phoneOrders.map((o) => o.id),
+                cle: `${Date.now()}`,
+            };
         },
         cancelPurge() {
             if (this.purging) return;
@@ -530,7 +555,7 @@ export default {
             const one = this.purgeTarget.order;
             const phoneToday = !!this.purgeTarget.phoneToday;
             const body = phoneToday
-                ? { confirm: true, reason: this.purgeReason.trim() }
+                ? { confirm: true, reason: this.purgeReason.trim(), ids: this.purgeTarget.ids || [] }
                 : {
                     confirm: true,
                     reason: this.purgeReason.trim(),
@@ -541,7 +566,7 @@ export default {
             try {
                 const res = phoneToday
                     ? await axios.post('admin/pos/counter-collect/purge-phone-today', body, {
-                        headers: { 'X-Idempotency-Key': `pos-purge-phone-today-${minute}` },
+                        headers: { 'X-Idempotency-Key': `pos-purge-phone-today-${this.purgeTarget.cle || minute}` },
                     })
                     : await axios.post('admin/pos/counter-collect/purge-previous', body, {
                         headers: { 'X-Idempotency-Key': `pos-purge-previous-${one ? one.id : 'all'}-${minute}` },

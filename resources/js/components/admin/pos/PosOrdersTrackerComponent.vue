@@ -1043,6 +1043,7 @@ import PosRefundModal from './PosRefundModal.vue';
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
 import PosQuestionImpressionTicket from './PosQuestionImpressionTicket.vue';
+import { imprimerTicketClient } from '../../../helpers/posImprimerTicketClient';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
 import PosStockOutflowModal from './PosStockOutflowModal.vue';
 import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
@@ -2324,7 +2325,11 @@ export default {
             // [GOAL REMARQUES 2026-10-03 · R-048] Le Suivi n'imprimait rien et ne demandait rien : même
             // question que la caisse, jamais d'impression automatique.
             const orderId = payload?.orderId ?? payload?.order_id ?? null;
-            if (orderId) this.questionImpressionOrderId = orderId;
+            // [Revue vague 2 · P3] Même règle que la page Encaissement : l'option explicite
+            // autoPrintClientReceipt imprime d'office ; sinon, la question.
+            const auto = !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+            if (orderId && auto) imprimerTicketClient(orderId);
+            else if (orderId) this.questionImpressionOrderId = orderId;
             // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
             // on invalide le TTL du compteur d'anciennes commandes pour que le
             // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.

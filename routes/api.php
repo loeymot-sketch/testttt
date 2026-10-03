@@ -1127,11 +1127,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             $validated = $request->validate([
                 'confirm' => ['required', 'accepted'],
                 'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+                // [Revue adverse vague 2 · P2-1] Les commandes MONTRÉES au caissier ; le service n'en
+                // garde que celles qui sont encore éligibles (intersection sous verrou).
+                'ids' => ['sometimes', 'array', 'max:500'],
+                'ids.*' => ['integer'],
             ]);
             $reason = trim((string) ($validated['reason'] ?? ''));
 
             $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
-                null,
+                array_key_exists('ids', $validated) ? $validated['ids'] : null,
                 mb_strlen($reason) >= 3 ? $reason : 'Client non venu',
                 auth()->user(),
                 (int) (auth()->user()?->branch_id ?? 0),

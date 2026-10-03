@@ -14,8 +14,10 @@ export async function imprimerTicketClient(orderId) {
         const { data } = await axios.get(`admin/pos/orders/${orderId}/escpos`, { params: { ticket: 'client' } });
         const b64 = data && data.escpos_b64;
         if (!b64) return { ok: false, raison: 'indisponible' };
+        // Le pont rend `{ ok: true }` en cas de succès et `null` sinon (réseau coupé, HTTP non 2xx) —
+        // jamais `{ ok: false }`. Seul un succès EXPLICITE en est un (revue adverse vague 2 · P2-2).
         const r = await printEscPosViaCaisseBridge(b64, { orderRef: orderId });
-        return r && r.ok === false ? { ok: false, raison: 'pont' } : { ok: true };
+        return r && r.ok ? { ok: true } : { ok: false, raison: 'pont' };
     } catch (_e) {
         return { ok: false, raison: 'erreur' };
     }

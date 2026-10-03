@@ -72,8 +72,27 @@ describe('Encaissement — supprimer d\'un geste les commandes téléphone du jo
         expect(axios.post).toHaveBeenCalledTimes(1);
         const [url, body, cfg] = axios.post.mock.calls[0];
         expect(url).toBe('admin/pos/counter-collect/purge-phone-today');
-        expect(body).toEqual({ confirm: true, reason: 'Client non venu' });
+        // [revue vague 2 · P2-1] Seules les commandes MONTRÉES partent.
+        expect(body).toEqual({ confirm: true, reason: 'Client non venu', ids: [1, 2] });
         expect(cfg.headers['X-Idempotency-Key']).toMatch(/^pos-purge-phone-today-/);
+    });
+
+    it('[revue vague 2 · P1-2] une commande téléphone À L\'AVANCE n\'est ni comptée ni proposée à la suppression', async () => {
+        const plusTard = new Date(Date.now() + 6 * 3600 * 1000).toISOString();
+        axios.get.mockImplementation(file([cmd(1, 'phone'), { ...cmd(2, 'phone'), scheduled_at: plusTard }]));
+        const w = monter();
+        await flushPromises();
+        expect(w.find('[data-testid="enc-purge-phone"]').text()).toContain('(1)');
+    });
+
+    it('[revue vague 2 · P3] la fenêtre de suppression téléphone ne réclame pas de justificatif', async () => {
+        axios.get.mockImplementation(file([cmd(1, 'phone')]));
+        const w = monter();
+        await flushPromises();
+        await w.find('[data-testid="enc-purge-phone"]').trigger('click');
+        const fenetre = w.find('[data-testid="enc-purge-confirm"]').text();
+        expect(fenetre).not.toContain('obligatoire');
+        expect(fenetre).toContain('téléphone');
     });
 
     it('les libellés existent dans les trois langues', () => {

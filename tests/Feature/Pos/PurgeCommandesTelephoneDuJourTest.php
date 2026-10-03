@@ -128,6 +128,47 @@ class PurgeCommandesTelephoneDuJourTest extends TestCase
         $this->assertSame(OrderStatus::ACCEPT, (int) $chezLesAutres->fresh()->status);
     }
 
+    /**
+     * [Revue adverse vague 2 · P1-2] Une commande téléphone À L'AVANCE (ce soir 20 h, demain midi) n'est pas
+     * un « client non venu » : la supprimer annulerait la commande d'un client qui viendra — et une
+     * annulation ne se défait pas. Elle reste dans la file, intouchée.
+     *
+     * @test
+     */
+    public function une_commande_a_l_avance_n_est_jamais_supprimee(): void
+    {
+        $ceSoir = $this->commande('phone', ['scheduled_at' => Carbon::now()->setHour(20)]);
+        $demain = $this->commande('phone', ['scheduled_at' => Carbon::now()->addDay()->setHour(12)], 1);
+        $maintenant = $this->commande('phone');
+
+        $res = $this->purger();
+        $res->assertOk();
+
+        $this->assertSame(1, (int) $res->json('purged'));
+        $this->assertSame(OrderStatus::ACCEPT, (int) $ceSoir->fresh()->status);
+        $this->assertSame(OrderStatus::ACCEPT, (int) $demain->fresh()->status);
+        $this->assertSame(OrderStatus::CANCELED, (int) $maintenant->fresh()->status);
+    }
+
+    /**
+     * [Revue adverse vague 2 · P2-1] Le serveur ne supprime QUE ce que le caissier a vu et confirmé : une
+     * commande arrivée entre l'affichage et le clic n'est pas emportée.
+     *
+     * @test
+     */
+    public function seules_les_commandes_montrees_au_caissier_partent(): void
+    {
+        $vue = $this->commande('phone');
+        $arriveeEntreTemps = $this->commande('phone');
+
+        $res = $this->purger(['confirm' => true, 'ids' => [$vue->id]]);
+        $res->assertOk();
+
+        $this->assertSame(1, (int) $res->json('purged'));
+        $this->assertSame(OrderStatus::CANCELED, (int) $vue->fresh()->status);
+        $this->assertSame(OrderStatus::ACCEPT, (int) $arriveeEntreTemps->fresh()->status);
+    }
+
     /** @test */
     public function sans_confirmation_rien_ne_part(): void
     {

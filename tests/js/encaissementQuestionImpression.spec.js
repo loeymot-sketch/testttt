@@ -61,6 +61,15 @@ describe('PosQuestionImpressionTicket', () => {
     });
 });
 
+describe('[revue vague 2 · P2-2] un pont d\'impression éteint n\'est jamais annoncé comme un succès', () => {
+    it('le pont rend null (réseau coupé, HTTP 500) → échec', async () => {
+        const { imprimerTicketClient } = await import('../../resources/js/helpers/posImprimerTicketClient.js');
+        axios.get.mockResolvedValue({ data: { escpos_b64: 'QUJD' } });
+        printEscPosViaCaisseBridge.mockResolvedValueOnce(null);
+        expect(await imprimerTicketClient(5)).toEqual({ ok: false, raison: 'pont' });
+    });
+});
+
 describe('libellés honnêtes', () => {
     it('le bouton de la fenêtre d\'encaissement ne promet plus « Imprimer »', () => {
         const src = fs.readFileSync(path.resolve(__dirname, '../../resources/js/components/admin/pos/PosCounterCollectModal.vue'), 'utf8');

@@ -30,7 +30,11 @@ class CommandesRatees
             ->whereIn('action', self::ACTIONS)
             ->where('resource', 'order')
             ->where('created_at', '>=', now()->subHours(self::FENETRE_HEURES))
+            // Revue vague 2 · P3 : audit_logs n'est indexé que par (branch_id, created_at) ; pour
+            // l'administrateur (branche 0) on passe la liste des branches pour profiter de l'index
+            // au lieu de balayer six ans de journal à chaque rafraîchissement.
             ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchId <= 0, fn ($q) => $q->whereIn('branch_id', \App\Models\Branch::query()->pluck('id')))
             ->orderByDesc('id')
             ->get(['resource_id', 'created_at', 'payload']);
 

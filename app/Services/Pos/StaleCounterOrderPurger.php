@@ -55,6 +55,10 @@ class StaleCounterOrderPurger
         $candidates = $perimetre === self::PERIMETRE_TELEPHONE_DU_JOUR
             ? CounterCollectQueue::applyScope(CounterCollectQueue::query($branchId), CounterCollectQueue::SCOPE_TODAY)
                 ->where('source_surface', 'phone')
+                // [Revue adverse vague 2 · P1-2] Jamais une commande À L'AVANCE dont le créneau n'est pas
+                // encore passé (ce soir 20 h, demain midi) : ce client n'est pas « non venu », et une
+                // annulation ne se défait pas. SCOPE_TODAY range ces commandes dans « aujourd'hui ».
+                ->where(fn ($q) => $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', now()))
             : CounterCollectQueue::applyScope(CounterCollectQueue::query($branchId), CounterCollectQueue::SCOPE_PREVIOUS);
 
         $eligibleIds = $candidates->pluck('id')->map(fn ($v) => (int) $v)->all();

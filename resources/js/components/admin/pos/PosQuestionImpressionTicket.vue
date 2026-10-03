@@ -8,6 +8,7 @@
     class="pos-question-impression"
     role="dialog"
     aria-modal="false"
+    aria-live="polite"
     :aria-label="$t('pos.print_decision_title')"
     data-testid="question-impression"
   >
@@ -15,6 +16,7 @@
     <div class="pos-question-impression__actions">
       <button
         type="button"
+        ref="boutonOui"
         class="pos-question-impression__oui"
         data-testid="question-impression-oui"
         :disabled="enCours"
@@ -49,6 +51,10 @@ export default {
   data() {
     return { enCours: false };
   },
+  // [Revue vague 2 · P3] Le focus va sur « Oui » : Entrée imprime, et un lecteur d'écran annonce la question.
+  mounted() {
+    this.$nextTick(() => { try { this.$refs.boutonOui?.focus(); } catch (_) { /* défensif */ } });
+  },
   methods: {
     async imprimer() {
       if (this.enCours) return;
@@ -57,7 +63,7 @@ export default {
       this.enCours = false;
       // Un échec d'impression ne se déguise jamais en succès ; l'encaissement, lui, a réussi.
       if (r.ok) alertService.success(this.$t('pos.print_ticket_client') + ' ✓');
-      else alertService.warning(this.$t('pos.print_ticket_client') + ' — impression impossible (pont ?)');
+      else alertService.warning(this.$t('pos.print_ticket_client') + ' — ' + this.$t('pos.print_failed_bridge'));
       this.$emit('fermer');
     },
   },

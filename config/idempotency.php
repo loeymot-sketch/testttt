@@ -42,6 +42,9 @@ return [
         // destructive-logique (annulation + audit). EncaissementComponent envoie déjà la clé ; un
         // double appui ne doit pas relancer la purge.
         'api/admin/pos/counter-collect/purge-previous',
+        // [GOAL REMARQUES 2026-10-03 · R-060] Même famille : suppression d'un geste des commandes
+        // téléphone du jour. Un double appui ne doit pas relancer la purge (revue adverse vague 2).
+        'api/admin/pos/counter-collect/purge-phone-today',
         'api/admin/pos-loyalty/customers',
         'api/admin/pos-order/*/attach-loyalty',
         // [ONB-13 T-3.1.1 2026-08-27] Les DEUX routes qui ecrivent reellement les points

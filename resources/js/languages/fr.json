@@ -321,6 +321,7 @@
         "offer_extra_undo": "Annuler l'offert",
         "offered_badge": "OFFERT",
         "loyalty_detach_aria": "Retirer le client de cette vente",
+        "print_failed_bridge": "impression impossible (pont d'impression injoignable ?)",
         "offer_extra_aria": "Offrir {name} à ce client",
         "cancel_kiosk_cash": {
             "title": "Annuler cette commande ?",
@@ -685,6 +686,8 @@
         "enc_purge_phone": "Supprimer les commandes téléphone ({n})",
         "enc_purge_summary_phone": "{n} commande(s) téléphone en attente aujourd'hui — {amount} au total. Les commandes de la borne et du site ne sont pas touchées.",
         "enc_purge_reason_phone_default": "Client non venu",
+        "enc_purge_phone_title": "Supprimer les commandes téléphone en attente ?",
+        "enc_purge_reason_phone": "Motif (déjà rempli, modifiable)",
         "encaisser_queue_empty": "Aucune commande à encaisser",
         "encaisser_queue_error": "Impossible de charger la file d’encaissement — réessayez",
         "guest": "Client passage",
