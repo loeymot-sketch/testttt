@@ -856,6 +856,17 @@
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <span class="pos-shortcuts__actions">
+                  <!-- [GOAL REMARQUES 2026-10-03 · R-016] Commande du site PRÊTE : le caissier valide le
+                       retrait (→ livrée → points de fidélité). En cuisine : pas de bouton (transition
+                       illégale tant que la cuisine n'a pas fini). -->
+                  <button
+                    v-if="estPrete(o)"
+                    type="button"
+                    class="pos-shortcuts__cta pos-shortcuts__cta--pickup"
+                    :data-testid="`pos-shortcut-web-paid-pickup-${o.id}`"
+                    :disabled="!!o._delivering"
+                    @click="validerRetraitWeb(o)"
+                  >{{ o._delivering ? '…' : 'Valider le retrait' }}</button>
                   <button
                     type="button"
                     class="pos-shortcuts__cta pos-shortcuts__cta--web-details"
@@ -7132,6 +7143,18 @@ export default {
          * qui n'est plus rattaché. Le reste du nettoyage (pastille, code fidélité, adresse) est celui de
          * changingUser() quand aucun client n'est choisi — une seule définition.
          */
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-016] Valider le retrait d'une commande du site prête : même chemin
+         * que « Livrée » du panneau Prêt (posOrder/changeStatus → DELIVERED, idempotent) — c'est ce passage
+         * qui crédite les points (AwardLoyaltyPointsOnDelivery). Puis le panneau « Web payées » est relu.
+         */
+        estPrete(o) {
+            return Number(o && o.status) === orderStatusEnum.PREPARED;
+        },
+        async validerRetraitWeb(o) {
+            await this.markDelivered(o);
+            try { await this.loadPaidWebOrders(); } catch (_) { /* le prochain sondage la retirera */ }
+        },
         /** [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique d'une commande de la file « À encaisser ». */
         apercuCommande(o) {
             return apercuTechnique(o);
@@ -7754,6 +7777,14 @@ export default {
 }
 .pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
   color: #991B1B;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-016] « Valider le retrait » — vert « fait », blanc 5,1:1. */
+.pos-shortcuts__cta--pickup {
+  background: #15803D;
+  color: #FFFFFF;
+}
+.pos-shortcuts__cta--pickup:hover:not(:disabled) {
+  background: #166534;
 }
 /* [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique sous le N° (pleine largeur de la ligne). */
 .pos-shortcuts__apercu {

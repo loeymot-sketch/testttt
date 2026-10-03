@@ -1227,7 +1227,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 // force source_surface='delivery' dès que order_type=DELIVERY.
                 ->whereIn('source_surface', ['web', 'delivery'])
                 ->where('payment_status', \App\Enums\PaymentStatus::PAID)
-                ->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                // [GOAL REMARQUES 2026-10-03 · R-016] Propriétaire : « lors de retrait de commande par site
+                // Web […] séparés et je pourrais les valider […] il y aura ces points ». Une commande À
+                // EMPORTER prête RESTE ici, où le caissier valide le retrait (→ livrée → points). Une
+                // LIVRAISON prête suit le circuit livreur et sort du panneau, comme avant.
+                ->where(function ($q) {
+                    $q->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                        ->orWhere(function ($pret) {
+                            $pret->where('status', \App\Enums\OrderStatus::PREPARED)
+                                ->where('order_type', '!=', \App\Enums\OrderType::DELIVERY);
+                        });
+                })
                 // Borne basse identique au board cuisine : sans elle, un vieux payé jamais bumpé
                 // (il en existe — #333 du 2026-08-03) squatterait le panneau à vie et le bip
                 // deviendrait du bruit que l'équipe apprendrait à ignorer.
