@@ -392,6 +392,11 @@ import { extractCashierNote } from "../../../helpers/posWizardInstruction";
 // diffèrent par attribut pour un même nom ; le wizard dédoublonne par nom). Voir l'en-tête
 // du helper pour la mesure et la cause racine.
 import { idViandeCanonique } from "../../../helpers/posViandeCanonique";
+import {
+    extraFritesSauceQuantity,
+    findSauceSupplementExtra,
+    formulaOptionExtras,
+} from "../../../helpers/posFormulaBilling";
 // [T-CAISSE-1TAP 2026-08-19 · GOAL owner] Un produit sans aucune option n'a rien
 // à demander : il rejoint le panier en un seul appui. Voir helpers/posQuickAdd.js.
 import { itemHasNoChoices } from "../../../helpers/posQuickAdd";
@@ -859,6 +864,9 @@ export default {
                     id: extraId,
                     quantity: safeQuantity,
                     name: extra.name,
+                    // [GOAL #5 2026-10-02] Prix catalogue, pour l'AFFICHAGE du panier et pour savoir si
+                    // le bouton « Offert » s'applique. Jamais envoyé au backend (qui refacture lui-même).
+                    unit_price: parseFloat(extra.convert_price) || 0,
                 });
             }
 
@@ -1724,6 +1732,30 @@ export default {
 
             return restore;
         },
+        /**
+         * [GOAL #6 2026-10-02] Ajoute au produit parent la quantité de « Sauce supplémentaire » due aux
+         * sauces FRITES au-delà de la 1ʳᵉ (affichées +0,50 € mais jamais facturées). Recalculé à chaque
+         * construction du payload depuis les choix du wizard — jamais cumulé sur `temp`, donc idempotent
+         * à l'édition d'une ligne. Sans cet extra sur le parent, on n'invente rien : le défaut est journalisé.
+         */
+        withFritesSauceSupplements: function (entries, extraQty) {
+            if (!(extraQty > 0)) return entries;
+            var sauceExtra = findSauceSupplementExtra(this.item && this.item.extras);
+            var sauceExtraId = sauceExtra ? normalizeId(sauceExtra.id) : null;
+            if (sauceExtraId === null || this.isModifierUnavailable(sauceExtra)) {
+                console.warn('[POS] 2e sauce frites non facturable : le produit parent n\'a pas d\'extra « Sauce supplémentaire ».');
+                return entries;
+            }
+            var existing = entries.find((entry) => entry.id === sauceExtraId);
+            var rest = entries.filter((entry) => entry.id !== sauceExtraId);
+            rest.push({
+                id: sauceExtraId,
+                quantity: (existing ? normalizeQuantity(existing.quantity, 1) : 0) + extraQty,
+                name: sauceExtra.name,
+                unit_price: parseFloat(sauceExtra.convert_price) || 0,
+            });
+            return rest;
+        },
         /** Une seule ligne panier : principal + `pos_line_addons` (menu, etc.) */
         buildPosCartMainPayload: function () {
             var quantity = parseInt(this.temp.quantity) > 0 ? parseInt(this.temp.quantity) : 1;
@@ -1748,12 +1780,23 @@ export default {
 
             // Wizard bundled addons take priority: they carry menu_extras + menu_restore.
             // Only fall back to Vue's this.addons when the wizard is not active.
+            var extraFritesSauces = 0;
             if (wizardBundled.length > 0) {
                 wizardBundled.forEach((b) => {
                     addonTotal += (parseFloat(b.total_price) || 0) * (parseInt(b.quantity) || 1);
                 });
                 wizardBundled.forEach((b) => {
-                    pos_line_addons.push(_.cloneDeep(b));
+                    var line = _.cloneDeep(b);
+                    // [GOAL #6 2026-10-02] « Grande Portion » / « Cheddar Fondu » de la formule étaient
+                    // AFFICHÉS +1,00 € mais jamais envoyés comme ids d'extras → jamais facturés. On les
+                    // rattache à la ligne addon (ids uniquement : PricingService facture, pas le client).
+                    var billable = formulaOptionExtras(line.menu_restore, this.getAddonById(line.parent_addon_id), line.item_id);
+                    if (billable.length > 0) {
+                        line.item_extras = billable;
+                    }
+                    // 2ᵉ sauce frites et suivantes : +0,50 € chacune, portées par l'extra générique du parent.
+                    extraFritesSauces += extraFritesSauceQuantity(line.menu_restore) * Math.max(1, parseInt(line.quantity, 10) || 1);
+                    pos_line_addons.push(line);
                 });
             // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"
             } else if (this.addons && typeof this.addons === 'object' && Object.keys(this.addons).length !== 0) {
@@ -1805,11 +1848,14 @@ export default {
                         const variation = this.findVariationById(entry.id);
                         return variation && !this.isModifierUnavailable(variation);
                     }),
-                item_extras: normalizeExtraEntries(this.temp.item_extras)
-                    .filter((entry) => {
-                        const extra = this.findExtraById(entry.id);
-                        return extra && !this.isModifierUnavailable(extra);
-                    }),
+                item_extras: this.withFritesSauceSupplements(
+                    normalizeExtraEntries(this.temp.item_extras)
+                        .filter((entry) => {
+                            const extra = this.findExtraById(entry.id);
+                            return extra && !this.isModifierUnavailable(extra);
+                        }),
+                    extraFritesSauces
+                ),
                 item_variation_total: this.temp.item_variation_total,
                 item_extra_total: this.temp.item_extra_total,
                 instruction: this.temp.instruction,

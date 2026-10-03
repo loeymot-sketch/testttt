@@ -135,6 +135,7 @@ return [
         'jambon-de-dinde'         => 'jambon-dinde.png',
         'supp-jambon'             => 'jambon-dinde.png',
         'fromage-supplementaire'  => 'fromage.png',
+        'cheddar'                 => 'cheddar.png',
         'supp-cheddar'            => 'cheddar.png',
         'supp-emmental'           => 'fromage.png',
         'fromage-a-raclette'      => 'raclette.png',

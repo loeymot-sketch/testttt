@@ -297,6 +297,40 @@ Plateforme restaurant fast-food complète :
 >   service 00 h vs 05 h à trancher. · Dine-in `show` public sans PII AVANT activation.
 > · Nom produit non scellé dans le snapshot (renommage réécrit l'historique).
 
+> **2026-10-02 — CAISSE/CUISINE : 7 CORRECTIFS (/goal owner), PREUVES À L'APPUI.** Branche `pos/category-first-caisse-2026-06-23`,
+> base `0ccb1dbb1`, rien poussé ni déployé. Détail et chiffres : voir le rapport de fin de session.
+> (1) Catégorie « Sauces supplémentaires » hors menu (`channels=["pos"]`, 13 sauces canoniques de `config/pos_sauces.php`, 0,50 €) —
+> migration de données `2026_10_02_090000`, aucun produit existant touché. (2) Écran de paiement : onglets Espèces / Carte bleue /
+> Titres-resto / Multi-paiement + CB partielle → reste par un autre moyen (`PaymentComponent.vue` **gelé**, LOCK
+> `docs/locks/LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE_2026-10-02.md`, contreseing formel à obtenir) ; même chose dans la modale
+> « à encaisser » (non gelée). (3) File « en attente d'encaissement » : jour courant par défaut (`CounterCollectQueue`), filtre
+> « Jours précédents », purge confirmée une par une / toutes (`StaleCounterOrderPurger` : CANCELED/REJECTED ou soft-delete PREPARED, JAMAIS de
+> DELETE, garde `fiscal_sequence_no IS NULL` sous verrou, audit `order.counter_pending_purged`). (4) **Cause racine des sauces sans nom** : la
+> caisse écrit « Sauce : A, B Supplément : X » avec une ESPACE ; `splitSauceList` jetait la dernière sauce — corrigé PHP + JS (+ lecture du
+> `sauce_destinations` scellé tronqué + libellé arabe). (5) Bouton « Offert » : sidecar `item_extras_offered` (ids seulement), PricingService
+> inchangé, audit `order.line_offered`, ligne « OFFERT » sur ticket/reçu. (6) Prix frites : le wizard gelé n'envoyait « Grande Portion »,
+> « Cheddar Fondu » et la 2ᵉ sauce frites de la formule qu'en TEXTE → désormais ids d'extras (`posFormulaBilling.js`, API addons
+> `addon_item_extras`). (7) Cuisine : « # » gras sur la ligne produit à supplément, suppléments blanc/noir (ticket GS B + KDS), fond jaune retiré,
+> contraste ≥ 7:1. ⚠ Défaut ANTÉRIEUR non lié : `FrozenZoneSha256BaselineSentinelTest` rouge sur `KioskWizardComponent.vue` (baseline périmée
+> depuis `c21628767`).
+
+> **2026-09-30 — BORNE : COQUE SOMBRE + 18 VISUELS RECOMPOSÉS SUR LE DÉCOR LE CAYENNE.**
+> Owner : « la page toute blanche fait bizarre… la barre latérale au noir, ça donne plus de
+> classe » + « les produits sans arrière-plan, rajoute ce fond-là comme le sandwich, à part les
+> boissons ». Fait : (1) `KioskCategoriesComponent.vue` — bloc CSS scoped : fond de page
+> #141414, bandeau/barre latérale/barre du bas #1A1A1A, cartes catégorie #242424, texte blanc ;
+> cartes PRODUIT toujours blanches ; aucun token global `--kiosk-*` touché, mode dark toujours
+> désactivé. (2) 18 PNG de `public/images/menu/` composés sur le décor 1536×1024 (script
+> Python PIL, ombre portée, alpha intérieur durci) + vignettes WebP régénérées
+> (`images:generate-pos-thumbs`). Boissons volontairement laissées en détouré sur blanc.
+> (3) `config/menu_images.php` : slug `cheddar` manquant → le supplément affichait l'icône
+> par défaut. **NON FAIT, à refaire à la source** : raclette, fromage (emmental), champignons,
+> boursin — leurs détourés ont des TROUS semi-transparents intérieurs (invisibles sur blanc,
+> décor visible au travers) ; 3 tentatives de réparation alpha (durcissement, dé-mattage vert,
+> remplissage blanc) toutes rejetées visuellement. Tarte Daim : fin liseré vert de matte sur
+> la croûte, mineur. Preuves : PHPUnit images 17/17, Vitest catalogue 26/26, zone gelée diff 0,
+> captures Playwright lues (Sandwichs, Burgers, Desserts, Boissons) sur :8766 arbre principal.
+> Les 4 sources originales sont dans git (aucun fichier supprimé), pas de push.
 > **2026-09-29 — BACKEND DÉPLOYÉ ET VÉRIFIÉ. HEAD prod = `faa81531`.**
 >
 > `tools/deploy-lecayenne.sh 8d9fcd707` → OK : snapshot de base pris, rien à
@@ -4739,6 +4773,9 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-09-30 — Borne : coque sombre du catalogue + 18 visuels produits recomposés sur le décor
+Le Cayenne + slug `cheddar` ajouté à `config/menu_images.php`.** 4 détourés troués à la source
+(raclette, fromage, champignons, boursin) laissés tels quels — voir §2.
 **QA — SECOND LOT + DÉPLOIEMENT PARTIEL (2026-09-28)** — branche
 `qa/corrige-rapports-2026-09-28` **poussée sur le distant** (11 commits au moment de cette note).
 Suite de la directive owner « corrige », puis « deploy ».

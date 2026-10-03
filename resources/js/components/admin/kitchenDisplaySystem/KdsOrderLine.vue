@@ -8,7 +8,7 @@
     header        — qty + name + ⚠ if hasAllergen
     variation     — "Pain : Baguette traditionnelle"
     variation-flat— "Avec : 2 Merguez, 1 Brochette"
-    supplement    — "+ Cheddar" in yellow italic
+    supplement    — "Cheddar" bold white on black (inverted)
     addon         — generic indented "▸ Label"
     menu_child    — "▸ Frites Moyennes" (menu_full/menu_frites/menu_boisson)
     instruction   — italic note, classified note/exclusion/allergen
@@ -30,6 +30,7 @@
       <div class="kds-line__symbolic">
         <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
+        <span v-if="line.hasSupplement" class="kds-line__hash" aria-hidden="true">#</span>
         <span class="kds-line__symbolic-text">{{ line.label }}</span>
       </div>
     </template>
@@ -57,9 +58,9 @@
       </div>
     </template>
 
-    <!-- supplement: "+ Cheddar" in yellow italic -->
+    <!-- supplement: "Cheddar" bold WHITE on a BLACK box (inverted reading, never yellow) -->
     <template v-else-if="line.type === 'supplement'">
-      <div class="kds-line__supplement">{{ line.label }}</div>
+      <div class="kds-line__supplement">{{ supplementText }}</div>
     </template>
 
     <!-- menu_child: "▸ Frites Moyennes" (formule child) -->
@@ -107,6 +108,11 @@ export default {
     },
   },
   computed: {
+    // [GOAL #7 2026-10-02] Le gras blanc sur noir porte à lui seul le signal « supplément » :
+    // l'étoile emoji (jaune) n'est plus affichée — jamais de jaune sur la fiche cuisine.
+    supplementText() {
+      return String(this.line.label || '').replace(/^\s*⭐\s*/u, '');
+    },
     groupLabel() {
       const key = `label.kds_group_${this.line.group || 'other'}`;
       // Fallback to raw group key if i18n misses (defensive — i18n parity
@@ -163,7 +169,7 @@ export default {
   margin-inline-start: 2px;
 }
 .kds-line__allergen-icon {
-  color: #F97316;
+  color: #7C2D12;
   font-size: 20px;
   line-height: 1;
   margin-top: -2px;
@@ -193,6 +199,13 @@ export default {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+.kds-line__hash {
+  /* [GOAL #7 2026-10-02] « # » gras en tête d'une ligne produit qui porte un supplément. */
+  color: #000000;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
 }
 .kds-line__symbolic-text {
   flex: 1;
@@ -228,7 +241,7 @@ export default {
 /* VARIATION — "Pain : Baguette" */
 .kds-line__variation,
 .kds-line__variation--flat {
-  color: #4B5563;
+  color: #374151; /* ≥ 7:1 sur tous les fonds de carte (#4B5563 tombait à 6,2 sur fond d'alerte) */
   font-size: 16px;
   line-height: 1.3;
   padding-inline-start: 56px;
@@ -238,18 +251,20 @@ export default {
 }
 .kds-line__group {
   font-weight: 600;
-  color: #374151;
+  color: #1F2937;
   text-transform: capitalize;
 }
 .kds-line__sep {
-  color: #6B7280;
+  color: #374151;
 }
 .kds-line__value {
-  color: #4B5563;
+  color: #374151;
 }
 
-/* SUPPLEMENT — jaune gras, EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Owner :
-   les suppléments s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne), en jaune. */
+/* SUPPLEMENT — EN LIGNE (côte à côte). [KDS-INLINE-SUPP 2026-07-05] Les suppléments
+   s'affichent l'un À CÔTÉ de l'autre (pas chacun sur sa ligne).
+   [GOAL #7 2026-10-02] LECTURE INVERSÉE : gras BLANC sur cadre NOIR (21:1), JAMAIS jaune —
+   le jaune (#CA8A04) tombait à 2,7:1 sur le fond jaune de la fiche. */
 .kds-line--supplement {
   display: inline-block;
   vertical-align: top;
@@ -258,12 +273,16 @@ export default {
   padding-inline-start: 44px; /* aligne le groupe suppléments sous le produit */
 }
 .kds-line__supplement {
-  display: inline;
-  color: #CA8A04;
+  display: inline-block;
+  background: #000000;
+  color: #FFFFFF;
+  padding: 2px 8px;
+  border-radius: 4px;
   font-size: 15px;
   font-style: normal;
-  font-weight: 800; /* [K2-KDS 2026-07-05] supplément en GRAS + étoile ⭐ (owner) */
-  margin-inline-end: 12px;
+  font-weight: 800;
+  margin-inline-end: 8px;
+  margin-bottom: 3px;
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -282,7 +301,7 @@ export default {
   line-height: 1.3;
 }
 .kds-line__menu-arrow {
-  color: #6B7280;
+  color: #374151;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -309,14 +328,14 @@ export default {
   white-space: pre-line;
 }
 .kds-instruction--note {
-  color: #4B5563;
+  color: #374151;
 }
 .kds-instruction--exclusion {
-  color: #92400E;
+  color: #7C2D12;
   font-weight: 600;
 }
 .kds-instruction--allergen {
-  color: #C2410C;
+  color: #7C2D12;
   font-weight: 700;
 }
 
@@ -326,7 +345,7 @@ export default {
   align-items: baseline;
   gap: 6px;
   flex-wrap: wrap;
-  color: #C2410C;
+  color: #7C2D12;
   font-size: 16px;
   font-style: italic;
   font-weight: 700;

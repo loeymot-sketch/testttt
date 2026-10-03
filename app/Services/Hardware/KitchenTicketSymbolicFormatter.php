@@ -360,7 +360,8 @@ final class KitchenTicketSymbolicFormatter
             }
             // Skip only FREE garnitures (folded into Line 1). Paid extras — even
             // crudité-named ones like "Oignons frits" — stay as supplement lines.
-            if ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e)) {
+            // [GOAL #5 2026-10-02] Un extra OFFERT est à 0 € mais reste à PRÉPARER : jamais replié comme crudité gratuite.
+            if ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e) && empty($e['offered'])) {
                 continue;
             }
             // La sauce en plus générique : on masque autant d'unités que le budget en explique
@@ -412,8 +413,11 @@ final class KitchenTicketSymbolicFormatter
         }
 
         // Borne/web write ONLY the extras ("Sauces en plus : …" / "Extra sauces: …").
+        // [GOAL #4 2026-10-02] « صلصات إضافية » = libellé arabe de ar.json (kiosk.wizard.instruction.sauces_extra) :
+        // aucune regex ne le reconnaissait → le nom était perdu et le générique s'affichait.
         if (preg_match('/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $m)
-            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $m)) {
+            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $m)
+            || preg_match('/صلصات\s+إضافية\s*:\s*([^\n.]+)/u', $instruction, $m)) {
             return $this->splitSauceList($m[1]);
         }
 
@@ -439,6 +443,15 @@ final class KitchenTicketSymbolicFormatter
                 $structured
             ), static fn (string $name): bool => $name !== ''));
             if ($names !== []) {
+                // [GOAL #4 2026-10-02] `sauce_destinations` est scellé (immuable, NF525) et a été
+                // écrit avec le même découpage défectueux : il peut être TRONQUÉ (ex. ["Curry"] pour
+                // « Barbecue, Curry »). On ne peut pas le réparer en base → à la lecture, la relecture
+                // de l'instruction l'emporte quand elle est plus complète.
+                $reread = $this->extraSauceNames($instruction);
+                if (count($reread) > count($names)) {
+                    return $reread;
+                }
+
                 return $names;
             }
         }
@@ -534,6 +547,13 @@ final class KitchenTicketSymbolicFormatter
                 continue;
             }
             if (mb_strpos($name, ':') !== false) {
+                // [GOAL #4 2026-10-02] CAUSE RACINE du « sauce supplémentaire sans nom ». La caisse
+                // colle la rubrique suivante à la dernière sauce par une ESPACE (pas une virgule) :
+                // « …, Harissa Supplément : Cheddar ». Jeter tout le morceau faisait disparaître la
+                // dernière sauce dès qu'un supplément suivait. On garde ce qui PRÉCÈDE la rubrique.
+                if (preg_match(self::RUBRIQUE_COLLEE, $name, $m) && trim($m[1]) !== '') {
+                    $out[] = trim($m[1]);
+                }
                 break;
             }
             $out[] = $name;
@@ -541,6 +561,13 @@ final class KitchenTicketSymbolicFormatter
 
         return $out;
     }
+
+    /**
+     * Rubriques que la caisse / la borne écrivent APRÈS la liste de sauces sur la même ligne.
+     * `(.+?)` = le dernier nom de sauce (peut contenir des espaces : « Fromagère maison »).
+     * Jumeau JS : resources/js/helpers/kdsSymbolic.js (RUBRIQUE_COLLEE).
+     */
+    public const RUBRIQUE_COLLEE = '/^(.+?)\s+(?:suppl[ée]ments?|viandes?(?:\s+en\s+plus)?|formule|sauce\s+frites|sauces?\s+en\s+plus|extra\s+sauces?|pain|boissons?|crudit[ée]s?|garnitures?|accompagnements?|menu|avec|sans|note)\s*:/iu';
 
     /**
      * [MULTIVIANDE 2026-07-24] Split a "A, B, C" meat list → trimmed, "+"-stripped

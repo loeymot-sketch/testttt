@@ -209,8 +209,12 @@ class TicketWidthSafeTest extends TestCase
 
         $lines = $this->decodeLines($bytes);
         $joined = implode("\n", array_map(static fn ($l) => $l['text'], $lines));
-        $this->assertStringContainsString('* Cheddar', $joined, 'supplément doit porter une étoile « * »');
-        $this->assertStringNotContainsString('+ Cheddar', $joined, 'plus de « + » : c\'est « * » maintenant');
+        // [GOAL CAISSE/CUISINE #7 2026-10-02] Le supplément est désormais imprimé en vidéo INVERSE
+        // (GS B 1 … GS B 0, blanc sur noir) : plus d'étoile, plus de « + ». Le décodeur du test lit
+        // l'octet de commande « B » comme un caractère — on vérifie donc l'encadrement sur les octets bruts.
+        $this->assertStringContainsString("\x1dB\x01 Cheddar \x1dB\x00", $bytes, 'supplément en vidéo inverse');
+        $this->assertStringNotContainsString('* Cheddar', $joined, 'plus d\'étoile : le supplément est inversé');
+        $this->assertStringNotContainsString('+ Cheddar', $joined, 'jamais de « + »');
 
         $headDoubleSize = false;
         foreach ($lines as $l) {

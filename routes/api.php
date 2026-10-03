@@ -1070,65 +1070,54 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // [PERF N+1 2026-07-31] Eager-load des relations lues par OrderDetailsResource
             // (user/address/branch/deliveryBoy/coupon/transaction/diningTable/payments) — sinon
             // ~9 requetes lazy PAR commande a chaque tick de polling (cap 200 → jusqu'a ~1800).
-            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
-                ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
-                // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
-                // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
-                // [SELF-AUDIT R3 P2 2026-07-05 — fantôme incaissable] La file d'encaissement excluait
-                // seulement CANCELED, mais confirmCounterPayment REFUSE aussi REJECTED/RETURNED
-                // (PaymentService:325). Un remboursement pré-Z (RETURNED) d'une commande Plan-B non
-                // encaissée laissait payment_status=PENDING_COUNTER → la commande restait à VIE dans la
-                // file /admin/encaissement, non encaissable. On aligne sur le set terminal du sceau.
-                ->whereNotIn('status', [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
-                ->where(function ($q) {
-                    $q->where(function ($k) {
-                        $k->where('source_surface', 'kiosk')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    })->orWhere(function ($p) {
-                        $p->where('source_surface', 'pos')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($tel) {
-                        // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé)
-                        // → source_surface='phone' + COUNTER_DEFERRED. Sans cette clause, la commande
-                        // téléphone serait INVISIBLE en caisse donc INENCAISSABLE (même famille de bug
-                        // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
-                        $tel->where('source_surface', 'phone')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($web) {
-                        // [P1-3 2026-07-18] Commande WEB à emporter acceptée sans paiement en ligne
-                        // (carte web OFF, mandat owner) : SYNC-WEB-KDS-01 la bascule en PENDING_COUNTER
-                        // pour la visibilité cuisine et OnlineOrderController complète le marqueur
-                        // COUNTER_DEFERRED (takeaway COD) → 4e origine LÉGITIME de counter-collect. Sans
-                        // cette clause, la commande web PENDING_COUNTER reste INVISIBLE en caisse donc
-                        // INENCAISSABLE (vente perdue). Miroir strict des clauses pos/phone + de la garde
-                        // assertCounterDeferredOrder (qui autorise 'web'). La LIVRAISON web n'a PAS le
-                        // marqueur COUNTER_DEFERRED (encaissée au doorstep) → naturellement exclue ici.
-                        $web->where('source_surface', 'web')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($n) {
-                        // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
-                        // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait
-                        // INVISIBLE en caisse donc INENCAISSABLE. On la rattrape par le type kiosk/emporter.
-                        $n->whereNull('source_surface')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    });
-                })
-                ->orderBy('created_at');
-
+            // [GOAL CAISSE/CUISINE #3 2026-10-02] La définition de la file vit désormais dans
+            // CounterCollectQueue (source unique, partagée avec la purge). Par DÉFAUT : la journée de
+            // service courante seulement (nouveau jour = liste vide) ; ?scope=previous = jours
+            // précédents ; ?scope=all = tout (diagnostic). Le plafond de 200 et le tri FIFO sont
+            // inchangés — mais ne s'appliquent plus à un arriéré d'anciennes commandes.
+            $scope = \App\Services\Pos\CounterCollectQueue::normalizeScope(request()->query('scope'));
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
-            if ($branchId > 0) {
-                $query->where('branch_id', $branchId);
-            }
 
-            // [abuse-e2e P3 heal 2026-05-30] Cap raised 50→200. Oldest-first
-            // (created_at ASC) is the correct FIFO collection order — collect the
-            // longest-waiting customer first. The old 50-cap silently hid orders
-            // beyond 50 (a real V1 single-box gap once a backlog builds: a
-            // waiting-to-pay customer became invisible to the cashier). 200 is far
-            // beyond any realistic single-restaurant uncollected backlog while
-            // staying bounded.
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+            $query = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId, ['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments']),
+                $scope
+            );
+
+            // Badge du filtre « jours précédents » : compté à part (requête légère, sans relations).
+            $previousCount = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId),
+                \App\Services\Pos\CounterCollectQueue::SCOPE_PREVIOUS
+            )->count();
+
+            // [abuse-e2e P3 heal 2026-05-30] Cap 200, FIFO (created_at ASC) : le client qui attend
+            // depuis le plus longtemps est encaissé en premier.
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get())
+                ->additional(['meta' => ['scope' => $scope, 'previous_count' => $previousCount]]);
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        // [GOAL CAISSE/CUISINE #3 2026-10-02] Purge des anciennes commandes JAMAIS payées (une par
+        // une via `ids`, ou toutes via `all`). Confirmation explicite + motif obligatoires. Aucune
+        // commande payée/fiscalisée n'est touchable (garde sous verrou dans le service) ; audit écrit.
+        Route::post('/counter-collect/purge-previous', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['required', 'string', 'min:3', 'max:255'],
+                'all' => ['sometimes', 'boolean'],
+                'ids' => ['required_without:all', 'array', 'max:500'],
+                'ids.*' => ['integer'],
+            ]);
+
+            $all = (bool) ($validated['all'] ?? false);
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                $all ? null : ($validated['ids'] ?? []),
+                $validated['reason'],
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-previous');
         // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
         // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
         // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client

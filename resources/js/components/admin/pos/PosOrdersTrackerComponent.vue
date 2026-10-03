@@ -2197,10 +2197,12 @@ export default {
                 const onBoard = new Set(
                     this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
                 );
+                // [GOAL CAISSE/CUISINE #3 2026-10-02] La file ne renvoie plus que le jour courant :
+                // les « plus anciennes » = hors tableau aujourd'hui + celles des jours précédents (meta).
                 this.olderPendingCount = rows.filter((r) => {
                     const id = parseInt(r?.id, 10);
                     return Number.isFinite(id) && !onBoard.has(id);
-                }).length;
+                }).length + (Number(res?.data?.meta?.previous_count) || 0);
             } catch (_) {
                 // File indisponible → on garde la dernière valeur connue (pas de faux
                 // zéro). [S2 auto-RED cycle 2] Back-off : on ne remet PAS le TTL à 0,

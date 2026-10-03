@@ -824,7 +824,7 @@ export default {
             return normalizeReceiptVariations(item?.item_variations);
         },
         normalizedExtras(item) {
-            return normalizeReceiptExtras(item?.item_extras);
+            return normalizeReceiptExtras(item?.item_extras, item?.instruction);
         },
         /**
          * [GOAL-CAISSE-VISION 2026-08-24] Suppléments de formule (menu : frites,

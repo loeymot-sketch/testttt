@@ -36,6 +36,9 @@ describe('KdsOrderLine — symbolic line types paint to the DOM', () => {
         // [CLUSTER-2 2026-07-11] role menu_frites = frites SEULES → « FRITES » (ligne 2),
         // pas « MENU » (la cuisine ne doit pas servir la formule complète). PUIS suppléments.
         expect(texts[1]).toContain('FRITES');
-        expect(texts[2]).toContain('⭐ Cheddar');
+        // [GOAL #7 2026-10-02] Le supplément s'affiche en blanc sur noir, SANS l'étoile jaune
+        // (jamais de jaune sur la fiche cuisine) : le texte est « Cheddar » seul.
+        expect(texts[2]).toContain('Cheddar');
+        expect(texts[2]).not.toContain('⭐');
     });
 });
