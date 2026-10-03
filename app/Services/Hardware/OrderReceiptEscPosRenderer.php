@@ -337,11 +337,15 @@ final class OrderReceiptEscPosRenderer
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial),
         // big so the cook can match it when handing the order over.
         $callNo = (string) ($order->queue_number ?: ($order->order_serial_no ?? $order->id));
-        // [TICKET-WIDTHSAFE] n° court → double taille ; sinon double hauteur (jamais déborder).
-        if (mb_strlen($callNo) <= max(1, (int) floor($w / 2))) {
-            $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
+        // [TICKET-WIDTHSAFE] n° court → grand ; sinon double hauteur (jamais déborder).
+        // [GOAL REMARQUES 2026-10-03 · R-052] Propriétaire : « 4 cm ou 3 cm de la page ». Hauteur au
+        // MAXIMUM de l'ESC/POS (×8 ≈ 2,4 cm, police A) et la plus grande largeur qui tient sur une
+        // ligne (largeur × caractères ≤ colonnes). Au-delà de ×8 : image tramée (porte G4).
+        $largeurNo = min(8, intdiv($w, max(1, mb_strlen($callNo))));
+        if ($largeurNo >= 2) {
+            $b .= EscPosCommandBuilder::textSize($largeurNo, 8).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textLine($callNo);
-            $b .= EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::textSize(1, 1).EscPosCommandBuilder::bold(false);
         } else {
             $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true);
             $b .= EscPosCommandBuilder::textWrap($callNo, $w);
@@ -454,7 +458,7 @@ final class OrderReceiptEscPosRenderer
                 // en plus à faire. Le repli des formules revendiquées (KitchenBundledAddonCollapser)
                 // ne déplace aucun extra : aucun doublon possible avec le bloc du parent.
                 // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche isMenuItem.
-                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => [], 'hash' => $this->symbolic->porteUnSupplement($snap)];
+                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => [], 'hash' => $this->symbolic->porteUnSupplement($snap), 'cadre' => true];
 
                 continue;
             }
@@ -502,15 +506,36 @@ final class OrderReceiptEscPosRenderer
             // [GOAL REMARQUES 2026-10-03 · R-072] … ET dès qu'un extra payant ou offert existe, même replié
             // dans la ligne produit (sauce en plus) ou sur le badge (2ᵉ sauce frites).
             $headText = ($blk['supps'] !== [] || ! empty($blk['hash'])) ? '# '.$blk['head'] : $blk['head'];
-            foreach (EscPosCommandBuilder::wrapIndented($headText, $halfW, '  ') as $headLine) {
-                $b .= EscPosCommandBuilder::textLine($headLine);
+            // [GOAL REMARQUES 2026-10-03 · R-054] « 2 x » sur fond NOIR (lecture inversée), même largeur
+            // visible que le texte d'origine : aucun risque de débordement.
+            $qtyMark = preg_match('/^(\d+ x )/u', (string) $blk['head'], $mq) ? $mq[1] : '';
+            // [GOAL REMARQUES 2026-10-03 · R-053] Une formule commandée SEULE (« MENU : MAY ») est
+            // encadrée en noir comme le badge MENU / FRITES : un espace de chaque côté fait le bandeau.
+            $cadre = ! empty($blk['cadre']);
+            foreach (EscPosCommandBuilder::wrapIndented($headText, $cadre ? $halfW - 2 : $halfW, '  ') as $i => $headLine) {
+                // Les octets GS B ne passent PAS par textLine() (sanitize() les détruirait) : la ligne,
+                // déjà assainie par wrapIndented(), est émise brute puis terminée par textLine('').
+                if ($i === 0 && $qtyMark !== '' && ! $cadre
+                    && preg_match('/^(\s*(?:#\s)?)'.preg_quote($qtyMark, '/').'(.*)$/us', $headLine, $hm)) {
+                    $b .= $hm[1].EscPosCommandBuilder::invert(true).$qtyMark.EscPosCommandBuilder::invert(false).$hm[2].EscPosCommandBuilder::textLine('');
+                } elseif ($cadre) {
+                    $b .= '  '.EscPosCommandBuilder::invert(true).' '.ltrim($headLine).' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
+                } else {
+                    $b .= EscPosCommandBuilder::textLine($headLine);
+                }
             }
             // Retour en double HAUTEUR (grand mais pleine largeur) pour le détail menu/suppléments.
             $b .= EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true);
             if ($blk['menu'] !== null) {
                 $b .= EscPosCommandBuilder::bold(true);
-                foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $w - 2, '  ') as $menuLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$menuLine);
+                // [GOAL REMARQUES 2026-10-03 · R-053] Propriétaire : « lorsqu'il y a une frite […] soit menu
+                // soit frites ça doit être encadré en noir ». MENU / FRITES / F en lecture inversée, même
+                // gabarit que les suppléments ; la BOISSON seule (aucune frite) reste en gras simple.
+                $encadre = (bool) preg_match('/^(MENU|FRITES|F)\b/u', (string) $blk['menu']);
+                foreach (EscPosCommandBuilder::wrapIndented($blk['menu'], $encadre ? $w - 6 : $w - 2, $encadre ? '' : '  ') as $menuLine) {
+                    $b .= $encadre
+                        ? '  '.EscPosCommandBuilder::invert(true).' '.$menuLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('')
+                        : EscPosCommandBuilder::textLine('  '.$menuLine);
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
