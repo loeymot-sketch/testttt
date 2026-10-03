@@ -323,6 +323,7 @@
             "title": "Cancel this order?",
             "warning": "This action is irreversible.",
             "reason_required": "Reason required (min 3 characters)",
+            "reason_prefilled": "Reason (pre-filled, editable)",
             "confirm_btn": "Yes, cancel the order",
             "back_btn": "Back"
         },

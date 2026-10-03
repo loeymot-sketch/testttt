@@ -2288,7 +2288,7 @@
             ) }}</span>
           </p>
           <label for="pos-kiosk-cash-cancel-reason" class="pos-kiosk-cash-cancel-label">
-            {{ $t('pos.cancel_kiosk_cash.reason_required') }}
+            {{ $t('pos.cancel_kiosk_cash.reason_prefilled') }}
           </label>
           <textarea
             id="pos-kiosk-cash-cancel-reason"
@@ -2320,6 +2320,7 @@
             {{ $t('pos.cancel_kiosk_cash.back_btn') }}
           </button>
           <button
+            ref="cancelKioskCashConfirmBtn"
             type="button"
             class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--danger"
             :disabled="cancelKioskCashDialog.busy"
@@ -2397,6 +2398,9 @@
 <script>
 import axios from 'axios';
 import { typeDAdresse } from "../../../services/typeDAdresse";
+// [GOAL REMARQUES 2026-10-03 · R-060] Motif pré-rempli de l'annulation d'une commande en attente (même
+// motif que la croix de la page Encaissement) — le caissier n'a plus rien à taper.
+const MOTIF_ANNULATION_PAR_DEFAUT = 'Client non venu';
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
@@ -5639,17 +5643,21 @@ export default {
         // [HEAL B2-P6-F01 2026-05-26] Open confirm-before-cancel dialog
         // instead of firing the destructive POST directly. Mirrors
         // PosOrdersTrackerComponent.openCancelDialog pattern.
+        // [GOAL REMARQUES 2026-10-03 · R-060] Propriétaire : « je veux pas […] mettre la justificatif pour
+        // pouvoir annuler directement ». La confirmation reste (Annuler puis « Oui ») ; le motif est
+        // PRÉ-REMPLI « Client non venu » (même motif que la croix de la page Encaissement) et reste
+        // modifiable. Le focus va sur « Oui », pas dans le champ : rien à taper.
         openCancelKioskCashDialog(order) {
             if (!order || order._canceling) return;
             this.cancelKioskCashDialog = {
                 open: true,
                 order,
-                reason: '',
+                reason: MOTIF_ANNULATION_PAR_DEFAUT,
                 error: '',
                 busy: false,
             };
             this.$nextTick(() => {
-                try { this.$refs.cancelKioskCashReasonInput?.focus(); } catch (_) { /* defensive */ }
+                try { this.$refs.cancelKioskCashConfirmBtn?.focus(); } catch (_) { /* defensive */ }
             });
         },
         closeCancelKioskCashDialog() {
@@ -5671,11 +5679,10 @@ export default {
         async confirmCancelKioskCashOrder() {
             const dlg = this.cancelKioskCashDialog;
             if (!dlg.open || !dlg.order || dlg.busy) return;
-            const reason = String(dlg.reason || '').trim();
-            if (reason.length < 3) {
-                this.cancelKioskCashDialog.error = this.$t('pos.cancel_kiosk_cash.reason_required');
-                return;
-            }
+            // [GOAL REMARQUES 2026-10-03 · R-060] Un motif vide ou trop court ne bloque plus : il retombe
+            // sur le motif par défaut (la trace d'audit n'est jamais vide).
+            const tape = String(dlg.reason || '').trim();
+            const reason = tape.length >= 3 ? tape : MOTIF_ANNULATION_PAR_DEFAUT;
             const order = dlg.order;
             if (order._canceling) return;
             this.cancelKioskCashDialog.busy = true;

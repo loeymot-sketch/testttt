@@ -325,6 +325,7 @@
             "title": "Annuler cette commande ?",
             "warning": "Cette action est irréversible.",
             "reason_required": "Raison obligatoire (min 3 caractères)",
+            "reason_prefilled": "Motif (déjà rempli, modifiable)",
             "confirm_btn": "Oui, annuler la commande",
             "back_btn": "Retour"
         },
