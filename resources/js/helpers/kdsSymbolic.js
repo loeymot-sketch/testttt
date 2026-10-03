@@ -382,6 +382,11 @@ function produitCode(produit) {
 
     if (CODE_SANS_MENTION.includes(n)) return '';
 
+    // [GOAL REMARQUES 2026-10-03 · R-070] Une SAUCE VENDUE SEULE (« Sauce Ketchup ») s'écrit EN ENTIER :
+    // réduite à son premier mot, chacune des 13 sortait « SAU » — le cuisinier ne savait pas laquelle
+    // servir. Seul un nom qui COMMENCE par « sauce ». Jumeau STRICT : KitchenTicketSymbolicFormatter::produitCode().
+    if (n.startsWith('sauce ')) return n.toUpperCase();
+
     // [OWNER 2026-08-10 · « la cuisine se trompe entre CHEESE et CHICKEN »] Familles écrites EN
     // TOUTES LETTRES. Le code court ne vaut que s'il DÉSIGNE : « Cheese Burger » et « Cheddar »
     // rendaient tous deux CHE, « Chicken Burger » rendait CHI — une lettre d'écart, lues à deux

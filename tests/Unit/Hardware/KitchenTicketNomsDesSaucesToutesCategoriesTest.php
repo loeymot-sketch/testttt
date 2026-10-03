@@ -149,6 +149,44 @@ class KitchenTicketNomsDesSaucesToutesCategoriesTest extends TestCase
         $this->assertSame(['Andalouse', 'Harissa'], $this->f->extraSauceNames('Sauce : Algérienne, Andalouse, Harissa'));
     }
 
+    /**
+     * [GOAL REMARQUES 2026-10-03 · T-1.3 R-070] Les 13 sauces VENDUES SEULES (catégorie « Sauces
+     * supplémentaires », migration 2026_10_02_090000 ; noms RÉELS de la table items #245-#257)
+     * sortaient toutes « SAU » : le cuisinier ne savait pas quelle sauce servir.
+     *
+     * @return array<string, array{0:string,1:string}>
+     */
+    public static function saucesVenduesSeules(): array
+    {
+        return [
+            'Ketchup' => ['Sauce Ketchup', 'SAUCE KETCHUP'],
+            'Mayonnaise' => ['Sauce Mayonnaise', 'SAUCE MAYONNAISE'],
+            'Blanche' => ['Sauce Blanche', 'SAUCE BLANCHE'],
+            'Algérienne' => ['Sauce Algérienne', 'SAUCE ALGERIENNE'],
+            'Samouraï' => ['Sauce Samouraï', 'SAUCE SAMOURAI'],
+            'Andalouse' => ['Sauce Andalouse', 'SAUCE ANDALOUSE'],
+            'Américaine' => ['Sauce Américaine', 'SAUCE AMERICAINE'],
+            'Barbecue' => ['Sauce Barbecue', 'SAUCE BARBECUE'],
+            'Curry' => ['Sauce Curry', 'SAUCE CURRY'],
+            'Harissa' => ['Sauce Harissa', 'SAUCE HARISSA'],
+            'Hannibal' => ['Sauce Hannibal', 'SAUCE HANNIBAL'],
+            'Fromagère maison' => ['Sauce Fromagère maison', 'SAUCE FROMAGERE MAISON'],
+            'Spicy maison' => ['Sauce Spicy maison', 'SAUCE SPICY MAISON'],
+        ];
+    }
+
+    /** @dataProvider saucesVenduesSeules */
+    public function test_une_sauce_vendue_seule_garde_son_nom_en_cuisine(string $item, string $attendu): void
+    {
+        $this->assertSame($attendu, $this->f->mainLine($item, ['lines' => [], 'extras' => [], 'addons' => []], ''));
+    }
+
+    public function test_un_produit_qui_contient_sauce_sans_commencer_par_sauce_reste_en_code_court(): void
+    {
+        // Contre-épreuve : seule la vente d'une SAUCE (nom commençant par « Sauce ») est écrite en entier.
+        $this->assertStringNotContainsString('SAUCE', $this->f->mainLine('Bol Frites', ['lines' => [], 'extras' => [], 'addons' => []], ''));
+    }
+
     public function test_un_prix_a_virgule_et_un_supplement_collant_ne_fabriquent_pas_de_fausse_sauce(): void
     {
         $noms = $this->f->extraSauceNames('Sauce : Mayonnaise, Samouraï Supplément : Œuf (+0,90 €), Olives (+0,90 €)');

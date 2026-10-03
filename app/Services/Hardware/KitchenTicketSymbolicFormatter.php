@@ -1216,6 +1216,14 @@ final class KitchenTicketSymbolicFormatter
             return '';
         }
 
+        // [GOAL REMARQUES 2026-10-03 · R-070] Une SAUCE VENDUE SEULE (catégorie « Sauces
+        // supplémentaires », « Sauce Ketchup ») s'écrit EN ENTIER : réduite à son premier mot, chacune
+        // des 13 sortait « SAU » et le cuisinier ne savait pas laquelle servir. Seul un nom qui
+        // COMMENCE par « sauce » est concerné. Jumeau STRICT : kdsSymbolic.js produitCode().
+        if (str_starts_with($n, 'sauce ')) {
+            return mb_strtoupper($n);
+        }
+
         // [OWNER 2026-08-10] Familles écrites EN TOUTES LETTRES — voir CODE_ECRIT_EN_ENTIER.
         // On rend le nom NORMALISÉ en majuscules (et non le libellé d'origine) pour que le
         // ticket ESC/POS reste en pur ASCII : « Suprême » deviendrait « SUPRÊME », dont l'accent
