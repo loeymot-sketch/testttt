@@ -1140,6 +1140,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
 
             return response()->json(['status' => true] + $result);
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-phone-today');
+        // [GOAL REMARQUES 2026-10-03 · R-059] « Commandes ratées » : téléphone annulées depuis < 24 h.
+        // Lecture seule (aucune écriture, aucun effet fiscal).
+        Route::get('/counter-collect/missed', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            return response()->json([
+                'data' => app(\App\Services\Pos\CommandesRatees::class)->liste((int) (auth()->user()?->branch_id ?? 0)),
+                'meta' => ['fenetre_heures' => \App\Services\Pos\CommandesRatees::FENETRE_HEURES],
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.missed');
         // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
         // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
         // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client

@@ -48,6 +48,14 @@
                         {{ $t('label.enc_scope_previous') }}
                         <span v-if="previousCount > 0" class="enc-scope-badge" data-testid="enc-previous-count">{{ previousCount }}</span>
                     </button>
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-059] « ça va dans commande rater ça reste 24 heures ». -->
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'missed' }"
+                        :aria-selected="scope === 'missed' ? 'true' : 'false'"
+                        data-testid="enc-scope-missed"
+                        @click="setScope('missed')"
+                    >{{ $t('label.enc_scope_missed') }}</button>
                     <button
                         v-if="scope === 'previous' && orders.length > 0"
                         type="button"
@@ -66,14 +74,33 @@
                     >{{ $t('label.enc_purge_phone', { n: phoneOrders.length }) }}</button>
                 </div>
                 <p v-if="scope === 'previous'" class="enc-scope-hint" data-testid="enc-previous-hint">{{ $t('label.enc_previous_hint') }}</p>
+                <p v-if="scope === 'missed'" class="enc-scope-hint" data-testid="enc-missed-hint">{{ $t('label.enc_missed_hint') }}</p>
 
                 <div class="enc-body">
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées : LECTURE SEULE, aucun bouton. -->
+                    <div v-if="scope === 'missed'" class="enc-missed" data-testid="enc-missed-list">
+                        <div v-if="ratees.length === 0" class="enc-empty" data-testid="enc-missed-empty">
+                            <p class="enc-empty-title">{{ $t('label.enc_missed_empty') }}</p>
+                        </div>
+                        <div v-for="r in ratees" :key="r.id" class="enc-missed-row" :data-testid="`enc-missed-${r.id}`">
+                            <div class="enc-missed-head">
+                                <span class="enc-missed-num">N° {{ r.numero }}</span>
+                                <span v-if="r.client" class="enc-missed-client">{{ r.client }}</span>
+                                <span v-if="r.telephone" class="enc-missed-phone">{{ r.telephone }}</span>
+                                <span class="enc-missed-time">{{ $t('label.enc_missed_cancelled_at', { time: heureCourte(r.annulee_a) }) }}</span>
+                                <span class="enc-missed-total">{{ formatPrice(r.total) }}</span>
+                            </div>
+                            <ul class="enc-missed-items">
+                                <li v-for="(p, i) in r.produits" :key="i">{{ p }}</li>
+                            </ul>
+                        </div>
+                    </div>
                     <!-- [T-4.1 FAUX-VIDE 2026-08-15] Un fetch en échec avec orders=[] affichait le
                          MÊME ✅ vert que "0 commande à encaisser" réel — le caissier ne pouvait pas
                          distinguer une file réellement vide d'une file INVISIBLE par panne réseau.
                          Un poll silencieux qui échoue alors qu'une liste réelle est déjà affichée ne
                          doit PAS l'effacer (orders.length > 0 garde la priorité sur l'erreur). -->
-                    <div v-if="fetchError && orders.length === 0" class="enc-empty enc-error" data-test="enc-fetch-error">
+                    <div v-else-if="fetchError && orders.length === 0" class="enc-empty enc-error" data-test="enc-fetch-error">
                         <div class="enc-empty-icon">⚠️</div>
                         <p class="enc-empty-title">{{ $t('label.encaisser_queue_error') }}</p>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
@@ -309,6 +336,7 @@ export default {
             // [GOAL #3 2026-10-02] 'today' (défaut) | 'previous' ; compteur du badge fourni par l'API.
             scope: 'today',
             previousCount: 0,
+            ratees: [], // [R-059] commandes téléphone annulées < 24 h (lecture seule)
             purgeTarget: null, // { order: Order|null } — null order = toutes les anciennes
             purgeReason: '',
             purging: false,
@@ -433,7 +461,27 @@ export default {
                 this.fetchPending(true);
             });
         },
+        // [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées (téléphone annulées < 24 h), lecture seule.
+        fetchRatees(silent = false) {
+            if (!silent) this.loading.isActive = true;
+            return axios.get('admin/pos/counter-collect/missed').then((res) => {
+                this.ratees = res.data?.data || [];
+                this.fetchError = false;
+                this.loading.isActive = false;
+            }).catch(() => {
+                this.fetchError = true;
+                this.loading.isActive = false;
+            });
+        },
+        heureCourte(iso) {
+            try {
+                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return ''; }
+        },
         fetchPending(silent = false) {
+            // Sur l'onglet « Ratées », le rafraîchissement (polling, temps réel) relit CETTE liste — il ne
+            // doit jamais la remplacer par la file en attente.
+            if (this.scope === 'missed') return this.fetchRatees(silent);
             if (!silent) this.loading.isActive = true;
             return axios.get('admin/pos/counter-collect/pending', { params: { scope: this.scope || 'today' } }).then((res) => {
                 this.orders = res.data?.data || [];
@@ -448,7 +496,7 @@ export default {
             });
         },
         setScope(scope) {
-            if (scope !== 'today' && scope !== 'previous') return;
+            if (scope !== 'today' && scope !== 'previous' && scope !== 'missed') return;
             this.scope = scope;
             this.orders = [];
             return this.fetchPending();
@@ -687,6 +735,15 @@ export default {
     background: #7F1D1D; color: #fff; font-weight: 700; cursor: pointer;
 }
 .enc-scope-hint { padding: 0.5rem var(--pos-v5-space-5) 0; color: #374151; font-size: 0.9rem; }
+/* [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées : liste sobre, en lecture seule. */
+.enc-missed { display: flex; flex-direction: column; gap: 0.6rem; }
+.enc-missed-row { border: 1px solid #E5E7EB; border-inline-start: 4px solid #9CA3AF; border-radius: 0.5rem; padding: 0.6rem 0.9rem; background: #FFFFFF; }
+.enc-missed-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.9rem; color: #111827; }
+.enc-missed-num { font-weight: 800; }
+.enc-missed-client, .enc-missed-phone { font-weight: 600; }
+.enc-missed-time { color: #374151; font-size: 0.9rem; }
+.enc-missed-total { margin-inline-start: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.enc-missed-items { margin: 0.35rem 0 0; padding-inline-start: 1.1rem; list-style: disc; color: #1F2937; font-size: 0.92rem; }
 .enc-purge-btn {
     min-height: 44px; padding: 0 0.9rem; border-radius: 0.5rem; border: 2px solid #7F1D1D; background: #fff; color: #7F1D1D; font-weight: 700; cursor: pointer;
 }
