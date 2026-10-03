@@ -166,7 +166,20 @@
                             <p>{{ item.category_name }}</p>
                             <div class="catalog-studio__product-meta">
                                 <span>{{ item.currency_price }}</span>
-                                <span :class="statusClass(item.status)">{{ enums.statusEnumArray[item.status] }}</span>
+                                <!-- [QA 2026-09-28 · P1-30] Cette cellule n'affichait que
+                                     `items.status` (statut catalogue GLOBAL) : un produit
+                                     `Actif` mais en rupture sur la branche courante
+                                     (`item_branch_availability`, auto-86) s'affichait donc
+                                     « Actif » ici alors que le POS le refusait déjà. Le gérant
+                                     pouvait croire le produit vendable. Même règle et même
+                                     pastille que /admin/items (MISSION FIX D4 2026-05-21). -->
+                                <span v-if="isItemRuptured(item)"
+                                      class="admin-item-rupture-pill"
+                                      :title="item.availability_reason || ''"
+                                      data-testid="catalog-studio-rupture-pill">
+                                    {{ $t('label.rupture') }}
+                                </span>
+                                <span v-else :class="statusClass(item.status)">{{ enums.statusEnumArray[item.status] }}</span>
                             </div>
                         </div>
                         <div class="catalog-studio__product-actions">
@@ -248,6 +261,8 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import askEnum from "../../../enums/modules/askEnum";
 import itemTypeEnum from "../../../enums/modules/itemTypeEnum";
 import alertService from "../../../services/alertService";
+// [QA 2026-09-28 P1-30] Prédicat partagé avec ItemListComponent — une seule règle.
+import { itemIsRuptured } from "../../../helpers/itemRupture";
 
 export default {
     name: "CatalogStudioComponent",
@@ -472,6 +487,13 @@ export default {
                 return true;
             }
             return /\(interne/i.test(name);
+        },
+        /**
+         * [QA 2026-09-28 · P1-30] Rupture par branche, déléguée au helper partagé
+         * avec ItemListComponent (pas de seconde copie de la table de vérité).
+         */
+        isItemRuptured(item) {
+            return itemIsRuptured(item);
         },
         statusClass(status) {
             return appService.statusClass(status);

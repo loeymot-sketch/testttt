@@ -70,6 +70,8 @@
 
 <script>
 import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+// [QA 2026-09-28 P1-11/P1-65] « Sans sauce » exclusive — voir helpers/sauceExclusive.js.
+import { sauceEntryIsNoSauceOption } from '../../../../helpers/sauceExclusive';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
 import { getKioskExtraSauceUnitPrice } from '../../../../helpers/kioskPricing';
 import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
@@ -249,15 +251,51 @@ export default {
       if (this.isSauceOos(sauce)) return;
       const key = this.sauceKey(sauce);
       const selKey = String(key);
-      const newSelections = { ...this.localSelections };
-      const newSauceOrder = [...this.sauceOrder];
+      let newSelections = { ...this.localSelections };
+      let newSauceOrder = [...this.sauceOrder];
       const orderIndex = newSauceOrder.findIndex(k => String(k) === String(key));
       if (newSelections[selKey]) {
         delete newSelections[selKey];
         if (orderIndex > -1) newSauceOrder.splice(orderIndex, 1);
       } else {
-        newSelections[selKey] = true;
-        newSauceOrder.push(key);
+        // [QA 2026-09-28 · P1-11/P1-65 · triage A19] « Sans sauce » est EXCLUSIVE.
+        //
+        // Ce n'était pas un défaut d'affichage mais d'ARGENT : le parent
+        // KioskWizardComponent (zone gelée §7, NON modifiée) facture les sauces au
+        // DÉCOMPTE — `extraSauceN = sauceOrder.length - 1`, puis autant d'extras
+        // « Sauce supplémentaire » à 0,50 € SCELLÉS par PricingService. « Sans
+        // sauce » vaut 0,00 €, mais cochée en plus de deux sauces elle comptait
+        // comme troisième sauce payante : le client payait 0,50 € pour ne PAS
+        // avoir de sauce (rapport : Menu Enfant Nuggets 5,90 € au lieu de 4,90 €).
+        //
+        // En rendant l'option exclusive ICI — la source de `sauceOrder`, non gelée —
+        // le décompte ne peut plus la voir : sauceOrder vaut ['sans_sauce'] seul,
+        // donc extraSauceN = 0 et aucun extra n'est poussé. Aucun gate propriétaire
+        // n'est requis, et c'est exactement la règle demandée par le rapport
+        // (« si sélectionné, désélectionner toutes les sauces »).
+        //
+        // La CAISSE (public/js/pos-wizard.js, gelée, 6 sites de décompte) reste
+        // exposée : escaladée au propriétaire, pas corrigée en silence.
+        if (sauceEntryIsNoSauceOption(sauce)) {
+          // « Sans sauce » choisie → elle remplace toute la sélection.
+          newSelections = { [selKey]: true };
+          newSauceOrder = [key];
+        } else {
+          // Une vraie sauce choisie → « Sans sauce » disparaît. `sauceList` est la
+          // liste rendue par le gabarit : c'est la seule correspondance
+          // clé → nom disponible, et elle est donc toujours peuplée à l'écran.
+          const aRetirer = new Set(
+            (this.sauceList || [])
+              .filter((s) => sauceEntryIsNoSauceOption(s))
+              .map((s) => String(this.sauceKey(s)))
+          );
+          if (aRetirer.size > 0) {
+            newSauceOrder = newSauceOrder.filter((k) => !aRetirer.has(String(k)));
+            aRetirer.forEach((k) => { delete newSelections[k]; });
+          }
+          newSelections[selKey] = true;
+          newSauceOrder.push(key);
+        }
       }
       this.localSelections = newSelections;
       this.sauceOrder = newSauceOrder;

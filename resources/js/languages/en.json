@@ -1660,7 +1660,7 @@
         "kds_line_allergen_icon_aria": "Item contains allergens",
         "kds_card_cta_ready": "Ready",
         "kds_card_cash_pending": "Awaiting cash payment",
-        "kds_card_cash_pending_aria": "Order awaiting cash collection by cashier — preparation on hold",
+        "kds_card_cash_pending_aria": "Order awaiting cash collection by cashier — preparation may continue",
         "kds_undo_bump": "Undo",
         "kds_undo_bump_aria": "Undo the last order marked ready",
         "kds_undo_done": "Undone",

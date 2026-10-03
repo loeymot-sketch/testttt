@@ -81,6 +81,181 @@ Plateforme restaurant fast-food complète :
 > la croûte, mineur. Preuves : PHPUnit images 17/17, Vitest catalogue 26/26, zone gelée diff 0,
 > captures Playwright lues (Sandwichs, Burgers, Desserts, Boissons) sur :8766 arbre principal.
 > Les 4 sources originales sont dans git (aucun fichier supprimé), pas de push.
+> **2026-09-29 — BACKEND DÉPLOYÉ ET VÉRIFIÉ. HEAD prod = `faa81531`.**
+>
+> `tools/deploy-lecayenne.sh 8d9fcd707` → OK : snapshot de base pris, rien à
+> migrer, triggers d'immuabilité **10/10**, chaîne NF525 « SWEEP COMPLETE —
+> CHAIN OK », `config:cache` volontairement sauté (piège fiscal), healthz vert,
+> bundles frais (gate hash-servi), CORS web OK, couverture des queues OK.
+>
+> **Vérifié indépendamment du script** : `8d9fcd707` prouvé ancêtre du HEAD
+> déployé ; `OrderItem::insertRows` présent dans le code déployé ; les deux
+> routes neuves répondent **401** en production (donc elles existent et sont
+> protégées) alors qu'une route inexistante renvoie 200 (page SPA) — le
+> contraste prouve la sonde discriminante.
+>
+> **Ce qui part** : (1) P0 caisse — un panier MIXTE (produit + supplément libre)
+> faisait échouer l'INSERT groupé des lignes (`all VALUES must have the same
+> number of terms`), donc AUCUNE commande créée, donc rien au ticket ni en
+> cuisine. (2) Croix d'annulation sans justificatif + nettoyage des journées
+> passées sur l'écran d'encaissement, avec garde fiscale
+> (`whereNull(fiscal_sequence_no)`) et plancher de journée de service.
+>
+> **Campagnes** : PHPUnit **6111 passés / 3 échecs** — 2 étaient les miens
+> (corrigés, reverts : 25 tests d'idempotence + 8 tests d'encaissement verts),
+> 1 est la dérive d'empreinte de zone gelée ci-dessous. Caisse **403 verts**.
+> Vitest **4567 verts**. E2E critique 21/22, E2E caisse 13/17 — **tous les
+> échecs E2E prouvés étrangers à ce lot** : 3 reproduits à l'identique sur
+> l'arbre principal (différentiel), 2 sont des pannes de harnais (commande de
+> nettoyage de fixtures, page fermée pendant une capture).
+>
+> ⚠️ **DÉRIVE DE ZONE GELÉE, NON CORRIGÉE — décision propriétaire requise.**
+> `FrozenZoneSha256BaselineSentinelTest` échoue sur
+> `KioskWizardComponent.vue`. Origine : commit `c21628767` (27/09, compte du
+> propriétaire) — **3 lignes de COMMENTAIRE** (reformatage d'annotation de lint
+> `owner gate` → `owner — date:`), **zéro ligne exécutable**, avec les LOCK
+> cités. Seule la mise à jour de `frozen-zone-sha256-baseline.json` a été
+> oubliée. La dérive est **déjà sur la branche de release et en production** :
+> ce déploiement ne l'aggrave pas. Je ne mets PAS à jour l'empreinte moi-même —
+> contresigner une zone gelée est une gate §10 propriétaire.
+>
+> ⚠️ **Le nettoyage automatique des commandes en attente ne tourne pas.**
+> `CleanupStalePendingKioskOrders` (voie téléphone, TTL 6 h) est planifié et
+> testé, mais **aucun cron n'appelle `schedule:run`** sur la machine : une
+> commande du 26/09 était encore dans la file le 29/09. Une ligne de cron rend
+> la purge vivante — c'est le correctif de fond, la croix n'est que le geste
+> manuel.
+>
+> ⚠️ **La file d'encaissement est plafonnée à 200, les plus ANCIENNES d'abord.**
+> Au-delà, ce sont les plus RÉCENTES qui disparaissent de l'écran : un client
+> qui vient payer devient invisible du caissier.
+>
+> 🔴 **Paiement en ligne : état non vérifié.** La route est derrière
+> `auth:sanctum` (sonde anonyme = 401 dans les deux cas) et les lectures en
+> production me sont refusées. Le réglage `/admin/settings/site` →
+> « Passerelle de paiement en ligne » reste à contrôler par le propriétaire.
+
+> **2026-09-28 (soir) — SITE VITRINE DÉPLOYÉ ET VÉRIFIÉ EN LIGNE.**
+> `main` du dépôt `Site-lecayenne` avancé en **avance rapide** `b7bc176 → 0fdf0bc`
+> (3 commits, aucune fusion), sur instruction explicite du propriétaire
+> (« vas-y push toi même sur main ») — gate CLAUDE.md §10 satisfaite.
+> Vercel a déployé ; vérifié sur le **contenu SERVI**, pas sur l'étiquette :
+> `api.js` porte `_tracking` (×2), `compiled/funnel.js` porte `formaterAttente`
+> (×3) et **0** occurrence de « devant toi » / « en cuisine devant »,
+> `styles-mobile.css` porte `safe-area-inset-top` (×2).
+> Contrôle navigateur sur la prod, iPhone 13 : `.lc-nav padding-top = 12px`,
+> « Mon compte » à 20 px du haut (8 px avant), **0 erreur console**, pas de
+> bandeau de configuration. Capture relue.
+>
+> Contenu livré : page de suivi (le bloc `tracking` du serveur n'était plus
+> jeté par `api.js`), aucun compteur de commandes nulle part, chiffre d'attente
+> précis réservé au cas « 1 commande devant » (sinon fourchette élargie vers le
+> haut uniquement), badge issu de `status_label`, ticket de retrait chiffré,
+> sondage qui ne meurt plus sur une réponse vide, barre de nav sous l'encoche,
+> repli paiement qui journalise enfin le motif serveur.
+>
+> ⚠️ **BACKEND NON DÉPLOYÉ — et c'est délibéré.** Prod reste à `77ed8de2`
+> (healthz : db/redis/websocket/fiscal_chain ok, queue 0). Deux raisons :
+> (1) la branche de release `pos/category-first-caisse-2026-06-23` a **divergé**
+> — une autre session y a poussé `e4d4dabea` + `5a66dadea`, **docs uniquement,
+> zéro fichier applicatif** — et mon correctif n'y est pas ; lancer le script
+> aurait déployé leur documentation, pas mon travail ;
+> (2) déploiement en pleine heure de service sur une caisse qui encaisse, pour
+> un delta sans effet d'exécution.
+> Mon seul changement applicatif backend est `SiteTableSeeder` + son test : un
+> **seeder ne s'exécute qu'à l'installation**, il ne répare donc PAS une base
+> existante.
+>
+> 🔴 **LE PAIEMENT EN LIGNE EST TOUJOURS FERMÉ EN PRODUCTION.** Le seul geste
+> qui le rallume est propriétaire : `/admin/settings/site` →
+> « Passerelle de paiement en ligne » → Activer. Les lectures et écritures en
+> production me sont refusées. Rappel utile : sur cet écran l'erreur s'affiche
+> **en haut** et le bouton est en bas — remonter vérifier après avoir cliqué.
+
+> **2026-09-28 — DÉPLOYÉ EN PRODUCTION. HEAD prod = `77ed8de2`**, contenant les
+> correctifs QA (`90474f870` prouvé ancêtre, vérifié sur le serveur).
+>
+> Évalué AVANT d'agir : la prod était **210 commits en retard**, mais ces 210
+> commits sont **tous `docs`/`qa`** — **zéro code applicatif, zéro migration**.
+> Aucun retard fonctionnel : le déploiement ne livre que les correctifs.
+>
+> `tools/deploy-lecayenne.sh 90474f870` → **✅ OK** : chaîne NF525
+> « SWEEP COMPLETE — CHAIN OK on every active branch », triggers d'immuabilité
+> vérifiés, healthz 200, bundles frais (gate hash-servi), CORS web OK,
+> couverture des queues OK. Le `REVIEWED_SHA` aurait fait avorter le script si
+> le correctif n'était pas dans ce qui partait.
+>
+> **Vérifié indépendamment du script — le CODE SERVI** : `aucune sauce` /
+> `pas de sauce` présents dans `kiosk-wizard-step.02a2779b.js` (le correctif
+> d'ARGENT P1-11 est live), et `enc-queue-date-badge`,
+> `catalog-studio-rupture-pill`, `payment-terminal-delete-` présents dans
+> `admin-shell.3bff92d5.js`. `/api/healthz` post-déploiement identique à la base
+> capturée avant : 200, `fiscal_chain: ok`, file à 0.
+>
+> ⚠️ **Anomalie DANS le script de déploiement, non corrigée** : son contrôle de
+> profondeur de file compare un message d'erreur Redis (`WRONGTYPE`) comme un
+> entier (`deploy.log` ligne 31). Ce contrôle-là ne contrôle donc rien sur cette
+> clé : il ne casse pas le déploiement, mais il ne peut pas signaler une file qui
+> s'accumule. À traiter.
+>
+> ⚠️ Le **site vitrine** n'est pas concerné (dépôt séparé, arbre dirty d'un autre
+> travail) et l'action B qui le visait est **fautive** — voir §6 du rapport.
+>
+> **HARNAIS E2E — deux défauts d'instrument corrigés, plus graves que les défauts
+> du rapport** : (1) `npm run test:e2e:full` était **MUET** — une spec lisait une
+> variable d'environnement au niveau module sans garde, l'exception tuait la
+> COLLECTE entière ; après correctif **1 376 tests / 384 fichiers** se collectent
+> (avant : rien). (2) **28 specs mesuraient un AUTRE arbre** : URL de base en
+> constante dure, échappant à `PLAYWRIGHT_BASE_URL` **et** à la garde d'arbre du
+> global-setup, qui ne valide que l'URL configurée. Prouvé : même commande, avant
+> 30 références à `:8766` / 0 à `:8000`, après l'inverse. Deux sentinelles neuves
+> empêchent la récidive, toutes deux prouvées mordantes.
+>
+> **Campagnes par surface (désormais lisibles)** : E2E critique **22/22** ;
+> caisse/POS **9/9** ; borne 11 verts + **1 échec PRÉEXISTANT** (différentiel
+> fait : échoue à l'identique avec mes correctifs borne remis à la base) ; KDS
+> 7 verts + 7 échecs, dont au moins un prouvé obsolète (assertion sur une chaîne
+> d'UI disparue, 22 ms sans navigateur, ne dépend d'aucune URL). Ces échecs sont
+> **listés, pas rafistolés** : réécrire une assertion obsolète sans comprendre le
+> changement produit masquerait une régression réelle.
+
+> **2026-09-28 — base `d9a95ac77` → branche `qa/corrige-rapports-2026-09-28`,
+> 8 commits, AUCUN PUSH.** Worktree `.claude/worktrees/qa-corrige-2026-09-28`
+> (assets compilés sur place : `npm run production` est requis dans tout worktree
+> frais, les bundles étant volontairement hors index de version depuis `85e5b4daa`).
+>
+> Directive owner « corrige » sur les 3 rapports QA → **9 défauts corrigés avec
+> preuves, part importante du rapport Codex réfutée ou déjà corrigée, 10 points
+> escaladés**. Détail : `reports/planning/QA_CORRECTIONS_2026-09-28.md`, synthèse
+> en §3.
+>
+> **État des suites sur cette branche** : PHPUnit **6 138 tests, 1 SEUL échec,
+> 36 skips, 6 incomplets** — l'unique échec est la sentinelle frozen-zone déjà
+> connue, hashes inchangés, donc **zéro régression et zéro nouvel échec**
+> (baseline de référence 6 080 / 36 / 6 / 1 : mêmes compteurs, +21 tests backend
+> neufs). Vitest **560 fichiers / 4 544 passés / 3 skips / 0 échec**. Garde-fous
+> release verts (pricing 86 fichiers, status 38, budget bundles).
+> **Diff zone gelée §7 contre la base réelle : VIDE.**
+>
+> ⚠️ Piège d'environnement rencontré et documenté : une première passe PHPUnit
+> donnait **19 échecs** parce qu'elle avait démarré **avant** `npm run production`
+> (`mix()` sans manifest → vues en **500**, 56 occurrences dans le journal). Le
+> run propre en compte **0**. Compiler AVANT de lancer, jamais en parallèle.
+>
+> ⚠️ **Le seul échec backend global reste la sentinelle frozen-zone** sur
+> `KioskWizardComponent.vue` (réel `f8ecb111…` vs baseline `fcbe3755…`), et il
+> est désormais **caractérisé comme un deadlock entre deux garde-fous** :
+> `pos:lint:pricing` exige le littéral `date:` dans l'annotation de sign-off, la
+> sentinelle de hash exige l'inverse — satisfaire l'un casse l'autre. Le lock de
+> juillet cité par les rapports QA comme blocage est **déjà inclus dans la
+> baseline autorisée le 2026-09-16** : il n'est donc pas le blocage.
+> **Décision owner requise** (3 options en §2.1 du rapport de corrections) —
+> baseline et fichier gelé laissés strictement intacts.
+>
+> ⚠️ **Argent client encore exposé sur la CAISSE** : « Sans sauce » y compte
+> toujours comme sauce payante (`public/js/pos-wizard.js`, gelé §7, 6 sites de
+> décompte). Corrigé sur la borne sans gate ; la caisse exige un LOCK owner, dont
+> ce bloc a déjà deux précédents (2026-07-15, 2026-07-29). **Priorité n°1.**
 
 > **2026-09-19 — DOUBLE COMPTE MÊME E-MAIL : ROOT CAUSE EXACTE TROUVÉE, CORRIGÉE, DÉPLOYÉE.**
 >
@@ -4351,6 +4526,114 @@ Plateforme restaurant fast-food complète :
 **2026-09-30 — Borne : coque sombre du catalogue + 18 visuels produits recomposés sur le décor
 Le Cayenne + slug `cheddar` ajouté à `config/menu_images.php`.** 4 détourés troués à la source
 (raclette, fromage, champignons, boursin) laissés tels quels — voir §2.
+**QA — SECOND LOT + DÉPLOIEMENT PARTIEL (2026-09-28)** — branche
+`qa/corrige-rapports-2026-09-28` **poussée sur le distant** (11 commits au moment de cette note).
+Suite de la directive owner « corrige », puis « deploy ».
+
+**4 défauts de plus corrigés**, chacun rouge avant correctif : P1-18 l'**API**
+acceptait de parker une commande **sans article** (`items_count = 0`, HTTP 201) —
+l'écran, lui, était déjà gardé depuis le 2026-04-21, donc cette moitié du
+signalement est RÉFUTÉE ; l'audit avait déduit la création depuis l'état activé
+du bouton · P1-04 le panneau « en attente » affichait `0` + « Aucune commande
+parkée » + « Impossible de charger » **simultanément** (jumeau oublié du patron
+T-4.1 FAUX-VIDE de l'encaissement) · P1-43 le format horaire **12 h était semé
+par défaut** contre le verrou FR ADR-007, et le libellé codait « PM » en dur
+(d'où « 12 Hour (7:34 PM) » à 07:34) — mon banc a trouvé en plus un exemple 24 h
+non zéro-paddé, absent du rapport · P1-49 les actions du tableau TPE n'avaient
+**aucun nom accessible** sur une action destructive.
+
+**3 escalades de ce lot, rien changé en silence** : P1-19 (supplément libre seul)
+— j'ai implémenté le garde et il a **cassé deux contrats existants**
+(`QuoteBindingTest`, `QuoteTamperTest`) : le dépôt affirme **délibérément**
+qu'une commande à ligne unique « supplément » persiste comme ligne fiscale, et
+une vente hors catalogue au comptoir est un usage légitime plausible. Garde
+**retiré** plutôt que de réécrire le test d'autrui → décision owner ·
+P1-10 (« viande supplémentaire » employé pour une viande **incluse**) confirmé
+mais dans `public/js/pos-wizard.js`, **gelé §7** → gate + LOCK ·
+P1-39 (PIN « 1234 ») **déjà corrigé le 2026-09-26** et ce ne fut **jamais** une
+faille : aucun identifiant par défaut n'a été livré.
+
+**Action B du plan de reprise — CONTRADICTION, non exécutée.** Remplacer la
+mention Uber Eats par « Livraison par nos livreurs bientôt » **supprimerait un
+canal de vente réel** (`index.html:85` porte
+`[OWNER 2026-07-29] Boutique Uber Eats officielle` + l'URL de la boutique) et
+remplacerait une copie **vraie** par une **promesse publique fausse** — alors que
+le réglage LIVRAISON est désactivé. C'est exactement le défaut que le rapport
+dénonce ailleurs (P1-46, P1-68). Aucune modification sur la surface externe.
+
+**Correction d'une de mes propres notes** : `config:cache` n'est PAS un bloqueur
+NF525. `FiscalChainValidator.php:188-191` documente cette piste comme une
+« FAUSSE PISTE À NE PAS REPRENDRE », **vérifiée en production**. Les 20 procédures
+de déploiement qui le prescrivent avaient raison ; `tools/deploy-lecayenne.sh`
+saute d'ailleurs `config:cache` volontairement et n'avait rien à corriger.
+
+**Déploiement : partiel.** Branche poussée, base de comparaison production
+capturée (healthz 200, `fiscal_chain: ok`, file à 0). **Deux permissions
+manquent** : `git merge` sur `pos/category-first-caisse-2026-06-23` (refusé —
+« Modify Shared Resources » ; ce n'est PAS un fast-forward, le distant a avancé à
+`d684ece9a`, mais ses 20 commits sont **tous `docs(qa)` et ne touchent que deux
+rapports .md**, donc aucun conflit de code) et `ssh lecayenne` (refusé —
+« Production Reads »). Commandes exactes et vérifications post-déploiement :
+`reports/planning/QA_CORRECTIONS_2026-09-28.md` §7.
+
+**QA — CORRECTION DES TROIS RAPPORTS (2026-09-28)** — branche
+`qa/corrige-rapports-2026-09-28`, base `d9a95ac77`, worktree
+`.claude/worktrees/qa-corrige-2026-09-28`, aucun push. Directive owner :
+« corrige » `QA_LOOP_NEXT_ACTION_2026-09-27`, `QA_CROSS_SURFACE_FOLLOWUP_2026-09-25`
+et `RAPPORT_DEV_CAISSE_2026-09-24` (19 P0 + 76 P1 + 3 blocages).
+Rapport complet : `reports/planning/QA_CORRECTIONS_2026-09-28.md`.
+
+**9 défauts corrigés**, chacun rouge avant correctif : P0-10 le **rapport X
+fiscal était inatteignable** pour le compte admin (422 « compte non rattaché »
+alors que la liste Z avait déjà sa relaxation lecture seule et que le X est
+read-only par contrat — résolu sans inventer d'agrégat inter-branches, garde
+anti-IDOR testé) · P1-11/P1-65 **« Sans sauce » facturée 0,50 €**, de l'argent
+réel scellé par PricingService faute d'exclusivité — corrigé **en amont du code
+gelé**, sans gate · P0-16 boisson **épuisée vendable** sur la borne (le backend
+envoyait `is_available`, la grille le jetait ; le wizard POS gelé filtrait déjà
+bien) · P0-18 numéro court **ambigu entre jours** à l'encaissement (correctif
+POS du 26/09 jamais porté sur l'écran dédié) · P1-30 « Actif » sur un produit en
+rupture au Catalogue · P0-15 tableau de bord **aveugle aux matières premières**
+(les deux écrans ne lisaient pas la même table) · route de **suppression nue**
+(ni throttle ni idempotence, derrière un commentaire qui affirmait le contraire)
+· libellé lecteur d'écran KDS contradictoire · banc `posDeliveryFlag` **au
+mauvais périmètre** (n'importait pas le composant, restait vert sans le garde).
+
+**Une part importante du rapport Codex est RÉFUTÉE ou DÉJÀ CORRIGÉE** —
+plusieurs par des commits **postérieurs** à sa date de recette : P0-12 (double
+garde serveur fail-closed), P0-09/P1-13/P1-57 (suppression douce + 3 couches de
+permission + 409 si scellé par un Z clos + trigger DB + chaîne NF525 — **§8 non
+violé**), P1-25 (invariant owner verrouillé par sentinelle), P1-52 (plancher
+effectif = 100 par conception), P0-13, P1-08/P1-36 (corrigé le 26/09), P1-65 sur
+le panier public (protégé depuis le 31/07), P0-15 dans sa formulation (corrigé
+le 02/09). Cause racine commune à la famille disponibilité : le SSOT serveur est
+sain, **trois surfaces clientes** jetaient le champ qu'il envoie déjà.
+
+**Précision de gouvernance sur le gate frozen** (les deux rapports QA
+l'affirmaient de travers) : le lock cité comme blocage porte sur le changement
+de **juillet**, déjà **inclus** dans la baseline courante autorisée le
+**2026-09-16** — il n'a donc jamais bloqué cette baseline. Le blocage réel est
+que `pos:lint:pricing` (qui exige le littéral `date:`) et la sentinelle de hash
+**s'excluent mutuellement** : satisfaire l'un casse l'autre. 3 options posées,
+**aucune prise**, baseline et fichier gelé intacts.
+
+**10 escalades owner**, rien changé en silence : « Sans sauce » à la **caisse**
+(`pos-wizard.js` gelé, 6 sites de décompte — argent client, à traiter en
+premier) · deadlock lint/sentinelle · listener d'impression serveur qui ignore
+le flag (dormant seulement parce que la table Imprimantes est vide ; un test
+verrouille le comportement actuel) · aucune sonde imprimante/paiement dans le
+readiness · suppression sans motif (les 3 traces enregistrent `reason: null`) +
+sans garde de statut + sans diffusion d'annulation au KDS · P0-14 recomptage
+matières · `APP_ENV=staging` en prod · sémantique stock article à 0 sans seuil ·
+`posDineInFlag.spec.js` même défaut de périmètre · compte E2E POS distant ·
+copie publique « Uber Eats » (surface externe, arbre déjà dirty).
+
+**Preuves** : Vitest **560 fichiers / 4 544 passés / 3 skips / 0 échec**.
+Garde-fous release verts (pricing 86, status 38, budget bundles). **Diff zone
+gelée §7 contre la base réelle : VIDE** (mesurer contre `main` donnait un faux
+positif de 14 fichiers — `main` est très en retard sur cette base). 3 bancs
+**prouvés mordants** par réintroduction volontaire du défaut, dont l'assertion
+d'argent « Sans sauce ». Aucun test rendu vert en affaiblissant son assertion.
 
 **GOAL_CONFORT_MAX_ET_BASE_PROUVEE — 7/7 vagues fermées 2026-08-15** (commits `bf94a73e1`→
 `e8923b10a`→`0835adbb0`→`ee9803008`→`b04a274de`→`a64484c18`→`1e0965ed2`→`421b34032`→

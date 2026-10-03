@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const OUT = '/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/web-t52-2026-08-05/round-ACTIVE/waveA';
-const BASE = 'http://127.0.0.1:8899/';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8899').replace(/\/$/, '');
 
 test.use({ viewport: { width: 1366, height: 768 } });
 test.describe.configure({ timeout: 300_000 });

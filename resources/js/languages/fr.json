@@ -1100,7 +1100,7 @@
         "kds_line_allergen_icon_aria": "Article contenant des allergènes",
         "kds_card_cta_ready": "Prêt",
         "kds_card_cash_pending": "En attente encaissement",
-        "kds_card_cash_pending_aria": "Commande en attente d'encaissement par le caissier — préparation en attente",
+        "kds_card_cash_pending_aria": "Commande en attente d'encaissement par le caissier — la préparation peut continuer",
         "kds_undo_bump": "Annuler",
         "kds_undo_bump_aria": "Annuler la dernière commande marquée prête",
         "kds_undo_done": "Annulation effectuée",

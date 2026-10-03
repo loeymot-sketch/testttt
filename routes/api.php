@@ -192,7 +192,8 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
         Route::post('/', [ForgotPasswordController::class, 'forgotPassword'])
-            ->middleware('throttle:3,60');
+            // [AUDIT SÉCURITÉ 2026-09-29] limiteur nommé : par adresse + global (voir RouteServiceProvider).
+            ->middleware('throttle:forgot-password');
         Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
             ->middleware('throttle:5,1');
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
@@ -1317,6 +1318,102 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
+        /**
+         * [CAISSE 2026-09-29 · demande propriétaire] Vider la file d'encaissement des
+         * journées PASSÉES.
+         *
+         * Le besoin, dans ses mots : « il y a une grande liste de commandes en attente
+         * parce que ça fait plusieurs jours, des clients qui sont pas venus ; je veux
+         * commencer une nouvelle journée, je veux tout supprimer, je veux pas cliquer
+         * sur chacune et mettre un justificatif ».
+         *
+         * DEUX GARDES QUI NE SONT PAS NÉGOCIABLES
+         * ---------------------------------------
+         * 1. `whereNull('fiscal_sequence_no')` — une commande qui a reçu un numéro
+         *    fiscal est entrée dans la chaîne signée. On n'y touche jamais. En
+         *    pratique une commande de cette file n'en a jamais (le numéro est alloué
+         *    À L'ENCAISSEMENT, PaymentService::confirmCounterPayment), mais la garde
+         *    reste écrite : c'est elle qui rend l'opération sûre, pas la coïncidence.
+         * 2. Plancher de la journée de service EN COURS — on ne touche QUE l'avant.
+         *    Un « tout vider » qui emporterait un client en train d'arriver au
+         *    comptoir serait une vente perdue et une commande déjà en cuisine.
+         *    Plancher identique à celui du panneau « En souffrance »
+         *    (PosOrderController:494-503) et du helper front posServiceDay.js :
+         *    5 h du matin, et recul d'un jour avant cette heure — sinon la nuit de
+         *    service en cours serait considérée comme « hier ».
+         *
+         * POURQUOI ANNULER ET NON SUPPRIMER
+         * ---------------------------------
+         * `OrderService::destroy` supprime EN DUR les lignes, l'adresse et le coupon
+         * avant le soft-delete, et `Order::restoring()` (app/Models/Order.php:157-165)
+         * interdit tout `restore()`. Une suppression groupée serait donc
+         * IRRATTRAPABLE. `cancelCounterPayment` garde la commande, la trace
+         * (`order.counter_payment_canceled` dans la chaîne HMAC), rend les points de
+         * fidélité et reprend les points acquis — ligne par ligne, ce qu'un UPDATE de
+         * masse ne saurait pas faire.
+         *
+         * `dry_run` renvoie le compte SANS rien changer : l'interface s'en sert pour
+         * annoncer un chiffre exact avant de demander confirmation.
+         */
+        /**
+         * Comptage SEUL des commandes des journées passées. Route GET distincte, et
+         * c'est délibéré : le comptage ne mute rien, il n'a donc rien à faire derrière
+         * l'intergiciel d'idempotence — lequel EXIGE une clé sur les routes déclarées
+         * (`config/idempotency.php`) et renverrait 422 à un simple comptage. Une
+         * lecture est un GET ; la confondre avec l'écriture obligeait l'écran à forger
+         * une clé pour savoir combien de lignes il allait proposer d'annuler.
+         */
+        Route::get('/counter-collect/stale-count', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query((int) (auth()->user()?->branch_id ?? 0));
+
+            return response([
+                'status' => true,
+                'count' => $requete->count(),
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.stale-count');
+        Route::post('/counter-collect/cancel-stale', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'reason' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            // Même définition que le comptage (GET stale-count) — une seule source,
+            // sinon l'écran annonce un nombre et en annule un autre.
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query(
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            $motif = $validated['reason'] ?? 'Client non venu — vidage de la file (journées passées)';
+            $service = app(\App\Services\PaymentService::class);
+
+            $annulees = 0;
+            $echecs = [];
+            foreach ($requete->get() as $commande) {
+                try {
+                    $service->cancelCounterPayment($commande, $motif);
+                    $annulees++;
+                } catch (\Throwable $e) {
+                    // Une ligne récalcitrante ne doit pas interrompre le vidage : on
+                    // la nomme et on continue. Un échec silencieux laisserait le
+                    // caissier croire la file vide alors qu'elle ne l'est pas.
+                    $echecs[] = [
+                        'order_id' => $commande->id,
+                        'message' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            return response([
+                'status' => true,
+                'canceled' => $annulees,
+                'failed' => $echecs,
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel-stale');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -1455,7 +1552,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->middleware('throttle:60,1')
             ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
-        Route::delete('/{order}', [PosOrderController::class, 'destroy']);
+        // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
+        // aucun middleware, alors que TOUTES ses voisines mutantes du même groupe
+        // portent ['throttle:pos-order-update','idempotency'] — et que le client
+        // ENVOIE déjà l'en-tête (store/modules/posOrder.js, buildIdempotencyHeaders).
+        // La protection anti-rejeu était donc INERTE, et un commentaire du client
+        // affirmait une protection inexistante. IdempotencyKeyMiddleware traite bien
+        // DELETE (voir sa liste de méthodes), le câblage est donc réel.
+        Route::delete('/{order}', [PosOrderController::class, 'destroy'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('destroy');
         Route::get('/export', [PosOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
         // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.

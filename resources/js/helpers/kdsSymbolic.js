@@ -687,6 +687,27 @@ export function renderItemSymbolic(orderItem) {
     const hasAllergen = allergenCodes.length > 0;
     const fritesSym = friesSauceNamesForOrder(orderItem).map((name) => sauceSymbol(name)).filter(Boolean).join(' ');
 
+    // [AUDIT AVAL 2026-09-29 · P0] SUPPLÉMENT LIBRE : libellé COMPLET, jamais le moteur
+    // symbolique. `produitCode()` réduit un nom à ses 3 premières lettres significatives ;
+    // or tout supplément libre commence par « Supplément — … » (PricingService) → la carte
+    // affichait « SUP » pour « Supplément — Sauce blanche maison » comme pour
+    // « Supplément — Viande hachée en plus » (deux lignes indiscernables), et « Supplément
+    // — Tacos en plus » devenait « Tacos » (branche isTacos) : le cuisinier préparait un
+    // taco entier. Jumeau STRICT : OrderReceiptEscPosRenderer::renderKitchenTicket.
+    if (orderItem?.line_type === 'manual_supplement') {
+        lines.push({
+            type: 'symbolic-main',
+            qty: orderItem?.quantity ?? 1,
+            label: String(orderItem?.manual_label || orderItem?.item_name || 'Supplément'),
+            category: s.category,
+            hasAllergen,
+        });
+        const suppNote = instructionLine(orderItem);
+        if (suppNote) lines.push(suppNote);
+        if (hasAllergen) lines.push({ type: 'allergen', codes: allergenCodes });
+        return { category: s.category, hasAllergen, lines };
+    }
+
     // [KITCHEN-MENU 2026-06-30] Un item Menu/Formule → juste « MENU » (+ sauce frites
     // en symbole), AUCUN prix ni « Frites + Boisson » : c'est frites + boisson, rien à
     // préparer de plus côté cuisine.

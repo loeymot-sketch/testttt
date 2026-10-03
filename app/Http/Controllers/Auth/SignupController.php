@@ -128,7 +128,12 @@ class SignupController extends Controller
             'email' => $request->post('email'),
             'phone' => $phone,
             'country_code' => $request->post('country_code'),
-            'branch_id' => 0,
+            // [AUDIT SÉCURITÉ 2026-09-29 · P1] `0` est la valeur sentinelle « admin » de
+            // BranchScope (aucun filtre) : un compte client auto-inscrit portait la marque
+            // d'un admin de branche et traversait le rempart anti-borne des routes admin
+            // (son jeton `['*']` fait retourner vrai à `can('*')`). Un client appartient à
+            // la branche par défaut du site, jamais à « toutes ».
+            'branch_id' => (int) (\Smartisan\Settings\Facades\Settings::group('site')->get('site_default_branch') ?: 1),
             'email_verified_at' => Carbon::now()->getTimestamp(),
             'is_guest' => Ask::NO,
             'password' => Hash::make($request->post('password')),

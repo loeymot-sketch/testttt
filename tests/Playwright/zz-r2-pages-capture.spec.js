@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const BASE = 'http://127.0.0.1:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const SHOTS = 'reports/goal-revision-absolue-2026-08-06/round-1/heals';
 
 test('pages Z reports + imprimantes rendues', async ({ page }) => {

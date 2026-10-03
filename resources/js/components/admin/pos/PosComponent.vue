@@ -1107,11 +1107,19 @@
 
                 <!-- Park / Parked shortcuts -->
                 <div class="grid grid-cols-2 gap-2">
+                    <!-- [QA 2026-09-28 · P1-18] Le bouton était actionnable sur un panier
+                         VIDE. `promptParkOrder` refusait déjà (depuis le 2026-04-21) en
+                         affichant `pos.park_requires_items`, donc rien n'était créé — mais
+                         un contrôle activé qui refuse est une mauvaise affordance, et
+                         l'audit externe en a justement tiré la fausse conclusion qu'un
+                         brouillon vide était créé. Le garde du gestionnaire est conservé
+                         en défense en profondeur. -->
                     <PosV5Button
                         variant="secondary"
                         size="md"
-                        :disabled="parkingInFlight"
+                        :disabled="parkingInFlight || carts.length === 0"
                         :loading="parkingInFlight"
+                        data-testid="pos-park-order"
                         @click="promptParkOrder"
                     >
                         <template #icon>⏸</template>
@@ -2394,6 +2402,8 @@ import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
 // l'écran cuisine et l'écran de statut.
 import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
+// [QA 2026-09-28 P0-18] Règle partagée avec /admin/encaissement — une seule définition.
+import { queueNumberDateBadge } from '../../../helpers/queueNumberDateBadge';
 import LoadingComponent from "../components/LoadingComponent.vue";
 import 'vue3-carousel/dist/carousel.css';
 import ItemComponent from "./ItemComponent.vue";
@@ -5703,19 +5713,15 @@ export default {
          * (`pos-shortcuts__num`) n'affichaient QUE ce numéro, sans date, aucun moyen de les
          * distinguer sans ouvrir chaque commande. Retourne '' pour une commande du jour
          * (cas normal, pas de bruit visuel) ; sinon "jj/mm" pour lever l'ambiguïté.
+         *
+         * [QA 2026-09-28 P0-18] La règle a été EXTRAITE dans
+         * `resources/js/helpers/queueNumberDateBadge.js` pour que l'écran dédié
+         * `/admin/encaissement` la partage au lieu d'en recopier une 3e version.
+         * Comportement inchangé ; cette méthode reste le point d'entrée du
+         * gabarit et de `posShortcutDateBadgeAmbiguity.spec.js`.
          */
         shortcutDateBadge(o) {
-            const iso = o && o.created_at;
-            if (!iso) return '';
-            try {
-                const d = new Date(iso);
-                const today = new Date();
-                const sameDay = d.getFullYear() === today.getFullYear()
-                    && d.getMonth() === today.getMonth()
-                    && d.getDate() === today.getDate();
-                if (sameDay) return '';
-                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            } catch (_) { return ''; }
+            return queueNumberDateBadge(o);
         },
         // ──────────────────────────────────────────────────────────────────
         onlyNumber: function (e) {
@@ -5825,7 +5831,16 @@ export default {
         },
         openParkedOrders() {
             this.showParkedOrders = true;
-            this.$store.dispatch('posParked/fetchList').then().catch(() => {});
+            // [QA 2026-09-28 · P1-04] Ce `.catch(() => {})` avalait la panne en
+            // SILENCE : une file non chargée s'affichait comme une file vide. Le
+            // panneau a désormais son propre état d'erreur exclusif ; on se contente
+            // de ne pas laisser une promesse rejetée non gérée, sans masquer le
+            // diagnostic (le composant refetch lui-même via son watch `open`).
+            this.$store.dispatch('posParked/fetchList').catch((erreur) => {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[POS] chargement des commandes en attente échoué', erreur);
+                }
+            });
         },
         async promptParkOrder() {
             if (this.parkingInFlight) {
@@ -6121,7 +6136,17 @@ export default {
 
                 let traced = false;
                 try {
-                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true });
+                    // [AUDIT CAISSE 2026-09-29 · P1] `cash-drawer/open` figure dans
+                    // config('idempotency.required_routes') : sans en-tête, 422 « Header
+                    // X-Idempotency-Key requis » → `traced` restait faux, toast rouge à
+                    // CHAQUE ouverture sans vente, et AUCUN CashMovement DRAWER_OPEN écrit —
+                    // le vecteur de détournement le plus direct d'une caisse n'était pas
+                    // journalisé, alors que le commentaire ci-dessus promettait l'inverse.
+                    // Clé FRAÎCHE par geste : chaque ouverture est un événement réel à tracer
+                    // (une clé fixe ferait rejouer la première trace au lieu d'en écrire une).
+                    const { data } = await axios.post('admin/pos/cash-drawer/open', { client_opened: true }, {
+                        headers: { 'X-Idempotency-Key': 'nosale-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) },
+                    });
                     traced = !!(data && (data.status === true || data.success === true));
                 } catch (_e) {
                     traced = false;

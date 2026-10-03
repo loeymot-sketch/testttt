@@ -19,9 +19,46 @@ const { loginAsAdmin } = require('../e2e/helpers/login');
  */
 
 const SORTIE = process.env.AUDIT_OUT || '/tmp/audit-dashboard';
-const PAGES = JSON.parse(fs.readFileSync(process.env.AUDIT_ROUTES, 'utf8'));
 
-fs.mkdirSync(SORTIE, { recursive: true });
+/**
+ * [QA 2026-09-28] CETTE LIGNE CASSAIT TOUTE LA CAMPAGNE E2E.
+ *
+ * Avant : `JSON.parse(fs.readFileSync(process.env.AUDIT_ROUTES, 'utf8'))` au
+ * NIVEAU MODULE, sans garde. Cette spec est un audit PONCTUEL piloté par
+ * `AUDIT_ROUTES` ; hors de cette invocation la variable est absente, donc
+ * `readFileSync(undefined)` levait un TypeError **pendant la COLLECTE** —
+ * ce qui fait échouer `npm run test:e2e:full` AVANT le moindre test, pour
+ * l'ensemble du dépôt. Mesuré : la campagne complète s'arrêtait sur
+ * « The "path" argument must be of type string… Received undefined ».
+ *
+ * C'est la récidive exacte d'un défaut déjà payé ici (D9 : un
+ * `fs.readFileSync` au niveau module cassait la collecte, Playwright rendait
+ * 0 test). Un fichier d'audit jetable ne doit jamais pouvoir rendre muette la
+ * suite entière : on lit donc défensivement et la spec s'IGNORE avec un motif
+ * explicite. La sentinelle `tests/js/specsNeCassentPasLaCollecte.spec.js`
+ * empêche désormais la reprise de ce motif.
+ */
+const CHEMIN_ROUTES = process.env.AUDIT_ROUTES;
+let PAGES = [];
+let motifIgnore = null;
+
+if (!CHEMIN_ROUTES) {
+    motifIgnore = 'AUDIT_ROUTES non défini — audit ponctuel, ignoré hors invocation explicite.';
+} else {
+    try {
+        PAGES = JSON.parse(fs.readFileSync(CHEMIN_ROUTES, 'utf8'));
+        if (!Array.isArray(PAGES) || PAGES.length === 0) {
+            motifIgnore = `AUDIT_ROUTES ne décrit aucune page (${CHEMIN_ROUTES}).`;
+        }
+    } catch (erreur) {
+        motifIgnore = `AUDIT_ROUTES illisible (${CHEMIN_ROUTES}) : ${erreur.message}`;
+    }
+}
+
+// Effet de bord repoussé hors de la collecte : ne rien créer si on s'ignore.
+if (!motifIgnore) {
+    fs.mkdirSync(SORTIE, { recursive: true });
+}
 
 /** Un libellé brut : « menu.orders », « Label.X » — du technique montré au client. */
 const RE_LIBELLE_BRUT = /^[a-z][a-z0-9]*(\.[a-z0-9_]+){1,}$/i;
@@ -62,6 +99,10 @@ test.describe('Audit tableau de bord + comptabilité', () => {
     // huit pages déjà mesurées ont été perdues avec. D'où les deux corrections : un délai
     // dimensionné au nombre réel de pages, et une écriture incrémentale.
     test.describe.configure({ mode: 'serial', timeout: 45 * 60_000 });
+
+    // [QA 2026-09-28] Audit ponctuel : s'ignore avec un motif LISIBLE quand il
+    // n'est pas piloté, au lieu de faire échouer la collecte de tout le dépôt.
+    test.skip(motifIgnore !== null, motifIgnore || '');
 
     test('relève chaque page du tableau de bord', async ({ page }) => {
         const journal = [];

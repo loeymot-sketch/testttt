@@ -259,8 +259,18 @@ export const posOrder = {
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
                 // [PS-2 audit 2026-05-18] Idempotency-Key on DELETE — pairs with
-                // server-side `idempotency` middleware on admin/pos-order/{order}
-                // (routes/api.php:885). Defense-in-depth against double-tap.
+                // server-side `idempotency` middleware on admin/pos-order/{order}.
+                //
+                // [QA 2026-09-28] Ce commentaire affirmait une protection serveur
+                // à « routes/api.php:885 » — cette ligne est une route de session
+                // de caisse sans rapport, et la route DELETE était en réalité NUE :
+                // l'en-tête envoyé ici n'était lu par personne. Le middleware est
+                // désormais réellement câblé (+ throttle), et déclaré dans
+                // config/idempotency.required_routes.
+                // Portée exacte : protège les duplicatas CONCURRENTS. Un second
+                // appel SÉQUENTIEL reçoit 404 (SubstituteBindings, du groupe `api`,
+                // résout le modèle avant les middlewares de route) — sans dégât.
+                // Voir tests/Feature/Idempotency/PosOrderDestroyIdempotencyTest.php.
                 axios.delete(`admin/pos-order/${payload.id}`, {
                     headers: buildIdempotencyHeaders(payload),
                 }).then((res) => {

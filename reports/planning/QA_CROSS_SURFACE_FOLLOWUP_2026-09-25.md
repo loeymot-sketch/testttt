@@ -1263,3 +1263,41 @@ de copie publique n’est intervenu depuis le contrôle précédent.
   sur OTP email/guest, inscription borne, canonicalisation téléphone 06/+33,
   liaison web, unicité et anti-fuite PII. Les collisions et comptes existants
   sont refusés proprement sans divulguer email, téléphone ou code tiers.
+---
+
+## Suite donnée (2026-09-28) — corrections livrées
+
+Branche `qa/corrige-rapports-2026-09-28`. Verdict par item, correctifs et
+escalades : **[`QA_CORRECTIONS_2026-09-28.md`](QA_CORRECTIONS_2026-09-28.md)**.
+
+Mise à jour de la synthèse de décision de ce document :
+
+| Domaine | Évolution au 28/09 |
+|---|---|
+| Kiosk public / borne | **Défaut corrigé** : une boisson **épuisée** restait sélectionnable dans l'étape menu. Le backend envoyait bien `is_available` ; la grille de boissons le jetait. Le wizard POS gelé filtrait déjà correctement — symétrie rétablie sans toucher la zone gelée. |
+| POS suppléments / sauces | **Défaut d'ARGENT corrigé sur la borne** : « Sans sauce » comptait comme sauce payante (+0,50 € scellés par `PricingService`) faute d'exclusivité. Corrigé en amont du code gelé. ⛔ **La caisse reste exposée** (`pos-wizard.js`, gelé) → gate propriétaire. |
+| Fiscalité | **Défaut corrigé** : le **rapport X était inatteignable** pour le compte admin (422 « compte non rattaché »), alors que la liste Z avait déjà sa relaxation lecture seule et que le X est read-only par contrat. Résolu sans inventer d'agrégat inter-branches, avec garde anti-IDOR testé. |
+| Caisse / encaissement | **Défaut corrigé** : le numéro court était ambigu entre journées (risque d'encaisser la mauvaise commande). Le correctif existait côté POS depuis le 26/09 mais n'avait jamais été porté sur `/admin/encaissement`. |
+| Stock | **Défaut corrigé** : le tableau de bord ne lisait **pas la même table** que « Conso & Stock » — les matières premières y étaient structurellement invisibles. |
+| Frozen-zone sentinel | Inchangé, **volontairement**. Voir la précision de gouvernance ci-dessous. |
+| Site public contenu livraison | Confirmé **hors de ce dépôt**. Rien committé sur la surface externe. |
+| i18n global | Inchangé — lot dédié. Aucune clé ajoutée par ce lot, donc dette `ar/de/bn` intacte. |
+
+**Précision de gouvernance sur le gate frozen.** Ce document, comme le plan de
+reprise, cite le sign-off non coché de
+`LOCK_KIOSK_FRITES_SAUCE_BILLING_2026-07-29.md` comme blocage de la baseline.
+La case est bien vide (vérifié). **Mais** ce lock porte sur le changement de
+**juillet**, lequel est déjà **inclus** dans la baseline courante `fcbe3755`,
+autorisée le **2026-09-16** : ce sign-off n'a donc jamais bloqué cette baseline,
+et l'invoquer pour un reformatage de **3 lignes de commentaire** est incohérent.
+Le blocage réel est que `pos:lint:pricing` (qui exige le littéral `date:`) et la
+sentinelle de hash **s'excluent mutuellement**. Trois options sont posées dans
+le rapport de corrections §2.1 ; **aucune n'a été prise**, baseline et fichier
+gelé sont intacts.
+
+**Note d'instrument.** La formulation « Aucune alerte de stock bas » relevée par
+l'audit du 24/09 était **déjà corrigée le 2026-09-02** (bandeau ambre « ce
+panneau ne surveille rien ») : l'auditeur lisait un bundle antérieur. La
+substance du défaut restait réelle et a été corrigée. Plusieurs autres points de
+ce même audit étaient également déjà clos par des commits **postérieurs** à sa
+date de recette — le détail est dans le tableau §3 du rapport de corrections.

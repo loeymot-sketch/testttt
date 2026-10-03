@@ -51,7 +51,14 @@ describe('POS — trace « ouverture tiroir sans vente »', () => {
         const vm = makeVm();
         await vm.triggerNoSaleOpenDrawer();
         expect(openDrawer).toHaveBeenCalled();
-        expect(axios.post).toHaveBeenCalledWith('admin/pos/cash-drawer/open', { client_opened: true });
+        // [2026-09-29] Le 3e argument porte la clé d'idempotence, exigée par le serveur
+        // (required_routes). Avant, ce banc VERROUILLAIT l'absence d'en-tête : vert sur un
+        // POST que la production refusait en 422.
+        expect(axios.post).toHaveBeenCalledWith(
+            'admin/pos/cash-drawer/open',
+            { client_opened: true },
+            expect.objectContaining({ headers: expect.objectContaining({ 'X-Idempotency-Key': expect.stringMatching(/^nosale-/) }) })
+        );
         expect(alertService.info).toHaveBeenCalledWith('pos.no_sale_done');
         expect(alertService.error).not.toHaveBeenCalled();
         expect(vm.noSaleBusy).toBe(false);
