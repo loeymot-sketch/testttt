@@ -458,7 +458,20 @@ final class OrderReceiptEscPosRenderer
                 // en plus à faire. Le repli des formules revendiquées (KitchenBundledAddonCollapser)
                 // ne déplace aucun extra : aucun doublon possible avec le bloc du parent.
                 // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche isMenuItem.
-                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => [], 'hash' => $this->symbolic->porteUnSupplement($snap), 'cadre' => true];
+                // [GOAL REMARQUES 2026-10-03 · revue F3] La note du CLIENT d'une formule commandée seule
+                // (« [sans sel] ») sortait à l'écran mais jamais sur le papier (`'notes' => []` en dur).
+                // Même nettoyage que la branche produit ; la sauce frites reste sur la ligne MENU.
+                $menuSupps = $this->symbolic->supplementLines($snap, $instruction);
+                $menuDrinks = $this->symbolic->drinkLines($snap);
+                $menuNote = $this->symbolic->sansMarqueurUber($this->symbolic->sansOptionsDejaAffichees(
+                    $this->symbolic->cleanInstruction($instruction, $name, $menuDrinks),
+                    $menuSupps
+                ));
+                $blocks[] = [
+                    'head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $menuSupps, 'drinks' => $menuDrinks,
+                    'notes' => array_values(array_filter(array_map('trim', explode("\n", $menuNote)))),
+                    'hash' => $this->symbolic->porteUnSupplement($snap), 'cadre' => true,
+                ];
 
                 continue;
             }
@@ -521,9 +534,13 @@ final class OrderReceiptEscPosRenderer
             foreach (EscPosCommandBuilder::wrapIndented($headText, $cadre ? $halfW - 2 : $halfW, '  ') as $i => $headLine) {
                 // Les octets GS B ne passent PAS par textLine() (sanitize() les détruirait) : la ligne,
                 // déjà assainie par wrapIndented(), est émise brute puis terminée par textLine('').
+                // [revue F5] wrapIndented() rogne la fin de ligne : quand la ligne s'enroule juste après
+                // « 2 x », l'espace final disparaît — on accepte « 2 x » seul et on remet l'espace s'il suit.
+                $qtyCore = rtrim($qtyMark);
                 if ($i === 0 && $qtyMark !== '' && ! $cadre
-                    && preg_match('/^(\s*(?:#\s)?)'.preg_quote($qtyMark, '/').'(.*)$/us', $headLine, $hm)) {
-                    $b .= $hm[1].EscPosCommandBuilder::invert(true).$qtyMark.EscPosCommandBuilder::invert(false).$hm[2].EscPosCommandBuilder::textLine('');
+                    && preg_match('/^(\s*(?:#\s)?)'.preg_quote($qtyCore, '/').'(?: (.*))?$/us', $headLine, $hm)) {
+                    $reste = $hm[2] ?? '';
+                    $b .= $hm[1].EscPosCommandBuilder::invert(true).$qtyCore.($reste !== '' ? ' ' : '').EscPosCommandBuilder::invert(false).$reste.EscPosCommandBuilder::textLine('');
                 } elseif ($cadre) {
                     $b .= '  '.EscPosCommandBuilder::invert(true).' '.ltrim($headLine).' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
                 } else {

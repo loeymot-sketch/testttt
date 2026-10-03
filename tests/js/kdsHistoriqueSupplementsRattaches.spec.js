@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { mount } from '@vue/test-utils';
+
 import { renderItem } from '../../resources/js/helpers/kdsCustomization.js';
+import KdsOrderLine from '../../resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue';
 
 // [GOAL REMARQUES 2026-10-03 · T-1.8 R-069] Propriétaire, 27/09 : « chaque sauce si c'est pour le sandwich
 // […] pour la ligne de sandwich. Si c'est pour les frites on doit s'afficher ça devant les frites ou bien
@@ -37,6 +40,18 @@ describe('tiroir Historique : chaque sauce en plus rattachée à sa destination 
 
     it('rien d\'explicable dans l\'instruction → le générique reste visible (une sauce payée ne disparaît jamais)', () => {
         expect(supps({ item_name: 'Cayenne', quantity: 1, item_extras: generique(1), instruction: '' })).toEqual(['+ Sauce supplémentaire']);
+    });
+
+    it('[revue] l\'en-tête du tiroir porte le « # » quand le produit a un supplément payé ou offert', () => {
+        const avec = renderItem({ item_name: 'Cayenne', quantity: 1, item_extras: [{ name: 'Cheddar', unit_price: 0.9, quantity: 1 }], instruction: '' });
+        const sans = renderItem({ item_name: 'Cayenne', quantity: 1, item_extras: [{ name: 'Salade', unit_price: 0, quantity: 1 }], instruction: '' });
+        expect(avec.lines.find((l) => l.type === 'header').hasSupplement).toBe(true);
+        expect(sans.lines.find((l) => l.type === 'header').hasSupplement).toBeFalsy();
+    });
+
+    it('[revue] le composant affiche « # » sur une ligne d\'en-tête marquée', () => {
+        const w = mount(KdsOrderLine, { props: { line: { type: 'header', qty: 1, label: 'Cayenne', hasSupplement: true } }, global: { mocks: { $t: (k) => k } } });
+        expect(w.find('.kds-line__hash').exists()).toBe(true);
     });
 
     it('contre-épreuve : la résolution produit existante est conservée', () => {

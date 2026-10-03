@@ -50,6 +50,17 @@ class KitchenTicketDieseTousSupplementsTest extends TestCase
         return app(OrderReceiptEscPosRenderer::class)->renderKitchenTicket($order);
     }
 
+    /**
+     * Texte tel que le cuisinier le LIT : suppléments en double taille, un libellé long s'enroule
+     * (« Frites : Grande » / « Portion ») — commandes ESC/POS retirées, lignes recollées.
+     */
+    private function texteLu(string $bytes): string
+    {
+        $sansCommandes = (string) preg_replace('/\x1d[!B].|\x1b[Eat!d\-].|\x1b@|\x1dV./s', '', $bytes);
+
+        return (string) preg_replace('/\s+/', ' ', $sansCommandes);
+    }
+
     private function assertDiese(string $b, string $ctx): void
     {
         $this->assertStringContainsString(EscPosCommandBuilder::bold(true).'  # ', $b, "$ctx : la ligne produit doit commencer par « # »");
@@ -94,7 +105,7 @@ class KitchenTicketDieseTousSupplementsTest extends TestCase
 
         $b = $this->ticket($parent, $formule);
 
-        $this->assertStringContainsString('Grande Portion', $b);
+        $this->assertStringContainsString('Frites : Grande Portion', $this->texteLu($b));
         $this->assertDiese($b, 'option de formule');
     }
 
@@ -106,8 +117,20 @@ class KitchenTicketDieseTousSupplementsTest extends TestCase
 
         $b = $this->ticket($parent, $formule);
 
-        $this->assertSame(1, substr_count($b, 'Grande Portion'), 'une seule mention de « Grande Portion » sur le ticket cuisine : '.addcslashes($b, "\0..\37"));
+        $this->assertSame(1, substr_count($this->texteLu($b), 'Grande Portion'), 'une seule mention de « Grande Portion » sur le ticket cuisine : '.$this->texteLu($b));
         $this->assertDiese($b, 'option de formule, forme réelle');
+    }
+
+    /** [Revue F2] L'option héritée de la formule est imprimée « Frites : Cheddar Fondu » : jamais confondue avec le Cheddar du sandwich. */
+    public function test_option_de_formule_dit_qu_elle_va_sur_les_frites(): void
+    {
+        $parent = $this->item('Cayenne', [['extra_name' => 'Cheddar', 'unit_price' => 0.9, 'line_total' => 0.9, 'quantity' => 1]], "CAYENNE\nPain Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\n↳ Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)");
+        $formule = $this->item('Menu (Frites + Boisson)', [['extra_name' => 'Cheddar Fondu', 'unit_price' => 1, 'line_total' => 1, 'quantity' => 1]], "Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)");
+
+        $b = $this->ticket($parent, $formule);
+
+        $this->assertStringContainsString('Frites : Cheddar Fondu', $this->texteLu($b));
+        $this->assertSame(1, substr_count($this->texteLu($b), 'Cheddar Fondu'), 'une seule mention, avec sa destination');
     }
 
     public function test_contre_epreuve_garniture_gratuite_seule(): void

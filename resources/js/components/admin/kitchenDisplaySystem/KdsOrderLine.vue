@@ -21,6 +21,7 @@
       <div class="kds-line__header">
         <span class="kds-line__qty" :class="{ 'kds-line__qty--multi': isMulti }">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
+        <span v-if="line.hasSupplement" class="kds-line__hash" aria-hidden="true">#</span>
         <span class="kds-line__name">{{ line.label }}</span>
       </div>
     </template>

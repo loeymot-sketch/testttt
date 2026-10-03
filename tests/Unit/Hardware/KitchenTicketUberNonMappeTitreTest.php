@@ -57,6 +57,23 @@ class KitchenTicketUberNonMappeTitreTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/\bART\b/', $b);
     }
 
+    /** [Revue F6] L'aperçu de la photo Uber en caisse doit montrer EXACTEMENT ce qui s'imprimera : plus de marqueur. */
+    public function test_l_apercu_photo_uber_suit_le_ticket(): void
+    {
+        $apercu = app(\App\Services\Uber\UberTicketPreviewBuilder::class)->build(['items' => [[
+            'name' => 'Wrap Poulet Spicy',
+            'quantity' => 1,
+            'instruction' => self::INSTRUCTION,
+            'composition_snapshot' => $this->snapshot(),
+        ]]]);
+
+        $ligne = $apercu['lignes'][0];
+        $this->assertSame('WRAP POULET SPICY | ALG', $ligne['symbolique']);
+        $this->assertStringNotContainsString('UBER NON MAPP', $ligne['note']);
+        $this->assertStringContainsString('NO ONIONS', $ligne['note']);
+        $this->assertTrue($ligne['non_mappe'], 'le drapeau « non reconnu » reste levé pour la personne qui valide');
+    }
+
     public function test_contre_epreuve_un_article_reconnu_garde_son_code(): void
     {
         $f = new KitchenTicketSymbolicFormatter;

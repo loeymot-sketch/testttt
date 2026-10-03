@@ -176,6 +176,36 @@ class KitchenTicketMenuFritesQuantiteEncadresTest extends TestCase
         $this->assertSame(substr_count($b, EscPosCommandBuilder::invert(true)), substr_count($b, EscPosCommandBuilder::invert(false)), "l'inversion doit toujours être refermée");
     }
 
+    /** [Revue F3] La note du client sur une formule commandée seule s'affichait à l'écran mais n'était jamais imprimée. */
+    public function test_la_note_client_d_une_formule_seule_est_imprimee(): void
+    {
+        $b = $this->ticket('Menu (Frites + Boisson)', 1, [], "Sauce frites: Mayonnaise\n[sans sel]");
+
+        $this->assertStringContainsString('sans sel', $b);
+    }
+
+    /** [Revue F5] Ligne produit enroulée sur papier étroit : « 2 x » garde son fond noir même seul sur sa ligne. */
+    public function test_la_quantite_garde_son_fond_noir_quand_la_ligne_s_enroule(): void
+    {
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 2, 'total_price' => 5, 'tax_rate' => 10, 'tax_name' => 'TVA', 'tax_type' => 1, 'tax_amount' => 0.5,
+            'instruction' => '',
+            'composition_snapshot' => ['lines' => [], 'extras' => [['extra_name' => 'Cheddar', 'unit_price' => 0.9, 'line_total' => 0.9, 'quantity' => 1]], 'addons' => []],
+        ]);
+        $oi->name = 'Coca-Cola Zero 33cl';
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'TEST-WRAP', 'queue_number' => 'A0047', 'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 5, 'total' => 5, 'pos_payment_method' => 1, 'order_datetime' => '2026-10-03 12:00:00', 'fiscal_sequence_no' => 3007,
+        ]);
+        $order->setRelation('branch', (new Branch)->forceFill(['name' => 'Le Cayenne', 'address' => 'x', 'phone' => '+33600000000']));
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        $b = app(OrderReceiptEscPosRenderer::class)->renderKitchenTicket($order, ['width_chars' => 32]);
+
+        $this->assertStringContainsString(EscPosCommandBuilder::invert(true).'2 x', $b);
+    }
+
     public function test_une_quantite_de_un_n_a_ni_prefixe_ni_fond_noir(): void
     {
         $b = $this->ticket('Tacos M', 1);

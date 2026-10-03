@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { renderItemSymbolic } from '../../resources/js/helpers/kdsSymbolic.js';
+import { renderItem } from '../../resources/js/helpers/kdsCustomization.js';
 
 // [GOAL REMARQUES 2026-10-03 · T-1.7 R-075] Jumeau écran de
 // tests/Unit/Hardware/KitchenTicketUberNonMappeTitreTest.php. Une ligne Uber non reconnue affichait
@@ -26,6 +27,19 @@ describe('Uber non reconnu : le titre complet, jamais « ART » (R-075)', () => 
         expect(texte).toContain('NO ONIONS');
         expect(texte).not.toContain('UBER NON MAPP');
         expect(texte).not.toMatch(/\bART\b/);
+    });
+
+    it('[revue F4] un titre sans lettre latine n\'est jamais vidé : le titre reste lisible', () => {
+        const r = renderItemSymbolic(item('Article Uber (non mappé)', '[UBER NON MAPPÉ: شاورما دجاج] [sans oignons]'));
+        // Sans repli, la normalisation ASCII vidait le titre : la ligne ne gardait que « ALG ».
+        expect(r.lines.find((l) => l.type === 'symbolic-main').label).toContain('شاورما دجاج');
+    });
+
+    it('[tiroir Historique] l\'en-tête montre le titre Uber, pas « Article Uber (non mappé) »', () => {
+        const out = renderItem(item('Article Uber (non mappé)', '[UBER NON MAPPÉ: Wrap Poulet Spicy] NO ONIONS'));
+        const header = out.lines.find((l) => l.type === 'header');
+        expect(header.label).toBe('Wrap Poulet Spicy');
+        expect(out.lines.map((l) => l.label).join('\n')).not.toContain('UBER NON MAPP');
     });
 
     it('contre-épreuve : un article reconnu garde son code', () => {

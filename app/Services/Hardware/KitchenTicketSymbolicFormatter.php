@@ -231,6 +231,7 @@ final class KitchenTicketSymbolicFormatter
     {
         $cle = static function (string $v): string {
             $v = (string) preg_replace('/^[+↳\s]+/u', '', $v);
+            $v = (string) preg_replace('/^frites\s*:\s*/iu', '', $v);
             $v = (string) preg_replace('/\s*×\d+\s*$/u', '', $v);
             $v = \Normalizer::normalize($v, \Normalizer::FORM_D) ?: $v;
             $v = (string) preg_replace('/\p{Mn}+/u', '', $v);
@@ -518,7 +519,9 @@ final class KitchenTicketSymbolicFormatter
             // (« Hachée, Poulet » / « 2× Poulet ») → le suffixe ×N est redondant et se lit
             // « 2× chaque ». Il ne reste que sur le libellé générique non résolu.
             $suffix = ($q > 1 && $display === $name) ? " ×{$q}" : '';
-            $out[] = '+ '.$display.$suffix;
+            // [GOAL REMARQUES 2026-10-03 · revue F2] Option héritée d'une formule repliée : « Frites : X ».
+            // Jumeau STRICT : kdsSymbolic.js buildSymbolic().
+            $out[] = '+ '.(! empty($e['from_formule']) ? 'Frites : ' : '').$display.$suffix;
         }
 
         return $out;

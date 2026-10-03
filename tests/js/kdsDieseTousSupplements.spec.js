@@ -93,6 +93,23 @@ describe('« # » sur tout produit qui porte un supplément (R-072)', () => {
         expect(main(seul).hasSupplement).toBe(true);
     });
 
+    it('[revue F2] l\'option de formule dit qu\'elle va sur les FRITES — jamais confondue avec le cheddar du sandwich', () => {
+        const parent = { id: 1, ...sandwich([{ extra_name: 'Cheddar', unit_price: 0.9, line_total: 0.9, quantity: 1 }], 'CAYENNE\nPain Sauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\n↳ Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)') };
+        const formule = {
+            id: 2,
+            item_name: 'Menu (Frites + Boisson)',
+            quantity: 1,
+            instruction: 'Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)',
+            composition_snapshot: { lines: [], extras: [{ extra_name: 'Cheddar Fondu', unit_price: 1, line_total: 1, quantity: 1 }], addons: [] },
+        };
+        const [seul] = collapseBundledAddonItems([parent, formule]);
+        const libelles = supplements(seul);
+        expect(libelles).toContain('⭐ Cheddar');
+        expect(libelles).toContain('⭐ Frites : Cheddar Fondu');
+        const texte = renderItemSymbolic(seul).lines.map((l) => l.label).join('\n');
+        expect(texte.match(/Cheddar Fondu/g) || []).toHaveLength(1);
+    });
+
     it('une note « ↳ » qui n\'est PAS un supplément affiché reste visible', () => {
         const item = sandwich([{ extra_name: 'Cheddar', unit_price: 0.9, line_total: 0.9, quantity: 1 }], 'CAYENNE\nSauce : Algérienne\n↳ Bien cuit');
         expect(renderItemSymbolic(item).lines.map((l) => l.label).join('\n')).toContain('Bien cuit');

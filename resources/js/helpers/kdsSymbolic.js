@@ -485,7 +485,10 @@ export function buildSymbolic(orderItem) {
     // « ART » de l'article technique. Jumeau STRICT : KitchenTicketSymbolicFormatter::mainLine().
     const titreUber = titreUberNonMappe(orderItem?.instruction);
     if (titreUber) {
-        produit = normalize(titreUber).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+        // [revue F4] Titre sans lettre latine (arabe, emoji) : la normalisation ASCII le viderait — on
+        // garde alors le titre brut plutôt qu'une ligne sans produit.
+        produit = normalize(titreUber).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase()
+            || titreUber.trim();
         nameSize = '';
     }
     // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
@@ -585,7 +588,10 @@ export function buildSymbolic(orderItem) {
             // redondant, gardé SEULEMENT sur le générique non résolu (parité PHP :272).
             const display = extraDisplayName(name, orderItem?.instruction);
             const suffix = (Number.isFinite(q) && q > 1 && display === name) ? ` ×${q}` : '';
-            supplements.push(`+ ${display}${suffix}`);
+            // [GOAL REMARQUES 2026-10-03 · revue F2] Option héritée d'une formule repliée : elle va sur
+            // les FRITES (« Frites : Cheddar Fondu »), jamais confondue avec un extra du sandwich.
+            // Jumeau STRICT : KitchenTicketSymbolicFormatter::supplementLines().
+            supplements.push(`+ ${e?.from_formule ? 'Frites : ' : ''}${display}${suffix}`);
         }
     }
 
@@ -724,6 +730,7 @@ function instructionLine(orderItem, supplements = []) {
 
 const cleOption = (value) => String(value || '')
     .replace(/^[+↳⭐\s]+/u, '')
+    .replace(/^frites\s*:\s*/iu, '')
     .replace(/\s*×\d+\s*$/u, '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')

@@ -137,7 +137,10 @@ function avecExtrasHerites(parent, herites) {
         const cle = extraKey(e);
         if (vus.has(cle)) return;
         vus.add(cle);
-        ajouts.push(e);
+        // [GOAL REMARQUES 2026-10-03 · revue F2] Marqueur d'AFFICHAGE : l'option vient de la formule
+        // (frites), pas du sandwich — « Cheddar Fondu » ne se confond plus avec le « Cheddar » du
+        // produit. Copie : l'objet source (et l'instantané NF525) restent intacts. Jumeau PHP.
+        ajouts.push(e && typeof e === 'object' ? { ...e, from_formule: true } : e);
     });
     if (ajouts.length === 0) return parent;
 

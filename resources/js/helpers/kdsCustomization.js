@@ -19,7 +19,7 @@
 
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 import { claimedFormuleBadge } from './kdsBundledAddons.js';
-import { extraDisplayName, saucesEnPlusParDestination } from './kdsSymbolic.js';
+import { extraDisplayName, porteUnSupplement, saucesEnPlusParDestination, titreUberNonMappe } from './kdsSymbolic.js';
 
 // Group keys are surfaced to i18n via `label.kds_group_<key>`.
 // Heuristic-keyword regex per group. The first match wins.
@@ -395,9 +395,14 @@ export function renderItem(orderItem) {
     lines.push({
         type: 'header',
         qty: orderItem?.quantity ?? 1,
-        label: orderItem?.item_name || '',
+        // [GOAL REMARQUES 2026-10-03 · R-075] Ligne Uber non reconnue : son vrai titre, pas
+        // « Article Uber (non mappé) ».
+        label: titreUberNonMappe(orderItem?.instruction) || orderItem?.item_name || '',
         category,
         hasAllergen: itemAllergen,
+        // [GOAL REMARQUES 2026-10-03 · R-072] « # » aussi dans le tiroir Historique : même règle que le
+        // plateau (extra payant ou offert, même replié ailleurs).
+        hasSupplement: porteUnSupplement(orderItem) || undefined,
     });
 
     const vars = readVariations(orderItem);
@@ -496,7 +501,11 @@ export function renderItem(orderItem) {
 
     // Free-text instruction — sanitized (strip the compo duplicate the
     // structured render already shows, keep unique extras), then keyword-classified.
-    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name, drinkLabels);
+    // [GOAL REMARQUES 2026-10-03 · R-075] Le titre Uber est l'en-tête : son marqueur technique ne se
+    // répète pas en note (la note du client, elle, reste).
+    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name, drinkLabels)
+        .replace(/\[UBER NON MAPP[ÉE]\s*:[^\]]*\]\s*/gu, '')
+        .trim();
     if (instruction.length > 0) {
         lines.push({
             type: 'instruction',
