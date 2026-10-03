@@ -168,6 +168,34 @@ class KitchenTicketMenuFritesQuantiteEncadresTest extends TestCase
         );
     }
 
+    /** [Revue 2 · P2-1] Un bandeau = un supplément : un libellé trop long pour la double largeur n'est pas
+     * coupé en plusieurs bandeaux (« Poulet » seul se lirait comme un autre supplément). */
+    public function test_un_supplement_long_reste_un_seul_bandeau(): void
+    {
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1, 'total_price' => 11.4, 'tax_rate' => 10, 'tax_name' => 'TVA', 'tax_type' => 1, 'tax_amount' => 1,
+            'instruction' => 'CAYENNE Viandes en plus : Poulet',
+            'composition_snapshot' => ['lines' => [], 'extras' => [['extra_name' => 'Viande supplémentaire', 'unit_price' => 2.5, 'line_total' => 2.5, 'quantity' => 1]], 'addons' => []],
+        ]);
+        $oi->name = 'Cayenne';
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'TEST-BAND', 'queue_number' => 'A0048', 'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 11.4, 'total' => 11.4, 'pos_payment_method' => 1, 'order_datetime' => '2026-10-03 12:00:00', 'fiscal_sequence_no' => 3008,
+        ]);
+        $order->setRelation('branch', (new Branch)->forceFill(['name' => 'Le Cayenne', 'address' => 'x', 'phone' => '+33600000000']));
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        foreach ([42, 48] as $largeur) {
+            $b = app(OrderReceiptEscPosRenderer::class)->renderKitchenTicket($order, ['width_chars' => $largeur]);
+            $this->assertStringContainsString(
+                self::inv((string) iconv('UTF-8', 'CP858', ' Viande supplémentaire : Poulet ')),
+                $b,
+                "un seul bandeau à $largeur colonnes"
+            );
+        }
+    }
+
     public function test_la_quantite_multiple_est_sur_fond_noir(): void
     {
         $b = $this->ticket('Tacos M', 2);

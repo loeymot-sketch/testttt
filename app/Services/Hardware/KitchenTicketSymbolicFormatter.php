@@ -341,6 +341,11 @@ final class KitchenTicketSymbolicFormatter
         $titreUber = $this->titreUberNonMappe($instruction);
         if ($titreUber !== '') {
             $produit = mb_strtoupper(trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($titreUber)))));
+            // [revue 2 · P2-2] Titre sans lettre imprimable (emoji, idéogrammes) : CP858 ne peut pas
+            // l'imprimer et la ligne produit serait VIDE — l'article disparaîtrait du papier. Repli explicite.
+            if ($produit === '') {
+                $produit = 'ARTICLE UBER';
+            }
             $taille = '';
         }
         // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du

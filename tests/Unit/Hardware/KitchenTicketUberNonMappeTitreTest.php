@@ -74,6 +74,16 @@ class KitchenTicketUberNonMappeTitreTest extends TestCase
         $this->assertTrue($ligne['non_mappe'], 'le drapeau « non reconnu » reste levé pour la personne qui valide');
     }
 
+    /** [Revue 2 · P2-2] Titre sans lettre imprimable (emoji, chinois) : l'article ne disparaît JAMAIS du papier. */
+    public function test_un_titre_sans_lettre_latine_ne_vide_jamais_la_ligne_produit(): void
+    {
+        $f = new KitchenTicketSymbolicFormatter;
+
+        foreach (['🍔🍟', '汉堡'] as $titre) {
+            $this->assertStringStartsWith('ARTICLE UBER', $f->mainLine('Article Uber (non mappé)', $this->snapshot(), "[UBER NON MAPPÉ: $titre] extra crispy"), $titre);
+        }
+    }
+
     public function test_contre_epreuve_un_article_reconnu_garde_son_code(): void
     {
         $f = new KitchenTicketSymbolicFormatter;

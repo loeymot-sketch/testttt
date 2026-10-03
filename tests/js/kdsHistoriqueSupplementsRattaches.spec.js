@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { renderItem } from '../../resources/js/helpers/kdsCustomization.js';
+import { collapseBundledAddonItems } from '../../resources/js/helpers/kdsBundledAddons';
 import KdsOrderLine from '../../resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue';
 
 // [GOAL REMARQUES 2026-10-03 · T-1.8 R-069] Propriétaire, 27/09 : « chaque sauce si c'est pour le sandwich
@@ -52,6 +53,25 @@ describe('tiroir Historique : chaque sauce en plus rattachée à sa destination 
     it('[revue] le composant affiche « # » sur une ligne d\'en-tête marquée', () => {
         const w = mount(KdsOrderLine, { props: { line: { type: 'header', qty: 1, label: 'Cayenne', hasSupplement: true } }, global: { mocks: { $t: (k) => k } } });
         expect(w.find('.kds-line__hash').exists()).toBe(true);
+    });
+
+    it('[revue 2 · P3-1] option de formule repliée : « Frites : Cheddar Fondu » une seule fois, distincte du Cheddar', () => {
+        const parent = {
+            id: 1, item_name: 'Cayenne', quantity: 1,
+            item_extras: [{ name: 'Cheddar', unit_price: 0.9, quantity: 1 }],
+            instruction: 'CAYENNE\nSauce : Algérienne\n+ Menu (Frites + Boisson) (+2,50 €)\n↳ Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)',
+        };
+        const formule = {
+            id: 2, item_name: 'Menu (Frites + Boisson)', quantity: 1,
+            item_extras: [{ name: 'Cheddar Fondu', unit_price: 1, quantity: 1 }],
+            instruction: 'Sauce frites: Mayonnaise\n↳ Cheddar Fondu (+1.00€)',
+        };
+        const [seul] = collapseBundledAddonItems([parent, formule]);
+        const out = renderItem(seul);
+        const sup = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
+        expect(sup).toContain('+ Cheddar');
+        expect(sup).toContain('+ Frites : Cheddar Fondu');
+        expect(out.lines.map((l) => l.label).join('\n').match(/Cheddar Fondu/g) || []).toHaveLength(1);
     });
 
     it('contre-épreuve : la résolution produit existante est conservée', () => {

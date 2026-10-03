@@ -576,9 +576,11 @@ final class OrderReceiptEscPosRenderer
                 // Garde « jamais un mot coupé » (régression C4-001) : sur papier étroit (58 mm, 32 col.)
                 // un mot plus long que la place en double largeur (« supplémentaire ») serait scindé.
                 // Ce supplément reste alors en double HAUTEUR, pleine largeur : grand, jamais coupé.
+                // [revue 2 · P2-1] Décidé sur le LIBELLÉ ENTIER : un bandeau = un supplément. Enroulé en
+                // double largeur, « Viande supplémentaire : Poulet » faisait trois bandeaux et « Poulet »
+                // seul se lisait comme un autre supplément.
                 $placeDouble = max(4, $halfW - 4);
-                $motLePlusLong = max(array_map('mb_strlen', explode(' ', $label)) ?: [0]);
-                $double = $motLePlusLong <= $placeDouble;
+                $double = mb_strlen($label) <= $placeDouble;
                 $b .= ($double ? EscPosCommandBuilder::doubleSize(true) : '').EscPosCommandBuilder::bold(true);
                 foreach (EscPosCommandBuilder::wrapIndented($label, $double ? $placeDouble : $w - 6, '') as $supLine) {
                     $b .= '  '.EscPosCommandBuilder::invert(true).' '.$supLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');

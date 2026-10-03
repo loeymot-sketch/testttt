@@ -19,7 +19,7 @@
 
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 import { claimedFormuleBadge } from './kdsBundledAddons.js';
-import { extraDisplayName, porteUnSupplement, saucesEnPlusParDestination, titreUberNonMappe } from './kdsSymbolic.js';
+import { extraDisplayName, porteUnSupplement, sansOptionsDejaAffichees, saucesEnPlusParDestination, titreUberNonMappe } from './kdsSymbolic.js';
 
 // Group keys are surfaced to i18n via `label.kds_group_<key>`.
 // Heuristic-keyword regex per group. The first match wins.
@@ -475,7 +475,9 @@ export function renderItem(orderItem) {
         // Un nom RÉSOLU énumère déjà chaque occurrence (ex. "Andalouse, Américaine") : le
         // suffixe ×N ne reste que pour un extra resté générique (rien à énumérer).
         const suffix = Number.isFinite(q) && q > 1 && display === rawName ? ` ×${q}` : '';
-        lines.push({ type: 'supplement', label: `+ ${display}${suffix}` });
+        // [GOAL REMARQUES 2026-10-03 · revue 2] Option héritée d'une formule repliée : « Frites : X »,
+        // comme le plateau et le ticket — jamais confondue avec un extra du sandwich.
+        lines.push({ type: 'supplement', label: `+ ${e?.from_formule ? 'Frites : ' : ''}${display}${suffix}` });
     }
 
     // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
@@ -503,7 +505,12 @@ export function renderItem(orderItem) {
     // structured render already shows, keep unique extras), then keyword-classified.
     // [GOAL REMARQUES 2026-10-03 · R-075] Le titre Uber est l'en-tête : son marqueur technique ne se
     // répète pas en note (la note du client, elle, reste).
-    const instruction = sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name, drinkLabels)
+    // … et une option déjà affichée en supplément (« ↳ Cheddar Fondu ») ne se répète pas en note.
+    const supplementsAffiches = lines.filter((l) => l.type === 'supplement').map((l) => l.label);
+    const instruction = sansOptionsDejaAffichees(
+        sanitizeKdsInstruction(orderItem?.instruction, orderItem?.item_name, drinkLabels),
+        supplementsAffiches,
+    )
         .replace(/\[UBER NON MAPP[ÉE]\s*:[^\]]*\]\s*/gu, '')
         .trim();
     if (instruction.length > 0) {
