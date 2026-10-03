@@ -187,6 +187,94 @@ final class KitchenTicketSymbolicFormatter
         return $price <= 0;
     }
 
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-072] Instantané VU PAR LA CUISINE : ses extras sont lus avec la
+     * MÊME priorité que l'écran (`kdsSymbolic.readExtras`) — l'instantané s'il en porte, l'ancienne
+     * colonne `item_extras` sinon.
+     *
+     * Pourquoi : quand une formule est repliée sous un sandwich SANS extra propre,
+     * KitchenBundledAddonCollapser écrit les options héritées (« Grande Portion », « Cheddar Fondu »)
+     * dans `item_extras`, faute d'extras dans l'instantané. L'écran les lisait ; le ticket ne lisait
+     * que l'instantané et les perdait — le papier cuisine ne disait pas « Grande Portion ».
+     * Vue d'affichage uniquement : rien n'est écrit, l'instantané NF525 reste figé.
+     *
+     * @param  array<string,mixed>  $snapshot
+     * @return array<string,mixed>
+     */
+    public function avecExtrasEffectifs(array $snapshot, mixed $item): array
+    {
+        if (isset($snapshot['extras']) && is_array($snapshot['extras']) && $snapshot['extras'] !== []) {
+            return $snapshot;
+        }
+        $legacy = is_object($item) ? ($item->item_extras ?? null) : null;
+        if (is_string($legacy)) {
+            $legacy = json_decode($legacy, true);
+        }
+        if (! is_array($legacy) || $legacy === []) {
+            return $snapshot;
+        }
+        $snapshot['extras'] = array_values(array_filter($legacy, 'is_array'));
+
+        return $snapshot;
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-049/R-072] Une option de formule écrite par la caisse en note
+     * (« ↳ Grande Portion (+1.00€) ») est AUSSI un extra facturé depuis le 02/10 : elle sortait deux
+     * fois — cadre noir « Grande Portion » puis note « ** Grande Portion ». La ligne « ↳ X » est
+     * retirée quand X est déjà imprimé en supplément ; toute autre ligne reste.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js sansOptionsDejaAffichees().
+     *
+     * @param  list<string>  $supps  lignes renvoyées par supplementLines() (« + Grande Portion »)
+     */
+    public function sansOptionsDejaAffichees(string $note, array $supps): string
+    {
+        $cle = static function (string $v): string {
+            $v = (string) preg_replace('/^[+↳\s]+/u', '', $v);
+            $v = (string) preg_replace('/\s*×\d+\s*$/u', '', $v);
+            $v = \Normalizer::normalize($v, \Normalizer::FORM_D) ?: $v;
+            $v = (string) preg_replace('/\p{Mn}+/u', '', $v);
+
+            return mb_strtolower(trim($v));
+        };
+        $deja = [];
+        foreach ($supps as $s) {
+            $k = $cle((string) $s);
+            if ($k !== '') {
+                $deja[$k] = true;
+            }
+        }
+        if ($deja === [] || $note === '') {
+            return $note;
+        }
+        $garde = array_filter(explode("\n", $note), static fn (string $l) => ! (preg_match('/^\s*↳/u', $l) && isset($deja[$cle($l)])));
+
+        return trim(implode("\n", $garde));
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-072] Le produit porte-t-il un supplément ? Oui dès qu'un extra est
+     * PAYANT ou OFFERT — même quand son nom est replié ailleurs (sauce en plus dans la ligne produit,
+     * 2ᵉ sauce frites sur le badge). Le « # » n'était posé que si une LIGNE supplément sortait : ces
+     * produits-là n'en avaient pas. Seules les garnitures gratuites ne comptent pas.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js porteUnSupplement().
+     *
+     * @param  array<string,mixed>  $snapshot
+     */
+    public function porteUnSupplement(array $snapshot): bool
+    {
+        foreach (($snapshot['extras'] ?? []) as $e) {
+            if (! is_array($e)) {
+                continue;
+            }
+            if (! empty($e['offered']) || ! $this->isFreeExtra($e)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function supportSymbol(?string $name): string
     {
         $n = $this->norm($name);

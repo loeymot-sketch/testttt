@@ -532,7 +532,10 @@ export function buildSymbolic(orderItem) {
         const price = Number(e?.unit_price ?? e?.line_total ?? 0) || 0;
         // Only FREE garnitures (price 0) fold into the crudités slot; a paid extra
         // that happens to match (e.g. "Oignons frits" 0,90) is a supplement.
-        if (cs && price <= 0) {
+        // [GOAL REMARQUES 2026-10-03 · R-072] Un extra OFFERT est scellé à 0 € mais reste un supplément
+        // À PRÉPARER : jamais replié parmi les crudités gratuites. Le jumeau PHP le faisait depuis le
+        // 02/10 (`empty($e['offered'])`), l'écran non : le ticket et l'écran se contredisaient.
+        if (cs && price <= 0 && !e?.offered) {
             crud.add(cs);
         } else if (/sauce\s*suppl/i.test(name)) {
             const q = Math.max(1, parseInt(e?.quantity, 10) || 1);
@@ -658,17 +661,42 @@ function drinkAddonLabels(orderItem) {
  * KdsOrderLine.vue). sanitizeKdsInstruction garde les notes libres (« oignons cuits »,
  * « BOISSON: Coca-Cola 33cl » du wizard caisse) et strip l'écho compo du wizard.
  */
-function instructionLine(orderItem) {
+function instructionLine(orderItem, supplements = []) {
     // [D-1 GOAL-8AXES 2026-08-05] Les boissons du canal ADDON (menu_child) sont
     // transmises au sanitiseur pour qu'il ne ré-émette pas la même boisson via
     // la ligne « Formule : … (X) » de l'instruction. Jumeau PHP : Renderer:336.
-    const note = sanitizeKdsInstruction(
+    const note = sansOptionsDejaAffichees(sanitizeKdsInstruction(
         orderItem?.instruction,
         orderItem?.item_name,
         drinkAddonLabels(orderItem),
-    );
+    ), supplements);
     if (note.length === 0) return null;
     return { type: 'instruction', label: note, visualClass: kdsInstructionVisualClass(note) };
+}
+
+const cleOption = (value) => String(value || '')
+    .replace(/^[+↳⭐\s]+/u, '')
+    .replace(/\s*×\d+\s*$/u, '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+
+/**
+ * [GOAL REMARQUES 2026-10-03 · R-049/R-072] Une option de formule écrite par la caisse en note
+ * (« ↳ Grande Portion (+1.00€) ») est AUSSI un extra facturé depuis le 02/10 : elle s'affichait deux
+ * fois — cadre noir « Grande Portion » puis note « ↳ Grande Portion ». La note « ↳ X » est retirée
+ * quand X est déjà affiché en supplément ; toute autre ligne reste.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::sansOptionsDejaAffichees().
+ */
+export function sansOptionsDejaAffichees(note, supplements) {
+    const deja = new Set((Array.isArray(supplements) ? supplements : []).map(cleOption).filter(Boolean));
+    if (deja.size === 0 || !note) return note;
+    return String(note)
+        .split('\n')
+        .filter((ligne) => !(/^\s*↳/u.test(ligne) && deja.has(cleOption(ligne))))
+        .join('\n')
+        .trim();
 }
 
 /**
@@ -733,14 +761,14 @@ export function renderItemSymbolic(orderItem) {
             lines.push({ type: 'menu_child', label: d });
         }
         // [W3-FIX-A] Note client visible aussi sur un item Menu/Formule.
-        const menuNote = instructionLine(orderItem);
+        const menuNote = instructionLine(orderItem, s.supplements);
         if (menuNote) {
             lines.push(menuNote);
         }
         if (hasAllergen) {
             lines.push({ type: 'allergen', codes: allergenCodes });
         }
-        flagSupplementOnMain(lines, s.supplements);
+        flagSupplementOnMain(lines, s.supplements, orderItem);
         return { category: s.category, hasAllergen, lines };
     }
 
@@ -791,7 +819,7 @@ export function renderItemSymbolic(orderItem) {
 
     // [W3-FIX-A 2026-07-06] Note client (« oignons cuits », « BOISSON: X » du POS) après
     // les suppléments — le ticket imprimé l'avait (** note), l'écran V2 la perdait.
-    const note = instructionLine(orderItem);
+    const note = instructionLine(orderItem, s.supplements);
     if (note) {
         lines.push(note);
     }
@@ -800,7 +828,7 @@ export function renderItemSymbolic(orderItem) {
         lines.push({ type: 'allergen', codes: allergenCodes });
     }
 
-    flagSupplementOnMain(lines, s.supplements);
+    flagSupplementOnMain(lines, s.supplements, orderItem);
     return { category: s.category, hasAllergen, lines };
 }
 
@@ -809,10 +837,26 @@ export function renderItemSymbolic(orderItem) {
  * marquée : l'écran la fait commencer par un « # » gras (jumeau du ticket imprimé, où la ligne
  * produit commence par « # »). Pur affichage — aucune donnée de commande n'est modifiée.
  */
-function flagSupplementOnMain(lines, supplements) {
-    if (!Array.isArray(supplements) || supplements.length === 0) return;
+function flagSupplementOnMain(lines, supplements, orderItem) {
+    const parLigne = Array.isArray(supplements) && supplements.length > 0;
+    if (!parLigne && !porteUnSupplement(orderItem)) return;
     const main = lines.find((l) => l.type === 'symbolic-main');
     if (main) main.hasSupplement = true;
+}
+
+/**
+ * [GOAL REMARQUES 2026-10-03 · R-072] Le produit porte-t-il un supplément ? Oui dès qu'un extra est
+ * PAYANT ou OFFERT — même quand son nom est déjà replié ailleurs : la sauce en plus dans la ligne
+ * produit (« … | ALG SAM »), la 2ᵉ sauce frites sur le badge (« MENU : MAY KTP »). Sans cela, ces
+ * produits n'avaient aucune ligne supplément, donc aucun « # », alors que le client a payé un
+ * supplément. Seules les garnitures gratuites n'en sont pas.
+ * Jumeau STRICT : KitchenTicketSymbolicFormatter::porteUnSupplement().
+ */
+export function porteUnSupplement(orderItem) {
+    return readExtras(orderItem).some((e) => {
+        if (e?.offered) return true;
+        return (Number(e?.unit_price ?? e?.line_total ?? 0) || 0) > 0;
+    });
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

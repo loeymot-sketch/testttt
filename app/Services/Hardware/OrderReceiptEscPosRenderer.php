@@ -405,6 +405,10 @@ final class OrderReceiptEscPosRenderer
         foreach ($this->bundledAddons->collapse($order->orderItems ?? collect()) as $oi) {
             $name = (string) ($oi->manual_label ?? $oi->name ?? optional($oi->orderItem)->name ?? 'Article');
             $snap = is_array($oi->composition_snapshot) ? $oi->composition_snapshot : [];
+            // [GOAL REMARQUES 2026-10-03 · R-072] Extras lus comme l'écran (instantané, sinon ancienne
+            // colonne) : les options d'une formule repliée sous un sandwich sans extra propre
+            // n'étaient pas imprimées. Vue d'affichage, rien n'est écrit.
+            $snap = $this->symbolic->avecExtrasEffectifs($snap, $oi);
             $qty = max(1, (int) ($oi->quantity ?? 1));
             // [KITCHEN-QTY 2026-07-15 owner] Préfixe quantité affiché UNIQUEMENT si > 1
             // (« 2 x … »). À 1 exemplaire (cas courant) → nom SEUL, le « 1 x » allongeait
@@ -450,7 +454,7 @@ final class OrderReceiptEscPosRenderer
                 // en plus à faire. Le repli des formules revendiquées (KitchenBundledAddonCollapser)
                 // ne déplace aucun extra : aucun doublon possible avec le bloc du parent.
                 // Jumeau STRICT : kdsSymbolic.js renderItemSymbolic(), branche isMenuItem.
-                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => []];
+                $blocks[] = ['head' => $qtyPrefix.$menuLine, 'menu' => null, 'supps' => $this->symbolic->supplementLines($snap, $instruction), 'drinks' => $this->symbolic->drinkLines($snap), 'notes' => [], 'hash' => $this->symbolic->porteUnSupplement($snap)];
 
                 continue;
             }
@@ -471,10 +475,15 @@ final class OrderReceiptEscPosRenderer
             $head = $this->symbolic->isDrinkItem($name)
                 ? $qtyPrefix.trim($name)
                 : $qtyPrefix.$this->symbolic->mainLine($name, $snap, $instruction);
+            $supps = $this->symbolic->supplementLines($snap, $instruction);
+            // [GOAL REMARQUES 2026-10-03 · R-049] « ↳ Grande Portion » ne ressort pas en note quand
+            // l'option est déjà imprimée en supplément (cadre noir) : une seule mention.
+            $note = $this->symbolic->sansOptionsDejaAffichees($note, $supps);
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,
-                'supps' => $this->symbolic->supplementLines($snap, $instruction),
+                'supps' => $supps,
+                'hash' => $this->symbolic->porteUnSupplement($snap),
                 'drinks' => $drinks,
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
@@ -490,7 +499,9 @@ final class OrderReceiptEscPosRenderer
             // [GOAL CAISSE/CUISINE #7 2026-10-02] La ligne produit qui porte au moins un supplément
             // COMMENCE par un « # » gras : le cuisinier voit d'un coup d'œil qu'il y a un extra à
             // lire dessous (jumeau écran : KdsOrderLine « kds-line__hash »).
-            $headText = $blk['supps'] !== [] ? '# '.$blk['head'] : $blk['head'];
+            // [GOAL REMARQUES 2026-10-03 · R-072] … ET dès qu'un extra payant ou offert existe, même replié
+            // dans la ligne produit (sauce en plus) ou sur le badge (2ᵉ sauce frites).
+            $headText = ($blk['supps'] !== [] || ! empty($blk['hash'])) ? '# '.$blk['head'] : $blk['head'];
             foreach (EscPosCommandBuilder::wrapIndented($headText, $halfW, '  ') as $headLine) {
                 $b .= EscPosCommandBuilder::textLine($headLine);
             }

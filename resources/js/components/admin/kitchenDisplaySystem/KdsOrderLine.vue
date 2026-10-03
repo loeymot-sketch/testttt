@@ -19,7 +19,7 @@
     <!-- header — qty + name + allergen icon -->
     <template v-if="line.type === 'header'">
       <div class="kds-line__header">
-        <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
+        <span class="kds-line__qty" :class="{ 'kds-line__qty--multi': isMulti }">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
         <span class="kds-line__name">{{ line.label }}</span>
       </div>
@@ -28,7 +28,7 @@
     <!-- symbolic-main — qty + "G | SANDWICH | P | STO | SAM" (kitchen shorthand) -->
     <template v-else-if="line.type === 'symbolic-main'">
       <div class="kds-line__symbolic">
-        <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
+        <span class="kds-line__qty" :class="{ 'kds-line__qty--multi': isMulti }">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
         <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
         <span v-if="line.hasSupplement" class="kds-line__hash" aria-hidden="true">#</span>
         <span class="kds-line__symbolic-text">{{ line.label }}</span>
@@ -108,6 +108,10 @@ export default {
     },
   },
   computed: {
+    // [GOAL REMARQUES 2026-10-03 · R-054] « 2 × » doit sauter aux yeux : fond noir dès qu'il y en a plus d'un.
+    isMulti() {
+      return Number(this.line.qty) > 1;
+    },
     // [GOAL #7 2026-10-02] Le gras blanc sur noir porte à lui seul le signal « supplément » :
     // l'étoile emoji (jaune) n'est plus affichée — jamais de jaune sur la fiche cuisine.
     supplementText() {
@@ -167,6 +171,17 @@ export default {
   font-size: 18px;
   opacity: 0.55;
   margin-inline-start: 2px;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-054] Propriétaire : « fois deux […] avec une arrière-plan en noir ».
+   Quantité > 1 en blanc sur noir ; le « × » reste lisible (opacité neutralisée). */
+.kds-line__qty--multi {
+  background: #000000;
+  color: #FFFFFF;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.kds-line__qty--multi .kds-line__qty-x {
+  opacity: 1;
 }
 .kds-line__allergen-icon {
   color: #7C2D12;
@@ -272,19 +287,26 @@ export default {
 .kds-line--supplement:first-of-type {
   padding-inline-start: 44px; /* aligne le groupe suppléments sous le produit */
 }
+/* [GOAL REMARQUES 2026-10-03 · R-071] Propriétaire, 03/10 : « agrandir les suppléments ». En 15 px ils
+   restaient PLUS PETITS que le produit (18 px symbolique, 22 px en-tête) : on passe à 22 px, au moins
+   la taille du nom. `nowrap` faisait déborder un nom long hors d'une fiche étroite (8 colonnes) : on
+   revient à la ligne ENTRE les mots seulement (jamais dans un mot — régression C4-001), borné à la fiche. */
 .kds-line__supplement {
   display: inline-block;
   background: #000000;
   color: #FFFFFF;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 15px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 22px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
   margin-inline-end: 8px;
-  margin-bottom: 3px;
-  line-height: 1.3;
-  white-space: nowrap;
+  margin-bottom: 4px;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 /* MENU CHILD — formule member */
