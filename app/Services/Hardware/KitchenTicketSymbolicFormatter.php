@@ -313,6 +313,18 @@ final class KitchenTicketSymbolicFormatter
         return preg_match('/\[UBER NON MAPP[ÉE]\s*:\s*([^\]]+)\]/u', $instruction, $m) ? trim($m[1]) : '';
     }
 
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-053] Produit qui EST des frites (Petite / Grande Frites, Frites
+     * Seules, Bol Frites, Frites Cheddar) ou qui en contient d'office (Menu Enfant) : sa ligne est
+     * encadrée en noir sur le ticket cuisine (« lorsqu'il y a une frite […] encadré en noir »).
+     */
+    public function estProduitAFrites(string $itemName): bool
+    {
+        $n = $this->norm($itemName);
+
+        return str_contains($n, 'frite') || str_contains($n, 'menu enfant');
+    }
+
     /** [R-075] Retire le marqueur technique d'une note cuisine (le titre est déjà la ligne produit). */
     public function sansMarqueurUber(string $note): string
     {
@@ -391,7 +403,10 @@ final class KitchenTicketSymbolicFormatter
             // Only FREE garnitures (Salade/Tomate/Oignon, price 0) fold into the
             // crudités slot. A PAID extra that happens to match (e.g. "Oignons frits"
             // 0,90€) is a supplement, not a crudité.
-            if ($cs !== '' && $this->isFreeExtra($e)) {
+            // [Revue adverse 2026-10-03 · F1] … et jamais un extra OFFERT (0 € mais à préparer) : sans
+            // cette garde, un « Oignons frits » offert imprimait un « O » (oignons crus) que l'écran
+            // n'affiche pas. Même garde que supplementLines() et que kdsSymbolic.js.
+            if ($cs !== '' && $this->isFreeExtra($e) && empty($e['offered'])) {
                 $crud[$cs] = true;
             }
         }

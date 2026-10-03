@@ -78,6 +78,13 @@ class KitchenTicketDieseTousSupplementsTest extends TestCase
 
         $this->assertStringContainsString('Oignons frits', $b);
         $this->assertDiese($b, 'extra offert');
+        // [Revue adverse vague 1 · F1] L'extra offert ne doit PAS être replié en crudité « O » dans la
+        // ligne produit (l'écran ne le fait pas) : le cuisinier lirait « oignons crus » sur le papier.
+        $this->assertSame('Tacos | ALG', (new \App\Services\Hardware\KitchenTicketSymbolicFormatter)->mainLine(
+            'Tacos M',
+            ['lines' => [['attribute_name' => 'Sauce (1ère Gratuite)', 'variation_name' => 'Algérienne']], 'extras' => [['extra_name' => 'Oignons frits', 'unit_price' => 0, 'line_total' => 0, 'quantity' => 1, 'offered' => true]], 'addons' => []],
+            ''
+        ));
     }
 
     public function test_option_de_formule_heritee_de_la_ligne_formule_repliee(): void

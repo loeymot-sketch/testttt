@@ -491,6 +491,9 @@ final class OrderReceiptEscPosRenderer
                 'menu' => $menu !== '' ? $menu : null,
                 'supps' => $supps,
                 'hash' => $this->symbolic->porteUnSupplement($snap),
+                // [Revue vague 1 · P1 R-053] « lorsqu'il y a une frite » : des frites vendues comme
+                // PRODUIT (et le Menu Enfant, qui en contient) sont encadrées en noir comme le badge.
+                'cadre' => $this->symbolic->estProduitAFrites($name),
                 'drinks' => $drinks,
                 'notes' => array_values(array_filter(array_map('trim', explode("\n", $note)))),
             ];
@@ -548,12 +551,22 @@ final class OrderReceiptEscPosRenderer
                 // [GOAL CAISSE/CUISINE #7 2026-10-02] LECTURE INVERSÉE : gras BLANC sur cadre NOIR
                 // (GS B). Le cadre ne couvre que les caractères imprimés → un espace de chaque côté
                 // fait le bandeau. Plus d'étoile : le cadre noir est le signal.
+                // [GOAL REMARQUES 2026-10-03 · R-071] Propriétaire, 02/10 : « c'est pas écrit en grand ».
+                // DOUBLE TAILLE (2×2), comme la ligne produit, au lieu de la double hauteur seule. En
+                // double largeur un caractère prend 2 colonnes : enroulé à la moitié de la largeur,
+                // moins l'indentation et les deux espaces du bandeau → jamais coupé par l'imprimante.
                 $label = trim((string) preg_replace('/^\+\s*/', '', (string) $sup));
-                $b .= EscPosCommandBuilder::bold(true);
-                foreach (EscPosCommandBuilder::wrapIndented($label, $w - 6, '') as $supLine) {
+                // Garde « jamais un mot coupé » (régression C4-001) : sur papier étroit (58 mm, 32 col.)
+                // un mot plus long que la place en double largeur (« supplémentaire ») serait scindé.
+                // Ce supplément reste alors en double HAUTEUR, pleine largeur : grand, jamais coupé.
+                $placeDouble = max(4, $halfW - 4);
+                $motLePlusLong = max(array_map('mb_strlen', explode(' ', $label)) ?: [0]);
+                $double = $motLePlusLong <= $placeDouble;
+                $b .= ($double ? EscPosCommandBuilder::doubleSize(true) : '').EscPosCommandBuilder::bold(true);
+                foreach (EscPosCommandBuilder::wrapIndented($label, $double ? $placeDouble : $w - 6, '') as $supLine) {
                     $b .= '  '.EscPosCommandBuilder::invert(true).' '.$supLine.' '.EscPosCommandBuilder::invert(false).EscPosCommandBuilder::textLine('');
                 }
-                $b .= EscPosCommandBuilder::bold(false);
+                $b .= EscPosCommandBuilder::bold(false).($double ? EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true) : '');
             }
             // [W3-FIX-C 2026-07-06] Boissons (addon drink / menu_boisson) en GRAS,
             // même gabarit width-safe que menu/suppléments (jamais coupées à 32 col).

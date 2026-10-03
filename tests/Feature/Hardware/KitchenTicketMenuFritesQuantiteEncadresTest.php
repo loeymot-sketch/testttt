@@ -76,6 +76,98 @@ class KitchenTicketMenuFritesQuantiteEncadresTest extends TestCase
         $this->assertStringContainsString(self::inv(' MENU : MAY '), $b);
     }
 
+    /**
+     * [Revue « œil du propriétaire » vague 1 · P1] « lorsqu'il y a une frite » : les frites VENDUES COMME
+     * PRODUIT (Petite Frites, Grande Frites, Frites Seules, Bol Frites, Frites Cheddar — noms réels de la
+     * table items) sont le cas le plus courant et n'étaient pas encadrées. Le Menu Enfant contient des
+     * frites : encadré aussi.
+     *
+     * @return array<string, array{0:string}>
+     */
+    public static function fritesProduits(): array
+    {
+        return [
+            'Petite Frites' => ['Petite Frites'],
+            'Grande Frites' => ['Grande Frites'],
+            'Frites Seules' => ['Frites Seules'],
+            'Bol Frites' => ['Bol Frites'],
+            'Frites Cheddar' => ['Frites Cheddar'],
+            'Menu Enfant' => ['Menu Enfant Chicken Burger'],
+        ];
+    }
+
+    /** @dataProvider fritesProduits */
+    public function test_des_frites_vendues_comme_produit_sont_encadrees(string $produit): void
+    {
+        $b = $this->ticket($produit, 1);
+
+        // Recherche par octets (pas de regex : GS B 0 contient un octet NUL).
+        $debut = strpos($b, EscPosCommandBuilder::invert(true).' ');
+        $this->assertNotFalse($debut, "« $produit » doit être encadré en noir");
+        $finLigne = strpos($b, "\n", $debut);
+        $this->assertNotFalse(strpos(substr($b, $debut, $finLigne - $debut), ' '.EscPosCommandBuilder::invert(false)), "le cadre de « $produit » se referme sur la même ligne");
+    }
+
+    public function test_un_sandwich_sans_frites_n_est_pas_encadre(): void
+    {
+        $b = $this->ticket('Cayenne', 1);
+
+        $this->assertStringNotContainsString(EscPosCommandBuilder::invert(true), $b);
+    }
+
+    /**
+     * [Revue « œil du propriétaire » vague 1 · P1 R-071] Propriétaire, 02/10 : « les supplément dans le ticket
+     * de cuisine […] c'est pas écrit en grand ». Inversés depuis le 02/10 mais restés en double HAUTEUR
+     * seulement (moitié de la largeur de la ligne produit) : ils passent en DOUBLE TAILLE, comme le produit.
+     */
+    public function test_les_supplements_sont_en_double_taille_comme_le_produit(): void
+    {
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1, 'total_price' => 9.8, 'tax_rate' => 10, 'tax_name' => 'TVA', 'tax_type' => 1, 'tax_amount' => 0.9,
+            'instruction' => '',
+            'composition_snapshot' => ['lines' => [], 'extras' => [['extra_name' => 'Cheddar', 'unit_price' => 0.9, 'line_total' => 0.9, 'quantity' => 1]], 'addons' => []],
+        ]);
+        $oi->name = 'Cayenne';
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'TEST-SUP', 'queue_number' => 'A0045', 'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 9.8, 'total' => 9.8, 'pos_payment_method' => 1, 'order_datetime' => '2026-10-03 12:00:00', 'fiscal_sequence_no' => 3005,
+        ]);
+        $order->setRelation('branch', (new Branch)->forceFill(['name' => 'Le Cayenne', 'address' => 'x', 'phone' => '+33600000000']));
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        $b = app(OrderReceiptEscPosRenderer::class)->renderKitchenTicket($order);
+
+        $this->assertStringContainsString(EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true).'  '.self::inv(' Cheddar '), $b);
+    }
+
+    /** Papier 58 mm (32 col.) : un mot trop long pour la double largeur n'est JAMAIS coupé (régression C4-001). */
+    public function test_sur_papier_etroit_un_supplement_long_n_est_jamais_coupe_en_plein_mot(): void
+    {
+        $oi = (new OrderItem)->forceFill([
+            'quantity' => 1, 'total_price' => 11.4, 'tax_rate' => 10, 'tax_name' => 'TVA', 'tax_type' => 1, 'tax_amount' => 1,
+            'instruction' => '',
+            'composition_snapshot' => ['lines' => [], 'extras' => [['extra_name' => 'Viande supplémentaire', 'unit_price' => 2.5, 'line_total' => 2.5, 'quantity' => 1]], 'addons' => []],
+        ]);
+        $oi->name = 'Cayenne';
+        $order = (new Order)->forceFill([
+            'order_serial_no' => 'TEST-58', 'queue_number' => 'A0046', 'order_type' => \App\Enums\OrderType::TAKEAWAY,
+            'subtotal' => 11.4, 'total' => 11.4, 'pos_payment_method' => 1, 'order_datetime' => '2026-10-03 12:00:00', 'fiscal_sequence_no' => 3006,
+        ]);
+        $order->setRelation('branch', (new Branch)->forceFill(['name' => 'Le Cayenne', 'address' => 'x', 'phone' => '+33600000000']));
+        $order->setRelation('user', null);
+        $order->setRelation('orderItems', collect([$oi]));
+
+        $b = app(OrderReceiptEscPosRenderer::class)->renderKitchenTicket($order, ['width_chars' => 32]);
+
+        // Le ticket sort encodé CP858 (« é » = 0x82) : la chaîne attendue est encodée pareil.
+        $this->assertStringContainsString(
+            self::inv((string) iconv('UTF-8', 'CP858', ' Viande supplémentaire ')),
+            $b,
+            'tout le libellé tient sur UNE ligne en double hauteur, mot entier'
+        );
+    }
+
     public function test_la_quantite_multiple_est_sur_fond_noir(): void
     {
         $b = $this->ticket('Tacos M', 2);

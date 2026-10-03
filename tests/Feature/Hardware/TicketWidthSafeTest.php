@@ -34,6 +34,12 @@ class TicketWidthSafeTest extends TestCase
                 $i += 3;
                 continue;
             }
+            // [GOAL REMARQUES 2026-10-03] GS B n = lecture inversée (blanc sur noir) : 3 octets, 0 colonne.
+            // Le décodeur ne le connaissait pas et comptait le « B » comme un caractère imprimé.
+            if ($c === "\x1D" && $i + 2 < $len && $bytes[$i + 1] === 'B') {
+                $i += 3;
+                continue;
+            }
             if ($c === "\x1D" && $i + 1 < $len && $bytes[$i + 1] === 'V') { // coupe
                 if ($cur !== '') { $lines[] = [$cur, $wmul]; $cur = ''; }
                 $i += 2; if ($i < $len) $i++;

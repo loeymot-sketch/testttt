@@ -168,7 +168,19 @@ class KitchenTicketViandeSupplNameTest extends TestCase
         // Le cuisinier voit désormais QUELLES viandes ajouter (noms complets, ASCII → survivent à l'encodage).
         $this->assertStringContainsString('Poulet', $kitchen, 'La 1ère viande en plus doit être nommée sur le ticket cuisine.');
         $this->assertStringContainsString('Merguez', $kitchen, 'La 2e viande en plus doit être nommée sur le ticket cuisine.');
-        $this->assertStringContainsString('Viande suppl', $kitchen, 'La ligne supplément viande reste présente.');
+        $this->assertStringContainsString('Viande suppl', $this->texteLu($kitchen), 'La ligne supplément viande reste présente.');
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-071] Texte tel que le cuisinier le LIT : suppléments en double taille,
+     * un libellé long s'enroule (« Viande » / « supplémentaire… ») — on retire les commandes ESC/POS et
+     * on recolle les lignes avant de chercher le libellé.
+     */
+    private function texteLu(string $bytes): string
+    {
+        $sansCommandes = (string) preg_replace('/\x1d[!B].|\x1b[Eat!d\-].|\x1b@|\x1dV./s', '', $bytes);
+
+        return (string) preg_replace('/\s+/', ' ', $sansCommandes);
     }
 
     /** @test */
@@ -188,7 +200,7 @@ class KitchenTicketViandeSupplNameTest extends TestCase
         $kitchen = (new OrderReceiptEscPosRenderer)->renderKitchenTicket($order);
 
         // Pas de crash, libellé générique conservé (rétro-compat).
-        $this->assertStringContainsString('Viande suppl', $kitchen, 'Libellé générique conservé sans nom parsable.');
+        $this->assertStringContainsString('Viande suppl', $this->texteLu($kitchen), 'Libellé générique conservé sans nom parsable.');
     }
 
     // ── Ticket CLIENT (ESC/POS) : parité avec la sauce, prix inchangé ──────────
