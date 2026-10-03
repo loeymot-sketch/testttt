@@ -7687,6 +7687,16 @@ export default {
 .pos-shortcuts__panel--web {
   border-left: 4px solid #d32f2f;
 }
+/* [GOAL REMARQUES 2026-10-03 · R-012] Dès qu'une commande du site attend, TOUT le panneau passe au rouge
+   (fond teinté + bordure pleine) : un liseré de 4 px ne se voyait pas au comptoir. Vide, il reste neutre. */
+.pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) {
+  background: #FEF2F2;
+  border: 2px solid #B91C1C;
+  border-left-width: 6px;
+}
+.pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
+  color: #991B1B;
+}
 .pos-shortcuts__head {
   display: flex;
   align-items: center;
@@ -7850,13 +7860,15 @@ export default {
 .pos-shortcuts__cta--cash:hover:not(:disabled) {
   background: var(--pos-v5-brand-red-dark, #b32f2f);
 }
-/* [WEB-CAISSE-SYNC 2026-07-13] CTA « Traiter » commande web — bleu, distinct de la file borne. */
+/* [WEB-CAISSE-SYNC 2026-07-13] CTA « Traiter » commande web.
+   [GOAL REMARQUES 2026-10-03 · R-012] Propriétaire : « ça doit afficher en rouge parce que le bleu […]
+   c'est la détecte même pas ». Le bleu « info » est remplacé par un rouge plein (blanc 6,5:1). */
 .pos-shortcuts__cta--web {
-  background: var(--pos-v5-info, #2563a8);
-  color: #fff;
+  background: #B91C1C;
+  color: #FFFFFF;
 }
 .pos-shortcuts__cta--web:hover:not(:disabled) {
-  background: var(--pos-v5-info-dark, #1d4e85);
+  background: #991B1B;
 }
 /* [C1 2026-07-18] Accept INLINE (principal, bleu plein) + Détails (secondaire, contour). */
 .pos-shortcuts__actions {
@@ -7864,14 +7876,15 @@ export default {
   gap: 6px;
   align-items: center;
 }
+/* [GOAL REMARQUES 2026-10-03 · R-012] Contour ROUGE (≥ 5,9:1 sur le fond teinté du panneau). */
 .pos-shortcuts__cta--web-details {
   background: transparent;
-  color: var(--pos-v5-info, #2563a8);
-  border: 1px solid var(--pos-v5-info, #2563a8);
+  color: #B91C1C;
+  border: 1px solid #B91C1C;
   padding: 5px 10px;
 }
 .pos-shortcuts__cta--web-details:hover:not(:disabled) {
-  background: rgba(37, 99, 168, 0.10);
+  background: rgba(185, 28, 28, 0.10);
 }
 .pos-shortcuts__more {
   display: inline-block;
