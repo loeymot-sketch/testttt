@@ -483,6 +483,9 @@ final class OrderReceiptEscPosRenderer
             // [GOAL REMARQUES 2026-10-03 · R-049] « ↳ Grande Portion » ne ressort pas en note quand
             // l'option est déjà imprimée en supplément (cadre noir) : une seule mention.
             $note = $this->symbolic->sansOptionsDejaAffichees($note, $supps);
+            // [GOAL REMARQUES 2026-10-03 · R-075] Le titre Uber non reconnu EST la ligne produit : son
+            // marqueur technique ne se répète pas en note (la note du client, elle, reste).
+            $note = $this->symbolic->sansMarqueurUber($note);
             $blocks[] = [
                 'head' => $head,
                 'menu' => $menu !== '' ? $menu : null,

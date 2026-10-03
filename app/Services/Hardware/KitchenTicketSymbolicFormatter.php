@@ -299,9 +299,37 @@ final class KitchenTicketSymbolicFormatter
     }
 
     /** @param array<string,mixed> $snapshot */
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-075] Titre d'une ligne Uber NON RECONNUE, tel qu'écrit par les mappers
+     * (`[UBER NON MAPPÉ: <titre>]`, UberOrderMapper / UberPhotoOrderMapper). Vide sinon.
+     * Jumeau STRICT : kdsSymbolic.js titreUberNonMappe().
+     */
+    public function titreUberNonMappe(?string $instruction): string
+    {
+        if (! is_string($instruction) || $instruction === '') {
+            return '';
+        }
+
+        return preg_match('/\[UBER NON MAPP[ÉE]\s*:\s*([^\]]+)\]/u', $instruction, $m) ? trim($m[1]) : '';
+    }
+
+    /** [R-075] Retire le marqueur technique d'une note cuisine (le titre est déjà la ligne produit). */
+    public function sansMarqueurUber(string $note): string
+    {
+        return trim((string) preg_replace('/\[UBER NON MAPP[ÉE]\s*:[^\]]*\]\s*/u', '', $note));
+    }
+
     public function mainLine(string $itemName, array $snapshot, ?string $instruction = null): string
     {
         [$produit, $taille] = $this->produitAndSize($itemName);
+        // [GOAL REMARQUES 2026-10-03 · R-075] Ligne Uber non reconnue : son TITRE, en entier (ASCII
+        // majuscules, comme les familles écrites en toutes lettres), au lieu du code « ART » de l'article
+        // technique. Les options restent en symboles caisse. Jumeau STRICT : kdsSymbolic.js buildSymbolic().
+        $titreUber = $this->titreUberNonMappe($instruction);
+        if ($titreUber !== '') {
+            $produit = mb_strtoupper(trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($titreUber)))));
+            $taille = '';
+        }
         // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
         // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
         $isTacos = $this->isTacos($itemName);

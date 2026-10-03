@@ -458,7 +458,14 @@ function friesSauceNamesForOrder(orderItem) {
  */
 export function buildSymbolic(orderItem) {
     const category = categorize(orderItem);
-    const { produit, taille: nameSize } = produitAndSize(orderItem?.item_name);
+    let { produit, taille: nameSize } = produitAndSize(orderItem?.item_name);
+    // [GOAL REMARQUES 2026-10-03 · R-075] Ligne Uber non reconnue : son TITRE en entier au lieu du code
+    // « ART » de l'article technique. Jumeau STRICT : KitchenTicketSymbolicFormatter::mainLine().
+    const titreUber = titreUberNonMappe(orderItem?.instruction);
+    if (titreUber) {
+        produit = normalize(titreUber).replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+        nameSize = '';
+    }
     // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
     // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
     const isTacosItem = isTacos(orderItem?.item_name);
@@ -666,15 +673,29 @@ function drinkAddonLabels(orderItem) {
  * KdsOrderLine.vue). sanitizeKdsInstruction garde les notes libres (« oignons cuits »,
  * « BOISSON: Coca-Cola 33cl » du wizard caisse) et strip l'écho compo du wizard.
  */
+/**
+ * [GOAL REMARQUES 2026-10-03 · R-075] Titre d'une ligne Uber NON RECONNUE (`[UBER NON MAPPÉ: <titre>]`,
+ * écrit par les mappers Uber). Vide sinon. Jumeau STRICT : KitchenTicketSymbolicFormatter::titreUberNonMappe().
+ */
+export function titreUberNonMappe(instruction) {
+    const m = String(instruction || '').match(/\[UBER NON MAPP[ÉE]\s*:\s*([^\]]+)\]/u);
+    return m ? m[1].trim() : '';
+}
+
+/** [R-075] Retire le marqueur technique d'une note (le titre est déjà la ligne produit). */
+function sansMarqueurUber(note) {
+    return String(note || '').replace(/\[UBER NON MAPP[ÉE]\s*:[^\]]*\]\s*/gu, '').trim();
+}
+
 function instructionLine(orderItem, supplements = []) {
     // [D-1 GOAL-8AXES 2026-08-05] Les boissons du canal ADDON (menu_child) sont
     // transmises au sanitiseur pour qu'il ne ré-émette pas la même boisson via
     // la ligne « Formule : … (X) » de l'instruction. Jumeau PHP : Renderer:336.
-    const note = sansOptionsDejaAffichees(sanitizeKdsInstruction(
+    const note = sansMarqueurUber(sansOptionsDejaAffichees(sanitizeKdsInstruction(
         orderItem?.instruction,
         orderItem?.item_name,
         drinkAddonLabels(orderItem),
-    ), supplements);
+    ), supplements));
     if (note.length === 0) return null;
     return { type: 'instruction', label: note, visualClass: kdsInstructionVisualClass(note) };
 }
