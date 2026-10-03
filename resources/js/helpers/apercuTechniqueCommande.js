@@ -24,7 +24,12 @@ function ligneTechnique(orderItem) {
     const qte = Number(orderItem && orderItem.quantity) > 1 ? `${orderItem.quantity}× ` : '';
     const texte = (principale && principale.label) || String((orderItem && orderItem.item_name) || '').trim();
     if (!texte) return '';
-    return `${qte}${texte}${menu ? ` + ${menu.label}` : ''}`;
+    // [Revue vague 3 · P3] Suppléments payants et boissons : ce que la cuisine lit sous le produit.
+    const supplements = lignes.filter((l) => l.type === 'supplement')
+        .map((l) => ` +${String(l.label || '').replace(/^\s*⭐\s*/u, '').trim()}`).join('');
+    const boissons = lignes.filter((l) => l.type === 'menu_child')
+        .map((l) => ` + ${String(l.label || '').replace(/^\s*\d+\s*×\s*/u, '').trim()}`).join('');
+    return `${qte}${texte}${menu ? ` + ${menu.label}` : ''}${supplements}${boissons}`;
 }
 
 /**

@@ -517,8 +517,8 @@
                                             :data-testid="`tracker-prep-${order.id}`"
                                             title="Temps de préparation annoncé au client (minutes)"
                                             aria-label="Temps de préparation en minutes"
-                                            min="1"
-                                            max="180"
+                                            min="5"
+                                            max="120"
                                             step="1"
                                             inputmode="numeric"
                                             @input="webPrepChoice = { ...webPrepChoice, [order.id]: parseInt($event.target.value, 10) }"
@@ -1028,6 +1028,7 @@ import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
 import { resumeTechnique as resumeTechniqueCommande } from '../../../support/compositionCommande';
+import { bornerTempsPreparation } from '../../../helpers/posTempsPreparation';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
 // cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
 import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
@@ -2271,7 +2272,9 @@ export default {
                 // affiché 15 : sans ça, le select montrait « 15 min » mais le backend
                 // gardait le défaut settings (réglable ≠ 15) → mensonge UI. Ce que le
                 // caissier VOIT est ce qui est ENVOYÉ.
-                const prep = parseInt(this.webPrepChoice[order.id] ?? 15, 10);
+                // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-3] Bornes du SERVEUR (5-120) : un 3 ou un
+                // 150 faisait échouer l'acceptation (422) et la commande restait en attente.
+                const prep = bornerTempsPreparation(this.webPrepChoice[order.id] ?? 15);
                 await axios.post(
                     `admin/online-order/change-status/${order.id}`,
                     {

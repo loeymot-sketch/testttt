@@ -57,6 +57,20 @@ describe('Offert sur une option de formule (R-041)', () => {
         expect(computePosCartLineDisplayTotal(state.lists[0])).toBeCloseTo(avant - 1, 6);
     });
 
+    it('[revue vague 3 · P1] l\'offert SURVIT au rechargement de la caisse et au rappel d\'une commande en attente', () => {
+        const state = panier();
+        state.lists[0].pos_line_addons[0].total_price = 4.5;
+        posCart.mutations.toggleAddonExtraOffered(state, { index: 0, addonIndex: 0, extraId: 234 });
+        const avant = computePosCartLineDisplayTotal(state.lists[0]);
+
+        const relu = { lists: [] };
+        posCart.mutations.hydrateFromScope(relu, { lists: JSON.parse(JSON.stringify(state.lists)), subtotal: 0, discount: 0 });
+
+        const formule = relu.lists[0].pos_line_addons[0];
+        expect((formule.item_extras_offered || []).map((e) => e.id)).toEqual([234]);
+        expect(computePosCartLineDisplayTotal(relu.lists[0])).toBeCloseTo(avant, 6);
+    });
+
     it('une option gratuite ou inconnue ne bascule pas', () => {
         const state = panier();
         state.lists[0].pos_line_addons[0].item_extras.push({ id: 999, item_id: 1, name: 'Gratuit', quantity: 1, unit_price: 0 });

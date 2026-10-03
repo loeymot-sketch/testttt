@@ -176,7 +176,13 @@ describe('PosComponent.vue — câblage réel', () => {
         const corps = SOURCE.match(/async loadReadyOrders\s*\(\)\s*\{[\s\S]+?\n {8}\},/);
         expect(corps[0]).not.toMatch(/allowedTypes/);
         expect(corps[0]).not.toMatch(/orderTypeEnum\./);
-        // Le remboursement passerelle, lui, reste exclu : il garde souvent son statut cuisine.
-        expect(corps[0]).toMatch(/paymentStatusEnum\.REFUNDED/);
+        // [GOAL REMARQUES 2026-10-03 · R-016] Le filtre vit dans estPretAuComptoir() : remboursement exclu
+        // (il garde souvent son statut cuisine) et UNE exception documentée — la commande du SITE payée à
+        // emporter, validée dans son panneau séparé « Web payées ». Aucun autre filtre par type.
+        expect(corps[0]).toMatch(/estPretAuComptoir/);
+        const filtre = SOURCE.match(/estPretAuComptoir\(o\)\s*\{[\s\S]+?\n {8}\},/);
+        expect(filtre[0]).toMatch(/paymentStatusEnum\.REFUNDED/);
+        expect(filtre[0]).not.toMatch(/allowedTypes/);
+        expect(filtre[0].match(/orderTypeEnum\.\w+/g)).toEqual(['orderTypeEnum.DELIVERY']);
     });
 });

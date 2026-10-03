@@ -151,7 +151,8 @@ function posLineAddonsSignature(addons) {
     return arr
         .map((a) => {
             const extrasHash = Array.isArray(a.menu_extras) ? a.menu_extras.slice().sort().join(',') : '';
-            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}:${buildVariationSignature(a.item_variations)}:${buildExtraSignature(a.item_extras)}`;
+            // [R-041] + l'offert : deux lignes qui ne diffèrent que par une option offerte ne fusionnent pas.
+            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}:${buildVariationSignature(a.item_variations)}:${buildExtraSignature(a.item_extras)}:${buildExtraSignature(a.item_extras_offered)}`;
         })
         .sort()
         .join('|');
@@ -170,6 +171,10 @@ function normPosLineAddon(a) {
         convert_price: a.convert_price,
         item_variations: normalizeVariationEntries(a.item_variations),
         item_extras: normalizeExtraEntries(a.item_extras),
+        // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P1] Options de formule OFFERTES : sans ce champ,
+        // un rechargement de la caisse ou le rappel d'une commande en attente les effaçait (badge perdu,
+        // total affiché supérieur au total facturé).
+        item_extras_offered: normalizeExtraEntries(a.item_extras_offered),
         item_variation_total: a.item_variation_total || 0,
         item_extra_total: a.item_extra_total || 0,
         instruction: a.instruction || '',

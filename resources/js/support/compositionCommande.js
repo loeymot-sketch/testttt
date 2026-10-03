@@ -117,15 +117,21 @@ export function resumeTechnique(ligne) {
         autres.push(valeur + qte);
     });
 
-    const morceaux = [...support, ...viandes];
-    if (crudites.length) morceaux.push(crudites.join(''));
-    morceaux.push(...sauces, ...autres);
-
+    // [Revue vague 3 · P3, décision] Les EXTRAS restent écrits en toutes lettres (« +Salade ») : la forme
+    // compacte du serveur ne porte que leur NOM, pas leur prix — impossible de distinguer une crudité
+    // gratuite d'un supplément payant au même nom. Replier un payant en symbole le ferait disparaître ;
+    // une ligne un peu plus longue est le moindre mal. Seules les crudités choisies en OPTIONS (groupe connu)
+    // deviennent « STO ».
+    const extrasEcrits = [];
     (ligne.extras || []).forEach((e) => {
         const nom = String((e && e.name) || '').trim();
         if (!nom) return;
-        morceaux.push(e.quantity > 1 ? `+${e.quantity} ${nom}` : `+${nom}`);
+        extrasEcrits.push(e.quantity > 1 ? `+${e.quantity} ${nom}` : `+${nom}`);
     });
+
+    const morceaux = [...support, ...viandes];
+    if (crudites.length) morceaux.push(crudites.join(''));
+    morceaux.push(...sauces, ...autres, ...extrasEcrits);
     (ligne.addons || []).forEach((a) => {
         const nom = String((a && a.name) || '').trim();
         if (!nom) return;

@@ -72,6 +72,19 @@ describe('Caisse — supplément libre interdit sur un panier sans produit (R-03
         expect(store.dispatch.mock.calls.filter((c) => c[0] === 'posCart/lists')).toHaveLength(0);
     });
 
+    it('[revue vague 3 · P2-4] produit supprimé APRÈS le supplément : la vente et la commande téléphone sont refusées', async () => {
+        store = storeAvec([{ line_type: 'manual_supplement', manual_label: 'X', manual_amount: 1 }]);
+        const w = monter(store);
+        expect(w.vm.panierSansProduit()).toBe(true);
+        w.vm.loading = { isActive: false };
+        const axios = (await import('axios')).default;
+        axios.post.mockClear();
+        await w.vm.orderSubmit();
+        await w.vm.phoneOrderSubmit();
+        expect(w.vm.loading.isActive).toBe(false);
+        expect(axios.post.mock.calls.map((c) => c[0])).toEqual([]);
+    });
+
     it('avec un produit au panier : le supplément s\'ajoute', () => {
         store = storeAvec([{ item_id: 22, name: 'Cayenne', quantity: 1 }]);
         const w = monter(store);

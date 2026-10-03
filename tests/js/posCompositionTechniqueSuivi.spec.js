@@ -42,6 +42,16 @@ describe('suivi / tiroir : composition en mots techniques (R-009)', () => {
         expect(resumeComposition(LIGNE)).toContain('Algérienne');
     });
 
+    it('[revue vague 3 · P3, décision] un EXTRA reste écrit : sans prix dans la forme compacte, un payant ne se cache jamais en symbole', () => {
+        const t = resumeTechnique({ options: [], extras: [{ name: 'Salade' }, { name: 'Cheddar' }] });
+        expect(t).toContain('+Salade');
+        expect(t).toContain('+Cheddar');
+    });
+
+    it('un supplément PAYANT nommé comme une crudité (« Oignons frits ») reste écrit, jamais caché en symbole', () => {
+        expect(resumeTechnique({ extras: [{ name: 'Oignons frits' }] })).toContain('+Oignons frits');
+    });
+
     it('une valeur sans symbole connu reste lisible (jamais effacée)', () => {
         expect(resumeTechnique({ options: [{ label: 'Cuisson', value: 'Bien cuit' }] })).toContain('Bien cuit');
     });
@@ -77,6 +87,22 @@ describe('file « À encaisser » : aperçu technique des produits (R-009)', () 
         expect(a.texte).not.toContain('Menu (Frites');
     });
 
+    it('[revue vague 3 · P3] les suppléments payants et la boisson figurent dans l\'aperçu', () => {
+        const avecExtras = {
+            order_items: [{
+                id: 9, item_name: 'Cayenne', quantity: 1, instruction: 'CAYENNE\nSauce : Algérienne',
+                composition_snapshot: {
+                    lines: [{ attribute_name: 'Sauce (1ère Gratuite)', variation_name: 'Algérienne' }],
+                    extras: [{ extra_name: 'Cheddar', unit_price: 0.9, quantity: 1 }],
+                    addons: [{ role: 'menu_boisson', addon_name: 'Coca-Cola 33cl', quantity: 1 }],
+                },
+            }],
+        };
+        const a = apercuTechnique(avecExtras, 200);
+        expect(a.texte).toContain('+Cheddar');
+        expect(a.texte).toContain('Coca-Cola 33cl');
+    });
+
     it('trop long : coupé sur un séparateur et la suite ANNONCÉE (+N), jamais tronqué en silence', () => {
         const a = apercuTechnique(commande, 20);
         expect(a.restants).toBeGreaterThan(0);
@@ -92,6 +118,8 @@ describe('file « À encaisser » : aperçu technique des produits (R-009)', () 
         const ligne = src.slice(src.indexOf('v-for="o in kioskCashOrders.slice(0, 4)"'), src.indexOf('pos-shortcut-encaisser-'));
         expect(ligne).toContain('pos-shortcut-apercu-');
         expect(ligne).toMatch(/apercuCommande\(o\)\.texte/);
+        // [revue vague 3 · P3] « avec l'heure de commande » (propriétaire, 02/09).
+        expect(ligne).toContain('pos-shortcut-heure-');
         expect(src).toMatch(/import \{ apercuTechnique \} from '\.\.\/\.\.\/\.\.\/helpers\/apercuTechniqueCommande'/);
     });
 });

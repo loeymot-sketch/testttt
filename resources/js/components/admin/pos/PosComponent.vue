@@ -644,6 +644,12 @@
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <!-- [GOAL REMARQUES 2026-10-03 · R-009] « pas juste voir le total […] les noms de produits
                      avec les mots techniques » : aperçu de la commande en symboles cuisine. -->
+                <!-- [revue vague 3 · P3] « avec l'heure de commande » (propriétaire, 02/09). -->
+                <span
+                  v-if="o.order_datetime || o.created_at"
+                  class="pos-shortcuts__heure"
+                  :data-testid="`pos-shortcut-heure-${o.id}`"
+                >{{ formatKioskTime(o.order_datetime || o.created_at) }}</span>
                 <span
                   v-if="apercuCommande(o).texte"
                   class="pos-shortcuts__apercu"
@@ -771,8 +777,8 @@
                     :data-testid="`pos-shortcut-web-prep-${o.id}`"
                     title="Temps de préparation annoncé au client (minutes)"
                     aria-label="Temps de préparation en minutes"
-                    min="1"
-                    max="180"
+                    min="5"
+                    max="120"
                     step="1"
                     inputmode="numeric"
                     @input="webPrepChoice = { ...webPrepChoice, [o.id]: parseInt($event.target.value, 10) }"
@@ -2460,11 +2466,15 @@
 <script>
 import axios from 'axios';
 import { typeDAdresse } from "../../../services/typeDAdresse";
+// [GOAL REMARQUES 2026-10-03 · R-017] Temps de préparation : mêmes bornes que le serveur.
+import { bornerTempsPreparation, TEMPS_PREPARATION_DEFAUT } from '../../../helpers/posTempsPreparation';
 // [GOAL REMARQUES 2026-10-03 · R-009] Aperçu de la commande en mots techniques (file « À encaisser »).
 import { apercuTechnique } from '../../../helpers/apercuTechniqueCommande';
 // [GOAL REMARQUES 2026-10-03 · R-060] Motif pré-rempli de l'annulation d'une commande en attente (même
 // motif que la croix de la page Encaissement) — le caissier n'a plus rien à taper.
 const MOTIF_ANNULATION_PAR_DEFAUT = 'Client non venu';
+// [GOAL REMARQUES 2026-10-03 · R-038] Message unique : ajout du supplément, vente, commande téléphone.
+const MESSAGE_SUPPLEMENT_SANS_PRODUIT = 'Ajoutez d\'abord un produit : un supplément libre complète une commande.';
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
@@ -5289,7 +5299,8 @@ export default {
                 // [GOAL REMARQUES 2026-10-03 · R-017] Temps de préparation TOUJOURS envoyé (défaut affiché
                 // 15) — miroir de PosOrdersTrackerComponent.acceptWebOrder : ce que le caissier voit est
                 // ce que le suivi client annonce.
-                const prep = parseInt(this.webPrepChoice[o.id] ?? 15, 10);
+                // [revue vague 3 · P2-3] Ramené dans les bornes du SERVEUR (5-120) : jamais de 422.
+                const prep = bornerTempsPreparation(this.webPrepChoice[o.id] ?? TEMPS_PREPARATION_DEFAUT);
                 await axios.post(
                     `admin/online-order/change-status/${o.id}`,
                     {
@@ -5669,11 +5680,7 @@ export default {
                 // commande prête, quel que soit le canal par lequel elle est entrée. Le
                 // remboursement passerelle, lui, reste exclu : il garde souvent son statut cuisine.
                 this.readyOrders = list
-                    .filter((o) => {
-                        const s = parseInt(o.status ?? o.order_status ?? 0, 10);
-                        const paiement = parseInt(o.payment_status ?? 0, 10);
-                        return s === orderStatusEnum.PREPARED && paiement !== paymentStatusEnum.REFUNDED;
-                    })
+                    .filter((o) => this.estPretAuComptoir(o))
                     // Plus ancienne d'abord — le caissier écoule d'abord ce qui attend depuis
                     // le plus longtemps. Même tri que kioskCashOrders.
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -6404,12 +6411,15 @@ export default {
                 error: '',
             };
         },
+        /** [GOAL REMARQUES 2026-10-03 · R-038] Le panier ne contient-il AUCUN produit catalogue ? */
+        panierSansProduit: function () {
+            return !(this.carts || []).some((l) => l && l.line_type !== 'manual_supplement');
+        },
         saveManualSupplement: function () {
             // [GOAL REMARQUES 2026-10-03 · R-038 · Codex P1-19] Un supplément libre COMPLÈTE une commande :
             // sans aucun produit au panier, il ferait une vente « Supplément — X » toute seule. Refusé.
-            const aUnProduit = (this.carts || []).some((l) => l && l.line_type !== 'manual_supplement');
-            if (this.manualSupplement.editIndex === null && !aUnProduit) {
-                this.manualSupplement.error = 'Ajoutez d\'abord un produit : un supplément libre complète une commande.';
+            if (this.manualSupplement.editIndex === null && this.panierSansProduit()) {
+                this.manualSupplement.error = MESSAGE_SUPPLEMENT_SANS_PRODUIT;
                 return;
             }
             const amount = this.parseManualSupplementAmount(this.manualSupplement.amount);
@@ -6672,6 +6682,11 @@ export default {
             if (!this.carts || this.carts.length === 0) {
                 return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
             }
+            // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-4] Même garde que l'ajout (R-038) : un produit
+            // supprimé APRÈS le supplément libre laissait partir une commande faite de suppléments seuls.
+            if (this.panierSansProduit()) {
+                return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
+            }
 
             this.phoneOrderSubmitting = true;
             this.loading.isActive = true;
@@ -6799,6 +6814,10 @@ export default {
             // [P5-3] Guard: prevent opening payment modal with empty cart
             if (!this.carts || this.carts.length === 0) {
                 return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
+            // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-4] Suppléments libres seuls : refusé.
+            if (this.panierSansProduit()) {
+                return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
             }
             this.loading.isActive = true;
             if (this.checkoutProps.form.order_type !== orderTypeEnum.DELIVERY && !this.checkoutProps.form.customer_id) {
@@ -7181,6 +7200,20 @@ export default {
          * que « Livrée » du panneau Prêt (posOrder/changeStatus → DELIVERED, idempotent) — c'est ce passage
          * qui crédite les points (AwardLoyaltyPointsOnDelivery). Puis le panneau « Web payées » est relu.
          */
+        /**
+         * Commande à montrer dans « Prêt » : prête, non remboursée — SAUF une commande du SITE payée à
+         * emporter, qui se valide dans son panneau séparé « Web payées » ([GOAL REMARQUES 2026-10-03 ·
+         * revue vague 3 · P2-5] : « mettre vraiment séparés » ; elle apparaissait dans les deux, avec deux
+         * boutons pour la même remise). Une LIVRAISON prête reste ici (circuit livreur).
+         */
+        estPretAuComptoir(o) {
+            const s = parseInt(o.status ?? o.order_status ?? 0, 10);
+            const paiement = parseInt(o.payment_status ?? 0, 10);
+            if (s !== orderStatusEnum.PREPARED || paiement === paymentStatusEnum.REFUNDED) return false;
+            const site = ['web', 'delivery'].includes(String(o.source_surface || '').toLowerCase());
+            if (site && paiement === paymentStatusEnum.PAID && parseInt(o.order_type, 10) !== orderTypeEnum.DELIVERY) return false;
+            return true;
+        },
         estPrete(o) {
             return Number(o && o.status) === orderStatusEnum.PREPARED;
         },
@@ -7193,8 +7226,19 @@ export default {
             return apercuTechnique(o);
         },
         retirerClientFidelite() {
-            this.checkoutProps.form.customer_id = null;
-            this.checkoutProps.form.loyalty_redeem_points = null;
+            const form = this.checkoutProps.form;
+            form.loyalty_redeem_points = null;
+            // [Revue vague 3 · P2-2] En LIVRAISON, le client porte l'adresse : le retirer laissait une
+            // adresse armée appartenant à personne, et la commande échouait au paiement (422). On ne retire
+            // alors QUE la fidélité ; le client et son adresse restent.
+            if (form.order_type === orderTypeEnum.DELIVERY) {
+                form.loyalty_customer_code = null;
+                this.selectedCustomerLoyalty = { points: null, code: null, loading: false };
+                return;
+            }
+            form.customer_id = null;
+            form.address_id = null;
+            form.delivery_distance_km = null;
             this.changingUser();
         },
         changingUser: function () {
@@ -7829,6 +7873,12 @@ export default {
   letter-spacing: 0.2px;
   overflow-wrap: break-word;
   word-break: normal;
+}
+.pos-shortcuts__heure {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
 }
 .pos-shortcuts__apercu-plus {
   color: #374151;

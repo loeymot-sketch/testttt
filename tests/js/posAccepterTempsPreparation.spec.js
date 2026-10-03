@@ -75,6 +75,26 @@ describe('Caisse — temps de préparation choisi à l\'acceptation d\'une comma
         );
     });
 
+    it('[revue vague 3 · P2-3] un temps hors des bornes du serveur (5-120 min) est ramené dedans — jamais un 422', async () => {
+        const w = monter();
+        w.vm.webPrepChoice = { 5: 3, 6: 150 };
+        await w.vm.acceptWebOrder({ id: 5 });
+        await w.vm.acceptWebOrder({ id: 6 });
+        const envoye = (id) => axios.post.mock.calls.find((c) => c[0] === `admin/online-order/change-status/${id}`)[1];
+        expect(envoye(5).preparation_time).toBe(5);
+        expect(envoye(6).preparation_time).toBe(120);
+    });
+
+    it('[revue vague 3 · P2-3] le champ annonce les mêmes bornes que le serveur, à la caisse comme au Suivi', () => {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        for (const f of ['PosComponent.vue', 'PosOrdersTrackerComponent.vue']) {
+            const src = fs.readFileSync(path.resolve(__dirname, `../../resources/js/components/admin/pos/${f}`), 'utf8');
+            expect(src, f).not.toMatch(/max="180"/);
+            expect(src, f).toMatch(/bornerTempsPreparation/);
+        }
+    });
+
     it('sans saisie, le défaut affiché (15) est bien celui envoyé', async () => {
         const w = monter();
         await w.vm.acceptWebOrder({ id: 4 });

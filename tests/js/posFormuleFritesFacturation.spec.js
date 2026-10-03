@@ -193,6 +193,19 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
         payload.pos_line_addons[0].item_extras.forEach((e) => expect(e).not.toHaveProperty('price'));
     });
 
+    // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-1] La valeur des options (+1 € chacune) restait dans
+    // « total wizard − addons », donc sur la ligne SANDWICH, alors que le serveur la facture sur la ligne
+    // FORMULE. Offrir l'option retirait alors le montant de la mauvaise ligne (plancher à 0 → écart).
+    it('la valeur des options est portée par la ligne FORMULE, là où le serveur la facture', () => {
+        // Total wizard COHÉRENT : Tacos M 8,50 + formule 2,50 + Grande Portion 1,00 + Cheddar Fondu 1,00.
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: true, fritesCheddar: true, sauceFritesOrder: [] })], 13);
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.pos_line_addons[0].total_price).toBeCloseTo(4.5, 6); // 2,50 formule + 2 × 1,00
+        expect(payload.convert_price).toBeCloseTo(8.5, 6); // le Tacos M à son prix, sans les options
+    });
+
     it('3 sauces frites → 2 « Sauce supplémentaire » facturées sur le produit parent', () => {
         const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] })], 9.5);
 

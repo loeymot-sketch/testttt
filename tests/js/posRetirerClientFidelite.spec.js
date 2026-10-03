@@ -12,6 +12,7 @@ vi.mock('../../resources/js/components/admin/customers/address/CustomerAddressCr
 vi.mock('../../resources/js/components/common/ConnectionStatusBanner.vue', () => ({ default: { name: 'ConnectionStatusBanner', template: '<div />' } }));
 
 import PosComponent from '../../resources/js/components/admin/pos/PosComponent.vue';
+import orderTypeEnum from '../../resources/js/enums/modules/orderTypeEnum';
 
 // [GOAL REMARQUES 2026-10-03 · T-3.2 R-015] Propriétaire, 21/08 : « je me connecte sur le système de
 // fidélité de Client et après je veux annuler […] j'arrive pas ça reste pour toute la command ». Le client
@@ -73,6 +74,38 @@ describe('Caisse — retirer le client fidélité de la vente en cours (R-015)',
         expect(w.vm.checkoutProps.form.loyalty_redeem_points).toBeNull();
         expect(w.vm.selectedCustomerLoyalty.code).toBeNull();
         expect(storeMock.commit.mock.calls.map((c) => c[0]).filter((n) => /posCart\/(reset|clear|remove)/.test(n))).toEqual([]);
+    });
+
+    it('[revue vague 3 · P2-2] en LIVRAISON, le client et son adresse restent ; seule la fidélité part', () => {
+        const w = monter();
+        w.vm.checkoutProps.form.order_type = orderTypeEnum.DELIVERY;
+        w.vm.checkoutProps.form.customer_id = 17;
+        w.vm.checkoutProps.form.address_id = 99;
+        w.vm.checkoutProps.form.loyalty_customer_code = 'CAY-42';
+        w.vm.checkoutProps.form.loyalty_redeem_points = 50;
+        w.vm.selectedCustomerLoyalty = { code: 'CAY-42', points: 120, loading: false };
+
+        w.vm.retirerClientFidelite();
+
+        expect(w.vm.checkoutProps.form.customer_id).toBe(17);
+        expect(w.vm.checkoutProps.form.address_id).toBe(99);
+        expect(w.vm.checkoutProps.form.loyalty_customer_code).toBeNull();
+        expect(w.vm.checkoutProps.form.loyalty_redeem_points).toBeNull();
+        expect(w.vm.selectedCustomerLoyalty.code).toBeNull();
+    });
+
+    it('[revue vague 3 · P2-2] à emporter, plus aucune adresse armée ne reste après le retrait du client', () => {
+        const w = monter();
+        w.vm.checkoutProps.form.order_type = orderTypeEnum.TAKEAWAY;
+        w.vm.checkoutProps.form.customer_id = 17;
+        w.vm.checkoutProps.form.address_id = 99;
+        w.vm.checkoutProps.form.delivery_distance_km = 3.2;
+
+        w.vm.retirerClientFidelite();
+
+        expect(w.vm.checkoutProps.form.customer_id).toBeNull();
+        expect(w.vm.checkoutProps.form.address_id).toBeNull();
+        expect(w.vm.checkoutProps.form.delivery_distance_km).toBeNull();
     });
 
     it('libellé accessible en fr, en, ar', () => {

@@ -1783,9 +1783,6 @@ export default {
             var extraFritesSauces = 0;
             if (wizardBundled.length > 0) {
                 wizardBundled.forEach((b) => {
-                    addonTotal += (parseFloat(b.total_price) || 0) * (parseInt(b.quantity) || 1);
-                });
-                wizardBundled.forEach((b) => {
                     var line = _.cloneDeep(b);
                     // [GOAL #6 2026-10-02] « Grande Portion » / « Cheddar Fondu » de la formule étaient
                     // AFFICHÉS +1,00 € mais jamais envoyés comme ids d'extras → jamais facturés. On les
@@ -1793,7 +1790,14 @@ export default {
                     var billable = formulaOptionExtras(line.menu_restore, this.getAddonById(line.parent_addon_id), line.item_id);
                     if (billable.length > 0) {
                         line.item_extras = billable;
+                        // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-1] Le serveur facture ces options sur
+                        // la ligne FORMULE : leur valeur y est portée aussi à l'AFFICHAGE (elle restait dans
+                        // « total wizard − addons », donc sur la ligne du sandwich). Le total du panier ne
+                        // change pas ; offrir une option la retire désormais de la bonne ligne.
+                        var valeurOptions = billable.reduce((s, e) => s + (parseFloat(e.unit_price) || 0) * (parseInt(e.quantity, 10) || 1), 0);
+                        line.total_price = Math.round(((parseFloat(line.total_price) || 0) + valeurOptions) * 100) / 100;
                     }
+                    addonTotal += (parseFloat(line.total_price) || 0) * (parseInt(line.quantity) || 1);
                     // 2ᵉ sauce frites et suivantes : +0,50 € chacune, portées par l'extra générique du parent.
                     extraFritesSauces += extraFritesSauceQuantity(line.menu_restore) * Math.max(1, parseInt(line.quantity, 10) || 1);
                     pos_line_addons.push(line);

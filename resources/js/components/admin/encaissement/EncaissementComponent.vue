@@ -410,8 +410,11 @@ export default {
             const t = this.purgeTarget;
             if (!t) return '';
             if (t.phoneToday) {
-                const totalTel = this.phoneOrders.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
-                return this.$t('label.enc_purge_summary_phone', { n: this.phoneOrders.length, amount: this.formatPrice(totalTel) });
+                // [Revue vague 3 · P3] Le résumé décrit EXACTEMENT ce qui partira : les commandes figées à
+                // l'ouverture (t.ids), pas la liste vivante — une commande arrivée entre-temps n'y est pas.
+                const figees = this.orders.filter((o) => (t.ids || []).includes(o.id));
+                const totalTel = figees.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
+                return this.$t('label.enc_purge_summary_phone', { n: (t.ids || []).length, amount: this.formatPrice(totalTel) });
             }
             if (t.order) {
                 return this.$t('label.enc_purge_summary_one', {
