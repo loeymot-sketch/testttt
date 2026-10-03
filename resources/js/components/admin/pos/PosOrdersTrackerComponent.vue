@@ -1027,6 +1027,7 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
+import { resumeTechnique as resumeTechniqueCommande } from '../../../support/compositionCommande';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
 // cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
 import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
@@ -2405,7 +2406,9 @@ export default {
          * +2 Cheddar · +Salade », 54 caractères) passe désormais ENTIER.
          */
         compoAffichee(item) {
-            const complet = this.resumeComposition(item);
+            // [GOAL REMARQUES 2026-10-03 · R-009] La carte parle TECHNIQUE (« G · ALG · +Cheddar ») —
+            // « avec les mots techniques » ; l'info-bulle et « Voir tout » restent en toutes lettres.
+            const complet = this.resumeTechnique(item);
             // [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Le budget était un nombre nu, enfermé
             // ici. Conséquence : le superviseur a constaté que le marqueur « +N » — la
             // pièce maîtresse de ce correctif — n'était rendu sur AUCUN des 10 états
@@ -2549,6 +2552,10 @@ export default {
          * Volontairement court — la carte doit rester lisible d'un coup d'œil ;
          * le détail intégral vit dans le panneau « Voir tout ».
          */
+        /** [R-009] Résumé en mots techniques — délègue au module partagé (une seule définition). */
+        resumeTechnique(item) {
+            return resumeTechniqueCommande(item);
+        },
         resumeComposition(item) {
             if (!item) return '';
             const morceaux = [];

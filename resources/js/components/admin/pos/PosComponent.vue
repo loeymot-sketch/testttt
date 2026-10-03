@@ -642,6 +642,13 @@
                 <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
                      quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
+                <!-- [GOAL REMARQUES 2026-10-03 · R-009] « pas juste voir le total […] les noms de produits
+                     avec les mots techniques » : aperçu de la commande en symboles cuisine. -->
+                <span
+                  v-if="apercuCommande(o).texte"
+                  class="pos-shortcuts__apercu"
+                  :data-testid="`pos-shortcut-apercu-${o.id}`"
+                >{{ apercuCommande(o).texte }}<span v-if="apercuCommande(o).restants" class="pos-shortcuts__apercu-plus"> · +{{ apercuCommande(o).restants }}</span></span>
                 <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Libellé « Tél » distinct pour une commande
                      téléphone (source_surface='phone') dans la file « à encaisser ». -->
                 <span
@@ -2423,6 +2430,8 @@
 <script>
 import axios from 'axios';
 import { typeDAdresse } from "../../../services/typeDAdresse";
+// [GOAL REMARQUES 2026-10-03 · R-009] Aperçu de la commande en mots techniques (file « À encaisser »).
+import { apercuTechnique } from '../../../helpers/apercuTechniqueCommande';
 // [GOAL REMARQUES 2026-10-03 · R-060] Motif pré-rempli de l'annulation d'une commande en attente (même
 // motif que la croix de la page Encaissement) — le caissier n'a plus rien à taper.
 const MOTIF_ANNULATION_PAR_DEFAUT = 'Client non venu';
@@ -7123,6 +7132,10 @@ export default {
          * qui n'est plus rattaché. Le reste du nettoyage (pastille, code fidélité, adresse) est celui de
          * changingUser() quand aucun client n'est choisi — une seule définition.
          */
+        /** [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique d'une commande de la file « À encaisser ». */
+        apercuCommande(o) {
+            return apercuTechnique(o);
+        },
         retirerClientFidelite() {
             this.checkoutProps.form.customer_id = null;
             this.checkoutProps.form.loyalty_redeem_points = null;
@@ -7741,6 +7754,21 @@ export default {
 }
 .pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
   color: #991B1B;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique sous le N° (pleine largeur de la ligne). */
+.pos-shortcuts__apercu {
+  flex-basis: 100%;
+  order: 10;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1F2937;
+  letter-spacing: 0.2px;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.pos-shortcuts__apercu-plus {
+  color: #374151;
+  font-weight: 800;
 }
 /* [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation à côté de « Accepter ». */
 .pos-shortcuts__prep {

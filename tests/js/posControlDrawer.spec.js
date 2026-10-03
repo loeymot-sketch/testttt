@@ -202,8 +202,10 @@ describe('§3 « voir ce qu’il y a dedans, en mode technique, avec l’heure �
         const w = monter();
         const carte = w.find('[data-testid="pos-control-card-7119"]');
         expect(carte.text()).toContain('Tacos M');
-        expect(carte.text()).toContain('Poulet mariné');
-        expect(carte.text()).toContain('Algérienne');
+        // [GOAL REMARQUES 2026-10-03 · R-009] « en mode technique » : la carte parle comme la cuisine
+        // (viande et sauce en symboles) ; les mots entiers restent dans « Voir tout ».
+        expect(carte.text()).toContain('P · ALG');
+        expect(carte.text()).not.toContain('Algérienne');
         expect(carte.text()).toContain('+2 Cheddar');
     });
 
