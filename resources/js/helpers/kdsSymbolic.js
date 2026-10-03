@@ -453,6 +453,28 @@ function friesSauceNamesForOrder(orderItem) {
 }
 
 /**
+ * [GOAL REMARQUES 2026-10-03 · R-069] Lignes « sauce en plus » d'une vue qui n'a PAS de ligne produit
+ * symbolique (tiroir Historique) : chaque sauce payée nommée À SA DESTINATION — produit (« Sauce
+ * supplémentaire : Samouraï ») ou frites (« Sauce frites en plus : Ketchup », la 1ʳᵉ sauce frites étant
+ * offerte). Ce que l'instruction n'explique pas garde le libellé générique : une sauce facturée ne
+ * disparaît jamais. Même budget que buildSymbolic() (plateau) et que le ticket.
+ *
+ * @param {object} orderItem
+ * @param {number} quantite  unités « Sauce supplémentaire » facturées sur la ligne
+ * @returns {string[]} libellés sans « + »
+ */
+export function saucesEnPlusParDestination(orderItem, quantite) {
+    const produit = productSauceNames(orderItem);
+    const frites = friesSauceNamesForOrder(orderItem).slice(1);
+    const out = [];
+    if (produit.length) out.push(`Sauce supplémentaire : ${produit.join(', ')}`);
+    if (frites.length) out.push(`Sauce frites en plus : ${frites.join(', ')}`);
+    const reste = Math.max(0, (Number(quantite) || 1) - produit.length - frites.length);
+    if (reste > 0) out.push(`Sauce supplémentaire${reste > 1 ? ` ×${reste}` : ''}`);
+    return out;
+}
+
+/**
  * Decompose an order item into the symbolic slots.
  * @returns {{category, support, produit, taille, viandes:string[], crudites:string, sauces:string[], supplements:string[], menu:string}}
  */

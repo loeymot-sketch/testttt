@@ -19,7 +19,7 @@
 
 import { kdsInstructionVisualClass } from './kdsLineSemantics.js';
 import { claimedFormuleBadge } from './kdsBundledAddons.js';
-import { extraDisplayName } from './kdsSymbolic.js';
+import { extraDisplayName, saucesEnPlusParDestination } from './kdsSymbolic.js';
 
 // Group keys are surfaced to i18n via `label.kds_group_<key>`.
 // Heuristic-keyword regex per group. The first match wins.
@@ -450,9 +450,21 @@ export function renderItem(orderItem) {
     // — tout extra déjà nommé (Cheddar…) ressort inchangé. Contrairement au plateau live
     // (renderItemSymbolic), cette vue n'a pas de "ligne 1" qui affiche déjà la sauce en
     // plus ailleurs : jamais de suppression/budget ici, chaque extra reste sa propre ligne.
-    for (const e of readExtras(orderItem)) {
+    // [GOAL REMARQUES 2026-10-03 · R-069] Les sauces EN PLUS génériques sont regroupées puis rendues
+    // UNE fois, chacune à sa destination (produit / frites) — la 2ᵉ sauce frites payée restait anonyme.
+    const extrasLus = readExtras(orderItem);
+    const saucesGeneriques = extrasLus
+        .filter((e) => /sauce\s*suppl/i.test(String(e?.name || e?.extra_name || '')))
+        .reduce((n, e) => n + Math.max(1, parseInt(e?.quantity, 10) || 1), 0);
+    if (saucesGeneriques > 0) {
+        for (const label of saucesEnPlusParDestination(orderItem, saucesGeneriques)) {
+            lines.push({ type: 'supplement', label: `+ ${label}` });
+        }
+    }
+    for (const e of extrasLus) {
         const rawName = e?.name || e?.extra_name || '';
         if (!rawName) continue;
+        if (/sauce\s*suppl/i.test(rawName)) continue; // déjà rendues ci-dessus, par destination
         const display = extraDisplayName(rawName, orderItem?.instruction);
         const q = parseInt(e?.quantity, 10);
         // Un nom RÉSOLU énumère déjà chaque occurrence (ex. "Andalouse, Américaine") : le
