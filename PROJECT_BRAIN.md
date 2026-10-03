@@ -47,6 +47,53 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-03 — GOAL « remarques caisse / cuisine / encaissement » : 3 vagues livrées sur
+> `qa/corrige-rapports-2026-09-28` (de `b0144f788` à HEAD), RIEN poussé ni déployé.**
+> - **Documents** :
+>   - plan : `plans/GOAL_CAISSE_CUISINE_REMARQUES_2026-10-03.md` ;
+>   - inventaire des 79 remarques et statuts : `reports/caisse-remarques-2026-10-03/` ;
+>   - bilan remarque par remarque : `BILAN_GOAL_2026-10-03.md`.
+> - **Vague 1, cuisine (écran et ticket)** :
+>   - suppléments en grand (KDS 22 px ; ticket en double taille, un seul bandeau) ;
+>   - « # » sur tout produit à supplément ;
+>   - sauces vendues seules écrites en entier ;
+>   - numéro d'appel ×8 (maximum ESC/POS) ;
+>   - MENU, FRITES et « 2 x » sur fond noir ;
+>   - titre Uber au lieu de « ART » ;
+>   - Historique : sauces rattachées à leur destination.
+> - **Vague 2, annulation et encaissement** :
+>   - croix de la caisse sans motif à taper ;
+>   - « Supprimer les commandes téléphone » (jamais la borne, le site ou les commandes à l'avance) ;
+>   - onglet « Ratées (24 h) » en lecture seule ;
+>   - question « Imprimer le ticket ? » partout.
+> - **Vague 3, caisse** :
+>   - commandes web en rouge ;
+>   - ✕ fidélité ;
+>   - temps de préparation 5-120 ;
+>   - mots techniques ;
+>   - « Valider le retrait » ;
+>   - supplément libre seul refusé ;
+>   - « Offert » sur les options de formule ;
+>   - « Galette Normale » retirée de la réinitialisation.
+> - **Argent (affiché = facturé)**, corrigé en route : quantité × formule, sauces frites en plus,
+>   « Sans formule » ou « Boisson Seule » à la modification, sauce en double à chaque « Modifier »,
+>   2ᵉ sauce perdue à « Modifier » quand un supplément suit sur la même ligne (`03dc23ec1`).
+> - **Revues adverses** :
+>   - par vague, puis 4 tours de convergence ;
+>   - les tours 2, 3 et 4 n'ont trouvé aucun P0 ni P1 dans le code du GOAL ; le tour 4, aucun du tout ;
+>   - détail au §4 du bilan.
+> - **Suites complètes à `0e91f3e3f`** : PHPUnit 6307 réussis / 0 échec ; Vitest 4833 réussis / 0 échec ;
+>   chaîne fiscale OK sur les 7 branches. Après `03dc23ec1` (JS seul) : compilation OK, Vitest 4834 réussis / 0 échec.
+> - **Zones gelées** : 0 ligne modifiée.
+> - **Portes en attente du propriétaire** :
+>   - G1 : contreseing de `docs/locks/LOCK_POS_WIZARD_REMARQUES_2026-10-03.md`, points W-1 à W-6 ;
+>   - G1 bis : « Offert » sur une sauce vendue seule ;
+>   - G2 : décisions (R-034, R-036, R-028, R-006, R-059 « Reprendre ») ;
+>   - G3 : relancer Claude Code depuis le Terminal (navigateur, ssh, GitHub) ;
+>   - G4 : numéro au-delà de 2,4 cm ;
+>   - G5 : essais sur le matériel ;
+>   - G6 : données de production.
+
 > **2026-10-02 (nuit) — demande propriétaire « continue test-e2e et deploy » : BLOQUÉE par la session.**
 > Le processus Claude ne joint plus les services macOS (`whoami` → 501, ssh → « No user exists for
 > uid 501 », Chromium « bootstrap (141) ») : ni navigateur, ni émulateur, ni SSH (prod, GitHub).
