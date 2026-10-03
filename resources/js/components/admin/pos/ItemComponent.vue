@@ -1091,7 +1091,15 @@ export default {
                     this.temp.currency_price = cartLine.currency_price;
                     this.temp.instruction = cartLine.instruction || '';
                     this.temp.item_variations = normalizeVariationEntries(cartLine.item_variations);
-                    this.temp.item_extras = normalizeExtraEntries(cartLine.item_extras);
+                    // [GOAL REMARQUES 2026-10-03 · revue de convergence 3 · P1-1 · R-002] L'extra GÉNÉRIQUE
+                    // « Sauce supplémentaire » n'est pas rechargé : il porte la somme des sauces en plus (produit +
+                    // frites) et le wizard le reconstruit depuis les sauces NOMMÉES de l'instruction (même règle que
+                    // la restauration plus bas). Rechargé, il s'ajoutait à la reconstruction : « Modifier → Valider »
+                    // sans rien changer facturait une sauce de plus à chaque fois (10,40 → 10,90 → 11,40).
+                    this.temp.item_extras = normalizeExtraEntries(cartLine.item_extras).filter((e) => {
+                        const nom = String(e.name || (this.findExtraById(e.id) || {}).name || '').toLowerCase();
+                        return !nom.includes('sauce suppl');
+                    });
 
                     _.forEach(cartLine.pos_line_addons || [], (b) => {
                         const ad = item.addons && item.addons.find((x) => String(x.id) === String(b.parent_addon_id));
@@ -1799,7 +1807,13 @@ export default {
                     }
                     addonTotal += (parseFloat(line.total_price) || 0) * (parseInt(line.quantity) || 1);
                     // 2ᵉ sauce frites et suivantes : +0,50 € chacune, portées par l'extra générique du parent.
-                    extraFritesSauces += extraFritesSauceQuantity(line.menu_restore) * Math.max(1, parseInt(line.quantity, 10) || 1);
+                    // [Revue de convergence 3 · P1-2] … seulement si la formule CONTIENT des frites (même règle que
+                    // l'affichage des sauces frites du wizard : « frite » ou « menu » dans le nom). « Boisson Seule »
+                    // garde les sélections de frites d'avant le changement de formule — elles ne se facturent pas.
+                    var formuleAvecFrites = /frite|menu/i.test(String(line.name || ''));
+                    if (formuleAvecFrites) {
+                        extraFritesSauces += extraFritesSauceQuantity(line.menu_restore) * Math.max(1, parseInt(line.quantity, 10) || 1);
+                    }
                     pos_line_addons.push(line);
                 });
             // [W6 FIX] Use proper typeof check instead of comparing to string "undefined"

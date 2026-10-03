@@ -258,6 +258,37 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
         expect(computePosCartLineDisplayTotal({ ...payload, quantity: 1 })).toBeCloseTo(8.5, 6);
     });
 
+    // [Revue de convergence 3 · P1-2] « Boisson Seule » n'a pas de frites : les sauces frites choisies avant
+    // de changer de formule restent dans les sélections du wizard, et l'extra partait quand même (0,50 €).
+    it('formule sans frites (« Boisson Seule ») : aucune sauce frites facturée', () => {
+        const boisson = { ...wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] }), name: 'Boisson Seule' };
+        const vm = vmWithWizard([boisson], 10);
+
+        expect(vm.buildPosCartMainPayload().item_extras.find((e) => e.id === 489)).toBeUndefined();
+    });
+
+    // [Revue de convergence 3 · P1-1 · R-002] « Modifier → Valider » sans rien changer facturait UNE
+    // « Sauce supplémentaire » de plus à chaque fois (10,40 → 10,90 → 11,40) : openEditFromCart rechargeait
+    // l'extra générique fusionné, puis la sauce frites s'y ajoutait encore. Il n'est plus rechargé — le
+    // wizard le reconstruit depuis les sauces nommées (même règle que la restauration, ItemComponent:1562).
+    it('« Modifier » ne recharge pas l\'extra générique « Sauce supplémentaire »', async () => {
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: parent } }));
+        const vm = createVm(null, dispatch);
+        vm.$nextTick = (cb) => (cb ? Promise.resolve().then(cb) : Promise.resolve());
+        try {
+            vm.openEditFromCart({
+                item_id: 26, name: 'Tacos M', quantity: 1, convert_price: 8.5,
+                item_variations: [],
+                item_extras: [{ id: 489, name: 'Sauce supplémentaire', quantity: 2, unit_price: 0.5 }],
+                pos_line_addons: [],
+                instruction: 'TACOS M\nSauce : Algérienne, Samouraï',
+            }, 0);
+        } catch (_) { /* le reste de l'ouverture (DOM) n'est pas l'objet de ce test */ }
+        await new Promise((r) => setTimeout(r, 0));
+        expect(dispatch).toHaveBeenCalled();
+        expect(vm.temp.item_extras.find((e) => e.id === 489)).toBeUndefined();
+    });
+
     it('1 seule sauce frites → rien à facturer (la 1ère est offerte)', () => {
         const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1'] })], 8.5);
 

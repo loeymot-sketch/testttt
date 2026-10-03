@@ -87,6 +87,33 @@ Chaque point se contresigne séparément (cocher OUI / NON).
   - banc Vitest de l'étape.
 - [ ] OUI  [ ] NON
 
+### W-6 · Options frites fantômes après un changement de formule (affiché ≠ facturé)
+
+- **Origine :** revue de convergence 3, le 2026-10-03.
+- **Constat :** on choisit « Grande Portion » ou « Cheddar Fondu », ou des sauces frites, puis « Sans
+  formule » ou « Boisson Seule ». Les choix de frites restent dans `selections`, car les boutons de formule
+  (`pos-wizard.js:6344-6354`) ne les remettent jamais à zéro. Ils sont ensuite comptés dans le total
+  (`:1564`) et imprimés dans l'instruction (`:4077`, « ↳ Grande Portion » sur un produit sans frites).
+  Exemples mesurés :
+
+  | Formule finale | Panier | Facturé |
+  |---|---|---|
+  | Sans formule | 7,90 | 6,90 |
+  | Boisson Seule | 10,30 | 9,30 |
+
+  Le serveur ne facture rien de tout cela (aucune ligne formule frites).
+- **Déjà corrigé hors zone gelée** (`ItemComponent.vue`, revue de convergence 3) : la sauce frites n'est
+  plus facturée sur une formule sans frites. Seul le **total affiché** et la **note cuisine** viennent du
+  wizard gelé.
+- **Changement :** quand la formule choisie ne contient pas de frites, remettre à zéro `fritesGrande`,
+  `fritesCheddar` et `sauceFritesOrder`. C'est la même règle que l'affichage des sections frites :
+  « frite » ou « menu » dans le nom.
+- **Preuve :**
+  - banc Vitest (à créer) `tests/js/posWizardOptionsFritesReinitialisees.spec.js` : panier = facturé dans
+    les 2 cas ci-dessus ;
+  - aucun « ↳ Grande Portion » dans l'instruction.
+- [ ] OUI  [ ] NON
+
 ## Invariants
 
 - **Prix :** le client n'envoie que des identifiants. `PricingService` reste l'unique autorité.
@@ -101,4 +128,4 @@ Un commit par point W-n. Un `git revert` de ce commit rétablit le fichier et so
 
 ## Contreseing propriétaire (§10)
 
-- [ ] Contresigné — date : ________  points acceptés : W-1 / W-2 / W-3 / W-4 / W-5
+- [ ] Contresigné — date : ________  points acceptés : W-1 / W-2 / W-3 / W-4 / W-5 / W-6
