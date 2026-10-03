@@ -755,6 +755,21 @@
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <!-- [C1 2026-07-18] Accept INLINE (chemin principal) + Détails (gestion complète). -->
                 <span class="pos-shortcuts__actions">
+                  <!-- [GOAL REMARQUES 2026-10-03 · R-017] « je mets par exemple 17 minutes » : temps de
+                       préparation annoncé au client, choisi ICI aussi (le Suivi le permettait déjà). -->
+                  <input
+                    type="number"
+                    class="pos-shortcuts__prep"
+                    :value="webPrepChoice[o.id] ?? 15"
+                    :data-testid="`pos-shortcut-web-prep-${o.id}`"
+                    title="Temps de préparation annoncé au client (minutes)"
+                    aria-label="Temps de préparation en minutes"
+                    min="1"
+                    max="180"
+                    step="1"
+                    inputmode="numeric"
+                    @input="webPrepChoice = { ...webPrepChoice, [o.id]: parseInt($event.target.value, 10) }"
+                  /><span class="pos-shortcuts__prep-unit" aria-hidden="true">min</span>
                   <button
                     type="button"
                     class="pos-shortcuts__cta pos-shortcuts__cta--web"
@@ -2644,6 +2659,8 @@ export default {
             // traiter (accept via le flux existant — aucun changement de paiement/cuisine ici).
             webOrders: [],
             webOrdersLoading: false,
+            // [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation choisies par commande web (défaut 15).
+            webPrepChoice: {},
             lastWebRefresh: null,
             // [WEB-PAYEE-MUETTE 2026-08-10] Commandes du site DÉJÀ PAYÉES, parties seules en
             // cuisine. Liste séparée de `webOrders` à dessein : celles-ci ne s'acceptent pas.
@@ -5230,9 +5247,16 @@ export default {
             try {
                 const minuteBucket = Math.floor(Date.now() / 60000);
                 const idempotencyKey = `web-accept-${o.id}-${minuteBucket}`;
+                // [GOAL REMARQUES 2026-10-03 · R-017] Temps de préparation TOUJOURS envoyé (défaut affiché
+                // 15) — miroir de PosOrdersTrackerComponent.acceptWebOrder : ce que le caissier voit est
+                // ce que le suivi client annonce.
+                const prep = parseInt(this.webPrepChoice[o.id] ?? 15, 10);
                 await axios.post(
                     `admin/online-order/change-status/${o.id}`,
-                    { status: orderStatusEnum.ACCEPT },
+                    {
+                        status: orderStatusEnum.ACCEPT,
+                        ...(Number.isFinite(prep) && prep > 0 ? { preparation_time: prep } : {}),
+                    },
                     { headers: { 'X-Idempotency-Key': idempotencyKey } }
                 );
                 const num = o.queue_number || o.order_serial_no || o.id;
@@ -7717,6 +7741,25 @@ export default {
 }
 .pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
   color: #991B1B;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation à côté de « Accepter ». */
+.pos-shortcuts__prep {
+  width: 3.6rem;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid #B91C1C;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #111827;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pos-shortcuts__prep-unit {
+  margin-inline-end: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
 }
 /* [GOAL REMARQUES 2026-10-03 · R-015] ✕ « Retirer le client » sur la pastille fidélité. */
 .pos-v5-loyalty__retirer {
