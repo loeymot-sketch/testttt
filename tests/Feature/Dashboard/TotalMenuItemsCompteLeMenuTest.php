@@ -110,4 +110,56 @@ class TotalMenuItemsCompteLeMenuTest extends TestCase
         // servi, l'écran doit dire zéro, pas « 2 articles au menu ».
         $this->assertSame(0, app(DashboardService::class)->totalMenuItems());
     }
+
+    /**
+     * [AUDIT-COMPTA 2026-10-04] Le menu, c'est ce qu'un CLIENT peut commander.
+     *
+     * Constaté en production le jour même où la migration `add_sauces_supplementaires_category`
+     * a été appliquée : « Total articles menu » est passé de 54 à 67 — 54 + 13. Cette migration
+     * crée 13 sauces « HORS MENU » (`channels = ["pos"]` : la caisse les voit, la borne et le site
+     * non). Le compteur excluait déjà les catégories de pollution et l'interne PAR LEUR NOM, mais
+     * ce qui rend ces sauces « hors menu » est leur CANAL, pas leur nom : elles ont été comptées.
+     *
+     * Deux correctifs justes, livrés par deux sessions, qui se contredisent à la rencontre — le
+     * même motif que l'écart 123/59 d'août. Un exploitant lit « mon menu a 67 articles » alors que
+     * sa borne en propose 54.
+     */
+    private function creerArticleSurCanaux(?array $canaux): Item
+    {
+        $item = $this->creerArticle(Status::ACTIVE);
+        $item->forceFill(['channels' => $canaux])->save();
+
+        return $item;
+    }
+
+    /** @test */
+    public function un_article_reserve_a_la_caisse_n_est_pas_au_menu(): void
+    {
+        $this->creerArticleSurCanaux(null);            // partout : au menu
+        $this->creerArticleSurCanaux(['kiosk', 'web']); // borne + site : au menu
+        $this->creerArticleSurCanaux(['pos']);          // caisse seule : HORS menu
+        $this->creerArticleSurCanaux(['pos']);
+
+        $affiche = app(DashboardService::class)->totalMenuItems();
+
+        $this->assertSame(
+            2,
+            $affiche,
+            "« Total articles menu » dit {$affiche} ; seuls 2 articles sont commandables par un "
+            . 'client (partout, ou borne + site). Les 2 articles réservés à la caisse sont « hors '
+            . 'menu » par leur CANAL — les compter fait lire à l\'exploitant un menu plus gros que '
+            . 'celui que sa borne propose.',
+        );
+    }
+
+    /** @test */
+    public function un_article_visible_sur_la_borne_seule_ou_le_site_seul_est_au_menu(): void
+    {
+        // Le critère est « visible par un client », pas « visible sur une surface donnée » :
+        // un article réservé au site (ou à la borne) est bien commandable.
+        $this->creerArticleSurCanaux(['kiosk']);
+        $this->creerArticleSurCanaux(['web']);
+
+        $this->assertSame(2, app(DashboardService::class)->totalMenuItems());
+    }
 }
