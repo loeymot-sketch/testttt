@@ -47,7 +47,35 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-04 (plus tard) — ✅ DÉPLOYÉ ET VÉRIFIÉ EN PRODUCTION : `8b164074`. L'entrée suivante
+> (« PAS déployé ») est PÉRIMÉE.**
+> - **Livré** : les 78 commits de `3133cba3` à `8b164074`, en avance rapide pure (`merge --ff-only`,
+>   la production était un ancêtre ; 43 fichiers `??` non suivis sur le serveur = sauvegardes
+>   d'exploitation, intacts). Branche de production et `goal/audit-compta-2026-10-01` poussées.
+> - **Migrations appliquées (2)** : `orders.preparation_time_confirmed_at` (colonne nullable) et
+>   `add_sauces_supplementaires_category` = **13 articles « Sauce … » à 0,50 €, caisse seule**
+>   (`channels=["pos"]`), noms tirés de `config/pos_sauces.php`, 0 article préexistant, réversible
+>   par soft-delete. Export JSON préalable des tables `items` et `item_categories` (24 catégories,
+>   98 articles) : `storage/backups/avant-deploiement-2026-10-04-items-et-categories.json`.
+> - **Constaté APRÈS le déploiement, corrigé dans le même passage** : « Total articles menu » est
+>   passé de 54 à **67** (54 + les 13 sauces hors menu) — deux correctifs justes de deux sessions qui
+>   se contredisaient. Le menu = articles actifs, catégories client, **visibles sur la borne ou le
+>   site** ; rétabli à **54** (`8b164074`), banc ajouté.
+> - **Vérifié sur le comportement servi** : chaîne NF525 OK ; rapport Z-49 en vrai PDF (1,5 Mo,
+>   `%PDF-1.7`) ; colonne présente ; 13 sauces ; bundles `admin-reports` / `admin-kds` portent les
+>   correctifs ; borne : 11 requêtes, toutes 200 ; kiosk/login/kds/admin 200. L'unique ligne d'erreur
+>   du journal (08:16:11, « temporary expression in write context ») est un one-liner tinker invalide
+>   de MA session, pas l'application.
+> - **Tests sur l'arbre livré** : PHPUnit 6313 / 0 échec ; Vitest 596 fichiers / 4849 / 0 échec ;
+>   zones gelées : 0 ligne par ce travail (le lot contient `PaymentComponent.vue` sous LOCK
+>   contresigné le 2026-10-02, décision de l'autre session).
+> - **Ce qui reste à une décision propriétaire** : le carnet `/carnet` (registre d'argent hors
+>   NF525 : acomptes/dépenses sans lien avec la caisse) ; 11 tiroirs ouverts depuis juin à régulariser
+>   à la caisse ; `GET /api/admin/setting/*` et `dining-table` ouverts à tout compte connecté
+>   (exceptions documentées, pas des oublis) ; « Français » n'a aucune image de drapeau en production.
+
 > **2026-10-04 — « finis tout et déploie » : poussé sur GitHub, PAS déployé sur le serveur.**
+> *(PÉRIMÉ — voir l'entrée ci-dessus : déployé le même jour.)*
 > - **Poussé (avancement simple, sans force)** : `qa/corrige-rapports-2026-09-28` et la branche de
 >   production `pos/category-first-caisse-2026-06-23`, de `96aa53a42` à `fb5cc0832` (76 commits, les deux
 >   branches identiques). Une autre session a vu arriver les 73 premiers pendant qu'elle préparait son propre
