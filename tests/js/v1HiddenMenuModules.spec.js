@@ -18,8 +18,16 @@ describe('V1_HIDDEN_MENU_MODULES (Lot A.2)', () => {
             'settings.mail', 'settings.notification', 'settings.theme',
             'settings.item-categories',
             'settings.item-attributes',
-            'settings.permission', 'settings.role', 'settings.tax', 'settings.charge',
-            'settings.translation', 'settings.activity-log', 'settings.languages',
+            // [ONB-05 2026-08-28] QUATRE cles RETIREES de cette liste :
+            // 'settings.permission', 'settings.charge', 'settings.translation' et
+            // 'settings.activity-log'. Elles masquaient du VIDE — verifie des deux
+            // cotes : aucune route dans settingRoutes.js, et aucun isSettingHidden()
+            // ne les consomme dans MenuComponent.vue. Restes du nettoyage du 2 mai.
+            // Ce banc est une LIGNE DE BASE : je le mets a jour parce que la liste a
+            // deliberement change, pas pour faire taire un echec. La sentinelle
+            // clesDeMasquageMasquentQuelqueChose.spec.js empeche desormais qu'une
+            // cle sans effet y revienne.
+            'settings.role', 'settings.tax', 'settings.languages',
             'settings.otp', 'settings.notification-alert', 'settings.social-media',
             'settings.cookies', 'settings.analytics', 'settings.time-slots',
             'settings.sliders', 'settings.pages',

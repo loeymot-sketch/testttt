@@ -46,7 +46,8 @@ final class KitchenTicketSymbolicFormatter
         ['/burger/', 'Burg'],
         ['/algerien/', 'ALG'],
         ['/barbecue|bbq/', 'BBQ'],
-        ['/harissa/', 'HAR'],
+        // Owner shorthand: Harissa must never be confused with Hannibal.
+        ['/harissa/', 'HH'],
         ['/fromage/', 'FRO'],
         ['/spicy/', 'SPI'],
     ];
@@ -63,6 +64,14 @@ final class KitchenTicketSymbolicFormatter
     ];
 
     private const CRUDITE_ORDER = ['S', 'T', 'O', "O\u{0332}"];
+
+    /**
+     * [FIX-1 2026-08-25 · P0 cuisine] Repli d'un extra dont l'entrée ne porte AUCUN champ de nom.
+     * Même mot que le gabarit KDS hérité (`kdsExtraDisplayName`, corrigé le 2026-08-24) pour que
+     * l'écran et le papier nomment la même chose de la même façon.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js EXTRA_SANS_NOM.
+     */
+    public const EXTRA_SANS_NOM = 'Supplément';
 
     /** lowercase, strip diacritics, trim — for keyword matching. */
     private function norm(?string $s): string
@@ -102,6 +111,9 @@ final class KitchenTicketSymbolicFormatter
 
     public function sauceSymbol(?string $name): string
     {
+        if (preg_match('/^(sans|pas\s+d[eu\']|no|without)\s+sauces?\b/iu', $this->norm($name))) {
+            return 'X';
+        }
         $connue = $this->knownSauceSymbol($name);
         if ($connue !== '') {
             return $connue;
@@ -175,6 +187,95 @@ final class KitchenTicketSymbolicFormatter
         return $price <= 0;
     }
 
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-072] Instantané VU PAR LA CUISINE : ses extras sont lus avec la
+     * MÊME priorité que l'écran (`kdsSymbolic.readExtras`) — l'instantané s'il en porte, l'ancienne
+     * colonne `item_extras` sinon.
+     *
+     * Pourquoi : quand une formule est repliée sous un sandwich SANS extra propre,
+     * KitchenBundledAddonCollapser écrit les options héritées (« Grande Portion », « Cheddar Fondu »)
+     * dans `item_extras`, faute d'extras dans l'instantané. L'écran les lisait ; le ticket ne lisait
+     * que l'instantané et les perdait — le papier cuisine ne disait pas « Grande Portion ».
+     * Vue d'affichage uniquement : rien n'est écrit, l'instantané NF525 reste figé.
+     *
+     * @param  array<string,mixed>  $snapshot
+     * @return array<string,mixed>
+     */
+    public function avecExtrasEffectifs(array $snapshot, mixed $item): array
+    {
+        if (isset($snapshot['extras']) && is_array($snapshot['extras']) && $snapshot['extras'] !== []) {
+            return $snapshot;
+        }
+        $legacy = is_object($item) ? ($item->item_extras ?? null) : null;
+        if (is_string($legacy)) {
+            $legacy = json_decode($legacy, true);
+        }
+        if (! is_array($legacy) || $legacy === []) {
+            return $snapshot;
+        }
+        $snapshot['extras'] = array_values(array_filter($legacy, 'is_array'));
+
+        return $snapshot;
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-049/R-072] Une option de formule écrite par la caisse en note
+     * (« ↳ Grande Portion (+1.00€) ») est AUSSI un extra facturé depuis le 02/10 : elle sortait deux
+     * fois — cadre noir « Grande Portion » puis note « ** Grande Portion ». La ligne « ↳ X » est
+     * retirée quand X est déjà imprimé en supplément ; toute autre ligne reste.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js sansOptionsDejaAffichees().
+     *
+     * @param  list<string>  $supps  lignes renvoyées par supplementLines() (« + Grande Portion »)
+     */
+    public function sansOptionsDejaAffichees(string $note, array $supps): string
+    {
+        $cle = static function (string $v): string {
+            $v = (string) preg_replace('/^[+↳\s]+/u', '', $v);
+            $v = (string) preg_replace('/^frites\s*:\s*/iu', '', $v);
+            $v = (string) preg_replace('/\s*×\d+\s*$/u', '', $v);
+            $v = \Normalizer::normalize($v, \Normalizer::FORM_D) ?: $v;
+            $v = (string) preg_replace('/\p{Mn}+/u', '', $v);
+
+            return mb_strtolower(trim($v));
+        };
+        $deja = [];
+        foreach ($supps as $s) {
+            $k = $cle((string) $s);
+            if ($k !== '') {
+                $deja[$k] = true;
+            }
+        }
+        if ($deja === [] || $note === '') {
+            return $note;
+        }
+        $garde = array_filter(explode("\n", $note), static fn (string $l) => ! (preg_match('/^\s*↳/u', $l) && isset($deja[$cle($l)])));
+
+        return trim(implode("\n", $garde));
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-072] Le produit porte-t-il un supplément ? Oui dès qu'un extra est
+     * PAYANT ou OFFERT — même quand son nom est replié ailleurs (sauce en plus dans la ligne produit,
+     * 2ᵉ sauce frites sur le badge). Le « # » n'était posé que si une LIGNE supplément sortait : ces
+     * produits-là n'en avaient pas. Seules les garnitures gratuites ne comptent pas.
+     * Jumeau STRICT : resources/js/helpers/kdsSymbolic.js porteUnSupplement().
+     *
+     * @param  array<string,mixed>  $snapshot
+     */
+    public function porteUnSupplement(array $snapshot): bool
+    {
+        foreach (($snapshot['extras'] ?? []) as $e) {
+            if (! is_array($e)) {
+                continue;
+            }
+            if (! empty($e['offered']) || ! $this->isFreeExtra($e)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function supportSymbol(?string $name): string
     {
         $n = $this->norm($name);
@@ -199,9 +300,54 @@ final class KitchenTicketSymbolicFormatter
     }
 
     /** @param array<string,mixed> $snapshot */
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-075] Titre d'une ligne Uber NON RECONNUE, tel qu'écrit par les mappers
+     * (`[UBER NON MAPPÉ: <titre>]`, UberOrderMapper / UberPhotoOrderMapper). Vide sinon.
+     * Jumeau STRICT : kdsSymbolic.js titreUberNonMappe().
+     */
+    public function titreUberNonMappe(?string $instruction): string
+    {
+        if (! is_string($instruction) || $instruction === '') {
+            return '';
+        }
+
+        return preg_match('/\[UBER NON MAPP[ÉE]\s*:\s*([^\]]+)\]/u', $instruction, $m) ? trim($m[1]) : '';
+    }
+
+    /**
+     * [GOAL REMARQUES 2026-10-03 · R-053] Produit qui EST des frites (Petite / Grande Frites, Frites
+     * Seules, Bol Frites, Frites Cheddar) ou qui en contient d'office (Menu Enfant) : sa ligne est
+     * encadrée en noir sur le ticket cuisine (« lorsqu'il y a une frite […] encadré en noir »).
+     */
+    public function estProduitAFrites(string $itemName): bool
+    {
+        $n = $this->norm($itemName);
+
+        return str_contains($n, 'frite') || str_contains($n, 'menu enfant');
+    }
+
+    /** [R-075] Retire le marqueur technique d'une note cuisine (le titre est déjà la ligne produit). */
+    public function sansMarqueurUber(string $note): string
+    {
+        return trim((string) preg_replace('/\[UBER NON MAPP[ÉE]\s*:[^\]]*\]\s*/u', '', $note));
+    }
+
     public function mainLine(string $itemName, array $snapshot, ?string $instruction = null): string
     {
         [$produit, $taille] = $this->produitAndSize($itemName);
+        // [GOAL REMARQUES 2026-10-03 · R-075] Ligne Uber non reconnue : son TITRE, en entier (ASCII
+        // majuscules, comme les familles écrites en toutes lettres), au lieu du code « ART » de l'article
+        // technique. Les options restent en symboles caisse. Jumeau STRICT : kdsSymbolic.js buildSymbolic().
+        $titreUber = $this->titreUberNonMappe($instruction);
+        if ($titreUber !== '') {
+            $produit = mb_strtoupper(trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/[^a-z0-9 ]+/', ' ', $this->norm($titreUber)))));
+            // [revue 2 · P2-2] Titre sans lettre imprimable (emoji, idéogrammes) : CP858 ne peut pas
+            // l'imprimer et la ligne produit serait VIDE — l'article disparaîtrait du papier. Repli explicite.
+            if ($produit === '') {
+                $produit = 'ARTICLE UBER';
+            }
+            $taille = '';
+        }
         // [MEGA-BORNE 2026-07-22 owner] Tacos : aucune taille (produitAndSize l'a déjà retirée du
         // NOM) — on neutralise aussi une éventuelle taille portée par une VARIATION (garde plus bas).
         $isTacos = $this->isTacos($itemName);
@@ -250,7 +396,7 @@ final class KitchenTicketSymbolicFormatter
         // Sauce(s) de la ligne 1, À CÔTÉ de la 1ère incluse (« FRO MAY ») — plus jamais une ligne
         // « + Sauce supplémentaire ». Le nom réel des extras ne survit que dans l'instruction
         // (extraSauceNames) → symbole. La sauce FRITES du menu reste, elle, en ligne 2 (menuLine).
-        foreach ($this->extraSauceNames($instruction) as $extraSauce) {
+        foreach ($this->productSauceNames($snapshot, $instruction) as $extraSauce) {
             $sym = $this->sauceSymbol($extraSauce);
             if ($sym !== '') {
                 $sauces[] = $sym;
@@ -263,13 +409,20 @@ final class KitchenTicketSymbolicFormatter
             // Only FREE garnitures (Salade/Tomate/Oignon, price 0) fold into the
             // crudités slot. A PAID extra that happens to match (e.g. "Oignons frits"
             // 0,90€) is a supplement, not a crudité.
-            if ($cs !== '' && $this->isFreeExtra($e)) {
+            // [Revue adverse 2026-10-03 · F1] … et jamais un extra OFFERT (0 € mais à préparer) : sans
+            // cette garde, un « Oignons frits » offert imprimait un « O » (oignons crus) que l'écran
+            // n'affiche pas. Même garde que supplementLines() et que kdsSymbolic.js.
+            if ($cs !== '' && $this->isFreeExtra($e) && empty($e['offered'])) {
                 $crud[$cs] = true;
             }
         }
 
-        // Owner rule: tacos (and galette products) show the support first, default G.
-        if ($support === '' && (preg_match('/\btacos?\b/', $this->norm($itemName)) || str_contains($this->norm($itemName), 'galette'))) {
+        // Owner rule: a taco is named plainly for the kitchen. Do not prefix
+        // "Galette"/G: it is redundant and was regularly misread in service.
+        if ($isTacos) {
+            $support = '';
+            $produit = 'Tacos';
+        } elseif ($support === '' && str_contains($this->norm($itemName), 'galette')) {
             $support = 'G';
         }
         // [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » n'a pas de step pain actif
@@ -325,14 +478,27 @@ final class KitchenTicketSymbolicFormatter
         // On tient donc un BUDGET de sauces payantes déjà expliquées ailleurs, et on ne masque
         // que ce nombre d'unités. Tout ce qui dépasse RESTE affiché : une sauce facturée que
         // rien n'explique ne doit jamais disparaître en silence.
-        $budgetSaucesExpliquees = count($this->extraSauceNames($instruction))
-            + max(0, count($this->fritesSauceNames($instruction)) - 1);
+        $budgetSaucesExpliquees = count($this->productSauceNames($snapshot, $instruction))
+            + max(0, count($this->fritesSauceNamesForSnapshot($snapshot, $instruction)) - 1);
 
         foreach (($snapshot['extras'] ?? []) as $e) {
+            // [FIX-1 2026-08-25 · P0 cuisine] Un extra SANS AUCUN champ de nom n'est PLUS sauté.
+            // La condition `$name === ''` le faisait disparaître du ticket : ni ligne, ni marqueur.
+            // Le gabarit KDS hérité, lui, rendait « Supplément » (corrigé le 2026-08-24) — le papier
+            // que le cuisinier a en main disait donc STRICTEMENT MOINS que l'ancien écran. Un
+            // supplément non vu est un produit servi faux ; l'annoncer sans savoir le nommer reste
+            // infiniment moins grave que de l'escamoter. La forme brute existe en base
+            // (`item_extras` = [{"id":269,"quantity":1}]) et elle est servie dès que l'instantané
+            // NF525 ne porte pas d'extras.
+            // Jumeau STRICT : resources/js/helpers/kdsSymbolic.js (EXTRA_SANS_NOM).
             $name = (string) ($e['extra_name'] ?? $e['name'] ?? '');
+            if ($name === '') {
+                $name = self::EXTRA_SANS_NOM;
+            }
             // Skip only FREE garnitures (folded into Line 1). Paid extras — even
             // crudité-named ones like "Oignons frits" — stay as supplement lines.
-            if ($name === '' || ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e))) {
+            // [GOAL #5 2026-10-02] Un extra OFFERT est à 0 € mais reste à PRÉPARER : jamais replié comme crudité gratuite.
+            if ($this->cruditeSymbol($name) !== '' && $this->isFreeExtra($e) && empty($e['offered'])) {
                 continue;
             }
             // La sauce en plus générique : on masque autant d'unités que le budget en explique
@@ -358,7 +524,9 @@ final class KitchenTicketSymbolicFormatter
             // (« Hachée, Poulet » / « 2× Poulet ») → le suffixe ×N est redondant et se lit
             // « 2× chaque ». Il ne reste que sur le libellé générique non résolu.
             $suffix = ($q > 1 && $display === $name) ? " ×{$q}" : '';
-            $out[] = '+ '.$display.$suffix;
+            // [GOAL REMARQUES 2026-10-03 · revue F2] Option héritée d'une formule repliée : « Frites : X ».
+            // Jumeau STRICT : kdsSymbolic.js buildSymbolic().
+            $out[] = '+ '.(! empty($e['from_formule']) ? 'Frites : ' : '').$display.$suffix;
         }
 
         return $out;
@@ -384,8 +552,11 @@ final class KitchenTicketSymbolicFormatter
         }
 
         // Borne/web write ONLY the extras ("Sauces en plus : …" / "Extra sauces: …").
+        // [GOAL #4 2026-10-02] « صلصات إضافية » = libellé arabe de ar.json (kiosk.wizard.instruction.sauces_extra) :
+        // aucune regex ne le reconnaissait → le nom était perdu et le générique s'affichait.
         if (preg_match('/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $m)
-            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $m)) {
+            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $m)
+            || preg_match('/صلصات\s+إضافية\s*:\s*([^\n.]+)/u', $instruction, $m)) {
             return $this->splitSauceList($m[1]);
         }
 
@@ -399,6 +570,32 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return [];
+    }
+
+    /** @param array<string,mixed> $snapshot @return list<string> */
+    private function productSauceNames(array $snapshot, ?string $instruction): array
+    {
+        $structured = $snapshot['sauce_destinations']['product'] ?? null;
+        if (is_array($structured)) {
+            $names = array_values(array_filter(array_map(
+                static fn ($name): string => trim((string) $name),
+                $structured
+            ), static fn (string $name): bool => $name !== ''));
+            if ($names !== []) {
+                // [GOAL #4 2026-10-02] `sauce_destinations` est scellé (immuable, NF525) et a été
+                // écrit avec le même découpage défectueux : il peut être TRONQUÉ (ex. ["Curry"] pour
+                // « Barbecue, Curry »). On ne peut pas le réparer en base → à la lecture, la relecture
+                // de l'instruction l'emporte quand elle est plus complète.
+                $reread = $this->extraSauceNames($instruction);
+                if (count($reread) > count($names)) {
+                    return $reread;
+                }
+
+                return $names;
+            }
+        }
+
+        return $this->extraSauceNames($instruction);
     }
 
     /**
@@ -459,11 +656,57 @@ final class KitchenTicketSymbolicFormatter
         return $extraName;
     }
 
-    /** Split a "A, B, C" sauce list → trimmed, non-empty names. */
+    /**
+     * Split a "A, B, C" sauce list → trimmed, non-empty names.
+     *
+     * [INCIDENT TICKET CUISINE 2026-09-05] Deux gardes, contre la MÊME cause : une
+     * instruction tient sur une seule ligne et enchaîne les rubriques —
+     * « Sauce : Mayonnaise, Supplément : Œuf (+0,90 €) ». Découper naïvement sur la
+     * virgule coupait aussi celle du PRIX : « 90 € » devenait un faux nom de sauce,
+     * imprimé en tête du ticket cuisine (commande 929 : « MAY 90 »), et son jeton
+     * parasite gonflait le budget de sauces au point de MASQUER la vraie ligne
+     * « + Sauce supplémentaire ». 61 lignes de commande concernées depuis le 2026-08-01.
+     *
+     *  1. On retire d'abord les montants entre parenthèses — leur virgule décimale est
+     *     la seule qui ne sépare rien.
+     *  2. On s'arrête à la première rubrique suivante : un segment qui porte un « : »
+     *     n'est plus une sauce mais un nouveau libellé (Supplément, Viandes, Formule,
+     *     Sauce frites…). Aucun nom de sauce de la carte ne contient de deux-points.
+     *
+     * Jumeau JS : resources/js/helpers/kdsSymbolic.js splitSauceList().
+     */
     private function splitSauceList(string $raw): array
     {
-        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn ($n): bool => $n !== ''));
+        $raw = preg_replace('/\([^)]*\)/u', '', $raw) ?? $raw;
+
+        $out = [];
+        foreach (explode(',', $raw) as $piece) {
+            $name = trim($piece);
+            if ($name === '') {
+                continue;
+            }
+            if (mb_strpos($name, ':') !== false) {
+                // [GOAL #4 2026-10-02] CAUSE RACINE du « sauce supplémentaire sans nom ». La caisse
+                // colle la rubrique suivante à la dernière sauce par une ESPACE (pas une virgule) :
+                // « …, Harissa Supplément : Cheddar ». Jeter tout le morceau faisait disparaître la
+                // dernière sauce dès qu'un supplément suivait. On garde ce qui PRÉCÈDE la rubrique.
+                if (preg_match(self::RUBRIQUE_COLLEE, $name, $m) && trim($m[1]) !== '') {
+                    $out[] = trim($m[1]);
+                }
+                break;
+            }
+            $out[] = $name;
+        }
+
+        return $out;
     }
+
+    /**
+     * Rubriques que la caisse / la borne écrivent APRÈS la liste de sauces sur la même ligne.
+     * `(.+?)` = le dernier nom de sauce (peut contenir des espaces : « Fromagère maison »).
+     * Jumeau JS : resources/js/helpers/kdsSymbolic.js (RUBRIQUE_COLLEE).
+     */
+    public const RUBRIQUE_COLLEE = '/^(.+?)\s+(?:suppl[ée]ments?|viandes?(?:\s+en\s+plus)?|formule|sauce\s+frites|sauces?\s+en\s+plus|extra\s+sauces?|pain|boissons?|crudit[ée]s?|garnitures?|accompagnements?|menu|avec|sans|note)\s*:/iu';
 
     /**
      * [MULTIVIANDE 2026-07-24] Split a "A, B, C" meat list → trimmed, "+"-stripped
@@ -535,6 +778,23 @@ final class KitchenTicketSymbolicFormatter
         }
 
         return [];
+    }
+
+    /** @param array<string,mixed> $snapshot @return list<string> */
+    private function fritesSauceNamesForSnapshot(array $snapshot, ?string $instruction): array
+    {
+        $structured = $snapshot['sauce_destinations']['fries'] ?? null;
+        if (is_array($structured)) {
+            $names = array_values(array_filter(array_map(
+                static fn ($name): string => trim((string) $name),
+                $structured
+            ), static fn (string $name): bool => $name !== ''));
+            if ($names !== []) {
+                return $names;
+            }
+        }
+
+        return $this->fritesSauceNames($instruction);
     }
 
     /** @param array<string,mixed> $snapshot */
@@ -612,7 +872,7 @@ final class KitchenTicketSymbolicFormatter
         }
 
         if ($menu === 'MENU' || $menu === 'FRITES') {
-            $sym = $this->fritesSauceSymbol($instruction);
+            $sym = implode(' ', array_filter(array_map([$this, 'sauceSymbol'], $this->fritesSauceNamesForSnapshot($snapshot, $instruction))));
 
             return $sym !== '' ? $menu.' : '.$sym : $menu;
         }
@@ -627,7 +887,7 @@ final class KitchenTicketSymbolicFormatter
         // Le nettoyeur d'instruction supprime la ligne « Sauce frites : … » puisqu'elle est
         // censée être rendue ICI ; sans ce repli, le choix du client était purement perdu.
         if ($menu === '') {
-            $sym = $this->fritesSauceSymbol($instruction);
+            $sym = implode(' ', array_filter(array_map([$this, 'sauceSymbol'], $this->fritesSauceNamesForSnapshot($snapshot, $instruction))));
 
             return $sym !== '' ? 'FRITES : '.$sym : '';
         }
@@ -1005,6 +1265,14 @@ final class KitchenTicketSymbolicFormatter
 
         if (in_array($n, self::CODE_SANS_MENTION, true)) {
             return '';
+        }
+
+        // [GOAL REMARQUES 2026-10-03 · R-070] Une SAUCE VENDUE SEULE (catégorie « Sauces
+        // supplémentaires », « Sauce Ketchup ») s'écrit EN ENTIER : réduite à son premier mot, chacune
+        // des 13 sortait « SAU » et le cuisinier ne savait pas laquelle servir. Seul un nom qui
+        // COMMENCE par « sauce » est concerné. Jumeau STRICT : kdsSymbolic.js produitCode().
+        if (str_starts_with($n, 'sauce ')) {
+            return mb_strtoupper($n);
         }
 
         // [OWNER 2026-08-10] Familles écrites EN TOUTES LETTRES — voir CODE_ECRIT_EN_ENTIER.

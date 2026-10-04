@@ -160,6 +160,26 @@ class KitchenTicketSaucesPlacementTest extends TestCase
         $this->assertSame('', $this->f->menuBadge($this->snap(), 'Menu Enfant Nuggets', null));
     }
 
+    /** @test */
+    public function les_destinations_structurees_scellees_priment_sur_une_instruction_legacy_contradictoire(): void
+    {
+        $snap = $this->snap(
+            [['attribute_name' => 'Sauce', 'variation_name' => 'Mayonnaise']],
+            [$this->sauceExtra(2)],
+            [['role' => 'menu_full', 'addon_name' => 'Menu (Frites + Boisson)', 'quantity' => 1]]
+        );
+        $snap['sauce_destinations'] = [
+            'product' => ['Harissa'],
+            'fries' => ['Ketchup', 'Hannibal'],
+        ];
+        // Legacy text is deliberately wrong: the immutable snapshot must win.
+        $instruction = 'Sauces en plus : Andalouse'."\n".'Sauce frites : Mayonnaise';
+
+        $this->assertStringContainsString('MAY HH', $this->f->mainLine('Tacos M', $snap, $instruction));
+        $this->assertSame('MENU : KTP HAN', $this->f->menuBadge($snap, 'Tacos M', $instruction));
+        $this->assertSame([], $this->f->supplementLines($snap, $instruction));
+    }
+
     /**
      * @test
      *

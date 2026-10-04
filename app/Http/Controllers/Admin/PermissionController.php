@@ -37,7 +37,24 @@ class PermissionController extends AdminController
     public function index(Role $role)
     {
         try {
-            $permissions     = Permission::get();
+            // [ONB-06 2026-08-28 · P0] `Permission::get()` listait TOUTES les gardes.
+            // Quatre permissions existent sous `sanctum` ET sous `web`
+            // (`availability_toggle`, `ingredients_manage`, `kitchen-display-system`,
+            // `pos-flyer-print`) : deux semoirs les creent en bouclant
+            // `foreach (['sanctum','web'] as $guard)`. L'ecran affichait donc quatre
+            // paires de lignes RIGOUREUSEMENT IDENTIQUES — meme libelle, rien pour les
+            // distinguer.
+            //
+            // Cocher la mauvaise jumelle sur un role `sanctum` faisait lever
+            // `GuardDoesNotMatch` par Spatie — APRES que `syncPermissions()` ait deja
+            // detache toutes les permissions. Le role finissait a ZERO : mesure sur la
+            // base reelle, « POS Operator » passait de 10 permissions a 0, et tous les
+            // caissiers perdaient l'acces a la caisse.
+            //
+            // On ne montre plus que ce qui est attribuable a CE role.
+            $permissions     = Permission::query()
+                ->where('guard_name', $role->guard_name)
+                ->get();
             $rolePermissions = Permission::join(
                 "role_has_permissions",
                 "role_has_permissions.permission_id",
@@ -83,7 +100,14 @@ class PermissionController extends AdminController
 
         if ($role->name === 'POS Operator') {
             $keepsPos = Permission::query()->whereIn('id', $ids)->where('name', 'pos')->exists();
-            if (! $keepsPos) {
+            // [fusion 2026-09-02] La garde ne mord que si le rôle DÉTIENT déjà ce droit.
+            // Écrite sans cette condition, elle exigeait que le rôle le possède TOUJOURS —
+            // et refusait alors toute réduction de droits sur un rôle qui ne l'avait jamais
+            // eu (constaté par UnRoleNeSeVidePasSurUnClicTest, dont les droits de fixture
+            // s'appellent droit_1..droit_10). Ce qu'on protège, c'est le RETRAIT du droit,
+            // pas son absence.
+            $detientDeja = $role->permissions->contains('name', 'pos');
+            if ($detientDeja && ! $keepsPos) {
                 throw new Exception(
                     'Le rôle « POS Operator » doit garder le droit caisse (pos).',
                     422
@@ -96,7 +120,14 @@ class PermissionController extends AdminController
                 ->whereIn('id', $ids)
                 ->where('name', 'kitchen-display-system')
                 ->exists();
-            if (! $keepsKds) {
+            // [fusion 2026-09-02] La garde ne mord que si le rôle DÉTIENT déjà ce droit.
+            // Écrite sans cette condition, elle exigeait que le rôle le possède TOUJOURS —
+            // et refusait alors toute réduction de droits sur un rôle qui ne l'avait jamais
+            // eu (constaté par UnRoleNeSeVidePasSurUnClicTest, dont les droits de fixture
+            // s'appellent droit_1..droit_10). Ce qu'on protège, c'est le RETRAIT du droit,
+            // pas son absence.
+            $detientDeja = $role->permissions->contains('name', 'kitchen-display-system');
+            if ($detientDeja && ! $keepsKds) {
                 throw new Exception(
                     "Le rôle « {$role->name} » doit garder le droit écran cuisine (kitchen-display-system).",
                     422
@@ -109,7 +140,14 @@ class PermissionController extends AdminController
                 ->whereIn('id', $ids)
                 ->where('name', 'table-orders')
                 ->exists();
-            if (! $keepsTables) {
+            // [fusion 2026-09-02] La garde ne mord que si le rôle DÉTIENT déjà ce droit.
+            // Écrite sans cette condition, elle exigeait que le rôle le possède TOUJOURS —
+            // et refusait alors toute réduction de droits sur un rôle qui ne l'avait jamais
+            // eu (constaté par UnRoleNeSeVidePasSurUnClicTest, dont les droits de fixture
+            // s'appellent droit_1..droit_10). Ce qu'on protège, c'est le RETRAIT du droit,
+            // pas son absence.
+            $detientDeja = $role->permissions->contains('name', 'table-orders');
+            if ($detientDeja && ! $keepsTables) {
                 throw new Exception(
                     'Le rôle « Waiter » doit garder le droit commandes de table (table-orders).',
                     422

@@ -44,7 +44,7 @@ class PromoFlyerService
         // Vide = « prends le numéro de la branche ». On ne code JAMAIS un numéro en dur : un
         // faux numéro sur un ticket est pire que pas de numéro du tout.
         'order_phone'      => '',
-        'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le meme restaurant, mais moins cher.',
+        'intro'            => 'Merci pour ta commande ! La prochaine fois, commande en direct sur notre site : c\'est le même restaurant, mais moins cher.',
         // [CONVERSION 2026-08-08] L'ancien texte annonçait « jusqu'a -30% d'economies » —
         // en contradiction directe avec le -10% du code juste au-dessus. Le client lit -30,
         // reçoit -10, et se sent floué : deux nombres qui se contredisent sur le même bout de
@@ -57,7 +57,7 @@ class PromoFlyerService
         // (« tu paies le repas, pas la commission ») a rejoint la liste, à sa place.
         // Le réglage reste disponible pour qui veut ajouter un mot de fin propre à lui.
         'savings_note'     => '',
-        'footer_note'      => 'A emporter et en livraison. A tres vite !',
+        'footer_note'      => 'À emporter et en livraison. À très vite !',
         'discount_percent' => 10,
         'validity_days'    => 30,
         'site_url'         => 'www.lecayenne.fr',
@@ -73,10 +73,10 @@ class PromoFlyerService
         // (`pos.loyalty_enabled`), le paiement en ligne est branché (Mollie).
         // Aucune promesse inventée : un argument faux sur un ticket papier se
         // retourne contre le restaurant, et il n'est pas rattrapable.
-        'strengths'        => "Meme cuisine, meme equipe : tu paies le repas, pas la commission\n"
+        'strengths'        => "Même cuisine, même équipe : tu paies le repas, pas la commission\n"
             . "Tacos, burgers, sandwichs et bowls\n"
-            . "Des points fidelite a chaque commande\n"
-            . "Paiement en ligne securise",
+            . "Des points fidélité à chaque commande\n"
+            . "Paiement en ligne sécurisé",
         // Logo imprimé en haut du ticket. Chemin RELATIF à public/ : un chemin
         // absolu saisi depuis l'admin serait une lecture de fichier arbitraire.
         'logo_path'        => 'images/kiosk-attract/logo.png',
@@ -491,7 +491,7 @@ class PromoFlyerService
             $flyer->forceFill([
                 'status'     => PromoFlyer::STATUS_FAILED,
                 'claimed_at' => null,
-                'last_error' => 'Code annule avant impression',
+                'last_error' => 'Code annulé avant impression',
             ])->save();
         }
     }

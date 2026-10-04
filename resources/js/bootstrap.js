@@ -327,7 +327,36 @@ if (_MIX_PUSHER_APP_KEY && _MIX_PUSHER_APP_KEY !== 'undefined' && _MIX_PUSHER_AP
         }
     }
 
-    const _baseUrl = (window.foodkingConfig?.baseUrl || window.location.origin).replace(/\/$/, '');
+    /*
+     * [AUDIT-SUPERVISEUR 2026-08-26 · E-014 / AB-012 / C-006] L'ADRESSE D'AUTHENTIFICATION
+     * DU TEMPS RÉEL DOIT ÊTRE RELATIVE.
+     *
+     * CE QUI A ÉTÉ MESURÉ, sur trois vagues indépendantes : chaque chargement de la cuisine
+     * et du mur client émettait
+     *   « Connecting to 'http://127.0.0.1:8000/api/broadcasting/auth' violates the following
+     *     Content Security Policy directive: "connect-src 'self' ws: wss: https: …" »
+     * suivi, dans le même journal, de « [PosSyncService] fallback polling disabled ».
+     *
+     * La cause : cette ligne fabriquait une adresse ABSOLUE depuis `foodkingConfig.baseUrl`
+     * (= APP_URL). Dès que l'écran est ouvert sur un hôte différent de celui d'APP_URL — une
+     * tablette de comptoir sur l'IP du réseau local, `localhost` au lieu de `127.0.0.1` — ce
+     * n'est plus la même ORIGINE, donc plus `'self'`.
+     *
+     * POURQUOI CE N'EST PAS BÉNIN AUJOURD'HUI PARCE QUE ÇA NE CASSE PAS AUJOURD'HUI. La CSP
+     * est en `report_only` : le navigateur signale et laisse passer. Le jour où
+     * `CSP_ENFORCE_MODE` passe à `enforce`, il BLOQUE — la cuisine et le mur client cessent de
+     * recevoir les commandes, le repli par sondage est déjà désactivé, et les écrans
+     * continuent d'afficher « Mis à jour à l'instant » sur des données FIGÉES. Une panne
+     * silencieuse en plein service, armée par une ligne de configuration.
+     *
+     * La correction de fond est ici, pas dans la CSP : une adresse RELATIVE est résolue
+     * contre l'origine de la PAGE. Elle est donc juste par construction, quel que soit l'hôte
+     * par lequel on ouvre l'écran — et elle le reste le jour où l'on durcit la politique.
+     *
+     * Élargir `connect-src` aurait marché aussi, et aurait laissé le défaut entier : il
+     * suffirait d'ouvrir la caisse par une adresse non listée pour le rouvrir.
+     */
+    const _authEndpoint = '/api/broadcasting/auth';
 
     window.Echo = new Echo({
         broadcaster: 'pusher',
@@ -345,7 +374,7 @@ if (_MIX_PUSHER_APP_KEY && _MIX_PUSHER_APP_KEY !== 'undefined' && _MIX_PUSHER_AP
         // triggers Pusher's internal exponential backoff (1s → 2s → 4s → … → 30s).
         activityTimeout: 30000,
         pongTimeout: 5000,
-        authEndpoint: `${_baseUrl}/api/broadcasting/auth`,
+        authEndpoint: _authEndpoint,
         auth: {
             headers: {
                 Authorization: `Bearer ${_getEchoBearerToken()}`,

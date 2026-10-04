@@ -33,6 +33,7 @@ class KioskAutoLoginGate
      * @param  string|null                $clientIp         request()->ip()
      * @param  string|null                $requestSecret    ?machine_key=… de l'URL borne (lien secret)
      * @param  string                     $configuredSecret KIOSK_AUTO_LOGIN_SECRET (vide = chemin secret inactif)
+     * @param  bool                       $persistentGrant  cookie HttpOnly chiffré émis après validation du lien machine
      * @return array<string,mixed>|null   le payload si autorisé, sinon null
      */
     public static function resolvePayload(
@@ -42,7 +43,8 @@ class KioskAutoLoginGate
         array $trustedIps,
         ?string $clientIp,
         ?string $requestSecret = null,
-        string $configuredSecret = ''
+        string $configuredSecret = '',
+        bool $persistentGrant = false,
     ): ?array {
         if (! $isKioskPath || $payload === null) {
             return null;
@@ -52,12 +54,17 @@ class KioskAutoLoginGate
             return $payload;
         }
 
+        // Le grant n'est créé que par le middleware après validation timing-safe
+        // du lien machine et arrive via EncryptCookies : une valeur forgée côté
+        // navigateur ne peut donc jamais autoriser l'injection des identifiants.
+        if ($persistentGrant) {
+            return $payload;
+        }
+
         // Lien secret (RÉSEAU-INDÉPENDANT : survit au changement d'IP/box/fibre) —
         // ?machine_key=<secret> == KIOSK_AUTO_LOGIN_SECRET, comparaison timing-safe.
         // Secret configuré vide ⇒ chemin inactif (jamais de bypass par secret vide).
-        $configuredSecret = trim($configuredSecret);
-        if ($configuredSecret !== '' && is_string($requestSecret) && $requestSecret !== ''
-            && hash_equals($configuredSecret, $requestSecret)) {
+        if (self::matchesMachineSecret($requestSecret, $configuredSecret)) {
             return $payload;
         }
 
@@ -71,5 +78,74 @@ class KioskAutoLoginGate
         }
 
         return null;
+    }
+
+    /**
+     * [QA_LOOP_NEXT_ACTION_2026-09-29] Pourquoi l'auto-login a été refusé.
+     *
+     * Le garde ci-dessus est volontairement fermé, et c'est bien. Mais un refus ne
+     * laissait AUCUNE trace : la borne affichait « Borne momentanément indisponible »,
+     * le HTML portait `kioskAutoLogin: null`, et il fallait remonter la cause à la main
+     * — c'est exactement ce qu'a dû faire le rapport de recette du 29/09, en lisant le
+     * code et en testant à l'aveugle avec et sans `machine_key`.
+     *
+     * Cette méthode NE DÉCIDE RIEN : elle nomme la première condition qui a manqué, pour
+     * que l'exploitant sache quoi configurer. Aucun secret, aucun identifiant, aucune IP
+     * ne sort d'ici — seulement un motif court et stable.
+     *
+     * @return string|null le motif, ou null si l'accès est accordé
+     */
+    public static function motifDeRefus(
+        ?array $payload,
+        bool $isKioskPath,
+        bool $localBypass,
+        array $trustedIps,
+        ?string $clientIp,
+        ?string $requestSecret = null,
+        string $configuredSecret = '',
+        bool $persistentGrant = false,
+    ): ?string {
+        if (! $isKioskPath) {
+            return 'chemin_hors_borne';
+        }
+        if ($payload === null) {
+            // La cause la plus fréquente à la mise en service : identifiants machine
+            // absents de la configuration, ou aucune machine borne active en base.
+            return 'identifiants_machine_absents';
+        }
+        if ($localBypass || $persistentGrant || self::matchesMachineSecret($requestSecret, $configuredSecret)) {
+            return null;
+        }
+
+        $list = array_values(array_filter(
+            array_map('trim', $trustedIps),
+            static fn (string $v): bool => $v !== ''
+        ));
+
+        if ($clientIp !== null && $clientIp !== '' && $list !== [] && IpUtils::checkIp($clientIp, $list)) {
+            return null;
+        }
+
+        // Distinguer « rien n'est configuré » de « configuré, mais cette borne n'y est
+        // pas » : ce sont deux gestes d'exploitation différents.
+        $secretConfigure = trim($configuredSecret) !== '';
+        if (! $secretConfigure && $list === []) {
+            return 'aucune_voie_configuree';
+        }
+        if (is_string($requestSecret) && $requestSecret !== '') {
+            return 'secret_fourni_invalide';
+        }
+
+        return 'borne_non_autorisee';
+    }
+
+    public static function matchesMachineSecret(?string $requestSecret, string $configuredSecret): bool
+    {
+        $configuredSecret = trim($configuredSecret);
+
+        return $configuredSecret !== ''
+            && is_string($requestSecret)
+            && $requestSecret !== ''
+            && hash_equals($configuredSecret, $requestSecret);
     }
 }

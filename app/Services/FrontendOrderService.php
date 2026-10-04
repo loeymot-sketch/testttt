@@ -416,6 +416,14 @@ class FrontendOrderService
                         ->filter()
                         ->unique()
                         ->toArray();
+
+                    $addonIds = collect($requestItems)
+                        ->pluck('item_addons')
+                        ->flatten(1)
+                        ->pluck('id')
+                        ->filter()
+                        ->unique()
+                        ->toArray();
                     
                     $dbVariations = !empty($variationIds)
                         ? \App\Models\ItemVariation::whereIn('id', $variationIds)->get()->keyBy('id')
@@ -423,6 +431,9 @@ class FrontendOrderService
                     
                     $dbExtras = !empty($extraIds)
                         ? \App\Models\ItemExtra::whereIn('id', $extraIds)->get()->keyBy('id')
+                        : collect();
+                    $dbAddons = !empty($addonIds)
+                        ? \App\Models\ItemAddon::with('addonItem')->whereIn('id', $addonIds)->get()->keyBy('id')
                         : collect();
 
                     // [CAISSE-LOGIC-HEAL SYNC-P1 2026-07-11] Inclure les composants de menu
@@ -512,8 +523,26 @@ class FrontendOrderService
                                 }
                             }
 
+                            $calcAddonTotal = 0.0;
+                            if (!empty($item->item_addons)) {
+                                foreach ($item->item_addons as $addon) {
+                                    $addonId = $addon->id ?? 0;
+                                    $dbAddon = $dbAddons[$addonId] ?? null;
+                                    if (!$dbAddon || (int) $dbAddon->item_id !== (int) $item->item_id) {
+                                        throw new \InvalidArgumentException(
+                                            "Addon ID {$addonId} introuvable ou invalide pour l'article {$item->item_id}.",
+                                            422
+                                        );
+                                    }
+                                    $calcAddonTotal += $this->pricingService->menuRoleAdjustedAddonPrice(
+                                        (string) ($addon->role ?? ''),
+                                        (float) ($dbAddon->addonItem?->price ?? 0)
+                                    ) * max(1, (int) ($addon->quantity ?? 1));
+                                }
+                            }
+
                             $verifiedQuantity = max(1, (int) ($item->quantity ?? 1));
-                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal) * $verifiedQuantity, 2);
+                            $verifiedTotalPrice = round(($itemPrice + $calcVariationTotal + $calcExtraTotal + $calcAddonTotal) * $verifiedQuantity, 2);
                             $realSubtotal += $verifiedTotalPrice;
 
                             $taxId = isset($items[$item->item_id]) ? $items[$item->item_id] : 0;
@@ -529,7 +558,7 @@ class FrontendOrderService
                             }
 
                             // [T07] NF525 immutable composition snapshot — written in same transaction as insert.
-                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras);
+                            $compositionSnapshot = (new \App\Services\Pricing\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras, null, $dbAddons);
 
                             $itemsArray[$i] = [
                                 'order_id' => $this->frontendOrder->id,
@@ -866,6 +895,144 @@ class FrontendOrderService
     /**
      * @throws Exception
      */
+    /**
+     * [GOAL STORES T-3.1.3 · 2026-09-30] Annulation d'une commande PAR SON CLIENT, avant
+     * que la cuisine ne l'ait commencée — le corps exact de `changeStatus`, extrait pour
+     * être appelé aussi par la suppression de compte.
+     *
+     * Pourquoi : un examinateur Apple/Google commande « sur place » pour tester, ne vient
+     * jamais retirer, puis supprime son compte. `DeactivateController` refusait dès qu'une
+     * commande n'était ni livrée ni annulée (Apple 5.1.1(v), Play « Suppression du compte »).
+     * Plutôt que d'inventer un second chemin d'annulation, la suppression réutilise
+     * CELUI-CI : même verrou, même seuil, même refus si payée, même remboursement de points,
+     * même journal de transition avec raison obligatoire, mêmes événements KDS/OSS.
+     *
+     * @param  string|null $cancelReason  raison (obligatoire pour la machine à états)
+     * @param  int         $targetStatus  toujours CANCELED pour un client
+     */
+    public function cancelOwnOrderBeforeAcceptance(FrontendOrder $frontendOrder, ?string $cancelReason, int $targetStatus = OrderStatus::CANCELED): FrontendOrder
+    {
+        if (is_string($cancelReason)) {
+            $cancelReason = trim($cancelReason);
+            if ($cancelReason === '') {
+                $cancelReason = null;
+            }
+        }
+        return DB::transaction(function () use ($frontendOrder, $cancelReason, $targetStatus) {
+            $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
+
+            // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
+            if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                return $locked;
+            }
+            // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
+            if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $targetStatus)) {
+                throw new Exception(trans('all.message.invalid_status_transition'), 422);
+            }
+            // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
+            $isKioskOrder = in_array(
+                (int) $locked->order_type,
+                [OrderType::KIOSK, OrderType::TAKEAWAY],
+                true
+            );
+            $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
+            if ($locked->status >= $cancelableThreshold) {
+                throw new Exception(trans('all.message.order_accept'), 422);
+            }
+
+            // [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande
+            // DÉJÀ PAYÉE : le seuil ne testait que `status`. Une commande carte web PAYÉE
+            // restée PENDING (avant auto-cuisine, ou seal en échec) était annulable → le
+            // remboursement `cashBack` est conditionné à `$locked->transaction` (relation
+            // hasOne toujours VIDE pour Mollie, qui n'écrit que la colonne transaction_id)
+            // → annulation SANS remboursement = argent perdu. Le remboursement d'un
+            // paiement en ligne = geste comptoir/ops (dashboard Mollie), jamais un
+            // self-cancel silencieux. Refus 422.
+            if ((int) $locked->payment_status === PaymentStatus::PAID) {
+                throw new Exception(trans('all.message.order_accept'), 422);
+            }
+
+            if ($locked->transaction) {
+                // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
+                $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
+                app(PaymentService::class)->cashBack(
+                    $locked,
+                    $refundGateway,
+                    'TXN-' . \Illuminate\Support\Str::random(12)
+                );
+            }
+            app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+            $oldStatus = $locked->status;
+            // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
+            if (is_string($cancelReason)) {
+                $cancelReason = trim($cancelReason);
+                if ($cancelReason === '') {
+                    $cancelReason = null;
+                }
+            }
+            if ($cancelReason !== null && $locked->isFillable('reason')) {
+                $locked->reason = $cancelReason;
+            }
+            $locked->status = $targetStatus;
+            $locked->save();
+            OrderStateMachine::recordTransition(
+                FrontendOrder::class,
+                (int) $locked->id,
+                (int) $oldStatus,
+                $targetStatus,
+                Auth::check() ? (int) Auth::id() : null,
+                $cancelReason
+            );
+            // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
+            try {
+                OrderStatusChanged::dispatch($locked, $oldStatus, $targetStatus);
+            } catch (\Exception $e) {
+                Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+            }
+            SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $targetStatus]);
+            // [F-01] Libération stock compensatoire (idempotent via released_qty).
+            try {
+                OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
+            } catch (\Exception $e) {
+                Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+            }
+            return $locked;
+        });
+    }
+
+    /**
+     * [GOAL STORES T-3.1.3 · 2026-09-30] Avant d'effacer un compte : annuler TOUTES les
+     * commandes que ce client aurait pu annuler lui-même (jamais acceptées / jamais
+     * commencées selon le seuil du service, jamais payées). Celles que la cuisine a
+     * commencées ou qui ont été encaissées sont laissées telles quelles — l'appelant
+     * décide alors de refuser, avec un message qui dit pourquoi.
+     *
+     * @return int nombre de commandes annulées
+     */
+    public function cancelAllOwnCancellableForAccountDeletion(int $userId, string $reason): int
+    {
+        $annulees = 0;
+        $ouvertes = FrontendOrder::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::RETURNED, OrderStatus::REJECTED])
+            ->orderBy('id')
+            ->get();
+        foreach ($ouvertes as $commande) {
+            $seuil = in_array((int) $commande->order_type, [OrderType::KIOSK, OrderType::TAKEAWAY], true)
+                ? OrderStatus::PREPARING
+                : OrderStatus::ACCEPT;
+            if ((int) $commande->status >= $seuil || (int) $commande->payment_status === PaymentStatus::PAID) {
+                continue; // la cuisine a commencé, ou de l'argent a été encaissé : pas à nous d'annuler
+            }
+            $this->cancelOwnOrderBeforeAcceptance($commande, $reason, OrderStatus::CANCELED);
+            $annulees++;
+        }
+
+        return $annulees;
+    }
+
     public function changeStatus(FrontendOrder $frontendOrder, OrderStatusRequest $request): FrontendOrder
     {
         try {
@@ -891,89 +1058,7 @@ class FrontendOrderService
                     // clawback points + double libération stock ; le middleware idempotency ne dédup que les
                     // clés IDENTIQUES). On sérialise via DB::transaction + re-fetch lockForUpdate + early-return
                     // idempotent sur le status FRAIS verrouillé (miroir du durcissement OrderService::changeStatus).
-                    return DB::transaction(function () use ($frontendOrder, $request) {
-                        $locked = FrontendOrder::query()->whereKey($frontendOrder->id)->lockForUpdate()->firstOrFail();
-
-                        // Idempotent : déjà annulée par une requête concurrente → aucun re-remboursement.
-                        if ((int) $locked->status === (int) OrderStatus::CANCELED) {
-                            return $locked;
-                        }
-                        // Re-valide transition + seuil sur le status FRAIS (pas le stale route-bound).
-                        if (!(new \App\Rules\ValidStatusTransition($locked->status))->passes('status', $request->status)) {
-                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
-                        }
-                        // [FIX] KIOSK (25) et TAKEAWAY (10) borne : même seuil (annulable jusqu'à PREPARING).
-                        $isKioskOrder = in_array(
-                            (int) $locked->order_type,
-                            [OrderType::KIOSK, OrderType::TAKEAWAY],
-                            true
-                        );
-                        $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
-                        if ($locked->status >= $cancelableThreshold) {
-                            throw new Exception(trans('all.message.order_accept'), 422);
-                        }
-
-                        // [P1-6 SÉCU 2026-08-04] Un client ne peut PAS auto-annuler une commande
-                        // DÉJÀ PAYÉE : le seuil ne testait que `status`. Une commande carte web PAYÉE
-                        // restée PENDING (avant auto-cuisine, ou seal en échec) était annulable → le
-                        // remboursement `cashBack` est conditionné à `$locked->transaction` (relation
-                        // hasOne toujours VIDE pour Mollie, qui n'écrit que la colonne transaction_id)
-                        // → annulation SANS remboursement = argent perdu. Le remboursement d'un
-                        // paiement en ligne = geste comptoir/ops (dashboard Mollie), jamais un
-                        // self-cancel silencieux. Refus 422.
-                        if ((int) $locked->payment_status === PaymentStatus::PAID) {
-                            throw new Exception(trans('all.message.order_accept'), 422);
-                        }
-
-                        if ($locked->transaction) {
-                            // [F-CASH-REFUND-DRAWER 2026-07-15 / P1] slug = origine du paiement.
-                            $refundGateway = ((int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) ? 'cash' : 'credit';
-                            app(PaymentService::class)->cashBack(
-                                $locked,
-                                $refundGateway,
-                                'TXN-' . \Illuminate\Support\Str::random(12)
-                            );
-                        }
-                        app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
-                        $oldStatus = $locked->status;
-                        // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
-                        $cancelReason = $request->input('reason');
-                        if (is_string($cancelReason)) {
-                            $cancelReason = trim($cancelReason);
-                            if ($cancelReason === '') {
-                                $cancelReason = null;
-                            }
-                        }
-                        if ($cancelReason !== null && $locked->isFillable('reason')) {
-                            $locked->reason = $cancelReason;
-                        }
-                        $locked->status = $request->status;
-                        $locked->save();
-                        OrderStateMachine::recordTransition(
-                            FrontendOrder::class,
-                            (int) $locked->id,
-                            (int) $oldStatus,
-                            (int) $request->status,
-                            Auth::check() ? (int) Auth::id() : null,
-                            $cancelReason
-                        );
-                        // Events DispatchableAfterCommit → déférés au commit de la tx (KDS/OSS retirent la tuile).
-                        try {
-                            OrderStatusChanged::dispatch($locked, $oldStatus, (int) $request->status);
-                        } catch (\Exception $e) {
-                            Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
-                        }
-                        SendOrderMail::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        SendOrderSms::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        SendOrderPush::dispatch(['order_id' => $locked->id, 'status' => $request->status]);
-                        // [F-01] Libération stock compensatoire (idempotent via released_qty).
-                        try {
-                            OrderCanceled::dispatch($locked); // allow: stock-release dispatch; recordTransition wrote the canonical audit row.
-                        } catch (\Exception $e) {
-                            Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
-                        }
-                        return $locked;
-                    });
+                    return $this->cancelOwnOrderBeforeAcceptance($frontendOrder, $request->input('reason'), (int) $request->status);
                 }
             } else {
                 abort(403, 'Access denied: you do not own this order.');

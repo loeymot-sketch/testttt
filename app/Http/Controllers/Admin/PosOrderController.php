@@ -19,6 +19,35 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PosOrderController extends AdminController
 {
+    /**
+     * [GOAL G1 2026-09-03] Plafonds de SÉCURITÉ du flux « journée de service » (voir serviceDay).
+     * Ce ne sont pas des choix d'affichage : ils ne mordent pas sur un service réel — Le Cayenne
+     * tourne à quelques centaines de commandes par jour, dont l'immense majorité déjà livrées.
+     * S'ils mordent, `meta.truncated` le DIT et l'écran l'annonce.
+     */
+    private const CAP_ACTIFS = 300;
+
+    private const CAP_LIVREES = 300;
+
+    /** Heure de bascule de la journée de service — miroir du helper front (voir stale()). */
+    private const HEURE_BASCULE_SERVICE = 5;
+
+    /** Les états des quatre files du tiroir, hors livrées (traitées à part, tri inverse). */
+    private const STATUTS_ACTIFS = [
+        \App\Enums\OrderStatus::PENDING,
+        \App\Enums\OrderStatus::ACCEPT,
+        \App\Enums\OrderStatus::PREPARING,
+        \App\Enums\OrderStatus::PREPARED,
+        \App\Enums\OrderStatus::OUT_FOR_DELIVERY,
+    ];
+
+    /** Terminaux non livrés — hors tiroir, sur demande explicite du tableau de suivi. */
+    private const STATUTS_TERMINAUX = [
+        \App\Enums\OrderStatus::CANCELED,
+        \App\Enums\OrderStatus::REJECTED,
+        \App\Enums\OrderStatus::RETURNED,
+    ];
+
     private OrderService $orderService;
 
     public function __construct(OrderService $order)
@@ -305,6 +334,134 @@ class PosOrderController extends AdminController
         }
 
         return $orders;
+    }
+
+    /**
+     * [GOAL G1 2026-09-03] La JOURNÉE DE SERVICE du tiroir de contrôle de la caisse.
+     *
+     * LE DÉFAUT RÉPARÉ. La caisse demandait `admin/pos-order?paginate=1&per_page=100` et
+     * présentait cette page comme la journée entière. `OrderService::list` trie `id desc` par
+     * défaut : au-delà de cent commandes, ce sont donc les PLUS ANCIENNES qui tombaient — celles
+     * qui traînent, celles qu'il faut voir — et rien ne le signalait. Devenaient faux en silence :
+     * les quatre files du tiroir, les deux pastilles de la barre, `activeOrdersStats`,
+     * `readyOrders`, et le rang cuisine annoncé au client (« vous êtes le 4ᵉ », sous-estimé).
+     * Il n'existait AUCUN plafond serveur : `PaginateRequest` ne borne qu'à `max:1000`. Le cent
+     * était un choix purement client, invisible et non signalé.
+     *
+     * POURQUOI UN ENDPOINT SÉPARÉ plutôt que retirer `per_page`. Sans borne, une journée à 900
+     * commandes fait un payload non borné sur l'écran qui doit rester instantané. Celui-ci ne
+     * rend que ce que le tiroir AFFICHE : la journée de service, dans les états des quatre files.
+     *
+     * DEUX FAMILLES, UN SEUL PLAFOND CHACUNE, ET IL EST AVOUÉ.
+     *  · ACTIFS (à encaisser / cuisine / prêtes / en livraison) — ce qui exige encore un geste.
+     *    Borné par la réalité d'un service, jamais par un choix d'affichage. Tri PLUS ANCIENNE
+     *    D'ABORD : si le plafond de sécurité mordait un jour, il tomberait sur les dernières
+     *    arrivées, jamais sur les traînardes qui sont la raison d'être de cet écran.
+     *  · LIVRÉES — l'archive du service. Tri PLUS RÉCENTE D'ABORD, exactement ce que dit la file
+     *    correspondante (`resources/js/support/filesControle.js::fileLivrees`) : « on ouvre cette
+     *    file pour vérifier ce qu'on VIENT de servir, pas pour relire le début du service ».
+     *
+     * `meta.total` est le total RÉEL, `meta.truncated` dit si une borne a mordu. Un compteur
+     * silencieusement faux est pire qu'une borne assumée : c'est le défaut d'origine lui-même.
+     *
+     * Les statuts terminaux non livrés (annulée / rejetée / rendue) restent DEHORS : aucune des
+     * quatre files ne les montre, et `meta.total` doit compter ce que l'écran affiche — sinon il
+     * annonce des commandes introuvables. Le paramètre `avec_terminales=1` les rajoute pour le
+     * tableau de suivi plein écran, dont le compteur « X aujourd'hui » les compte, lui.
+     */
+    public function serviceDay(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->user()?->can('pos-orders') || auth()->user()?->can('pos'), 403);
+
+        try {
+            [$debut, $fin] = $this->fenetreDuService();
+
+            // Plafonds de SÉCURITÉ, jamais des choix d'affichage : ils ne mordent pas sur un
+            // service réel. `plafond` ne peut que les ABAISSER (jamais les lever) — il sert au
+            // banc à prouver que la troncature est avouée quand elle survient.
+            $capActifs = self::CAP_ACTIFS;
+            $capLivrees = self::CAP_LIVREES;
+            if ($request->filled('plafond')) {
+                $demande = max(1, (int) $request->input('plafond'));
+                $capActifs = min($capActifs, $demande);
+                $capLivrees = min($capLivrees, $demande);
+            }
+
+            $statutsActifs = self::STATUTS_ACTIFS;
+            if ($request->boolean('avec_terminales')) {
+                $statutsActifs = array_merge($statutsActifs, self::STATUTS_TERMINAUX);
+            }
+
+            $relations = ['transaction', 'orderItems.orderItem', 'user'];
+
+            $fenetre = fn () => Order::query()
+                ->where('order_datetime', '>=', $debut)
+                ->where('order_datetime', '<', $fin);
+
+            $totalActifs = $fenetre()->whereIn('status', $statutsActifs)->count();
+            $actifs = $fenetre()
+                ->whereIn('status', $statutsActifs)
+                ->with($relations)
+                ->orderBy('order_datetime')
+                ->orderBy('id')
+                ->limit($capActifs)
+                ->get();
+
+            $totalLivrees = $fenetre()->where('status', \App\Enums\OrderStatus::DELIVERED)->count();
+            $livrees = $fenetre()
+                ->where('status', \App\Enums\OrderStatus::DELIVERED)
+                ->with($relations)
+                ->orderByDesc('order_datetime')
+                ->orderByDesc('id')
+                ->limit($capLivrees)
+                ->get();
+
+            $lignes = $actifs->concat($livrees);
+            $total = $totalActifs + $totalLivrees;
+
+            return response()->json([
+                'data' => SimpleOrderResource::collection($this->markSealed($lignes))->resolve(),
+                'meta' => [
+                    'total'     => $total,
+                    'shown'     => $lignes->count(),
+                    'truncated' => $total > $lignes->count(),
+                    'from'      => $debut->toIso8601String(),
+                    'to'        => $fin->toIso8601String(),
+                    'actifs'    => [
+                        'total'     => $totalActifs,
+                        'shown'     => $actifs->count(),
+                        'truncated' => $totalActifs > $actifs->count(),
+                    ],
+                    'livrees'   => [
+                        'total'     => $totalLivrees,
+                        'shown'     => $livrees->count(),
+                        'truncated' => $totalLivrees > $livrees->count(),
+                    ],
+                ],
+            ]);
+        } catch (Exception $exception) {
+            return response()->json(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Bornes de la journée de service, MIROIR EXACT du helper front
+     * `resources/js/helpers/posServiceDay.js::serviceDayRange()` : jours civils complets, et tant
+     * que l'heure de bascule (5 h) n'est pas franchie, la VEILLE reste affichée avec le jour
+     * courant. Les deux doivent bouger ensemble — sinon une commande serait ni dans le tableau,
+     * ni en souffrance. Le 5 h est un littéral VOLONTAIRE des deux côtés (voir `stale()`).
+     *
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon} [début inclus, fin EXCLUE]
+     */
+    private function fenetreDuService(): array
+    {
+        $now = \Carbon\Carbon::now(config('app.timezone'));
+        $debut = $now->copy()->startOfDay();
+        if ($now->hour < self::HEURE_BASCULE_SERVICE) {
+            $debut->subDay();
+        }
+
+        return [$debut, $now->copy()->startOfDay()->addDay()];
     }
 
     /**

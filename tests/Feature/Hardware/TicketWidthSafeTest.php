@@ -34,6 +34,12 @@ class TicketWidthSafeTest extends TestCase
                 $i += 3;
                 continue;
             }
+            // [GOAL REMARQUES 2026-10-03] GS B n = lecture inversée (blanc sur noir) : 3 octets, 0 colonne.
+            // Le décodeur ne le connaissait pas et comptait le « B » comme un caractère imprimé.
+            if ($c === "\x1D" && $i + 2 < $len && $bytes[$i + 1] === 'B') {
+                $i += 3;
+                continue;
+            }
             if ($c === "\x1D" && $i + 1 < $len && $bytes[$i + 1] === 'V') { // coupe
                 if ($cur !== '') { $lines[] = [$cur, $wmul]; $cur = ''; }
                 $i += 2; if ($i < $len) $i++;
@@ -209,16 +215,20 @@ class TicketWidthSafeTest extends TestCase
 
         $lines = $this->decodeLines($bytes);
         $joined = implode("\n", array_map(static fn ($l) => $l['text'], $lines));
-        $this->assertStringContainsString('* Cheddar', $joined, 'supplément doit porter une étoile « * »');
-        $this->assertStringNotContainsString('+ Cheddar', $joined, 'plus de « + » : c\'est « * » maintenant');
+        // [GOAL CAISSE/CUISINE #7 2026-10-02] Le supplément est désormais imprimé en vidéo INVERSE
+        // (GS B 1 … GS B 0, blanc sur noir) : plus d'étoile, plus de « + ». Le décodeur du test lit
+        // l'octet de commande « B » comme un caractère — on vérifie donc l'encadrement sur les octets bruts.
+        $this->assertStringContainsString("\x1dB\x01 Cheddar \x1dB\x00", $bytes, 'supplément en vidéo inverse');
+        $this->assertStringNotContainsString('* Cheddar', $joined, 'plus d\'étoile : le supplément est inversé');
+        $this->assertStringNotContainsString('+ Cheddar', $joined, 'jamais de « + »');
 
         $headDoubleSize = false;
         foreach ($lines as $l) {
-            if (str_contains($l['text'], 'TAC') && $l['width'] === mb_strlen($l['text']) * 2) {
+            if (str_contains($l['text'], 'Tacos') && $l['width'] === mb_strlen($l['text']) * 2) {
                 $headDoubleSize = true;
             }
         }
-        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (TAC) doit être en double taille (2×)');
+        $this->assertTrue($headDoubleSize, 'la ligne produit cuisine (Tacos) doit être en double taille (2×)');
     }
 
     public function test_client_name_printed_on_client_and_kitchen_tickets_when_set(): void

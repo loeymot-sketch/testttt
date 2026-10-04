@@ -104,18 +104,32 @@
         <!-- [GOAL-8AXES V6 T-3.3.2] Paiement MIXTE : mode de la tranche 1 (montant
              saisi via le champ/numpad partagés ci-dessous) + RESTE auto en tranche 2. -->
         <div v-if="selectedMode === 'MIXTE'" class="cc-mixte-section" data-testid="pos-counter-collect-mixte-block">
+          <!--
+            [GOAL CAISSE/CUISINE #2 2026-10-02] Multi-paiement : la 1ʳᵉ partie ET le RESTE se règlent chacun
+            avec le moyen de son choix — Carte bleue, Espèces, Titres-resto (ou Mobile). Avant : seulement
+            carte/espèces, avec inversion automatique ; un titre-resto ne pouvait pas compléter une carte.
+          -->
           <div class="cc-mixte-row">
             <span class="cc-mixte-label">{{ $t('label.mixte_tranche1') || '1ʳᵉ partie' }}</span>
-            <div class="cc-mixte-toggle" role="radiogroup">
-              <button type="button" :class="['cc-mixte-mode', { 'is-active': mixteFirstMode === 'CARD' }]"
-                data-testid="cc-mixte-first-card" @click="setMixteModes('CARD')">💳 Carte</button>
-              <button type="button" :class="['cc-mixte-mode', { 'is-active': mixteFirstMode === 'CASH' }]"
-                data-testid="cc-mixte-first-cash" @click="setMixteModes('CASH')">💶 Espèces</button>
+            <div class="cc-mixte-toggle" role="radiogroup" :aria-label="$t('label.mixte_tranche1')">
+              <button v-for="m in splitModes" :key="'first-' + m.id" type="button"
+                :class="['cc-mixte-mode', { 'is-active': mixteFirstMode === m.id }]"
+                role="radio" :aria-checked="mixteFirstMode === m.id ? 'true' : 'false'"
+                :data-testid="`cc-mixte-first-${m.id.toLowerCase()}`" @click="setMixteModes(m.id)">{{ m.icon }} {{ $t(m.labelKey) }}</button>
             </div>
           </div>
           <div class="cc-mixte-row cc-mixte-remainder" data-testid="cc-mixte-remainder">
-            <span class="cc-mixte-label">{{ $t('label.mixte_reste') || 'Reste' }} ({{ mixteSecondMode === 'CARD' ? '💳 Carte' : '💶 Espèces' }})</span>
-            <strong class="cc-mixte-amount">{{ formatPrice(mixteRemainder) }}</strong>
+            <span class="cc-mixte-label">{{ $t('label.mixte_reste') || 'Reste' }}</span>
+            <strong class="cc-mixte-amount" data-testid="cc-mixte-remainder-amount">{{ formatPrice(mixteRemainder) }}</strong>
+          </div>
+          <div class="cc-mixte-row">
+            <span class="cc-mixte-label">{{ $t('label.mixte_reste_par') || 'Reste payé par' }}</span>
+            <div class="cc-mixte-toggle" role="radiogroup" :aria-label="$t('label.mixte_reste_par')">
+              <button v-for="m in splitModes" :key="'second-' + m.id" type="button"
+                :class="['cc-mixte-mode', { 'is-active': mixteSecondMode === m.id }]"
+                role="radio" :aria-checked="mixteSecondMode === m.id ? 'true' : 'false'"
+                :data-testid="`cc-mixte-second-${m.id.toLowerCase()}`" @click="setMixteSecondMode(m.id)">{{ m.icon }} {{ $t(m.labelKey) }}</button>
+            </div>
           </div>
           <p v-if="(mixteFirstMode === 'CARD' || mixteSecondMode === 'CARD') && !terminalId" class="cc-mixte-warn">
             {{ $t('label.no_terminal_configured') || 'Aucun TPE actif — ajoutez-en un dans Paramètres → Terminaux.' }}
@@ -237,7 +251,7 @@
           >
             <span v-if="submitting" class="cc-spinner" aria-hidden="true"></span>
             <span v-else aria-hidden="true">✓</span>
-            {{ submitting ? $t('label.processing') : $t('button.confirm_and_print') }}
+            {{ submitting ? $t('label.processing') : $t('button.confirm_collect') }}
           </button>
         </div>
       </div>
@@ -310,13 +324,22 @@ export default {
       // Static mode list — kept inside data to ease i18n key reference;
       // intentionally NOT a computed because keys never change.
       modes: [
+        // [GOAL #2 2026-10-02] Ordre demandé par le patron : Espèces, Carte bleue, Titres-resto,
+        // Multi-paiement ; « Mobile » (non demandé, conservé) vient en dernier.
         { id: 'CASH',   icon: '💶', labelKey: 'label.encaisser_mode_cash',   subKey: 'label.encaisser_mode_cash_sub'   },
         { id: 'CARD',   icon: '💳', labelKey: 'label.encaisser_mode_card',   subKey: 'label.encaisser_mode_card_sub'   },
-        { id: 'MOBILE', icon: '📱', labelKey: 'label.encaisser_mode_mobile', subKey: null },
         { id: 'TICKET', icon: '🎟️', labelKey: 'label.encaisser_mode_ticket', subKey: null },
         // [GOAL-8AXES V6 T-3.3.2 2026-08-05 owner] Paiement MIXTE à l'encaissement :
         // « je tape 12 € en carte, il me reste 8 €, je choisis espèces pour le reste ».
         { id: 'MIXTE',  icon: '💳💶', labelKey: 'label.encaisser_mode_mixte', subKey: 'label.encaisser_mode_mixte_sub' },
+        { id: 'MOBILE', icon: '📱', labelKey: 'label.encaisser_mode_mobile', subKey: null },
+      ],
+      // [GOAL #2 2026-10-02] Moyens proposés pour CHAQUE partie d'un multi-paiement.
+      splitModes: [
+        { id: 'CARD',   icon: '💳', labelKey: 'label.encaisser_mode_card' },
+        { id: 'CASH',   icon: '💶', labelKey: 'label.encaisser_mode_cash' },
+        { id: 'TICKET', icon: '🎟️', labelKey: 'label.encaisser_mode_ticket' },
+        { id: 'MOBILE', icon: '📱', labelKey: 'label.encaisser_mode_mobile' },
       ],
       // [T-3.3.2] Tranche 1 : mode + montant saisi ; tranche 2 = RESTE auto.
       mixteFirstMode: 'CARD',
@@ -375,7 +398,9 @@ export default {
         return this.orderTotal > 0
           && this.mixteFirstAmount > 0
           && this.mixteFirstAmount < this.orderTotal
-          && this.mixteFirstMode !== this.mixteSecondMode
+          // [GOAL #2 2026-10-02] Les deux parties peuvent avoir le MÊME moyen (ex. deux cartes) :
+          // le reste « peut se régler avec un autre moyen (CB, espèces, titre-resto…) », y compris
+          // le même. Seule exigence : un TPE actif si une partie est en carte.
           && (!(this.mixteFirstMode === 'CARD' || this.mixteSecondMode === 'CARD') || !!this.terminalId);
       }
       // MOBILE / TICKET : validation directe (backend accepte received null).
@@ -404,7 +429,7 @@ export default {
     },
     amountLabel() {
       if (this.selectedMode === 'MIXTE') {
-        return (this.mixteFirstMode === 'CARD' ? '💳 ' : '💶 ')
+        return ((this.splitModes.find((m) => m.id === this.mixteFirstMode) || {}).icon || '💶') + ' '
           + (this.$t('label.mixte_amount_label') !== 'label.mixte_amount_label'
             ? this.$t('label.mixte_amount_label')
             : 'Montant de la 1ʳᵉ partie');
@@ -425,6 +450,22 @@ export default {
     },
   },
   watch: {
+    // [GOAL CAISSE/CUISINE #2 2026-10-02] « Si je choisis CB avec un montant inférieur au total, le
+    // RESTE doit pouvoir se régler avec un autre moyen. » Avant : CARTE exigeait montant ≥ total et
+    // le bouton Confirmer restait mort sans explication. Maintenant : dès que le caissier tape un
+    // montant carte strictement inférieur au total, l'écran bascule en Multi-paiement avec CE montant
+    // en 1ʳᵉ partie (carte bleue) et le reste à régler par le moyen de son choix. Seule une saisie
+    // du caissier déclenche la bascule (pas le pré-remplissage = total).
+    cashReceivedRaw() {
+      if (this.selectedMode !== 'CARD' || this.cashFieldPristine || !this.order) return;
+      const amount = this.cashReceivedNumber;
+      if (amount > 0 && amount < this.orderTotal) {
+        this.selectedMode = 'MIXTE';
+        this.mixteFirstMode = 'CARD';
+        this.mixteSecondMode = 'CASH';
+        this.loadActiveTerminal();
+      }
+    },
     // Pre-fill the received input with the order total the moment the
     // modal mounts on a fresh order so a one-tap "Confirmer" suffices for
     // the canonical exact-change case (cashier's most common scenario).
@@ -499,7 +540,13 @@ export default {
     // sur l'autre mode (cas owner : carte d'abord, le reste en espèces — ou l'inverse).
     setMixteModes(firstMode) {
       this.mixteFirstMode = firstMode;
-      this.mixteSecondMode = firstMode === 'CARD' ? 'CASH' : 'CARD';
+      // [GOAL #2 2026-10-02] Reste par défaut : l'autre moyen le plus courant (carte↔espèces) ;
+      // titre-resto / mobile en 1ʳᵉ partie → reste en espèces. Le caissier peut le changer
+      // ensuite (setMixteSecondMode).
+      this.mixteSecondMode = firstMode === 'CARD' ? 'CASH' : (firstMode === 'CASH' ? 'CARD' : 'CASH');
+    },
+    setMixteSecondMode(mode) {
+      this.mixteSecondMode = mode;
     },
     async loadActiveTerminal() {
       if (this.terminalsLoaded) return;
@@ -559,7 +606,13 @@ export default {
       if (this.submitting) return;
       const base = this.cashFieldPristine ? 0 : this.cashReceivedNumber;
       this.cashFieldPristine = false;
+      // @pricing-allowed-block start
+      // Additionne les coupures tapées par le caissier pour préremplir "espèces reçues" —
+      // arithmétique sur l'argent physiquement posé au comptoir, jamais un prix produit/commande
+      // (le total scellé reste calculé et vérifié côté backend ailleurs dans ce flux).
+      // signoff-pending — date_limit: 2026-10-27
       const total = Math.round((base + Number(amount)) * 100) / 100;
+      // @pricing-allowed-block end
       this.cashReceivedRaw = String(total.toFixed(2)).replace('.', ',');
     },
     // [PRINT-AENCAISSER 2026-07-03] Imprime le ticket CLIENT ou CUISINE de la commande

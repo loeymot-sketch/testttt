@@ -92,17 +92,34 @@ correctness, coherence, reliability, and quality**.
 ### Single Source of Truth (SSOT) — menu data
 - **DB items table** = source officielle des produits (45 items V1 Le Cayenne)
 - **`config/menu.php`** = config menu structure si modifié post-reset
-- **`mobile/data/menu.js`** = mirror canonical mobile standalone
-- **`/Users/1millnonstop/Downloads/web/data/menu.js`** = mirror canonical web standalone
+- ~~`mobile/data/menu.js`~~ = miroir du prototype `mobile/`, hors chemin (2026-09-30)
+- ⚠️ **`/Users/1millnonstop/Downloads/web/` EST UNE COPIE PÉRIMÉE — NE PAS L'UTILISER.**
+  Corrigé le 2026-09-06 : figée au 12 juillet, sans dépôt distant, `funnel.jsx` 46 Ko.
+  Le site RÉELLEMENT DÉPLOYÉ est **`/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne`**
+  (distant `github.com/loeymot-sketch/Site-lecayenne`, `funnel.jsx` 177 Ko, dossier `compiled/`).
+  Ce leurre m'a fait conclure à tort « le site n'a pas bougé depuis le 24 août » alors que le
+  vrai dépôt avait été livré le 3 septembre. **Toujours vérifier `git remote -v` avant de
+  conclure quoi que ce soit sur le site.**
+- **`<dépôt déployé>/data/menu.js`** = mirror canonical web standalone
 - ⛔ **JAMAIS** inventer de produits (« Box Familiale », « Nashville », « Solo »...). Si un produit n'apparaît PAS dans la DB items table, il n'existe pas.
 - ⛔ JAMAIS deviner les noms catégorie — toujours `grep "Sandwich\|Tacos\|Bols"` la source
 
 ### Codebases (3 séparés, mandats distincts owner)
 - **Backend testttt** (ici) = V1 LOCAL Le Cayenne, single restaurant FR
-- **Mobile RN** (`mobile/`) = STANDALONE separated, NO API wireup V1 (owner mandate)
-- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = STANDALONE separated, NO API wireup V1
+- **Application des stores (Apple / Google)** = le site `lecayenne.fr` **empaqueté par
+  Capacitor 8** dans `/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/app/`
+  (`fr.lecayenne.app`, procédure `app/PUBLICATION.md`, plan
+  `plans/GOAL_STORES_FINITION_APP_2026-09-30.md`). **Câblée au backend testttt en production**
+  (routes `guest-signup/email-login`, `social/*`, `delete-account`, CORS `https://localhost`).
+  Son paquet `app/www` se périme à chaque correctif du site : `npm run check:www` avant tout build.
+- ⛔ **`mobile/` N'EST PAS l'application** — corrigé le 2026-09-30 après ancrage : prototype
+  navigateur de mai 2026 (React UMD + Babel à la volée, données locales, `api/client.js` jamais
+  branché, ni `package.json` ni `ios/`/`android/`). Ce document l'appelait « Mobile RN,
+  standalone, NO API wireup » : c'était faux. Hors chemin store ; ne pas y faire cibler un audit.
+- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = copie PÉRIMÉE (cf. ci-dessus), jamais.
 
-⛔ **JAMAIS wire mobile/web aux APIs du backend testttt** sauf demande explicite owner. Composer_profile hardcoded mirror = pattern accepté pour future wireup mécanique.
+⛔ **JAMAIS wire le prototype `mobile/` aux APIs du backend testttt.** Le site (et donc l'application
+des stores) **est** câblé au backend : c'est le seul client mobile réel.
 
 ### Design palette mandate
 - **Kiosk + POS + Admin (backend testttt)** : palette Cayenne brand
@@ -438,7 +455,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **24 models** (baseline locked par
+- `BranchScope` global appliqué sur **25 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,
@@ -450,7 +467,10 @@ Loi de Finance France — non-négociable, prison time si violé.
   appartient à SA caisse, jamais à une autre),
   WheelSpin (roue de la fortune 2026-08-09),
   UberTicketCapture (ticket Uber photographié 2026-08-10 — une capture
-  appartient à la caisse qui l'a prise, jamais à une autre).
+  appartient à la caisse qui l'a prise, jamais à une autre),
+  UberDirectDelivery (course de livraison Uber Direct 2026-09-06 — une course
+  appartient au restaurant qui l'a commandée ; table dédiée à dessein, pour que
+  le cycle de LIVRAISON ne se mêle jamais à la machine à états de la CUISINE).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
 - ⚠️ **`User` N'EST PAS ISOLÉ PAR BRANCHE — corrigé dans CE document le 2026-08-14 après
   vérification en lecture de code (décision owner).** `User.php` enregistre bien le scope
@@ -498,13 +518,18 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
 - FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
-  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 64`
-  vérifié dans le code le 2026-08-15** (`tests/Feature/Sentinels/
-  FormRequestAuthzDriftSentinelTest.php:67`) — le cliquet a déjà été
-  resserré deux fois depuis la dernière note ici (69 → 66 → **64**,
-  historique complet : 77 initial Wave 8 → 74 post Wave 5H → 69 post
-  BUILD-6 → 66 → 64). V1.0.2 BACKLOG : continuer le chip-away par vague
-  de commits et resserrer `RETURN_TRUE_BASELINE` à chaque fois.
+  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 52`,
+  relu dans le code le 2026-10-01** (`tests/Feature/Sentinels/
+  FormRequestAuthzDriftSentinelTest.php:83`). Historique : 77 initial
+  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 → 66 → 64 → **52**.
+  V1.0.2 BACKLOG : continuer le chip-away par vague de commits et
+  resserrer `RETURN_TRUE_BASELINE` à chaque fois.
+  ⚠️ **Ce nombre avait dérivé : ce document annonçait 64 quand le code
+  était à 52.** Cette mémoire est relue à chaque démarrage de session, par
+  chaque agent : un chiffre faux ici se propage partout et fait croire qu'il
+  reste 12 FormRequests à traiter qui l'ont déjà été. Le cliquet descend à
+  chaque vague — **relire la constante avant de la citer**, ne jamais la
+  recopier depuis ce document.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating

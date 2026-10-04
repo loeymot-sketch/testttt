@@ -73,8 +73,8 @@
               <span class="kiosk-waiting-meta-value">{{ positionAhead }}</span>
               <span class="kiosk-waiting-meta-label">{{ $t('kiosk.waiting_ui.orders_ahead_label') }}</span>
             </div>
-            <div v-if="waitLow !== null && waitHigh !== null" class="kiosk-waiting-meta-item" data-testid="kiosk-wait-estimate">
-              <span class="kiosk-waiting-meta-value">{{ waitLow }}-{{ waitHigh }} min</span>
+            <div v-if="waitLabel !== null" class="kiosk-waiting-meta-item" data-testid="kiosk-wait-estimate">
+              <span class="kiosk-waiting-meta-value">{{ waitLabel }}</span>
               <span class="kiosk-waiting-meta-label">{{ $t('kiosk.waiting_ui.wait_estimate_label') }}</span>
             </div>
           </div>
@@ -290,6 +290,14 @@ export default {
     isRush() {
       const flags = this.$store.getters['kioskMenu/kioskBranchFlags'];
       return !!(flags && flags.is_rush);
+    },
+    // [2026-09-23] Une fois acceptée, OrderTrackingService peut renvoyer une
+    // valeur précise (wait_low === wait_high) — éviter l'artefact "15-15 min".
+    waitLabel() {
+      if (this.waitLow === null || this.waitHigh === null) return null;
+      return this.waitLow === this.waitHigh
+        ? `${this.waitLow} min`
+        : `${this.waitLow}-${this.waitHigh} min`;
     },
   },
   mounted() {

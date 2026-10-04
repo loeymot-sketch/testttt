@@ -121,7 +121,10 @@ describe('ItemComponent.buildWizardRestorePayload — sauce via item_variations 
                     { id: 13, name: 'Algérienne' },
                 ],
             },
-            extras: [],
+            // The real Cayenne bills every sauce after the first through this
+            // generic extra. It must never become a third named sauce when the
+            // ticket already restores Andalouse + Algérienne.
+            extras: [{ id: 501, name: 'Sauce supplémentaire', convert_price: 0.5 }],
         };
     }
 
@@ -152,6 +155,19 @@ describe('ItemComponent.buildWizardRestorePayload — sauce via item_variations 
         expect(restore.sauces['s_13']).toBe(true);
         expect(restore.sauces['s_14']).toBeUndefined();
         expect(restore.sauceSingle).toBe(13);
+    });
+
+    it('restaure les deux sauces nommées même si la seconde est facturée via l’extra générique', () => {
+        const cartLine = makeTacosCartLine('Andalouse');
+        cartLine.item_extras = [{ id: 501, name: 'Sauce supplémentaire', quantity: 1 }];
+        cartLine.instruction = 'CAYENNE\nViandes : Poulet mariné Sauce : Andalouse, Algérienne';
+
+        const restore = buildWizardRestorePayload(cartLine, makeTacosItem());
+
+        expect(restore.sauceOrder).toEqual(['s_14', 's_13']);
+        expect(restore.sauces['s_14']).toBe(true);
+        expect(restore.sauces['s_13']).toBe(true);
+        expect(restore.sauces['s_501']).toBeUndefined();
     });
 });
 

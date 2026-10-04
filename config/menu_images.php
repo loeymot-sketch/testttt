@@ -83,7 +83,6 @@ return [
 
         // ── Galette (cat 2)
         'galette-cayenne' => 'galette.png',
-        'galette-normale' => 'galette.png',
         // [AUDIT 2026-08-12] Créée le jour même, elle n'avait aucune entrée ici : l'accesseur
         // `Item::getThumbAttribute()` ne lit que `items` + `addons`, jamais `categories`. Une
         // entrée manquante ne casse rien et ne lève aucune erreur — elle sert simplement la
@@ -135,6 +134,7 @@ return [
         'jambon-de-dinde'         => 'jambon-dinde.png',
         'supp-jambon'             => 'jambon-dinde.png',
         'fromage-supplementaire'  => 'fromage.png',
+        'cheddar'                 => 'cheddar.png',
         'supp-cheddar'            => 'cheddar.png',
         'supp-emmental'           => 'fromage.png',
         'fromage-a-raclette'      => 'raclette.png',
@@ -220,6 +220,11 @@ return [
         'terminator'     => 'sandwich-terminator.png',
         'tacos-m'        => 'tacos-cayenne.png',
         'tacos-l'        => 'tacos-cayenne.png',
+        // [OWNER TACOS-XL 2026-08-24] Le tacos 3 viandes — « mettre la même photo » que ses
+        // aînés. Ce n'est pas un oubli de visuel dédié : les trois tailles montrent le même
+        // tacos, seule la garniture change. Sans cette ligne, le nouveau produit tomberait sur
+        // `item-default.svg` et sortirait en gris sur la borne, la caisse et le web.
+        'tacos-xl'       => 'tacos-cayenne.png',
         'chicken-burger' => 'chicken_burger.png',
         'cheese-burger'  => 'cheese-burger.png',
         'double-cheese'  => 'double-cheese.png',

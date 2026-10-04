@@ -6,7 +6,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const BASE = 'http://127.0.0.1:8766';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8766').replace(/\/$/, '');
 const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
 const OUT = path.resolve(__dirname, '../../tests/captures/borne-e2e-logique-2026-07-21');
 fs.mkdirSync(OUT, { recursive: true });

@@ -51,7 +51,7 @@
         { id: 3, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90,  extras_summary: 'Viande au choix · Sauce fromagère' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.90,  extras_summary: '' },
       ],
-      points_earned_estimate: 24,     // Math.floor(24.70 × 1) — 1 pt/€ FLOOR (backend)
+      points_earned_estimate: 247,    // Math.floor(24.70 × 10) — 10 pt/€ FLOOR (backend)
     },
   ];
 
@@ -67,7 +67,7 @@
         { id: 2, item_id: 702,  name: 'Grande Frites',     qty: 1, line_total: 4.00, extras_summary: 'Nature' },
         { id: 3, item_id: 1001, name: 'Coca-Cola 33cl',    qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 13,   // Math.floor(13.30 × 1)
+      points_earned: 133,  // Math.floor(13.30 × 10)
     },
     {
       id: 'C-1208', number: 1208, status: 'delivered', status_label: 'Récupérée',
@@ -79,7 +79,7 @@
         { id: 1, item_id: 401, name: 'Chicken Burger', qty: 2, line_total: 9.80, extras_summary: '' },
         { id: 2, item_id: 701, name: 'Petite Frites',  qty: 1, line_total: 2.50, extras_summary: 'Nature' },
       ],
-      points_earned: 12,   // Math.floor(12.30 × 1)
+      points_earned: 123,  // Math.floor(12.30 × 10)
     },
     {
       id: 'C-1190', number: 1190, status: 'delivered', status_label: 'Récupérée',
@@ -92,7 +92,7 @@
         { id: 2, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90, extras_summary: 'Viande au choix · Sauce fromagère' },
         { id: 3, item_id: 1002, name: 'Coca-Cola Zero 33cl',      qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 16,   // Math.floor(16.80 × 1)
+      points_earned: 168,  // Math.floor(16.80 × 10)
     },
     {
       id: 'C-1142', number: 1142, status: 'delivered', status_label: 'Récupérée',
@@ -104,7 +104,7 @@
         { id: 1, item_id: 101,  name: 'Cayenne',            qty: 1, line_total: 7.40, extras_summary: 'Pain · Sauce fromagère maison' },
         { id: 2, item_id: 1001, name: 'Coca-Cola 33cl',     qty: 1, line_total: 1.90, extras_summary: '' },
       ],
-      points_earned: 9,   // Math.floor(9.30 × 1)
+      points_earned: 93,  // Math.floor(9.30 × 10)
     },
     {
       id: 'C-1100', number: 1100, status: 'delivered', status_label: 'Récupérée',
@@ -116,7 +116,7 @@
         { id: 1, item_id: 104, name: 'Terminator', qty: 1, line_total: 9.00, extras_summary: '2 viandes au choix · Sauce algérienne' },
         { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.50, extras_summary: '' },
       ],
-      points_earned: 12,  // Math.floor(12.50 × 1)
+      points_earned: 125, // Math.floor(12.50 × 10)
     },
   ];
 
@@ -167,7 +167,7 @@
     const count = Number(o.order_items) || 0;
     const est = (window.LC && window.LC.loyalty && window.LC.loyalty.estimateEarn)
       ? window.LC.loyalty.estimateEarn(total)
-      : Math.floor(total); // 1 pt/€ FLOOR par défaut
+      : Math.floor(total * 10); // 10 pt/€ FLOOR par défaut (loyalty.js toujours chargé avant : chemin théorique)
     return {
       id: serial,
       backend_id: o.id,

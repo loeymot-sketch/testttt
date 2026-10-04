@@ -78,8 +78,8 @@
             <span class="ot-meta-value">{{ positionAhead }}</span>
             <span class="ot-meta-label">commande{{ positionAhead > 1 ? 's' : '' }} avant vous</span>
           </div>
-          <div v-if="waitLow !== null && waitHigh !== null" class="ot-meta-item">
-            <span class="ot-meta-value">{{ waitLow }}-{{ waitHigh }} min</span>
+          <div v-if="waitLabel !== null" class="ot-meta-item">
+            <span class="ot-meta-value">{{ waitLabel }}</span>
             <span class="ot-meta-label">temps d'attente estimé</span>
           </div>
         </div>
@@ -147,6 +147,17 @@ export default {
       return this.status === 13 // DELIVERED (générique "remise/terminée")
         ? 'Bon appétit !'
         : 'Vous pouvez venir la récupérer au comptoir.';
+    },
+    // [2026-09-23 owner] Une fois la commande acceptée, OrderTrackingService
+    // renvoie une valeur PRÉCISE (wait_low === wait_high, le temps fixé par
+    // le caissier, décompté) — "15-15 min" serait un artefact visible du
+    // format générique en fourchette. On n'affiche la fourchette que quand
+    // les deux bornes diffèrent réellement (estimation générique 10-15).
+    waitLabel() {
+      if (this.waitLow === null || this.waitHigh === null) return null;
+      return this.waitLow === this.waitHigh
+        ? `${this.waitLow} min`
+        : `${this.waitLow}-${this.waitHigh} min`;
     },
   },
   mounted() {

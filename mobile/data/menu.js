@@ -30,6 +30,9 @@
 //   - database/seeders/OwnerMenuUpdate20260623Seeder.php (2026-06-23/24) — menu canon
 //   - DB tables: items, item_variations, item_extras, item_addons,
 //     item_wizard_profiles, item_wizard_steps
+//   - [OWNER TACOS-XL 2026-08-24] Tacos L 7,90 → 8,90 et NOUVEAU Tacos XL 10,90 (3 viandes au
+//     choix COMPRISES dans le prix, même photo). Appliqué en base par
+//     app/Console/Commands/EnsureTacosXl3ViandesCommand.php.
 //
 // Catégories visibles (9) : Sandwichs, Galette, Burgers, Tacos, Bols, Frites,
 //              Desserts, Boissons, Menu enfant.
@@ -86,6 +89,8 @@
     // Tacos (cat 5) — board deliberately shares one tacos photo
     'tacos-m': 'tacos.png',
     'tacos-l': 'tacos.png',
+    // [OWNER 2026-08-24] Le tacos 3 viandes — même photo, comme ses aînés.
+    'tacos-xl': 'tacos.png',
     // Bols (cat 6)
     'bol-frites': 'bol-frites.png',
     'bol-riz':    'bol-riz.png',
@@ -127,6 +132,7 @@
     'galette-cayenne': 'signature/cayenne-hero.png',
     'tacos-m': 'signature/tacos-hero.png',
     'tacos-l': 'signature/tacos-hero.png',
+    'tacos-xl': 'signature/tacos-hero.png',
   };
 
   function imgFor(slug) {
@@ -283,7 +289,7 @@
     { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.png' },
     { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 4,  slug: 'burgers',      name: 'Burgers',     icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Chicken, Cheese, Double Cheese, Fish, Big, Grill', image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande) ou Tacos L (2 viandes)',       image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.png' },
     // [GOAL-SYNC 2026-07-08] wizard_template 'tacos'→'bol' (aligné web — sauces servies par BOL_SAUCES).
     { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'bol',      has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
@@ -459,7 +465,8 @@
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 12 }),
   ];
 
-  // ====== TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 7,90 (2 viandes).
+  // ====== TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 8,90 (2 viandes) /
+  //   Tacos XL 10,90 (3 viandes) [OWNER 2026-08-24].
   //   Galette de blé · frites maison · sauce. Formule menu +2,50€.
   //   [GOAL-SYNC 2026-07-08] crudités RESTAURÉES (revert backend 05e5cacd0 2026-07-07 —
   //   fixture canon : extras group_label='crudite' ×4 sur items 26/97). ======
@@ -468,10 +475,16 @@
       'Galette de blé · 1 viande au choix · Frites maison · Sauce',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
-    mkItem(502, 'tacos-l', 5, 'Tacos L', 7.90,
+    mkItem(502, 'tacos-l', 5, 'Tacos L', 8.90,
       'Galette de blé · 2 viandes au choix · Frites maison · Sauce',
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),
+    // [OWNER 2026-08-24] Les TROIS viandes sont comprises dans les 10,90 € (`viandes: 3` pilote
+    // le compteur du wizard). La QUATRIÈME reste payante via `has_extra_meat` (+2,50).
+    mkItem(503, 'tacos-xl', 5, 'Tacos XL', 10.90,
+      'Galette de blé · 3 viandes au choix · Frites maison · Sauce',
+      { viandes: 3, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
+        is_featured: true, is_new: true, tags: ['NOUVEAU'], emoji: '🌮', time: 14 }),
   ];
 
   // ====== BOLS (cat 6) — seeder : 2 produits @ 7,90, viande au choix (parmi 7), sauce, suppléments.

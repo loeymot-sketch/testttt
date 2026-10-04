@@ -322,10 +322,13 @@ function App() {
           onPickCounter = COMMANDE RÉELLE (placeCounterOrder) ; onPickCard gardé derrière le flag (défense en profondeur). */}
       {modal === 'pay' && <ModalPayChoice total={total} flag={window.LC.config.onlineCardEnabled} onClose={()=>setModal(null)} onPickCounter={async ()=>{ setModal(null); const ok = await placeCounterOrder(); if (!ok) return; setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); /* [GOAL-SYNC-HEAL 2026-07-08] Honnêteté : PAS de « +points gagnés » quand la commande n'a PAS été transmise (mode hors-ligne) */ if (ok !== 'offline') setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ if (!window.LC.config.onlineCardEnabled) return; setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted order total.
-          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : 1 pt/€ FLOOR du total TTC
-          (Math.floor(total × points_per_euro=1)) — l'EARN réel est crédité par le backend au statut
-          PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé (story standalone). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+          [GOAL-SYNC 2026-07-08] Estimation earn alignée backend (contrat §2) : points_per_euro FLOOR
+          du total TTC (Math.floor(total × points_per_euro)) — l'EARN réel est crédité par le backend
+          au statut PREPARED/DELIVERED, le client n'ajoute jamais de points. Fallback 25 conservé
+          (story standalone). [2026-09-25] Bug réel corrigé : ce calcul multipliait par 1 en dur
+          (Math.floor(total)), jamais par le vrai taux — un client voyait "12 points" pour une
+          commande à 12 € au lieu des 120 réellement crédités (barème 10 pts/€). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.floor(lastOrder.total * (Number(window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.points_per_euro) || 10)) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);

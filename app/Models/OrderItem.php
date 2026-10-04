@@ -12,6 +12,117 @@ class OrderItem extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const LINE_TYPE_CATALOG = 'catalog';
+    public const LINE_TYPE_MANUAL_SUPPLEMENT = 'manual_supplement';
+
+    /**
+     * [P0 CAISSE 2026-09-29] Insertion en lot des lignes d'une commande.
+     *
+     * LE DÉFAUT QUE CETTE MÉTHODE CORRIGE
+     * -----------------------------------
+     * Signalement propriétaire : « j'arrive pas à rajouter un supplément libre,
+     * ça met toujours erreur ; le chiffre s'ajoute au panier mais j'arrive pas à
+     * le passer en commande, ni sur le ticket ni sur l'écran de cuisine ».
+     *
+     * Reproduit : `OrderItem::insert()` écrit TOUTES les lignes d'une commande en
+     * UN SEUL `INSERT ... VALUES (…), (…)`. Laravel `ksort` chaque ligne puis
+     * construit la liste de colonnes à partir de la PREMIÈRE — toutes les lignes
+     * d'un lot doivent donc avoir exactement le même JEU de clés.
+     *
+     * Or `PricingService` produit deux formes différentes :
+     *   · ligne catalogue        → PAS de `line_type`, PAS de `manual_label` (20 colonnes)
+     *   · ligne supplément libre → `line_type` ET `manual_label`             (22 colonnes)
+     *
+     * Un panier ne contenant QUE l'une des deux formes passe — d'où un banc vert
+     * (QuoteBindingTest::test_pos_commit_persists_a_sealed_manual_supplement_as_a_fiscal_line,
+     * une seule ligne). Le panier RÉEL du caissier est mixte : un produit PLUS un
+     * supplément libre. Il produit alors :
+     *     SQLSTATE[HY000] : all VALUES must have the same number of terms
+     * La transaction échoue ENTIÈREMENT : aucune ligne, aucune commande — d'où
+     * « rien au ticket, rien en cuisine ». Le message SQL ne nomme jamais le
+     * supplément, ce qui rendait la cause invisible depuis la caisse.
+     *
+     * POURQUOI LA NORMALISATION EST SANS EFFET DE BORD
+     * ------------------------------------------------
+     * Migration `2026_09_15_000001_add_manual_supplement_fields_to_order_items` :
+     *   · `line_type`    string(32) NOT NULL **DEFAULT 'catalog'**
+     *   · `manual_label` string(80) **nullable**
+     * Écrire explicitement `catalog` / `null` sur une ligne catalogue donne donc
+     * exactement ce que la base écrivait déjà d'elle-même. Aucun prix, aucune
+     * taxe, aucun montant n'est touché : incidence NF525 nulle. Et cela évite de
+     * modifier `PricingService`, qui est une ZONE GELÉE (CLAUDE.md §7).
+     *
+     * ON NE MASQUE PAS LES DIVERGENCES FUTURES
+     * ----------------------------------------
+     * Après normalisation des deux colonnes connues, toute divergence RESTANTE
+     * est un vrai défaut : on lève une exception qui NOMME les colonnes fautives,
+     * au lieu de laisser partir un INSERT dont le message SQL ne désigne rien.
+     * Compléter aveuglément toute clé manquante par `null` serait pire : cela
+     * écraserait en silence des valeurs par défaut légitimes.
+     *
+     * @param  array<int,array<string,mixed>>  $rows
+     */
+    public static function insertRows(array $rows): bool
+    {
+        if ($rows === []) {
+            return false;
+        }
+
+        // [AUDIT AVAL 2026-09-29] Ne normaliser QUE si le lot contient réellement une
+        // ligne supplément. Sinon, un lot 100 % catalogue repart tel quel — sans
+        // `line_type` ni `manual_label` — exactement comme avant ce correctif.
+        // Pourquoi : normaliser toujours couplait TOUTE commande caisse à la
+        // migration `2026_09_15_000001` ; sur une base où elle manque (constaté sur
+        // la base de dev locale), la caisse ne prenait plus AUCUNE commande
+        // (« Unknown column 'line_type' »), supplément ou pas. Le correctif reste
+        // entier pour les paniers mixtes, et cesse d'être un point de défaillance
+        // pour les autres.
+        $contientUnSupplement = false;
+        foreach ($rows as $row) {
+            if ((string) ($row['line_type'] ?? self::LINE_TYPE_CATALOG) === self::LINE_TYPE_MANUAL_SUPPLEMENT) {
+                $contientUnSupplement = true;
+                break;
+            }
+        }
+
+        if ($contientUnSupplement) {
+            foreach ($rows as $i => $row) {
+                // `+` n'écrase JAMAIS une clé présente : une ligne supplément garde
+                // son propre `line_type` / `manual_label`.
+                $rows[$i] = $row + [
+                    'line_type' => self::LINE_TYPE_CATALOG,
+                    'manual_label' => null,
+                ];
+            }
+        }
+
+        $reference = array_keys($rows[array_key_first($rows)]);
+        sort($reference);
+
+        foreach ($rows as $i => $row) {
+            $clefs = array_keys($row);
+            sort($clefs);
+
+            if ($clefs !== $reference) {
+                $manquantes = array_diff($reference, $clefs);
+                $enTrop = array_diff($clefs, $reference);
+
+                throw new \LogicException(sprintf(
+                    'Lignes de commande non homogènes : la ligne %d %s%s. Un INSERT '
+                    . 'multi-lignes exige le même jeu de colonnes partout '
+                    . '(voir OrderItem::insertRows).',
+                    $i,
+                    $manquantes !== [] ? 'ne porte pas [' . implode(', ', $manquantes) . ']' : '',
+                    $enTrop !== []
+                        ? ($manquantes !== [] ? ' et ' : '') . 'porte en trop [' . implode(', ', $enTrop) . ']'
+                        : ''
+                ));
+            }
+        }
+
+        return static::insert($rows);
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -63,6 +174,8 @@ class OrderItem extends Model
         'order_id',
         'branch_id',
         'item_id',
+        'line_type',
+        'manual_label',
         'quantity',
         'discount',
         'tax_name',
@@ -78,6 +191,7 @@ class OrderItem extends Model
         'total_price',
         'instruction',
         'allergens_snapshot',
+        'kitchen_bumped_at',
         'creator_type',
         'creator_id',
         'editor_type',
@@ -90,6 +204,8 @@ class OrderItem extends Model
         'order_id'             => 'integer',
         'branch_id'            => 'integer',
         'item_id'              => 'integer',
+        'line_type'            => 'string',
+        'manual_label'          => 'string',
         'quantity'             => 'integer',
         'discount'             => 'decimal:6',
         'tax_name'             => 'string',
@@ -105,6 +221,7 @@ class OrderItem extends Model
         'total_price'          => 'decimal:6',
         'instruction'          => 'string',
         'allergens_snapshot'   => 'array',
+        'kitchen_bumped_at'    => 'datetime',
         'creator_type'         => 'string',
         'creator_id'           => 'integer',
         'editor_type'          => 'string',

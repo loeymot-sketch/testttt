@@ -5,6 +5,8 @@ namespace App\Rules;
 use App\Enums\Status;
 use App\Models\ItemAttribute;
 use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
+use App\Models\Scopes\WizardProfileBranchScope;
 use Closure;
 use Illuminate\Support\Collection;
 
@@ -24,7 +26,7 @@ class MultiVariationConstraint
      * @param  array<int, mixed>  $orderItems  Liste d'items (chacun peut contenir item_variations)
      * @param  Closure(int $itemIndex, string $message): void  $failItem
      */
-    public static function validateCollectionKeyedByItemIndex(array $orderItems, Closure $failItem): void
+    public static function validateCollectionKeyedByItemIndex(array $orderItems, Closure $failItem, ?int $branchId = null): void
     {
         $allVarIds = [];
         foreach ($orderItems as $item) {
@@ -53,10 +55,10 @@ class MultiVariationConstraint
         // per-attribute min check below only inspects attributes PRESENT in the
         // payload, so an order missing a required modifier entirely (a tacos
         // with no meat, a sandwich with no bread, a bol with no sauce) was
-        // silently accepted. All required attributes in the V1 menu are visible
-        // on both pos & kiosk, so enforcing presence cannot reject a valid order
-        // (the wizard always defaults a value for each required attribute).
-        $requiredByItem = self::requiredAttributesByOrderedItem($orderItems);
+        // silently accepted. The active published composer profile is the
+        // visibility contract when it exists; otherwise preserve the legacy
+        // V1 required-attribute behavior.
+        $requiredByItem = self::requiredAttributesByOrderedItem($orderItems, $branchId);
 
         if ($allVarIds === [] && $requiredByItem === []) {
             return;
@@ -115,7 +117,7 @@ class MultiVariationConstraint
      * @param  array<int, mixed>  $orderItems
      * @return array<int, array<int, array{name: string, min: int}>>  [item_id => [attribute_id => [name, min]]]
      */
-    private static function requiredAttributesByOrderedItem(array $orderItems): array
+    private static function requiredAttributesByOrderedItem(array $orderItems, ?int $branchId = null): array
     {
         $itemIds = [];
         foreach ($orderItems as $item) {
@@ -128,8 +130,57 @@ class MultiVariationConstraint
             return [];
         }
 
-        $rows = ItemVariation::query()
+        // A published composer profile is the product's active contract. An
+        // inactive legacy step (for example “pain”) must not be resurrected
+        // by the generic presence validator: the kiosk cannot select it, yet
+        // the old rule rejected the quote at checkout. PricingService already
+        // enforces the profile's active step min/max rules.
+        // Only the nullable wizard-profile tenant filter must be lifted here:
+        // the query re-applies the permitted global-or-requested-branch policy
+        // below. Do not use `withoutGlobalScopes()` as it would silently widen
+        // any future scope added to this model.
+        $profiles = ItemWizardProfile::withoutGlobalScope(WizardProfileBranchScope::class)
+            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
             ->whereIn('item_id', $itemIds)
+            ->where('is_published', true)
+            ->where(function ($query) use ($branchId): void {
+                $query->whereNull('branch_id_scope');
+                if ($branchId !== null && $branchId > 0) {
+                    $query->orWhere('branch_id_scope', $branchId);
+                }
+            })
+            ->get()
+            ->groupBy('item_id')
+            ->map(function (Collection $candidates) use ($branchId): ItemWizardProfile {
+                return $candidates->sortByDesc(function (ItemWizardProfile $profile) use ($branchId): int {
+                    return $branchId !== null && (int) $profile->branch_id_scope === $branchId ? 2 : 1;
+                })->first();
+            });
+
+        $out = [];
+        foreach ($profiles as $itemId => $profile) {
+            foreach ($profile->steps as $step) {
+                if ($step->source_type !== 'item_attribute' || (int) $step->min_select < 1) {
+                    continue;
+                }
+                $attributeId = (int) ($step->source_item_attribute_id ?: $step->source_ref);
+                if ($attributeId < 1) {
+                    continue;
+                }
+                $out[(int) $itemId][$attributeId] = [
+                    'name' => (string) $step->label,
+                    'min' => (int) $step->min_select,
+                ];
+            }
+        }
+
+        $legacyItemIds = array_values(array_diff($itemIds, $profiles->keys()->map(fn ($id) => (int) $id)->all()));
+        if ($legacyItemIds === []) {
+            return $out;
+        }
+
+        $rows = ItemVariation::query()
+            ->whereIn('item_id', $legacyItemIds)
             ->where('status', Status::ACTIVE)
             ->get(['item_id', 'item_attribute_id']);
         if ($rows->isEmpty()) {
@@ -141,7 +192,6 @@ class MultiVariationConstraint
             ? collect()
             : ItemAttribute::query()->whereIn('id', $attrIds)->get()->keyBy('id');
 
-        $out = [];
         foreach ($rows as $row) {
             $attrId = (int) $row->item_attribute_id;
             $attr = $attrs->get($attrId);

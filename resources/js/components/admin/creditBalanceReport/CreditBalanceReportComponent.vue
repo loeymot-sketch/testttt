@@ -46,15 +46,20 @@
                                 <input id="searchPhone" v-model="props.search.phone" v-on:keypress="phoneNumber($event)"
                                     type="text" class="db-field-control" />
                             </div>
+                            <!-- [ONB-07 2026-08-28] Sélecteur « Rôle » RETIRÉ : il ne
+                                 filtrait rien. `CreditBalanceReportController::customerScoped()`
+                                 écrase `role_id` par le rôle Client, sans condition, sur les
+                                 DEUX voies (écran et export). Le cantonnement est justifié et
+                                 documenté depuis le 2026-06-01 — un membre du personnel ne
+                                 détient pas d'avoir client. C'est donc le contrôle à l'écran
+                                 qui mentait : le commerçant choisissait « Chef », cliquait
+                                 Rechercher, et voyait exactement la même liste.
+                                 On retire le contrôle, pas la règle. -->
                             <div class="col-12 sm:col-6 md:col-4 xl:col-3">
-                                <label for="role_id" class="db-field-title">{{
-                                    $t("label.role")
-                                }}</label>
-
-                                <vue-select class="db-field-control f-b-custom-select" id="role_id"
-                                    v-model="props.search.role_id" :options="roles" label-by="name" value-by="id"
-                                    :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
-                                    search-placeholder="--" />
+                                <label class="db-field-title after:hidden">{{ $t("label.role") }}</label>
+                                <p class="text-sm text-slate-500 pt-2">
+                                    {{ $t("message.credit_balance_customers_only") }}
+                                </p>
                             </div>
                             <div class="col-12">
                                 <div class="flex flex-wrap gap-3 mt-4">

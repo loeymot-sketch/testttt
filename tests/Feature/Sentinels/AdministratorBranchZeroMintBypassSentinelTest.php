@@ -121,6 +121,15 @@ class AdministratorBranchZeroMintBypassSentinelTest extends TestCase
             'password_confirmation' => 'StrongPassword123',
             'status'                => 1,
             'country_code'          => 'FR',
+            // [ONB-06 2026-08-28] `users.phone` est NOT NULL depuis mai, et
+            // `AdministratorRequest` l'exige desormais — il etait reste `nullable`,
+            // si bien qu'un compte cree sans telephone remontait une erreur de base
+            // de donnees au commercant au lieu d'un refus nomme.
+            //
+            // Ce banc porte sur le `branch_id`, pas sur le telephone : on complete sa
+            // fixture plutot que d'affaiblir la regle. `uniqid()` parce que la colonne
+            // porte une contrainte d'unicite.
+            'phone'                 => '+3361' . substr((string) crc32(uniqid()), 0, 7),
         ], $overrides);
     }
 

@@ -38,8 +38,28 @@ return [
         // relançait le crédit. Le crochet et l'exigence sont deux choses distinctes — la sentinelle
         // `IdempotencyRequiredRoutesCoverageTest` existe précisément pour attraper cet écart, et
         // c'est elle qui l'a attrapé.
+        // [GOAL CAISSE/CUISINE #3 2026-10-02] Purge des anciennes commandes jamais payées : écriture
+        // destructive-logique (annulation + audit). EncaissementComponent envoie déjà la clé ; un
+        // double appui ne doit pas relancer la purge.
+        'api/admin/pos/counter-collect/purge-previous',
+        // [GOAL REMARQUES 2026-10-03 · R-060] Même famille : suppression d'un geste des commandes
+        // téléphone du jour. Un double appui ne doit pas relancer la purge (revue adverse vague 2).
+        'api/admin/pos/counter-collect/purge-phone-today',
         'api/admin/pos-loyalty/customers',
         'api/admin/pos-order/*/attach-loyalty',
+        // [ONB-13 T-3.1.1 2026-08-27] Les DEUX routes qui ecrivent reellement les points
+        // manquaient a l'appel du 12/08 : celui-ci a ajoute `customers` et `attach-loyalty`
+        // et oublie `credit-manual` et `deduct-manual`. Meme famille, meme risque, oubliees.
+        // Elles portaient bien l'intergiciel, mais sans figurer ici la cle restait
+        // FACULTATIVE : un double appui creditait ou debitait deux fois. La sentinelle
+        // IdempotencyRequiredRoutesCoverageTest etait ROUGE — verifie en la lancant, pas
+        // en la supposant. La modale POS envoie deja X-Idempotency-Key sur les deux :
+        // rendre l'exigence obligatoire ne casse aucun appelant existant.
+        'api/admin/pos-loyalty/credit-manual',
+        'api/admin/pos-loyalty/deduct-manual',
+        // Meme situation pour l'ajustement de matiere premiere : un rejeu doublait
+        // l'ajustement de stock. RawMaterialAdjustComponent envoie deja l'en-tete.
+        'api/admin/raw-materials/*/adjust',
         'api/admin/pos',
         'api/admin/pos-order/change-payment-status/*',
         'api/admin/pos-order/select-delivery-boy/*',
@@ -83,6 +103,13 @@ return [
         // double cash-drawer-open, double order-status-change).
         'api/admin/pos/counter-collect/*/confirm',
         'api/admin/pos/counter-collect/*/cancel',
+        // [CAISSE 2026-09-29] Annulation GROUPÉE des commandes des journées passées.
+        // C'est l'écriture la plus lourde de cet écran : un rejeu réseau sur un
+        // second lot annulerait des commandes d'une AUTRE journée que celle que le
+        // caissier avait sous les yeux quand il a confirmé. La clé rend le rejeu
+        // inoffensif. (Le COMPTAGE est une route GET distincte, sans clé : une
+        // lecture n'a pas à en porter.)
+        'api/admin/pos/counter-collect/cancel-stale',
         'api/admin/pos/collect-kiosk-cash/*',
         // [SEC MISSION-12 2026-07-31] Sortie de stock (repas perso / perte) : décrémente le stock →
         // un rejeu réseau doit être idempotent (sinon double-décrément + double trace). La modale envoie
@@ -100,6 +127,13 @@ return [
         'api/admin/pos/cash-drawer/sessions/*/reconcile',
         'api/admin/pos-order/*/refund-with-counter-entry',
         'api/admin/pos-order/change-status/*',
+        // [QA 2026-09-28 · addendum triage C] Suppression d'une commande (DELETE
+        // api/admin/pos-order/{order}) : route DESTRUCTIVE laissée nue, alors que
+        // toutes ses voisines mutantes portaient déjà le middleware et que le
+        // client envoyait déjà l'en-tête — la protection anti-rejeu était inerte.
+        // Le motif ne comporte qu'un segment, il ne peut donc pas viser
+        // change-status/* ni */refund-with-counter-entry (deux segments).
+        'api/admin/pos-order/*',
         'api/admin/online-order/change-status/*',
         'api/admin/table-order/change-status/*',
         'api/admin/kds-order/change-status/*',
@@ -110,6 +144,10 @@ return [
         // Identique au pattern change-status/* ci-dessus + même defense-in-depth
         // (idempotency + throttle:kds-bump) au router.
         'api/admin/kds-order/recall/*',
+        // Item-level bump/recall mutate the same order state and therefore
+        // require the idempotency key just like the order-level KDS routes.
+        'api/admin/kds-order/items/*/bump',
+        'api/admin/kds-order/items/*/recall',
         // [REMETTRE-EN-PRÉPARATION 2026-08-13] Même oubli que `recall/*` juste au-dessus, à cinq
         // ans d'écart : la route est câblée avec l'intergiciel d'idempotence dans routes/api.php
         // mais je ne l'avais pas déclarée ici. La sentinelle l'a attrapée — c'est précisément son

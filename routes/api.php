@@ -75,6 +75,8 @@ use App\Http\Controllers\Admin\PosOrderController;
 use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\Assistant\MenuExtractionController;
+use App\Http\Controllers\Admin\Assistant\MissionLocaleController;
 use App\Http\Controllers\Admin\SalesReportController;
 use App\Http\Controllers\Admin\SimpleUserController;
 use App\Http\Controllers\Admin\SiteController;
@@ -83,6 +85,7 @@ use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\PurchasingScanController;
 use App\Http\Controllers\Admin\RawMaterialAdjustController;
+use App\Http\Controllers\Admin\RawMaterialController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\UnifiedStockViewController;
 use App\Http\Controllers\Admin\SubscriberController;
@@ -189,7 +192,8 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
         Route::post('/', [ForgotPasswordController::class, 'forgotPassword'])
-            ->middleware('throttle:3,60');
+            // [AUDIT SÉCURITÉ 2026-09-29] limiteur nommé : par adresse + global (voir RouteServiceProvider).
+            ->middleware('throttle:forgot-password');
         Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
             ->middleware('throttle:5,1');
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
@@ -429,6 +433,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
+    // [ONB-08 2026-08-28] Le seuil d'alerte de stock devient saisissable.
+    // Il etait LU par `lowAlerts` et par NotifyStockLowOnStockLevelChanged, et
+    // ECRIT par personne : 55 lignes en base, 0 seuil. La section « alertes stock
+    // bas » ne pouvait donc structurellement rien afficher.
+    Route::put('/stock/levels/{stockLevel}/seuil', [StockRuptureDashboardController::class, 'definirLeSeuil'])
+        ->whereNumber('stockLevel')
+        ->name('stock.levels.seuil');
     // [PHASE 3d — VUE CONSO & STOCK UNIFIÉE 2026-07-24] Lecture seule : matières
     // premières + boissons dans un seul tableau + section « à acheter ». Gate
     // items_show (écran de lecture, comme catalog-overview). ADDITIF, HORS NF525.
@@ -456,6 +467,32 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // `adjust` = écriture (gate items_create, même famille que /purchasing/scan).
     // `idempotency` : protection double-submit HTTP (opt-in via X-Idempotency-Key ;
     // no-op si l'en-tête est absent ou si `idempotency.enabled` est false).
+    /*
+     | [ONB-08 2026-08-28] LE CRUD DES MATIERES PREMIERES.
+     |
+     | Ce domaine n'exposait que `movements` (lecture) et `adjust` (correction de
+     | quantite). Les seules sources de creation etaient un seeder et une commande
+     | console : **un nouveau commercant ne pouvait declarer aucun ingredient.**
+     | C'est le blocage le plus lourd de la mission « depuis zero », et il
+     | n'apparaissait dans aucun constat de reconnaissance.
+     |
+     | Il ferme aussi le trou de `threshold_low`, qui n'avait aucun chemin
+     | d'ecriture : 55/55 et 20/20 lignes a NULL, alors que le tableau de rupture et
+     | le listener d'alerte filtrent `whereNotNull('threshold_low')` — donc 100 % des
+     | lignes exclues, et l'alerte de stock bas structurellement muette.
+     |
+     | Les gardes sont portees par le constructeur du controleur, en miroir de
+     | l'ajustement : `items_show` en lecture, `items_create` en ecriture.
+     */
+    Route::get('/raw-materials', [RawMaterialController::class, 'index'])
+        ->name('raw-materials.index');
+    Route::post('/raw-materials', [RawMaterialController::class, 'store'])
+        ->name('raw-materials.store');
+    Route::match(['put', 'patch'], '/raw-materials/{rawMaterial}', [RawMaterialController::class, 'update'])
+        ->name('raw-materials.update');
+    Route::delete('/raw-materials/{rawMaterial}', [RawMaterialController::class, 'destroy'])
+        ->name('raw-materials.destroy');
+
     Route::get('/raw-materials/{rawMaterial}/movements', [RawMaterialAdjustController::class, 'history'])
         ->name('raw-materials.movements');
     Route::post('/raw-materials/{rawMaterial}/adjust', [RawMaterialAdjustController::class, 'adjust'])
@@ -894,6 +931,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/import/file', [ItemController::class, 'import']);
         Route::get('/details/{item}', [ItemController::class, 'itemDetails']);
 
+        /*
+         * [ONB 2026-08-28] Le referentiel des 14 allergenes de l'Annexe II du
+         * Reglement UE 1169/2011, pour que le formulaire produit puisse enfin les
+         * proposer. Aucune route ne les exposait : il n'y avait meme pas de quoi
+         * peupler une liste de choix.
+         *
+         * Lecture seule, et ouverte a qui peut deja voir ou modifier un produit —
+         * c'est un referentiel legal, pas une donnee du commercant.
+         */
+        Route::get('/allergens', [ItemController::class, 'allergens'])
+            ->middleware('permission:items|items_create|items_edit')
+            ->name('allergens');
+
         Route::get('/variation/{item}', [ItemVariationController::class, 'index']);
         Route::get('/variation/group-by-attribute/{item}', [ItemVariationController::class, 'listGroupByAttribute']);
         Route::post('/variation/{item}', [ItemVariationController::class, 'store']);
@@ -1020,65 +1070,90 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // [PERF N+1 2026-07-31] Eager-load des relations lues par OrderDetailsResource
             // (user/address/branch/deliveryBoy/coupon/transaction/diningTable/payments) — sinon
             // ~9 requetes lazy PAR commande a chaque tick de polling (cap 200 → jusqu'a ~1800).
-            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
-                ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
-                // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
-                // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
-                // [SELF-AUDIT R3 P2 2026-07-05 — fantôme incaissable] La file d'encaissement excluait
-                // seulement CANCELED, mais confirmCounterPayment REFUSE aussi REJECTED/RETURNED
-                // (PaymentService:325). Un remboursement pré-Z (RETURNED) d'une commande Plan-B non
-                // encaissée laissait payment_status=PENDING_COUNTER → la commande restait à VIE dans la
-                // file /admin/encaissement, non encaissable. On aligne sur le set terminal du sceau.
-                ->whereNotIn('status', [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
-                ->where(function ($q) {
-                    $q->where(function ($k) {
-                        $k->where('source_surface', 'kiosk')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    })->orWhere(function ($p) {
-                        $p->where('source_surface', 'pos')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($tel) {
-                        // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé)
-                        // → source_surface='phone' + COUNTER_DEFERRED. Sans cette clause, la commande
-                        // téléphone serait INVISIBLE en caisse donc INENCAISSABLE (même famille de bug
-                        // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
-                        $tel->where('source_surface', 'phone')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($web) {
-                        // [P1-3 2026-07-18] Commande WEB à emporter acceptée sans paiement en ligne
-                        // (carte web OFF, mandat owner) : SYNC-WEB-KDS-01 la bascule en PENDING_COUNTER
-                        // pour la visibilité cuisine et OnlineOrderController complète le marqueur
-                        // COUNTER_DEFERRED (takeaway COD) → 4e origine LÉGITIME de counter-collect. Sans
-                        // cette clause, la commande web PENDING_COUNTER reste INVISIBLE en caisse donc
-                        // INENCAISSABLE (vente perdue). Miroir strict des clauses pos/phone + de la garde
-                        // assertCounterDeferredOrder (qui autorise 'web'). La LIVRAISON web n'a PAS le
-                        // marqueur COUNTER_DEFERRED (encaissée au doorstep) → naturellement exclue ici.
-                        $web->where('source_surface', 'web')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($n) {
-                        // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
-                        // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait
-                        // INVISIBLE en caisse donc INENCAISSABLE. On la rattrape par le type kiosk/emporter.
-                        $n->whereNull('source_surface')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    });
-                })
-                ->orderBy('created_at');
-
+            // [GOAL CAISSE/CUISINE #3 2026-10-02] La définition de la file vit désormais dans
+            // CounterCollectQueue (source unique, partagée avec la purge). Par DÉFAUT : la journée de
+            // service courante seulement (nouveau jour = liste vide) ; ?scope=previous = jours
+            // précédents ; ?scope=all = tout (diagnostic). Le plafond de 200 et le tri FIFO sont
+            // inchangés — mais ne s'appliquent plus à un arriéré d'anciennes commandes.
+            $scope = \App\Services\Pos\CounterCollectQueue::normalizeScope(request()->query('scope'));
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
-            if ($branchId > 0) {
-                $query->where('branch_id', $branchId);
-            }
 
-            // [abuse-e2e P3 heal 2026-05-30] Cap raised 50→200. Oldest-first
-            // (created_at ASC) is the correct FIFO collection order — collect the
-            // longest-waiting customer first. The old 50-cap silently hid orders
-            // beyond 50 (a real V1 single-box gap once a backlog builds: a
-            // waiting-to-pay customer became invisible to the cashier). 200 is far
-            // beyond any realistic single-restaurant uncollected backlog while
-            // staying bounded.
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+            $query = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId, ['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments']),
+                $scope
+            );
+
+            // Badge du filtre « jours précédents » : compté à part (requête légère, sans relations).
+            $previousCount = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId),
+                \App\Services\Pos\CounterCollectQueue::SCOPE_PREVIOUS
+            )->count();
+
+            // [abuse-e2e P3 heal 2026-05-30] Cap 200, FIFO (created_at ASC) : le client qui attend
+            // depuis le plus longtemps est encaissé en premier.
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get())
+                ->additional(['meta' => ['scope' => $scope, 'previous_count' => $previousCount]]);
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        // [GOAL CAISSE/CUISINE #3 2026-10-02] Purge des anciennes commandes JAMAIS payées (une par
+        // une via `ids`, ou toutes via `all`). Confirmation explicite + motif obligatoires. Aucune
+        // commande payée/fiscalisée n'est touchable (garde sous verrou dans le service) ; audit écrit.
+        Route::post('/counter-collect/purge-previous', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['required', 'string', 'min:3', 'max:255'],
+                'all' => ['sometimes', 'boolean'],
+                'ids' => ['required_without:all', 'array', 'max:500'],
+                'ids.*' => ['integer'],
+            ]);
+
+            $all = (bool) ($validated['all'] ?? false);
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                $all ? null : ($validated['ids'] ?? []),
+                $validated['reason'],
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-previous');
+        // [GOAL REMARQUES 2026-10-03 · R-060] « Dans l'attente je veux tout supprimer » : les commandes
+        // TÉLÉPHONE du jour jamais encaissées, en un geste confirmé, sans motif à taper (motif par défaut
+        // « Client non venu »). Borne et site JAMAIS touchés ; même service, mêmes gardes NF525, audit écrit.
+        Route::post('/counter-collect/purge-phone-today', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+                // [Revue adverse vague 2 · P2-1] Les commandes MONTRÉES au caissier ; le service n'en
+                // garde que celles qui sont encore éligibles (intersection sous verrou).
+                'ids' => ['sometimes', 'array', 'max:500'],
+                'ids.*' => ['integer'],
+            ]);
+            $reason = trim((string) ($validated['reason'] ?? ''));
+
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                array_key_exists('ids', $validated) ? $validated['ids'] : null,
+                mb_strlen($reason) >= 3 ? $reason : 'Client non venu',
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0),
+                \App\Services\Pos\StaleCounterOrderPurger::PERIMETRE_TELEPHONE_DU_JOUR
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-phone-today');
+        // [GOAL REMARQUES 2026-10-03 · R-059] « Commandes ratées » : téléphone annulées depuis < 24 h.
+        // Lecture seule (aucune écriture, aucun effet fiscal).
+        Route::get('/counter-collect/missed', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            return response()->json([
+                'data' => app(\App\Services\Pos\CommandesRatees::class)->liste((int) (auth()->user()?->branch_id ?? 0)),
+                'meta' => ['fenetre_heures' => \App\Services\Pos\CommandesRatees::FENETRE_HEURES],
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.missed');
         // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
         // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
         // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client
@@ -1152,7 +1227,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 // force source_surface='delivery' dès que order_type=DELIVERY.
                 ->whereIn('source_surface', ['web', 'delivery'])
                 ->where('payment_status', \App\Enums\PaymentStatus::PAID)
-                ->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                // [GOAL REMARQUES 2026-10-03 · R-016] Propriétaire : « lors de retrait de commande par site
+                // Web […] séparés et je pourrais les valider […] il y aura ces points ». Une commande À
+                // EMPORTER prête RESTE ici, où le caissier valide le retrait (→ livrée ; ses points sont
+                // crédités dès « prête » par AwardLoyaltyPointsOnDelivery). Une LIVRAISON prête suit le
+                // circuit livreur et sort du panneau, comme avant.
+                ->where(function ($q) {
+                    $q->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                        ->orWhere(function ($pret) {
+                            $pret->where('status', \App\Enums\OrderStatus::PREPARED)
+                                ->where('order_type', '!=', \App\Enums\OrderType::DELIVERY);
+                        });
+                })
                 // Borne basse identique au board cuisine : sans elle, un vieux payé jamais bumpé
                 // (il en existe — #333 du 2026-08-03) squatterait le panneau à vie et le bip
                 // deviendrait du bruit que l'équipe apprendrait à ignorer.
@@ -1279,6 +1365,102 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
+        /**
+         * [CAISSE 2026-09-29 · demande propriétaire] Vider la file d'encaissement des
+         * journées PASSÉES.
+         *
+         * Le besoin, dans ses mots : « il y a une grande liste de commandes en attente
+         * parce que ça fait plusieurs jours, des clients qui sont pas venus ; je veux
+         * commencer une nouvelle journée, je veux tout supprimer, je veux pas cliquer
+         * sur chacune et mettre un justificatif ».
+         *
+         * DEUX GARDES QUI NE SONT PAS NÉGOCIABLES
+         * ---------------------------------------
+         * 1. `whereNull('fiscal_sequence_no')` — une commande qui a reçu un numéro
+         *    fiscal est entrée dans la chaîne signée. On n'y touche jamais. En
+         *    pratique une commande de cette file n'en a jamais (le numéro est alloué
+         *    À L'ENCAISSEMENT, PaymentService::confirmCounterPayment), mais la garde
+         *    reste écrite : c'est elle qui rend l'opération sûre, pas la coïncidence.
+         * 2. Plancher de la journée de service EN COURS — on ne touche QUE l'avant.
+         *    Un « tout vider » qui emporterait un client en train d'arriver au
+         *    comptoir serait une vente perdue et une commande déjà en cuisine.
+         *    Plancher identique à celui du panneau « En souffrance »
+         *    (PosOrderController:494-503) et du helper front posServiceDay.js :
+         *    5 h du matin, et recul d'un jour avant cette heure — sinon la nuit de
+         *    service en cours serait considérée comme « hier ».
+         *
+         * POURQUOI ANNULER ET NON SUPPRIMER
+         * ---------------------------------
+         * `OrderService::destroy` supprime EN DUR les lignes, l'adresse et le coupon
+         * avant le soft-delete, et `Order::restoring()` (app/Models/Order.php:157-165)
+         * interdit tout `restore()`. Une suppression groupée serait donc
+         * IRRATTRAPABLE. `cancelCounterPayment` garde la commande, la trace
+         * (`order.counter_payment_canceled` dans la chaîne HMAC), rend les points de
+         * fidélité et reprend les points acquis — ligne par ligne, ce qu'un UPDATE de
+         * masse ne saurait pas faire.
+         *
+         * `dry_run` renvoie le compte SANS rien changer : l'interface s'en sert pour
+         * annoncer un chiffre exact avant de demander confirmation.
+         */
+        /**
+         * Comptage SEUL des commandes des journées passées. Route GET distincte, et
+         * c'est délibéré : le comptage ne mute rien, il n'a donc rien à faire derrière
+         * l'intergiciel d'idempotence — lequel EXIGE une clé sur les routes déclarées
+         * (`config/idempotency.php`) et renverrait 422 à un simple comptage. Une
+         * lecture est un GET ; la confondre avec l'écriture obligeait l'écran à forger
+         * une clé pour savoir combien de lignes il allait proposer d'annuler.
+         */
+        Route::get('/counter-collect/stale-count', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query((int) (auth()->user()?->branch_id ?? 0));
+
+            return response([
+                'status' => true,
+                'count' => $requete->count(),
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.stale-count');
+        Route::post('/counter-collect/cancel-stale', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'reason' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            // Même définition que le comptage (GET stale-count) — une seule source,
+            // sinon l'écran annonce un nombre et en annule un autre.
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query(
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            $motif = $validated['reason'] ?? 'Client non venu — vidage de la file (journées passées)';
+            $service = app(\App\Services\PaymentService::class);
+
+            $annulees = 0;
+            $echecs = [];
+            foreach ($requete->get() as $commande) {
+                try {
+                    $service->cancelCounterPayment($commande, $motif);
+                    $annulees++;
+                } catch (\Throwable $e) {
+                    // Une ligne récalcitrante ne doit pas interrompre le vidage : on
+                    // la nomme et on continue. Un échec silencieux laisserait le
+                    // caissier croire la file vide alors qu'elle ne l'est pas.
+                    $echecs[] = [
+                        'order_id' => $commande->id,
+                        'message' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            return response([
+                'status' => true,
+                'canceled' => $annulees,
+                'failed' => $echecs,
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel-stale');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -1301,7 +1483,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // au pont local caisse pour une impression SILENCIEUSE (le cloud Linux ne joint pas l'USB). Lecture seule.
         Route::get('/orders/{order}/escpos', [\App\Http\Controllers\Admin\Pos\PosTicketBytesController::class, 'show'])->name('orders.escpos-bytes');
         // [CUSTOMER-DISPLAY 2026-06-28] Refresh the SAGA pole display (total / welcome). Best-effort, no fiscal.
-        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])->name('customer-display.update');
+        // [AUDIT-SUPERVISEUR 2026-08-25] Seau dedie : poussee a cadence fixe, non fiscale et
+        // sans ecriture en base — elle n'a rien a faire dans le seau des mutations de la caisse,
+        // ou elle se disputait le plafond avec l'encaissement. Voir RouteServiceProvider.
+        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])
+            ->middleware('throttle:customer-display')
+            // Sans ce retrait, les deux seaux s'EMPILENT et le plus strict gagne : la route
+            // resterait plafonnee a 120/min et le seau dedie ne servirait a rien. Verifie sur
+            // `route:list -v` : un seul limiteur doit apparaitre.
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('customer-display.update');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
@@ -1400,8 +1591,24 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/stale', [PosOrderController::class, 'stale'])
             ->middleware('throttle:60,1')
             ->name('stale');
+        // [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée aux états des quatre files
+        // du tiroir de contrôle. Remplace `?paginate=1&per_page=100` sur ce chemin : la page de
+        // cent, triée `id desc`, jetait les commandes les PLUS ANCIENNES — celles qui traînent —
+        // sans rien signaler. Lecture seule ; `throttle` aligné sur les lectures du tableau.
+        Route::get('/service-day', [PosOrderController::class, 'serviceDay'])
+            ->middleware('throttle:60,1')
+            ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
-        Route::delete('/{order}', [PosOrderController::class, 'destroy']);
+        // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
+        // aucun middleware, alors que TOUTES ses voisines mutantes du même groupe
+        // portent ['throttle:pos-order-update','idempotency'] — et que le client
+        // ENVOIE déjà l'en-tête (store/modules/posOrder.js, buildIdempotencyHeaders).
+        // La protection anti-rejeu était donc INERTE, et un commentaire du client
+        // affirmait une protection inexistante. IdempotencyKeyMiddleware traite bien
+        // DELETE (voir sa liste de méthodes), le câblage est donc réel.
+        Route::delete('/{order}', [PosOrderController::class, 'destroy'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('destroy');
         Route::get('/export', [PosOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
         // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.
@@ -1526,6 +1733,48 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // accountant. POST (per spec) ; permission `pos-manage-fiscal` enforced
         // in DashboardController::__construct (separate from :dashboard).
         Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);
+    });
+
+    /*
+     | [ONB-04 2026-08-28] Assistant du commerçant — lecture de carte photographiée.
+     |
+     | Deux gestes seulement, et la frontière entre eux est le sujet :
+     |   · `lecture`     lit une photo et PROPOSE. N'écrit rien en base.
+     |   · `application` reçoit ce que le commerçant a RELU et corrigé, puis crée
+     |                   le catalogue par les services existants — donc avec leurs
+     |                   règles, dont la taxe obligatoire posée par ONB-02.
+     |
+     | Les deux exigent `items_create` : lire une carte prépare une écriture au
+     | catalogue, ce n'est pas une consultation.
+     */
+    Route::prefix('assistant/menu')->name('assistant.menu.')->group(function () {
+        Route::post('/lecture', [MenuExtractionController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MenuExtractionController::class, 'appliquer'])->name('application');
+    });
+
+    /*
+     | [ONB-04 2026-08-28] L'ASSISTANT DE MISSIONS LOCALES
+     |
+     | Le mandat le demande en toutes lettres : « chatbot de missions locales », avec
+     | pour exemple « ajoute une sauce à tous les tacos ». Il n'existait pas.
+     |
+     | Même découpe en deux temps que l'extraction de carte, et pour la même raison :
+     |   · `lecture`     comprend la phrase et rend un PLAN. N'écrit RIEN.
+     |   · `application` REFAIT le plan depuis la phrase, puis l'exécute — jamais un
+     |                   diff reçu du navigateur, qui pourrait avoir été trafiqué en
+     |                   route sous couvert d'une confirmation humaine.
+     |
+     | L'interpréteur est DÉTERMINISTE : grammaire déclarée, aucun appel sortant,
+     | refus explicite quand il ne comprend pas. Il ne dépend donc pas du gate G-IA
+     | — et le jour où un modèle prendra le relais, il ne remplacera QUE l'étape
+     | « comprendre la phrase ».
+     |
+     | La garde `items_edit` est portée par le constructeur du contrôleur : une
+     | mission locale MODIFIE le catalogue, et `lecture` prépare cette écriture.
+     */
+    Route::prefix('assistant/mission')->name('assistant.mission.')->group(function () {
+        Route::post('/lecture', [MissionLocaleController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MissionLocaleController::class, 'appliquer'])->name('application');
     });
 
     Route::prefix('sales-report')->name('sales-report.')->group(function () {
@@ -1687,6 +1936,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/reopen/{order}', [KitchenDisplaySystemController::class, 'reopen'])
             ->middleware(['idempotency', 'throttle:kds-bump'])
             ->name('reopen');
+        // [KDS-ITEM-READY-SYNC 2026-09-23] Pastille "prêt" PAR ARTICLE — SSOT
+        // serveur (audit finding #4 : c'était localStorage-only, invisible d'un
+        // second écran/appareil). Distinct de `change-status` (agrégat commande)
+        // et de `recall`/`reopen` (statut commande) : ne touche jamais OrderStatus.
+        Route::post('/items/{orderItem}/bump', [KitchenDisplaySystemController::class, 'itemBump'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-bump');
+        Route::post('/items/{orderItem}/recall', [KitchenDisplaySystemController::class, 'itemRecall'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-recall');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
@@ -1824,6 +2083,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         ->middleware('throttle:30,1')
         ->name('order.wait-estimate');
 
+    // [STORES T-3.3.2 · 2026-10-01] Version minimale de l'application des stores — PUBLIC
+    // (lue au lancement, avant toute connexion), lecture seule, aucune donnée client.
+    // 60/min : des clients derrière une même adresse d'opérateur mobile la lisent chacun
+    // à l'ouverture ; un 429 n'y bloque rien (l'application ne bloque que sur une réponse lue).
+    Route::get('app/config', [\App\Http\Controllers\Frontend\AppConfigController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('app.config');
+
     // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
     // tracking_token opaque — PUBLIC (lien envoyé/affiché au client, pas de
     // login), lecture seule, throttle 30/min (même discipline que wait-estimate,
@@ -1877,7 +2144,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // réclame déjà, mais un écran se contourne en fermant l'app — le refus vit donc
         // ici. Sans effet sur la BORNE (jeton `kiosk-token`) ni sur les clients venus par
         // le parcours téléphone, dont le compte est créé À PARTIR de leur numéro.
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'require_customer_phone', 'idempotency']);
+        // [STORES T-3.3.2 · 2026-10-01] `app_version` en tête : une application périmée reçoit
+        // « mets à jour » avant toute autre exigence, et sans toucher à la clé d'idempotence.
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'app_version', 'require_customer_phone', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
         // [P0 2026-08-07] Jumelles de mollie-checkout : elles portent aussi une commande, donc
         // même garde de branche dérivée du serveur. Ces deux méthodes ne lisent PAS `branch_id`

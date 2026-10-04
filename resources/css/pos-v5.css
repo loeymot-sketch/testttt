@@ -65,7 +65,13 @@
 
 .pos-v5-operator-bar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [R-005 2026-10-04] Mesuré : de 1440 à 1920 px de large, la colonne du titre tombait à 0 px (colonne
+       d'actions en `auto` = toute la rangée de boutons sur une ligne) et « Commande rapide » se repliait
+       sur 2+ lignes PAR-DESSUS les boutons. La colonne de marque garde au moins 270 px (couronne 44 +
+       espace 12 + « Commande rapide » ≈ 195 px CSS sur une ligne) ; la colonne d'actions peut rétrécir
+       (`minmax(0, auto)`) et ses boutons passent à la ligne (`flex-wrap`) dans l'espace restant.
+       ≤1439 px : inchangé, le media query plus bas empile. */
+    grid-template-columns: minmax(270px, 1fr) minmax(0, auto);
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -712,6 +718,16 @@
     }
 }
 
+/* [R-005 2026-10-04] Le panneau ticket est `fixed` : il ne suit pas `.db-main`. Sa hauteur Tailwind
+   `md:h-[calc(100dvh-64px)]` (PosComponent.vue) ignore le zoom 0.9 de la caisse → il s'arrêtait 72 px
+   au-dessus du bas de l'écran (1,9 cm). On divise par `--caisse-zoom` (caisseZoom.js) et on garde 12 px
+   de marge basse, la même que la marge droite (`md:right-3`) : le ticket descend jusqu'au bas de l'écran. */
+@media (min-width: 768px) {
+    body[data-caisse-zoom] #pos-cart.pos-v5-cart {
+        height: calc(100dvh / var(--caisse-zoom, 1) - 76px);
+    }
+}
+
 .pos-v5-cart__head {
     flex-shrink: 0;
     padding: var(--pos-v5-space-4) var(--pos-v5-space-4) var(--pos-v5-space-3);
@@ -1029,6 +1045,36 @@
     opacity: 0.6;
 }
 
+/*
+ * [AUDIT-SUPERVISEUR 2026-08-25 · AB-004] SUR UN ÉCRAN BAS, CE BLOC NE MONTRAIT QUE SON
+ * REMPLISSAGE.
+ *
+ * Mesuré à 1024×600, panier vide : le corps du panier dispose de 31 px et ce bloc en
+ * réclame 172 (32 px de marge + icône 48 px + sa marge + deux lignes + 32 px). Le caissier
+ * voyait donc un bandeau BLANC de 31 px là où le gabarit 1366 affiche l'assiette et
+ * « Aucun article. Sélectionnez un produit dans la grille. » Un vide muet se lit comme une
+ * panne ; un vide qui se nomme se lit comme un état.
+ *
+ * Pourquoi ne PAS rendre sa place au corps : le plancher est retiré ICI VOLONTAIREMENT
+ * (règle `:has(.pos-v5-cart__empty)` ci-dessus, 2026-08-25). Panier vide, le corps ne
+ * protège aucune ligne de vente, et les 108 px qu'il prenait manquaient exactement au champ
+ * « Nom du client » — le nom qui s'imprime sur le ticket cuisine, mandat propriétaire. On ne
+ * revient pas là-dessus : on fait tenir le message dans la place qui reste.
+ *
+ * L'icône disparaît, les marges se resserrent : le bloc passe sous 32 px et la PHRASE
+ * devient ce qu'on voit. Au-dessus de 700 px de haut, rien ne change.
+ */
+@media (max-height: 700px) {
+    .pos-v5-cart__empty {
+        padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
+        line-height: 1.25;
+    }
+
+    .pos-v5-cart__empty-icon {
+        display: none;
+    }
+}
+
 /* =============================================================================
    7. CART ITEMS LIST (cards verticales — meilleure densité que table)
    ============================================================================= */
@@ -1193,6 +1239,61 @@
 .pos-v5-cart-item__removal {
     font-weight: var(--pos-v5-weight-bold);
     color: var(--pos-v5-danger);
+}
+
+/* [GOAL CAISSE/CUISINE #5 2026-10-02] Bouton « Offert » : une rangée par supplément / sauce payant.
+   Cible tactile ≥ 36 px de haut ; état actif = fond sombre + texte blanc (jamais de jaune). */
+.pos-v5-cart-item__offer {
+    margin-top: var(--pos-v5-space-1);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.pos-v5-cart-item__offer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.pos-v5-cart-item__offer-name {
+    font-size: 12px;
+    font-weight: var(--pos-v5-weight-medium);
+    color: var(--pos-v5-ink);
+    line-height: var(--pos-v5-leading-snug);
+}
+.pos-v5-cart-item__offer-name.is-offered {
+    text-decoration: line-through;
+    color: var(--pos-v5-ink-muted);
+}
+.pos-v5-cart-item__offer-badge {
+    margin-inline-start: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #111827;
+    color: #FFFFFF;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+    text-decoration: none;
+    display: inline-block;
+}
+.pos-v5-cart-item__offer-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1.5px solid #111827;
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: #111827;
+    font-size: 12px;
+    font-weight: var(--pos-v5-weight-bold);
+    cursor: pointer;
+}
+.pos-v5-cart-item__offer-btn.is-on {
+    background: #111827;
+    color: #FFFFFF;
+}
+.pos-v5-cart-item__offer-btn:focus-visible {
+    outline: 3px solid #1D4ED8;
+    outline-offset: 2px;
 }
 
 .pos-v5-cart-item__bundled {
@@ -1829,4 +1930,26 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* [GOAL CAISSE/CUISINE #2 2026-10-02] Écran de paiement : 4 onglets (Espèces, Carte bleue, Titres-resto,
+   Multi-paiement). Sélecteur plus spécifique que la règle scopée du composant gelé (0,2,0). */
+nav.pos-v4-payment-methods.pos-v5-payment-methods.pos-v5-payment-methods--4col {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+nav.pos-v5-payment-methods--4col .pos-v5-payment-method {
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding-inline: 4px !important;
+    text-align: center;
+}
+nav.pos-v5-payment-methods--4col .pos-v5-payment-method-label {
+    font-size: 0.78rem;
+    line-height: 1.15;
+    text-align: center;
+    /* Jamais de coupure en plein mot (« Espèc/es ») : on ne casse qu'entre les mots. */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
 }

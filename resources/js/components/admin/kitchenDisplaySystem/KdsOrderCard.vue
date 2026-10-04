@@ -1098,16 +1098,19 @@ export default {
 }
 
 .kds-card--ready {
-    opacity: 0.7;
+    /* [GOAL #7 2026-10-02] `opacity: 0.7` délavait TOUT le texte de la fiche (17,7:1 → ~6,5:1) :
+       un état « prêt » ne doit pas être moins lisible. Repère conservé par un liseré gris. */
+    box-shadow: inset 0 0 0 2px #6B7280;
 }
 .kds-card--cancelled {
     background: rgba(254, 226, 226, 0.5);
 }
-/* [K2-KDS 2026-07-05] Owner : fiche JAUNE dès qu'il y a un supplément payant → repérable
-   immédiatement par le cuisinier. Liseré ambre + fond jaune clair (n'écrase pas le stripe/état). */
+/* [GOAL #7 2026-10-02] Fiche à supplément : le FOND JAUNE (#FEF9C3) est retiré — il rendait le
+   texte jaune illisible (2,7:1). Les suppléments se lisent désormais en blanc sur noir ; la fiche
+   garde un fond blanc et un liseré NOIR épais comme repère. */
 .kds-card--has-supplements {
-    background: #FEF9C3;
-    box-shadow: inset 0 0 0 3px #F59E0B;
+    background: #FFFFFF;
+    box-shadow: inset 0 0 0 3px #111827;
 }
 
 @media (prefers-reduced-motion: reduce) {

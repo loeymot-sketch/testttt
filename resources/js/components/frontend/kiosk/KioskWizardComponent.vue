@@ -145,6 +145,7 @@
             :key="currentStepKey"
             v-bind="wizardStepBindings"
             @update="updateSelection"
+            @modifier="goToStepType"
           />
         </transition>
       </div>
@@ -1806,6 +1807,12 @@ export default {
           }
           // [P-MEGA-05] Restore après fetch + inférences (mode edit via /wizard/:id).
           this.restoreEditingSelectionsIfAny();
+          // [LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25] C'est CE chemin
+          // qu'emprunte le panier (`/wizard/:itemId?edit=1`), pas celui de la prop
+          // `item` : l'ouverture sur le récap doit donc se faire ici AUSSI, après le
+          // fetch — les étapes actives n'existent pas tant que le produit n'est pas
+          // chargé, et `recapStepIndex()` rendrait -1.
+          this.openOnRecapIfEditing();
         } else {
           this.fetchError = this.$t('kiosk.wizard.product_not_found');
         }
@@ -1989,7 +1996,7 @@ export default {
       // bas) jamais envoyé → écran 7,40 € mais order scellé 6,90 € = fuite revenu +
       // composition_snapshot sous-facturé (risque NF525). Items sans cet extra (frites/bols) →
       // sauce en plus GRATUITE (aucun mécanisme backend) donc display == sealed.
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-15 (déblocage frozen compo)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-15 (déblocage frozen compo)
       const extraSauceN = Math.max(0, this.selections.sauceOrder.length - 1);
       if (extraSauceN > 0) {
         const ssExtra = (item.extras || []).find(e =>
@@ -2013,7 +2020,7 @@ export default {
       // la facturait jamais (manque à gagner + composition_snapshot sous-facturé). Le SITE
       // facture et scelle déjà ce surcoût (api.js) : cette ligne restaure la parité.
       // Items sans cet extra → aucun push, sauce frites gratuite (display == sealed).
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-29 (plainte suppléments non calculés)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-29 (plainte suppléments non calculés)
       const extraFritesSauceN = Math.max(0, (this.selections.fritesSauceOrder || []).length - 1);
       if (extraFritesSauceN > 0) {
         const fsExtra = (item.extras || []).find(e =>
@@ -2077,7 +2084,7 @@ export default {
       // dans l'instruction « Viandes en plus : … » (buildInstruction, résolu au ticket cuisine). Le
       // backend PricingService SCELLE le prix depuis la DB → display == sealed. Miroir EXACT du bloc
       // « Sauce supplémentaire » ci-dessus.
-      // @pricing-allowed-block start — signed-off: owner gate 2026-07-24 (LOCK viande suppl unifié)
+      // @pricing-allowed-block start — signed-off: owner — date: 2026-07-24 (LOCK viande suppl unifié)
       const viandeSupplN = viandeMeta.reduce((n, v) => (
         v && v.source === 'variation' ? n + (parseInt(v.supplCount || 0, 10) || 0) : n
       ), 0);
@@ -2356,6 +2363,51 @@ export default {
      * inférences de taille (l'ordre garantit que le snapshot écrase les
      * inférences, pas l'inverse).
      */
+    /**
+     * [LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25] Saute à l'étape demandée
+     * depuis le récap.
+     *
+     * Le récap émet le TYPE de l'étape ('viande', 'sauce', 'menu'…), jamais un index :
+     * les étapes actives dépendent du produit (un burger n'a pas d'étape pain, un tacos
+     * n'a pas de crudités), donc un index serait juste pour un produit et faux pour le
+     * suivant. On résout le type contre `activeSteps` au moment du clic.
+     *
+     * Type introuvable ⇒ on ne bouge pas. Envoyer le client sur une étape au hasard
+     * serait pire que de ne rien faire.
+     */
+    goToStepType(type) {
+      if (!type) return;
+      const index = this.activeSteps.findIndex((s) => s && s.type === type);
+      if (index < 0) return;
+      this.currentStepIndex = index;
+      this.$nextTick(() => this.emitWizardStepEntered(this.currentStep?.type));
+    },
+    /**
+     * [LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25] Index de l'étape récap.
+     * -1 si elle n'existe pas encore (activeSteps l'ajoute toujours, mais on ne parie
+     * pas là-dessus : un -1 non gardé renverrait le client à l'étape 1 sans le dire).
+     */
+    recapStepIndex() {
+      return this.activeSteps.findIndex((s) => s && s.type === 'recap');
+    },
+    /**
+     * [LOCK_KIOSK_WIZARD_MODIFIER_DEPUIS_RECAP_2026-08-25] Ouvre sur le RÉCAP quand on
+     * vient modifier un produit déjà au panier.
+     *
+     * Jusqu'ici l'édition rouvrait à l'étape 1 : pour corriger une sauce, le client
+     * reparcourait viande, sauce, suppléments, formule. Il arrive maintenant sur le
+     * récapitulatif de SON produit, voit ce qu'il a choisi, et clique « Modifier » sur
+     * la seule ligne qui l'intéresse.
+     *
+     * Ne s'applique QU'À l'édition : une première composition doit évidemment commencer
+     * au début. Et seulement si le récap existe vraiment dans les étapes actives.
+     */
+    openOnRecapIfEditing() {
+      if (!this.$store?.getters?.['kioskCart/isEditingCart']) return;
+      const index = this.recapStepIndex();
+      if (index < 0) return;
+      this.currentStepIndex = index;
+    },
     restoreEditingSelectionsIfAny() {
       const snap = this.$store?.state?.kioskCart?.editingCartSnapshot;
       if (!snap) return;
@@ -2382,6 +2434,7 @@ export default {
       // [P-MEGA-05] Restore APRÈS inférences pour qu'un snapshot d'édition
       // écrase les valeurs par défaut.
       this.restoreEditingSelectionsIfAny();
+      this.openOnRecapIfEditing();
     } else if (this.itemId) {
       this.fetchItemById(this.itemId);
     }

@@ -119,13 +119,100 @@ class ItemCategoryController extends AdminController
         }
     }
 
+    /**
+     * [ONB 2026-08-28] Ce controleur repondait un `202` VIDE, quoi qu'il arrive.
+     *
+     * L'instance d'import etait construite EN LIGNE dans l'appel a `Excel::import()`,
+     * donc jetee aussitot : les echecs collectes par `SkipsFailures` n'etaient jamais
+     * lus. Combine a l'absence d'alias d'en-tetes (corrigee dans
+     * `AccepteLesEnTetesExportes`), cela donnait le pire enchainement possible :
+     * le commercant exportait ses categories, en corrigeait une, redeposait le
+     * fichier — TOUTES les lignes echouaient sur `name required`, `SkipsOnFailure`
+     * les avalait, et l'ecran affichait un succes. Zero categorie creee, zero mot.
+     *
+     * Le meme defaut avait ete ferme cote PRODUITS le meme jour. Il etait reste
+     * intact ici : c'est le motif « une correction appliquee a un seul des deux
+     * jumeaux », que le trait partage doit desormais empecher de revenir.
+     */
     public function import(ItemCategoryImportRequest $request)
     {
         try {
-            Excel::import(new ItemCategoryImport($request->file('file')), $request->file('file'));
-            return response('', 202);
+            $import = new ItemCategoryImport($request->file('file'));
+            Excel::import($import, $request->file('file'));
+
+            $brut = collect($import->failures());
+
+            $lignesDeja = $brut
+                ->filter(fn ($echec) => str_contains(
+                    implode(' ', $echec->errors()),
+                    ItemCategoryImport::MARQUEUR_DEJA_PRESENT
+                ))
+                ->map(fn ($echec) => $echec->row())
+                ->unique();
+
+            $enPlace = $brut
+                ->filter(fn ($echec) => $lignesDeja->contains($echec->row()))
+                ->groupBy(fn ($echec) => $echec->row())
+                ->map(fn ($groupe, $ligne) => [
+                    'ligne'  => (int) $ligne,
+                    'raison' => trim(str_replace(
+                        ItemCategoryImport::MARQUEUR_DEJA_PRESENT,
+                        '',
+                        implode(' ', $groupe->first()->errors())
+                    )),
+                ])
+                ->values()
+                ->all();
+
+            $echecs = $brut
+                ->reject(fn ($echec) => $lignesDeja->contains($echec->row()))
+                ->map(fn ($echec) => [
+                    'ligne'   => $echec->row(),
+                    'colonne' => $echec->attribute(),
+                    'raison'  => implode(' ', $echec->errors()),
+                ])
+                ->values()
+                ->all();
+
+            // `model()` n'est appelee QUE par les lignes qui ont passe la
+            // validation : le compteur est deja net des refus et des lignes
+            // deja presentes. Les soustraire une seconde fois ramenait a zero.
+            $creees = (int) $import->creees;
+
+            return response()->json([
+                'status'        => true,
+                'creees'        => $creees,
+                'deja_presents' => $enPlace,
+                'echecs'        => $echecs,
+                'message'       => $this->resumeImport($creees, count($echecs), count($enPlace)),
+            ], 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
+    }
+
+    /** Une phrase que le commercant peut lire, plutot que trois listes a recouper. */
+    private function resumeImport(int $creees, int $echecs, int $dejaPresents = 0): string
+    {
+        if ($creees === 0 && $echecs === 0 && $dejaPresents === 0) {
+            return 'Votre fichier ne contenait aucune ligne exploitable.';
+        }
+
+        $phrase = $creees > 0
+            ? $creees . ' categorie' . ($creees > 1 ? 's ajoutees.' : ' ajoutee.')
+            : 'Aucune categorie ajoutee.';
+
+        if ($dejaPresents > 0) {
+            $phrase .= ' ' . $dejaPresents . ' ligne' . ($dejaPresents > 1 ? 's' : '')
+                . ' deja dans votre carte, ' . ($dejaPresents > 1 ? 'ignorees' : 'ignoree')
+                . ' sans modification.';
+        }
+
+        if ($echecs > 0) {
+            $phrase .= ' ' . $echecs . ' ligne' . ($echecs > 1 ? 's' : '')
+                . ' a corriger : voir le detail ci-dessous.';
+        }
+
+        return $phrase;
     }
 }

@@ -1,24 +1,62 @@
 # Active Cycle – FoodKing
 
+## Closure audit — 2026-09-17 (session f99fe4fa)
+
+Propriétaire a demandé de retrouver où toutes les missions en cours s'étaient arrêtées et de
+clôturer celles qui ne le sont pas. Constat, sourcé sur `reports/AGENT_ACTIVITY_LOG.md` +
+`git log` (pas de supposition) :
+
+- **ORDER-INTEGRITY-KDS-LOYALTY-20260914** — DÉPLOYÉ. `reports/AGENT_ACTIVITY_LOG.md` ligne
+  2026-09-17T15:05:30Z : « Committed 3e7e3236c, pushed and deployed ; migration, fiscal chain,
+  trigger and dedicated browser paths verified. » Le `report.md` de la mission datait d'AVANT ce
+  déploiement et affirmait encore « no deployment attempted » — corrigé ci-dessous (addendum daté,
+  rien effacé). PHASE repassée à CLOSED.
+- **KIOSK-SESSION-RESILIENCE-20260917** — DÉPLOYÉ (commit `e75c46e3b`). Reste un point produit,
+  PAS technique : notifications de queue à activer ou non — décision propriétaire en attente.
+- **DRAWER-BRIDGE-VISIBILITY-20260917** — NON CLÔTURÉ. Modifie `PaymentComponent.vue` (zone
+  gelée CLAUDE.md §7) mais reste **non committé** dans l'arbre de travail, sans LOCK doc. Aucun
+  hook mécanique ne l'a bloqué (le script `.cursor/hooks/safety-check.sh` ne liste pas ce fichier
+  dans `FROZEN_ZONES` — dérive à corriger séparément). Ne PAS committer sans gate explicite
+  propriétaire (§10 : « Frozen-zone touch needed » = STOP).
+- **LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05** — **CORRECTION** : d'abord signalé à tort comme
+  bloqué ici. En réalité CLÔTURÉ depuis `a5720abe9` (2026-09-06), sentinelle SHA-256 vérifiée
+  verte sur `pos-wizard.js`. La tentative annulée `dafb9c776` (2026-09-05) a simplement été
+  suivie d'un second essai réussi le lendemain, jamais relu avant d'écrire cette ligne.
+
+Voir `PROJECT_BRAIN.md` §2 entrée 2026-09-17 pour le détail complet (autocorrection incluse).
+
+---
+
+## Current order-integrity continuation — 2026-09-14 (CLOSED 2026-09-17)
+
+TASK_ID: ORDER-INTEGRITY-KDS-LOYALTY-20260914
+PHASE: CLOSED — deployed `3e7e3236c` 2026-09-17 (see closure audit above)
+RUNNER_MODE: single-session
+PRIMARY_EXECUTION_MODEL: gpt-5.5-pro
+PLAN_FILE: plans/PLAN_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md
+REPORT_FILE: reports/execution/ORDER-INTEGRITY-KDS-LOYALTY-20260914/report.md
+EXECUTE_DELEGATION:
+Previous wheel cycle is retained in its plan/report and replaced by explicit owner instruction.
+
 **Méta (SSOT `run-cycle.md` Step 0 + `AGENTS.md` § *Authoritative … cycle state*)** — requis pour que l’orchestrateur ne s’arrête pas sur *« RUNNER_MODE not set »*.
 
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `CLOSED` — double audit PASS ; V1 livrée désactivée, activation réelle toujours gelée par gate humaine. |
+| **PHASE** | `EXECUTE` — PLAN_REVIEW_VERDICT: PASS. |
 | **MASTER_TASK_ID** | |
-| **TASK_ID** | `VOICE-ORDER-ASSIST-V1-20260830` |
-| **PLAN_FILE** | `plans/PLAN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
-| **REPORT_FILE** | `reports/execution/RUN_VOICE-ORDER-ASSIST-V1-20260830_2026-08-30.md` |
-| **AUDIT_SOURCE** | `claude-terminal claude-opus-4-7/high — PASS, TERMINAL_AUDIT_OK: 1` |
-| **CONTINUATION_HANDOFF** | `missions/VOICE-ORDER-ASSIST-V1-20260830/execute_brief.md` |
-| **PARENT_CYCLE** | `None. Previous CAISSE-SUPERVISOR-CONTROL-20260823 remains suspended at GPT final channel decision; its plan/report/handoff are preserved and must not be rewritten.` |
-| **SUBSYSTEMS_TOUCHED** | `Free Pro/Asterisk voice gateway, Deepgram STT, voice transcript cache/ActionLog, catalog-bounded order draft, POS assistant panel, existing phone-order UI handoff` |
-| **INVARIANTS_AT_RISK** | `backend pricing SSOT; branch_id isolation; PII transcript retention; frozen wizard invocation without edit` |
-| **GATE_CONDITIONS** | `No schema/auth/frozen/payment/status gate planned. Implementation may proceed, but production activation is blocked until caller-notice wording + real Free Pro call receive human-verification sign-off.` |
-| **GATE_FILE** | `None for disabled implementation/validation. Deferred production activation checklist: docs/gates/GATE_VOICE-ORDER-ASSIST-V1-20260830_REAL_CALL_2026-08-30.md. Stop now only if implementation requires migration, auth middleware change, frozen edit or out-of-scope branch logic.` |
+| **TASK_ID** | `ORDER-INTEGRITY-KDS-LOYALTY-20260914` |
+| **PLAN_FILE** | `plans/PLAN_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md` |
+| **REPORT_FILE** | `reports/execution/ORDER-INTEGRITY-KDS-LOYALTY-20260914/report.md` |
+| **AUDIT_SOURCE** | `Pending — claude-terminal after validation` |
+| **CONTINUATION_HANDOFF** | `missions/ORDER-INTEGRITY-KDS-LOYALTY-20260914/execute_brief.md` |
+| **PARENT_CYCLE** | `Previous WHEEL-JOURNEY-UX-20260913 superseded by explicit owner instruction; its artefacts remain untouched.` |
+| **SUBSYSTEMS_TOUCHED** | `Pricing/order sealing, POS composition and checkout, receipt/KDS, kiosk loyalty, tests, web information copy` |
+| **INVARIANTS_AT_RISK** | `backend pricing SSOT; branch_id isolation; fiscal snapshot immutability; PII loyalty; frozen POS/pricing services` |
+| **GATE_CONDITIONS** | `Approved frozen/pricing/auth/schema gate; no scope expansion without a new brief.` |
+| **GATE_FILE** | `docs/gates/GATE_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md` |
 
-> **ACTIVE_PRIMARY** : `VOICE-ORDER-ASSIST-V1-20260830` (cycle standard non-`CV1-MXX`; l'ancienne section Masterplay ci-dessous reste une référence historique, pas un second cycle actif).
+> **ACTIVE_PRIMARY** : `ORDER-INTEGRITY-KDS-LOYALTY-20260914` (cycle standard non-`CV1-MXX`; l'ancienne section Masterplay ci-dessous reste une référence historique, pas un second cycle actif).
 > Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`
 
 ---
