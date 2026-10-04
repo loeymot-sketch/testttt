@@ -49,8 +49,9 @@ Plateforme restaurant fast-food complète :
 
 > **2026-10-04 — « finis tout et déploie » : poussé sur GitHub, PAS déployé sur le serveur.**
 > - **Poussé (avancement simple, sans force)** : `qa/corrige-rapports-2026-09-28` et la branche de
->   production `pos/category-first-caisse-2026-06-23`, de `96aa53a42` à `af7f306e3` (73 commits). Une autre
->   session a vu arriver ces 73 commits pendant qu'elle préparait son propre déploiement.
+>   production `pos/category-first-caisse-2026-06-23`, de `96aa53a42` à `fb5cc0832` (76 commits, les deux
+>   branches identiques). Une autre session a vu arriver les 73 premiers pendant qu'elle préparait son propre
+>   déploiement ; les 3 derniers (R-005, en-tête, documentation) ont suivi après revérification de la pointe.
 > - **Non déployé** : l'accès ssh à la production est refusé par le classificateur de permissions
 >   (« Production Reads », puis « Production Deploy » pour la lecture du script). Ce n'est pas la session
 >   qui a perdu le réseau : le navigateur et GitHub fonctionnent de nouveau.
@@ -58,8 +59,7 @@ Plateforme restaurant fast-food complète :
 >   captures lues, **témoin négatif** (carte sans supplément = pas de « # »). Détail : bilan §3.
 > - **R-005 corrigée et mesurée** : bande blanche 72 / 77 / 108 px → 11 px (zoom 0,9 + `h-screen`).
 >   Trouvaille : de 1440 à 1920 px l'en-tête de la caisse chevauchait ses boutons (colonne du titre à 0 px).
->   Commit `de95b9adc`, **poussé seulement sur `qa/…`, pas sur la branche de production**, pour ne pas
->   changer la cible d'une session qui prépare le déploiement. À avancer en même temps que la prod.
+>   Commit `de95b9adc`, poussé sur les deux branches : le prochain déploiement le livre.
 > - **Suites** : Vitest 594 fichiers / 4838 tests / 0 échec ; PHPUnit 6307 / 0 (à `0e91f3e3f`, aucun PHP
 >   modifié depuis) ; chaîne fiscale OK. Zones gelées : 0 ligne par ce GOAL ; le lot complet contient
 >   `PaymentComponent.vue` sous LOCK contresigné le 2026-10-02.

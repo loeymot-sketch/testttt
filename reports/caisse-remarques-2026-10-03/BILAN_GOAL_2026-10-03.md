@@ -6,7 +6,8 @@
 (`STATUT_A/B/C`).
 
 **État de livraison au 2026-10-04 :** le code est **poussé sur GitHub** (branche `qa/corrige-rapports-2026-09-28`
-et branche de release `pos/category-first-caisse-2026-06-23`, en avancement simple, sans force). Il n'est
+et branche de release `pos/category-first-caisse-2026-06-23`, identiques à `fb5cc0832`, en avancement simple,
+sans force). R-005 et l'en-tête sont inclus dans cette pointe. Il n'est
 **pas déployé sur le serveur** : l'accès ssh à la production est refusé par le classificateur de permissions
 (porte G3, voir §2). Le navigateur et GitHub, eux, fonctionnent de nouveau.
 
@@ -74,8 +75,8 @@ Défauts d'argent corrigés en route : le panier affichait parfois autre chose q
 |---|---|---|
 | **G1** | R-020, R-023, R-025, R-033, R-035 (assistant de la caisse, zone gelée) | Contresigner `docs/locks/LOCK_POS_WIZARD_REMARQUES_2026-10-03.md`, point par point |
 | **G1 bis** | R-041 « Offert » sur une sauce vendue seule | C'est un article entier : il faut une remise de ligne dans `PricingService` (zone gelée) |
-| **G2** | R-034 (Américaine), R-036 (portion 1,90 €), R-028 (cornichon), R-006 (barre du haut), R-059 (bouton « Reprendre » une commande ratée) | Décisions |
-| **G3** | **Levée en grande partie le 2026-10-04** : le navigateur et GitHub fonctionnent de nouveau (captures faites, branche poussée). Reste l'accès ssh à la production, **refusé par le classificateur de permissions** de Claude Code | Lancer le déploiement toi-même avec `!` (commande dans le compte rendu). R-065 reste à vérifier |
+| **G2** | R-034 (Américaine), R-036 (portion 1,90 €), R-028 (cornichon), R-006 (barre du haut), R-059 (bouton « Reprendre » une commande ratée), **R-065** (barre du haut du KDS) | Décisions. R-065 mesurée le 2026-10-04 : la barre de boutons du KDS est sur sa propre rangée sous l'en-tête du logo, et la première carte commence à ~20 % de la hauteur (1280×720). La fusionner avec l'en-tête du logo est un choix de design à valider avant de toucher à l'écran cuisine |
+| **G3** | **Levée en grande partie le 2026-10-04** : le navigateur et GitHub fonctionnent de nouveau (captures faites, branche poussée). Reste l'accès ssh à la production, **refusé par le classificateur de permissions** de Claude Code | Lancer le déploiement toi-même avec `!` (commande dans le compte rendu) |
 | **G4** | R-052 au-delà de 2,4 cm | « ×8 suffit » ou « image tramée » |
 | **G5** | R-047 (tiroir), R-074 (afficheur SAGA), R-007 (vitesse) | Essais au comptoir |
 | **G6** | R-024 à R-032, R-040, R-042, R-078 (photos), R-079, R-068 | Vérification des données en production (lecture ssh, après G3) |
