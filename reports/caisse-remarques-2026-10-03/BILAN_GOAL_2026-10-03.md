@@ -5,8 +5,11 @@
 **Inventaire :** 79 remarques du propriétaire (`REMARQUES_PROPRIETAIRE.md`) et 3 statuts de départ
 (`STATUT_A/B/C`).
 
-**Rien n'est poussé ni déployé.** Dans cette session, le navigateur, ssh et GitHub sont inaccessibles
-(porte G3).
+**État de livraison au 2026-10-04 :** le code est **poussé sur GitHub** (branche `qa/corrige-rapports-2026-09-28`
+et branche de release `pos/category-first-caisse-2026-06-23`, identiques à `fb5cc0832`, en avancement simple,
+sans force). R-005 et l'en-tête sont inclus dans cette pointe. Il n'est
+**pas déployé sur le serveur** : l'accès ssh à la production est refusé par le classificateur de permissions
+(porte G3, voir §2). Le navigateur et GitHub, eux, fonctionnent de nouveau.
 
 ## 1. Ce qui a changé, remarque par remarque
 
@@ -53,6 +56,8 @@ Défauts trouvés en route :
 | R-038 Supplément libre | Refusé tant que le panier n'a aucun produit (ajout, vente, commande téléphone) |
 | R-041 Offert | Aussi sur les options de formule (Grande Portion, Cheddar Fondu). Survit au rechargement ; le montant affiché égale le montant facturé |
 | R-078 Galette Normale | La réinitialisation du catalogue ne la recrée plus |
+| R-005 Bande blanche en bas | Mesurée le 2026-10-04 (le navigateur est revenu) : **72 px (1,9 cm) à 1280×720, 77 px à 1366×768, 108 px à 1920×1080**, soit 10 % de l'écran. Cause : la caisse tourne sous `zoom: 0.9`, mais `h-screen` et `100dvh` ne suivent pas le zoom. Après : **11 px aux trois tailles** (la marge basse voulue, égale à la marge droite). Au passage, les tuiles « Boissons / Menu enfant / Sauces supplémentaires » n'étaient plus coupées à 1080 |
+| En-tête de la caisse (trouvaille) | De **1440 à 1920 px de large**, la colonne du titre tombait à 0 px et « Commande rapide » se repliait **par-dessus** les boutons. Après : colonne de 193 px, titre sur une ligne, boutons passés à la ligne |
 
 Défauts d'argent corrigés en route : le panier affichait parfois autre chose que le montant facturé.
 
@@ -70,8 +75,8 @@ Défauts d'argent corrigés en route : le panier affichait parfois autre chose q
 |---|---|---|
 | **G1** | R-020, R-023, R-025, R-033, R-035 (assistant de la caisse, zone gelée) | Contresigner `docs/locks/LOCK_POS_WIZARD_REMARQUES_2026-10-03.md`, point par point |
 | **G1 bis** | R-041 « Offert » sur une sauce vendue seule | C'est un article entier : il faut une remise de ligne dans `PricingService` (zone gelée) |
-| **G2** | R-034 (Américaine), R-036 (portion 1,90 €), R-028 (cornichon), R-006 (barre du haut), R-059 (bouton « Reprendre » une commande ratée) | Décisions |
-| **G3** | Navigateur, ssh et GitHub coupés dans cette session | Relancer Claude Code depuis le Terminal. Débloque les captures, R-005, R-065 et le déploiement |
+| **G2** | R-034 (Américaine), R-036 (portion 1,90 €), R-028 (cornichon), R-006 (barre du haut), R-059 (bouton « Reprendre » une commande ratée), **R-065** (barre du haut du KDS) | Décisions. R-065 mesurée le 2026-10-04 : la barre de boutons du KDS est sur sa propre rangée sous l'en-tête du logo, et la première carte commence à ~20 % de la hauteur (1280×720). La fusionner avec l'en-tête du logo est un choix de design à valider avant de toucher à l'écran cuisine |
+| **G3** | **Levée en grande partie le 2026-10-04** : le navigateur et GitHub fonctionnent de nouveau (captures faites, branche poussée). Reste l'accès ssh à la production, **refusé par le classificateur de permissions** de Claude Code | Lancer le déploiement toi-même avec `!` (commande dans le compte rendu) |
 | **G4** | R-052 au-delà de 2,4 cm | « ×8 suffit » ou « image tramée » |
 | **G5** | R-047 (tiroir), R-074 (afficheur SAGA), R-007 (vitesse) | Essais au comptoir |
 | **G6** | R-024 à R-032, R-040, R-042, R-078 (photos), R-079, R-068 | Vérification des données en production (lecture ssh, après G3) |
@@ -80,7 +85,22 @@ Défauts d'argent corrigés en route : le panier affichait parfois autre chose q
 
 - La relecture adverse a été faite par vague (code et « œil du propriétaire »), puis trois tours de
   convergence. Chaque P0 et P1 trouvé a été corrigé et testé.
-- Zones gelées : 0 ligne modifiée entre `b0144f788` et HEAD.
+- Zones gelées : **0 ligne modifiée par ce GOAL** (de `b0144f788` à HEAD). ⚠ Précision du 2026-10-04 : par
+  rapport à la branche de release `96aa53a42`, le lot complet contient **un** changement de zone gelée,
+  `PaymentComponent.vue` (+104 / −5), livré le 2026-10-02 par une autre session sous
+  `LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE_2026-10-02.md`, **contresigné par le propriétaire**
+  (« Oui, je valide »). Il était déjà couvert par les suites vertes.
+- **Contrôle visuel du 2026-10-04**, sur un banc local (`php artisan serve :8790`, base de test, courriel en
+  journal), captures lues une à une dans `tests/captures/goal-remarques-2026-10-03/` :
+  - KDS : « # » devant le produit à supplément, « Œuf » en 22 px gras blanc sur noir, **témoin sans supplément
+    sans « # »** (la mesure sait dire non) ;
+  - caisse : commandes web en rouge, champ « 15 min » à côté d'« Accepter », aucune clé de traduction brute ;
+  - page Encaissement : onglet « Ratées (24 h) », aucune clé brute ;
+  - R-005 et en-tête : mesures avant/après aux mêmes tailles (`r005-avant-*`, `r005-apres-*`, `entete-*`) ;
+  - le wizard (zone gelée) occupe bien toute la hauteur : il n'a pas la perte de 10 %.
+- Résidus de test : 8 commandes `E2E-VISU-REMARQUES` payées par carte restent dans la base de **test** locale.
+  Elles sont fiscalisées, donc le nettoyage ne les supprime pas, à dessein (NF525 : aucune suppression dure).
+  La chaîne fiscale du banc reste `CHAIN OK` sur les 7 branches.
 - Les chiffres des suites complètes, de la chaîne fiscale et du dernier tour de convergence sont au §4.
 
 ## 4. Suites complètes et convergence

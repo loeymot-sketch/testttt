@@ -326,6 +326,11 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     /* MAIN CONTENT */
     .db-main { @apply font-public px-3 sm:px-4 pb-4 xh:pt-[170px] pt-[80px] lg:pt-[84px] ltr:lg:pl-[280px] rtl:lg:pr-[280px] ltr:lg:pr-5 rtl:lg:pl-5 lg:pb-5 h-screen overflow-auto transition bg-[#f7f7fc] }
     .db-main.expand { @apply ltr:lg:pl-5 rtl:lg:pr-5 }
+    /* [R-005 2026-10-04 · owner « 2 cm de blanc en bas de la caisse »] La caisse tourne sous `zoom: 0.9`
+       (caisseZoom.js). `h-screen` = 100vh ne suit PAS le zoom : la zone de défilement mesurait 720 px CSS,
+       affichés 648 → 72 px blancs à 720, 77 à 768, 108 à 1080 (10 % de l'écran). On divise par le facteur
+       publié dans `--caisse-zoom` ; hors caisse la variable n'existe pas (repli 1 → aucun changement). */
+    body[data-caisse-zoom] .db-main { height: calc(100vh / var(--caisse-zoom, 1)) }
     /* [KDS-A-01 2026-07-06] Route-scoped (classe posée/retirée par KitchenDisplaySystemComponent
        mounted/beforeUnmount, même pattern que `.expand`) : db-main est display:block, donc le
        `flex:1` de .kds-v2 était inerte → la grille prenait la hauteur de son contenu (~514px)

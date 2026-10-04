@@ -65,7 +65,13 @@
 
 .pos-v5-operator-bar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [R-005 2026-10-04] Mesuré : de 1440 à 1920 px de large, la colonne du titre tombait à 0 px (colonne
+       d'actions en `auto` = toute la rangée de boutons sur une ligne) et « Commande rapide » se repliait
+       sur 2+ lignes PAR-DESSUS les boutons. La colonne de marque garde au moins 270 px (couronne 44 +
+       espace 12 + « Commande rapide » ≈ 195 px CSS sur une ligne) ; la colonne d'actions peut rétrécir
+       (`minmax(0, auto)`) et ses boutons passent à la ligne (`flex-wrap`) dans l'espace restant.
+       ≤1439 px : inchangé, le media query plus bas empile. */
+    grid-template-columns: minmax(270px, 1fr) minmax(0, auto);
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -709,6 +715,16 @@
     .pos-v5-cart {
         width: 400px;
         max-width: 400px;
+    }
+}
+
+/* [R-005 2026-10-04] Le panneau ticket est `fixed` : il ne suit pas `.db-main`. Sa hauteur Tailwind
+   `md:h-[calc(100dvh-64px)]` (PosComponent.vue) ignore le zoom 0.9 de la caisse → il s'arrêtait 72 px
+   au-dessus du bas de l'écran (1,9 cm). On divise par `--caisse-zoom` (caisseZoom.js) et on garde 12 px
+   de marge basse, la même que la marge droite (`md:right-3`) : le ticket descend jusqu'au bas de l'écran. */
+@media (min-width: 768px) {
+    body[data-caisse-zoom] #pos-cart.pos-v5-cart {
+        height: calc(100dvh / var(--caisse-zoom, 1) - 76px);
     }
 }
 
