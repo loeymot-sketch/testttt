@@ -14,7 +14,7 @@
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
-const { loginAsChefOperator, loginAsAdmin, cleanupOrphanTestOrders } = require('./helpers/login');
+const { loginAsChefOperator, loginAsAdmin, loginAsPosOperator, cleanupOrphanTestOrders } = require('./helpers/login');
 const { placeOrder } = require('./helpers/place-order');
 
 const OUT = path.resolve(__dirname, '../captures/goal-remarques-2026-10-03');
@@ -92,6 +92,22 @@ test('KDS — supplément agrandi + dièse sur le produit (avec témoin négatif
     expect(mAvec.carteTexte, 'R-072 : « # » devant le produit à supplément').toMatch(/\d\s*×\s*#/);
     expect(mSans.aUneLigneSupplement, 'le témoin n\'a aucune ligne supplément').toBe(false);
     expect(mSans.carteTexte, 'témoin : PAS de « # » sans supplément').not.toMatch(/#/);
+    expect(erreurs, 'aucune erreur JavaScript').toEqual([]);
+});
+
+test('Caisse — charge sans erreur JavaScript ni clé de traduction brute', async ({ page }) => {
+    const erreurs = [];
+    page.on('pageerror', (e) => erreurs.push(String(e.message).slice(0, 250)));
+
+    await loginAsPosOperator(page);
+    await page.waitForTimeout(6000);
+    await page.screenshot({ path: path.join(OUT, '05-caisse.png') });
+
+    const corps = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+    // Une clé brute ressemble à `pos.cancel_kiosk_cash.reason_prefilled` / `label.enc_*` / `button.confirm_collect`.
+    const brutes = corps.match(/\b(?:pos|label|button|kiosk)\.[a-z_]+(?:\.[a-z_]+)*\b/g) || [];
+    console.log('CAISSE_CLES_BRUTES', JSON.stringify(brutes.slice(0, 10)));
+    expect(brutes, 'aucune clé de traduction brute dans la caisse').toEqual([]);
     expect(erreurs, 'aucune erreur JavaScript').toEqual([]);
 });
 
