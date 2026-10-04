@@ -1282,6 +1282,8 @@
         "audit_event_order_payment_tranche_persisted": "Tranche de paiement enregistrée",
         "audit_event_order_delivery_boy_assigned": "Livreur assigné",
         "audit_event_order_counter_payment_canceled": "Encaissement comptoir annulé",
+        "audit_event_order_counter_pending_purged": "Commande à encaisser périmée archivée",
+        "audit_event_order_line_offered": "Supplément offert",
         "audit_event_order_refunded_stripe_dashboard": "Remboursement Stripe (tableau de bord)",
         "audit_event_order_payment_drained_by_cron": "Paiement régularisé (tâche planifiée)",
         "audit_event_payment_cash_back_issued": "Rendu de monnaie émis",
