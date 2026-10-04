@@ -47,6 +47,27 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-04 — « finis tout et déploie » : poussé sur GitHub, PAS déployé sur le serveur.**
+> - **Poussé (avancement simple, sans force)** : `qa/corrige-rapports-2026-09-28` et la branche de
+>   production `pos/category-first-caisse-2026-06-23`, de `96aa53a42` à `af7f306e3` (73 commits). Une autre
+>   session a vu arriver ces 73 commits pendant qu'elle préparait son propre déploiement.
+> - **Non déployé** : l'accès ssh à la production est refusé par le classificateur de permissions
+>   (« Production Reads », puis « Production Deploy » pour la lecture du script). Ce n'est pas la session
+>   qui a perdu le réseau : le navigateur et GitHub fonctionnent de nouveau.
+> - **Navigateur de retour** : contrôle visuel du lot sur un banc local (KDS, caisse, Encaissement),
+>   captures lues, **témoin négatif** (carte sans supplément = pas de « # »). Détail : bilan §3.
+> - **R-005 corrigée et mesurée** : bande blanche 72 / 77 / 108 px → 11 px (zoom 0,9 + `h-screen`).
+>   Trouvaille : de 1440 à 1920 px l'en-tête de la caisse chevauchait ses boutons (colonne du titre à 0 px).
+>   Commit `de95b9adc`, **poussé seulement sur `qa/…`, pas sur la branche de production**, pour ne pas
+>   changer la cible d'une session qui prépare le déploiement. À avancer en même temps que la prod.
+> - **Suites** : Vitest 594 fichiers / 4838 tests / 0 échec ; PHPUnit 6307 / 0 (à `0e91f3e3f`, aucun PHP
+>   modifié depuis) ; chaîne fiscale OK. Zones gelées : 0 ligne par ce GOAL ; le lot complet contient
+>   `PaymentComponent.vue` sous LOCK contresigné le 2026-10-02.
+> - **Déploiement : contrôles à faire AVANT le reset** (voir la mémoire `deploiement-controles-avant-le-reset`) :
+>   `git fetch` juste avant ; HEAD du serveur = ancêtre de la pointe ; lire les 2 migrations (colonne nullable
+>   `orders.preparation_time_confirmed_at` + insertion idempotente d'environ 15 sauces à 0,50 € hors menu) ;
+>   sauvegarde par la connexion de l'application, jamais `mysqldump` extrait de `.env`.
+
 > **2026-10-03 — GOAL « remarques caisse / cuisine / encaissement » : 3 vagues livrées sur
 > `qa/corrige-rapports-2026-09-28` (de `b0144f788` à HEAD), RIEN poussé ni déployé.**
 > - **Documents** :
