@@ -169,5 +169,9 @@ class Kernel extends HttpKernel
         // fermant simplement l'écran qui le réclame. La borne (jeton `kiosk-token`) et les
         // clients venus par le parcours téléphone ne sont pas touchés.
         'require_customer_phone' => \App\Http\Middleware\RequireCustomerPhone::class,
+        // [STORES T-3.3.2 · 2026-10-01] Une application des stores plus ancienne que la
+        // version minimale publiée (config/app_mobile.php) ne passe pas de commande. Le site
+        // web et la borne n'envoient pas de version : jamais concernés.
+        'app_version' => \App\Http\Middleware\RefuseOutdatedApp::class,
     ];
 }

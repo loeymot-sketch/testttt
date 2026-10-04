@@ -86,3 +86,16 @@ gate de sécurité; sans cette configuration, la borne restera indisponible.
 - `pos:lint:status` : **OK**, 38 fichiers analysés.
 - `perf:bundle-check` : **OK**, bundles kiosk/admin dans leurs budgets.
 - `composer validate --strict --no-check-publish` : **OK**.
+
+## Smoke Playwright critique (29/09/2026)
+
+- `npm run test:e2e:smoke` sous Node 20 : **22 scénarios, 21 passés, 1 échec**
+  (durée 1m55).
+- Auth refresh POS, cycle caisse cash complet, navigation borne, login KDS,
+  chargement KDS et synchronisation rupture de stock passent.
+- L’échec unique est `04-kds-status.spec.js` : après le clic sur « Prêt » de
+  la commande `7519`, le test attend à tort le texte « Commande N°7519 servie ».
+  La capture montre que la commande reste `En cours` avec bouton « Prêt » et que
+  la bande « Récemment servies » contient `7518`; le défaut est donc dans le
+  contrat/assertion E2E (PREPARED ≠ DELIVERED), pas une preuve de panne prix ou
+  d’affichage KDS. À corriger dans le test avant de relancer la gate.

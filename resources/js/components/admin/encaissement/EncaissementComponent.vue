@@ -16,36 +16,6 @@
                     </div>
                     <div class="enc-header-actions">
                         <span class="enc-count-chip">{{ orders.length }}</span>
-                        <!--
-                          [CAISSE 2026-09-29 · demande propriétaire] « Si je veux vraiment commencer
-                          une nouvelle journée, j'ai grand nombre de commandes en attente, je veux
-                          tout supprimer. »
-
-                          Le bouton ne touche QUE les journées PASSÉES (plancher de service à 5 h,
-                          côté serveur). Un « tout vider » littéral emporterait le client qui arrive
-                          à la porte, avec un plat déjà parti en cuisine.
-
-                          Il annonce d'abord le compte EXACT (appel à blanc), puis attend un second
-                          clic. On n'affiche jamais « vider » sans dire combien : un caissier ne peut
-                          pas consentir à un chiffre qu'il ne connaît pas.
-                        -->
-                        <button
-                            v-if="staleCount === null || staleCount > 0"
-                            class="db-btn py-2 enc-purge-btn"
-                            :class="purgeArmed ? 'enc-purge-btn--armed' : 'enc-purge-btn--idle'"
-                            :disabled="purging"
-                            data-testid="enc-purge-stale"
-                            :data-armed="purgeArmed ? '1' : '0'"
-                            @click.prevent="purgeStale"
-                        >
-                            <!-- [AUDIT CAISSE 2026-09-29] L'état ARMÉ est porté par `purgeArmed`, pas par
-                                 « a-t-on déjà compté » : le rouge et le mot « Confirmer » n'apparaissent
-                                 qu'après le premier clic, et disparaissent après 4 s. -->
-                            <span v-if="purging">Nettoyage…</span>
-                            <span v-else-if="staleCount === null">Nettoyer les jours passés</span>
-                            <span v-else-if="purgeArmed">Confirmer : annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }}</span>
-                            <span v-else>Annuler {{ staleCount }} commande{{ staleCount > 1 ? 's' : '' }} des jours passés</span>
-                        </button>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
                             <i class="lab lab-refresh-line lab-font-size-16"></i>
                             <span>{{ $t('button.refresh') }}</span>
@@ -53,13 +23,88 @@
                     </div>
                 </div>
 
+                <!--
+                  [GOAL CAISSE/CUISINE #3 2026-10-02] File « en attente d'encaissement » : par DÉFAUT la
+                  journée de service courante seulement (nouveau jour = liste vide). Les commandes d'hier et
+                  d'avant, jamais encaissées, vivent dans « Jours précédents » — d'où on peut les purger
+                  (une par une ou toutes), après confirmation. Une purge ANNULE (jamais de suppression d'une
+                  commande payée / fiscalisée) et laisse une trace d'audit.
+                -->
+                <div class="enc-scope-bar" role="tablist" :aria-label="$t('label.enc_scope_aria')">
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'today' }"
+                        :aria-selected="scope === 'today' ? 'true' : 'false'"
+                        data-testid="enc-scope-today"
+                        @click="setScope('today')"
+                    >{{ $t('label.enc_scope_today') }}</button>
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'previous' }"
+                        :aria-selected="scope === 'previous' ? 'true' : 'false'"
+                        data-testid="enc-scope-previous"
+                        @click="setScope('previous')"
+                    >
+                        {{ $t('label.enc_scope_previous') }}
+                        <span v-if="previousCount > 0" class="enc-scope-badge" data-testid="enc-previous-count">{{ previousCount }}</span>
+                    </button>
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-059] « ça va dans commande rater ça reste 24 heures ». -->
+                    <button
+                        type="button" role="tab" class="enc-scope-tab"
+                        :class="{ 'is-active': scope === 'missed' }"
+                        :aria-selected="scope === 'missed' ? 'true' : 'false'"
+                        data-testid="enc-scope-missed"
+                        @click="setScope('missed')"
+                    >{{ $t('label.enc_scope_missed') }}</button>
+                    <button
+                        v-if="scope === 'previous' && orders.length > 0"
+                        type="button"
+                        class="enc-purge-all-btn"
+                        data-testid="enc-purge-all"
+                        @click="askPurge(null)"
+                    >{{ $t('label.enc_purge_all', { n: orders.length }) }}</button>
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-060] « Dans l'attente je veux tout supprimer » : les
+                         commandes TÉLÉPHONE du jour, d'un geste confirmé. Jamais la borne ni le site. -->
+                    <button
+                        v-if="scope === 'today' && phoneOrders.length > 0"
+                        type="button"
+                        class="enc-purge-all-btn"
+                        data-testid="enc-purge-phone"
+                        @click="askPurgePhoneToday"
+                    >{{ $t('label.enc_purge_phone', { n: phoneOrders.length }) }}</button>
+                </div>
+                <p v-if="scope === 'previous'" class="enc-scope-hint" data-testid="enc-previous-hint">{{ $t('label.enc_previous_hint') }}</p>
+                <p v-if="scope === 'missed'" class="enc-scope-hint" data-testid="enc-missed-hint">{{ $t('label.enc_missed_hint') }}</p>
+
                 <div class="enc-body">
+                    <!-- [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées : LECTURE SEULE, aucun bouton. -->
+                    <div v-if="scope === 'missed'" class="enc-missed" data-testid="enc-missed-list">
+                        <!-- [Revue vague 2 · P3] Une panne réseau ne se déguise jamais en « aucune commande ratée ». -->
+                        <div v-if="fetchError && ratees.length === 0" class="enc-empty enc-error" data-testid="enc-missed-error">
+                            <p class="enc-empty-title">{{ $t('label.encaisser_queue_error') }}</p>
+                        </div>
+                        <div v-else-if="ratees.length === 0" class="enc-empty" data-testid="enc-missed-empty">
+                            <p class="enc-empty-title">{{ $t('label.enc_missed_empty') }}</p>
+                        </div>
+                        <div v-for="r in ratees" :key="r.id" class="enc-missed-row" :data-testid="`enc-missed-${r.id}`">
+                            <div class="enc-missed-head">
+                                <span class="enc-missed-num">N° {{ r.numero }}</span>
+                                <span v-if="r.client" class="enc-missed-client">{{ r.client }}</span>
+                                <span v-if="r.telephone" class="enc-missed-phone">{{ r.telephone }}</span>
+                                <span class="enc-missed-time">{{ $t('label.enc_missed_cancelled_at', { time: heureCourte(r.annulee_a) }) }}</span>
+                                <span class="enc-missed-total">{{ formatPrice(r.total) }}</span>
+                            </div>
+                            <ul class="enc-missed-items">
+                                <li v-for="(p, i) in r.produits" :key="i">{{ p }}</li>
+                            </ul>
+                        </div>
+                    </div>
                     <!-- [T-4.1 FAUX-VIDE 2026-08-15] Un fetch en échec avec orders=[] affichait le
                          MÊME ✅ vert que "0 commande à encaisser" réel — le caissier ne pouvait pas
                          distinguer une file réellement vide d'une file INVISIBLE par panne réseau.
                          Un poll silencieux qui échoue alors qu'une liste réelle est déjà affichée ne
                          doit PAS l'effacer (orders.length > 0 garde la priorité sur l'erreur). -->
-                    <div v-if="fetchError && orders.length === 0" class="enc-empty enc-error" data-test="enc-fetch-error">
+                    <div v-else-if="fetchError && orders.length === 0" class="enc-empty enc-error" data-test="enc-fetch-error">
                         <div class="enc-empty-icon">⚠️</div>
                         <p class="enc-empty-title">{{ $t('label.encaisser_queue_error') }}</p>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
@@ -69,7 +114,7 @@
 
                     <div v-else-if="orders.length === 0" class="enc-empty" data-test="enc-empty-real">
                         <div class="enc-empty-icon">✅</div>
-                        <p class="enc-empty-title">{{ $t('label.encaisser_queue_empty') }}</p>
+                        <p class="enc-empty-title">{{ scope === 'previous' ? $t('label.enc_previous_empty') : $t('label.encaisser_queue_empty') }}</p>
                     </div>
 
                     <div v-else class="enc-grid">
@@ -118,6 +163,13 @@
                                     class="enc-queue-date-badge"
                                     :data-testid="`enc-queue-date-${order.id}`"
                                 >{{ queueDateBadge(order) }}</span>
+                                <!-- [E2E stores · B2-R2-11 · 2026-10-02] Commande PROGRAMMÉE : l'heure de
+                                     retrait choisie par le client (même règle que la fiche, serveur). -->
+                                <span
+                                    v-if="order.scheduled_at && order.delivery_time"
+                                    class="enc-queue-date-badge"
+                                    :data-testid="`enc-scheduled-${order.id}`"
+                                >⏰ {{ order.delivery_time }}</span>
                                 <button
                                     class="enc-cancel-x"
                                     :class="{ 'enc-cancel-x--armed': pendingCancelId === order.id }"
@@ -205,9 +257,32 @@
                                 >
                                     {{ $t('label.encaisser') }}
                                 </button>
+                                <button
+                                    v-if="scope === 'previous'"
+                                    type="button"
+                                    class="enc-purge-btn"
+                                    :aria-label="`${$t('label.enc_purge_one')} ${order.order_serial_no || order.id}`"
+                                    :data-testid="`enc-purge-${order.id}`"
+                                    @click.prevent="askPurge(order)"
+                                >{{ $t('label.enc_purge_one') }}</button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- [GOAL #3 2026-10-02] Confirmation OBLIGATOIRE avant toute purge. -->
+        <div v-if="purgeTarget" class="enc-confirm-overlay" data-testid="enc-purge-confirm" @click.self="cancelPurge">
+            <div class="enc-confirm" role="alertdialog" aria-modal="true" :aria-label="purgeTitre">
+                <h4 class="enc-confirm-title">{{ purgeTitre }}</h4>
+                <p class="enc-confirm-body" data-testid="enc-purge-summary">{{ purgeSummary }}</p>
+                <p class="enc-confirm-note">{{ $t('label.enc_purge_note') }}</p>
+                <label class="enc-confirm-label" for="encPurgeReason">{{ purgeTarget && purgeTarget.phoneToday ? $t('label.enc_purge_reason_phone') : $t('label.enc_purge_reason') }}</label>
+                <input id="encPurgeReason" v-model="purgeReason" class="enc-confirm-input" type="text" maxlength="255" data-testid="enc-purge-reason" />
+                <div class="enc-confirm-actions">
+                    <button type="button" class="enc-confirm-cancel" data-testid="enc-purge-cancel" :disabled="purging" @click="cancelPurge">{{ $t('button.cancel') }}</button>
+                    <button type="button" class="enc-confirm-ok" data-testid="enc-purge-ok" :disabled="purging || purgeReason.trim().length < 3" @click="confirmPurge">{{ $t('label.enc_purge_confirm') }}</button>
                 </div>
             </div>
         </div>
@@ -219,6 +294,13 @@
             :order="encaisseOrder"
             @confirmed="onEncaisseConfirmed"
             @cancel="encaisseOrder = null" />
+        <!-- [GOAL REMARQUES 2026-10-03 · R-048] « Imprimer le ticket client ? » après l'encaissement —
+             jamais d'impression automatique (sauf option explicite autoPrintClientReceipt). -->
+        <PosQuestionImpressionTicket
+            v-if="questionImpressionOrderId"
+            :key="questionImpressionOrderId"
+            :order-id="questionImpressionOrderId"
+            @fermer="questionImpressionOrderId = null" />
     </div>
 </template>
 
@@ -227,6 +309,7 @@ import LoadingComponent from "../components/LoadingComponent";
 import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import CaisseSecondaryNav from "../pos/CaisseSecondaryNav.vue";
 import PosCounterCollectModal from "../pos/PosCounterCollectModal.vue";
+import PosQuestionImpressionTicket from "../pos/PosQuestionImpressionTicket.vue";
 import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import axios from "axios";
@@ -256,23 +339,29 @@ export default {
         LoadingComponent,
         BreadcrumbComponent,
         PosCounterCollectModal,
+        PosQuestionImpressionTicket,
     },
     data() {
         return {
             loading: { isActive: false },
             orders: [],
             fetchError: false,
+            // [GOAL #3 2026-10-02] 'today' (défaut) | 'previous' ; compteur du badge fourni par l'API.
+            scope: 'today',
+            previousCount: 0,
+            ratees: [], // [R-059] commandes téléphone annulées < 24 h (lecture seule)
+            questionImpressionOrderId: null, // [R-048] commande dont on propose d'imprimer le ticket client
+            purgeTarget: null, // { order: Order|null } — null order = toutes les anciennes
+            purgeReason: '',
+            purging: false,
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
-            // [CAISSE 2026-09-29] Annulation directe (croix) + nettoyage des jours passés.
+            // [CAISSE 2026-09-29] Annulation directe (croix). (Le nettoyage des jours passés vit dans
+            // l'onglet « Jours précédents » depuis le 02/10 — un seul chemin, R-061.)
             pendingCancelId: null,   // commande dont la croix est ARMÉE (2e clic attendu)
             pendingCancelTimer: null,
             cancellingId: null,      // requête en vol, pour ne pas double-annuler
-            staleCount: null,        // null = pas encore compté ; 0 = rien à nettoyer
-            purging: false,
-            purgeArmed: false,       // 1er clic = armé 4 s ; 2e clic = exécute
-            purgeArmTimer: null,
         };
     },
     mounted() {
@@ -286,7 +375,6 @@ export default {
         this.subscribeEcho();
         // [CAISSE 2026-09-29] Compte à blanc : le bouton de nettoyage ne s'affiche
         // que s'il a réellement quelque chose à faire.
-        this.refreshStaleCount();
     },
     beforeUnmount() {
         if (this.pendingCancelTimer) {
@@ -300,6 +388,44 @@ export default {
         this.unsubscribeEcho();
     },
     computed: {
+        // [GOAL REMARQUES 2026-10-03 · R-060] Commandes TÉLÉPHONE de la file du jour (seules concernées
+        // par « Supprimer les commandes téléphone »).
+        // [Revue adverse vague 2 · P1-2] … SAUF une commande à l'avance dont le créneau n'est pas encore
+        // passé : ce client viendra (même règle que le serveur).
+        phoneOrders() {
+            const maintenant = Date.now();
+            return this.orders.filter((o) => {
+                if (String(o.source_surface || '').toLowerCase() !== 'phone') return false;
+                const creneau = o.scheduled_at ? Date.parse(o.scheduled_at) : NaN;
+                return !(Number.isFinite(creneau) && creneau > maintenant);
+            });
+        },
+        // [Revue vague 2 · P3] « Supprimer les commandes téléphone ? » — pas « Purger les commandes jamais
+        // encaissées » ni « Motif (obligatoire) » : le propriétaire ne veut aucun justificatif à taper.
+        purgeTitre() {
+            return this.purgeTarget && this.purgeTarget.phoneToday
+                ? this.$t('label.enc_purge_phone_title')
+                : this.$t('label.enc_purge_title');
+        },
+        purgeSummary() {
+            const t = this.purgeTarget;
+            if (!t) return '';
+            if (t.phoneToday) {
+                // [Revue vague 3 · P3] Le résumé décrit EXACTEMENT ce qui partira : les commandes figées à
+                // l'ouverture (t.ids), pas la liste vivante — une commande arrivée entre-temps n'y est pas.
+                const figees = this.orders.filter((o) => (t.ids || []).includes(o.id));
+                const totalTel = figees.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
+                return this.$t('label.enc_purge_summary_phone', { n: (t.ids || []).length, amount: this.formatPrice(totalTel) });
+            }
+            if (t.order) {
+                return this.$t('label.enc_purge_summary_one', {
+                    order: t.order.order_serial_no || t.order.id,
+                    amount: this.formatPrice(this.orderAmount(t.order)),
+                });
+            }
+            const total = this.orders.reduce((sum, o) => sum + (parseFloat(this.orderAmount(o)) || 0), 0);
+            return this.$t('label.enc_purge_summary_all', { n: this.orders.length, amount: this.formatPrice(total) });
+        },
         // [RECEIPT-NO-AUTO 2026-07-24] Flag OPT-IN d'auto-impression du reçu CLIENT
         // (défaut FALSE). Spec owner : à l'encaissement, on n'imprime PLUS le ticket
         // client automatiquement — les boutons manuels de la modale (printTicket)
@@ -364,72 +490,33 @@ export default {
             }).finally(() => {
                 this.cancellingId = null;
                 this.fetchPending(true);
-                this.refreshStaleCount();
             });
         },
-        /**
-         * Compte, sans rien changer, les commandes des journées PASSÉES encore dans la
-         * file. Sert à n'afficher le bouton de nettoyage que s'il a quelque chose à
-         * faire, et à annoncer un chiffre exact avant d'agir.
-         */
-        refreshStaleCount() {
-            // GET : un comptage ne mute rien, il n'a donc pas à porter de clé
-            // d'idempotence (le POST d'annulation, lui, en exige une).
-            return axios.get('admin/pos/counter-collect/stale-count')
-                .then((res) => { this.staleCount = Number(res.data?.count ?? 0); })
-                .catch(() => { /* le bouton reste au repos ; jamais bloquant */ });
+        // [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées (téléphone annulées < 24 h), lecture seule.
+        fetchRatees(silent = false) {
+            if (!silent) this.loading.isActive = true;
+            return axios.get('admin/pos/counter-collect/missed').then((res) => {
+                this.ratees = res.data?.data || [];
+                this.fetchError = false;
+                this.loading.isActive = false;
+            }).catch(() => {
+                this.fetchError = true;
+                this.loading.isActive = false;
+            });
         },
-        /**
-         * Premier clic : compte et annonce. Second clic : annule réellement.
-         * Le serveur borne lui-même au plancher de journée de service — le service en
-         * cours ne peut pas être emporté, même si cette interface se trompait.
-         */
-        purgeStale() {
-            if (this.purging) return;
-
-            if (this.staleCount === null) {
-                this.purging = true;
-                return this.refreshStaleCount().finally(() => {
-                    this.purging = false;
-                    if (this.staleCount === 0) this.staleCount = null;
-                });
-            }
-
-            // [AUDIT CAISSE 2026-09-29 · P1 — DÉFAUT DE MA PROPRE VERSION] Le comptage
-            // se fait au montage (`mounted` → refreshStaleCount), donc `staleCount` est
-            // déjà un nombre quand le caissier arrive : le bouton s'affichait armé
-            // d'emblée et le PREMIER clic annulait — alors que le docbloc et le CSS
-            // promettaient une confirmation en deux temps. Et l'annulation est
-            // irréversible (CANCELED + REFUNDED, résurrection interdite). Le premier
-            // clic ARME désormais pour 4 s, comme la croix ; seul le second exécute.
-            if (!this.purgeArmed) {
-                this.purgeArmed = true;
-                if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
-                this.purgeArmTimer = setTimeout(() => { this.purgeArmed = false; }, 4000);
-                return;
-            }
-            if (this.purgeArmTimer) clearTimeout(this.purgeArmTimer);
-            this.purgeArmed = false;
-
-            this.purging = true;
-            // Clé propre à CE lot : un rejeu réseau rejoue la même opération, mais un
-            // nettoyage lancé plus tard est bien une nouvelle opération (sinon le
-            // second resservirait la réponse du premier et ne nettoierait rien).
-            const cleLot = `enc-purge-${Date.now()}`;
-            axios.post('admin/pos/counter-collect/cancel-stale', {}, {
-                headers: { 'X-Idempotency-Key': cleLot },
-            })
-                .then(() => { this.staleCount = null; })
-                .catch(() => { this.fetchError = true; })
-                .finally(() => {
-                    this.purging = false;
-                    this.fetchPending(true);
-                });
+        heureCourte(iso) {
+            try {
+                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            } catch (_) { return ''; }
         },
         fetchPending(silent = false) {
+            // Sur l'onglet « Ratées », le rafraîchissement (polling, temps réel) relit CETTE liste — il ne
+            // doit jamais la remplacer par la file en attente.
+            if (this.scope === 'missed') return this.fetchRatees(silent);
             if (!silent) this.loading.isActive = true;
-            return axios.get('admin/pos/counter-collect/pending').then((res) => {
+            return axios.get('admin/pos/counter-collect/pending', { params: { scope: this.scope || 'today' } }).then((res) => {
                 this.orders = res.data?.data || [];
+                this.previousCount = Number(res.data?.meta?.previous_count || 0);
                 this.fetchError = false;
                 this.loading.isActive = false;
             }).catch(() => {
@@ -438,6 +525,67 @@ export default {
                 this.fetchError = true;
                 this.loading.isActive = false;
             });
+        },
+        setScope(scope) {
+            if (scope !== 'today' && scope !== 'previous' && scope !== 'missed') return;
+            this.scope = scope;
+            this.orders = [];
+            return this.fetchPending();
+        },
+        // [GOAL #3 2026-10-02] Demande de purge : `order` = une commande, null = toutes les anciennes.
+        askPurge(order) {
+            this.purgeReason = this.$t('label.enc_purge_reason_default');
+            this.purgeTarget = { order: order || null };
+        },
+        // [GOAL REMARQUES 2026-10-03 · R-060] Toutes les commandes téléphone du jour : même fenêtre de
+        // confirmation, motif pré-rempli « Client non venu » (rien à taper).
+        askPurgePhoneToday() {
+            this.purgeReason = this.$t('label.enc_purge_reason_phone_default');
+            // [Revue adverse vague 2] On fige ICI les commandes montrées (seules celles-là partiront) et une
+            // clé d'idempotence propre à CETTE confirmation (un double appui rejoue, un nouveau geste non).
+            this.purgeTarget = {
+                order: null,
+                phoneToday: true,
+                ids: this.phoneOrders.map((o) => o.id),
+                cle: `${Date.now()}`,
+            };
+        },
+        cancelPurge() {
+            if (this.purging) return;
+            this.purgeTarget = null;
+        },
+        async confirmPurge() {
+            if (!this.purgeTarget || this.purging || this.purgeReason.trim().length < 3) return;
+            const one = this.purgeTarget.order;
+            const phoneToday = !!this.purgeTarget.phoneToday;
+            const body = phoneToday
+                ? { confirm: true, reason: this.purgeReason.trim(), ids: this.purgeTarget.ids || [] }
+                : {
+                    confirm: true,
+                    reason: this.purgeReason.trim(),
+                    ...(one ? { ids: [one.id] } : { all: true }),
+                };
+            const minute = Math.floor(Date.now() / 60000);
+            this.purging = true;
+            try {
+                const res = phoneToday
+                    ? await axios.post('admin/pos/counter-collect/purge-phone-today', body, {
+                        headers: { 'X-Idempotency-Key': `pos-purge-phone-today-${this.purgeTarget.cle || minute}` },
+                    })
+                    : await axios.post('admin/pos/counter-collect/purge-previous', body, {
+                        headers: { 'X-Idempotency-Key': `pos-purge-previous-${one ? one.id : 'all'}-${minute}` },
+                    });
+                const purged = Number(res.data?.purged || 0);
+                const skipped = Array.isArray(res.data?.skipped) ? res.data.skipped.length : 0;
+                if (purged > 0) alertService.success(this.$t('label.enc_purge_done', { n: purged }));
+                if (skipped > 0) alertService.warning(this.$t('label.enc_purge_skipped', { n: skipped }));
+                this.purgeTarget = null;
+                await this.fetchPending();
+            } catch (err) {
+                alertService.error(err?.response?.data?.message || this.$t('label.enc_purge_error'));
+            } finally {
+                this.purging = false;
+            }
         },
         // [F-W5-01 sync heal 2026-06-03] Echo subscription mirrors KDS/OSS/tracker:
         // branch staff (branch_id>0) get sub-second updates; admin (branch 0) keeps
@@ -516,7 +664,7 @@ export default {
             return normalizeReceiptVariations(it?.item_variations);
         },
         normalizedExtras(it) {
-            return normalizeReceiptExtras(it?.item_extras);
+            return normalizeReceiptExtras(it?.item_extras, it?.instruction);
         },
         normalizedAddons(it) {
             return normalizeReceiptAddons(it?.item_addons);
@@ -584,7 +732,8 @@ export default {
         },
         async onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
-            alertService.success(this.$t('label.encaisser_success', { order: '' }));
+            // [E2E stores · B2-R2-07 · 2026-10-01] PosCounterCollectModal affiche DÉJÀ son toast
+            // (avec le numéro) sur chaque chemin de succès : celui-ci doublait, au numéro vide.
             // [ENCAISSEMENT-TICKET 2026-07-01][PRINT-INSTANT 2026-07-06] Imprimer le TICKET
             // CLIENT via le pont ESC/POS — lancé AVANT/EN PARALLÈLE du refresh de la liste
             // (fire-and-forget, plus d'await en série). Best-effort — pont 202 immédiat.
@@ -600,6 +749,9 @@ export default {
                         return b64 ? printEscPosViaCaisseBridge(b64) : null;
                     })
                     .catch(() => null); /* pont indisponible : ignoré (l'encaissement a réussi) */
+            } else if (orderId) {
+                // [GOAL REMARQUES 2026-10-03 · R-048] Par défaut : la QUESTION, comme à la caisse.
+                this.questionImpressionOrderId = orderId;
             }
             this.fetchPending();
         },
@@ -608,6 +760,46 @@ export default {
 </script>
 
 <style scoped>
+/* [GOAL #3 2026-10-02] Filtre « Aujourd'hui | Jours précédents » + purge. Texte ≥ 7:1, cibles ≥ 44 px. */
+.enc-scope-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem var(--pos-v5-space-5) 0; flex-wrap: wrap; }
+.enc-scope-tab {
+    min-height: 44px; padding: 0 1.1rem; border-radius: 9999px; border: 2px solid #111827;
+    background: #fff; color: #111827; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;
+}
+.enc-scope-tab.is-active { background: #111827; color: #fff; }
+.enc-scope-badge {
+    display: inline-flex; min-width: 1.6rem; height: 1.6rem; padding: 0 0.4rem; align-items: center; justify-content: center;
+    border-radius: 9999px; background: #B91C1C; color: #fff; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.enc-purge-all-btn {
+    margin-inline-start: auto; min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #7F1D1D;
+    background: #7F1D1D; color: #fff; font-weight: 700; cursor: pointer;
+}
+.enc-scope-hint { padding: 0.5rem var(--pos-v5-space-5) 0; color: #374151; font-size: 0.9rem; }
+/* [GOAL REMARQUES 2026-10-03 · R-059] Commandes ratées : liste sobre, en lecture seule. */
+.enc-missed { display: flex; flex-direction: column; gap: 0.6rem; }
+.enc-missed-row { border: 1px solid #E5E7EB; border-inline-start: 4px solid #9CA3AF; border-radius: 0.5rem; padding: 0.6rem 0.9rem; background: #FFFFFF; }
+.enc-missed-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.9rem; color: #111827; }
+.enc-missed-num { font-weight: 800; }
+.enc-missed-client, .enc-missed-phone { font-weight: 600; }
+.enc-missed-time { color: #374151; font-size: 0.9rem; }
+.enc-missed-total { margin-inline-start: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.enc-missed-items { margin: 0.35rem 0 0; padding-inline-start: 1.1rem; list-style: disc; color: #1F2937; font-size: 0.92rem; }
+.enc-purge-btn {
+    min-height: 44px; padding: 0 0.9rem; border-radius: 0.5rem; border: 2px solid #7F1D1D; background: #fff; color: #7F1D1D; font-weight: 700; cursor: pointer;
+}
+.enc-ticket-bottom { flex-wrap: wrap; gap: 0.5rem; }
+.enc-confirm-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1200; padding: 1rem; }
+.enc-confirm { background: #fff; color: #111827; border-radius: 0.75rem; padding: 1.25rem 1.5rem; max-width: 30rem; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+.enc-confirm-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 0.5rem; }
+.enc-confirm-body { font-weight: 700; margin-bottom: 0.4rem; }
+.enc-confirm-note { color: #374151; font-size: 0.9rem; margin-bottom: 0.75rem; }
+.enc-confirm-label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+.enc-confirm-input { width: 100%; min-height: 44px; border: 2px solid #111827; border-radius: 0.5rem; padding: 0 0.75rem; }
+.enc-confirm-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.enc-confirm-cancel { min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #111827; background: #fff; color: #111827; font-weight: 700; cursor: pointer; }
+.enc-confirm-ok { min-height: 44px; padding: 0 1.1rem; border-radius: 0.5rem; border: 2px solid #7F1D1D; background: #7F1D1D; color: #fff; font-weight: 700; cursor: pointer; }
+.enc-confirm-ok:disabled, .enc-confirm-cancel:disabled { opacity: 0.55; cursor: not-allowed; }
 .enc-card {
     border-radius: var(--pos-v5-radius-lg);
     box-shadow: var(--pos-v5-shadow-md);
@@ -712,10 +904,6 @@ export default {
 .enc-cancel-no { background: #fff; color: #6b6b6b; border: 1px solid var(--pos-v5-border); }
 /* Bouton de nettoyage des journées passées : neutre tant qu'il n'a pas compté,
    rouge une fois qu'il annonce un nombre — le second clic est destructif. */
-.enc-purge-btn { border: 1px solid var(--pos-v5-border); border-radius: var(--pos-v5-radius-md); }
-.enc-purge-btn--idle { background: #fff; color: #6b6b6b; }
-.enc-purge-btn--armed { background: #c0392b; color: #fff; font-weight: 700; }
-.enc-purge-btn:disabled { opacity: .6; cursor: default; }
 .enc-ticket-top { display: flex; align-items: center; justify-content: space-between; }
 .enc-origin-badge {
     display: inline-flex;

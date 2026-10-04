@@ -38,7 +38,10 @@ describe('PosOrdersTracker — Encaisser CTA is wired to a real modal (not a dea
     expect(src).toMatch(/this\.encaisseOrder\s*=\s*\{\s*\.\.\.order/);
   });
 
+  // [GOAL REMARQUES 2026-10-03 · R-048] onEncaisseConfirmed reçoit désormais le payload de la modale
+  // (pour proposer d'imprimer le ticket de CETTE commande) : la signature peut porter un paramètre ; le
+  // rafraîchissement du tableau, lui, reste exigé.
   it('onEncaisseConfirmed refreshes the board (fetchOrders)', () => {
-    expect(src).toMatch(/onEncaisseConfirmed\s*\(\)\s*\{[\s\S]*?this\.fetchOrders\(\)/);
+    expect(src).toMatch(/onEncaisseConfirmed\s*\([^)]*\)\s*\{[\s\S]*?this\.fetchOrders\(\)/);
   });
 });

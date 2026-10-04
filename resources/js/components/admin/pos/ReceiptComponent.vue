@@ -197,7 +197,7 @@
                                             class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                             {{ $t('label.extras') }}:
                                             <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'extra-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<template v-if="extra.line_total > 0"> (+{{ formatReceiptAddonPrice(extra.line_total) }})</template>
+                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<template v-if="extra.offered"> (<strong>{{ $t('pos.offered_badge') }}</strong>)</template><template v-else-if="extra.line_total > 0"> (+{{ formatReceiptAddonPrice(extra.line_total) }})</template>
                                                 <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                             </span>
                                         </p>
@@ -370,8 +370,9 @@
                                     <td class="py-1.5 align-top text-base font-black">{{ item.quantity }}×</td>
                                     <td class="py-1.5">
                                         <template v-for="(line, li) in kitchenSymbolicLines(item)" :key="'ks-' + idx + '-' + li">
-                                            <p v-if="line.type === 'symbolic-main'" class="text-base font-black tracking-wide leading-snug">{{ line.label }}</p>
-                                            <p v-else-if="line.type === 'supplement'" class="text-sm font-bold leading-snug mt-0.5">{{ line.label }}</p>
+                                            <p v-if="line.type === 'symbolic-main'" class="text-base font-black tracking-wide leading-snug"><span v-if="line.hasSupplement">#&nbsp;</span>{{ line.label }}</p>
+                                            <!-- [GOAL #7 2026-10-02] supplément : gras BLANC sur cadre NOIR (lecture inversée) ; « # » gras en tête de la ligne produit. -->
+                                            <p v-else-if="line.type === 'supplement'" class="text-sm font-bold leading-snug mt-0.5"><span style="display:inline-block;background:#000;color:#fff;padding:1px 6px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">{{ String(line.label || '').replace(/^\s*⭐\s*/u, '') }}</span></p>
                                             <p v-else-if="line.type === 'symbolic-menu'" class="text-sm font-black leading-snug mt-0.5">{{ line.label }}</p>
                                         </template>
                                         <p v-if="kitchenInstructionText(item)"

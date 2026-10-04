@@ -138,6 +138,8 @@ function samePosLineMergeSignature(a, b) {
         return false;
     }
     if (buildExtraSignature(a.item_extras) !== buildExtraSignature(b.item_extras)) return false;
+    // [GOAL #5 2026-10-02] Deux lignes identiques dont l'une a des extras OFFERTS ne fusionnent pas.
+    if (buildExtraSignature(a.item_extras_offered) !== buildExtraSignature(b.item_extras_offered)) return false;
     if (posLineAddonsSignature(a.pos_line_addons) !== posLineAddonsSignature(b.pos_line_addons)) return false;
     return true;
 }
@@ -149,7 +151,8 @@ function posLineAddonsSignature(addons) {
     return arr
         .map((a) => {
             const extrasHash = Array.isArray(a.menu_extras) ? a.menu_extras.slice().sort().join(',') : '';
-            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}:${buildVariationSignature(a.item_variations)}:${buildExtraSignature(a.item_extras)}`;
+            // [R-041] + l'offert : deux lignes qui ne diffèrent que par une option offerte ne fusionnent pas.
+            return `${a.parent_addon_id}:${a.item_id}:${a.quantity}:${extrasHash}:${buildVariationSignature(a.item_variations)}:${buildExtraSignature(a.item_extras)}:${buildExtraSignature(a.item_extras_offered)}`;
         })
         .sort()
         .join('|');
@@ -168,6 +171,10 @@ function normPosLineAddon(a) {
         convert_price: a.convert_price,
         item_variations: normalizeVariationEntries(a.item_variations),
         item_extras: normalizeExtraEntries(a.item_extras),
+        // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P1] Options de formule OFFERTES : sans ce champ,
+        // un rechargement de la caisse ou le rappel d'une commande en attente les effaçait (badge perdu,
+        // total affiché supérieur au total facturé).
+        item_extras_offered: normalizeExtraEntries(a.item_extras_offered),
         item_variation_total: a.item_variation_total || 0,
         item_extra_total: a.item_extra_total || 0,
         instruction: a.instruction || '',
@@ -232,6 +239,8 @@ function shapePosListItem(pay) {
         instruction: pay.instruction,
         item_extra_total: pay.item_extra_total,
         item_extras: normalized.item_extras,
+        // [GOAL #5 2026-10-02] Extras OFFERTS (ids + qté ; `unit_price` = affichage seulement).
+        item_extras_offered: normalizeExtraEntries(pay.item_extras_offered),
         item_id: normalizeCartItemId(pay.item_id, pay.item_id),
         item_variation_total: pay.item_variation_total,
         item_variations: normalized.item_variations,
@@ -329,6 +338,16 @@ export const posCart = {
         },
         setItemVariations: function (context, payload) {
             context.commit('setItemVariations', payload);
+            context.commit('subtotal');
+        },
+        /** [GOAL #5 2026-10-02] Bouton « Offert » : bascule un extra payant d'une ligne. */
+        toggleExtraOffered: function (context, payload) {
+            context.commit('toggleExtraOffered', payload);
+            context.commit('subtotal');
+        },
+        // [GOAL REMARQUES 2026-10-03 · R-041] « Offert » sur une option de FORMULE (Grande Portion, Cheddar Fondu).
+        toggleAddonExtraOffered: function (context, payload) {
+            context.commit('toggleAddonExtraOffered', payload);
             context.commit('subtotal');
         },
         /**
@@ -465,6 +484,76 @@ export const posCart = {
             var pay = payload.item;
             if (index < 0 || index >= state.lists.length || !pay) return;
             state.lists.splice(index, 1, shapePosListItem(pay));
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
+        /**
+         * [GOAL CAISSE/CUISINE #5 2026-10-02] Bascule « Offert » d'un extra d'une ligne. Offrir déplace
+         * TOUTE la quantité de l'extra de `item_extras` (payant) vers `item_extras_offered` ; rebasculer
+         * la remet en payant. Seul un extra dont le prix catalogue est connu (`unit_price` > 0, posé par
+         * le wizard) est offrable : un extra gratuit n'a rien à offrir. Aucun prix n'est décidé ici.
+         */
+        toggleExtraOffered: function (state, payload) {
+            const index = payload && payload.index;
+            const extraId = normalizeId(payload && payload.extraId);
+            const line = state.lists[index];
+            if (!line || extraId === null) return;
+
+            const paid = normalizeExtraEntries(line.item_extras);
+            const offered = normalizeExtraEntries(line.item_extras_offered);
+            const offeredAt = offered.findIndex((e) => e.id === extraId);
+
+            if (offeredAt !== -1) {
+                const back = offered.splice(offeredAt, 1)[0];
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt !== -1) {
+                    paid[paidAt] = { ...paid[paidAt], quantity: paid[paidAt].quantity + back.quantity };
+                } else {
+                    paid.push(back);
+                }
+            } else {
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt === -1 || !(parseFloat(paid[paidAt].unit_price) > 0)) return;
+                offered.push(paid.splice(paidAt, 1)[0]);
+            }
+
+            line.item_extras = paid;
+            line.item_extras_offered = offered;
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
+        },
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-041] Même bascule que toggleExtraOffered, sur une option de la
+         * ligne FORMULE (`pos_line_addons[addonIndex]`). La ligne formule part au serveur comme une ligne
+         * à part entière (buildPosCheckoutOrderRow) : son `item_extras_offered` est validé par
+         * OfferedExtras (l'option appartient au produit formule) et vaut 0 € par construction.
+         */
+        toggleAddonExtraOffered: function (state, payload) {
+            const line = state.lists[payload && payload.index];
+            const addon = line && Array.isArray(line.pos_line_addons) ? line.pos_line_addons[payload.addonIndex] : null;
+            const extraId = normalizeId(payload && payload.extraId);
+            if (!addon || extraId === null) return;
+
+            const paid = normalizeExtraEntries(addon.item_extras);
+            const offered = normalizeExtraEntries(addon.item_extras_offered);
+            const offeredAt = offered.findIndex((e) => e.id === extraId);
+
+            if (offeredAt !== -1) {
+                const back = offered.splice(offeredAt, 1)[0];
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt !== -1) {
+                    paid[paidAt] = { ...paid[paidAt], quantity: paid[paidAt].quantity + back.quantity };
+                } else {
+                    paid.push(back);
+                }
+            } else {
+                const paidAt = paid.findIndex((e) => e.id === extraId);
+                if (paidAt === -1 || !(parseFloat(paid[paidAt].unit_price) > 0)) return;
+                offered.push(paid.splice(paidAt, 1)[0]);
+            }
+
+            addon.item_extras = paid;
+            addon.item_extras_offered = offered;
             saveCartToStorage(state);
             state.restoredFromStorage = false;
         },

@@ -376,6 +376,33 @@
                             <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
                         </PosV5Button>
                         <!--
+                          [AFFICHEUR-CLIENT 2026-09-30] Afficheur client SAGA (2×20) : le total
+                          du panier s'y affiche à chaque ajout. Un clic l'appaire une fois ;
+                          Chrome s'en souvient, la caisse se reconnecte seule ensuite.
+                          Masqué si le navigateur n'a pas Web Serial.
+                        -->
+                        <PosV5Button
+                            v-if="customerDisplayState.status !== 'unsupported'"
+                            variant="ghost"
+                            size="md"
+                            data-testid="pos-customer-display-connect"
+                            :tone="customerDisplayState.status === 'connected' ? 'ready' : 'neutral'"
+                            :loading="customerDisplayState.status === 'connecting'"
+                            :title="customerDisplayState.status === 'connected'
+                                ? 'Afficheur client branché : le total du panier s\'y affiche. Cliquer pour changer de port.'
+                                : (customerDisplayState.error || 'Brancher l\'afficheur client (total du panier face au client)')"
+                            :aria-label="customerDisplayState.status === 'connected' ? 'Afficheur client branché' : 'Brancher l\'afficheur client'"
+                            @click="connectCustomerDisplay"
+                        >
+                            <template #icon>📟</template>
+                            <span class="hidden lg:inline">Afficheur</span>
+                            <span
+                                v-if="customerDisplayState.status === 'error'"
+                                class="pos-v4-cash-stale"
+                                aria-hidden="true"
+                            >!</span>
+                        </PosV5Button>
+                        <!--
                           [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
                           gestion de session caisse (fond de caisse, mouvements, clôture).
                           Variant ghost + tone "ready" quand session active = halo subtil
@@ -615,6 +642,19 @@
                 <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
                      quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
+                <!-- [GOAL REMARQUES 2026-10-03 · R-009] « pas juste voir le total […] les noms de produits
+                     avec les mots techniques » : aperçu de la commande en symboles cuisine. -->
+                <!-- [revue vague 3 · P3] « avec l'heure de commande » (propriétaire, 02/09). -->
+                <span
+                  v-if="o.order_datetime || o.created_at"
+                  class="pos-shortcuts__heure"
+                  :data-testid="`pos-shortcut-heure-${o.id}`"
+                >{{ formatKioskTime(o.order_datetime || o.created_at) }}</span>
+                <span
+                  v-if="apercuCommande(o).texte"
+                  class="pos-shortcuts__apercu"
+                  :data-testid="`pos-shortcut-apercu-${o.id}`"
+                >{{ apercuCommande(o).texte }}<span v-if="apercuCommande(o).restants" class="pos-shortcuts__apercu-plus"> · +{{ apercuCommande(o).restants }}</span></span>
                 <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Libellé « Tél » distinct pour une commande
                      téléphone (source_surface='phone') dans la file « à encaisser ». -->
                 <span
@@ -728,6 +768,21 @@
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <!-- [C1 2026-07-18] Accept INLINE (chemin principal) + Détails (gestion complète). -->
                 <span class="pos-shortcuts__actions">
+                  <!-- [GOAL REMARQUES 2026-10-03 · R-017] « je mets par exemple 17 minutes » : temps de
+                       préparation annoncé au client, choisi ICI aussi (le Suivi le permettait déjà). -->
+                  <input
+                    type="number"
+                    class="pos-shortcuts__prep"
+                    :value="webPrepChoice[o.id] ?? 15"
+                    :data-testid="`pos-shortcut-web-prep-${o.id}`"
+                    title="Temps de préparation annoncé au client (minutes)"
+                    aria-label="Temps de préparation en minutes"
+                    min="5"
+                    max="120"
+                    step="1"
+                    inputmode="numeric"
+                    @input="webPrepChoice = { ...webPrepChoice, [o.id]: parseInt($event.target.value, 10) }"
+                  /><span class="pos-shortcuts__prep-unit" aria-hidden="true">min</span>
                   <button
                     type="button"
                     class="pos-shortcuts__cta pos-shortcuts__cta--web"
@@ -807,6 +862,17 @@
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <span class="pos-shortcuts__actions">
+                  <!-- [GOAL REMARQUES 2026-10-03 · R-016] Commande du site PRÊTE : le caissier valide le
+                       retrait (→ livrée ; les points d'une commande à emporter sont crédités dès « prête »).
+                       En cuisine : pas de bouton (transition illégale tant que la cuisine n'a pas fini). -->
+                  <button
+                    v-if="estPrete(o)"
+                    type="button"
+                    class="pos-shortcuts__cta pos-shortcuts__cta--pickup"
+                    :data-testid="`pos-shortcut-web-paid-pickup-${o.id}`"
+                    :disabled="!!o._delivering"
+                    @click="validerRetraitWeb(o)"
+                  >{{ o._delivering ? '…' : 'Valider le retrait' }}</button>
                   <button
                     type="button"
                     class="pos-shortcuts__cta pos-shortcuts__cta--web-details"
@@ -1156,6 +1222,16 @@
                         >— {{ checkoutProps.form.loyalty_redeem_points }} pts déduits sur cette vente</span>
                     </template>
                 </span>
+                <!-- [GOAL REMARQUES 2026-10-03 · R-015] « je veux annuler […] ça reste pour toute la
+                     commande » : retirer le client de CETTE vente, sans vider le panier. -->
+                <button
+                    type="button"
+                    class="pos-v5-loyalty__retirer"
+                    data-testid="pos-loyalty-detach"
+                    :aria-label="$t('pos.loyalty_detach_aria')"
+                    :title="$t('pos.loyalty_detach_aria')"
+                    @click="retirerClientFidelite"
+                >✕</button>
             </div>
 
             <!--
@@ -1574,6 +1650,29 @@
                         </p>
                     </template>
 
+                    <!--
+                      [GOAL CAISSE/CUISINE #5 2026-10-02] Bouton « Offert » : sur chaque supplément / sauce
+                      payant de la ligne. Il met la ligne à 0 € POUR CE CLIENT ; le prix réel reste calculé
+                      par le backend (le panier n'envoie que des identifiants). Rebasculer = « Annuler l'offert ».
+                    -->
+                    <div v-if="cartOfferableExtras(cart).length > 0" class="pos-v5-cart-item__offer" data-testid="pos-cart-offer-list">
+                        <div v-for="extra in cartOfferableExtras(cart)" :key="'offer-' + index + '-' + extra.id" class="pos-v5-cart-item__offer-row">
+                            <span class="pos-v5-cart-item__offer-name" :class="extra.offered ? 'is-offered' : ''">
+                                {{ extra.name }}<template v-if="extra.quantity > 1"> ×{{ extra.quantity }}</template>
+                                <strong v-if="extra.offered" class="pos-v5-cart-item__offer-badge">{{ $t('pos.offered_badge') }}</strong>
+                            </span>
+                            <button
+                                type="button"
+                                class="pos-v5-cart-item__offer-btn"
+                                :class="extra.offered ? 'is-on' : ''"
+                                :aria-pressed="extra.offered ? 'true' : 'false'"
+                                :aria-label="$t('pos.offer_extra_aria', { name: extra.name })"
+                                data-testid="pos-cart-offer-extra"
+                                @click.stop.prevent="toggleExtraOffered(index, extra)"
+                            >{{ extra.offered ? $t('pos.offer_extra_undo') : $t('pos.offer_extra') }}</button>
+                        </div>
+                    </div>
+
                     <!-- Menu bundled + extras menu (formules) -->
                     <div v-if="cart.pos_line_addons && cart.pos_line_addons.length > 0" class="pos-v5-cart-item__bundled">
                         <div v-for="(bundled, bi) in cart.pos_line_addons" :key="'b-' + index + '-' + bi" class="pos-v5-cart-item__bundled-line">
@@ -1597,6 +1696,25 @@
                                 class="pos-v5-cart-item__bundled-extras"
                                 data-testid="pos-cart-bundled-extras"
                             >{{ cartBundledExtras(cart, bundled).join(' · ') }}</span>
+                            <!-- [GOAL REMARQUES 2026-10-03 · R-041] « Offert » aussi sur les options de
+                                 FORMULE (Grande Portion, Cheddar Fondu) — même bouton que les extras. -->
+                            <div v-if="addonOfferableExtras(bundled).length > 0" class="pos-v5-cart-item__offer" data-testid="pos-cart-offer-addon-list">
+                                <div v-for="extra in addonOfferableExtras(bundled)" :key="'offer-a-' + index + '-' + bi + '-' + extra.id" class="pos-v5-cart-item__offer-row">
+                                    <span class="pos-v5-cart-item__offer-name" :class="extra.offered ? 'is-offered' : ''">
+                                        {{ extra.name }}
+                                        <strong v-if="extra.offered" class="pos-v5-cart-item__offer-badge">{{ $t('pos.offered_badge') }}</strong>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        class="pos-v5-cart-item__offer-btn"
+                                        :class="extra.offered ? 'is-on' : ''"
+                                        :aria-pressed="extra.offered ? 'true' : 'false'"
+                                        :aria-label="$t('pos.offer_extra_aria', { name: extra.name })"
+                                        data-testid="pos-cart-offer-addon-extra"
+                                        @click.stop.prevent="toggleAddonExtraOffered(index, bi, extra)"
+                                    >{{ extra.offered ? $t('pos.offer_extra_undo') : $t('pos.offer_extra') }}</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2238,7 +2356,7 @@
             ) }}</span>
           </p>
           <label for="pos-kiosk-cash-cancel-reason" class="pos-kiosk-cash-cancel-label">
-            {{ $t('pos.cancel_kiosk_cash.reason_required') }}
+            {{ $t('pos.cancel_kiosk_cash.reason_prefilled') }}
           </label>
           <textarea
             id="pos-kiosk-cash-cancel-reason"
@@ -2270,6 +2388,7 @@
             {{ $t('pos.cancel_kiosk_cash.back_btn') }}
           </button>
           <button
+            ref="cancelKioskCashConfirmBtn"
             type="button"
             class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--danger"
             :disabled="cancelKioskCashDialog.busy"
@@ -2347,6 +2466,15 @@
 <script>
 import axios from 'axios';
 import { typeDAdresse } from "../../../services/typeDAdresse";
+// [GOAL REMARQUES 2026-10-03 · R-017] Temps de préparation : mêmes bornes que le serveur.
+import { bornerTempsPreparation, TEMPS_PREPARATION_DEFAUT } from '../../../helpers/posTempsPreparation';
+// [GOAL REMARQUES 2026-10-03 · R-009] Aperçu de la commande en mots techniques (file « À encaisser »).
+import { apercuTechnique } from '../../../helpers/apercuTechniqueCommande';
+// [GOAL REMARQUES 2026-10-03 · R-060] Motif pré-rempli de l'annulation d'une commande en attente (même
+// motif que la croix de la page Encaissement) — le caissier n'a plus rien à taper.
+const MOTIF_ANNULATION_PAR_DEFAUT = 'Client non venu';
+// [GOAL REMARQUES 2026-10-03 · R-038] Message unique : ajout du supplément, vente, commande téléphone.
+const MESSAGE_SUPPLEMENT_SANS_PRODUIT = 'Ajoutez d\'abord un produit : un supplément libre complète une commande.';
 // [ENCAISSEMENT-TICKET 2026-07-01] Impression du ticket client au pont ESC/POS local à l'encaissement.
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
@@ -2468,6 +2596,7 @@ import { applyCaisseZoom, clearCaisseZoom, resolveCaisseZoom } from "../../../he
 // que `menu_extras` n'expose pas. Voir helpers/posCartCompactDisplay.js.
 import { compactCompositionSegments, compactBundledExtras, compactBundledName } from "../../../helpers/posCartCompactDisplay";
 import VoiceOrderAssistantPanel from "./VoiceOrderAssistantPanel.vue";
+import { customerDisplay } from "../../../helpers/posCustomerDisplay";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2563,6 +2692,8 @@ export default {
             scheduledDatePickerOpen: false,
             // Kiosk cash orders notification
             kioskCashOrders: [],
+            // [GOAL #3 2026-10-02] Nombre de commandes d'AVANT la journée de service jamais encaissées (serveur).
+            previousPendingCount: 0,
             kioskCashLoading: false,
             showKioskCashPanel: false,
             // [UX-RESET-06 2026-07-22] Confirmation 2-taps du bouton « Annuler » (vider panier) :
@@ -2577,6 +2708,8 @@ export default {
             // traiter (accept via le flux existant — aucun changement de paiement/cuisine ici).
             webOrders: [],
             webOrdersLoading: false,
+            // [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation choisies par commande web (défaut 15).
+            webPrepChoice: {},
             lastWebRefresh: null,
             // [WEB-PAYEE-MUETTE 2026-08-10] Commandes du site DÉJÀ PAYÉES, parties seules en
             // cuisine. Liste séparée de `webOrders` à dessein : celles-ci ne s'acceptent pas.
@@ -2681,6 +2814,8 @@ export default {
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
             noSaleBusy: false,
+            // [AFFICHEUR-CLIENT 2026-09-30] État du port série de l'afficheur SAGA (Web Serial).
+            customerDisplayState: customerDisplay().getState(),
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
             // CTA state. `currentLoyaltyOrder` is the latest order object
             // captured from the `order:confirmed` event (PaymentComponent →
@@ -3159,11 +3294,13 @@ export default {
             const jour = serviceDayRange();
             const debut = new Date(`${jour.from}T00:00:00`).getTime();
             if (!Number.isFinite(debut)) return 0;
-            return (Array.isArray(this.kioskCashOrders) ? this.kioskCashOrders : [])
+            const dansLaListe = (Array.isArray(this.kioskCashOrders) ? this.kioskCashOrders : [])
                 .filter((o) => {
                     const t = Date.parse(o?.created_at ?? '');
                     return Number.isFinite(t) && t < debut;
                 }).length;
+            // [GOAL #3 2026-10-02] Le compteur serveur fait foi : la liste ne contient plus les anciennes.
+            return Math.max(dansLaListe, Number(this.previousPendingCount) || 0);
         },
         /** Profondeur de la file cuisine pour le ticket en cours — mesures, jamais prévision. */
         attenteCuisineTicket: function () {
@@ -3503,6 +3640,12 @@ export default {
         if (this._cdTimer) {
             clearTimeout(this._cdTimer);
         }
+        // [AFFICHEUR-CLIENT 2026-09-30] Le port reste ouvert (instance unique) ; seul
+        // l'abonnement de ce composant est retiré.
+        if (this._cdUnsubscribe) {
+            this._cdUnsubscribe();
+            this._cdUnsubscribe = null;
+        }
         // [UX-RESET-06 2026-07-22] Stoppe le timer de confirmation « Annuler ».
         if (this._resetConfirmTimer) {
             clearTimeout(this._resetConfirmTimer);
@@ -3601,7 +3744,14 @@ export default {
         // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
         // [CUSTOMER-DISPLAY 2026-06-28] Écran client en veille au démarrage (accueil).
-        this.pushCustomerDisplay(this.grandTotal);
+        // [AFFICHEUR-CLIENT 2026-09-30] Reprend d'abord, sans geste, le port série déjà
+        // autorisé dans ce Chrome, puis affiche le total courant (ou l'accueil).
+        this._cdUnsubscribe = customerDisplay().onChange((s) => {
+            this.customerDisplayState = s;
+        });
+        customerDisplay().autoConnect().finally(() => {
+            this.pushCustomerDisplay(this.grandTotal);
+        });
         if (this.voiceAssistantMode) {
             this.scheduleVoiceOrderLinkRetry(1800);
         }
@@ -3964,9 +4114,32 @@ export default {
             }
             this._cdTimer = setTimeout(() => {
                 const t = Number(total) || 0;
+                // [AFFICHEUR-CLIENT 2026-09-30] Le serveur (cloud Linux) n'atteint pas l'USB
+                // du PC caisse : c'est ce Chrome qui écrit sur le port série de la SAGA.
+                // Le POST serveur ne reste qu'en secours (installation Windows mono-poste),
+                // et seulement si le port n'est pas déjà tenu ici — sinon conflit « port occupé ».
+                const display = customerDisplay();
+                display.setWelcome(this.setting?.company_name || '', 'Soyez le bienvenu !');
+                if (display.isConnected()) {
+                    display.showTotal(t);
+                    return;
+                }
                 const payload = t > 0 ? { mode: 'total', total: t } : { mode: 'welcome' };
                 axios.post('admin/pos/customer-display', payload).catch(() => {});
             }, 350);
+        },
+        /**
+         * [AFFICHEUR-CLIENT 2026-09-30] Clic « Afficheur » : appaire le port série de la SAGA.
+         * Chrome n'autorise le choix d'un port que sur un geste ; ensuite il s'en souvient et
+         * la caisse se reconnecte seule à chaque ouverture (autoConnect au montage).
+         */
+        async connectCustomerDisplay() {
+            const display = customerDisplay();
+            display.setWelcome(this.setting?.company_name || '', 'Soyez le bienvenu !');
+            const ok = await display.connect();
+            if (ok) {
+                display.showTotal(this.grandTotal);
+            }
         },
         // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
         /**
@@ -4767,8 +4940,10 @@ export default {
             }
 
             try {
+                // [B2-R2-09] Même libellé que le sondage (numéro appelé, sinon série).
+                const affiche = this._libelleCommande(normalized.payload, orderId);
                 const label = orderId
-                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId)
+                    ? (this.$t && this.$t('message.new_pos_order_with_id', { id: affiche })) || ('Nouvelle commande ' + affiche)
                     : (this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande';
                 alertService.info(label);
             } catch (e) { /* defensive */ }
@@ -5121,9 +5296,17 @@ export default {
             try {
                 const minuteBucket = Math.floor(Date.now() / 60000);
                 const idempotencyKey = `web-accept-${o.id}-${minuteBucket}`;
+                // [GOAL REMARQUES 2026-10-03 · R-017] Temps de préparation TOUJOURS envoyé (défaut affiché
+                // 15) — miroir de PosOrdersTrackerComponent.acceptWebOrder : ce que le caissier voit est
+                // ce que le suivi client annonce.
+                // [revue vague 3 · P2-3] Ramené dans les bornes du SERVEUR (5-120) : jamais de 422.
+                const prep = bornerTempsPreparation(this.webPrepChoice[o.id] ?? TEMPS_PREPARATION_DEFAUT);
                 await axios.post(
                     `admin/online-order/change-status/${o.id}`,
-                    { status: orderStatusEnum.ACCEPT },
+                    {
+                        status: orderStatusEnum.ACCEPT,
+                        ...(Number.isFinite(prep) && prep > 0 ? { preparation_time: prep } : {}),
+                    },
                     { headers: { 'X-Idempotency-Key': idempotencyKey } }
                 );
                 const num = o.queue_number || o.order_serial_no || o.id;
@@ -5159,6 +5342,10 @@ export default {
             try {
                 const res = await axios.get('admin/pos/counter-collect/pending');
                 const all = res?.data?.data || [];
+                // [GOAL CAISSE/CUISINE #3 2026-10-02] La file ne renvoie plus que la journée de service
+                // courante ; les anciennes jamais encaissées sont COMPTÉES à part (meta.previous_count)
+                // pour que le pied du tiroir continue d'annoncer « N plus anciennes ».
+                this.previousPendingCount = Number(res?.data?.meta?.previous_count || 0);
                 this.kioskCashOrders = all
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
                 // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
@@ -5249,13 +5436,20 @@ export default {
                     .map(o => o && (o.id != null ? o.id : o.order_id))
                     .filter(v => v != null)
                     .map(String);
+                // [E2E stores · B2-R2-09 · 2026-10-01] Libellé AFFICHÉ de chaque commande : le numéro
+                // appelé, sinon la série — jamais l'id en base (un 3ᵉ numéro que rien d'autre n'affiche).
+                const libelles = {};
+                (list || []).forEach(o => {
+                    const id = o && (o.id != null ? o.id : o.order_id);
+                    if (id != null) libelles[String(id)] = this._libelleCommande(o, id);
+                });
                 const firstSeed = !this._pollSeeded[seedKey];
                 let fresh = 0; let lastId = null;
                 ids.forEach(id => {
                     if (firstSeed) { this._notifiedOrderIds.add(id); return; }
                     if (!this._notifiedOrderIds.has(id)) {
                         this._notifiedOrderIds.add(id);
-                        fresh += 1; lastId = id;
+                        fresh += 1; lastId = libelles[id] || id;
                     }
                 });
                 this._pollSeeded[seedKey] = true;
@@ -5267,6 +5461,12 @@ export default {
                 if (fresh > 0) this._signalNewOrder(lastId, fresh, origin);
             } catch (_) { /* defensive — jamais casser un poll */ }
         },
+        /** « N°A0054 » si la commande a un numéro de file, sinon « #<série> », sinon « #<id> ». */
+        _libelleCommande(o, id) {
+            if (o && o.queue_number) return 'N°' + o.queue_number;
+            if (o && o.order_serial_no) return '#' + o.order_serial_no;
+            return '#' + id;
+        },
         /** Toast + beep « nouvelle commande » (réutilise le beep WebAudio et le setting d'opt-out). */
         _signalNewOrder(orderId, count, origin) {
             try {
@@ -5275,7 +5475,7 @@ export default {
                     label = (this.$t && this.$t('message.new_pos_orders_count', { count })) || (count + ' nouvelles commandes');
                 } else {
                     label = orderId
-                        ? ((this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande #' + orderId))
+                        ? ((this.$t && this.$t('message.new_pos_order_with_id', { id: orderId })) || ('Nouvelle commande ' + orderId))
                         : ((this.$t && this.$t('message.new_pos_order')) || 'Nouvelle commande');
                 }
                 alertService.info(label);
@@ -5480,11 +5680,7 @@ export default {
                 // commande prête, quel que soit le canal par lequel elle est entrée. Le
                 // remboursement passerelle, lui, reste exclu : il garde souvent son statut cuisine.
                 this.readyOrders = list
-                    .filter((o) => {
-                        const s = parseInt(o.status ?? o.order_status ?? 0, 10);
-                        const paiement = parseInt(o.payment_status ?? 0, 10);
-                        return s === orderStatusEnum.PREPARED && paiement !== paymentStatusEnum.REFUNDED;
-                    })
+                    .filter((o) => this.estPretAuComptoir(o))
                     // Plus ancienne d'abord — le caissier écoule d'abord ce qui attend depuis
                     // le plus longtemps. Même tri que kioskCashOrders.
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -5527,17 +5723,21 @@ export default {
         // [HEAL B2-P6-F01 2026-05-26] Open confirm-before-cancel dialog
         // instead of firing the destructive POST directly. Mirrors
         // PosOrdersTrackerComponent.openCancelDialog pattern.
+        // [GOAL REMARQUES 2026-10-03 · R-060] Propriétaire : « je veux pas […] mettre la justificatif pour
+        // pouvoir annuler directement ». La confirmation reste (Annuler puis « Oui ») ; le motif est
+        // PRÉ-REMPLI « Client non venu » (même motif que la croix de la page Encaissement) et reste
+        // modifiable. Le focus va sur « Oui », pas dans le champ : rien à taper.
         openCancelKioskCashDialog(order) {
             if (!order || order._canceling) return;
             this.cancelKioskCashDialog = {
                 open: true,
                 order,
-                reason: '',
+                reason: MOTIF_ANNULATION_PAR_DEFAUT,
                 error: '',
                 busy: false,
             };
             this.$nextTick(() => {
-                try { this.$refs.cancelKioskCashReasonInput?.focus(); } catch (_) { /* defensive */ }
+                try { this.$refs.cancelKioskCashConfirmBtn?.focus(); } catch (_) { /* defensive */ }
             });
         },
         closeCancelKioskCashDialog() {
@@ -5559,11 +5759,10 @@ export default {
         async confirmCancelKioskCashOrder() {
             const dlg = this.cancelKioskCashDialog;
             if (!dlg.open || !dlg.order || dlg.busy) return;
-            const reason = String(dlg.reason || '').trim();
-            if (reason.length < 3) {
-                this.cancelKioskCashDialog.error = this.$t('pos.cancel_kiosk_cash.reason_required');
-                return;
-            }
+            // [GOAL REMARQUES 2026-10-03 · R-060] Un motif vide ou trop court ne bloque plus : il retombe
+            // sur le motif par défaut (la trace d'audit n'est jamais vide).
+            const tape = String(dlg.reason || '').trim();
+            const reason = tape.length >= 3 ? tape : MOTIF_ANNULATION_PAR_DEFAUT;
             const order = dlg.order;
             if (order._canceling) return;
             this.cancelKioskCashDialog.busy = true;
@@ -6212,7 +6411,17 @@ export default {
                 error: '',
             };
         },
+        /** [GOAL REMARQUES 2026-10-03 · R-038] Le panier ne contient-il AUCUN produit catalogue ? */
+        panierSansProduit: function () {
+            return !(this.carts || []).some((l) => l && l.line_type !== 'manual_supplement');
+        },
         saveManualSupplement: function () {
+            // [GOAL REMARQUES 2026-10-03 · R-038 · Codex P1-19] Un supplément libre COMPLÈTE une commande :
+            // sans aucun produit au panier, il ferait une vente « Supplément — X » toute seule. Refusé.
+            if (this.manualSupplement.editIndex === null && this.panierSansProduit()) {
+                this.manualSupplement.error = MESSAGE_SUPPLEMENT_SANS_PRODUIT;
+                return;
+            }
             const amount = this.parseManualSupplementAmount(this.manualSupplement.amount);
             if (!Number.isFinite(amount) || amount <= 0 || amount > 100) {
                 this.manualSupplement.error = 'Saisissez un montant entre 0,01 € et 100,00 €.';
@@ -6363,6 +6572,13 @@ export default {
                 name: extra.name || undefined,
                 quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
             }));
+            // [GOAL CAISSE/CUISINE #5 2026-10-02] « Offert » : on n'envoie QUE des ids et une quantité.
+            // Jamais de prix (le backend ignore tout montant client) : PricingService reste la source de
+            // vérité, il ne voit pas ces extras dans `item_extras` donc les facture 0.
+            const item_extras_offered = normalizeExtraEntries(row.item_extras_offered).map((extra) => ({
+                id: normalizeId(extra.id) || extra.id,
+                quantity: Math.max(1, parseInt(extra.quantity, 10) || 1),
+            }));
             return {
                 item_id: row.item_id,
                 item_price: row.convert_price,
@@ -6375,7 +6591,26 @@ export default {
                 item_extra_total: row.item_extra_total,
                 item_variations: item_variations,
                 item_extras: item_extras,
+                ...(item_extras_offered.length > 0 ? { item_extras_offered: item_extras_offered } : {}),
             };
+        },
+        /** [GOAL #5 2026-10-02] Extras payants ou offerts d'une ligne, avec leur état « Offert ». */
+        cartOfferableExtras: function (cart) {
+            const offered = normalizeExtraEntries(cart && cart.item_extras_offered).map((e) => ({ ...e, offered: true }));
+            const paid = normalizeExtraEntries(cart && cart.item_extras)
+                .filter((e) => parseFloat(e.unit_price) > 0)
+                .map((e) => ({ ...e, offered: false }));
+            return [...paid, ...offered];
+        },
+        /** [GOAL REMARQUES 2026-10-03 · R-041] Options payantes ou offertes d'une ligne FORMULE. */
+        addonOfferableExtras: function (bundled) {
+            return this.cartOfferableExtras(bundled);
+        },
+        toggleAddonExtraOffered: function (index, addonIndex, extra) {
+            this.$store.dispatch('posCart/toggleAddonExtraOffered', { index: index, addonIndex: addonIndex, extraId: extra.id });
+        },
+        toggleExtraOffered: function (index, extra) {
+            this.$store.dispatch('posCart/toggleExtraOffered', { index: index, extraId: extra.id });
         },
         /**
          * [C4-CAISSE-TELEPHONE 2026-07-07] Sérialise le panier (principaux + addons bundle) au
@@ -6446,6 +6681,11 @@ export default {
             if (this.phoneOrderSubmitting) return;
             if (!this.carts || this.carts.length === 0) {
                 return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
+            // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-4] Même garde que l'ajout (R-038) : un produit
+            // supprimé APRÈS le supplément libre laissait partir une commande faite de suppléments seuls.
+            if (this.panierSansProduit()) {
+                return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
             }
 
             this.phoneOrderSubmitting = true;
@@ -6574,6 +6814,10 @@ export default {
             // [P5-3] Guard: prevent opening payment modal with empty cart
             if (!this.carts || this.carts.length === 0) {
                 return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
+            // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-4] Suppléments libres seuls : refusé.
+            if (this.panierSansProduit()) {
+                return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
             }
             this.loading.isActive = true;
             if (this.checkoutProps.form.order_type !== orderTypeEnum.DELIVERY && !this.checkoutProps.form.customer_id) {
@@ -6944,6 +7188,63 @@ export default {
                 .catch((err) => {
                     alertService.error(err.response.data.message);
                 });
+        },
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-015] Retire le client (et sa fidélité) de la vente en cours, sans
+         * toucher au panier. Un rachat de points armé tombe avec lui : il déduirait les points d'un client
+         * qui n'est plus rattaché. Le reste du nettoyage (pastille, code fidélité, adresse) est celui de
+         * changingUser() quand aucun client n'est choisi — une seule définition.
+         */
+        /**
+         * [GOAL REMARQUES 2026-10-03 · R-016] Valider le retrait d'une commande du site prête : même chemin
+         * que « Livrée » du panneau Prêt (posOrder/changeStatus → DELIVERED, idempotent). Points de fidélité :
+         * pour une commande À EMPORTER, AwardLoyaltyPointsOnDelivery les crédite déjà au passage en PRÊTE
+         * (revue de convergence) — ce bouton clôt la commande, sans double crédit. Puis « Web payées » est relu.
+         */
+        /**
+         * Commande à montrer dans « Prêt » : prête, non remboursée — SAUF une commande du SITE payée à
+         * emporter, qui se valide dans son panneau séparé « Web payées » ([GOAL REMARQUES 2026-10-03 ·
+         * revue vague 3 · P2-5] : « mettre vraiment séparés » ; elle apparaissait dans les deux, avec deux
+         * boutons pour la même remise). Une LIVRAISON prête reste ici (circuit livreur).
+         */
+        estPretAuComptoir(o) {
+            const s = parseInt(o.status ?? o.order_status ?? 0, 10);
+            const paiement = parseInt(o.payment_status ?? 0, 10);
+            if (s !== orderStatusEnum.PREPARED || paiement === paymentStatusEnum.REFUNDED) return false;
+            const site = ['web', 'delivery'].includes(String(o.source_surface || '').toLowerCase());
+            // [Revue de convergence · P1] … et SEULEMENT si « Web payées » la montre vraiment : ce panneau ne
+            // couvre que 8 h (oss.stale_window_hours) ; une commande programmée pour ce soir, absente de
+            // « Web payées », disparaissait des DEUX panneaux. Absente là-bas → elle reste ici.
+            // [Revue de convergence 2 · P2] « montre » = parmi les 4 lignes RÉELLEMENT affichées (le panneau fait
+            // slice(0, 4)) et seulement si le caissier voit ce panneau (canProcessWebOrders).
+            if (site && paiement === paymentStatusEnum.PAID && parseInt(o.order_type, 10) !== orderTypeEnum.DELIVERY
+                && this.canProcessWebOrders
+                && (this.paidWebOrders || []).slice(0, 4).some((p) => p && p.id === o.id)) return false;
+            return true;
+        },
+        estPrete(o) {
+            return Number(o && o.status) === orderStatusEnum.PREPARED;
+        },
+        async validerRetraitWeb(o) {
+            await this.markDelivered(o);
+            try { await this.loadPaidWebOrders(); } catch (_) { /* le prochain sondage la retirera */ }
+        },
+        /** [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique d'une commande de la file « À encaisser ». */
+        apercuCommande(o) {
+            return apercuTechnique(o);
+        },
+        retirerClientFidelite() {
+            const form = this.checkoutProps.form;
+            form.loyalty_redeem_points = null;
+            // [Revue vague 3 · P2-2 puis revue de convergence · P1] Retirer le client retire TOUT ce qui lui
+            // appartient : son adresse et la distance de livraison (sinon adresse orpheline → 422 au paiement),
+            // et sa fidélité. Garder le client en livraison ne suffisait pas : le serveur re-déduit le code
+            // fidélité du client (OrderService) et lui créditait les points. En livraison, le caissier
+            // re-choisit donc le client ou saisit l'adresse ; le panier, lui, ne bouge pas.
+            form.customer_id = null;
+            form.address_id = null;
+            form.delivery_distance_km = null;
+            this.changingUser();
         },
         changingUser: function () {
             if (this.checkoutProps.form.customer_id !== null) {
@@ -7549,6 +7850,80 @@ export default {
 .pos-shortcuts__panel--web {
   border-left: 4px solid #d32f2f;
 }
+/* [GOAL REMARQUES 2026-10-03 · R-012] Dès qu'une commande du site attend, TOUT le panneau passe au rouge
+   (fond teinté + bordure pleine) : un liseré de 4 px ne se voyait pas au comptoir. Vide, il reste neutre. */
+.pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) {
+  background: #FEF2F2;
+  border: 2px solid #B91C1C;
+  border-left-width: 6px;
+}
+.pos-shortcuts__panel--web:not(.pos-shortcuts__panel--empty) .pos-shortcuts__num {
+  color: #991B1B;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-016] « Valider le retrait » — vert « fait », blanc 5,1:1. */
+.pos-shortcuts__cta--pickup {
+  background: #15803D;
+  color: #FFFFFF;
+}
+.pos-shortcuts__cta--pickup:hover:not(:disabled) {
+  background: #166534;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-009] Aperçu technique sous le N° (pleine largeur de la ligne). */
+.pos-shortcuts__apercu {
+  flex-basis: 100%;
+  order: 10;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1F2937;
+  letter-spacing: 0.2px;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.pos-shortcuts__heure {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+.pos-shortcuts__apercu-plus {
+  color: #374151;
+  font-weight: 800;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation à côté de « Accepter ». */
+.pos-shortcuts__prep {
+  width: 3.6rem;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid #B91C1C;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #111827;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pos-shortcuts__prep-unit {
+  margin-inline-end: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+}
+/* [GOAL REMARQUES 2026-10-03 · R-015] ✕ « Retirer le client » sur la pastille fidélité. */
+.pos-v5-loyalty__retirer {
+  margin-inline-start: auto;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+.pos-v5-loyalty__retirer:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
 .pos-shortcuts__head {
   display: flex;
   align-items: center;
@@ -7712,13 +8087,15 @@ export default {
 .pos-shortcuts__cta--cash:hover:not(:disabled) {
   background: var(--pos-v5-brand-red-dark, #b32f2f);
 }
-/* [WEB-CAISSE-SYNC 2026-07-13] CTA « Traiter » commande web — bleu, distinct de la file borne. */
+/* [WEB-CAISSE-SYNC 2026-07-13] CTA « Traiter » commande web.
+   [GOAL REMARQUES 2026-10-03 · R-012] Propriétaire : « ça doit afficher en rouge parce que le bleu […]
+   c'est la détecte même pas ». Le bleu « info » est remplacé par un rouge plein (blanc 6,5:1). */
 .pos-shortcuts__cta--web {
-  background: var(--pos-v5-info, #2563a8);
-  color: #fff;
+  background: #B91C1C;
+  color: #FFFFFF;
 }
 .pos-shortcuts__cta--web:hover:not(:disabled) {
-  background: var(--pos-v5-info-dark, #1d4e85);
+  background: #991B1B;
 }
 /* [C1 2026-07-18] Accept INLINE (principal, bleu plein) + Détails (secondaire, contour). */
 .pos-shortcuts__actions {
@@ -7726,14 +8103,15 @@ export default {
   gap: 6px;
   align-items: center;
 }
+/* [GOAL REMARQUES 2026-10-03 · R-012] Contour ROUGE (≥ 5,9:1 sur le fond teinté du panneau). */
 .pos-shortcuts__cta--web-details {
   background: transparent;
-  color: var(--pos-v5-info, #2563a8);
-  border: 1px solid var(--pos-v5-info, #2563a8);
+  color: #B91C1C;
+  border: 1px solid #B91C1C;
   padding: 5px 10px;
 }
 .pos-shortcuts__cta--web-details:hover:not(:disabled) {
-  background: rgba(37, 99, 168, 0.10);
+  background: rgba(185, 28, 28, 0.10);
 }
 .pos-shortcuts__more {
   display: inline-block;

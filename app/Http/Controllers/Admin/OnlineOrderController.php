@@ -178,6 +178,9 @@ class OnlineOrderController extends AdminController
                 if ((int) $request->status === \App\Enums\OrderStatus::ACCEPT
                     && $request->filled('preparation_time')) {
                     $order->preparation_time = (int) $request->input('preparation_time');
+                    // [B2-R2-02 · 2026-10-01] Le temps vient du CAISSIER : seul ce cas remplace la
+                    // fourchette générique au suivi client (le défaut stampé à la création, non).
+                    $order->preparation_time_confirmed_at = now();
                 }
                 // [S1 2026-07-18 · jumeau non-COD de P1-3] Le flip board-release la commande
                 // (KitchenReleaseRule admet PENDING_COUNTER). Il est donc gaté sur la COLLECTABILITÉ

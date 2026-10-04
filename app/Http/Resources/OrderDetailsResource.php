@@ -73,7 +73,9 @@ class OrderDetailsResource extends JsonResource
             // aucun créneau n'est posé » était infaisable. Un champ ne doit jamais
             // inventer sa valeur pour justifier son libellé.
             'delivery_date' => $this->resolvePickupSlotDate(),
-            'delivery_time' => AppLibrary::deliveryTime($this->delivery_time),
+            // [E2E stores · F-B2 · 2026-10-01] Heure programmée affichée (« 18:20 ») : la fiche ne
+            // montrait aucune heure pour une commande « À l'ouverture ». Voir App\Support\CreneauRetrait.
+            'delivery_time' => \App\Support\CreneauRetrait::heure($this),
             // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible d'une commande programmée
             // (NULL = ASAP). ISO 8601 comme created_at — le client web/app affiche
             // « prévue pour HH:MM » sur le suivi de commande. Projection pure.
@@ -202,15 +204,9 @@ class OrderDetailsResource extends JsonResource
      */
     private function resolvePickupSlotDate(): ?string
     {
-        if ($this->is_advance_order == Ask::YES) {
-            return AppLibrary::increaseDate($this->order_datetime, 1);
-        }
-
-        if (AppLibrary::deliveryTime($this->delivery_time) !== '') {
-            return AppLibrary::date($this->order_datetime);
-        }
-
-        return null;
+        // [E2E stores · F-B2 · 2026-10-01] Une heure programmée fait foi ; sans elle, règle
+        // historique inchangée (lendemain si commande anticipée, jour même si créneau saisi).
+        return \App\Support\CreneauRetrait::date($this);
     }
 
     /**

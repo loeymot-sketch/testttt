@@ -42,7 +42,7 @@ function sitesDeRendu(src, appel) {
 
 describe('quantité des suppléments sur les écrans cuisine', () => {
     it('CHAQUE site de rendu d\'un supplément affiche sa quantité', () => {
-        const sites = sitesDeRendu(source(), '{{ kdsExtraDisplayName(extra) }}');
+        const sites = sitesDeRendu(source(), '{{ kdsExtraDisplayName(extra');
 
         expect(
             sites.length,
@@ -75,7 +75,7 @@ describe('quantité des suppléments sur les écrans cuisine', () => {
         const formeAddon = addons.every((s) => /Number\(addon\.quantity \|\| 1\) > 1/.test(s.texte));
         expect(formeAddon, 'la garde de référence des addons a changé de forme').toBe(true);
 
-        const extras = sitesDeRendu(src, '{{ kdsExtraDisplayName(extra) }}');
+        const extras = sitesDeRendu(src, '{{ kdsExtraDisplayName(extra');
         extras.forEach((s) => {
             expect(
                 /<span v-if="Number\(extra\.quantity \|\| 1\) > 1"> ×\{\{ Number\(extra\.quantity \|\| 1\) \}\}<\/span>/
@@ -89,7 +89,7 @@ describe('quantité des suppléments sur les écrans cuisine', () => {
 
     it('la quantité vient bien AVANT la virgule de séparation', () => {
         // « Cheddar ×2, Salade » et non « Cheddar, ×2 Salade » : l'ordre change le sens.
-        sitesDeRendu(source(), '{{ kdsExtraDisplayName(extra) }}').forEach((s) => {
+        sitesDeRendu(source(), '{{ kdsExtraDisplayName(extra').forEach((s) => {
             const posQuantite = s.texte.indexOf('Number(extra.quantity');
             const posVirgule = s.texte.indexOf(',&nbsp;');
             if (posVirgule === -1) return; // site sans séparateur

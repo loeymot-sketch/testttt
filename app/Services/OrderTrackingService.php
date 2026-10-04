@@ -137,6 +137,10 @@ class OrderTrackingService
             'ready' => $ready,
             'wait_low' => $estimate['wait_low'] ?? null,
             'wait_high' => $estimate['wait_high'] ?? null,
+            // [GOAL STORES 2026-10-01] Heure de retrait PROGRAMMÉE (HH:MM), si elle est à venir.
+            // Sans elle, une commande passée à 3 h pour 18 h 20 affichait « prête dans ~10-15
+            // min » sur sa page de suivi — et le rappel de l'application sonnait dans 10 min.
+            'prevue_pour' => $this->heureProgrammee($order, $now),
             'server_time' => $now->toIso8601String(),
         ];
     }
@@ -157,18 +161,69 @@ class OrderTrackingService
         $inCashierReviewedFlow = in_array($status, [OrderStatus::ACCEPT, OrderStatus::PREPARING], true);
         $preparationTime = (int) ($order->preparation_time ?? 0);
 
-        if ($inCashierReviewedFlow && $preparationTime > 0 && $order->accepted_at) {
+        // [E2E stores · vague B · 2026-10-01 · P0] `FrontendOrder` — le modèle de la route du client —
+        // ne convertit PAS `accepted_at` en date (`Order` le fait) : on recevait une chaîne, et
+        // `getTimestamp()` sur une chaîne rendait 500 au suivi de toute commande web acceptée
+        // (53 erreurs en production du 25 au 28/09). On lit la date quelle que soit sa forme, ici,
+        // plutôt que d'ajouter le cast au modèle : cela changerait le JSON qu'il sert ailleurs.
+        $accepteeLe = $this->instant($order->accepted_at ?? null);
+        // [E2E stores · revue adverse B2-R2-02 · 2026-10-01] `preparation_time` porte DÈS LA CRÉATION
+        // le défaut des réglages (30 min en production) : il ne vaut temps du caissier que si celui-ci
+        // l'a réellement choisi à l'acceptation (`preparation_time_confirmed_at`). Sinon, la
+        // fourchette générique (décision propriétaire du 2026-09-23) reste affichée.
+        $confirmeParLaCaisse = $this->instant($order->preparation_time_confirmed_at ?? null) !== null;
+
+        if ($inCashierReviewedFlow && $preparationTime > 0 && $accepteeLe && $confirmeParLaCaisse) {
             // Timestamps bruts (jamais diffInSeconds signé — sens ambigu selon
             // l'appelant/l'objet receveur, source de bugs de sens ailleurs dans
             // ce dépôt) : elapsed > 0 si `now` est après `accepted_at`.
-            $elapsedSeconds = $now->getTimestamp() - $order->accepted_at->getTimestamp();
+            $elapsedSeconds = $now->getTimestamp() - $accepteeLe->getTimestamp();
             $elapsedMinutes = (int) floor($elapsedSeconds / 60);
             $remaining = max(0, $preparationTime - max(0, $elapsedMinutes));
 
             return ['wait_low' => $remaining, 'wait_high' => $remaining];
         }
 
+        // [GOAL STORES 2026-10-01] Commande programmée à venir : le temps restant va jusqu'à
+        // l'heure choisie — jamais la fourchette générique « dès que prêt », qui ne la concerne
+        // pas. (Le rappel natif de l'application lit ces minutes : il sonne donc à l'heure.)
+        if ($this->heureProgrammee($order, $now) !== null) {
+            $minutes = (int) ceil(($order->scheduled_at->getTimestamp() - $now->getTimestamp()) / 60);
+
+            return ['wait_low' => $minutes, 'wait_high' => $minutes];
+        }
+
         return app(WaitEstimateService::class)->estimate((int) $order->branch_id);
+    }
+
+    /** HH:MM de l'heure de retrait programmée si elle est STRICTEMENT à venir, sinon null. */
+    /**
+     * Une date de la base, quelle que soit la forme sous laquelle le modèle la rend : objet date
+     * (attribut converti) ou chaîne brute (attribut non converti). Illisible ⇒ null.
+     */
+    private function instant(mixed $valeur): ?\Carbon\CarbonInterface
+    {
+        if ($valeur instanceof \Carbon\CarbonInterface) {
+            return $valeur;
+        }
+        if (! is_string($valeur) || trim($valeur) === '') {
+            return null;
+        }
+        try {
+            return \Illuminate\Support\Carbon::parse($valeur, config('app.timezone'));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function heureProgrammee(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
+    {
+        $prevue = $order->scheduled_at ?? null;
+        if (! $prevue instanceof \Carbon\CarbonInterface) {
+            return null;
+        }
+
+        return $prevue->greaterThan($now) ? $prevue->copy()->timezone(config('app.timezone'))->format('H:i') : null;
     }
 
     /**

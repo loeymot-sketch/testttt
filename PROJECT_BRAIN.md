@@ -47,6 +47,337 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-03 — GOAL « remarques caisse / cuisine / encaissement » : 3 vagues livrées sur
+> `qa/corrige-rapports-2026-09-28` (de `b0144f788` à HEAD), RIEN poussé ni déployé.**
+> - **Documents** :
+>   - plan : `plans/GOAL_CAISSE_CUISINE_REMARQUES_2026-10-03.md` ;
+>   - inventaire des 79 remarques et statuts : `reports/caisse-remarques-2026-10-03/` ;
+>   - bilan remarque par remarque : `BILAN_GOAL_2026-10-03.md`.
+> - **Vague 1, cuisine (écran et ticket)** :
+>   - suppléments en grand (KDS 22 px ; ticket en double taille, un seul bandeau) ;
+>   - « # » sur tout produit à supplément ;
+>   - sauces vendues seules écrites en entier ;
+>   - numéro d'appel ×8 (maximum ESC/POS) ;
+>   - MENU, FRITES et « 2 x » sur fond noir ;
+>   - titre Uber au lieu de « ART » ;
+>   - Historique : sauces rattachées à leur destination.
+> - **Vague 2, annulation et encaissement** :
+>   - croix de la caisse sans motif à taper ;
+>   - « Supprimer les commandes téléphone » (jamais la borne, le site ou les commandes à l'avance) ;
+>   - onglet « Ratées (24 h) » en lecture seule ;
+>   - question « Imprimer le ticket ? » partout.
+> - **Vague 3, caisse** :
+>   - commandes web en rouge ;
+>   - ✕ fidélité ;
+>   - temps de préparation 5-120 ;
+>   - mots techniques ;
+>   - « Valider le retrait » ;
+>   - supplément libre seul refusé ;
+>   - « Offert » sur les options de formule ;
+>   - « Galette Normale » retirée de la réinitialisation.
+> - **Argent (affiché = facturé)**, corrigé en route : quantité × formule, sauces frites en plus,
+>   « Sans formule » ou « Boisson Seule » à la modification, sauce en double à chaque « Modifier »,
+>   2ᵉ sauce perdue à « Modifier » quand un supplément suit sur la même ligne (`03dc23ec1`).
+> - **Revues adverses** :
+>   - par vague, puis 4 tours de convergence ;
+>   - les tours 2, 3 et 4 n'ont trouvé aucun P0 ni P1 dans le code du GOAL ; le tour 4, aucun du tout ;
+>   - détail au §4 du bilan.
+> - **Suites complètes à `0e91f3e3f`** : PHPUnit 6307 réussis / 0 échec ; Vitest 4833 réussis / 0 échec ;
+>   chaîne fiscale OK sur les 7 branches. Après `03dc23ec1` (JS seul) : compilation OK, Vitest 4834 réussis / 0 échec.
+> - **Zones gelées** : 0 ligne modifiée.
+> - **Portes en attente du propriétaire** :
+>   - G1 : contreseing de `docs/locks/LOCK_POS_WIZARD_REMARQUES_2026-10-03.md`, points W-1 à W-6 ;
+>   - G1 bis : « Offert » sur une sauce vendue seule ;
+>   - G2 : décisions (R-034, R-036, R-028, R-006, R-059 « Reprendre ») ;
+>   - G3 : relancer Claude Code depuis le Terminal (navigateur, ssh, GitHub) ;
+>   - G4 : numéro au-delà de 2,4 cm ;
+>   - G5 : essais sur le matériel ;
+>   - G6 : données de production.
+
+> **2026-10-02 (nuit) — demande propriétaire « continue test-e2e et deploy » : BLOQUÉE par la session.**
+> Le processus Claude ne joint plus les services macOS (`whoami` → 501, ssh → « No user exists for
+> uid 501 », Chromium « bootstrap (141) ») : ni navigateur, ni émulateur, ni SSH (prod, GitHub).
+> Relancer Claude Code depuis un Terminal, puis dans l'ordre :
+> 1. `launchctl print gui/$(id -u)` doit répondre ; `ssh lecayenne true` doit passer.
+> 2. Tests : banc `tests-e2e/lot-i-2026-10-02.spec.js` sur la copie :8896 (lot I appliqué) puis sur
+>    :8898 (doit rougir), appliquer `tmp/patch-site-lot-i.py` au worktree, recompiler, bumper,
+>    batterie + rejeu B/C (round 5) + revue adverse → 2ᵉ round propre = convergence.
+> 3. Déploiement BACKEND d'abord (route version minimale + migration `preparation_time_confirmed_at`) :
+>    comparer `git rev-parse HEAD` du VPS à `origin/pos/category-first-caisse-2026-06-23` ; si un
+>    commit serveur n'est sur aucune branche → le fusionner localement d'abord (mémoire
+>    `deploiement-direct-sans-github`). Si GitHub refuse encore (« verify your email ») : bundle +
+>    variante à garde d'ascendance, lancée PAR LE PROPRIÉTAIRE avec `!`. Vérifier ensuite : hash servi,
+>    `php artisan migrate:status`, `fiscal:verify-chain`, `/api/frontend/app/config` en JSON.
+> 4. Puis SITE : fusionner `app/natif-honnete-2026-09-30` dans la branche déployée du dépôt du site
+>    (vérifier `git remote -v` ; NE PAS embarquer le travail non commité d'une autre session),
+>    `node tools/release-gates.mjs --prod` tout vert, pousser (Vercel déploie).
+> 5. Applications : `npm run build:www` + `cap sync`, paquets signés (clé du propriétaire).
+
+> **2026-10-02 (soir) — GOAL STORES, round 4 : vague B VERTE (0 P0, 0 P1), vague C application
+> VERTE (0 P0, 0 P1), revue site en cours.** Site `aebc92f` (lots C à H + portes de publication
+> `tools/release-gates.mjs`), backend `3c5fcfbd0` (fiche/facture/encaissement d'une commande web).
+> Paquet Android du code final : 28/28 sur émulateur. Commandes de test non payées annulées en base
+> locale (aucune à numéro fiscal touchée).
+> **Prêt, NON appliqué** (`tmp/patch-site-lot-i.py`, appliqué seulement sur la copie :8896) : statut
+> du suivi annoncé aux lecteurs d'écran, points fidélité plafonnés au montant de la commande
+> (l'écran promettait 1 200 pts −12 € sur un dessert à 3,50 € ; le serveur, lui, débitait 350 pts),
+> noms de suppléments plus coupés au milieu des mots à 320 px (régression du lot G), logo lisible
+> à 320 px. Banc `tests-e2e/lot-i-2026-10-02.spec.js` écrit, PAS encore exécuté.
+> **Blocage d'environnement** : depuis le `/login` du 02/10 au soir, la session ne peut plus lancer
+> Chromium ni l'émulateur (macOS : « 141 Reentrancy avoided », mémoire `session-sans-services-macos`).
+> Relancer Claude Code depuis un Terminal, puis : banc lot I sur :8896 et :8898, appliquer le lot I,
+> rejouer B et C (round 5), revue adverse, convergence.
+
+> **2026-10-02 — GOAL STORES, W2 E2E : rounds 2 et 3 corrigés, round 4 en cours.**
+> Backend (LOCAL, rien de poussé ni déployé) : `a4c408a59` suivi « ~30 min » après acceptation
+> (le défaut des réglages, 30 min en prod, était pris pour un temps du caissier ; **migration**
+> `preparation_time_confirmed_at` à jouer au déploiement), `5fa5f3b85` fiche caisse d'une commande
+> web (composition + Cheddar invisibles, statut vide, « livraison » pour un retrait, 403 livreurs)
+> et un seul numéro « N°A00xx » partout (cuisine, caisse). Suites touchées vertes (~1 400 PHPUnit,
+> 1 498 Vitest caisse/cuisine) ; seul rouge = dérive KioskWizard connue.
+> Site (worktree `site-wt-stores-2026-09-30`) : `d0acc91` → `2a73e94` (lots C à H : numéro appelé
+> au titre, QR masqué si annulée, boisson épuisée non commandable en formule, un seul délai,
+> catégories et colonnes collantes sous l'en-tête RÉEL, « dépensés » exact, pied de page dégagé,
+> lien d'évitement, contraste, logo 320 px, bandeau hors ligne, barre d'action de la fiche produit,
+> filtre XL). Bancs neufs : finitions-store 21, collants 11 (rouges sur le code d'avant).
+> **Décisions propriétaire en attente** : allergènes (CW-001 : la page légale promet un récapitulatif
+> que l'assistant n'affiche pas), déploiement, « au plus vite » hors service, commandes
+> d'examinateur, débit du code par IP, complément silencieux d'attribut requis.
+
+> **2026-10-01 (matin) — GOAL STORES, W2 E2E : round 1 clos, round 2 en cours.**
+> Backend (branche `qa/corrige-rapports-2026-09-28`, LOCAL — GitHub refuse toujours les poussées) :
+> `5242f2449` hors service, `b32b92d90` + `9bf44bd39` version minimale de l'app, **`1f33aef6e` P0 :
+> suivi d'une commande web acceptée → 500** (53 erreurs en PRODUCTION du 25 au 28/09, `FrontendOrder`
+> ne caste pas `accepted_at`), `d1f33574c` fiche caisse « demain » pour une commande programmée ce soir
+> (`App\Support\CreneauRetrait`) + `queue_number` dans « Mes commandes ».
+> Site (worktree `site-wt-stores-2026-09-30`, branche `app/natif-honnete-2026-09-30`) : `4050155`
+> hors service + suppression, `de1ff84` lot du 01/10 (écran « Mise à jour nécessaire », garde « onglet
+> périmé » MORTE depuis le 08/08 réparée, numéro APPELÉ « N°A0051 » dans l'app, titres d'inscription
+> illisibles, recours comptoir, après connexion on reste au paiement, téléphone « 06 06… »), `1576a09`
+> bancs. Preuves : batterie site 34/34, bancs du lot 43+35+12+21+64, comportement 17/17, appareil 28/28.
+> **E2E** : vague A capturée + revue adverse (0 P0, 2 P1 corrigés) ; vague B : 3 défauts prouvés, tous
+> corrigés (rapport `reports/test-e2e/stores-finition-2026-09-30/round-1/vague-B-capture.md`) ; vagues
+> B et C rejouées sur le code final (round 2) puis revue adverse.
+> **Décisions propriétaire en attente** : déployer (vérifier l'e-mail GitHub, ou déploiement direct) ;
+> refuser « au plus vite » hors service côté serveur ? ; commandes de l'examinateur Apple/Google
+> (bac à sable ou refus poli) ; débit du code de connexion 3/5 min PAR ADRESSE IP (clients partageant
+> une connexion) ; complément silencieux d'attribut requis par `api.js` (risque latent si le catalogue
+> diverge du menu du site).
+
+> **2026-10-01 (nuit) — GOAL STORES, vague W1 quasi close, W2 (E2E) en cours.**
+> Site : worktree `site-wt-stores-2026-09-30`, branche `app/natif-honnete-2026-09-30`,
+> commits `cac473a` → `9ec0dc3` (LOCAUX, GitHub refuse toujours les poussées du compte).
+>
+> **Défaut majeur trouvé SUR ÉMULATEUR (Android 36)** : depuis le 19/08, AUCUNE fonction
+> native ne marchait dans l'app — `app-native.js` appelait `Capacitor.registerPlugin`,
+> absent sans `@capacitor/core`. Liens externes morts, bouton retour, bandeau hors
+> connexion, connexion Apple : inertes. Les bancs étaient verts (faux pont trop généreux).
+> Corrigé + instruments réalignés sur le pont RÉEL + `tools/verify-app-device.py`
+> (28/28 sur appareil). Mémoire `pont-capacitor-sans-registerplugin`.
+>
+> Aussi livré (site) : rappel local à l'heure estimée + alerte « prête » (non exactes —
+> sinon Android 14 ouvre « Alarmes et rappels »), SCHEDULE_EXACT_ALARM retirée, haptique,
+> tiroir fermé par RETOUR (il quittait l'app), bandeau hors ligne en bas et non bloquant,
+> zéro « bientôt » DANS L'APP (site inchangé), 1 réglage de notification réel au lieu de 4
+> faux, texte « paiement en ligne bientôt » corrigé (faux : actif), fiche store exacte (plus
+> de « avec Google »), signature Android prête (clés exclues du dépôt — elles ne l'étaient
+> pas), 4 bancs périmés réparés (3 Apple Pay depuis le 13/08, 1 suivi). Batterie site 32/34
+> (2 = besoin d'un backend local, verts à part 24/24 + 16/16). Backend : suppression de
+> compte après commande comptoir non commencée (`673db0952`).
+>
+> **En cours** : 3 agents de capture E2E (A compte/suppression, B chemin doré site→KDS→
+> caisse→écran client, C parcours visuel app+site) contre backend local :8000 (4 processus,
+> base `foodking_e2e`, `MAIL_MAILER=log` — passé de smtp à log le 01/10 pour ne pas envoyer
+> de vrais e-mails pendant les bancs).
+>
+> **Trouvé, à traiter après la capture** : hors service (02 h 35), l'API de production
+> annonce « 10-15 min » et accepte une commande « dès que prêt » (garde horaire seulement
+> pour les commandes programmées, OrderRequest:402) ; le tunnel retombe sur « ~15-20 min »
+> codé en dur sans estimation. Affichage = à corriger ; accepter/refuser l'immédiat hors
+> service = DÉCISION PROPRIÉTAIRE (recommandation : programmation seule).
+>
+> Le travail NON COMMITÉ d'une autre session dans `Site lecayenne` (routage par hash,
+> racine.jsx…) casse les 5 bancs « roue » (verts sur la version en ligne) : ne pas le
+> déployer en l'état.
+
+> **2026-09-30 (après-midi) — GOAL ACTIF : `plans/GOAL_STORES_FINITION_APP_2026-09-30.md`**
+> (finition de l'application pour l'App Store et Google Play, E2E complet, 8 vagues, 10 gates).
+> **Vague en cours : W0** (pré-vol, gates longs, arbitrages, doc, émulateur).
+>
+> **Fait établi par ancrage** : l'application des stores = le site `lecayenne.fr` empaqueté par
+> Capacitor 8 (`Site lecayenne/app/`, `fr.lecayenne.app`) — `testttt/mobile/` est un prototype
+> hors chemin ; CLAUDE.md / CONSTITUTION / SYSTEM_MAP corrigés (commit de ce bloc).
+> Paquet `app/www` en retard de 27 jours sur le site (31+ fichiers) ; pont natif câblé sans
+> appelant (Apple 4.2) ; suppression de compte refusée avec commande ouverte (Apple 5.1.1(v)) ;
+> aucune signature Android ; pas de version minimale ; backend prêt en prod (routes, CORS
+> `https://localhost`, certificat → 21/11/2026) ; `verify-app-behaviour` 13/13.
+>
+> **Pré-vol E2E 10/10** : serveurs DÉTACHÉS `:8000` (arbre qa), `:8899` (site), `:6001` (soketi)
+> — lanceur `~/.claude/jobs/48fdb176/tmp/lancer-serveurs-locaux.sh` ; 0 migration en attente ;
+> workers 1 ; aides `tests/e2e/helpers/` ; `reports/test-e2e/stores-finition-2026-09-30/`.
+>
+> **Déploiement backend du lot QA (fusion `5a7c57e9a` = P0-01 + santé impression + borne +
+> SAGA)** : bundle sur le VPS, gardes pré-validées, **lancement réservé au propriétaire**
+> (classificateur) : `! bash ~/.claude/jobs/48fdb176/tmp/lancer-deploy-direct.sh`. GitHub
+> refuse toujours les poussées du compte (« verify your email », SSH et HTTPS, 2 dépôts).
+>
+> **Arbitrages posés au propriétaire (G8), défauts appliqués en attendant** : « bientôt »
+> réseaux → retirer ; paiement app = comptoir ; notification locale + haptique = oui ;
+> suppression après commande comptoir non commencée = autorisée (annulation puis effacement) ;
+> commandes d'examen `TEST-` auto-annulées H+2.
+>
+> **Suite complète** : PHPUnit 6 138 / 1 échec (dérive gelée `KioskWizardComponent.vue` à
+> contresigner) ; Vitest 4 596 verts sur la fusion. Zéro ligne de zone gelée touchée.
+
+> **2026-09-30 — DEUX RAPPORTS TRAITÉS : 3 corrigés (prouvés), 2 réfutés (prouvés).**
+> Voir `reports/planning/QA_CORRECTIONS_2026-09-30.md`.
+> Périmètre : `RAPPORT_DEV_CAISSE_2026-09-24` (8 P0) + `QA_LOOP_NEXT_ACTION_2026-09-29`.
+>
+> **Suite complète : 6 138 passés / 1 échec** — l'unique échec est la dérive
+> d'empreinte gelée `KioskWizardComponent.vue` (3 lignes de COMMENTAIRE, commit
+> `c21628767` du 27/09, **déjà en production**), qui attend une contresignature
+> propriétaire. Les 3 échecs de la veille (bancs figeant l'ancien comportement) sont
+> alignés et reverts. Vitest **4 583 verts**. **Zéro ligne de zone gelée touchée**
+> (diff des 15 fichiers §7 depuis `96aa53a42` : vide).
+>
+> **P0-01 — le risque n°1 du rapport caisse, REPRODUIT PUIS CORRIGÉ.** « Modifier »
+> sur un Tacos XL à 3 viandes n'en rechargeait qu'UNE, tout en affichant « 3/3
+> incluses ». Le correctif du 26/09 (`c3dafb064`) avait traité une AUTRE cause ; le
+> défaut restait. Cause racine prouvée en base : le backend donne un id de variation
+> DIFFÉRENT par attribut pour le même nom (Mexicanos = 777/784/791), alors que le
+> wizard (GELÉ) dédoublonne ses tuiles PAR NOM et ne connaît que 777/778/779 — deux
+> clés sur trois ne désignaient aucune tuile. Correctif hors zone gelée :
+> `helpers/posViandeCanonique.js`. Banc navigateur **3 → 1 avant, 3 → 3 après**.
+> Note : ma 1ʳᵉ version utilisait `this.` et cassait 3 bancs —
+> `buildWizardRestorePayload` est appelée NON LIÉE (fonction pure par conception).
+>
+> **P0-07/P0-08 — l'écran de santé caisse était aveugle aux imprimantes** (zéro
+> occurrence de `printer` dans le contrôleur) : « Tout va bien » avec la table vide.
+> Contrôle `impression` ajouté, plafonné à l'ambre (l'écran cuisine reste la voie de
+> secours), `unknown` si le contrôle échoue. Le TPE simulé n'est PAS signalé : état V1
+> assumé et documenté (§3bis).
+>
+> **Borne — un refus d'auto-login ne laissait AUCUNE trace.** Le garde est correct et
+> n'a pas été touché. `KioskAutoLoginGate::motifDeRefus()` nomme la première condition
+> manquante, journalisée 1×/min, SANS jamais laisser fuir le secret, le mot de passe
+> machine ni l'adresse (test dédié). Vérifié en production : `/kiosk/idle` → 200,
+> `kioskAutoLogin: null`.
+>
+> **RÉFUTÉS avec preuve** : P0-06 (« Ventes du jour » compte le chiffre RÉALISÉ,
+> `payment_status = PAID` ; la supervision montre les commandes EN COURS — la vraie
+> divergence entre tuiles, 104,90 € mesurés, avait été corrigée le 29/08) ; P0-02
+> (mêmes 5 commandes décrites deux fois : la file d'encaissement n'a volontairement
+> aucun filtre de journée). P0-03/P0-04 = configuration de déploiement, le repli KDS
+> est prévu et le socket déjà surveillé.
+>
+> ⚠️ **GitHub bloque TOUJOURS les poussées** : « You must verify your email address »
+> (github.com/settings/emails). Les commits du 30/09 (`4eb8a4821`, `63042000e`,
+> `c3b31290f`, `589ed6ab4`, `bbbc67e06`) sont **locaux**. Sans effet sur le
+> déploiement (le VPS tire avec sa propre clé) mais le lot du jour n'est PAS déployé.
+>
+> **État déployé au 30/09 00:02** : backend `96aa53a4`, site `main` = `b9e1f64`.
+> Le lot du 30/09 (P0-01, santé impression, borne) n'est PAS encore en production.
+>
+> **DÉCISIONS PROPRIÉTAIRE (gates §10/§12)** — inchangées, plus une :
+> · Remise manuelle : le vrai correctif est dans `PaymentComponent.vue`, **GELÉ** → LOCK.
+> · `public/js/pos-wizard.js` (GELÉ) : 9 `innerHTML` sans échappement → LOCK.
+> · Empreinte gelée `KioskWizardComponent.vue` à contresigner (seul échec de la suite).
+> · **Borne : poser `KIOSK_AUTO_LOGIN_SECRET` ou le CIDR réel sur le VPS — ET tourner
+>   `kiosk123` en même temps.** Un secret d'auto-login posé sur un mot de passe machine
+>   public laisserait la porte ouverte : les deux gestes vont ensemble.
+> · OSS n'affiche pas ACCEPT+PAID (56 commandes invisibles du mur) — épinglé par test.
+> · Cron `schedule:run` absent (purge automatique inerte). · Journée de service 00 h vs
+>   05 h à trancher. · Dine-in `show` public sans PII AVANT activation. · Nom produit
+>   non scellé dans le snapshot.
+
+> **2026-09-30 00:02 — AUDIT EN PROFONDEUR (caisse + site) : CORRIGÉ, TESTÉ, DÉPLOYÉ.**
+> Backend **HEAD prod = `96aa53a4`** (`tools/deploy-lecayenne.sh 5e5dc4a1c` : snapshot,
+> rien à migrer, triggers 10/10, chaîne NF525 CHAIN OK, `config:cache` sauté, healthz
+> vert, bundles frais, CORS OK). Site **`main` = `b9e1f64`**, Vercel en ligne, contenu
+> SERVI vérifié fichier par fichier. Vérification indépendante prod : healthz ok, et le
+> nouveau limiteur `forgot-password` répond 400,400,400 puis **429** (seau par adresse).
+>
+> **Méthode** : 5 audits parallèles en lecture seule (caisse-argent, tunnel site,
+> sécurité, site perf/PWA/SEO, aval cuisine/ticket/écrans), chaque constat re-vérifié
+> ligne à ligne, **deux reproduits par l'écran avant correction** (remise caisse →
+> déconnexion ; supplément libre par le geste réel du caissier). Zéro ligne de zone
+> gelée touchée (diff des 15 fichiers §7 depuis 9fff27add : vide).
+>
+> **Livré côté caisse/cuisine (commits 8c8d51eaf…d5a3f851f)** : remise = déconnexion
+> (401 métier → 409 + coupe-circuit V1 au devis) ; « sans vente » non journalisé (clé
+> d'idempotence) ; nettoyage groupé armé au chargement (deux temps réels, prouvés) ;
+> plancher du vidage aligné sur le tableau (purge MOINS) ; libellé supplément libre
+> réduit à « SUP » en cuisine (ticket + carte, jumeaux) ; suppléments fusionnés sur le
+> board ; filtre programmées sur le ticket cuisine ; TVA ticket groupée par taux ;
+> mur client 15 s + écoute OrderPaidAtCounter ; erreurs SQL masquées désormais
+> journalisées ; `insertRows` défensif.
+> **Sécurité** : kiosk-login sans couche globale ; login par compte contournable ;
+> forgot-password inondable + verrouillage permanent ; semeur borne inerte en staging ;
+> inscription publique en branch_id 0 (sentinelle admin).
+> **Site (b9e1f64)** : repli comptoir mensonger sur panne carte (P0 de l'incident
+> 26-28/09) ; coche Apple Pay sans preuve ; 409 d'idempotence insoluble ; retour 3DS
+> sans vérité de paiement ; 401 checkout ; sondage attente ; **9 fichiers servis
+> périmés sous `immutable` 1 an** (Galette Normale, « dès 100 pts ») ; pages légales
+> sous jetons d'août ; qrcode sans jeton ; SW figé ; llms.txt ; et l'outil de contrôle
+> lui-même (non récursif, règle qui se désarmait) → règle fondée sur l'historique,
+> prouvée mordante 10→0.
+>
+> **Suites** : PHPUnit **6123 passés / 4 échecs** — 3 bancs qui figeaient l'ANCIEN
+> comportement, alignés et reverts un par un ; 1 = dérive d'empreinte gelée
+> (ci-dessous). Caisse 403+, cuisine/KDS/ticket 321, auth/sécu 338, Vitest 536+27+18.
+>
+> ⚠️ **GitHub bloque les poussées : « You must verify your email address »**
+> (compte-niveau, github.com/settings/emails). Sans effet sur le déploiement (le VPS
+> tire avec sa propre clé de dépôt ; la release distante contenait déjà le lot). Les
+> derniers commits locaux (docs) ne sont PAS poussés tant que l'email n'est pas vérifié.
+>
+> **DÉCISIONS PROPRIÉTAIRE (gates §10/§12)** :
+> · `PaymentComponent.vue:942` (GELÉ) retire `discount` de la commande → toute remise
+>   manuelle restera impossible même flag ouvert ; LOCK requis pour le vrai correctif.
+> · `public/js/pos-wizard.js` (GELÉ) : 9 `innerHTML` sans échappement, chemin persistant
+>   via l'instruction restaurée → LOCK (le motif `textContent` existe déjà l.3866).
+> · OSS n'affiche pas ACCEPT+PAID (56 commandes invisibles du mur) — épinglé par test.
+> · Identifiants borne `kiosk-lecayenne/kiosk123` : rotation en prod à faire par le
+>   propriétaire (lecture SSH refusée) + révoquer les jetons vivants.
+> · Empreinte gelée `KioskWizardComponent.vue` (3 lignes de commentaire, c21628767) à
+>   contresigner. · Cron `schedule:run` absent (purge automatique inerte). · Journée de
+>   service 00 h vs 05 h à trancher. · Dine-in `show` public sans PII AVANT activation.
+> · Nom produit non scellé dans le snapshot (renommage réécrit l'historique).
+
+> **2026-10-02 — CAISSE/CUISINE : 7 CORRECTIFS (/goal owner), PREUVES À L'APPUI.** Branche `pos/category-first-caisse-2026-06-23`,
+> base `0ccb1dbb1`, rien poussé ni déployé. Détail et chiffres : voir le rapport de fin de session.
+> (1) Catégorie « Sauces supplémentaires » hors menu (`channels=["pos"]`, 13 sauces canoniques de `config/pos_sauces.php`, 0,50 €) —
+> migration de données `2026_10_02_090000`, aucun produit existant touché. (2) Écran de paiement : onglets Espèces / Carte bleue /
+> Titres-resto / Multi-paiement + CB partielle → reste par un autre moyen (`PaymentComponent.vue` **gelé**, LOCK
+> `docs/locks/LOCK_PAYMENT_COMPONENT_TITRES_RESTO_CB_PARTIELLE_2026-10-02.md`, contreseing formel à obtenir) ; même chose dans la modale
+> « à encaisser » (non gelée). (3) File « en attente d'encaissement » : jour courant par défaut (`CounterCollectQueue`), filtre
+> « Jours précédents », purge confirmée une par une / toutes (`StaleCounterOrderPurger` : CANCELED/REJECTED ou soft-delete PREPARED, JAMAIS de
+> DELETE, garde `fiscal_sequence_no IS NULL` sous verrou, audit `order.counter_pending_purged`). (4) **Cause racine des sauces sans nom** : la
+> caisse écrit « Sauce : A, B Supplément : X » avec une ESPACE ; `splitSauceList` jetait la dernière sauce — corrigé PHP + JS (+ lecture du
+> `sauce_destinations` scellé tronqué + libellé arabe). (5) Bouton « Offert » : sidecar `item_extras_offered` (ids seulement), PricingService
+> inchangé, audit `order.line_offered`, ligne « OFFERT » sur ticket/reçu. (6) Prix frites : le wizard gelé n'envoyait « Grande Portion »,
+> « Cheddar Fondu » et la 2ᵉ sauce frites de la formule qu'en TEXTE → désormais ids d'extras (`posFormulaBilling.js`, API addons
+> `addon_item_extras`). (7) Cuisine : « # » gras sur la ligne produit à supplément, suppléments blanc/noir (ticket GS B + KDS), fond jaune retiré,
+> contraste ≥ 7:1. ⚠ Défaut ANTÉRIEUR non lié : `FrozenZoneSha256BaselineSentinelTest` rouge sur `KioskWizardComponent.vue` (baseline périmée
+> depuis `c21628767`).
+
+> **2026-09-30 — BORNE : COQUE SOMBRE + 18 VISUELS RECOMPOSÉS SUR LE DÉCOR LE CAYENNE.**
+> Owner : « la page toute blanche fait bizarre… la barre latérale au noir, ça donne plus de
+> classe » + « les produits sans arrière-plan, rajoute ce fond-là comme le sandwich, à part les
+> boissons ». Fait : (1) `KioskCategoriesComponent.vue` — bloc CSS scoped : fond de page
+> #141414, bandeau/barre latérale/barre du bas #1A1A1A, cartes catégorie #242424, texte blanc ;
+> cartes PRODUIT toujours blanches ; aucun token global `--kiosk-*` touché, mode dark toujours
+> désactivé. (2) 18 PNG de `public/images/menu/` composés sur le décor 1536×1024 (script
+> Python PIL, ombre portée, alpha intérieur durci) + vignettes WebP régénérées
+> (`images:generate-pos-thumbs`). Boissons volontairement laissées en détouré sur blanc.
+> (3) `config/menu_images.php` : slug `cheddar` manquant → le supplément affichait l'icône
+> par défaut. **NON FAIT, à refaire à la source** : raclette, fromage (emmental), champignons,
+> boursin — leurs détourés ont des TROUS semi-transparents intérieurs (invisibles sur blanc,
+> décor visible au travers) ; 3 tentatives de réparation alpha (durcissement, dé-mattage vert,
+> remplissage blanc) toutes rejetées visuellement. Tarte Daim : fin liseré vert de matte sur
+> la croûte, mineur. Preuves : PHPUnit images 17/17, Vitest catalogue 26/26, zone gelée diff 0,
+> captures Playwright lues (Sandwichs, Burgers, Desserts, Boissons) sur :8766 arbre principal.
+> Les 4 sources originales sont dans git (aucun fichier supprimé), pas de push.
 > **2026-09-29 — BACKEND DÉPLOYÉ ET VÉRIFIÉ. HEAD prod = `faa81531`.**
 >
 > `tools/deploy-lecayenne.sh 8d9fcd707` → OK : snapshot de base pris, rien à
@@ -4489,6 +4820,9 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-09-30 — Borne : coque sombre du catalogue + 18 visuels produits recomposés sur le décor
+Le Cayenne + slug `cheddar` ajouté à `config/menu_images.php`.** 4 détourés troués à la source
+(raclette, fromage, champignons, boursin) laissés tels quels — voir §2.
 **QA — SECOND LOT + DÉPLOIEMENT PARTIEL (2026-09-28)** — branche
 `qa/corrige-rapports-2026-09-28` **poussée sur le distant** (11 commits au moment de cette note).
 Suite de la directive owner « corrige », puis « deploy ».

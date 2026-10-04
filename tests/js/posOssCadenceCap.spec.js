@@ -151,6 +151,10 @@ describe('OssSyncService cadence cap (Wave 3c KDS-ADV3C-08 P1)', () => {
         });
         const svc = new OssSyncService();
         const cfg = svc._runtimeConfig();
+        // [fusion 2026-10-04] Une autre session a corrigé ce même banc en parallèle
+        // (« [AUDIT AVAL 2026-09-29] », littéral 15_000). Les deux gardent le même
+        // invariant ; cette version le garde SANS figer la valeur, et ajoute le contrôle
+        // du plafond ci-dessous.
         // [AUDIT-COMPTA 2026-10-04] On garde l'INVARIANT — « une valeur invalide retombe sur
         // le défaut du service » — et non la valeur du défaut.
         //

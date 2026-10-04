@@ -143,6 +143,20 @@ class OrderQuoteService
             throw new HttpException(409, 'Le total a changé depuis le devis. Relance l\'encaissement pour le recalculer.');
         }
 
+        // [GOAL CAISSE/CUISINE #5 2026-10-02] Trace d'audit de l'« Offert » (qui/quoi/quand), écrite
+        // dans la transaction de création : elle ne peut exister que si la commande existe.
+        if ($surface === self::SURFACE_POS) {
+            $decoded = $this->safeJsonDecode((string) $request->input('items', '[]'));
+            if (is_array($decoded)) {
+                app(\App\Services\Pos\OfferedExtras::class)->audit(
+                    $decoded,
+                    $orderId,
+                    (int) $quote->branch_id,
+                    (int) $quote->actor_id
+                );
+            }
+        }
+
         return $quote->refresh();
     }
 
@@ -318,6 +332,10 @@ class OrderQuoteService
      */
     private function calculatePricing(Request $request, string $surface, int $branchId, array $items, User $actor): PricingResult
     {
+        // [GOAL CAISSE/CUISINE #5 2026-10-02] « Offert » : validé AVANT tout calcul (forme, extra du
+        // bon produit, payant, surface POS). Le prix, lui, reste calculé par PricingService.
+        app(\App\Services\Pos\OfferedExtras::class)->assertValid($items, $surface);
+
         if ($surface === self::SURFACE_KIOSK) {
             $pricing = $this->pricingService->calculateOrder(
                 PricingRequest::forKiosk(

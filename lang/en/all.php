@@ -333,6 +333,7 @@ return [
         'flyer_settings_saved' => 'Promo flyer settings saved.',
         'account_delete_success' => 'Account Deleted Successfully.',
         'account_not_delete' => 'You cannot delete your account if you have an active order.',
+        'account_not_delete_kitchen' => "Your account cannot be deleted yet: an order is being prepared or has already been paid. Collect it (or wait until it is completed), then try again.",
         'invalid_api_key' => 'Invalid Api Key.',
         'user_match' => 'User not match.',
         'something_wrong' => 'Something wrong.',

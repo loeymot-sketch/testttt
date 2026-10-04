@@ -517,8 +517,8 @@
                                             :data-testid="`tracker-prep-${order.id}`"
                                             title="Temps de préparation annoncé au client (minutes)"
                                             aria-label="Temps de préparation en minutes"
-                                            min="1"
-                                            max="180"
+                                            min="5"
+                                            max="120"
                                             step="1"
                                             inputmode="numeric"
                                             @input="webPrepChoice = { ...webPrepChoice, [order.id]: parseInt($event.target.value, 10) }"
@@ -992,6 +992,13 @@
             @confirmed="onEncaisseConfirmed"
             @cancel="encaisseOrder = null"
         />
+        <!-- [GOAL REMARQUES 2026-10-03 · R-048] « Imprimer le ticket client ? » après l'encaissement. -->
+        <PosQuestionImpressionTicket
+            v-if="questionImpressionOrderId"
+            :key="questionImpressionOrderId"
+            :order-id="questionImpressionOrderId"
+            @fermer="questionImpressionOrderId = null"
+        />
 
         <!-- [BOUTON SCELLÉ 2026-08-19] Contrepartie comptable d'une commande scellée.
              Composant EXISTANT réutilisé tel quel (PosRefundModal) : il porte déjà la clé
@@ -1021,6 +1028,8 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
+import { resumeTechnique as resumeTechniqueCommande } from '../../../support/compositionCommande';
+import { bornerTempsPreparation } from '../../../helpers/posTempsPreparation';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
 // cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
 import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
@@ -1036,6 +1045,8 @@ import PosRefundModal from './PosRefundModal.vue';
 // must be self-sufficient for encashment (its Encaisser CTA was previously a
 // dead button: it only dispatched an un-listened CustomEvent).
 import PosCounterCollectModal from './PosCounterCollectModal.vue';
+import PosQuestionImpressionTicket from './PosQuestionImpressionTicket.vue';
+import { imprimerTicketClient } from '../../../helpers/posImprimerTicketClient';
 import PosSystemHealthPill from './PosSystemHealthPill.vue';
 import PosStockOutflowModal from './PosStockOutflowModal.vue';
 import PromoFlyerQuickModal from '../promo/PromoFlyerQuickModal.vue';
@@ -1101,7 +1112,7 @@ const SCHEDULED_LEAD_MIN = 20;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal, PosRefundModal },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal, PosQuestionImpressionTicket, PosSystemHealthPill, PosStockOutflowModal, PromoFlyerQuickModal, PosRefundModal },
     mixins: [adminPriceMixin],
     data() {
         return {
@@ -1190,6 +1201,7 @@ export default {
             // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
             // via the shared PosCounterCollectModal (null = modal closed).
             encaisseOrder: null,
+            questionImpressionOrderId: null, // [R-048] commande dont on propose d'imprimer le ticket client
             // [WEB-TRACKER-VISIBILITY 2026-07-20] Anti double-clic par commande
             // pour le CTA « Accepter » des commandes web PENDING.
             webAccepting: {},
@@ -2197,10 +2209,12 @@ export default {
                 const onBoard = new Set(
                     this.orders.map((o) => parseInt(o?.id, 10)).filter(Number.isFinite)
                 );
+                // [GOAL CAISSE/CUISINE #3 2026-10-02] La file ne renvoie plus que le jour courant :
+                // les « plus anciennes » = hors tableau aujourd'hui + celles des jours précédents (meta).
                 this.olderPendingCount = rows.filter((r) => {
                     const id = parseInt(r?.id, 10);
                     return Number.isFinite(id) && !onBoard.has(id);
-                }).length;
+                }).length + (Number(res?.data?.meta?.previous_count) || 0);
             } catch (_) {
                 // File indisponible → on garde la dernière valeur connue (pas de faux
                 // zéro). [S2 auto-RED cycle 2] Back-off : on ne remet PAS le TTL à 0,
@@ -2259,7 +2273,9 @@ export default {
                 // affiché 15 : sans ça, le select montrait « 15 min » mais le backend
                 // gardait le défaut settings (réglable ≠ 15) → mensonge UI. Ce que le
                 // caissier VOIT est ce qui est ENVOYÉ.
-                const prep = parseInt(this.webPrepChoice[order.id] ?? 15, 10);
+                // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-3] Bornes du SERVEUR (5-120) : un 3 ou un
+                // 150 faisait échouer l'acceptation (422) et la commande restait en attente.
+                const prep = bornerTempsPreparation(this.webPrepChoice[order.id] ?? 15);
                 await axios.post(
                     `admin/online-order/change-status/${order.id}`,
                     {
@@ -2309,8 +2325,16 @@ export default {
         // the counter-collect; clear it + refresh so the now-paid order leaves
         // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
         // fetchOrders, but we refresh immediately for local responsiveness).
-        onEncaisseConfirmed() {
+        onEncaisseConfirmed(payload) {
             this.encaisseOrder = null;
+            // [GOAL REMARQUES 2026-10-03 · R-048] Le Suivi n'imprimait rien et ne demandait rien : même
+            // question que la caisse, jamais d'impression automatique.
+            const orderId = payload?.orderId ?? payload?.order_id ?? null;
+            // [Revue vague 2 · P3] Même règle que la page Encaissement : l'option explicite
+            // autoPrintClientReceipt imprime d'office ; sinon, la question.
+            const auto = !!(typeof window !== 'undefined' && window.foodkingConfig?.printing?.autoPrintClientReceipt);
+            if (orderId && auto) imprimerTicketClient(orderId);
+            else if (orderId) this.questionImpressionOrderId = orderId;
             // [S2 F1 révisé 2026-07-29] Un encaissement change la file d'attente :
             // on invalide le TTL du compteur d'anciennes commandes pour que le
             // bandeau ne reste pas jusqu'à 5 min sur une valeur périmée.
@@ -2386,7 +2410,9 @@ export default {
          * +2 Cheddar · +Salade », 54 caractères) passe désormais ENTIER.
          */
         compoAffichee(item) {
-            const complet = this.resumeComposition(item);
+            // [GOAL REMARQUES 2026-10-03 · R-009] La carte parle TECHNIQUE (« G · ALG · +Cheddar ») —
+            // « avec les mots techniques » ; l'info-bulle et « Voir tout » restent en toutes lettres.
+            const complet = this.resumeTechnique(item);
             // [AUDIT-SUPERVISEUR 2026-08-25 · A-016] Le budget était un nombre nu, enfermé
             // ici. Conséquence : le superviseur a constaté que le marqueur « +N » — la
             // pièce maîtresse de ce correctif — n'était rendu sur AUCUN des 10 états
@@ -2530,6 +2556,10 @@ export default {
          * Volontairement court — la carte doit rester lisible d'un coup d'œil ;
          * le détail intégral vit dans le panneau « Voir tout ».
          */
+        /** [R-009] Résumé en mots techniques — délègue au module partagé (une seule définition). */
+        resumeTechnique(item) {
+            return resumeTechniqueCommande(item);
+        },
         resumeComposition(item) {
             if (!item) return '';
             const morceaux = [];

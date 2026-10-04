@@ -5,8 +5,12 @@
             <div class="flex flex-wrap gap-y-5 items-end justify-between">
                 <div>
                     <div class="flex flex-wrap items-start gap-y-2 gap-x-6 mb-5">
+                        <!-- [E2E stores · B4-R4-01 · 2026-10-02] Le numéro APPELÉ (« N°A0032 »), celui
+                             que l'écran client, l'encaissement et l'application affichent ; la série
+                             reste en référence. -->
                         <p class="text-2xl font-medium">{{ $t('label.order_id') }}:
-                            <span class="text-heading">
+                            <span class="text-heading" v-if="order.queue_number">N°{{ order.queue_number }}</span>
+                            <span :class="order.queue_number ? 'text-sm text-paragraph ml-2' : 'text-heading'">
                                 #{{ order.order_serial_no }}
                             </span>
                         </p>
@@ -36,7 +40,7 @@
                                 {{ paymentMethodLabel(order.transaction.payment_method) }}
                             </span>
                             <span v-else class="text-heading">
-                                {{ paymentTypeEnumArray[order.payment_method] }}
+                                {{ libellePaiement(order) }}
                             </span>
                         </li>
                         <li class="text-xs">
@@ -46,7 +50,7 @@
                             </span>
                         </li>
                         <li class="text-xs">
-                            {{ $t('label.delivery_time') }}:
+                            {{ order.order_type === enums.orderTypeEnum.DELIVERY ? $t('label.delivery_time') : $t('label.pickup_time') }}:
                             <span :class="order.is_advance_order === enums.isAdvanceOrderEnum.YES ? 'text-primary' : ''"
                                 class="text-heading">
                                 {{ order.delivery_date }} {{ order.delivery_time }}
@@ -203,10 +207,13 @@
                                             class="text-sm font-medium capitalize transition text-heading hover:underline">
                                             {{ item.item_name }}
                                         </a>
-                                        <p v-if="item.item_variations.length !== 0" class="capitalize text-xs mb-1.5">
-                                            <span v-for="(variation, index) in item.item_variations">
-                                                {{ variation.variation_name }}: {{ variation.name }}<span
-                                                    v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
+                                        <!-- [E2E stores · revue adverse B2-R2-03 · 2026-10-01] Lecture brute FAUSSE sur
+                                             l'instantané NF525 (rôles inversés : « Tenders: », Cheddar invisible) — même
+                                             normaliseur que la fiche caisse POS et le ticket (posReceiptBuilder). -->
+                                        <p v-if="normalizedVariations(item).length !== 0" class="capitalize text-xs mb-1.5">
+                                            <span v-for="(variation, index) in normalizedVariations(item)" :key="index">
+                                                {{ variation.label }}: {{ variation.name }}<span
+                                                    v-if="index + 1 < normalizedVariations(item).length">,&nbsp;</span>
                                             </span>
                                         </p>
                                         <h3 class="text-xs font-semibold">{{ item.total_currency_price }}</h3>
@@ -214,19 +221,19 @@
                                     </div>
                                 </div>
 
-                                <ul v-if="item.item_extras.length > 0 || item.instruction !== ''"
+                                <ul v-if="normalizedExtras(item).length > 0 || hasInstruction(item)"
                                     class="flex flex-col gap-1.5 mt-2">
-                                    <li class="flex gap-1" v-if="item.item_extras.length > 0">
+                                    <li class="flex gap-1" v-if="normalizedExtras(item).length > 0">
                                         <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:
                                         </h3>
                                         <p class="text-xs">
-                                            <span v-for="(extra, index) in item.item_extras">
-                                                {{ extra.name }}<span
-                                                    v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                                            <span v-for="(extra, index) in normalizedExtras(item)" :key="index">
+                                                {{ extra.name }}<span v-if="extra.quantity > 1"> ×{{ extra.quantity }}</span><span
+                                                    v-if="index + 1 < normalizedExtras(item).length">,&nbsp;</span>
                                             </span>
                                         </p>
                                     </li>
-                                    <li class="flex gap-1" v-if="item.instruction !== ''">
+                                    <li class="flex gap-1" v-if="hasInstruction(item)">
                                         <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{
                                             $t('label.instruction')
                                         }}:</h3>
@@ -337,6 +344,7 @@ import OnlineOrderMapComponent from "./OnlineOrderMapComponent";
 import alertService from "../../../services/alertService";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
+import { normalizeReceiptVariations, normalizeReceiptExtras } from "../../../helpers/posReceiptBuilder";
 import { paymentMethodLabelMixin } from "../../../helpers/paymentMethodLabel";
 
 export default {
@@ -448,7 +456,11 @@ export default {
         paymentStatusEnumArray: function () {
             return {
                 [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                // [E2E stores · B2-R2 · 2026-10-01] Après acceptation, une commande web à régler au
+                // comptoir passe en PENDING_COUNTER : sans ce libellé, le badge restait VIDE.
+                [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
             }
         },
         orderTypeEnumArray: function () {
@@ -465,12 +477,17 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
-        this.$store.dispatch('deliveryBoy/lists', {
-            order_column: 'id',
-            order_type: 'asc',
-            status: statusEnum.ACTIVE
-        });
         this.$store.dispatch('onlineOrder/show', this.$route.params.id).then(res => {
+            // [E2E stores · B2-R2 · 2026-10-01] La liste des livreurs n'a de sens que pour une
+            // LIVRAISON, et le compte caisse n'y a pas droit : elle était demandée à chaque
+            // ouverture (403 + erreur non rattrapée en console).
+            if (res.data.data.order_type === orderTypeEnum.DELIVERY) {
+                this.$store.dispatch('deliveryBoy/lists', {
+                    order_column: 'id',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE
+                }).catch(() => {});
+            }
             this.payment_status = res.data.data.payment_status;
             this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
             this.order_status = res.data.data.status;
@@ -480,6 +497,23 @@ export default {
         });
     },
     methods: {
+        normalizedVariations(item) {
+            return normalizeReceiptVariations(item?.item_variations);
+        },
+        normalizedExtras(item) {
+            return normalizeReceiptExtras(item?.item_extras);
+        },
+        hasInstruction(item) {
+            return typeof item?.instruction === 'string' && item.instruction.trim() !== '';
+        },
+        // [E2E stores · B2-R2 · 2026-10-01] « Paiement à la livraison » s'affichait pour une commande
+        // à EMPORTER réglée au comptoir. Le libellé suit le type de commande.
+        libellePaiement(order) {
+            if (order?.payment_method === paymentTypeEnum.CASH_ON_DELIVERY && order?.order_type !== orderTypeEnum.DELIVERY) {
+                return this.$t("label.pay_at_counter");
+            }
+            return this.paymentTypeEnumArray[order?.payment_method];
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

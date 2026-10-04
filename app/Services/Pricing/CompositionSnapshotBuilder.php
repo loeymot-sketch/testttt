@@ -115,6 +115,30 @@ final class CompositionSnapshotBuilder
             }
         }
 
+        // [GOAL CAISSE/CUISINE #5 2026-10-02] Options OFFERTES : scellées dans le snapshot comme lignes
+        // VISIBLES à 0 € avec leur valeur catalogue (preuve de ce qui a été offert). Elles ne viennent
+        // PAS de item_extras (donc jamais facturées par PricingService) mais du sidecar
+        // `item_extras_offered`, déjà validé en amont (OfferedExtras::assertValid).
+        $offered = \App\Services\Pos\OfferedExtras::entries($item);
+        if ($offered !== []) {
+            $offeredDb = \App\Models\ItemExtra::query()->whereIn('id', array_column($offered, 'id'))->get()->keyBy('id');
+            foreach ($offered as $o) {
+                $dbExt = $offeredDb[$o['id']] ?? null;
+                if (! $dbExt) {
+                    continue;
+                }
+                $extras[] = [
+                    'extra_id'           => (int) $dbExt->id,
+                    'extra_name'         => (string) $dbExt->name,
+                    'quantity'           => $o['quantity'],
+                    'unit_price'         => 0.0,
+                    'line_total'         => 0.0,
+                    'offered'            => true,
+                    'catalog_unit_price' => round((float) $dbExt->price, 6),
+                ];
+            }
+        }
+
         if (isset($item->item_addons) && is_array($item->item_addons)) {
             $addonIds = [];
             foreach ($item->item_addons as $addon) {
@@ -203,7 +227,8 @@ final class CompositionSnapshotBuilder
 
         $product = [];
         if (preg_match('/sauces?\s+en\s+plus\s*:\s*([^\n.]+)/iu', $instruction, $match)
-            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $match)) {
+            || preg_match('/extra\s+sauces?\s*:\s*([^\n.]+)/iu', $instruction, $match)
+            || preg_match('/صلصات\s+إضافية\s*:\s*([^\n.]+)/u', $instruction, $match)) {
             $product = $this->splitSauceNames($match[1]);
         } elseif (preg_match('/(?<![\p{L}])sauces?\s*:\s*([^\n]+)/iu', $instruction, $match)) {
             // POS records all product sauces; the first is the included one.
@@ -224,7 +249,17 @@ final class CompositionSnapshotBuilder
         $names = [];
         foreach (explode(',', $withoutAmounts) as $part) {
             $name = trim($part);
-            if ($name === '' || str_contains($name, ':')) {
+            if ($name === '') {
+                break;
+            }
+            if (str_contains($name, ':')) {
+                // [GOAL #4 2026-10-02] « …, Harissa Supplément : Cheddar » : la caisse colle la
+                // rubrique suivante par une ESPACE — on garde la sauce qui la précède (jumeau de
+                // KitchenTicketSymbolicFormatter::splitSauceList). Sans ça le snapshot scellé
+                // était écrit TRONQUÉ, et immuable ensuite.
+                if (preg_match(\App\Services\Hardware\KitchenTicketSymbolicFormatter::RUBRIQUE_COLLEE, $name, $m) && trim($m[1]) !== '') {
+                    $names[] = trim($m[1]);
+                }
                 break;
             }
             $names[] = $name;

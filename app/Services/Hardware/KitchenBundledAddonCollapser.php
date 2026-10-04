@@ -264,7 +264,9 @@ class KitchenBundledAddonCollapser
                 continue;
             }
             $vus[$cle] = true;
-            $ajouts[] = $e;
+            // [GOAL REMARQUES 2026-10-03 · revue F2] Marqueur d'AFFICHAGE : l'option vient de la formule
+            // (frites), pas du sandwich. Clone en mémoire, jamais persisté. Jumeau JS : kdsBundledAddons.js.
+            $ajouts[] = is_array($e) ? $e + ['from_formule' => true] : $e;
         }
         if ($ajouts === []) {
             return $parent;

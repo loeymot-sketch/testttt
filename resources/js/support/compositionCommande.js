@@ -23,6 +23,9 @@
  * Banc : `tests/js/compositionCommandeModule.spec.js`.
  */
 
+// [GOAL REMARQUES 2026-10-03 · R-009] Les symboles de la CUISINE (module pur, sans Vue ni réseau).
+import { cruditeSymbol, meatSymbol, sauceSymbol, supportSymbol } from '../helpers/kdsSymbolic.js';
+
 /**
  * Budget de la composition affichée sur une carte, en caractères.
  *
@@ -86,6 +89,59 @@ export function resumeComposition(ligne) {
 }
 
 /**
+ * [GOAL REMARQUES 2026-10-03 · R-009] Résumé d'UNE ligne en MOTS TECHNIQUES — ceux de la cuisine :
+ * « P · POU · STO · ALG · +Cheddar ». Propriétaire : « mettre même les noms de produits […] avec les mots
+ * techniques » (24/08), « en mode technique » (02/09). Les symboles viennent du moteur de la cuisine
+ * (kdsSymbolic.js) : une seule table, celle que le cuisinier lit déjà. Une valeur sans symbole connu
+ * (« Bien cuit ») reste écrite telle quelle — jamais effacée. Le détail intégral, en toutes lettres,
+ * reste `resumeComposition` (« Voir tout », info-bulle).
+ */
+export function resumeTechnique(ligne) {
+    if (!ligne) return '';
+    const support = [];
+    const viandes = [];
+    const crudites = [];
+    const sauces = [];
+    const autres = [];
+
+    (ligne.options || []).forEach((o) => {
+        const valeur = String((o && o.value) || '').trim();
+        if (!valeur) return;
+        const groupe = String((o && o.label) || '').toLowerCase();
+        const qte = o.quantity > 1 ? ` ×${o.quantity}` : '';
+        if (/viande|meat/.test(groupe)) { viandes.push((meatSymbol(valeur) || valeur) + qte); return; }
+        if (/sauce/.test(groupe)) { sauces.push((sauceSymbol(valeur) || valeur) + qte); return; }
+        if (/pain|galette|support|bread/.test(groupe)) { support.push(supportSymbol(valeur) || valeur); return; }
+        const cs = /crudit/.test(groupe) ? cruditeSymbol(valeur) : '';
+        if (cs) { crudites.push(cs); return; }
+        autres.push(valeur + qte);
+    });
+
+    // [Revue vague 3 · P3, décision] Les EXTRAS restent écrits en toutes lettres (« +Salade ») : la forme
+    // compacte du serveur ne porte que leur NOM, pas leur prix — impossible de distinguer une crudité
+    // gratuite d'un supplément payant au même nom. Replier un payant en symbole le ferait disparaître ;
+    // une ligne un peu plus longue est le moindre mal. Seules les crudités choisies en OPTIONS (groupe connu)
+    // deviennent « STO ».
+    const extrasEcrits = [];
+    (ligne.extras || []).forEach((e) => {
+        const nom = String((e && e.name) || '').trim();
+        if (!nom) return;
+        extrasEcrits.push(e.quantity > 1 ? `+${e.quantity} ${nom}` : `+${nom}`);
+    });
+
+    const morceaux = [...support, ...viandes];
+    if (crudites.length) morceaux.push(crudites.join(''));
+    morceaux.push(...sauces, ...autres, ...extrasEcrits);
+    (ligne.addons || []).forEach((a) => {
+        const nom = String((a && a.name) || '').trim();
+        if (!nom) return;
+        morceaux.push(a.quantity > 1 ? `+${a.quantity} ${nom}` : `+${nom}`);
+    });
+
+    return morceaux.join(SEPARATEUR_COMPO);
+}
+
+/**
  * La composition telle qu'elle est RÉELLEMENT affichable, et l'aveu de ce qui ne l'est pas.
  *
  * Pourquoi en JS et pas en CSS : `text-overflow: ellipsis` coupe sans que personne — ni le
@@ -96,7 +152,8 @@ export function resumeComposition(ligne) {
  * @returns {{texte: string, tronque: boolean, restants: number}}
  */
 export function compoAffichee(ligne, budget = BUDGET_COMPO) {
-    const complet = resumeComposition(ligne);
+    // [GOAL REMARQUES 2026-10-03 · R-009] La CARTE parle technique ; le détail reste en toutes lettres.
+    const complet = resumeTechnique(ligne);
     if (!complet || complet.length <= budget) {
         return { texte: complet, tronque: false, restants: 0 };
     }

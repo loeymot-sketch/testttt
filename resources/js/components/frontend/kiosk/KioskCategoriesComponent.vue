@@ -1833,6 +1833,87 @@ export default {
   box-shadow: none;
 }
 
+/* =============================================================================
+   [OWNER 2026-09-30] Coque SOMBRE du catalogue borne.
+   Demande : « la page toute blanche fait bizarre — la page ou la barre latérale
+   en noir, ça donne plus de classe ». On assombrit la COQUE (fond de page,
+   bandeau, barre latérale, barre du bas) et on garde les cartes produit
+   blanches : le texte reste lisible, et les visuels déjà composés sur le décor
+   Le Cayenne (sandwichs, burgers, tacos, galettes + 18 détourés recomposés ce
+   jour) ressortent sur la carte claire exactement comme avant. Ce n'est PAS le
+   mode « dark » (désactivé par mandat, tokens-bold.css) : aucune variable
+   globale --kiosk-* n'est touchée, uniquement des surfaces de CE composant.
+   Les palettes : noir #141414/#1A1A1A/#242424, bordures #2E2E2E, texte blanc.
+   ============================================================================= */
+.kiosk-catalogue {
+  background: #141414;
+}
+.kiosk-catalogue-header {
+  background: #1A1A1A;
+  border-bottom: 1px solid #2E2E2E;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.kiosk-brand-thumb-wrap {
+  background: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.kiosk-breadcrumb-muted { color: #B8B8B8; }
+.kiosk-breadcrumb-current { color: #FFFFFF; }
+
+.kiosk-sidebar {
+  background: #1A1A1A;
+  border-inline-end: 1px solid #2E2E2E;
+}
+.kiosk-sidebar-item {
+  background: #242424;
+  border-color: #333333;
+}
+.kiosk-sidebar-item:active {
+  background: #2C2C2C;
+}
+.kiosk-sidebar-name {
+  color: #FFFFFF;
+}
+.kiosk-sidebar-thumb-wrap {
+  background: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.kiosk-zone-title { color: #FFFFFF; }
+.kiosk-zone-subtitle { color: #B8B8B8; }
+.kiosk-catalogue-loading,
+.kiosk-catalogue-empty { color: #B8B8B8; }
+
+.kiosk-bottom-bar {
+  background: #1A1A1A;
+  border-top: 1px solid #2E2E2E;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+.kiosk-bottom-cart {
+  background: #242424;
+  color: #FFFFFF;
+  border: 1px solid #333333;
+}
+.kiosk-bottom-cart:not(:disabled):hover {
+  background: #2C2C2C;
+  border-color: #FFFFFF;
+}
+.kiosk-bottom-total {
+  background: rgba(244, 80, 30, 0.14);
+}
+.kiosk-bottom-abandon {
+  color: #E6E6E6;
+  border: 2px solid #4A4A4A;
+}
+.kiosk-bottom-abandon:hover {
+  background: #FFFFFF;
+  color: #1A1A1A;
+}
+.kiosk-bottom-pay:disabled {
+  background: #3A3A3A;
+  color: #8A8A8A;
+}
+
 /* Reduced motion guard */
 [data-kiosk-reduced-motion='true'] .kiosk-product-card,
 [data-kiosk-reduced-motion='true'] .kiosk-top-chip,

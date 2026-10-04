@@ -180,6 +180,34 @@
             (string) config('kiosk.auto_login_secret', ''),
             request()->attributes->get(\App\Http\Middleware\RememberKioskAutoLoginGrant::ATTRIBUTE) === true,
         );
+
+        // [QA_LOOP_NEXT_ACTION_2026-09-29] Un refus laisse enfin une trace.
+        //
+        // La borne affichait « Borne momentanément indisponible », le HTML portait
+        // `kioskAutoLogin: null`, et RIEN n'indiquait laquelle des voies d'autorisation
+        // avait manqué : la recette du 29/09 a dû remonter la cause en lisant le code.
+        // On journalise le motif — jamais le secret, jamais les identifiants, jamais
+        // l'IP — et une fois par minute seulement : une borne sonde en boucle, et un
+        // journal qui hurle se fait ignorer comme un faux vert.
+        if ($kioskAutoLoginPayload === null && request()->is('kiosk*')) {
+            $motif = \App\Support\KioskAutoLoginGate::motifDeRefus(
+                config('kiosk.spa_payload'),
+                true,
+                (bool) config('kiosk.auto_login_local_bypass', false),
+                (array) config('kiosk.auto_login_trusted_ips', []),
+                request()->server('REMOTE_ADDR'),
+                request()->query('machine_key'),
+                (string) config('kiosk.auto_login_secret', ''),
+                request()->attributes->get(\App\Http\Middleware\RememberKioskAutoLoginGrant::ATTRIBUTE) === true,
+            );
+            if ($motif !== null && \Illuminate\Support\Facades\Cache::add('kiosk:refus-auto-login:'.$motif, 1, 60)) {
+                \Illuminate\Support\Facades\Log::warning('[borne] auto-login refusé : '.$motif, [
+                    'chemin' => request()->path(),
+                    'voie_secret_configuree' => trim((string) config('kiosk.auto_login_secret', '')) !== '',
+                    'nb_plages_de_confiance' => count(array_filter((array) config('kiosk.auto_login_trusted_ips', []))),
+                ]);
+            }
+        }
     @endphp
     <script>
         window.foodkingConfig = {

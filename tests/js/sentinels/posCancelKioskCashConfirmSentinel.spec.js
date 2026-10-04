@@ -49,19 +49,22 @@ describe('B2-P6-F01 — PosComponent kiosk-cash confirm-before-cancel', () => {
         );
     });
 
-    it('the confirm method enforces a typed reason of at least 3 characters', () => {
-        // The confirm method must guard on reason.length < 3 before doing
-        // any axios call — the operator MUST type a motive.
+    // [GOAL REMARQUES 2026-10-03 · R-060] DÉCISION PROPRIÉTAIRE PLUS RÉCENTE que B2-P6-F01 (2026-05-26) :
+    // 29/09 « je veux pas cliquer sur chacune et je mettre la justificatif pour pouvoir annuler
+    // directement », 03/10 « l'annulation des commandes annuler par téléphone ». Ce que la sentinelle
+    // protégeait — une CONFIRMATION avant l'action destructive — est conservé (dialog + bouton « Oui »,
+    // vérifiés par les autres cas). Seule la SAISIE obligatoire du motif disparaît : il est pré-rempli
+    // (« Client non venu ») et un motif vide retombe dessus — la trace d'audit n'est jamais vide.
+    it('the confirm method never sends an empty motive (pre-filled default, typed motive kept)', () => {
         expect(source).toMatch(/confirmCancelKioskCashOrder/);
         const confirmBlock = source.match(
             /async\s+confirmCancelKioskCashOrder\s*\([\s\S]*?\n\s{8}\},/,
         );
         expect(confirmBlock).not.toBeNull();
         const body = confirmBlock[0];
-        // reason length guard ≥ 3
-        expect(body).toMatch(/reason\.length\s*<\s*3/);
-        // sets the error key, not silently early-returns
-        expect(body).toMatch(/pos\.cancel_kiosk_cash\.reason_required/);
+        // a typed motive ≥ 3 chars is kept, otherwise the default motive is used
+        expect(body).toMatch(/tape\.length\s*>=\s*3\s*\?\s*tape\s*:\s*MOTIF_ANNULATION_PAR_DEFAUT/);
+        expect(source).toMatch(/const MOTIF_ANNULATION_PAR_DEFAUT = 'Client non venu';/);
         // axios POST goes through this method
         expect(body).toMatch(/axios\.post\([^)]*counter-collect\/\$\{[^}]+\}\/cancel/);
         // payload sends the operator-typed reason variable, NOT the legacy
@@ -86,7 +89,7 @@ describe('B2-P6-F01 — PosComponent kiosk-cash confirm-before-cancel', () => {
         expect(body).toMatch(/cancelKioskCashDialog\.busy/);
     });
 
-    it('the open method seeds a fresh dialog state and focuses the textarea', () => {
+    it('the open method seeds a fresh dialog state (pre-filled motive) and focuses the confirm button', () => {
         const openBlock = source.match(
             /openCancelKioskCashDialog\s*\(\s*order\s*\)\s*\{[\s\S]*?\n\s{8}\},/,
         );
@@ -97,10 +100,10 @@ describe('B2-P6-F01 — PosComponent kiosk-cash confirm-before-cancel', () => {
         expect(body).not.toMatch(/axios\./);
         // Resets reason + error, opens the modal.
         expect(body).toMatch(/open:\s*true/);
-        expect(body).toMatch(/reason:\s*''/);
+        // [R-060 2026-10-03] motif pré-rempli (rien à taper), focus sur « Oui » (Entrée confirme).
+        expect(body).toMatch(/reason:\s*MOTIF_ANNULATION_PAR_DEFAUT/);
         expect(body).toMatch(/error:\s*''/);
-        // Focus the textarea for keyboard-first operator workflow.
-        expect(body).toMatch(/cancelKioskCashReasonInput/);
+        expect(body).toMatch(/cancelKioskCashConfirmBtn/);
     });
 
     it('the dialog template uses ARIA dialog semantics', () => {

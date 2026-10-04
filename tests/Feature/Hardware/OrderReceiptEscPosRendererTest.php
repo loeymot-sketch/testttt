@@ -288,9 +288,14 @@ class OrderReceiptEscPosRendererTest extends TestCase
         $this->assertStringContainsString('Cordon', $bytes);
         $this->assertStringContainsString('Frec', $bytes);
         $this->assertStringContainsString('SAM', $bytes);
-        // [T3-CUISINE] Suppléments payants en GRAS + étoile « * » (accent doit survivre CP858).
-        $this->assertStringContainsString('* Cheddar', $bytes);
-        $this->assertStringContainsString('* Viande suppl', $bytes);
+        // [GOAL CAISSE/CUISINE #7 2026-10-02] Suppléments en GRAS, BLANC sur NOIR (impression inversée
+        // GS B 1 … GS B 0) — l'étoile « * » du T3-CUISINE est remplacée. L'accent doit survivre CP858.
+        $this->assertStringContainsString("\x1dB\x01 Cheddar \x1dB\x00", $bytes);
+        // [GOAL REMARQUES 2026-10-03 · R-071] Suppléments en DOUBLE TAILLE : le libellé long s'enroule
+        // (« Viande » / « supplémentaire… ») — le bandeau inversé commence toujours par « Viande ».
+        $this->assertStringContainsString("\x1dB\x01 Viande", $bytes);
+        $this->assertStringContainsString('suppl', $bytes);
+        $this->assertStringNotContainsString('* Cheddar', $bytes, 'plus d\'étoile : le supplément est en vidéo inverse');
         // No prices on the kitchen ticket.
         $this->assertStringNotContainsString('EUR', $bytes, 'kitchen ticket must not show prices');
         // [AUDIT F1] Same call number as the client ticket (queue, not the long serial).
