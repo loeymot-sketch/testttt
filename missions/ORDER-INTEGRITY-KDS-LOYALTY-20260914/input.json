@@ -1,0 +1,6 @@
+{
+  "instruction": "Implémenter exclusivement le plan ORDER-INTEGRITY-KDS-LOYALTY-20260914 : le serveur scelle tous prix/options, l'édition POS ne perd aucune sauce, le supplément libre est une ligne fiscalisée contrôlée, la fidélité borne reste dans un état rendu, et KDS/ticket affichent les sauces sans ambiguïté. Ne jamais calculer un prix métier dans Vue, ne jamais changer OrderStatus ou les dispatchers, et respecter le gate approuvé.",
+  "plan_file": "plans/PLAN_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md",
+  "subsystems": ["app/Services/Pricing/", "app/Services/OrderService.php", "app/Services/FrontendOrderService.php", "resources/js/components/admin/pos/", "resources/js/components/frontend/kiosk/", "resources/js/components/admin/kitchenDisplaySystem/", "app/Services/Hardware/", "tests/"],
+  "acceptance": ["Le total UI, le devis serveur, la commande scellée et le ticket concordent pour sauces, viandes et extras.", "Deux sauces restent présentes après édition POS.", "Le supplément libre est autorisé serveur, branch-scopé, fiscalisé et rendu au ticket.", "Une inscription fidélité borne nouvelle ou existante n'aboutit jamais à un écran blanc ni un compte vide.", "Harissa=HH, Sans sauce=X, Tacos sans Galette, et chaque sauce est localisée produit ou frites sur KDS/papier.", "Les tests PHP/JS/Playwright ciblés passent sans paiement réel."]
+}

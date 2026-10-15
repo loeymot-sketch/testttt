@@ -1,0 +1,880 @@
+{
+  "base": "http://127.0.0.1:8766",
+  "date": "2026-09-02T06:58:48.189Z",
+  "cas": [
+    {
+      "produit": "Cayenne",
+      "item_id": 22,
+      "rayon": "Sandwichs",
+      "attendu": "viande_2 vide (0 choix)",
+      "etapes": [
+        {
+          "etape": "rayon_ouvert",
+          "rayon": "Sandwichs"
+        },
+        {
+          "etape": "produit_clique",
+          "ouvert": true
+        }
+      ],
+      "drapeau_composer_aware": true,
+      "capture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/cayenne-wizard.png",
+      "dom": {
+        "present": true,
+        "mode_single_page": true,
+        "pages_barre_progression": [],
+        "nb_pages_barre": 0,
+        "blocs": [
+          {
+            "classe": "pain-section",
+            "titre": "🥖 Type de pain",
+            "visible": true,
+            "nb_options": 2,
+            "badge": "",
+            "texte": "🥖 Type de pain🥖Pain🫓Galette"
+          },
+          {
+            "classe": "wizard-section viande-section",
+            "titre": "🥩 Viande",
+            "visible": true,
+            "nb_options": 6,
+            "badge": "0/1 incluse",
+            "texte": "🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Viande Hachée🍗Mixte (hachée + poulet)"
+          },
+          {
+            "classe": "wizard-2col-block crudites-section",
+            "titre": "🥬 Crudités",
+            "visible": true,
+            "nb_options": 0,
+            "badge": "",
+            "texte": "🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits"
+          },
+          {
+            "classe": "wizard-2col-block sauce-section",
+            "titre": "🥄 Sauce",
+            "visible": true,
+            "nb_options": 14,
+            "badge": "1ère gratuite",
+            "texte": "🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hann"
+          },
+          {
+            "classe": "wizard-2col-block supplements-section",
+            "titre": "",
+            "visible": true,
+            "nb_options": 12,
+            "badge": "",
+            "texte": "➕ Suppléments ▼🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €🥓Jambon+0,90 €➕Champignons+0,90 €➕Oignons frits+0,90 €🧀Boursin+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €"
+          },
+          {
+            "classe": "wizard-section formule-section",
+            "titre": "🍟🥤 Formule",
+            "visible": true,
+            "nb_options": 31,
+            "badge": "",
+            "texte": "🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneof"
+          },
+          {
+            "classe": "wizard-section comment-section",
+            "titre": "📝 Instruction spéciale",
+            "visible": true,
+            "nb_options": 0,
+            "badge": "",
+            "texte": "📝 Instruction spéciale"
+          }
+        ],
+        "nb_blocs_visibles": 7,
+        "mentions_viande_2_ou_3": [],
+        "intitules_composeur_trouves_dans_le_dom": [
+          "Suppléments"
+        ],
+        "nav_boutons": [
+          {
+            "texte": "−",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "+",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "🥖Pain",
+            "disabled": false,
+            "visible": true,
+            "classe": "pain-btn selected"
+          },
+          {
+            "texte": "🫓Galette",
+            "disabled": false,
+            "visible": true,
+            "classe": "pain-btn"
+          },
+          {
+            "texte": "🍗Poulet mariné",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🥩Viande Hachée",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🍗Mixte (hachée + poulet)",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🚫 Sans crudités",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn"
+          },
+          {
+            "texte": "🥬 ✓ Salade",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🍅 ✓ Tomate",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✓ Oignon",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✕ Sans Oignons cuits",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn removed"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          }
+        ],
+        "texte_wizard": "Cayenne€7.40−1+🥖 Type de pain🥖Pain🫓Galette🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Viande Hachée🍗Mixte (hachée + poulet)🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50➕ Suppléments ▼🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €🥓Jambon+0,90 €➕Champignons+0,90 €➕Oignons frits+0,90 €🧀Boursin+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50🥤 Choisissez votre boisson🚫Sans boisson—Coca-Cola Zero 33clIncluseFanta Orange 33clIncluseSprite 33clIncluseOasis Tropical 33clIncluseOrangina 33clIncluseEau Plate 50clIncluseCapri-SunIncluseCoca Cherry 33clIncluseTropico 33clIncluseIce Tea Pêche 33clIncluseFanta Citron 33clIncluseFuze Tea 33clIncluseHawaï 33clInclusePerrier 33clIncluse📝 Instruction spécialeAperçu ticketCAYENNE Pain - Salade, Tomate, Oignon AnnulerTotal€7.40 Ajouter au panier"
+      },
+      "reseau": {
+        "url": "http://127.0.0.1:8766/api/admin/item/details/22?surface=pos&branch_id=1",
+        "nom": "Cayenne",
+        "composer_profile_present": false,
+        "profil_id": null,
+        "version": null,
+        "pas": null,
+        "attributs_envoyes": [
+          "Sauce (1ère Gratuite)",
+          "Type de Pain",
+          "Viande 1"
+        ],
+        "variations_par_attribut": {
+          "1": 3,
+          "5": 14,
+          "6": 2
+        }
+      },
+      "dom_html": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/cayenne.dom.html"
+    },
+    {
+      "produit": "Méga",
+      "item_id": 104,
+      "rayon": "Sandwichs",
+      "attendu": "TÉMOIN — viande_2 à 7 choix",
+      "etapes": [
+        {
+          "etape": "rayon_ouvert",
+          "rayon": "Sandwichs"
+        },
+        {
+          "etape": "produit_clique",
+          "ouvert": true
+        }
+      ],
+      "drapeau_composer_aware": true,
+      "capture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/mega-wizard.png",
+      "dom": {
+        "present": true,
+        "mode_single_page": true,
+        "pages_barre_progression": [],
+        "nb_pages_barre": 0,
+        "blocs": [
+          {
+            "classe": "pain-section",
+            "titre": "🥖 Type de pain",
+            "visible": true,
+            "nb_options": 2,
+            "badge": "",
+            "texte": "🥖 Type de pain🥖Pain🫓Galette"
+          },
+          {
+            "classe": "wizard-section viande-section",
+            "titre": "🥩 Viandes",
+            "visible": true,
+            "nb_options": 14,
+            "badge": "0/2 incluses",
+            "texte": "🥩 Viandes0/2 incluses2 viandes incluses — au-delà : +€2.50 / viande🥩Mexicanos🔵Cordon Bleu🥩Viande Hachée🟡Nuggets🍗Tenders🌭Fricadelle🍗Poulet mariné"
+          },
+          {
+            "classe": "wizard-2col-block crudites-section",
+            "titre": "🥬 Crudités",
+            "visible": true,
+            "nb_options": 0,
+            "badge": "",
+            "texte": "🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits"
+          },
+          {
+            "classe": "wizard-2col-block sauce-section",
+            "titre": "🥄 Sauce",
+            "visible": true,
+            "nb_options": 14,
+            "badge": "1ère gratuite",
+            "texte": "🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hann"
+          },
+          {
+            "classe": "wizard-2col-block supplements-section",
+            "titre": "",
+            "visible": true,
+            "nb_options": 12,
+            "badge": "",
+            "texte": "➕ Suppléments ▼➕Oignons frits+0,90 €➕Champignons+0,90 €🥓Jambon+0,90 €🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🧀Boursin+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €"
+          },
+          {
+            "classe": "wizard-section formule-section",
+            "titre": "🍟🥤 Formule",
+            "visible": true,
+            "nb_options": 31,
+            "badge": "",
+            "texte": "🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneof"
+          },
+          {
+            "classe": "wizard-section comment-section",
+            "titre": "📝 Instruction spéciale",
+            "visible": true,
+            "nb_options": 0,
+            "badge": "",
+            "texte": "📝 Instruction spéciale"
+          }
+        ],
+        "nb_blocs_visibles": 7,
+        "mentions_viande_2_ou_3": [],
+        "intitules_composeur_trouves_dans_le_dom": [
+          "Suppléments"
+        ],
+        "nav_boutons": [
+          {
+            "texte": "−",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "+",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "🥖Pain",
+            "disabled": false,
+            "visible": true,
+            "classe": "pain-btn selected"
+          },
+          {
+            "texte": "🫓Galette",
+            "disabled": false,
+            "visible": true,
+            "classe": "pain-btn"
+          },
+          {
+            "texte": "🥩Mexicanos",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🔵Cordon Bleu",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🥩Viande Hachée",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🟡Nuggets",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🍗Tenders",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🌭Fricadelle",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🍗Poulet mariné",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🚫 Sans crudités",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn"
+          },
+          {
+            "texte": "🥬 ✓ Salade",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🍅 ✓ Tomate",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✓ Oignon",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn included"
+          },
+          {
+            "texte": "🧅 ✕ Sans Oignons cuits",
+            "disabled": false,
+            "visible": true,
+            "classe": "garniture-toggle-btn removed"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          }
+        ],
+        "texte_wizard": "Méga€8.00−1+🥖 Type de pain🥖Pain🫓Galette🥩 Viandes0/2 incluses2 viandes incluses — au-delà : +€2.50 / viande🥩Mexicanos🔵Cordon Bleu🥩Viande Hachée🟡Nuggets🍗Tenders🌭Fricadelle🍗Poulet mariné🥬 CruditésCliquez pour retirer.🚫 Sans crudités🥬 ✓ Salade🍅 ✓ Tomate🧅 ✓ Oignon🧅 ✕ Sans Oignons cuits🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50➕ Suppléments ▼➕Oignons frits+0,90 €➕Champignons+0,90 €🥓Jambon+0,90 €🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🧀Boursin+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €➕Poivrons cuits+0,90 €➕Maïs+0,90 €➕Olives+0,90 €🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50🥤 Choisissez votre boisson🚫Sans boisson—Coca-Cola Zero 33clIncluseFanta Orange 33clIncluseSprite 33clIncluseOasis Tropical 33clIncluseOrangina 33clIncluseEau Plate 50clIncluseCapri-SunIncluseCoca Cherry 33clIncluseTropico 33clIncluseIce Tea Pêche 33clIncluseFanta Citron 33clIncluseFuze Tea 33clIncluseHawaï 33clInclusePerrier 33clIncluse📝 Instruction spécialeAperçu ticketMÉGA Pain - Salade, Tomate, Oignon AnnulerTotal€8.00 Ajouter au panier"
+      },
+      "reseau": {
+        "url": "http://127.0.0.1:8766/api/admin/item/details/104?surface=pos&branch_id=1",
+        "nom": "Méga",
+        "composer_profile_present": false,
+        "profil_id": null,
+        "version": null,
+        "pas": null,
+        "attributs_envoyes": [
+          "Viande 1",
+          "Viande 2",
+          "Type de Pain",
+          "Sauce (1ère Gratuite)"
+        ],
+        "variations_par_attribut": {
+          "1": 7,
+          "2": 7,
+          "5": 14,
+          "6": 2
+        }
+      },
+      "dom_html": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/mega.dom.html"
+    },
+    {
+      "produit": "Tacos M",
+      "item_id": 26,
+      "rayon": "Tacos",
+      "attendu": "viande_2 ET viande_3 vides",
+      "etapes": [
+        {
+          "etape": "rayon_ouvert",
+          "rayon": "Tacos"
+        },
+        {
+          "etape": "produit_clique",
+          "ouvert": true
+        }
+      ],
+      "drapeau_composer_aware": true,
+      "capture": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/tacos-m-wizard.png",
+      "dom": {
+        "present": true,
+        "mode_single_page": true,
+        "pages_barre_progression": [],
+        "nb_pages_barre": 0,
+        "blocs": [
+          {
+            "classe": "wizard-section viande-section",
+            "titre": "🥩 Viande",
+            "visible": true,
+            "nb_options": 14,
+            "badge": "0/1 incluse",
+            "texte": "🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Mexicanos🔵Cordon Bleu🥩Viande Hachée🟡Nuggets🍗Tenders🌭Fricadelle"
+          },
+          {
+            "classe": "wizard-2col-block sauce-section",
+            "titre": "🥄 Sauce",
+            "visible": true,
+            "nb_options": 14,
+            "badge": "1ère gratuite",
+            "texte": "🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hann"
+          },
+          {
+            "classe": "wizard-2col-block supplements-section",
+            "titre": "",
+            "visible": true,
+            "nb_options": 9,
+            "badge": "",
+            "texte": "➕ Suppléments ▼➕Oignons frits+0,90 €➕Champignons+0,90 €🥓Jambon+0,90 €🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🧀Boursin+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €"
+          },
+          {
+            "classe": "wizard-section formule-section",
+            "titre": "🍟🥤 Formule",
+            "visible": true,
+            "nb_options": 31,
+            "badge": "",
+            "texte": "🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneof"
+          },
+          {
+            "classe": "wizard-section comment-section",
+            "titre": "📝 Instruction spéciale",
+            "visible": true,
+            "nb_options": 0,
+            "badge": "",
+            "texte": "📝 Instruction spéciale"
+          }
+        ],
+        "nb_blocs_visibles": 5,
+        "mentions_viande_2_ou_3": [],
+        "intitules_composeur_trouves_dans_le_dom": [
+          "Suppléments"
+        ],
+        "nav_boutons": [
+          {
+            "texte": "−",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "+",
+            "disabled": false,
+            "visible": true,
+            "classe": "wizard-qty-btn"
+          },
+          {
+            "texte": "🍗Poulet mariné",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🥩Mexicanos",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🔵Cordon Bleu",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🥩Viande Hachée",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🟡Nuggets",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🍗Tenders",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🌭Fricadelle",
+            "disabled": false,
+            "visible": true,
+            "classe": "viande-btn viande-tile-add plus"
+          },
+          {
+            "texte": "🍅Ketchupofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥚Mayonnaiseofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🥛Blancheofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Algérienneofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "⚔️Samouraïofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🫑Andalouseofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌟Américaineofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🔥Barbecueofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🍛Curryofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🌶️Harissaofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          },
+          {
+            "texte": "🦁Hannibalofferte+€0.50",
+            "disabled": false,
+            "visible": true,
+            "classe": "sauce-chip"
+          }
+        ],
+        "texte_wizard": "Tacos M€6.90−1+🥩 Viande0/1 incluse1 viande incluse — au-delà : +€2.50 / viande🍗Poulet mariné🥩Mexicanos🔵Cordon Bleu🥩Viande Hachée🟡Nuggets🍗Tenders🌭Fricadelle🥄 Sauce1ère gratuite🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50➕ Suppléments ▼➕Oignons frits+0,90 €➕Champignons+0,90 €🥓Jambon+0,90 €🧀Cheddar+0,90 €🫕Raclette+0,90 €➕Emmental+0,90 €🧀Boursin+0,90 €🥚Œuf+0,90 €➕Légumes sautés+0,90 €🍟🥤 Formule🚫Sans formule—🥤Menu (Frites + Boisson)+2,50 €🍟Frites Seules+1,90 €🥤Boisson Seule+1,90 €Options fritesGrande Portion+€1.00Cheddar Fondu+€1.00🍟 Sauce pour frites🍅Ketchupofferte+€0.50🥚Mayonnaiseofferte+€0.50🥛Blancheofferte+€0.50🌶️Algérienneofferte+€0.50⚔️Samouraïofferte+€0.50🫑Andalouseofferte+€0.50🌟Américaineofferte+€0.50🔥Barbecueofferte+€0.50🍛Curryofferte+€0.50🌶️Harissaofferte+€0.50🦁Hannibalofferte+€0.50🧀Fromagère maisonofferte+€0.50🥵Spicy maisonofferte+€0.50🚫Sans sauceofferte+€0.50🥤 Choisissez votre boisson🚫Sans boisson—Coca-Cola Zero 33clIncluseFanta Orange 33clIncluseSprite 33clIncluseOasis Tropical 33clIncluseOrangina 33clIncluseEau Plate 50clIncluseCapri-SunIncluseCoca Cherry 33clIncluseTropico 33clIncluseIce Tea Pêche 33clIncluseFanta Citron 33clIncluseFuze Tea 33clIncluseHawaï 33clInclusePerrier 33clIncluse📝 Instruction spécialeAperçu ticketTACOS M AnnulerTotal€6.90 Ajouter au panier"
+      },
+      "reseau": {
+        "url": "http://127.0.0.1:8766/api/admin/item/details/26?surface=pos&branch_id=1",
+        "nom": "Tacos M",
+        "composer_profile_present": false,
+        "profil_id": null,
+        "version": null,
+        "pas": null,
+        "attributs_envoyes": [
+          "Viande 1",
+          "Sauce (1ère Gratuite)"
+        ],
+        "variations_par_attribut": {
+          "1": 7,
+          "5": 14
+        }
+      },
+      "dom_html": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/chef-mesure/page-morte/tacos-m.dom.html"
+    }
+  ],
+  "echecs_api": [],
+  "console": [
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    }
+  ],
+  "profils_reseau_bruts": {
+    "22": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/22?surface=pos&branch_id=1",
+      "nom": "Cayenne",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Sauce (1ère Gratuite)",
+        "Type de Pain",
+        "Viande 1"
+      ],
+      "variations_par_attribut": {
+        "1": 3,
+        "5": 14,
+        "6": 2
+      }
+    },
+    "26": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/26?surface=pos&branch_id=1",
+      "nom": "Tacos M",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Viande 1",
+        "Sauce (1ère Gratuite)"
+      ],
+      "variations_par_attribut": {
+        "1": 7,
+        "5": 14
+      }
+    },
+    "33": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/33?surface=pos&branch_id=1",
+      "nom": "Petite Frites",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Sauce (1ère Gratuite)"
+      ],
+      "variations_par_attribut": {
+        "5": 14
+      }
+    },
+    "104": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/104?surface=pos&branch_id=1",
+      "nom": "Méga",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Viande 1",
+        "Viande 2",
+        "Type de Pain",
+        "Sauce (1ère Gratuite)"
+      ],
+      "variations_par_attribut": {
+        "1": 7,
+        "2": 7,
+        "5": 14,
+        "6": 2
+      }
+    },
+    "107": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/107?surface=pos&branch_id=1",
+      "nom": "Petite Frites Cheddar fondu",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Sauce (1ère Gratuite)"
+      ],
+      "variations_par_attribut": {
+        "5": 14
+      }
+    },
+    "234": {
+      "url": "http://127.0.0.1:8766/api/admin/item/details/234?surface=pos&branch_id=1",
+      "nom": "Tacos XL",
+      "composer_profile_present": false,
+      "profil_id": null,
+      "version": null,
+      "pas": null,
+      "attributs_envoyes": [
+        "Viande 1",
+        "Viande 2",
+        "Viande 3",
+        "Sauce (1ère Gratuite)"
+      ],
+      "variations_par_attribut": {
+        "1": 7,
+        "2": 7,
+        "3": 7,
+        "5": 14
+      }
+    }
+  }
+}

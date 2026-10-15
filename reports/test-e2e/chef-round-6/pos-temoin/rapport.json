@@ -1,0 +1,66 @@
+{
+  "produit": "Coca",
+  "base": "http://127.0.0.1:8766",
+  "etapes": [
+    {
+      "etape": "pos_ouvert",
+      "url": "http://127.0.0.1:8766/admin/pos"
+    },
+    {
+      "etape": "rayon_ouvert",
+      "rayon": "Boissons"
+    }
+  ],
+  "rayons_visibles": [
+    "Sandwichs",
+    "Galette",
+    "Burgers",
+    "Tacos",
+    "Bols",
+    "Frites",
+    "Desserts",
+    "Boissons",
+    "Menu enfant",
+    "E2E_PLAYWRIGHT_STUDIO_CATEGORY"
+  ],
+  "tuiles_du_rayon": 15,
+  "erreur": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button.pos-item-tile').filter({ hasText: /Coca/i }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"button\" aria-busy=\"false\" data-v-5b675172=\"\" aria-disabled=\"true\" data-pos-item-id=\"52\" aria-label=\"Indisponible : Coca-Cola 33cl\" class=\"pos-v5-tile pos-item-tile is-unavailable\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20m",
+  "console": [
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "t": "error",
+      "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    }
+  ]
+}

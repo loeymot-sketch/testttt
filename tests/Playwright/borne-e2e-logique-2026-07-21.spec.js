@@ -65,16 +65,19 @@ test('borne e2e logique — aucun choix largué (affiché == scellé backend)', 
 
   // 6) Parcourir le wizard ; au SUPPLÉMENT choisir un PAYANT
   let paidSupplementPicked = false;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 12; i++) {
     await page.waitForTimeout(400);
     const st = await page.evaluate(() => ({
-      title: (document.querySelector('.kiosk-step-title, h3')?.innerText || '').toLowerCase(),
-      isSupp: !!document.querySelector('.kiosk-supplement-row, [class*="supplement"]'),
+      title: (document.querySelector('.kiosk-step-content .kiosk-step-title')?.innerText || '').toLowerCase(),
+      // The wizard timeline always contains the word “supplément”; scope to
+      // the mounted step so the meat step is not mistaken for this one.
+      isSupp: !!document.querySelector('.kiosk-step-content .kiosk-step-supplements'),
+      kind: Array.from(document.querySelector('.kiosk-step-content')?.classList || []).join(' '),
     }));
 
     if (st.isSupp || /suppl/.test(st.title)) {
       const picked = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('.kiosk-supplement-row, .kiosk-option-card, [class*="supplement"] [role="button"]'));
+        const rows = Array.from(document.querySelectorAll('.kiosk-supplement-row, .kiosk-option-card, [role="group"], [class*="supplement"] [role="button"]'));
         const paid = rows.find(r => /\+?\s*\d+[.,]\d{2}\s*€|\+\s*\d/.test(r.innerText || ''));
         const tgt = paid || rows[0];
         if (tgt) { try { (tgt.querySelector('button, [role="button"]') || tgt).click(); return (tgt.innerText || '').replace(/\s+/g, ' ').slice(0, 40); } catch (_) {} }
@@ -84,27 +87,49 @@ test('borne e2e logique — aucun choix largué (affiché == scellé backend)', 
       report.assertions.push({ supplement_picked: picked });
       await page.waitForTimeout(400);
     } else {
-      await page.evaluate(() => {
+      await page.evaluate((stepTitle) => {
+        const root = document.querySelector('.kiosk-step-content');
+        if (!root) return;
+        // “Viande 2” is an optional composer page for this real catalogue
+        // product (min_select=0). Do not turn its optional choice into an
+        // extra paid meat while exercising the quote path.
+        if (/viande\s*2/.test(stepTitle || '')) return;
         // étape menu : préférer « Sans menu » (total simple), sinon 1ʳᵉ carte menu
-        const menuCards = Array.from(document.querySelectorAll('.kiosk-menu-card'));
+        const menuCards = Array.from(root.querySelectorAll('.kiosk-menu-card'));
         if (menuCards.length) {
           const none = menuCards.find(c => /sans menu/i.test(c.innerText || ''));
           try { (none || menuCards[menuCards.length - 1]).click(); return; } catch (_) {}
         }
-        const p = document.querySelector('.kiosk-option-card, .kiosk-generic-choice, .kiosk-garniture-row, .kiosk-viande-row');
+        // A meat card can represent a quantity. Only choose a card still
+        // displaying “Choisir”; a selected card would add a paid portion.
+        const groups = Array.from(root.querySelectorAll('.kiosk-step-viande [role="group"]'))
+          .filter((node) => /choisir/i.test(node.innerText || ''));
+        const p = groups[0]
+          || root.querySelector('.kiosk-step-pain [role="radio"][aria-checked="false"]')
+          || root.querySelector('.kiosk-step-sauce [role="checkbox"][aria-checked="false"]')
+          || root.querySelector('.kiosk-generic-choice');
         if (p) { try { p.click(); } catch (_) {} }
-      }).catch(() => {});
+      }, st.title).catch(() => {});
       await page.waitForTimeout(300);
     }
 
-    const adv = await page.evaluate(() => {
-      const n = document.querySelector('.kiosk-btn-next');
-      if (n && !n.disabled && !n.classList.contains('kiosk-btn-next--cart')) { n.click(); return 'next'; }
-      if (n && !n.disabled) { n.click(); return 'cart'; }
-      return false;
-    });
+    // Preview validation is asynchronous. Waiting for the enabled CTA avoids
+    // adding a duplicate choice while its first click is still being priced.
+    const next = page.locator('.kiosk-btn-next').last();
+    let adv = false;
+    try {
+      await expect(next).toBeEnabled({ timeout: 3000 });
+      adv = await next.evaluate((node) => {
+        const isCart = node.classList.contains('kiosk-btn-next--cart');
+        node.click();
+        return isCart ? 'cart' : 'next';
+      });
+    } catch (_) {}
     await page.waitForTimeout(1200);
-    if (adv === 'cart' || adv === false) break;
+    // A mandatory multi-choice step can legitimately keep “Suivant” disabled
+    // after the first selection. Keep filling the active step instead of
+    // abandoning the wizard before its second required choice.
+    if (adv === 'cart') break;
   }
   await page.waitForTimeout(1200);
   await shot(page, '01-apres-ajout-panier.png');

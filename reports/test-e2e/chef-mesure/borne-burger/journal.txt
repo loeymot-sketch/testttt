@@ -1,0 +1,87 @@
+
+===== Chicken Burger (item 38) =====
+   [capture] cas-chicken-burger-01-idle.png
+   [capture] cas-chicken-burger-03-liste-produits.png
+   ÉTAPES AFFICHÉES (5) : ["QUELLE SAUCE ?","QUELLE CRUDITÉ ?","QUEL SUPPLÉMENT ?","QUEL MENU ?","RÉCAP"]
+   étape « viande » présente dans le bandeau : NON
+   [capture] cas-chicken-burger-10-etape-0-QUELLE_SAUCE_.png
+   [0] "QUELLE SAUCE ?" | choix_cliquables=14 | clics=1 | bouton="SUIVANT" bloqué=false
+   [capture] cas-chicken-burger-11-etape-1-QUELLE_CRUDIT_.png
+   [1] "QUELLE CRUDITÉ ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] cas-chicken-burger-12-etape-2-QUEL_SUPPL_MENT_.png
+   [2] "QUEL SUPPLÉMENT ?" | choix_cliquables=9 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] cas-chicken-burger-13-etape-3-QUEL_MENU_.png
+   [3] "QUEL MENU ?" | choix_cliquables=4 | clics=1 | bouton="SUIVANT" bloqué=false
+   [capture] cas-chicken-burger-14-etape-4-QUELLE_BOISSON_.png
+   [4] "QUELLE BOISSON ?" | choix_cliquables=0 | clics=0 | bouton="SUIVANT" bloqué=true
+   >>> IMPASSE : aucun moyen d'activer « SUIVANT » à l'étape « QUELLE BOISSON ? ».
+
+===== Galette Cayenne (item 24) =====
+   [capture] temoin1-galette-cayenne-01-idle.png
+   [capture] temoin1-galette-cayenne-03-liste-produits.png
+   ÉTAPES AFFICHÉES (6) : ["QUELLE VIANDE ?","QUELLE SAUCE ?","QUELLE CRUDITÉ ?","QUEL SUPPLÉMENT ?","QUEL MENU ?","RÉCAP"]
+   étape « viande » présente dans le bandeau : OUI
+   [capture] temoin1-galette-cayenne-10-etape-0-QUELLE_VIANDE_.png
+   [0] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=1 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-11-etape-1-QUELLE_VIANDE_.png
+   [1] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-12-etape-2-QUELLE_VIANDE_.png
+   [2] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-13-etape-3-QUELLE_VIANDE_.png
+   [3] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-14-etape-4-QUELLE_VIANDE_.png
+   [4] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-15-etape-5-QUELLE_VIANDE_.png
+   [5] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-16-etape-6-QUELLE_VIANDE_.png
+   [6] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-17-etape-7-QUELLE_VIANDE_.png
+   [7] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-18-etape-8-QUELLE_VIANDE_.png
+   [8] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-19-etape-9-QUELLE_VIANDE_.png
+   [9] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-20-etape-10-QUELLE_VIANDE_.png
+   [10] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-21-etape-11-QUELLE_VIANDE_.png
+   [11] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-22-etape-12-QUELLE_VIANDE_.png
+   [12] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin1-galette-cayenne-23-etape-13-QUELLE_VIANDE_.png
+   [13] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+
+===== Bol Frites (item 41) =====
+   [capture] temoin2-bol-frites-01-idle.png
+   [capture] temoin2-bol-frites-03-liste-produits.png
+   ÉTAPES AFFICHÉES (5) : ["QUELLE VIANDE ?","QUELLE SAUCE ?","QUEL SUPPLÉMENT ?","QUEL MENU ?","RÉCAP"]
+   étape « viande » présente dans le bandeau : OUI
+   [capture] temoin2-bol-frites-10-etape-0-QUELLE_VIANDE_.png
+   [0] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=1 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-11-etape-1-QUELLE_VIANDE_.png
+   [1] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-12-etape-2-QUELLE_VIANDE_.png
+   [2] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-13-etape-3-QUELLE_VIANDE_.png
+   [3] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-14-etape-4-QUELLE_VIANDE_.png
+   [4] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-15-etape-5-QUELLE_VIANDE_.png
+   [5] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-16-etape-6-QUELLE_VIANDE_.png
+   [6] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-17-etape-7-QUELLE_VIANDE_.png
+   [7] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-18-etape-8-QUELLE_VIANDE_.png
+   [8] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-19-etape-9-QUELLE_VIANDE_.png
+   [9] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-20-etape-10-QUELLE_VIANDE_.png
+   [10] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-21-etape-11-QUELLE_VIANDE_.png
+   [11] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-22-etape-12-QUELLE_VIANDE_.png
+   [12] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+   [capture] temoin2-bol-frites-23-etape-13-QUELLE_VIANDE_.png
+   [13] "QUELLE VIANDE ?" | choix_cliquables=7 | clics=0 | bouton="SUIVANT" bloqué=false
+
+=== composer_profile renvoyé par le endpoint DÉTAIL borne ===

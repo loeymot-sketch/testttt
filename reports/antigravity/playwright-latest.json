@@ -1,7 +1,20 @@
 {
   "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
+      "test",
+      "--config=playwright.config.js",
+      "tests/e2e/01-auth-refresh.spec.js",
+      "tests/e2e/02-pos-cash.spec.js",
+      "tests/e2e/03-kiosk-wizard.spec.js",
+      "tests/e2e/04-kds-status.spec.js",
+      "tests/e2e/stock-rupture-sync.spec.js",
+      "--retries=0"
+    ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/playwright.config.js",
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Playwright/global-setup.js",
@@ -51,31 +64,965 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.62.1",
     "workers": 1,
-    "webServer": null
+    "webServer": {
+      "command": "php artisan serve --host=127.0.0.1 --port=8000",
+      "url": "http://127.0.0.1:8000",
+      "reuseExistingServer": true,
+      "timeout": 180000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
   },
   "suites": [
     {
-      "title": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-      "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
+      "title": "e2e/01-auth-refresh.spec.js",
+      "file": "e2e/01-auth-refresh.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "WAVE A — Admin dashboard capture",
-          "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-          "line": 176,
+          "title": "Auth Refresh — F5 sur POS",
+          "file": "e2e/01-auth-refresh.spec.js",
+          "line": 12,
           "column": 6,
           "specs": [
             {
-              "title": "login → dashboard KPIs → Vue d’ensemble / Suivi en direct",
+              "title": "login POS → F5 → reste sur /admin/pos",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 600000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 27161,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:16:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:16:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:19:57.343Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-01-auth-refresh-Auth-R-2d397--→-F5-→-reste-sur-admin-pos-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-01-auth-refresh-Auth-R-2d397--→-F5-→-reste-sur-admin-pos-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "52e1feede43b1a5cafed-6b2e8d3945bd850685a0",
+              "file": "e2e/01-auth-refresh.spec.js",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "user info preserved after F5",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 600000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26902,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:34:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/01-auth-refresh.spec.js:34:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:20:29.912Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-01-auth-refresh-Auth-R-1d9b9-ser-info-preserved-after-F5-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-01-auth-refresh-Auth-R-1d9b9-ser-info-preserved-after-F5-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "52e1feede43b1a5cafed-7a0f4482ab5a9209cd31",
+              "file": "e2e/01-auth-refresh.spec.js",
+              "line": 32,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/02-pos-cash.spec.js",
+      "file": "e2e/02-pos-cash.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POS Cash — commande complète",
+          "file": "e2e/02-pos-cash.spec.js",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "surface POS chargée sur /admin/pos",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26130,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:20:57.319Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-35896-e-POS-chargée-sur-admin-pos-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-35896-e-POS-chargée-sur-admin-pos-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4da8fe6222230d46e566-bab40b9bfb5e5539d837",
+              "file": "e2e/02-pos-cash.spec.js",
+              "line": 26,
+              "column": 3
+            },
+            {
+              "title": "panier démarre vide — pas de commande fantôme",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26194,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:21:23.971Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-04856-e-—-pas-de-commande-fantôme-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-04856-e-—-pas-de-commande-fantôme-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4da8fe6222230d46e566-eb57badafaa420b94094",
+              "file": "e2e/02-pos-cash.spec.js",
+              "line": 33,
+              "column": 3
+            },
+            {
+              "title": "pas de crash JavaScript visible sur la surface POS",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26375,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:21:50.640Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-fe71b--visible-sur-la-surface-POS-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-fe71b--visible-sur-la-surface-POS-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4da8fe6222230d46e566-f5a8eb420eab1715f348",
+              "file": "e2e/02-pos-cash.spec.js",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "full POS cash order cycle — adversarial",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 27050,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsPosOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:94:3)\n    at loginAsPOS (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:16:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/02-pos-cash.spec.js:23:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:17.588Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-02-pos-cash-POS-Cash-—-faf8d-h-order-cycle-—-adversarial-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "4da8fe6222230d46e566-b701cd653a06d6a6815c",
+              "file": "e2e/02-pos-cash.spec.js",
+              "line": 74,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/03-kiosk-wizard.spec.js",
+      "file": "e2e/03-kiosk-wizard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Kiosk — écran login borne",
+          "file": "e2e/03-kiosk-wizard.spec.js",
+          "line": 13,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page /kiosk/login accessible sans crash",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 626,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:45.223Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "20cf2081630a63b46a4f-d27aa51df7d31affdc14",
+              "file": "e2e/03-kiosk-wizard.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "écran login borne visible — message de configuration affiché",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2434,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:45.987Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "20cf2081630a63b46a4f-292c3fea1cfab56eda49",
+              "file": "e2e/03-kiosk-wizard.spec.js",
+              "line": 25,
+              "column": 3
+            },
+            {
+              "title": "pas d'erreur JavaScript fatale sur la borne",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3495,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:48.432Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "20cf2081630a63b46a4f-e3b9768af5699caafcdb",
+              "file": "e2e/03-kiosk-wizard.spec.js",
+              "line": 42,
+              "column": 3
+            },
+            {
+              "title": "window.foodkingConfig présent et kioskMenuPricing configuré",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 452,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:51.932Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "20cf2081630a63b46a4f-6425a778796313735fc7",
+              "file": "e2e/03-kiosk-wizard.spec.js",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "kiosk navigation flow — categories and items browsable adversarial",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5954,
+                      "error": {
+                        "message": "TimeoutError: locator.click: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"kiosk-idle-lang-fr\"]').first()\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" data-v-78fd8b90=\"\" aria-pressed=\"true\" class=\"kiosk-lang-btn active\" data-testid=\"kiosk-idle-lang-fr\">FR</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    6 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n",
+                        "stack": "TimeoutError: locator.click: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"kiosk-idle-lang-fr\"]').first()\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" data-v-78fd8b90=\"\" aria-pressed=\"true\" class=\"kiosk-lang-btn active\" data-testid=\"kiosk-idle-lang-fr\">FR</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    6 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/03-kiosk-wizard.spec.js:109:20",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/03-kiosk-wizard.spec.js",
+                          "column": 20,
+                          "line": 109
+                        },
+                        "snippet": "  107 |     const langEn = page.locator('[data-testid=\"kiosk-idle-lang-en\"]').first();\n  108 |     if (await langFr.isVisible({ timeout: 3_000 }).catch(() => false)) {\n> 109 |       await langFr.click({ timeout: 3_000 });\n      |                    ^\n  110 |       await page.waitForTimeout(400);\n  111 |     }\n  112 |     if (await langEn.isVisible({ timeout: 2_000 }).catch(() => false)) {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/03-kiosk-wizard.spec.js",
+                            "column": 20,
+                            "line": 109
+                          },
+                          "message": "TimeoutError: locator.click: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"kiosk-idle-lang-fr\"]').first()\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" data-v-78fd8b90=\"\" aria-pressed=\"true\" class=\"kiosk-lang-btn active\" data-testid=\"kiosk-idle-lang-fr\">FR</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    6 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div data-v-4f67e2a4=\"\" class=\"kiosk-init-overlay kiosk-init-error\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\n\n  107 |     const langEn = page.locator('[data-testid=\"kiosk-idle-lang-en\"]').first();\n  108 |     if (await langFr.isVisible({ timeout: 3_000 }).catch(() => false)) {\n> 109 |       await langFr.click({ timeout: 3_000 });\n      |                    ^\n  110 |       await page.waitForTimeout(400);\n  111 |     }\n  112 |     if (await langEn.isVisible({ timeout: 2_000 }).catch(() => false)) {\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/03-kiosk-wizard.spec.js:109:20"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:52.389Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-03-kiosk-wizard-Kiosk--e6fab-items-browsable-adversarial-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-03-kiosk-wizard-Kiosk--e6fab-items-browsable-adversarial-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/03-kiosk-wizard.spec.js",
+                        "column": 20,
+                        "line": 109
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "20cf2081630a63b46a4f-8ce0c852793d04a4efa8",
+              "file": "e2e/03-kiosk-wizard.spec.js",
+              "line": 83,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/04-kds-status.spec.js",
+      "file": "e2e/04-kds-status.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "KDS — interface cuisine",
+          "file": "e2e/04-kds-status.spec.js",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page /kds accessible — redirige vers login si non authentifié",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 383,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:58.689Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "474c8fcdceec08a474a5-681fef4b4edb7930f33e",
+              "file": "e2e/04-kds-status.spec.js",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "login chef via /login → redirection vers surface chef",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 27042,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:34:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:34:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:22:59.206Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-aa913-direction-vers-surface-chef-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-aa913-direction-vers-surface-chef-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "474c8fcdceec08a474a5-ecc7a950631c732a5edf",
+              "file": "e2e/04-kds-status.spec.js",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "KDS surface loads order list without crash",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26464,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:45:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:45:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:23:26.723Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-ec300-ds-order-list-without-crash-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-ec300-ds-order-list-without-crash-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "474c8fcdceec08a474a5-3e1348f676a1f77ff5dc",
+              "file": "e2e/04-kds-status.spec.js",
+              "line": 44,
+              "column": 3
+            },
+            {
+              "title": "KDS adversarial — toolbar actions + status transition attempt",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 26351,
+                      "error": {
+                        "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"",
+                        "stack": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:84:5",
+                        "location": {
+                          "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                          "column": 32,
+                          "line": 59
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39me2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                            "column": 32,
+                            "line": 59
+                          },
+                          "message": "TimeoutError: page.waitForResponse: Timeout 25000ms exceeded while waiting for event \"response\"\n\n   at e2e/helpers/login.js:59\n\n  57 |\n  58 |   const clickAndAwaitApi = async () => {\n> 59 |     const loginResponse = page.waitForResponse(\n     |                                ^\n  60 |       (res) =>\n  61 |         res.request().method() === 'POST' &&\n  62 |         /\\/api\\/auth\\/login/i.test(res.url()),\n    at clickAndAwaitApi (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:59:32)\n    at login (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:69:20)\n    at loginAsChefOperator (/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js:115:3)\n    at /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/04-kds-status.spec.js:84:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:23:53.661Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-a5dd6-s-status-transition-attempt-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results/e2e-04-kds-status-KDS-—-in-a5dd6-s-status-transition-attempt-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/helpers/login.js",
+                        "column": 32,
+                        "line": 59
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "474c8fcdceec08a474a5-2c007561fd6761f3f83c",
+              "file": "e2e/04-kds-status.spec.js",
+              "line": 83,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "e2e/stock-rupture-sync.spec.js",
+      "file": "e2e/stock-rupture-sync.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "F-017 Wave 4.1 / Suite 6 — Stock Rupture Multi-Surface Sync",
+          "file": "e2e/stock-rupture-sync.spec.js",
+          "line": 299,
+          "column": 6,
+          "specs": [
+            {
+              "title": "S6-01 — Item rupture branch A propagates + branch B isolation",
               "ok": true,
               "tags": [],
               "tests": [
@@ -87,15 +1034,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 10,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9124,
+                      "duration": 28043,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-29T05:56:06.108Z",
+                      "startTime": "2026-10-15T02:24:20.533Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -103,9 +1050,213 @@
                   "status": "expected"
                 }
               ],
-              "id": "d8f5b1a3baea2f580500-581763192c5b9c5a272c",
-              "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-              "line": 179,
+              "id": "199c1fab12d12e16783b-c26e23bf5675727a427d",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 346,
+              "column": 3
+            },
+            {
+              "title": "S6-02 — Extra rupture branch A propagates + branch B isolation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2374,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:24:51.407Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-eb1a0f8ddd02fd8306ec",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 429,
+              "column": 3
+            },
+            {
+              "title": "S6-03 — Variation rupture branch A propagates + branch B isolation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1640,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:24:53.790Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-bf335aa0e6ec83f5eb35",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 482,
+              "column": 3
+            },
+            {
+              "title": "S6-04 — Re-disponible item branch A propagates back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1722,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:24:55.439Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-23903907a2a3a56fd607",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 527,
+              "column": 3
+            },
+            {
+              "title": "S6-05 — Auto-86 on max_daily_qty quota",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1462,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:24:57.168Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-fe7336e6d1b08c2066c8",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 567,
+              "column": 3
+            },
+            {
+              "title": "S6-06 — Order rejected when item flipped unavailable mid-flight (defensive)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1657,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:24:58.637Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-cb4065051daa324592cb",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 605,
+              "column": 3
+            },
+            {
+              "title": "S6-INDEX — Synthesis index for Suite 6",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 434,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-15T02:25:00.302Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "199c1fab12d12e16783b-067105059013c893179a",
+              "file": "e2e/stock-rupture-sync.spec.js",
+              "line": 648,
               "column": 3
             }
           ]
@@ -115,11 +1266,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-29T05:56:05.263Z",
-    "duration": 10682.292,
-    "expected": 1,
+    "startTime": "2026-10-15T02:19:54.359Z",
+    "duration": 306427.29,
+    "expected": 12,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 10,
     "flaky": 0
   }
 }
