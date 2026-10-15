@@ -19,7 +19,12 @@ const { loginAsAdmin } = require('../e2e/helpers/login');
  */
 
 const SORTIE = process.env.AUDIT_OUT || '/tmp/audit-dashboard';
-const PAGES = JSON.parse(fs.readFileSync(process.env.AUDIT_ROUTES, 'utf8'));
+// Cet audit est PILOTÉ PAR UN FICHIER DE ROUTES (JSON) fourni à la demande, pas un test de
+// non-régression. Sans AUDIT_ROUTES, `readFileSync(undefined)` levait une TypeError AU CHARGEMENT
+// du module et bloquait toute la campagne `test:e2e:full` (audit Codex 2026-10-15). On saute donc
+// explicitement, avec la raison dite, au lieu de planter le chargement.
+const ROUTES_FILE = process.env.AUDIT_ROUTES;
+const PAGES = ROUTES_FILE ? JSON.parse(fs.readFileSync(ROUTES_FILE, 'utf8')) : [];
 
 fs.mkdirSync(SORTIE, { recursive: true });
 
@@ -64,6 +69,7 @@ test.describe('Audit tableau de bord + comptabilité', () => {
     test.describe.configure({ mode: 'serial', timeout: 45 * 60_000 });
 
     test('relève chaque page du tableau de bord', async ({ page }) => {
+        test.skip(!ROUTES_FILE, 'AUDIT_ROUTES non défini : audit à la demande (AUDIT_ROUTES=<fichier.json> AUDIT_OUT=<dossier>)');
         const journal = [];
 
         const consoleErreurs = [];

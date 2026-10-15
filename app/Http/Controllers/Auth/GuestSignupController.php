@@ -164,9 +164,17 @@ class GuestSignupController extends Controller
                 $this->otpManagerService->otp($request, dispatchSms: false);
 
                 $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
-                $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
-                if (! blank($token) && filled($compte->email)) {
-                    Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                $codeRevue = $this->codeDeRevuePour($email, $compte);
+                if ($codeRevue !== null) {
+                    // Revue App Store (décision propriétaire 2026-10-15) : code fixe, jamais envoyé.
+                    // La ligne otps garde son expiry ; chaque usage est journalisé.
+                    DB::table('otps')->where('phone', $cle)->update(['token' => $codeRevue]);
+                    Log::warning('app_review_login: code fixe de revue utilisé', ['email' => $email, 'ip' => $request->ip()]);
+                } else {
+                    $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
+                    if (! blank($token) && filled($compte->email)) {
+                        Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                    }
                 }
 
                 $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
@@ -277,6 +285,36 @@ class GuestSignupController extends Controller
         return \App\Support\PhoneDisplay::safe($compte->phone) !== null
             ? (string) $compte->phone
             : self::cleSansNumero($email);
+    }
+
+    /**
+     * Code fixe du compte de revue App Store, ou null. Décision propriétaire (2026-10-15) : Apple
+     * examine CONTRE la production et ne peut pas lire nos e-mails. Garde-fous qui répondent à
+     * « une porte qu'on oublie de refermer » : (1) éteint par défaut ; (2) exige une DATE DE FIN
+     * (`APP_REVIEW_UNTIL`) — passée cette date, ou sans date, la porte se referme seule ;
+     * (3) un seul e-mail exact, et seulement un compte INVITÉ (jamais staff) ; (4) code à 4 chiffres comme l'écran, jamais envoyé ; (5) chaque usage
+     * est journalisé ; (6) le débit `otp-send` et le verrou du verify s'appliquent comme pour tous.
+     */
+    private function codeDeRevuePour(string $email, User $compte): ?string
+    {
+        $emailRevue = mb_strtolower(trim((string) config('auth.app_review.email', '')));
+        $code       = trim((string) config('auth.app_review.otp', ''));
+        $jusqua     = trim((string) config('auth.app_review.until', ''));
+        if ($emailRevue === '' || $emailRevue !== $email || ! preg_match('/^\d{4}$/', $code) || $jusqua === '') {
+            return null;
+        }
+        try {
+            if (now()->greaterThan(Carbon::parse($jusqua)->endOfDay())) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            return null; // date illisible = porte fermée
+        }
+        if ((int) $compte->is_guest !== Ask::YES) {
+            return null; // jamais un compte staff
+        }
+
+        return $code;
     }
 
     /**

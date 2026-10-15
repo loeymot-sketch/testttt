@@ -293,42 +293,81 @@ class EmailLoginFlowTest extends TestCase
         $this->assertNull(User::withoutGlobalScopes()->where('phone', 'email:social@example.com')->first(), 'La clé synthétique ne doit JAMAIS devenir un téléphone de compte.');
     }
 
+    private function ouvrirPorteDeRevue(string $until): void
+    {
+        config(['auth.app_review.email' => 'revue@lecayenne.fr', 'auth.app_review.otp' => '2468', 'auth.app_review.until' => $until]);
+    }
+
     /**
-     * (7) SENTINELLE — aucune porte dérobée d'examen App Store.
+     * (7) SENTINELLE — compte de revue App Store : porte FERMÉE par défaut, et qui se referme seule.
      *
-     * J'avais posé un code de connexion FIXE pour une adresse configurée (APP_REVIEW_EMAIL /
-     * APP_REVIEW_OTP), afin que l'examinateur Apple puisse se connecter sans lire nos e-mails.
-     * `app/PUBLICATION.md §8` du dépôt du site tranchait déjà l'inverse : « un code fixe pour
-     * une adresse connue est une porte qu'on oublie de refermer ». Et le garde-fou habituel du
-     * projet — interdire en production — ne peut pas s'appliquer, puisque l'examen se fait
-     * CONTRE la production. Le mécanisme a donc été retiré ; l'examinateur reçoit son code
-     * dans une boîte de démonstration dédiée (procédure PUBLICATION.md §8).
-     *
-     * Ce test verrouille la décision : quelle que soit la configuration, le code d'un compte
-     * connu reste ALÉATOIRE et part par e-mail. Il rougirait si quelqu'un remettait la porte.
+     * Historique : posée le 02/09, retirée le même jour (« une porte qu'on oublie de refermer »), puis
+     * RÉ-OUVERTE sur décision du propriétaire le 2026-10-15 — Apple examine contre la production et ne
+     * lit pas nos e-mails. La dérive redoutée est l'oubli : d'où la date de fin OBLIGATOIRE. Ces tests
+     * verrouillent les garde-fous ; ils rougissent si l'un d'eux saute.
      */
-    public function test_aucun_code_fixe_de_revue_app_store(): void
+    public function test_revue_porte_fermee_par_defaut(): void
     {
         Mail::fake();
-        // On tente de rallumer l'ancienne porte par tous ses noms — elle ne doit plus exister.
-        config([
-            'auth.app_review.email'     => 'revue@lecayenne.fr',
-            'auth.app_review.otp'       => '246810',
-            'security.app_review.email' => 'revue@lecayenne.fr',
-            'security.app_review.otp'   => '246810',
-        ]);
-        $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555010', 'name' => 'Revue Apple']);
+        $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555010', 'name' => 'Revue Apple', 'loyalty_points' => 0]);
 
         $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
 
-        $token = $this->tokenFor('0699555010');
-        $this->assertNotSame('246810', $token, 'Un code fixe de revue a été réintroduit — porte dérobée.');
-        $this->assertMatchesRegularExpression('/^\d{4,6}$/', (string) $token);
+        $this->assertNotSame('2468', $this->tokenFor('0699555010'));
         Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $m) => $m->hasTo('revue@lecayenne.fr'));
+    }
 
-        // Et le code fixe ne doit ouvrir aucune session.
-        $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '246810'])
-            ->assertStatus(422);
+    public function test_revue_sans_date_de_fin_ou_expiree_reste_fermee(): void
+    {
+        Mail::fake();
+        $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555010', 'name' => 'Revue Apple', 'loyalty_points' => 0]);
+
+        foreach (['', now()->subDay()->toDateString(), 'pas-une-date'] as $until) {
+            $this->ouvrirPorteDeRevue($until);
+            $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200);
+            $this->assertNotSame('2468', $this->tokenFor('0699555010'), "until='{$until}' doit laisser la porte fermée");
+            $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(422);
+        }
+    }
+
+    public function test_revue_ouverte_code_fixe_pour_ce_seul_email_sans_envoi(): void
+    {
+        Mail::fake();
+        $this->ouvrirPorteDeRevue(now()->addDays(14)->toDateString());
+        $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555010', 'name' => 'Revue Apple', 'loyalty_points' => 0]);
+
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
+        $this->assertSame('2468', $this->tokenFor('0699555010'));
+        Mail::assertNothingSent();
+
+        $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '1111'])->assertStatus(422);
+        $v = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468']);
+        $v->assertStatus(201);
+        $this->assertNotEmpty($v->json('token'));
+        $this->assertFalse((bool) $v->json('phone_required'), 'Le compte de revue a un téléphone : aucun écran bloquant.');
+    }
+
+    public function test_revue_ouverte_nautorise_aucun_autre_email_ni_staff_ni_code_a_6_chiffres(): void
+    {
+        Mail::fake();
+        $this->ouvrirPorteDeRevue(now()->addDays(14)->toDateString());
+        $this->guest(); // un vrai client : sarah.dupont@example.com
+
+        $this->emailLogin(['email' => self::EMAIL])->assertStatus(200);
+        $this->assertNotSame('2468', $this->tokenFor(self::PHONE), 'Un autre e-mail garde son code aléatoire.');
+        Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $m) => $m->hasTo(self::EMAIL));
+
+        // Un compte non invité (staff) portant l'e-mail de revue reste « inconnu » : jamais de code fixe.
+        User::withoutGlobalScopes()->where('email', self::EMAIL)->delete();
+        $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0699555011', 'is_guest' => Ask::NO]);
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', false);
+
+        // Un code mal formé (pas 4 chiffres) ne peut pas devenir un code fixe.
+        config(['auth.app_review.otp' => '123456']);
+        $this->guest(['email' => 'revue2@lecayenne.fr', 'phone' => '0699555012']);
+        config(['auth.app_review.email' => 'revue2@lecayenne.fr']);
+        $this->emailLogin(['email' => 'revue2@lecayenne.fr'])->assertStatus(200);
+        $this->assertNotSame('123456', $this->tokenFor('0699555012'));
     }
 
     /** (8) verify sans téléphone NI e-mail → 422, jamais de token. */
