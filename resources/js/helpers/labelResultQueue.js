@@ -7,8 +7,10 @@
  * un DOUBLON. Le verdict est donc mis en file d'attente locale (localStorage) et rejoué dès que le réseau revient,
  * y compris après un rechargement de la page.
  *
- * Règle : un refus du serveur (4xx) est définitif et sort de la file ; seule une absence de réponse (réseau, 5xx)
- * est rejouée. Aucune fonction ne lève d'exception.
+ * Règle : un refus DÉFINITIF du serveur (400, 404, 409, 422…) sort de la file ; tout le reste est rejoué — absence de
+ * réponse, 5xx, mais aussi 401/419 (jeton expiré pendant une longue coupure : rejoué après reconnexion), 403, 408, 425 et
+ * 429 (limite de débit atteinte en vidant un gros arriéré). Une étiquette imprimée hors ligne ne doit jamais perdre sa
+ * ligne de journal en silence. Aucune fonction ne lève d'exception.
  */
 export const QUEUE_KEY = 'label_result_queue';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -29,10 +31,23 @@ function save(storage, items) {
     try { storage && storage.setItem(QUEUE_KEY, JSON.stringify(items.slice(-MAX_ITEMS))); } catch (_) { /* mémoire seule */ }
 }
 
-/** Erreur « pas de réponse du serveur » (rejouable) — par opposition à un refus explicite 4xx. */
+/** Statuts qui ne disent rien de la demande elle-même : on la garde et on la rejoue plus tard. */
+const RETRY_STATUSES = new Set([401, 403, 408, 419, 425, 429]);
+
+/** Rejouable ? — tout sauf un refus définitif de la demande (400, 404, 409, 422…). */
 function retriable(err) {
     const status = err && err.response && err.response.status;
-    return !status || status >= 500;
+    return !status || status >= 500 || RETRY_STATUSES.has(status);
+}
+
+let seq = 0;
+function newId() {
+    seq += 1;
+    return `${Date.now().toString(36)}-${seq}-${Math.random().toString(36).slice(2, 8)}`;
+}
+/** Identité d'une entrée (les anciennes n'avaient pas d'identifiant). */
+function keyOf(i) {
+    return i.qid || JSON.stringify([i.url, i.body, i.at]);
 }
 
 /**
@@ -45,7 +60,10 @@ export function createResultQueue({ post, storage, now = Date.now }) {
         if (flushing) return flushing;
         flushing = (async () => {
             // chaque entrée peut porter sa propre durée de garde (une étiquette imprimée hors ligne : 7 jours)
-            let items = load(storage).filter((i) => now() - i.at < (i.maxAge || MAX_AGE_MS) && i.tries < (i.maxAge ? 1e9 : MAX_TRIES));
+            const snapshot = load(storage);
+            const seen = new Set(snapshot.map(keyOf));
+            // chaque entrée peut porter sa propre durée de garde (une étiquette imprimée hors ligne : 7 jours)
+            const items = snapshot.filter((i) => now() - i.at < (i.maxAge || MAX_AGE_MS) && i.tries < (i.maxAge ? 1e9 : MAX_TRIES));
             const remaining = [];
             let offline = false;
             for (const item of items) {
@@ -57,11 +75,14 @@ export function createResultQueue({ post, storage, now = Date.now }) {
                         remaining.push({ ...item, tries: item.tries + 1 });
                         offline = true;
                     }
-                    // 4xx : refus définitif, on abandonne l'entrée
+                    // refus définitif (400, 404, 409, 422…) : on abandonne l'entrée
                 }
             }
-            save(storage, remaining);
-            return remaining.length;
+            // Ce qui a été mis en file PENDANT l'envoi (une autre impression hors ligne) est gardé : on n'écrase jamais
+            // la file avec la photo prise au début.
+            const added = load(storage).filter((i) => !seen.has(keyOf(i)));
+            save(storage, [...remaining, ...added]);
+            return remaining.length + added.length;
         })().finally(() => { flushing = null; });
         return flushing;
     }
@@ -78,7 +99,7 @@ export function createResultQueue({ post, storage, now = Date.now }) {
                 return true;
             } catch (err) {
                 if (retriable(err)) {
-                    const item = { url, body, at: now(), tries: 1 };
+                    const item = { qid: newId(), url, body, at: now(), tries: 1 };
                     if (opts.maxAgeMs) item.maxAge = opts.maxAgeMs;
                     save(storage, [...load(storage), item]);
                 }
@@ -87,6 +108,8 @@ export function createResultQueue({ post, storage, now = Date.now }) {
         },
         flush,
         pending: () => load(storage).length,
+        /** Les entrées en attente (copie), pour les montrer — ex. les étiquettes imprimées hors ligne pas encore journalisées. */
+        items: () => load(storage).map((i) => ({ ...i })),
     };
 }
 

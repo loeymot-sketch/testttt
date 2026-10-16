@@ -253,8 +253,9 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         const names = ['Oignons émincés', 'Tomates tranchées', 'Olives noires', 'Champignons', 'Salade lavée', 'Fromage râpé', 'Sauce blanche', 'Poivrons', 'Cornichons', 'Jambon', 'Maïs'];
         names.forEach((n, i) => SQL(`insert into dlc_label_products (branch_id,name,shelf_life_value,shelf_life_unit,storage,sort_order,is_active,created_at,updated_at) values (1,'${n} (sup)',${i % 2 ? 24 : 2},'${i % 2 ? 'hours' : 'days'}',${i % 3 ? "'+4 °C'" : 'NULL'},0,1,now(),now())`));
         // fiches détaillées : décongélation d'un surgelé, DLC du fabricant exigée, préparation à partir d'un autre lot
-        const expert = (n, cat, actions, storage, ask) => SQL(`insert into dlc_label_products (branch_id,name,category,shelf_life_value,shelf_life_unit,actions,storage,ask_original_dlc,sort_order,is_active,created_at,updated_at) values (1,'${n} (sup)','${cat}',${actions[0].value},'${actions[0].unit}','${JSON.stringify(actions)}','${storage}',${ask ? 1 : 0},0,1,now(),now())`);
-        expert('Steak haché', 'Viandes & volailles', [{ key: 'thawed', value: 3, unit: 'days' }, { key: 'opened', value: 24, unit: 'hours' }], '≤ −18 °C', false);
+        const expert = (n, cat, actions, storage, ask, thawed = null) => SQL(`insert into dlc_label_products (branch_id,name,category,shelf_life_value,shelf_life_unit,actions,storage,thawed_storage,ask_original_dlc,sort_order,is_active,created_at,updated_at) values (1,'${n} (sup)','${cat}',${actions[0].value},'${actions[0].unit}','${JSON.stringify(actions)}','${storage}',${thawed ? `'${thawed}'` : 'NULL'},${ask ? 1 : 0},0,1,now(),now())`);
+        // viande hachée décongelée : 0 à +2 °C (arrêté du 21/12/2009, annexe I), 24 h
+        expert('Steak haché', 'Viandes & volailles', [{ key: 'thawed', value: 24, unit: 'hours' }, { key: 'opened', value: 24, unit: 'hours' }], '≤ −18 °C', false, '0 à +2 °C');
         expert('Crème', 'Fromages & produits laitiers', [{ key: 'opened', value: 3, unit: 'days' }], '0 à +4 °C', true);
         expert('Poulet mariné', 'Viandes & volailles', [{ key: 'prepared', value: 2, unit: 'days' }, { key: 'cooked', value: 3, unit: 'days' }], '0 à +3 °C', false);
         expert('Sauce maison', 'Sauces', [{ key: 'prepared', value: 48, unit: 'hours' }], '0 à +4 °C', false);

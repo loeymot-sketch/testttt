@@ -599,7 +599,7 @@ class LabelControllerTest extends TestCase
                 ['key' => 'thawed', 'value' => 3, 'unit' => 'days'],
                 ['key' => 'opened', 'value' => 48, 'unit' => 'hours'],
             ],
-            'allergens' => ['moutarde', 'lait'], 'storage' => '0 à +3 °C', 'note' => 'Bac n°2',
+            'allergens' => ['moutarde', 'lait'], 'storage' => '0 à +3 °C', 'thawed_storage' => '0 à +3 °C', 'note' => 'Bac n°2',
             'print_operator' => true, 'default_copies' => 2,
         ])->assertCreated()->json('data');
     }
@@ -740,20 +740,23 @@ class LabelControllerTest extends TestCase
         ]]);
         $p = ['id' => $legacy->id];
 
-        $thawed = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'thawed'])->assertOk()->json();
-        $this->assertSame('0 à +4 °C', $thawed['storage']);
-        $this->assertSame('0 à +4 °C', LabelPrintLog::query()->findOrFail($thawed['log_id'])->storage, 'le journal dit ce que dit le papier');
+        // AUCUNE valeur de repli (revue HACCP, 3e tour) : sans conservation après décongélation, refus guidé, rien de journalisé
+        $before = LabelPrintLog::query()->count();
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'thawed'])
+            ->assertStatus(422)->assertJsonPath('status', 'thawed_storage_missing')
+            ->assertJsonPath('message', 'Renseignez la conservation après décongélation de « Steaks hachés » (Modifier la fiche) : elle est imprimée sur l’étiquette.');
+        $this->assertSame($before, LabelPrintLog::query()->count());
 
         // le même produit simplement OUVERT (sachet de surgelés entamé) reste au congélateur
         $opened = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'opened'])->assertOk()->json();
         $this->assertSame('≤ −18 °C', $opened['storage']);
 
-        // « Ambiante » ou « -18 » écrit à la main : même règle ; un froid positif est gardé tel quel
-        $this->assertSame('0 à +4 °C', (new DlcLabelProduct(['storage' => 'Ambiante']))->storageFor('thawed'));
-        $this->assertSame('0 à +4 °C', (new DlcLabelProduct(['storage' => '-18°C']))->storageFor('thawed'));
-        $this->assertSame('0 à +3 °C', (new DlcLabelProduct(['storage' => '0 à +3 °C']))->storageFor('thawed'));
-        $this->assertSame('2-4 °C', (new DlcLabelProduct(['storage' => '2-4 °C']))->storageFor('thawed'), 'plage positive : le tiret n’est pas un signe moins');
-        $this->assertSame('0 à +4 °C', (new DlcLabelProduct(['storage' => '0 à -2 °C']))->storageFor('thawed'));
+        // une fois la fiche complétée, c'est sa valeur qui est imprimée et journalisée
+        $legacy->forceFill(['thawed_storage' => '0 à +2 °C'])->save();
+        $thawed = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'thawed'])->assertOk()->json();
+        $this->assertSame('0 à +2 °C', $thawed['storage']);
+        $this->assertSame('0 à +2 °C', LabelPrintLog::query()->findOrFail($thawed['log_id'])->storage, 'le journal dit ce que dit le papier');
+        $this->assertNull((new DlcLabelProduct(['storage' => '0 à +3 °C']))->storageFor('thawed'), 'jamais la conservation habituelle à la place');
     }
 
     public function test_un_produit_fait_a_partir_d_un_autre_ne_depasse_jamais_sa_dlc_sauf_cuisson(): void
@@ -777,6 +780,13 @@ class LabelControllerTest extends TestCase
         $cooked = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'action' => 'cooked', 'parent_log_id' => $parent['log_id']])->assertOk()->json();
         $this->assertFalse($cooked['capped']);
         $this->assertSame('2026-10-19 10:00', Carbon::parse($cooked['expires_at'])->format('Y-m-d H:i'));
+        $this->postJson("/api/admin/labels/prints/{$cooked['log_id']}/result", ['status' => 'printed'])->assertOk();
+        // … mais UNE seule remise en température : recuire (1 h plus tard) un produit déjà cuit garde la DLC du lot cuit
+        Carbon::setTestNow(Carbon::parse('2026-10-16 11:00:00', config('app.timezone')));
+        $recooked = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'action' => 'cooked', 'parent_log_id' => $cooked['log_id']])->assertOk()->json();
+        $this->assertTrue($recooked['capped']);
+        $this->assertSame('parent', $recooked['cap_source']);
+        $this->assertSame('2026-10-19 10:00', Carbon::parse($recooked['expires_at'])->format('Y-m-d H:i'));
 
         // produit d'origine périmé : refus, même pour cuire
         Carbon::setTestNow(Carbon::parse('2026-10-18 10:01:00', config('app.timezone')));
@@ -866,6 +876,14 @@ class LabelControllerTest extends TestCase
 
         // elle entre dans la surveillance comme les autres
         $this->assertContains($r['log_id'], collect($this->getJson('/api/admin/labels/watch')->json('data'))->pluck('id')->all());
+        // une étiquette « à vérifier » est signalée TOUT DE SUITE, même si sa DLC imprimée est lointaine
+        $far = $this->expertProduct(['name' => 'Longue', 'actions' => [['key' => 'prepared', 'value' => 10, 'unit' => 'days']]]);
+        $odd = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-far00001', 'product_id' => $far['id'], 'action' => 'prepared', 'copies' => 1, 'status' => 'printed',
+            'opened_at' => '2026-10-16T07:30:00Z', 'expires_at' => '2026-10-30T07:30:00Z', // 14 j > 10 j de la fiche
+        ])->assertOk()->json();
+        $this->assertTrue($odd['anomaly']);
+        $this->assertContains($odd['log_id'], collect($this->getJson('/api/admin/labels/watch')->json('data'))->pluck('id')->all());
         Carbon::setTestNow();
     }
 
@@ -876,8 +894,8 @@ class LabelControllerTest extends TestCase
         $p = $this->expertProduct(['name' => 'Olives', 'actions' => [['key' => 'opened', 'value' => 24, 'unit' => 'hours']]]);
         $old = $this->printed($p['id']);            // échue le 11/10 10:00
         $veryOld = null;
-        Carbon::setTestNow(Carbon::parse('2026-10-02 10:00:00', config('app.timezone')));
-        $veryOld = $this->printed($p['id']);        // échue le 03/10 : plus de 7 jours → journal seul
+        Carbon::setTestNow(Carbon::parse('2026-09-01 10:00:00', config('app.timezone')));
+        $veryOld = $this->printed($p['id']);        // échue le 02/09 : plus de 30 jours → journal seul
         Carbon::setTestNow(Carbon::parse('2026-10-12 21:00:00', config('app.timezone')));
         // 60 impressions plus récentes : l'historique (50 lignes) n'a plus le lot échu, la surveillance si
         $q = $this->expertProduct(['name' => 'Long', 'actions' => [['key' => 'opened', 'value' => 10, 'unit' => 'days']]]);
@@ -935,13 +953,26 @@ class LabelControllerTest extends TestCase
         // masquer la fiche ne redemande rien (la conservation n'est pas touchée)
         $this->putJson('/api/admin/labels/products/'.$steak['id'], ['name' => 'Steak haché', 'actions' => $steak['actions'], 'is_active' => false])->assertOk();
 
-        // froid positif reconnu par liste blanche : tiret demi-cadratin, « surgelé », « froid négatif » ne le sont pas
-        foreach (['–18 °C', 'Surgelé', 'Froid négatif', 'Congélateur', 'Ambiante', '-18', 'Chambre froide'] as $notChilled) {
+        // froid positif reconnu par liste blanche STRICTE : aucun nombre négatif quel que soit ce qui le précède, rien
+        // au-dessus de +8 °C, une température écrite ; « 2-4 °C » reste une plage positive
+        foreach (['–18 °C', 'Surgelé', 'Froid négatif', 'Congélateur', 'Ambiante', '-18', 'Chambre froide', 'Chambre froide n°2',
+            'T°-18°C', 'max-18', '0/-18', '—18 °C', '‑18 °C', '18 °C', '15 à 25 °C', '-2 à +2 °C'] as $notChilled) {
             $this->assertFalse(DlcLabelProduct::isChilled($notChilled), $notChilled);
         }
-        foreach (['0 à +4 °C', '2-4 °C', '+3 °C', '0 à +2 °C'] as $chilled) {
+        foreach (['0 à +4 °C', '2-4 °C', '+3 °C', '0 à +2 °C', '+2°C', '2 °C', '0/+4', '0°C à 4°C'] as $chilled) {
             $this->assertTrue(DlcLabelProduct::isChilled($chilled), $chilled);
         }
+        // l'après‑décongélation n'accepte que du froid positif ou « Ambiante » — jamais le congélateur
+        $this->postJson('/api/admin/labels/products', [
+            'name' => 'Frites', 'storage' => '≤ −18 °C', 'thawed_storage' => '≤ −18 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']],
+        ])->assertStatus(422)->assertJsonPath('errors.thawed_storage.0', 'Après décongélation : du froid positif (ex. 0 à +2 °C, 0 à +4 °C) ou « Ambiante » — jamais le congélateur.');
+        // décongélation prévue sur un produit au froid positif : la valeur reste obligatoire (aucune déduction)
+        $this->postJson('/api/admin/labels/products', [
+            'name' => 'Crevettes', 'storage' => '0 à +2 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']],
+        ])->assertStatus(422)->assertJsonPath('errors.thawed_storage.0', 'Indiquez la conservation après décongélation (ex. 0 à +2 °C pour une viande hachée, 0 à +4 °C, ambiante pour un pain).');
+        // masquer une fiche ancienne incomplète reste possible (seule la visibilité change)
+        $old = $this->product(['name' => 'Ancien surgelé', 'storage' => '≤ −18 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);
+        $this->putJson('/api/admin/labels/products/'.$old->id, ['name' => 'Ancien surgelé', 'is_active' => false])->assertOk()->assertJsonPath('data.is_active', false);
     }
 
     public function test_un_produit_fait_a_partir_d_un_autre_exige_son_origine_ou_produit_neuf(): void
@@ -955,8 +986,9 @@ class LabelControllerTest extends TestCase
         // un appui sans origine : refus explicite — l'horloge ne repart jamais à zéro par oubli
         $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id']])
             ->assertStatus(422)->assertJsonPath('status', 'parent_required');
-        // « produit neuf » déclaré : accepté
-        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'parent_none' => true])->assertOk();
+        // « produit neuf » déclaré : accepté, et la déclaration est gardée au journal
+        $new = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'parent_none' => true])->assertOk()->json();
+        $this->assertTrue(LabelPrintLog::query()->findOrFail($new['log_id'])->declared_new);
 
         // bac d'origine marqué « utilisé » il y a 30 min : encore une origine valable (on vide, puis on étiquette)
         $parent = $this->printed($source['id']);
@@ -1013,6 +1045,16 @@ class LabelControllerTest extends TestCase
         $row = collect($this->getJson('/api/admin/labels/history')->json('data'))->firstWhere('id', $r['log_id']);
         $this->assertSame('Karim', $row['discarded_by']);
         $this->assertSame('discarded', $row['discard_reason']);
+    }
+
+    public function test_durees_verifiees_gardees_avec_leur_auteur(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $user = $this->caisse();
+        $p = $this->expertProduct(['name' => 'Saumon', 'durations_checked' => true, 'actions' => [['key' => 'thawed', 'value' => 72, 'unit' => 'hours']]]);
+        $this->assertSame('2026-10-16 10:00', Carbon::parse($p['durations_checked_at'])->format('Y-m-d H:i'));
+        $this->assertSame($user->id, DlcLabelProduct::query()->findOrFail($p['id'])->durations_checked_by);
+        Carbon::setTestNow();
     }
 
     public function test_une_etiquette_annulee_ne_compte_pas_dans_les_plus_utilises(): void

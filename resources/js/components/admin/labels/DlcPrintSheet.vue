@@ -23,7 +23,10 @@
                             <span>DLC +{{ life(a) }} · {{ dueText(a) }}</span>
                         </button>
                     </div>
-                    <p v-if="action === 'thawed'" class="sh-note" data-testid="dlc-sheet-thawed-note">
+                    <p v-if="thawedMissing" class="sh-cap is-bad" data-testid="dlc-sheet-thawed-missing">
+                        Conservation après décongélation non renseignée : « Modifier la fiche » pour la choisir (elle est imprimée).
+                    </p>
+                    <p v-else-if="action === 'thawed'" class="sh-note" data-testid="dlc-sheet-thawed-note">
                         Étiquette à poser en <b>sortant le produit du congélateur</b>. Elle portera « NE PAS RECONGELER » et
                         « {{ storageText }} ».
                     </p>
@@ -32,6 +35,11 @@
                         <label for="dlc-sheet-original" class="sh-label">DLC du fabricant (sur l'emballage d'origine)</label>
                         <input id="dlc-sheet-original" v-model="original" type="date" class="db-field-control" :min="todayIso"
                                data-testid="dlc-sheet-original" />
+                        <!-- La DLC d'un NOUVEL emballage se recopie : la dernière connue n'est proposée que sur un choix explicite. -->
+                        <button v-if="lastOriginal && lastOriginal.original_dlc && original !== lastOriginal.original_dlc" type="button"
+                                class="sh-btn sh-btn--ghost sh-same" data-testid="dlc-sheet-same-pack" @click="useLastPack">
+                            Même emballage que la dernière fois ({{ lastPackText }})
+                        </button>
                         <p v-if="capNote" class="sh-cap" :class="{ 'is-bad': originalExpired }" data-testid="dlc-sheet-cap-note">{{ capNote }}</p>
                         <label for="dlc-sheet-supplier-lot" class="sh-label sh-label--sub">Lot du fabricant (facultatif)</label>
                         <input id="dlc-sheet-supplier-lot" v-model="supplierLot" type="text" maxlength="40" class="db-field-control sh-lot"
@@ -59,6 +67,7 @@
                                     :data-testid="`dlc-sheet-parent-${l.id}`" @click="parentChoice = l.id">
                                 <strong>{{ l.name }}</strong>
                                 <span>{{ l.actionShort }} · jusqu'au {{ l.until }}<template v-if="l.lot"> · N° {{ l.lot }}</template><template v-if="l.used"> · bac utilisé à l'instant</template></span>
+                                <span v-if="l.anomaly" class="sh-anomaly" data-testid="dlc-sheet-parent-anomaly">⚠ À vérifier (imprimée hors ligne) : sa DLC peut être fausse</span>
                             </button>
                             <p v-if="!filteredParents.length" class="sh-help">{{ parentChoices.length ? "Aucun lot ne correspond." : "Aucun lot en cours dans le journal." }}</p>
                         </div>
@@ -125,9 +134,9 @@ export default {
         const start = actions.find((a) => a.key === this.initialAction) || actions[0] || { key: "opened" };
         return {
             action: start.key, copies: Number(this.product.default_copies) || 1,
-            // dernière DLC/lot du fabricant connue pour ce produit (même emballage entamé) : proposée, modifiable
-            original: (this.lastOriginal && this.lastOriginal.original_dlc) || "",
-            supplierLot: (this.lastOriginal && this.lastOriginal.supplier_lot) || "",
+            // jamais pré-remplie : la DLC d'un nouvel emballage se lit sur l'emballage (« Même emballage » la reprend)
+            original: "",
+            supplierLot: "",
             // null = pas encore choisi ; "none" = produit neuf ; sinon l'identifiant du lot d'origine
             parentChoice: null, parentQuery: "", showParents: Boolean(this.product.needs_parent), returnFocus: null,
         };
@@ -155,6 +164,7 @@ export default {
                 .filter((l) => { const k = `${l.product_name}|${l.expires_at}`; if (seen.has(k)) return false; seen.add(k); return true; })
                 .map((l) => ({
                     id: l.id, name: l.product_name, lot: l.lot, expiresAt: l.expires_at, used: Boolean(l.discarded_at),
+                    action: l.action || "", anomaly: Boolean(l.anomaly),
                     actionShort: (DLC_ACTIONS[l.action] || DLC_ACTIONS.opened).short,
                     until: formatDlcDate(l.expires_at, this.timezone),
                 }));
@@ -179,13 +189,22 @@ export default {
         },
         parentNote() {
             if (!this.parent) return "";
+            if (this.action === "cooked" && this.parent.action === "cooked") return "Déjà cuit : une seule remise en température — la DLC suit celle du produit d'origine.";
             if (this.action === "cooked") return "Cuisson : nouvelle durée de conservation (le produit d'origine est encore bon).";
             return this.limit.source === "parent"
                 ? `La DLC suivra celle du produit d'origine (${this.parent.until}).`
                 : "Le produit d'origine se garde plus longtemps : la durée habituelle s'applique.";
         },
+        /** Décongélation sur une fiche sans conservation après décongélation : on n'imprime rien (aucune valeur de repli). */
+        thawedMissing() { return this.action === "thawed" && !String(this.product.thawed_storage || "").trim(); },
+        lastPackText() {
+            const o = this.lastOriginal || {};
+            const d = o.original_dlc ? o.original_dlc.split("-").reverse().join("/") : "";
+            return [d, o.supplier_lot ? `lot ${o.supplier_lot}` : ""].filter(Boolean).join(" · ");
+        },
         canPrint() {
             if (!this.current) return false;
+            if (this.thawedMissing) return false;
             if (this.product.ask_original_dlc && (!this.original || this.originalExpired)) return false;
             if (this.mustChooseParent) return false;
             return true;
@@ -222,13 +241,19 @@ export default {
     },
     methods: {
         labelOf(key) { return (DLC_ACTIONS[key] || DLC_ACTIONS.opened).label; },
+        useLastPack() {
+            this.original = this.lastOriginal.original_dlc || "";
+            this.supplierLot = this.lastOriginal.supplier_lot || "";
+        },
         life(a) { return shelfLifeText(a.value, a.unit); },
         /** La DLC qu'imprimerait cet événement, LIMITÉE comme sur l'aperçu (fabricant, produit d'origine sauf cuisson). */
         limitFor(a) {
             let e = a ? previewExpiry(a, this.now) : this.now;
             let source = null;
             if (this.originalEnd && e > this.originalEnd) { e = this.originalEnd; source = "original"; }
-            if (this.parentEnd && (!a || a.key !== "cooked") && e > this.parentEnd) { e = this.parentEnd; source = "parent"; }
+            // cuire redonne une durée propre, SAUF un produit déjà cuit (une seule remise en température)
+            const restart = a && a.key === "cooked" && !(this.parent && this.parent.action === "cooked");
+            if (this.parentEnd && !restart && e > this.parentEnd) { e = this.parentEnd; source = "parent"; }
             return { expires: e, source };
         },
         dueText(a) {
@@ -282,6 +307,8 @@ export default {
 .sh-parent { border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 10px 8px; }
 .sh-parent.is-required { border-color: #f59e0b; background: #fffbeb; }
 .sh-parent-search { min-height: 48px; margin-bottom: 4px; }
+.sh-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
+.sh-same { margin-top: 8px; display: block; text-align: left; height: auto; padding: 10px 14px; line-height: 1.3; }
 .sh-toggle { background: none; border: 0; font-size: 15px; font-weight: 700; color: #334155; min-height: 48px; cursor: pointer; padding: 0; text-align: left; }
 .sh-parent-picked { color: #D63D0B; }
 .sh-parent-list { display: flex; flex-direction: column; gap: 6px; }

@@ -32,9 +32,12 @@ class LabelPrintLog extends Model
     public const DISCARD_CANCELLED = 'cancelled';
     public const DISCARD_REASONS = [self::DISCARD_DISCARDED, self::DISCARD_USED, self::DISCARD_CANCELLED];
 
-    /** Lots d'hygiène surveillés : à échoir dans ces heures, ou échus depuis moins de ces jours (puis journal seul). */
+    /**
+     * Lots d'hygiène surveillés : à échoir dans ces heures, ou échus depuis moins de ces jours (puis journal seul — 30 jours
+     * couvrent une fermeture annuelle : au retour, les lots restés en chambre froide sont encore signalés).
+     */
     public const WATCH_AHEAD_HOURS = 72;
-    public const WATCH_BEHIND_DAYS = 7;
+    public const WATCH_BEHIND_DAYS = 30;
 
     /**
      * Une réclamation jamais conclue (onglet fermé en pleine impression) est rendue à la file après ce
@@ -65,6 +68,7 @@ class LabelPrintLog extends Model
         'storage',
         'cap_source',
         'parent_log_id',
+        'declared_new',
         'supplier_lot',
         'offline',
         'anomaly',
@@ -106,6 +110,7 @@ class LabelPrintLog extends Model
         'original_dlc' => 'date',
         'capped' => 'boolean',
         'parent_log_id' => 'integer',
+        'declared_new' => 'boolean',
         'offline' => 'boolean',
         'anomaly' => 'boolean',
         'discarded_by' => 'integer',

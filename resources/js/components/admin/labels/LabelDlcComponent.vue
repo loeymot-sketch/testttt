@@ -9,6 +9,11 @@
                 <LabelPrinterBar :info="printerInfo" :status="printerState.status" :supported="printerSupported"
                                  :detected-media="detectedMedia" @connect="connectPrinter" @adopt-media="adoptDetectedMedia" />
 
+                <p v-if="pendingOffline.length" class="dlc-pending" role="status" data-testid="dlc-pending">
+                    ⏳ {{ pendingOffline.length }} étiquette{{ pendingOffline.length > 1 ? "s" : "" }} imprimée{{ pendingOffline.length > 1 ? "s" : "" }} hors ligne
+                    en attente du journal — {{ pendingOffline.length > 1 ? "elles partiront" : "elle partira" }} dès le retour du réseau (ou après reconnexion).
+                    Déjà comptée{{ pendingOffline.length > 1 ? "s" : "" }} dans « À surveiller ».
+                </p>
                 <p v-if="loadError" class="dlc-alert" data-testid="dlc-error">{{ loadError }}</p>
                 <p v-if="!loaded && !loadError" class="dlc-empty" role="status">Chargement des produits…</p>
 
@@ -49,18 +54,19 @@
                     <div class="dlc-cats" role="tablist" aria-label="Familles">
                         <button type="button" class="dlc-cat" role="tab" :aria-selected="category === '' ? 'true' : 'false'" :class="{ 'is-on': category === '' }"
                                 data-testid="dlc-cat-all" @click="category = ''">Tous <span class="dlc-cat-n">{{ activeProducts.length }}</span></button>
-                        <button v-for="c in categoryTabs" :key="c.name" type="button" class="dlc-cat" role="tab"
-                                :aria-selected="category === c.name ? 'true' : 'false'" :class="{ 'is-on': category === c.name }"
-                                :data-testid="`dlc-cat-${c.slug}`" @click="category = c.name">
-                            <span class="dlc-dot" :style="{ background: colorOf(c.name) }" aria-hidden="true"></span>{{ c.name }}
-                            <span class="dlc-cat-n">{{ c.count }}</span>
-                        </button>
                         <button v-if="uncategorizedCount && categoryTabs.length" type="button" class="dlc-cat" role="tab"
                                 :aria-selected="category === NO_FAMILY ? 'true' : 'false'" :class="{ 'is-on': category === NO_FAMILY }"
                                 data-testid="dlc-cat-none" @click="category = NO_FAMILY">
                             <span class="dlc-dot" :style="{ background: colorOf('') }" aria-hidden="true"></span>Sans famille
                             <span class="dlc-cat-n">{{ uncategorizedCount }}</span>
                         </button>
+                        <button v-for="c in categoryTabs" :key="c.name" type="button" class="dlc-cat" role="tab"
+                                :aria-selected="category === c.name ? 'true' : 'false'" :class="{ 'is-on': category === c.name }"
+                                :data-testid="`dlc-cat-${c.slug}`" @click="category = c.name">
+                            <span class="dlc-dot" :style="{ background: colorOf(c.name) }" aria-hidden="true"></span>{{ c.name }}
+                            <span class="dlc-cat-n">{{ c.count }}</span>
+                        </button>
+
                     </div>
 
                     <div class="dlc-modes" role="group" aria-label="Mode d'impression">
@@ -105,7 +111,8 @@
                                 <li v-for="w in watchItems" :key="w.key" :class="`is-${w.level}`" data-testid="dlc-watch-item">
                                     <!-- une seule ligne de gabarit : Vue supprime les espaces entre balises séparées par un saut de ligne -->
                                     <span class="dlc-watch-body"><span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }}<template v-if="w.lot"> · N° {{ w.lot }}</template>)</span><br />{{ w.text }}<template v-if="w.anomaly"><br /><span class="dlc-watch-anomaly" data-testid="dlc-watch-anomaly">{{ w.message }}</span></template></span>
-                                    <span class="dlc-watch-actions">
+                                    <span v-if="w.pending" class="dlc-watch-pending" data-testid="dlc-watch-pending">⏳ hors ligne — journal en attente</span>
+                                    <span v-else class="dlc-watch-actions">
                                         <button type="button" class="dlc-btn dlc-btn--small" :class="{ 'dlc-btn--danger': w.level === 'expired' }"
                                                 :data-testid="`dlc-discard-${w.id}`" :disabled="discarding" @click="discard(w, 'discarded')">Jeté ✓</button>
                                         <button type="button" class="dlc-btn dlc-btn--small" :data-testid="`dlc-used-${w.id}`" :disabled="discarding"
@@ -143,7 +150,7 @@
                                             <span v-if="p.allergens.length">⚠ {{ p.allergens.length }} allergène{{ p.allergens.length > 1 ? "s" : "" }}</span>
                                             <span v-if="p.ask_original_dlc">DLC fabricant</span>
                                             <span v-if="p.needs_parent">Produit d'origine</span>
-                                            <span v-if="!p.storage" class="dlc-tile-todo" data-testid="dlc-tile-todo">⚠ Conservation à renseigner</span>
+                                            <span v-if="ficheIncomplete(p)" class="dlc-tile-todo" data-testid="dlc-tile-todo">⚠ {{ ficheIncomplete(p) }}</span>
                                             <span v-if="p.default_copies > 1 && !selectMode">{{ p.default_copies }} par appui</span>
                                         </span>
                                         <span v-if="busyId === p.id" class="dlc-tile-busy">Impression…{{ queuedCount(p.id) ? ` (+${queuedCount(p.id)} en attente)` : "" }}</span>
@@ -198,7 +205,7 @@
                             <span class="dlc-history-dlc">DLC {{ short(h.expires_at) }}<small v-if="h.capped"> ({{ h.cap_source === "parent" ? "origine" : "fabricant" }})</small><small v-if="h.offline"> · hors ligne</small></span>
                             <span class="dlc-history-lot">{{ h.lot || "" }}<small v-if="h.offline && h.client_ref"> (réf. {{ offlineRefOf(h.client_ref) }})</small></span>
                             <span class="dlc-history-by">{{ h.by || "" }}</span>
-                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? reasonText(h.discard_reason) : stateText(h.status) }}<small v-if="h.discarded_at"> {{ short(h.discarded_at) }}{{ h.discarded_by ? ` par ${h.discarded_by}` : "" }}</small><small v-if="h.anomaly" class="dlc-history-anomaly"> · à vérifier</small></span>
+                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? `${reasonText(h.discard_reason)} ${short(h.discarded_at)}${h.discarded_by ? ` par ${h.discarded_by}` : ""}` : stateText(h.status) }}{{ h.anomaly ? " · à vérifier" : "" }}{{ h.declared_new ? " · produit neuf déclaré" : "" }}</span>
                         </li>
                     </ul>
                 </div>
@@ -210,7 +217,7 @@
         <div class="dlc-toasts" :class="{ 'is-raised': basketShown }" :style="toastStyle" aria-live="polite">
             <div v-if="undo" class="dlc-undo" role="status" data-testid="dlc-undo">
                 <span>{{ undo.text }}</span>
-                <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-undo-btn" @click="undoDiscard">Annuler</button>
+                <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-undo-btn" @click="!toastGuarded() && undoDiscard()">Annuler</button>
             </div>
             <div v-if="last" class="dlc-last" :class="last.ok ? (last.warn ? 'is-warn' : 'is-ok') : 'is-ko'" data-testid="dlc-last" role="status">
                 <div v-if="last.batch" class="dlc-last-text" data-testid="dlc-last-batch">
@@ -246,7 +253,7 @@
 
         <!-- Sélection contenant des produits « DLC du fabricant » : une seule étape, toutes les dates d'un coup (proposées
              d'après la dernière saisie de chaque produit), puis tout part ensemble. -->
-        <div v-if="originals" class="dlc-orig-overlay" data-testid="dlc-originals" @keydown.esc="originals = null">
+        <div v-if="originals" ref="origOverlay" class="dlc-orig-overlay" data-testid="dlc-originals" @keydown.esc="originals = null" @keydown.tab="trapTab($event, $refs.origOverlay)">
             <div class="dlc-orig-panel" role="dialog" aria-modal="true" aria-label="DLC du fabricant">
                 <header class="dlc-orig-head">
                     <h4>DLC du fabricant — {{ originals.length }} produit{{ originals.length > 1 ? "s" : "" }}</h4>
@@ -259,6 +266,10 @@
                            :data-testid="`dlc-originals-date-${o.id}`" />
                     <input v-model="o.supplier_lot" type="text" maxlength="40" class="db-field-control dlc-orig-lot" placeholder="Lot (facultatif)"
                            :aria-label="`Lot du fabricant : ${o.name}`" :data-testid="`dlc-originals-lot-${o.id}`" />
+                    <button v-if="o.last && o.last.original_dlc !== o.original_dlc" type="button" class="dlc-btn dlc-btn--small"
+                            :data-testid="`dlc-originals-same-${o.id}`" @click="useSamePack(o)">
+                        Même emballage ({{ o.last.original_dlc.split("-").reverse().join("/") }}{{ o.last.supplier_lot ? ` · lot ${o.last.supplier_lot}` : "" }})
+                    </button>
                     <span v-if="o.original_dlc && o.original_dlc < todayIso" class="dlc-last-warn">Dépassée : ne pas utiliser.</span>
                 </div>
                 <footer class="dlc-orig-foot">
@@ -348,6 +359,7 @@ export default {
             toastStyle: {},
             toastShownAt: 0,
             originals: null,
+            pendingOffline: [],
             busyId: null,
             queue: [],
             draining: false,
@@ -437,8 +449,14 @@ export default {
                 .sort((a, b) => (b.uses_30d || 0) - (a.uses_30d || 0) || a.name.localeCompare(b.name, "fr"));
         },
         // `nowMs` avance toutes les 30 s : sans lui, l'écran laissé ouvert ne verrait jamais un lot devenir « expiré ».
+        // Les étiquettes imprimées hors ligne pas encore journalisées y figurent aussi (sans « Jeté » : rien à acquitter
+        // côté serveur tant qu'elles n'y sont pas).
         watch() {
-            return watchList(this.watchRows, this.nowMs + this.serverOffsetMs, this.watchLimit);
+            const pending = this.pendingOffline.map((q) => ({
+                id: `q-${q.qid || q.at}`, dlc_product_id: q.body.product_id, product_name: q.body.product_name || "",
+                copies: q.body.copies, expires_at: q.body.expires_at, status: "printed", lot: "", pending: true,
+            }));
+            return watchList([...this.watchRows, ...pending], this.nowMs + this.serverOffsetMs, this.watchLimit);
         },
         watchItems() { return this.watch.items; },
         watchMore() { return this.watch.more; },
@@ -450,6 +468,13 @@ export default {
         },
     },
     watch: {
+        // La fenêtre « DLC du fabricant » prend le focus (clavier, lecteur d'écran).
+        originals(now, before) {
+            if (now && !before) this.$nextTick(() => {
+                const first = this.$refs.origOverlay && this.$refs.origOverlay.querySelector("input");
+                if (first && first.focus) first.focus();
+            });
+        },
         // Un autre événement de lot : les produits qui ne le prévoient pas sortent de la sélection (jamais d'étiquette
         // « Entamé le » pour un produit qu'on vient de sortir du congélateur).
         batchAction() {
@@ -538,11 +563,22 @@ export default {
          * à part ceux qui exigent leur produit d'origine, une fiche sans conservation, ou un événement qu'ils ne prévoient pas.
          */
         selectable(p) {
-            if (p.needs_parent || !p.storage) return false;
-            return !this.batchAction || p.actions.some((a) => a.key === this.batchAction);
+            if (p.needs_parent || this.ficheIncomplete(p)) return false;
+            if (this.batchAction && !p.actions.some((a) => a.key === this.batchAction)) return false;
+            return !(this.batchAction === "thawed" && !p.thawed_storage);
+        },
+        /** Le produit prévoit l'événement du lot, mais sa fiche ne permet pas de l'imprimer (décongélation sans conservation). */
+        batchIncomplete(p) {
+            return this.batchAction === "thawed" && p.actions.some((a) => a.key === "thawed") && !p.thawed_storage;
+        },
+        /** Ce qui manque à la fiche pour imprimer son événement par défaut ('' = rien). */
+        ficheIncomplete(p) {
+            if (!p.storage) return "Conservation à renseigner";
+            if (p.actions[0] && p.actions[0].key === "thawed" && !p.thawed_storage) return "Conservation après décongélation à renseigner";
+            return "";
         },
         apartReason(p) {
-            if (!p.storage) return "À part (fiche à compléter)";
+            if (this.ficheIncomplete(p) || this.batchIncomplete(p)) return "À part (fiche à compléter)";
             if (p.needs_parent) return "À part (produit d'origine)";
             return `Sans ${this.actionLabel(this.batchAction).toLowerCase()}`;
         },
@@ -613,7 +649,30 @@ export default {
         /** Rejoue la file locale (verdicts et étiquettes imprimées hors ligne), puis relit journal et surveillance. */
         async syncOffline() {
             try { await labelResultQueue(axios).flush(); } catch (_) { /* rejouée plus tard */ }
+            this.refreshPending();
             await this.loadHistory();
+        },
+        /** Étiquettes imprimées hors ligne dont la ligne de journal attend le réseau (ou la reconnexion). */
+        refreshPending() {
+            try {
+                this.pendingOffline = labelResultQueue(axios).items()
+                    .filter((i) => /labels\/dlc\/offline$/.test(i.url) && i.body && i.body.status !== "failed");
+            } catch (_) {
+                this.pendingOffline = [];
+            }
+        },
+        trapTab(e, root) {
+            if (!root) return;
+            const items = [...root.querySelectorAll("button:not([disabled]), input:not([disabled]), select")];
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        },
+        useSamePack(o) {
+            o.original_dlc = o.last.original_dlc;
+            o.supplier_lot = o.last.supplier_lot || "";
         },
 
         // ── impression ─────────────────────────────────────────────────────────
@@ -626,7 +685,9 @@ export default {
             if (this.selectMode) {
                 if (!this.selectable(p)) {
                     // Produit à imprimer seul : on mène là où il faut agir, avec la raison.
-                    if (!p.storage) return this.openEditorFor(p, "Renseignez la conservation : elle est imprimée sur l’étiquette.");
+                    if (this.ficheIncomplete(p) || this.batchIncomplete(p)) {
+                        return this.openEditorFor(p, `${this.ficheIncomplete(p) || "Conservation après décongélation à renseigner"} : elle est imprimée sur l’étiquette.`);
+                    }
                     if (p.needs_parent) return this.openSheet(p);
                     alertService.error(`« ${p.name} » ne prévoit pas l'événement « ${this.actionLabel(this.batchAction)} ».`);
                     return null;
@@ -635,7 +696,7 @@ export default {
                 this.selection = { ...this.selection, [p.id]: Math.min(n, 20) };
                 return null;
             }
-            if (!p.storage) return this.openEditorFor(p, "Renseignez la conservation : elle est imprimée sur l’étiquette.");
+            if (this.ficheIncomplete(p)) return this.openEditorFor(p, `${this.ficheIncomplete(p)} : elle est imprimée sur l’étiquette.`);
             // une saisie est obligatoire (DLC du fabricant, produit d'origine) : la fiche d'impression, jamais un tir à l'aveugle
             if (p.ask_original_dlc || p.needs_parent) return this.openSheet(p);
             const now = Date.now();
@@ -731,10 +792,8 @@ export default {
             if (!originalsById) {
                 const needing = this.activeProducts.filter((p) => this.selection[p.id] && p.ask_original_dlc && this.selectable(p));
                 if (needing.length) {
-                    this.originals = needing.map((p) => {
-                        const last = this.lastOriginalFor(p.id);
-                        return { id: p.id, name: p.name, original_dlc: last ? last.original_dlc : "", supplier_lot: last ? last.supplier_lot : "" };
-                    });
+                    // jamais pré-remplies : la date d'un nouvel emballage se lit dessus ; « Même emballage » reprend la dernière
+                    this.originals = needing.map((p) => ({ id: p.id, name: p.name, original_dlc: "", supplier_lot: "", last: this.lastOriginalFor(p.id) }));
                     return;
                 }
             }
@@ -882,6 +941,7 @@ export default {
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",
                     message: result.message ? String(result.message).slice(0, 290) : null,
                 }, { maxAgeMs: OFFLINE_KEEP_MS });
+                this.refreshPending();
             }
 
             if (!opts.quiet) {
@@ -904,6 +964,7 @@ export default {
         // ── « Jeté » / « Utilisé » / « Annulée » ────────────────────────────────
         async discard(w, reason = "discarded") {
             this.discarding = true;
+            this.placeToasts(); // la notice « Annuler » se pose sur la grille, jamais sur la liste qu'on vient de toucher
             try {
                 await axios.post("admin/labels/prints/discard", { ids: w.ids, reason });
                 await this.loadHistory();
@@ -912,6 +973,7 @@ export default {
                 const text = { used: `${what} marqué utilisé.`, cancelled: `Impression de ${w.name} annulée : retirez ${many ? "les étiquettes" : "l'étiquette"}.` }[reason]
                     || `${what} marqué jeté.`;
                 this.undo = { ids: w.ids, name: w.name, text };
+                this.toastShownAt = Date.now();
                 clearTimeout(this.undoTimer);
                 this.undoTimer = setTimeout(() => { this.undo = null; }, 8000);
             } catch (e) {
@@ -972,7 +1034,8 @@ export default {
         },
         async toggleActive(p) {
             try {
-                await axios.put(`admin/labels/products/${p.id}`, { name: p.name, actions: p.actions, is_active: !p.is_active });
+                // masquer / réactiver ne touche que la visibilité (une fiche ancienne n'a rien à compléter pour être masquée)
+                await axios.put(`admin/labels/products/${p.id}`, { name: p.name, is_active: !p.is_active });
                 await this.loadProducts();
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Modification impossible."));
@@ -1026,6 +1089,8 @@ export default {
 .dlc-watch-actions { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
 .dlc-watch-more { margin: 6px 0 0; color: #92400e; }
 .dlc-watch-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
+.dlc-watch-pending { margin-left: auto; color: #1e3a8a; font-weight: 700; font-size: 13px; }
+.dlc-pending { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-weight: 600; }
 .dlc-watch li.is-expired .dlc-watch-n { color: #7f1d1d; }
 .dlc-tile-todo { background: #fef3c7 !important; color: #92400e; font-weight: 700; }
 .dlc-history-anomaly { color: #9a3412; font-weight: 700; }
@@ -1119,7 +1184,7 @@ export default {
 .dlc-history-dlc { color: #334155; }
 .dlc-history-lot { color: #64748b; font-variant-numeric: tabular-nums; }
 .dlc-history-by { color: #64748b; min-width: 60px; }
-.dlc-history-state { font-weight: 700; }
+.dlc-history-state { font-weight: 700; flex: 0 0 auto; margin-left: auto; }
 .dlc-history-state.is-printed { color: #166534; }
 .dlc-history-state.is-failed { color: #991b1b; }
 .dlc-history-state.is-unconfirmed { color: #92400e; }

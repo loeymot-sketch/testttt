@@ -32,11 +32,13 @@ class DlcLabelProduct extends Model
 
     /**
      * Un produit décongelé ne retourne jamais au congélateur (GBPH restauration § 2.6 : « ne doit en aucun cas être
-     * recongelé »). Sa conservation se choisit sur la fiche (`thawed_storage` : +2 °C pour une viande hachée, 0 à +2 °C pour
-     * un poisson — arrêté du 21/12/2009, annexe I — ambiante pour un pain). Ceci n'est que le REPLI d'une fiche ancienne
-     * qui ne l'a pas encore renseignée : jamais « ≤ −18 °C » sur une étiquette de décongélation.
+     * recongelé »). Sa conservation APRÈS décongélation se choisit sur la fiche (`thawed_storage` : 0 à +2 °C pour une
+     * viande hachée ou un poisson — arrêté du 21/12/2009, annexe I — ambiante pour un pain) ; elle est OBLIGATOIRE dès que
+     * la fiche prévoit la décongélation. Aucune valeur de repli : une valeur unique imposée à tous serait fausse pour
+     * certains produits (revue HACCP, 3e tour).
      */
-    public const THAWED_STORAGE = '0 à +4 °C';
+    /** Froid positif : au-delà de +8 °C ce n'est plus de la réfrigération (produits frais : 0 à +8 °C au plus). */
+    public const CHILLED_MAX_C = 8;
 
     /** Les 14 allergènes à déclaration obligatoire (règlement UE 1169/2011), codes de l'application. */
     public const ALLERGENS = [
@@ -60,6 +62,8 @@ class DlcLabelProduct extends Model
         'note',
         'ask_original_dlc',
         'needs_parent',
+        'durations_checked_at',
+        'durations_checked_by',
         'print_operator',
         'default_copies',
         'sort_order',
@@ -74,6 +78,8 @@ class DlcLabelProduct extends Model
         'allergens' => 'array',
         'ask_original_dlc' => 'boolean',
         'needs_parent' => 'boolean',
+        'durations_checked_at' => 'datetime',
+        'durations_checked_by' => 'integer',
         'no_allergens' => 'boolean',
         'print_operator' => 'boolean',
         'default_copies' => 'integer',
@@ -137,32 +143,37 @@ class DlcLabelProduct extends Model
     public function storageFor(string $actionKey): ?string
     {
         $clean = fn ($v) => $v !== null && trim((string) $v) !== '' ? trim((string) $v) : null;
-        $storage = $clean($this->storage);
-        if ($actionKey === 'thawed') {
-            if ($thawed = $clean($this->thawed_storage)) return $thawed;
-            if ($storage === null || ! self::isChilled($storage)) return self::THAWED_STORAGE;
-        }
+        // décongélation : la conservation APRÈS décongélation de la fiche, et rien d'autre (aucun repli)
+        if ($actionKey === 'thawed') return $clean($this->thawed_storage);
 
-        return $storage;
+        return $clean($this->storage);
     }
 
-    /** La fiche prévoit la décongélation mais sa conservation habituelle n'est pas du froid positif : il faut la préciser. */
+    /** La fiche prévoit la décongélation : sa conservation après décongélation doit être dite. */
     public static function needsThawedStorage(?string $storage, array $actions): bool
     {
-        $thawing = collect($actions)->contains(fn ($a) => is_array($a) && ($a['key'] ?? null) === 'thawed');
+        return collect($actions)->contains(fn ($a) => is_array($a) && ($a['key'] ?? null) === 'thawed');
+    }
 
-        return $thawing && ($storage === null || trim($storage) === '' || ! self::isChilled($storage));
+    /** Valeur acceptée pour l'après‑décongélation : du froid positif reconnu, ou « Ambiante » (un pain). */
+    public static function isValidThawedStorage(string $storage): bool
+    {
+        return self::isChilled($storage) || (bool) preg_match('/^\s*ambiante\s*$/iu', $storage);
     }
 
     /**
-     * Froid POSITIF reconnu (liste blanche, miroir de dlcLabelBuilder.js) : une température, aucune valeur négative
-     * (« −18 », « –18 », « -18 » en tête ou après une espace, « ≤ », « < », « ( » — « 2-4 °C » reste une plage positive),
-     * ni congélateur, surgelé, froid négatif ou ambiante.
+     * Froid POSITIF reconnu (liste blanche stricte, miroir de dlcLabelBuilder.js) : au moins une température écrite
+     * (« °C » ou « +N »), AUCUN nombre précédé d'un signe moins — quel que soit ce qui précède (« T°-18 », « max-18 »,
+     * « 0/-18 », tiret demi-cadratin, cadratin, insécable) ; seul un tiret ENTRE deux chiffres est une plage (« 2-4 °C ») —,
+     * aucune valeur au-dessus de +8 °C, et ni congélateur, ni surgelé, ni froid négatif, ni ambiante.
      */
     public static function isChilled(string $storage): bool
     {
-        if (! preg_match('/\d/', $storage)) return false;
-        if (preg_match('/(^|[\s≤<(])[−–-]\s*\d/u', $storage)) return false;
+        if (! preg_match('/°\s*C|\+\s*\d/iu', $storage)) return false;
+        if (! preg_match_all('/(?<!\d)([−–—‑-])?\s*(\d+)/u', $storage, $m, PREG_SET_ORDER)) return false;
+        foreach ($m as $x) {
+            if ($x[1] !== '' || (int) $x[2] > self::CHILLED_MAX_C) return false;
+        }
 
         return ! preg_match('/cong[eé]l|surgel|n[ée]gati|ambiant/iu', $storage);
     }

@@ -75,19 +75,31 @@ export const DLC_STORAGES = Object.freeze(['0 à +3 °C', '0 à +4 °C', '≤ �
  */
 export const DLC_THAWED_STORAGES = Object.freeze(['0 à +2 °C', '0 à +3 °C', '0 à +4 °C', 'Ambiante']);
 
-/** Repli d'une fiche ancienne sans conservation après décongélation (miroir de DlcLabelProduct::THAWED_STORAGE). */
-export const THAWED_STORAGE = '0 à +4 °C';
+/** Froid positif : au-delà de +8 °C ce n'est plus de la réfrigération (miroir de DlcLabelProduct::CHILLED_MAX_C). */
+export const CHILLED_MAX_C = 8;
 
 /**
- * Froid POSITIF reconnu (liste blanche, miroir de DlcLabelProduct::isChilled) : une température, aucune valeur négative
- * (« −18 », « –18 », « -18 » en tête ou après une espace, « ≤ », « < », « ( » — « 2-4 °C » reste une plage positive),
- * ni congélateur, surgelé, froid négatif ou ambiante.
+ * Froid POSITIF reconnu (liste blanche stricte, miroir de DlcLabelProduct::isChilled) : au moins une température écrite
+ * (« °C » ou « +N »), AUCUN nombre précédé d'un signe moins quel que soit ce qui précède (« T°-18 », « max-18 », « 0/-18 »,
+ * tirets demi-cadratin, cadratin, insécable) — seul un tiret ENTRE deux chiffres est une plage (« 2-4 °C ») —, aucune
+ * valeur au-dessus de +8 °C, ni congélateur, surgelé, froid négatif ou ambiante.
  */
 export function isChilled(storage) {
     const s = String(storage || '');
-    if (!/\d/.test(s)) return false;
-    if (/(^|[\s≤<(])[−–-]\s*\d/u.test(s)) return false;
-    return !/cong[eé]l|surgel|n[ée]gati|ambiant/iu.test(s);
+    if (!/°\s*C|\+\s*\d/iu.test(s)) return false;
+    const re = /(?<!\d)([−–—‑-])?\s*(\d+)/gu;
+    let m;
+    let any = false;
+    while ((m = re.exec(s)) !== null) {
+        any = true;
+        if (m[1] || Number(m[2]) > CHILLED_MAX_C) return false;
+    }
+    return any && !/cong[eé]l|surgel|n[ée]gati|ambiant/iu.test(s);
+}
+
+/** Valeur acceptée pour l'après‑décongélation : froid positif reconnu, ou « Ambiante » (un pain). */
+export function isValidThawedStorage(storage) {
+    return isChilled(storage) || /^\s*ambiante\s*$/iu.test(String(storage || ''));
 }
 
 /** Tout ce qui n'est pas du froid positif reconnu. */
@@ -97,21 +109,16 @@ export function isFrozenOrAmbient(storage) {
 
 /**
  * La conservation à imprimer pour un événement (miroir de DlcLabelProduct::storageFor) : décongélation → celle choisie
- * pour l'après‑décongélation, sinon la conservation habituelle si c'est du froid positif, sinon le repli.
+ * pour l'après‑décongélation, et rien d'autre (aucune valeur de repli : '' = fiche à compléter).
  */
 export function storageForAction(storage, actionKey, thawedStorage = '') {
-    const s = String(storage || '').trim();
-    if (actionKey === 'thawed') {
-        const t = String(thawedStorage || '').trim();
-        if (t) return t;
-        if (!s || !isChilled(s)) return THAWED_STORAGE;
-    }
-    return s;
+    if (actionKey === 'thawed') return String(thawedStorage || '').trim();
+    return String(storage || '').trim();
 }
 
-/** La fiche prévoit la décongélation mais sa conservation habituelle n'est pas du froid positif : il faut la préciser. */
+/** La fiche prévoit la décongélation : sa conservation après décongélation doit être dite. */
 export function needsThawedStorage(storage, actions) {
-    return (actions || []).some((a) => a && a.key === 'thawed') && !isChilled(storage);
+    return (actions || []).some((a) => a && a.key === 'thawed');
 }
 
 /**
@@ -264,7 +271,8 @@ export function watchList(rows, nowMs, limit = 30) {
         if (!['printed', 'unconfirmed'].includes(h.status) || !h.expires_at || !h.product_name || h.discarded_at) return;
         const exp = Date.parse(h.expires_at);
         if (!Number.isFinite(exp)) return;
-        if (exp > nowMs + 72 * 3600 * 1000) return;
+        // une étiquette « à vérifier » (hors ligne) est signalée tout de suite, quelle que soit sa DLC imprimée
+        if (exp > nowMs + 72 * 3600 * 1000 && !h.anomaly) return;
         const key = `${h.product_name}|${Math.round(exp / 60000)}`;
         if (seen.has(key)) {
             // même produit, même échéance : un seul lot — on additionne et on garde tous les identifiants (pour « Jeté »)
@@ -279,6 +287,8 @@ export function watchList(rows, nowMs, limit = 30) {
             action: h.action || '', expiresMs: exp, copies: Number(h.copies) || 1,
             // étiquette imprimée hors ligne que le serveur signale « à vérifier » (fiche modifiée, heure incohérente…)
             anomaly: Boolean(h.anomaly), message: h.anomaly ? String(h.message || '') : '',
+            // imprimée hors ligne, pas encore inscrite au journal (file locale)
+            pending: Boolean(h.pending),
             ...expiryStatus(exp, nowMs),
         });
     });

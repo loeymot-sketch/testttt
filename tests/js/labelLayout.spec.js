@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { wrapText, layoutLabel, SIZES, MIN_LABEL_DOTS } from '../../resources/js/helpers/labelLayout.js';
-import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList, dlcParts, storagePhrase, storageForAction } from '../../resources/js/helpers/dlcLabelBuilder.js';
+import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList, dlcParts, storagePhrase, storageForAction, isChilled, isValidThawedStorage } from '../../resources/js/helpers/dlcLabelBuilder.js';
 
 /** Mesure factice : 0,55 × la taille de police par caractère. */
 const measure = (text, font) => {
@@ -167,7 +167,7 @@ describe('étiquette DLC', () => {
     it('produit décongelé : « Mis en décongélation le », bandeau NE PAS RECONGELER, jamais « ≤ −18 °C »', () => {
         const blocks = dlcLabelBlocks({
             name: 'Steaks', action: 'thawed', openedAt: '2026-10-16T12:00:00Z', expiresAt: '2026-10-19T12:00:00Z',
-            storage: storageForAction('≤ −18 °C', 'thawed'),
+            storage: storageForAction('≤ −18 °C', 'thawed', '0 à +4 °C'),
         });
         // sous le nom et le filet, avant toute date
         expect(blocks[1]).toEqual({ t: 'rule' });
@@ -187,23 +187,21 @@ describe('étiquette DLC', () => {
         expect(storagePhrase('+4 °C')).toBe('À conserver à +4 °C maximum');
         expect(storagePhrase('Chambre froide n°2')).toBe('À conserver : Chambre froide n°2');
         expect(storagePhrase('')).toBe('');
-        expect(storageForAction('≤ −18 °C', 'thawed')).toBe('0 à +4 °C');
-        expect(storageForAction('-18°C', 'thawed')).toBe('0 à +4 °C');
-        expect(storageForAction('Ambiante', 'thawed')).toBe('0 à +4 °C');
-        expect(storageForAction('', 'thawed')).toBe('0 à +4 °C');
-        expect(storageForAction('0 à +3 °C', 'thawed')).toBe('0 à +3 °C');
+        // décongélation : la conservation APRÈS décongélation de la fiche, et rien d'autre — aucune valeur de repli
+        expect(storageForAction('≤ −18 °C', 'thawed')).toBe('');
+        expect(storageForAction('0 à +3 °C', 'thawed')).toBe('');
         expect(storageForAction('≤ −18 °C', 'opened')).toBe('≤ −18 °C');
-        // « 2-4 °C » est une plage positive (le tiret n'est pas un signe moins) ; « 0 à -2 °C » ne l'est pas
-        expect(storageForAction('2-4 °C', 'thawed')).toBe('2-4 °C');
         expect(storagePhrase('2-4 °C')).toBe('À conserver entre 2 et 4 °C');
-        expect(storageForAction('0 à -2 °C', 'thawed')).toBe('0 à +4 °C');
-        expect(storageForAction('Congélateur', 'thawed')).toBe('0 à +4 °C');
         // conservation APRÈS décongélation choisie sur la fiche : elle prime (viande hachée, pain…)
         expect(storageForAction('≤ −18 °C', 'thawed', '0 à +2 °C')).toBe('0 à +2 °C');
         expect(storageForAction('≤ −18 °C', 'thawed', 'Ambiante')).toBe('Ambiante');
         expect(storageForAction('≤ −18 °C', 'opened', '0 à +2 °C')).toBe('≤ −18 °C');
-        // liste blanche du froid positif, comme le serveur : tiret demi-cadratin, « surgelé », « froid négatif »
-        ['–18 °C', 'Surgelé', 'Froid négatif', 'Chambre froide'].forEach((t) => expect(storageForAction(t, 'thawed')).toBe('0 à +4 °C'));
+        // liste blanche STRICTE du froid positif, identique au serveur
+        ['–18 °C', 'Surgelé', 'Froid négatif', 'Chambre froide', 'Chambre froide n°2', 'T°-18°C', 'max-18', '0/-18', '—18 °C', '‑18 °C',
+            '18 °C', '15 à 25 °C', '-2 à +2 °C', 'Ambiante'].forEach((t) => expect(isChilled(t), t).toBe(false));
+        ['0 à +4 °C', '2-4 °C', '+3 °C', '0 à +2 °C', '+2°C', '2 °C', '0/+4', '0°C à 4°C'].forEach((t) => expect(isChilled(t), t).toBe(true));
+        expect(isValidThawedStorage('Ambiante')).toBe(true);
+        expect(isValidThawedStorage('≤ −18 °C')).toBe(false);
     });
 
     it('DLC lointaine (plus de 6 jours) : pas de pastille du jour, le même jour reviendrait', () => {
@@ -300,6 +298,13 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         expect(w[1].copies).toBe(4);
         expect(w[1].ids).toEqual([2, 3]);
         expect(watchList(null, now)).toEqual({ items: [], more: 0 });
+    });
+
+    it('une étiquette « à vérifier » (hors ligne) est signalée tout de suite, même si sa DLC imprimée est lointaine', () => {
+        const rows = [h({ id: 8, product_name: 'Sauce', expires_at: '2026-10-30T12:00:00Z', anomaly: true, message: '⚠ À vérifier' })];
+        const { items } = watchList(rows, now);
+        expect(items.map((x) => [x.name, x.anomaly, x.message])).toEqual([['Sauce', true, '⚠ À vérifier']]);
+        expect(watchList([h({ id: 9, expires_at: '2026-10-30T12:00:00Z' })], now).items).toEqual([]);
     });
 
     it('au-delà de la limite, le nombre de lots non affichés est rendu (« + N autres »), jamais tu', () => {

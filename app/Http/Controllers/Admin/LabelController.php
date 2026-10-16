@@ -142,11 +142,15 @@ class LabelController extends AdminController
         $expiresAt = $product->expiresFrom($openedAt, $action);
         $capSource = null;
 
-        // La conservation figure sur toute étiquette d'hygiène : une fiche ancienne qui ne la dit pas n'imprime pas.
+        // La conservation figure sur toute étiquette d'hygiène : une fiche qui ne la dit pas n'imprime pas — et pour une
+        // décongélation, c'est la conservation APRÈS décongélation, sans aucune valeur de repli.
         if ($product->storageFor($action['key']) === null) {
-            $message = 'Renseignez la conservation de « '.$product->name.' » (Modifier la fiche) : elle est imprimée sur l’étiquette.';
+            [$status, $field, $what] = $action['key'] === 'thawed'
+                ? ['thawed_storage_missing', 'thawed_storage', 'la conservation après décongélation']
+                : ['storage_missing', 'storage', 'la conservation'];
+            $message = 'Renseignez '.$what.' de « '.$product->name.' » (Modifier la fiche) : elle est imprimée sur l’étiquette.';
 
-            return response()->json(['status' => 'storage_missing', 'message' => $message, 'errors' => ['storage' => [$message]]], 422);
+            return response()->json(['status' => $status, 'message' => $message, 'errors' => [$field => [$message]]], 422);
         }
 
         // Produit fait à partir d'un produit étiqueté : l'origine (ou « produit neuf ») est obligatoire — un appui ne
@@ -208,7 +212,10 @@ class LabelController extends AdminController
             if ($parent->expires_at->lte($openedAt)) {
                 return $refuse('parent_expired', 'Le produit d’origine '.$ref.' est périmé : il ne doit pas être utilisé.');
             }
-            if ($action['key'] !== 'cooked' && $expiresAt->gt($parent->expires_at)) {
+            // Une SEULE remise en température : cuire un produit déjà cuit ne lui redonne pas de durée (GBPH, pratique
+            // professionnelle) — la DLC du lot cuit d'origine s'applique alors comme pour toute préparation.
+            $restarts = $action['key'] === 'cooked' && $parent->action !== 'cooked';
+            if (! $restarts && $expiresAt->gt($parent->expires_at)) {
                 $expiresAt = $parent->expires_at->copy();
                 $capSource = 'parent';
             }
@@ -235,6 +242,8 @@ class LabelController extends AdminController
             'cap_source' => $capSource,
             'storage' => $storage,
             'parent_log_id' => $parent?->id,
+            // « produit neuf » DÉCLARÉ pour une préparation : la personne a dit qu'il n'y avait pas d'origine étiquetée
+            'declared_new' => $parent === null && ! empty($validated['parent_none']),
             'supplier_lot' => $supplierLot,
             'copies' => $copies,
             'status' => LabelPrintLog::STATUS_CLAIMED,
@@ -470,10 +479,14 @@ class LabelController extends AdminController
             ->whereIn('status', LabelPrintLog::DONE_STATUSES)
             ->whereNull('discarded_at')
             ->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [
-                $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS),
-                $now->copy()->addHours(LabelPrintLog::WATCH_AHEAD_HOURS),
-            ])
+            ->where(fn ($q) => $q
+                ->whereBetween('expires_at', [
+                    $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS),
+                    $now->copy()->addHours(LabelPrintLog::WATCH_AHEAD_HOURS),
+                ])
+                // une étiquette imprimée hors ligne « à vérifier » est signalée TOUT DE SUITE, quelle que soit sa DLC
+                // imprimée (elle peut être plus longue que la vraie) — jamais seulement à son échéance
+                ->orWhere(fn ($a) => $a->where('anomaly', true)->where('created_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))))
             ->orderBy('expires_at')
             ->limit(300)
             ->get()
@@ -539,6 +552,7 @@ class LabelController extends AdminController
             'original_dlc' => $l->original_dlc?->format('Y-m-d'),
             'supplier_lot' => $l->supplier_lot,
             'parent_log_id' => $l->parent_log_id,
+            'declared_new' => (bool) $l->declared_new,
             'offline' => (bool) $l->offline,
             'anomaly' => (bool) $l->anomaly,
             'client_ref' => $l->client_ref,
@@ -717,8 +731,9 @@ class LabelController extends AdminController
         $data = $request->validate([
             'name' => ['required', 'string', 'min:1', 'max:120'],
             'category' => ['nullable', 'string', 'max:60'],
-            'shelf_life_value' => [$hasActions ? 'nullable' : 'required', 'integer', 'min:1', 'max:'.$max],
-            'shelf_life_unit' => [$hasActions ? 'nullable' : 'required', Rule::in(DlcLabelProduct::UNITS)],
+            // une modification partielle (masquer / réactiver) n'a pas à renvoyer la durée
+            'shelf_life_value' => [$hasActions || $ignoreId ? 'nullable' : 'required', 'integer', 'min:1', 'max:'.$max],
+            'shelf_life_unit' => [$hasActions || $ignoreId ? 'nullable' : 'required', Rule::in(DlcLabelProduct::UNITS)],
             'actions' => ['nullable', 'array', 'min:1', 'max:5'],
             'actions.*.key' => ['required', 'distinct', Rule::in(DlcLabelProduct::ACTIONS)],
             'actions.*.value' => ['required', 'integer', 'min:1', 'max:720'],
@@ -732,6 +747,8 @@ class LabelController extends AdminController
             'thawed_storage' => ['nullable', 'string', 'max:60'],
             'no_allergens' => ['nullable', 'boolean'],
             'needs_parent' => ['nullable', 'boolean'],
+            // « Durées vérifiées » coché pour une durée inhabituelle : qui et quand sont gardés sur la fiche
+            'durations_checked' => ['nullable', 'boolean'],
             'note' => ['nullable', 'string', 'max:80'],
             'ask_original_dlc' => ['nullable', 'boolean'],
             'print_operator' => ['nullable', 'boolean'],
@@ -791,7 +808,16 @@ class LabelController extends AdminController
         // fiche est saisie (création, ou modification qui touche la conservation ou les événements), pas quand on la
         // masque seulement.
         $model = $ignoreId ? DlcLabelProduct::query()->find($ignoreId) : null;
-        if (! $ignoreId || array_key_exists('storage', $data) || array_key_exists('thawed_storage', $data)) {
+        if (array_key_exists('thawed_storage', $data) && $data['thawed_storage'] !== null
+            && ! DlcLabelProduct::isValidThawedStorage((string) $data['thawed_storage'])) {
+            abort(response()->json([
+                'message' => 'Conservation après décongélation invalide.',
+                'errors' => ['thawed_storage' => ['Après décongélation : du froid positif (ex. 0 à +2 °C, 0 à +4 °C) ou « Ambiante » — jamais le congélateur.']],
+            ], 422));
+        }
+        // La fiche prévoit la décongélation : sa conservation APRÈS décongélation doit être dite. Vérifié à chaque saisie
+        // qui touche les événements ou la conservation (masquer / réactiver seulement ne redemande rien).
+        if (! $ignoreId || array_key_exists('storage', $data) || array_key_exists('thawed_storage', $data) || array_key_exists('actions', $data)) {
             $effectiveStorage = array_key_exists('storage', $data) ? $data['storage'] : $model?->storage;
             $effectiveActions = $data['actions'] ?? ($model ? $model->actionList() : []);
             $effectiveThawed = array_key_exists('thawed_storage', $data) ? $data['thawed_storage'] : $model?->thawed_storage;
@@ -802,6 +828,11 @@ class LabelController extends AdminController
                 ], 422));
             }
         }
+        if (! empty($data['durations_checked'])) {
+            $data['durations_checked_at'] = now();
+            $data['durations_checked_by'] = $request->user()?->id;
+        }
+        unset($data['durations_checked']);
 
         $duplicate = DlcLabelProduct::query()
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($data['name'])])
@@ -837,6 +868,7 @@ class LabelController extends AdminController
             'thawed_storage' => $p->thawed_storage,
             'no_allergens' => (bool) $p->no_allergens,
             'needs_parent' => (bool) $p->needs_parent,
+            'durations_checked_at' => $p->durations_checked_at?->toIso8601String(),
             'note' => $p->note,
             'ask_original_dlc' => (bool) $p->ask_original_dlc,
             'print_operator' => $p->print_operator === null ? true : (bool) $p->print_operator,

@@ -59,6 +59,37 @@ describe('labelResultQueue', () => {
         expect(direct.pending()).toBe(0);
     });
 
+    it('401 / 419 (jeton expiré pendant la coupure), 403, 429 (limite de débit) : GARDÉS et rejoués, jamais perdus', async () => {
+        for (const status of [401, 403, 408, 419, 425, 429]) {
+            const storage = mem();
+            let fail = true;
+            const sent = [];
+            const q = createResultQueue({ post: async (u) => { if (fail) throw httpErr(status); sent.push(u); }, storage });
+            await q.send('admin/labels/dlc/offline', { client_ref: `r${status}` }, { maxAgeMs: 7 * 86400000 });
+            expect(q.pending(), `statut ${status}`).toBe(1);
+            await q.flush();
+            expect(q.pending(), `statut ${status} au rejeu`).toBe(1);
+            fail = false; // reconnecté
+            await q.flush();
+            expect(sent).toEqual(['admin/labels/dlc/offline']);
+            expect(q.pending()).toBe(0);
+        }
+    });
+
+    it('une entrée mise en file PENDANT un rejeu n’est jamais écrasée par la photo prise au début', async () => {
+        const storage = mem();
+        let release;
+        const q = createResultQueue({ post: (u) => (u === 'lent' ? new Promise((r) => { release = r; }) : Promise.reject(netErr())), storage });
+        await q.send('lent-ko', {}); // une première entrée hors ligne
+        storage.setItem(QUEUE_KEY, JSON.stringify([{ qid: 'a', url: 'lent', body: {}, at: Date.now(), tries: 1 }]));
+        const flushing = q.flush();
+        await q.send('nouvelle', { n: 1 }); // imprimée hors ligne pendant le rejeu
+        release();
+        await flushing;
+        expect(JSON.parse(storage.getItem(QUEUE_KEY)).map((i) => i.url)).toEqual(['nouvelle']);
+        expect(q.items()[0].body).toEqual({ n: 1 });
+    });
+
     it('l’ordre est conservé et une panne réseau stoppe le rejeu sans rien perdre', async () => {
         const storage = mem();
         let calls = 0;

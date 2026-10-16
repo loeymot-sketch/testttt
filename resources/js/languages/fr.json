@@ -1721,6 +1721,7 @@
         "dlc_watch_expired": "Expirés",
         "dlc_watch_today": "Aujourd'hui",
         "dlc_watch_soon": "Sous 72 h",
+        "dlc_watch_anomaly": "À vérifier",
         "dlc_watch_none": "Aucun lot à surveiller : rien n'expire dans les 72 heures.",
         "dlc_watch_error": "Surveillance des DLC indisponible — réessayez plus tard.",
         "promo_flyer_settings": "Réglages du ticket promo",

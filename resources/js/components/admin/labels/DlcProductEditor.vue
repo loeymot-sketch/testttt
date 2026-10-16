@@ -51,8 +51,10 @@
                         </div>
                         <label v-if="warnings.length" class="ed-switch ed-switch--warn">
                             <input v-model="durationsChecked" type="checkbox" data-testid="dlc-ed-durations-ok" />
-                            <span><b>Durées vérifiées</b> : elles sont validées par notre plan de maîtrise sanitaire ou indiquées par le fabricant.</span>
+                            <span><b>Durées vérifiées</b> : elles sont validées par notre plan de maîtrise sanitaire ou indiquées par le fabricant
+                                (votre nom et l'heure sont gardés sur la fiche).</span>
                         </label>
+                        <p v-if="checkedText" class="ed-help" data-testid="dlc-ed-durations-checked-at">{{ checkedText }}</p>
                     </fieldset>
 
                     <fieldset class="ed-fieldset">
@@ -66,7 +68,7 @@
                         </div>
                         <!-- Après décongélation : jamais une valeur unique imposée (viande hachée +2 °C, poisson 0/+2 °C, pain ambiante). -->
                         <div v-if="thawingEnabled" class="ed-thawed" data-testid="dlc-ed-thawed">
-                            <span class="ed-label">Après décongélation<span v-if="thawedRequired" class="ed-required"> (obligatoire : ce produit n'est pas conservé au froid positif)</span></span>
+                            <span class="ed-label">{{ thawedRequired ? "Après décongélation — à choisir (obligatoire)" : "Après décongélation" }}</span>
                             <div class="ed-chips">
                                 <button v-for="(st, i) in thawedChoices" :key="st" type="button" class="ed-chip"
                                         :class="{ 'is-on': form.thawed_storage === st }" :aria-pressed="form.thawed_storage === st ? 'true' : 'false'"
@@ -161,6 +163,7 @@
 import {
     DLC_ACTIONS, DLC_ACTION_KEYS, DLC_ALLERGENS, DLC_CATEGORIES, DLC_STORAGES, DLC_THAWED_STORAGES,
     dlcLabelBlocks, previewExpiry, shelfLifeText, storageForAction, storagePhrase, isFrozenOrAmbient, needsThawedStorage,
+    isValidThawedStorage, formatDlcDate,
 } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
@@ -229,7 +232,13 @@ export default {
         thawedChoices() { return DLC_THAWED_STORAGES; },
         thawingEnabled() { return this.actionRows.some((a) => a.key === "thawed" && a.enabled); },
         thawedRequired() { return needsThawedStorage(this.form.storage, this.enabledActions) && !String(this.form.thawed_storage || "").trim(); },
-        thawedPrinted() { return storagePhrase(storageForAction(this.form.storage, "thawed", this.form.thawed_storage)); },
+        thawedPrinted() {
+            return storagePhrase(storageForAction(this.form.storage, "thawed", this.form.thawed_storage)) || "… à choisir ci-dessus";
+        },
+        checkedText() {
+            const at = this.product && this.product.durations_checked_at;
+            return at ? `Durées inhabituelles vérifiées le ${formatDlcDate(at)}.` : "";
+        },
         allergenChoices() { return DLC_ALLERGENS; },
         /** Les événements cochés, l'événement « par défaut » en premier (c'est lui qu'imprime un appui). */
         enabledActions() {
@@ -335,6 +344,10 @@ export default {
                 this.localError = "Indiquez la conservation après décongélation (ex. 0 à +2 °C pour une viande hachée).";
                 return;
             }
+            if (this.thawingEnabled && !isValidThawedStorage(this.form.thawed_storage)) {
+                this.localError = "Après décongélation : du froid positif (ex. 0 à +2 °C, 0 à +4 °C) ou « Ambiante » — jamais le congélateur.";
+                return;
+            }
             if (this.warnings.length && !this.durationsChecked) {
                 this.localError = "Durée inhabituelle : corrigez-la, ou cochez « Durées vérifiées ».";
                 return;
@@ -349,6 +362,7 @@ export default {
                 allergens: this.form.allergens,
                 no_allergens: this.form.allergens.length ? false : this.form.no_allergens,
                 needs_parent: this.form.needs_parent,
+                durations_checked: this.warnings.length && this.durationsChecked ? true : undefined,
                 actions: this.enabledActions,
                 ask_original_dlc: this.form.ask_original_dlc,
                 print_operator: this.form.print_operator,

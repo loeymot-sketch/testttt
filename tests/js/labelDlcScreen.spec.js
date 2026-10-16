@@ -142,7 +142,7 @@ describe('écran DLC — un par un', () => {
     });
 
     it('réseau coupé : l’étiquette sort quand même (« Imprimée hors ligne »), et sa ligne de journal part en file', async () => {
-        setup([P({ id: 1, storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 3, unit: 'days' }] })], { offline: true });
+        setup([P({ id: 1, storage: '≤ −18 °C', thawed_storage: '0 à +4 °C', actions: [{ key: 'thawed', value: 3, unit: 'days' }] })], { offline: true });
         const w = await mountScreen();
         await w.get('[data-testid="dlc-product-1"]').trigger('click');
         await flushPromises();
@@ -158,6 +158,31 @@ describe('écran DLC — un par un', () => {
         expect(blocks).toContain(`réf. ${journal[1].client_ref.slice(-6).toUpperCase()}`);
         expect(journal[1].client_ref).toMatch(/^t[a-z0-9]+-[a-z0-9]+$/);
         expect(w.get('[data-testid="dlc-last"]').text()).toMatch(/inscrite au journal dès le retour du réseau/);
+    });
+
+    it('hors ligne et journal en attente : le dit, et compte déjà l’étiquette dans « À surveiller »', async () => {
+        setup([P({ id: 1, actions: [{ key: 'prepared', value: 2, unit: 'hours' }] })], { offline: true });
+        h.axios.post.mockImplementation(async (url, body) => {
+            posts.push([url, body]);
+            const e = new Error('Network Error'); throw e; // tout le réseau est coupé, journal compris
+        });
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-product-1"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-pending"]').text()).toMatch(/1 étiquette imprimée hors ligne en attente du journal/);
+        expect(w.get('[data-testid="dlc-watch"]').text()).toMatch(/Oignons émincés/);
+        expect(w.find('[data-testid="dlc-watch-pending"]').exists()).toBe(true);
+        expect(w.find('[data-testid^="dlc-discard-q-"]').exists()).toBe(false); // rien à « jeter » côté serveur tant qu'il n'y est pas
+    });
+
+    it('fiche « décongélation » sans conservation après décongélation : l’appui ouvre l’éditeur, rien ne s’imprime', async () => {
+        setup([P({ id: 1, storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] })]);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-product-1"]').text()).toMatch(/Conservation après décongélation à renseigner/);
+        await w.get('[data-testid="dlc-product-1"]').trigger('click');
+        await flushPromises();
+        expect(prints).toEqual([]);
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/Conservation après décongélation à renseigner/);
     });
 
     it('« Annuler cette impression » : la ligne reste au journal, marquée annulée', async () => {
@@ -233,7 +258,7 @@ describe('écran DLC — tout ensemble', () => {
 
     it('événement imposé pour la sélection : seuls les produits qui le prévoient restent, jamais d’événement remplacé en silence', async () => {
         setup([
-            P({ id: 1, actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }] }),
+            P({ id: 1, thawed_storage: '0 à +4 °C', actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }] }),
             P({ id: 2, name: 'Tomates', actions: [{ key: 'prepared', value: 24, unit: 'hours' }] }),
         ]);
         const w = await mountScreen();
@@ -264,6 +289,8 @@ describe('écran DLC — tout ensemble', () => {
         expect(prints).toEqual([]);
         expect(w.get('[data-testid="dlc-originals"]').text()).toMatch(/Crème/);
         expect(w.get('[data-testid="dlc-originals-print"]').attributes('disabled')).toBeDefined();
+        // jamais pré-remplie ; « Même emballage » n'apparaît que si une DLC antérieure est connue
+        expect(w.get('[data-testid="dlc-originals-date-2"]').element.value).toBe('');
         await w.get('[data-testid="dlc-originals-date-2"]').setValue(tomorrow);
         await w.get('[data-testid="dlc-originals-lot-2"]').setValue('2345A');
         await w.get('[data-testid="dlc-originals-print"]').trigger('click');
@@ -298,7 +325,7 @@ describe('écran DLC — tout ensemble', () => {
         await w.get('[data-testid="dlc-product-1"]').trigger('click');
         await flushPromises();
         expect(prints).toEqual([]);
-        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/Renseignez la conservation/);
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/Conservation à renseigner : elle est imprimée sur l’étiquette/);
     });
 
     it('− retire une étiquette ; à zéro le produit sort de la sélection', async () => {
@@ -404,11 +431,26 @@ describe('fiche d’impression', () => {
         expect(w.emitted('print')[0][0]).toMatchObject({ action: 'cooked', parent_log_id: 55 });
     });
 
-    it('la dernière DLC / lot du fabricant connus pour ce produit sont proposés (même emballage entamé)', () => {
+    it('la DLC d’un nouvel emballage n’est JAMAIS pré-remplie ; « Même emballage » la reprend sur un choix explicite', async () => {
         const w = mount(DlcPrintSheet, { props: { product: P({ ask_original_dlc: true }), settings, lastOriginal: { original_dlc: '2099-12-31', supplier_lot: 'LOT9' } } });
+        expect(w.get('[data-testid="dlc-sheet-original"]').element.value).toBe('');
+        expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeDefined();
+        expect(w.get('[data-testid="dlc-sheet-same-pack"]').text()).toMatch(/31\/12\/2099 · lot LOT9/);
+        await w.get('[data-testid="dlc-sheet-same-pack"]').trigger('click');
         expect(w.get('[data-testid="dlc-sheet-original"]').element.value).toBe('2099-12-31');
         expect(w.get('[data-testid="dlc-sheet-supplier-lot"]').element.value).toBe('LOT9');
         expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeUndefined();
+    });
+
+    it('recuire un produit DÉJÀ cuit : une seule remise en température, la DLC suit le lot d’origine ; un lot « à vérifier » est signalé', async () => {
+        const lots = [{ id: 70, dlc_product_id: 9, status: 'printed', product_name: 'Poulet rôti', action: 'cooked', lot: 'L261016-0070', anomaly: true,
+            expires_at: new Date(Date.now() + 10 * 3600000).toISOString() }];
+        const w = mount(DlcPrintSheet, { props: { product: P({ actions: [{ key: 'cooked', value: 3, unit: 'days' }] }), settings, lots } });
+        await w.get('[data-testid="dlc-sheet-parent-toggle"]').trigger('click');
+        expect(w.get('[data-testid="dlc-sheet-parent-anomaly"]').text()).toMatch(/À vérifier/);
+        await w.get('[data-testid="dlc-sheet-parent-70"]').trigger('click');
+        expect(w.get('[data-testid="dlc-sheet-parent-note"]').text()).toMatch(/une seule remise en température/);
+        expect(w.get('[data-testid="dlc-sheet-action-cooked"]').text()).toMatch(/\(limitée\)/);
     });
 
     it('décongélation : la conservation APRÈS décongélation de la fiche est celle annoncée', () => {
@@ -416,9 +458,10 @@ describe('fiche d’impression', () => {
         expect(w.get('[data-testid="dlc-sheet-thawed-note"]').text()).toMatch(/À conserver entre 0 et \+2 °C/);
     });
 
-    it('décongélation : la fiche rappelle « NE PAS RECONGELER » et la conservation au froid positif', () => {
+    it('décongélation sans conservation après décongélation sur la fiche : impression bloquée, avec la marche à suivre', () => {
         const w = mountSheet({ storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 3, unit: 'days' }] });
-        expect(w.get('[data-testid="dlc-sheet-thawed-note"]').text()).toMatch(/NE PAS RECONGELER.*À conserver entre 0 et \+4 °C/);
+        expect(w.get('[data-testid="dlc-sheet-thawed-missing"]').text()).toMatch(/Modifier la fiche/);
+        expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeDefined();
     });
 });
 
@@ -439,6 +482,10 @@ describe('éditeur de produit', () => {
         expect(w.emitted('save')).toBeUndefined();
         expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/température de conservation/);
         await w.get('[data-testid="dlc-ed-storage-1"]').trigger('click');
+        // décongélation cochée : la conservation après décongélation est obligatoire
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/conservation après décongélation/);
+        await w.get('[data-testid="dlc-ed-thawed-0"]').trigger('click'); // 0 à +2 °C (viande)
         // viande décongelée 3 jours : au-delà de l'usage courant (24 h), à confirmer
         expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/24 h est l'usage courant/);
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
@@ -448,21 +495,21 @@ describe('éditeur de produit', () => {
         const payload = w.emitted('save')[0][0];
         expect(payload).toMatchObject({
             name: 'Poulet mariné', category: 'Viandes & volailles', allergens: ['moutarde'], ask_original_dlc: true,
-            print_operator: true, default_copies: 1, storage: '0 à +4 °C',
+            print_operator: true, default_copies: 1, storage: '0 à +4 °C', thawed_storage: '0 à +2 °C', durations_checked: true,
             actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }],
         });
         expect(w.find('[data-testid="dlc-ed-preview"]').exists()).toBe(true);
     });
 
     it('« Par défaut » : l’événement choisi passe en tête (c’est lui qu’imprime un appui)', async () => {
-        const w = mount(DlcProductEditor, { props: { product: P({ actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }] }), settings } });
+        const w = mount(DlcProductEditor, { props: { product: P({ thawed_storage: '0 à +4 °C', actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }] }), settings } });
         await w.get('[data-testid="dlc-ed-default-thawed"]').setValue(true);
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
         expect(w.emitted('save')[0][0].actions.map((a) => a.key)).toEqual(['thawed', 'opened']);
     });
 
     it('durée inhabituelle (décongelé 5 jours, « 96 heures ») : signalée, et à confirmer avant d’enregistrer', async () => {
-        const w = mount(DlcProductEditor, { props: { product: P({ actions: [{ key: 'thawed', value: 5, unit: 'days' }] }), settings } });
+        const w = mount(DlcProductEditor, { props: { product: P({ thawed_storage: '0 à +4 °C', actions: [{ key: 'thawed', value: 5, unit: 'days' }] }), settings } });
         expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/3 jours au plus/);
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
         expect(w.emitted('save')).toBeUndefined();
