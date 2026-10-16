@@ -445,7 +445,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **25 models** (baseline locked par
+- `BranchScope` global appliqué sur **27 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,
@@ -460,7 +460,10 @@ Loi de Finance France — non-négociable, prison time si violé.
   appartient à la caisse qui l'a prise, jamais à une autre),
   UberDirectDelivery (course de livraison Uber Direct 2026-09-06 — une course
   appartient au restaurant qui l'a commandée ; table dédiée à dessein, pour que
-  le cycle de LIVRAISON ne se mêle jamais à la machine à états de la CUISINE).
+  le cycle de LIVRAISON ne se mêle jamais à la machine à états de la CUISINE),
+  DlcLabelProduct (produits d'hygiène/DLC à étiqueter 2026-10-16 — le catalogue de durées de
+  conservation appartient à SON restaurant), LabelPrintLog (journal d'impression des étiquettes
+  2026-10-16 — traçabilité d'hygiène + verrou d'impression automatique, par branche).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
 - ⚠️ **`User` N'EST PAS ISOLÉ PAR BRANCHE — corrigé dans CE document le 2026-08-14 après
   vérification en lecture de code (décision owner).** `User.php` enregistre bien le scope

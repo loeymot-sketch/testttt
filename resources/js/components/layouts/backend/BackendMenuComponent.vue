@@ -154,6 +154,19 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // cuisine. Même gate réutilisée (`pos-orders`) et même raison qu'au-dessus : une permission
     // neuve ne serait portée par aucun rôle, l'écran serait inaccessible à tout le monde.
     Object.freeze({ url: 'uber-photo', language: 'uber_photo', icon: 'fa-solid fa-camera' }),
+    // [ETIQUETTES 2026-10-16 · owner] Imprimante d'étiquettes Brother QL-820NWB (Bluetooth sur la tablette) :
+    // étiquettes par produit de commande, étiquettes d'hygiène (DLC), réglages de l'imprimante. Même gate
+    // réutilisée (`pos-orders`) et même raison que l'entrée Uber : une permission neuve ne serait portée par aucun rôle.
+    Object.freeze({
+        url: 'labels',
+        language: 'labels',
+        icon: 'fa-solid fa-tags',
+        children: Object.freeze([
+            Object.freeze({ url: 'labels/orders', language: 'labels_orders', icon: 'lab lab-list' }),
+            Object.freeze({ url: 'labels/dlc', language: 'labels_dlc', icon: 'lab lab-list' }),
+            Object.freeze({ url: 'labels/printer', language: 'labels_printer', icon: 'lab lab-list' }),
+        ]),
+    }),
     /*
      * [ROUE 2026-08-13 · propriétaire : « accès admin caisse »] Les écrans de la roue existaient
      * et fonctionnaient, mais aucun lien n'y menait depuis le back-office.
@@ -192,6 +205,11 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     'promo-flyer/settings': 'pos-orders',
     // [UBER-PHOTO 2026-08-10] Même gate que la caisse — voir l'entrée de menu.
     'uber-photo': 'pos-orders',
+    // [ETIQUETTES 2026-10-16] Même gate que la caisse — voir l'entrée de menu.
+    labels: 'pos-orders',
+    'labels/orders': 'pos-orders',
+    'labels/dlc': 'pos-orders',
+    'labels/printer': 'pos-orders',
     // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
     // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
     // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,

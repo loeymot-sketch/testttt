@@ -4348,6 +4348,16 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-10-16 — Étiquettes Brother QL-820NWB (DLC/hygiène + une étiquette par produit de commande, semi-auto puis automatique).**
+Transport : Web Serial sur Bluetooth RFCOMM depuis le Chrome de la tablette (Android ≥ 138) — le serveur n'imprime jamais.
+Protocole raster Brother écrit d'après le manuel officiel (aller-retour avec un décodeur indépendant), écrans `/admin/labels/{orders,dlc,printer}`
+(menu « Étiquettes »), serveur : catalogue DLC + horloge unique + journal d'hygiène + verrou d'impression automatique
+(`LabelController`, tables `dlc_label_products` / `label_print_logs`, BranchScope : CLAUDE.md §9 → 27 modèles). Preuves : 573 fichiers vitest verts
+(4798 tests), PHPUnit Labels 32/32, E2E Playwright 7/7 avec fausse Brother (octets décodés == aperçu), balayage des 3739 commandes réelles
+(0 oubli, mutation vérifiée), 3 revues adversariales (2 P0 + 6 P1 corrigés), frozen-diff 0, NF525 CHAIN OK. **Reste au propriétaire (matériel)** :
+appairage Bluetooth Android, sens physique du papier (étiquette test G/D), « Arrêt automatique › Off » sur l'imprimante. Doc : `docs/ETIQUETTES_BROTHER_QL820NWB.md`.
+Hors périmètre, constaté : `WithoutGlobalScopesAuditSentinelTest` rouge (28 usages ≠ 26, commandes console déjà commitées, antérieur à ce travail).
+
 **2026-09-30 — Borne : coque sombre du catalogue + 18 visuels produits recomposés sur le décor
 Le Cayenne + slug `cheddar` ajouté à `config/menu_images.php`.** 4 détourés troués à la source
 (raclette, fromage, champignons, boursin) laissés tels quels — voir §2.

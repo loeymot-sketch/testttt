@@ -306,19 +306,19 @@ function splitViandeList(raw) {
 
 // ── Composition decomposition ────────────────────────────────────────────────
 
-function readVariations(orderItem) {
+export function readVariations(orderItem) {
     const snap = orderItem?.composition_snapshot;
     if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) return snap.lines;
     return Array.isArray(orderItem?.item_variations) ? orderItem.item_variations : [];
 }
 
-function readExtras(orderItem) {
+export function readExtras(orderItem) {
     const snap = orderItem?.composition_snapshot;
     if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) return snap.extras;
     return Array.isArray(orderItem?.item_extras) ? orderItem.item_extras : [];
 }
 
-function readAddons(orderItem) {
+export function readAddons(orderItem) {
     const snap = orderItem?.composition_snapshot;
     if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) return snap.addons;
     return Array.isArray(orderItem?.item_addons) ? orderItem.item_addons : [];
@@ -332,16 +332,16 @@ function readAddons(orderItem) {
  */
 export const EXTRA_SANS_NOM = 'Supplément';
 
-function extraName(e) {
+export function extraName(e) {
     return e?.extra_name || e?.name || '';
 }
 
-function addonName(a) {
+export function addonName(a) {
     return a?.addon_name || a?.name || '';
 }
 
 /** Classify a Line-1 slot from its GROUP (with value-based fallback). */
-function classifyVariation(group, value) {
+export function classifyVariation(group, value) {
     const g = normalize(group);
     if (/viande|meat/.test(g)) return 'meat';
     if (/sauce/.test(g)) return 'sauce';
@@ -434,7 +434,7 @@ function structuredSauceNames(orderItem, destination) {
     return values.map((value) => String(value || '').trim()).filter(Boolean);
 }
 
-function productSauceNames(orderItem) {
+export function productSauceNames(orderItem) {
     const structured = structuredSauceNames(orderItem, 'product');
     // [GOAL #4 2026-10-02] `sauce_destinations` est scellé (immuable) et a pu être écrit TRONQUÉ par
     // l'ancien découpage : la relecture de l'instruction l'emporte quand elle est plus complète.
@@ -442,7 +442,7 @@ function productSauceNames(orderItem) {
     return structured.length && reread.length <= structured.length ? structured : (reread.length ? reread : structured);
 }
 
-function friesSauceNamesForOrder(orderItem) {
+export function friesSauceNamesForOrder(orderItem) {
     const structured = structuredSauceNames(orderItem, 'fries');
     return structured.length ? structured : fritesSauceNames(orderItem?.instruction);
 }
@@ -635,7 +635,7 @@ function isDrinkAddonRole(role) {
 }
 
 /** Lignes boisson d'un item ("1× Coca-Cola 33cl") depuis ses addons. */
-function drinkAddonLabels(orderItem) {
+export function drinkAddonLabels(orderItem) {
     const out = [];
     for (const a of readAddons(orderItem)) {
         if (!isDrinkAddonRole(a?.role)) continue;

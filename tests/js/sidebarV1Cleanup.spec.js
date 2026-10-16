@@ -108,7 +108,15 @@ describe('V1 admin sidebar cleanup', () => {
         // la même autorisation `catalog.compose` que le composeur → 19 rows. Compteur remonté
         // DANS la session qui livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.wizard_pages');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(19);
+        // [ETIQUETTES 2026-10-16] +4 : « Étiquettes » (imprimante Brother QL-820NWB) = 1 entrée parent
+        // + ses 3 sous-écrans (commandes, DLC/hygiène, imprimante) — les enfants comptent comme des
+        // lignes, comme ceux de `items` et `promo-flyer`. Même porte que la caisse (`pos-orders`) → 23 rows.
+        // Compteur remonté DANS la session qui livre l'entrée, pas découvert plus tard.
+        expect(text).toContain('menu.labels');
+        expect(text).toContain('menu.labels_orders');
+        expect(text).toContain('menu.labels_dlc');
+        expect(text).toContain('menu.labels_printer');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(23);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

@@ -523,6 +523,27 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::post('/uber/photo/{capture}/reprint', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'reprint'])
         ->whereNumber('capture')->name('uber.photo.reprint');
 
+    // [ETIQUETTES 2026-10-16 · owner] Imprimante d'étiquettes Brother QL-820NWB (Bluetooth, sur la tablette) :
+    // étiquettes d'hygiène (DLC) et une étiquette par produit de commande. Le serveur ne parle JAMAIS à
+    // l'imprimante (cloud ≠ Bluetooth local) : il tient le catalogue DLC, l'horloge, le journal d'hygiène et le
+    // verrou d'impression automatique. Porte : permission:pos-orders|pos|kitchen-display-system (voir le
+    // contrôleur). Domaine NEUF, ADDITIF, HORS NF525.
+    Route::prefix('labels')->name('labels.')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Admin\LabelController::class, 'products'])->name('products');
+        Route::post('/products', [\App\Http\Controllers\Admin\LabelController::class, 'storeProduct'])->name('products.store');
+        Route::match(['put', 'patch'], '/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'updateProduct'])
+            ->where('product', '[0-9]{1,18}')->name('products.update');
+        Route::delete('/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'destroyProduct'])
+            ->where('product', '[0-9]{1,18}')->name('products.destroy');
+        Route::post('/dlc/print', [\App\Http\Controllers\Admin\LabelController::class, 'dlcPrint'])->name('dlc.print');
+        Route::post('/prints/{log}/result', [\App\Http\Controllers\Admin\LabelController::class, 'printResult'])
+            ->where('log', '[0-9]{1,18}')->name('prints.result');
+        Route::get('/history', [\App\Http\Controllers\Admin\LabelController::class, 'history'])->name('history');
+        Route::get('/orders', [\App\Http\Controllers\Admin\LabelController::class, 'orders'])->name('orders');
+        Route::post('/orders/{order}/claim', [\App\Http\Controllers\Admin\LabelController::class, 'claim'])
+            ->where('order', '[0-9]{1,18}')->name('orders.claim');
+    });
+
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
             Route::get('/', [CompanyController::class, 'index']);
