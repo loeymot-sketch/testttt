@@ -12,7 +12,7 @@
                 <p v-if="pendingOffline.length" class="dlc-pending" role="status" data-testid="dlc-pending">
                     ⏳ {{ pendingOffline.length }} étiquette{{ pendingOffline.length > 1 ? "s" : "" }} imprimée{{ pendingOffline.length > 1 ? "s" : "" }} hors ligne
                     en attente du journal — {{ pendingOffline.length > 1 ? "elles partiront" : "elle partira" }} dès le retour du réseau (ou après reconnexion).
-                    Déjà comptée{{ pendingOffline.length > 1 ? "s" : "" }} dans « À surveiller ».
+                    {{ pendingOffline.length > 1 ? "Elles figurent" : "Elle figure" }} dans « À surveiller » dès l'approche de la DLC.
                 </p>
                 <p v-if="loadError" class="dlc-alert" data-testid="dlc-error">{{ loadError }}</p>
                 <p v-if="!loaded && !loadError" class="dlc-empty" role="status">Chargement des produits…</p>
@@ -124,7 +124,7 @@
                                     @click="watchLimit = 300">+ {{ watchMore }} autre{{ watchMore > 1 ? "s" : "" }} lot{{ watchMore > 1 ? "s" : "" }} — tout afficher</button>
                         </aside>
 
-                        <div ref="main" class="dlc-main">
+                        <div ref="main" class="dlc-main" :class="{ 'has-toast': Boolean(last) }">
                             <div v-if="query && !visibleProducts.length" class="dlc-empty dlc-empty--inline" data-testid="dlc-no-match">
                                 <span>Aucun produit ne correspond à « {{ query }} ».</span>
                                 <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-add-from-query" @click="openEditor({ name: query })">Créer « {{ query }} »</button>
@@ -360,6 +360,7 @@ export default {
             toastShownAt: 0,
             originals: null,
             pendingOffline: [],
+            origReturnFocus: null,
             busyId: null,
             queue: [],
             draining: false,
@@ -468,12 +469,19 @@ export default {
         },
     },
     watch: {
-        // La fenêtre « DLC du fabricant » prend le focus (clavier, lecteur d'écran).
+        // La fenêtre « DLC du fabricant » prend le focus (clavier, lecteur d'écran) et le rend à la fermeture.
         originals(now, before) {
-            if (now && !before) this.$nextTick(() => {
-                const first = this.$refs.origOverlay && this.$refs.origOverlay.querySelector("input");
-                if (first && first.focus) first.focus();
-            });
+            if (now && !before) {
+                this.origReturnFocus = document.activeElement;
+                this.$nextTick(() => {
+                    const first = this.$refs.origOverlay && this.$refs.origOverlay.querySelector("input");
+                    if (first && first.focus) first.focus();
+                });
+            } else if (!now && before) {
+                const el = this.origReturnFocus;
+                this.origReturnFocus = null;
+                this.$nextTick(() => { if (el && el.focus && document.contains(el)) el.focus(); });
+            }
         },
         // Un autre événement de lot : les produits qui ne le prévoient pas sortent de la sélection (jamais d'étiquette
         // « Entamé le » pour un produit qu'on vient de sortir du congélateur).
@@ -536,8 +544,10 @@ export default {
         offlineRefOf(ref) { return String(ref || "").slice(-6).toUpperCase(); },
         /** Dernière DLC / lot du fabricant saisis pour ce produit, s'ils sont encore valables (même emballage entamé). */
         lastOriginalFor(productId) {
+            // seulement une impression réellement sortie et pas annulée ni jetée (l'emballage jeté n'est plus « le même »)
             const rows = [...this.lotRows, ...this.history]
-                .filter((h) => h.dlc_product_id === productId && h.original_dlc && h.original_dlc >= this.todayIso)
+                .filter((h) => h.dlc_product_id === productId && h.original_dlc && h.original_dlc >= this.todayIso
+                    && ["printed", "unconfirmed"].includes(h.status) && !["cancelled", "discarded"].includes(h.discard_reason))
                 .sort((a, b) => b.id - a.id);
             return rows.length ? { original_dlc: rows[0].original_dlc, supplier_lot: rows[0].supplier_lot || "" } : null;
         },
@@ -926,12 +936,13 @@ export default {
             const result = await printBlocks(this.printerInstance(), Array.from({ length: data.copies }, () => blocks), this.settings);
 
             if (resultUrl) {
+                // le verdict d'une étiquette DLC est gardé 7 jours en file : une longue coupure ne le perd jamais
                 await labelResultQueue(axios).send(resultUrl, {
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",
                     message: result.message ? String(result.message).slice(0, 290) : null,
                     printed_pages: result.ok ? data.copies : (result.pages || 0),
                     attempt: data.attempt || null,
-                });
+                }, { maxAgeMs: OFFLINE_KEEP_MS });
                 labelInflight(axios).end(data.log_id);
             } else if (offline) {
                 // La ligne de journal partira dès le retour du réseau (file locale rejouée, `client_ref` : jamais de doublon).
@@ -1092,6 +1103,7 @@ export default {
 .dlc-watch-more { margin: 6px 0 0; color: #92400e; }
 .dlc-watch-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
 .dlc-watch-pending { margin-left: auto; color: #1e3a8a; font-weight: 700; font-size: 13px; }
+.dlc-main.has-toast { padding-bottom: 150px; } /* la dernière rangée reste atteignable au-dessus de la notice */
 .dlc-pending { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-weight: 600; }
 .dlc-watch li.is-expired .dlc-watch-n { color: #7f1d1d; }
 .dlc-tile-todo { background: #fef3c7 !important; color: #92400e; font-weight: 700; }

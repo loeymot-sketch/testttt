@@ -515,7 +515,11 @@ class LabelController extends AdminController
         $rows = LabelPrintLog::query()
             ->with('user:id,name')
             ->where('kind', LabelPrintLog::KIND_DLC)
-            ->whereIn('status', LabelPrintLog::DONE_STATUSES)
+            // une étiquette réservée dont le verdict n'est jamais arrivé (réseau coupé PENDANT l'impression) a peut-être
+            // été imprimée : passé 10 minutes, elle est surveillée comme « non confirmée » — jamais perdue en silence
+            ->where(fn ($st) => $st->whereIn('status', LabelPrintLog::DONE_STATUSES)->orWhere(fn ($c) => $c
+                ->where('status', LabelPrintLog::STATUS_CLAIMED)
+                ->where('claimed_at', '<', $now->copy()->subMinutes(10))))
             ->whereNull('discarded_at')
             ->whereNotNull('expires_at')
             ->where(fn ($q) => $q
@@ -553,11 +557,26 @@ class LabelController extends AdminController
                 ->where('discarded_at', '>=', $now->copy()->subHours(LabelPrintLog::PARENT_USED_GRACE_HOURS))))
             ->orderBy('expires_at')
             ->limit(300)
-            ->get()
-            ->map(fn (LabelPrintLog $l): array => $this->presentLog($l))
-            ->values();
+            ->get();
 
-        return response()->json(['data' => $rows, 'meta' => $this->clock()]);
+        // « déjà cuit plus haut dans la chaîne ? » pour chaque lot (même règle que dlcPrint), en mémoire : une requête
+        $graph = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)
+            ->where('created_at', '>=', $now->copy()->subDays(60))
+            ->get(['id', 'action', 'parent_log_id'])->keyBy('id');
+        $chainCooked = function (LabelPrintLog $l) use ($graph): bool {
+            $seen = [];
+            for ($cur = $l, $d = 0; $cur && $d < 25 && ! isset($seen[$cur->id]); $d++) {
+                if ($cur->action === 'cooked') return true;
+                $seen[$cur->id] = true;
+                $cur = $cur->parent_log_id ? $graph->get($cur->parent_log_id) : null;
+            }
+
+            return false;
+        };
+
+        $data = $rows->map(fn (LabelPrintLog $l): array => $this->presentLog($l) + ['chain_cooked' => $chainCooked($l)])->values();
+
+        return response()->json(['data' => $data, 'meta' => $this->clock()]);
     }
 
     /** Dernières impressions (traçabilité d'hygiène). */

@@ -1062,6 +1062,24 @@ class LabelControllerTest extends TestCase
         $re = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $regen['id'], 'parent_log_id' => $packed['log_id']])->assertOk()->json();
         $this->assertTrue($re['capped']);
         $this->assertSame('2026-10-19 10:00', Carbon::parse($re['expires_at'])->format('Y-m-d H:i'));
+        // la fiche d'impression le sait aussi : le lot sous vide est marqué « déjà cuit plus haut dans la chaîne »
+        $lots = collect($this->getJson('/api/admin/labels/lots')->json('data'))->keyBy('id');
+        $this->assertTrue($lots[$packed['log_id']]['chain_cooked']);
+        Carbon::setTestNow();
+    }
+
+    public function test_une_etiquette_reservee_sans_verdict_reste_surveillee_apres_10_minutes(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->product(['name' => 'Olives', 'shelf_life_value' => 24, 'shelf_life_unit' => 'hours']);
+        // réseau coupé PENDANT l'impression : la réservation existe, le verdict n'arrive jamais
+        $r = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p->id])->assertOk()->json();
+        $ids = fn () => collect($this->getJson('/api/admin/labels/watch')->json('data'))->pluck('id')->all();
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:02:00', config('app.timezone')));
+        $this->assertNotContains($r['log_id'], $ids(), 'impression en cours : pas encore');
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:15:00', config('app.timezone')));
+        $this->assertContains($r['log_id'], $ids(), 'sans verdict depuis 15 min : surveillée (« non confirmée »)');
         Carbon::setTestNow();
     }
 

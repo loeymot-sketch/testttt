@@ -309,6 +309,9 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         const merged = watchList([h({ id: 1, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 2, expires_at: '2026-10-16T18:00:00Z', anomaly: true, message: '⚠ x' })], now).items;
         expect(merged).toHaveLength(1);
         expect(merged[0].anomaly).toBe(true);
+        // une étiquette hors ligne pas encore journalisée ne se fond jamais dans un lot du journal
+        const kept = watchList([h({ id: 1, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 'q-1', expires_at: '2026-10-16T18:00:00Z', pending: true })], now).items;
+        expect(kept.map((x) => [x.ids, x.pending])).toEqual([[[1], false], [['q-1'], true]]);
     });
 
     it('au-delà de la limite, le nombre de lots non affichés est rendu (« + N autres »), jamais tu', () => {

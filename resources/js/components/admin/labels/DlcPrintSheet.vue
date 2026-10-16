@@ -164,7 +164,7 @@ export default {
                 .filter((l) => { const k = `${l.product_name}|${l.expires_at}`; if (seen.has(k)) return false; seen.add(k); return true; })
                 .map((l) => ({
                     id: l.id, name: l.product_name, lot: l.lot, expiresAt: l.expires_at, used: Boolean(l.discarded_at),
-                    action: l.action || "", anomaly: Boolean(l.anomaly),
+                    action: l.action || "", anomaly: Boolean(l.anomaly), chainCooked: Boolean(l.chain_cooked) || l.action === "cooked",
                     actionShort: (DLC_ACTIONS[l.action] || DLC_ACTIONS.opened).short,
                     until: formatDlcDate(l.expires_at, this.timezone),
                 }));
@@ -189,7 +189,7 @@ export default {
         },
         parentNote() {
             if (!this.parent) return "";
-            if (this.action === "cooked" && this.parent.action === "cooked") return "Déjà cuit : une seule remise en température — la DLC suit celle du produit d'origine.";
+            if (this.action === "cooked" && this.parent.chainCooked) return "Déjà cuit : une seule remise en température — la DLC suit celle du produit d'origine.";
             if (this.action === "cooked") return "Cuisson : nouvelle durée de conservation (le produit d'origine est encore bon).";
             return this.limit.source === "parent"
                 ? `La DLC suivra celle du produit d'origine (${this.parent.until}).`
@@ -252,7 +252,7 @@ export default {
             let source = null;
             if (this.originalEnd && e > this.originalEnd) { e = this.originalEnd; source = "original"; }
             // cuire redonne une durée propre, SAUF un produit déjà cuit (une seule remise en température)
-            const restart = a && a.key === "cooked" && !(this.parent && this.parent.action === "cooked");
+            const restart = a && a.key === "cooked" && !(this.parent && this.parent.chainCooked);
             if (this.parentEnd && !restart && e > this.parentEnd) { e = this.parentEnd; source = "parent"; }
             return { expires: e, source };
         },

@@ -274,7 +274,8 @@ export function watchList(rows, nowMs, limit = 30) {
         if (!Number.isFinite(exp)) return;
         // une étiquette « à vérifier » (hors ligne) est signalée tout de suite, quelle que soit sa DLC imprimée
         if (exp > nowMs + 72 * 3600 * 1000 && !h.anomaly) return;
-        const key = `${h.product_name}|${Math.round(exp / 60000)}`;
+        // une étiquette hors ligne pas encore journalisée ne se fond jamais dans un lot du journal (« Jeté » viserait un id local)
+        const key = `${h.product_name}|${Math.round(exp / 60000)}${h.pending ? '|q' : ''}`;
         if (seen.has(key)) {
             // même produit, même échéance : un seul lot — on additionne et on garde tous les identifiants (pour « Jeté »)
             const lot = out.find((o) => o.key === key);

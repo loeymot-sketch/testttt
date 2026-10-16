@@ -442,6 +442,16 @@ describe('fiche d’impression', () => {
         expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeUndefined();
     });
 
+    it('déjà cuit PLUS HAUT dans la chaîne (lot sous vide d’un rôti) : la fiche applique la même règle que le serveur', async () => {
+        const lots = [{ id: 71, dlc_product_id: 9, status: 'printed', product_name: 'Poulet sous vide', action: 'vacuum', chain_cooked: true,
+            lot: 'L261016-0071', expires_at: new Date(Date.now() + 10 * 3600000).toISOString() }];
+        const w = mount(DlcPrintSheet, { props: { product: P({ actions: [{ key: 'cooked', value: 3, unit: 'days' }] }), settings, lots } });
+        await w.get('[data-testid="dlc-sheet-parent-toggle"]').trigger('click');
+        await w.get('[data-testid="dlc-sheet-parent-71"]').trigger('click');
+        expect(w.get('[data-testid="dlc-sheet-parent-note"]').text()).toMatch(/une seule remise en température/);
+        expect(w.get('[data-testid="dlc-sheet-action-cooked"]').text()).toMatch(/\(limitée\)/);
+    });
+
     it('recuire un produit DÉJÀ cuit : une seule remise en température, la DLC suit le lot d’origine ; un lot « à vérifier » est signalé', async () => {
         const lots = [{ id: 70, dlc_product_id: 9, status: 'printed', product_name: 'Poulet rôti', action: 'cooked', lot: 'L261016-0070', anomaly: true,
             expires_at: new Date(Date.now() + 10 * 3600000).toISOString() }];
