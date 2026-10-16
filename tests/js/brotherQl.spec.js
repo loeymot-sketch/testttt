@@ -25,6 +25,7 @@ import {
     extractStatusFrames,
     parseStatus,
     mediaMismatchMessage,
+    mediaFromStatus,
 } from '../../resources/js/helpers/brotherQl.js';
 
 const hex = (u8) => Array.from(u8).map((b) => b.toString(16).padStart(2, '0')).join(' ');
@@ -285,5 +286,19 @@ describe('statut de l’imprimante (32 octets, manuel §4)', () => {
         expect(mediaMismatchMessage(parseStatus(frame()), MEDIA.c62)).toBeNull();
         // « aucun rouleau » est signalé par errors, pas par ce message
         expect(mediaMismatchMessage(parseStatus(frame({ width: 0, type: 0x00 })), MEDIA.c62)).toBeNull();
+    });
+});
+
+describe('rouleau détecté', () => {
+    it('reconnaît les formats gérés d’après l’état de l’imprimante', () => {
+        expect(mediaFromStatus(parseStatus(frame())).id).toBe('c62');
+        expect(mediaFromStatus(parseStatus(frame({ width: 29, type: 0x4b, length: 90 }))).id).toBe('d29x90');
+        expect(mediaFromStatus(parseStatus(frame({ width: 62, type: 0x4b, length: 29 }))).id).toBe('d62x29');
+    });
+
+    it('format inconnu, aucun rouleau ou état invalide : null', () => {
+        expect(mediaFromStatus(parseStatus(frame({ width: 12, type: 0x4a })))).toBeNull();
+        expect(mediaFromStatus(parseStatus(frame({ width: 0, type: 0x00 })))).toBeNull();
+        expect(mediaFromStatus(null)).toBeNull();
     });
 });

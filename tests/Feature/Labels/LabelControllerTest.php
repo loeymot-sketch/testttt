@@ -503,4 +503,49 @@ class LabelControllerTest extends TestCase
         $logId = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p->id])->assertOk()->json('log_id');
         $this->assertSame(2, (int) LabelPrintLog::withoutGlobalScopes()->findOrFail($logId)->branch_id);
     }
+
+    public function test_les_produits_les_plus_utilises_sont_comptes_sur_30_jours(): void
+    {
+        $this->caisse();
+        $a = $this->product(['name' => 'Rare']);
+        $b = $this->product(['name' => 'Souvent']);
+        foreach ([[$b, 3], [$b, 2], [$a, 1]] as [$p, $copies]) {
+            $id = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p->id, 'copies' => $copies])->json('log_id');
+            $this->postJson("/api/admin/labels/prints/{$id}/result", ['status' => 'printed'])->assertOk();
+        }
+        // une impression en échec ne compte pas
+        $fail = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $a->id, 'copies' => 9])->json('log_id');
+        $this->postJson("/api/admin/labels/prints/{$fail}/result", ['status' => 'failed'])->assertOk();
+
+        $rows = collect($this->getJson('/api/admin/labels/products')->json('data'))->keyBy('name');
+        $this->assertSame(5, $rows['Souvent']['uses_30d']);
+        $this->assertSame(1, $rows['Rare']['uses_30d']);
+    }
+
+    public function test_reimprimer_une_seule_etiquette_ne_marque_pas_la_commande_imprimee(): void
+    {
+        $this->caisse();
+        $o = $this->orderOnBoard();
+        $log = $this->postJson("/api/admin/labels/orders/{$o->id}/claim", ['mode' => 'manual', 'labels_count' => 1, 'partial' => true])->json('log_id');
+        $this->postJson("/api/admin/labels/prints/{$log}/result", ['status' => 'printed', 'labels_count' => 1])->assertOk();
+
+        $state = $this->getJson('/api/admin/labels/orders')->json('meta.states.'.$o->id);
+        $this->assertFalse($state['printed'], 'une étiquette sur quatre ne vaut pas « commande imprimée »');
+        // et l'automatique n'est pas verrouillé par une réimpression partielle
+        $this->postJson("/api/admin/labels/orders/{$o->id}/claim", ['mode' => 'auto'])->assertJsonPath('claimed', true);
+    }
+
+    public function test_une_impression_complete_apres_une_partielle_marque_la_commande_imprimee(): void
+    {
+        $this->caisse();
+        $o = $this->orderOnBoard();
+        $p = $this->postJson("/api/admin/labels/orders/{$o->id}/claim", ['mode' => 'manual', 'labels_count' => 1, 'partial' => true])->json('log_id');
+        $this->postJson("/api/admin/labels/prints/{$p}/result", ['status' => 'printed'])->assertOk();
+        $f = $this->postJson("/api/admin/labels/orders/{$o->id}/claim", ['mode' => 'manual', 'labels_count' => 4])->json('log_id');
+        $this->postJson("/api/admin/labels/prints/{$f}/result", ['status' => 'printed', 'labels_count' => 4])->assertOk();
+
+        $state = $this->getJson('/api/admin/labels/orders')->json('meta.states.'.$o->id);
+        $this->assertTrue($state['printed']);
+        $this->assertSame(1, $state['print_count']);
+    }
 }

@@ -47,11 +47,21 @@ class LabelController extends AdminController
 
     public function products(): JsonResponse
     {
+        // Étiquettes réellement imprimées sur 30 jours, par produit : l'écran met en tête ce qu'on utilise le plus.
+        $uses = LabelPrintLog::query()
+            ->where('kind', LabelPrintLog::KIND_DLC)
+            ->whereIn('status', LabelPrintLog::DONE_STATUSES)
+            ->whereNotNull('dlc_product_id')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('dlc_product_id, SUM(copies) as total')
+            ->groupBy('dlc_product_id')
+            ->pluck('total', 'dlc_product_id');
+
         $products = DlcLabelProduct::query()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
-            ->map(fn (DlcLabelProduct $p): array => $this->presentProduct($p))
+            ->map(fn (DlcLabelProduct $p): array => $this->presentProduct($p) + ['uses_30d' => (int) ($uses[$p->id] ?? 0)])
             ->values();
 
         return response()->json([
@@ -241,7 +251,7 @@ class LabelController extends AdminController
 
         $states = [];
         foreach ($logs->groupBy('order_id') as $orderId => $rows) {
-            $done = $rows->whereIn('status', LabelPrintLog::DONE_STATUSES);
+            $done = $rows->whereIn('status', LabelPrintLog::DONE_STATUSES)->where('partial', false);
             $fresh = $rows->first(fn (LabelPrintLog $l): bool => $l->status === LabelPrintLog::STATUS_CLAIMED
                 && $l->claimed_at !== null
                 && $l->claimed_at->gt(now()->subSeconds(LabelPrintLog::CLAIM_TTL_SECONDS)));
@@ -274,6 +284,8 @@ class LabelController extends AdminController
         $validated = $request->validate([
             'mode' => ['required', Rule::in(['auto', 'manual'])],
             'labels_count' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            // Réimpression de QUELQUES étiquettes seulement : ne vaut pas « commande imprimée ».
+            'partial' => ['nullable', 'boolean'],
         ]);
 
         $orderModel = Order::query()->findOrFail((int) $order);
@@ -286,6 +298,7 @@ class LabelController extends AdminController
             'kind' => LabelPrintLog::KIND_ORDER,
             'order_id' => $orderModel->id,
             'labels_count' => $validated['labels_count'] ?? null,
+            'partial' => ! $auto && (bool) ($validated['partial'] ?? false),
             'status' => LabelPrintLog::STATUS_CLAIMED,
             'claimed_at' => $now,
             'attempts' => 1,
@@ -298,6 +311,7 @@ class LabelController extends AdminController
             $alreadyHandled = LabelPrintLog::query()
                 ->where('kind', LabelPrintLog::KIND_ORDER)
                 ->where('order_id', $orderModel->id)
+                ->where('partial', false)
                 ->where(function ($q) use ($now) {
                     $q->whereIn('status', LabelPrintLog::DONE_STATUSES)
                         ->orWhere(function ($fresh) use ($now) {

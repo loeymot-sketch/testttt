@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { wrapText, layoutLabel, SIZES, MIN_LABEL_DOTS } from '../../resources/js/helpers/labelLayout.js';
-import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks } from '../../resources/js/helpers/dlcLabelBuilder.js';
+import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList } from '../../resources/js/helpers/dlcLabelBuilder.js';
 
 /** Mesure factice : 0,55 × la taille de police par caractère. */
 const measure = (text, font) => {
@@ -149,5 +149,39 @@ describe('étiquette DLC', () => {
         expect(flat).toContain('G <');
         expect(flat).toContain('> D');
         expect(flat).toContain('éèàçù Œuf');
+    });
+});
+
+describe('DLC à surveiller (intelligence du journal)', () => {
+    const now = Date.parse('2026-10-16T12:00:00Z'); // 14:00 à Paris
+    const h = (over) => ({ id: 1, status: 'printed', product_name: 'Oignons', copies: 1, expires_at: '2026-10-16T18:00:00Z', ...over });
+
+    it('texte et niveau d’urgence', () => {
+        expect(expiryStatus(now - 3 * 3600000, now)).toEqual({ level: 'expired', text: 'EXPIRÉE depuis 3 h' });
+        expect(expiryStatus(now - 20 * 60000, now).text).toBe('EXPIRÉE depuis 20 min');
+        expect(expiryStatus(now + 30 * 60000, now)).toEqual({ level: 'today', text: 'expire dans 30 min (14:30)' });
+        expect(expiryStatus(now + 5 * 3600000, now)).toEqual({ level: 'today', text: 'expire aujourd’hui à 19:00' });
+        expect(expiryStatus(now + 24 * 3600000, now)).toEqual({ level: 'soon', text: 'expire demain à 14:00' });
+        // 16/10 14:00 + 2 jours = dimanche 18/10 : « après‑demain », jamais « demain » (défaut relevé par le superviseur)
+        expect(expiryStatus(now + 48 * 3600000, now).text).toBe('expire après‑demain à 14:00 (dim 18/10)');
+        expect(expiryStatus(now + 96 * 3600000, now).text).toBe('expire le mar 20/10 à 14:00');
+        // passé minuit : 23:30 → 00:30 le lendemain est « demain », pas « aujourd’hui »
+        const late = Date.parse('2026-10-16T21:30:00Z'); // 23:30 Paris
+        expect(expiryStatus(late + 3600000, late).text).toBe('expire demain à 00:30');
+    });
+
+    it('ne garde que les DLC proches, dédoublonne, trie par échéance', () => {
+        const rows = [
+            h({ id: 1, product_name: 'Tomates', expires_at: '2026-10-16T20:00:00Z' }),
+            h({ id: 2, product_name: 'Oignons', expires_at: '2026-10-16T09:00:00Z' }),
+            h({ id: 3, product_name: 'Oignons', expires_at: '2026-10-16T09:00:00Z', copies: 3 }), // doublon (même lot)
+            h({ id: 4, product_name: 'Olives', expires_at: '2026-10-20T09:00:00Z' }),            // trop loin
+            h({ id: 5, product_name: 'Vieux', expires_at: '2026-10-10T09:00:00Z' }),             // échue depuis des jours
+            h({ id: 6, product_name: 'Raté', status: 'failed' }),                                  // jamais sortie
+        ];
+        const w = watchList(rows, now);
+        expect(w.map((x) => x.name)).toEqual(['Oignons', 'Tomates']);
+        expect(w[0].level).toBe('expired');
+        expect(watchList(null, now)).toEqual([]);
     });
 });

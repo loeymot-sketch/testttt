@@ -288,21 +288,21 @@ export function extractStatusFrames(buffer) {
 
 /** Messages d'erreur en français (manuel §4 tableaux (1) et (2)). */
 const ERROR_1 = [
-    [0x01, 'no_media', 'Aucun rouleau d’étiquettes dans l’imprimante.'],
-    [0x02, 'end_of_media', 'Fin de rouleau : il n’y a plus d’étiquettes.'],
-    [0x04, 'cutter_jam', 'Bourrage du couteau : ouvrez le capot et dégagez le papier.'],
+    [0x01, 'no_media', 'Aucun rouleau d’étiquettes dans l’imprimante.', true, 'Plus de rouleau'],
+    [0x02, 'end_of_media', 'Fin de rouleau : il n’y a plus d’étiquettes.', true, 'Fin de rouleau'],
+    [0x04, 'cutter_jam', 'Bourrage du couteau : ouvrez le capot et dégagez le papier.', true, 'Couteau bloqué'],
     // « Printer in use » : information, pas une panne — elle ne bloque jamais une impression.
-    [0x10, 'in_use', 'L’imprimante est occupée.', false],
-    [0x20, 'turned_off', 'L’imprimante est en train de s’éteindre.'],
+    [0x10, 'in_use', 'L’imprimante est occupée.', false, 'Imprimante occupée'],
+    [0x20, 'turned_off', 'L’imprimante est en train de s’éteindre.', true, 'Imprimante qui s’éteint'],
 ];
 const ERROR_2 = [
-    [0x01, 'replace_media', 'Le rouleau chargé ne correspond pas au format réglé (changez le format dans « Imprimante » ou le rouleau).'],
-    [0x02, 'buffer_full', 'Mémoire de l’imprimante pleine.'],
-    [0x04, 'communication', 'Erreur de communication avec l’imprimante.'],
-    [0x08, 'comm_buffer_full', 'Tampon de communication plein.'],
-    [0x10, 'cover_open', 'Capot ouvert : fermez le capot de l’imprimante.'],
-    [0x40, 'cannot_feed', 'Le papier ne peut pas avancer (fin de rouleau ou bourrage).'],
-    [0x80, 'system_error', 'Erreur système de l’imprimante : éteignez‑la puis rallumez‑la.'],
+    [0x01, 'replace_media', 'Le rouleau chargé ne correspond pas au format réglé : choisissez le bon format dans les réglages ci-dessous, ou changez le rouleau.', true, 'Mauvais rouleau'],
+    [0x02, 'buffer_full', 'Mémoire de l’imprimante pleine.', true, 'Mémoire pleine'],
+    [0x04, 'communication', 'Erreur de communication avec l’imprimante.', true, 'Erreur de communication'],
+    [0x08, 'comm_buffer_full', 'Tampon de communication plein.', true, 'Communication saturée'],
+    [0x10, 'cover_open', 'Capot ouvert : fermez le capot de l’imprimante.', true, 'Capot ouvert'],
+    [0x40, 'cannot_feed', 'Le papier ne peut pas avancer (fin de rouleau ou bourrage).', true, 'Papier bloqué'],
+    [0x80, 'system_error', 'Erreur système de l’imprimante : éteignez‑la puis rallumez‑la.', true, 'Erreur système'],
 ];
 
 /**
@@ -313,8 +313,8 @@ export function parseStatus(frame) {
     const err1 = frame[8];
     const err2 = frame[9];
     const errors = [];
-    ERROR_1.forEach(([mask, code, message, blocking]) => { if (err1 & mask) errors.push({ code, message, blocking: blocking !== false }); });
-    ERROR_2.forEach(([mask, code, message, blocking]) => { if (err2 & mask) errors.push({ code, message, blocking: blocking !== false }); });
+    ERROR_1.forEach(([mask, code, message, blocking, short]) => { if (err1 & mask) errors.push({ code, message, short, blocking: blocking !== false }); });
+    ERROR_2.forEach(([mask, code, message, blocking, short]) => { if (err2 & mask) errors.push({ code, message, short, blocking: blocking !== false }); });
 
     const mediaTypeByte = frame[11];
     return {
@@ -348,5 +348,16 @@ export function mediaMismatchMessage(status, media) {
         && (wantType === 'continuous' || loaded.lengthMm === media.lengthMm);
     if (same) return null;
     const dim = (m) => (m.type === 'continuous' ? `${m.widthMm} mm continu` : `${m.widthMm} × ${m.lengthMm} mm`);
-    return `Rouleau chargé : ${dim(loaded)} — format réglé : ${dim(media)}. Changez le format dans « Imprimante » ou le rouleau.`;
+    return `Rouleau chargé : ${dim(loaded)} — format réglé : ${dim(media)}. Choisissez le bon format dans les réglages, ou changez le rouleau.`;
+}
+
+/**
+ * Le rouleau que l'imprimante dit avoir chargé, s'il fait partie des formats gérés (sinon null).
+ * Sert à proposer « Utiliser le rouleau détecté » en un appui plutôt que de laisser l'équipe chercher le bon réglage.
+ */
+export function mediaFromStatus(status) {
+    if (!status || !status.valid || !status.media || status.media.type === 'none') return null;
+    const m = status.media;
+    return mediaList().find((x) => x.type === m.type && x.widthMm === m.widthMm
+        && (x.type === 'continuous' || x.lengthMm === m.lengthMm)) || null;
 }

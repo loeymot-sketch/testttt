@@ -67,3 +67,47 @@ export function testLabelBlocks(mediaId, now = new Date()) {
         { t: 'sub', text: `Imprimante prête · ${formatDlcDate(now)}` },
     ];
 }
+
+/**
+ * Où en est une DLC ? Texte court et niveau d'urgence, pour la liste « À surveiller ».
+ * @param {number} expiresMs  échéance (ms)
+ * @param {number} nowMs      maintenant, à l'heure du serveur (ms)
+ * @returns {{level:'expired'|'today'|'soon', text:string}}
+ */
+export function expiryStatus(expiresMs, nowMs) {
+    const diffMin = Math.round((expiresMs - nowMs) / 60000);
+    const hhmm = (ms) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: RESTAURANT_TZ }).format(new Date(ms));
+    if (diffMin <= 0) {
+        const late = Math.abs(diffMin);
+        const how = late < 60 ? `${late} min` : late < 2880 ? `${Math.round(late / 60)} h` : `${Math.round(late / 1440)} j`;
+        return { level: 'expired', text: `EXPIRÉE depuis ${how}` };
+    }
+    if (diffMin < 60) return { level: 'today', text: `expire dans ${diffMin} min (${hhmm(expiresMs)})` };
+    const dayKey = (ms) => new Intl.DateTimeFormat('fr-CA', { timeZone: RESTAURANT_TZ }).format(new Date(ms)); // AAAA-MM-JJ
+    const dayDiff = Math.round((Date.parse(`${dayKey(expiresMs)}T00:00:00Z`) - Date.parse(`${dayKey(nowMs)}T00:00:00Z`)) / 86400000);
+    if (dayDiff <= 0) return { level: 'today', text: `expire aujourd’hui à ${hhmm(expiresMs)}` };
+    if (dayDiff === 1) return { level: 'soon', text: `expire demain à ${hhmm(expiresMs)}` };
+    const when = new Intl.DateTimeFormat('fr-FR', { timeZone: RESTAURANT_TZ, weekday: 'short', day: '2-digit', month: '2-digit' })
+        .format(new Date(expiresMs)).replace('.', '');
+    return { level: 'soon', text: dayDiff === 2 ? `expire après‑demain à ${hhmm(expiresMs)} (${when})` : `expire le ${when} à ${hhmm(expiresMs)}` };
+}
+
+/**
+ * Les DLC à surveiller d'après le journal : imprimées, échues depuis moins de 24 h ou à échoir dans les 48 h,
+ * dédoublonnées (un produit imprimé 3 fois d'un coup = une ligne), les plus pressées d'abord.
+ */
+export function watchList(history, nowMs, limit = 8) {
+    const seen = new Set();
+    const out = [];
+    (history || []).forEach((h) => {
+        if (!['printed', 'unconfirmed'].includes(h.status) || !h.expires_at || !h.product_name) return;
+        const exp = Date.parse(h.expires_at);
+        if (!Number.isFinite(exp)) return;
+        if (exp < nowMs - 24 * 3600 * 1000 || exp > nowMs + 48 * 3600 * 1000) return;
+        const key = `${h.product_name}|${Math.round(exp / 60000)}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({ id: h.id, name: h.product_name, expiresMs: exp, copies: h.copies, ...expiryStatus(exp, nowMs) });
+    });
+    return out.sort((a, b) => a.expiresMs - b.expiresMs).slice(0, limit);
+}

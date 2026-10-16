@@ -7,7 +7,38 @@
 
             <div class="db-card-body">
                 <LabelPrinterBar :info="printerInfo" :status="printerState.status" :supported="printerSupported"
-                                 :show-link="false" @connect="connectPrinter" />
+                                 :show-link="false" :detected-media="detectedMedia" @connect="connectPrinter" @adopt-media="adoptDetectedMedia" />
+
+                <!-- ── Mise en service : numérotée, ouverte tant que l'imprimante n'est pas prête, repliée ensuite ── -->
+                <details class="pr-guide" :open="guideOpen" data-testid="pr-guide" @toggle="guideOpen = $event.target.open">
+                    <summary class="pr-guide-summary">
+                        <strong>Mise en service (une seule fois)</strong>
+                        <span v-if="printerReady" class="pr-ok">✓ terminée</span>
+                    </summary>
+                    <ol class="pr-steps">
+                        <li>
+                            <span class="pr-step-n" aria-hidden="true">1</span>
+                            <div><strong>Sur l'imprimante</strong> (écran tactile) : <em>Menu › Bluetooth › Bluetooth (On/Off) › On</em>, puis
+                                <em>Reconnexion automatique › On</em>.<br />Ensuite <em>Menu › Réglages › Arrêt automatique › Adaptateur › Off</em> :
+                                sinon elle s'éteint seule et la tablette la perd.</div>
+                        </li>
+                        <li>
+                            <span class="pr-step-n" aria-hidden="true">2</span>
+                            <div><strong>Sur la tablette Android</strong> : Réglages › Bluetooth › « QL‑820NWB… ». Si un code s'affiche, il doit être
+                                <b>identique</b> sur l'imprimante : validez les deux.</div>
+                        </li>
+                        <li>
+                            <span class="pr-step-n" aria-hidden="true">3</span>
+                            <div><strong>Dans Chrome</strong> (pas un autre navigateur) : appuyez sur « Connecter l'imprimante » et choisissez‑la.
+                                Elle reste connectée ; la tablette la retrouve seule après une coupure.</div>
+                        </li>
+                        <li>
+                            <span class="pr-step-n" aria-hidden="true">4</span>
+                            <div><strong>Vérifiez</strong> avec « Imprimer une étiquette test ». Une imprimante ne se connecte qu'à
+                                <b>un seul appareil à la fois</b> : déconnectez l'application Brother d'un téléphone si besoin.</div>
+                        </li>
+                    </ol>
+                </details>
 
                 <div class="pr-actions">
                     <button v-if="printerState.status === 'disconnected' || printerState.status === 'unsupported'" type="button"
@@ -17,13 +48,18 @@
                     <button v-else type="button" class="pr-btn" data-testid="pr-disconnect" @click="disconnectPrinter">
                         Déconnecter
                     </button>
-                    <button type="button" class="pr-btn pr-btn--primary" :disabled="testing" data-testid="pr-test" @click="printTest">
+                    <button type="button" class="pr-btn pr-btn--primary" :disabled="testing || !printerReady" data-testid="pr-test" @click="printTest">
                         {{ testing ? "Impression…" : "🖨 Imprimer une étiquette test" }}
                     </button>
                     <button type="button" class="pr-btn" data-testid="pr-fallback" @click="fallbackPrint">
-                        Imprimer via Android (secours)
+                        Secours : imprimer par Android
                     </button>
                 </div>
+                <p class="pr-hint pr-hint--block">
+                    L'étiquette test vérifie le sens, les accents et la coupe. <b>Secours</b> : ouvre la boîte d'impression d'Android
+                    (à utiliser seulement si la connexion directe ci‑dessus ne marche pas).
+                    <span v-if="!printerReady"><br />Le test est disponible dès que l'imprimante est prête.</span>
+                </p>
 
                 <p v-if="testMessage" class="pr-msg" :class="testOk ? 'is-ok' : 'is-ko'" data-testid="pr-test-message">{{ testMessage }}</p>
                 <div v-if="testPreview" class="pr-preview">
@@ -85,27 +121,6 @@
                     </details>
                 </div>
 
-                <!-- ── Mode d'emploi ───────────────────────────────────────────────────── -->
-                <h4 class="pr-h4">Mise en service (une seule fois)</h4>
-                <ol class="pr-steps">
-                    <li>
-                        <strong>Sur l'imprimante</strong> : écran tactile, <em>Menu › Bluetooth › Bluetooth (On/Off) › On</em>, puis
-                        <em>Reconnexion automatique › On</em>. Dans <em>Menu › Réglages › Arrêt automatique › Adaptateur</em> choisissez
-                        <em>Off</em> — sinon l'imprimante s'éteint seule et la tablette la perd. (Intitulés anglais possibles : Settings, Auto Power Off.)
-                    </li>
-                    <li>
-                        <strong>Sur la tablette Android</strong> : Réglages › Bluetooth › choisissez « QL‑820NWB… ». Si un code s'affiche,
-                        il doit être <b>identique</b> sur l'imprimante : validez les deux. L'imprimante apparaît alors comme « appairée ».
-                    </li>
-                    <li>
-                        <strong>Dans Chrome</strong> (pas un autre navigateur) : appuyez sur « Connecter l'imprimante », choisissez-la dans la liste.
-                        Elle restera connectée ; la tablette la retrouve seule après une coupure.
-                    </li>
-                    <li>
-                        <strong>Vérifiez</strong> avec « Imprimer une étiquette test ». Une imprimante ne peut être connectée qu'à
-                        <b>un seul appareil à la fois</b> : déconnectez l'application Brother d'un téléphone si besoin.
-                    </li>
-                </ol>
             </div>
         </div>
     </div>
@@ -133,7 +148,17 @@ export default {
     components: { LabelPrinterBar },
     mixins: [labelPrinterMixin],
     data() {
-        return { testing: false, testMessage: "", testOk: false, testPreview: "" };
+        return { testing: false, testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false };
+    },
+    watch: {
+        // Ouvert tant que l'imprimante n'est pas prête ; replié dès qu'elle l'est (sauf si on l'a ouvert exprès).
+        printerReady: {
+            immediate: true,
+            handler(ready) { if (!this.guideTouched) this.guideOpen = !ready; },
+        },
+        guideOpen(open, before) {
+            if (before !== undefined && open !== !this.printerReady) this.guideTouched = true;
+        },
     },
     computed: {
         mediaChoices() {
@@ -213,12 +238,13 @@ export default {
     font-size: 17px; font-weight: 700; cursor: pointer;
 }
 .pr-btn:disabled { opacity: .45; cursor: not-allowed; }
-.pr-btn--primary { background: #F4501E; border-color: #F4501E; color: #fff; }
+.pr-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
+.pr-btn:disabled { background: #e2e8f0; border-color: #cbd5e1; color: #64748b; cursor: not-allowed; }
 .pr-msg { border-radius: 8px; padding: 10px 12px; margin: 6px 0 12px; font-weight: 600; }
 .pr-msg.is-ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #166534; }
 .pr-msg.is-ko { background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; }
 .pr-preview img { width: min(100%, 348px); border: 1px solid #94a3b8; image-rendering: pixelated; background: #fff; display: block; }
-.pr-hint { color: #64748b; font-size: 13px; display: block; margin-top: 4px; }
+.pr-hint { color: #475569; font-size: 14px; display: block; margin-top: 4px; }
 .pr-h4 { font-size: 17px; font-weight: 800; margin: 22px 0 8px; border-top: 1px solid #e2e8f0; padding-top: 14px; }
 .pr-diag { list-style: none; margin: 0; padding: 0; }
 .pr-diag li { display: flex; gap: 10px; padding: 6px 0; align-items: baseline; }
@@ -228,7 +254,17 @@ export default {
 .pr-form { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
 .pr-field label { display: block; font-weight: 700; margin-bottom: 4px; }
 .pr-check { display: flex; gap: 10px; align-items: flex-start; font-size: 16px; line-height: 1.35; min-height: 44px; }
-.pr-check input { width: 22px; height: 22px; margin-top: 2px; flex: 0 0 auto; }
+.pr-check input { width: 28px; height: 28px; margin-top: 0; flex: 0 0 auto; }
+.pr-check { min-height: 52px; align-items: center; cursor: pointer; }
+.pr-check .pr-hint { display: block; flex-basis: 100%; margin-left: 38px; }
+.pr-field .db-field-control { min-height: 48px; }
+.pr-hint--block { margin: 0 0 12px; font-size: 14px; color: #475569; }
+.pr-guide { border: 1px solid #cbd5e1; border-radius: 12px; padding: 4px 16px; margin: 0 0 16px; background: #f8fafc; }
+.pr-guide-summary { cursor: pointer; padding: 12px 0; font-size: 17px; display: flex; gap: 12px; align-items: center; min-height: 48px; }
+.pr-ok { color: #166534; font-weight: 700; font-size: 14px; }
+.pr-steps { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 14px; }
+.pr-steps li { display: flex; gap: 12px; align-items: flex-start; line-height: 1.45; }
+.pr-step-n { flex: 0 0 34px; height: 34px; border-radius: 50%; background: #1a1a1a; color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .pr-advanced summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
 .pr-steps { padding-left: 22px; display: flex; flex-direction: column; gap: 12px; max-width: 760px; line-height: 1.45; }
 </style>

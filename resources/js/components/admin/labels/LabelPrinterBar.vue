@@ -9,6 +9,10 @@
                 @click="$emit('connect')">
             Connecter l’imprimante
         </button>
+        <button v-if="detectedMedia" type="button" class="lbl-btn lbl-btn--primary" data-testid="label-printer-adopt-media"
+                @click="$emit('adopt-media')">
+            Utiliser le rouleau détecté : {{ detectedMedia.label }}
+        </button>
         <router-link v-if="showLink" to="/admin/labels/printer" class="lbl-btn lbl-btn--ghost" data-testid="label-printer-link">
             Réglages
         </router-link>
@@ -27,8 +31,9 @@ export default {
         status: { type: String, default: "disconnected" },
         supported: { type: Boolean, default: true },
         showLink: { type: Boolean, default: true },
+        detectedMedia: { type: Object, default: null },
     },
-    emits: ["connect"],
+    emits: ["connect", "adopt-media"],
     computed: {
         canConnect() {
             return this.supported && this.status === "disconnected";
@@ -45,7 +50,7 @@ export default {
 .lbl-bar-dot { width: 14px; height: 14px; border-radius: 50%; background: #94a3b8; flex: 0 0 auto; }
 .lbl-bar-text { flex: 1 1 240px; display: flex; flex-direction: column; min-width: 0; }
 .lbl-bar-text strong { font-size: 17px; }
-.lbl-bar-detail { color: #475569; font-size: 14px; }
+.lbl-bar-detail { color: #334155; font-size: 14px; }
 .lbl-bar.is-ok { background: #ecfdf5; border-color: #a7f3d0; }
 .lbl-bar.is-ok .lbl-bar-dot { background: #16a34a; }
 .lbl-bar.is-warn { background: #fffbeb; border-color: #fcd34d; }
@@ -57,6 +62,6 @@ export default {
     min-height: 48px; padding: 0 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff;
     font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; color: inherit;
 }
-.lbl-btn--primary { background: #F4501E; border-color: #F4501E; color: #fff; }
+.lbl-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
 .lbl-btn--ghost { background: transparent; color: #475569; }
 </style>

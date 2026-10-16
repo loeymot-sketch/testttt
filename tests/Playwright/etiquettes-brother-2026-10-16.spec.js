@@ -230,20 +230,27 @@ test('2 · imprimante en défaut : capot ouvert et mauvais rouleau bloquent l’
     await page.goto(`${BASE}/admin/labels/printer`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('label-printer-title')).toHaveText('Imprimante prête', { timeout: 30000 });
 
+    // capot ouvert : la barre dit LA panne, le test est indisponible (rien ne part), et le bouton « rouleau détecté »
+    // n'est PAS proposé (le problème n'est pas le format — revue superviseur PR-001)
     await page.evaluate(() => { window.__lbl.mode = 'cover_open'; });
-    await page.getByTestId('pr-test').click();
-    await expect(page.getByTestId('pr-test-message')).toContainText('Capot ouvert', { timeout: 20000 });
+    await expect(page.getByTestId('label-printer-title')).toHaveText('Capot ouvert', { timeout: 20000 });
+    await expect(page.getByTestId('label-printer-detail')).toContainText('Fermez le capot');
+    await expect(page.getByTestId('pr-test')).toBeDisabled();
+    await expect(page.getByTestId('label-printer-adopt-media')).toHaveCount(0);
     expect((await jobs(page)).length, 'rien n’est envoyé quand le capot est ouvert').toBe(0);
     await page.screenshot({ path: path.join(SHOTS, '02-capot-ouvert.png'), fullPage: true });
 
+    // mauvais rouleau (29×90 chargé, 62 mm réglé) : message explicite, test indisponible, correction en UN appui
     await page.evaluate(() => { window.__lbl.mode = 'wrong_media'; });
-    await page.getByTestId('pr-test').click();
-    await expect(page.getByTestId('pr-test-message')).toContainText('29 × 90 mm', { timeout: 20000 });
-    await expect(page.getByTestId('pr-test-message')).toContainText('62 mm continu');
+    await expect(page.getByTestId('label-printer-title')).toHaveText('Mauvais rouleau', { timeout: 20000 });
+    await expect(page.getByTestId('label-printer-detail')).toContainText('29 × 90 mm');
+    await expect(page.getByTestId('label-printer-detail')).toContainText('62 mm continu');
+    await expect(page.getByTestId('pr-test')).toBeDisabled();
     expect((await jobs(page)).length).toBe(0);
-
-    // régler le format sur le rouleau réellement chargé fait disparaître l'erreur
-    await page.getByTestId('pr-media').selectOption('d29x90');
+    await expect(page.getByTestId('label-printer-adopt-media')).toContainText('29 × 90 mm');
+    await page.getByTestId('label-printer-adopt-media').click();
+    await expect(page.getByTestId('label-printer-title')).toHaveText('Imprimante prête', { timeout: 20000 });
+    await expect(page.getByTestId('pr-media')).toHaveValue('d29x90');
     await page.getByTestId('pr-test').click();
     await expect(page.getByTestId('pr-test-message')).toContainText('Étiquette test envoyée', { timeout: 20000 });
     const j = await jobs(page);
@@ -261,7 +268,9 @@ test('3 · DLC : ajouter un produit, un appui imprime ouverture + DLC calculées
     await page.goto(`${BASE}/admin/labels/dlc`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('label-printer-title')).toHaveText('Imprimante prête', { timeout: 30000 });
 
-    await page.getByTestId('dlc-manage-toggle').click();
+    // aucun produit : la gestion s'ouvre d'elle-même, avec un appel à l'action
+    await expect(page.getByTestId('dlc-add-first')).toBeVisible();
+    await expect(page.getByTestId('dlc-form')).toBeVisible();
     await page.getByTestId('dlc-form-name').fill('Oignons émincés (test)');
     await page.getByTestId('dlc-form-value').fill('2');
     await page.getByTestId('dlc-form-unit').selectOption('days');
@@ -411,7 +420,7 @@ test('5 · automatique : seules les commandes ARRIVÉES APRÈS l’activation s�
     // imprimante en défaut : la commande qui arrive attend, rien ne part
     await page.evaluate(() => { window.__lbl.mode = 'cover_open'; });
     await page.waitForTimeout(9500); // un cycle de veille lit l'état (8 s)
-    await expect(page.getByTestId('label-printer-title')).toHaveText('Imprimante en défaut', { timeout: 20000 });
+    await expect(page.getByTestId('label-printer-title')).toHaveText('Capot ouvert', { timeout: 20000 });
     const fresh = seed([7593]);
     await expect(page.getByTestId(`label-order-${fresh[0].id}`)).toBeVisible({ timeout: 30000 });
     await page.waitForTimeout(7000);

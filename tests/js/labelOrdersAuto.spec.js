@@ -14,7 +14,7 @@ vi.mock('axios', () => ({ default: h.axios }));
 vi.mock('../../resources/js/services/alertService', () => ({ default: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock('../../resources/js/helpers/labelPrintJob', () => ({
     printBlocks: (...a) => h.printBlocks(...a),
-    previewUrls: () => ({ urls: ['data:image/png;base64,AA=='], overflow: false }),
+    previewUrls: (blocksList) => ({ urls: blocksList.map(() => 'data:image/png;base64,AA=='), overflow: false }),
 }));
 vi.mock('../../resources/js/helpers/labelPrinter.js', async (orig) => {
     const real = await orig();
@@ -253,6 +253,73 @@ describe('impression automatique — moteur', () => {
         await polls(w, 2);
         expect(h.printBlocks).toHaveBeenCalledTimes(2);
         vi.useRealTimers();
+        w.unmount();
+    });
+
+    it('automatique actif + commande en attente + imprimante indisponible : bandeau rouge « bloquée »', async () => {
+        setup({ ready: false });
+        const w = await mountScreen();
+        list = [order()];
+        await polls(w, 1);
+        const banner = w.find('[data-testid="label-blocked"]');
+        expect(banner.exists()).toBe(true);
+        expect(banner.text()).toMatch(/1 commande en attente — Imprimante non connectée/);
+        expect(w.get('[data-testid="label-auto"]').text()).toMatch(/en pause/);
+        expect(w.find('[data-testid="label-retry"]').exists()).toBe(true);
+        w.unmount();
+    });
+
+    it('imprimante prête ou rien en attente : pas de bandeau', async () => {
+        setup({ ready: true });
+        const w = await mountScreen();
+        list = [order()];
+        await polls(w, 1);
+        expect(w.find('[data-testid="label-blocked"]').exists()).toBe(false);
+        w.unmount();
+        setup({ ready: false });
+        const w2 = await mountScreen();
+        list = [];
+        await polls(w2, 1);
+        expect(w2.find('[data-testid="label-blocked"]').exists()).toBe(false);
+        w2.unmount();
+    });
+
+    it('les commandes à imprimer passent avant les imprimées, les plus anciennes en tête', async () => {
+        setup({ settings: { autoPrint: false } });
+        const t = Date.now();
+        const oldest = order({ created_at_iso: new Date(t - 9 * 60000).toISOString() });
+        const newest = order({ created_at_iso: new Date(t - 1 * 60000).toISOString() });
+        const done = order({ created_at_iso: new Date(t - 5 * 60000).toISOString() });
+        list = [newest, done, oldest];
+        states = { [done.id]: { printed: true, in_progress: false, failed: false, print_count: 1 } };
+        const w = await mountScreen();
+        await polls(w, 1);
+        const pending = w.findAll('[data-testid="label-orders"] > li').map((li) => li.attributes('data-testid'));
+        expect(pending).toEqual([`label-order-${oldest.id}`, `label-order-${newest.id}`]);
+        expect(w.findAll('[data-testid="label-orders-done"] > li').map((li) => li.attributes('data-testid'))).toEqual([`label-order-${done.id}`]);
+        // l'âge est affiché, avec une urgence à 8 min
+        const ageText = w.get(`[data-testid="label-order-${oldest.id}"] [data-testid="label-order-age"]`);
+        expect(ageText.text()).toMatch(/il y a 9 min/);
+        expect(ageText.classes()).toContain('is-warn');
+        w.unmount();
+    });
+
+    it('« Réimprimer celle-ci » n’imprime QU’UNE étiquette et le journal le sait', async () => {
+        setup({ settings: { autoPrint: false } });
+        const o = order({ id: 9500 });
+        // 2 étiquettes : deux unités du même produit
+        o.order_items[0].quantity = 2;
+        list = [o];
+        const w = await mountScreen();
+        await polls(w, 1);
+        await w.get('[data-testid="label-preview-9500"]').trigger('click');
+        await flushPromises();
+        await w.get('[data-testid="label-print-one-9500-2"]').trigger('click');
+        await flushPromises();
+        expect(h.printBlocks).toHaveBeenCalledTimes(1);
+        expect(h.printBlocks.mock.calls[0][1]).toHaveLength(1);
+        const claim = h.axios.post.mock.calls.find(([u]) => /\/claim$/.test(u));
+        expect(claim[1]).toMatchObject({ mode: 'manual', labels_count: 1, partial: true });
         w.unmount();
     });
 });

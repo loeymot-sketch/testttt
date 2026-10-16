@@ -7,18 +7,18 @@
 
             <div class="db-card-body">
                 <LabelPrinterBar :info="printerInfo" :status="printerState.status" :supported="printerSupported"
-                                 @connect="connectPrinter" />
+                                 :detected-media="detectedMedia" @connect="connectPrinter" @adopt-media="adoptDetectedMedia" />
 
                 <!-- ── Réglage « automatique » ──────────────────────────────────────────
                      Semi‑automatique aujourd'hui (bouton Imprimer), automatique demain : la tablette posée
                      imprime toute commande qui ARRIVE après l'activation. -->
-                <div class="lbl-auto" :class="{ 'is-on': settings.autoPrint }" data-testid="label-auto">
+                <div class="lbl-auto" :class="{ 'is-on': settings.autoPrint && !blocked, 'is-paused': blocked }" data-testid="label-auto">
                     <button type="button" class="lbl-switch" role="switch" :aria-checked="settings.autoPrint ? 'true' : 'false'"
                             aria-label="Impression automatique des nouvelles commandes" data-testid="label-auto-toggle" @click="toggleAuto">
                         <span class="lbl-switch-knob"></span>
                     </button>
                     <div class="lbl-auto-text">
-                        <strong>Impression automatique {{ settings.autoPrint ? "activée" : "désactivée" }}</strong>
+                        <strong>Impression automatique {{ blocked ? "en pause" : settings.autoPrint ? "activée" : "désactivée" }}</strong>
                         <span v-if="settings.autoPrint">
                             Les nouvelles commandes s'impriment seules, tant que cet écran reste ouvert et l'imprimante prête.
                             <em v-if="autoStatusText"> {{ autoStatusText }}</em>
@@ -26,8 +26,20 @@
                         <span v-else>Activez‑la pour que chaque nouvelle commande imprime ses étiquettes sans appui.</span>
                     </div>
                     <button type="button" class="lbl-btn lbl-btn--primary" :disabled="!toPrint.length || batchBusy || !printerReady"
+                            :title="!printerReady ? 'Indisponible : l\'imprimante n\'est pas prête' : ''"
                             data-testid="label-print-all" @click="printAll">
                         🖨 Tout imprimer ({{ toPrint.length }})
+                    </button>
+                </div>
+
+                <!-- Une tablette posée sans surveillance doit APPELER quelqu'un : bandeau rouge + signal sonore. -->
+                <div v-if="blocked" class="lbl-blocked" role="alert" data-testid="label-blocked">
+                    <div class="lbl-blocked-text">
+                        <strong>⚠ {{ waitingCount }} commande{{ waitingCount > 1 ? "s" : "" }} en attente — {{ printerInfo.title }}</strong>
+                        <span>{{ printerInfo.detail }} L'impression reprendra toute seule dès que l'imprimante sera prête.</span>
+                    </div>
+                    <button type="button" class="lbl-btn lbl-btn--light" data-testid="label-retry" :disabled="retrying" @click="retryPrinter">
+                        {{ retrying ? "Vérification…" : "Réessayer" }}
                     </button>
                 </div>
 
@@ -36,17 +48,22 @@
                     Plus de 50 commandes en cuisine : seules les 50 plus anciennes sont listées ici.
                 </p>
 
-                <p v-if="!rows.length && !loadError" class="lbl-empty" data-testid="label-orders-empty">
+                <p v-if="!loaded && !loadError" class="lbl-empty" data-testid="label-orders-loading" role="status">Chargement des commandes…</p>
+                <p v-else-if="!rows.length && !loadError" class="lbl-empty" data-testid="label-orders-empty">
                     Aucune commande en cours. Elles apparaissent ici dès qu'elles arrivent en cuisine.
                 </p>
 
+                <h4 v-if="pendingRows.length" class="lbl-section" data-testid="label-section-pending">
+                    À imprimer <span class="lbl-count">{{ pendingRows.length }}</span>
+                </h4>
                 <ul class="lbl-orders" data-testid="label-orders">
-                    <li v-for="row in rows" :key="row.order.id" class="lbl-order" :class="`is-${row.state.kind}`"
+                    <li v-for="row in pendingRows" :key="row.order.id" class="lbl-order" :class="[`is-${row.state.kind}`, { 'is-new': newIds.includes(row.order.id) }]"
                         :data-testid="`label-order-${row.order.id}`">
                         <div class="lbl-order-head">
                             <span class="lbl-order-num" data-testid="label-order-number">N° {{ row.number }}</span>
                             <span class="lbl-order-source">{{ row.source }}</span>
                             <span class="lbl-order-time">{{ row.time }}</span>
+                            <span v-if="row.age && !row.state.printed" class="lbl-age" :class="`is-${row.age.level}`" data-testid="label-order-age">{{ row.age.text }}</span>
                             <span v-if="row.customer" class="lbl-order-customer">{{ row.customer }}</span>
                             <span class="lbl-chip" :class="`is-${row.state.kind}`" data-testid="label-order-state">{{ row.state.text }}</span>
                         </div>
@@ -68,7 +85,8 @@
                                     :data-testid="`label-preview-${row.order.id}`" @click="togglePreview(row.order.id)">
                                 {{ previewId === row.order.id ? "Masquer l'aperçu" : "Aperçu" }}
                             </button>
-                            <button type="button" class="lbl-btn lbl-btn--primary"
+                            <button type="button" class="lbl-btn"
+                                    :class="row.state.printed || !printerReady ? 'lbl-btn--ghost' : 'lbl-btn--primary'"
                                     :disabled="!row.built.total || busyIds.includes(row.order.id)"
                                     :data-testid="`label-print-${row.order.id}`"
                                     @click="printOrder(row.order, 'manual')">
@@ -83,10 +101,78 @@
                             <figure v-for="(u, i) in previewImages" :key="i" class="lbl-preview">
                                 <img :src="u" :alt="`Étiquette ${i + 1}`" />
                                 <figcaption>{{ i + 1 }}/{{ previewImages.length }}</figcaption>
+                                <button type="button" class="lbl-btn lbl-btn--ghost lbl-btn--small" :disabled="busyIds.includes(row.order.id)"
+                                        :data-testid="`label-print-one-${row.order.id}-${i + 1}`"
+                                        @click="printOrder(row.order, 'manual', { only: [i] })">
+                                    🖨 Réimprimer celle‑ci
+                                </button>
                             </figure>
                         </div>
                     </li>
                 </ul>
+
+                <template v-if="doneRows.length">
+                    <h4 class="lbl-section">
+                        <button type="button" class="lbl-section-toggle" :aria-expanded="showDone ? 'true' : 'false'"
+                                data-testid="label-section-done-toggle" @click="showDone = !showDone">
+                            {{ showDone ? "▾" : "▸" }} Déjà imprimées <span class="lbl-count">{{ doneRows.length }}</span>
+                        </button>
+                    </h4>
+                    <ul v-if="showDone" class="lbl-orders lbl-orders--done" data-testid="label-orders-done">
+                    <li v-for="row in doneRows" :key="row.order.id" class="lbl-order" :class="[`is-${row.state.kind}`, { 'is-new': newIds.includes(row.order.id) }]"
+                        :data-testid="`label-order-${row.order.id}`">
+                        <div class="lbl-order-head">
+                            <span class="lbl-order-num" data-testid="label-order-number">N° {{ row.number }}</span>
+                            <span class="lbl-order-source">{{ row.source }}</span>
+                            <span class="lbl-order-time">{{ row.time }}</span>
+                            <span v-if="row.age && !row.state.printed" class="lbl-age" :class="`is-${row.age.level}`" data-testid="label-order-age">{{ row.age.text }}</span>
+                            <span v-if="row.customer" class="lbl-order-customer">{{ row.customer }}</span>
+                            <span class="lbl-chip" :class="`is-${row.state.kind}`" data-testid="label-order-state">{{ row.state.text }}</span>
+                        </div>
+
+                        <div class="lbl-order-body">
+                            <p v-if="row.built.total" class="lbl-order-summary">
+                                <strong>{{ row.built.total }} étiquette{{ row.built.total > 1 ? "s" : "" }}</strong> —
+                                {{ row.summary }}
+                            </p>
+                            <p v-else class="lbl-order-summary lbl-muted">
+                                Aucune étiquette
+                                <span v-if="row.built.skipped.length">(boissons seules : {{ row.built.skipped.join(", ") }})</span>
+                            </p>
+                            <p v-if="row.state.detail" class="lbl-order-detail">{{ row.state.detail }}</p>
+                        </div>
+
+                        <div class="lbl-order-actions">
+                            <button type="button" class="lbl-btn lbl-btn--ghost" :disabled="!row.built.total"
+                                    :data-testid="`label-preview-${row.order.id}`" @click="togglePreview(row.order.id)">
+                                {{ previewId === row.order.id ? "Masquer l'aperçu" : "Aperçu" }}
+                            </button>
+                            <button type="button" class="lbl-btn"
+                                    :class="row.state.printed || !printerReady ? 'lbl-btn--ghost' : 'lbl-btn--primary'"
+                                    :disabled="!row.built.total || busyIds.includes(row.order.id)"
+                                    :data-testid="`label-print-${row.order.id}`"
+                                    @click="printOrder(row.order, 'manual')">
+                                {{ busyIds.includes(row.order.id) ? "Impression…" : row.state.printed || row.state.partial ? "🖨 Réimprimer" : "🖨 Imprimer" }}
+                            </button>
+                        </div>
+
+                        <div v-if="previewId === row.order.id" class="lbl-previews" data-testid="label-previews">
+                            <p v-if="previewOverflow" class="lbl-alert">
+                                Une étiquette est trop longue pour le rouleau « {{ labelMedia.label }} » : choisissez le 62 mm continu.
+                            </p>
+                            <figure v-for="(u, i) in previewImages" :key="i" class="lbl-preview">
+                                <img :src="u" :alt="`Étiquette ${i + 1}`" />
+                                <figcaption>{{ i + 1 }}/{{ previewImages.length }}</figcaption>
+                                <button type="button" class="lbl-btn lbl-btn--ghost lbl-btn--small" :disabled="busyIds.includes(row.order.id)"
+                                        :data-testid="`label-print-one-${row.order.id}-${i + 1}`"
+                                        @click="printOrder(row.order, 'manual', { only: [i] })">
+                                    🖨 Réimprimer celle‑ci
+                                </button>
+                            </figure>
+                        </div>
+                    </li>
+                    </ul>
+                </template>
             </div>
         </div>
     </div>
@@ -111,6 +197,7 @@ import LabelPrinterBar from "./LabelPrinterBar";
 import { buildOrderLabels, orderLabelBlocks, orderNumber, orderSourceLabel } from "../../../helpers/orderLabelBuilder";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
 import { createWakeLock } from "../../../helpers/screenWakeLock";
+import { createAlarm } from "../../../helpers/labelAlarm";
 import { labelResultQueue, labelInflight } from "../../../helpers/labelResultQueue";
 
 const POLL_MS = 5000;
@@ -140,6 +227,13 @@ export default {
             poller: null,
             autoRunning: false,
             wakeLockActive: false,
+            showDone: true,
+            retrying: false,
+            loaded: false,
+            nowTick: Date.now(),
+            newIds: [],
+            seenIds: null,
+            ticker: null,
             // commandes déjà traitées (ou refusées par le verrou) pendant CETTE session d'écran
             autoHandled: {},
         };
@@ -168,8 +262,30 @@ export default {
                     customer: order.customer && order.customer.name && order.source_surface !== "kiosk" ? order.customer.name : "",
                     summary: this.summaryOf(built),
                     state: this.stateOf(built, server, order.id),
+                    age: this.ageOf(order),
                 };
             });
+        },
+        /** À imprimer : les plus anciennes d'abord (ordre de la cuisine). */
+        pendingRows() {
+            return this.rows
+                .filter((r) => !r.state.printed)
+                .sort((a, b) => Date.parse(a.order.created_at_iso) - Date.parse(b.order.created_at_iso));
+        },
+        /** Déjà imprimées : les plus récentes d'abord. */
+        doneRows() {
+            return this.rows
+                .filter((r) => r.state.printed)
+                .sort((a, b) => Date.parse(b.order.created_at_iso) - Date.parse(a.order.created_at_iso));
+        },
+        /** Commandes qui attendraient l'impression automatique (hors celles déjà sur le tableau à l'activation). */
+        waitingCount() {
+            const baseline = new Set(Array.isArray(this.settings.autoPrintBaseline) ? this.settings.autoPrintBaseline : []);
+            return this.rows.filter((r) => r.built.total > 0 && !r.state.printed && !r.state.busy && !baseline.has(r.order.id)).length;
+        },
+        /** Automatique actif, des commandes attendent, et l'imprimante ne peut pas imprimer. */
+        blocked() {
+            return this.settings.autoPrint && this.waitingCount > 0 && !this.printerReady;
         },
         /** Commandes dont les étiquettes ne sont pas sorties (hors celles en cours d'impression). */
         toPrint() {
@@ -192,12 +308,15 @@ export default {
     },
     mounted() {
         labelInflight(axios).recover();
+        this.alarm = createAlarm();
         this.poll();
         this.poller = setInterval(this.poll, POLL_MS);
+        this.ticker = setInterval(() => { this.nowTick = Date.now(); }, 20000);
     },
     beforeUnmount() {
         this.unmounted = true;
         if (this.poller) clearInterval(this.poller);
+        if (this.ticker) clearInterval(this.ticker);
         if (this.wakeLock) this.wakeLock.release();
     },
     methods: {
@@ -210,6 +329,19 @@ export default {
                 await this.wakeLock.release();
             }
             this.wakeLockActive = this.wakeLock.isActive();
+        },
+
+        /** « il y a 4 min », avec une urgence croissante : le client attend. */
+        ageOf(order) {
+            const created = Date.parse(order.created_at_iso);
+            if (!Number.isFinite(created)) return null;
+            const minutes = Math.max(0, Math.floor((this.nowTick + this.serverOffsetMs - created) / 60000));
+            if (order.scheduled_at) return null;
+            return {
+                minutes,
+                text: minutes < 1 ? "à l'instant" : `il y a ${minutes} min`,
+                level: minutes >= 15 ? "danger" : minutes >= 8 ? "warn" : "ok",
+            };
         },
 
         hhmm(iso) {
@@ -234,7 +366,7 @@ export default {
                 return { kind: "busy", text: "Impression…", busy: true, printed: false, detail: "" };
             }
             if (server && server.printed) {
-                return { kind: "done", text: "✓ Imprimées", printed: true, detail: "" };
+                return { kind: "done", text: "✓\u00a0Imprimées", printed: true, detail: "" };
             }
             if (server && server.failed) {
                 const partial = server.printed_pages > 0;
@@ -257,17 +389,30 @@ export default {
                 if (this.unmounted) return;
                 this.overflow = Boolean(data.meta && data.meta.overflow);
                 this.orders = Array.isArray(data.data) ? data.data : [];
+                this.markNew(this.orders.map((o) => o.id));
                 this.states = (data.meta && data.meta.states) || {};
                 if (data.meta && data.meta.server_now) {
                     const server = Date.parse(data.meta.server_now);
                     if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
                 }
                 this.loadError = "";
+                this.loaded = true;
             } catch (e) {
                 this.loadError = "Liste des commandes indisponible — nouvelle tentative dans quelques secondes.";
             }
             if (this.wakeLock) this.wakeLockActive = this.wakeLock.isActive();
+            if (this.blocked && this.alarm) this.alarm.ring();
             this.autoTick();
+        },
+
+        /** Met en évidence (6 s) les commandes qui viennent d'arriver — pas celles du premier chargement. */
+        markNew(ids) {
+            if (this.seenIds === null) { this.seenIds = new Set(ids); return; }
+            const fresh = ids.filter((id) => !this.seenIds.has(id));
+            fresh.forEach((id) => this.seenIds.add(id));
+            if (!fresh.length) return;
+            this.newIds = [...this.newIds, ...fresh];
+            setTimeout(() => { this.newIds = this.newIds.filter((id) => !fresh.includes(id)); }, 6000);
         },
 
         serverNow() {
@@ -294,6 +439,18 @@ export default {
             }
         },
 
+        async retryPrinter() {
+            this.retrying = true;
+            try {
+                const printer = this.printerInstance();
+                if (!printer.isConnected()) await printer.autoConnect();
+                await printer.refreshStatus();
+                await this.poll();
+            } finally {
+                this.retrying = false;
+            }
+        },
+
         togglePreview(orderId) {
             if (this.previewId === orderId) {
                 this.previewId = null;
@@ -307,6 +464,11 @@ export default {
                 const { urls, overflow } = previewUrls(row.built.labels.map(orderLabelBlocks), this.settings);
                 this.previewImages = urls;
                 this.previewOverflow = overflow;
+                // L'aperçu s'ouvre sous la carte : on l'amène à l'écran, sinon « il ne se passe rien ».
+                this.$nextTick(() => {
+                    const el = document.querySelector('[data-testid="label-previews"]');
+                    if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                });
             } catch (e) {
                 this.previewImages = [];
                 this.previewOverflow = false;
@@ -323,9 +485,12 @@ export default {
          * Imprime les étiquettes d'une commande. mode « manual » : toujours (réimprimer est permis) ;
          * mode « auto » : seulement si le verrou serveur l'accorde.
          */
-        async printOrder(order, mode) {
+        async printOrder(order, mode, opts = {}) {
             const built = buildOrderLabels(order, this.buildOptions);
-            if (!built.total) return { ok: false, skipped: true };
+            // `only` : réimprimer certaines étiquettes seulement (étiquette déchirée, collée de travers…).
+            const labels = Array.isArray(opts.only) ? opts.only.map((i) => built.labels[i]).filter(Boolean) : built.labels;
+            const count = labels.length;
+            if (!count) return { ok: false, skipped: true };
             if (this.busyIds.includes(order.id)) return { ok: false, skipped: true };
 
             this.busyIds = [...this.busyIds, order.id];
@@ -333,7 +498,7 @@ export default {
             let attempt = null;
             try {
                 try {
-                    const claim = await this.post(`admin/labels/orders/${order.id}/claim`, { mode, labels_count: built.total });
+                    const claim = await this.post(`admin/labels/orders/${order.id}/claim`, { mode, labels_count: count, partial: Array.isArray(opts.only) && count < built.total });
                     if (!claim.claimed) return { ok: false, skipped: true, claim: "refused" };
                     logId = claim.log_id;
                     attempt = claim.attempt || null;
@@ -347,7 +512,7 @@ export default {
                 // Impression « en vol » : si la page est rechargée avant le verdict, il sera déclaré « non confirmé »
                 // au prochain chargement (jamais de réimpression automatique par erreur).
                 if (resultUrl) labelInflight(axios).begin(logId, resultUrl, attempt);
-                const result = await printBlocks(this.printerInstance(), built.labels.map(orderLabelBlocks), this.settings);
+                const result = await printBlocks(this.printerInstance(), labels.map(orderLabelBlocks), this.settings);
 
                 if (logId) {
                     const status = result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed";
@@ -355,15 +520,15 @@ export default {
                     await labelResultQueue(axios).send(resultUrl, {
                         status,
                         message: result.message ? String(result.message).slice(0, 290) : null,
-                        labels_count: built.total,
-                        printed_pages: result.ok ? built.total : (result.pages || 0),
+                        labels_count: count,
+                        printed_pages: result.ok ? count : (result.pages || 0),
                         attempt,
                     });
                     labelInflight(axios).end(logId);
                 }
 
                 if (result.ok && !result.unconfirmed) {
-                    if (mode === "manual") alertService.success(`Commande ${built.number} : ${built.total} étiquette${built.total > 1 ? "s" : ""} imprimée${built.total > 1 ? "s" : ""}.`);
+                    if (mode === "manual" && !opts.quiet) alertService.success(`Commande ${built.number} : ${count} étiquette${count > 1 ? "s" : ""} imprimée${count > 1 ? "s" : ""}.`);
                 } else if (result.ok) {
                     alertService.info(result.message);
                 } else {
@@ -379,13 +544,18 @@ export default {
         async printAll() {
             if (this.batchBusy) return;
             this.batchBusy = true;
+            let orders = 0;
+            let labels = 0;
             try {
                 // du plus ancien au plus récent : l'ordre de la cuisine
                 const queue = [...this.toPrint].sort((a, b) => Date.parse(a.created_at_iso) - Date.parse(b.created_at_iso));
                 for (const order of queue) {
-                    const r = await this.printOrder(order, "manual");
-                    if (r && !r.ok && !r.skipped) break; // une panne : inutile d'enchaîner
+                    const r = await this.printOrder(order, "manual", { quiet: true });
+                    if (r && r.ok) { orders += 1; labels += buildOrderLabels(order, this.buildOptions).total; }
+                    if (r && !r.ok && !r.skipped) break; // une panne : inutile d'enchaîner (son message a déjà été affiché)
                 }
+                // UN seul message pour le lot, pas une pile de bandeaux.
+                if (orders) alertService.success(`${labels} étiquette${labels > 1 ? "s" : ""} imprimée${labels > 1 ? "s" : ""} — ${orders} commande${orders > 1 ? "s" : ""}.`);
             } finally {
                 this.batchBusy = false;
             }
@@ -457,28 +627,58 @@ export default {
 .lbl-auto-text { flex: 1 1 260px; display: flex; flex-direction: column; font-size: 14px; color: #475569; }
 .lbl-auto-text strong { font-size: 17px; color: #0f172a; }
 .lbl-switch {
-    position: relative; width: 80px; height: 48px; border-radius: 999px; border: 0; background: #cbd5e1; cursor: pointer; flex: 0 0 auto;
+    position: relative; width: 84px; height: 52px; border-radius: 999px; border: 0; background: #cbd5e1; cursor: pointer; flex: 0 0 auto;
 }
 .lbl-switch[aria-checked="true"] { background: #16a34a; }
-.lbl-switch-knob { position: absolute; top: 4px; left: 4px; width: 40px; height: 40px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.lbl-switch-knob { position: absolute; top: 4px; left: 4px; width: 44px; height: 44px; border-radius: 50%; background: #fff; transition: transform .15s; }
 .lbl-switch[aria-checked="true"] .lbl-switch-knob { transform: translateX(32px); }
+.lbl-auto.is-paused { border-color: #fcd34d; background: #fffbeb; }
+.lbl-auto.is-paused .lbl-switch[aria-checked="true"] { background: #f59e0b; }
 
 .lbl-btn {
     min-height: 52px; padding: 0 20px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff;
     font-size: 17px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
 }
-.lbl-btn:disabled { opacity: .45; cursor: not-allowed; }
-.lbl-btn--primary { background: #F4501E; border-color: #F4501E; color: #fff; }
+.lbl-btn:disabled { opacity: 1; background: #e2e8f0; border-color: #cbd5e1; color: #64748b; cursor: not-allowed; }
+.lbl-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
+.lbl-btn--light { background: #fff; border-color: #fff; color: #7f1d1d; }
 .lbl-btn--ghost { background: transparent; color: #475569; }
 
+.lbl-blocked {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; background: #b91c1c; color: #fff; border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 14px; font-size: 16px; animation: lbl-pulse 1.6s ease-in-out infinite;
+}
+.lbl-blocked-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; }
+@keyframes lbl-pulse { 50% { box-shadow: 0 0 0 6px rgba(185, 28, 28, .25); } }
+.lbl-section { font-size: 17px; font-weight: 800; margin: 18px 0 8px; }
+.lbl-section-toggle { background: none; border: 0; font: inherit; font-weight: 800; cursor: pointer; padding: 8px 0; min-height: 48px; }
+.lbl-count { display: inline-block; min-width: 26px; text-align: center; background: #1a1a1a; color: #fff; border-radius: 999px; padding: 0 8px; font-size: 14px; margin-left: 4px; }
+.lbl-orders--done .lbl-order { opacity: .88; }
+.lbl-order.is-new { animation: lbl-new 6s ease-out; }
+@keyframes lbl-new { 0%, 60% { box-shadow: 0 0 0 4px #F4501E; } 100% { box-shadow: none; } }
+.lbl-age { font-size: 14px; font-weight: 700; border-radius: 999px; padding: 3px 12px; background: #e2e8f0; color: #334155; }
+.lbl-age.is-warn { background: #fde68a; color: #78350f; }
+.lbl-age.is-danger { background: #fecaca; color: #7f1d1d; }
+.lbl-btn--small { min-height: 48px; padding: 0 14px; font-size: 14px; margin-top: 6px; }
 .lbl-alert { border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
 .lbl-empty { color: #64748b; padding: 28px 8px; text-align: center; font-size: 16px; }
 .lbl-muted { color: #94a3b8; }
 
 .lbl-orders { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.lbl-order { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; background: #fff; }
+.lbl-order {
+    border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; background: #fff;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center;
+}
+.lbl-order > .lbl-order-head, .lbl-order > .lbl-order-body { grid-column: 1; }
+.lbl-order > .lbl-order-actions { grid-column: 2; grid-row: 1 / span 2; align-self: center; flex-wrap: nowrap; }
+.lbl-order > .lbl-previews { grid-column: 1 / -1; }
+@media (max-width: 899px) {
+    .lbl-order { grid-template-columns: 1fr; }
+    .lbl-order > .lbl-order-actions { grid-column: 1; grid-row: auto; justify-content: stretch; margin-top: 8px; }
+    .lbl-order > .lbl-order-actions .lbl-btn { flex: 1 1 0; justify-content: center; }
+}
 .lbl-order.is-todo { border-left: 6px solid #F4501E; }
-.lbl-order.is-done { border-left: 6px solid #16a34a; background: #f8fffb; }
+.lbl-order.is-done { border-left: 6px solid #16a34a; background: #f8fffb; border-color: #d1fae5; }
 .lbl-order.is-failed { border-left: 6px solid #dc2626; background: #fffafa; }
 .lbl-order.is-busy { border-left: 6px solid #2563eb; }
 .lbl-order-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -486,7 +686,7 @@ export default {
 .lbl-order-source { background: #1a1a1a; color: #fff; border-radius: 6px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
 .lbl-order-time { color: #64748b; font-variant-numeric: tabular-nums; }
 .lbl-order-customer { color: #334155; font-weight: 600; }
-.lbl-chip { margin-left: auto; border-radius: 999px; padding: 4px 14px; font-weight: 800; font-size: 14px; background: #fff3ed; color: #c2410c; }
+.lbl-chip { margin-left: auto; border-radius: 999px; padding: 6px 16px; font-weight: 800; font-size: 15px; background: #ffe4d6; color: #9a3412; }
 .lbl-chip.is-done { background: #dcfce7; color: #166534; }
 .lbl-chip.is-failed { background: #fee2e2; color: #991b1b; }
 .lbl-chip.is-busy { background: #dbeafe; color: #1e40af; }

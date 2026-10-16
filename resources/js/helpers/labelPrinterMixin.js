@@ -2,7 +2,7 @@
  * labelPrinterMixin.js — [ETIQUETTES 2026-10-16] Ce que partagent les trois écrans d'étiquettes : l'état
  * de l'imprimante Bluetooth (réactif), les réglages de la tablette, la reconnexion automatique.
  */
-import { getMedia, mediaMismatchMessage } from './brotherQl.js';
+import { getMedia, mediaFromStatus, mediaMismatchMessage } from './brotherQl.js';
 import { labelPrinter, loadSettings, saveSettings } from './labelPrinter.js';
 
 function safeStorage() {
@@ -46,7 +46,14 @@ export function describePrinter(state, settings, supported) {
         return { level: 'info', ready: true, title: 'Imprimante connectée', detail: 'Lecture de l’état…' };
     }
     const blocking = status.errors.find((e) => e.blocking);
-    if (blocking) return { level: 'error', ready: false, title: 'Imprimante en défaut', detail: blocking.message };
+    if (blocking) {
+        // Le titre dit déjà la panne : le détail ne la répète pas (« Capot ouvert » / « Fermez le capot… »).
+        const lead = blocking.short ? `${blocking.short} : ` : '';
+        const detail = lead && blocking.message.startsWith(lead)
+            ? blocking.message.slice(lead.length).replace(/^./, (c) => c.toUpperCase())
+            : blocking.message;
+        return { level: 'error', ready: false, title: blocking.short || 'Imprimante en défaut', detail };
+    }
     const mismatch = mediaMismatchMessage(status, media);
     if (mismatch) return { level: 'error', ready: false, title: 'Mauvais rouleau', detail: mismatch };
     return {
@@ -69,6 +76,15 @@ export default {
         printerInfo() { return describePrinter(this.printerState, this.settings, this.printerSupported); },
         printerReady() { return this.printerInfo.ready && this.printerState.status === 'connected'; },
         labelMedia() { return getMedia(this.settings.mediaId); },
+        /** Rouleau chargé reconnu ET différent du réglage : proposé en un appui. */
+        detectedMedia() {
+            const status = this.printerState.printer;
+            // Jamais proposé pendant une PANNE (capot ouvert…) : le vrai problème n'est pas le format, et un appui
+            // réécrirait le réglage sans rien réparer.
+            if (!status || status.hasError) return null;
+            const found = mediaFromStatus(status);
+            return found && found.id !== this.settings.mediaId ? found : null;
+        },
     },
     created() {
         const printer = labelPrinter();
@@ -87,6 +103,9 @@ export default {
         updateSettings(patch) {
             this.settings = { ...this.settings, ...patch };
             saveSettings(safeStorage(), this.settings);
+        },
+        adoptDetectedMedia() {
+            if (this.detectedMedia) this.updateSettings({ mediaId: this.detectedMedia.id });
         },
         async connectPrinter() { return labelPrinter().connect(); },
         async disconnectPrinter() { return labelPrinter().disconnect(); },

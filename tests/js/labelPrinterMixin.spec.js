@@ -52,7 +52,13 @@ describe('describePrinter', () => {
         const d = describePrinter(st({ printer: status({ err2: 0x10 }) }), DEFAULT_SETTINGS, true);
         expect(d.level).toBe('error');
         expect(d.ready).toBe(false);
-        expect(d.detail).toMatch(/Capot ouvert/);
+        expect(d.title).toBe('Capot ouvert'); // le titre dit la panne, pas « en défaut » tout court
+        expect(d.detail).toBe('Fermez le capot de l’imprimante.'); // …et le détail ne la répète pas
+    });
+
+    it('titres courts par panne : plus de rouleau, mauvais rouleau…', () => {
+        expect(describePrinter(st({ printer: status({ err1: 0x01, width: 0, type: 0 }) }), DEFAULT_SETTINGS, true).title).toBe('Plus de rouleau');
+        expect(describePrinter(st({ printer: status({ err1: 0x02 }) }), DEFAULT_SETTINGS, true).title).toBe('Fin de rouleau');
     });
 
     it('« imprimante occupée » seule n’est pas une panne', () => {
