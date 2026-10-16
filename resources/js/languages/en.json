@@ -1796,6 +1796,7 @@
         "dlc_watch_today": "Today",
         "dlc_watch_soon": "Within 72 h",
         "dlc_watch_anomaly": "To check",
+        "dlc_watch_unconfirmed": "Unconfirmed",
         "dlc_watch_none": "Nothing to watch: no batch expires within 72 hours.",
         "dlc_watch_error": "Food label watch unavailable — try again later.",
         "promo_flyer_settings": "Promo flyer settings",

@@ -205,7 +205,7 @@
                             <span class="dlc-history-dlc">DLC {{ short(h.expires_at) }}<small v-if="h.capped"> ({{ h.cap_source === "parent" ? "origine" : "fabricant" }})</small><small v-if="h.offline"> · hors ligne</small></span>
                             <span class="dlc-history-lot">{{ h.lot || "" }}<small v-if="h.offline && h.client_ref"> (réf. {{ offlineRefOf(h.client_ref) }})</small></span>
                             <span class="dlc-history-by">{{ h.by || "" }}</span>
-                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? `${reasonText(h.discard_reason)} ${short(h.discarded_at)}${h.discarded_by ? ` par ${h.discarded_by}` : ""}` : stateText(h.status) }}{{ h.anomaly ? " · à vérifier" : "" }}{{ h.declared_new ? " · produit neuf déclaré" : "" }}</span>
+                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? `${reasonText(h.discard_reason)} ${short(h.discarded_at)}${h.discarded_by ? ` par ${h.discarded_by}` : ""}` : stateText(h.status, h.created_at) }}{{ h.anomaly ? " · à vérifier" : "" }}{{ h.declared_new ? " · produit neuf déclaré" : "" }}</span>
                         </li>
                     </ul>
                 </div>
@@ -480,9 +480,11 @@ export default {
             } else if (!now && before) {
                 const el = this.origReturnFocus;
                 this.origReturnFocus = null;
-                // le bouton d'origine (panier) a disparu après impression : le focus revient au mode « Sélection multiple »
+                // le bouton d'origine (« Imprimer la sélection ») est désactivé puis disparaît : le focus revient au mode
+                // « Sélection multiple » (vérifié aussi à la fin de l'impression, voir focusAfterBatch)
                 this.$nextTick(() => {
-                    const target = el && document.contains(el) ? el : this.$el.querySelector('[data-testid="dlc-mode-list"]');
+                    const usable = el && document.contains(el) && !el.disabled && el.offsetParent !== null;
+                    const target = usable ? el : this.$el.querySelector('[data-testid="dlc-mode-list"]');
                     if (target && target.focus) target.focus();
                 });
             }
@@ -566,7 +568,9 @@ export default {
                 return "";
             }
         },
-        stateText(s) {
+        stateText(s, createdAt) {
+            // réservée depuis plus de 10 min sans verdict : peut-être imprimée — « non confirmée », comme dans « À surveiller »
+            if (s === "claimed" && createdAt && Date.now() + this.serverOffsetMs - Date.parse(createdAt) > 10 * 60000) return "non confirmée";
             return { printed: "imprimée", failed: "échec", unconfirmed: "non confirmée", claimed: "en cours" }[s] || s;
         },
         reasonText(r) {
@@ -579,11 +583,11 @@ export default {
         selectable(p) {
             if (p.needs_parent || this.ficheIncomplete(p)) return false;
             if (this.batchAction && !p.actions.some((a) => a.key === this.batchAction)) return false;
-            return !(this.batchAction === "thawed" && !p.thawed_storage);
+            return !(this.batchAction === "thawed" && !isValidThawedStorage(p.thawed_storage));
         },
-        /** Le produit prévoit l'événement du lot, mais sa fiche ne permet pas de l'imprimer (décongélation sans conservation). */
+        /** Le produit prévoit l'événement du lot, mais sa fiche ne permet pas de l'imprimer (décongélation sans conservation valide). */
         batchIncomplete(p) {
-            return this.batchAction === "thawed" && p.actions.some((a) => a.key === "thawed") && !p.thawed_storage;
+            return this.batchAction === "thawed" && p.actions.some((a) => a.key === "thawed") && !isValidThawedStorage(p.thawed_storage);
         },
         /** Ce qui manque à la fiche pour imprimer son événement par défaut ('' = rien). */
         ficheIncomplete(p) {
@@ -842,7 +846,17 @@ export default {
             } finally {
                 this.listBusy = false;
                 this.loadHistory();
+                this.focusAfterBatch();
             }
+        },
+        /** Fin d'une impression en lot : si le focus est tombé dans le vide (bouton disparu), il revient à « Sélection multiple ». */
+        focusAfterBatch() {
+            this.$nextTick(() => {
+                const a = document.activeElement;
+                if (a && a !== document.body && document.contains(a) && a.offsetParent !== null) return;
+                const target = this.$el.querySelector && this.$el.querySelector('[data-testid="dlc-mode-list"]');
+                if (target && target.focus) target.focus();
+            });
         },
         confirmOriginals() {
             if (!this.originalsReady) return;
@@ -1171,6 +1185,8 @@ export default {
 .dlc-last-text { display: flex; flex-direction: column; gap: 2px; font-size: 15px; flex: 1 1 240px; min-width: 0; }
 .dlc-last-warn { color: #92400e; font-weight: 600; }
 .dlc-last-img { width: 150px; max-width: 40%; border: 1px solid #94a3b8; image-rendering: pixelated; background: #fff; }
+/* étroit (portrait) : notice compacte — l'image de l'étiquette est dans l'historique et l'aperçu ; on couvre moins de tuiles */
+@media (max-width: 1099px) { .dlc-last-img { display: none; } .dlc-last { padding: 8px 10px; } .dlc-last-text { font-size: 14px; } }
 .dlc-last-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; }
 .dlc-btn--icon { min-width: 48px; padding: 0; }
 .dlc-undo { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #1a1a1a; color: #fff; border-radius: 12px; padding: 8px 8px 8px 16px; }

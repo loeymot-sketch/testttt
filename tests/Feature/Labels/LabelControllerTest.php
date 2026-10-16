@@ -1146,6 +1146,24 @@ class LabelControllerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_le_nom_de_qui_a_jete_reste_meme_s_il_a_quitte_l_equipe(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $alice = User::factory()->create(['branch_id' => 1, 'name' => 'Alice Test']);
+        $alice->givePermissionTo(['pos-orders']);
+        Sanctum::actingAs($alice, ['*']);
+        $p = $this->product(['name' => 'Olives']);
+        $r = $this->printed($p->id);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']]])->assertOk();
+        $alice->delete(); // départ de l'équipe (suppression douce)
+        $this->caisse();  // Karim
+        $row = collect($this->getJson('/api/admin/labels/history')->json('data'))->firstWhere('id', $r['log_id']);
+        $this->assertSame('Alice', $row['discarded_by']);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'restore' => true])->assertOk();
+        $this->assertStringContainsString('« jeté » du 16/10 10:00 par Alice annulé', (string) LabelPrintLog::query()->findOrFail($r['log_id'])->message);
+        Carbon::setTestNow();
+    }
+
     public function test_durees_verifiees_gardees_avec_leur_auteur(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));

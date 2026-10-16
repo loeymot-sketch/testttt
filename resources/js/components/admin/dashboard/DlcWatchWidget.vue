@@ -26,6 +26,8 @@
                               data-testid="dlc-watch-widget-count-soon">{{ $t('label.dlc_watch_soon') }} : {{ counts.soon }}</span>
                         <span v-if="counts.anomaly" class="rounded-lg px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-900"
                               data-testid="dlc-watch-widget-count-anomaly">{{ $t('label.dlc_watch_anomaly') }} : {{ counts.anomaly }}</span>
+                        <span v-if="counts.unconfirmed" class="rounded-lg px-3 py-1.5 text-sm font-semibold bg-blue-100 text-blue-900"
+                              data-testid="dlc-watch-widget-count-unconfirmed">{{ $t('label.dlc_watch_unconfirmed') }} : {{ counts.unconfirmed }}</span>
                     </div>
                     <p v-if="!items.length" class="text-sm text-gray-600" data-testid="dlc-watch-widget-none">{{ $t('label.dlc_watch_none') }}</p>
                     <ul v-else class="text-sm">
@@ -73,6 +75,7 @@ export default {
                 today: this.all.filter((w) => w.level === 'today').length,
                 soon: this.all.filter((w) => w.level === 'soon').length,
                 anomaly: this.all.filter((w) => w.anomaly).length,
+                unconfirmed: this.all.filter((w) => w.unconfirmed).length,
             };
         },
     },

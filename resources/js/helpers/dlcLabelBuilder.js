@@ -284,6 +284,7 @@ export function watchList(rows, nowMs, limit = 30) {
             lot.ids.push(h.id);
             // une seule ligne du lot « à vérifier » suffit à signaler tout le lot
             if (h.anomaly && !lot.anomaly) { lot.anomaly = true; lot.message = String(h.message || '⚠ À vérifier.'); }
+            if (h.status === 'claimed' || h.status === 'unconfirmed') lot.unconfirmed = true; // quel que soit l'ordre des lignes
             return;
         }
         seen.add(key);

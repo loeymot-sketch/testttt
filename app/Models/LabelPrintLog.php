@@ -132,7 +132,8 @@ class LabelPrintLog extends Model
     /** Qui a sorti le lot de la surveillance (jeté, utilisé, annulé). */
     public function discardedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'discarded_by');
+        // la personne a pu quitter l'équipe depuis : son nom reste dans le journal
+        return $this->belongsTo(User::class, 'discarded_by')->withTrashed();
     }
 
     /** Délai pendant lequel un lot marqué « utilisé » peut encore servir d'origine (on étiquette souvent juste après). */

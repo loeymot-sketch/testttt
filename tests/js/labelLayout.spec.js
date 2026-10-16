@@ -315,6 +315,9 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         // réservée sans verdict depuis > 10 min (le serveur la renvoie « claimed ») : surveillée, « non confirmée »
         const claimed = watchList([h({ id: 3, status: 'claimed', expires_at: '2026-10-16T18:00:00Z' })], now).items;
         expect(claimed.map((x) => [x.id, x.unconfirmed])).toEqual([[3, true]]);
+        // deux appuis rapides : la ligne « imprimée » arrive d'abord, la réservée sans verdict ensuite — le lot reste « non confirmé »
+        const both = watchList([h({ id: 5, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 6, status: 'claimed', expires_at: '2026-10-16T18:00:00Z' })], now).items;
+        expect(both.map((x) => [x.ids, x.unconfirmed])).toEqual([[[5, 6], true]]);
         // « à vérifier » sans message : la raison générique s'affiche quand même
         expect(watchList([h({ id: 4, anomaly: true, message: null })], now).items[0].message).toBe('⚠ À vérifier.');
     });

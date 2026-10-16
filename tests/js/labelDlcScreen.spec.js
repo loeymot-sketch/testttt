@@ -539,9 +539,21 @@ describe('éditeur de produit', () => {
         expect(h96.get('[data-testid="dlc-ed-warn-prepared"]').text()).toMatch(/96 heures = 4 jours : vérifiez l'unité/);
     });
 
-    it('viande ou poisson décongelés à température ambiante : signalé', () => {
-        const w = mount(DlcProductEditor, { props: { product: P({ name: 'Poulet', storage: '≤ −18 °C', thawed_storage: 'Ambiante', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] }), settings } });
-        expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/jamais à température ambiante/);
+    it('décongelé à température ambiante : signalé pour tout sauf le pain (liste blanche, pas liste noire des viandes)', () => {
+        const warn = (name, category = '') => mount(DlcProductEditor, { props: { product: P({ name, category, storage: '≤ −18 °C', thawed_storage: 'Ambiante', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] }), settings } })
+            .find('[data-testid="dlc-ed-warn-thawed"]');
+        ['Cordon bleu', 'Tenders', 'Mexicanos', 'Cabillaud', 'Poulet'].forEach((n) => expect(warn(n).exists(), n).toBe(true));
+        expect(warn('Cordon bleu').text()).toMatch(/réservé au pain et aux viennoiseries/);
+        ['Pains burger', 'Brioches', 'Wraps'].forEach((n) => expect(warn(n).exists(), n).toBe(false));
+    });
+
+    it('sélection « Décongélation » : une fiche dont l’après-décongélation est invalide (ancienne valeur congélateur) reste à part', async () => {
+        setup([P({ id: 1, thawed_storage: '≤ −18 °C', actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }] })]);
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-mode-list"]').trigger('click');
+        await w.get('[data-testid="dlc-batch-action"]').setValue('thawed');
+        expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (0)');
+        expect(w.get('[data-testid="dlc-product-1"]').text()).toMatch(/À part \(fiche à compléter\)/);
     });
 
     it('viande hachée décongelée au-dessus de +2 °C : signalée (arrêté du 21/12/2009), à confirmer', async () => {

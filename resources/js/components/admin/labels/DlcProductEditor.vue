@@ -172,6 +172,8 @@ const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [
 const PACKAGED = ["opened", "vacuum"];
 /** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). */
 const MEAT_OR_FISH = /viande|volaille|poulet|b(?:oe|œ)uf|steak|hach|kebab|poisson|saumon|thon|crevette|fruits de mer/iu;
+/** Pains et viennoiseries : les seuls produits qui se décongèlent à température ambiante. */
+const BREAD = /pain|bun|brioch|viennois|baguette|croissant|wrap|tortilla|galette|pita|naan|bagel|muffin|cookie|g[aâ]teau|p[aâ]tisserie|dessert/iu;
 /** Viande hachée et produits de la pêche : +2 °C au plus (arrêté du 21/12/2009, annexe I). */
 const MINCED_OR_FISH = /hach|steak|poisson|saumon|thon|cabillaud|colin|crevette|fruits de mer/iu;
 
@@ -310,8 +312,10 @@ export default {
             if (a.key === "thawed" && MINCED_OR_FISH.test(what) && maxTemp(this.form.thawed_storage) > 2) {
                 return "Viande hachée ou poisson décongelés : +2 °C au plus (arrêté du 21/12/2009, annexe I).";
             }
-            if (a.key === "thawed" && MEAT_OR_FISH.test(what) && /^\s*ambiante\s*$/iu.test(String(this.form.thawed_storage || ""))) {
-                return "Viande ou poisson décongelés : au froid, jamais à température ambiante (arrêté du 21/12/2009, annexe I).";
+            // Décongelé à température ambiante : seul un pain ou une viennoiserie s'y prête — tout le reste au froid (arrêté du
+            // 21/12/2009, annexe I : la température du produit frais équivalent). Liste blanche des pains, pas liste noire des viandes.
+            if (a.key === "thawed" && /^\s*ambiante\s*$/iu.test(String(this.form.thawed_storage || "")) && !BREAD.test(what)) {
+                return "Décongelé à température ambiante : réservé au pain et aux viennoiseries — viande, poisson, plats : au froid (arrêté du 21/12/2009, annexe I).";
             }
             if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(what)) {
                 return "Viande ou poisson décongelé : 24 h est l'usage courant ; au-delà, votre plan de maîtrise sanitaire doit le prévoir.";

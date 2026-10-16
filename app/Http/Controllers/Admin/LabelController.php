@@ -572,16 +572,27 @@ class LabelController extends AdminController
             ->limit(300)
             ->get();
 
-        // « déjà cuit plus haut dans la chaîne ? » pour chaque lot (même règle que dlcPrint), en mémoire : une requête
-        $graph = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)
-            ->where('created_at', '>=', $now->copy()->subDays(400))
-            ->get(['id', 'action', 'parent_log_id'])->keyBy('id');
+        // « déjà cuit plus haut dans la chaîne ? » pour chaque lot (même règle que dlcPrint). On ne charge QUE les ancêtres
+        // des lots affichés, niveau par niveau (≤ 25 requêtes, colonnes nues) — jamais tout le journal en mémoire.
+        $graph = [];
+        $frontier = $rows->pluck('parent_log_id')->filter()->unique()->values()->all();
+        for ($depth = 0; $frontier !== [] && $depth < 25; $depth++) {
+            $found = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('id', $frontier)
+                ->toBase()->get(['id', 'action', 'parent_log_id']);
+            $frontier = [];
+            foreach ($found as $f) {
+                $graph[$f->id] = $f;
+                if ($f->parent_log_id && ! isset($graph[$f->parent_log_id])) $frontier[] = $f->parent_log_id;
+            }
+            $frontier = array_values(array_unique($frontier));
+        }
         $chainCooked = function (LabelPrintLog $l) use ($graph): bool {
+            if ($l->action === 'cooked') return true;
             $seen = [];
-            for ($cur = $l, $d = 0; $cur && $d < 25 && ! isset($seen[$cur->id]); $d++) {
-                if ($cur->action === 'cooked') return true;
-                $seen[$cur->id] = true;
-                $cur = $cur->parent_log_id ? $graph->get($cur->parent_log_id) : null;
+            for ($id = $l->parent_log_id, $d = 0; $id && $d < 25 && ! isset($seen[$id]) && isset($graph[$id]); $d++) {
+                if ($graph[$id]->action === 'cooked') return true;
+                $seen[$id] = true;
+                $id = $graph[$id]->parent_log_id;
             }
 
             return false;

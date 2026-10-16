@@ -41,11 +41,13 @@ describe('tableau de bord — DLC à surveiller', () => {
         const now = Date.now();
         const rows = Array.from({ length: 7 }, (_, i) => lot({ id: i + 1, product_name: `P${i}`, expires_at: new Date(now + (i + 1) * 3600000).toISOString() }));
         rows.push(lot({ id: 99, product_name: 'Hors ligne', anomaly: true, message: '⚠ À vérifier', expires_at: new Date(now + 10 * 86400000).toISOString() }));
+        rows.push(lot({ id: 98, product_name: 'Sans verdict', status: 'claimed', expires_at: new Date(now + 2 * 3600000).toISOString() }));
         h.axios.get.mockResolvedValue({ data: { data: rows, meta: { server_now: new Date(now).toISOString() } } });
         const w = mountWidget([{ url: 'pos-orders', access: true }]);
         await flushPromises();
         expect(w.get('[data-testid="dlc-watch-widget-count-anomaly"]').text()).toContain(': 1');
-        expect(w.get('[data-testid="dlc-watch-widget-more"]').text()).toMatch(/\+ 3/);
+        expect(w.get('[data-testid="dlc-watch-widget-count-unconfirmed"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-more"]').text()).toMatch(/\+ 4/);
     });
 
     it('sans la permission de l’écran : rien n’est affiché ni demandé (jamais un appel promis au 403)', async () => {
