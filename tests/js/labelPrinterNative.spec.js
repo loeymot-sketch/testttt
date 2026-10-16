@@ -100,6 +100,32 @@ describe('createNativeSerial', () => {
         expect(printer.getState().status).toBe('disconnected');
     });
 
+    it('liaison Wi-Fi muette (imprimante éteinte sans fermer la prise) : coupée après 3 états manquants, puis reconnexion', async () => {
+        const { bridge, win, log } = fakeBridge({ devices: [{ kind: 'tcp', host: '192.168.1.50', port: 9100 }] });
+        const realWrite = bridge.write;
+        let mute = false;
+        bridge.write = (callId, data) => { if (mute) { win.__labelNativeEvent(JSON.stringify({ type: 'result', callId, ok: true })); return; } realWrite(callId, data); };
+        const printer = createLabelPrinter({ serial: createNativeSerial(bridge, win), statusTimeoutMs: 15 });
+        await printer.connect();
+        await new Promise((r) => setTimeout(r, 40));
+        expect(printer.getState().status).toBe('connected');
+        mute = true; // l'imprimante ne répond plus, la prise reste ouverte
+        printer.startKeepAlive(30);
+        await new Promise((r) => setTimeout(r, 300));
+        printer.stopKeepAlive();
+        expect(printer.getState().status).toBe('disconnected');
+        expect(printer.getState().error).toMatch(/silencieuse/);
+        expect(log.closed).toBeGreaterThan(0);
+    });
+
+    it('les messages précis du pont (Bluetooth éteint, autorisation) ne sont pas remplacés par le texte générique', async () => {
+        const { bridge, win } = fakeBridge();
+        bridge.open = (callId) => setTimeout(() => win.__labelNativeEvent(JSON.stringify({ type: 'result', callId, ok: false, name: 'NetworkError', error: 'Imprimante injoignable (Bluetooth éteint)' })), 0);
+        const printer = createLabelPrinter({ serial: createNativeSerial(bridge, win) });
+        await printer.connect();
+        expect(printer.getState().error).toBe('Imprimante injoignable (Bluetooth éteint)');
+    });
+
     it('le profil annoncé est le profil série (SPP) pour le Bluetooth, rien pour le Wi-Fi', async () => {
         const { bridge, win } = fakeBridge();
         const serial = createNativeSerial(bridge, win);

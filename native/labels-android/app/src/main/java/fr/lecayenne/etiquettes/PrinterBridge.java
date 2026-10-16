@@ -1,5 +1,6 @@
 package fr.lecayenne.etiquettes;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -9,6 +10,10 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
@@ -57,6 +62,13 @@ public class PrinterBridge {
     private OutputStream out;
     private int generation = 0;
     private JSONObject lastChoice;
+    // Prise en cours de connexion : fermable depuis un autre fil pour AVORTER un connect() bloqué (Bluetooth : pas de délai).
+    private Socket connectingTcp;
+    private BluetoothSocket connectingBt;
+    private String connectedTarget;
+    private String pendingChooserCall;
+    private final Handler ui = new Handler(Looper.getMainLooper());
+    private static final long CONNECT_WATCHDOG_MS = 15000;
 
     public PrinterBridge(Activity activity, WebView web) {
         this.activity = activity;
@@ -109,7 +121,7 @@ public class PrinterBridge {
 
     @JavascriptInterface
     public void close() {
-        io.execute(() -> closeLink(false, null));
+        closeLink(false, null); // direct : ne fait pas la queue derrière une connexion qui traîne
     }
 
     public void shutdown() {
@@ -120,6 +132,15 @@ public class PrinterBridge {
     // ── ouverture / lecture / écriture ───────────────────────────────────────────────────
 
     private void doOpen(String callId, String kind, String target, int port) {
+        final String key = kind + ":" + target + ":" + port;
+        synchronized (lock) {
+            // La page rechargée redemande la MÊME imprimante alors que la liaison tient encore : on la garde (une Brother
+            // refuse souvent une reconnexion immédiate).
+            if (out != null && key.equals(connectedTarget)) {
+                result(callId, true, null, null);
+                return;
+            }
+        }
         closeLink(false, null); // une seule liaison à la fois
         try {
             InputStream is;
@@ -128,6 +149,7 @@ public class PrinterBridge {
             BluetoothSocket btSocket = null;
             if ("tcp".equals(kind)) {
                 tcpSocket = new Socket();
+                synchronized (lock) { connectingTcp = tcpSocket; }
                 tcpSocket.connect(new InetSocketAddress(target, port > 0 ? port : 9100), 6000);
                 tcpSocket.setTcpNoDelay(true);
                 is = tcpSocket.getInputStream();
@@ -143,15 +165,20 @@ public class PrinterBridge {
                 bt = btSocket;
                 in = is;
                 out = os;
+                connectedTarget = key;
+                connectingTcp = null;
+                connectingBt = null;
                 gen = ++generation;
             }
             commitChoice(kind, target, port);
             startReader(gen, is);
             result(callId, true, null, null);
         } catch (SecurityException e) {
+            synchronized (lock) { connectingTcp = null; connectingBt = null; }
             result(callId, false, "NetworkError",
                     "Autorisez « Appareils à proximité » pour cette application (Réglages › Applications › Le Cayenne Étiquettes › Autorisations).");
         } catch (Exception e) {
+            synchronized (lock) { connectingTcp = null; connectingBt = null; }
             String msg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             result(callId, false, "NetworkError", "Imprimante injoignable (" + msg + ")");
         }
@@ -161,10 +188,13 @@ public class PrinterBridge {
         BluetoothAdapter adapter = adapter();
         if (adapter == null || !adapter.isEnabled()) throw new IOException("Bluetooth éteint");
         BluetoothDevice device = adapter.getRemoteDevice(address);
-        adapter.cancelDiscovery();
+        // Aucune recherche n'est lancée par l'application ; sur Android 12+, cancelDiscovery() exige BLUETOOTH_SCAN et peut
+        // lever SecurityException même avec « Appareils à proximité » accordé : jamais bloquant.
+        try { adapter.cancelDiscovery(); } catch (SecurityException ignored) { /* inutile ici */ }
         BluetoothSocket socket = null;
         try {
             socket = device.createRfcommSocketToServiceRecord(SPP);
+            armWatchdog(socket);
             socket.connect();
             return socket;
         } catch (IOException first) {
@@ -173,12 +203,23 @@ public class PrinterBridge {
             try {
                 Method m = device.getClass().getMethod("createRfcommSocket", int.class);
                 BluetoothSocket fallback = (BluetoothSocket) m.invoke(device, 1);
+                armWatchdog(fallback);
                 fallback.connect();
                 return fallback;
             } catch (Exception second) {
                 throw first;
             }
         }
+    }
+
+    /** Un connect() Bluetooth n'a pas de délai propre : au bout de 15 s on ferme la prise, ce qui l'interrompt. */
+    private void armWatchdog(final BluetoothSocket socket) {
+        synchronized (lock) { connectingBt = socket; }
+        ui.postDelayed(() -> {
+            boolean stuck;
+            synchronized (lock) { stuck = connectingBt == socket && bt != socket; }
+            if (stuck) try { socket.close(); } catch (IOException ignored) { /* abandon */ }
+        }, CONNECT_WATCHDOG_MS);
     }
 
     private void startReader(final int gen, final InputStream is) {
@@ -194,10 +235,7 @@ public class PrinterBridge {
                     emit(o);
                 }
             } catch (Exception ignored) { /* la liaison est tombée : ci-dessous */ }
-            synchronized (lock) {
-                if (gen != generation) return; // une liaison plus récente a pris le relais
-            }
-            closeLink(true, "Imprimante déconnectée");
+            closeLinkIfCurrent(gen, "Imprimante déconnectée");
         }, "label-reader");
         t.setDaemon(true);
         t.start();
@@ -220,6 +258,14 @@ public class PrinterBridge {
         }
     }
 
+    /** Ferme la liaison SEULEMENT si c'est encore la génération `gen` (un lecteur mourant ne ferme pas la liaison neuve). */
+    private void closeLinkIfCurrent(int gen, String reason) {
+        synchronized (lock) {
+            if (gen != generation) return;
+        }
+        closeLink(true, reason);
+    }
+
     private void closeLink(boolean notify, String reason) {
         boolean had;
         synchronized (lock) {
@@ -227,6 +273,10 @@ public class PrinterBridge {
             generation++; // tout lecteur en cours devient obsolète
             try { if (tcp != null) tcp.close(); } catch (IOException ignored) { /* déjà fermé */ }
             try { if (bt != null) bt.close(); } catch (IOException ignored) { /* déjà fermé */ }
+            // une connexion en cours est avortée aussi (close() la débloque)
+            try { if (connectingTcp != null) connectingTcp.close(); } catch (IOException ignored) { /* déjà fermé */ }
+            try { if (connectingBt != null) connectingBt.close(); } catch (IOException ignored) { /* déjà fermé */ }
+            connectingTcp = null; connectingBt = null; connectedTarget = null;
             tcp = null; bt = null; in = null; out = null;
         }
         if (notify && had) {
@@ -241,7 +291,29 @@ public class PrinterBridge {
 
     // ── choix de l'imprimante ────────────────────────────────────────────────────────────
 
+    private boolean needsBluetoothPermission() {
+        return Build.VERSION.SDK_INT >= 31
+                && activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** MainActivity → réponse à la demande « Appareils à proximité » : on rouvre le choix, sans redemander (pas de boucle). */
+    public void onBluetoothPermissionResult() {
+        final String call;
+        synchronized (lock) { call = pendingChooserCall; pendingChooserCall = null; }
+        if (call != null) activity.runOnUiThread(() -> showChooser(call, true));
+    }
+
     private void showChooser(final String callId) {
+        showChooser(callId, false);
+    }
+
+    private void showChooser(final String callId, boolean permissionAlreadyAsked) {
+        if (!permissionAlreadyAsked && needsBluetoothPermission()) {
+            // L'utilisateur peut appuyer sur « Connecter » avant d'avoir répondu à la demande du lancement : on la repose ici.
+            synchronized (lock) { pendingChooserCall = callId; }
+            activity.requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT}, MainActivity.REQ_BT);
+            return;
+        }
         final List<JSONObject> devices = new ArrayList<>();
         final List<String> labels = new ArrayList<>();
         String problem = null;

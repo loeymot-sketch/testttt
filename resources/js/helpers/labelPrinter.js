@@ -83,6 +83,8 @@ function readJson(storage, key) {
 export function explainPortError(err) {
     const name = err && err.name;
     const msg = String((err && err.message) || err || '');
+    // Le pont de l'application native dit déjà précisément ce qui ne va pas (Bluetooth éteint, autorisation, adresse injoignable).
+    if (err && err.fromNative) return msg;
     if (name === 'NotFoundError') return 'Aucune imprimante choisie.';
     if (name === 'NetworkError' || /failed to open|failed to connect|connection/i.test(msg)) {
         return 'Imprimante injoignable : elle est éteinte, hors de portée, ou déjà connectée à un autre appareil (un téléphone par exemple). Rallumez‑la puis réessayez.';
@@ -505,10 +507,22 @@ export function createLabelPrinter(opts = {}) {
          */
         startKeepAlive(intervalMs = 8000) {
             if (!serial || keepAliveTimer) return;
+            let silent = 0;
             const tick = async () => {
                 if (busy) return;
-                if (!port) { await api.autoConnect(); return; }
-                await api.refreshStatus();
+                if (!port) { silent = 0; await api.autoConnect(); return; }
+                const s = await api.refreshStatus();
+                // Application native : une liaison Wi‑Fi (TCP) dont l'imprimante s'est endormie ou a perdu le courant sans
+                // fermer la prise reste « ouverte » pour Android. 3 réponses d'état manquantes de suite = elle est muette :
+                // on coupe, et le prochain tour se reconnecte (au lieu d'afficher « prête » pour une imprimante absente).
+                if (serial && serial.isNative) {
+                    silent = s ? 0 : silent + 1;
+                    if (silent >= 3 && port) {
+                        silent = 0;
+                        try { await port.close(); } catch (_) { /* déjà fermée */ }
+                        dropPort('Imprimante silencieuse (éteinte, en veille ou hors de portée). Reconnexion automatique…');
+                    }
+                }
             };
             tick();
             keepAliveTimer = setInterval(tick, intervalMs);

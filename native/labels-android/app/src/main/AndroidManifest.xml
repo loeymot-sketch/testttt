@@ -17,12 +17,13 @@
         android:icon="@drawable/ic_launcher"
         android:allowBackup="false"
         android:usesCleartextTraffic="${usesCleartext}"
+        android:enableOnBackInvokedCallback="false"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -77,7 +77,7 @@ export function createNativeSerial(bridge, win) {
             if (!p) return;
             pending.delete(ev.callId);
             if (ev.ok) p.resolve(ev);
-            else p.reject(namedError(ev.name || 'NetworkError', ev.error || 'Erreur'));
+            else { const e = namedError(ev.name || 'NetworkError', ev.error || 'Erreur'); e.fromNative = true; p.reject(e); }
         } else if (ev.type === 'data') {
             if (current && current._push) current._push(b64decode(ev.b64 || ''));
         } else if (ev.type === 'closed') {

@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -26,10 +27,11 @@ import android.widget.FrameLayout;
  * L'écran reste allumé : une tablette posée près de l'imprimante imprime les commandes qui arrivent.
  */
 public class MainActivity extends Activity {
-    private static final int REQ_BT = 41;
+    static final int REQ_BT = 41;
 
     private WebView web;
     private PrinterBridge bridge;
+    private long lastRenderCrash = 0;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -71,8 +73,17 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                // Wi‑Fi coupé au lancement ou pendant une coupure : la page d'erreur de Chrome ne se relance pas toute seule.
+                if (request.isForMainFrame()) view.postDelayed(() -> view.loadUrl(startUrl), 10000);
+            }
+
+            @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                recreate(); // le moteur web est tombé (mémoire) : on repart propre, la session est conservée
+                // le moteur web est tombé (mémoire) : on repart propre, la session est conservée — mais pas en boucle
+                long now = System.currentTimeMillis();
+                if (now - lastRenderCrash > 20000) { lastRenderCrash = now; recreate(); }
+                else view.postDelayed(() -> view.loadUrl(startUrl), 20000);
                 return true;
             }
         });
@@ -85,12 +96,27 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQ_BT);
         }
 
-        if (savedInstanceState != null) web.restoreState(savedInstanceState);
-        else web.loadUrl(startUrl);
+        // restoreState() renvoie null quand l'état sauvegardé ne contient pas de WebView (recreate() après un plantage) :
+        // sans cette garde, la page restait blanche.
+        if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) web.loadUrl(startUrl);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_BT && bridge != null) bridge.onBluetoothPermissionResult();
+    }
+
+    @Override
+    protected void onPause() {
+        android.webkit.CookieManager.getInstance().flush(); // la session survit à une fermeture brutale
+        super.onPause();
     }
 
     private String startUrl() {
-        String fromIntent = getIntent() != null ? getIntent().getStringExtra("url") : null;
+        // L'activité est exportée : une adresse reçue d'une autre application recevrait le pont `LabelNative`. Seule la version
+        // de test (debug) l'accepte.
+        String fromIntent = BuildConfig.DEBUG && getIntent() != null ? getIntent().getStringExtra("url") : null;
         return fromIntent != null && !fromIntent.isEmpty() ? fromIntent : BuildConfig.START_URL;
     }
 
