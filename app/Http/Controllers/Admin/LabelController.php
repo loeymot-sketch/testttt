@@ -110,18 +110,34 @@ class LabelController extends AdminController
             'product_id' => ['required', 'integer'],
             'copies' => ['nullable', 'integer', 'min:1', 'max:20'],
             'action' => ['nullable', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
-            // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ).
+            // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ), et son numéro de lot.
             'original_dlc' => ['nullable', 'date_format:Y-m-d'],
-        ], [], ['product_id' => 'produit', 'copies' => 'nombre d’étiquettes', 'original_dlc' => 'DLC du fabricant']);
+            'supplier_lot' => ['nullable', 'string', 'max:40'],
+            // Étiquette du produit d'origine (ex. poulet décongelé → poulet mariné).
+            'parent_log_id' => ['nullable', 'integer', 'min:1'],
+        ], [], [
+            'product_id' => 'produit', 'copies' => 'nombre d’étiquettes', 'original_dlc' => 'DLC du fabricant',
+            'supplier_lot' => 'lot du fabricant', 'parent_log_id' => 'étiquette d’origine',
+        ]);
 
         $product = DlcLabelProduct::query()->where('is_active', true)->find($validated['product_id']);
         if (! $product) {
             return response()->json(['status' => 'unknown_product', 'message' => 'Produit introuvable ou désactivé.'], 404);
         }
 
+        // Un événement demandé mais non prévu par la fiche n'est JAMAIS remplacé par un autre : l'étiquette dirait
+        // « Entamé le » avec la durée d'ouverture alors que le produit sort du congélateur.
+        $requested = $validated['action'] ?? null;
+        if ($requested !== null && ! $product->hasAction($requested)) {
+            $message = '« '.DlcLabelProduct::ACTION_LABELS[$requested].' » n’est pas prévu pour « '.$product->name.' » : ajoutez-le à sa fiche, ou choisissez un autre événement.';
+
+            return response()->json(['status' => 'unknown_action', 'message' => $message, 'errors' => ['action' => [$message]]], 422);
+        }
+
         $openedAt = now();
-        $action = $product->action($validated['action'] ?? null);
+        $action = $product->action($requested);
         $expiresAt = $product->expiresFrom($openedAt, $action);
+        $capSource = null;
 
         // Règle du plan de maîtrise sanitaire : la DLC secondaire ne dépasse JAMAIS la DLC du fabricant.
         $original = $validated['original_dlc'] ?? null;
@@ -131,7 +147,6 @@ class LabelController extends AdminController
                 'errors' => ['original_dlc' => ['Indiquez la DLC du fabricant (sur l’emballage d’origine).']],
             ], 422);
         }
-        $capped = false;
         if ($original !== null) {
             $originalEnd = \Carbon\Carbon::createFromFormat('Y-m-d', $original, config('app.timezone'))->endOfDay();
             if ($originalEnd->lt($openedAt)) {
@@ -143,12 +158,44 @@ class LabelController extends AdminController
             }
             if ($expiresAt->gt($originalEnd)) {
                 $expiresAt = $originalEnd->copy()->startOfMinute();
-                $capped = true;
+                $capSource = 'original';
+            }
+        }
+
+        // Produit fait À PARTIR d'un produit déjà étiqueté : sa DLC ne repart pas à zéro (GBPH § 2.7 — jamais plus longue
+        // que la durée initiale, « sauf si un traitement assainissant est appliqué » : la CUISSON redonne une durée propre,
+        // à condition que le produit d'origine soit encore bon au moment de la cuisson).
+        $parent = null;
+        if (! empty($validated['parent_log_id'])) {
+            $parent = LabelPrintLog::query()
+                ->where('kind', LabelPrintLog::KIND_DLC)
+                ->whereIn('status', LabelPrintLog::DONE_STATUSES)
+                ->whereNotNull('expires_at')
+                ->find((int) $validated['parent_log_id']);
+            $refuse = function (string $status, string $message) {
+                return response()->json(['status' => $status, 'message' => $message, 'errors' => ['parent_log_id' => [$message]]], 422);
+            };
+            if (! $parent) {
+                return $refuse('parent_unknown', 'Étiquette d’origine introuvable.');
+            }
+            $ref = $parent->product_name.($parent->lot ? ' (N° '.$parent->lot.')' : '');
+            if ($parent->discarded_at !== null) {
+                return $refuse('parent_closed', 'Le produit d’origine '.$ref.' n’est plus en stock (jeté, utilisé ou annulé).');
+            }
+            if ($parent->expires_at->lte($openedAt)) {
+                return $refuse('parent_expired', 'Le produit d’origine '.$ref.' est périmé : il ne doit pas être utilisé.');
+            }
+            if ($action['key'] !== 'cooked' && $expiresAt->gt($parent->expires_at)) {
+                $expiresAt = $parent->expires_at->copy();
+                $capSource = 'parent';
             }
         }
 
         $user = $request->user();
         $copies = (int) ($validated['copies'] ?? $product->default_copies ?: 1);
+        $storage = $product->storageFor($action['key']);
+        $supplierLot = isset($validated['supplier_lot']) && trim((string) $validated['supplier_lot']) !== ''
+            ? trim((string) $validated['supplier_lot']) : null;
 
         $log = new LabelPrintLog([
             'user_id' => $user?->id,
@@ -161,7 +208,11 @@ class LabelController extends AdminController
             'opened_at' => $openedAt,
             'expires_at' => $expiresAt,
             'original_dlc' => $original,
-            'capped' => $capped,
+            'capped' => $capSource !== null,
+            'cap_source' => $capSource,
+            'storage' => $storage,
+            'parent_log_id' => $parent?->id,
+            'supplier_lot' => $supplierLot,
             'copies' => $copies,
             'status' => LabelPrintLog::STATUS_CLAIMED,
             'claimed_at' => $openedAt,
@@ -169,28 +220,121 @@ class LabelController extends AdminController
         // La ligne de journal appartient à la branche du PRODUIT (un administrateur sans branche voit toutes les branches).
         $log->branch_id = (int) ($product->branch_id ?: $this->branchId($request));
         $log->save();
-        // Numéro de lot : lien entre cette étiquette, le journal et l'emballage d'origine (traçabilité).
-        $log->forceFill(['lot' => 'L'.$openedAt->format('ymd').'-'.str_pad((string) $log->id, 4, '0', STR_PAD_LEFT)])->save();
+        // Numéro de l'étiquette : lien entre ce papier, le journal et les produits faits à partir de lui (traçabilité).
+        $log->forceFill(['lot' => $this->lotNumber($openedAt, $log->id)])->save();
 
-        return response()->json([
-            'log_id' => $log->id,
-            'attempt' => 1,
-            'name' => $product->name,
-            'category' => $product->category,
+        return response()->json($this->presentDlcLabel($product, $log, $parent, $user) + ['attempt' => 1]);
+    }
+
+    /**
+     * Étiquette imprimée RÉSEAU COUPÉ (l'étiquette prime : la cuisine ne s'arrête pas) : la tablette la journalise dès que
+     * le réseau revient. Le serveur vérifie qu'elle ne dit rien de plus que la fiche (DLC jamais plus longue que la durée
+     * prévue), lui donne un numéro, et la met dans la surveillance comme les autres. Rejouer l'envoi (même `client_ref`)
+     * ne crée jamais de doublon.
+     */
+    public function dlcOffline(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'client_ref' => ['required', 'string', 'min:8', 'max:64'],
+            'product_id' => ['required', 'integer'],
+            'action' => ['required', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
+            'copies' => ['required', 'integer', 'min:1', 'max:20'],
+            'opened_at' => ['required', 'date'],
+            'expires_at' => ['required', 'date'],
+            'status' => ['required', Rule::in([LabelPrintLog::STATUS_PRINTED, LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_FAILED])],
+            'message' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $existing = LabelPrintLog::query()->where('client_ref', $validated['client_ref'])->first();
+        if ($existing) {
+            return response()->json(['status' => 'ok', 'log_id' => $existing->id, 'lot' => $existing->lot, 'replayed' => true]);
+        }
+
+        $product = DlcLabelProduct::withTrashed()->find($validated['product_id']);
+        if (! $product) {
+            return response()->json(['status' => 'unknown_product', 'message' => 'Produit introuvable.'], 422);
+        }
+        if (! $product->hasAction($validated['action'])) {
+            return response()->json(['status' => 'unknown_action', 'message' => 'Événement non prévu pour ce produit.'], 422);
+        }
+
+        // La tablette envoie de l'ISO avec fuseau (souvent « Z ») : ramené au fuseau de l'application avant d'être écrit,
+        // sinon la base recevrait l'heure UTC comme si c'était l'heure de Paris (deux heures d'écart).
+        $openedAt = \Carbon\Carbon::parse($validated['opened_at'])->setTimezone(config('app.timezone'));
+        $expiresAt = \Carbon\Carbon::parse($validated['expires_at'])->setTimezone(config('app.timezone'));
+        $now = now();
+        if ($openedAt->lt($now->copy()->subHours(26)) || $openedAt->gt($now->copy()->addMinutes(10))) {
+            return response()->json(['status' => 'bad_clock', 'message' => 'Heure d’impression invalide.'], 422);
+        }
+        $action = $product->action($validated['action']);
+        if ($expiresAt->lte($openedAt) || $expiresAt->gt($product->expiresFrom($openedAt, $action)->addMinutes(2))) {
+            return response()->json(['status' => 'bad_expiry', 'message' => 'DLC imprimée plus longue que la durée prévue.'], 422);
+        }
+
+        $log = new LabelPrintLog([
+            'user_id' => $request->user()?->id,
+            'kind' => LabelPrintLog::KIND_DLC,
+            'dlc_product_id' => $product->id,
+            'product_name' => $product->name,
             'action' => $action['key'],
-            'storage' => $product->storage,
-            'note' => $product->note,
-            'allergens' => array_values((array) ($product->allergens ?? [])),
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
-            'opened_at' => $openedAt->toIso8601String(),
-            'expires_at' => $expiresAt->toIso8601String(),
-            'original_dlc' => $original,
-            'capped' => $capped,
+            'opened_at' => $openedAt,
+            'expires_at' => $expiresAt,
+            'storage' => $product->storageFor($action['key']),
+            'copies' => (int) $validated['copies'],
+            'offline' => true,
+            'client_ref' => $validated['client_ref'],
+            'status' => $validated['status'],
+            'message' => $validated['message'] ?? 'Imprimée hors ligne, journalisée au retour du réseau.',
+            'printed_pages' => $validated['status'] === LabelPrintLog::STATUS_FAILED ? 0 : (int) $validated['copies'],
+            'claimed_at' => $openedAt,
+            'finished_at' => $now,
+        ]);
+        $log->branch_id = (int) ($product->branch_id ?: $this->branchId($request));
+        try {
+            $log->save();
+        } catch (QueryException $e) {
+            // Deux envois simultanés du même `client_ref` : le second retrouve le premier.
+            if (! $this->isUniqueViolation($e)) throw $e;
+            $first = LabelPrintLog::query()->where('client_ref', $validated['client_ref'])->firstOrFail();
+
+            return response()->json(['status' => 'ok', 'log_id' => $first->id, 'lot' => $first->lot, 'replayed' => true]);
+        }
+        $log->forceFill(['lot' => $this->lotNumber($openedAt, $log->id)])->save();
+
+        return response()->json(['status' => 'ok', 'log_id' => $log->id, 'lot' => $log->lot, 'replayed' => false]);
+    }
+
+    /** Ce que la tablette imprime : exactement ce que dit le journal. */
+    private function presentDlcLabel(DlcLabelProduct $product, LabelPrintLog $log, ?LabelPrintLog $parent, $user): array
+    {
+        return [
+            'log_id' => $log->id,
+            'name' => $product->name,
+            'category' => $product->category,
+            'action' => $log->action,
+            'storage' => $log->storage,
+            'note' => $product->note,
+            'allergens' => array_values((array) ($product->allergens ?? [])),
+            'shelf_life_value' => $log->shelf_life_value,
+            'shelf_life_unit' => $log->shelf_life_unit,
+            'opened_at' => $log->opened_at->toIso8601String(),
+            'expires_at' => $log->expires_at->toIso8601String(),
+            'original_dlc' => $log->original_dlc?->format('Y-m-d'),
+            'supplier_lot' => $log->supplier_lot,
+            'capped' => (bool) $log->capped,
+            'cap_source' => $log->cap_source,
+            'parent' => $parent ? ['lot' => $parent->lot, 'name' => $parent->product_name] : null,
             'lot' => $log->lot,
             'copies' => $log->copies,
             'by' => $product->print_operator ? $this->firstName($user?->name) : null,
-        ]);
+        ];
+    }
+
+    private function lotNumber(\Carbon\CarbonInterface $at, int $id): string
+    {
+        return 'L'.$at->format('ymd').'-'.str_pad((string) $id, 4, '0', STR_PAD_LEFT);
     }
 
     /**

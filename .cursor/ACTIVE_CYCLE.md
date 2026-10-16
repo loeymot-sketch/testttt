@@ -1,22 +1,22 @@
 # Active Cycle – FoodKing
 
-## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 11 E2E LOYALTY REALIGNMENT
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 12 IMAGE CONVERGENCE
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16
-PHASE: CLOSED
-CLOSURE_NOTE: Phase 11 PASS; 29/29 mobile E2E verts; App Store blockers restent packaging natif, SMS, Mollie, loyalty gate et assets catalogue
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16/report.md
+TASK_ID: MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016
+PHASE: PLAN
+CLOSURE_NOTE:
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016/report.md
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
-EXECUTE_DELEGATION: controlled local complex execution
-FALLBACK_REASON: codex-extension indisponible dans cette session; scope tests E2E borné
-AUDIT_CHANNEL: cursor-session
-AUDIT_FALLBACK_REASON: terminal audit non utilisé pour une phase tests-only bornée
-AUDIT_VERDICT: PASS
-GPT_FINAL_AUDIT_VERDICT: PASS
-SUBSYSTEMS_TOUCHED: mobile E2E assertions only
-SUBSYSTEMS_OFF_LIMITS: mobile loyalty implementation, backend loyalty, reactivation policy, pricing/order data, payment, auth/SMS, migrations, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging/signing
+EXECUTE_DELEGATION:
+FALLBACK_REASON:
+AUDIT_CHANNEL:
+AUDIT_FALLBACK_REASON:
+AUDIT_VERDICT:
+GPT_FINAL_AUDIT_VERDICT:
+SUBSYSTEMS_TOUCHED: mobile/data/menu.js, mobile/assets/menu canonical product/category images, mobile/tests/mobile-catalog-visual.spec.js, tests/mobile-e2e/catalog-visual-critical.spec.js
+SUBSYSTEMS_OFF_LIMITS: backend PHP/config, database/migrations, pricing/order data, payment, auth/SMS, loyalty, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging/signing
 
 | **FIELD** | **VALUE** |
 |---|---|

@@ -26,6 +26,16 @@ class LabelPrintLog extends Model
     /** Statuts qui comptent comme « les étiquettes de cette commande sont sorties ». */
     public const DONE_STATUSES = [self::STATUS_PRINTED, self::STATUS_UNCONFIRMED];
 
+    /** Pourquoi un lot DLC sort de la surveillance (la ligne reste au journal). */
+    public const DISCARD_DISCARDED = 'discarded';
+    public const DISCARD_USED = 'used';
+    public const DISCARD_CANCELLED = 'cancelled';
+    public const DISCARD_REASONS = [self::DISCARD_DISCARDED, self::DISCARD_USED, self::DISCARD_CANCELLED];
+
+    /** Lots d'hygiène surveillés : à échoir dans ces heures, ou échus depuis moins de ces jours (puis journal seul). */
+    public const WATCH_AHEAD_HOURS = 72;
+    public const WATCH_BEHIND_DAYS = 7;
+
     /**
      * Une réclamation jamais conclue (onglet fermé en pleine impression) est rendue à la file après ce
      * délai, pour qu'une commande ne reste pas « en cours » pour toujours.
@@ -74,6 +84,7 @@ class LabelPrintLog extends Model
         'finished_at',
         'discarded_at',
         'discarded_by',
+        'discard_reason',
         'claim_key',
     ];
 

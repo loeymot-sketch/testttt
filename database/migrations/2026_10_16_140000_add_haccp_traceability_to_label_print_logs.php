@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Schema;
  *   · supplier_lot   — le lot du FABRICANT recopié de l'emballage d'origine (traçabilité amont) ;
  *   · offline        — étiquette imprimée réseau coupé, journalisée au retour du réseau ;
  *   · client_ref     — identifiant de la tablette pour cette impression hors ligne : rejouer l'envoi ne crée jamais de doublon ;
- *   · discarded_by   — qui a déclaré le lot jeté.
+ *   · discarded_by   — qui a sorti le lot de la surveillance ;
+ *   · discard_reason — pourquoi : « discarded » (jeté), « used » (entièrement utilisé), « cancelled » (étiquette imprimée
+ *                      par erreur, annulée) — la ligne reste au journal dans les trois cas.
  */
 return new class extends Migration
 {
@@ -33,6 +35,7 @@ return new class extends Migration
             if (! Schema::hasColumn('label_print_logs', 'offline')) $table->boolean('offline')->default(false)->after('supplier_lot');
             if (! Schema::hasColumn('label_print_logs', 'client_ref')) $table->string('client_ref', 64)->nullable()->unique()->after('offline');
             if (! Schema::hasColumn('label_print_logs', 'discarded_by')) $table->unsignedBigInteger('discarded_by')->nullable()->after('discarded_at');
+            if (! Schema::hasColumn('label_print_logs', 'discard_reason')) $table->string('discard_reason', 12)->nullable()->after('discarded_by');
         });
     }
 
@@ -47,7 +50,7 @@ return new class extends Migration
             if (Schema::hasColumn('label_print_logs', 'parent_log_id')) $table->dropIndex(['parent_log_id']);
         });
         Schema::table('label_print_logs', function (Blueprint $table) {
-            foreach (['storage', 'cap_source', 'parent_log_id', 'supplier_lot', 'offline', 'client_ref', 'discarded_by'] as $c) {
+            foreach (['storage', 'cap_source', 'parent_log_id', 'supplier_lot', 'offline', 'client_ref', 'discarded_by', 'discard_reason'] as $c) {
                 if (Schema::hasColumn('label_print_logs', $c)) $table->dropColumn($c);
             }
         });
