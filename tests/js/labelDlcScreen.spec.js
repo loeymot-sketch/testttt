@@ -522,6 +522,13 @@ describe('éditeur de produit', () => {
         expect(h96.get('[data-testid="dlc-ed-warn-prepared"]').text()).toMatch(/96 heures = 4 jours : vérifiez l'unité/);
     });
 
+    it('viande hachée décongelée au-dessus de +2 °C : signalée (arrêté du 21/12/2009), à confirmer', async () => {
+        const w = mount(DlcProductEditor, { props: { product: P({ name: 'Steak haché', storage: '≤ −18 °C', thawed_storage: '0 à +4 °C', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] }), settings } });
+        expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/\+2 °C au plus/);
+        await w.get('[data-testid="dlc-ed-thawed-0"]').trigger('click'); // 0 à +2 °C
+        expect(w.find('[data-testid="dlc-ed-warn-thawed"]').exists()).toBe(false);
+    });
+
     it('décongélation d’un produit surgelé : la conservation APRÈS décongélation est obligatoire, et annoncée', async () => {
         const w = mount(DlcProductEditor, { props: { product: P({ name: 'Pains burger', storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 48, unit: 'hours' }] }), settings } });
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');

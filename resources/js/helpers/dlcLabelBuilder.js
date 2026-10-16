@@ -260,8 +260,9 @@ export function expiryStatus(expiresMs, nowMs) {
 
 /**
  * Les DLC à surveiller, d'après la liste du serveur (`/labels/watch` : imprimées, ni jetées ni utilisées, à échoir dans les
- * 72 h ou échues depuis moins de 7 jours), regroupées par lot (même produit, même échéance), les plus pressées d'abord.
- * Un lot échu reste affiché tant que personne ne l'a sorti, 7 jours au plus ; au-delà il ne vit plus qu'au journal.
+ * 72 h ou échues depuis moins de 30 jours, plus les étiquettes « à vérifier »), regroupées par lot (même produit, même
+ * échéance), les plus pressées d'abord. Un lot échu reste affiché tant que personne ne l'a sorti, 30 jours au plus ;
+ * au-delà il ne vit plus qu'au journal.
  * @returns {{items: Array<object>, more: number}} `more` = lots non affichés (au-delà de `limit`)
  */
 export function watchList(rows, nowMs, limit = 30) {
@@ -279,6 +280,8 @@ export function watchList(rows, nowMs, limit = 30) {
             const lot = out.find((o) => o.key === key);
             lot.copies += Number(h.copies) || 1;
             lot.ids.push(h.id);
+            // une seule ligne du lot « à vérifier » suffit à signaler tout le lot
+            if (h.anomaly && !lot.anomaly) { lot.anomaly = true; lot.message = String(h.message || ''); }
             return;
         }
         seen.add(key);

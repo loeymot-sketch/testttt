@@ -1047,6 +1047,67 @@ class LabelControllerTest extends TestCase
         $this->assertSame('discarded', $row['discard_reason']);
     }
 
+    public function test_une_seule_remise_en_temperature_meme_a_travers_une_chaine(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $roast = $this->expertProduct(['name' => 'Poulet rôti', 'actions' => [['key' => 'cooked', 'value' => 3, 'unit' => 'days']]]);
+        $vac = $this->expertProduct(['name' => 'Poulet sous vide', 'actions' => [['key' => 'vacuum', 'value' => 6, 'unit' => 'days']]]);
+        $regen = $this->expertProduct(['name' => 'Poulet régénéré', 'actions' => [['key' => 'cooked', 'value' => 3, 'unit' => 'days']]]);
+        $cooked = $this->printed($roast['id']);                                                  // DLC 19/10 10:00
+        Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', config('app.timezone')));
+        $packed = $this->printed($vac['id'], ['parent_log_id' => $cooked['log_id']]);            // limité au 19/10 10:00
+        Carbon::setTestNow(Carbon::parse('2026-10-17 12:00:00', config('app.timezone')));
+        // cuit → sous vide → « cuisson » : déjà cuit plus haut dans la chaîne, la durée ne repart PAS (avant : 20/10 12:00)
+        $re = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $regen['id'], 'parent_log_id' => $packed['log_id']])->assertOk()->json();
+        $this->assertTrue($re['capped']);
+        $this->assertSame('2026-10-19 10:00', Carbon::parse($re['expires_at'])->format('Y-m-d H:i'));
+        Carbon::setTestNow();
+    }
+
+    public function test_un_lot_fait_a_partir_d_un_lot_a_verifier_est_a_verifier_lui_aussi(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $src = $this->expertProduct(['name' => 'Sauce base', 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]]);
+        $made = $this->expertProduct(['name' => 'Sauce finie', 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]]);
+        $odd = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-anom0001', 'product_id' => $src['id'], 'action' => 'prepared', 'copies' => 1, 'status' => 'printed',
+            'opened_at' => '2026-10-16T07:00:00Z', 'expires_at' => '2026-10-18T07:00:00Z', // plus longue que la fiche
+        ])->assertOk()->json();
+        $child = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'parent_log_id' => $odd['log_id']])->assertOk()->json();
+        $row = LabelPrintLog::query()->findOrFail($child['log_id']);
+        $this->assertTrue($row->anomaly);
+        $this->assertStringContainsString('fait à partir d’un lot imprimé hors ligne à vérifier', $row->message);
+        // « produit neuf » déclaré hors ligne : journalisé au retour du réseau
+        $new = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-neuf0001', 'product_id' => $made['id'], 'action' => 'prepared', 'copies' => 1, 'status' => 'printed',
+            'opened_at' => '2026-10-16T07:00:00Z', 'expires_at' => '2026-10-17T07:00:00Z', 'parent_none' => true,
+        ])->assertOk()->json();
+        $this->assertTrue(LabelPrintLog::query()->findOrFail($new['log_id'])->declared_new);
+        Carbon::setTestNow();
+    }
+
+    public function test_annuler_un_jete_laisse_une_trace_et_une_valeur_ancienne_invalide_ne_s_imprime_pas(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->product(['name' => 'Olives']);
+        $r = $this->printed($p->id);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'reason' => 'discarded'])->assertOk();
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:05:00', config('app.timezone')));
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'restore' => true])->assertOk()->assertJsonPath('restored', 1);
+        $row = LabelPrintLog::query()->findOrFail($r['log_id']);
+        $this->assertNull($row->discarded_at);
+        $this->assertStringContainsString('« jeté » du 16/10 10:00 annulé le 16/10 10:05 par Karim', (string) $row->message);
+
+        // valeur d'après‑décongélation enregistrée avant la règle (congélateur) : refusée à l'impression
+        $old = $this->product(['name' => 'Ancien', 'storage' => '≤ −18 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);
+        $old->forceFill(['thawed_storage' => '≤ −18 °C'])->save();
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $old->id])->assertStatus(422)->assertJsonPath('status', 'thawed_storage_invalid');
+        Carbon::setTestNow();
+    }
+
     public function test_durees_verifiees_gardees_avec_leur_auteur(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));

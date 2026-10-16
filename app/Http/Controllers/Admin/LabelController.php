@@ -144,6 +144,13 @@ class LabelController extends AdminController
 
         // La conservation figure sur toute étiquette d'hygiène : une fiche qui ne la dit pas n'imprime pas — et pour une
         // décongélation, c'est la conservation APRÈS décongélation, sans aucune valeur de repli.
+        // Une valeur d'après‑décongélation enregistrée avant la règle (ex. « ≤ −18 °C ») ne s'imprime pas non plus.
+        if ($action['key'] === 'thawed' && $product->storageFor('thawed') !== null
+            && ! DlcLabelProduct::isValidThawedStorage((string) $product->storageFor('thawed'))) {
+            $message = 'La conservation après décongélation de « '.$product->name.' » n’est pas du froid positif (Modifier la fiche).';
+
+            return response()->json(['status' => 'thawed_storage_invalid', 'message' => $message, 'errors' => ['thawed_storage' => [$message]]], 422);
+        }
         if ($product->storageFor($action['key']) === null) {
             [$status, $field, $what] = $action['key'] === 'thawed'
                 ? ['thawed_storage_missing', 'thawed_storage', 'la conservation après décongélation']
@@ -212,9 +219,10 @@ class LabelController extends AdminController
             if ($parent->expires_at->lte($openedAt)) {
                 return $refuse('parent_expired', 'Le produit d’origine '.$ref.' est périmé : il ne doit pas être utilisé.');
             }
-            // Une SEULE remise en température : cuire un produit déjà cuit ne lui redonne pas de durée (GBPH, pratique
-            // professionnelle) — la DLC du lot cuit d'origine s'applique alors comme pour toute préparation.
-            $restarts = $action['key'] === 'cooked' && $parent->action !== 'cooked';
+            // Une SEULE remise en température : cuire un produit qui a DÉJÀ été cuit — même plusieurs étiquettes plus haut
+            // (cuit → mis sous vide → recuit) — ne lui redonne pas de durée (GBPH § 2.7 ; toxines thermostables
+            // B. cereus, S. aureus) : la DLC de la chaîne s'applique alors comme pour toute préparation.
+            $restarts = $action['key'] === 'cooked' && ! $this->chainWasCooked($parent);
             if (! $restarts && $expiresAt->gt($parent->expires_at)) {
                 $expiresAt = $parent->expires_at->copy();
                 $capSource = 'parent';
@@ -244,6 +252,11 @@ class LabelController extends AdminController
             'parent_log_id' => $parent?->id,
             // « produit neuf » DÉCLARÉ pour une préparation : la personne a dit qu'il n'y avait pas d'origine étiquetée
             'declared_new' => $parent === null && ! empty($validated['parent_none']),
+            // fait à partir d'un lot « à vérifier » (imprimé hors ligne) : sa DLC peut être fausse, celle-ci aussi
+            'anomaly' => (bool) $parent?->anomaly,
+            'message' => $parent?->anomaly
+                ? '⚠ À vérifier : fait à partir d’un lot imprimé hors ligne à vérifier ('.($parent->lot ? 'N° '.$parent->lot : $parent->product_name).').'
+                : null,
             'supplier_lot' => $supplierLot,
             'copies' => $copies,
             'status' => LabelPrintLog::STATUS_CLAIMED,
@@ -277,6 +290,7 @@ class LabelController extends AdminController
             'opened_at' => ['required', 'date'],
             'expires_at' => ['required', 'date'],
             'storage' => ['nullable', 'string', 'max:60'],
+            'parent_none' => ['nullable', 'boolean'],
             'status' => ['required', Rule::in([LabelPrintLog::STATUS_PRINTED, LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_FAILED])],
             'message' => ['nullable', 'string', 'max:300'],
         ]);
@@ -330,6 +344,7 @@ class LabelController extends AdminController
             'storage' => $validated['storage'] ?? $product?->storageFor($action['key']),
             'copies' => (int) $validated['copies'],
             'offline' => true,
+            'declared_new' => ! empty($validated['parent_none']),
             'anomaly' => $anomalies !== [],
             'client_ref' => $validated['client_ref'],
             'status' => $validated['status'],
@@ -378,6 +393,20 @@ class LabelController extends AdminController
             'copies' => $log->copies,
             'by' => $product->print_operator ? $this->firstName($user?->name) : null,
         ];
+    }
+
+    /** Un lot de la chaîne d'origine (le parent, son parent…) a-t-il été CUIT ? (25 niveaux au plus, sans boucle) */
+    private function chainWasCooked(LabelPrintLog $parent): bool
+    {
+        $seen = [];
+        $current = $parent;
+        for ($depth = 0; $current && $depth < 25 && ! isset($seen[$current->id]); $depth++) {
+            if ($current->action === 'cooked') return true;
+            $seen[$current->id] = true;
+            $current = $current->parent_log_id ? LabelPrintLog::query()->find($current->parent_log_id) : null;
+        }
+
+        return false;
     }
 
     private function lotNumber(\Carbon\CarbonInterface $at, int $id): string
@@ -449,26 +478,36 @@ class LabelController extends AdminController
         ]);
 
         $restore = (bool) ($validated['restore'] ?? false);
-        $count = LabelPrintLog::query()
-            ->where('kind', LabelPrintLog::KIND_DLC)
-            ->whereIn('id', $validated['ids'])
-            ->when($restore, fn ($q) => $q->whereNotNull('discarded_at'), fn ($q) => $q->whereNull('discarded_at'))
-            ->update($restore
-                ? ['discarded_at' => null, 'discarded_by' => null, 'discard_reason' => null, 'updated_at' => now()]
-                : [
-                    'discarded_at' => now(),
-                    'discarded_by' => $request->user()?->id,
-                    'discard_reason' => $validated['reason'] ?? LabelPrintLog::DISCARD_DISCARDED,
-                    'updated_at' => now(),
-                ]);
+        $base = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('id', $validated['ids']);
+        if ($restore) {
+            // L'annulation ne s'efface pas : qui l'a faite, quand, et ce qui avait été posé restent écrits au journal.
+            $by = $this->firstName($request->user()?->name) ?? '—';
+            $rows = (clone $base)->whereNotNull('discarded_at')->get();
+            foreach ($rows as $row) {
+                $was = ['discarded' => 'jeté', 'used' => 'utilisé', 'cancelled' => 'annulée'][$row->discard_reason ?: 'discarded'] ?? 'jeté';
+                $trace = '« '.$was.' » du '.$row->discarded_at->format('d/m H:i').' annulé le '.now()->format('d/m H:i').' par '.$by;
+                $row->forceFill([
+                    'discarded_at' => null, 'discarded_by' => null, 'discard_reason' => null,
+                    'message' => mb_substr(trim(($row->message ? $row->message.' · ' : '').$trace), 0, 300),
+                ])->save();
+            }
+            $count = $rows->count();
+        } else {
+            $count = (clone $base)->whereNull('discarded_at')->update([
+                'discarded_at' => now(),
+                'discarded_by' => $request->user()?->id,
+                'discard_reason' => $validated['reason'] ?? LabelPrintLog::DISCARD_DISCARDED,
+                'updated_at' => now(),
+            ]);
+        }
 
         return response()->json(['status' => 'ok', 'discarded' => $restore ? 0 : $count, 'restored' => $restore ? $count : 0]);
     }
 
     /**
      * Les lots d'hygiène à SURVEILLER, tirés du journal entier (pas des 50 dernières lignes) : imprimés, ni jetés ni
-     * utilisés, à échoir dans les 72 h ou échus depuis moins de 7 jours. Un lot échu reste signalé tant que personne ne
-     * l'a sorti — il ne disparaît pas tout seul au bout de 24 h.
+     * utilisés, à échoir dans les 72 h ou échus depuis moins de 30 jours, et les étiquettes « à vérifier » quelle que soit
+     * leur DLC. Un lot échu reste signalé tant que personne ne l'a sorti — il ne disparaît pas tout seul au bout de 24 h.
      */
     public function watch(): JsonResponse
     {

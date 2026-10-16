@@ -137,8 +137,8 @@ class DlcLabelProduct extends Model
     }
 
     /**
-     * La conservation à IMPRIMER pour cet événement. Décongélation : celle choisie pour l'après‑décongélation, sinon la
-     * conservation habituelle si c'est du froid positif, sinon le repli (jamais le congélateur).
+     * La conservation à IMPRIMER pour cet événement. Décongélation : celle choisie pour l'après‑décongélation, et rien
+     * d'autre — sans elle la fiche est à compléter (aucune valeur de repli).
      */
     public function storageFor(string $actionKey): ?string
     {

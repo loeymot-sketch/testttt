@@ -938,6 +938,8 @@ export default {
                 await labelResultQueue(axios).send("admin/labels/dlc/offline", {
                     client_ref: data.client_ref, product_id: product.id, product_name: product.name, action: data.action,
                     copies: data.copies, opened_at: data.opened_at, expires_at: data.expires_at, storage: data.storage || null,
+                    // « produit neuf » déclaré pour une préparation : la déclaration suit l'étiquette au journal
+                    parent_none: opts.parent_none || undefined,
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",
                     message: result.message ? String(result.message).slice(0, 290) : null,
                 }, { maxAgeMs: OFFLINE_KEEP_MS });

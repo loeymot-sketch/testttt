@@ -51,8 +51,8 @@
                         </div>
                         <label v-if="warnings.length" class="ed-switch ed-switch--warn">
                             <input v-model="durationsChecked" type="checkbox" data-testid="dlc-ed-durations-ok" />
-                            <span><b>Durées vérifiées</b> : elles sont validées par notre plan de maîtrise sanitaire ou indiquées par le fabricant
-                                (votre nom et l'heure sont gardés sur la fiche).</span>
+                            <span><b>Durées vérifiées</b> : ces durées et températures sont validées par notre plan de maîtrise sanitaire ou
+                                indiquées par le fabricant (votre nom et l'heure sont gardés sur la fiche).</span>
                         </label>
                         <p v-if="checkedText" class="ed-help" data-testid="dlc-ed-durations-checked-at">{{ checkedText }}</p>
                     </fieldset>
@@ -172,6 +172,14 @@ const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [
 const PACKAGED = ["opened", "vacuum"];
 /** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). */
 const MEAT_OR_FISH = /viande|volaille|poulet|b(?:oe|œ)uf|steak|hach|kebab|poisson|saumon|thon|crevette|fruits de mer/iu;
+/** Viande hachée et produits de la pêche : +2 °C au plus (arrêté du 21/12/2009, annexe I). */
+const MINCED_OR_FISH = /hach|steak|poisson|saumon|thon|cabillaud|colin|crevette|fruits de mer/iu;
+
+/** Température la plus haute écrite (« 0 à +4 °C » → 4) ; null si aucune. */
+function maxTemp(text) {
+    const nums = String(text || "").match(/[+]?\d+/g);
+    return nums ? Math.max(...nums.map((n) => Number(n.replace("+", "")))) : null;
+}
 
 function hoursOf(a) { return a.unit === "days" ? Number(a.value) * 24 : Number(a.value); }
 
@@ -298,7 +306,11 @@ export default {
             if (!(v >= 1)) return "";
             const h = hoursOf(a);
             if (a.unit === "hours" && v > 72) return `${v} heures = ${Math.round(v / 24)} jours : vérifiez l'unité.`;
-            if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(`${this.form.name} ${this.form.category}`)) {
+            const what = `${this.form.name} ${this.form.category}`;
+            if (a.key === "thawed" && MINCED_OR_FISH.test(what) && maxTemp(this.form.thawed_storage) > 2) {
+                return "Viande hachée ou poisson décongelés : +2 °C au plus (arrêté du 21/12/2009, annexe I).";
+            }
+            if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(what)) {
                 return "Viande ou poisson décongelé : 24 h est l'usage courant ; au-delà, votre plan de maîtrise sanitaire doit le prévoir.";
             }
             if (a.key === "thawed" && h > 72) return "Un produit décongelé se garde en général 3 jours au plus.";
