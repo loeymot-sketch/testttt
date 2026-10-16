@@ -12,6 +12,7 @@
                 <!-- ── Mise en service : numérotée, ouverte tant que l'imprimante n'est pas prête, repliée ensuite ── -->
                 <details class="pr-guide" :open="guideOpen" data-testid="pr-guide" @toggle="guideOpen = $event.target.open">
                     <summary class="pr-guide-summary">
+                        <span class="pr-chevron" aria-hidden="true">{{ guideOpen ? "▾" : "▸" }}</span>
                         <strong>Mise en service (une seule fois)</strong>
                         <span v-if="printerReady" class="pr-ok">✓ terminée</span>
                     </summary>
@@ -48,7 +49,7 @@
                     <button v-else type="button" class="pr-btn" data-testid="pr-disconnect" @click="disconnectPrinter">
                         Déconnecter
                     </button>
-                    <button type="button" class="pr-btn pr-btn--primary" :disabled="testing || !printerReady" data-testid="pr-test" @click="printTest">
+                    <button type="button" class="pr-btn pr-btn--primary" :disabled="testing || !printerReady" :aria-describedby="printerReady ? null : 'pr-test-why'" data-testid="pr-test" @click="printTest">
                         {{ testing ? "Impression…" : "🖨 Imprimer une étiquette test" }}
                     </button>
                     <button type="button" class="pr-btn" data-testid="pr-fallback" @click="fallbackPrint">
@@ -58,7 +59,7 @@
                 <p class="pr-hint pr-hint--block">
                     L'étiquette test vérifie le sens, les accents et la coupe. <b>Secours</b> : ouvre la boîte d'impression d'Android
                     (à utiliser seulement si la connexion directe ci‑dessus ne marche pas).
-                    <span v-if="!printerReady"><br />Le test est disponible dès que l'imprimante est prête.</span>
+                    <span v-if="!printerReady" id="pr-test-why"><br />Le test est disponible dès que l'imprimante est prête.</span>
                 </p>
 
                 <p v-if="testMessage" class="pr-msg" :class="testOk ? 'is-ok' : 'is-ko'" data-testid="pr-test-message">{{ testMessage }}</p>
@@ -152,15 +153,24 @@ export default {
     },
     watch: {
         // Ouvert tant que l'imprimante n'est pas prête ; replié dès qu'elle l'est (sauf si on l'a ouvert exprès).
+        // Le guide de PREMIÈRE installation ne s'ouvre que si l'imprimante n'est pas connectée : une imprimante connectée
+        // mais en panne (capot, rouleau) n'a pas besoin qu'on lui redise d'appuyer sur « Connecter ».
+        printerState: {
+            deep: true,
+            handler() { if (!this.guideTouched) this.guideOpen = this.guideShouldBeOpen; },
+        },
         printerReady: {
             immediate: true,
-            handler(ready) { if (!this.guideTouched) this.guideOpen = !ready; },
+            handler() { if (!this.guideTouched) this.guideOpen = this.guideShouldBeOpen; },
         },
         guideOpen(open, before) {
-            if (before !== undefined && open !== !this.printerReady) this.guideTouched = true;
+            if (before !== undefined && open !== this.guideShouldBeOpen) this.guideTouched = true;
         },
     },
     computed: {
+        guideShouldBeOpen() {
+            return !this.printerSupported || this.printerState.status === "disconnected" || this.printerState.status === "connecting";
+        },
         mediaChoices() {
             return mediaList();
         },
@@ -239,7 +249,7 @@ export default {
 }
 .pr-btn:disabled { opacity: .45; cursor: not-allowed; }
 .pr-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
-.pr-btn:disabled { background: #e2e8f0; border-color: #cbd5e1; color: #64748b; cursor: not-allowed; }
+.pr-btn:disabled { opacity: 1; background: #e2e8f0; border-color: #cbd5e1; color: #475569; cursor: not-allowed; }
 .pr-msg { border-radius: 8px; padding: 10px 12px; margin: 6px 0 12px; font-weight: 600; }
 .pr-msg.is-ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #166534; }
 .pr-msg.is-ko { background: #fef2f2; border: 1px solid #fca5a5; color: #7f1d1d; }
@@ -253,9 +263,9 @@ export default {
 .pr-diag li.is-ko .pr-diag-mark { color: #dc2626; }
 .pr-form { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
 .pr-field label { display: block; font-weight: 700; margin-bottom: 4px; }
-.pr-check { display: flex; gap: 10px; align-items: flex-start; font-size: 16px; line-height: 1.35; min-height: 44px; }
+.pr-check { flex-wrap: wrap; display: flex; gap: 10px; align-items: flex-start; font-size: 16px; line-height: 1.35; min-height: 44px; }
 .pr-check input { width: 28px; height: 28px; margin-top: 0; flex: 0 0 auto; }
-.pr-check { min-height: 52px; align-items: center; cursor: pointer; }
+.pr-check { min-height: 52px; align-items: center; cursor: pointer; flex-wrap: wrap; }
 .pr-check .pr-hint { display: block; flex-basis: 100%; margin-left: 38px; }
 .pr-field .db-field-control { min-height: 48px; }
 .pr-hint--block { margin: 0 0 12px; font-size: 14px; color: #475569; }
@@ -265,6 +275,7 @@ export default {
 .pr-steps { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 14px; }
 .pr-steps li { display: flex; gap: 12px; align-items: flex-start; line-height: 1.45; }
 .pr-step-n { flex: 0 0 34px; height: 34px; border-radius: 50%; background: #1a1a1a; color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-.pr-advanced summary { cursor: pointer; font-weight: 700; padding: 8px 0; }
+.pr-advanced summary { cursor: pointer; font-weight: 700; padding: 8px 0; min-height: 48px; display: flex; align-items: center; }
+.pr-chevron { font-size: 18px; width: 20px; }
 .pr-steps { padding-left: 22px; display: flex; flex-direction: column; gap: 12px; max-width: 760px; line-height: 1.45; }
 </style>

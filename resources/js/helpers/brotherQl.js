@@ -348,7 +348,7 @@ export function mediaMismatchMessage(status, media) {
         && (wantType === 'continuous' || loaded.lengthMm === media.lengthMm);
     if (same) return null;
     const dim = (m) => (m.type === 'continuous' ? `${m.widthMm} mm continu` : `${m.widthMm} × ${m.lengthMm} mm`);
-    return `Rouleau chargé : ${dim(loaded)} — format réglé : ${dim(media)}. Choisissez le bon format dans les réglages, ou changez le rouleau.`;
+    return `Rouleau posé dans l’imprimante : ${dim(loaded)} — réglage actuel : ${dim(media)}. Choisissez le bon format dans les réglages, ou changez le rouleau.`;
 }
 
 /**

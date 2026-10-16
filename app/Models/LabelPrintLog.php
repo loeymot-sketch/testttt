@@ -62,6 +62,7 @@ class LabelPrintLog extends Model
         'message',
         'claimed_at',
         'finished_at',
+        'discarded_at',
         'claim_key',
     ];
 
@@ -81,6 +82,7 @@ class LabelPrintLog extends Model
         'expires_at' => 'datetime',
         'claimed_at' => 'datetime',
         'finished_at' => 'datetime',
+        'discarded_at' => 'datetime',
     ];
 
     protected static function booted(): void

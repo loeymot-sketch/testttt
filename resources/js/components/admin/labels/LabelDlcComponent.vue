@@ -40,7 +40,9 @@
                     <ul>
                         <li v-for="w in watchItems" :key="w.id" :class="`is-${w.level}`" data-testid="dlc-watch-item">
                             <span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span>
-                            <span><strong>{{ w.name }}</strong> <span v-if="w.copies > 1" class="dlc-watch-n">({{ w.copies }} étiquettes)</span><br />{{ w.text }}</span>
+                            <span class="dlc-watch-body"><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }})</span><br />{{ w.text }}</span>
+                            <button v-if="w.level === 'expired'" type="button" class="dlc-btn dlc-btn--small dlc-btn--danger" :data-testid="`dlc-discard-${w.id}`"
+                                    :disabled="discarding" @click="discard(w)">Jeté ✓</button>
                         </li>
                     </ul>
                 </aside>
@@ -73,7 +75,10 @@
                         </div>
                     </div>
 
-                    <p v-if="query && !visibleProducts.length" class="dlc-empty" data-testid="dlc-no-match">Aucun produit ne correspond à « {{ query }} ».</p>
+                    <div v-if="query && !visibleProducts.length" class="dlc-empty dlc-empty--inline" data-testid="dlc-no-match">
+                            <span>Aucun produit ne correspond à « {{ query }} ».</span>
+                            <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-add-from-query" @click="addFromQuery">Ajouter « {{ query }} »</button>
+                        </div>
                     <div class="dlc-grid" data-testid="dlc-grid">
                         <div v-for="p in visibleProducts" :key="p.id" class="dlc-cell">
                             <button type="button" class="dlc-tile"
@@ -93,7 +98,7 @@
                 </div>
 
                 <!-- Liste du jour : la sélection, prête à partir d'un seul appui. -->
-                <div v-if="selectMode" class="dlc-basket" data-testid="dlc-basket">
+                <div v-if="selectMode && (selectionTotal > 0 || listBusy)" class="dlc-basket" data-testid="dlc-basket">
                     <span class="dlc-basket-text">
                         <strong data-testid="dlc-basket-total">{{ selectionTotal }} étiquette{{ selectionTotal > 1 ? "s" : "" }}</strong>
                         — {{ selectionProducts }} produit{{ selectionProducts > 1 ? "s" : "" }}
@@ -148,7 +153,7 @@
                                 </select>
                             </div>
                             <div class="dlc-field">
-                                <label for="dlc-storage">Conservation (facultatif)</label>
+                                <label for="dlc-storage">Conservation</label>
                                 <input id="dlc-storage" v-model="form.storage" type="text" maxlength="60" class="db-field-control"
                                        placeholder="+4 °C" data-testid="dlc-form-storage" />
                             </div>
@@ -230,6 +235,7 @@ export default {
             copyChoices: [1, 2, 3, 5, 10],
             busyId: null,
             loaded: false,
+            discarding: false,
             selectMode: false,
             selection: {},
             listBusy: false,
@@ -315,6 +321,27 @@ export default {
         /** Pré‑remplit le formulaire avec un exemple : le restaurant valide (ou corrige) la durée, rien n'est créé tout seul. */
         applySuggestion(sg) {
             this.form = { id: null, name: sg.name, shelf_life_value: sg.value, shelf_life_unit: sg.unit, storage: "" };
+            this.startAdding();
+        },
+
+        /** « Jeté » : le personnel a retiré le lot échu — l'alerte disparaît (la ligne de journal reste). */
+        async discard(w) {
+            this.discarding = true;
+            try {
+                await axios.post("admin/labels/prints/discard", { ids: w.ids });
+                await this.loadHistory();
+            } catch (e) {
+                alertService.error(this.apiMessage(e, "Impossible d'enregistrer : réessayez."));
+            } finally {
+                this.discarding = false;
+            }
+        },
+
+        /** Recherche sans résultat : un appui pour AJOUTER ce produit (le nom est déjà saisi). */
+        addFromQuery() {
+            const name = String(this.query || "").trim();
+            this.query = "";
+            this.form = { id: null, name, shelf_life_value: 2, shelf_life_unit: "days", storage: "" };
             this.startAdding();
         },
 
@@ -584,11 +611,13 @@ export default {
 @media (min-width: 1100px) {
     .dlc-layout { flex-direction: row; align-items: flex-start; }
     .dlc-main { flex: 1 1 auto; min-width: 0; }
-    .dlc-watch { order: 2; flex: 0 0 300px; position: sticky; top: 8px; }
+    .dlc-watch { order: 2; flex: 0 0 340px; position: sticky; top: 8px; }
 }
 .dlc-watch { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 10px 16px; margin: 6px 0 14px; }
 .dlc-watch li { display: flex; gap: 8px; align-items: flex-start; }
 .dlc-watch li.is-expired { background: #fee2e2; border-radius: 8px; padding: 6px 8px; margin: 2px -8px; }
+.dlc-watch-body { flex: 1 1 auto; min-width: 0; }
+.dlc-empty--inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .dlc-watch-icon { font-size: 18px; line-height: 1.2; }
 .dlc-watch-n { color: #64748b; font-weight: 400; }
 .dlc-cell { position: relative; }
@@ -597,6 +626,9 @@ export default {
 .dlc-tile.is-expired { border-color: #dc2626; background: #fef2f2; }
 .dlc-tile-flag { position: absolute; top: 8px; right: 10px; background: #dc2626; color: #fff; border-radius: 999px; padding: 2px 10px; font-weight: 800; font-size: 13px; }
 .dlc-tile.is-expired .dlc-tile-name { padding-right: 84px; }
+.dlc-tile.is-picked .dlc-tile-life { padding-right: 64px; }
+.dlc-tile.is-picked .dlc-tile-name { padding-top: 22px; padding-right: 0; }
+.dlc-tile.is-picked.is-expired .dlc-tile-name { padding-right: 84px; }
 .dlc-search-row { display: flex; gap: 8px; align-items: center; }
 .dlc-search-row .db-field-control { min-height: 48px; flex: 1 1 auto; }
 .dlc-empty--cta { text-align: left; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 18px; }
@@ -629,7 +661,7 @@ export default {
 .dlc-tile.is-picked { border-color: #F4501E; background: #fff7f3; }
 .dlc-tile.is-picked .dlc-tile-name, .dlc-tile:disabled .dlc-tile-name { padding-right: 76px; }
 .dlc-tile-count {
-    position: absolute; top: 8px; right: 10px; background: #F4501E; color: #fff; border-radius: 999px;
+    position: absolute; top: 8px; left: 10px; background: #D63D0B; color: #fff; border-radius: 999px;
     padding: 2px 12px; font-weight: 800; font-size: 15px;
 }
 .dlc-basket {

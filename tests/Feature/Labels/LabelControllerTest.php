@@ -548,4 +548,31 @@ class LabelControllerTest extends TestCase
         $this->assertTrue($state['printed']);
         $this->assertSame(1, $state['print_count']);
     }
+
+    public function test_jeter_un_lot_pose_la_date_sans_supprimer_la_ligne_et_reste_dans_la_branche(): void
+    {
+        $this->caisse();
+        $p = $this->product(['name' => 'Olives']);
+        $id = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p->id])->json('log_id');
+        $this->postJson("/api/admin/labels/prints/{$id}/result", ['status' => 'printed'])->assertOk();
+
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id]])->assertOk()->assertJsonPath('discarded', 1);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id]])->assertOk()->assertJsonPath('discarded', 0); // idempotent
+
+        $row = collect($this->getJson('/api/admin/labels/history')->json('data'))->firstWhere('id', $id);
+        $this->assertNotNull($row['discarded_at']);
+        $this->assertSame('printed', $row['status']); // la ligne reste, intacte
+
+        // une autre branche ne peut pas jeter ce lot
+        $this->caisse(2);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id]])->assertOk()->assertJsonPath('discarded', 0);
+    }
+
+    public function test_jeter_refuse_une_liste_vide_ou_invalide(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => []])->assertStatus(422);
+        $this->postJson('/api/admin/labels/prints/discard', [])->assertStatus(422);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => ['x']])->assertStatus(422);
+    }
 }

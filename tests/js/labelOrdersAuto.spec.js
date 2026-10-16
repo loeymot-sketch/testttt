@@ -263,7 +263,7 @@ describe('impression automatique — moteur', () => {
         await polls(w, 1);
         const banner = w.find('[data-testid="label-blocked"]');
         expect(banner.exists()).toBe(true);
-        expect(banner.text()).toMatch(/1 commande en attente — Imprimante non connectée/);
+        expect(banner.text()).toMatch(/1 commande en attente d'impression/);
         expect(w.get('[data-testid="label-auto"]').text()).toMatch(/en pause/);
         expect(w.find('[data-testid="label-retry"]').exists()).toBe(true);
         w.unmount();

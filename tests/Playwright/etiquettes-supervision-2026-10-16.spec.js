@@ -265,6 +265,14 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await page.getByTestId('dlc-basket-print').click();
         await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(2);
         await snap(page, `dlc-${vp}-apres-impression`);
+        // « Jeté ✓ » : le lot échu est acquitté, l'alerte et le drapeau de la tuile disparaissent
+        const discardBtn = page.locator('[data-testid^="dlc-discard-"]').first();
+        await expect(discardBtn).toBeVisible();
+        await discardBtn.click();
+        await expect(page.locator('[data-testid^="dlc-discard-"]')).toHaveCount(0, { timeout: 15000 });
+        await expect(page.getByText('EXPIRÉE depuis')).toHaveCount(0);
+        await expect(page.locator('.dlc-tile.is-expired')).toHaveCount(0);
+        await snap(page, `dlc-${vp}-apres-jete`);
         if (!(await page.getByTestId('dlc-form').isVisible())) await page.getByTestId('dlc-manage-toggle').click();
         await snap(page, `dlc-${vp}-gestion`);
     });

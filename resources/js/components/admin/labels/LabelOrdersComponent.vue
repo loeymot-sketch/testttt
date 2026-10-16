@@ -19,7 +19,8 @@
                     </button>
                     <div class="lbl-auto-text">
                         <strong>Impression automatique {{ blocked ? "en pause" : settings.autoPrint ? "activée" : "désactivée" }}</strong>
-                        <span v-if="settings.autoPrint">
+                        <span v-if="settings.autoPrint && blocked">Reprendra toute seule dès que l'imprimante sera prête.</span>
+                        <span v-else-if="settings.autoPrint">
                             Les nouvelles commandes s'impriment seules, tant que cet écran reste ouvert et l'imprimante prête.
                             <em v-if="autoStatusText"> {{ autoStatusText }}</em>
                         </span>
@@ -30,13 +31,14 @@
                             data-testid="label-print-all" @click="printAll">
                         🖨 Tout imprimer ({{ toPrint.length }})
                     </button>
+                    <small v-if="!printerReady && toPrint.length" class="lbl-why" data-testid="label-print-all-why">Indisponible : imprimante non prête.</small>
                 </div>
 
                 <!-- Une tablette posée sans surveillance doit APPELER quelqu'un : bandeau rouge + signal sonore. -->
                 <div v-if="blocked" class="lbl-blocked" role="alert" data-testid="label-blocked">
                     <div class="lbl-blocked-text">
-                        <strong>⚠ {{ waitingCount }} commande{{ waitingCount > 1 ? "s" : "" }} en attente — {{ printerInfo.title }}</strong>
-                        <span>{{ printerInfo.detail }} L'impression reprendra toute seule dès que l'imprimante sera prête.</span>
+                        <strong>⚠ {{ waitingCount }} commande{{ waitingCount > 1 ? "s" : "" }} en attente d'impression</strong>
+                        <span>Elles partiront toutes seules dès que l'imprimante sera prête (voir ci-dessus).</span>
                     </div>
                     <button type="button" class="lbl-btn lbl-btn--light" data-testid="label-retry" :disabled="retrying" @click="retryPrinter">
                         {{ retrying ? "Vérification…" : "Réessayer" }}
@@ -104,7 +106,7 @@
                                 <button type="button" class="lbl-btn lbl-btn--ghost lbl-btn--small" :disabled="busyIds.includes(row.order.id)"
                                         :data-testid="`label-print-one-${row.order.id}-${i + 1}`"
                                         @click="printOrder(row.order, 'manual', { only: [i] })">
-                                    🖨 Réimprimer celle‑ci
+                                    🖨 {{ row.state.printed ? "Réimprimer" : "Imprimer" }} celle‑ci
                                 </button>
                             </figure>
                         </div>
@@ -119,7 +121,7 @@
                         </button>
                     </h4>
                     <ul v-if="showDone" class="lbl-orders lbl-orders--done" data-testid="label-orders-done">
-                    <li v-for="row in doneRows" :key="row.order.id" class="lbl-order" :class="[`is-${row.state.kind}`, { 'is-new': newIds.includes(row.order.id) }]"
+                    <li v-for="row in doneRows" :key="row.order.id" class="lbl-order" :class="`is-${row.state.kind}`"
                         :data-testid="`label-order-${row.order.id}`">
                         <div class="lbl-order-head">
                             <span class="lbl-order-num" data-testid="label-order-number">N° {{ row.number }}</span>
@@ -166,7 +168,7 @@
                                 <button type="button" class="lbl-btn lbl-btn--ghost lbl-btn--small" :disabled="busyIds.includes(row.order.id)"
                                         :data-testid="`label-print-one-${row.order.id}-${i + 1}`"
                                         @click="printOrder(row.order, 'manual', { only: [i] })">
-                                    🖨 Réimprimer celle‑ci
+                                    🖨 {{ row.state.printed ? "Réimprimer" : "Imprimer" }} celle‑ci
                                 </button>
                             </figure>
                         </div>
@@ -466,8 +468,8 @@ export default {
                 this.previewOverflow = overflow;
                 // L'aperçu s'ouvre sous la carte : on l'amène à l'écran, sinon « il ne se passe rien ».
                 this.$nextTick(() => {
-                    const el = document.querySelector('[data-testid="label-previews"]');
-                    if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                    const el = document.querySelector(`[data-testid="label-order-${orderId}"]`);
+                    if (el && el.scrollIntoView) el.scrollIntoView({ block: "start", behavior: "smooth" });
                 });
             } catch (e) {
                 this.previewImages = [];
@@ -696,7 +698,9 @@ export default {
 .lbl-order-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
 .lbl-previews { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px; border-top: 1px dashed #e2e8f0; padding-top: 14px; }
-.lbl-preview { margin: 0; width: min(100%, 348px); }
+.lbl-preview { margin: 0; width: min(100%, 348px); display: flex; flex-direction: column; }
+.lbl-preview .lbl-btn { margin-top: auto; justify-content: center; }
+.lbl-why { flex-basis: 100%; color: #475569; font-size: 14px; text-align: right; }
 .lbl-preview img { width: 100%; height: auto; border: 1px solid #94a3b8; background: #fff; image-rendering: pixelated; display: block; }
 .lbl-preview figcaption { text-align: center; color: #64748b; font-size: 13px; margin-top: 4px; }
 </style>

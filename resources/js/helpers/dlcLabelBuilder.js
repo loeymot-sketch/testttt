@@ -93,21 +93,27 @@ export function expiryStatus(expiresMs, nowMs) {
 }
 
 /**
- * Les DLC à surveiller d'après le journal : imprimées, échues depuis moins de 24 h ou à échoir dans les 48 h,
- * dédoublonnées (un produit imprimé 3 fois d'un coup = une ligne), les plus pressées d'abord.
+ * Les DLC à surveiller d'après le journal : imprimées, non « jetées », échues depuis moins de 24 h ou à échoir dans les
+ * 72 h, regroupées par lot (même produit, même échéance), les plus pressées d'abord.
  */
 export function watchList(history, nowMs, limit = 8) {
     const seen = new Set();
     const out = [];
     (history || []).forEach((h) => {
-        if (!['printed', 'unconfirmed'].includes(h.status) || !h.expires_at || !h.product_name) return;
+        if (!['printed', 'unconfirmed'].includes(h.status) || !h.expires_at || !h.product_name || h.discarded_at) return;
         const exp = Date.parse(h.expires_at);
         if (!Number.isFinite(exp)) return;
-        if (exp < nowMs - 24 * 3600 * 1000 || exp > nowMs + 48 * 3600 * 1000) return;
+        if (exp < nowMs - 24 * 3600 * 1000 || exp > nowMs + 72 * 3600 * 1000) return;
         const key = `${h.product_name}|${Math.round(exp / 60000)}`;
-        if (seen.has(key)) return;
+        if (seen.has(key)) {
+            // même produit, même échéance : un seul lot — on additionne et on garde tous les identifiants (pour « Jeté »)
+            const lot = out.find((o) => o.key === key);
+            lot.copies += Number(h.copies) || 1;
+            lot.ids.push(h.id);
+            return;
+        }
         seen.add(key);
-        out.push({ id: h.id, name: h.product_name, expiresMs: exp, copies: h.copies, ...expiryStatus(exp, nowMs) });
+        out.push({ key, id: h.id, ids: [h.id], name: h.product_name, expiresMs: exp, copies: Number(h.copies) || 1, ...expiryStatus(exp, nowMs) });
     });
     return out.sort((a, b) => a.expiresMs - b.expiresMs).slice(0, limit);
 }

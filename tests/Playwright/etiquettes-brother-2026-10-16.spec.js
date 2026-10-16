@@ -321,7 +321,7 @@ test('3 · DLC : ajouter un produit, un appui imprime ouverture + DLC calculées
     await expect(tile2).toContainText('DLC +24 h');
 
     await page.getByTestId('dlc-mode-list').click();
-    await expect(page.getByTestId('dlc-basket-print')).toBeDisabled();
+    await expect(page.getByTestId('dlc-basket'), 'panier masqué tant qu’il est vide').toHaveCount(0);
     await tile.click();
     await tile.click();
     await tile2.click();
@@ -334,7 +334,8 @@ test('3 · DLC : ajouter un produit, un appui imprime ouverture + DLC calculées
     await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(3);
     const all = await jobs(page);
     expect(all.slice(1).map((x) => x.pages), 'un travail par produit, dans l’ordre d’affichage').toEqual([2, 1]);
-    await expect(page.getByTestId('dlc-basket-total')).toHaveText('0 étiquette');
+    await expect(page.getByTestId('dlc-basket'), 'panier vidé après impression').toHaveCount(0);
+    await expect(page.getByTestId('dlc-last-batch')).toContainText('3 étiquettes imprimées');
     const tomato = decodedMask(await jobBytes(page, 2), 0);
     await savePng(page, '03c-dlc-tomates-decodee.png', tomato);
     const counts = execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',

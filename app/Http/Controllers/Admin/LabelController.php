@@ -199,6 +199,26 @@ class LabelController extends AdminController
         ]);
     }
 
+    /**
+     * « Jeté » : accuse réception d'un lot DLC échu. La ligne reste dans le journal (traçabilité), seule la date est posée.
+     * Idempotent ; ne concerne que les étiquettes d'hygiène.
+     */
+    public function discard(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:50'],
+            'ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $count = LabelPrintLog::query()
+            ->where('kind', LabelPrintLog::KIND_DLC)
+            ->whereIn('id', $validated['ids'])
+            ->whereNull('discarded_at')
+            ->update(['discarded_at' => now(), 'updated_at' => now()]);
+
+        return response()->json(['status' => 'ok', 'discarded' => $count]);
+    }
+
     /** Dernières impressions (traçabilité d'hygiène). */
     public function history(Request $request): JsonResponse
     {
@@ -220,6 +240,7 @@ class LabelController extends AdminController
                 'expires_at' => $l->expires_at?->toIso8601String(),
                 'status' => $l->status,
                 'message' => $l->message,
+                'discarded_at' => $l->discarded_at?->toIso8601String(),
                 'by' => $this->firstName($l->user?->name),
                 'created_at' => $l->created_at?->toIso8601String(),
             ])->values();

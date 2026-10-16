@@ -182,6 +182,17 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         const w = watchList(rows, now);
         expect(w.map((x) => x.name)).toEqual(['Oignons', 'Tomates']);
         expect(w[0].level).toBe('expired');
+        // le même lot imprimé deux fois : une ligne, étiquettes additionnées, tous les identifiants gardés (pour « Jeté »)
+        expect(w[0].copies).toBe(4);
+        expect(w[0].ids).toEqual([2, 3]);
         expect(watchList(null, now)).toEqual([]);
+    });
+
+    it('un lot « jeté » disparaît de la liste ; une DLC à +2 jours reste visible', () => {
+        const rows = [
+            h({ id: 1, product_name: 'Olives', expires_at: '2026-10-16T09:00:00Z', discarded_at: '2026-10-16T10:00:00Z' }),
+            h({ id: 2, product_name: 'Fromage', expires_at: '2026-10-18T12:00:00Z' }), // +48 h pile : au bord
+        ];
+        expect(watchList(rows, now).map((x) => x.name)).toEqual(['Fromage']);
     });
 });
