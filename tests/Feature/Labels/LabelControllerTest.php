@@ -563,6 +563,12 @@ class LabelControllerTest extends TestCase
         $this->assertNotNull($row['discarded_at']);
         $this->assertSame('printed', $row['status']); // la ligne reste, intacte
 
+        // annuler un « Jeté » posé par erreur remet le lot dans la liste
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id], 'restore' => true])->assertOk()->assertJsonPath('restored', 1);
+        $row = collect($this->getJson('/api/admin/labels/history')->json('data'))->firstWhere('id', $id);
+        $this->assertNull($row['discarded_at']);
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id]])->assertOk()->assertJsonPath('discarded', 1);
+
         // une autre branche ne peut pas jeter ce lot
         $this->caisse(2);
         $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$id]])->assertOk()->assertJsonPath('discarded', 0);

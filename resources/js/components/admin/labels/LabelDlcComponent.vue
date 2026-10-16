@@ -34,6 +34,28 @@
                     <strong>Imprimer la liste</strong> : toutes les étiquettes sortent d'un coup.
                 </p>
 
+                <!-- Dernier résultat : on voit ce qui est parti, et la date exacte imprimée. -->
+                <div v-if="last" ref="lastBox" class="dlc-last" :class="last.ok ? 'is-ok' : 'is-ko'" data-testid="dlc-last" role="status">
+                    <div v-if="last.batch" class="dlc-last-text" data-testid="dlc-last-batch">
+                        <strong>{{ last.ok ? "✓" : "⚠" }} {{ last.total }} étiquette{{ last.total > 1 ? "s" : "" }} imprimée{{ last.total > 1 ? "s" : "" }}
+                            — {{ last.batch.filter((b) => b.ok).map((b) => `${b.name} ×${b.copies}`).join(", ") }}</strong>
+                        <span v-if="last.failed.length" class="dlc-last-warn">Non imprimé : {{ last.failed.map((b) => `${b.name} (${b.message})`).join(" ; ") }}</span>
+                    </div>
+                    <div v-else class="dlc-last-text">
+                        <strong>{{ last.ok ? "✓" : "⚠" }} {{ last.name }} — {{ last.copies }} étiquette{{ last.copies > 1 ? "s" : "" }}</strong>
+                        <span v-if="last.ok">Ouvert le {{ last.opened }} · À consommer avant <b>{{ last.expires }}</b></span>
+                        <span v-else>{{ last.message }}</span>
+                        <span v-if="last.ok && last.message" class="dlc-last-warn">{{ last.message }}</span>
+                    </div>
+                    <img v-if="last.preview" :src="last.preview" alt="Dernière étiquette" class="dlc-last-img" />
+                </div>
+
+                <!-- Jeté : annulable quelques secondes (un appui trop vite ne doit pas effacer l'alerte pour de bon). -->
+                <div v-if="undo" class="dlc-undo" role="status" data-testid="dlc-undo">
+                    <span>Lot « {{ undo.name }} » marqué jeté.</span>
+                    <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-undo-btn" @click="undoDiscard">Annuler</button>
+                </div>
+
                 <div class="dlc-layout">
                 <aside v-if="watchItems.length" class="dlc-watch" data-testid="dlc-watch" aria-label="Étiquettes à surveiller">
                     <h4 class="dlc-h4">À surveiller</h4>
@@ -85,7 +107,7 @@
                                     :class="{ 'is-picked': selectMode && selection[p.id], 'is-expired': expiredNames.has(p.name) }"
                                     :disabled="busyId === p.id || listBusy" :data-testid="`dlc-product-${p.id}`" @click="onTile(p)">
                                 <span v-if="selectMode && selection[p.id]" class="dlc-tile-count" data-testid="dlc-tile-count">× {{ selection[p.id] }}</span>
-                                <span v-else-if="expiredNames.has(p.name)" class="dlc-tile-flag">⚠ Expirée</span>
+                                <span v-if="expiredNames.has(p.name)" class="dlc-tile-flag">⚠ Expirée</span>
                                 <span class="dlc-tile-name">{{ p.name }}</span>
                                 <span class="dlc-tile-life">{{ tileLife(p) }}</span>
                                 <span v-if="busyId === p.id" class="dlc-tile-busy">Impression…</span>
@@ -109,22 +131,6 @@
                             data-testid="dlc-basket-print" @click="printSelection">
                         {{ listBusy ? "Impression…" : "🖨 Imprimer la liste" }}
                     </button>
-                </div>
-
-                <!-- Dernier résultat : on voit ce qui est parti, et la date exacte imprimée. -->
-                <div v-if="last" ref="lastBox" class="dlc-last" :class="last.ok ? 'is-ok' : 'is-ko'" data-testid="dlc-last" role="status">
-                    <div v-if="last.batch" class="dlc-last-text" data-testid="dlc-last-batch">
-                        <strong>{{ last.ok ? "✓" : "⚠" }} {{ last.total }} étiquette{{ last.total > 1 ? "s" : "" }} imprimée{{ last.total > 1 ? "s" : "" }}
-                            — {{ last.batch.filter((b) => b.ok).map((b) => `${b.name} ×${b.copies}`).join(", ") }}</strong>
-                        <span v-if="last.failed.length" class="dlc-last-warn">Non imprimé : {{ last.failed.map((b) => `${b.name} (${b.message})`).join(" ; ") }}</span>
-                    </div>
-                    <div v-else class="dlc-last-text">
-                        <strong>{{ last.ok ? "✓" : "⚠" }} {{ last.name }} — {{ last.copies }} étiquette{{ last.copies > 1 ? "s" : "" }}</strong>
-                        <span v-if="last.ok">Ouvert le {{ last.opened }} · À consommer avant <b>{{ last.expires }}</b></span>
-                        <span v-else>{{ last.message }}</span>
-                        <span v-if="last.ok && last.message" class="dlc-last-warn">{{ last.message }}</span>
-                    </div>
-                    <img v-if="last.preview" :src="last.preview" alt="Dernière étiquette" class="dlc-last-img" />
                 </div>
 
                 <!-- ── Gérer les produits ───────────────────────────────────────────── -->
@@ -236,6 +242,8 @@ export default {
             busyId: null,
             loaded: false,
             discarding: false,
+            undo: null,
+            undoTimer: null,
             selectMode: false,
             selection: {},
             listBusy: false,
@@ -330,10 +338,26 @@ export default {
             try {
                 await axios.post("admin/labels/prints/discard", { ids: w.ids });
                 await this.loadHistory();
+                this.undo = { ids: w.ids, name: w.name };
+                clearTimeout(this.undoTimer);
+                this.undoTimer = setTimeout(() => { this.undo = null; }, 8000);
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Impossible d'enregistrer : réessayez."));
             } finally {
                 this.discarding = false;
+            }
+        },
+
+        async undoDiscard() {
+            if (!this.undo) return;
+            const { ids } = this.undo;
+            this.undo = null;
+            clearTimeout(this.undoTimer);
+            try {
+                await axios.post("admin/labels/prints/discard", { ids, restore: true });
+                await this.loadHistory();
+            } catch (e) {
+                alertService.error(this.apiMessage(e, "Annulation impossible : réessayez."));
             }
         },
 
@@ -617,6 +641,8 @@ export default {
 .dlc-watch li { display: flex; gap: 8px; align-items: flex-start; }
 .dlc-watch li.is-expired { background: #fee2e2; border-radius: 8px; padding: 6px 8px; margin: 2px -8px; }
 .dlc-watch-body { flex: 1 1 auto; min-width: 0; }
+.dlc-undo { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #1a1a1a; color: #fff; border-radius: 12px; padding: 8px 8px 8px 16px; margin: 0 0 12px; }
+.dlc-undo .dlc-btn { background: #fff; color: #1a1a1a; }
 .dlc-empty--inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .dlc-watch-icon { font-size: 18px; line-height: 1.2; }
 .dlc-watch-n { color: #64748b; font-weight: 400; }

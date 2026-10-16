@@ -223,7 +223,7 @@ describe('impression', () => {
         await p.connect();
         const r = await p.print(smallJob(), MEDIA.c62);
         expect(r.ok).toBe(false);
-        expect(r.message).toMatch(/29 × 90 mm.*62 mm continu/);
+        expect(r.message).toMatch(/29\s×\s90\smm.*62\smm\scontinu/);
         expect(fp.jobPayload()).toHaveLength(0);
     });
 

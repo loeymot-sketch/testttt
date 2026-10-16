@@ -50,7 +50,7 @@ export default {
 .lbl-bar-dot { width: 14px; height: 14px; border-radius: 50%; background: #94a3b8; flex: 0 0 auto; }
 .lbl-bar-text { flex: 1 1 240px; display: flex; flex-direction: column; min-width: 0; }
 .lbl-bar-text strong { font-size: 17px; color: #111827; }
-@media (max-width: 720px) { .lbl-bar .lbl-btn { flex: 1 1 100%; justify-content: center; } }
+@media (max-width: 1000px) { .lbl-bar .lbl-btn { flex: 1 1 100%; justify-content: center; } }
 .lbl-bar-detail { color: #334155; font-size: 14px; }
 .lbl-bar.is-ok { background: #ecfdf5; border-color: #a7f3d0; }
 .lbl-bar.is-ok .lbl-bar-dot { background: #16a34a; }

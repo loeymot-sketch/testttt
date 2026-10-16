@@ -281,7 +281,7 @@ describe('statut de l’imprimante (32 octets, manuel §4)', () => {
 
     it('rouleau chargé ≠ format réglé → message clair ; identique → rien', () => {
         const loaded = parseStatus(frame({ width: 29, type: 0x4b, length: 90 }));
-        expect(mediaMismatchMessage(loaded, MEDIA.c62)).toMatch(/29 × 90 mm.*62 mm continu/);
+        expect(mediaMismatchMessage(loaded, MEDIA.c62)).toMatch(/29\s×\s90\smm.*62\smm\scontinu/);
         expect(mediaMismatchMessage(loaded, MEDIA.d29x90)).toBeNull();
         expect(mediaMismatchMessage(parseStatus(frame()), MEDIA.c62)).toBeNull();
         // « aucun rouleau » est signalé par errors, pas par ce message

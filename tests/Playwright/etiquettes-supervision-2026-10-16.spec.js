@@ -273,6 +273,12 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await expect(page.getByText('EXPIRÉE depuis')).toHaveCount(0);
         await expect(page.locator('.dlc-tile.is-expired')).toHaveCount(0);
         await snap(page, `dlc-${vp}-apres-jete`);
+        // un « Jeté » posé trop vite s'annule : l'alerte revient, puis on la ré-acquitte
+        await expect(page.getByTestId('dlc-undo')).toBeVisible();
+        await page.getByTestId('dlc-undo-btn').click();
+        await expect(page.locator('[data-testid^="dlc-discard-"]').first()).toBeVisible({ timeout: 15000 });
+        await page.locator('[data-testid^="dlc-discard-"]').first().click();
+        await expect(page.locator('[data-testid^="dlc-discard-"]')).toHaveCount(0, { timeout: 15000 });
         if (!(await page.getByTestId('dlc-form').isVisible())) await page.getByTestId('dlc-manage-toggle').click();
         await snap(page, `dlc-${vp}-gestion`);
     });

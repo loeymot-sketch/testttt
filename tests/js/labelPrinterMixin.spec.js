@@ -69,7 +69,7 @@ describe('describePrinter', () => {
         const d = describePrinter(st({ printer: status({ width: 29, type: 0x4b, length: 90 }) }), DEFAULT_SETTINGS, true);
         expect(d.level).toBe('error');
         expect(d.title).toBe('Mauvais rouleau');
-        expect(d.detail).toMatch(/29 × 90 mm.*62 mm continu/);
+        expect(d.detail).toMatch(/29\s×\s90\smm.*62\smm\scontinu/);
         // réglé sur le bon rouleau : prête
         const ok = describePrinter(st({ printer: status({ width: 29, type: 0x4b, length: 90 }) }), { ...DEFAULT_SETTINGS, mediaId: 'd29x90' }, true);
         expect(ok.ready).toBe(true);

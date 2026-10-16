@@ -668,6 +668,7 @@ export default {
 
 .lbl-orders { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .lbl-order {
+    scroll-margin-top: 80px;
     border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; background: #fff;
     display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center;
 }
@@ -697,7 +698,7 @@ export default {
 .lbl-order-detail { margin: 4px 0 0; color: #991b1b; font-size: 14px; font-weight: 600; }
 .lbl-order-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-.lbl-previews { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px; border-top: 1px dashed #e2e8f0; padding-top: 14px; }
+.lbl-previews { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; border-top: 1px dashed #e2e8f0; padding-top: 14px; }
 .lbl-preview { margin: 0; width: min(100%, 348px); display: flex; flex-direction: column; }
 .lbl-preview .lbl-btn { margin-top: auto; justify-content: center; }
 .lbl-why { flex-basis: 100%; color: #475569; font-size: 14px; text-align: right; }

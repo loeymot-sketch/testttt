@@ -208,15 +208,18 @@ class LabelController extends AdminController
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1', 'max:50'],
             'ids.*' => ['integer', 'min:1'],
+            // Annuler un « Jeté » posé par erreur : remet l'alerte.
+            'restore' => ['nullable', 'boolean'],
         ]);
 
+        $restore = (bool) ($validated['restore'] ?? false);
         $count = LabelPrintLog::query()
             ->where('kind', LabelPrintLog::KIND_DLC)
             ->whereIn('id', $validated['ids'])
-            ->whereNull('discarded_at')
-            ->update(['discarded_at' => now(), 'updated_at' => now()]);
+            ->when($restore, fn ($q) => $q->whereNotNull('discarded_at'), fn ($q) => $q->whereNull('discarded_at'))
+            ->update(['discarded_at' => $restore ? null : now(), 'updated_at' => now()]);
 
-        return response()->json(['status' => 'ok', 'discarded' => $count]);
+        return response()->json(['status' => 'ok', 'discarded' => $restore ? 0 : $count, 'restored' => $restore ? $count : 0]);
     }
 
     /** Dernières impressions (traçabilité d'hygiène). */
