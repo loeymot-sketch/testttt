@@ -32,6 +32,15 @@ const seed = (ids) => JSON.parse(php(['seed', ids.join(',')]));
 /** Fausse Brother QL-820NWB sur Bluetooth (profil SPP). */
 async function installFakePrinter(context) {
     await context.addInitScript({ path: path.join(__dirname, 'helpers', 'brotherDecode.js') });
+    // La barre de débogage Laravel (développement seulement, absente en production) se pose en bas d'écran par-dessus les
+    // boutons fixes des fenêtres : masquée, comme dans audit-dashboard-comptable-2026-08-29.spec.js.
+    await context.addInitScript(() => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const st = document.createElement('style');
+            st.textContent = '.phpdebugbar, #phpdebugbar, .phpdebugbar-closed { display: none !important; }';
+            document.head.appendChild(st);
+        });
+    });
     await context.addInitScript(() => {
         const SPP = '00001101-0000-1000-8000-00805f9b34fb';
         const L = (window.__lbl = {
@@ -243,6 +252,11 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
 
         const names = ['Oignons émincés', 'Tomates tranchées', 'Olives noires', 'Champignons', 'Salade lavée', 'Fromage râpé', 'Sauce blanche', 'Poivrons', 'Cornichons', 'Jambon', 'Maïs'];
         names.forEach((n, i) => SQL(`insert into dlc_label_products (branch_id,name,shelf_life_value,shelf_life_unit,storage,sort_order,is_active,created_at,updated_at) values (1,'${n} (sup)',${i % 2 ? 24 : 2},'${i % 2 ? 'hours' : 'days'}',${i % 3 ? "'+4 °C'" : 'NULL'},0,1,now(),now())`));
+        // fiches détaillées : décongélation d'un surgelé, DLC du fabricant exigée, préparation à partir d'un autre lot
+        const expert = (n, cat, actions, storage, ask) => SQL(`insert into dlc_label_products (branch_id,name,category,shelf_life_value,shelf_life_unit,actions,storage,ask_original_dlc,sort_order,is_active,created_at,updated_at) values (1,'${n} (sup)','${cat}',${actions[0].value},'${actions[0].unit}','${JSON.stringify(actions)}','${storage}',${ask ? 1 : 0},0,1,now(),now())`);
+        expert('Steak haché', 'Viandes & volailles', [{ key: 'thawed', value: 3, unit: 'days' }, { key: 'opened', value: 24, unit: 'hours' }], '≤ −18 °C', false);
+        expert('Crème', 'Fromages & produits laitiers', [{ key: 'opened', value: 3, unit: 'days' }], '0 à +4 °C', true);
+        expert('Poulet mariné', 'Viandes & volailles', [{ key: 'prepared', value: 2, unit: 'days' }, { key: 'cooked', value: 3, unit: 'days' }], '0 à +3 °C', false);
         const idOf = (n) => SQL(`select id from dlc_label_products where name='${n} (sup)'`).trim();
         // usage : « Tomates » le plus utilisées, puis « Olives »
         const log = (n, copies, exp) => SQL(`insert into label_print_logs (branch_id,user_id,kind,dlc_product_id,product_name,shelf_life_value,shelf_life_unit,opened_at,expires_at,copies,status,claimed_at,finished_at,created_at,updated_at) values (1,1,'dlc',${idOf(n)},'${n} (sup)',24,'hours',now(),${exp},${copies},'printed',now(),now(),now(),now())`);
@@ -257,11 +271,36 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await expect(page.getByTestId('dlc-sheet')).toBeVisible();
         await snap(page, `dlc-${vp}-fiche`);
         await page.getByTestId('dlc-sheet-close').click();
+        // décongélation d'un surgelé : « NE PAS RECONGELER », conservation au froid positif
+        await page.getByTestId(`dlc-more-${idOf('Steak haché')}`).click();
+        await page.getByTestId('dlc-sheet-action-thawed').click();
+        await expect(page.getByTestId('dlc-sheet-thawed-note')).toBeVisible();
+        await snap(page, `dlc-${vp}-fiche-decongelation`);
+        await page.getByTestId('dlc-sheet-close').click();
+        // fait à partir d'un lot déjà étiqueté : la DLC suit la sienne
+        await page.getByTestId(`dlc-more-${idOf('Poulet mariné')}`).click();
+        await page.getByTestId('dlc-sheet-parent-toggle').click();
+        await page.locator('[data-testid^="dlc-sheet-parent-"]:not([data-testid$="-toggle"]):not([data-testid$="-none"]):not([data-testid$="-note"])').first().click();
+        await expect(page.getByTestId('dlc-sheet-parent-note')).toBeVisible();
+        await snap(page, `dlc-${vp}-fiche-origine`);
+        await page.getByTestId('dlc-sheet-close').click();
+        // DLC du fabricant exigée : la fiche s'ouvre d'un appui
+        await page.getByTestId(`dlc-product-${idOf('Crème')}`).click();
+        await page.getByTestId('dlc-sheet-original').fill(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
+        await page.getByTestId('dlc-sheet-supplier-lot').fill('2345A');
+        await snap(page, `dlc-${vp}-fiche-fabricant`);
+        await page.getByTestId('dlc-sheet-close').click();
         await page.getByTestId('dlc-new').click();
         await expect(page.getByTestId('dlc-editor')).toBeVisible();
         await page.getByTestId('dlc-ed-name').fill('Exemple (sup)');
         await page.getByTestId('dlc-ed-allergen-lait').click();
         await snap(page, `dlc-${vp}-editeur`);
+        // garde-fous : conservation obligatoire, durée inhabituelle à confirmer
+        await page.getByTestId('dlc-ed-action-thawed').check();
+        await page.getByTestId('dlc-ed-value-thawed').fill('5');
+        await page.getByTestId('dlc-ed-save').click();
+        await expect(page.getByTestId('dlc-ed-error')).toBeVisible();
+        await snap(page, `dlc-${vp}-editeur-alerte`);
         await page.getByTestId('dlc-ed-close').click();
         await page.getByTestId('dlc-search').fill('olive');
         await snap(page, `dlc-${vp}-recherche`);
@@ -276,20 +315,27 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await page.getByTestId('dlc-basket-print').click();
         await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(2);
         await snap(page, `dlc-${vp}-apres-impression`);
+        // un appui en mode unitaire : résultat en notice fixe, avec « Annuler cette impression »
+        await page.getByTestId('dlc-mode-single').click();
+        await page.getByTestId(`dlc-product-${idOf('Maïs')}`).click();
+        await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(3);
+        await expect(page.getByTestId('dlc-last-cancel')).toBeVisible();
+        await snap(page, `dlc-${vp}-resultat-unitaire`);
+        await page.getByTestId('dlc-last-close').click();
         // « Jeté ✓ » : le lot échu est acquitté, l'alerte et le drapeau de la tuile disparaissent
-        const discardBtn = page.locator('[data-testid^="dlc-discard-"]').first();
-        await expect(discardBtn).toBeVisible();
-        await discardBtn.click();
-        await expect(page.locator('[data-testid^="dlc-discard-"]')).toHaveCount(0, { timeout: 15000 });
+        const expired = page.locator('[data-testid="dlc-watch-item"].is-expired');
+        await expect(expired).toHaveCount(1);
+        await expired.first().locator('[data-testid^="dlc-discard-"]').click();
+        await expect(expired).toHaveCount(0, { timeout: 15000 });
         await expect(page.getByText('EXPIRÉE depuis')).toHaveCount(0);
         await expect(page.locator('.dlc-tile.is-expired')).toHaveCount(0);
         await snap(page, `dlc-${vp}-apres-jete`);
         // un « Jeté » posé trop vite s'annule : l'alerte revient, puis on la ré-acquitte
         await expect(page.getByTestId('dlc-undo')).toBeVisible();
         await page.getByTestId('dlc-undo-btn').click();
-        await expect(page.locator('[data-testid^="dlc-discard-"]').first()).toBeVisible({ timeout: 15000 });
-        await page.locator('[data-testid^="dlc-discard-"]').first().click();
-        await expect(page.locator('[data-testid^="dlc-discard-"]')).toHaveCount(0, { timeout: 15000 });
+        await expect(expired).toHaveCount(1, { timeout: 15000 });
+        await expired.first().locator('[data-testid^="dlc-discard-"]').click();
+        await expect(expired).toHaveCount(0, { timeout: 15000 });
         if (!(await page.getByTestId('dlc-form').isVisible())) await page.getByTestId('dlc-manage-toggle').click();
         await snap(page, `dlc-${vp}-gestion`);
     });

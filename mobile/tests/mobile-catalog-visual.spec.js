@@ -25,6 +25,62 @@ function localAsset(file) {
   assert.ok(!file.includes('..') && !file.includes('generated_'), `existing selected asset: ${file}`);
   assert.ok(fs.existsSync(path.join(root, file)), `asset exists: ${file}`);
 }
+
+const canonicalProductImages = {
+  cayenne: 'sandwich-cayenne.png',
+  supreme: 'sandwich-supreme.png',
+  mega: 'sandwich-mega.png',
+  terminator: 'sandwich-terminator.png',
+  'galette-normale': 'galette.png',
+  'galette-cayenne': 'galette.png',
+  'tacos-m': 'tacos-cayenne.png',
+  'tacos-l': 'tacos-cayenne.png',
+  'tacos-xl': 'tacos-cayenne.png',
+};
+
+const canonicalCategoryImages = {
+  sandwichs: 'cat-sandwich-cayenne.png',
+  galette: 'cat-galette.png',
+  tacos: 'cat-tacos.png',
+};
+
+const canonicalBinaryFiles = [
+  'sandwich-cayenne.png',
+  'sandwich-supreme.png',
+  'sandwich-mega.png',
+  'sandwich-terminator.png',
+  'tacos-cayenne.png',
+  'galette.png',
+  'cat-sandwich-cayenne.png',
+  'cat-galette.png',
+  'cat-tacos.png',
+];
+
+function shaFile(file) {
+  return sha(fs.readFileSync(file));
+}
+
+for (const [slug, file] of Object.entries(canonicalProductImages)) {
+  const item = menu.findItem(slug);
+  const expected = 'assets/menu/' + file;
+  assert.equal(item.image, expected, `canonical product image: ${slug}`);
+  assert.equal(item.hero, expected, `canonical product hero reuses image: ${slug}`);
+}
+for (const [slug, file] of Object.entries(canonicalCategoryImages)) {
+  assert.equal(menu.categories.find(category => category.slug === slug).image,
+    'assets/menu/' + file, `canonical category image: ${slug}`);
+}
+
+for (const file of canonicalBinaryFiles) {
+  const source = path.resolve(root, '../public/images/menu', file);
+  const destination = path.join(root, 'assets/menu', file);
+  assert.ok(fs.existsSync(source), `canonical source exists: ${file}`);
+  assert.ok(fs.existsSync(destination), `canonical destination exists: ${file}`);
+  const sourceSha = shaFile(source);
+  const destinationSha = shaFile(destination);
+  console.log(`SHA256 ${file}: source=${sourceSha} destination=${destinationSha}`);
+  assert.equal(destinationSha, sourceSha, `canonical binary copied without alteration: ${file}`);
+}
 for (const item of menu.items) {
   localAsset(item.image);
   localAsset(item.hero);
@@ -65,10 +121,6 @@ for (const [slug, file] of Object.entries({
   'menu-enfant-burger': 'chicken_burger.png',
 })) assert.equal(menu.findItem(slug).image, 'assets/menu/' + file, `specific local photo: ${slug}`);
 for (const slug of ['cheese-burger', 'grill-burger']) assert.equal(menu.findItem(slug).image, neutral);
-for (const slug of ['supreme', 'mega', 'terminator']) {
-  assert.equal(menu.findItem(slug).image, `assets/menu/signature/${slug}-hero.png`);
-  assert.equal(menu.findItem(slug).hero, menu.findItem(slug).image);
-}
 assert.equal(menu.findItem('tiramisu').image, 'assets/menu/tiramisu.png');
 
 const main = read('screens-main.jsx');

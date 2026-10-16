@@ -1047,9 +1047,9 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
-          {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire.
-              [MASSIVE-LOGIC HEAL 2026-05-17] now uses aggregatedAllergens (item + supps + drinks)
-              instead of item.allergens only — full FIC disclosure per selection. */}
+          {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le récapitulatif.
+              [MASSIVE-LOGIC HEAL 2026-05-17] uses aggregatedAllergens (item + supps + drinks)
+              so every selected component remains covered by the legal disclosure. */}
           {window.AllergenBadge && <window.AllergenBadge allergens={aggregatedAllergens} size="lg"/>}
         </div>
         {/* [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled rows : base + viande fixed by item */}
@@ -1405,8 +1405,8 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         <div style={{ padding: '24px 20px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.95 }}>{item.name}</h1>
           <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
-          {/* [D4 EU FIC 1169/2011] AllergenBadge sur item detail */}
-          {window.AllergenBadge && <div style={{ marginTop: 12 }}><window.AllergenBadge allergens={item.allergens} size="lg"/></div>}
+          {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le détail produit. */}
+          {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
           <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

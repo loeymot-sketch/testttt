@@ -32,6 +32,15 @@ const seed = (ids) => JSON.parse(php(['seed', ids.join(',')]));
 /** Fausse Brother QL-820NWB sur Bluetooth (profil SPP). */
 async function installFakePrinter(context) {
     await context.addInitScript({ path: path.join(__dirname, 'helpers', 'brotherDecode.js') });
+    // La barre de débogage Laravel (développement seulement, absente en production) se pose en bas d'écran par-dessus les
+    // boutons fixes des fenêtres : masquée, comme dans audit-dashboard-comptable-2026-08-29.spec.js.
+    await context.addInitScript(() => {
+        document.addEventListener('DOMContentLoaded', () => {
+            const st = document.createElement('style');
+            st.textContent = '.phpdebugbar, #phpdebugbar, .phpdebugbar-closed { display: none !important; }';
+            document.head.appendChild(st);
+        });
+    });
     await context.addInitScript(() => {
         const SPP = '00001101-0000-1000-8000-00805f9b34fb';
         const L = (window.__lbl = {
@@ -274,6 +283,9 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     await page.getByTestId('dlc-ed-name').fill('Oignons émincés (test)');
     await page.getByTestId('dlc-ed-category').fill('Légumes & crudités');
     await page.getByTestId('dlc-ed-storage').fill('+4 °C');
+    // fiche neuve « ouverture » : la DLC du fabricant est demandée par défaut ; légumes frais = sans emballage d'origine
+    await expect(page.getByTestId('dlc-ed-ask-original')).toBeChecked();
+    await page.getByTestId('dlc-ed-ask-original').uncheck();
     await page.getByTestId('dlc-ed-copies-plus').click(); // 2 étiquettes par appui
     await expect(page.getByTestId('dlc-ed-preview')).toBeVisible();
     await page.getByTestId('dlc-ed-save').click();
@@ -286,6 +298,10 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     await page.getByTestId('dlc-new').click();
     await page.getByTestId('dlc-ed-name').fill('OIGNONS ÉMINCÉS (TEST)');
     await page.getByTestId('dlc-ed-save').click();
+    // la conservation est obligatoire : l'éditeur le dit avant tout envoi, près du bouton
+    await expect(page.getByTestId('dlc-ed-error')).toContainText('température de conservation');
+    await page.getByTestId('dlc-ed-storage-1').click();
+    await page.getByTestId('dlc-ed-save').click();
     await expect(page.getByTestId('dlc-ed-error')).toContainText('porte déjà ce nom');
     await page.getByTestId('dlc-ed-close').click();
 
@@ -293,7 +309,7 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     await tile.click();
     await expect(page.getByTestId('dlc-last')).toContainText('2 étiquettes', { timeout: 30000 });
     await expect(page.getByTestId('dlc-last')).toContainText('À consommer jusqu’au');
-    await expect(page.getByTestId('dlc-last')).toContainText('Lot L');
+    await expect(page.getByTestId('dlc-last')).toContainText('N° L');
 
     const j = await jobs(page);
     expect(j).toEqual([{ pages: 2, error: null }]);
@@ -321,6 +337,9 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     await page.getByTestId('dlc-ed-unit-opened').selectOption('hours');
     await page.getByTestId('dlc-ed-action-thawed').check();
     await page.getByTestId('dlc-ed-value-thawed').fill('3');
+    await page.getByTestId('dlc-ed-storage-2').click(); // ≤ −18 °C : l'étiquette de décongélation dira « 0 à +4 °C »
+    await expect(page.getByTestId('dlc-ed-thawed-note')).toContainText('NE PAS RECONGELER');
+    await page.getByTestId('dlc-ed-ask-original').uncheck();
     await page.getByTestId('dlc-ed-save').click();
     const tile2 = page.locator('[data-testid^="dlc-product-"]', { hasText: 'Tomates tranchées (test)' });
     await expect(tile2).toBeVisible({ timeout: 15000 });
@@ -359,6 +378,10 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     expect(counts.length).toBe(4);
     expect(counts[0]).toBe('Oignons émincés (test)\t2\tprinted\topened\t48');
     expect(counts[1]).toBe('Tomates tranchées (test)\t1\tprinted\tthawed\t72');
+    // le journal porte la conservation IMPRIMÉE : froid positif pour la décongélation, congélateur pour l'ouverture
+    const storages = execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',
+        "select action, storage from label_print_logs where product_name = 'Tomates tranchées (test)' order by id"], { encoding: 'utf8' }).trim().split('\n');
+    expect(storages).toEqual(['thawed\t0 à +4 °C', 'opened\t≤ −18 °C']);
     expect(counts.slice(2).sort()).toEqual([
         'Oignons émincés (test)\t1\tprinted\topened\t48',
         'Tomates tranchées (test)\t1\tprinted\topened\t24',

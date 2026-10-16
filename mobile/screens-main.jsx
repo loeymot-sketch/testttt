@@ -51,6 +51,39 @@ function lcRedeemRatio() {
   return (isFinite(r) && r > 0) ? r : 100;
 }
 
+// [MOBILE-EXCELLENCE-PHASE15] Customer-facing reactivation must use the
+// public local state APIs. The dev namespace is intentionally not required in
+// the shipped mobile build. Reactivation starts a fresh zero-point account,
+// matching the existing opt-out copy and local erasure behavior.
+function reactivateLoyaltyAccount() {
+  const lc = window.LC || {};
+  const storage = lc.storage || {};
+  const loyalty = lc.loyalty || {};
+
+  if (typeof storage.setConsent === 'function') {
+    storage.setConsent('opted_in');
+  }
+  if (typeof loyalty._replaceAccount === 'function') {
+    loyalty._replaceAccount({
+      consent_status: 'opted_in',
+      balance: 0,
+      lifetime_earned: 0,
+      lifetime_redeemed: 0,
+    });
+  }
+
+  // _replaceAccount persists state but does not notify listeners itself.
+  // Keep the existing event contract so ScreenLoyalty re-renders immediately.
+  if (typeof window.dispatchEvent === 'function') {
+    const detail = { type: 'consent', status: 'opted_in', source: 'customer' };
+    if (typeof window.CustomEvent === 'function') {
+      window.dispatchEvent(new window.CustomEvent('lc:loyalty-changed', { detail }));
+    } else if (typeof window.Event === 'function') {
+      window.dispatchEvent(new window.Event('lc:loyalty-changed'));
+    }
+  }
+}
+
 // Tag pill
 const Tag = ({ t }) => {
   const map = {
@@ -63,48 +96,62 @@ const Tag = ({ t }) => {
   return <span className="lc-pill" style={{ background: s.bg, color: s.fg, padding: '4px 9px', fontSize: 9 }}>{t}</span>;
 };
 
-// [Owner re-cadrage 2026-05-11 D4] EU FIC 1169/2011 — disclosure obligation des 14 allergènes
-// majeurs sur tout produit alimentaire commercialisé. Composant compact (chip) + détail au tap.
-// Allergènes mappés sur emoji+label FR pour lisibilité immédiate.
+// [MOBILE-EXCELLENCE-PHASE13] EU FIC 1169/2011 — disclosure textuelle des 14 allergènes
+// majeurs sur tout produit alimentaire commercialisé. Les cartes restent neutres ; la
+// disclosure complète est réservée aux surfaces de détail et de récapitulatif.
+// ALLERGEN_META reste l'unique vocabulaire d'affichage français.
 const ALLERGEN_META = {
-  gluten:     { icon: '🌾', label: 'Gluten' },
-  lactose:    { icon: '🥛', label: 'Lactose' },
-  oeuf:       { icon: '🥚', label: 'Œuf' },
-  arachide:   { icon: '🥜', label: 'Arachide' },
-  fruits_coque: { icon: '🌰', label: 'Fruits à coque' },
-  soja:       { icon: '🫘', label: 'Soja' },
-  poisson:    { icon: '🐟', label: 'Poisson' },
-  crustaces:  { icon: '🦐', label: 'Crustacés' },
-  mollusques: { icon: '🦑', label: 'Mollusques' },
-  celeri:     { icon: '🥬', label: 'Céleri' },
-  moutarde:   { icon: '🟡', label: 'Moutarde' },
-  sesame:     { icon: '⚪', label: 'Sésame' },
-  sulfites:   { icon: '🍇', label: 'Sulfites' },
-  lupin:      { icon: '🌿', label: 'Lupin' },
+  gluten:     { label: 'Gluten' },
+  lactose:    { label: 'Lactose' },
+  oeuf:       { label: 'Œuf' },
+  arachide:   { label: 'Arachide' },
+  fruits_coque: { label: 'Fruits à coque' },
+  soja:       { label: 'Soja' },
+  poisson:    { label: 'Poisson' },
+  crustaces:  { label: 'Crustacés' },
+  mollusques: { label: 'Mollusques' },
+  celeri:     { label: 'Céleri' },
+  moutarde:   { label: 'Moutarde' },
+  sesame:     { label: 'Sésame' },
+  sulfites:   { label: 'Sulfites' },
+  lupin:      { label: 'Lupin' },
 };
 
-function AllergenBadge({ allergens, size = 'sm' }) {
-  if (!allergens || allergens.length === 0) return null;
+function AllergenDisclosure({ allergens, size = 'sm' }) {
+  const labels = Array.from(new Set(allergens || []))
+    .map(k => (ALLERGEN_META[k] && ALLERGEN_META[k].label) || k)
+    .filter(Boolean);
+  if (labels.length === 0) return null;
   const isLg = size === 'lg';
+  const labelText = labels.join(', ');
   return (
-    <div
-      role="region"
-      aria-label={`Allergènes : ${allergens.map(k => (ALLERGEN_META[k]?.label || k)).join(', ')}`}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: isLg ? '6px 10px' : '2px 6px', background: 'var(--cream)', borderRadius: 999, fontSize: isLg ? 11 : 9, color: 'var(--gray-4)', fontWeight: 600 }}
+    <details
+      open
+      data-testid="allergen-disclosure"
+      aria-label={`Allergènes présents : ${labelText}`}
+      style={{ marginTop: isLg ? 16 : 10, padding: isLg ? '12px 14px' : '9px 11px', border: '1px solid var(--gray-2)', borderRadius: 14, background: '#fff', color: 'var(--ink)' }}
     >
-      <span aria-hidden="true" style={{ width: isLg ? 16 : 13, height: isLg ? 16 : 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid currentColor', borderRadius: 999, fontSize: isLg ? 10 : 8, fontWeight: 800, lineHeight: 1 }}>i</span>
-      {allergens.slice(0, isLg ? 6 : 4).map((k, i) => {
-        const m = ALLERGEN_META[k] || { icon: '•', label: k };
-        return (
-          <span key={k} title={m.label} aria-hidden="true" style={{ fontSize: isLg ? 14 : 11, lineHeight: 1 }}>{m.icon}</span>
-        );
-      })}
-      {allergens.length > (isLg ? 6 : 4) && (
-        <span aria-hidden="true" style={{ marginLeft: 2 }}>+{allergens.length - (isLg ? 6 : 4)}</span>
-      )}
-    </div>
+      <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: isLg ? 13 : 11, fontWeight: 750, lineHeight: 1.3 }}>
+        <span>Informations allergènes</span>
+        <span style={{ color: 'var(--gray-4)', fontSize: isLg ? 11 : 10, fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {labels.length} {labels.length > 1 ? 'allergènes' : 'allergène'}
+        </span>
+      </summary>
+      <div role="region" aria-label={`Allergènes : ${labelText}`} style={{ marginTop: 9, paddingTop: 9, borderTop: '1px solid var(--gray-2)' }}>
+        <p style={{ margin: 0, color: 'var(--gray-4)', fontSize: isLg ? 11 : 10, lineHeight: 1.4 }}>
+          Allergènes présents dans cette sélection :
+        </p>
+        <ul style={{ margin: '6px 0 0', paddingLeft: 18, color: 'var(--ink)', fontSize: isLg ? 12 : 11, lineHeight: 1.55 }}>
+          {labels.map(label => <li key={label}>{label}</li>)}
+        </ul>
+      </div>
+    </details>
   );
 }
+
+// Compatibility export for the older static catalogue contract. It now renders
+// the same text-first disclosure and is not a visual badge or icon surface.
+const AllergenBadge = AllergenDisclosure;
 
 // HOME
 // [GOAL-SYNC 2026-07-08] Plus de « Ikyes B. » hardcodé : avatar + aria-label dérivés du prop
@@ -119,7 +166,12 @@ function ScreenHome({ go, name = '' }) {
   const featuredTop = featuredLines.slice(0, 2).join(' ');
   const featuredBottom = featuredLines.slice(2).join(' ');
   const featuredItems = ITEMS.filter(i => i.is_featured).slice(0, 4);
-  const newItems = ITEMS.filter(i => (i.tags || []).includes('TOP')).slice(0, 4);
+  const newItems = [
+    ...ITEMS.filter(i => i.is_new || (i.tags || []).includes('NOUVEAU')),
+    ...ITEMS.filter(i => (i.tags || []).includes('TOP')),
+  ]
+    .filter((item, index, items) => items.findIndex(candidate => candidate.id === item.id) === index)
+    .slice(0, 4);
   return (
     <div ref={screenRef} data-screen-label="07 Home" className="lc-home">
       <div className="lc-screen lc-home__scroll">
@@ -1389,7 +1441,7 @@ function ScreenLoyalty({ go }) {
             <div style={{ padding: '16px 24px', textAlign: 'center' }}>
               <div className="lc-display" style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>Programme désactivé</div>
               <div style={{ fontSize: 13, color: 'var(--ink)', marginBottom: 16 }}>Tu ne cumules plus de points et tes points ont été effacés (RGPD art. 17). Réactive pour t'inscrire à nouveau.</div>
-              <button onClick={() => { if (window.LC.dev) window.LC.dev.setConsent('opted_in'); }} className="lc-btn lc-btn--ink" style={{ height: 48 }}>Réactiver mon compte</button>
+              <button data-testid="loyalty-reactivate-btn" onClick={reactivateLoyaltyAccount} className="lc-btn lc-btn--ink" style={{ height: 48 }}>Réactiver mon compte</button>
             </div>
           ) : (
             <>
@@ -1707,4 +1759,4 @@ function PromoCodeRow({ onApply }) {
   );
 }
 
-Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, LoyaltyRedeemPanel, ITEMS, CATS, AllergenBadge, PromoCodeRow });
+Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, LoyaltyRedeemPanel, ITEMS, CATS, AllergenDisclosure, AllergenBadge, PromoCodeRow });

@@ -86,8 +86,9 @@ function layoutOnce(blocks, width, measure, scale) {
         }
 
         if (b.t === 'band') {
-            // Bandeau noir plein largeur, texte blanc : le numéro de commande se lit de loin.
-            let size = sz('band');
+            // Bandeau noir plein largeur, texte blanc : le numéro de commande se lit de loin (`size` : bandeau d'alerte
+            // plus discret, ex. « NE PAS RECONGELER »).
+            let size = sz(b.size || 'band');
             const bandPad = 8 * scale;
             let left = String(b.left ?? '');
             let right = String(b.right ?? '');
@@ -126,12 +127,16 @@ function layoutOnce(blocks, width, measure, scale) {
             const dayFontSize = Math.min(textH * 0.62, sz('band') * 1.05);
             const dayFont = fontOf(dayFontSize, true);
             const dayText = String(b.day || '');
-            const badgeW = Math.max(textH, measure(dayText, dayFont) + pad * 2);
             const h = textH + pad * 2;
-            cmds.push({ op: 'rect', x: PAD_X, y, w: badgeW, h, fill: '#000' });
-            const dw = measure(dayText, dayFont);
-            cmds.push({ op: 'text', x: PAD_X + (badgeW - dw) / 2, y: y + (h - dayFontSize * LINE_HEIGHT) / 2, text: dayText, font: dayFont, color: '#fff', size: dayFontSize });
-            const tx = PAD_X + badgeW + 14 * scale;
+            // Sans jour (DLC lointaine : le même jour reviendrait), pas de pastille : le cadre prend toute la largeur.
+            let tx = PAD_X + 6 * scale;
+            if (dayText) {
+                const badgeW = Math.max(textH, measure(dayText, dayFont) + pad * 2);
+                cmds.push({ op: 'rect', x: PAD_X, y, w: badgeW, h, fill: '#000' });
+                const dw = measure(dayText, dayFont);
+                cmds.push({ op: 'text', x: PAD_X + (badgeW - dw) / 2, y: y + (h - dayFontSize * LINE_HEIGHT) / 2, text: dayText, font: dayFont, color: '#fff', size: dayFontSize });
+                tx = PAD_X + badgeW + 14 * scale;
+            }
             const avail = width - PAD_X - tx;
             const cap = String(b.caption || '');
             const date = String(b.text || '');
@@ -148,7 +153,19 @@ function layoutOnce(blocks, width, measure, scale) {
             const size = sz(b.size || 'md');
             const font = fontOf(size, b.bold !== false);
             const wr = measure(String(b.right ?? ''), font);
-            if (measure(String(b.left ?? ''), fontOf(size, false)) + wr + 16 > inner) clipped = true;
+            const tooWide = measure(String(b.left ?? ''), fontOf(size, false)) + wr + 16 > inner;
+            if (tooWide && b.stack) {
+                // « Mis en décongélation le » + la date ne tiennent pas sur une ligne : libellé au-dessus, date dessous,
+                // plutôt qu'un texte rogné (jamais de troncature silencieuse).
+                const small = sz('sm');
+                cmds.push({ op: 'text', x: PAD_X, y, text: String(b.left ?? ''), font: fontOf(small, false), color: '#000', size: small });
+                y += small * LINE_HEIGHT;
+                if (wr > inner) clipped = true;
+                cmds.push({ op: 'text', x: PAD_X, y, text: String(b.right ?? ''), font, color: '#000', size });
+                y += size * LINE_HEIGHT;
+                return;
+            }
+            if (tooWide) clipped = true;
             cmds.push({ op: 'text', x: PAD_X, y, text: String(b.left ?? ''), font: fontOf(size, false), color: '#000', size });
             cmds.push({ op: 'text', x: width - PAD_X - wr, y, text: String(b.right ?? ''), font, color: '#000', size });
             y += size * LINE_HEIGHT;

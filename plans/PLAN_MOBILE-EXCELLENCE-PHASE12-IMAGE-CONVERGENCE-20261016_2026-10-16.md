@@ -59,6 +59,28 @@ PLAN_REVIEW_VERDICT: REWORK — revise allowlist and evidence requirements, then
 - `reports/post_execute_latest.log`
 - `reports/AGENT_ACTIVITY_LOG.md`
 
+### Generated governance artifacts (not product scope)
+
+- `missions/MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016/input.json` and
+  any fallback execution brief/output required by the execution runner.
+- `reports/audit/GPT_PLAN_REVIEW_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016.md`
+  and its raw log.
+- `reports/audit/GPT_SELF_AUDIT_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016.md`
+  when the Codex execution path produces it.
+- `reports/test_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016_*.log`.
+
+These generated files are evidence only; they do not authorize any additional product
+file outside the exact allowlist above.
+
+### Pre-existing worktree baseline
+
+At PLAN time the following unrelated files were already dirty and are explicitly not
+part of this cycle: `app/Http/Controllers/Admin/LabelController.php`, `routes/api.php`,
+`tests/Feature/Labels/LabelControllerTest.php`, `resources/js/helpers/dlcLabelBuilder.js`,
+`resources/js/helpers/labelLayout.js`, and `tests/js/labelLayout.spec.js`. Validation must capture
+`git status --short` before and after EXECUTE and fail if any new non-allowlisted file
+appears; these six baseline files must not be reverted, staged or edited.
+
 ## SUBSYSTEMS_OFF_LIMITS
 
 - Backend PHP/config and database/migrations — canonical files are read-only inputs.
@@ -80,25 +102,41 @@ PLAN_REVIEW_VERDICT: REWORK — revise allowlist and evidence requirements, then
 
 ## Execution Steps
 
-1. Confirm the plan review and reserve the declared mobile mapping/assets/test scope.
+1. Confirm the plan review. Capture the baseline above, then reserve the exact scope with:
+   `bash scripts/agent-activity-log.sh start foodking-complex-implementer MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 execute "mobile/data/menu.js,mobile/tests/mobile-catalog-visual.spec.js,tests/mobile-e2e/catalog-visual-critical.spec.js,mobile/assets/menu/sandwich-cayenne.png,mobile/assets/menu/sandwich-supreme.png,mobile/assets/menu/sandwich-mega.png,mobile/assets/menu/sandwich-terminator.png,mobile/assets/menu/tacos-cayenne.png,mobile/assets/menu/galette.png,mobile/assets/menu/cat-sandwich-cayenne.png,mobile/assets/menu/cat-galette.png,mobile/assets/menu/cat-tacos.png" "sync mobile product/category images to public canonical assets"`.
+   Then run `bash scripts/preflight-execute.sh MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 --agent=foodking-complex-implementer --scope="mobile/data/menu.js,mobile/tests/mobile-catalog-visual.spec.js,tests/mobile-e2e/catalog-visual-critical.spec.js,mobile/assets/menu/sandwich-cayenne.png,mobile/assets/menu/sandwich-supreme.png,mobile/assets/menu/sandwich-mega.png,mobile/assets/menu/sandwich-terminator.png,mobile/assets/menu/tacos-cayenne.png,mobile/assets/menu/galette.png,mobile/assets/menu/cat-sandwich-cayenne.png,mobile/assets/menu/cat-galette.png,mobile/assets/menu/cat-tacos.png"`.
 2. Replace obsolete mobile product/category image mappings with the canonical public
    filenames and copy the exact canonical binaries into `mobile/assets/menu/`.
 3. Extend the existing visual regression test and targeted E2E contract to assert the
    canonical product paths, category paths, exact binary equality and unchanged
    non-visual/order invariants. E2E remains read-only and makes no write requests.
-4. Run the post-execute hook, static checks, targeted catalog E2E, diff checks and
-   record the evidence in the execution report.
+4. Run the task-scoped hook first because it resets `reports/post_execute_latest.log`:
+   `FOODKING_TASK_ID=MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 bash .cursor/hooks/post-execute.sh`.
+   Then append
+   `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)` and
+   `FALLBACK_REASON: codex CLI rejected gpt-5.5-pro for the authenticated ChatGPT account`
+   to the stable log and report, then run
+   `bash scripts/post-execute-guard.sh MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 --agent=foodking-complex-implementer --run=reports/execution/MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016/report.md`.
+   Compare the post-EXECUTE `git status --short` to the captured baseline (not a naked
+   HEAD diff), then run `git diff --check` and record all evidence.
 
 ### Required evidence
 
 - `bash .cursor/hooks/safety-check.sh` before EXECUTE.
-- `scripts/agent-activity-log.sh start` reservation and `preflight-execute.sh` for
-  the exact allowlist.
+- The exact reservation and `scripts/preflight-execute.sh` command above.
 - `node mobile/tests/mobile-catalog-visual.spec.js`.
 - `npx playwright test tests/mobile-e2e/catalog-visual-critical.spec.js --config=tests/mobile-e2e/playwright.config.js`.
-- `post-execute.sh`, `post-execute-guard.sh`, and `git diff --check`.
-- The unchanged non-visual catalog SHA, prices, and `buildLineItem` SHA remain asserted;
-  no price, option, order payload or write-flow code is edited.
+- `FOODKING_TASK_ID=MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 bash .cursor/hooks/post-execute.sh`, `bash scripts/post-execute-guard.sh
+  MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016 --agent=foodking-complex-implementer
+  --run=reports/execution/MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-20261016/report.md`,
+  a baseline-aware allowlist comparison, and `git diff --check`.
+- The unchanged non-visual catalog SHA is
+  `dba1d13ba410398c0429ad164d937e28cffb91336cf176b0d384c20b313ae91d` and the
+  unchanged `buildLineItem` SHA is
+  `92fd480da9dc71da31397f6efcd17e4bdba7f06603b790da54777271020034d1`.
+  The test must show prices/options unchanged, print source/destination SHA-256 pairs
+  for all nine synchronized binaries, and install a request listener that fails on any
+  E2E POST/PUT/PATCH/DELETE request.
 
 ## SYMMETRY_NOTE
 
@@ -109,6 +147,10 @@ N/A — `OrderService` and `FrontendOrderService` are not touched.
 
 ## ESCALATION
 
+EXECUTE_BLOCKED: the required post-execute guard scans the whole dirty worktree and
+cannot baseline-exclude the files being actively modified by another Claude process.
+Execution must resume only after that parallel work is released or an isolated clean
+worktree is explicitly selected.
 
 ## Audit Status
 

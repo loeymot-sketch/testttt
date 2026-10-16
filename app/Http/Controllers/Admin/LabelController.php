@@ -52,6 +52,8 @@ class LabelController extends AdminController
             ->where('kind', LabelPrintLog::KIND_DLC)
             ->whereIn('status', LabelPrintLog::DONE_STATUSES)
             ->whereNotNull('dlc_product_id')
+            // une étiquette annulée (imprimée par erreur) ne fait pas monter le produit en tête
+            ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED))
             ->where('created_at', '>=', now()->subDays(30))
             ->selectRaw('dlc_product_id, SUM(copies) as total')
             ->groupBy('dlc_product_id')
@@ -386,14 +388,16 @@ class LabelController extends AdminController
     }
 
     /**
-     * « Jeté » : accuse réception d'un lot DLC échu. La ligne reste dans le journal (traçabilité), seule la date est posée.
-     * Idempotent ; ne concerne que les étiquettes d'hygiène.
+     * Sort un lot DLC de la surveillance : « jeté » (échu, à la poubelle), « utilisé » (bac terminé) ou « annulée »
+     * (étiquette imprimée par erreur). La ligne reste dans le journal (traçabilité) : seuls la date, la raison et la
+     * personne sont posées. Idempotent ; ne concerne que les étiquettes d'hygiène.
      */
     public function discard(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1', 'max:50'],
             'ids.*' => ['integer', 'min:1'],
+            'reason' => ['nullable', Rule::in(LabelPrintLog::DISCARD_REASONS)],
             // Annuler un « Jeté » posé par erreur : remet l'alerte.
             'restore' => ['nullable', 'boolean'],
         ]);
@@ -403,9 +407,43 @@ class LabelController extends AdminController
             ->where('kind', LabelPrintLog::KIND_DLC)
             ->whereIn('id', $validated['ids'])
             ->when($restore, fn ($q) => $q->whereNotNull('discarded_at'), fn ($q) => $q->whereNull('discarded_at'))
-            ->update(['discarded_at' => $restore ? null : now(), 'updated_at' => now()]);
+            ->update($restore
+                ? ['discarded_at' => null, 'discarded_by' => null, 'discard_reason' => null, 'updated_at' => now()]
+                : [
+                    'discarded_at' => now(),
+                    'discarded_by' => $request->user()?->id,
+                    'discard_reason' => $validated['reason'] ?? LabelPrintLog::DISCARD_DISCARDED,
+                    'updated_at' => now(),
+                ]);
 
         return response()->json(['status' => 'ok', 'discarded' => $restore ? 0 : $count, 'restored' => $restore ? $count : 0]);
+    }
+
+    /**
+     * Les lots d'hygiène à SURVEILLER, tirés du journal entier (pas des 50 dernières lignes) : imprimés, ni jetés ni
+     * utilisés, à échoir dans les 72 h ou échus depuis moins de 7 jours. Un lot échu reste signalé tant que personne ne
+     * l'a sorti — il ne disparaît pas tout seul au bout de 24 h.
+     */
+    public function watch(): JsonResponse
+    {
+        $now = now();
+        $rows = LabelPrintLog::query()
+            ->with('user:id,name')
+            ->where('kind', LabelPrintLog::KIND_DLC)
+            ->whereIn('status', LabelPrintLog::DONE_STATUSES)
+            ->whereNull('discarded_at')
+            ->whereNotNull('expires_at')
+            ->whereBetween('expires_at', [
+                $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS),
+                $now->copy()->addHours(LabelPrintLog::WATCH_AHEAD_HOURS),
+            ])
+            ->orderBy('expires_at')
+            ->limit(300)
+            ->get()
+            ->map(fn (LabelPrintLog $l): array => $this->presentLog($l))
+            ->values();
+
+        return response()->json(['data' => $rows, 'meta' => $this->clock()]);
     }
 
     /** Dernières impressions (traçabilité d'hygiène). */
@@ -419,25 +457,39 @@ class LabelController extends AdminController
             ->orderByDesc('id')
             ->limit(50)
             ->get()
-            ->map(fn (LabelPrintLog $l): array => [
-                'id' => $l->id,
-                'product_name' => $l->product_name,
-                'action' => $l->action,
-                'lot' => $l->lot,
-                'capped' => (bool) $l->capped,
-                'order_id' => $l->order_id,
-                'copies' => $l->copies,
-                'labels_count' => $l->labels_count,
-                'opened_at' => $l->opened_at?->toIso8601String(),
-                'expires_at' => $l->expires_at?->toIso8601String(),
-                'status' => $l->status,
-                'message' => $l->message,
-                'discarded_at' => $l->discarded_at?->toIso8601String(),
-                'by' => $this->firstName($l->user?->name),
-                'created_at' => $l->created_at?->toIso8601String(),
-            ])->values();
+            ->map(fn (LabelPrintLog $l): array => $this->presentLog($l))
+            ->values();
 
         return response()->json(['data' => $rows]);
+    }
+
+    private function presentLog(LabelPrintLog $l): array
+    {
+        return [
+            'id' => $l->id,
+            'dlc_product_id' => $l->dlc_product_id,
+            'product_name' => $l->product_name,
+            'action' => $l->action,
+            'lot' => $l->lot,
+            'capped' => (bool) $l->capped,
+            'cap_source' => $l->cap_source,
+            'storage' => $l->storage,
+            'original_dlc' => $l->original_dlc?->format('Y-m-d'),
+            'supplier_lot' => $l->supplier_lot,
+            'parent_log_id' => $l->parent_log_id,
+            'offline' => (bool) $l->offline,
+            'order_id' => $l->order_id,
+            'copies' => $l->copies,
+            'labels_count' => $l->labels_count,
+            'opened_at' => $l->opened_at?->toIso8601String(),
+            'expires_at' => $l->expires_at?->toIso8601String(),
+            'status' => $l->status,
+            'message' => $l->message,
+            'discarded_at' => $l->discarded_at?->toIso8601String(),
+            'discard_reason' => $l->discarded_at ? ($l->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED) : null,
+            'by' => $this->firstName($l->user?->name),
+            'created_at' => $l->created_at?->toIso8601String(),
+        ];
     }
 
     // ───────────────────────────── Commandes ─────────────────────────────
@@ -608,7 +660,9 @@ class LabelController extends AdminController
             'actions.*.unit' => ['required', Rule::in(DlcLabelProduct::UNITS)],
             'allergens' => ['nullable', 'array', 'max:14'],
             'allergens.*' => ['distinct', Rule::in(DlcLabelProduct::ALLERGENS)],
-            'storage' => ['nullable', 'string', 'max:60'],
+            // La température de conservation figure sur toute étiquette d'hygiène (GBPH § 2.7 : « À conserver à … °C ») :
+            // obligatoire à la création, et jamais effacée ensuite (absente d'une modification = inchangée).
+            'storage' => [$ignoreId ? 'sometimes' : 'required', 'filled', 'string', 'max:60'],
             'note' => ['nullable', 'string', 'max:80'],
             'ask_original_dlc' => ['nullable', 'boolean'],
             'print_operator' => ['nullable', 'boolean'],
@@ -618,6 +672,8 @@ class LabelController extends AdminController
         ], [
             'shelf_life_value.max' => 'La durée ne peut pas dépasser '.$max.($unit === DlcLabelProduct::UNIT_HOURS ? ' heures (30 jours).' : ' jours.'),
             'actions.*.key.distinct' => 'Chaque événement (ouverture, décongélation…) ne peut figurer qu’une fois.',
+            'storage.required' => 'Indiquez la température de conservation (elle est imprimée sur l’étiquette).',
+            'storage.filled' => 'Indiquez la température de conservation (elle est imprimée sur l’étiquette).',
         ], [
             'name' => 'nom',
             'category' => 'famille',

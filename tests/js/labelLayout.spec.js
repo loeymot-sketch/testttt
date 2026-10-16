@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { wrapText, layoutLabel, SIZES, MIN_LABEL_DOTS } from '../../resources/js/helpers/labelLayout.js';
-import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList, dlcParts } from '../../resources/js/helpers/dlcLabelBuilder.js';
+import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList, dlcParts, storagePhrase, storageForAction } from '../../resources/js/helpers/dlcLabelBuilder.js';
 
 /** Mesure factice : 0,55 × la taille de police par caractère. */
 const measure = (text, font) => {
@@ -155,16 +155,71 @@ describe('étiquette DLC', () => {
         });
         expect(blocks[0]).toEqual({ t: 'title', text: 'OIGNONS ÉMINCÉS' });
         expect(blocks[1]).toEqual({ t: 'sub', text: 'Légumes & crudités · Fait maison' });
-        expect(blocks).toContainEqual({ t: 'pair', left: 'Entamé le', right: 'ven 16/10/2026 14:32', size: 'md' });
+        expect(blocks).toContainEqual({ t: 'pair', left: 'Entamé le', right: 'ven 16/10/2026 14:32', size: 'md', stack: true });
         expect(blocks).toContainEqual({ t: 'dayline', day: 'DIM', caption: 'À CONSOMMER JUSQU’AU', text: '18/10/2026  14:32' });
         expect(blocks).toContainEqual({ t: 'line', text: 'Lait, Moutarde', prefix: 'ALLERGÈNES : ', size: 'md', box: true });
-        expect(blocks[blocks.length - 1]).toEqual({ t: 'sub', text: 'Conserver 0 à +4 °C · Lot L261016-0042 · Par Karim' });
+        // la conservation au modèle du guide PMS, sur sa propre ligne ; puis le numéro de l'étiquette et l'opérateur
+        expect(blocks).toContainEqual({ t: 'line', text: 'À conserver entre 0 et +4 °C', size: 'sm' });
+        expect(blocks[blocks.length - 1]).toEqual({ t: 'sub', text: 'N° L261016-0042 · Par Karim' });
+        expect(JSON.stringify(blocks)).not.toContain('RECONGELER');
+    });
+
+    it('produit décongelé : « Mis en décongélation le », bandeau NE PAS RECONGELER, jamais « ≤ −18 °C »', () => {
+        const blocks = dlcLabelBlocks({
+            name: 'Steaks', action: 'thawed', openedAt: '2026-10-16T12:00:00Z', expiresAt: '2026-10-19T12:00:00Z',
+            storage: storageForAction('≤ −18 °C', 'thawed'),
+        });
+        // sous le nom et le filet, avant toute date
+        expect(blocks[1]).toEqual({ t: 'rule' });
+        expect(blocks[2]).toEqual({ t: 'band', left: 'NE PAS RECONGELER', size: 'lg' });
+        expect(blocks.find((b) => b.t === 'pair').left).toBe('Mis en décongélation le');
+        expect(blocks).toContainEqual({ t: 'line', text: 'À conserver entre 0 et +4 °C', size: 'sm' });
+        expect(JSON.stringify(blocks)).not.toContain('18 °C');
+        // et le tout tient sur 62 mm sans rien rogner : le verbe long passe au-dessus de la date
+        const r = layoutLabel(blocks, { width: 696, measure });
+        expect(r.overflow).toBe(false);
+    });
+
+    it('conservation : phrase du guide PMS, et règle de décongélation identique au serveur', () => {
+        expect(storagePhrase('0 à +3 °C')).toBe('À conserver entre 0 et +3 °C');
+        expect(storagePhrase('≤ −18 °C')).toBe('À conserver à −18 °C ou moins');
+        expect(storagePhrase('Ambiante')).toBe('À conserver à température ambiante');
+        expect(storagePhrase('+4 °C')).toBe('À conserver à +4 °C maximum');
+        expect(storagePhrase('Chambre froide n°2')).toBe('À conserver : Chambre froide n°2');
+        expect(storagePhrase('')).toBe('');
+        expect(storageForAction('≤ −18 °C', 'thawed')).toBe('0 à +4 °C');
+        expect(storageForAction('-18°C', 'thawed')).toBe('0 à +4 °C');
+        expect(storageForAction('Ambiante', 'thawed')).toBe('0 à +4 °C');
+        expect(storageForAction('', 'thawed')).toBe('0 à +4 °C');
+        expect(storageForAction('0 à +3 °C', 'thawed')).toBe('0 à +3 °C');
+        expect(storageForAction('≤ −18 °C', 'opened')).toBe('≤ −18 °C');
+    });
+
+    it('DLC lointaine (plus de 6 jours) : pas de pastille du jour, le même jour reviendrait', () => {
+        const day = (exp) => dlcLabelBlocks({ name: 'X', openedAt: '2026-10-16T12:00:00Z', expiresAt: exp }).find((b) => b.t === 'dayline').day;
+        expect(day('2026-10-22T12:00:00Z')).toBe('JEU');
+        expect(day('2026-10-23T12:00:00Z')).toBe('');
+        const r = layoutLabel([{ t: 'dayline', day: '', caption: 'À CONSOMMER JUSQU’AU', text: '30/10/2026  12:00' }], { width: 696, measure });
+        expect(r.commands.filter((c) => c.op === 'rect')).toHaveLength(0);
+        expect(r.overflow).toBe(false);
+    });
+
+    it('traçabilité amont : DLC et lot du fabricant, produit d’origine, hors ligne', () => {
+        const base = { name: 'Crème', openedAt: '2026-10-16T08:00:00Z', expiresAt: '2026-10-18T08:00:00Z' };
+        const subs = (d) => dlcLabelBlocks({ ...base, ...d }).filter((b) => b.t === 'sub').map((b) => b.text);
+        expect(subs({ originalDlc: '2026-10-30', supplierLot: '2345A', lot: 'L261016-0001' }))
+            .toEqual(['DLC fabricant 30/10/2026 · Lot fab. 2345A', 'N° L261016-0001']);
+        expect(subs({ parent: { lot: 'L261015-0007', name: 'Poulet' }, lot: 'L261016-0002' }))
+            .toEqual(['Issu de Poulet N° L261015-0007', 'N° L261016-0002']);
+        const capped = dlcLabelBlocks({ ...base, capped: true, capSource: 'parent', parent: { lot: 'L261015-0007', name: 'Poulet' } });
+        expect(capped).toContainEqual({ t: 'line', text: 'Limitée à la DLC du produit d’origine (N° L261015-0007)', size: 'sm' });
+        expect(subs({ offline: true, lot: null, by: 'Karim' })).toEqual(['Imprimée hors ligne · Par Karim']);
     });
 
     it('le verbe suit l’événement : décongelé, préparé, cuit, sous vide', () => {
         const verb = (action) => dlcLabelBlocks({ name: 'X', action, openedAt: '2026-10-16T12:00:00Z', expiresAt: '2026-10-17T12:00:00Z' })
             .find((b) => b.t === 'pair').left;
-        expect(verb('thawed')).toBe('Décongelé le');
+        expect(verb('thawed')).toBe('Mis en décongélation le');
         expect(verb('prepared')).toBe('Préparé le');
         expect(verb('cooked')).toBe('Cuit le');
         expect(verb('vacuum')).toBe('Mis sous vide le');
@@ -216,13 +271,22 @@ describe('DLC à surveiller (intelligence du journal)', () => {
             h({ id: 5, product_name: 'Vieux', expires_at: '2026-10-10T09:00:00Z' }),             // échue depuis des jours
             h({ id: 6, product_name: 'Raté', status: 'failed' }),                                  // jamais sortie
         ];
-        const w = watchList(rows, now);
-        expect(w.map((x) => x.name)).toEqual(['Oignons', 'Tomates']);
+        const { items: w, more } = watchList(rows, now);
+        // un lot échu depuis des jours que personne n'a sorti RESTE signalé (le serveur borne déjà à 7 jours)
+        expect(w.map((x) => x.name)).toEqual(['Vieux', 'Oignons', 'Tomates']);
         expect(w[0].level).toBe('expired');
+        expect(more).toBe(0);
         // le même lot imprimé deux fois : une ligne, étiquettes additionnées, tous les identifiants gardés (pour « Jeté »)
-        expect(w[0].copies).toBe(4);
-        expect(w[0].ids).toEqual([2, 3]);
-        expect(watchList(null, now)).toEqual([]);
+        expect(w[1].copies).toBe(4);
+        expect(w[1].ids).toEqual([2, 3]);
+        expect(watchList(null, now)).toEqual({ items: [], more: 0 });
+    });
+
+    it('au-delà de la limite, le nombre de lots non affichés est rendu (« + N autres »), jamais tu', () => {
+        const rows = Array.from({ length: 12 }, (_, i) => h({ id: i + 1, product_name: `P${i}`, expires_at: new Date(now + i * 3600000).toISOString() }));
+        const r = watchList(rows, now, 8);
+        expect(r.items).toHaveLength(8);
+        expect(r.more).toBe(4);
     });
 
     it('un lot « jeté » disparaît de la liste ; une DLC à +2 jours reste visible', () => {
@@ -230,6 +294,6 @@ describe('DLC à surveiller (intelligence du journal)', () => {
             h({ id: 1, product_name: 'Olives', expires_at: '2026-10-16T09:00:00Z', discarded_at: '2026-10-16T10:00:00Z' }),
             h({ id: 2, product_name: 'Fromage', expires_at: '2026-10-18T12:00:00Z' }), // +48 h pile : au bord
         ];
-        expect(watchList(rows, now).map((x) => x.name)).toEqual(['Fromage']);
+        expect(watchList(rows, now).items.map((x) => x.name)).toEqual(['Fromage']);
     });
 });

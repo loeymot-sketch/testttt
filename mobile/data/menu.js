@@ -73,9 +73,9 @@
   const ITEM_IMG = {
     // Sandwichs (cat 1)
     'cayenne':     'sandwich-cayenne.png',
-    'supreme':     'signature/supreme-hero.png',
-    'mega':        'signature/mega-hero.png',
-    'terminator':  'signature/terminator-hero.png',
+    'supreme':     'sandwich-supreme.png',
+    'mega':        'sandwich-mega.png',
+    'terminator':  'sandwich-terminator.png',
     // Galette (cat 2)
     'galette-normale': 'galette.png',
     'galette-cayenne': 'galette.png',
@@ -89,10 +89,10 @@
     'big-burger':     'big_burger.png',
     'grill-burger':   'item-default.svg',
     // Tacos (cat 5) — board deliberately shares one tacos photo
-    'tacos-m': 'tacos.png',
-    'tacos-l': 'tacos.png',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
     // [OWNER 2026-08-24] Le tacos 3 viandes — même photo, comme ses aînés.
-    'tacos-xl': 'tacos.png',
+    'tacos-xl': 'tacos-cayenne.png',
     // Bols (cat 6)
     'bol-frites': 'bol-frites.png',
     'bol-riz':    'bol-riz.png',
@@ -126,15 +126,15 @@
     'menu-enfant-burger':  'chicken_burger.png',
   };
 
-  // Signature heroes (bg-removed)
+  // Canonical product heroes share the same public asset as their catalog image.
   const HERO_IMG = {
-    'cayenne': 'signature/cayenne-hero.png',
-    'supreme': 'signature/supreme-hero.png',
-    'mega': 'signature/mega-hero.png',
-    'terminator': 'signature/terminator-hero.png',
-    'tacos-m': 'signature/tacos-hero.png',
-    'tacos-l': 'signature/tacos-hero.png',
-    'tacos-xl': 'signature/tacos-hero.png',
+    'cayenne': 'sandwich-cayenne.png',
+    'supreme': 'sandwich-supreme.png',
+    'mega': 'sandwich-mega.png',
+    'terminator': 'sandwich-terminator.png',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
+    'tacos-xl': 'tacos-cayenne.png',
   };
 
   function imgFor(slug) {

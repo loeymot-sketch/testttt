@@ -4,7 +4,7 @@
       "/usr/local/bin/node",
       "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
       "test",
-      "tests/mobile-e2e",
+      "tests/mobile-e2e/catalog-visual-critical.spec.js",
       "--config=tests/mobile-e2e/playwright.config.js"
     ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
@@ -83,48 +83,6 @@
   },
   "suites": [
     {
-      "title": "tests/mobile-e2e/auth-otp-local.spec.js",
-      "file": "tests/mobile-e2e/auth-otp-local.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "local OTP: cooldown blocks duplicates, expiry permits one resend, dev_code verifies",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 75000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 34422,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:15:48.467Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "6a470d803fbf0ae0c158-4d3dcd7703b6e6132dfd",
-          "file": "tests/mobile-e2e/auth-otp-local.spec.js",
-          "line": 7,
-          "column": 1
-        }
-      ]
-    },
-    {
       "title": "tests/mobile-e2e/catalog-visual-critical.spec.js",
       "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
       "column": 0,
@@ -134,7 +92,7 @@
         {
           "title": "Phase 3 catalogue visuals",
           "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-          "line": 89,
+          "line": 153,
           "column": 6,
           "specs": [
             {
@@ -153,12 +111,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2963,
+                      "duration": 3273,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-16T16:16:23.251Z",
+                      "startTime": "2026-10-16T16:44:00.823Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -168,8 +126,42 @@
               ],
               "id": "3972c6a8b8425e01665c-ac79eab2c24f6ba64f1b",
               "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 90,
+              "line": 154,
               "column": 1
+            },
+            {
+              "title": "home Nouveautés prioritizes new arrivals and keeps every card navigable",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1663,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-16T16:44:04.294Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-29335789c5938ae4e0f0",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 184,
+              "column": 3
             },
             {
               "title": "category → product personalization → cart keeps detail allergen disclosure and images",
@@ -187,12 +179,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3187,
+                      "duration": 3047,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-16T16:16:26.221Z",
+                      "startTime": "2026-10-16T16:44:05.963Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -202,7 +194,7 @@
               ],
               "id": "3972c6a8b8425e01665c-b31b0f4b275293bd1ec3",
               "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 119,
+              "line": 209,
               "column": 3
             },
             {
@@ -221,12 +213,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1621,
+                      "duration": 1667,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-16T16:16:29.413Z",
+                      "startTime": "2026-10-16T16:44:09.018Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -236,1050 +228,7 @@
               ],
               "id": "3972c6a8b8425e01665c-74a7d33d3228a595a407",
               "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 165,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/inspect-contrast.spec.js",
-      "file": "tests/mobile-e2e/inspect-contrast.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "inspect — color-contrast nodes detail on Home",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2528,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "VIOLATIONS: []\n"
-                    }
-                  ],
-                  "stderr": [
-                    {
-                      "text": "(node:21984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
-                    }
-                  ],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:31.044Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "ee43da9c002017929c34-87cf932973f09add4c02",
-          "file": "tests/mobile-e2e/inspect-contrast.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
-      "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S01 — Earn via purchase_app updates balance + history entry visible",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2809,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:33.581Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "ac0b940bc7e37f93917e-f73ef230321c28757d7d",
-          "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
-      "file": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S02 — Earn kiosk (source wired) crédite le solde local + entrée historique kiosk",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2490,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:36.398Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "c9011bc71004425421df-0bb8c48a6e60c0a8a9fd",
-          "file": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
-          "line": 14,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
-      "file": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S03 — QR réel lqr. : mint-on-display + rotation payload via Actualiser",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 4345,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:38.897Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "df270cb300f236e42ed6-e83ad11965d34265153d",
-          "file": "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
-          "line": 16,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
-      "file": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S04 — Panel redeem continu : pas de 100, confirm → POST réel, erreur FR, zéro débit client",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2754,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:43.254Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "eb46fb319b5d207f5d2d-9d4166785cbf4151c93b",
-          "file": "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
-          "line": 15,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
-      "file": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S05 — Paliers : déverrouillés ≤ solde avec UTILISER, verrouillés = pts manquants sans CTA",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2641,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:46.020Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "4e9582d55f28a2ea5bb3-abebcb2e3d9f0a6c9494",
-          "file": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
-          "line": 11,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
-      "file": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S06 — Plastic card link persists localStorage flag + shows badge",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3508,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:48.669Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "34e6ce2648207fa6ff70-cb6cb61255e37a16ec6a",
-          "file": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
-      "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S07 — Apple Wallet button opens V0 notice modal with onSeeQR CTA",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2948,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:52.185Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "0b9211d8cebf66b33706-1184b9ca8f7460045e89",
-          "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
-      "file": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S08 — Google Wallet button opens V0 notice modal with Google branding",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3009,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:55.142Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "9e7813fb50aa3ac4806e-68e4fa8c688dd9abb744",
-          "file": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
-      "file": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S09 — Redeems concurrents : erreurs typées gérées, zéro mutation client",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2364,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:16:58.158Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "10a80caec8d6ca237b46-c320a3c69277356a929c",
-          "file": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
-          "line": 15,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
-      "file": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S10 — Refund writes manual_add reversal entry + restores balance",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2187,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:00.531Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "4657f61cff158c5ed4a1-dc15d39f34142b3dde70",
-          "file": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
-          "line": 7,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
-      "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S11 — RGPD opt-out hides QR + shows reactivation panel",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2753,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:02.727Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "857252f1f41b5b0437ff-09f54ead3065c1056f96",
-          "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
-      "file": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S12 — 100 history entries render and remain scrollable",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2790,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:05.491Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "ec818eb21d6a0106df53-e609486f28748e27a426",
-          "file": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
-          "line": 8,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
-      "file": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S13 — History filter chips narrow visible entries by source_surface",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3149,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:08.290Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "3bee9ee3144b31d7ecd5-11fd5ccb7f6e0edce90c",
-          "file": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
-      "file": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S14 — QR/Barcode toggle persists preference across reload",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3949,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:11.447Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "58019b35d839433df794-aab29a69ea62ceb7d7ea",
-          "file": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
-          "line": 7,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
-      "file": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "S15 — Zero-balance user sees welcoming empty state + first-order CTA",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2585,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:15.404Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "8ffcb040955dd20fcd45-a59c00d9773c28daf201",
-          "file": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
-          "line": 6,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
-      "file": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "A1 — Le token QR lqr. n'apparaît jamais en texte sélectionnable",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3336,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:17.996Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "86f7605afb6bf99767e9-df59dec79bd0c415ef87",
-          "file": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
-          "line": 14,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
-      "file": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "A2 — V0 ne détecte pas le screenshot ; le compte à rebours TTL est la mitigation",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3359,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:21.341Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "97a8d0558c8b4e46eb70-6329741b0d8b8f7ca41d",
-          "file": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
-          "line": 11,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
-      "file": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "A3 — Tampered localStorage balance is reflected in V0 (Phase 6 must override)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3315,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:24.707Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "5224685c58eab27c1ddd-65ae4b3a1013d513e2d4",
-          "file": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
-          "line": 8,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
-      "file": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "A4 — Double-tap sur Confirmer ⇒ exactement 1 POST redeem, zéro débit client",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2628,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:28.030Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "aaae1ffb34253e072f81-1eae0ff83fc819cbdff0",
-          "file": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
-          "line": 11,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
-      "file": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "A5 — Annuler en confirmation ⇒ retour sélection, zéro POST, zéro débit",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 90000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2544,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-10-16T16:17:30.664Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "848600e22cf7e4f95808-479fa9bf97886c60d65a",
-          "file": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
-          "line": 10,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-      "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "RED-D mobile fictional purge visual gate",
-          "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-          "line": 59,
-          "column": 6,
-          "specs": [
-            {
-              "title": "1 — Order history (Commandes tab) shows healed canonical SKUs",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4528,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:17:33.216Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "353607c31d05ad7befe6-c3a9b449bcd7910a5f7d",
-              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-              "line": 60,
-              "column": 3
-            },
-            {
-              "title": "2 — Loyalty screen via prototype direct nav",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4940,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:17:37.750Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "353607c31d05ad7befe6-7e023197d3da6027bd43",
-              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-              "line": 77,
-              "column": 3
-            },
-            {
-              "title": "3 — Order detail C-1234 via prototype direct nav",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5103,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:17:42.695Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "353607c31d05ad7befe6-1de07672608baeb0f011",
-              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-              "line": 97,
-              "column": 3
-            },
-            {
-              "title": "4 — window.LC data layer SSOT check (sentinel sanity)",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3211,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:17:47.803Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "353607c31d05ad7befe6-71e13cb9094a78809e8a",
-              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
-              "line": 115,
+              "line": 268,
               "column": 3
             }
           ]
@@ -1289,9 +238,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-16T16:15:36.010Z",
-    "duration": 135235.842,
-    "expected": 29,
+    "startTime": "2026-10-16T16:43:47.984Z",
+    "duration": 22774.575,
+    "expected": 4,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

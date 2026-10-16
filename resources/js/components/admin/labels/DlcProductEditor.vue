@@ -1,5 +1,5 @@
 <template>
-    <div class="ed-overlay" data-testid="dlc-editor" @keydown.esc="$emit('cancel')">
+    <div class="ed-overlay" data-testid="dlc-editor" @keydown.esc="$emit('cancel')" @keydown.tab="trapTab">
         <div class="ed-panel" role="dialog" aria-modal="true" :aria-label="form.id ? 'Modifier le produit' : 'Nouveau produit'">
             <header class="ed-head">
                 <h4>{{ form.id ? "Modifier le produit" : "Nouveau produit" }}</h4>
@@ -27,10 +27,11 @@
                     <!-- Événements : chacun avec SA durée de conservation -->
                     <fieldset class="ed-fieldset">
                         <legend>Événements et durée de conservation</legend>
-                        <p class="ed-help">Cochez ce que vous faites avec ce produit. Le premier coché est proposé par défaut.</p>
+                        <p class="ed-help">Cochez ce que vous faites avec ce produit, avec la durée de votre plan de maîtrise sanitaire.
+                            « Par défaut » = l'événement imprimé d'un seul appui.</p>
                         <div v-for="a in actionRows" :key="a.key" class="ed-action" :class="{ 'is-on': a.enabled }">
                             <label class="ed-action-toggle">
-                                <input v-model="a.enabled" type="checkbox" :data-testid="`dlc-ed-action-${a.key}`" />
+                                <input v-model="a.enabled" type="checkbox" :data-testid="`dlc-ed-action-${a.key}`" @change="onToggle(a)" />
                                 <span>{{ a.label }}</span>
                             </label>
                             <template v-if="a.enabled">
@@ -40,20 +41,30 @@
                                     <option value="hours">heures</option>
                                     <option value="days">jours</option>
                                 </select>
+                                <label class="ed-default" :class="{ 'is-on': defaultKey === a.key }">
+                                    <input v-model="defaultKey" type="radio" name="dlc-ed-default" :value="a.key" :data-testid="`dlc-ed-default-${a.key}`" />
+                                    <span>Par défaut</span>
+                                </label>
                                 <span class="ed-action-hint">{{ hint(a) }}</span>
+                                <span v-if="warningOf(a)" class="ed-action-warn" :data-testid="`dlc-ed-warn-${a.key}`">⚠ {{ warningOf(a) }}</span>
                             </template>
                         </div>
+                        <label v-if="warnings.length" class="ed-switch ed-switch--warn">
+                            <input v-model="durationsChecked" type="checkbox" data-testid="dlc-ed-durations-ok" />
+                            <span><b>Durées vérifiées</b> : elles sont validées par notre plan de maîtrise sanitaire ou indiquées par le fabricant.</span>
+                        </label>
                     </fieldset>
 
                     <fieldset class="ed-fieldset">
-                        <legend>Conservation</legend>
+                        <legend>Conservation <span class="ed-required">(obligatoire, imprimée sur l'étiquette)</span></legend>
                         <div class="ed-chips">
-                            <button v-for="st in storageChoices" :key="st" type="button" class="ed-chip"
+                            <button v-for="(st, i) in storageChoices" :key="st" type="button" class="ed-chip"
                                     :class="{ 'is-on': form.storage === st }" :aria-pressed="form.storage === st ? 'true' : 'false'"
-                                    @click="form.storage = form.storage === st ? '' : st">{{ st }}</button>
+                                    :data-testid="`dlc-ed-storage-${i}`" @click="form.storage = form.storage === st ? '' : st">{{ st }}</button>
                             <input v-model="form.storage" type="text" maxlength="60" class="db-field-control ed-storage" placeholder="Autre…"
                                    aria-label="Conservation (autre)" data-testid="dlc-ed-storage" />
                         </div>
+                        <p v-if="thawedNote" class="ed-note" data-testid="dlc-ed-thawed-note">{{ thawedNote }}</p>
                     </fieldset>
 
                     <fieldset class="ed-fieldset">
@@ -82,16 +93,16 @@
                     </div>
 
                     <label class="ed-switch">
-                        <input v-model="form.ask_original_dlc" type="checkbox" data-testid="dlc-ed-ask-original" />
+                        <input v-model="form.ask_original_dlc" type="checkbox" data-testid="dlc-ed-ask-original" @change="askTouched = true" />
                         <span><b>Demander la DLC du fabricant</b> à chaque impression — la DLC imprimée ne la dépassera jamais
-                            (règle du plan de maîtrise sanitaire).</span>
+                            (règle du plan de maîtrise sanitaire). Recommandé pour tout produit entamé dans son emballage d'origine.</span>
                     </label>
                     <label class="ed-switch">
                         <input v-model="form.print_operator" type="checkbox" data-testid="dlc-ed-operator" />
                         <span>Imprimer le prénom de la personne qui étiquette</span>
                     </label>
 
-                    <p v-if="error" class="ed-error" role="alert" data-testid="dlc-ed-error">{{ error }}</p>
+                    <p v-if="shownError" class="ed-error" role="alert" data-testid="dlc-ed-error">{{ shownError }}</p>
                 </form>
 
                 <aside class="ed-preview" aria-label="Aperçu de l'étiquette">
@@ -106,6 +117,7 @@
                     {{ confirmDelete ? "Confirmer la suppression" : "Supprimer" }}
                 </button>
                 <span class="ed-spacer"></span>
+                <span v-if="shownError" class="ed-foot-error" aria-hidden="true">⚠ {{ shortError }}</span>
                 <button type="button" class="ed-btn" @click="$emit('cancel')">Annuler</button>
                 <button type="button" class="ed-btn ed-btn--primary" :disabled="saving" data-testid="dlc-ed-save" @click="submit">
                     {{ saving ? "Enregistrement…" : form.id ? "Enregistrer" : "Ajouter le produit" }}
@@ -118,17 +130,24 @@
 <script>
 /**
  * [ETIQUETTES 2026-10-16 · owner « très configuré selon chaque produit, comme les concurrents »] Fiche produit DLC :
- * famille, plusieurs événements (ouverture, décongélation, préparation, cuisson, sous vide) chacun avec sa durée,
- * conservation, 14 allergènes, mention, DLC du fabricant demandée, prénom imprimé, nombre d'étiquettes — avec l'aperçu
- * EXACT de l'étiquette pendant la saisie.
+ * famille, plusieurs événements (ouverture, décongélation, préparation, cuisson, sous vide) chacun avec sa durée et l'un
+ * d'eux « par défaut », conservation (obligatoire), 14 allergènes, mention, DLC du fabricant demandée, prénom imprimé,
+ * nombre d'étiquettes — avec l'aperçu EXACT de l'étiquette pendant la saisie.
+ *
+ * Garde-fous du guide PMS : une durée inhabituelle (décongelé au-delà de 3 jours, froid positif au-delà de 7 jours, ou
+ * « 96 heures » qui ressemble à une erreur d'unité) est signalée et doit être confirmée avant d'enregistrer.
  */
 import {
     DLC_ACTIONS, DLC_ACTION_KEYS, DLC_ALLERGENS, DLC_CATEGORIES, DLC_STORAGES,
-    dlcLabelBlocks, previewExpiry, shelfLifeText,
+    dlcLabelBlocks, previewExpiry, shelfLifeText, storageForAction, storagePhrase, isFrozenOrAmbient,
 } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
 const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"] };
+/** Événements où le produit est encore dans son emballage d'origine : la DLC du fabricant est demandée par défaut. */
+const PACKAGED = ["opened", "vacuum"];
+
+function hoursOf(a) { return a.unit === "days" ? Number(a.value) * 24 : Number(a.value); }
 
 export default {
     name: "DlcProductEditor",
@@ -146,6 +165,8 @@ export default {
             ? p.actions
             : (p.shelf_life_value ? [{ key: "opened", value: p.shelf_life_value, unit: p.shelf_life_unit }] : [{ key: "opened", value: 2, unit: "days" }]);
         const order = [...actions.map((a) => a.key), ...DLC_ACTION_KEYS.filter((k) => !actions.some((a) => a.key === k))];
+        // Fiche neuve sans avis explicite : DLC du fabricant demandée si le produit est entamé dans son emballage.
+        const askDefault = p.ask_original_dlc === undefined ? PACKAGED.includes(actions[0].key) : Boolean(p.ask_original_dlc);
         return {
             form: {
                 id: p.id || null,
@@ -154,7 +175,7 @@ export default {
                 storage: p.storage || "",
                 note: p.note || "",
                 allergens: Array.isArray(p.allergens) ? [...p.allergens] : [],
-                ask_original_dlc: Boolean(p.ask_original_dlc),
+                ask_original_dlc: askDefault,
                 print_operator: p.print_operator === undefined ? true : Boolean(p.print_operator),
                 default_copies: Number(p.default_copies) || 1,
             },
@@ -166,7 +187,12 @@ export default {
                     value: existing ? existing.value : value, unit: existing ? existing.unit : unit,
                 };
             }),
+            defaultKey: actions[0].key,
+            askTouched: p.ask_original_dlc !== undefined,
+            durationsChecked: false,
+            localError: "",
             confirmDelete: false,
+            returnFocus: null,
         };
     },
     computed: {
@@ -175,8 +201,28 @@ export default {
         },
         storageChoices() { return DLC_STORAGES; },
         allergenChoices() { return DLC_ALLERGENS; },
+        /** Les événements cochés, l'événement « par défaut » en premier (c'est lui qu'imprime un appui). */
         enabledActions() {
-            return this.actionRows.filter((a) => a.enabled && Number(a.value) >= 1).map((a) => ({ key: a.key, value: Number(a.value), unit: a.unit }));
+            const list = this.actionRows.filter((a) => a.enabled && Number(a.value) >= 1).map((a) => ({ key: a.key, value: Number(a.value), unit: a.unit }));
+            const i = list.findIndex((a) => a.key === this.defaultKey);
+            if (i > 0) list.unshift(list.splice(i, 1)[0]);
+            return list;
+        },
+        warnings() {
+            return this.actionRows.filter((a) => a.enabled && this.warningOf(a)).map((a) => a.key);
+        },
+        thawedNote() {
+            const thawed = this.actionRows.find((a) => a.key === "thawed" && a.enabled);
+            if (!thawed) return "";
+            const printed = storagePhrase(storageForAction(this.form.storage, "thawed"));
+            return this.form.storage && !isFrozenOrAmbient(this.form.storage)
+                ? ""
+                : `Après décongélation, l'étiquette indiquera « ${printed} » et « NE PAS RECONGELER ».`;
+        },
+        shownError() { return this.localError || this.error; },
+        shortError() {
+            const t = String(this.shownError || "");
+            return t.length > 60 ? `${t.slice(0, 57)}…` : t;
         },
         preview() {
             const first = this.enabledActions[0];
@@ -186,7 +232,7 @@ export default {
                 const blocks = dlcLabelBlocks({
                     name: this.form.name, category: this.form.category, note: this.form.note, action: first.key,
                     openedAt: now.toISOString(), expiresAt: previewExpiry(first, now).toISOString(),
-                    storage: this.form.storage, allergens: this.form.allergens,
+                    storage: storageForAction(this.form.storage, first.key), allergens: this.form.allergens,
                     by: this.form.print_operator ? "Prénom" : "", lot: "L000000-0000",
                 });
                 return previewUrls([blocks], this.settings).urls[0] || "";
@@ -195,14 +241,46 @@ export default {
             }
         },
     },
+    watch: {
+        // Tant que la personne n'a pas tranché, « DLC du fabricant » suit l'événement par défaut d'une fiche neuve.
+        defaultKey(key) {
+            if (!this.askTouched && !this.form.id) this.form.ask_original_dlc = PACKAGED.includes(key);
+        },
+        warnings(now, before) {
+            if (now.join() !== before.join()) this.durationsChecked = false;
+        },
+    },
     mounted() {
+        this.returnFocus = document.activeElement;
         this.$nextTick(() => { if (this.$refs.name) this.$refs.name.focus(); });
+    },
+    beforeUnmount() {
+        if (this.returnFocus && this.returnFocus.focus && document.contains(this.returnFocus)) this.returnFocus.focus();
     },
     methods: {
         hint(a) {
             const v = Number(a.value);
             if (!(v >= 1)) return "durée à saisir";
             return `→ DLC ${shelfLifeText(v, a.unit)} après`;
+        },
+        /** Durée inhabituelle (règles de prudence du guide PMS, et erreurs d'unité courantes). */
+        warningOf(a) {
+            const v = Number(a.value);
+            if (!(v >= 1)) return "";
+            const h = hoursOf(a);
+            if (a.unit === "hours" && v > 72) return `${v} heures = ${Math.round(v / 24)} jours : vérifiez l'unité.`;
+            if (a.key === "thawed" && h > 72) return "Un produit décongelé se garde en général 3 jours au plus.";
+            const cold = !this.form.storage || !isFrozenOrAmbient(this.form.storage) || a.key === "thawed";
+            if (cold && h > 7 * 24) return "Plus de 7 jours au froid positif : durée inhabituelle.";
+            return "";
+        },
+        onToggle(a) {
+            // L'événement par défaut est toujours un événement coché.
+            if (a.enabled && !this.actionRows.some((r) => r.enabled && r.key === this.defaultKey)) this.defaultKey = a.key;
+            if (!a.enabled && a.key === this.defaultKey) {
+                const next = this.actionRows.find((r) => r.enabled);
+                if (next) this.defaultKey = next.key;
+            }
         },
         toggleAllergen(code) {
             const i = this.form.allergens.indexOf(code);
@@ -213,12 +291,29 @@ export default {
             if (!this.confirmDelete) { this.confirmDelete = true; setTimeout(() => { this.confirmDelete = false; }, 4000); return; }
             this.$emit("delete", this.form.id);
         },
+        trapTab(e) {
+            const items = [...this.$el.querySelectorAll("button:not([disabled]), input:not([disabled]), select, textarea")];
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        },
         submit() {
+            this.localError = "";
+            if (!String(this.form.storage || "").trim()) {
+                this.localError = "Indiquez la température de conservation (elle est imprimée sur l’étiquette).";
+                return;
+            }
+            if (this.warnings.length && !this.durationsChecked) {
+                this.localError = "Durée inhabituelle : corrigez-la, ou cochez « Durées vérifiées ».";
+                return;
+            }
             this.$emit("save", {
                 id: this.form.id,
                 name: this.form.name,
                 category: this.form.category || null,
-                storage: this.form.storage || null,
+                storage: this.form.storage.trim(),
                 note: this.form.note || null,
                 allergens: this.form.allergens,
                 actions: this.enabledActions,
@@ -232,13 +327,18 @@ export default {
 </script>
 
 <style scoped>
-.ed-overlay { position: fixed; inset: 0; z-index: 1050; background: rgba(15, 23, 42, .55); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 24px 12px; }
-.ed-panel { background: #fff; border-radius: 16px; width: min(1040px, 100%); box-shadow: 0 20px 60px rgba(0, 0, 0, .3); display: flex; flex-direction: column; }
-.ed-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; }
+.ed-overlay { position: fixed; inset: 0; z-index: 1050; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.ed-panel { background: #fff; border-radius: 16px; width: min(1040px, 100%); max-height: calc(100vh - 24px); box-shadow: 0 20px 60px rgba(0, 0, 0, .3); display: flex; flex-direction: column; }
+.ed-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; flex: 0 0 auto; }
 .ed-head h4 { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
 .ed-close { width: 48px; height: 48px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; font-size: 20px; cursor: pointer; }
-.ed-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 16px 20px; }
-@media (max-width: 899px) { .ed-body { grid-template-columns: 1fr; } }
+/* Le corps défile ; l'en-tête et les boutons « Annuler / Enregistrer » restent toujours visibles. */
+.ed-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 16px 20px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+@media (max-width: 899px) {
+    .ed-body { grid-template-columns: 1fr; }
+    /* Portrait : l'aperçu passe en tête, compact — on voit l'étiquette changer pendant la saisie. */
+    .ed-preview { order: -1; position: static; max-width: 340px; width: 100%; margin: 0 auto; }
+}
 .ed-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ed-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .ed-field { flex: 1 1 200px; min-width: 0; }
@@ -247,6 +347,7 @@ export default {
 .ed-form .db-field-control { min-height: 48px; }
 .ed-fieldset { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 14px 12px; margin: 0; }
 .ed-fieldset legend { font-size: 15px; font-weight: 800; color: #111827; padding: 0 6px; width: auto; margin: 0; }
+.ed-required { font-weight: 600; color: #64748b; font-size: 13px; }
 .ed-help { color: #475569; font-size: 14px; margin: 2px 0 8px; }
 .ed-action { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 8px; border-radius: 10px; min-height: 56px; }
 .ed-action.is-on { background: #fff7f3; }
@@ -254,7 +355,13 @@ export default {
 .ed-action-toggle input, .ed-switch input { width: 26px; height: 26px; flex: 0 0 auto; }
 .ed-num { width: 96px; }
 .ed-unit { width: 120px; }
+.ed-default { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 10px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; font-size: 14px; font-weight: 600; color: #475569; cursor: pointer; margin: 0; }
+.ed-default input { width: 20px; height: 20px; }
+.ed-default.is-on { border-color: #D63D0B; color: #9a2c08; background: #fff; }
 .ed-action-hint { color: #64748b; font-size: 14px; }
+.ed-action-warn { flex-basis: 100%; color: #92400e; font-size: 14px; font-weight: 700; padding-left: 36px; }
+.ed-switch--warn { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.ed-note { margin: 8px 0 0; font-size: 14px; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; }
 .ed-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ed-chip { min-height: 48px; padding: 0 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
 .ed-chip.is-on { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
@@ -267,8 +374,9 @@ export default {
 .ed-error { border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; padding: 10px 12px; margin: 0; font-weight: 600; }
 .ed-preview { position: sticky; top: 0; align-self: start; }
 .ed-preview img { width: 100%; border: 1px solid #94a3b8; background: #fff; image-rendering: pixelated; display: block; }
-.ed-foot { display: flex; gap: 10px; align-items: center; padding: 12px 20px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; }
+.ed-foot { display: flex; gap: 10px; align-items: center; padding: 12px 20px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; flex: 0 0 auto; }
 .ed-spacer { flex: 1 1 auto; }
+.ed-foot-error { color: #b91c1c; font-weight: 700; font-size: 14px; max-width: 360px; }
 .ed-btn { min-height: 52px; padding: 0 20px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
 .ed-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
 .ed-btn--primary:disabled { background: #e2e8f0; border-color: #cbd5e1; color: #475569; }
