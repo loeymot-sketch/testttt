@@ -25,8 +25,9 @@ mobile, POS, caisse, KDS, kiosk runtime, signing iOS et configuration App Store.
 
 ## Stratégie de test
 
-`playwright-full-e2e` sur le périmètre mobile-only après partitionnement explicite, puis
-`playwright-critical-flow` sur les vagues A, B, C, D et Fluidity corrigées.
+`playwright-critical-flow` sur le projet mobile-only explicitement allowlisté (A, B, C, D,
+Fluidity, Surfaces et `tests/mobile-e2e`). Wave E est un scénario kiosk séparé et n'est pas
+une preuve de cette application mobile.
 
 ## Risques
 
@@ -34,3 +35,17 @@ mobile, POS, caisse, KDS, kiosk runtime, signing iOS et configuration App Store.
   documentée comme écart produit, jamais masquée par une valeur fictive.
 - La séparation de Wave E réduit le faux positif du harnais mobile mais impose une validation
   kiosk dédiée dans une phase ultérieure.
+
+## Revue du plan
+
+- Première revue fallback : `REWORK` — discovery trop large, contrat d'URL insuffisamment explicite,
+  assertions D historiques, reporter Markdown manquant et vocabulaire E2E trop large.
+- Corrections appliquées puis seconde revue fallback : `REWORK` ; une dernière revue a confirmé
+  `PASS` après la suppression du dernier commentaire D historique.
+- `PLAN_REVIEW_CHANNEL: foodking-complex-implementer (codex-extension-fallback)`.
+- `FALLBACK_REASON: codex CLI rejected gpt-5.5-pro on the signed-in ChatGPT account after two attempts.`
+
+Fichiers supplémentaires autorisés après revue :
+
+- `tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js`
+- `tests/mobile-e2e/reporters/antigravity-markdown.js`

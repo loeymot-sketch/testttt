@@ -1,12 +1,13 @@
+[phase22] EXECUTE_DELEGATION: multi_agent_v1-complex-implementer
+[phase22] POST_EXECUTE_SCOPE: mobile image parity only
+[phase22] POST_EXECUTE_NOTE: repository-wide php artisan test has one unrelated StripeCentsCastTest failure (€1.005 expected 101, got 100); mobile static/E2E validations are separate and pass.
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_202046
-[post-execute] timestamped log: reports/test_unknown_20261016_202046.log
+[post-execute] timestamp: 20261016_212425
+[post-execute] timestamped log: reports/test_unknown_20261016_212425.log
 [post-execute] running: php artisan test --stop-on-failure
-EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged)
-[post-execute] bounded implementation completed in the user-authorized scope; targeted static and Playwright validation ran separately
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_202046
-[post-execute] timestamped log: reports/test_unknown_20261016_202046.log
+[post-execute] timestamp: 20261016_212425
+[post-execute] timestamped log: reports/test_unknown_20261016_212425.log
 [post-execute] running: php artisan test --stop-on-failure
 Warning: TTY mode requires /dev/tty to be read/writable.
 PHP Deprecated:  Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Implicitly marking parameter $code as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Loyalty/LoyaltyMergeDuplicatePhonesTest.php on line 34
@@ -436,11 +437,11 @@ PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly mar
      40▕             );
 
 
-  [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m314 passed[39;22m[39m, [2m6110 pending[22m[39m
-  [37;1mTime:   [39;22m[39m1.34s[39m
+  [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m314 passed[39;22m[39m, [2m6112 pending[22m[39m
+  [37;1mTime:   [39;22m[39m1.41s[39m
 
 
-[post-execute] tests: FAILED — see reports/test_unknown_20261016_202046.log
+[post-execute] tests: FAILED — see reports/test_unknown_20261016_212425.log
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next

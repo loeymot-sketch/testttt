@@ -27,33 +27,33 @@ function localAsset(file) {
 }
 
 const canonicalProductImages = {
-  cayenne: 'sandwich-cayenne.webp',
-  supreme: 'sandwich-supreme.webp',
-  mega: 'sandwich-mega.webp',
-  terminator: 'sandwich-terminator.webp',
-  'galette-normale': 'galette.webp',
-  'galette-cayenne': 'galette.webp',
-  'tacos-m': 'tacos-cayenne.webp',
-  'tacos-l': 'tacos-cayenne.webp',
-  'tacos-xl': 'tacos-cayenne.webp',
+  cayenne: 'sandwich-cayenne.png',
+  supreme: 'sandwich-supreme.png',
+  mega: 'sandwich-mega.png',
+  terminator: 'sandwich-terminator.png',
+  'galette-normale': 'galette.png',
+  'galette-cayenne': 'galette.png',
+  'tacos-m': 'tacos-cayenne.png',
+  'tacos-l': 'tacos-cayenne.png',
+  'tacos-xl': 'tacos-cayenne.png',
 };
 
 const canonicalCategoryImages = {
-  sandwichs: 'cat-sandwich-cayenne.webp',
-  galette: 'cat-galette.webp',
-  tacos: 'cat-tacos.webp',
+  sandwichs: 'cat-sandwich-cayenne.png',
+  galette: 'cat-galette.png',
+  tacos: 'cat-tacos.png',
 };
 
-const canonicalBinaryFiles = [
-  'sandwich-cayenne.webp',
-  'sandwich-supreme.webp',
-  'sandwich-mega.webp',
-  'sandwich-terminator.webp',
-  'tacos-cayenne.webp',
-  'galette.webp',
-  'cat-sandwich-cayenne.webp',
-  'cat-galette.webp',
-  'cat-tacos.webp',
+const canonicalPngFiles = [
+  'sandwich-cayenne.png',
+  'sandwich-supreme.png',
+  'sandwich-mega.png',
+  'sandwich-terminator.png',
+  'tacos-cayenne.png',
+  'galette.png',
+  'cat-sandwich-cayenne.png',
+  'cat-galette.png',
+  'cat-tacos.png',
 ];
 
 // Remaining category cards are served as PNG by the current site/borne pack.
@@ -111,10 +111,10 @@ for (const [slug, file] of Object.entries(canonicalCategoryImages)) {
     'assets/menu/' + file, `canonical category image: ${slug}`);
 }
 assert.equal(menu.pains.find(pain => pain.id === 'pain-galette').image,
-  'assets/menu/galette.webp', 'galette pain choice uses the canonical WebP');
+  'assets/menu/galette.png', 'galette pain choice uses the canonical PNG');
 
-for (const file of canonicalBinaryFiles) {
-  const source = path.resolve(root, '../public/images/menu/thumbs', file);
+for (const file of canonicalPngFiles) {
+  const source = path.resolve(root, '../public/images/menu', file);
   const destination = path.join(root, 'assets/menu', file);
   assert.ok(fs.existsSync(source), `canonical source exists: ${file}`);
   assert.ok(fs.existsSync(destination), `canonical destination exists: ${file}`);

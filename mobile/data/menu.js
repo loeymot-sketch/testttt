@@ -69,16 +69,16 @@
   // -------------------------------------------------------------------------
   const ASSET_BASE = 'assets/menu/';
 
-  // Items → images ([MENU-CANON 2026-10-16] WebP exactes du site/borne, fallback item-default)
+  // Items → images ([MENU-CANON 2026-10-16] PNG exactes du site/borne, fallback item-default)
   const ITEM_IMG = {
     // Sandwichs (cat 1)
-    'cayenne':     'sandwich-cayenne.webp',
-    'supreme':     'sandwich-supreme.webp',
-    'mega':        'sandwich-mega.webp',
-    'terminator':  'sandwich-terminator.webp',
+    'cayenne':     'sandwich-cayenne.png',
+    'supreme':     'sandwich-supreme.png',
+    'mega':        'sandwich-mega.png',
+    'terminator':  'sandwich-terminator.png',
     // Galette (cat 2)
-    'galette-normale': 'galette.webp',
-    'galette-cayenne': 'galette.webp',
+    'galette-normale': 'galette.png',
+    'galette-cayenne': 'galette.png',
     // Burgers (cat 4)
     'chicken-burger': 'chicken_burger.png',
     // Local cheeseburger.png shows a double; grill_burger.png shows sauce.
@@ -89,10 +89,10 @@
     'big-burger':     'big_burger.png',
     'grill-burger':   'item-default.svg',
     // Tacos (cat 5) — board deliberately shares one tacos photo
-    'tacos-m': 'tacos-cayenne.webp',
-    'tacos-l': 'tacos-cayenne.webp',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
     // [OWNER 2026-08-24] Le tacos 3 viandes — même photo, comme ses aînés.
-    'tacos-xl': 'tacos-cayenne.webp',
+    'tacos-xl': 'tacos-cayenne.png',
     // Bols (cat 6)
     'bol-frites': 'bol-frites.png',
     'bol-riz':    'bol-riz.png',
@@ -137,13 +137,13 @@
 
   // Canonical product heroes share the same public asset as their catalog image.
   const HERO_IMG = {
-    'cayenne': 'sandwich-cayenne.webp',
-    'supreme': 'sandwich-supreme.webp',
-    'mega': 'sandwich-mega.webp',
-    'terminator': 'sandwich-terminator.webp',
-    'tacos-m': 'tacos-cayenne.webp',
-    'tacos-l': 'tacos-cayenne.webp',
-    'tacos-xl': 'tacos-cayenne.webp',
+    'cayenne': 'sandwich-cayenne.png',
+    'supreme': 'sandwich-supreme.png',
+    'mega': 'sandwich-mega.png',
+    'terminator': 'sandwich-terminator.png',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
+    'tacos-xl': 'tacos-cayenne.png',
   };
 
   function imgFor(slug) {
@@ -236,7 +236,7 @@
   //   exposé sur les 4 Sandwichs via has_pain_choice (parité WEB-SYNC-CAISSE 2026-06-26 L4).
   const PAINS = [
     { id: 'pain-classique', name: 'Pain',    price: 0, is_default: true, image: ASSET_BASE + 'sandwich-classique.png' },
-    { id: 'pain-galette',   name: 'Galette', price: 0,                   image: ASSET_BASE + 'galette.webp' },
+    { id: 'pain-galette',   name: 'Galette', price: 0,                   image: ASSET_BASE + 'galette.png' },
   ];
 
   // [GOAL-SYNC 2026-07-08] Viande supplémentaire (canon extra +2,50€) — sandwichs, galettes,
@@ -297,10 +297,10 @@
   //   Les ids backend sont préservés (1,2,4,5,6,7,9,10,11).
   // -------------------------------------------------------------------------
   const CATEGORIES = [
-    { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.webp' },
-    { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.webp' },
+    { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.png' },
+    { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 4,  slug: 'burgers',      name: 'Burgers',     icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Chicken, Cheese, Double Cheese, Fish, Big, Grill', image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.webp' },
+    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.png' },
     // [GOAL-SYNC 2026-07-08] wizard_template 'tacos'→'bol' (aligné web — sauces servies par BOL_SAUCES).
     { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'bol',      has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },

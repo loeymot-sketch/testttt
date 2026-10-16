@@ -7,6 +7,18 @@ que le testMatch mobile inclut les vagues design historiques et la vague kiosk E
 la configuration démarre le serveur mobile sur 8087. Le run global récent a montré des URLs
 8081 refusées, des attentes D obsolètes et un conflit de tracing.
 
+## Revue du plan
+
+La première revue fallback a demandé `REWORK` : réduire la discovery aux tests mobiles,
+fixer le contrat 8087, aligner Wave D sur les données courantes, retirer le tracing manuel,
+produire `reports/antigravity/latest.md`, et documenter Wave E comme exécution kiosk séparée.
+Ces corrections sont intégrées ; la seconde revue fallback a relevé quatre derniers points,
+puis la dernière revue a confirmé `PASS` après leur correction.
+
+`PLAN_REVIEW_CHANNEL: foodking-complex-implementer (codex-extension-fallback)`
+
+`FALLBACK_REASON: codex CLI rejected gpt-5.5-pro on the signed-in ChatGPT account after two attempts.`
+
 ## Action recommandée
 
 1. Paramétrer les vagues mobile avec `MOBILE_URL` et le défaut 8087.
@@ -15,7 +27,10 @@ la configuration démarre le serveur mobile sur 8087. Le run global récent a mo
    téléphone valide, historique réellement rendu, tiers configurés).
 4. Laisser la configuration Playwright gérer les traces et supprimer les démarrages manuels
    concurrents dans Fluidity.
-5. Relancer d’abord les fichiers ciblés, puis la suite mobile-only complète.
+5. Relancer d’abord les fichiers ciblés, puis le projet mobile-only allowlisté, avec le reporter Markdown.
+
+Wave E doit être relancée séparément via `playwright.config.js` et le runtime Laravel/kiosk ; elle ne
+doit pas être mélangée à ce verdict mobile.
 
 ## Critère de sortie
 

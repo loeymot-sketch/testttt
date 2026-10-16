@@ -1,26 +1,26 @@
 # Active Cycle – FoodKing
 
-## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 21 E2E HARNESS PARITY
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 22 LATEST PRODUCT ASSET PARITY
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016
-PHASE: PLAN
-CLOSURE_NOTE:
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016_2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016/report.md
-GATE_FILE:
+TASK_ID: MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016
+PHASE: GATE
+CLOSURE_NOTE: Phase 21 remains recorded below as REWORK; superseded by the owner's explicit request for a new bounded image-parity subject.
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/report.md
+GATE_FILE: docs/gates/GATE_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-2026-10-16.md
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
-EXECUTE_DELEGATION: pending
+EXECUTE_DELEGATION: multi_agent_v1-complex-implementer
 FALLBACK_REASON:
-AUDIT_CHANNEL: pending
-AUDIT_FALLBACK_REASON:
-AUDIT_VERDICT: PENDING
+AUDIT_CHANNEL: fallback-subagent
+AUDIT_FALLBACK_REASON: Claude terminal wrapper could not find claude on PATH; fallback audit returned REWORK on shared-worktree evidence/guard blockers.
+AUDIT_VERDICT: REWORK
 GPT_FINAL_AUDIT_CHANNEL: pending
 GPT_FINAL_AUDIT_MODEL: gpt-5.5-pro
 GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
 GPT_FINAL_AUDIT_VERDICT: PENDING
-SUBSYSTEMS_TOUCHED: tests/mobile-e2e/playwright.config.js, tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js, tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js, tasks/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016.md, reports/planning/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016.md, reports/execution/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016/report.md
-SUBSYSTEMS_OFF_LIMITS: mobile product code/assets, backend PHP/config, database/migrations, pricing/order data, payment/Mollie, loyalty policy, branch isolation, dispatch, OrderService/FrontendOrderService, POS/caisse/KDS/kiosk runtime, native iOS packaging/signing
+SUBSYSTEMS_TOUCHED: mobile/data/menu.js, mobile/assets/menu/cat-sandwich-cayenne.png, mobile/assets/menu/cat-galette.png, mobile/assets/menu/cat-tacos.png, mobile/assets/menu/sandwich-cayenne.png, mobile/assets/menu/sandwich-supreme.png, mobile/assets/menu/sandwich-mega.png, mobile/assets/menu/sandwich-terminator.png, mobile/assets/menu/galette.png, mobile/assets/menu/tacos-cayenne.png, mobile/tests/mobile-catalog-visual.spec.js, tests/mobile-e2e/catalog-visual-critical.spec.js, tasks/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016.md, plans/PLAN_MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016_2026-10-16.md, reports/execution/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/report.md, missions/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/input.json, .cursor/ACTIVE_CYCLE.md, reports/AGENT_ACTIVITY_LOG.md
+SUBSYSTEMS_OFF_LIMITS: backend PHP/config, database/migrations, pricing/order data, payment/Mollie, loyalty policy, auth/SMS, branch isolation, dispatch, OrderService/FrontendOrderService, POS/caisse/KDS/kiosk runtime, native iOS packaging/signing
 
 | **FIELD** | **VALUE** |
 |---|---|

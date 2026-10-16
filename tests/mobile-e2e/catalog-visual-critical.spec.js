@@ -12,35 +12,35 @@ const path = require('node:path');
 
 const MOBILE_PATH = '/index.html?dev&catalog-visual-critical=1';
 const REPO_ROOT = path.resolve(__dirname, '../..');
-const canonicalWebpFiles = [
-  'sandwich-cayenne.webp',
-  'sandwich-supreme.webp',
-  'sandwich-mega.webp',
-  'sandwich-terminator.webp',
-  'tacos-cayenne.webp',
-  'galette.webp',
-  'cat-sandwich-cayenne.webp',
-  'cat-galette.webp',
-  'cat-tacos.webp',
+const canonicalPngFiles = [
+  'sandwich-cayenne.png',
+  'sandwich-supreme.png',
+  'sandwich-mega.png',
+  'sandwich-terminator.png',
+  'tacos-cayenne.png',
+  'galette.png',
+  'cat-sandwich-cayenne.png',
+  'cat-galette.png',
+  'cat-tacos.png',
 ];
 const sha = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const writeRequestsByPage = new WeakMap();
 const canonicalProductImages = {
-  cayenne: 'assets/menu/sandwich-cayenne.webp',
-  supreme: 'assets/menu/sandwich-supreme.webp',
-  mega: 'assets/menu/sandwich-mega.webp',
-  terminator: 'assets/menu/sandwich-terminator.webp',
-  'galette-normale': 'assets/menu/galette.webp',
-  'galette-cayenne': 'assets/menu/galette.webp',
-  'tacos-m': 'assets/menu/tacos-cayenne.webp',
-  'tacos-l': 'assets/menu/tacos-cayenne.webp',
-  'tacos-xl': 'assets/menu/tacos-cayenne.webp',
+  cayenne: 'assets/menu/sandwich-cayenne.png',
+  supreme: 'assets/menu/sandwich-supreme.png',
+  mega: 'assets/menu/sandwich-mega.png',
+  terminator: 'assets/menu/sandwich-terminator.png',
+  'galette-normale': 'assets/menu/galette.png',
+  'galette-cayenne': 'assets/menu/galette.png',
+  'tacos-m': 'assets/menu/tacos-cayenne.png',
+  'tacos-l': 'assets/menu/tacos-cayenne.png',
+  'tacos-xl': 'assets/menu/tacos-cayenne.png',
 };
 const canonicalCategoryImages = {
-  sandwichs: 'assets/menu/cat-sandwich-cayenne.webp',
-  galette: 'assets/menu/cat-galette.webp',
-  tacos: 'assets/menu/cat-tacos.webp',
+  sandwichs: 'assets/menu/cat-sandwich-cayenne.png',
+  galette: 'assets/menu/cat-galette.png',
+  tacos: 'assets/menu/cat-tacos.png',
 };
 const canonicalDrinkImages = {
   coca: 'assets/menu/coca.png',
@@ -129,7 +129,7 @@ async function assertCanonicalRuntimeImages(page) {
     expect(actual.categories[slug], `canonical category image: ${slug}`).toBe(expected);
   }
   expect(actual.pains['pain-galette'], 'canonical galette pain image')
-    .toBe('assets/menu/galette.webp');
+    .toBe('assets/menu/galette.png');
   for (const [slug, expected] of Object.entries(canonicalDrinkImages)) {
     expect(actual.drinks[slug], `canonical drink image: ${slug}`).toBe(expected);
   }
@@ -235,12 +235,12 @@ async function assertBackendBranch(request) {
 }
 
 test.describe('Phase 3 catalogue visuals', () => {
-  test('mobile server serves the exact canonical WebP bytes', async ({ request }) => {
-    for (const file of canonicalWebpFiles) {
-      const source = fs.readFileSync(path.join(REPO_ROOT, 'public/images/menu/thumbs', file));
+  test('mobile server serves the exact canonical PNG bytes', async ({ request }) => {
+    for (const file of canonicalPngFiles) {
+      const source = fs.readFileSync(path.join(REPO_ROOT, 'public/images/menu', file));
       const response = await request.get(`/assets/menu/${file}`);
-      expect(response.ok(), `canonical WebP response: ${file}`).toBeTruthy();
-      expect(sha(await response.body()), `canonical WebP SHA: ${file}`)
+      expect(response.ok(), `canonical PNG response: ${file}`).toBeTruthy();
+      expect(sha(await response.body()), `canonical PNG SHA: ${file}`)
         .toBe(sha(source));
     }
   });
