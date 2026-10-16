@@ -316,6 +316,10 @@ class LabelController extends AdminController
         if ($openedAt->lt($now->copy()->subDays(7)) || $openedAt->gt($now->copy()->addMinutes(10))) {
             $anomalies[] = 'heure de la tablette incohérente';
         }
+        if ($validated['action'] === 'thawed' && ! empty($validated['storage'])
+            && ! DlcLabelProduct::isValidThawedStorage((string) $validated['storage'])) {
+            $anomalies[] = 'conservation après décongélation imprimée invalide';
+        }
         if ($expiresAt->lte($openedAt)) {
             $anomalies[] = 'DLC antérieure à l’impression';
         } elseif ($product && $product->hasAction($validated['action'])
@@ -445,7 +449,10 @@ class LabelController extends AdminController
             ->when(isset($validated['attempt']), fn ($q) => $q->where('attempts', (int) $validated['attempt']))
             ->update([
                 'status' => $validated['status'],
-                'message' => $validated['message'] ?? null,
+                // la raison d'un « à vérifier » posée à la réservation n'est jamais effacée par le verdict de l'imprimante
+                'message' => $model->anomaly && $model->message
+                    ? mb_substr($model->message.(isset($validated['message']) ? ' · '.$validated['message'] : ''), 0, 300)
+                    : ($validated['message'] ?? null),
                 'labels_count' => $validated['labels_count'] ?? $model->labels_count,
                 'printed_pages' => $validated['printed_pages']
                     ?? ($validated['status'] === LabelPrintLog::STATUS_FAILED ? 0 : ($validated['labels_count'] ?? $model->labels_count ?? 0)),
@@ -482,13 +489,19 @@ class LabelController extends AdminController
         if ($restore) {
             // L'annulation ne s'efface pas : qui l'a faite, quand, et ce qui avait été posé restent écrits au journal.
             $by = $this->firstName($request->user()?->name) ?? '—';
-            $rows = (clone $base)->whereNotNull('discarded_at')->get();
+            $rows = (clone $base)->whereNotNull('discarded_at')->with('discardedBy:id,name')->get();
             foreach ($rows as $row) {
                 $was = ['discarded' => 'jeté', 'used' => 'utilisé', 'cancelled' => 'annulée'][$row->discard_reason ?: 'discarded'] ?? 'jeté';
-                $trace = '« '.$was.' » du '.$row->discarded_at->format('d/m H:i').' annulé le '.now()->format('d/m H:i').' par '.$by;
+                $who = $this->firstName($row->discardedBy?->name);
+                $trace = '« '.$was.' » du '.$row->discarded_at->format('d/m H:i').($who ? ' par '.$who : '')
+                    .' annulé le '.now()->format('d/m H:i').' par '.$by;
+                // la trace est gardée entière : c'est l'ancien message qui est raccourci s'il faut de la place
+                $room = 300 - mb_strlen($trace) - 3;
+                $old = (string) $row->message;
+                $kept = $old === '' ? '' : (mb_strlen($old) > $room ? mb_substr($old, 0, max(0, $room - 1)).'…' : $old).' · ';
                 $row->forceFill([
                     'discarded_at' => null, 'discarded_by' => null, 'discard_reason' => null,
-                    'message' => mb_substr(trim(($row->message ? $row->message.' · ' : '').$trace), 0, 300),
+                    'message' => $kept.$trace,
                 ])->save();
             }
             $count = $rows->count();
@@ -561,7 +574,7 @@ class LabelController extends AdminController
 
         // « déjà cuit plus haut dans la chaîne ? » pour chaque lot (même règle que dlcPrint), en mémoire : une requête
         $graph = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)
-            ->where('created_at', '>=', $now->copy()->subDays(60))
+            ->where('created_at', '>=', $now->copy()->subDays(400))
             ->get(['id', 'action', 'parent_log_id'])->keyBy('id');
         $chainCooked = function (LabelPrintLog $l) use ($graph): bool {
             $seen = [];

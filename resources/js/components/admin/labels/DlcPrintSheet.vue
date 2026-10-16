@@ -106,7 +106,7 @@
  * jamais), produit d'origine déjà étiqueté (la DLC suit la sienne, sauf cuisson — GBPH § 2.7), aperçu fidèle.
  * S'ouvre seulement quand il y a un choix à faire : sinon un appui sur la tuile imprime directement.
  */
-import { DLC_ACTIONS, dlcLabelBlocks, previewExpiry, shelfLifeText, formatDlcDate, storageForAction, storagePhrase } from "../../../helpers/dlcLabelBuilder";
+import { DLC_ACTIONS, dlcLabelBlocks, previewExpiry, shelfLifeText, formatDlcDate, storageForAction, storagePhrase, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
 function isoDay(d) {
@@ -196,7 +196,7 @@ export default {
                 : "Le produit d'origine se garde plus longtemps : la durée habituelle s'applique.";
         },
         /** Décongélation sur une fiche sans conservation après décongélation : on n'imprime rien (aucune valeur de repli). */
-        thawedMissing() { return this.action === "thawed" && !String(this.product.thawed_storage || "").trim(); },
+        thawedMissing() { return this.action === "thawed" && !isValidThawedStorage(this.product.thawed_storage); },
         lastPackText() {
             const o = this.lastOriginal || {};
             const d = o.original_dlc ? o.original_dlc.split("-").reverse().join("/") : "";

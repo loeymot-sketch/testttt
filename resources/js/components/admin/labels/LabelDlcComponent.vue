@@ -110,7 +110,7 @@
                             <ul>
                                 <li v-for="w in watchItems" :key="w.key" :class="`is-${w.level}`" data-testid="dlc-watch-item">
                                     <!-- une seule ligne de gabarit : Vue supprime les espaces entre balises séparées par un saut de ligne -->
-                                    <span class="dlc-watch-body"><span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }}<template v-if="w.lot"> · N° {{ w.lot }}</template>)</span><br />{{ w.text }}<template v-if="w.anomaly"><br /><span class="dlc-watch-anomaly" data-testid="dlc-watch-anomaly">{{ w.message }}</span></template></span>
+                                    <span class="dlc-watch-body"><span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }}<template v-if="w.lot"> · N° {{ w.lot }}</template>)</span><br />{{ w.text }}<template v-if="w.anomaly"><br /><span class="dlc-watch-anomaly" data-testid="dlc-watch-anomaly">{{ w.message }}</span></template><template v-if="w.unconfirmed"><br /><span class="dlc-watch-anomaly" data-testid="dlc-watch-unconfirmed">Impression non confirmée : vérifiez que l'étiquette est sortie.</span></template></span>
                                     <span v-if="w.pending" class="dlc-watch-pending" data-testid="dlc-watch-pending">⏳ hors ligne — journal en attente</span>
                                     <span v-else class="dlc-watch-actions">
                                         <button type="button" class="dlc-btn dlc-btn--small" :class="{ 'dlc-btn--danger': w.level === 'expired' }"
@@ -306,7 +306,7 @@ import labelPrinterMixin from "../../../helpers/labelPrinterMixin";
 import LabelPrinterBar from "./LabelPrinterBar";
 import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
-import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList } from "../../../helpers/dlcLabelBuilder";
+import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
 import { labelResultQueue, labelInflight } from "../../../helpers/labelResultQueue";
 
@@ -584,7 +584,7 @@ export default {
         /** Ce qui manque à la fiche pour imprimer son événement par défaut ('' = rien). */
         ficheIncomplete(p) {
             if (!p.storage) return "Conservation à renseigner";
-            if (p.actions[0] && p.actions[0].key === "thawed" && !p.thawed_storage) return "Conservation après décongélation à renseigner";
+            if (p.actions[0] && p.actions[0].key === "thawed" && !isValidThawedStorage(p.thawed_storage)) return "Conservation après décongélation à renseigner";
             return "";
         },
         apartReason(p) {

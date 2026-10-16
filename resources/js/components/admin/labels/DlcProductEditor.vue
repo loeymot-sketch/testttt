@@ -310,6 +310,9 @@ export default {
             if (a.key === "thawed" && MINCED_OR_FISH.test(what) && maxTemp(this.form.thawed_storage) > 2) {
                 return "Viande hachée ou poisson décongelés : +2 °C au plus (arrêté du 21/12/2009, annexe I).";
             }
+            if (a.key === "thawed" && MEAT_OR_FISH.test(what) && /^\s*ambiante\s*$/iu.test(String(this.form.thawed_storage || ""))) {
+                return "Viande ou poisson décongelés : au froid, jamais à température ambiante (arrêté du 21/12/2009, annexe I).";
+            }
             if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(what)) {
                 return "Viande ou poisson décongelé : 24 h est l'usage courant ; au-delà, votre plan de maîtrise sanitaire doit le prévoir.";
             }

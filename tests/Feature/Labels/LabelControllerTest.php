@@ -1094,9 +1094,21 @@ class LabelControllerTest extends TestCase
             'opened_at' => '2026-10-16T07:00:00Z', 'expires_at' => '2026-10-18T07:00:00Z', // plus longue que la fiche
         ])->assertOk()->json();
         $child = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'parent_log_id' => $odd['log_id']])->assertOk()->json();
+        // le verdict de l'imprimante n'efface pas la raison (revue HACCP tour E : elle était remise à null)
+        $this->postJson("/api/admin/labels/prints/{$child['log_id']}/result", ['status' => 'printed'])->assertOk();
         $row = LabelPrintLog::query()->findOrFail($child['log_id']);
         $this->assertTrue($row->anomaly);
         $this->assertStringContainsString('fait à partir d’un lot imprimé hors ligne à vérifier', $row->message);
+        $watched = collect($this->getJson('/api/admin/labels/watch')->json('data'))->firstWhere('id', $child['log_id']);
+        $this->assertStringContainsString('à vérifier', $watched['message']);
+        // conservation après décongélation imprimée hors ligne invalide (fiche ancienne en cache) : « à vérifier »
+        $thaw = $this->expertProduct(['name' => 'Steak', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);
+        $cold = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-froi0001', 'product_id' => $thaw['id'], 'action' => 'thawed', 'copies' => 1, 'status' => 'printed',
+            'opened_at' => '2026-10-16T07:00:00Z', 'expires_at' => '2026-10-17T07:00:00Z', 'storage' => '≤ −18 °C',
+        ])->assertOk()->json();
+        $this->assertTrue($cold['anomaly']);
+        $this->assertStringContainsString('conservation après décongélation imprimée invalide', LabelPrintLog::query()->findOrFail($cold['log_id'])->message);
         // « produit neuf » déclaré hors ligne : journalisé au retour du réseau
         $new = $this->postJson('/api/admin/labels/dlc/offline', [
             'client_ref' => 'tab-1-neuf0001', 'product_id' => $made['id'], 'action' => 'prepared', 'copies' => 1, 'status' => 'printed',
@@ -1117,7 +1129,15 @@ class LabelControllerTest extends TestCase
         $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'restore' => true])->assertOk()->assertJsonPath('restored', 1);
         $row = LabelPrintLog::query()->findOrFail($r['log_id']);
         $this->assertNull($row->discarded_at);
-        $this->assertStringContainsString('« jeté » du 16/10 10:00 annulé le 16/10 10:05 par Karim', (string) $row->message);
+        $this->assertStringContainsString('« jeté » du 16/10 10:00 par Karim annulé le 16/10 10:05 par Karim', (string) $row->message);
+        // un message déjà long : c'est lui qui est raccourci, jamais la trace
+        $row->forceFill(['message' => str_repeat('x', 295)])->save();
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'reason' => 'used'])->assertOk();
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$r['log_id']], 'restore' => true])->assertOk();
+        $msg = (string) LabelPrintLog::query()->findOrFail($r['log_id'])->message;
+        $this->assertLessThanOrEqual(300, mb_strlen($msg));
+        $this->assertStringEndsWith('annulé le 16/10 10:05 par Karim', $msg);
+        $this->assertStringContainsString('« utilisé » du 16/10 10:05 par Karim', $msg);
 
         // valeur d'après‑décongélation enregistrée avant la règle (congélateur) : refusée à l'impression
         $old = $this->product(['name' => 'Ancien', 'storage' => '≤ −18 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);

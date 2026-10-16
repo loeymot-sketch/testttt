@@ -312,6 +312,11 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         // une étiquette hors ligne pas encore journalisée ne se fond jamais dans un lot du journal
         const kept = watchList([h({ id: 1, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 'q-1', expires_at: '2026-10-16T18:00:00Z', pending: true })], now).items;
         expect(kept.map((x) => [x.ids, x.pending])).toEqual([[[1], false], [['q-1'], true]]);
+        // réservée sans verdict depuis > 10 min (le serveur la renvoie « claimed ») : surveillée, « non confirmée »
+        const claimed = watchList([h({ id: 3, status: 'claimed', expires_at: '2026-10-16T18:00:00Z' })], now).items;
+        expect(claimed.map((x) => [x.id, x.unconfirmed])).toEqual([[3, true]]);
+        // « à vérifier » sans message : la raison générique s'affiche quand même
+        expect(watchList([h({ id: 4, anomaly: true, message: null })], now).items[0].message).toBe('⚠ À vérifier.');
     });
 
     it('au-delà de la limite, le nombre de lots non affichés est rendu (« + N autres »), jamais tu', () => {

@@ -377,6 +377,13 @@ describe('à surveiller', () => {
         expect(w.get('[data-testid="dlc-undo"]').text()).toMatch(/utilisé/);
     });
 
+    it('une étiquette réservée sans verdict (réseau coupé pendant l’impression) est À L’ÉCRAN : « non confirmée »', async () => {
+        setup([P({ id: 1, name: 'Olives' })], { watch: [lot({ id: 12, status: 'claimed', expires_at: new Date(Date.now() + 5 * 3600000).toISOString() })] });
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-watch"]').text()).toMatch(/Olives/);
+        expect(w.get('[data-testid="dlc-watch-unconfirmed"]').text()).toMatch(/Impression non confirmée/);
+    });
+
     it('au-delà de 30 lots, le reste est annoncé (« + N autres »), jamais tu', async () => {
         const rows = Array.from({ length: 33 }, (_, i) => lot({ id: i + 1, product_name: `P${i}`, expires_at: new Date(Date.now() + (i + 1) * 3600000).toISOString() }));
         setup([P({ id: 1 })], { watch: rows });
@@ -530,6 +537,11 @@ describe('éditeur de produit', () => {
 
         const h96 = mount(DlcProductEditor, { props: { product: P({ actions: [{ key: 'prepared', value: 96, unit: 'hours' }] }), settings } });
         expect(h96.get('[data-testid="dlc-ed-warn-prepared"]').text()).toMatch(/96 heures = 4 jours : vérifiez l'unité/);
+    });
+
+    it('viande ou poisson décongelés à température ambiante : signalé', () => {
+        const w = mount(DlcProductEditor, { props: { product: P({ name: 'Poulet', storage: '≤ −18 °C', thawed_storage: 'Ambiante', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] }), settings } });
+        expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/jamais à température ambiante/);
     });
 
     it('viande hachée décongelée au-dessus de +2 °C : signalée (arrêté du 21/12/2009), à confirmer', async () => {

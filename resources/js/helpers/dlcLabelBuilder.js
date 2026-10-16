@@ -269,7 +269,8 @@ export function watchList(rows, nowMs, limit = 30) {
     const seen = new Set();
     const out = [];
     (rows || []).forEach((h) => {
-        if (!['printed', 'unconfirmed'].includes(h.status) || !h.expires_at || !h.product_name || h.discarded_at) return;
+        // « claimed » : réservée sans verdict depuis plus de 10 min (le serveur ne renvoie que celles-là) — peut-être imprimée
+        if (!['printed', 'unconfirmed', 'claimed'].includes(h.status) || !h.expires_at || !h.product_name || h.discarded_at) return;
         const exp = Date.parse(h.expires_at);
         if (!Number.isFinite(exp)) return;
         // une étiquette « à vérifier » (hors ligne) est signalée tout de suite, quelle que soit sa DLC imprimée
@@ -282,7 +283,7 @@ export function watchList(rows, nowMs, limit = 30) {
             lot.copies += Number(h.copies) || 1;
             lot.ids.push(h.id);
             // une seule ligne du lot « à vérifier » suffit à signaler tout le lot
-            if (h.anomaly && !lot.anomaly) { lot.anomaly = true; lot.message = String(h.message || ''); }
+            if (h.anomaly && !lot.anomaly) { lot.anomaly = true; lot.message = String(h.message || '⚠ À vérifier.'); }
             return;
         }
         seen.add(key);
@@ -290,7 +291,8 @@ export function watchList(rows, nowMs, limit = 30) {
             key, id: h.id, ids: [h.id], name: h.product_name, productId: h.dlc_product_id || null, lot: h.lot || '',
             action: h.action || '', expiresMs: exp, copies: Number(h.copies) || 1,
             // étiquette imprimée hors ligne que le serveur signale « à vérifier » (fiche modifiée, heure incohérente…)
-            anomaly: Boolean(h.anomaly), message: h.anomaly ? String(h.message || '') : '',
+            anomaly: Boolean(h.anomaly), message: h.anomaly ? String(h.message || '⚠ À vérifier.') : '',
+            unconfirmed: h.status === 'claimed' || h.status === 'unconfirmed',
             // imprimée hors ligne, pas encore inscrite au journal (file locale)
             pending: Boolean(h.pending),
             ...expiryStatus(exp, nowMs),
