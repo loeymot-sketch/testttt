@@ -7,6 +7,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const homeSource = fs.readFileSync(path.join(root, 'screens-main.jsx'), 'utf8');
 const itemStepsSource = fs.readFileSync(path.join(root, 'screens-item-steps.jsx'), 'utf8');
+const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'data/menu.js'), 'utf8');
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -54,6 +55,10 @@ assert.match(homeSource, /new window\.CustomEvent\('lc:loyalty-changed'/, 'react
 assert.match(homeSource, /data-testid="loyalty-reactivate-btn"[\s\S]*onClick=\{reactivateLoyaltyAccount\}/, 'reactivation control is wired without LC.dev');
 assert.doesNotMatch(homeSource, /loyalty-reactivate-btn[\s\S]*window\.LC\.dev\.setConsent/, 'customer-facing reactivation does not depend on the dev namespace');
 assert.match(homeSource, /data-lc-decoration="loyalty-pattern"[\s\S]*pointerEvents:\s*'none'/, 'loyalty decoration cannot intercept customer clicks');
+assert.match(indexSource, /window\.LC\.storage\.setConsent\('opted_out'\)/, 'opt-out persists consent through public storage');
+assert.match(indexSource, /_replaceAccount\(\{\s*consent_status:\s*'opted_out',[\s\S]*balance:\s*0,[\s\S]*lifetime_earned:\s*0,[\s\S]*lifetime_redeemed:\s*0/, 'opt-out preserves the current zero-point behavior');
+assert.match(indexSource, /new window\.CustomEvent\('lc:loyalty-changed'/, 'opt-out emits the existing loyalty change event');
+assert.doesNotMatch(indexSource, /LC\.dev\.setConsent\('opted_out'\)/, 'opt-out does not depend on the dev namespace');
 assert.match(itemStepsSource, /window\.AllergenBadge/, 'wizard consumes the disclosure-only compatibility alias');
 assert.match(itemStepsSource, /aggregatedAllergens/, 'recap keeps aggregate allergen computation');
 assert.match(itemStepsSource, /selections\.supplementIds[\s\S]*selections\.drinkId/, 'aggregate includes supplements and drinks');

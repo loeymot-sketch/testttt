@@ -10,6 +10,11 @@ test('S11 — RGPD opt-out hides QR + shows reactivation panel', async ({ page }
   // QR is initially visible
   await expect(page.locator('[data-testid="loyalty-qr"]')).toBeVisible();
 
+  // Exercise the shipped customer path: no prototype-only dev helper is
+  // available when the consent control is used.
+  await page.evaluate(() => { delete window.LC.dev; });
+  expect(await page.evaluate(() => typeof window.LC.dev)).toBe('undefined');
+
   // Scroll to opt-out button + click
   await page.locator('[data-testid="loyalty-opt-out-btn"]').scrollIntoViewIfNeeded();
   await page.click('[data-testid="loyalty-opt-out-btn"]');

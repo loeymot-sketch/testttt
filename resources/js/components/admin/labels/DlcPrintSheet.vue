@@ -38,26 +38,32 @@
                                autocomplete="off" placeholder="ex. 2345A" data-testid="dlc-sheet-supplier-lot" />
                     </div>
 
-                    <!-- Produit fait à partir d'un produit déjà étiqueté : la DLC ne repart pas à zéro (sauf cuisson). -->
-                    <div v-if="parentChoices.length" class="sh-parent">
+                    <!-- Produit fait à partir d'un produit déjà étiqueté : la DLC ne repart pas à zéro (sauf cuisson). Pour une fiche
+                         « fait à partir de… », le choix est OBLIGATOIRE : l'origine, ou « produit neuf » dit explicitement. -->
+                    <div v-if="parentChoices.length || product.needs_parent" class="sh-parent" :class="{ 'is-required': mustChooseParent }">
                         <button type="button" class="sh-toggle" :aria-expanded="showParents ? 'true' : 'false'" data-testid="dlc-sheet-parent-toggle"
                                 @click="showParents = !showParents">
-                            {{ showParents ? "▾" : "▸" }} Fait à partir d'un produit déjà étiqueté ?
+                            {{ showParents ? "▾" : "▸" }} {{ product.needs_parent ? "Produit d'origine (obligatoire)" : "Fait à partir d'un produit déjà étiqueté ?" }}
                             <span v-if="parent" class="sh-parent-picked">— {{ parent.name }}</span>
+                            <span v-else-if="parentChoice === 'none'" class="sh-parent-picked">— produit neuf</span>
                         </button>
                         <div v-if="showParents" class="sh-parent-list" role="radiogroup" aria-label="Produit d'origine">
-                            <button type="button" class="sh-parent-item" role="radio" :aria-checked="parentId === null ? 'true' : 'false'"
-                                    :class="{ 'is-on': parentId === null }" data-testid="dlc-sheet-parent-none" @click="parentId = null">
-                                Aucun (produit neuf)
+                            <input v-if="parentChoices.length > 6" v-model="parentQuery" type="search" class="db-field-control sh-parent-search"
+                                   placeholder="🔍 Chercher un lot (nom, N°)…" aria-label="Chercher un lot" data-testid="dlc-sheet-parent-search" />
+                            <button type="button" class="sh-parent-item" role="radio" :aria-checked="parentChoice === 'none' ? 'true' : 'false'"
+                                    :class="{ 'is-on': parentChoice === 'none' }" data-testid="dlc-sheet-parent-none" @click="parentChoice = 'none'">
+                                Aucun : produit neuf (pas fait à partir d'un produit étiqueté)
                             </button>
-                            <button v-for="l in parentChoices" :key="l.id" type="button" class="sh-parent-item" role="radio"
-                                    :aria-checked="parentId === l.id ? 'true' : 'false'" :class="{ 'is-on': parentId === l.id }"
-                                    :data-testid="`dlc-sheet-parent-${l.id}`" @click="parentId = l.id">
+                            <button v-for="l in filteredParents" :key="l.id" type="button" class="sh-parent-item" role="radio"
+                                    :aria-checked="parentChoice === l.id ? 'true' : 'false'" :class="{ 'is-on': parentChoice === l.id }"
+                                    :data-testid="`dlc-sheet-parent-${l.id}`" @click="parentChoice = l.id">
                                 <strong>{{ l.name }}</strong>
-                                <span>{{ l.actionShort }} · jusqu'au {{ l.until }}<template v-if="l.lot"> · N° {{ l.lot }}</template></span>
+                                <span>{{ l.actionShort }} · jusqu'au {{ l.until }}<template v-if="l.lot"> · N° {{ l.lot }}</template><template v-if="l.used"> · bac utilisé à l'instant</template></span>
                             </button>
+                            <p v-if="!filteredParents.length" class="sh-help">{{ parentChoices.length ? "Aucun lot ne correspond." : "Aucun lot en cours dans le journal." }}</p>
                         </div>
-                        <p v-if="parentNote" class="sh-cap" data-testid="dlc-sheet-parent-note">{{ parentNote }}</p>
+                        <p v-if="mustChooseParent" class="sh-cap is-bad" data-testid="dlc-sheet-parent-required">Choisissez le produit d'origine, ou « produit neuf ».</p>
+                        <p v-else-if="parentNote" class="sh-cap" data-testid="dlc-sheet-parent-note">{{ parentNote }}</p>
                     </div>
 
                     <span class="sh-label">Nombre d'étiquettes</span>
@@ -107,8 +113,10 @@ export default {
         serverOffsetMs: { type: Number, default: 0 },
         busy: { type: Boolean, default: false },
         initialAction: { type: String, default: "" },
-        /** Lots en cours (journal) : origines possibles d'une préparation. */
+        /** Lots en cours (journal entier, `GET labels/lots`) : origines possibles d'une préparation. */
         lots: { type: Array, default: () => [] },
+        /** Dernière DLC / lot du fabricant saisis pour ce produit, encore valables : { original_dlc, supplier_lot }. */
+        lastOriginal: { type: Object, default: null },
         timezone: { type: String, default: "Europe/Paris" },
     },
     emits: ["print", "close", "edit"],
@@ -116,15 +124,19 @@ export default {
         const actions = this.product.actions || [];
         const start = actions.find((a) => a.key === this.initialAction) || actions[0] || { key: "opened" };
         return {
-            action: start.key, copies: Number(this.product.default_copies) || 1, original: "", supplierLot: "",
-            parentId: null, showParents: false, returnFocus: null,
+            action: start.key, copies: Number(this.product.default_copies) || 1,
+            // dernière DLC/lot du fabricant connue pour ce produit (même emballage entamé) : proposée, modifiable
+            original: (this.lastOriginal && this.lastOriginal.original_dlc) || "",
+            supplierLot: (this.lastOriginal && this.lastOriginal.supplier_lot) || "",
+            // null = pas encore choisi ; "none" = produit neuf ; sinon l'identifiant du lot d'origine
+            parentChoice: null, parentQuery: "", showParents: Boolean(this.product.needs_parent), returnFocus: null,
         };
     },
     computed: {
         now() { return new Date(Date.now() + this.serverOffsetMs); },
         todayIso() { return isoDay(this.now); },
         current() { return (this.product.actions || []).find((a) => a.key === this.action) || (this.product.actions || [])[0]; },
-        storageText() { return storagePhrase(storageForAction(this.product.storage, this.action)); },
+        storageText() { return storagePhrase(storageForAction(this.product.storage, this.action, this.product.thawed_storage)); },
         originalEnd() {
             if (!this.original) return null;
             const [y, m, d] = this.original.split("-").map(Number);
@@ -136,27 +148,28 @@ export default {
             const nowMs = this.now.getTime();
             const seen = new Set();
             return (this.lots || [])
-                .filter((l) => ["printed", "unconfirmed"].includes(l.status) && !l.discarded_at && l.expires_at
+                .filter((l) => ["printed", "unconfirmed"].includes(l.status) && l.expires_at
+                    && (!l.discarded_at || l.discard_reason === "used")
                     && Date.parse(l.expires_at) > nowMs && l.dlc_product_id !== this.product.id)
                 .sort((a, b) => Date.parse(a.expires_at) - Date.parse(b.expires_at))
                 .filter((l) => { const k = `${l.product_name}|${l.expires_at}`; if (seen.has(k)) return false; seen.add(k); return true; })
-                .slice(0, 12)
                 .map((l) => ({
-                    id: l.id, name: l.product_name, lot: l.lot, expiresAt: l.expires_at,
+                    id: l.id, name: l.product_name, lot: l.lot, expiresAt: l.expires_at, used: Boolean(l.discarded_at),
                     actionShort: (DLC_ACTIONS[l.action] || DLC_ACTIONS.opened).short,
                     until: formatDlcDate(l.expires_at, this.timezone),
                 }));
         },
+        filteredParents() {
+            const q = String(this.parentQuery || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            const norm = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            return this.parentChoices.filter((l) => !q || norm(l.name).includes(q) || norm(l.lot).includes(q)).slice(0, 40);
+        },
+        parentId() { return typeof this.parentChoice === "number" ? this.parentChoice : null; },
         parent() { return this.parentChoices.find((l) => l.id === this.parentId) || null; },
         parentEnd() { return this.parent ? new Date(this.parent.expiresAt) : null; },
+        mustChooseParent() { return Boolean(this.product.needs_parent) && this.parentChoice === null; },
         rawExpiry() { return this.current ? previewExpiry(this.current, this.now) : this.now; },
-        limit() {
-            let e = this.rawExpiry;
-            let source = null;
-            if (this.originalEnd && e > this.originalEnd) { e = this.originalEnd; source = "original"; }
-            if (this.parentEnd && this.action !== "cooked" && e > this.parentEnd) { e = this.parentEnd; source = "parent"; }
-            return { expires: e, source };
-        },
+        limit() { return this.limitFor(this.current); },
         capNote() {
             if (!this.originalEnd) return "";
             if (this.originalExpired) return "DLC du fabricant dépassée : ce produit ne doit pas être utilisé.";
@@ -174,6 +187,7 @@ export default {
         canPrint() {
             if (!this.current) return false;
             if (this.product.ask_original_dlc && (!this.original || this.originalExpired)) return false;
+            if (this.mustChooseParent) return false;
             return true;
         },
         preview() {
@@ -182,8 +196,9 @@ export default {
                 const blocks = dlcLabelBlocks({
                     name: this.product.name, category: this.product.category, note: this.product.note, action: this.current.key,
                     openedAt: this.now.toISOString(), expiresAt: this.limit.expires.toISOString(),
-                    storage: storageForAction(this.product.storage, this.current.key),
-                    allergens: this.product.allergens, capped: Boolean(this.limit.source), capSource: this.limit.source,
+                    storage: storageForAction(this.product.storage, this.current.key, this.product.thawed_storage),
+                    allergens: this.product.allergens, noAllergens: this.product.no_allergens,
+                    capped: Boolean(this.limit.source), capSource: this.limit.source,
                     originalDlc: this.original, supplierLot: this.supplierLot.trim(),
                     parent: this.parent ? { lot: this.parent.lot, name: this.parent.name } : null,
                     by: this.product.print_operator ? "Prénom" : "", lot: "L000000-0000",
@@ -208,7 +223,18 @@ export default {
     methods: {
         labelOf(key) { return (DLC_ACTIONS[key] || DLC_ACTIONS.opened).label; },
         life(a) { return shelfLifeText(a.value, a.unit); },
-        dueText(a) { return formatDlcDate(previewExpiry(a, this.now), this.timezone); },
+        /** La DLC qu'imprimerait cet événement, LIMITÉE comme sur l'aperçu (fabricant, produit d'origine sauf cuisson). */
+        limitFor(a) {
+            let e = a ? previewExpiry(a, this.now) : this.now;
+            let source = null;
+            if (this.originalEnd && e > this.originalEnd) { e = this.originalEnd; source = "original"; }
+            if (this.parentEnd && (!a || a.key !== "cooked") && e > this.parentEnd) { e = this.parentEnd; source = "parent"; }
+            return { expires: e, source };
+        },
+        dueText(a) {
+            const l = this.limitFor(a);
+            return `${formatDlcDate(l.expires, this.timezone)}${l.source ? " (limitée)" : ""}`;
+        },
         trapTab(e) {
             const items = [...this.$el.querySelectorAll("button:not([disabled]), input:not([disabled]), select, [tabindex='0']")];
             if (!items.length) return;
@@ -222,6 +248,7 @@ export default {
             this.$emit("print", {
                 action: this.current.key, copies: this.copies, original_dlc: this.original || null,
                 supplier_lot: this.supplierLot.trim() || null, parent_log_id: this.parentId,
+                parent_none: this.parentChoice === "none" || undefined,
             });
         },
     },
@@ -253,6 +280,8 @@ export default {
 .sh-cap { margin: 6px 0 0; font-size: 14px; color: #92400e; font-weight: 600; }
 .sh-cap.is-bad { color: #b91c1c; }
 .sh-parent { border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 10px 8px; }
+.sh-parent.is-required { border-color: #f59e0b; background: #fffbeb; }
+.sh-parent-search { min-height: 48px; margin-bottom: 4px; }
 .sh-toggle { background: none; border: 0; font-size: 15px; font-weight: 700; color: #334155; min-height: 48px; cursor: pointer; padding: 0; text-align: left; }
 .sh-parent-picked { color: #D63D0B; }
 .sh-parent-list { display: flex; flex-direction: column; gap: 6px; }

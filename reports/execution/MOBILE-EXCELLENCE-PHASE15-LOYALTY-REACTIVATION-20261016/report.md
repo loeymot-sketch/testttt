@@ -51,3 +51,27 @@ Il ne peut donc plus intercepter les clics du contrôle de réactivation.
 `FALLBACK_REASON: le canal codex-extension gpt-5.5-pro n'était pas disponible dans cette session ; exécution locale bornée au plan.`
 
 `VERDICT: PASS (validation ciblée uniquement; pas de clôture de cycle)`
+
+## Remédiation audit cycle 1/5
+
+**REMEDIATION_AUDIT_CYCLE: 1/5**
+
+Le chemin client d’opt-out a été corrigé après l’audit de secours :
+
+- `mobile/index.html` utilise désormais `window.LC.storage.setConsent('opted_out')` ;
+- le compte local reste à zéro et l’historique est vidé comme dans le contrat existant ;
+- `lc:loyalty-changed` est émis pour permettre le rafraîchissement immédiat de l’écran ;
+- aucune politique backend de restauration sous 30 jours n’a été inventée ou modifiée ;
+- l’E2E supprime `window.LC.dev` avant le clic d’opt-out et vérifie ensuite opt-out → réactivation → QR visible.
+
+### Validation de remédiation
+
+- `bash .cursor/hooks/safety-check.sh` — **PASS**
+- `node mobile/tests/mobile-ui-excellence.spec.js` — **PASS**
+- `node mobile/tests/mobile-catalog-visual.spec.js` — **PASS**
+- `npx playwright test tests/mobile-e2e/loyalty-11-opt-out.spec.js --config=tests/mobile-e2e/playwright.config.js` — **PASS**, 1/1
+- `git diff --check -- mobile/index.html mobile/screens-main.jsx mobile/tests/mobile-ui-excellence.spec.js tests/mobile-e2e/loyalty-11-opt-out.spec.js` — **PASS**
+
+**VERDICT: PASS — remédiation ciblée 1/5**
+
+L’audit formel Claude/GPT final, la politique backend 30 jours, Mollie, la suppression de compte native et la préparation App Store restent hors de cette remédiation et ne sont pas déclarés résolus.

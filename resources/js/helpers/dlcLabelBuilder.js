@@ -69,19 +69,49 @@ export const DLC_CATEGORIES = Object.freeze([
 /** Températures de conservation usuelles. */
 export const DLC_STORAGES = Object.freeze(['0 à +3 °C', '0 à +4 °C', '≤ −18 °C', 'Ambiante']);
 
-/** Conservation d'un produit DÉCONGELÉ (miroir de DlcLabelProduct::THAWED_STORAGE). */
+/**
+ * Conservation APRÈS décongélation, au choix par produit (arrêté du 21/12/2009, annexe I : viande hachée +2 °C au plus,
+ * poisson 0 à +2 °C ; un pain se décongèle à température ambiante).
+ */
+export const DLC_THAWED_STORAGES = Object.freeze(['0 à +2 °C', '0 à +3 °C', '0 à +4 °C', 'Ambiante']);
+
+/** Repli d'une fiche ancienne sans conservation après décongélation (miroir de DlcLabelProduct::THAWED_STORAGE). */
 export const THAWED_STORAGE = '0 à +4 °C';
 
-/** « ≤ −18 °C », « -18 », « congélateur », « Ambiante » : tout ce qui n'est pas du froid positif (miroir du serveur). */
-export function isFrozenOrAmbient(storage) {
-    return /[−-]\s*\d|cong[eé]l|ambiant/iu.test(String(storage || ''));
+/**
+ * Froid POSITIF reconnu (liste blanche, miroir de DlcLabelProduct::isChilled) : une température, aucune valeur négative
+ * (« −18 », « –18 », « -18 » en tête ou après une espace, « ≤ », « < », « ( » — « 2-4 °C » reste une plage positive),
+ * ni congélateur, surgelé, froid négatif ou ambiante.
+ */
+export function isChilled(storage) {
+    const s = String(storage || '');
+    if (!/\d/.test(s)) return false;
+    if (/(^|[\s≤<(])[−–-]\s*\d/u.test(s)) return false;
+    return !/cong[eé]l|surgel|n[ée]gati|ambiant/iu.test(s);
 }
 
-/** La conservation à imprimer pour un événement : un produit décongelé ne retourne jamais au congélateur. */
-export function storageForAction(storage, actionKey) {
+/** Tout ce qui n'est pas du froid positif reconnu. */
+export function isFrozenOrAmbient(storage) {
+    return !isChilled(storage);
+}
+
+/**
+ * La conservation à imprimer pour un événement (miroir de DlcLabelProduct::storageFor) : décongélation → celle choisie
+ * pour l'après‑décongélation, sinon la conservation habituelle si c'est du froid positif, sinon le repli.
+ */
+export function storageForAction(storage, actionKey, thawedStorage = '') {
     const s = String(storage || '').trim();
-    if (actionKey === 'thawed' && (!s || isFrozenOrAmbient(s))) return THAWED_STORAGE;
+    if (actionKey === 'thawed') {
+        const t = String(thawedStorage || '').trim();
+        if (t) return t;
+        if (!s || !isChilled(s)) return THAWED_STORAGE;
+    }
     return s;
+}
+
+/** La fiche prévoit la décongélation mais sa conservation habituelle n'est pas du froid positif : il faut la préciser. */
+export function needsThawedStorage(storage, actions) {
+    return (actions || []).some((a) => a && a.key === 'thawed') && !isChilled(storage);
 }
 
 /**
@@ -133,8 +163,9 @@ export function previewExpiry(action, now = new Date()) {
  * du fabricant, numéro de l'étiquette, opérateur.
  *
  * @param {{name:string, openedAt:string, expiresAt:string, action?:string, category?:string, note?:string,
- *          storage?:string, by?:string, lot?:string, allergens?:string[], capped?:boolean, capSource?:string,
- *          originalDlc?:string, supplierLot?:string, parent?:{lot?:string, name?:string}|null, offline?:boolean}} d
+ *          storage?:string, by?:string, lot?:string, allergens?:string[], noAllergens?:boolean, capped?:boolean,
+ *          capSource?:string, originalDlc?:string, supplierLot?:string, parent?:{lot?:string, name?:string}|null,
+ *          offline?:boolean, offlineRef?:string}} d
  */
 export function dlcLabelBlocks(d) {
     const action = DLC_ACTIONS[d.action] || DLC_ACTIONS.opened;
@@ -151,25 +182,31 @@ export function dlcLabelBlocks(d) {
     const showDay = Number.isFinite(spanMs) && spanMs <= 6 * 86400000;
     blocks.push({ t: 'dayline', day: showDay ? exp.day : '', caption: 'À CONSOMMER JUSQU’AU', text: `${exp.date}  ${exp.time}` });
     const orig = d.originalDlc ? String(d.originalDlc).split('-').reverse().join('/') : '';
+    // Le produit d'origine est TOUJOURS nommé : par son N° s'il en a un, sinon par son nom.
+    const parentRef = d.parent ? (d.parent.lot ? `N° ${d.parent.lot}` : String(d.parent.name || '').trim()) : '';
     if (d.capped) {
         const limit = d.capSource === 'parent'
-            ? `Limitée à la DLC du produit d’origine${d.parent && d.parent.lot ? ` (N° ${d.parent.lot})` : ''}`
+            ? `Limitée à la DLC du produit d’origine${parentRef ? ` (${parentRef})` : ''}`
             : `Limitée à la DLC du fabricant${orig ? ` (${orig})` : ''}`;
         blocks.push({ t: 'line', text: limit, size: 'sm' });
     }
     const allergens = allergenLabels(d.allergens);
     if (allergens.length) blocks.push({ t: 'line', text: allergens.join(', '), prefix: 'ALLERGÈNES : ', size: 'md', box: true });
+    // « aucun » DÉCLARÉ sur la fiche — distinct d'une fiche où rien n'est renseigné (alors : aucune ligne).
+    else if (d.noAllergens) blocks.push({ t: 'line', text: 'aucun des 14 majeurs', prefix: 'ALLERGÈNES : ', size: 'sm', box: true });
     const keep = storagePhrase(d.storage);
     if (keep) blocks.push({ t: 'line', text: keep, size: 'sm' });
     // Traçabilité amont : ce qui figure sur l'emballage d'origine (la DLC du fabricant figure même quand elle ne limite pas).
     const upstream = [
         orig && !(d.capped && d.capSource !== 'parent') ? `DLC fabricant ${orig}` : '',
         d.supplierLot ? `Lot fab. ${d.supplierLot}` : '',
-        d.parent && !d.capped ? `Issu de ${d.parent.name || ''}${d.parent.lot ? ` N° ${d.parent.lot}` : ''}`.trim() : '',
+        // l'origine reste écrite même quand c'est la DLC du FABRICANT qui limite (sinon le lien serait perdu)
+        d.parent && d.capSource !== 'parent' ? `Issu de ${d.parent.name || ''}${d.parent.lot ? ` N° ${d.parent.lot}` : ''}`.trim() : '',
     ].filter(Boolean).join(' · ');
     if (upstream) blocks.push({ t: 'sub', text: upstream });
     const foot = [
-        d.offline ? 'Imprimée hors ligne' : (d.lot ? `N° ${d.lot}` : ''),
+        // hors ligne : la référence de la tablette relie ce papier à sa ligne de journal, inscrite au retour du réseau
+        d.offline ? `Hors ligne${d.offlineRef ? ` · réf. ${d.offlineRef}` : ''}` : (d.lot ? `N° ${d.lot}` : ''),
         d.by ? `Par ${d.by}` : '',
     ].filter(Boolean).join(' · ');
     if (foot) blocks.push({ t: 'sub', text: foot });
@@ -217,7 +254,7 @@ export function expiryStatus(expiresMs, nowMs) {
 /**
  * Les DLC à surveiller, d'après la liste du serveur (`/labels/watch` : imprimées, ni jetées ni utilisées, à échoir dans les
  * 72 h ou échues depuis moins de 7 jours), regroupées par lot (même produit, même échéance), les plus pressées d'abord.
- * Un lot échu reste affiché tant que personne ne l'a sorti.
+ * Un lot échu reste affiché tant que personne ne l'a sorti, 7 jours au plus ; au-delà il ne vit plus qu'au journal.
  * @returns {{items: Array<object>, more: number}} `more` = lots non affichés (au-delà de `limit`)
  */
 export function watchList(rows, nowMs, limit = 30) {
@@ -239,7 +276,10 @@ export function watchList(rows, nowMs, limit = 30) {
         seen.add(key);
         out.push({
             key, id: h.id, ids: [h.id], name: h.product_name, productId: h.dlc_product_id || null, lot: h.lot || '',
-            action: h.action || '', expiresMs: exp, copies: Number(h.copies) || 1, ...expiryStatus(exp, nowMs),
+            action: h.action || '', expiresMs: exp, copies: Number(h.copies) || 1,
+            // étiquette imprimée hors ligne que le serveur signale « à vérifier » (fiche modifiée, heure incohérente…)
+            anomaly: Boolean(h.anomaly), message: h.anomaly ? String(h.message || '') : '',
+            ...expiryStatus(exp, nowMs),
         });
     });
     const sorted = out.sort((a, b) => a.expiresMs - b.expiresMs);

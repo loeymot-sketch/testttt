@@ -397,3 +397,4 @@ PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly mar
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next
+EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)

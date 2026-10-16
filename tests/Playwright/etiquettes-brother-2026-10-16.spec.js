@@ -337,7 +337,11 @@ test('3 · DLC : fiche produit complète, un appui imprime l’événement, la D
     await page.getByTestId('dlc-ed-unit-opened').selectOption('hours');
     await page.getByTestId('dlc-ed-action-thawed').check();
     await page.getByTestId('dlc-ed-value-thawed').fill('3');
-    await page.getByTestId('dlc-ed-storage-2').click(); // ≤ −18 °C : l'étiquette de décongélation dira « 0 à +4 °C »
+    await page.getByTestId('dlc-ed-storage-2').click(); // ≤ −18 °C : surgelé
+    // décongélation d'un surgelé : la conservation APRÈS décongélation est obligatoire (jamais une valeur imposée)
+    await page.getByTestId('dlc-ed-save').click();
+    await expect(page.getByTestId('dlc-ed-error')).toContainText('conservation après décongélation');
+    await page.getByTestId('dlc-ed-thawed-2').click(); // 0 à +4 °C
     await expect(page.getByTestId('dlc-ed-thawed-note')).toContainText('NE PAS RECONGELER');
     await page.getByTestId('dlc-ed-ask-original').uncheck();
     await page.getByTestId('dlc-ed-save').click();

@@ -148,12 +148,14 @@ describe('écran DLC — un par un', () => {
         await flushPromises();
         expect(h.printBlocks).toHaveBeenCalledTimes(1);
         const blocks = JSON.stringify(h.printBlocks.mock.calls[0][1][0]);
-        expect(blocks).toContain('Imprimée hors ligne');
+        expect(blocks).toMatch(/Hors ligne · réf\. [A-Z0-9]{6}/);
         expect(blocks).toContain('NE PAS RECONGELER');
         expect(blocks).toContain('À conserver entre 0 et +4 °C'); // jamais « −18 » sur une étiquette de décongélation
         const journal = posts.find(([url]) => url === 'admin/labels/dlc/offline');
         expect(journal).toBeTruthy();
-        expect(journal[1]).toMatchObject({ product_id: 1, action: 'thawed', copies: 1, status: 'printed' });
+        expect(journal[1]).toMatchObject({ product_id: 1, product_name: 'Oignons émincés', action: 'thawed', copies: 1, status: 'printed', storage: '0 à +4 °C' });
+        // la référence imprimée est celle de la ligne de journal
+        expect(blocks).toContain(`réf. ${journal[1].client_ref.slice(-6).toUpperCase()}`);
         expect(journal[1].client_ref).toMatch(/^t[a-z0-9]+-[a-z0-9]+$/);
         expect(w.get('[data-testid="dlc-last"]').text()).toMatch(/inscrite au journal dès le retour du réseau/);
     });
@@ -163,6 +165,11 @@ describe('écran DLC — un par un', () => {
         const w = await mountScreen();
         await w.get('[data-testid="dlc-product-1"]').trigger('click');
         await flushPromises();
+        // la notice vient d'apparaître sous le doigt : un appui immédiat est ignoré (il visait ce qui était dessous)
+        await w.get('[data-testid="dlc-last-cancel"]').trigger('click');
+        await flushPromises();
+        expect(posts.find(([url]) => url === 'admin/labels/prints/discard')).toBeUndefined();
+        w.vm.toastShownAt -= 1000;
         await w.get('[data-testid="dlc-last-cancel"]').trigger('click');
         await flushPromises();
         expect(posts.find(([url]) => url === 'admin/labels/prints/discard')[1]).toEqual({ ids: [101], reason: 'cancelled' });
@@ -243,21 +250,55 @@ describe('écran DLC — tout ensemble', () => {
         expect(prints.map((p) => [p.product_id, p.action])).toEqual([[1, 'thawed']]);
     });
 
-    it('un produit exigeant la DLC du fabricant n’entre jamais dans un lot : signalé « à part », un appui ouvre sa fiche', async () => {
+    it('« DLC du fabricant » dans la sélection : une seule étape demande les dates, puis TOUT part ensemble', async () => {
+        const tomorrow = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris' }).format(new Date(Date.now() + 86400000));
         setup([P({ id: 1 }), P({ id: 2, name: 'Crème', ask_original_dlc: true })]);
         const w = await mountScreen();
         await w.get('[data-testid="dlc-mode-list"]').trigger('click');
-        expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (1)');
-        expect(w.get('[data-testid="dlc-apart-hint"]').text()).toMatch(/1 produit s'imprime à part/);
-        expect(w.get('[data-testid="dlc-product-2"]').text()).toMatch(/À part \(DLC fabricant\)/);
+        expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (2)');
         await w.get('[data-testid="dlc-select-all"]').trigger('click');
-        // le panier annonce exactement ce qui partira
-        expect(w.get('[data-testid="dlc-basket-total"]').text()).toBe('1 étiquette');
+        expect(w.get('[data-testid="dlc-basket-total"]').text()).toBe('2 étiquettes');
         await w.get('[data-testid="dlc-basket-print"]').trigger('click');
         await flushPromises();
-        expect(prints.map((p) => p.product_id)).toEqual([1]);
+        // rien ne part avant les dates
+        expect(prints).toEqual([]);
+        expect(w.get('[data-testid="dlc-originals"]').text()).toMatch(/Crème/);
+        expect(w.get('[data-testid="dlc-originals-print"]').attributes('disabled')).toBeDefined();
+        await w.get('[data-testid="dlc-originals-date-2"]').setValue(tomorrow);
+        await w.get('[data-testid="dlc-originals-lot-2"]').setValue('2345A');
+        await w.get('[data-testid="dlc-originals-print"]').trigger('click');
+        await flushPromises();
+        const byId = Object.fromEntries(prints.map((p) => [p.product_id, [p.original_dlc, p.supplier_lot]]));
+        expect(byId).toEqual({ 1: [undefined, undefined], 2: [tomorrow, '2345A'] });
+        expect(w.find('[data-testid="dlc-originals"]').exists()).toBe(false);
+    });
+
+    it('« fait à partir d’un produit étiqueté » : jamais dans un lot, un appui ouvre sa fiche ; l’origine (ou « produit neuf ») est obligatoire', async () => {
+        setup([P({ id: 1 }), P({ id: 2, name: 'Poulet mariné', needs_parent: true })]);
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-mode-list"]').trigger('click');
+        expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (1)');
+        expect(w.get('[data-testid="dlc-product-2"]').text()).toMatch(/À part \(produit d'origine\)/);
+        await w.get('[data-testid="dlc-mode-single"]').trigger('click');
         await w.get('[data-testid="dlc-product-2"]').trigger('click');
-        expect(w.find('[data-testid="dlc-sheet"]').exists()).toBe(true);
+        await flushPromises();
+        expect(prints).toEqual([]);
+        expect(w.get('[data-testid="dlc-sheet-parent-required"]').exists()).toBe(true);
+        expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeDefined();
+        await w.get('[data-testid="dlc-sheet-parent-none"]').trigger('click');
+        await w.get('[data-testid="dlc-sheet-print"]').trigger('click');
+        await flushPromises();
+        expect(prints).toEqual([expect.objectContaining({ product_id: 2, parent_none: true })]);
+    });
+
+    it('fiche sans conservation : jamais imprimée à l’aveugle, l’appui ouvre l’éditeur avec la raison', async () => {
+        setup([P({ id: 1, storage: null })]);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-product-1"]').text()).toMatch(/Conservation à renseigner/);
+        await w.get('[data-testid="dlc-product-1"]').trigger('click');
+        await flushPromises();
+        expect(prints).toEqual([]);
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/Renseignez la conservation/);
     });
 
     it('− retire une étiquette ; à zéro le produit sort de la sélection', async () => {
@@ -270,6 +311,26 @@ describe('écran DLC — tout ensemble', () => {
         await w.get('[data-testid="dlc-minus-1"]').trigger('click');
         await w.get('[data-testid="dlc-minus-1"]').trigger('click');
         expect(w.find('[data-testid="dlc-basket"]').exists()).toBe(false);
+    });
+});
+
+describe('écran laissé ouvert', () => {
+    it('l’heure avance : un lot qui atteint sa DLC passe « expiré » sans recharger, et la surveillance se relit', async () => {
+        vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+        const lot = { id: 9, dlc_product_id: 1, status: 'printed', product_name: 'Oignons émincés', copies: 1, expires_at: new Date(Date.now() + 10 * 60000).toISOString() };
+        setup([P({ id: 1 })], { watch: [lot] });
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-watch"]').text()).toMatch(/expire dans 10 min/);
+        expect(w.find('[data-testid="dlc-watch-chip"]').exists()).toBe(false);
+        const watchCalls = () => h.axios.get.mock.calls.filter(([u]) => u === 'admin/labels/watch').length;
+        const before = watchCalls();
+        vi.advanceTimersByTime(11 * 60000);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch"]').text()).toMatch(/EXPIRÉE depuis/);
+        expect(w.get('[data-testid="dlc-watch-chip"]').text()).toMatch(/1 lot expiré/);
+        expect(w.get('[data-testid="dlc-product-1"]').text()).toMatch(/Lot expiré/);
+        expect(watchCalls(), 'la surveillance est relue (lots imprimés sur une autre tablette)').toBeGreaterThan(before);
+        vi.useRealTimers();
     });
 });
 
@@ -317,6 +378,8 @@ describe('fiche d’impression', () => {
         await w.get('[data-testid="dlc-sheet-original"]').setValue(iso);
         expect(w.get('[data-testid="dlc-sheet-cap-note"]').text()).toMatch(/limitée à celle du fabricant/);
         await w.get('[data-testid="dlc-sheet-supplier-lot"]').setValue(' 2345A ');
+        // la carte de l'événement annonce la même DLC (limitée) que l'aperçu
+        expect(w.get('[data-testid="dlc-sheet-action-opened"]').text()).toMatch(/\(limitée\)/);
         await w.get('[data-testid="dlc-sheet-print"]').trigger('click');
         expect(w.emitted('print')[0][0]).toEqual({ action: 'opened', copies: 1, original_dlc: iso, supplier_lot: '2345A', parent_log_id: null });
     });
@@ -339,6 +402,18 @@ describe('fiche d’impression', () => {
         expect(w.get('[data-testid="dlc-sheet-parent-note"]').text()).toMatch(/Cuisson : nouvelle durée/);
         await w.get('[data-testid="dlc-sheet-print"]').trigger('click');
         expect(w.emitted('print')[0][0]).toMatchObject({ action: 'cooked', parent_log_id: 55 });
+    });
+
+    it('la dernière DLC / lot du fabricant connus pour ce produit sont proposés (même emballage entamé)', () => {
+        const w = mount(DlcPrintSheet, { props: { product: P({ ask_original_dlc: true }), settings, lastOriginal: { original_dlc: '2099-12-31', supplier_lot: 'LOT9' } } });
+        expect(w.get('[data-testid="dlc-sheet-original"]').element.value).toBe('2099-12-31');
+        expect(w.get('[data-testid="dlc-sheet-supplier-lot"]').element.value).toBe('LOT9');
+        expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeUndefined();
+    });
+
+    it('décongélation : la conservation APRÈS décongélation de la fiche est celle annoncée', () => {
+        const w = mountSheet({ storage: '≤ −18 °C', thawed_storage: '0 à +2 °C', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] });
+        expect(w.get('[data-testid="dlc-sheet-thawed-note"]').text()).toMatch(/À conserver entre 0 et \+2 °C/);
     });
 
     it('décongélation : la fiche rappelle « NE PAS RECONGELER » et la conservation au froid positif', () => {
@@ -364,6 +439,11 @@ describe('éditeur de produit', () => {
         expect(w.emitted('save')).toBeUndefined();
         expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/température de conservation/);
         await w.get('[data-testid="dlc-ed-storage-1"]').trigger('click');
+        // viande décongelée 3 jours : au-delà de l'usage courant (24 h), à confirmer
+        expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/24 h est l'usage courant/);
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.emitted('save')).toBeUndefined();
+        await w.get('[data-testid="dlc-ed-durations-ok"]').setValue(true);
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
         const payload = w.emitted('save')[0][0];
         expect(payload).toMatchObject({
@@ -395,9 +475,25 @@ describe('éditeur de produit', () => {
         expect(h96.get('[data-testid="dlc-ed-warn-prepared"]').text()).toMatch(/96 heures = 4 jours : vérifiez l'unité/);
     });
 
-    it('décongélation d’un produit congelé : l’éditeur annonce ce que dira l’étiquette', () => {
-        const w = mount(DlcProductEditor, { props: { product: P({ storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 3, unit: 'days' }] }), settings } });
-        expect(w.get('[data-testid="dlc-ed-thawed-note"]').text()).toMatch(/À conserver entre 0 et \+4 °C.*NE PAS RECONGELER/);
+    it('décongélation d’un produit surgelé : la conservation APRÈS décongélation est obligatoire, et annoncée', async () => {
+        const w = mount(DlcProductEditor, { props: { product: P({ name: 'Pains burger', storage: '≤ −18 °C', actions: [{ key: 'thawed', value: 48, unit: 'hours' }] }), settings } });
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.emitted('save')).toBeUndefined();
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toMatch(/conservation après décongélation/);
+        await w.get('[data-testid="dlc-ed-thawed-3"]').trigger('click'); // Ambiante (un pain)
+        expect(w.get('[data-testid="dlc-ed-thawed-note"]').text()).toMatch(/À conserver à température ambiante.*NE PAS RECONGELER/);
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.emitted('save')[0][0]).toMatchObject({ storage: '≤ −18 °C', thawed_storage: 'Ambiante' });
+    });
+
+    it('« aucun allergène » et « fait à partir d’un produit étiqueté » partent au serveur ; un allergène coché annule « aucun »', async () => {
+        const w = mount(DlcProductEditor, { props: { product: P({}), settings } });
+        await w.get('[data-testid="dlc-ed-no-allergens"]').setValue(true);
+        await w.get('[data-testid="dlc-ed-needs-parent"]').setValue(true);
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.emitted('save')[0][0]).toMatchObject({ no_allergens: true, needs_parent: true, allergens: [] });
+        await w.get('[data-testid="dlc-ed-allergen-lait"]').trigger('click');
+        expect(w.get('[data-testid="dlc-ed-no-allergens"]').element.checked).toBe(false);
     });
 
     it('à l’édition : reprend les événements existants, en tête, dans leur ordre', () => {

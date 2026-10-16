@@ -64,11 +64,27 @@
                             <input v-model="form.storage" type="text" maxlength="60" class="db-field-control ed-storage" placeholder="Autre…"
                                    aria-label="Conservation (autre)" data-testid="dlc-ed-storage" />
                         </div>
-                        <p v-if="thawedNote" class="ed-note" data-testid="dlc-ed-thawed-note">{{ thawedNote }}</p>
+                        <!-- Après décongélation : jamais une valeur unique imposée (viande hachée +2 °C, poisson 0/+2 °C, pain ambiante). -->
+                        <div v-if="thawingEnabled" class="ed-thawed" data-testid="dlc-ed-thawed">
+                            <span class="ed-label">Après décongélation<span v-if="thawedRequired" class="ed-required"> (obligatoire : ce produit n'est pas conservé au froid positif)</span></span>
+                            <div class="ed-chips">
+                                <button v-for="(st, i) in thawedChoices" :key="st" type="button" class="ed-chip"
+                                        :class="{ 'is-on': form.thawed_storage === st }" :aria-pressed="form.thawed_storage === st ? 'true' : 'false'"
+                                        :data-testid="`dlc-ed-thawed-${i}`" @click="form.thawed_storage = form.thawed_storage === st ? '' : st">{{ st }}</button>
+                                <input v-model="form.thawed_storage" type="text" maxlength="60" class="db-field-control ed-storage" placeholder="Autre…"
+                                       aria-label="Conservation après décongélation (autre)" data-testid="dlc-ed-thawed-storage" />
+                            </div>
+                            <p class="ed-note" data-testid="dlc-ed-thawed-note">L'étiquette de décongélation indiquera « {{ thawedPrinted }} » et « NE PAS RECONGELER ».
+                                Viande hachée : 0 à +2 °C ; poisson : 0 à +2 °C ; pain : ambiante.</p>
+                        </div>
                     </fieldset>
 
                     <fieldset class="ed-fieldset">
                         <legend>Allergènes imprimés sur l'étiquette</legend>
+                        <label class="ed-switch ed-switch--inline">
+                            <input v-model="form.no_allergens" type="checkbox" data-testid="dlc-ed-no-allergens" @change="onNoAllergens" />
+                            <span><b>Aucun</b> des 14 allergènes réglementaires (imprimé « ALLERGÈNES : aucun des 14 majeurs »)</span>
+                        </label>
                         <div class="ed-chips">
                             <button v-for="[code, label] in allergenChoices" :key="code" type="button" class="ed-chip ed-chip--allergen"
                                     :class="{ 'is-on': form.allergens.includes(code) }" :aria-pressed="form.allergens.includes(code) ? 'true' : 'false'"
@@ -98,6 +114,11 @@
                             (règle du plan de maîtrise sanitaire). Recommandé pour tout produit entamé dans son emballage d'origine.</span>
                     </label>
                     <label class="ed-switch">
+                        <input v-model="form.needs_parent" type="checkbox" data-testid="dlc-ed-needs-parent" />
+                        <span><b>Fait à partir d'un produit déjà étiqueté</b> (marinade, sauce, préparation…) : chaque impression demande le
+                            produit d'origine — la DLC ne repart pas à zéro (elle suit la sienne, sauf cuisson) — ou « produit neuf ».</span>
+                    </label>
+                    <label class="ed-switch">
                         <input v-model="form.print_operator" type="checkbox" data-testid="dlc-ed-operator" />
                         <span>Imprimer le prénom de la personne qui étiquette</span>
                     </label>
@@ -117,7 +138,7 @@
                     {{ confirmDelete ? "Confirmer la suppression" : "Supprimer" }}
                 </button>
                 <span class="ed-spacer"></span>
-                <span v-if="shownError" class="ed-foot-error" aria-hidden="true">⚠ {{ shortError }}</span>
+                <span v-if="shownError" class="ed-foot-error" aria-hidden="true" data-testid="dlc-ed-foot-error">⚠ {{ shownError }}</span>
                 <button type="button" class="ed-btn" @click="$emit('cancel')">Annuler</button>
                 <button type="button" class="ed-btn ed-btn--primary" :disabled="saving" data-testid="dlc-ed-save" @click="submit">
                     {{ saving ? "Enregistrement…" : form.id ? "Enregistrer" : "Ajouter le produit" }}
@@ -138,14 +159,16 @@
  * « 96 heures » qui ressemble à une erreur d'unité) est signalée et doit être confirmée avant d'enregistrer.
  */
 import {
-    DLC_ACTIONS, DLC_ACTION_KEYS, DLC_ALLERGENS, DLC_CATEGORIES, DLC_STORAGES,
-    dlcLabelBlocks, previewExpiry, shelfLifeText, storageForAction, storagePhrase, isFrozenOrAmbient,
+    DLC_ACTIONS, DLC_ACTION_KEYS, DLC_ALLERGENS, DLC_CATEGORIES, DLC_STORAGES, DLC_THAWED_STORAGES,
+    dlcLabelBlocks, previewExpiry, shelfLifeText, storageForAction, storagePhrase, isFrozenOrAmbient, needsThawedStorage,
 } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
 const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"] };
 /** Événements où le produit est encore dans son emballage d'origine : la DLC du fabricant est demandée par défaut. */
 const PACKAGED = ["opened", "vacuum"];
+/** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). */
+const MEAT_OR_FISH = /viande|volaille|poulet|b(?:oe|œ)uf|steak|hach|kebab|poisson|saumon|thon|crevette|fruits de mer/iu;
 
 function hoursOf(a) { return a.unit === "days" ? Number(a.value) * 24 : Number(a.value); }
 
@@ -173,8 +196,11 @@ export default {
                 name: p.name || "",
                 category: p.category || "",
                 storage: p.storage || "",
+                thawed_storage: p.thawed_storage || "",
                 note: p.note || "",
                 allergens: Array.isArray(p.allergens) ? [...p.allergens] : [],
+                no_allergens: Boolean(p.no_allergens),
+                needs_parent: Boolean(p.needs_parent),
                 ask_original_dlc: askDefault,
                 print_operator: p.print_operator === undefined ? true : Boolean(p.print_operator),
                 default_copies: Number(p.default_copies) || 1,
@@ -200,6 +226,10 @@ export default {
             return [...new Set([...DLC_CATEGORIES, ...this.categories.filter(Boolean)])];
         },
         storageChoices() { return DLC_STORAGES; },
+        thawedChoices() { return DLC_THAWED_STORAGES; },
+        thawingEnabled() { return this.actionRows.some((a) => a.key === "thawed" && a.enabled); },
+        thawedRequired() { return needsThawedStorage(this.form.storage, this.enabledActions) && !String(this.form.thawed_storage || "").trim(); },
+        thawedPrinted() { return storagePhrase(storageForAction(this.form.storage, "thawed", this.form.thawed_storage)); },
         allergenChoices() { return DLC_ALLERGENS; },
         /** Les événements cochés, l'événement « par défaut » en premier (c'est lui qu'imprime un appui). */
         enabledActions() {
@@ -211,19 +241,8 @@ export default {
         warnings() {
             return this.actionRows.filter((a) => a.enabled && this.warningOf(a)).map((a) => a.key);
         },
-        thawedNote() {
-            const thawed = this.actionRows.find((a) => a.key === "thawed" && a.enabled);
-            if (!thawed) return "";
-            const printed = storagePhrase(storageForAction(this.form.storage, "thawed"));
-            return this.form.storage && !isFrozenOrAmbient(this.form.storage)
-                ? ""
-                : `Après décongélation, l'étiquette indiquera « ${printed} » et « NE PAS RECONGELER ».`;
-        },
         shownError() { return this.localError || this.error; },
-        shortError() {
-            const t = String(this.shownError || "");
-            return t.length > 60 ? `${t.slice(0, 57)}…` : t;
-        },
+
         preview() {
             const first = this.enabledActions[0];
             if (!String(this.form.name).trim() || !first) return "";
@@ -232,7 +251,8 @@ export default {
                 const blocks = dlcLabelBlocks({
                     name: this.form.name, category: this.form.category, note: this.form.note, action: first.key,
                     openedAt: now.toISOString(), expiresAt: previewExpiry(first, now).toISOString(),
-                    storage: storageForAction(this.form.storage, first.key), allergens: this.form.allergens,
+                    storage: storageForAction(this.form.storage, first.key, this.form.thawed_storage), allergens: this.form.allergens,
+                    noAllergens: this.form.no_allergens,
                     by: this.form.print_operator ? "Prénom" : "", lot: "L000000-0000",
                 });
                 return previewUrls([blocks], this.settings).urls[0] || "";
@@ -269,6 +289,9 @@ export default {
             if (!(v >= 1)) return "";
             const h = hoursOf(a);
             if (a.unit === "hours" && v > 72) return `${v} heures = ${Math.round(v / 24)} jours : vérifiez l'unité.`;
+            if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(`${this.form.name} ${this.form.category}`)) {
+                return "Viande ou poisson décongelé : 24 h est l'usage courant ; au-delà, votre plan de maîtrise sanitaire doit le prévoir.";
+            }
             if (a.key === "thawed" && h > 72) return "Un produit décongelé se garde en général 3 jours au plus.";
             const cold = !this.form.storage || !isFrozenOrAmbient(this.form.storage) || a.key === "thawed";
             if (cold && h > 7 * 24) return "Plus de 7 jours au froid positif : durée inhabituelle.";
@@ -282,10 +305,13 @@ export default {
                 if (next) this.defaultKey = next.key;
             }
         },
+        onNoAllergens() {
+            if (this.form.no_allergens) this.form.allergens = [];
+        },
         toggleAllergen(code) {
             const i = this.form.allergens.indexOf(code);
             if (i >= 0) this.form.allergens.splice(i, 1);
-            else this.form.allergens.push(code);
+            else { this.form.allergens.push(code); this.form.no_allergens = false; }
         },
         askDelete() {
             if (!this.confirmDelete) { this.confirmDelete = true; setTimeout(() => { this.confirmDelete = false; }, 4000); return; }
@@ -305,6 +331,10 @@ export default {
                 this.localError = "Indiquez la température de conservation (elle est imprimée sur l’étiquette).";
                 return;
             }
+            if (this.thawedRequired) {
+                this.localError = "Indiquez la conservation après décongélation (ex. 0 à +2 °C pour une viande hachée).";
+                return;
+            }
             if (this.warnings.length && !this.durationsChecked) {
                 this.localError = "Durée inhabituelle : corrigez-la, ou cochez « Durées vérifiées ».";
                 return;
@@ -314,8 +344,11 @@ export default {
                 name: this.form.name,
                 category: this.form.category || null,
                 storage: this.form.storage.trim(),
+                thawed_storage: this.thawingEnabled ? (String(this.form.thawed_storage || "").trim() || null) : null,
                 note: this.form.note || null,
                 allergens: this.form.allergens,
+                no_allergens: this.form.allergens.length ? false : this.form.no_allergens,
+                needs_parent: this.form.needs_parent,
                 actions: this.enabledActions,
                 ask_original_dlc: this.form.ask_original_dlc,
                 print_operator: this.form.print_operator,
@@ -361,6 +394,8 @@ export default {
 .ed-action-hint { color: #64748b; font-size: 14px; }
 .ed-action-warn { flex-basis: 100%; color: #92400e; font-size: 14px; font-weight: 700; padding-left: 36px; }
 .ed-switch--warn { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.ed-switch--inline { margin-bottom: 8px; }
+.ed-thawed { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
 .ed-note { margin: 8px 0 0; font-size: 14px; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; }
 .ed-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ed-chip { min-height: 48px; padding: 0 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
@@ -376,7 +411,7 @@ export default {
 .ed-preview img { width: 100%; border: 1px solid #94a3b8; background: #fff; image-rendering: pixelated; display: block; }
 .ed-foot { display: flex; gap: 10px; align-items: center; padding: 12px 20px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; flex: 0 0 auto; }
 .ed-spacer { flex: 1 1 auto; }
-.ed-foot-error { color: #b91c1c; font-weight: 700; font-size: 14px; max-width: 360px; }
+.ed-foot-error { color: #b91c1c; font-weight: 700; font-size: 14px; flex: 1 1 260px; min-width: 0; }
 .ed-btn { min-height: 52px; padding: 0 20px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
 .ed-btn--primary { background: #D63D0B; border-color: #D63D0B; color: #fff; }
 .ed-btn--primary:disabled { background: #e2e8f0; border-color: #cbd5e1; color: #475569; }

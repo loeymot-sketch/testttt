@@ -193,6 +193,17 @@ describe('étiquette DLC', () => {
         expect(storageForAction('', 'thawed')).toBe('0 à +4 °C');
         expect(storageForAction('0 à +3 °C', 'thawed')).toBe('0 à +3 °C');
         expect(storageForAction('≤ −18 °C', 'opened')).toBe('≤ −18 °C');
+        // « 2-4 °C » est une plage positive (le tiret n'est pas un signe moins) ; « 0 à -2 °C » ne l'est pas
+        expect(storageForAction('2-4 °C', 'thawed')).toBe('2-4 °C');
+        expect(storagePhrase('2-4 °C')).toBe('À conserver entre 2 et 4 °C');
+        expect(storageForAction('0 à -2 °C', 'thawed')).toBe('0 à +4 °C');
+        expect(storageForAction('Congélateur', 'thawed')).toBe('0 à +4 °C');
+        // conservation APRÈS décongélation choisie sur la fiche : elle prime (viande hachée, pain…)
+        expect(storageForAction('≤ −18 °C', 'thawed', '0 à +2 °C')).toBe('0 à +2 °C');
+        expect(storageForAction('≤ −18 °C', 'thawed', 'Ambiante')).toBe('Ambiante');
+        expect(storageForAction('≤ −18 °C', 'opened', '0 à +2 °C')).toBe('≤ −18 °C');
+        // liste blanche du froid positif, comme le serveur : tiret demi-cadratin, « surgelé », « froid négatif »
+        ['–18 °C', 'Surgelé', 'Froid négatif', 'Chambre froide'].forEach((t) => expect(storageForAction(t, 'thawed')).toBe('0 à +4 °C'));
     });
 
     it('DLC lointaine (plus de 6 jours) : pas de pastille du jour, le même jour reviendrait', () => {
@@ -213,7 +224,16 @@ describe('étiquette DLC', () => {
             .toEqual(['Issu de Poulet N° L261015-0007', 'N° L261016-0002']);
         const capped = dlcLabelBlocks({ ...base, capped: true, capSource: 'parent', parent: { lot: 'L261015-0007', name: 'Poulet' } });
         expect(capped).toContainEqual({ t: 'line', text: 'Limitée à la DLC du produit d’origine (N° L261015-0007)', size: 'sm' });
-        expect(subs({ offline: true, lot: null, by: 'Karim' })).toEqual(['Imprimée hors ligne · Par Karim']);
+        // hors ligne : la référence de la tablette relie le papier à sa ligne de journal (inscrite au retour du réseau)
+        expect(subs({ offline: true, offlineRef: 'K3X9QZ', lot: null, by: 'Karim' })).toEqual(['Hors ligne · réf. K3X9QZ · Par Karim']);
+        // l'origine reste nommée quand c'est la DLC du FABRICANT qui limite ; sans N°, par son nom
+        expect(subs({ capped: true, capSource: 'original', originalDlc: '2026-10-17', parent: { lot: 'L261015-0007', name: 'Poulet' } }))
+            .toContain('Issu de Poulet N° L261015-0007');
+        const noLot = dlcLabelBlocks({ ...base, capped: true, capSource: 'parent', parent: { lot: null, name: 'Poulet' } });
+        expect(noLot).toContainEqual({ t: 'line', text: 'Limitée à la DLC du produit d’origine (Poulet)', size: 'sm' });
+        // « aucun allergène » DÉCLARÉ : une ligne explicite ; non renseigné : aucune ligne
+        expect(dlcLabelBlocks({ ...base, noAllergens: true })).toContainEqual({ t: 'line', text: 'aucun des 14 majeurs', prefix: 'ALLERGÈNES : ', size: 'sm', box: true });
+        expect(JSON.stringify(dlcLabelBlocks(base))).not.toContain('ALLERGÈNES');
     });
 
     it('le verbe suit l’événement : décongelé, préparé, cuit, sous vide', () => {

@@ -7,8 +7,32 @@
 | Écran (menu **Étiquettes**) | URL | Usage |
 |---|---|---|
 | **Étiquettes commandes** | `/admin/labels/orders` | Les commandes en cours (mêmes que l'écran cuisine). Pour chaque **produit** : une étiquette avec **N° de commande**, **nom**, personnalisation **en clair** (pain, viande, sauces, crudités, menu ou seul, sauce frites, suppléments, notes, allergènes) et **k/N**. Boutons *Imprimer*, *Réimprimer*, *Tout imprimer*, *Aperçu*, et l'interrupteur **Impression automatique**. |
-| **Étiquettes DLC / hygiène** | `/admin/labels/dlc` | La liste de vos produits (oignons, tomates, olives, champignons…) avec leur durée de conservation. **Un appui = une étiquette** : produit, *Ouvert le*, **À consommer avant** (calculés par le serveur, journalisés). |
+| **Étiquettes DLC / hygiène** | `/admin/labels/dlc` | Vos fiches produits (oignons, tomates, olives, champignons…), configurées comme dans les logiciels HACCP du marché (voir *Étiquettes DLC* ci‑dessous). **Un appui = une étiquette** ; **⋯** pour choisir l'événement ; **Sélection multiple / Tout sélectionner** pour tout imprimer d'un coup. Dates calculées par le serveur, journalisées. |
 | **Imprimante d'étiquettes** | `/admin/labels/printer` | Connexion Bluetooth, état en direct, choix du rouleau, étiquette test, diagnostic de la tablette, mode d'emploi. |
+
+## Étiquettes DLC (hygiène) — au niveau des logiciels du marché
+
+Références : GBPH restauration § 2.6 *Décongélation* et § 2.7 *Gestion des entamés* (guide PMS), pratiques Octopus HACCP / ePack / Traqfood.
+
+**Fiche produit** (bouton *＋ Nouveau produit* ou *Modifier*) :
+- **Famille** (onglets et sélection par famille), **mention** libre, **14 allergènes** imprimés.
+- **Événements**, chacun avec **sa** durée : *Ouverture*, *Décongélation*, *Préparation*, *Cuisson*, *Mise sous vide*. L'un est **« Par défaut »** : c'est lui qu'imprime un appui. Les durées sont celles **de votre PMS**, jamais les nôtres.
+- **Conservation obligatoire** (imprimée : « À conserver entre 0 et +4 °C »…). Un produit **décongelé** est toujours imprimé au **froid positif** (0 à +4 °C) même si sa fiche dit « ≤ −18 °C ».
+- **Durée inhabituelle** (décongelé > 3 jours, froid positif > 7 jours, « 96 heures » = erreur d'unité probable) : signalée, à confirmer (« Durées vérifiées ») avant d'enregistrer.
+- **Demander la DLC du fabricant** (cochée par défaut pour un produit *ouvert / sous vide*) : la DLC imprimée ne la dépasse **jamais** ; une DLC fabricant dépassée est **refusée**. Le **lot du fabricant** peut être recopié.
+
+**Imprimer** : un appui = l'étiquette tout de suite (les appuis rapides sur plusieurs produits **attendent leur tour**, rien n'est perdu ; un rebond du doigt < 0,45 s ne double pas). **⋯** : choisir l'événement, le nombre, la DLC/lot du fabricant, ou **« Fait à partir d'un produit déjà étiqueté ? »** (ex. poulet décongelé → poulet mariné) : la DLC **suit celle du produit d'origine** (sauf *Cuisson*, traitement assainissant — le produit d'origine doit encore être bon). **Sélection multiple** : seuls les produits imprimables en lot y entrent ; ceux qui exigent la DLC du fabricant ou n'ont pas l'événement choisi sont marqués **« À part »** — un événement n'est **jamais remplacé en silence** par un autre (le serveur refuse, `unknown_action`).
+
+**L'étiquette** (62 mm) : NOM · famille/mention · **NE PAS RECONGELER** (décongélation) · *Entamé le / Mis en décongélation le / Préparé le / Cuit le / Mis sous vide le* + date · **pastille du jour** + **À CONSOMMER JUSQU'AU** date heure (pastille omise au‑delà de 6 jours) · *Limitée à la DLC du fabricant / du produit d'origine* · **ALLERGÈNES** · conservation · DLC/lot fabricant, *Issu de …* · **N° L…** (numéro d'étiquette, journal) · *Par Prénom*.
+
+**À surveiller** : tous les lots non sortis, à échoir sous 72 h ou échus depuis moins de 7 jours (requête dédiée `GET admin/labels/watch`, sans limite de 50 lignes). Chaque lot se sort par **Jeté ✓** ou **Utilisé** (raison et auteur journalisés, *Annuler* 8 s) ; une étiquette sortie par erreur : **Annuler cette impression** (la ligne reste, marquée *annulée*).
+
+**Réseau coupé** : l'étiquette sort quand même (heure du serveur connue, mention *Imprimée hors ligne*) et sa ligne de journal part **dès le retour du réseau** (file locale, `client_ref` : jamais de doublon ; le serveur refuse une DLC plus longue que la fiche). Impossible hors ligne : DLC du fabricant à vérifier, produit d'origine à vérifier.
+
+## Bluetooth ou Wi‑Fi ?
+
+**Bluetooth** (recommandé, c'est ce que fait l'application) : Chrome de la tablette ↔ imprimante en direct (Web Serial). Impression **silencieuse**, **automatique** (commandes), **état lu** (capot, rouleau, confirmation par page).
+**Wi‑Fi** : une page web ne peut pas ouvrir le port réseau de l'imprimante (TCP 9100) et le serveur, dans le cloud, ne voit pas le réseau du restaurant. Le Wi‑Fi ne sert donc que par la **boîte d'impression Android** (*Imprimer via Android*, plugin *Brother Print Service*) : utile en **secours**, mais un appui de plus à chaque fois, **pas d'automatique**, **pas d'état**. Laisser le Wi‑Fi de l'imprimante activé ne gêne pas.
 
 ## Mise en service (une seule fois)
 
@@ -47,7 +71,7 @@
 
 ```
 npx vitest run tests/js/brotherQl.spec.js tests/js/brotherQlRoundTrip.spec.js tests/js/labelLayout.spec.js \
-  tests/js/labelPrinter.spec.js tests/js/orderLabelBuilder.spec.js tests/js/labelPrinterMixin.spec.js
+  tests/js/labelPrinter.spec.js tests/js/orderLabelBuilder.spec.js tests/js/labelPrinterMixin.spec.js tests/js/labelDlcScreen.spec.js
 php vendor/bin/phpunit tests/Feature/Labels/LabelControllerTest.php
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766 PLAYWRIGHT_NO_WEB_SERVER=1 \
   npx playwright test tests/Playwright/etiquettes-brother-2026-10-16.spec.js --workers=1
@@ -57,6 +81,8 @@ Le test Playwright joue une **fausse Brother** (Web Serial simulé) qui enregist
 
 ## Limites connues
 
-- Hors ligne, une étiquette DLC s'imprime avec l'heure du serveur connue au dernier échange mais **sans entrée de journal**.
+- Hors ligne, une étiquette DLC s'imprime avec l'heure du serveur connue au dernier échange ; sa ligne de journal part au retour du réseau (file locale gardée 24 h). Le papier porte « Imprimée hors ligne » au lieu du N°.
+- *Par Prénom* imprime le prénom du **compte connecté** : sur un compte partagé, il ne désigne personne (prévoir un compte par personne, ou ne pas cocher l'option).
+- Une fiche sans allergène coché n'imprime **aucune** ligne d'allergènes (« non renseigné » et « aucun » ne se distinguent pas sur le papier).
 - Tablette fermée en pleine impression automatique : la réclamation est rendue à la file après 120 s ; en théorie un doublon est possible si l'impression avait en fait abouti.
 - Le chef (permission `kitchen-display-system` seule) est admis par l'API mais pas par la route de l'écran (`pos-orders`), comme l'écran Uber photo.

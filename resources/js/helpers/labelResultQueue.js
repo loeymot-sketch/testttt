@@ -13,7 +13,7 @@
 export const QUEUE_KEY = 'label_result_queue';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_TRIES = 30;
-const MAX_ITEMS = 100;
+const MAX_ITEMS = 500; // une longue coupure réseau peut accumuler des centaines d’étiquettes hors ligne
 
 function load(storage) {
     try {
@@ -44,7 +44,8 @@ export function createResultQueue({ post, storage, now = Date.now }) {
     async function flush() {
         if (flushing) return flushing;
         flushing = (async () => {
-            let items = load(storage).filter((i) => now() - i.at < MAX_AGE_MS && i.tries < MAX_TRIES);
+            // chaque entrée peut porter sa propre durée de garde (une étiquette imprimée hors ligne : 7 jours)
+            let items = load(storage).filter((i) => now() - i.at < (i.maxAge || MAX_AGE_MS) && i.tries < (i.maxAge ? 1e9 : MAX_TRIES));
             const remaining = [];
             let offline = false;
             for (const item of items) {
@@ -66,14 +67,20 @@ export function createResultQueue({ post, storage, now = Date.now }) {
     }
 
     return {
-        /** Envoie le verdict ; en cas d'absence de réponse, le garde pour plus tard. @returns {Promise<boolean>} envoyé ? */
-        async send(url, body) {
+        /**
+         * Envoie ; en cas d'absence de réponse, le garde pour plus tard. `opts.maxAgeMs` : durée de garde propre à cette
+         * entrée (au lieu de 24 h), rejouée sans limite de tentatives pendant ce temps.
+         * @returns {Promise<boolean>} envoyé ?
+         */
+        async send(url, body, opts = {}) {
             try {
                 await post(url, body);
                 return true;
             } catch (err) {
                 if (retriable(err)) {
-                    save(storage, [...load(storage), { url, body, at: now(), tries: 1 }]);
+                    const item = { url, body, at: now(), tries: 1 };
+                    if (opts.maxAgeMs) item.maxAge = opts.maxAgeMs;
+                    save(storage, [...load(storage), item]);
                 }
                 return false;
             }

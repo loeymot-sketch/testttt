@@ -69,16 +69,16 @@
   // -------------------------------------------------------------------------
   const ASSET_BASE = 'assets/menu/';
 
-  // Items → images ([MENU-CANON 2026-06-26] board photos réutilisées, fallback item-default)
+  // Items → images ([MENU-CANON 2026-10-16] WebP exactes du site/borne, fallback item-default)
   const ITEM_IMG = {
     // Sandwichs (cat 1)
-    'cayenne':     'sandwich-cayenne.png',
-    'supreme':     'sandwich-supreme.png',
-    'mega':        'sandwich-mega.png',
-    'terminator':  'sandwich-terminator.png',
+    'cayenne':     'sandwich-cayenne.webp',
+    'supreme':     'sandwich-supreme.webp',
+    'mega':        'sandwich-mega.webp',
+    'terminator':  'sandwich-terminator.webp',
     // Galette (cat 2)
-    'galette-normale': 'galette.png',
-    'galette-cayenne': 'galette.png',
+    'galette-normale': 'galette.webp',
+    'galette-cayenne': 'galette.webp',
     // Burgers (cat 4)
     'chicken-burger': 'chicken_burger.png',
     // Local cheeseburger.png shows a double; grill_burger.png shows sauce.
@@ -89,10 +89,10 @@
     'big-burger':     'big_burger.png',
     'grill-burger':   'item-default.svg',
     // Tacos (cat 5) — board deliberately shares one tacos photo
-    'tacos-m': 'tacos-cayenne.png',
-    'tacos-l': 'tacos-cayenne.png',
+    'tacos-m': 'tacos-cayenne.webp',
+    'tacos-l': 'tacos-cayenne.webp',
     // [OWNER 2026-08-24] Le tacos 3 viandes — même photo, comme ses aînés.
-    'tacos-xl': 'tacos-cayenne.png',
+    'tacos-xl': 'tacos-cayenne.webp',
     // Bols (cat 6)
     'bol-frites': 'bol-frites.png',
     'bol-riz':    'bol-riz.png',
@@ -112,13 +112,22 @@
     'orangina': 'item-default.svg',
     'eau-plate': 'eau.png',
     'capri-sun': 'capri-sun.png',
-    // Brand-specific assets only; no other brand/flavour as a substitute.
-    // Cherry, Lipton Pêche and Fanta Citron copied from the local canonical pack.
+    // Phase 16 — drink asset parity: brand-specific assets only; no other
+    // brand/flavour may be used as a substitute. Site assets are copied byte
+    // for byte from public/images/menu and guarded by the catalog visual test.
+    // The Fuze Tea packshot is copied byte-for-byte from the canonical kiosk
+    // checkout source and has its own SHA-256 guard in the static catalog test.
+    // Cherry, Tropico, Lipton Pêche, Fanta Citron/Orange, Oasis, Sprite, Eau,
+    // Capri-Sun, Fuze Tea and Coca variants are available in the canonical packs.
+    // Exact packshots are still missing for Hawaï and Perrier; the neutral asset
+    // is intentional until the owner supplies the matching SKU.
+    // Schweppes Agrumes, Oasis Cassis and Coca bouteille have no canonical
+    // mobile SKU/asset in this pack and must not be invented here.
     'coca-cherry':   'coca-cherry.png',
     'tropico':       'tropico.png',
     'ice-tea-peche': 'lipton-peche.png',
     'fanta-citron':  'fanta-citron.png',
-    'fuze-tea':      'item-default.svg',
+    'fuze-tea':      'fuze-tea.png',
     'hawai':         'item-default.svg',
     'perrier':       'item-default.svg',
     // Menu enfant (cat 11)
@@ -128,13 +137,13 @@
 
   // Canonical product heroes share the same public asset as their catalog image.
   const HERO_IMG = {
-    'cayenne': 'sandwich-cayenne.png',
-    'supreme': 'sandwich-supreme.png',
-    'mega': 'sandwich-mega.png',
-    'terminator': 'sandwich-terminator.png',
-    'tacos-m': 'tacos-cayenne.png',
-    'tacos-l': 'tacos-cayenne.png',
-    'tacos-xl': 'tacos-cayenne.png',
+    'cayenne': 'sandwich-cayenne.webp',
+    'supreme': 'sandwich-supreme.webp',
+    'mega': 'sandwich-mega.webp',
+    'terminator': 'sandwich-terminator.webp',
+    'tacos-m': 'tacos-cayenne.webp',
+    'tacos-l': 'tacos-cayenne.webp',
+    'tacos-xl': 'tacos-cayenne.webp',
   };
 
   function imgFor(slug) {
@@ -227,7 +236,7 @@
   //   exposé sur les 4 Sandwichs via has_pain_choice (parité WEB-SYNC-CAISSE 2026-06-26 L4).
   const PAINS = [
     { id: 'pain-classique', name: 'Pain',    price: 0, is_default: true, image: ASSET_BASE + 'sandwich-classique.png' },
-    { id: 'pain-galette',   name: 'Galette', price: 0,                   image: ASSET_BASE + 'galette.png' },
+    { id: 'pain-galette',   name: 'Galette', price: 0,                   image: ASSET_BASE + 'galette.webp' },
   ];
 
   // [GOAL-SYNC 2026-07-08] Viande supplémentaire (canon extra +2,50€) — sandwichs, galettes,
@@ -288,10 +297,10 @@
   //   Les ids backend sont préservés (1,2,4,5,6,7,9,10,11).
   // -------------------------------------------------------------------------
   const CATEGORIES = [
-    { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.png' },
-    { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
+    { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.webp' },
+    { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.webp' },
     { id: 4,  slug: 'burgers',      name: 'Burgers',     icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Chicken, Cheese, Double Cheese, Fish, Big, Grill', image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.webp' },
     // [GOAL-SYNC 2026-07-08] wizard_template 'tacos'→'bol' (aligné web — sauces servies par BOL_SAUCES).
     { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'bol',      has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },

@@ -2,19 +2,20 @@
 
 ## Objective
 
-Make the disabled-loyalty screen's « Réactiver mon compte » button functional in the mobile app build by using public storage/state APIs rather than the dev-helper namespace.
+Make the complete local loyalty consent loop portable in the mobile app build: both « Désactiver mon compte fidélité » and « Réactiver mon compte » must use public storage/state APIs rather than the dev-helper namespace.
 
 ## Implementation
 
 1. Add a small customer-facing reactivation helper in the loyalty screen.
-2. Persist `opted_in` through `LC.storage.setConsent`.
-3. Update `LC.loyalty` consent state through `_replaceAccount` and emit `lc:loyalty-changed`.
+2. Persist both `opted_in` and `opted_out` through `LC.storage.setConsent`.
+3. Update `LC.loyalty` consent state through `_replaceAccount` and emit `lc:loyalty-changed` for both transitions.
 4. Keep the current zero-balance behavior and current copy until the owner approves a backend 30-day policy.
-5. Add a browser assertion that opt-out → reactivation changes consent and restores the QR.
+5. Add a browser assertion that opt-out → reactivation changes consent and restores the QR without `dev-helpers`.
 
 ## Allowlist
 
 - `mobile/screens-main.jsx`
+- `mobile/index.html`
 - `mobile/tests/mobile-ui-excellence.spec.js`
 - `tests/mobile-e2e/loyalty-11-opt-out.spec.js`
 - `tasks/MOBILE-EXCELLENCE-PHASE15-LOYALTY-REACTIVATION-20261016.md`
@@ -30,3 +31,9 @@ Make the disabled-loyalty screen's « Réactiver mon compte » button functional
 `PRIMARY_EXECUTION_MODEL: gpt-5.5-pro`
 
 `EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)`
+
+## Remediation audit cycle
+
+`REMEDIATION_AUDIT_CYCLE: 1/5`
+
+`REWORK_REASON: fallback audit found that the opt-out path still depended on window.LC.dev; the customer-facing consent loop must be portable before the cycle can pass.`

@@ -67,6 +67,7 @@ class LabelPrintLog extends Model
         'parent_log_id',
         'supplier_lot',
         'offline',
+        'anomaly',
         'client_ref',
         'shelf_life_value',
         'shelf_life_unit',
@@ -106,6 +107,7 @@ class LabelPrintLog extends Model
         'capped' => 'boolean',
         'parent_log_id' => 'integer',
         'offline' => 'boolean',
+        'anomaly' => 'boolean',
         'discarded_by' => 'integer',
         'claimed_at' => 'datetime',
         'finished_at' => 'datetime',
@@ -121,4 +123,13 @@ class LabelPrintLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /** Qui a sorti le lot de la surveillance (jeté, utilisé, annulé). */
+    public function discardedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'discarded_by');
+    }
+
+    /** Délai pendant lequel un lot marqué « utilisé » peut encore servir d'origine (on étiquette souvent juste après). */
+    public const PARENT_USED_GRACE_HOURS = 2;
 }

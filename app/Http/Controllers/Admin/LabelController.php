@@ -115,8 +115,9 @@ class LabelController extends AdminController
             // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ), et son numéro de lot.
             'original_dlc' => ['nullable', 'date_format:Y-m-d'],
             'supplier_lot' => ['nullable', 'string', 'max:40'],
-            // Étiquette du produit d'origine (ex. poulet décongelé → poulet mariné).
+            // Étiquette du produit d'origine (ex. poulet décongelé → poulet mariné), ou « produit neuf » déclaré.
             'parent_log_id' => ['nullable', 'integer', 'min:1'],
+            'parent_none' => ['nullable', 'boolean'],
         ], [], [
             'product_id' => 'produit', 'copies' => 'nombre d’étiquettes', 'original_dlc' => 'DLC du fabricant',
             'supplier_lot' => 'lot du fabricant', 'parent_log_id' => 'étiquette d’origine',
@@ -140,6 +141,21 @@ class LabelController extends AdminController
         $action = $product->action($requested);
         $expiresAt = $product->expiresFrom($openedAt, $action);
         $capSource = null;
+
+        // La conservation figure sur toute étiquette d'hygiène : une fiche ancienne qui ne la dit pas n'imprime pas.
+        if ($product->storageFor($action['key']) === null) {
+            $message = 'Renseignez la conservation de « '.$product->name.' » (Modifier la fiche) : elle est imprimée sur l’étiquette.';
+
+            return response()->json(['status' => 'storage_missing', 'message' => $message, 'errors' => ['storage' => [$message]]], 422);
+        }
+
+        // Produit fait à partir d'un produit étiqueté : l'origine (ou « produit neuf ») est obligatoire — un appui ne
+        // remet jamais l'horloge à zéro par oubli.
+        if ($product->needs_parent && empty($validated['parent_log_id']) && empty($validated['parent_none'])) {
+            $message = 'Indiquez le produit d’origine de « '.$product->name.' » (sa DLC ne repart pas à zéro), ou « produit neuf ».';
+
+            return response()->json(['status' => 'parent_required', 'message' => $message, 'errors' => ['parent_log_id' => [$message]]], 422);
+        }
 
         // Règle du plan de maîtrise sanitaire : la DLC secondaire ne dépasse JAMAIS la DLC du fabricant.
         $original = $validated['original_dlc'] ?? null;
@@ -181,7 +197,12 @@ class LabelController extends AdminController
                 return $refuse('parent_unknown', 'Étiquette d’origine introuvable.');
             }
             $ref = $parent->product_name.($parent->lot ? ' (N° '.$parent->lot.')' : '');
-            if ($parent->discarded_at !== null) {
+            // Un bac marqué « utilisé » à l'instant reste une origine valable un court moment (on le vide, puis on étiquette
+            // ce qu'on en a fait) ; jeté ou annulé, jamais.
+            $justUsed = $parent->discard_reason === LabelPrintLog::DISCARD_USED
+                && $parent->discarded_at !== null
+                && $parent->discarded_at->gte($openedAt->copy()->subHours(LabelPrintLog::PARENT_USED_GRACE_HOURS));
+            if ($parent->discarded_at !== null && ! $justUsed) {
                 return $refuse('parent_closed', 'Le produit d’origine '.$ref.' n’est plus en stock (jeté, utilisé ou annulé).');
             }
             if ($parent->expires_at->lte($openedAt)) {
@@ -230,34 +251,30 @@ class LabelController extends AdminController
 
     /**
      * Étiquette imprimée RÉSEAU COUPÉ (l'étiquette prime : la cuisine ne s'arrête pas) : la tablette la journalise dès que
-     * le réseau revient. Le serveur vérifie qu'elle ne dit rien de plus que la fiche (DLC jamais plus longue que la durée
-     * prévue), lui donne un numéro, et la met dans la surveillance comme les autres. Rejouer l'envoi (même `client_ref`)
-     * ne crée jamais de doublon.
+     * le réseau revient. Le papier EXISTE déjà, posé sur un bac : le serveur l'inscrit donc TOUJOURS au journal et dans la
+     * surveillance — et s'il n'aurait pas imprimé la même chose (fiche modifiée entre-temps, événement retiré, DLC plus
+     * longue que la fiche, heure de tablette incohérente, produit supprimé), il le signale « à vérifier » (`anomaly`) au
+     * lieu de le rejeter : un refus ferait disparaître une étiquette réelle du journal, sans que personne le sache.
+     * Rejouer l'envoi (même `client_ref`) ne crée jamais de doublon.
      */
     public function dlcOffline(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'client_ref' => ['required', 'string', 'min:8', 'max:64'],
             'product_id' => ['required', 'integer'],
+            'product_name' => ['nullable', 'string', 'max:120'],
             'action' => ['required', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
             'copies' => ['required', 'integer', 'min:1', 'max:20'],
             'opened_at' => ['required', 'date'],
             'expires_at' => ['required', 'date'],
+            'storage' => ['nullable', 'string', 'max:60'],
             'status' => ['required', Rule::in([LabelPrintLog::STATUS_PRINTED, LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_FAILED])],
             'message' => ['nullable', 'string', 'max:300'],
         ]);
 
         $existing = LabelPrintLog::query()->where('client_ref', $validated['client_ref'])->first();
         if ($existing) {
-            return response()->json(['status' => 'ok', 'log_id' => $existing->id, 'lot' => $existing->lot, 'replayed' => true]);
-        }
-
-        $product = DlcLabelProduct::withTrashed()->find($validated['product_id']);
-        if (! $product) {
-            return response()->json(['status' => 'unknown_product', 'message' => 'Produit introuvable.'], 422);
-        }
-        if (! $product->hasAction($validated['action'])) {
-            return response()->json(['status' => 'unknown_action', 'message' => 'Événement non prévu pour ce produit.'], 422);
+            return response()->json(['status' => 'ok', 'log_id' => $existing->id, 'lot' => $existing->lot, 'replayed' => true, 'anomaly' => (bool) $existing->anomaly]);
         }
 
         // La tablette envoie de l'ISO avec fuseau (souvent « Z ») : ramené au fuseau de l'application avant d'être écrit,
@@ -265,35 +282,54 @@ class LabelController extends AdminController
         $openedAt = \Carbon\Carbon::parse($validated['opened_at'])->setTimezone(config('app.timezone'));
         $expiresAt = \Carbon\Carbon::parse($validated['expires_at'])->setTimezone(config('app.timezone'));
         $now = now();
-        if ($openedAt->lt($now->copy()->subHours(26)) || $openedAt->gt($now->copy()->addMinutes(10))) {
-            return response()->json(['status' => 'bad_clock', 'message' => 'Heure d’impression invalide.'], 422);
+
+        $anomalies = [];
+        $product = DlcLabelProduct::withTrashed()->find($validated['product_id']);
+        if (! $product) {
+            $anomalies[] = 'produit introuvable';
+        } elseif (! $product->hasAction($validated['action'])) {
+            $anomalies[] = 'événement « '.DlcLabelProduct::ACTION_LABELS[$validated['action']].' » non prévu par la fiche';
         }
-        $action = $product->action($validated['action']);
-        if ($expiresAt->lte($openedAt) || $expiresAt->gt($product->expiresFrom($openedAt, $action)->addMinutes(2))) {
-            return response()->json(['status' => 'bad_expiry', 'message' => 'DLC imprimée plus longue que la durée prévue.'], 422);
+        if ($openedAt->lt($now->copy()->subDays(7)) || $openedAt->gt($now->copy()->addMinutes(10))) {
+            $anomalies[] = 'heure de la tablette incohérente';
         }
+        if ($expiresAt->lte($openedAt)) {
+            $anomalies[] = 'DLC antérieure à l’impression';
+        } elseif ($product && $product->hasAction($validated['action'])
+            && $expiresAt->gt($product->expiresFrom($openedAt, $product->action($validated['action']))->addMinutes(2))) {
+            $anomalies[] = 'DLC imprimée plus longue que la fiche';
+        }
+        $hours = max(1, (int) round($openedAt->diffInMinutes($expiresAt, false) / 60));
+        $action = $product && $product->hasAction($validated['action'])
+            ? $product->action($validated['action'])
+            : ['key' => $validated['action'], 'value' => min(720, $hours), 'unit' => DlcLabelProduct::UNIT_HOURS];
+        $message = $anomalies
+            ? '⚠ À vérifier (imprimée hors ligne) : '.implode(' ; ', $anomalies).'.'
+            : ($validated['message'] ?? 'Imprimée hors ligne, journalisée au retour du réseau.');
 
         $log = new LabelPrintLog([
             'user_id' => $request->user()?->id,
             'kind' => LabelPrintLog::KIND_DLC,
-            'dlc_product_id' => $product->id,
-            'product_name' => $product->name,
+            'dlc_product_id' => $product?->id,
+            'product_name' => $product?->name ?? (trim((string) ($validated['product_name'] ?? '')) ?: 'Produit #'.$validated['product_id']),
             'action' => $action['key'],
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
             'expires_at' => $expiresAt,
-            'storage' => $product->storageFor($action['key']),
+            // la conservation IMPRIMÉE (celle que la tablette a mise sur le papier), sinon celle de la fiche
+            'storage' => $validated['storage'] ?? $product?->storageFor($action['key']),
             'copies' => (int) $validated['copies'],
             'offline' => true,
+            'anomaly' => $anomalies !== [],
             'client_ref' => $validated['client_ref'],
             'status' => $validated['status'],
-            'message' => $validated['message'] ?? 'Imprimée hors ligne, journalisée au retour du réseau.',
+            'message' => mb_substr($message, 0, 300),
             'printed_pages' => $validated['status'] === LabelPrintLog::STATUS_FAILED ? 0 : (int) $validated['copies'],
             'claimed_at' => $openedAt,
             'finished_at' => $now,
         ]);
-        $log->branch_id = (int) ($product->branch_id ?: $this->branchId($request));
+        $log->branch_id = (int) ($product?->branch_id ?: $this->branchId($request));
         try {
             $log->save();
         } catch (QueryException $e) {
@@ -301,11 +337,11 @@ class LabelController extends AdminController
             if (! $this->isUniqueViolation($e)) throw $e;
             $first = LabelPrintLog::query()->where('client_ref', $validated['client_ref'])->firstOrFail();
 
-            return response()->json(['status' => 'ok', 'log_id' => $first->id, 'lot' => $first->lot, 'replayed' => true]);
+            return response()->json(['status' => 'ok', 'log_id' => $first->id, 'lot' => $first->lot, 'replayed' => true, 'anomaly' => (bool) $first->anomaly]);
         }
         $log->forceFill(['lot' => $this->lotNumber($openedAt, $log->id)])->save();
 
-        return response()->json(['status' => 'ok', 'log_id' => $log->id, 'lot' => $log->lot, 'replayed' => false]);
+        return response()->json(['status' => 'ok', 'log_id' => $log->id, 'lot' => $log->lot, 'replayed' => false, 'anomaly' => $anomalies !== []]);
     }
 
     /** Ce que la tablette imprime : exactement ce que dit le journal. */
@@ -319,6 +355,7 @@ class LabelController extends AdminController
             'storage' => $log->storage,
             'note' => $product->note,
             'allergens' => array_values((array) ($product->allergens ?? [])),
+            'no_allergens' => (bool) $product->no_allergens,
             'shelf_life_value' => $log->shelf_life_value,
             'shelf_life_unit' => $log->shelf_life_unit,
             'opened_at' => $log->opened_at->toIso8601String(),
@@ -446,13 +483,38 @@ class LabelController extends AdminController
         return response()->json(['data' => $rows, 'meta' => $this->clock()]);
     }
 
+    /**
+     * Les lots EN COURS (origines possibles d'une préparation) : imprimés, encore bons, pas jetés ni annulés — ceux
+     * marqués « utilisés » il y a moins de 2 h comptent encore (on vide le bac, puis on étiquette ce qu'on en a fait).
+     * Tirés du journal entier, quelle que soit leur échéance (pas seulement les 72 h de la surveillance).
+     */
+    public function lots(): JsonResponse
+    {
+        $now = now();
+        $rows = LabelPrintLog::query()
+            ->with('user:id,name')
+            ->where('kind', LabelPrintLog::KIND_DLC)
+            ->whereIn('status', LabelPrintLog::DONE_STATUSES)
+            ->where('expires_at', '>', $now)
+            ->where(fn ($q) => $q->whereNull('discarded_at')->orWhere(fn ($used) => $used
+                ->where('discard_reason', LabelPrintLog::DISCARD_USED)
+                ->where('discarded_at', '>=', $now->copy()->subHours(LabelPrintLog::PARENT_USED_GRACE_HOURS))))
+            ->orderBy('expires_at')
+            ->limit(300)
+            ->get()
+            ->map(fn (LabelPrintLog $l): array => $this->presentLog($l))
+            ->values();
+
+        return response()->json(['data' => $rows, 'meta' => $this->clock()]);
+    }
+
     /** Dernières impressions (traçabilité d'hygiène). */
     public function history(Request $request): JsonResponse
     {
         $kind = $request->query('kind') === LabelPrintLog::KIND_ORDER ? LabelPrintLog::KIND_ORDER : LabelPrintLog::KIND_DLC;
 
         $rows = LabelPrintLog::query()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'discardedBy:id,name'])
             ->where('kind', $kind)
             ->orderByDesc('id')
             ->limit(50)
@@ -478,6 +540,8 @@ class LabelController extends AdminController
             'supplier_lot' => $l->supplier_lot,
             'parent_log_id' => $l->parent_log_id,
             'offline' => (bool) $l->offline,
+            'anomaly' => (bool) $l->anomaly,
+            'client_ref' => $l->client_ref,
             'order_id' => $l->order_id,
             'copies' => $l->copies,
             'labels_count' => $l->labels_count,
@@ -487,6 +551,7 @@ class LabelController extends AdminController
             'message' => $l->message,
             'discarded_at' => $l->discarded_at?->toIso8601String(),
             'discard_reason' => $l->discarded_at ? ($l->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED) : null,
+            'discarded_by' => $l->discarded_at && $l->relationLoaded('discardedBy') ? $this->firstName($l->discardedBy?->name) : null,
             'by' => $this->firstName($l->user?->name),
             'created_at' => $l->created_at?->toIso8601String(),
         ];
@@ -663,6 +728,10 @@ class LabelController extends AdminController
             // La température de conservation figure sur toute étiquette d'hygiène (GBPH § 2.7 : « À conserver à … °C ») :
             // obligatoire à la création, et jamais effacée ensuite (absente d'une modification = inchangée).
             'storage' => [$ignoreId ? 'sometimes' : 'required', 'filled', 'string', 'max:60'],
+            // Conservation APRÈS décongélation (viande hachée +2 °C, poisson 0/+2 °C, pain ambiante…).
+            'thawed_storage' => ['nullable', 'string', 'max:60'],
+            'no_allergens' => ['nullable', 'boolean'],
+            'needs_parent' => ['nullable', 'boolean'],
             'note' => ['nullable', 'string', 'max:80'],
             'ask_original_dlc' => ['nullable', 'boolean'],
             'print_operator' => ['nullable', 'boolean'],
@@ -695,7 +764,7 @@ class LabelController extends AdminController
         }
 
         $data['name'] = trim((string) $data['name']);
-        foreach (['storage', 'note', 'category'] as $field) {
+        foreach (['storage', 'thawed_storage', 'note', 'category'] as $field) {
             if (array_key_exists($field, $data)) {
                 $data[$field] = isset($data[$field]) && trim((string) $data[$field]) !== '' ? trim((string) $data[$field]) : null;
             }
@@ -713,6 +782,25 @@ class LabelController extends AdminController
         }
         if (array_key_exists('allergens', $data)) {
             $data['allergens'] = array_values(array_unique((array) ($data['allergens'] ?? [])));
+            // Des allergènes cochés l'emportent sur « aucun allergène » : jamais les deux à la fois.
+            if ($data['allergens'] !== []) $data['no_allergens'] = false;
+        }
+
+        // Décongélation prévue sur un produit qui n'est pas conservé au froid positif (surgelé, ambiante…) : sa
+        // conservation APRÈS décongélation doit être dite — jamais une valeur unique imposée à tous. Vérifié quand la
+        // fiche est saisie (création, ou modification qui touche la conservation ou les événements), pas quand on la
+        // masque seulement.
+        $model = $ignoreId ? DlcLabelProduct::query()->find($ignoreId) : null;
+        if (! $ignoreId || array_key_exists('storage', $data) || array_key_exists('thawed_storage', $data)) {
+            $effectiveStorage = array_key_exists('storage', $data) ? $data['storage'] : $model?->storage;
+            $effectiveActions = $data['actions'] ?? ($model ? $model->actionList() : []);
+            $effectiveThawed = array_key_exists('thawed_storage', $data) ? $data['thawed_storage'] : $model?->thawed_storage;
+            if (DlcLabelProduct::needsThawedStorage($effectiveStorage, $effectiveActions) && ($effectiveThawed === null || $effectiveThawed === '')) {
+                abort(response()->json([
+                    'message' => 'Indiquez la conservation après décongélation.',
+                    'errors' => ['thawed_storage' => ['Indiquez la conservation après décongélation (ex. 0 à +2 °C pour une viande hachée, 0 à +4 °C, ambiante pour un pain).']],
+                ], 422));
+            }
         }
 
         $duplicate = DlcLabelProduct::query()
@@ -726,7 +814,7 @@ class LabelController extends AdminController
             ], 422));
         }
 
-        foreach (['is_active', 'sort_order', 'ask_original_dlc', 'print_operator', 'default_copies', 'shelf_life_value', 'shelf_life_unit'] as $optional) {
+        foreach (['is_active', 'sort_order', 'ask_original_dlc', 'print_operator', 'default_copies', 'shelf_life_value', 'shelf_life_unit', 'needs_parent', 'no_allergens'] as $optional) {
             if (! array_key_exists($optional, $data) || $data[$optional] === null) {
                 unset($data[$optional]);
             }
@@ -746,6 +834,9 @@ class LabelController extends AdminController
             'actions' => $p->actionList(),
             'allergens' => array_values((array) ($p->allergens ?? [])),
             'storage' => $p->storage,
+            'thawed_storage' => $p->thawed_storage,
+            'no_allergens' => (bool) $p->no_allergens,
+            'needs_parent' => (bool) $p->needs_parent,
             'note' => $p->note,
             'ask_original_dlc' => (bool) $p->ask_original_dlc,
             'print_operator' => $p->print_operator === null ? true : (bool) $p->print_operator,

@@ -31,8 +31,10 @@ class DlcLabelProduct extends Model
     ];
 
     /**
-     * Un produit décongelé se garde au FROID POSITIF (GBPH restauration § 2.6 : « ne doit en aucun cas être recongelé ») :
-     * si sa fiche dit « ≤ −18 °C » (ou ne dit rien, ou « ambiante »), l'étiquette de décongélation imprime ceci.
+     * Un produit décongelé ne retourne jamais au congélateur (GBPH restauration § 2.6 : « ne doit en aucun cas être
+     * recongelé »). Sa conservation se choisit sur la fiche (`thawed_storage` : +2 °C pour une viande hachée, 0 à +2 °C pour
+     * un poisson — arrêté du 21/12/2009, annexe I — ambiante pour un pain). Ceci n'est que le REPLI d'une fiche ancienne
+     * qui ne l'a pas encore renseignée : jamais « ≤ −18 °C » sur une étiquette de décongélation.
      */
     public const THAWED_STORAGE = '0 à +4 °C';
 
@@ -53,8 +55,11 @@ class DlcLabelProduct extends Model
         'actions',
         'allergens',
         'storage',
+        'thawed_storage',
+        'no_allergens',
         'note',
         'ask_original_dlc',
+        'needs_parent',
         'print_operator',
         'default_copies',
         'sort_order',
@@ -68,6 +73,8 @@ class DlcLabelProduct extends Model
         'actions' => 'array',
         'allergens' => 'array',
         'ask_original_dlc' => 'boolean',
+        'needs_parent' => 'boolean',
+        'no_allergens' => 'boolean',
         'print_operator' => 'boolean',
         'default_copies' => 'integer',
         'sort_order' => 'integer',
@@ -123,21 +130,47 @@ class DlcLabelProduct extends Model
         return false;
     }
 
-    /** La conservation à IMPRIMER pour cet événement : un produit décongelé ne retourne jamais au congélateur. */
+    /**
+     * La conservation à IMPRIMER pour cet événement. Décongélation : celle choisie pour l'après‑décongélation, sinon la
+     * conservation habituelle si c'est du froid positif, sinon le repli (jamais le congélateur).
+     */
     public function storageFor(string $actionKey): ?string
     {
-        $storage = $this->storage !== null && trim((string) $this->storage) !== '' ? trim((string) $this->storage) : null;
-        if ($actionKey === 'thawed' && ($storage === null || self::isFrozenOrAmbient($storage))) {
-            return self::THAWED_STORAGE;
+        $clean = fn ($v) => $v !== null && trim((string) $v) !== '' ? trim((string) $v) : null;
+        $storage = $clean($this->storage);
+        if ($actionKey === 'thawed') {
+            if ($thawed = $clean($this->thawed_storage)) return $thawed;
+            if ($storage === null || ! self::isChilled($storage)) return self::THAWED_STORAGE;
         }
 
         return $storage;
     }
 
-    /** « ≤ −18 °C », « -18 », « congélateur », « Ambiante » : tout ce qui n'est pas du froid positif. */
+    /** La fiche prévoit la décongélation mais sa conservation habituelle n'est pas du froid positif : il faut la préciser. */
+    public static function needsThawedStorage(?string $storage, array $actions): bool
+    {
+        $thawing = collect($actions)->contains(fn ($a) => is_array($a) && ($a['key'] ?? null) === 'thawed');
+
+        return $thawing && ($storage === null || trim($storage) === '' || ! self::isChilled($storage));
+    }
+
+    /**
+     * Froid POSITIF reconnu (liste blanche, miroir de dlcLabelBuilder.js) : une température, aucune valeur négative
+     * (« −18 », « –18 », « -18 » en tête ou après une espace, « ≤ », « < », « ( » — « 2-4 °C » reste une plage positive),
+     * ni congélateur, surgelé, froid négatif ou ambiante.
+     */
+    public static function isChilled(string $storage): bool
+    {
+        if (! preg_match('/\d/', $storage)) return false;
+        if (preg_match('/(^|[\s≤<(])[−–-]\s*\d/u', $storage)) return false;
+
+        return ! preg_match('/cong[eé]l|surgel|n[ée]gati|ambiant/iu', $storage);
+    }
+
+    /** L'inverse : tout ce qui n'est pas du froid positif reconnu. */
     public static function isFrozenOrAmbient(string $storage): bool
     {
-        return (bool) preg_match('/[−-]\s*\d|cong[eé]l|ambiant/iu', $storage);
+        return ! self::isChilled($storage);
     }
 
     /**

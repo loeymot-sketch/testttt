@@ -1,22 +1,25 @@
 # Active Cycle – FoodKing
 
-## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 15 LOYALTY REACTIVATION
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 17 CANONICAL WEBP ASSETS
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE15-LOYALTY-REACTIVATION-20261016
-PHASE: VALIDATE
-CLOSURE_NOTE:
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE15-LOYALTY-REACTIVATION-20261016_2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE15-LOYALTY-REACTIVATION-20261016/report.md
+TASK_ID: MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016
+PHASE: CLOSED
+CLOSURE_NOTE: Phase 17 clôturée après validation ciblée PASS, AUDIT fallback PASS et GPT final PASS. Les anciens PNG restent conservés mais ne sont plus référencés par les visuels concernés.
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016/report.md
 GATE_FILE:
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
 EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
-FALLBACK_REASON: codex-extension gpt-5.5-pro indisponible dans cette session; exécution locale bornée au plan.
-AUDIT_CHANNEL:
-AUDIT_FALLBACK_REASON:
-AUDIT_VERDICT:
-GPT_FINAL_AUDIT_VERDICT:
-SUBSYSTEMS_TOUCHED: mobile/screens-main.jsx, mobile/tests/mobile-ui-excellence.spec.js, tests/mobile-e2e/loyalty-11-opt-out.spec.js
+FALLBACK_REASON: exécution bornée locale ; aucun canal d’extension disponible dans cette session.
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: claude command not found
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_CHANNEL: foodking-complex-implementer (codex-extension-fallback)
+GPT_FINAL_AUDIT_MODEL: gpt-5.5-pro
+GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
+GPT_FINAL_AUDIT_VERDICT: PASS
+SUBSYSTEMS_TOUCHED: mobile/assets/menu, mobile/data/menu.js, mobile/tests/mobile-catalog-visual.spec.js, tests/mobile-e2e/catalog-visual-critical.spec.js
 SUBSYSTEMS_OFF_LIMITS: backend PHP/config, database/migrations, pricing/order data, payment, auth/SMS, loyalty, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging/signing
 
 | **FIELD** | **VALUE** |

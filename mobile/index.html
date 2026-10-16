@@ -362,7 +362,22 @@ function App() {
         if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceHistory) {
           window.LC.loyalty._replaceHistory([]);
         }
-        if (window.LC && window.LC.dev) window.LC.dev.setConsent('opted_out');
+        // Customer-facing opt-out must use the public state APIs. The dev
+        // namespace is not part of the shipped mobile contract.
+        if (window.LC && window.LC.storage && typeof window.LC.storage.setConsent === 'function') {
+          window.LC.storage.setConsent('opted_out');
+        }
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceAccount) {
+          window.LC.loyalty._replaceAccount({ consent_status: 'opted_out', balance: 0, lifetime_earned: 0, lifetime_redeemed: 0 });
+        }
+        if (typeof window.dispatchEvent === 'function') {
+          const detail = { type: 'consent', status: 'opted_out', source: 'customer' };
+          if (typeof window.CustomEvent === 'function') {
+            window.dispatchEvent(new window.CustomEvent('lc:loyalty-changed', { detail }));
+          } else if (typeof window.Event === 'function') {
+            window.dispatchEvent(new window.Event('lc:loyalty-changed'));
+          }
+        }
         setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
       }}/>}
       {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}

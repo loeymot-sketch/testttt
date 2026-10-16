@@ -55,6 +55,12 @@
                             <span class="dlc-dot" :style="{ background: colorOf(c.name) }" aria-hidden="true"></span>{{ c.name }}
                             <span class="dlc-cat-n">{{ c.count }}</span>
                         </button>
+                        <button v-if="uncategorizedCount && categoryTabs.length" type="button" class="dlc-cat" role="tab"
+                                :aria-selected="category === NO_FAMILY ? 'true' : 'false'" :class="{ 'is-on': category === NO_FAMILY }"
+                                data-testid="dlc-cat-none" @click="category = NO_FAMILY">
+                            <span class="dlc-dot" :style="{ background: colorOf('') }" aria-hidden="true"></span>Sans famille
+                            <span class="dlc-cat-n">{{ uncategorizedCount }}</span>
+                        </button>
                     </div>
 
                     <div class="dlc-modes" role="group" aria-label="Mode d'impression">
@@ -86,8 +92,8 @@
                             Touchez les produits préparés (chaque appui ajoute une étiquette), ou <b>Tout sélectionner</b>, puis
                             <b>Imprimer la sélection</b>.
                             <span v-if="apartCount" class="dlc-hint-apart" data-testid="dlc-apart-hint">
-                                {{ apartCount }} produit{{ apartCount > 1 ? "s" : "" }} s'imprime{{ apartCount > 1 ? "nt" : "" }} à part
-                                ({{ batchAction ? "DLC du fabricant à saisir, ou événement non prévu" : "DLC du fabricant à saisir" }}) : touchez-le pour l'imprimer seul.
+                                {{ apartCount }} produit{{ apartCount > 1 ? "s" : "" }} hors sélection (marqué{{ apartCount > 1 ? "s" : "" }} « À part ») : produit d'origine à indiquer,
+                                fiche à compléter ou événement non prévu — touchez-le pour savoir quoi faire.
                             </span>
                         </template>
                     </p>
@@ -98,19 +104,20 @@
                             <ul>
                                 <li v-for="w in watchItems" :key="w.key" :class="`is-${w.level}`" data-testid="dlc-watch-item">
                                     <!-- une seule ligne de gabarit : Vue supprime les espaces entre balises séparées par un saut de ligne -->
-                                    <span class="dlc-watch-body"><span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }}<template v-if="w.lot"> · N° {{ w.lot }}</template>)</span><br />{{ w.text }}</span>
+                                    <span class="dlc-watch-body"><span v-if="w.level === 'expired'" class="dlc-watch-icon" aria-hidden="true">⚠</span><strong>{{ w.name }}</strong> <span class="dlc-watch-n">({{ w.copies }} étiquette{{ w.copies > 1 ? "s" : "" }}<template v-if="w.lot"> · N° {{ w.lot }}</template>)</span><br />{{ w.text }}<template v-if="w.anomaly"><br /><span class="dlc-watch-anomaly" data-testid="dlc-watch-anomaly">{{ w.message }}</span></template></span>
                                     <span class="dlc-watch-actions">
                                         <button type="button" class="dlc-btn dlc-btn--small" :class="{ 'dlc-btn--danger': w.level === 'expired' }"
                                                 :data-testid="`dlc-discard-${w.id}`" :disabled="discarding" @click="discard(w, 'discarded')">Jeté ✓</button>
                                         <button type="button" class="dlc-btn dlc-btn--small" :data-testid="`dlc-used-${w.id}`" :disabled="discarding"
-                                                @click="discard(w, 'used')">Utilisé</button>
+                                                @click="discard(w, 'used')">{{ w.level === "expired" ? "Utilisé avant la DLC" : "Utilisé" }}</button>
                                     </span>
                                 </li>
                             </ul>
-                            <p v-if="watchMore" class="dlc-watch-more" data-testid="dlc-watch-more">+ {{ watchMore }} autre{{ watchMore > 1 ? "s" : "" }} lot{{ watchMore > 1 ? "s" : "" }} à surveiller (voir l'historique).</p>
+                            <button v-if="watchMore" type="button" class="dlc-btn dlc-btn--small dlc-watch-more" data-testid="dlc-watch-more"
+                                    @click="watchLimit = 300">+ {{ watchMore }} autre{{ watchMore > 1 ? "s" : "" }} lot{{ watchMore > 1 ? "s" : "" }} — tout afficher</button>
                         </aside>
 
-                        <div class="dlc-main">
+                        <div ref="main" class="dlc-main">
                             <div v-if="query && !visibleProducts.length" class="dlc-empty dlc-empty--inline" data-testid="dlc-no-match">
                                 <span>Aucun produit ne correspond à « {{ query }} ».</span>
                                 <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-add-from-query" @click="openEditor({ name: query })">Créer « {{ query }} »</button>
@@ -135,9 +142,11 @@
                                             <span v-if="p.actions.length > 1">{{ p.actions.length }} événements</span>
                                             <span v-if="p.allergens.length">⚠ {{ p.allergens.length }} allergène{{ p.allergens.length > 1 ? "s" : "" }}</span>
                                             <span v-if="p.ask_original_dlc">DLC fabricant</span>
+                                            <span v-if="p.needs_parent">Produit d'origine</span>
+                                            <span v-if="!p.storage" class="dlc-tile-todo" data-testid="dlc-tile-todo">⚠ Conservation à renseigner</span>
                                             <span v-if="p.default_copies > 1 && !selectMode">{{ p.default_copies }} par appui</span>
                                         </span>
-                                        <span v-if="busyId === p.id" class="dlc-tile-busy">Impression…</span>
+                                        <span v-if="busyId === p.id" class="dlc-tile-busy">Impression…{{ queuedCount(p.id) ? ` (+${queuedCount(p.id)} en attente)` : "" }}</span>
                                         <span v-else-if="queuedCount(p.id)" class="dlc-tile-busy dlc-tile-busy--queued" data-testid="dlc-tile-queued">En attente ×{{ queuedCount(p.id) }}</span>
                                     </button>
                                     <button v-if="selectMode && selection[p.id]" type="button" class="dlc-corner" :aria-label="`Retirer une étiquette ${p.name}`"
@@ -156,7 +165,7 @@
                             — {{ selectionProducts }} produit{{ selectionProducts > 1 ? "s" : "" }}
                         </span>
                         <button type="button" class="dlc-btn" :disabled="listBusy" data-testid="dlc-basket-clear" @click="selection = {}">Vider</button>
-                        <button type="button" class="dlc-btn dlc-btn--primary" :disabled="listBusy || draining" data-testid="dlc-basket-print" @click="printSelection">
+                        <button type="button" class="dlc-btn dlc-btn--primary" :disabled="listBusy || draining" data-testid="dlc-basket-print" @click="printSelection()">
                             {{ listBusy ? "Impression…" : "🖨 Imprimer la sélection" }}
                         </button>
                     </div>
@@ -187,9 +196,9 @@
                             <span class="dlc-history-when">{{ short(h.created_at) }}</span>
                             <span class="dlc-history-name">{{ h.product_name }} ×{{ h.copies }}<small v-if="h.action"> · {{ actionLabel(h.action) }}</small></span>
                             <span class="dlc-history-dlc">DLC {{ short(h.expires_at) }}<small v-if="h.capped"> ({{ h.cap_source === "parent" ? "origine" : "fabricant" }})</small><small v-if="h.offline"> · hors ligne</small></span>
-                            <span class="dlc-history-lot">{{ h.lot || "" }}</span>
+                            <span class="dlc-history-lot">{{ h.lot || "" }}<small v-if="h.offline && h.client_ref"> (réf. {{ offlineRefOf(h.client_ref) }})</small></span>
                             <span class="dlc-history-by">{{ h.by || "" }}</span>
-                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? reasonText(h.discard_reason) : stateText(h.status) }}</span>
+                            <span class="dlc-history-state" :class="`is-${h.discarded_at ? 'discarded' : h.status}`">{{ h.discarded_at ? reasonText(h.discard_reason) : stateText(h.status) }}<small v-if="h.discarded_at"> {{ short(h.discarded_at) }}{{ h.discarded_by ? ` par ${h.discarded_by}` : "" }}</small><small v-if="h.anomaly" class="dlc-history-anomaly"> · à vérifier</small></span>
                         </li>
                     </ul>
                 </div>
@@ -198,7 +207,7 @@
 
         <!-- Résultat et « Annuler » : notices FIXES en bas d'écran — elles ne poussent jamais la grille (un appui pendant un
              saut de mise en page imprimerait le mauvais produit). -->
-        <div class="dlc-toasts" :class="{ 'is-raised': basketShown }" aria-live="polite">
+        <div class="dlc-toasts" :class="{ 'is-raised': basketShown }" :style="toastStyle" aria-live="polite">
             <div v-if="undo" class="dlc-undo" role="status" data-testid="dlc-undo">
                 <span>{{ undo.text }}</span>
                 <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-undo-btn" @click="undoDiscard">Annuler</button>
@@ -232,7 +241,34 @@
         <DlcProductEditor v-if="editing" :key="editorKey" :product="editing" :categories="knownCategories" :settings="settings"
                           :saving="saving" :error="formError" @save="saveProduct" @cancel="closeEditor" @delete="deleteProduct" />
         <DlcPrintSheet v-if="sheetProduct" :product="sheetProduct" :settings="settings" :server-offset-ms="serverOffsetMs" :busy="busyId === sheetProduct.id || queuedCount(sheetProduct.id) > 0"
-                       :lots="activeLots" :timezone="timezone" @print="printFromSheet" @close="sheetProduct = null" @edit="editFromSheet" />
+                       :lots="lotRows.length ? lotRows : activeLots" :last-original="lastOriginalFor(sheetProduct.id)" :timezone="timezone"
+                       @print="printFromSheet" @close="sheetProduct = null" @edit="editFromSheet" />
+
+        <!-- Sélection contenant des produits « DLC du fabricant » : une seule étape, toutes les dates d'un coup (proposées
+             d'après la dernière saisie de chaque produit), puis tout part ensemble. -->
+        <div v-if="originals" class="dlc-orig-overlay" data-testid="dlc-originals" @keydown.esc="originals = null">
+            <div class="dlc-orig-panel" role="dialog" aria-modal="true" aria-label="DLC du fabricant">
+                <header class="dlc-orig-head">
+                    <h4>DLC du fabricant — {{ originals.length }} produit{{ originals.length > 1 ? "s" : "" }}</h4>
+                    <button type="button" class="dlc-btn dlc-btn--small dlc-btn--icon" aria-label="Fermer" data-testid="dlc-originals-close" @click="originals = null">✕</button>
+                </header>
+                <p class="dlc-hint">Recopiez la date de l'emballage d'origine : la DLC imprimée ne la dépassera jamais.</p>
+                <div v-for="o in originals" :key="o.id" class="dlc-orig-row">
+                    <strong class="dlc-orig-name">{{ o.name }}</strong>
+                    <input v-model="o.original_dlc" type="date" class="db-field-control" :min="todayIso" :aria-label="`DLC du fabricant : ${o.name}`"
+                           :data-testid="`dlc-originals-date-${o.id}`" />
+                    <input v-model="o.supplier_lot" type="text" maxlength="40" class="db-field-control dlc-orig-lot" placeholder="Lot (facultatif)"
+                           :aria-label="`Lot du fabricant : ${o.name}`" :data-testid="`dlc-originals-lot-${o.id}`" />
+                    <span v-if="o.original_dlc && o.original_dlc < todayIso" class="dlc-last-warn">Dépassée : ne pas utiliser.</span>
+                </div>
+                <footer class="dlc-orig-foot">
+                    <button type="button" class="dlc-btn" @click="originals = null">Annuler</button>
+                    <button type="button" class="dlc-btn dlc-btn--primary" :disabled="!originalsReady" data-testid="dlc-originals-print" @click="confirmOriginals">
+                        🖨 Imprimer la sélection
+                    </button>
+                </footer>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -271,6 +307,14 @@ function slug(v) {
 
 /** Deux appuis sur la même tuile à moins de ce délai = un rebond du doigt (ganté), pas deux étiquettes voulues. */
 const DOUBLE_TAP_MS = 450;
+/** Une notice qui vient d'apparaître ignore les appuis un court instant : le doigt visait ce qui était dessous. */
+const TOAST_GUARD_MS = 600;
+/** Écran laissé ouvert : l'heure avance (échéances, « expiré ») et la surveillance se relit (autres tablettes). */
+const CLOCK_TICK_MS = 30000;
+const WATCH_REFRESH_MS = 180000;
+/** Une étiquette imprimée hors ligne attend son inscription au journal jusqu'à 7 jours (longue coupure). */
+const OFFLINE_KEEP_MS = 7 * 24 * 3600 * 1000;
+const NO_FAMILY = "__none__";
 
 function clientRef() {
     return `t${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -295,6 +339,15 @@ export default {
             products: [],
             history: [],
             watchRows: [],
+            lotRows: [],
+            watchLimit: 30,
+            nowMs: Date.now(),
+            clockTimer: null,
+            refreshTimer: null,
+            visibilityHandler: null,
+            toastStyle: {},
+            toastShownAt: 0,
+            originals: null,
             busyId: null,
             queue: [],
             draining: false,
@@ -332,6 +385,14 @@ export default {
         },
         knownCategories() {
             return [...new Set(this.products.map((p) => p.category).filter(Boolean))];
+        },
+        NO_FAMILY() { return NO_FAMILY; },
+        uncategorizedCount() { return this.activeProducts.filter((p) => !p.category).length; },
+        todayIso() {
+            return new Intl.DateTimeFormat("fr-CA", { timeZone: this.timezone }).format(new Date(this.nowMs + this.serverOffsetMs));
+        },
+        originalsReady() {
+            return Boolean(this.originals && this.originals.every((o) => o.original_dlc && o.original_dlc >= this.todayIso));
         },
         categoryTabs() {
             const counts = new Map();
@@ -371,12 +432,13 @@ export default {
         visibleProducts() {
             const q = this.norm(this.query);
             return this.activeProducts
-                .filter((p) => !this.category || p.category === this.category)
+                .filter((p) => !this.category || (this.category === NO_FAMILY ? !p.category : p.category === this.category))
                 .filter((p) => !q || this.norm(p.name).includes(q) || this.norm(p.category).includes(q))
                 .sort((a, b) => (b.uses_30d || 0) - (a.uses_30d || 0) || a.name.localeCompare(b.name, "fr"));
         },
+        // `nowMs` avance toutes les 30 s : sans lui, l'écran laissé ouvert ne verrait jamais un lot devenir « expiré ».
         watch() {
-            return watchList(this.watchRows, Date.now() + this.serverOffsetMs);
+            return watchList(this.watchRows, this.nowMs + this.serverOffsetMs, this.watchLimit);
         },
         watchItems() { return this.watch.items; },
         watchMore() { return this.watch.more; },
@@ -406,11 +468,26 @@ export default {
         // Réseau revenu : les étiquettes imprimées hors ligne partent au journal.
         this.onlineHandler = () => this.syncOffline();
         window.addEventListener("online", this.onlineHandler);
+        // Tablette posée, écran ouvert entre deux services : l'heure avance, la surveillance se relit (lots imprimés
+        // ailleurs, échéances franchies), et tout de suite quand l'écran redevient visible.
+        this.clockTimer = setInterval(() => { this.nowMs = Date.now(); }, CLOCK_TICK_MS);
+        this.refreshTimer = setInterval(() => this.syncOffline(), WATCH_REFRESH_MS);
+        this.visibilityHandler = () => {
+            if (document.visibilityState === "visible") { this.nowMs = Date.now(); this.syncOffline(); }
+        };
+        document.addEventListener("visibilitychange", this.visibilityHandler);
+        window.addEventListener("focus", this.visibilityHandler);
     },
     beforeUnmount() {
         clearTimeout(this.undoTimer);
         clearTimeout(this.lastTimer);
+        clearInterval(this.clockTimer);
+        clearInterval(this.refreshTimer);
         if (this.onlineHandler) window.removeEventListener("online", this.onlineHandler);
+        if (this.visibilityHandler) {
+            document.removeEventListener("visibilitychange", this.visibilityHandler);
+            window.removeEventListener("focus", this.visibilityHandler);
+        }
     },
     methods: {
         norm(v) {
@@ -428,7 +505,16 @@ export default {
             const a = p.actions[0];
             // espaces insécables : « +4 °C » ou « 2 jours » ne se coupent jamais en fin de ligne
             const nb = (t) => String(t || "").replace(/ (°C|jours?|h)\b/g, "\u00a0$1");
-            return [`${this.actionLabel(a.key)} · DLC +${nb(this.lifeOf(a))}`, nb(p.storage)].filter(Boolean).join(" · ");
+            // la conservation de l'événement par défaut (un produit décongelé n'est jamais affiché « ≤ −18 °C »)
+            return [`${this.actionLabel(a.key)} · DLC +${nb(this.lifeOf(a))}`, nb(storageForAction(p.storage, a.key, p.thawed_storage))].filter(Boolean).join(" · ");
+        },
+        offlineRefOf(ref) { return String(ref || "").slice(-6).toUpperCase(); },
+        /** Dernière DLC / lot du fabricant saisis pour ce produit, s'ils sont encore valables (même emballage entamé). */
+        lastOriginalFor(productId) {
+            const rows = [...this.lotRows, ...this.history]
+                .filter((h) => h.dlc_product_id === productId && h.original_dlc && h.original_dlc >= this.todayIso)
+                .sort((a, b) => b.id - a.id);
+            return rows.length ? { original_dlc: rows[0].original_dlc, supplier_lot: rows[0].supplier_lot || "" } : null;
         },
         short(iso) {
             if (!iso) return "";
@@ -447,12 +533,17 @@ export default {
         reasonText(r) {
             return { used: "utilisé", cancelled: "annulée" }[r] || "jeté";
         },
+        /**
+         * Imprimable en lot ? Les produits « DLC du fabricant » le sont (une étape commune demande leurs dates) ; restent
+         * à part ceux qui exigent leur produit d'origine, une fiche sans conservation, ou un événement qu'ils ne prévoient pas.
+         */
         selectable(p) {
-            if (p.ask_original_dlc) return false;
+            if (p.needs_parent || !p.storage) return false;
             return !this.batchAction || p.actions.some((a) => a.key === this.batchAction);
         },
         apartReason(p) {
-            if (p.ask_original_dlc) return "À part (DLC fabricant)";
+            if (!p.storage) return "À part (fiche à compléter)";
+            if (p.needs_parent) return "À part (produit d'origine)";
             return `Sans ${this.actionLabel(this.batchAction).toLowerCase()}`;
         },
         queuedCount(id) {
@@ -483,6 +574,9 @@ export default {
                 default_copies: Number(p.default_copies) || 1,
                 print_operator: p.print_operator === undefined ? true : Boolean(p.print_operator),
                 ask_original_dlc: Boolean(p.ask_original_dlc),
+                needs_parent: Boolean(p.needs_parent),
+                no_allergens: Boolean(p.no_allergens),
+                thawed_storage: p.thawed_storage || "",
             };
         },
         async loadProducts() {
@@ -510,6 +604,7 @@ export default {
             if (hist.status === "fulfilled") this.history = hist.value.data.data || [];
             if (watch.status === "fulfilled") {
                 this.watchRows = watch.value.data.data || [];
+                this.nowMs = Date.now();
                 const meta = watch.value.data.meta;
                 const server = meta && Date.parse(meta.server_now);
                 if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
@@ -530,8 +625,9 @@ export default {
         onTile(p) {
             if (this.selectMode) {
                 if (!this.selectable(p)) {
-                    // Produit à imprimer seul : DLC du fabricant à saisir → sa fiche ; événement non prévu → on le dit.
-                    if (p.ask_original_dlc) return this.openSheet(p);
+                    // Produit à imprimer seul : on mène là où il faut agir, avec la raison.
+                    if (!p.storage) return this.openEditorFor(p, "Renseignez la conservation : elle est imprimée sur l’étiquette.");
+                    if (p.needs_parent) return this.openSheet(p);
                     alertService.error(`« ${p.name} » ne prévoit pas l'événement « ${this.actionLabel(this.batchAction)} ».`);
                     return null;
                 }
@@ -539,7 +635,9 @@ export default {
                 this.selection = { ...this.selection, [p.id]: Math.min(n, 20) };
                 return null;
             }
-            if (p.ask_original_dlc) return this.openSheet(p);
+            if (!p.storage) return this.openEditorFor(p, "Renseignez la conservation : elle est imprimée sur l’étiquette.");
+            // une saisie est obligatoire (DLC du fabricant, produit d'origine) : la fiche d'impression, jamais un tir à l'aveugle
+            if (p.ask_original_dlc || p.needs_parent) return this.openSheet(p);
             const now = Date.now();
             if (now - (this.lastTapAt[p.id] || 0) < DOUBLE_TAP_MS) return null; // rebond du doigt
             this.lastTapAt = { ...this.lastTapAt, [p.id]: now };
@@ -561,6 +659,21 @@ export default {
         },
         openSheet(p) {
             this.sheetProduct = p;
+            this.loadLots();
+        },
+        /** Lots en cours, journal entier (origines possibles) — relus à chaque ouverture de fiche. */
+        async loadLots() {
+            try {
+                const { data } = await axios.get("admin/labels/lots");
+                this.lotRows = data.data || [];
+            } catch (_) {
+                // hors ligne : on garde ce qu'on a (journal + surveillance) ; l'origine ne pourra pas être vérifiée
+            }
+        },
+        openEditorFor(p, message) {
+            this.openEditor(p);
+            this.formError = message;
+            return null;
         },
         editFromSheet(p) {
             this.sheetProduct = null;
@@ -612,8 +725,19 @@ export default {
             }
         },
         /** Sélection : un travail d'impression par produit, dans l'ordre d'affichage ; on s'arrête à la première panne. */
-        async printSelection() {
+        async printSelection(originalsById = null) {
             if (this.listBusy || this.draining || !this.selectionTotal) return;
+            // Des produits « DLC du fabricant » dans la sélection : leurs dates d'abord, en une seule étape.
+            if (!originalsById) {
+                const needing = this.activeProducts.filter((p) => this.selection[p.id] && p.ask_original_dlc && this.selectable(p));
+                if (needing.length) {
+                    this.originals = needing.map((p) => {
+                        const last = this.lastOriginalFor(p.id);
+                        return { id: p.id, name: p.name, original_dlc: last ? last.original_dlc : "", supplier_lot: last ? last.supplier_lot : "" };
+                    });
+                    return;
+                }
+            }
             this.listBusy = true;
             const batch = [];
             const skipped = [];
@@ -625,7 +749,11 @@ export default {
                     const count = this.selection[p.id];
                     // la DLC du fabricant se saisit produit par produit ; un événement non prévu n'est JAMAIS remplacé par un autre
                     if (!this.selectable(p)) { skipped.push(p.name); continue; }
-                    const result = await this.printOne(p, { copies: count, action: this.batchAction || null, quiet: true });
+                    const orig = originalsById && originalsById[p.id];
+                    const result = await this.printOne(p, {
+                        copies: count, action: this.batchAction || null, quiet: true,
+                        original_dlc: orig ? orig.original_dlc : undefined, supplier_lot: orig ? orig.supplier_lot : undefined,
+                    });
                     batch.push({ name: p.name, copies: count, ok: result.ok, message: result.message, ids: result.ids || [], offline: result.offline });
                     if (!result.ok && !result.refused) break; // panne d'imprimante : inutile d'enchaîner, la sélection reste pour réessayer
                     if (!result.ok) continue; // refusé (ce produit seulement) : il reste sélectionné, les autres partent
@@ -643,14 +771,33 @@ export default {
                 this.loadHistory();
             }
         },
+        confirmOriginals() {
+            if (!this.originalsReady) return;
+            const byId = Object.fromEntries(this.originals.map((o) => [o.id, { original_dlc: o.original_dlc, supplier_lot: String(o.supplier_lot || "").trim() || undefined }]));
+            this.originals = null;
+            this.printSelection(byId);
+        },
         /**
-         * Le résultat s'affiche en notice fixe (sans lui, on croit que rien ne s'est passé et on retape : doublon). Un
-         * succès s'efface seul au bout de 15 s ; un échec reste jusqu'à ce qu'on le ferme.
+         * Le résultat s'affiche en notice fixe (sans lui, on croit que rien ne s'est passé et on retape : doublon), posée
+         * AU-DESSUS DE LA GRILLE — jamais sur les boutons « Jeté / Utilisé » de la surveillance. Un succès s'efface seul au
+         * bout de 15 s ; un échec reste jusqu'à ce qu'on le ferme.
          */
         showLast(last) {
+            this.placeToasts();
             this.last = last;
+            this.toastShownAt = Date.now();
             clearTimeout(this.lastTimer);
             if (last.ok && !last.warn) this.lastTimer = setTimeout(() => { this.last = null; }, 15000);
+        },
+        placeToasts() {
+            const el = this.$refs.main;
+            if (!el || !el.getBoundingClientRect || typeof window === "undefined" || window.innerWidth < 1100) { this.toastStyle = {}; return; }
+            const r = el.getBoundingClientRect();
+            if (!r.width) { this.toastStyle = {}; return; }
+            this.toastStyle = { left: `${Math.round(r.left)}px`, right: "auto", width: `${Math.round(Math.min(560, r.width))}px` };
+        },
+        toastGuarded() {
+            return Date.now() - this.toastShownAt < TOAST_GUARD_MS;
         },
         closeLast() {
             clearTimeout(this.lastTimer);
@@ -658,6 +805,7 @@ export default {
         },
         /** Étiquette sortie par erreur : la ligne reste au journal, marquée « annulée », et quitte la surveillance. */
         async cancelLast() {
+            if (this.toastGuarded()) return; // la notice vient d'apparaître sous le doigt
             if (!this.last || !this.last.ids || !this.last.ids.length) return;
             const name = this.last.batch ? "la sélection" : `« ${this.last.name} »`;
             await this.discard({ ids: this.last.ids, name }, "cancelled");
@@ -672,6 +820,7 @@ export default {
                 const res = await axios.post("admin/labels/dlc/print", {
                     product_id: product.id, copies, action: opts.action || undefined, original_dlc: opts.original_dlc || undefined,
                     supplier_lot: opts.supplier_lot || undefined, parent_log_id: opts.parent_log_id || undefined,
+                    parent_none: opts.parent_none || undefined,
                 });
                 data = res.data;
             } catch (e) {
@@ -696,19 +845,22 @@ export default {
                 // Réseau coupé : on imprime avec l'horloge du serveur connue au dernier échange ; le journal suivra.
                 offline = true;
                 const now = new Date(Date.now() + this.serverOffsetMs);
+                const ref = clientRef();
                 data = {
                     log_id: null, name: product.name, category: product.category, note: product.note,
-                    storage: storageForAction(product.storage, action.key), allergens: product.allergens, action: action.key,
+                    storage: storageForAction(product.storage, action.key, product.thawed_storage), allergens: product.allergens,
+                    no_allergens: product.no_allergens, action: action.key,
                     opened_at: now.toISOString(), expires_at: previewExpiry(action, now).toISOString(), copies,
-                    by: null, lot: null, capped: false, offline: true,
+                    by: null, lot: null, capped: false, offline: true, client_ref: ref,
                 };
             }
 
             const blocks = dlcLabelBlocks({
                 name: data.name, category: data.category, note: data.note, action: data.action,
                 openedAt: data.opened_at, expiresAt: data.expires_at, storage: data.storage, by: data.by, lot: data.lot,
-                allergens: data.allergens, capped: data.capped, capSource: data.cap_source, originalDlc: data.original_dlc,
-                supplierLot: data.supplier_lot, parent: data.parent, offline: Boolean(data.offline),
+                allergens: data.allergens, noAllergens: Boolean(data.no_allergens), capped: data.capped, capSource: data.cap_source,
+                originalDlc: data.original_dlc, supplierLot: data.supplier_lot, parent: data.parent, offline: Boolean(data.offline),
+                offlineRef: data.client_ref ? this.offlineRefOf(data.client_ref) : "",
             });
             const resultUrl = data.log_id ? `admin/labels/prints/${data.log_id}/result` : null;
             if (resultUrl) labelInflight(axios).begin(data.log_id, resultUrl, data.attempt || null);
@@ -725,11 +877,11 @@ export default {
             } else if (offline) {
                 // La ligne de journal partira dès le retour du réseau (file locale rejouée, `client_ref` : jamais de doublon).
                 await labelResultQueue(axios).send("admin/labels/dlc/offline", {
-                    client_ref: clientRef(), product_id: product.id, action: data.action, copies: data.copies,
-                    opened_at: data.opened_at, expires_at: data.expires_at,
+                    client_ref: data.client_ref, product_id: product.id, product_name: product.name, action: data.action,
+                    copies: data.copies, opened_at: data.opened_at, expires_at: data.expires_at, storage: data.storage || null,
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",
                     message: result.message ? String(result.message).slice(0, 290) : null,
-                });
+                }, { maxAgeMs: OFFLINE_KEEP_MS });
             }
 
             if (!opts.quiet) {
@@ -756,7 +908,8 @@ export default {
                 await axios.post("admin/labels/prints/discard", { ids: w.ids, reason });
                 await this.loadHistory();
                 const what = String(w.name).startsWith("«") || String(w.name).startsWith("la ") ? w.name : `Lot « ${w.name} »`;
-                const text = { used: `${what} marqué utilisé.`, cancelled: `Impression de ${w.name} annulée : retirez l'étiquette.` }[reason]
+                const many = (w.ids || []).length > 1 || String(w.name).startsWith("la ");
+                const text = { used: `${what} marqué utilisé.`, cancelled: `Impression de ${w.name} annulée : retirez ${many ? "les étiquettes" : "l'étiquette"}.` }[reason]
                     || `${what} marqué jeté.`;
                 this.undo = { ids: w.ids, name: w.name, text };
                 clearTimeout(this.undoTimer);
@@ -871,7 +1024,20 @@ export default {
 .dlc-watch ul { list-style: none; margin: 0; padding: 0; }
 .dlc-watch li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 0; font-size: 15px; }
 .dlc-watch-actions { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
-.dlc-watch-more { margin: 6px 0 0; font-size: 14px; color: #92400e; font-weight: 600; }
+.dlc-watch-more { margin: 6px 0 0; color: #92400e; }
+.dlc-watch-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
+.dlc-watch li.is-expired .dlc-watch-n { color: #7f1d1d; }
+.dlc-tile-todo { background: #fef3c7 !important; color: #92400e; font-weight: 700; }
+.dlc-history-anomaly { color: #9a3412; font-weight: 700; }
+.dlc-orig-overlay { position: fixed; inset: 0; z-index: 1060; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.dlc-orig-panel { background: #fff; border-radius: 16px; width: min(720px, 100%); max-height: calc(100vh - 24px); overflow-y: auto; padding: 14px 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); }
+.dlc-orig-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dlc-orig-head h4 { margin: 0; font-size: 20px; font-weight: 800; }
+.dlc-orig-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
+.dlc-orig-row .db-field-control { min-height: 52px; max-width: 220px; font-size: 17px; }
+.dlc-orig-name { flex: 1 1 180px; font-size: 17px; }
+.dlc-orig-lot { max-width: 180px !important; }
+.dlc-orig-foot { display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; }
 .dlc-watch li.is-expired { background: #fee2e2; border-radius: 8px; padding: 6px 8px; margin: 2px -8px; color: #991b1b; font-weight: 700; }
 .dlc-watch li.is-today { color: #92400e; }
 .dlc-watch-icon { font-size: 18px; line-height: 1.2; margin-right: 6px; }
