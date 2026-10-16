@@ -53,6 +53,7 @@ assert.match(homeSource, /loyalty\._replaceAccount\(\{[\s\S]*consent_status:\s*'
 assert.match(homeSource, /new window\.CustomEvent\('lc:loyalty-changed'/, 'reactivation emits the existing loyalty change event');
 assert.match(homeSource, /data-testid="loyalty-reactivate-btn"[\s\S]*onClick=\{reactivateLoyaltyAccount\}/, 'reactivation control is wired without LC.dev');
 assert.doesNotMatch(homeSource, /loyalty-reactivate-btn[\s\S]*window\.LC\.dev\.setConsent/, 'customer-facing reactivation does not depend on the dev namespace');
+assert.match(homeSource, /data-lc-decoration="loyalty-pattern"[\s\S]*pointerEvents:\s*'none'/, 'loyalty decoration cannot intercept customer clicks');
 assert.match(itemStepsSource, /window\.AllergenBadge/, 'wizard consumes the disclosure-only compatibility alias');
 assert.match(itemStepsSource, /aggregatedAllergens/, 'recap keeps aggregate allergen computation');
 assert.match(itemStepsSource, /selections\.supplementIds[\s\S]*selections\.drinkId/, 'aggregate includes supplements and drinks');
