@@ -542,9 +542,13 @@ describe('éditeur de produit', () => {
     it('décongelé à température ambiante : signalé pour tout sauf le pain (liste blanche, pas liste noire des viandes)', () => {
         const warn = (name, category = '') => mount(DlcProductEditor, { props: { product: P({ name, category, storage: '≤ −18 °C', thawed_storage: 'Ambiante', actions: [{ key: 'thawed', value: 24, unit: 'hours' }] }), settings } })
             .find('[data-testid="dlc-ed-warn-thawed"]');
-        ['Cordon bleu', 'Tenders', 'Mexicanos', 'Cabillaud', 'Poulet'].forEach((n) => expect(warn(n).exists(), n).toBe(true));
+        ['Cordon bleu', 'Tenders', 'Mexicanos', 'Cabillaud', 'Poulet', 'Fricadelle', 'Capitaine'].forEach((n) => expect(warn(n).exists(), n).toBe(true));
         expect(warn('Cordon bleu').text()).toMatch(/réservé au pain et aux viennoiseries/);
-        ['Pains burger', 'Brioches', 'Wraps'].forEach((n) => expect(warn(n).exists(), n).toBe(false));
+        // un mot de pain n'annule JAMAIS un mot de viande ou de poisson (régression relevée au tour G)
+        ['Wrap poulet', 'Galette kebab', 'Pain de viande', 'Pain de poisson'].forEach((n) => expect(warn(n).exists(), n).toBe(true));
+        // desserts et pâtisseries à la crème : au froid
+        ['Tiramisu', 'Cheesecake', 'Pâtisserie à la crème'].forEach((n) => expect(warn(n, 'Desserts').exists(), n).toBe(true));
+        ['Pains burger', 'Brioches', 'Wraps', 'Pita'].forEach((n) => expect(warn(n).exists(), n).toBe(false));
     });
 
     it('sélection « Décongélation » : une fiche dont l’après-décongélation est invalide (ancienne valeur congélateur) reste à part', async () => {
@@ -554,6 +558,18 @@ describe('éditeur de produit', () => {
         await w.get('[data-testid="dlc-batch-action"]').setValue('thawed');
         expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (0)');
         expect(w.get('[data-testid="dlc-product-1"]').text()).toMatch(/À part \(fiche à compléter\)/);
+    });
+
+    it('viande décongelée au-delà de 24 h : liste fast-food comprise (cordon bleu, nuggets…)', () => {
+        const w = mount(DlcProductEditor, { props: { product: P({ name: 'Cordon bleu', storage: '≤ −18 °C', thawed_storage: '0 à +4 °C', actions: [{ key: 'thawed', value: 3, unit: 'days' }] }), settings } });
+        expect(w.get('[data-testid="dlc-ed-warn-thawed"]').text()).toMatch(/24 h est l'usage courant/);
+    });
+
+    it('liste des lots en cours indisponible : la fiche le dit (liste partielle), jamais en silence', async () => {
+        const lots = [{ id: 80, dlc_product_id: 9, status: 'printed', product_name: 'Poulet', action: 'thawed', expires_at: new Date(Date.now() + 3600000).toISOString() }];
+        const w = mount(DlcPrintSheet, { props: { product: P({}), settings, lots, lotsPartial: true } });
+        await w.get('[data-testid="dlc-sheet-parent-toggle"]').trigger('click');
+        expect(w.get('[data-testid="dlc-sheet-lots-partial"]').text()).toMatch(/indisponible/);
     });
 
     it('viande hachée décongelée au-dessus de +2 °C : signalée (arrêté du 21/12/2009), à confirmer', async () => {

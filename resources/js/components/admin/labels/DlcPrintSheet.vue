@@ -69,6 +69,7 @@
                                 <span>{{ l.actionShort }} · jusqu'au {{ l.until }}<template v-if="l.lot"> · N° {{ l.lot }}</template><template v-if="l.used"> · bac utilisé à l'instant</template></span>
                                 <span v-if="l.anomaly" class="sh-anomaly" data-testid="dlc-sheet-parent-anomaly">⚠ À vérifier (imprimée hors ligne) : sa DLC peut être fausse</span>
                             </button>
+                            <p v-if="lotsPartial" class="sh-cap" data-testid="dlc-sheet-lots-partial">Liste des lots en cours indisponible (réseau) : seuls les lots récents sont proposés.</p>
                             <p v-if="!filteredParents.length" class="sh-help">{{ parentChoices.length ? "Aucun lot ne correspond." : "Aucun lot en cours dans le journal." }}</p>
                         </div>
                         <p v-if="mustChooseParent" class="sh-cap is-bad" data-testid="dlc-sheet-parent-required">Choisissez le produit d'origine, ou « produit neuf ».</p>
@@ -124,6 +125,8 @@ export default {
         initialAction: { type: String, default: "" },
         /** Lots en cours (journal entier, `GET labels/lots`) : origines possibles d'une préparation. */
         lots: { type: Array, default: () => [] },
+        /** La liste complète des lots n'a pas pu être relue (réseau, serveur) : celle affichée est partielle. */
+        lotsPartial: { type: Boolean, default: false },
         /** Dernière DLC / lot du fabricant saisis pour ce produit, encore valables : { original_dlc, supplier_lot }. */
         lastOriginal: { type: Object, default: null },
         timezone: { type: String, default: "Europe/Paris" },

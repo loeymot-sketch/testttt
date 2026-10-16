@@ -248,7 +248,7 @@
         <DlcProductEditor v-if="editing" :key="editorKey" :product="editing" :categories="knownCategories" :settings="settings"
                           :saving="saving" :error="formError" @save="saveProduct" @cancel="closeEditor" @delete="deleteProduct" />
         <DlcPrintSheet v-if="sheetProduct" :product="sheetProduct" :settings="settings" :server-offset-ms="serverOffsetMs" :busy="busyId === sheetProduct.id || queuedCount(sheetProduct.id) > 0"
-                       :lots="lotRows.length ? lotRows : activeLots" :last-original="lastOriginalFor(sheetProduct.id)" :timezone="timezone"
+                       :lots="lotRows.length ? lotRows : activeLots" :lots-partial="lotsError" :last-original="lastOriginalFor(sheetProduct.id)" :timezone="timezone"
                        @print="printFromSheet" @close="sheetProduct = null" @edit="editFromSheet" />
 
         <!-- Sélection contenant des produits « DLC du fabricant » : une seule étape, toutes les dates d'un coup (proposées
@@ -361,6 +361,7 @@ export default {
             originals: null,
             pendingOffline: [],
             origReturnFocus: null,
+            lotsError: false,
             busyId: null,
             queue: [],
             draining: false,
@@ -745,8 +746,10 @@ export default {
             try {
                 const { data } = await axios.get("admin/labels/lots");
                 this.lotRows = data.data || [];
+                this.lotsError = false;
             } catch (_) {
-                // hors ligne : on garde ce qu'on a (journal + surveillance) ; l'origine ne pourra pas être vérifiée
+                // on garde ce qu'on a (journal + surveillance), et la fiche le DIT : la liste des origines est partielle
+                this.lotsError = true;
             }
         },
         openEditorFor(p, message) {

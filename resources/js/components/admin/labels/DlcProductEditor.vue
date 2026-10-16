@@ -170,10 +170,13 @@ import { previewUrls } from "../../../helpers/labelPrintJob";
 const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"] };
 /** Événements où le produit est encore dans son emballage d'origine : la DLC du fabricant est demandée par défaut. */
 const PACKAGED = ["opened", "vacuum"];
-/** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). */
-const MEAT_OR_FISH = /viande|volaille|poulet|b(?:oe|œ)uf|steak|hach|kebab|poisson|saumon|thon|crevette|fruits de mer/iu;
-/** Pains et viennoiseries : les seuls produits qui se décongèlent à température ambiante. */
-const BREAD = /pain|bun|brioch|viennois|baguette|croissant|wrap|tortilla|galette|pita|naan|bagel|muffin|cookie|g[aâ]teau|p[aâ]tisserie|dessert/iu;
+/** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). Liste large, fast-food compris. */
+const MEAT_OR_FISH = /viande|volaille|poulet|chicken|dinde|b(?:oe|œ)uf|veau|porc|agneau|steak|hach|kebab|kefta|merguez|saucisse|chipolata|lardon|bacon|jambon|escalope|cordon|nugget|tender|wing|mexicano|fricadelle|boulette|poisson|saumon|thon|colin|cabillaud|merlu|capitaine|crevette|calamar|surimi|fruits de mer/iu;
+/**
+ * Pains et viennoiseries : les seuls produits qui se décongèlent à température ambiante. Mots ENTIERS (« pita » ne doit pas
+ * reconnaître « Capitaine ») ; jamais les desserts ni pâtisseries à la crème (ils se décongèlent au froid).
+ */
+const BREAD = /(^|[^a-zà-ÿ])(pains?|buns?|brioches?|viennoiseries?|baguettes?|croissants?|wraps?|tortillas?|galettes?|pitas?|naans?|bagels?|muffins?|cookies?)([^a-zà-ÿ]|$)/iu;
 /** Viande hachée et produits de la pêche : +2 °C au plus (arrêté du 21/12/2009, annexe I). */
 const MINCED_OR_FISH = /hach|steak|poisson|saumon|thon|cabillaud|colin|crevette|fruits de mer/iu;
 
@@ -313,8 +316,10 @@ export default {
                 return "Viande hachée ou poisson décongelés : +2 °C au plus (arrêté du 21/12/2009, annexe I).";
             }
             // Décongelé à température ambiante : seul un pain ou une viennoiserie s'y prête — tout le reste au froid (arrêté du
-            // 21/12/2009, annexe I : la température du produit frais équivalent). Liste blanche des pains, pas liste noire des viandes.
-            if (a.key === "thawed" && /^\s*ambiante\s*$/iu.test(String(this.form.thawed_storage || "")) && !BREAD.test(what)) {
+            // 21/12/2009, annexe I : la température du produit frais équivalent). Viande ou poisson : TOUJOURS signalé, même avec
+            // un mot de pain (« Wrap poulet », « Pain de viande ») ; sinon signalé sauf pain reconnu.
+            const ambient = /^\s*ambiante\s*$/iu.test(String(this.form.thawed_storage || ""));
+            if (a.key === "thawed" && ambient && (MEAT_OR_FISH.test(what) || !BREAD.test(what))) {
                 return "Décongelé à température ambiante : réservé au pain et aux viennoiseries — viande, poisson, plats : au froid (arrêté du 21/12/2009, annexe I).";
             }
             if (a.key === "thawed" && h > 24 && MEAT_OR_FISH.test(what)) {
