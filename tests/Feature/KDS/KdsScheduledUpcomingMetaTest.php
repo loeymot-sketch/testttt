@@ -80,6 +80,8 @@ class KdsScheduledUpcomingMetaTest extends TestCase
             'order_datetime'   => now(),
             'is_advance_order' => Ask::NO,
             'scheduled_at'     => Carbon::parse($parisTime, 'Europe/Paris'),
+            // [B2-R2-08 · 2026-10-01] Numéro appelé, que le bandeau affiche (« N°A0055 »).
+            'queue_number'     => 'A' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
         ]);
     }
 
@@ -114,10 +116,13 @@ class KdsScheduledUpcomingMetaTest extends TestCase
         // Payload minimal auto-suffisant pour le bandeau.
         $row = $upcomingRows->firstWhere('id', $upcoming->id);
         $this->assertNotNull($row);
-        foreach (['id', 'order_serial_no', 'scheduled_at', 'order_type', 'customer_name', 'scheduled_date'] as $key) {
+        foreach (['id', 'order_serial_no', 'queue_number', 'scheduled_at', 'order_type', 'customer_name', 'scheduled_date'] as $key) {
             $this->assertArrayHasKey($key, $row, "meta.scheduled_upcoming doit exposer `$key`.");
         }
         $this->assertSame($upcoming->order_serial_no, $row['order_serial_no']);
+        // [B2-R2-08 · 2026-10-01] Le bandeau cite le numéro APPELÉ, comme la caisse et l'écran client.
+        $this->assertNotNull($row['queue_number']);
+        $this->assertSame($upcoming->queue_number, $row['queue_number']);
         $this->assertNotNull($row['scheduled_at'], 'scheduled_at sérialisé (ISO8601) pour affichage HH:MM côté bandeau.');
         $this->assertStringContainsString('2026-03-10', (string) $row['scheduled_at']);
         // [FIX SCHEDULED-STALE P3 2026-07-20] Date cible Y-m-d (Paris-local) pour

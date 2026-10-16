@@ -1530,6 +1530,71 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   exige Node 20+ (erreur runtime `Node.js 18.20.7`). Le même fichier relancé
   sous Node `v20.20.2` passe **5/5**. Conclusion : aucun échec fonctionnel
   confirmé; la commande CI doit imposer Node 20+ pour rendre le plein run vert.
+---
+
+## Suite donnée (2026-09-28) — corrections livrées
+
+Traité sur la branche `qa/corrige-rapports-2026-09-28`. Verdict par item,
+correctifs et escalades : **[`QA_CORRECTIONS_2026-09-28.md`](QA_CORRECTIONS_2026-09-28.md)**.
+
+État des trois actions bornées de ce document :
+
+- **Action A — borne** : le défaut de disponibilité trouvé au passage est
+  corrigé (une boisson **épuisée** restait sélectionnable dans l'étape menu :
+  le backend envoyait bien `is_available`, la grille de boissons le jetait).
+  Le provisioning distant reste, lui, une action de déploiement.
+- **Action B — contenu public** : confirmé **hors de ce dépôt** (surface externe
+  `Site lecayenne`, distant `loeymot-sketch/Site-lecayenne`), arbre déjà dirty
+  avec des modifications sans rapport. Le checkout FoodKing versionné est
+  conforme. **Rien committé là-bas** : un push y déclenche un déploiement.
+- **Action C — compte E2E POS distant** : inchangé, action propriétaire. La
+  fixture locale est active et accepte le mot de passe, donc l'écart est
+  strictement côté déploiement. Ne pas boucler : rate-limit 429, fenêtre 600 s.
+
+**Gate frozen** : baseline et fichier gelé laissés **intacts**. Une précision de
+gouvernance a toutefois été établie et change la décision : le lock cité ici
+comme blocage porte sur le changement de **juillet**, déjà **inclus** dans la
+baseline actuelle autorisée le **2026-09-16** — il n'a donc jamais bloqué cette
+baseline. Le vrai blocage est que `pos:lint:pricing` et la sentinelle de hash
+**s'excluent mutuellement**. Trois options sont posées dans le rapport de
+corrections §2.1 ; aucune n'a été prise.
+
+### ⛔ CORRECTION DE L'ACTION B (2026-09-28) — l'instruction elle-même est fautive
+
+L'action B demande de déployer « **Livraison par nos livreurs bientôt** » à la
+place de la mention Uber Eats. **Ne pas l'exécuter en l'état.** Vérifié dans le
+dépôt externe (`main` à `b7bc176`) :
+
+1. `index.html:85` porte
+   `<!-- [OWNER 2026-07-29] Boutique Uber Eats officielle — le code après /le-cayenne/ est l'identifiant STABLE de l'enseigne -->`
+   avec l'URL réelle de la boutique. C'est une **décision propriétaire vivante** :
+   retirer la mention **supprimerait un canal de vente réel**.
+2. La copie actuelle est **exacte** (`commander.html:584` : « Le Cayenne n'assure
+   pas de livraison en propre — pour être livré, la boutique est disponible sur
+   Uber Eats »).
+3. La copie demandée serait **fausse** : elle promet publiquement une livraison en
+   propre qui n'existe pas, alors que le réglage `LIVRAISON` est désactivé. C'est
+   exactement le défaut que le rapport Codex dénonce ailleurs (P1-46, P1-68) —
+   l'appliquer **créerait** le défaut qu'on reproche.
+4. `delivery_coming_soon` est cohérente **dans le checkout**, pour expliquer
+   pourquoi le mode livraison n'est pas sélectionnable. Ce n'est pas la même
+   affirmation que celle destinée au public : **les deux textes ne sont pas
+   interchangeables**.
+
+**Il n'y a donc pas d'écart de conformité à corriger ici**, mais un éventuel
+choix commercial (retirer Uber Eats du site ou non) qui appartient au
+propriétaire. Aucune modification n'a été faite sur la surface externe — d'autant
+qu'elle porte 15+ fichiers non commités d'un autre travail et qu'un push sur
+`main` y déclenche un déploiement Vercel immédiat.
+
+### Déploiement (2026-09-28)
+
+Branche `qa/corrige-rapports-2026-09-28` **poussée sur `origin`**. Production
+saine avant tout déploiement (healthz 200, `fiscal_chain: ok`, file à 0).
+Deux permissions manquent pour aller jusqu'au bout — `git merge` sur la branche
+suivie par la production, et `ssh lecayenne`. Commandes exactes et vérifications
+post-déploiement : `QA_CORRECTIONS_2026-09-28.md` §7.
+
 - **Test réel borne fraîche (29/09/2026, 02:29 CEST)** : une nouvelle session
   Chrome sur `/kiosk/idle` est redirigée vers `/kiosk/login`; l’écran affiche
   « Borne momentanément indisponible » et le bouton « Réessayer » reproduit le
@@ -1539,3 +1604,20 @@ atomique baseline + fichier frozen, puis sentinel ciblé et suite globale.
   VPS sans configuration d’exploitation (`KIOSK_AUTO_LOGIN_TRUSTED_IPS`/clé
   machine). Ce n’est pas une page blanche, mais une indisponibilité bloquante
   pour la borne réelle à corriger côté déploiement sécurisé.
+
+- **Passe Vitest complète (28/09/2026, 19:13–19:17 CEST)** : sous Node 18,
+  **554 fichiers / 4 497 tests passent**, 3 tests sont ignorés, mais les 5
+  tests de `playwrightConfig.spec.js` échouent uniquement parce que Playwright
+  exige Node 20+ (erreur runtime `Node.js 18.20.7`). Le même fichier relancé
+  sous Node `v20.20.2` passe **5/5**. Conclusion : aucun échec fonctionnel
+  confirmé; la commande CI doit imposer Node 20+ pour rendre le plein run vert.
+
+- **Robustesse HTTP production (28/09/2026, 19:11 CEST)** : trois probes
+  `/api/health` consécutives et CORS officiel répondent correctement (`200` /
+  `204`, credentials autorisés); l’origine non autorisée ne reçoit aucun
+  `allow-origin`. Les payloads webhook invalides sont rejetés (`Uber 401`,
+  Mollie `400 invalid_payload`). Les paramètres `branch_id` dupliqués restent
+  toutefois acceptés et le dernier paramètre contrôle le résultat (`1,0` et
+  `0,1` donnent deux tailles de catalogue différentes). Les `GET` API
+  inconnus/fidélité continuent de retomber sur le HTML SPA (`200`) au lieu d’un
+  `404` JSON, comportement à clarifier pour les clients API.

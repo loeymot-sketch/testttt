@@ -137,6 +137,28 @@ class PosSystemHealthController extends Controller
                     : 'Aucune commande en retard.',
             ];
 
+        // --- Impression cuisine — DEGRADED si AUCUNE imprimante active.
+        //
+        // [P0-07 / P0-08 · RAPPORT_DEV_CAISSE_2026-09-24] Cet écran affichait « Tout va bien »
+        // alors que la table Imprimantes était VIDE en production : le restaurant l'apprenait
+        // à la première commande, quand rien ne sortait en cuisine. Le contrôle regardait le
+        // temps réel, les files, le stock et les commandes en souffrance — jamais la seule
+        // chose qui met le plat en route.
+        //
+        // Sévérité : 'degraded' (ambre), pas 'down'. Sans imprimante on encaisse toujours et
+        // l'écran cuisine reste la voie de secours ; c'est une panne d'atelier, pas une caisse
+        // morte. Le compte est volontairement exposé : « 0 » se lit mieux qu'une phrase.
+        $imprimantes = $this->activePrinterCount($branchId);
+        $impression = $imprimantes === null
+            ? $this->unknownCountCheck('Contrôle des imprimantes momentanément indisponible.')
+            : [
+                'status'  => $imprimantes > 0 ? 'ok' : 'warn',
+                'count'   => $imprimantes,
+                'message' => $imprimantes > 0
+                    ? ($imprimantes.' imprimante'.($imprimantes > 1 ? 's' : '').' active'.($imprimantes > 1 ? 's' : ''))
+                    : 'Aucune imprimante active : rien ne sortira en cuisine.',
+            ];
+
         // Sévérité : une panne de SYNC (opérationnel — la caisse ne reçoit plus les commandes) peut
         // aller jusqu'à 'down' (rouge). Une alerte FISCALE (intégrité de fond ; l'opérateur ne peut
         // qu'alerter le support, il continue d'encaisser) plafonne à 'degraded' (ambre) — on ne veut
@@ -145,16 +167,41 @@ class PosSystemHealthController extends Controller
         $fiscalRank = $fiscal['status'] === 'ok' ? 0 : 1;
         $stockRank  = $stock['status'] === 'unknown' ? 1 : 0;
         $agingRank  = $aging['status'] === 'unknown' ? 1 : 0;
-        $worst = max($syncRank, $fiscalRank, $stockRank, $agingRank);
+        // 'warn' (aucune imprimante) et 'unknown' pèsent pareil : l'écran cesse de dire
+        // « tout va bien » sans jamais passer au rouge.
+        $impressionRank = in_array($impression['status'], ['warn', 'unknown'], true) ? 1 : 0;
+        $worst = max($syncRank, $fiscalRank, $stockRank, $agingRank, $impressionRank);
         $overall = $worst === 0 ? 'ok' : ($worst === 1 ? 'degraded' : 'down');
 
         return response()->json([
             'overall'       => $overall,
-            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal, 'stock' => $stock, 'aging' => $aging],
+            'checks'        => ['sync' => $sync, 'fiscal' => $fiscal, 'stock' => $stock, 'aging' => $aging, 'impression' => $impression],
             'stale_events'  => $staleEvents,
             'queue_pending' => $queuePending,
             'timestamp'     => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Imprimantes ACTIVES de la branche, ou null si le contrôle lui-même échoue.
+     *
+     * `null` n'est pas `0` : « je ne sais pas » ne doit jamais se lire « tout va bien »,
+     * ni « rien ne marche ». Même convention que les autres compteurs de cet écran.
+     */
+    protected function activePrinterCount(int $branchId): ?int
+    {
+        try {
+            $requete = \App\Models\Printer::query()->where('status', \App\Enums\Status::ACTIVE);
+            if ($branchId > 0) {
+                $requete->where('branch_id', $branchId);
+            }
+
+            return (int) $requete->count();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     protected function websocketStatus(): string

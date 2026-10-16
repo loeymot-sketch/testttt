@@ -606,10 +606,31 @@ class DashboardService
             // raison, et se concilient si les deux définitions bougent ENSEMBLE — ce que ce
             // second banc demande d'ailleurs mot pour mot. On garde donc la définition
             // « menu = catégories client », et le banc de comparaison a été aligné dessus.
+            //
+            // [AUDIT-COMPTA 2026-10-04] « Menu » = ce qu'un CLIENT peut commander.
+            //
+            // Le jour où la migration `add_sauces_supplementaires_category` a été appliquée, ce
+            // compteur est passé de 54 à 67 (54 + 13) : elle crée 13 sauces « HORS MENU »
+            // (`channels = ["pos"]`, vues de la caisse seule). La catégorie n'est exclue ni par
+            // son nom (pollution, interne) ni par autre chose : ce qui la rend « hors menu »
+            // est son CANAL. Deux correctifs justes, livrés par deux sessions, se contredisaient
+            // à leur rencontre — un exploitant lisait « mon menu a 67 articles » alors que sa
+            // borne en propose 54.
+            //
+            // Le critère est donc « visible sur la borne OU sur le site » (`channels` nul = partout,
+            // la règle V1 de `ItemService::applyChannelsFilter`, réutilisée plutôt que réécrite).
+            // Caisse seule = hors menu ; borne seule ou site seul = au menu.
+            $items = app(ItemService::class);
+
             return Item::query()
                 ->where('status', Status::ACTIVE)
                 ->whereHas('category', function ($category) {
                     ItemCategoryService::constrainCustomerFacing($category);
+                })
+                ->where(function ($visibleParUnClient) use ($items) {
+                    $visibleParUnClient
+                        ->where(fn ($borne) => $items->applyChannelsFilter($borne, 'kiosk'))
+                        ->orWhere(fn ($site) => $items->applyChannelsFilter($site, 'web'));
                 })
                 ->count();
         } catch (Exception $exception) {

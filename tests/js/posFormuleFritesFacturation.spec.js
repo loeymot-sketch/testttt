@@ -34,6 +34,7 @@ import {
     findSauceSupplementExtra,
     formulaOptionExtras,
 } from '../../resources/js/helpers/posFormulaBilling';
+import { computePosCartLineDisplayTotal } from '../../resources/js/helpers/posCartLineMath';
 
 function _unusedCartState() {
     return {
@@ -154,9 +155,11 @@ describe('helper — options de formule facturables', () => {
     const catalog = parent.addons[0];
 
     it('Grande Portion + Cheddar Fondu → deux ids d\'extras sur la ligne formule', () => {
+        // [GOAL REMARQUES 2026-10-03 · R-041] + `unit_price` (prix catalogue, AFFICHAGE / « offrable »
+        // seulement — jamais transmis : voir le cas « la ligne envoyée » de posOffertOptionFormule.spec).
         expect(formulaOptionExtras({ fritesGrande: true, fritesCheddar: true }, catalog, 1)).toEqual([
-            { id: 234, item_id: 1, name: 'Grande Portion', quantity: 1 },
-            { id: 235, item_id: 1, name: 'Cheddar Fondu', quantity: 1 },
+            { id: 234, item_id: 1, name: 'Grande Portion', quantity: 1, unit_price: 1 },
+            { id: 235, item_id: 1, name: 'Cheddar Fondu', quantity: 1, unit_price: 1 },
         ]);
     });
     it('rien de coché → rien n\'est ajouté (aucun prix inventé)', () => {
@@ -191,6 +194,33 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
         payload.pos_line_addons[0].item_extras.forEach((e) => expect(e).not.toHaveProperty('price'));
     });
 
+    // [GOAL REMARQUES 2026-10-03 · revue vague 3 · P2-1] La valeur des options (+1 € chacune) restait dans
+    // « total wizard − addons », donc sur la ligne SANDWICH, alors que le serveur la facture sur la ligne
+    // FORMULE. Offrir l'option retirait alors le montant de la mauvaise ligne (plancher à 0 → écart).
+    it('la valeur des options est portée par la ligne FORMULE, là où le serveur la facture', () => {
+        // Total wizard COHÉRENT : Tacos M 8,50 + formule 2,50 + Grande Portion 1,00 + Cheddar Fondu 1,00.
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: true, fritesCheddar: true, sauceFritesOrder: [] })], 13);
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.pos_line_addons[0].total_price).toBeCloseTo(4.5, 6); // 2,50 formule + 2 × 1,00
+        expect(payload.convert_price).toBeCloseTo(8.5, 6); // le Tacos M à son prix, sans les options
+    });
+
+    // [GOAL REMARQUES 2026-10-03 · revue de convergence · P0] Quantité 2 au wizard : le total wizard vaut
+    // (sandwich + formule + options) × 2 mais le code ne retirait la formule qu'UNE fois — le panier affichait
+    // plus que le montant facturé (22,00 € facturés, 24,50 € affichés sans option).
+    it('quantité 2 : le total du panier = le total du wizard = le facturé', () => {
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: true, fritesCheddar: true, sauceFritesOrder: [] })], 26);
+        vm.temp.quantity = 2;
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.convert_price).toBeCloseTo(8.5, 6);
+        expect(payload.pos_line_addons[0].total_price).toBeCloseTo(4.5, 6);
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 2 })).toBeCloseTo(26, 6);
+    });
+
     it('3 sauces frites → 2 « Sauce supplémentaire » facturées sur le produit parent', () => {
         const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] })], 9.5);
 
@@ -199,6 +229,64 @@ describe('payload panier POS — ce qui est affiché est ce qui part au backend'
         const sauce = payload.item_extras.find((e) => e.id === 489);
         expect(sauce, 'extra « Sauce supplémentaire » du parent').toBeTruthy();
         expect(sauce.quantity).toBe(2);
+    });
+
+    // [GOAL REMARQUES 2026-10-03 · revue de convergence 2 · R-037] Le total du WIZARD n'inclut pas les sauces
+    // frites au-delà de la 1ʳᵉ (pos-wizard.js, zone gelée), mais l'extra « Sauce supplémentaire » part au
+    // serveur qui le facture : le panier annonçait MOINS que le montant encaissé (22,00 contre 24,00 à q=2).
+    it('2ᵉ et 3ᵉ sauces frites : le panier affiche ce que le serveur facture', () => {
+        // Total wizard RÉEL : Tacos M 8,50 + formule 2,50 — sans les 2 × 0,50 des sauces frites.
+        const vm = vmWithWizard([wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] })], 22);
+        vm.temp.quantity = 2;
+
+        const payload = vm.buildPosCartMainPayload();
+
+        // Facturé : 2 × (8,50 + 2 × 0,50) + 2 × 2,50 = 24,00
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 2 })).toBeCloseTo(24, 6);
+    });
+
+    // [Revue de convergence 2 · R-002 « le prix ne changeait pas »] « Sans formule » à la modification : le
+    // wizard n'envoie plus de ligne formule, mais le payload retombait sur les anciennes formules (this.addons
+    // rechargées par openEditFromCart) — la formule restait facturée.
+    it('« Modifier » puis « Sans formule » : la formule quitte le panier et la facture', () => {
+        const vm = vmWithWizard([], 8.5);
+        vm.addons = { 7: { name: 'Menu (Frites + Boisson)', item_id: 1, quantity: 1, total_price: 2.5, convert_price: 2.5, item_variations: [], item_extras: [] } };
+
+        const payload = vm.buildPosCartMainPayload();
+
+        expect(payload.pos_line_addons).toEqual([]);
+        expect(computePosCartLineDisplayTotal({ ...payload, quantity: 1 })).toBeCloseTo(8.5, 6);
+    });
+
+    // [Revue de convergence 3 · P1-2] « Boisson Seule » n'a pas de frites : les sauces frites choisies avant
+    // de changer de formule restent dans les sélections du wizard, et l'extra partait quand même (0,50 €).
+    it('formule sans frites (« Boisson Seule ») : aucune sauce frites facturée', () => {
+        const boisson = { ...wizardAddonLine({ fritesGrande: false, fritesCheddar: false, sauceFritesOrder: ['sf_1', 'sf_2', 'sf_3'] }), name: 'Boisson Seule' };
+        const vm = vmWithWizard([boisson], 10);
+
+        expect(vm.buildPosCartMainPayload().item_extras.find((e) => e.id === 489)).toBeUndefined();
+    });
+
+    // [Revue de convergence 3 · P1-1 · R-002] « Modifier → Valider » sans rien changer facturait UNE
+    // « Sauce supplémentaire » de plus à chaque fois (10,40 → 10,90 → 11,40) : openEditFromCart rechargeait
+    // l'extra générique fusionné, puis la sauce frites s'y ajoutait encore. Il n'est plus rechargé — le
+    // wizard le reconstruit depuis les sauces nommées (même règle que la restauration, ItemComponent:1562).
+    it('« Modifier » ne recharge pas l\'extra générique « Sauce supplémentaire »', async () => {
+        const dispatch = vi.fn(() => Promise.resolve({ data: { data: parent } }));
+        const vm = createVm(null, dispatch);
+        vm.$nextTick = (cb) => (cb ? Promise.resolve().then(cb) : Promise.resolve());
+        try {
+            vm.openEditFromCart({
+                item_id: 26, name: 'Tacos M', quantity: 1, convert_price: 8.5,
+                item_variations: [],
+                item_extras: [{ id: 489, name: 'Sauce supplémentaire', quantity: 2, unit_price: 0.5 }],
+                pos_line_addons: [],
+                instruction: 'TACOS M\nSauce : Algérienne, Samouraï',
+            }, 0);
+        } catch (_) { /* le reste de l'ouverture (DOM) n'est pas l'objet de ce test */ }
+        await new Promise((r) => setTimeout(r, 0));
+        expect(dispatch).toHaveBeenCalled();
+        expect(vm.temp.item_extras.find((e) => e.id === 489)).toBeUndefined();
     });
 
     it('1 seule sauce frites → rien à facturer (la 1ère est offerte)', () => {

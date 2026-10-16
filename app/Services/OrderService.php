@@ -460,7 +460,7 @@ class OrderService
                     // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -591,7 +591,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [AUDIT-FIX P0-1] Coupon recalculation server-side — never trust $request->discount
@@ -996,7 +996,7 @@ class OrderService
                     // at order time, not read through a live FK join later).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1157,7 +1157,7 @@ class OrderService
                     // non-SSOT legacy path (feature flag `pricing.use_ssot_service=false`).
                     $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER
@@ -1655,7 +1655,7 @@ class OrderService
                     // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
                 } else {
                     $i = 0;
@@ -1802,7 +1802,7 @@ class OrderService
                     }
 
                     if (! blank($itemsArray)) {
-                        OrderItem::insert($itemsArray);
+                        OrderItem::insertRows($itemsArray);
                     }
 
                     // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT POUR TABLE ORDER

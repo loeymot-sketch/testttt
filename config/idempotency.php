@@ -42,6 +42,9 @@ return [
         // destructive-logique (annulation + audit). EncaissementComponent envoie déjà la clé ; un
         // double appui ne doit pas relancer la purge.
         'api/admin/pos/counter-collect/purge-previous',
+        // [GOAL REMARQUES 2026-10-03 · R-060] Même famille : suppression d'un geste des commandes
+        // téléphone du jour. Un double appui ne doit pas relancer la purge (revue adverse vague 2).
+        'api/admin/pos/counter-collect/purge-phone-today',
         'api/admin/pos-loyalty/customers',
         'api/admin/pos-order/*/attach-loyalty',
         // [ONB-13 T-3.1.1 2026-08-27] Les DEUX routes qui ecrivent reellement les points
@@ -100,6 +103,13 @@ return [
         // double cash-drawer-open, double order-status-change).
         'api/admin/pos/counter-collect/*/confirm',
         'api/admin/pos/counter-collect/*/cancel',
+        // [CAISSE 2026-09-29] Annulation GROUPÉE des commandes des journées passées.
+        // C'est l'écriture la plus lourde de cet écran : un rejeu réseau sur un
+        // second lot annulerait des commandes d'une AUTRE journée que celle que le
+        // caissier avait sous les yeux quand il a confirmé. La clé rend le rejeu
+        // inoffensif. (Le COMPTAGE est une route GET distincte, sans clé : une
+        // lecture n'a pas à en porter.)
+        'api/admin/pos/counter-collect/cancel-stale',
         'api/admin/pos/collect-kiosk-cash/*',
         // [SEC MISSION-12 2026-07-31] Sortie de stock (repas perso / perte) : décrémente le stock →
         // un rejeu réseau doit être idempotent (sinon double-décrément + double trace). La modale envoie
@@ -117,6 +127,13 @@ return [
         'api/admin/pos/cash-drawer/sessions/*/reconcile',
         'api/admin/pos-order/*/refund-with-counter-entry',
         'api/admin/pos-order/change-status/*',
+        // [QA 2026-09-28 · addendum triage C] Suppression d'une commande (DELETE
+        // api/admin/pos-order/{order}) : route DESTRUCTIVE laissée nue, alors que
+        // toutes ses voisines mutantes portaient déjà le middleware et que le
+        // client envoyait déjà l'en-tête — la protection anti-rejeu était inerte.
+        // Le motif ne comporte qu'un segment, il ne peut donc pas viser
+        // change-status/* ni */refund-with-counter-entry (deux segments).
+        'api/admin/pos-order/*',
         'api/admin/online-order/change-status/*',
         'api/admin/table-order/change-status/*',
         'api/admin/kds-order/change-status/*',

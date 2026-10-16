@@ -234,7 +234,8 @@ describe('A-006 — la composition coupée le DIT, au lieu de se cacher dans un 
         const vue = vm.compoAffichee(ligneVagueA);
 
         expect(vue.tronque).toBe(false);
-        expect(vue.texte).toBe('Galette · Algérienne · Bien cuit · +2 Cheddar · +Salade');
+        // [GOAL REMARQUES 2026-10-03 · R-009] Mots TECHNIQUES de la cuisine sur la carte.
+        expect(vue.texte).toBe('G · ALG · Bien cuit · +2 Cheddar · +Salade');
 
         // Et ce texte est bien RENDU, pas seulement calculé.
         vm.orders = [commandeTel({ order_items: [ligneVagueA] })];
@@ -246,7 +247,8 @@ describe('A-006 — la composition coupée le DIT, au lieu de se cacher dans un 
 
     it('une composition démesurée est coupée sur un séparateur et annonce combien manque', () => {
         const vm = buildHarness().wrapper.vm;
-        const complet = vm.resumeComposition(ligneDemesuree);
+        // [R-009] La carte coupe sa forme TECHNIQUE : c'est elle la référence de la coupe.
+        const complet = vm.resumeTechnique(ligneDemesuree);
         const vue = vm.compoAffichee(ligneDemesuree);
 
         expect(vue.tronque).toBe(true);
@@ -491,18 +493,22 @@ describe('marqueur « +N » — le chemin de troncature est RÉELLEMENT exercé'
     const vm = () => buildHarness().wrapper.vm;
 
     /** Compose une chaîne dont on SAIT qu'elle dépasse le budget. */
+    // [R-009] La forme technique est plus courte que les mots entiers : la composition est rallongée
+    // pour que la carte (technique) dépasse VRAIMENT le budget — sinon la coupe ne serait pas exercée.
     const compositionLongue = () => ({
         options: [
             { label: 'Pain', value: 'Galette complète' },
             { label: 'Viande', value: 'Poulet mariné maison' },
             { label: 'Sauce', value: 'Algérienne relevée' },
             { label: 'Cuisson', value: 'Bien cuit' },
+            { label: 'Remarque', value: 'Sans oignons frais' },
+            { label: 'Boisson', value: 'Coca Zéro 50 cl' },
         ],
-        extras: [{ name: 'Cheddar', quantity: 2 }, { name: 'Salade' }],
+        extras: [{ name: 'Cheddar', quantity: 2 }, { name: 'Salade' }, { name: 'Oignons frits' }, { name: 'Champignons' }],
     });
 
     it('la composition de test dépasse bien le budget — sinon le test ne prouverait rien', () => {
-        const complet = vm().resumeComposition(compositionLongue());
+        const complet = vm().resumeTechnique(compositionLongue());
         expect(complet.length).toBeGreaterThan(BUDGET_COMPO);
     });
 
@@ -515,7 +521,7 @@ describe('marqueur « +N » — le chemin de troncature est RÉELLEMENT exercé'
         expect(res.texte.length).toBeLessThanOrEqual(BUDGET_COMPO + 20);
 
         // Le compte doit être exact : morceaux totaux − morceaux gardés.
-        const total = vm().resumeComposition(item).split(' · ').length;
+        const total = vm().resumeTechnique(item).split(' · ').length;
         const gardes = res.texte.split(' · ').length;
         expect(res.restants).toBe(total - gardes);
     });

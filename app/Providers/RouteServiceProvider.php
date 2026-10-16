@@ -155,6 +155,28 @@ class RouteServiceProvider extends ServiceProvider
             return $limits;
         });
 
+        // [AUDIT SÉCURITÉ 2026-09-29 · P1] `forgot-password` était en `throttle:3,60` nu
+        // (clé domaine|IP, rotatable). Or chaque appel SUPPRIME le code de réinitialisation
+        // en attente : en boucle sur l'adresse du propriétaire, un anonyme (a) inonde sa
+        // boîte et (b) l'empêche définitivement de terminer une réinitialisation — le seul
+        // chemin de récupération, pendant le service. Seau par ADRESSE (la primitive
+        // « effacer le code de la victime » disparaît) + couche globale sans clé IP.
+        RateLimiter::for('forgot-password', function (Request $request) {
+            $email = $request->input('email');
+            $id = is_string($email) && $email !== '' ? Str::lower(trim($email)) : 'anon';
+            $tropDeTentatives = function () {
+                return response()->json([
+                    'message' => 'Trop de demandes. Patiente une heure avant de redemander un code.',
+                    'retry_after' => 3600,
+                ], 429);
+            };
+
+            return [
+                Limit::perMinutes(60, 3)->by('pwreset-email:'.$id)->response($tropDeTentatives),
+                Limit::perMinute(10)->by('pwreset-global')->response($tropDeTentatives),
+            ];
+        });
+
         RateLimiter::for('kiosk-orders', function (Request $request) {
             $userKey = $request->user()?->id ?? 'guest';
 
@@ -448,13 +470,23 @@ class RouteServiceProvider extends ServiceProvider
             $identifier = Str::lower(trim($rawIdentifier));
             $key = 'kiosk:'.$identifier.'|'.$request->ip();
             $maxAttempts = max(1, (int) config('kiosk.login_rate_limit', 30));
-
-            return Limit::perMinute($maxAttempts)->by($key)->response(function () {
+            $tropDeTentatives = function () {
                 return response()->json([
                     'message' => 'Too many kiosk login attempts. Please try again shortly.',
                     'retry_after' => 60,
                 ], 429);
-            });
+            };
+
+            // [AUDIT SÉCURITÉ 2026-09-29 · P1] Seul limiteur d'identifiants du fichier SANS
+            // couche globale. Avec TrustProxies `$proxies = '*'`, `$request->ip()` est fourni
+            // par l'attaquant (X-Forwarded-For) : un seau NEUF à chaque requête, les 30/min
+            // ne se déclenchent jamais → force brute non bornée sur le mot de passe machine
+            // (défaut connu `kiosk123`), et chaque essai coûte un bcrypt-12 à la caisse.
+            // Même remède que login-lockout / otp-send / wheel-pin : une couche sans clé IP.
+            return [
+                Limit::perMinute($maxAttempts)->by($key)->response($tropDeTentatives),
+                Limit::perMinute(60)->by('kiosk-login-global')->response($tropDeTentatives),
+            ];
         });
 
         // [Sprint H5-B Z4-P2-05 2026-05-17] Public OSS endpoints
@@ -515,6 +547,11 @@ class RouteServiceProvider extends ServiceProvider
             // quelques logins/h), borne le brute-force distribué.
             return [
                 Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response($tooMany),
+                // [AUDIT SÉCURITÉ 2026-09-29 · P1] Le seau « par compte » était clé
+                // `<email>|<IP>` : une rotation de X-Forwarded-For le contournait, et il ne
+                // restait que le global (30/min = 1 800 essais/h sur un compte NOMMÉ). Ce seau
+                // par identifiant SEUL survit à la rotation d'IP — même motif que `otp-id:`.
+                Limit::perMinutes($decayMinutes, $maxAttempts)->by('login-id:'.$identifier)->response($tooMany),
                 Limit::perMinute(30)->by('login-global')->response($tooMany),
             ];
         });

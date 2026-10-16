@@ -81,6 +81,37 @@ describe.each(Object.entries(CATEGORIES))('noms des sauces en plus — %s', (_ca
     });
 });
 
+// [GOAL REMARQUES 2026-10-03 · T-1.3 R-070] Les 13 sauces VENDUES SEULES (catégorie « Sauces
+// supplémentaires », noms réels de la table items #245-#257) s'affichaient toutes « SAU ».
+// Jumeau : KitchenTicketNomsDesSaucesToutesCategoriesTest::saucesVenduesSeules().
+const SAUCES_SEULES = {
+    'Sauce Ketchup': 'SAUCE KETCHUP',
+    'Sauce Mayonnaise': 'SAUCE MAYONNAISE',
+    'Sauce Blanche': 'SAUCE BLANCHE',
+    'Sauce Algérienne': 'SAUCE ALGERIENNE',
+    'Sauce Samouraï': 'SAUCE SAMOURAI',
+    'Sauce Andalouse': 'SAUCE ANDALOUSE',
+    'Sauce Américaine': 'SAUCE AMERICAINE',
+    'Sauce Barbecue': 'SAUCE BARBECUE',
+    'Sauce Curry': 'SAUCE CURRY',
+    'Sauce Harissa': 'SAUCE HARISSA',
+    'Sauce Hannibal': 'SAUCE HANNIBAL',
+    'Sauce Fromagère maison': 'SAUCE FROMAGERE MAISON',
+    'Sauce Spicy maison': 'SAUCE SPICY MAISON',
+};
+
+describe('sauce vendue seule : son nom, jamais « SAU » (R-070)', () => {
+    it.each(Object.entries(SAUCES_SEULES))('%s → %s', (nom, attendu) => {
+        const res = renderItemSymbolic({ item_name: nom, quantity: 1, instruction: '', composition_snapshot: { lines: [], extras: [], addons: [] } });
+        expect(res.lines.find((l) => l.type === 'symbolic-main').label).toBe(attendu);
+    });
+
+    it('contre-épreuve : un produit qui ne COMMENCE pas par « Sauce » garde son code court', () => {
+        const res = renderItemSymbolic({ item_name: 'Bol Frites', quantity: 1, instruction: '', composition_snapshot: { lines: [], extras: [], addons: [] } });
+        expect(res.lines.find((l) => l.type === 'symbolic-main').label).not.toContain('SAUCE');
+    });
+});
+
 describe('contre-épreuves', () => {
     it('sans supplément, le cas qui marchait déjà ne régresse pas', () => {
         expect(extraSauceNames('Sauce : Algérienne, Andalouse, Harissa')).toEqual(['Andalouse', 'Harissa']);

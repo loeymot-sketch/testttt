@@ -319,6 +319,14 @@ export default {
             broadcastAs: 'OrderCreated',
             handler: () => { this.list(); },
           },
+          // [AUDIT AVAL 2026-09-29 · P1] Le mur filtre sur le paiement (applyBoardRelease-
+          // Filter) : c'est l'ENCAISSEMENT comptoir qui rend une commande visible — et il
+          // n'était pas écouté ici (le KDS, lui, lie OrderPaidAtCounter). Sans cette liaison,
+          // une commande encaissée n'apparaissait qu'au sondage suivant.
+          {
+            broadcastAs: 'OrderPaidAtCounter',
+            handler: () => { this.list(); },
+          },
         ]);
         // [P13_LOG_HYGIENE] console.log(`[OSS] Echo subscribed to branch.${branchId}`);
       } catch (e) {

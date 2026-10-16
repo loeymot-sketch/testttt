@@ -50,7 +50,7 @@ class WaitEstimateService
     public const MIN_DISPLAYED_QUEUE_COUNT = 2;
 
     /**
-     * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string}
+     * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string, service_ouvert:bool, ouverture:string}
      */
     public function estimate(int $branchId): array
     {
@@ -84,7 +84,30 @@ class WaitEstimateService
             'wait_high' => $high,
             'closing_time' => $this->todayClosingTime($now),
             'server_time' => $now->toIso8601String(),
+            // [GOAL STORES 2026-10-01] Le restaurant SERT-il en ce moment ? Mesuré en production
+            // à 02 h 35 : l'API répondait « 10-15 min », restaurant fermé, et le site affichait
+            // « prête dans ~10-15 min » devant une porte close. La fourchette constante reste
+            // (décision propriétaire 2026-09-23) ; on dit en plus si elle a un sens maintenant.
+            'service_ouvert' => self::serviceOuvert($now),
+            'ouverture' => (string) config('kds.scheduled_window_open', '18:00'),
         ];
+    }
+
+    /**
+     * Fenêtre de service = celle qui valide déjà les commandes PROGRAMMÉES
+     * (OrderRequest::validateScheduledAtAfter, `kds.scheduled_window_open/close`) : une seule
+     * définition de « le restaurant sert », jamais deux. Gère la fenêtre qui passe minuit
+     * (18:00 → 00:30).
+     */
+    public static function serviceOuvert(Carbon $maintenant): bool
+    {
+        $ouverture = (string) config('kds.scheduled_window_open', '18:00');
+        $fermeture = (string) config('kds.scheduled_window_close', '00:30');
+        $hm = $maintenant->format('H:i');
+
+        return $ouverture <= $fermeture
+            ? ($hm >= $ouverture && $hm <= $fermeture)
+            : ($hm >= $ouverture || $hm <= $fermeture);
     }
 
     /**

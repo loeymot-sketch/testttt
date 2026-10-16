@@ -314,6 +314,7 @@ return [
         'flyer_settings_saved' => 'Réglages du ticket promo enregistrés.',
         'account_delete_success' => 'Compte supprimé avec succès.',
         'account_not_delete' => 'Vous ne pouvez pas supprimer votre compte si vous avez une commande active.',
+        'account_not_delete_kitchen' => "Impossible de supprimer ton compte pour l'instant : une commande est en préparation ou déjà réglée. Récupère-la (ou attends qu'elle soit terminée), puis réessaie.",
         'invalid_api_key' => 'Clé API invalide.',
         'user_match' => 'Utilisateur non trouvé.',
         'something_wrong' => "Quelque chose s'est mal passé.",

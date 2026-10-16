@@ -23,7 +23,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const BASE = 'http://127.0.0.1:8766';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8766').replace(/\/$/, '');
 const REPO_ROOT = path.join(__dirname, '..', '..');
 
 // [robustesse 2026-09-23] `php artisan tinker --execute="..."` via un shell

@@ -73,9 +73,11 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 ---
 
 ## 4. WEB + APP — customer storefront (standalone) + backend customer SPA
-**Standalone repos (OWNED, NO API wireup V1):**
-- `/Users/1millnonstop/Downloads/web/**` (web standalone; `data/menu.js` canonical mirror)
-- `mobile/**` (mobile app; `mobile/data/menu.js` canonical mirror)
+**Dépôt du site = application des stores (corrigé 2026-09-30) :**
+- `/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/**` — site `lecayenne.fr`, câblé au backend
+  en production ; `app/**` = coque Capacitor 8 (`fr.lecayenne.app`, `app/PUBLICATION.md`).
+- `mobile/**` — prototype navigateur de mai 2026, **hors chemin** (aucune voie d'agent).
+- `/Users/1millnonstop/Downloads/web/**` — copie périmée, jamais.
 
 **Backend customer storefront (OWNED):**
 - `resources/js/components/frontend/**` **EXCEPT `frontend/kiosk/**`** (which is the BORNE lane). Exclusion rule (like CENTRAL): every customer storefront dir (account, auth, checkout, home, menu, offers, search, page, otherPage, `frontend/components`) AND any NEW `frontend/<dir>` ≠ `kiosk` defaults to THIS lane — no dir is left unassigned.

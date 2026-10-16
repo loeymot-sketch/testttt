@@ -291,7 +291,10 @@ class OrderReceiptEscPosRendererTest extends TestCase
         // [GOAL CAISSE/CUISINE #7 2026-10-02] Suppléments en GRAS, BLANC sur NOIR (impression inversée
         // GS B 1 … GS B 0) — l'étoile « * » du T3-CUISINE est remplacée. L'accent doit survivre CP858.
         $this->assertStringContainsString("\x1dB\x01 Cheddar \x1dB\x00", $bytes);
-        $this->assertStringContainsString("\x1dB\x01 Viande suppl", $bytes);
+        // [GOAL REMARQUES 2026-10-03 · R-071] Suppléments en DOUBLE TAILLE : le libellé long s'enroule
+        // (« Viande » / « supplémentaire… ») — le bandeau inversé commence toujours par « Viande ».
+        $this->assertStringContainsString("\x1dB\x01 Viande", $bytes);
+        $this->assertStringContainsString('suppl', $bytes);
         $this->assertStringNotContainsString('* Cheddar', $bytes, 'plus d\'étoile : le supplément est en vidéo inverse');
         // No prices on the kitchen ticket.
         $this->assertStringNotContainsString('EUR', $bytes, 'kitchen ticket must not show prices');

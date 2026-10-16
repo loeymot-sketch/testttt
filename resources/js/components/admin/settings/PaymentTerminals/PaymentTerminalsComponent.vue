@@ -44,12 +44,29 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
+                            <!--
+                              [QA 2026-09-28 · P1-49] Ces deux actions n'avaient NI `title`
+                              NI `aria-label` NI texte lisible : rien que deux glyphes de
+                              police d'icônes. Au lecteur d'écran comme au tactile (pas de
+                              survol sur un poste de caisse), une action potentiellement
+                              DESTRUCTIVE était donc anonyme — et le même fichier fait déjà
+                              l'inverse une ligne plus bas pour son bouton de fermeture.
+                              Le nom porte le terminal concerné, pas seulement le verbe :
+                              plusieurs lignes existent, « Supprimer » seul serait ambigu.
+                              Même règle que D-007 sur la file d'encaissement.
+                            -->
                             <div class="flex justify-start items-center gap-1.5">
                                 <button type="button" class="db-btn-outline sm primary m-0.5"
+                                        :title="`${$t('button.edit')} — ${terminal.name}`"
+                                        :aria-label="`${$t('button.edit')} — ${terminal.name}`"
+                                        :data-testid="`payment-terminal-edit-${terminal.id}`"
                                         @click="openEdit(terminal)">
                                     <i class="lab lab-edit"></i>
                                 </button>
                                 <button type="button" class="db-btn-outline sm danger m-0.5"
+                                        :title="`${$t('button.delete')} — ${terminal.name}`"
+                                        :aria-label="`${$t('button.delete')} — ${terminal.name}`"
+                                        :data-testid="`payment-terminal-delete-${terminal.id}`"
                                         @click="destroy(terminal.id)" v-if="terminal.status === 1">
                                     <i class="lab lab-delete"></i>
                                 </button>

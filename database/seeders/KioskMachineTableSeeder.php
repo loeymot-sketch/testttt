@@ -18,7 +18,11 @@ class KioskMachineTableSeeder extends Seeder
     public function run()
     {
         // [AUDIT-P0-C] Safety guard: never seed default kiosk credentials in production.
-        if (app()->environment('production')) {
+        // [AUDIT SÉCURITÉ 2026-09-29 · P0] La machine qui encaisse tourne en APP_ENV=staging :
+        // un garde qui ne teste que `production` y est INERTE, et tout `db:seed` replantait
+        // `kiosk-lecayenne` / `kiosk123` — même après rotation. On n'autorise le semis des
+        // identifiants par défaut qu'en `local` et `testing`, jamais sur une box exposée.
+        if (! app()->environment(['local', 'testing'])) {
             \Illuminate\Support\Facades\Log::warning('[KioskMachineTableSeeder] Blocked in production environment.');
             return;
         }

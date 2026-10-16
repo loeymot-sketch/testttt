@@ -44,7 +44,7 @@ class QuoteTamperTest extends TestCase
 
         $this->actingAs($operator, 'sanctum')
             ->postJson('/api/admin/pos/quote', $tampered)
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
     }
 
     public function test_manual_supplement_quote_seals_its_label_and_ttc_amount(): void
@@ -80,7 +80,7 @@ class QuoteTamperTest extends TestCase
 
         $this->actingAs($operator, 'sanctum')
             ->postJson('/api/admin/pos/quote', $tampered)
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
     }
 
     public function test_pos_commit_with_tampered_quote_intent_is_rejected(): void
@@ -108,7 +108,7 @@ class QuoteTamperTest extends TestCase
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $tampered)
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
 
         $this->assertNull(OrderQuote::where('quote_token', $first['quote_token'])->value('consumed_at'));
     }
@@ -132,7 +132,7 @@ class QuoteTamperTest extends TestCase
         $this->actingAs($operatorB, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $payloadB)
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] 409 : refus métier du devis, jamais 401 (un 401 déconnecte la caisse) */;
     }
 
     /**

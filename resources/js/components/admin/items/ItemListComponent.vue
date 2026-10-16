@@ -319,6 +319,7 @@ import axios from 'axios';
 import LoadingComponent from "../components/LoadingComponent";
 import ItemCreateComponent from "./ItemCreateComponent";
 import alertService from "../../../services/alertService";
+import { itemIsRuptured } from "../../../helpers/itemRupture";
 import statusEnum from "../../../enums/modules/statusEnum";
 import { libelleTaxe } from "../../../services/libelleTaxe";
 import askEnum from "../../../enums/modules/askEnum";
@@ -575,11 +576,10 @@ export default {
         // — same predicate used by the table pill, the header card local fallback,
         // and the test spec. Strict false (vs falsy) protects against missing API
         // field on older deployments (a missing key would falsely flag everything).
+        // [QA 2026-09-28 P1-30] Règle EXTRAITE dans helpers/itemRupture.js pour être
+        // partagée avec CatalogStudioComponent. Comportement inchangé.
         isItemRuptured: function (item) {
-            if (!item) return false;
-            return item.is_available === false
-                || item.is_available === 0
-                || item.is_available === '0';
+            return itemIsRuptured(item);
         },
         statusClass: function (status) {
             return appService.statusClass(status);

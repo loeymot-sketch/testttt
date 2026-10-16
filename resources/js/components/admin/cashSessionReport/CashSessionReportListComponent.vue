@@ -76,6 +76,21 @@
                             </div>
                         </header>
 
+                        <!-- [AUDIT-COMPTA 2026-10-04] Les totaux ci-dessus portent sur la page
+                             chargée. Une journée au bord de la page peut se poursuivre sur la
+                             page voisine : on le dit, au lieu de laisser lire un total complet. -->
+                        <p
+                            v-if="day.suitePagePrecedente || day.suitePageSuivante"
+                            class="px-4 py-2 text-xs bg-amber-50 text-amber-800 border-b border-amber-200"
+                            data-testid="cash-session-day-partial"
+                        >
+                            {{ $t(day.suitePagePrecedente && day.suitePageSuivante
+                                ? 'label.cash_day_may_continue_both'
+                                : (day.suitePagePrecedente
+                                    ? 'label.cash_day_may_continue_prev'
+                                    : 'label.cash_day_may_continue_next')) }}
+                        </p>
+
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="bg-gray-100 text-gray-700">
@@ -277,7 +292,31 @@ export default {
             }
             // Map iteration preserves insertion order; sessions arrive
             // sorted opened_at desc so days come out desc as expected.
-            return Array.from(map.values());
+            const jours = Array.from(map.values());
+
+            // [AUDIT-COMPTA 2026-10-04] Un total de JOURNÉE calculé sur UNE PAGE de sessions.
+            //
+            // Le serveur pagine les SESSIONS (50 par page, tri `opened_at` décroissant), pas les
+            // jours : une journée qui tombe à cheval sur deux pages voit ses totaux calculés sur
+            // une partie seulement de ses caisses — « Sessions », « Transactions », « Total
+            // ouverture » et « Total clôture » deviennent partiels sans que rien ne le dise, alors
+            // que le pagineur est juste en dessous. Un total de clôture partiel présenté comme
+            // celui de la journée est un chiffre de caisse faux.
+            //
+            // Seuls les deux jours AUX BORDS de la page peuvent être concernés : le plus récent
+            // (continue sur la page précédente) et le plus ancien (continue sur la suivante).
+            // Les jours intermédiaires sont forcément complets. On le DÉCLARE plutôt que de
+            // l'inventer exact — le même principe que D-003 : un chiffre incomplet mais annoncé
+            // vaut mieux qu'un chiffre complet et faux. L'indicateur est conservateur : il peut
+            // signaler une journée qui s'arrête pile à la frontière, jamais en taire une coupée.
+            const meta = this.meta || {};
+            const page = Number(meta.current_page || 1);
+            const derniere = Number(meta.last_page || 1);
+            if (jours.length > 0) {
+                if (page > 1) jours[0].suitePagePrecedente = true;
+                if (page < derniere) jours[jours.length - 1].suitePageSuivante = true;
+            }
+            return jours;
         },
     },
     mounted() {

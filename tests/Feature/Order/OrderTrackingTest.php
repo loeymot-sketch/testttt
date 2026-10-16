@@ -154,6 +154,8 @@ class OrderTrackingTest extends TestCase
             'status' => OrderStatus::ACCEPT,
             'preparation_time' => 25,
             'accepted_at' => now(),
+            // [B2-R2-02 · 2026-10-01] Temps CHOISI par le caissier (sinon : fourchette générique).
+            'preparation_time_confirmed_at' => now(),
         ]);
         $result = $this->track($order->tracking_token);
 
@@ -168,6 +170,8 @@ class OrderTrackingTest extends TestCase
             'status' => OrderStatus::ACCEPT,
             'preparation_time' => 25,
             'accepted_at' => now()->subMinutes(10),
+            // [B2-R2-02 · 2026-10-01] Temps CHOISI par le caissier (sinon : fourchette générique).
+            'preparation_time_confirmed_at' => now(),
         ]);
         $result = $this->track($order->tracking_token);
 
@@ -182,6 +186,8 @@ class OrderTrackingTest extends TestCase
             'status' => OrderStatus::PREPARING,
             'preparation_time' => 25,
             'accepted_at' => now()->subMinutes(40),
+            // [B2-R2-02 · 2026-10-01] Temps CHOISI par le caissier (sinon : fourchette générique).
+            'preparation_time_confirmed_at' => now(),
         ]);
         $result = $this->track($order->tracking_token);
 

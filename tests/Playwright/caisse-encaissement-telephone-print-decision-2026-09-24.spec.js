@@ -20,7 +20,7 @@
 //   la question             : [data-testid="counter-collect-print-decision-yes|no"]
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'http://127.0.0.1:8766';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8766').replace(/\/$/, '');
 
 async function login(page) {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });

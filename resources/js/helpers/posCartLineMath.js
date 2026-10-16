@@ -49,7 +49,9 @@ export function rowUnitBundled(row) {
     if (row.total_price !== undefined && row.total_price !== null && row.total_price !== '') {
         const authoritative = parseFloat(row.total_price);
         if (Number.isFinite(authoritative)) {
-            return authoritative;
+            // [GOAL REMARQUES 2026-10-03 · R-041] Une option de formule OFFERTE (Grande Portion…) est
+            // facturée 0 par le serveur : le panier la retire aussi, sinon affiché ≠ facturé.
+            return Math.max(0, authoritative - offeredValue(row));
         }
     }
     return rowUnitMain(row);

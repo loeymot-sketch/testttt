@@ -109,7 +109,21 @@
                 </thead>
                 <tbody>
                     @foreach ($orders as $order)
-                        @php $total+= $order->total @endphp
+                        @php
+                            // [AUDIT-COMPTA 2026-10-04] Même règle que `sales_report.blade.php`
+                            // (SALES-NET-01) : toutes les commandes restent LISTÉES, mais la
+                            // ligne Total ne somme que le chiffre d'affaires réalisé net.
+                            //
+                            // Ce document additionnait `$order->total` sans aucun prédicat :
+                            // annulées, impayées, canal Uber (non fiscalisé par conception) et
+                            // contre-écritures de remboursement entraient dans un « Total » qui
+                            // ne concordait ni avec la carte à l'écran ni avec le Z signé. C'était
+                            // le seul document de chiffre d'affaires du dépôt sans prédicat de
+                            // réalisation.
+                            if (\App\Models\Order::isRealizedRevenueRow($order)) {
+                                $total += $order->total;
+                            }
+                        @endphp
                         <tr>
                             <td>{{$order->order_serial_no}}</td>
                             <td>{{trans('orderType.' . $order->order_type)}}</td>

@@ -63,6 +63,33 @@ describe('caisseZoom', () => {
         expect(resolveCaisseZoom(undefined)).toBe(CAISSE_ZOOM);
     });
 
+    // [GOAL REMARQUES 2026-10-03 · R-005] « 2 cm de blanc en bas de la caisse ». Mesuré dans le navigateur :
+    // 72 px à 720, 77 px à 768, 108 px à 1080, soit 10 % de la hauteur. Cause : `zoom: 0.9` sur le body +
+    // des hauteurs en unités d'écran (`h-screen`, `100dvh`) qui ne suivent PAS le zoom. Le helper publie donc
+    // le facteur dans `--caisse-zoom`, que le CSS divise pour redonner à ces boîtes toute la fenêtre.
+    it('applyCaisseZoom publie le facteur dans --caisse-zoom, clearCaisseZoom le retire', () => {
+        const props = {};
+        const d = fakeDoc();
+        d.body.style.setProperty = (k, v) => { props[k] = String(v); };
+        d.body.style.removeProperty = (k) => { delete props[k]; };
+
+        applyCaisseZoom(d, 0.9);
+        expect(props['--caisse-zoom'], 'le CSS divise 100vh par ce facteur').toBe('0.9');
+
+        applyCaisseZoom(d, 0.8);
+        expect(props['--caisse-zoom'], 'le facteur suit un réglage localStorage').toBe('0.8');
+
+        clearCaisseZoom(d);
+        expect(props['--caisse-zoom'], 'sortie de la caisse : plus de compensation sur les autres pages').toBeUndefined();
+    });
+
+    it('défensif : un body sans style.setProperty ne fait pas planter le zoom', () => {
+        const d = fakeDoc(); // style = {} : pas de setProperty
+        expect(() => applyCaisseZoom(d, 0.9)).not.toThrow();
+        expect(d.body.style.zoom).toBe('0.9');
+        expect(() => clearCaisseZoom(d)).not.toThrow();
+    });
+
     it('défensif : ne crash pas si doc/body absent', () => {
         expect(() => applyCaisseZoom(null)).not.toThrow();
         expect(() => applyCaisseZoom({})).not.toThrow();
