@@ -1,7 +1,15 @@
 {
   "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
+      "test",
+      "--config=tests/mobile-e2e/playwright.config.js",
+      "--list"
+    ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -10,18 +18,14 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
         "retries": 0,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "",
         "name": "",
         "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
@@ -59,12 +63,11 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.62.1",
     "workers": 1,
     "webServer": {
       "command": "php -S 127.0.0.1:8087 -t mobile/",
@@ -75,6 +78,2144 @@
     }
   },
   "suites": [
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "mobile-design-full wave A — splash → onb1-4 → login → otp → home (10 states)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "7d1c3e0b24b4d193dd52-a45ef189c2a3fc859dfd",
+          "file": "tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js",
+          "line": 88,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "mobile-design-full wave B — home → menu (13 cats) → Tacos XXL wizard → cart (16 states)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "df494fc4f55fc86b393c-f87661db2f16f93e034c",
+          "file": "tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js",
+          "line": 86,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "wave C — pay choice + Stripe + confirm + orders + order detail (12 states)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "37e509db8ac38a5605b9-b23859e45e1e28e705ce",
+          "file": "tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js",
+          "line": 186,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "wave D design-full — profile + loyalty sections + wizard + modals",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "61d2179449c594d403b2-edaa3c509b7b938700d1",
+          "file": "tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js",
+          "line": 66,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-full-wave-E.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-full-wave-E.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Wave E — kiosk parity-reference capture (mobile-design audit 2026-05-11)",
+          "file": "tests/e2e/test-e2e-mobile-design-full-wave-E.spec.js",
+          "line": 302,
+          "column": 6,
+          "specs": [
+            {
+              "title": "capture 10 kiosk states for mobile-vs-kiosk parity diff",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 360000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "44a5d3ef00754fdaa261-b0be6594e36f0327f4e9",
+              "file": "tests/e2e/test-e2e-mobile-design-full-wave-E.spec.js",
+              "line": 305,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Wave-Fluidity — motion + scroll + thumb-reach",
+          "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+          "line": 49,
+          "column": 6,
+          "specs": [
+            {
+              "title": "F01 — step transition viandes→sauce < 200ms",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-9703fa46883c202edf09",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "F02 — step transition sauce→crudités < 200ms",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-0616ea7636ee5eb06a5c",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 76,
+              "column": 3
+            },
+            {
+              "title": "F03 — back-nav recap to fritesSauce < 200ms",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-34fc567189e7871ea3e0",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "F04 — menu scroll FPS >= 58 over 60+ items",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-f04e0a1128523a9d9938",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 125,
+              "column": 3
+            },
+            {
+              "title": "F05 — cart scroll FPS >= 58 with multi-line cart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-c9437528ec5f1e3e9203",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "F06 — modal pay choice opens within 250ms",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-07a74e5f65cff8362133",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 191,
+              "column": 3
+            },
+            {
+              "title": "F07 — toast slide-down animation duration is 0.3s",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-9744df91afa3a91ebbe7",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 223,
+              "column": 3
+            },
+            {
+              "title": "F08 — thumb-reach: CTA bottom ≤ 80px from viewport bottom",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-866c39856b4c86e03c42",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 251,
+              "column": 3
+            },
+            {
+              "title": "F09 — prefers-reduced-motion freezes animations (<10ms duration)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-3d93f3d87957abecccfe",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 263,
+              "column": 3
+            },
+            {
+              "title": "F10 — lc-btn :active scale feedback transition <120ms (perceptible)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1f003ec1973e76b8f883-5e10d6e6f1e4e45eb306",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+              "line": 277,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Wave-Surfaces — 16 surfaces hors-wizard",
+          "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+          "line": 43,
+          "column": 6,
+          "specs": [
+            {
+              "title": "S01 — Splash visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-6e03b77f03c4a6ca1673",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 49,
+              "column": 3
+            },
+            {
+              "title": "S02 — Onboarding 1",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-7976f0e8d6d38c3e2a07",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 55,
+              "column": 3
+            },
+            {
+              "title": "S03 — Login phone screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-e2fc9277eda8e3c97b31",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 66,
+              "column": 3
+            },
+            {
+              "title": "S04 — Home greeting + featured + tabbar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-cb3e330a56c71b44b478",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 74,
+              "column": 3
+            },
+            {
+              "title": "S05 — Home \"Envies du moment\" carousel (S-005 hunt)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-173d83c2c88fa6bcf85d",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 80,
+              "column": 3
+            },
+            {
+              "title": "S06 — Menu 13 cats + filter chips",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-7329ecb767829bdeb932",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 96,
+              "column": 3
+            },
+            {
+              "title": "S07 — Cart 1-line composition display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-7d7159a2bdfca5b5dc7d",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 103,
+              "column": 3
+            },
+            {
+              "title": "S08 — Cart empty state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-503ec177f220052cb9de",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 118,
+              "column": 3
+            },
+            {
+              "title": "S09 — Confirm screen (S-006 ETA hardcoded hunt)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-d49b02e9c0c6cdabd2a5",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "S10 — Orders active tab",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-c196cf2a2b00f946d8de",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 155,
+              "column": 3
+            },
+            {
+              "title": "S11 — Orders historique tab",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-7df8bae512760258f4c6",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 162,
+              "column": 3
+            },
+            {
+              "title": "S12 — Profile screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-ab287b341b18f07ae8ae",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 172,
+              "column": 3
+            },
+            {
+              "title": "S13 — Loyalty hero + QR + balance card",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-eef34ae614404fbebee6",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 179,
+              "column": 3
+            },
+            {
+              "title": "S14 — Loyalty opt-out modal opens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-6f178d81d5f03c654b0e",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 189,
+              "column": 3
+            },
+            {
+              "title": "S15 — Loyalty opt-out APPLIED — POINTS card gating check (S-001 critical)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-12817cc1b596af5805cc",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 205,
+              "column": 3
+            },
+            {
+              "title": "S16 — WizardRedeem 3-step flow accessible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "95b9d744f67e8e0e6afe-ac62bf7c51fde85d1769",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js",
+              "line": 227,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Wave-Wizard — Tacos XXL full pricing + variants",
+          "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+          "line": 49,
+          "column": 6,
+          "specs": [
+            {
+              "title": "W01 — Tacos XXL entry → step1 viandes 0/4 CTA disabled with hint",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-8ce9d745306865012b09",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 59,
+              "column": 3
+            },
+            {
+              "title": "W02 — Tacos XXL step1 viandes 4/4 → CTA enabled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-91c8190e88a49f8dbac2",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 72,
+              "column": 3
+            },
+            {
+              "title": "W03 — Tacos XXL step2 sauce ketchup free → step3",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-7a20e76e3256ef77913b",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 84,
+              "column": 3
+            },
+            {
+              "title": "W04 — Tacos XXL step2 sauce 2nd paid +0,50€",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-6261167dc353e0967584",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 99,
+              "column": 3
+            },
+            {
+              "title": "W05 — Tacos XXL step3 crudités default ON (toggle visible)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-d2b9fb786233650e3708",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 115,
+              "column": 3
+            },
+            {
+              "title": "W06 — Tacos XXL step4 supplements Œuf +1,00€",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-e44fc3152c40d07291cd",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 130,
+              "column": 3
+            },
+            {
+              "title": "W07 — Tacos XXL step5 menu full → cascade injected",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-156ac72efe72adfb153c",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 146,
+              "column": 3
+            },
+            {
+              "title": "W08 — Tacos XXL step6 drink coca cascade",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-14ce7780e67a0ecdf7ed",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 166,
+              "column": 3
+            },
+            {
+              "title": "W09 — Tacos XXL step7 frites style Cheddar fondu +1,00€",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-48f02ed6f5535a375c25",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 186,
+              "column": 3
+            },
+            {
+              "title": "W10 — Tacos XXL step8 frites sauce BBQ",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-287d92cf7f1bd600cc0f",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 207,
+              "column": 3
+            },
+            {
+              "title": "W11 — Tacos XXL recap full combo total = 18,00 €",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-36d4503962ea62ee9292",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 228,
+              "column": 3
+            },
+            {
+              "title": "W12 — Cheese Burger no-formule recap = 6,00 €",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "32ff6ed943f664b9d812-94c8ca9e8f93fe13aa8b",
+              "file": "tests/e2e/test-e2e-mobile-design-perfect-wave-wizard.spec.js",
+              "line": 258,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+      "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "G — Data parity (window.LC.menu canonical)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-d9bbfb57e06e3659e505",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 80,
+          "column": 1
+        },
+        {
+          "title": "H — Pricing parity (bol composer prices)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-96c8d0f885a219c58071",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 151,
+          "column": 1
+        },
+        {
+          "title": "A — Home shows category badge and Menu screen lists 11 cats",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-de25f572f6878435b18a",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 183,
+          "column": 1
+        },
+        {
+          "title": "D — Bols Gourmands wizard renders custom composer 3-step",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-bda77050e51b31bb03aa",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 216,
+          "column": 1
+        },
+        {
+          "title": "E — Frites wizard renders custom composer 1-step",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-52a7d370b742062be284",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 249,
+          "column": 1
+        },
+        {
+          "title": "C — Tacos wizard renders template=tacos",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-e03c8c7cfcd0511b3bea",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 277,
+          "column": 1
+        },
+        {
+          "title": "B — Sandwich-family 4 cats share template=sandwich",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-0c608941a4ef5dbbe0c0",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 308,
+          "column": 1
+        },
+        {
+          "title": "F — Simple categories direct-add (no wizard steps)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-ec99ca8b62a5fc7adf31",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 328,
+          "column": 1
+        },
+        {
+          "title": "I — Cart line composition for Bowl includes base + meat + sauce + supps + drink",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-8520559a3b62866decbc",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 357,
+          "column": 1
+        },
+        {
+          "title": "J — Cart round-trip preserves bol fields through localStorage",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-2f0c36df6a5b423b6968",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 387,
+          "column": 1
+        },
+        {
+          "title": "K — Frites wizard pre-selects Nature so user can advance immediately",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-1666f26b99e6e46564c3",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 426,
+          "column": 1
+        },
+        {
+          "title": "L — Aggregated allergens include selected supplements + drinks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-f3007842bc725cfeffb7",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 461,
+          "column": 1
+        },
+        {
+          "title": "M — Multi-sauce pricing (1 free, 0.50€ each extra)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-780036ddf133fe321f5c",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 489,
+          "column": 1
+        },
+        {
+          "title": "N — Bol sauce default fallback works when lookup fails",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-ee0c9b77e63da60d92c9",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 510,
+          "column": 1
+        },
+        {
+          "title": "O — Sandwich Cayenne sauce_locked produces correct step sequence",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-cb04864bc2c5f5cb769d",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 530,
+          "column": 1
+        },
+        {
+          "title": "P — Big Cayenne requires exactly 2 viandes to advance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-9a33089cd4946030c498",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 552,
+          "column": 1
+        },
+        {
+          "title": "Z — Visual sweep all 11 categories (snapshots)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0f76c143f41afd257463-267a5d1edc21b689dc98",
+          "file": "tests/e2e/test-e2e-mobile-realignment-2026-05-16.spec.js",
+          "line": 573,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+      "file": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "web mobile — full flow capture (home → menu → item → wizard → cart → checkout → payment → confirm → track → orders → loyalty → about)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "d38d9a7d94b01ed4520b-f64be60b1f32b22b7270",
+          "file": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+          "line": 253,
+          "column": 3
+        },
+        {
+          "title": "web desktop — full flow capture (home → menu → item → wizard → cart → checkout → payment → confirm → track → orders → loyalty → about)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "d38d9a7d94b01ed4520b-0a10c09d54918fdcf13b",
+          "file": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+          "line": 253,
+          "column": 3
+        }
+      ],
+      "suites": [
+        {
+          "title": "Mobile pages",
+          "file": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+          "line": 40,
+          "column": 6,
+          "specs": [
+            {
+              "title": "mobile — full flow capture (splash → onb → login → otp → home → menu → item → wizard → cart → confirm → orders → loyalty → profile)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d38d9a7d94b01ed4520b-52e5b40869a7bbd8c712",
+              "file": "tests/e2e/test-real-e2e-pagebypage-2026-05-18.spec.js",
+              "line": 41,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+      "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "00 — smoke: boot + Home non-blank",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-ca58d022e2d8793ef29d",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "00b — Menu complet displayed +price vs charged delta",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-b24e43045810fc1e3b9c",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 230,
+          "column": 1
+        },
+        {
+          "title": "00c — register vision-pass findings (from PNG Read)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-bc7592ee7c5dce0cb119",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 275,
+          "column": 1
+        },
+        {
+          "title": "01 — Menu top + scrolled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-83ccb7f2108ffc839c66",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 324,
+          "column": 1
+        },
+        {
+          "title": "02 — Each category filter applied",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-24fc1f633702b6fd2b44",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 349,
+          "column": 1
+        },
+        {
+          "title": "03a — Sandwich wizard (full step walk)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-d904f0908599167cfee7",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 442,
+          "column": 1
+        },
+        {
+          "title": "03b — Tacos wizard (full step walk)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-f2411937377144dcb5c5",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 450,
+          "column": 1
+        },
+        {
+          "title": "03c — Bols 3-step wizard (sauce/bol_supplements/bol_drink)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-674d247f53d64d49ffb0",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 458,
+          "column": 1
+        },
+        {
+          "title": "03d — Frites 1-step wizard (frites_style)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-543c9e28970d79cc91d4",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 466,
+          "column": 1
+        },
+        {
+          "title": "03e — Direct-add simple item (drink/dessert)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-b1831f8bfba3ced8cb4e",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 474,
+          "column": 1
+        },
+        {
+          "title": "03f — Menu/formule with drink cascade (explicit Menu complet → drink)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-f1967c0e52c34ba00f64",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 483,
+          "column": 1
+        },
+        {
+          "title": "04a — qty decrement floor + increment (recap stepper)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-02fda591e919e41f8aba",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 523,
+          "column": 1
+        },
+        {
+          "title": "04b — select many option combos on one sandwich + total updates",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-a2d55286c0272194d45c",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 552,
+          "column": 1
+        },
+        {
+          "title": "04c — add to cart, open cart, remove, re-add, empty + full states",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-adc2f81f6ba0cf1fdf87",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 582,
+          "column": 1
+        },
+        {
+          "title": "04d — Back mid-wizard returns cleanly",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-3740181815f850e2b542",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 639,
+          "column": 1
+        },
+        {
+          "title": "04e — Double-tap add: verify no double-add",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-86de527be7d271275eaa",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 658,
+          "column": 1
+        },
+        {
+          "title": "05 — Cart recap + checkout → mock pay choice",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-9a9e77e6fbc62af8c9c8",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 681,
+          "column": 1
+        },
+        {
+          "title": "ZZ — gate: no P0/P1 findings",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "2da075a11d7ec5ca3717-6fb1b9712b6c10025d64",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-mobile-2026-05-30.spec.js",
+          "line": 735,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+      "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "home landing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-8ab15cb64613562ea657",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 193,
+          "column": 1
+        },
+        {
+          "title": "menu all categories",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-61a693ff1c88842c4e19",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 204,
+          "column": 1
+        },
+        {
+          "title": "menu product images resolve",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-7122a722b13cc3b1c353",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 222,
+          "column": 1
+        },
+        {
+          "title": "wizard sandwich-cayenne",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-740ea3020136114fafa4",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 248,
+          "column": 1
+        },
+        {
+          "title": "wizard galette",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-d4be8e704880c8434e77",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 265,
+          "column": 1
+        },
+        {
+          "title": "wizard tacos",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-87e28d6d0627ad309522",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 281,
+          "column": 1
+        },
+        {
+          "title": "wizard bols 3-step + total integrity",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-962e19e888632dbede6a",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 298,
+          "column": 1
+        },
+        {
+          "title": "wizard frites 1-step",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-694fcfd6b9c3dc576726",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 315,
+          "column": 1
+        },
+        {
+          "title": "simple direct-add coca + qty abuse",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-d18414532f64f4b31d6d",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 331,
+          "column": 1
+        },
+        {
+          "title": "abuse back-mid-wizard + double-tap",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-5d88b10e3c9beb542bba",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 362,
+          "column": 1
+        },
+        {
+          "title": "cart full drawer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-1a012c30605c59434f2c",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 399,
+          "column": 1
+        },
+        {
+          "title": "cart empty state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-8ecd8feff881b240be44",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 417,
+          "column": 1
+        },
+        {
+          "title": "checkout stop flow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "357c4a4c598f0202c2f0-5b18d0465cfff136d28d",
+          "file": "tests/e2e/test-real-e2e-pagebypage-abuse-web-2026-05-30.spec.js",
+          "line": 440,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+      "file": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "mobile R2 — splash → onb1→4 → login → OTP (real click chain)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "38aefdac0f1bd0f3a827-577bc3c74b28739856cd",
+          "file": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+          "line": 38,
+          "column": 1
+        },
+        {
+          "title": "mobile R2 — Coca direct-add + orders detail + profile + loyalty + redeem",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "38aefdac0f1bd0f3a827-0b68703bb2497fc9648d",
+          "file": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+          "line": 97,
+          "column": 1
+        },
+        {
+          "title": "web R2 tablet — full flow capture (home → menu → wizard×3 → cart → checkout → confirm → track → orders → loyalty)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "38aefdac0f1bd0f3a827-f1ad3bb6af09e8911e76",
+          "file": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+          "line": 218,
+          "column": 3
+        },
+        {
+          "title": "web R2 wide — full flow capture (home → menu → wizard×3 → cart → checkout → confirm → track → orders → loyalty)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "38aefdac0f1bd0f3a827-f82d502b8416ede7e926",
+          "file": "tests/e2e/test-real-e2e-round2-2026-05-18.spec.js",
+          "line": 218,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/inspect-contrast.spec.js",
+      "file": "tests/mobile-e2e/inspect-contrast.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "inspect — color-contrast nodes detail on Home",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ee43da9c002017929c34-87cf932973f09add4c02",
+          "file": "tests/mobile-e2e/inspect-contrast.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
     {
       "title": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
       "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
@@ -92,27 +2233,41 @@
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2910,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-08T17:14:25.377Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
+              "results": [],
+              "status": "skipped"
             }
           ],
           "id": "ac0b940bc7e37f93917e-f73ef230321c28757d7d",
           "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
           "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
+      "file": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S02 — Earn kiosk (source wired) crédite le solde local + entrée historique kiosk",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "c9011bc71004425421df-0bb8c48a6e60c0a8a9fd",
+          "file": "tests/mobile-e2e/loyalty-02-earn-kiosk-modal.spec.js",
+          "line": 14,
           "column": 1
         }
       ]
@@ -134,22 +2289,8 @@
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3877,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-08T17:14:28.799Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
+              "results": [],
+              "status": "skipped"
             }
           ],
           "id": "df270cb300f236e42ed6-e83ad11965d34265153d",
@@ -176,22 +2317,8 @@
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2797,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-08T17:14:32.687Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
+              "results": [],
+              "status": "skipped"
             }
           ],
           "id": "eb46fb319b5d207f5d2d-9d4166785cbf4151c93b",
@@ -200,14 +2327,559 @@
           "column": 1
         }
       ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
+      "file": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S05 — Paliers : déverrouillés ≤ solde avec UTILISER, verrouillés = pts manquants sans CTA",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "4e9582d55f28a2ea5bb3-abebcb2e3d9f0a6c9494",
+          "file": "tests/mobile-e2e/loyalty-05-redeem-locked.spec.js",
+          "line": 11,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
+      "file": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S06 — Plastic card link persists localStorage flag + shows badge",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "34e6ce2648207fa6ff70-cb6cb61255e37a16ec6a",
+          "file": "tests/mobile-e2e/loyalty-06-link-plastic-card.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+      "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S07 — Apple Wallet button opens V0 notice modal with onSeeQR CTA",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "0b9211d8cebf66b33706-1184b9ca8f7460045e89",
+          "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
+      "file": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S08 — Google Wallet button opens V0 notice modal with Google branding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "9e7813fb50aa3ac4806e-68e4fa8c688dd9abb744",
+          "file": "tests/mobile-e2e/loyalty-08-google-wallet.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
+      "file": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S09 — Redeems concurrents : erreurs typées gérées, zéro mutation client",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "10a80caec8d6ca237b46-c320a3c69277356a929c",
+          "file": "tests/mobile-e2e/loyalty-09-redeem-race.spec.js",
+          "line": 15,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
+      "file": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S10 — Refund writes manual_add reversal entry + restores balance",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "4657f61cff158c5ed4a1-dc15d39f34142b3dde70",
+          "file": "tests/mobile-e2e/loyalty-10-refund-reversal.spec.js",
+          "line": 7,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S11 — RGPD opt-out hides QR + shows reactivation panel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "857252f1f41b5b0437ff-09f54ead3065c1056f96",
+          "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
+      "file": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S12 — 100 history entries render and remain scrollable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ec818eb21d6a0106df53-e609486f28748e27a426",
+          "file": "tests/mobile-e2e/loyalty-12-history-pagination.spec.js",
+          "line": 8,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
+      "file": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S13 — History filter chips narrow visible entries by source_surface",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "3bee9ee3144b31d7ecd5-11fd5ccb7f6e0edce90c",
+          "file": "tests/mobile-e2e/loyalty-13-history-filter.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
+      "file": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S14 — QR/Barcode toggle persists preference across reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "58019b35d839433df794-aab29a69ea62ceb7d7ea",
+          "file": "tests/mobile-e2e/loyalty-14-qr-barcode-toggle.spec.js",
+          "line": 7,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
+      "file": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S15 — Zero-balance user sees welcoming empty state + first-order CTA",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "8ffcb040955dd20fcd45-a59c00d9773c28daf201",
+          "file": "tests/mobile-e2e/loyalty-15-empty-state.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
+      "file": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A1 — Le token QR lqr. n'apparaît jamais en texte sélectionnable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "86f7605afb6bf99767e9-df59dec79bd0c415ef87",
+          "file": "tests/mobile-e2e/loyalty-adv-A1-clipboard-replay.spec.js",
+          "line": 14,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
+      "file": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A2 — V0 ne détecte pas le screenshot ; le compte à rebours TTL est la mitigation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "97a8d0558c8b4e46eb70-6329741b0d8b8f7ca41d",
+          "file": "tests/mobile-e2e/loyalty-adv-A2-screenshot-detection.spec.js",
+          "line": 11,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
+      "file": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A3 — Tampered localStorage balance is reflected in V0 (Phase 6 must override)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "5224685c58eab27c1ddd-65ae4b3a1013d513e2d4",
+          "file": "tests/mobile-e2e/loyalty-adv-A3-localStorage-tamper.spec.js",
+          "line": 8,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
+      "file": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A4 — Double-tap sur Confirmer ⇒ exactement 1 POST redeem, zéro débit client",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "aaae1ffb34253e072f81-1eae0ff83fc819cbdff0",
+          "file": "tests/mobile-e2e/loyalty-adv-A4-double-tap-redeem.spec.js",
+          "line": 11,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
+      "file": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "A5 — Annuler en confirmation ⇒ retour sélection, zéro POST, zéro débit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "848600e22cf7e4f95808-479fa9bf97886c60d65a",
+          "file": "tests/mobile-e2e/loyalty-adv-A5-browser-back-mid-wizard.spec.js",
+          "line": 10,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+      "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "RED-D mobile fictional purge visual gate",
+          "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+          "line": 59,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1 — Order history (Commandes tab) shows healed canonical SKUs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "353607c31d05ad7befe6-c3a9b449bcd7910a5f7d",
+              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "2 — Loyalty screen via prototype direct nav",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "353607c31d05ad7befe6-7e023197d3da6027bd43",
+              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+              "line": 77,
+              "column": 3
+            },
+            {
+              "title": "3 — Order detail C-1234 via prototype direct nav",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "353607c31d05ad7befe6-1de07672608baeb0f011",
+              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+              "line": 97,
+              "column": 3
+            },
+            {
+              "title": "4 — window.LC data layer SSOT check (sentinel sanity)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "353607c31d05ad7befe6-71e13cb9094a78809e8a",
+              "file": "tests/mobile-e2e/red-d-mobile-fictional-purge-2026-05-18.spec.js",
+              "line": 115,
+              "column": 3
+            }
+          ]
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-08T17:14:14.251Z",
-    "duration": 21299.402000000002,
-    "expected": 3,
-    "skipped": 0,
+    "startTime": "2026-10-16T12:15:09.539Z",
+    "duration": 11721.030999999999,
+    "expected": 0,
+    "skipped": 123,
     "unexpected": 0,
     "flaky": 0
   }

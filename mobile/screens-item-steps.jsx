@@ -1265,11 +1265,12 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   });
 
   const [stepIndex, setStepIndex] = useState_w(0);
+  const screenRef = useScreenScrollReset(`${itemId}:${stepIndex}`);
 
   // If item not found, render error early
   if (!item) {
     return (
-      <div data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
+      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
         <h2 className="lc-display" style={{ fontSize: 26, color: 'var(--ink)' }}>Plat introuvable.</h2>
         <button onClick={() => go('back')} className="lc-btn lc-btn--ink" style={{ marginTop: 20 }}>Retour</button>
       </div>
@@ -1357,8 +1358,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const stepTitle = STEP_LABELS[currentKey] || currentKey;
 
   return (
-    <div data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--paper)', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+    <div ref={screenRef} data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--paper)', overflow: 'hidden' }}>
+      <div data-screen-scroll style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
         <WizardHeader
           stepIndex={clampedIndex}
           stepTotal={activeSteps.length}
@@ -1367,7 +1368,7 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
           onClose={() => go('back')}
           headingRef={headingRef}
         />
-        {/* rdw-step keyed wrapper triggers slide-x entry animation on step change */}
+        {/* Keyed content resets each step; mobile navigation stays animation-free. */}
         <div key={currentKey} className="rdw-step">
           {body}
         </div>
@@ -1387,14 +1388,15 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 // Direct-add view (cat 11 desserts, cat 12 boissons, cat 13 plain supplements)
 // ============================================================================
 function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart }) {
+  const screenRef = useScreenScrollReset(item.id);
   const qty = selections.qty || 1;
   const setQty = (q) => setSelections(s => ({ ...s, qty: Math.max(1, q) }));
   const total = item.price * qty;
   return (
-    <div data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
+    <div ref={screenRef} data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
       <div className="lc-screen" style={{ paddingBottom: 130 }}>
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
+          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name} fit="contain"/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={18}/></IconBtn>

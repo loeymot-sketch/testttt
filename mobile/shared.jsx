@@ -16,17 +16,50 @@ const LC_IS_DEV = (() => {
 window.LC = window.LC || {};
 window.LC.isDev = LC_IS_DEV;
 
+// Reset only on screen/step transitions, before paint; ordinary rerenders keep
+// the customer's position. A scoped ref also works in the multi-phone preview.
+function useScreenScrollReset(screenKey) {
+  const screenRef = useRef(null);
+  React.useLayoutEffect(() => {
+    const screen = screenRef.current;
+    if (!screen) return;
+    [screen, ...screen.querySelectorAll('.lc-screen, [data-screen-scroll]')].forEach(node => {
+      node.scrollTop = 0;
+      node.scrollLeft = 0;
+    });
+  }, [screenKey]);
+  return screenRef;
+}
+
+// Canonical Le Cayenne brand asset. The text fallback keeps the identity legible
+// if the shared image is unavailable during an offline/local preview.
+const BRAND_LOGO_SRC = 'assets/brand/lecayenne-logo.webp';
+
 // Wordmark logo
 // ADV-A11-017 P1 round-3 — accent default switched to --orange-text (#C2410C
 // = 4.86:1 on white) since Logo is overwhelmingly rendered on white surfaces
 // in mobile (login/OTP/confirm). Callers on dark backgrounds explicitly pass
 // accent='var(--orange)' or accent='var(--yellow)' for visual emphasis.
 function Logo({ size = 22, color = '#0A0A0A', accent = '#C2410C' }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const wrapperStyle = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 };
+  if (!imageFailed) {
+    return (
+      <span role="img" aria-label="Le Cayenne" style={wrapperStyle}>
+        <img
+          src={BRAND_LOGO_SRC}
+          alt="Le Cayenne"
+          onError={() => setImageFailed(true)}
+          style={{ display: 'block', width: Math.max(52, size * 4.5), height: 'auto', objectFit: 'contain' }}
+        />
+      </span>
+    );
+  }
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.02em', lineHeight: 1, fontSize: size, fontWeight: 400 }}>
+    <span role="img" aria-label="Le Cayenne" style={{ ...wrapperStyle, gap: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: size, fontWeight: 400 }}>
       <span style={{ color }}>LE</span>
       <span style={{ color: accent }}>CAYENNE</span>
-    </div>
+    </span>
   );
 }
 
@@ -77,7 +110,8 @@ function TabBar({ active, onChange }) {
 
 // Image-slot wrapper that respects React.
 // Phase 6.A 2026-05-11 (real assets) — if `src` is provided, render a real <img>
-// with object-fit:cover + emoji fallback on error. Falls back to the legacy
+// with explicit fit for product cutouts + emoji fallback on error. Heroes keep
+// the default cover fit. Falls back to the legacy
 // <image-slot> drag-and-drop placeholder only when no src is provided.
 function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji, fit = 'cover' }) {
   const sharedBoxStyle = {
@@ -90,7 +124,7 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
   };
   if (src) {
     return (
-      <div style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative' }} aria-label={alt || placeholder}>
+      <div style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }} aria-label={alt || placeholder}>
         <img
           src={src}
           alt={alt || placeholder}
@@ -247,4 +281,4 @@ function QRMock({ size = 200, value = 'LECAY-LOYALTY' }) {
   );
 }
 
-Object.assign(window, { Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock });
+Object.assign(window, { BRAND_LOGO_SRC, useScreenScrollReset, Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock });

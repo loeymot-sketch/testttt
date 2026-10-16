@@ -80,6 +80,13 @@ h1[tabindex="-1"]:focus-visible { outline: none; }
 .lc-screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-top: var(--ios-safe-top); }
 .lc-screen::-webkit-scrollbar { display: none; }
 
+/* Keep artwork inside its screen, including fixed/transformed descendants. */
+.lc-device > [data-screen-label] { isolation: isolate; contain: paint; }
+.lc-screen, [data-screen-scroll] { scroll-behavior: auto; overscroll-behavior: contain; }
+[data-lc-decoration], .lc-marquee { pointer-events: none; }
+/* A moving step must never cover the next step's controls. */
+.lc-device .rdw-step { animation: none; }
+
 /* Pills + buttons */
 .lc-btn {
   display: inline-flex; align-items: center; justify-content: center;

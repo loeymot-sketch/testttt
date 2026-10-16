@@ -21,6 +21,16 @@ if (!window.LC || !window.LC.menu) {
 const CATS = window.CATS;
 const ITEMS = window.ITEMS;
 
+function branchPhoneInfo() {
+  const raw = String((window.LC.menu.branch && window.LC.menu.branch.phone) || '').trim();
+  const digits = raw.replace(/\D/g, '');
+  return {
+    digits,
+    display: digits ? digits.replace(/(\d{2})(?=\d)/g, '$1 ') : '—',
+    href: digits ? `tel:${digits}` : null,
+  };
+}
+
 // [GOAL-SYNC 2026-07-08] Config fidélité RÉELLE (contrat §2) — les taux viennent de la data
 // layer alignée sur GET /api/frontend/loyalty/config (points_per_euro=10, points_for_1_euro_
 // discount=100). Plus AUCUN ratio hardcodé dans les écrans. Supporte les deux formes de
@@ -100,15 +110,16 @@ function AllergenBadge({ allergens, size = 'sm' }) {
 // [GOAL-SYNC 2026-07-08] Plus de « Ikyes B. » hardcodé : avatar + aria-label dérivés du prop
 // name (posé par index.html depuis le profil réel / storage). Fallback neutre FR si absent.
 function ScreenHome({ go, name = '' }) {
+  const screenRef = useScreenScrollReset('home');
   const safeName = String(name || '').trim();
   const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
   return (
-    <div data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
+    <div ref={screenRef} data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
       <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
         {/* header — centered logo, avatar L, bell R */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 2px', minHeight: 40 }}>
           <button onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>{avatarInitial}</button>
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div data-lc-decoration style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <Logo size={14}/>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-4)' }}>
               <span style={{ width: 5, height: 5, borderRadius: 999, background: '#22c55e', boxShadow: '0 0 6px #22c55e' }}/> Ouvert
@@ -157,9 +168,9 @@ function ScreenHome({ go, name = '' }) {
             <span className="more">{CATS.length} choix</span>
           </div>
           <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {CATS.slice(0, 6).map(c => (
+            {CATS.map(c => (
               <div key={c.id} role="button" tabIndex={0} aria-label={`Catégorie ${c.label}`} className="lc-tap" onClick={() => go('menu')} onKeyDown={window.lcTapKey(() => go('menu'))} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
-                <div style={{ fontSize: 26 }}>{c.icon}</div>
+                <Slot id={`home-category-${c.id}`} h={64} radius={8} src={c.image} alt={c.label} fit="contain"/>
                 <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</div>
               </div>
             ))}
@@ -177,7 +188,7 @@ function ScreenHome({ go, name = '' }) {
             {ITEMS.filter(i => i.is_featured).slice(0, 4).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                   <button style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <I.Heart size={16}/>
                   </button>
@@ -200,7 +211,7 @@ function ScreenHome({ go, name = '' }) {
             {ITEMS.filter(i => (i.tags || []).includes('TOP')).slice(0, 4).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ cursor: 'pointer' }}>
                 <div style={{ position: 'relative', aspectRatio: '1/1', borderRadius: 14, overflow: 'hidden', background: 'var(--ink)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                   <div style={{ position: 'absolute', bottom: 8, left: 8 }}><Tag t="TOP"/></div>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>{it.name}</div>
@@ -212,7 +223,7 @@ function ScreenHome({ go, name = '' }) {
 
         {/* RESTAURANT INFO */}
         <div style={{ margin: '28px 20px 12px', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 22, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -10, right: -10, width: 120, height: 120, opacity: 0.08 }}>
+          <div data-lc-decoration style={{ position: 'absolute', top: -10, right: -10, width: 120, height: 120, opacity: 0.08 }}>
             <I.Pepper size={120} stroke="#FF5A1F"/>
           </div>
           <div style={{ width: 32, height: 4, background: 'var(--orange)', marginBottom: 12 }}/>
@@ -220,7 +231,7 @@ function ScreenHome({ go, name = '' }) {
           <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols Frites/Riz, tacos M & L — du peuple, pour le peuple.</p>
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             <span>Ouvert 11h — 00h</span>
-            <span style={{ color: 'var(--orange)' }}>06 51 30 XX XX</span>
+            <span style={{ color: 'var(--orange)' }}>{branchPhoneInfo().display}</span>
           </div>
         </div>
       </div>
@@ -230,10 +241,11 @@ function ScreenHome({ go, name = '' }) {
 
 // MENU
 function ScreenMenu({ go, cart, addToCart }) {
+  const screenRef = useScreenScrollReset('menu');
   const [filter, setFilter] = uS('all');
   const filtered = filter === 'all' ? ITEMS : ITEMS.filter(i => i.cat === filter);
   return (
-    <div data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 160 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px 20px 6px' }}>
           <div>
@@ -247,8 +259,8 @@ function ScreenMenu({ go, cart, addToCart }) {
           {[{ id: 'all', label: 'Tout' }, ...CATS].map(c => {
             const active = filter === c.id;
             return (
-              <button key={c.id} onClick={() => setFilter(c.id)} aria-pressed={active} style={{ flexShrink: 0, padding: '10px 16px', borderRadius: 999, border: active ? '0' : '1.5px solid var(--gray-2)', background: active ? 'var(--ink)' : '#fff', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>
-                {c.icon ? `${c.icon} ` : ''}{c.label}
+              <button key={c.id} onClick={() => setFilter(c.id)} aria-pressed={active} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0, padding: '10px 16px', borderRadius: 999, border: active ? '0' : '1.5px solid var(--gray-2)', background: active ? 'var(--ink)' : '#fff', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>
+                {c.image && <span aria-hidden="true"><Slot id={`menu-category-${c.id}`} w={24} h={24} radius={6} src={c.image} alt="" fit="contain"/></span>}{c.label}
               </button>
             );
           })}
@@ -260,20 +272,18 @@ function ScreenMenu({ go, cart, addToCart }) {
           return (
             <div key={cat.id} style={{ marginTop: 18 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '0 20px', marginBottom: 10 }}>
-                <h3 className="lc-display" style={{ margin: 0, fontSize: 24 }}>{cat.icon} {cat.label}</h3>
+                <h3 className="lc-display" style={{ margin: 0, fontSize: 24, display: 'flex', alignItems: 'center', gap: 10 }}><span aria-hidden="true"><Slot id={`section-category-${cat.id}`} w={40} h={40} radius={8} src={cat.image} alt="" fit="contain"/></span>{cat.label}</h3>
                 <span style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{items.length} créations</span>
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => (
                   <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} className="lc-tap" onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
-                      <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
+                      <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'center', flexWrap: 'wrap' }}>
                         {it.tags.slice(0,2).map(t => <Tag key={t} t={t}/>)}
-                        {/* [D4 EU FIC 1169/2011] Allergens chip — disclosure légale obligatoire */}
-                        <AllergenBadge allergens={it.allergens} size="sm"/>
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                       {/* [test-e2e fix B-004 round-2 2026-05-11] CSS line-clamp 2 + tooltip — no more hard viewport clip */}
@@ -326,6 +336,7 @@ function ScreenMenu({ go, cart, addToCart }) {
 // Refactor 2026-05-10 post-audit cross-agent. Single-scroll legacy preserved
 // only as fallback if the wizard module fails to load.
 function ScreenItem({ go, itemId, addToCart }) {
+  const screenRef = useScreenScrollReset(itemId);
   if (typeof window.ScreenItemWizard === 'function') {
     return <window.ScreenItemWizard go={go} itemId={itemId} addToCart={addToCart}/>;
   }
@@ -334,7 +345,7 @@ function ScreenItem({ go, itemId, addToCart }) {
   const item = lcMenu.findItem(itemId);
   if (!item) {
     return (
-      <div data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
+      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
         <h2 className="lc-display" style={{ fontSize: 26, color: 'var(--ink)' }}>Plat introuvable.</h2>
         <button onClick={() => go('back')} className="lc-btn lc-btn--ink" style={{ marginTop: 20 }}>Retour</button>
       </div>
@@ -378,11 +389,11 @@ function ScreenItem({ go, itemId, addToCart }) {
 
   // -- Render ---------------------------------------------------------------
   return (
-    <div data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 110, paddingTop: 0 }}>
         {/* hero photo */}
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
+          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name} fit="contain"/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -414,6 +425,7 @@ function ScreenItem({ go, itemId, addToCart }) {
           </div>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.95 }}>{item.name}</h1>
           <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
+          <AllergenBadge allergens={item.allergens} size="lg"/>
 
           {item.time > 0 && (
             <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -616,6 +628,7 @@ function ScreenItem({ go, itemId, addToCart }) {
 
 // CART
 function ScreenCart({ go, cart, setCart }) {
+  const screenRef = useScreenScrollReset('cart');
   // [Adversarial cluster-7 P1 fix] Promo discount wired — banner appliqué applique vraiment
   // une réduction (V0 mock : WELCOME10/CAYENNE = -10%). Avant : banner cosmetic-only,
   // user pensait avoir -10% mais payait full price → mauvaise UX + risque légal.
@@ -632,7 +645,7 @@ function ScreenCart({ go, cart, setCart }) {
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
-    <div data-screen-label="10 Cart" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="10 Cart" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 200 }}>
         <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
@@ -650,7 +663,7 @@ function ScreenCart({ go, cart, setCart }) {
           ) : cart.map((it, idx) => (
             <div key={idx} style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--cream)', borderRadius: 16 }}>
               <div style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--ink)' }}>
-                <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
+                <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{it.name}</div>
@@ -755,6 +768,7 @@ function ScreenCart({ go, cart, setCart }) {
 // CONFIRMATION
 // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — receives { id, total, eta } from App
 function ScreenConfirm({ go, order }) {
+  const screenRef = useScreenScrollReset('confirm');
   // Fallback safe values if order missing (e.g. direct nav without prior pay step)
   const orderId = (order && order.id) || 'C-0000';
   const orderTotal = (order && typeof order.total === 'number') ? order.total : 0;
@@ -767,7 +781,7 @@ function ScreenConfirm({ go, order }) {
   // alors PAS la commande comme transmise à la cuisine — bandeau clair + libellé qualifié.
   const isOffline = !!(order && order.offline);
   return (
-    <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
+    <div ref={screenRef} data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
       <div style={{ flex: 1, padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {isOffline && (
@@ -861,6 +875,7 @@ function mapRemoteOrderRow(o) {
 }
 
 function ScreenOrders({ go }) {
+  const screenRef = useScreenScrollReset('orders');
   const [tab, setTab] = uS('current');
   // [GOAL-SYNC 2026-07-08] Historique RÉEL : si connecté → LC.mobileApi.orderHistory(50) ;
   // réseau down → fallback data layer locale + bandeau hors-ligne ; erreur métier → message FR.
@@ -909,7 +924,7 @@ function ScreenOrders({ go }) {
   const fmtEur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 
   return (
-    <div data-screen-label="12 Orders" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="12 Orders" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
         <div style={{ padding: '16px 20px 6px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Commandes</h1>
@@ -1049,6 +1064,7 @@ function ScreenOrders({ go }) {
 // /api/profile, contrat §2) quand connecté ; fallback storage.getAuth().phone sinon.
 // Le « Ikyes B. / +33 6 42 79 98 84 » hardcodé est SUPPRIMÉ.
 function ScreenProfile({ go }) {
+  const screenRef = useScreenScrollReset('profile');
   const api = (window.LC && window.LC.mobileApi) || null;
   const authed = !!(api && api.isAuthed && api.isAuthed());
   const storedAuth = (window.LC && window.LC.storage && window.LC.storage.getAuth) ? (window.LC.storage.getAuth() || {}) : {};
@@ -1062,9 +1078,10 @@ function ScreenProfile({ go }) {
   const rawName = (prof && (prof.name || [prof.first_name, prof.last_name].filter(Boolean).join(' '))) || '';
   const displayName = String(rawName).trim() || 'Client Le Cayenne';
   const displayPhone = (prof && prof.phone) || storedAuth.phone || '—';
+  const { display: branchPhoneDisplay, href: branchPhoneHref } = branchPhoneInfo();
   const initials = displayName.split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase() || 'LC';
   return (
-    <div data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
         <div style={{ padding: '16px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Profil</h1>
@@ -1125,18 +1142,23 @@ function ScreenProfile({ go }) {
               { i: I.Bell, t: 'Notifications', d: 'Activées' },
               { i: I.Pepper, t: 'Allergènes & préférences', d: '2 actives' },
               { i: I.Globe, t: 'Langue', d: 'Français' },
-              { i: I.Phone, t: 'Nous contacter', d: '06 51 30 XX XX' },
+              { i: I.Phone, t: 'Nous contacter', d: branchPhoneDisplay, href: branchPhoneHref },
               { i: I.Shield, t: 'CGU & Confidentialité' },
-            ].map((row, i) => (
-              <div key={i} role="button" tabIndex={0} aria-label={row.t + (row.d ? ' — ' + row.d : '')} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })} onKeyDown={window.lcTapKey(() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' }))}>
+            ].map((row, i) => {
+              const content = <>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: row.accent || 'var(--ink)', color: row.accent ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}><row.i size={16}/></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{row.t}</div>
                 </div>
                 {row.d && <div style={{ fontSize: 12, color: 'var(--gray-3)', marginRight: 10 }}>{row.d}</div>}
                 <I.Chevron size={14} stroke="var(--gray-3)"/>
-              </div>
-            ))}
+              </>;
+              const label = row.t + (row.d ? ' — ' + row.d : '');
+              if (row.href) {
+                return <a key={i} href={row.href} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer', color: 'inherit', textDecoration: 'none' }}>{content}</a>;
+              }
+              return <div key={i} role="button" tabIndex={0} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })} onKeyDown={window.lcTapKey(() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' }))}>{content}</div>;
+            })}
           </div>
           <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
@@ -1283,6 +1305,7 @@ function LoyaltyRedeemPanel({ balance, authed, preset, loyaltyCode, go, onRedeem
 // POINTS (balance + progress) → ACTIONS RAPIDES (wallet pills come in commit-4) →
 // TABS (Mes points / Récompenses / Historique) → INFOS (rules + RGPD opt-out).
 function ScreenLoyalty({ go }) {
+  const screenRef = useScreenScrollReset('loyalty');
   const [tab, setTab] = uS('points');
   const [qrMode, setQrMode] = uS((window.LC.storage && window.LC.storage.getQRPreference) ? window.LC.storage.getQRPreference() : 'qr');
   const [filterSource, setFilterSource] = uS('all');
@@ -1384,7 +1407,7 @@ function ScreenLoyalty({ go }) {
       });
 
   return (
-    <div data-screen-label="14 Loyalty" data-testid="loyalty-screen" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+    <div ref={screenRef} data-screen-label="14 Loyalty" data-testid="loyalty-screen" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 40 }}>
         {/* HERO — yellow top with QR/Barcode + member badge + countdown */}
         <div style={{ background: 'var(--yellow)', padding: '0 0 28px', position: 'relative', overflow: 'hidden' }}>

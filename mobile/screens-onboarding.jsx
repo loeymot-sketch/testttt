@@ -267,7 +267,7 @@ function ScreenLogin({ onNext, onBack }) {
 // [GOAL-SYNC 2026-07-08] props {phone, onNext} : affiche LE VRAI numéro saisi (plus de
 // '+33 6 12 34 56 78' hardcodé) ; onNext(otp) remonte le code saisi au parent (index.html
 // appelle guestVerify) ; état loading + erreur FR si la vérification échoue.
-function ScreenOTP({ phone, onNext, onBack }) {
+function ScreenOTP({ phone, devCode, onNext, onBack }) {
   const [code, setCode] = useState_o(['', '', '', '']);
   const [loading, setLoading] = useState_o(false);
   const [error, setError] = useState_o('');
@@ -342,8 +342,8 @@ function ScreenOTP({ phone, onNext, onBack }) {
         {error && !loading && <div role="alert" data-testid="otp-error" style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>{error}</div>}
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance — hide demo code from prod-facing users */}
-          {window.LC && window.LC.isDev
-            ? <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>Code de démo : 1234</div>
+          {window.LC && window.LC.isDev && devCode
+            ? <button type="button" onClick={() => { setCode(String(devCode).split('')); submit(String(devCode)); }} style={{ background: 'transparent', border: 0, padding: 0, fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)', cursor: 'pointer' }}>Utiliser le code de test : {devCode}</button>
             : <div/>}
           <button style={{ background: 'transparent', border: 0, fontSize: 12, fontWeight: 700, color: 'var(--gray-3)', cursor: 'pointer' }}>Renvoyer (29s)</button>
         </div>

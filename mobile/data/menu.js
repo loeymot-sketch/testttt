@@ -56,7 +56,7 @@
     city: 'Hénin-Beaumont',
     zip: '62210',
     address: 'Le Cayenne, 62210 Hénin-Beaumont',
-    phone: '+33 6 51 30 00 00',
+    phone: '0365678291',
     is_open: true,
     hours: '11h — 00h',
     currency: '€',
@@ -73,19 +73,21 @@
   const ITEM_IMG = {
     // Sandwichs (cat 1)
     'cayenne':     'sandwich-cayenne.png',
-    'supreme':     'sandwich-classique.png',
-    'mega':        'sandwich-cayenne-maxi.png',
-    'terminator':  'sandwich-classique-maxi.png',
+    'supreme':     'signature/supreme-hero.png',
+    'mega':        'signature/mega-hero.png',
+    'terminator':  'signature/terminator-hero.png',
     // Galette (cat 2)
     'galette-normale': 'galette.png',
     'galette-cayenne': 'galette.png',
     // Burgers (cat 4)
-    'chicken-burger': 'burger-cheese.png',
-    'cheese-burger':  'burger-cheese.png',
-    'double-cheese':  'burger-big.png',
-    'fish-burger':    'burger-cheese.png',
-    'big-burger':     'burger-big.png',
-    'grill-burger':   'burger-big.png',
+    'chicken-burger': 'chicken_burger.png',
+    // Local cheeseburger.png shows a double; grill_burger.png shows sauce.
+    // Neither is a trustworthy product photo for these two references.
+    'cheese-burger':  'item-default.svg',
+    'double-cheese':  'double_cheese.png',
+    'fish-burger':    'fish_burger.png',
+    'big-burger':     'big_burger.png',
+    'grill-burger':   'item-default.svg',
     // Tacos (cat 5) — board deliberately shares one tacos photo
     'tacos-m': 'tacos.png',
     'tacos-l': 'tacos.png',
@@ -107,29 +109,29 @@
     'fanta': 'fanta-orange.png',
     'sprite': 'sprite.png',
     'oasis': 'oasis.png',
-    'orangina': 'tropico.png',
+    'orangina': 'item-default.svg',
     'eau-plate': 'eau.png',
     'capri-sun': 'capri-sun.png',
-    // [GOAL-SYNC 2026-07-08] +7 boissons canon — assets EXISTANTS vérifiés (ls assets/menu),
-    // fallback générique boisson.png quand aucun visuel dédié n'existe (jamais d'asset inventé).
-    'coca-cherry':   'coca.png',
+    // Brand-specific assets only; no other brand/flavour as a substitute.
+    // Cherry, Lipton Pêche and Fanta Citron copied from the local canonical pack.
+    'coca-cherry':   'coca-cherry.png',
     'tropico':       'tropico.png',
-    'ice-tea-peche': 'boisson.png',
-    'fanta-citron':  'fanta.png',
-    'fuze-tea':      'boisson.png',
-    'hawai':         'boisson.png',
-    'perrier':       'eau_gazeuse.png',
+    'ice-tea-peche': 'lipton-peche.png',
+    'fanta-citron':  'fanta-citron.png',
+    'fuze-tea':      'item-default.svg',
+    'hawai':         'item-default.svg',
+    'perrier':       'item-default.svg',
     // Menu enfant (cat 11)
     'menu-enfant-nuggets': 'nuggets.png',
-    'menu-enfant-burger':  'burger-cheese.png',
+    'menu-enfant-burger':  'chicken_burger.png',
   };
 
   // Signature heroes (bg-removed)
   const HERO_IMG = {
     'cayenne': 'signature/cayenne-hero.png',
-    'mega': 'signature/cayenne-hero.png',
-    'terminator': 'signature/cayenne-hero.png',
-    'galette-cayenne': 'signature/cayenne-hero.png',
+    'supreme': 'signature/supreme-hero.png',
+    'mega': 'signature/mega-hero.png',
+    'terminator': 'signature/terminator-hero.png',
     'tacos-m': 'signature/tacos-hero.png',
     'tacos-l': 'signature/tacos-hero.png',
     'tacos-xl': 'signature/tacos-hero.png',
@@ -262,21 +264,21 @@
 
   // Boissons formule menu — [GOAL-SYNC 2026-07-08] étendu 8→15 saveurs (canon boissons 33cl).
   const FORMULE_DRINKS = [
-    { id: 'd-coca',          name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca.png' },
-    { id: 'd-coca-zero',     name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca-zero.png' },
-    { id: 'd-fanta',         name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta-orange.png' },
-    { id: 'd-sprite',        name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
-    { id: 'd-oasis',         name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis.png' },
-    { id: 'd-orangina',      name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'tropico.png' },
-    { id: 'd-eau',           name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
-    { id: 'd-capri',         name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri-sun.png' },
-    { id: 'd-coca-cherry',   name: 'Coca Cherry 33cl',    emoji: '🥤', image: ASSET_BASE + 'coca.png' },
-    { id: 'd-tropico',       name: 'Tropico 33cl',        emoji: '🌴', image: ASSET_BASE + 'tropico.png' },
-    { id: 'd-ice-tea-peche', name: 'Ice Tea Pêche 33cl',  emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-fanta-citron',  name: 'Fanta Citron 33cl',   emoji: '🍋', image: ASSET_BASE + 'fanta.png' },
-    { id: 'd-fuze-tea',      name: 'Fuze Tea 33cl',       emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-hawai',         name: 'Hawaï 33cl',          emoji: '🌴', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-perrier',       name: 'Perrier 33cl',        emoji: '💧', image: ASSET_BASE + 'eau_gazeuse.png' },
+    { id: 'd-coca',          name: 'Coca-Cola 33cl',      emoji: '🥤', image: imgFor('coca') },
+    { id: 'd-coca-zero',     name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: imgFor('coca-zero') },
+    { id: 'd-fanta',         name: 'Fanta Orange 33cl',   emoji: '🍊', image: imgFor('fanta') },
+    { id: 'd-sprite',        name: 'Sprite 33cl',         emoji: '🍋', image: imgFor('sprite') },
+    { id: 'd-oasis',         name: 'Oasis Tropical 33cl', emoji: '🌴', image: imgFor('oasis') },
+    { id: 'd-orangina',      name: 'Orangina 33cl',       emoji: '🍊', image: imgFor('orangina') },
+    { id: 'd-eau',           name: 'Eau Plate 50cl',      emoji: '💧', image: imgFor('eau-plate') },
+    { id: 'd-capri',         name: 'Capri-Sun',           emoji: '🧃', image: imgFor('capri-sun') },
+    { id: 'd-coca-cherry',   name: 'Coca Cherry 33cl',    emoji: '🥤', image: imgFor('coca-cherry') },
+    { id: 'd-tropico',       name: 'Tropico 33cl',        emoji: '🌴', image: imgFor('tropico') },
+    { id: 'd-ice-tea-peche', name: 'Ice Tea Pêche 33cl',  emoji: '🥤', image: imgFor('ice-tea-peche') },
+    { id: 'd-fanta-citron',  name: 'Fanta Citron 33cl',   emoji: '🍋', image: imgFor('fanta-citron') },
+    { id: 'd-fuze-tea',      name: 'Fuze Tea 33cl',       emoji: '🥤', image: imgFor('fuze-tea') },
+    { id: 'd-hawai',         name: 'Hawaï 33cl',          emoji: '🌴', image: imgFor('hawai') },
+    { id: 'd-perrier',       name: 'Perrier 33cl',        emoji: '💧', image: imgFor('perrier') },
   ];
 
   // -------------------------------------------------------------------------

@@ -145,6 +145,7 @@ function App() {
   // [GOAL-SYNC 2026-07-08] AUTH RÉELLE — téléphone hoisté dans App : saisi sur ScreenLogin,
   // affiché sur ScreenOTP, envoyé à guest-signup /otp puis /verify (plus de mock).
   const [authPhone, setAuthPhone] = useState('');
+  const [devOtp, setDevOtp] = useState('');
 
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
@@ -278,13 +279,14 @@ function App() {
                       const api = window.LC.mobileApi;
                       if (!(api && api.guestOtp)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
                       try {
-                        await api.guestOtp(p);
+                        const otpResponse = await api.guestOtp(p);
+                        setDevOtp(window.LC && window.LC.isDev && otpResponse && otpResponse.dev_code ? String(otpResponse.dev_code) : '');
                         go('otp');
                       } catch (e) {
                         setToast({ m: (e && e.kind === 'network') ? 'Réseau indisponible — impossible d’envoyer le code. Réessaie.' : ((e && e.message) || 'Envoi du code impossible. Réessaie.'), k: 'error' });
                       }
                     }} onBack={() => go('back')}/>; break;
-    case 'otp':     body = <ScreenOTP phone={authPhone} onNext={async (otp) => {
+    case 'otp':     body = <ScreenOTP phone={authPhone} devCode={devOtp} onNext={async (otp) => {
                       const api = window.LC.mobileApi;
                       if (!(api && api.guestVerify)) { setToast({ m: 'Service momentanément indisponible. Réessaie dans un instant.', k: 'error' }); return; }
                       try {

@@ -1,5 +1,20 @@
 # Active Cycle – FoodKing
 
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 3
+
+TASK_ID: MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016
+PHASE: PLAN
+RUNNER_MODE: single-session
+PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016/report.md
+EXECUTE_DELEGATION:
+FALLBACK_REASON:
+SUBSYSTEMS_TOUCHED: mobile catalog data and assets, mobile visual components, compact allergen presentation, mobile local validation, mobile critical-flow E2E
+SUBSYSTEMS_OFF_LIMITS: backend pricing/order/auth/payment/loyalty, migrations, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging and signing
+
+> This mobile cycle supersedes the historical closed-cycle entries below for the current session. Historical entries are preserved for audit.
+
 ## Closure audit — 2026-09-17 (session f99fe4fa)
 
 Propriétaire a demandé de retrouver où toutes les missions en cours s'étaient arrêtées et de

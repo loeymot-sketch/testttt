@@ -1,9 +1,24 @@
 # Bref contexte FoodKing — alimentation terminal Claude Code
 
-Généré : 2026-09-26T19:34:57+02:00
+Généré : 2026-10-16T12:32:13+02:00
 
 ## .cursor/ACTIVE_CYCLE.md (extrait, 60 premières lignes)
 # Active Cycle – FoodKing
+
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16
+
+TASK_ID: MOBILE-EXCELLENCE-PHASE1-20261016
+PHASE: AUDIT
+RUNNER_MODE: single-session
+PRIMARY_EXECUTION_MODEL: gpt-6-astra (fallback implementation: foodking-complex-implementer)
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE1-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE1-20261016/report.md
+EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
+FALLBACK_REASON: codex-extension unavailable after retries (broken local vendor binary, legacy model rejected, account usage limit)
+SUBSYSTEMS_TOUCHED: mobile catalogue images/categories/drinks, mobile home/menu presentation, focused mobile tests
+SUBSYSTEMS_OFF_LIMITS: backend pricing/order/auth/payment, loyalty policy, branch isolation, dispatch, frozen POS/caisse zones
+
+> This mobile cycle supersedes the historical closed-cycle entries below for the current session. Historical entries are preserved for audit.
 
 ## Closure audit — 2026-09-17 (session f99fe4fa)
 
@@ -48,21 +63,6 @@ Previous wheel cycle is retained in its plan/report and replaced by explicit own
 | Champ | Valeur actuelle |
 | --- | --- |
 | **RUNNER_MODE** | `single-session` |
-| **PHASE** | `EXECUTE` — PLAN_REVIEW_VERDICT: PASS. |
-| **MASTER_TASK_ID** | |
-| **TASK_ID** | `ORDER-INTEGRITY-KDS-LOYALTY-20260914` |
-| **PLAN_FILE** | `plans/PLAN_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md` |
-| **REPORT_FILE** | `reports/execution/ORDER-INTEGRITY-KDS-LOYALTY-20260914/report.md` |
-| **AUDIT_SOURCE** | `Pending — claude-terminal after validation` |
-| **CONTINUATION_HANDOFF** | `missions/ORDER-INTEGRITY-KDS-LOYALTY-20260914/execute_brief.md` |
-| **PARENT_CYCLE** | `Previous WHEEL-JOURNEY-UX-20260913 superseded by explicit owner instruction; its artefacts remain untouched.` |
-| **SUBSYSTEMS_TOUCHED** | `Pricing/order sealing, POS composition and checkout, receipt/KDS, kiosk loyalty, tests, web information copy` |
-| **INVARIANTS_AT_RISK** | `backend pricing SSOT; branch_id isolation; fiscal snapshot immutability; PII loyalty; frozen POS/pricing services` |
-| **GATE_CONDITIONS** | `Approved frozen/pricing/auth/schema gate; no scope expansion without a new brief.` |
-| **GATE_FILE** | `docs/gates/GATE_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md` |
-
-> **ACTIVE_PRIMARY** : `ORDER-INTEGRITY-KDS-LOYALTY-20260914` (cycle standard non-`CV1-MXX`; l'ancienne section Masterplay ci-dessous reste une référence historique, pas un second cycle actif).
-> Dernier cycle archivé : `docs/orchestration/cycles/CYCLE_CV1-V1.5C-SYNC-STOCK-HEAL-MASTER_2026-05-04.md`
 
 ## Dernières entrées — memory/episodes/12_decisions_log.jsonl
 {"name":"AUDIT INDÉPENDANT V1 cumulé 4 masters + GATE PRODUCTION CUTOVER APPROVED — 2026-05-04","source":"text","source_description":"audit terminal Claude post-quota indépendant 2026-05-04 ~19:30 + gate brief docs/gates/GATE_CV1-V1-PIVOT-PRODUCTION-CUTOVER_2026-05-04.md approved + GATE_LOG.md entry + healings G1+H1+H2 appliqués 2026-05-04 19:50 UTC+2","episode_body":"Audit indépendant terminal Claude post-quota 2026-05-04 ~19:30 UTC+2 sur 4 masters cumulés V1 (V1-PIVOT + V1-FINISH + V1.5-DEBT-CLEANUP + V1.5B-DRILLDOWN-INGREDIENTS) — verdict PASS_WITH_HEALING / PROD_READINESS GO_WITH_CONDITIONS, 0 finding CRITICAL, 3 HIGH (F1 MySQL<8.0 mitigé Q2=9.6.0 + F2 rollback fragile déjà documenté gate + G1 sentinelle parity multi-préfixe regex), 6 MEDIUM (A2 middleware catch silencieux, A3 ownerType orphan, B1 PHPDoc branchId asymétrique, D1 GPT final audit non exécuté, E1 drill-down addon sémantique limitée, F3 smoketest rollback partiel), 7 LOW. Vérifications 40 points file:line confirmées : 6/6 invariants FoodKing tenus (I1 pricing SSOT, I2 OrderStatus, I3 branch_id mono-filiale V1 documenté, I4 dispatch après commit DispatchableAfterCommit, I5 OrderService symmetry préservée, I6 frozen zones 0 édition depuis 2026-05-04 13:00), middleware EnsureProfileNotItemOwnedUnlessDemoEnabled couvre exactement 6/6 routes shared profile/step (routes/api.php:670-676), fix D1 ChoiceAvailabilityResolver::availabilityForVariation câblé l.63 snapshotForItems + l.144 assertSelectionsOrderable symétrie order-guard, tests sentinelles non tautologiques. GATE_CV1-V1-PIVOT-PRODUCTION-CUTOVER approved 2026-05-04 19:43 UTC+2 par Kossay/user kossayelbenna8 (réponses chat) + transcription Claude orchestrator : Q1=A cohabitation transitoire, Q2 MySQL 9.6.0 ≥ 8.0 vérifié SSH local terminals/1.txt:30-32 mitigeant finding HIGH F1, Q3 ASAP no-prod-yet (1er resto sera déploiement initial — pas de fenêtre maintenance imposée), Q4 .env ABSENT default false vérifié terminals/1.txt:36-38. GATE_LOG.md ligne ajoutée avec audit trail complet. Healings appliqués post-approval 2026-05-04 19:50 UTC+2 : G1 (HIGH BLOCKING) tests/js/labelKeyParityFrontend.spec.js regex étendue de label.* à 5 préfixes (label, studio, message, demo_wizard_advanced, menu) via TRACKED_PREFIXES array — sentinelle PASS, 1162/1162 Vitest 0 régression ; H1 (LOW) gate brief checklist ops complétée (warmup cache step 9, invalidation CDN step 10, communication kiosks reload step 12, drill-down validation step 13) ; H2 (LOW) docs/orchestration/V1_PIVOT_STAGING_SMOKETEST_PROCEDURE.md procédure manuelle 5e bullet drill-down ingrédient ajoutée. PHPUnit ciblé V1 41/41 PASS post-healings. Conditions GO_WITH_CONDITIONS satisfaites côté code/doctrine ; reste : smoketest staging humain (script bash scripts/v1-pivot-staging-smoketest.sh) à exécuter avant 1er restaurateur réel + GPT final audit codex:final-audit recommandé non bloquant (D1 medium audit indépendant). V1 = PRÊT PROD FONCTIONNEL. Backlog V1.5c+ : healing E1 sémantique drill-down addon par role + healing F3 smoketest rollback post-data + R-T7 preview admin studio branchId + cleanup AGENT_ACTIVITY_LOG orphan starts + OpenAPI doc routes admin ingredients + asymétrie C1 strict vs lax is_available."}
