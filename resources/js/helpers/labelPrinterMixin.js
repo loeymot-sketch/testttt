@@ -32,6 +32,17 @@ export function describePrinter(state, settings, supported) {
         return { level: 'info', ready: false, title: 'Connexion à l’imprimante…', detail: 'Patientez quelques secondes.' };
     }
     if (state.status === 'disconnected') {
+        if (state.noDevice && !state.error) {
+            return {
+                level: 'warn', ready: false,
+                title: 'Imprimante non trouvée par Chrome',
+                detail: 'Aucune imprimante choisie. Si Chrome a affiché « Aucun appareil compatible détecté » : '
+                    + '1) allumez l’imprimante, Bluetooth activé et « visible » ; '
+                    + '2) dans Android › Bluetooth, « Supprimer » QL-820NWB puis appairez‑la de nouveau (l’appairage doit se faire imprimante allumée à côté) ; '
+                    + '3) vérifiez que Chrome est en version 138 ou plus (Réglages › Imprimante › Diagnostic) ; '
+                    + '4) rappuyez sur « Connecter ».',
+            };
+        }
         return {
             level: 'warn', ready: false,
             title: 'Imprimante non connectée',

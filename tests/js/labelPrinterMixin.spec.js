@@ -84,3 +84,18 @@ describe('chromeMajor', () => {
         expect(chromeMajor(undefined)).toBeNull();
     });
 });
+
+describe('imprimante non trouvée par Chrome (« Aucun appareil compatible détecté »)', () => {
+    it('ne se tait plus : le bandeau dit quoi vérifier', () => {
+        const info = describePrinter({ status: 'disconnected', error: null, noDevice: true, printer: null }, { mediaId: 'c62' }, true);
+        expect(info.title).toBe('Imprimante non trouvée par Chrome');
+        expect(info.detail).toMatch(/Aucun appareil compatible détecté/);
+        expect(info.detail).toMatch(/Supprimer.*appairez/);
+        expect(info.level).toBe('warn');
+    });
+    it('une vraie erreur garde son message', () => {
+        const info = describePrinter({ status: 'disconnected', error: 'Imprimante injoignable', noDevice: false, printer: null }, { mediaId: 'c62' }, true);
+        expect(info.title).toBe('Imprimante non connectée');
+        expect(info.detail).toBe('Imprimante injoignable');
+    });
+});

@@ -355,7 +355,7 @@ export function createLabelPrinter(opts = {}) {
         /** Appairage — DOIT être appelé depuis un clic (Chrome l'exige pour requestPort). */
         async connect() {
             if (!serial) return false;
-            setState({ status: 'connecting', error: null });
+            setState({ status: 'connecting', error: null, noDevice: false });
             let chosen;
             try {
                 // On propose d'abord les imprimantes Bluetooth (profil SPP) ; si le navigateur ne connaît pas ce
@@ -374,9 +374,13 @@ export function createLabelPrinter(opts = {}) {
                 }
             } catch (err) {
                 // Fenêtre fermée sans choisir : ce n'est pas une erreur.
+                // Chrome lève NotFoundError AUSSI quand sa fenêtre affiche « Aucun appareil compatible détecté » : on ne le
+                // laisse plus passer en silence — l'écran explique quoi vérifier (appairage, profil série, version de Chrome).
+                const notFound = err && err.name === 'NotFoundError';
                 setState({
                     status: port ? 'connected' : 'disconnected',
-                    error: err && err.name === 'NotFoundError' ? null : explainPortError(err),
+                    error: notFound ? null : explainPortError(err),
+                    noDevice: Boolean(notFound && !port),
                 });
                 return Boolean(port);
             }
