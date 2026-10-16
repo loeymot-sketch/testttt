@@ -31,6 +31,13 @@ Références : GBPH restauration § 2.6 *Décongélation* et § 2.7 *Gestion des
 
 **Réseau coupé** : l'étiquette sort quand même (heure du serveur connue, mention *Hors ligne · réf. XXXXXX*) et sa ligne de journal part **dès le retour du réseau** (file locale gardée 7 jours, rejouée aussi après un jeton expiré ou une limite de débit ; `client_ref` : jamais de doublon). Le serveur l'inscrit **toujours** ; ce qu'il n'aurait pas imprimé (DLC plus longue que la fiche, événement retiré…) est signalé **« à vérifier »** tout de suite. Un bandeau dit combien d'étiquettes attendent le journal ; elles figurent dans « À surveiller » dès l'approche de leur DLC (72 h). Une étiquette réservée dont le verdict n'est jamais arrivé y figure aussi, « impression non confirmée », dès que 10 minutes sont passées ET que sa DLC tombe dans la fenêtre surveillée (72 h). Impossible hors ligne : DLC du fabricant à vérifier, produit d'origine à vérifier.
 
+## Application Android native (recommandée) — « comme Komia »
+
+Chrome n'arrive pas toujours à voir la Brother en Bluetooth. L'application **Le Cayenne Étiquettes** (`native/labels-android/`,
+voir son README) ouvre une vraie prise **Bluetooth (profil série)** ou **Wi‑Fi (adresse IP, port 9100)** vers l'imprimante et
+charge le même écran *Étiquettes*. Le choix de l'imprimante est une fenêtre native, mémorisée (reconnexion automatique). Le
+protocole d'impression est identique à celui de Chrome. Installation : copier `LeCayenne-Etiquettes.apk` sur la tablette.
+
 ## Bluetooth ou Wi‑Fi ?
 
 **Bluetooth** (recommandé, c'est ce que fait l'application) : Chrome de la tablette ↔ imprimante en direct (Web Serial). Impression **silencieuse**, **automatique** (commandes), **état lu** (capot, rouleau, confirmation par page).

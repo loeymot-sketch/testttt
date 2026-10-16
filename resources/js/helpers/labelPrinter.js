@@ -24,6 +24,7 @@ import {
     mediaMismatchMessage,
     DEFAULT_MEDIA_ID,
 } from './brotherQl.js';
+import { nativeBridge, createNativeSerial } from './labelPrinterNative.js';
 
 export const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
 export const PORT_STORAGE_KEY = 'label_printer_port';
@@ -380,7 +381,8 @@ export function createLabelPrinter(opts = {}) {
                 setState({
                     status: port ? 'connected' : 'disconnected',
                     error: notFound ? null : explainPortError(err),
-                    noDevice: Boolean(notFound && !port),
+                    // (dans l'application native, fermer la fenêtre de choix n'est qu'une annulation)
+                    noDevice: Boolean(notFound && !port && !(serial && serial.isNative)),
                 });
                 return Boolean(port);
             }
@@ -525,7 +527,11 @@ let singleton = null;
 /** Instance unique : la connexion Bluetooth reste ouverte d'un écran d'étiquettes à l'autre. */
 export function labelPrinter() {
     if (!singleton) {
-        const serial = typeof navigator !== 'undefined' && navigator.serial ? navigator.serial : undefined;
+        // Application Android native (WebView + pont Java) : vraie prise Bluetooth RFCOMM / TCP, sans Chrome ; sinon Web Serial.
+        const bridge = nativeBridge();
+        const serial = bridge
+            ? createNativeSerial(bridge)
+            : (typeof navigator !== 'undefined' && navigator.serial ? navigator.serial : undefined);
         let storage;
         try { storage = window.localStorage; } catch (_) { storage = undefined; }
         singleton = createLabelPrinter({ serial, storage });
