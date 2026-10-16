@@ -103,6 +103,20 @@
     return (r && (r.data || r.user)) || r;
   }
 
+  // [APPSTORE-ACCOUNT-DELETION 2026-10-16] Apple requires an in-app path to
+  // delete the customer account. The server remains the authority: this call
+  // does not purge local state and never reports success on a failed response.
+  async function deleteAccount() {
+    try {
+      return await req('POST', '/api/delete-account', { auth: true });
+    } catch (e) {
+      if (e && e.kind === 'http' && e.status === 401) {
+        throw Object.assign({}, e, { message: 'La vérification de ton compte est requise avant sa suppression.' });
+      }
+      throw e;
+    }
+  }
+
   // ---- Fidélité (contrat §2 — les taux viennent du backend, JAMAIS hardcodés) ----
   async function loyaltyConfig() {
     var r = await req('GET', '/api/frontend/loyalty/config', {});
@@ -474,7 +488,7 @@
     // auth
     guestOtp: guestOtp, guestVerify: guestVerify, isAuthed: isAuthed, logout: logout,
     // profil + fidélité
-    profile: profile, loyaltyConfig: loyaltyConfig, loyaltyHistory: loyaltyHistory,
+    profile: profile, deleteAccount: deleteAccount, loyaltyConfig: loyaltyConfig, loyaltyHistory: loyaltyHistory,
     loyaltyQr: loyaltyQr, loyaltyRedeem: loyaltyRedeem,
     // menu / résolution
     buildItemIndex: buildItemIndex, itemDetails: itemDetails,

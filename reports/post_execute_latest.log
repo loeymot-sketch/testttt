@@ -1,10 +1,12 @@
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_144530
-[post-execute] timestamped log: reports/test_unknown_20261016_144530.log
+[post-execute] timestamp: 20261016_202046
+[post-execute] timestamped log: reports/test_unknown_20261016_202046.log
 [post-execute] running: php artisan test --stop-on-failure
+EXECUTE_DELEGATION: explicit-prompt-bind (human-acknowledged)
+[post-execute] bounded implementation completed in the user-authorized scope; targeted static and Playwright validation ran separately
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_144530
-[post-execute] timestamped log: reports/test_unknown_20261016_144530.log
+[post-execute] timestamp: 20261016_202046
+[post-execute] timestamped log: reports/test_unknown_20261016_202046.log
 [post-execute] running: php artisan test --stop-on-failure
 Warning: TTY mode requires /dev/tty to be read/writable.
 PHP Deprecated:  Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Implicitly marking parameter $code as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Loyalty/LoyaltyMergeDuplicatePhonesTest.php on line 34
@@ -25,12 +27,12 @@ Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitl
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
 PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
 PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
 
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
 
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
-PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
-PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
 
   [30;42;1m PASS [39;49;22m[39m Tests\Unit\Backup\BackupVerifyRestoreLogicTest[39m
   [32;1m✓[39;22m[39m [2mpick newest returns null for empty list[22m[39m
@@ -247,6 +249,15 @@ PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(
   [32;1m✓[39;22m[39m [2mcrudite print order matches[22m[39m
   [32;1m✓[39;22m[39m [2mtables are non empty[22m[39m
 
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketDieseTousSupplementsTest[39m
+  [32;1m✓[39;22m[39m [2msauce en plus repliee dans la ligne produit[22m[39m
+  [32;1m✓[39;22m[39m [2mdeuxieme sauce frites payee sur le badge[22m[39m
+  [32;1m✓[39;22m[39m [2mextra offert nomme comme une crudite[22m[39m
+  [32;1m✓[39;22m[39m [2moption de formule heritee de la ligne formule repliee[22m[39m
+  [32;1m✓[39;22m[39m [2moption de formule forme reelle imprimee une seule fois[22m[39m
+  [32;1m✓[39;22m[39m [2moption de formule dit qu elle va sur les frites[22m[39m
+  [32;1m✓[39;22m[39m [2mcontre epreuve garniture gratuite seule[22m[39m
+
   [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketExtraJamaisEscamoteTest[39m
   [32;1m✓[39;22m[39m [2mun extra sans aucun nom est annonce au lieu de disparaitre[22m[39m
   [32;1m✓[39;22m[39m [2mla quantite d un extra anonyme survit[22m[39m
@@ -290,6 +301,20 @@ PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(
   [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Frites"[22m[39m
   [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Menu enfant"[22m[39m
   [32;1m✓[39;22m[39m [2mles deux sauces en plus sans supplement restent correctes[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Ketchup"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Mayonnaise"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Blanche"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Algérienne"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Samouraï"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Andalouse"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Américaine"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Barbecue"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Curry"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Harissa"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Hannibal"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Fromagère maison"[22m[39m
+  [32;1m✓[39;22m[39m [2mune sauce vendue seule garde son nom en cuisine with data set "Spicy maison"[22m[39m
+  [32;1m✓[39;22m[39m [2mun produit qui contient sauce sans commencer par sauce reste en code court[22m[39m
   [32;1m✓[39;22m[39m [2mun prix a virgule et un supplement collant ne fabriquent pas de fausse sauce[22m[39m
 
   [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketSymbolicFormatterTest[39m
@@ -313,6 +338,13 @@ PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(
   [32;1m✓[39;22m[39m [2mclean instruction strips price annotations[22m[39m
   [32;1m✓[39;22m[39m [2mmenu line[22m[39m
   [32;1m✓[39;22m[39m [2mdrink lines reject formule container keep real drink[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketUberNonMappeTitreTest[39m
+  [32;1m✓[39;22m[39m [2mla ligne produit est le titre uber en entier[22m[39m
+  [32;1m✓[39;22m[39m [2mle ticket cuisine imprime le titre et la note sans le marqueur[22m[39m
+  [32;1m✓[39;22m[39m [2ml apercu photo uber suit le ticket[22m[39m
+  [32;1m✓[39;22m[39m [2mun titre sans lettre latine ne vide jamais la ligne produit[22m[39m
+  [32;1m✓[39;22m[39m [2mcontre epreuve un article reconnu garde son code[22m[39m
 
   [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketVirguleDuPrixTest[39m
   [32;1m✓[39;22m[39m [2mla virgule d un prix ne fabrique pas une fausse sauce[22m[39m
@@ -346,6 +378,21 @@ PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(
   [32;1m✓[39;22m[39m [2msecret still requires kiosk path[22m[39m
   [32;1m✓[39;22m[39m [2msecret still blocked when payload null[22m[39m
 
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\KioskAutoLoginMotifDeRefusTest[39m
+  [32;1m✓[39;22m[39m [2mhors chemin borne[22m[39m
+  [32;1m✓[39;22m[39m [2midentifiants machine absents est la cause de mise en service[22m[39m
+  [32;1m✓[39;22m[39m [2maucune voie configuree quand ni secret ni plage[22m[39m
+  [32;1m✓[39;22m[39m [2msecret fourni mais invalide[22m[39m
+  [32;1m✓[39;22m[39m [2mborne hors des plages de confiance[22m[39m
+  [32;1m✓[39;22m[39m [2maucun motif quand l acces est accorde[22m[39m
+  [32;1m✓[39;22m[39m [2mle motif ne fuit jamais de secret[22m[39m
+  [32;1m✓[39;22m[39m [2mle diagnostic ne change pas la decision[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Libraries\QueryExceptionLibraryJournaliseTest[39m
+  [32;1m✓[39;22m[39m [2mhors debug le client recoit le message generique et le journal recoit la cause[22m[39m
+  [32;1m✓[39;22m[39m [2men debug le message brut est rendu et toujours journalise[22m[39m
+  [32;1m✓[39;22m[39m [2mla contrainte de cle etrangere garde son message metier[22m[39m
+
   [30;42;1m PASS [39;49;22m[39m Tests\Unit\Listeners\KioskCacheInvalidationWiringSentinelTest[39m
   [32;1m✓[39;22m[39m [2mevery catalog event is wired to kiosk cache invalidator[22m[39m
 
@@ -358,6 +405,8 @@ PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 
 
   [37;41;1m FAIL [39;49;22m[39m Tests\Unit\Payment\StripeCentsCastTest[39m
   [31;1m⨯[39;22m[39m [2mmath formula produces correct cents for x99 amounts[22m[39m
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
 
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
 
@@ -366,8 +415,6 @@ Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking param
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
 
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
-PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
-PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
 PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
 PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
 
@@ -389,12 +436,11 @@ PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly mar
      40▕             );
 
 
-  [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m277 passed[39;22m[39m, [2m5920 pending[22m[39m
-  [37;1mTime:   [39;22m[39m1.13s[39m
+  [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m314 passed[39;22m[39m, [2m6110 pending[22m[39m
+  [37;1mTime:   [39;22m[39m1.34s[39m
 
 
-[post-execute] tests: FAILED — see reports/test_unknown_20261016_144530.log
+[post-execute] tests: FAILED — see reports/test_unknown_20261016_202046.log
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next
-EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)

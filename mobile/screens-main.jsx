@@ -351,6 +351,12 @@ function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
 //
 // Validation pre-cart : viandesCount === item.viandes (si > 0).
 
+const FALLBACK_FORMULA_IMAGES = {
+  'f-menu': 'assets/menu/menu_complet.png',
+  'f-frites': 'assets/menu/frites.png',
+  'f-boisson': 'assets/menu/boisson.png',
+};
+
 // ScreenItem — thin wrapper delegating to the multi-page wizard
 // (mobile/screens-item-steps.jsx exposes window.ScreenItemWizard).
 // Refactor 2026-05-10 post-audit cross-agent. Single-scroll legacy preserved
@@ -467,7 +473,13 @@ function ScreenItem({ go, itemId, addToCart }) {
                   return (
                     <div key={m.id} onClick={() => toggleMeat(m.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 12px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '2px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span>{m.emoji}</span>
+                        {m.image && <img
+                          className="lc-wizard-choice-image lc-wizard-choice-image--meat"
+                          src={m.image}
+                          alt=""
+                          aria-hidden="true"
+                          onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
+                        />}
                         {m.name}
                       </span>
                       <span style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -494,7 +506,6 @@ function ScreenItem({ go, itemId, addToCart }) {
                   return (
                     <div key={s.id} onClick={() => toggleSauce(s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {s.is_spicy && <span>🌶️</span>}
                         {s.name}
                       </span>
                       {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', fontWeight: 700 }}>+0,50€</span>}
@@ -562,11 +573,24 @@ function ScreenItem({ go, itemId, addToCart }) {
                 <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Optionnel</span>
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
-                {[{ id: null, name: 'Sans formule', price: 0, label: '—' }].concat(lcMenu.formules).map(f => {
+                    {[{ id: null, name: 'Sans formule', price: 0, label: '—' }].concat(lcMenu.formules).map(f => {
                   const on = formuleId === f.id;
                   return (
                     <div key={f.id || 'none'} onClick={() => setFormuleId(f.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{f.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {f.id && FALLBACK_FORMULA_IMAGES[f.id]
+                          ? <img
+                              className="lc-wizard-choice-image"
+                              src={FALLBACK_FORMULA_IMAGES[f.id]}
+                              alt=""
+                              aria-hidden="true"
+                              onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
+                            />
+                          : (!f.id && window.NeutralAsset
+                            ? <window.NeutralAsset label="Sans formule — aucune formule sélectionnée" style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }} />
+                            : null)}
+                        {f.name}
+                      </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
                         <span style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
@@ -607,7 +631,7 @@ function ScreenItem({ go, itemId, addToCart }) {
             if (sauceLabels.length) summaryParts.push('Sauce ' + sauceLabels.join('/'));
             if (cruditeLabels.length < 3 && item.has_crudites) summaryParts.push('Sans ' + lcMenu.crudites.filter(c => !cruditeIds.includes(c.id)).map(c => c.name.toLowerCase()).join('/'));
             if (supLabels.length) summaryParts.push('+ ' + supLabels.join(' + '));
-            if (formuleLabel) summaryParts.push('🍽 ' + formuleLabel);
+            if (formuleLabel) summaryParts.push(formuleLabel);
 
             const lineItem = {
               ...item,
@@ -1180,6 +1204,18 @@ function ScreenProfile({ go }) {
               return <div key={i} role="button" tabIndex={0} aria-label={label} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })} onKeyDown={window.lcTapKey(() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' }))}>{content}</div>;
             })}
           </div>
+          {authed && (
+            <button
+              data-testid="delete-account-btn"
+              onClick={() => go('deleteAccount')}
+              aria-label="Supprimer mon compte"
+              style={{ width: '100%', marginTop: 18, display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', background: '#FFF1F0', color: 'var(--red)', border: '1px solid rgba(201, 54, 47, 0.18)', borderRadius: 14, textAlign: 'left', cursor: 'pointer' }}
+            >
+              <I.Trash size={18} stroke="var(--red)" />
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 800 }}>Supprimer mon compte</span>
+              <I.Chevron size={14} stroke="var(--red)" />
+            </button>
+          )}
           <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
       </div>

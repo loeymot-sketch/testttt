@@ -178,6 +178,24 @@ image-slot {
   transform: rotate(45deg);
 }
 
+/* Wizard choice media: real product assets only; neutral marks are reserved
+   for explicit non-product choices such as "Sans formule". */
+.lc-wizard-choice-image {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--cream-2, #f5f0e8);
+}
+.lc-wizard-choice-image--meat {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 /* Tab bar */
 .lc-tabs {
   position: absolute; left: 0; right: 0; bottom: 0;

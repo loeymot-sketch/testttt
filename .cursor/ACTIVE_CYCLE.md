@@ -1,26 +1,26 @@
 # Active Cycle – FoodKing
 
-## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 17 CANONICAL WEBP ASSETS
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 21 E2E HARNESS PARITY
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016
-PHASE: CLOSED
-CLOSURE_NOTE: Phase 17 clôturée après validation ciblée PASS, AUDIT fallback PASS et GPT final PASS. Les anciens PNG restent conservés mais ne sont plus référencés par les visuels concernés.
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016_2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE17-CANONICAL-WEBP-ASSETS-20261016/report.md
+TASK_ID: MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016
+PHASE: PLAN
+CLOSURE_NOTE:
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016_2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016/report.md
 GATE_FILE:
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
-EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
-FALLBACK_REASON: exécution bornée locale ; aucun canal d’extension disponible dans cette session.
-AUDIT_CHANNEL: cursor-session
-AUDIT_FALLBACK_REASON: claude command not found
-AUDIT_VERDICT: PASS
-GPT_FINAL_AUDIT_CHANNEL: foodking-complex-implementer (codex-extension-fallback)
+EXECUTE_DELEGATION: pending
+FALLBACK_REASON:
+AUDIT_CHANNEL: pending
+AUDIT_FALLBACK_REASON:
+AUDIT_VERDICT: PENDING
+GPT_FINAL_AUDIT_CHANNEL: pending
 GPT_FINAL_AUDIT_MODEL: gpt-5.5-pro
 GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
-GPT_FINAL_AUDIT_VERDICT: PASS
-SUBSYSTEMS_TOUCHED: mobile/assets/menu, mobile/data/menu.js, mobile/tests/mobile-catalog-visual.spec.js, tests/mobile-e2e/catalog-visual-critical.spec.js
-SUBSYSTEMS_OFF_LIMITS: backend PHP/config, database/migrations, pricing/order data, payment, auth/SMS, loyalty, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging/signing
+GPT_FINAL_AUDIT_VERDICT: PENDING
+SUBSYSTEMS_TOUCHED: tests/mobile-e2e/playwright.config.js, tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js, tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js, tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js, tasks/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016.md, reports/planning/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016.md, reports/execution/MOBILE-EXCELLENCE-PHASE21-E2E-HARNESS-PARITY-20261016/report.md
+SUBSYSTEMS_OFF_LIMITS: mobile product code/assets, backend PHP/config, database/migrations, pricing/order data, payment/Mollie, loyalty policy, branch isolation, dispatch, OrderService/FrontendOrderService, POS/caisse/KDS/kiosk runtime, native iOS packaging/signing
 
 | **FIELD** | **VALUE** |
 |---|---|

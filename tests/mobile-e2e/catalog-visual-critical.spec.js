@@ -56,6 +56,20 @@ const canonicalDrinkImages = {
   'capri-sun': 'assets/menu/capri-sun.png',
   'fuze-tea': 'assets/menu/fuze-tea.png',
 };
+const canonicalMeatImages = {
+  'm-mexicanos': 'assets/menu/viande_mexicain.png',
+  'm-cordon-bleu': 'assets/menu/viande_cordon.png',
+  'm-viande-hachee': 'assets/menu/viande_hachee.png',
+  'm-nuggets': 'assets/menu/viande_nuggets.png',
+  'm-tenders': 'assets/menu/viande_tenders.png',
+  'm-fricadelle': 'assets/menu/viande_fricandelle.png',
+  'm-poulet-marine': 'assets/menu/viande_poulet.png',
+};
+const canonicalFormulaImages = {
+  full: 'assets/menu/menu_complet.png',
+  frites: 'assets/menu/frites.png',
+  boisson: 'assets/menu/boisson.png',
+};
 const missingExactDrinkImages = {
   hawai: 'assets/menu/item-default.svg',
   perrier: 'assets/menu/item-default.svg',
@@ -98,6 +112,7 @@ async function assertCanonicalRuntimeImages(page) {
       ])),
       drinks: Object.fromEntries(drinkSlugs.map((slug) => [slug, menu.findItem(slug).image])),
       missingDrinks: Object.fromEntries(missingDrinkSlugs.map((slug) => [slug, menu.findItem(slug).image])),
+      meats: Object.fromEntries(menu.meats.map((meat) => [meat.id, meat.image])),
     };
   }, {
     productSlugs: Object.keys(canonicalProductImages),
@@ -120,6 +135,9 @@ async function assertCanonicalRuntimeImages(page) {
   }
   for (const [slug, expected] of Object.entries(missingExactDrinkImages)) {
     expect(actual.missingDrinks[slug], `missing exact drink stays neutral: ${slug}`).toBe(expected);
+  }
+  for (const [id, expected] of Object.entries(canonicalMeatImages)) {
+    expect(actual.meats[id], `canonical meat image: ${id}`).toBe(expected);
   }
 }
 
@@ -186,6 +204,22 @@ async function assertNoHorizontalOverflow(page) {
   }));
   expect(dimensions.documentWidth, 'mobile UI must not overflow horizontally')
     .toBeLessThanOrEqual(dimensions.viewportWidth + 1);
+}
+
+async function assertWizardChoiceSurface(page, wizard, group, imagePrefix, expectedImages, label) {
+  await expect(group, `${label} choice group should be visible`).toBeVisible();
+  const emojiText = await group.evaluate((node) => /[\u{1F300}-\u{1FAFF}]/u.test(node.textContent || ''));
+  expect(emojiText, `${label} choice group must not render food emoji`).toBe(false);
+
+  const images = group.locator(`img[data-testid^="${imagePrefix}"]`);
+  await expect(images, `${label} choices must expose real asset images`).toHaveCount(expectedImages.length);
+  const loaded = await images.evaluateAll((nodes) => nodes.map((image) => ({
+    src: image.getAttribute('src'),
+    loaded: image.complete && image.naturalWidth > 0,
+    errored: image.dataset.imageError === 'true',
+  })));
+  expect(loaded, `${label} choice images must load`).toEqual(expectedImages.map((src) => ({ src, loaded: true, errored: false })));
+  await expect(wizard.locator('[data-image-slot][data-image-state="fallback"]'), `${label} must not create product image fallbacks`).toHaveCount(0);
 }
 
 async function assertBackendBranch(request) {
@@ -283,6 +317,16 @@ test('home and menu expose real/neutral assets with compact allergen disclosure 
     // or option rule. When a required step is empty, select its first canonical
     // choice; optional steps are simply advanced.
     for (let step = 0; step < 14; step += 1) {
+      const meatGroup = wizard.getByRole('radiogroup', { name: /Choisis \d viandes/ });
+      if (await meatGroup.isVisible().catch(() => false)) {
+        await assertWizardChoiceSurface(page, wizard, meatGroup, 'meat-choice-image-', Object.values(canonicalMeatImages), 'meat');
+      }
+      const formulaGroup = wizard.getByRole('radiogroup', { name: 'Faire un menu' });
+      if (await formulaGroup.isVisible().catch(() => false)) {
+        await assertWizardChoiceSurface(page, wizard, formulaGroup, 'formula-choice-image-', Object.values(canonicalFormulaImages), 'formula');
+        await expect(formulaGroup.locator('[role="img"][aria-label^="Sans formule"]'), 'non-product formula choice keeps its accessible neutral state').toHaveCount(1);
+      }
+
       const addButton = wizard.getByRole('button', { name: /Ajouter au panier/ });
       if (await addButton.count() && await addButton.first().isVisible()) {
         await assertImageSlots(page, wizard);

@@ -19,6 +19,14 @@ const disclosureStart = homeSource.indexOf('function AllergenDisclosure');
 const disclosureEnd = homeSource.indexOf('// HOME', disclosureStart);
 assert.ok(disclosureStart >= 0 && disclosureEnd > disclosureStart, 'AllergenDisclosure boundary is present');
 const disclosure = homeSource.slice(disclosureStart, disclosureEnd);
+const meatStepStart = itemStepsSource.indexOf('function ScreenStepViandes');
+const meatStepEnd = itemStepsSource.indexOf('// STEP 2 — Sauce', meatStepStart);
+const menuStepStart = itemStepsSource.indexOf('function ScreenStepMenu');
+const menuStepEnd = itemStepsSource.indexOf('// STEP 6 — Drink', menuStepStart);
+assert.ok(meatStepStart >= 0 && meatStepEnd > meatStepStart, 'meat choice step boundary is present');
+assert.ok(menuStepStart >= 0 && menuStepEnd > menuStepStart, 'formula choice step boundary is present');
+const meatStep = itemStepsSource.slice(meatStepStart, meatStepEnd);
+const menuStep = itemStepsSource.slice(menuStepStart, menuStepEnd);
 
 for (const selector of [
   'lc-home', 'lc-home__hero', 'lc-home__categories', 'lc-home__rail',
@@ -59,14 +67,36 @@ assert.match(indexSource, /window\.LC\.storage\.setConsent\('opted_out'\)/, 'opt
 assert.match(indexSource, /_replaceAccount\(\{\s*consent_status:\s*'opted_out',[\s\S]*balance:\s*0,[\s\S]*lifetime_earned:\s*0,[\s\S]*lifetime_redeemed:\s*0/, 'opt-out preserves the current zero-point behavior');
 assert.match(indexSource, /new window\.CustomEvent\('lc:loyalty-changed'/, 'opt-out emits the existing loyalty change event');
 assert.doesNotMatch(indexSource, /LC\.dev\.setConsent\('opted_out'\)/, 'opt-out does not depend on the dev namespace');
+assert.match(indexSource, /api\.deleteAccount\(\)/, 'account deletion calls the authenticated mobile API');
+assert.match(indexSource, /storage\.clearAuth\(\);[\s\S]*setHistory\(\['login'\]\)/, 'local identity is purged only before returning to login');
+assert.match(homeSource, /data-testid="delete-account-btn"[\s\S]*go\('deleteAccount'\)/, 'profile exposes account deletion for authenticated users');
+assert.match(indexSource, /ModalDeleteAccountConfirm/, 'account deletion requires the dedicated confirmation modal');
+assert.match(indexSource, /if \(result && result\.status === false\)/, 'server-declared failure cannot become a local success');
 assert.match(itemStepsSource, /window\.AllergenBadge/, 'wizard consumes the disclosure-only compatibility alias');
 assert.match(itemStepsSource, /aggregatedAllergens/, 'recap keeps aggregate allergen computation');
 assert.match(itemStepsSource, /selections\.supplementIds[\s\S]*selections\.drinkId/, 'aggregate includes supplements and drinks');
 assert.match(itemStepsSource, /window\.AllergenBadge/, 'detail and recap use the text-first disclosure');
 
+// Phase 18 — visual choice surfaces use real local product assets and never
+// expose the legacy food-emoji placeholders in the wizard.
+assert.match(meatStep, /m\.image/, 'meat choices consume the catalog image field');
+assert.match(meatStep, /data-testid=\{`meat-choice-image-\$\{m\.id\}`\}/, 'meat images are addressable for E2E load checks');
+assert.doesNotMatch(meatStep, /m\.emoji|[\u{1F300}-\u{1FAFF}]/u, 'meat choices have no visible emoji fallback');
+for (const asset of ['menu_complet.png', 'frites.png', 'boisson.png']) {
+  assert.match(itemStepsSource, new RegExp(`assets/menu/${asset}`), `formula choice uses ${asset}`);
+}
+assert.match(menuStep, /data-testid=\{`formula-choice-image-\$\{o\.id\}`\}/, 'formula images are addressable for E2E load checks');
+assert.match(menuStep, /label="Sans formule — aucune formule sélectionnée"/, 'non-product formula choice has an accessible neutral fallback');
+assert.doesNotMatch(menuStep, /o\.emoji|[\u{1F300}-\u{1FAFF}]/u, 'formula choices have no visible emoji fallback');
+// Legacy emoji prefixes remain in the order-line payload for kiosk/backend
+// compatibility; only visible choice surfaces are forbidden from rendering
+// them.
+assert.match(itemStepsSource, /summary\.push\('🥤 '/, 'order-line payload compatibility is preserved');
+
 for (const selector of [
   '.lc-home__hero', '.lc-home__categories', '.lc-home__category',
   '.lc-home__product-art', '.lc-home__new-card', '.lc-home__restaurant',
+  '.lc-wizard-choice-image', '.lc-wizard-choice-image--meat',
 ]) {
   assert.match(styles, new RegExp(escapeRegex(selector)), `styles include ${selector}`);
 }

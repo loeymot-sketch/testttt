@@ -389,4 +389,44 @@ function ModalOptOutConfirm({ onClose, onConfirm }) {
   );
 }
 
-Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ModalOptOutConfirm, ModalShell, ScreenOrderDetail, Toast });
+// ---------- Account deletion (Apple 5.1.1(v)) ----------
+// The destructive action is server-backed and requires an explicit second tap.
+// Errors stay in the modal so a failed request cannot look like a local success.
+function ModalDeleteAccountConfirm({ onClose, onConfirm }) {
+  const [busy, setBusy] = useState_m(false);
+  const [error, setError] = useState_m('');
+  const confirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onConfirm();
+    } catch (e) {
+      setBusy(false);
+      setError((e && e.message) || 'Suppression impossible pour le moment. Réessaie.');
+    }
+  };
+  return (
+    <div data-testid="modal-delete-account" data-modal-kind="delete-account" role="dialog" aria-modal="true" aria-labelledby="modal-delete-account-title">
+      <ModalShell onClose={busy ? () => {} : onClose}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--red)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          <I.Trash size={14} stroke="#fff" /> Action définitive
+        </div>
+        <h2 id="modal-delete-account-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Supprimer mon<br/>compte ?</h2>
+        <p style={{ margin: '0 0 14px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
+          Ton profil, tes données personnelles et ta carte fidélité seront supprimés. Les justificatifs de commandes conservés par obligation légale ne sont pas effacés.
+        </p>
+        <div style={{ background: 'var(--cream)', borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 12, color: 'var(--ink)', lineHeight: 1.45 }}>
+          Une commande encore en préparation peut empêcher la suppression. Dans ce cas, rien ne sera supprimé et tu pourras réessayer plus tard.
+        </div>
+        {error && <div data-testid="delete-account-error" role="alert" style={{ background: '#FFF1F0', color: 'var(--red)', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 12, lineHeight: 1.4 }}>{error}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
+          <button data-testid="delete-account-cancel-btn" onClick={onClose} disabled={busy} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50, opacity: busy ? 0.55 : 1 }}>Annuler</button>
+          <button data-testid="delete-account-confirm-btn" onClick={confirm} disabled={busy} className="lc-btn" style={{ background: 'var(--red)', color: '#fff', height: 50, opacity: busy ? 0.7 : 1 }}>{busy ? 'Suppression…' : 'Supprimer'}</button>
+        </div>
+      </ModalShell>
+    </div>
+  );
+}
+
+Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ModalOptOutConfirm, ModalDeleteAccountConfirm, ModalShell, ScreenOrderDetail, Toast });

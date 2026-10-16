@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261016-r2">
+<link rel="stylesheet" href="styles.css?v=20261016-r4">
 <link rel="stylesheet" href="redesigns-styles.css?v=20261016-r2">
 
 <style>
@@ -79,7 +79,7 @@
 <script src="api/storage.js?v=20261016"></script>
 <!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
      par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
-<script src="api/client.js?v=20261016"></script>
+<script src="api/client.js?v=20261016-r1"></script>
 <script src="data/menu.js?v=20261016"></script>
 <script src="data/loyalty.js?v=20261016"></script>
 <script src="data/loyaltyRewardState.js?v=20261016"></script>
@@ -111,9 +111,9 @@
 
 <!-- Screens -->
 <script type="text/babel" src="screens-onboarding.jsx?v=20261016"></script>
-<script type="text/babel" src="screens-item-steps.jsx?v=20261016"></script>
-<script type="text/babel" src="screens-main.jsx?v=20261016-r2"></script>
-<script type="text/babel" src="screens-modals.jsx?v=20261016"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261016-r4"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261016-r3"></script>
+<script type="text/babel" src="screens-modals.jsx?v=20261016-r1"></script>
 
 <!-- App root -->
 <script type="text/babel">
@@ -175,6 +175,7 @@ function App() {
     if (s === 'walletApple')  { setModal('walletApple');  return; }
     if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
     if (s === 'optOut') { setModal('optOut'); return; }
+    if (s === 'deleteAccount') { setModal('deleteAccount'); return; }
     if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
     if (s === 'menu') setMenuFilter(ext || 'all');
     // [GOAL-SYNC 2026-07-08] Flag Stripe OFF ⇒ 'stripe' inaccessible : redirection vers le choix de paiement.
@@ -379,6 +380,21 @@ function App() {
           }
         }
         setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
+      }}/>}
+      {modal === 'deleteAccount' && <ModalDeleteAccountConfirm onClose={()=>setModal(null)} onConfirm={async()=>{
+        const api = window.LC && window.LC.mobileApi;
+        if (!(api && api.deleteAccount)) throw { message: 'Service de suppression indisponible. Réessaie dans un instant.' };
+        const result = await api.deleteAccount();
+        if (result && result.status === false) throw { message: result.message || 'Suppression impossible pour le moment. Réessaie.' };
+        // Only purge local identity after the server has confirmed deletion.
+        storage.clearAuth();
+        setAuthPhone('');
+        setDevOtp('');
+        setCart([]);
+        setModal(null);
+        setHistory(['login']);
+        setScreen('login');
+        setToast({ m: 'Compte supprimé. Tu peux recréer un compte quand tu le souhaites.', k: 'success' });
       }}/>}
       {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
       {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}

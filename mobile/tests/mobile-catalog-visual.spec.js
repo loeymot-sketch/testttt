@@ -56,6 +56,17 @@ const canonicalBinaryFiles = [
   'cat-tacos.webp',
 ];
 
+// Remaining category cards are served as PNG by the current site/borne pack.
+// Keep them byte-identical too; the mobile references already use these names.
+const canonicalCategoryPngFiles = [
+  'cat-burgers.png',
+  'cat-bols-gourmands.png',
+  'cat-frites.png',
+  'cat-desserts.png',
+  'cat-boissons.png',
+  'cat-menu-enfant.png',
+];
+
 const canonicalDrinkBinaryFiles = [
   'coca.png',
   'coca-zero.png',
@@ -111,6 +122,16 @@ for (const file of canonicalBinaryFiles) {
   const destinationSha = shaFile(destination);
   console.log(`SHA256 ${file}: source=${sourceSha} destination=${destinationSha}`);
   assert.equal(destinationSha, sourceSha, `canonical binary copied without alteration: ${file}`);
+}
+for (const file of canonicalCategoryPngFiles) {
+  const source = path.resolve(root, '../public/images/menu', file);
+  const destination = path.join(root, 'assets/menu', file);
+  assert.ok(fs.existsSync(source), `canonical category source exists: ${file}`);
+  assert.ok(fs.existsSync(destination), `canonical category destination exists: ${file}`);
+  const sourceSha = shaFile(source);
+  const destinationSha = shaFile(destination);
+  console.log(`SHA256 ${file}: source=${sourceSha} destination=${destinationSha}`);
+  assert.equal(destinationSha, sourceSha, `canonical category copied without alteration: ${file}`);
 }
 for (const file of canonicalDrinkBinaryFiles) {
   const source = path.resolve(root, '../public/images/menu', file);
