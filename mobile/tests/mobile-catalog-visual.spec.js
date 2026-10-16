@@ -44,6 +44,8 @@ const expectedDrinks = {
 };
 assert.equal(menu.items.filter(i => i.category_id === 10).length, 15);
 assert.equal(menu.formuleDrinks.length, 15);
+assert.equal(menu.branch.id, 1, 'mobile catalogue stays on the active Le Cayenne branch');
+assert.equal(menu.branch.phone, '0365678291', 'branch phone matches the borne/backend canonical phone');
 for (const [slug, file] of Object.entries(expectedDrinks)) {
   const item = menu.findItem(slug);
   assert.equal(item.image, 'assets/menu/' + file, `correct brand/flavour or neutral: ${slug}`);
@@ -73,6 +75,7 @@ const main = read('screens-main.jsx');
 const steps = read('screens-item-steps.jsx');
 const compact = main.slice(main.indexOf('function ScreenHome('), main.indexOf('function ScreenItem('));
 assert.doesNotMatch(compact, /<AllergenBadge\b/, 'no compact allergen badge');
+assert.doesNotMatch(main, /⚠️/, 'no warning emoji remains in product presentation');
 assert.match(compact, /CATS\.map\(c => \(/, 'all nine home categories rendered');
 assert.match(compact, /id=\{`home-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);
 assert.match(compact, /id=\{`menu-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);

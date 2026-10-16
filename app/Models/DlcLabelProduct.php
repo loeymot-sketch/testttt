@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * [ETIQUETTES 2026-10-16] Un produit à étiqueter pour l'hygiène (oignons, tomates, olives…) et sa
- * durée de conservation après ouverture, saisie par le restaurant.
+ * [ETIQUETTES 2026-10-16] Un produit à étiqueter pour l'hygiène (oignons, tomates, olives…), configuré comme dans les
+ * logiciels HACCP du marché : plusieurs ÉVÉNEMENTS possibles (ouverture, décongélation, préparation, cuisson, mise sous
+ * vide), chacun avec SA durée ; une famille, des allergènes, une température de conservation, une mention libre.
+ *
+ * Les durées sont celles du restaurant (son plan de maîtrise sanitaire), jamais les nôtres.
  */
 class DlcLabelProduct extends Model
 {
@@ -19,14 +22,30 @@ class DlcLabelProduct extends Model
     public const UNIT_DAYS = 'days';
     public const UNITS = [self::UNIT_HOURS, self::UNIT_DAYS];
 
+    /** Événements qui ouvrent une DLC secondaire (libellés français côté écran). */
+    public const ACTIONS = ['opened', 'thawed', 'prepared', 'cooked', 'vacuum'];
+
+    /** Les 14 allergènes à déclaration obligatoire (règlement UE 1169/2011), codes de l'application. */
+    public const ALLERGENS = [
+        'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait',
+        'fruits_a_coque', 'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'mollusques',
+    ];
+
     protected $table = 'dlc_label_products';
 
     protected $fillable = [
         'branch_id',
         'name',
+        'category',
         'shelf_life_value',
         'shelf_life_unit',
+        'actions',
+        'allergens',
         'storage',
+        'note',
+        'ask_original_dlc',
+        'print_operator',
+        'default_copies',
         'sort_order',
         'is_active',
     ];
@@ -35,6 +54,11 @@ class DlcLabelProduct extends Model
         'id' => 'integer',
         'branch_id' => 'integer',
         'shelf_life_value' => 'integer',
+        'actions' => 'array',
+        'allergens' => 'array',
+        'ask_original_dlc' => 'boolean',
+        'print_operator' => 'boolean',
+        'default_copies' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -45,15 +69,49 @@ class DlcLabelProduct extends Model
     }
 
     /**
-     * Date limite de consommation pour une ouverture à `$openedAt`.
-     * Heures : ajout exact ; jours : même heure, N jours plus tard.
+     * Les événements configurés, toujours au moins un. Un produit créé avant la configuration détaillée n'a que sa durée
+     * historique : elle devient l'événement « ouverture ».
+     *
+     * @return array<int, array{key:string, value:int, unit:string}>
      */
-    public function expiresFrom(CarbonInterface $openedAt): CarbonInterface
+    public function actionList(): array
     {
-        $expires = $openedAt->copy();
+        $list = [];
+        foreach ((array) ($this->actions ?? []) as $a) {
+            if (! is_array($a) || ! in_array($a['key'] ?? null, self::ACTIONS, true)) continue;
+            $value = (int) ($a['value'] ?? 0);
+            $unit = in_array($a['unit'] ?? null, self::UNITS, true) ? $a['unit'] : self::UNIT_DAYS;
+            if ($value < 1) continue;
+            $list[] = ['key' => $a['key'], 'value' => $value, 'unit' => $unit];
+        }
+        if ($list === []) {
+            $list[] = ['key' => 'opened', 'value' => (int) $this->shelf_life_value, 'unit' => (string) $this->shelf_life_unit];
+        }
 
-        return $this->shelf_life_unit === self::UNIT_HOURS
-            ? $expires->addHours($this->shelf_life_value)
-            : $expires->addDays($this->shelf_life_value);
+        return $list;
+    }
+
+    /** L'événement demandé, ou celui par défaut (le premier). */
+    public function action(?string $key): array
+    {
+        $list = $this->actionList();
+        foreach ($list as $a) {
+            if ($a['key'] === $key) return $a;
+        }
+
+        return $list[0];
+    }
+
+    /**
+     * Date limite pour un événement à `$at`. Heures : ajout exact ; jours : même heure, N jours plus tard.
+     */
+    public function expiresFrom(CarbonInterface $at, ?array $action = null): CarbonInterface
+    {
+        $action = $action ?? $this->action(null);
+        $expires = $at->copy();
+
+        return $action['unit'] === self::UNIT_HOURS
+            ? $expires->addHours($action['value'])
+            : $expires->addDays($action['value']);
     }
 }

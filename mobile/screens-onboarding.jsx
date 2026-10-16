@@ -267,10 +267,13 @@ function ScreenLogin({ onNext, onBack }) {
 // [GOAL-SYNC 2026-07-08] props {phone, onNext} : affiche LE VRAI numéro saisi (plus de
 // '+33 6 12 34 56 78' hardcodé) ; onNext(otp) remonte le code saisi au parent (index.html
 // appelle guestVerify) ; état loading + erreur FR si la vérification échoue.
-function ScreenOTP({ phone, devCode, onNext, onBack }) {
+function ScreenOTP({ phone, devCode, onNext, onResend, onBack }) {
   const [code, setCode] = useState_o(['', '', '', '']);
   const [loading, setLoading] = useState_o(false);
   const [error, setError] = useState_o('');
+  const [resendLoading, setResendLoading] = useState_o(false);
+  const [resendError, setResendError] = useState_o('');
+  const [resendCooldown, setResendCooldown] = useState_o(30);
   const refs = [useRef_o(), useRef_o(), useRef_o(), useRef_o()];
   // Affichage FR par paires : '0612345678' → '06 12 34 56 78'
   const phoneDigits = String(phone || '').replace(/\D/g, '');
@@ -282,7 +285,11 @@ function ScreenOTP({ phone, devCode, onNext, onBack }) {
       await onNext(otp);
     } catch (e) {
       // Défense en profondeur — le parent gère déjà ses erreurs (toast FR)
-      setError((e && e.message) || 'Code invalide ou vérification impossible. Réessaie.');
+      setError(e && e.kind === 'network'
+        ? 'Réseau indisponible — vérification impossible. Réessaie.'
+        : e && e.status === 429
+          ? 'Trop de tentatives — attends un instant puis réessaie.'
+          : 'Code invalide ou vérification impossible. Réessaie.');
       setCode(['', '', '', '']);
       setTimeout(() => refs[0].current?.focus(), 0);
     } finally {
@@ -296,6 +303,28 @@ function ScreenOTP({ phone, devCode, onNext, onBack }) {
     const next = [...code]; next[i] = v; setCode(next);
     if (v && i < 3) refs[i+1].current?.focus();
     if (next.join('').length === 4) setTimeout(() => submit(next.join('')), 250);
+  };
+  useEffect_o(() => {
+    if (resendCooldown <= 0) return undefined;
+    const timer = setTimeout(() => setResendCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+  const resend = async () => {
+    if (resendLoading || resendCooldown > 0 || typeof onResend !== 'function') return;
+    setResendLoading(true);
+    setResendError('');
+    try {
+      await onResend();
+      setResendCooldown(30);
+    } catch (e) {
+      setResendError(e && e.kind === 'network'
+        ? 'Réseau indisponible — impossible de renvoyer le code.'
+        : e && e.status === 429
+          ? 'Trop de demandes — attends un instant puis réessaie.'
+          : 'Impossible de renvoyer le code. Réessaie.');
+    } finally {
+      setResendLoading(false);
+    }
   };
   useEffect_o(() => { refs[0].current?.focus(); }, []);
   return (
@@ -343,10 +372,21 @@ function ScreenOTP({ phone, devCode, onNext, onBack }) {
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance — hide demo code from prod-facing users */}
           {window.LC && window.LC.isDev && devCode
-            ? <button type="button" onClick={() => { setCode(String(devCode).split('')); submit(String(devCode)); }} style={{ background: 'transparent', border: 0, padding: 0, fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)', cursor: 'pointer' }}>Utiliser le code de test : {devCode}</button>
+            ? <button data-testid="otp-dev-code" type="button" onClick={() => { setCode(String(devCode).split('')); submit(String(devCode)); }} style={{ background: 'transparent', border: 0, padding: 0, fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)', cursor: 'pointer' }}>Utiliser le code de test : {devCode}</button>
             : <div/>}
-          <button style={{ background: 'transparent', border: 0, fontSize: 12, fontWeight: 700, color: 'var(--gray-3)', cursor: 'pointer' }}>Renvoyer (29s)</button>
+          <button
+            data-testid="otp-resend"
+            type="button"
+            onClick={resend}
+            disabled={resendLoading || resendCooldown > 0 || typeof onResend !== 'function'}
+            aria-busy={resendLoading}
+            aria-describedby={resendError ? 'otp-resend-error' : undefined}
+            style={{ background: 'transparent', border: 0, fontSize: 12, fontWeight: 700, color: resendLoading || resendCooldown > 0 ? 'var(--gray-3)' : 'var(--orange)', opacity: resendLoading || resendCooldown > 0 ? 0.7 : 1, cursor: resendLoading || resendCooldown > 0 ? 'not-allowed' : 'pointer' }}
+          >
+            {resendLoading ? 'Renvoi…' : resendCooldown > 0 ? `Renvoyer (${resendCooldown}s)` : 'Renvoyer le code'}
+          </button>
         </div>
+        {resendError && <div id="otp-resend-error" role="alert" data-testid="otp-resend-error" style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: 'var(--red)', textAlign: 'right' }}>{resendError}</div>}
         {/* fun illustration band */}
         <div style={{ marginTop: 36, padding: 20, background: 'var(--yellow)', borderRadius: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 48, height: 48, background: 'var(--ink)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

@@ -252,6 +252,17 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await page.reload({ waitUntil: 'domcontentloaded' });
         await expect(page.locator('[data-testid^="dlc-product-"]').first()).toBeVisible({ timeout: 20000 });
         await snap(page, `dlc-${vp}-produits`);
+        // la fiche d'impression (⋯) et l'éditeur complet
+        await page.locator('[data-testid^="dlc-more-"]').first().click();
+        await expect(page.getByTestId('dlc-sheet')).toBeVisible();
+        await snap(page, `dlc-${vp}-fiche`);
+        await page.getByTestId('dlc-sheet-close').click();
+        await page.getByTestId('dlc-new').click();
+        await expect(page.getByTestId('dlc-editor')).toBeVisible();
+        await page.getByTestId('dlc-ed-name').fill('Exemple (sup)');
+        await page.getByTestId('dlc-ed-allergen-lait').click();
+        await snap(page, `dlc-${vp}-editeur`);
+        await page.getByTestId('dlc-ed-close').click();
         await page.getByTestId('dlc-search').fill('olive');
         await snap(page, `dlc-${vp}-recherche`);
         await page.getByTestId('dlc-search').fill('zzz');

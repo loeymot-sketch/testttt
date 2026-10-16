@@ -112,6 +112,37 @@ function layoutOnce(blocks, width, measure, scale) {
             return;
         }
 
+        if (b.t === 'dayline') {
+            // [ÉTIQUETTE DLC] Pastille du JOUR de la DLC (« DIM ») en blanc sur noir, à gauche ; à droite la légende et la
+            // date/heure. C'est l'équivalent, en impression noir et blanc, des pastilles de couleur par jour des cuisines :
+            // on repère d'un coup d'œil, dans la chambre froide, ce qui doit partir aujourd'hui.
+            y += gap;
+            const capSize = sz('sm');
+            const dateSize = sz('lg');
+            const capFont = fontOf(capSize, true);
+            const dateFont = fontOf(dateSize, true);
+            const textH = capSize * LINE_HEIGHT + dateSize * LINE_HEIGHT;
+            const pad = 10 * scale;
+            const dayFontSize = Math.min(textH * 0.62, sz('band') * 1.05);
+            const dayFont = fontOf(dayFontSize, true);
+            const dayText = String(b.day || '');
+            const badgeW = Math.max(textH, measure(dayText, dayFont) + pad * 2);
+            const h = textH + pad * 2;
+            cmds.push({ op: 'rect', x: PAD_X, y, w: badgeW, h, fill: '#000' });
+            const dw = measure(dayText, dayFont);
+            cmds.push({ op: 'text', x: PAD_X + (badgeW - dw) / 2, y: y + (h - dayFontSize * LINE_HEIGHT) / 2, text: dayText, font: dayFont, color: '#fff', size: dayFontSize });
+            const tx = PAD_X + badgeW + 14 * scale;
+            const avail = width - PAD_X - tx;
+            const cap = String(b.caption || '');
+            const date = String(b.text || '');
+            if (measure(cap, capFont) > avail - 10 * scale || measure(date, dateFont) > avail - 10 * scale) clipped = true;
+            cmds.push({ op: 'frame', x: tx - 6 * scale, y, w: width - PAD_X - tx + 6 * scale, h, line: Math.max(3, 4 * scale) });
+            cmds.push({ op: 'text', x: tx + 4 * scale, y: y + pad, text: cap, font: capFont, color: '#000', size: capSize });
+            cmds.push({ op: 'text', x: tx + 4 * scale, y: y + pad + capSize * LINE_HEIGHT, text: date, font: dateFont, color: '#000', size: dateSize });
+            y += h;
+            return;
+        }
+
         if (b.t === 'pair') {
             y += gap;
             const size = sz(b.size || 'md');

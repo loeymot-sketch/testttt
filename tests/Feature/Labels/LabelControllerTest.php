@@ -100,7 +100,13 @@ class LabelControllerTest extends TestCase
 
         $this->putJson('/api/admin/labels/products/'.$created['id'], [
             'name' => 'Tomates', 'shelf_life_value' => 2, 'shelf_life_unit' => 'days', 'is_active' => false,
-        ])->assertOk()->assertJsonPath('data.is_active', false)->assertJsonPath('data.storage', null);
+        ])->assertOk()->assertJsonPath('data.is_active', false)
+            // un champ ABSENT n'est pas effacé (masquer un produit ne doit pas lui retirer sa conservation)…
+            ->assertJsonPath('data.storage', '+4 °C');
+        // …un champ envoyé vide, si.
+        $this->putJson('/api/admin/labels/products/'.$created['id'], [
+            'name' => 'Tomates', 'shelf_life_value' => 2, 'shelf_life_unit' => 'days', 'storage' => '',
+        ])->assertOk()->assertJsonPath('data.storage', null);
 
         $this->deleteJson('/api/admin/labels/products/'.$created['id'])->assertOk();
         $this->getJson('/api/admin/labels/products')->assertJsonCount(0, 'data');
@@ -580,5 +586,127 @@ class LabelControllerTest extends TestCase
         $this->postJson('/api/admin/labels/prints/discard', ['ids' => []])->assertStatus(422);
         $this->postJson('/api/admin/labels/prints/discard', [])->assertStatus(422);
         $this->postJson('/api/admin/labels/prints/discard', ['ids' => ['x']])->assertStatus(422);
+    }
+
+    // ───────────── configuration détaillée (niveau logiciels HACCP du marché) ─────────────
+
+    private function expertProduct(array $over = []): array
+    {
+        return $this->postJson('/api/admin/labels/products', $over + [
+            'name' => 'Poulet mariné', 'category' => 'Viandes & volailles',
+            'actions' => [
+                ['key' => 'thawed', 'value' => 3, 'unit' => 'days'],
+                ['key' => 'opened', 'value' => 48, 'unit' => 'hours'],
+            ],
+            'allergens' => ['moutarde', 'lait'], 'storage' => '0 à +3 °C', 'note' => 'Bac n°2',
+            'print_operator' => true, 'default_copies' => 2,
+        ])->assertCreated()->json('data');
+    }
+
+    public function test_un_produit_peut_porter_plusieurs_evenements_chacun_avec_sa_duree(): void
+    {
+        $this->caisse();
+        $p = $this->expertProduct();
+        $this->assertSame('Viandes & volailles', $p['category']);
+        $this->assertSame([['key' => 'thawed', 'value' => 3, 'unit' => 'days'], ['key' => 'opened', 'value' => 48, 'unit' => 'hours']], $p['actions']);
+        $this->assertSame(['moutarde', 'lait'], $p['allergens']);
+        $this->assertSame(2, $p['default_copies']);
+        // la durée « historique » suit le premier événement
+        $this->assertSame(3, $p['shelf_life_value']);
+        $this->assertSame('days', $p['shelf_life_unit']);
+    }
+
+    public function test_un_produit_ancien_sans_evenements_garde_sa_duree_comme_ouverture(): void
+    {
+        $this->caisse();
+        $old = $this->product(['shelf_life_value' => 2, 'shelf_life_unit' => 'days']);
+        $row = collect($this->getJson('/api/admin/labels/products')->json('data'))->firstWhere('id', $old->id);
+        $this->assertSame([['key' => 'opened', 'value' => 2, 'unit' => 'days']], $row['actions']);
+        $this->assertSame(1, $row['default_copies']);
+        $this->assertTrue($row['print_operator']);
+    }
+
+    public function test_configuration_invalide_refusee(): void
+    {
+        $this->caisse();
+        $base = ['name' => 'X'];
+        $this->postJson('/api/admin/labels/products', $base + ['actions' => [['key' => 'grille', 'value' => 1, 'unit' => 'days']]])->assertStatus(422);
+        $dup = $this->postJson('/api/admin/labels/products', $base + ['actions' => [['key' => 'opened', 'value' => 1, 'unit' => 'days'], ['key' => 'opened', 'value' => 2, 'unit' => 'days']]])
+            ->assertStatus(422)->json('errors');
+        $this->assertSame('Chaque événement (ouverture, décongélation…) ne peut figurer qu’une fois.', $dup['actions.1.key'][0]);
+        $long = $this->postJson('/api/admin/labels/products', $base + ['actions' => [['key' => 'opened', 'value' => 400, 'unit' => 'days']]])
+            ->assertStatus(422)->json('errors');
+        $this->assertSame('La durée ne peut pas dépasser 365 jours.', $long['actions.0.value'][0]);
+        $this->postJson('/api/admin/labels/products', $base + ['actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']], 'allergens' => ['chocolat']])->assertStatus(422);
+        $this->postJson('/api/admin/labels/products', $base + ['actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']], 'default_copies' => 50])->assertStatus(422);
+    }
+
+    public function test_impression_par_evenement_lot_et_operateur(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->expertProduct();
+
+        $thawed = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id']])->assertOk()->json();
+        $this->assertSame('thawed', $thawed['action']); // événement par défaut = le premier
+        $this->assertSame('2026-10-19 10:00', Carbon::parse($thawed['expires_at'])->format('Y-m-d H:i'));
+        $this->assertSame(2, $thawed['copies']); // nombre proposé par le produit
+        $this->assertMatchesRegularExpression('/^L261016-\d{4}$/', $thawed['lot']);
+        $this->assertSame('Karim', $thawed['by']);
+        $this->assertSame(['moutarde', 'lait'], $thawed['allergens']);
+        $this->assertSame('Bac n°2', $thawed['note']);
+
+        $opened = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'opened', 'copies' => 1])->assertOk()->json();
+        $this->assertSame('opened', $opened['action']);
+        $this->assertSame('2026-10-18 10:00', Carbon::parse($opened['expires_at'])->format('Y-m-d H:i'));
+        $this->assertNotSame($thawed['lot'], $opened['lot']);
+
+        $log = LabelPrintLog::query()->findOrFail($opened['log_id']);
+        $this->assertSame('opened', $log->action);
+        $this->assertSame($opened['lot'], $log->lot);
+        Carbon::setTestNow();
+    }
+
+    public function test_sans_prenom_si_le_produit_ne_le_demande_pas(): void
+    {
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Anonyme', 'print_operator' => false]);
+        $this->assertNull($this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id']])->json('by'));
+    }
+
+    public function test_la_dlc_secondaire_ne_depasse_jamais_la_dlc_du_fabricant(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-16 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Crème', 'ask_original_dlc' => true, 'actions' => [['key' => 'opened', 'value' => 5, 'unit' => 'days']]]);
+
+        // DLC demandée : obligatoire
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id']])
+            ->assertStatus(422)->assertJsonPath('errors.original_dlc.0', 'Indiquez la DLC du fabricant (sur l’emballage d’origine).');
+
+        // fabricant au 18/10 : la DLC calculée (21/10) est LIMITÉE au 18/10 23:59
+        $r = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'original_dlc' => '2026-10-18'])->assertOk()->json();
+        $this->assertTrue($r['capped']);
+        $this->assertSame('2026-10-18 23:59', Carbon::parse($r['expires_at'])->format('Y-m-d H:i'));
+
+        // fabricant au 30/10 : la DLC calculée (21/10) s'applique
+        $r2 = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'original_dlc' => '2026-10-30'])->assertOk()->json();
+        $this->assertFalse($r2['capped']);
+        $this->assertSame('2026-10-21 10:00', Carbon::parse($r2['expires_at'])->format('Y-m-d H:i'));
+
+        // fabricant déjà dépassé : refus net, rien n'est journalisé
+        $before = LabelPrintLog::query()->count();
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'original_dlc' => '2026-10-15'])
+            ->assertStatus(422)->assertJsonPath('status', 'original_expired');
+        $this->assertSame($before, LabelPrintLog::query()->count());
+        Carbon::setTestNow();
+    }
+
+    public function test_un_evenement_non_configure_retombe_sur_le_premier(): void
+    {
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Seul', 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]]);
+        $this->assertSame('prepared', $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'vacuum'])->json('action'));
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'inconnu'])->assertStatus(422);
     }
 }

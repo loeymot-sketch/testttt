@@ -1,4 +1,399 @@
 [post-execute] task: unknown
-[post-execute] timestamp: 20260919_193720
-[post-execute] timestamped log: reports/test_unknown_20260919_193720.log
+[post-execute] timestamp: 20261016_144530
+[post-execute] timestamped log: reports/test_unknown_20261016_144530.log
 [post-execute] running: php artisan test --stop-on-failure
+[post-execute] task: unknown
+[post-execute] timestamp: 20261016_144530
+[post-execute] timestamped log: reports/test_unknown_20261016_144530.log
+[post-execute] running: php artisan test --stop-on-failure
+Warning: TTY mode requires /dev/tty to be read/writable.
+PHP Deprecated:  Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Implicitly marking parameter $code as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Loyalty/LoyaltyMergeDuplicatePhonesTest.php on line 34
+
+Deprecated: Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Implicitly marking parameter $code as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Loyalty/LoyaltyMergeDuplicatePhonesTest.php on line 34
+
+Deprecated: Tests\Feature\Refund\RefundMirrorSplitPaymentTest::makeParentWithSplit(): Implicitly marking parameter $totalOverride as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Refund/RefundMirrorSplitPaymentTest.php on line 68
+PHP Deprecated:  Tests\Feature\Refund\RefundMirrorSplitPaymentTest::makeParentWithSplit(): Implicitly marking parameter $totalOverride as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Refund/RefundMirrorSplitPaymentTest.php on line 68
+
+Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Printer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 61
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Printer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 61
+
+Deprecated: Method ReflectionMethod::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/ConfigureIO.php on line 37
+PHP Deprecated:  Method ReflectionMethod::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/ConfigureIO.php on line 37
+
+Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
+
+Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
+
+Deprecated: NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
+
+Deprecated: NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Backup\BackupVerifyRestoreLogicTest[39m
+  [32;1m✓[39;22m[39m [2mpick newest returns null for empty list[22m[39m
+  [32;1m✓[39;22m[39m [2mpick newest selects highest mtime not filename order[22m[39m
+  [32;1m✓[39;22m[39m [2mpick newest single candidate[22m[39m
+  [32;1m✓[39;22m[39m [2mderive scratch default suffix[22m[39m
+  [32;1m✓[39;22m[39m [2mderive scratch honours override[22m[39m
+  [32;1m✓[39;22m[39m [2mderive scratch refuses when override equals live[22m[39m
+  [32;1m✓[39;22m[39m [2mderive scratch default can never equal live[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts green when all nonzero and below live[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts red when a table is empty[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts red when table missing[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts red when scratch exceeds live[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts zreports zero is red by default[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts zreports zero allowed with flag[22m[39m
+  [32;1m✓[39;22m[39m [2mevaluate counts flag does not relax other tables[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Domain\Events\EventContractUnitTest[39m
+  [32;1m✓[39;22m[39m [2mbuild envelope produces flat v1 shape[22m[39m
+  [32;1m✓[39;22m[39m [2mvalid envelope passes[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope with wrong version throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope with unknown type throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope missing aggregate id throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope missing branch id key throws[22m[39m
+  [32;1m✓[39;22m[39m [2menvelope payload not object throws[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload validation catches missing required key for status changed[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload validation allows extra keys[22m[39m
+  [32;1m✓[39;22m[39m [2mbroadcast map matches all v1 types[22m[39m
+  [32;1m✓[39;22m[39m [2mtype for broadcast as returns mapped type or identity[22m[39m
+  [32;1m✓[39;22m[39m [2mpayload mismatch exception exposes context[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Domain\Order\OrderStateMachineTest[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → accept"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "pending → rejected"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "accept → preparing"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "accept → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "preparing → prepared"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "preparing → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "prepared → out_for_delivery"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "prepared → delivered"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "prepared → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "out_for_delivery → delivered"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "out_for_delivery → canceled"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are allowed with data set "delivered → returned"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "1→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "4→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "7→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "8→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "10→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "13→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→19"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "16→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "19→22"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→1"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→4"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→7"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→8"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→10"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→13"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→16"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected without user with data set "22→19"[22m[39m
+  [32;1m✓[39;22m[39m [2midentity transition is always allowed[22m[39m
+  [32;1m✓[39;22m[39m [2massert allows throws on illegal transition[22m[39m
+  [32;1m✓[39;22m[39m [2massert allows does not throw on legal transition[22m[39m
+  [32;1m✓[39;22m[39m [2mpos shortcut allows accept to delivered for pos user[22m[39m
+  [32;1m✓[39;22m[39m [2mpos shortcut does not apply to non pos user[22m[39m
+  [32;1m✓[39;22m[39m [2madmin can transition from terminal states[22m[39m
+  [32;1m✓[39;22m[39m [2mrequires reason is true for cancel reject return[22m[39m
+  [32;1m✓[39;22m[39m [2mrequires reason is false for happy path[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions matrix contains exactly expected count[22m[39m
+  [32;1m✓[39;22m[39m [2mall statuses returns nine v1 states[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Domain\Order\PaymentStateMachineExtendedTest[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are accepted with data set "unpaid -> paid"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are accepted with data set "pending_counter -> paid"[22m[39m
+  [32;1m✓[39;22m[39m [2mlegal transitions are accepted with data set "pending_counter -> refunded"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "paid -> unpaid"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "paid -> refunded"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "paid -> pending_counter"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "refunded -> paid"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "refunded -> unpaid"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "refunded -> pending_counter"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "unpaid -> refunded"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "unpaid -> pending_counter"[22m[39m
+  [32;1m✓[39;22m[39m [2millegal transitions are rejected with data set "pending_counter -> unpaid"[22m[39m
+  [32;1m✓[39;22m[39m [2mpaid is terminal under option b[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Events\OrderCanceledMaterialCommittedTest[39m
+  [32;1m✓[39;22m[39m [2mannuler avant preparation restitue le stock comme avant[22m[39m
+  [32;1m✓[39;22m[39m [2mannuler apres pret ne restitue pas le stock[22m[39m
+  [32;1m✓[39;22m[39m [2mun statut terminal ne compte pas comme marchandise engagee[22m[39m
+  [32;1m✓[39;22m[39m [2msans statut d origine le comportement historique est conserve[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Grok\AddonCreateDoesNotWipeSelectionTest[39m
+  [32;1m✓[39;22m[39m [2mvariation handler does not reset addon item id to null[22m[39m
+  [32;1m✓[39;22m[39m [2msave stringifies variation picks only when they are an object[22m[39m
+  [32;1m✓[39;22m[39m [2mrole create reset uses role store not analytic[22m[39m
+  [32;1m✓[39;22m[39m [2mrole list hides delete for pos operator by name[22m[39m
+  [32;1m✓[39;22m[39m [2mcategory list has status fallback label[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Grok\MissionGrokContractTest[39m
+  [32;1m✓[39;22m[39m [2mmission file states owner goal and delivery rules[22m[39m
+  [32;1m✓[39;22m[39m [2mevery grok owned glob resolves to real files[22m[39m
+  [32;1m✓[39;22m[39m [2mnever touch globs exist and do not overlap grok owned[22m[39m
+  [32;1m✓[39;22m[39m [2mi18n prefixes are declared[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\CustomerDisplayServiceTest[39m
+  [32;1m✓[39;22m[39m [2mtotal bytes show only the amount right aligned[22m[39m
+  [32;1m✓[39;22m[39m [2mwelcome bytes show the idle message[22m[39m
+  [32;1m✓[39;22m[39m [2mlines are capped to 20 columns[22m[39m
+  [32;1m✓[39;22m[39m [2mdisabled service sends nothing[22m[39m
+  [32;1m✓[39;22m[39m [2menabled service sends via transport[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\EscPosCommandBuilderWrapTest[39m
+  [32;1m✓[39;22m[39m [2mshort text stays on one line[22m[39m
+  [32;1m✓[39;22m[39m [2mlong list wraps under width with hanging indent[22m[39m
+  [32;1m✓[39;22m[39m [2msingle token longer than width is hard split[22m[39m
+  [32;1m✓[39;22m[39m [2mempty body yields no lines[22m[39m
+  [32;1m✓[39;22m[39m [2mfrench ligatures transliterate cleanly[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenBundledAddonCollapserTest[39m
+  [32;1m✓[39;22m[39m [2mcas reel commande 6598 la ligne formule disparait[22m[39m
+  [32;1m✓[39;22m[39m [2msurete une formule commandee seule reste affichee[22m[39m
+  [32;1m✓[39;22m[39m [2mdeux sandwichs en menu replient une ligne de quantite deux[22m[39m
+  [32;1m✓[39;22m[39m [2msurete un menu attache et un menu seul en laissent un[22m[39m
+  [32;1m✓[39;22m[39m [2mla revendication tolere casse et accents[22m[39m
+  [32;1m✓[39;22m[39m [2mun supplement ne masque rien[22m[39m
+  [32;1m✓[39;22m[39m [2mune ligne ne peut pas se replier elle meme[22m[39m
+  [32;1m✓[39;22m[39m [2msurete une note libre ne masque pas une vraie ligne[22m[39m
+  [32;1m✓[39;22m[39m [2mla revendication legitime fonctionne malgre une note libre[22m[39m
+  [32;1m✓[39;22m[39m [2mvaleurs degenerees[22m[39m
+  [32;1m✓[39;22m[39m [2mla source n est jamais mutee[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenBundledAddonExtrasLeguesTest[39m
+  [32;1m✓[39;22m[39m [2mun extra de l instantane survit au repli[22m[39m
+  [32;1m✓[39;22m[39m [2mun extra de l ancienne forme survit aussi[22m[39m
+  [32;1m✓[39;22m[39m [2ml heritage atterrit dans la source que le rendu lira[22m[39m
+  [32;1m✓[39;22m[39m [2mun extra deja porte par le parent n est pas duplique[22m[39m
+  [32;1m✓[39;22m[39m [2maucun extra n est invente quand la ligne repliee n en porte pas[22m[39m
+  [32;1m✓[39;22m[39m [2mles consignes de cuisine sont toujours leguees[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenDeuxMenusDeuxBoissonsTest[39m
+  [32;1m✓[39;22m[39m [2mchaque menu garde  s a boisson[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenFormuleVisibleTest[39m
+  [32;1m✓[39;22m[39m [2mcommande 5544 la sauce frites de la ligne repliee arrive chez le parent[22m[39m
+  [32;1m✓[39;22m[39m [2mcommande 5544 le badge dit  m e n u la ou il ne disait plus  r i e n[22m[39m
+  [32;1m✓[39;22m[39m [2mcommande 6598 le badge dit  m e n u et non  f r i t e s[22m[39m
+  [32;1m✓[39;22m[39m [2mla boisson de la formule reste lisible sur le bloc du parent[22m[39m
+  [32;1m✓[39;22m[39m [2mpas de sauce frites en double quand le parent la porte deja[22m[39m
+  [32;1m✓[39;22m[39m [2mla note libre du caissier reste la derniere ligne[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "menu complet nommé"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "menu complet legacy"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "formule générique"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "frites seules"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "boisson seule"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "supplément payant"[22m[39m
+  [32;1m✓[39;22m[39m [2mnature de la formule revendiquee with data set "aucune revendication"[22m[39m
+  [32;1m✓[39;22m[39m [2mune note libre ne fabrique pas de badge fantome[22m[39m
+  [32;1m✓[39;22m[39m [2mle canal addon scelle garde la priorite sur la revendication[22m[39m
+  [32;1m✓[39;22m[39m [2mune formule commandee seule n est ni repliee ni deshabillee[22m[39m
+  [32;1m✓[39;22m[39m [2mle legs ne mute jamais la ligne source[22m[39m
+  [32;1m✓[39;22m[39m [2mla revendication rendue par le badge ne reste pas aussi en note[22m[39m
+  [32;1m✓[39;22m[39m [2mles options de frites de la formule ne disparaissent plus[22m[39m
+  [32;1m✓[39;22m[39m [2mdeux menus deux parents chacun recoit sa consigne[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenSymbolPhpJsParityTest[39m
+  [32;1m✓[39;22m[39m [2mmeat symbols match between php and js[22m[39m
+  [32;1m✓[39;22m[39m [2msauce symbols match between php and js[22m[39m
+  [32;1m✓[39;22m[39m [2mcrudite symbols match between php and js[22m[39m
+  [32;1m✓[39;22m[39m [2mcrudite print order matches[22m[39m
+  [32;1m✓[39;22m[39m [2mtables are non empty[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketExtraJamaisEscamoteTest[39m
+  [32;1m✓[39;22m[39m [2mun extra sans aucun nom est annonce au lieu de disparaitre[22m[39m
+  [32;1m✓[39;22m[39m [2mla quantite d un extra anonyme survit[22m[39m
+  [32;1m✓[39;22m[39m [2mun extra nomme et un anonyme coexistent[22m[39m
+  [32;1m✓[39;22m[39m [2mnon regression une garniture gratuite nommee reste repliee en ligne 1[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketNomsDesSaucesToutesCategoriesTest[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Sandwichs"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Galette"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Burgers"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Tacos"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Bols"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Frites"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse trois sauces puis un supplement sur la meme ligne with data set "Menu enfant"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Sandwichs"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Galette"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Burgers"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Tacos"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Bols"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Frites"[22m[39m
+  [32;1m✓[39;22m[39m [2mcaisse deux sauces puis un supplement with data set "Menu enfant"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Sandwichs"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Galette"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Burgers"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Tacos"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Bols"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Frites"[22m[39m
+  [32;1m✓[39;22m[39m [2msnapshot scelle tronque ne masque pas la relecture correcte with data set "Menu enfant"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Sandwichs"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Galette"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Burgers"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Tacos"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Bols"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Frites"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle francais sauces en plus with data set "Menu enfant"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Sandwichs"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Galette"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Burgers"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Tacos"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Bols"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Frites"[22m[39m
+  [32;1m✓[39;22m[39m [2mborne libelle arabe est reconnu with data set "Menu enfant"[22m[39m
+  [32;1m✓[39;22m[39m [2mles deux sauces en plus sans supplement restent correctes[22m[39m
+  [32;1m✓[39;22m[39m [2mun prix a virgule et un supplement collant ne fabriquent pas de fausse sauce[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketSymbolicFormatterTest[39m
+  [32;1m✓[39;22m[39m [2msandwich main line[22m[39m
+  [32;1m✓[39;22m[39m [2mtacos main line with default support[22m[39m
+  [32;1m✓[39;22m[39m [2msandwich classique shows support and meat only[22m[39m
+  [32;1m✓[39;22m[39m [2mtwo meats space joined[22m[39m
+  [32;1m✓[39;22m[39m [2mcrudites canonical order[22m[39m
+  [32;1m✓[39;22m[39m [2mmeat not dropped when attribute name null[22m[39m
+  [32;1m✓[39;22m[39m [2mdrink is just the name[22m[39m
+  [32;1m✓[39;22m[39m [2msupplement lines exclude crudites[22m[39m
+  [32;1m✓[39;22m[39m [2mclean instruction drops compo blob keeps free note[22m[39m
+  [32;1m✓[39;22m[39m [2mclean instruction drops standalone viandes en plus line[22m[39m
+  [32;1m✓[39;22m[39m [2mclean instruction mono line borne keeps colocated client note[22m[39m
+  [32;1m✓[39;22m[39m [2mevery real menu value maps to expected symbol[22m[39m
+  [32;1m✓[39;22m[39m [2mpaid supplement named like a crudite is not folded[22m[39m
+  [32;1m✓[39;22m[39m [2mfrites sauce symbol from instruction[22m[39m
+  [32;1m✓[39;22m[39m [2mfrites sauce symbol lists all sauces[22m[39m
+  [32;1m✓[39;22m[39m [2mclean instruction drops menu and frites sauce lines[22m[39m
+  [32;1m✓[39;22m[39m [2mis menu item[22m[39m
+  [32;1m✓[39;22m[39m [2mclean instruction strips price annotations[22m[39m
+  [32;1m✓[39;22m[39m [2mmenu line[22m[39m
+  [32;1m✓[39;22m[39m [2mdrink lines reject formule container keep real drink[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Hardware\KitchenTicketVirguleDuPrixTest[39m
+  [32;1m✓[39;22m[39m [2mla virgule d un prix ne fabrique pas une fausse sauce[22m[39m
+  [32;1m✓[39;22m[39m [2mun supplement sur la meme ligne n est jamais pris pour une sauce[22m[39m
+  [32;1m✓[39;22m[39m [2mune  v r a i e deuxieme sauce reste reconnue[22m[39m
+  [32;1m✓[39;22m[39m [2mdeux vraies sauces en plus survivent a un supplement qui suit[22m[39m
+  [32;1m✓[39;22m[39m [2mles autres rubriques bornent aussi la capture[22m[39m
+  [32;1m✓[39;22m[39m [2mle format borne reste intact[22m[39m
+  [32;1m✓[39;22m[39m [2mune instruction sans sauce ne renvoie rien[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Http\Resources\ItemCategoryResourceTest[39m
+  [32;1m✓[39;22m[39m [2mit exposes legacy kiosk image aliases[22m[39m
+  [32;1m✓[39;22m[39m [2mit exposes the parent category[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\KioskAutoLoginGateResolverTest[39m
+  [32;1m✓[39;22m[39m [2mnon kiosk path never emits payload[22m[39m
+  [32;1m✓[39;22m[39m [2mnull payload means no creds even on trusted ip[22m[39m
+  [32;1m✓[39;22m[39m [2mlocal bypass emits payload[22m[39m
+  [32;1m✓[39;22m[39m [2mpersistent encrypted grant emits payload without repeating machine key[22m[39m
+  [32;1m✓[39;22m[39m [2muntrusted request without grant stays blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mexact ipv4 in allowlist emits payload[22m[39m
+  [32;1m✓[39;22m[39m [2mipv4 outside allowlist blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mempty allowlist without bypass blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mipv6 inside trusted cidr prefix emits payload[22m[39m
+  [32;1m✓[39;22m[39m [2mipv6 outside trusted cidr prefix blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mblank and whitespace entries are ignored[22m[39m
+  [32;1m✓[39;22m[39m [2mnull client ip blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mmatching url secret emits payload regardless of ip[22m[39m
+  [32;1m✓[39;22m[39m [2mwrong url secret blocked[22m[39m
+  [32;1m✓[39;22m[39m [2mempty configured secret keeps secret path inactive[22m[39m
+  [32;1m✓[39;22m[39m [2msecret still requires kiosk path[22m[39m
+  [32;1m✓[39;22m[39m [2msecret still blocked when payload null[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\Listeners\KioskCacheInvalidationWiringSentinelTest[39m
+  [32;1m✓[39;22m[39m [2mevery catalog event is wired to kiosk cache invalidator[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\MoneyFormatConfigCacheTest[39m
+  [32;1m✓[39;22m[39m [2mmoney formatters keep decimals when env decimal point is null[22m[39m
+  [32;1m✓[39;22m[39m [2mdate formatters fall back to fr format when env is null[22m[39m
+
+Deprecated: Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 115
+PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 115
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Unit\Payment\StripeCentsCastTest[39m
+  [31;1m⨯[39;22m[39m [2mmath formula produces correct cents for x99 amounts[22m[39m
+
+Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
+
+Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
+
+Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
+
+Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
+
+Deprecated: NunoMaduro\Collision\Highlighter::__construct(): Implicitly marking parameter $color as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Highlighter.php on line 91
+PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly marking parameter $color as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Highlighter.php on line 91
+
+[39;1m  €1.005 must convert to 101 cents (got 100)
+  Failed asserting that 100 is identical to 101.[39;22m
+
+  at [32mtests/Unit/Payment/StripeCentsCastTest.php[39m:[32m36[39m
+     32▕         ];
+     33▕ 
+     34▕         foreach ($cases as [$total, $expectedCents]) {
+     35▕             $cents = (int) round((float) $total * 100);
+  ➜  36▕             $this->assertSame(
+     37▕                 $expectedCents,
+     38▕                 $cents,
+     39▕                 "€{$total} must convert to {$expectedCents} cents (got {$cents})"
+     40▕             );
+
+
+  [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m277 passed[39;22m[39m, [2m5920 pending[22m[39m
+  [37;1mTime:   [39;22m[39m1.13s[39m
+
+
+[post-execute] tests: FAILED — see reports/test_unknown_20261016_144530.log
+[post-execute] lint: SKIPPED — no lint script in package.json
+[post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
+[post-execute] done — invoke Composer validate phase next

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { wrapText, layoutLabel, SIZES, MIN_LABEL_DOTS } from '../../resources/js/helpers/labelLayout.js';
-import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList } from '../../resources/js/helpers/dlcLabelBuilder.js';
+import { formatDlcDate, shelfLifeText, dlcLabelBlocks, testLabelBlocks, expiryStatus, watchList, dlcParts } from '../../resources/js/helpers/dlcLabelBuilder.js';
 
 /** Mesure factice : 0,55 × la taille de police par caractère. */
 const measure = (text, font) => {
@@ -95,6 +95,22 @@ describe('layoutLabel', () => {
     });
 });
 
+describe('pastille du jour (dayline)', () => {
+    it('dessine un bloc noir avec le jour en blanc, puis la légende et la date', () => {
+        const r = layoutLabel([{ t: 'dayline', day: 'DIM', caption: 'À CONSOMMER JUSQU’AU', text: '18/10/2026  14:32' }], { width: 696, measure });
+        expect(r.overflow).toBe(false);
+        const texts = r.commands.filter((c) => c.op === 'text');
+        expect(texts.map((t) => t.text)).toEqual(['DIM', 'À CONSOMMER JUSQU’AU', '18/10/2026  14:32']);
+        expect(texts[0].color).toBe('#fff');
+        expect(r.commands.some((c) => c.op === 'rect' && c.fill === '#000')).toBe(true);
+    });
+
+    it('une date trop longue pour la place est signalée, jamais rognée en silence', () => {
+        const r = layoutLabel([{ t: 'dayline', day: 'DIM', caption: 'X', text: 'Y'.repeat(60) }], { width: 696, measure });
+        expect(r.overflow).toBe(true);
+    });
+});
+
 describe('chevauchement et rognage signalés (revue adversariale)', () => {
     it('un bandeau dont les deux textes ne tiennent plus côte à côte est signalé, même en ruban continu', () => {
         const r = layoutLabel([{ t: 'band', left: `N° ${'X'.repeat(60)}`, right: '1/3' }], { width: 696, measure });
@@ -131,17 +147,38 @@ describe('étiquette DLC', () => {
         expect(shelfLifeText(0, 'days')).toBe('');
     });
 
-    it('contient produit, date d’ouverture et DLC', () => {
+    it('contient produit, famille, événement, DLC avec le JOUR en pastille, lot, conservation et opérateur', () => {
         const blocks = dlcLabelBlocks({
-            name: 'Oignons émincés', openedAt: '2026-10-16T12:32:00Z', expiresAt: '2026-10-18T12:32:00Z',
-            storage: '+4 °C', by: 'Karim', shelfValue: 2, shelfUnit: 'days',
+            name: 'Oignons émincés', category: 'Légumes & crudités', note: 'Fait maison', action: 'opened',
+            openedAt: '2026-10-16T12:32:00Z', expiresAt: '2026-10-18T12:32:00Z',
+            storage: '0 à +4 °C', by: 'Karim', lot: 'L261016-0042', allergens: ['lait', 'moutarde'],
         });
-        const flat = JSON.stringify(blocks);
-        expect(flat).toContain('OIGNONS ÉMINCÉS');
-        expect(flat).toContain('ven 16/10/2026 14:32');
-        expect(flat).toContain('dim 18/10/2026 14:32');
-        expect(flat).toContain('À CONSOMMER AVANT');
-        expect(flat).toContain('Conservation 2 jours · +4 °C · Par Karim');
+        expect(blocks[0]).toEqual({ t: 'title', text: 'OIGNONS ÉMINCÉS' });
+        expect(blocks[1]).toEqual({ t: 'sub', text: 'Légumes & crudités · Fait maison' });
+        expect(blocks).toContainEqual({ t: 'pair', left: 'Entamé le', right: 'ven 16/10/2026 14:32', size: 'md' });
+        expect(blocks).toContainEqual({ t: 'dayline', day: 'DIM', caption: 'À CONSOMMER JUSQU’AU', text: '18/10/2026  14:32' });
+        expect(blocks).toContainEqual({ t: 'line', text: 'Lait, Moutarde', prefix: 'ALLERGÈNES : ', size: 'md', box: true });
+        expect(blocks[blocks.length - 1]).toEqual({ t: 'sub', text: 'Conserver 0 à +4 °C · Lot L261016-0042 · Par Karim' });
+    });
+
+    it('le verbe suit l’événement : décongelé, préparé, cuit, sous vide', () => {
+        const verb = (action) => dlcLabelBlocks({ name: 'X', action, openedAt: '2026-10-16T12:00:00Z', expiresAt: '2026-10-17T12:00:00Z' })
+            .find((b) => b.t === 'pair').left;
+        expect(verb('thawed')).toBe('Décongelé le');
+        expect(verb('prepared')).toBe('Préparé le');
+        expect(verb('cooked')).toBe('Cuit le');
+        expect(verb('vacuum')).toBe('Mis sous vide le');
+        expect(verb('inconnu')).toBe('Entamé le');
+    });
+
+    it('DLC limitée par celle du fabricant : mention explicite sur l’étiquette', () => {
+        const blocks = dlcLabelBlocks({ name: 'Crème', openedAt: '2026-10-16T08:00:00Z', expiresAt: '2026-10-18T21:59:00Z', capped: true, originalDlc: '2026-10-18' });
+        expect(blocks).toContainEqual({ t: 'line', text: 'Limitée à la DLC du fabricant (18/10/2026)', size: 'sm' });
+    });
+
+    it('jour de la semaine juste autour de minuit (fuseau du restaurant)', () => {
+        expect(dlcParts('2026-10-17T22:30:00Z')).toEqual({ day: 'DIM', date: '18/10/2026', time: '00:30' }); // samedi 22:30 UTC = dimanche 00:30 Paris
+        expect(dlcParts('nope').date).toBe('—');
     });
 
     it('l’étiquette de test porte le repère gauche/droite et des accents', () => {

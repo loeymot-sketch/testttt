@@ -1,17 +1,29 @@
 # Active Cycle – FoodKing
 
-## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 3
+## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 11 E2E LOYALTY REALIGNMENT
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016
-PHASE: PLAN
+TASK_ID: MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16
+PHASE: CLOSED
+CLOSURE_NOTE: Phase 11 PASS; 29/29 mobile E2E verts; App Store blockers restent packaging natif, SMS, Mollie, loyalty gate et assets catalogue
+PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16.md
+REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE11-E2E-LOYALTY-REALIGNMENT-2026-10-16/report.md
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016_2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE3-CATALOG-REALIGN-20261016/report.md
-EXECUTE_DELEGATION:
-FALLBACK_REASON:
-SUBSYSTEMS_TOUCHED: mobile catalog data and assets, mobile visual components, compact allergen presentation, mobile local validation, mobile critical-flow E2E
-SUBSYSTEMS_OFF_LIMITS: backend pricing/order/auth/payment/loyalty, migrations, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging and signing
+EXECUTE_DELEGATION: controlled local complex execution
+FALLBACK_REASON: codex-extension indisponible dans cette session; scope tests E2E borné
+AUDIT_CHANNEL: cursor-session
+AUDIT_FALLBACK_REASON: terminal audit non utilisé pour une phase tests-only bornée
+AUDIT_VERDICT: PASS
+GPT_FINAL_AUDIT_VERDICT: PASS
+SUBSYSTEMS_TOUCHED: mobile E2E assertions only
+SUBSYSTEMS_OFF_LIMITS: mobile loyalty implementation, backend loyalty, reactivation policy, pricing/order data, payment, auth/SMS, migrations, branch isolation, dispatch, POS/caisse/kiosk frozen zones, native iOS packaging/signing
+
+| **FIELD** | **VALUE** |
+|---|---|
+| **TASK_ID** | `MOBILE-EXCELLENCE-PHASE9-VISUAL-REFONTE-20261016` |
+| **PHASE** | `CLOSED` |
+| **PLAN_FILE** | `plans/PLAN_MOBILE-EXCELLENCE-PHASE9-VISUAL-REFONTE-20261016_2026-10-16.md` |
+| **REPORT_FILE** | `reports/execution/MOBILE-EXCELLENCE-PHASE9-VISUAL-REFONTE-20261016/report.md` |
 
 > This mobile cycle supersedes the historical closed-cycle entries below for the current session. Historical entries are preserved for audit.
 

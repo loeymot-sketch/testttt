@@ -2,10 +2,10 @@
 /**
  * [ETIQUETTES 2026-10-16] Fabrique/retire des commandes de test VISIBLES sur l'écran cuisine pour le
  * test E2E des étiquettes. Copie des commandes réelles de la base locale (lignes + composition scellée),
- * marquées `token = E2E-LABELS-…` pour que le nettoyage les retrouve sans toucher à autre chose.
+ * marquées `token = ETQ-LBL-…` pour que le nettoyage les retrouve sans toucher à autre chose.
  *
  *   php seed-label-orders.php seed 7593,6101,6277   → JSON [{id, queue_number, source_id}]
- *   php seed-label-orders.php clean                 → supprime toutes les commandes E2E-LABELS-*
+ *   php seed-label-orders.php clean                 → supprime toutes les commandes ETQ-LBL-*
  *
  * Uniquement sur la base LOCALE (garde : APP_ENV doit être local/testing).
  */
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
 $mode = $argv[1] ?? '';
 
 if ($mode === 'clean') {
-    $ids = DB::table('orders')->where('token', 'like', 'E2E-LABELS-%')->pluck('id')->all();
+    $ids = DB::table('orders')->where('token', 'like', 'ETQ-LBL-%')->pluck('id')->all();
     if ($ids) {
         DB::table('label_print_logs')->whereIn('order_id', $ids)->delete();
         DB::table('order_items')->whereIn('order_id', $ids)->delete();
@@ -47,7 +47,7 @@ if ($mode === 'seed') {
         $now = now();
         $queue = 'ZT'.str_pad((string) random_int(1, 999), 3, '0', STR_PAD_LEFT);
         $row = array_merge($row, [
-            'token' => 'E2E-LABELS-'.bin2hex(random_bytes(4)),
+            'token' => 'ETQ-LBL-'.bin2hex(random_bytes(4)),
             'queue_number' => $queue,
             'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,

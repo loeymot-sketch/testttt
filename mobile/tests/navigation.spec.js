@@ -86,11 +86,11 @@ for (const source of [main, steps]) {
     }
   }
 }
-assert.equal(productSlots, 7, 'home, menu, detail, cart, upsell and direct-add covered');
+assert.equal(productSlots, 8, 'home, menu, detail, cart, upsell, recap and direct-add covered');
 assert.match(shared, /fit = 'cover'/, 'hero default remains cover');
 assert.match(main, /src=\{featured.hero\}[^>]*fit="contain"/, 'existing signature hero fit preserved');
 assert.match(shared, /position: 'relative', pointerEvents: 'none'/, 'image layers cannot intercept clicks');
 assert.match(css, /\.lc-device > \[data-screen-label\][^}]*contain: paint/, 'artwork stays inside its screen');
 assert.match(css, /\[data-lc-decoration\], \.lc-marquee\s*\{ pointer-events: none;/);
 assert.match(css, /\.lc-device \.rdw-step\s*\{ animation: none;/);
-console.log('PASS: scroll lifecycle, screen wiring, 7 product slots, hero fit and click-layer guards');
+console.log('PASS: scroll lifecycle, screen wiring, 8 product slots, hero fit and click-layer guards');

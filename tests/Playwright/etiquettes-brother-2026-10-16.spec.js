@@ -261,34 +261,39 @@ test('2 · imprimante en défaut : capot ouvert et mauvais rouleau bloquent l’
     await page.evaluate(() => localStorage.removeItem('label_printer_settings'));
 });
 
-test('3 · DLC : ajouter un produit, un appui imprime ouverture + DLC calculées par le serveur et journalisées', async ({ page }) => {
-    test.setTimeout(150000);
+test('3 · DLC : fiche produit complète, un appui imprime l’événement, la DLC (jour en pastille), le lot — journalisés', async ({ page }) => {
+    test.setTimeout(180000);
     await page.setViewportSize({ width: 1280, height: 800 });
     await login(page);
     await page.goto(`${BASE}/admin/labels/dlc`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('label-printer-title')).toHaveText('Imprimante prête', { timeout: 30000 });
 
-    // aucun produit : la gestion s'ouvre d'elle-même, avec un appel à l'action
-    await expect(page.getByTestId('dlc-add-first')).toBeVisible();
-    await expect(page.getByTestId('dlc-form')).toBeVisible();
-    await page.getByTestId('dlc-form-name').fill('Oignons émincés (test)');
-    await page.getByTestId('dlc-form-value').fill('2');
-    await page.getByTestId('dlc-form-unit').selectOption('days');
-    await page.getByTestId('dlc-form-storage').fill('+4 °C');
-    await page.getByTestId('dlc-form-save').click();
+    // aucun produit : appel à l'action → éditeur complet
+    await page.getByTestId('dlc-add-first').click();
+    await expect(page.getByTestId('dlc-editor')).toBeVisible();
+    await page.getByTestId('dlc-ed-name').fill('Oignons émincés (test)');
+    await page.getByTestId('dlc-ed-category').fill('Légumes & crudités');
+    await page.getByTestId('dlc-ed-storage').fill('+4 °C');
+    await page.getByTestId('dlc-ed-copies-plus').click(); // 2 étiquettes par appui
+    await expect(page.getByTestId('dlc-ed-preview')).toBeVisible();
+    await page.getByTestId('dlc-ed-save').click();
+    await expect(page.getByTestId('dlc-editor')).toHaveCount(0);
     const tile = page.locator('[data-testid^="dlc-product-"]', { hasText: 'Oignons émincés (test)' });
     await expect(tile).toBeVisible({ timeout: 15000 });
-    await expect(tile).toContainText('DLC +2 jours');
+    await expect(tile).toContainText('Ouverture · DLC +2 jours');
 
-    // doublon refusé
-    await page.getByTestId('dlc-form-name').fill('OIGNONS ÉMINCÉS (TEST)');
-    await page.getByTestId('dlc-form-save').click();
-    await expect(page.getByTestId('dlc-form-error')).toContainText('porte déjà ce nom');
+    // doublon refusé, message dans l'éditeur
+    await page.getByTestId('dlc-new').click();
+    await page.getByTestId('dlc-ed-name').fill('OIGNONS ÉMINCÉS (TEST)');
+    await page.getByTestId('dlc-ed-save').click();
+    await expect(page.getByTestId('dlc-ed-error')).toContainText('porte déjà ce nom');
+    await page.getByTestId('dlc-ed-close').click();
 
-    await page.getByTestId('dlc-copies-2').click();
+    // un appui = l'étiquette, tout de suite, avec le nombre habituel du produit
     await tile.click();
     await expect(page.getByTestId('dlc-last')).toContainText('2 étiquettes', { timeout: 30000 });
-    await expect(page.getByTestId('dlc-last')).toContainText('À consommer avant');
+    await expect(page.getByTestId('dlc-last')).toContainText('À consommer jusqu’au');
+    await expect(page.getByTestId('dlc-last')).toContainText('Lot L');
 
     const j = await jobs(page);
     expect(j).toEqual([{ pages: 2, error: null }]);
@@ -302,48 +307,61 @@ test('3 · DLC : ajouter un produit, un appui imprime ouverture + DLC calculées
     expect(p0.mask === preview.mask, 'DLC imprimée == aperçu').toBe(true);
     await savePng(page, '03-dlc-decodee.png', p0);
 
-    // le journal serveur a la ligne, avec le verdict de l'imprimante
     await expect(page.getByTestId('dlc-history')).toContainText('Oignons émincés (test) ×2');
     await expect(page.getByTestId('dlc-history')).toContainText('imprimée');
     const row = execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',
-        "select status, copies, product_name, timestampdiff(day, opened_at, expires_at) from label_print_logs where product_name like '%(test)' order by id desc limit 1"], { encoding: 'utf8' }).trim().split('\t');
-    expect(row).toEqual(['printed', '2', 'Oignons émincés (test)', '2']);
+        "select status, copies, product_name, timestampdiff(day, opened_at, expires_at), action, lot like 'L%' from label_print_logs where product_name like '%(test)' order by id desc limit 1"], { encoding: 'utf8' }).trim().split('\t');
+    expect(row).toEqual(['printed', '2', 'Oignons émincés (test)', '2', 'opened', '1']);
     await page.screenshot({ path: path.join(SHOTS, '03-dlc.png'), fullPage: true });
 
-    // ── Liste du jour : plusieurs produits, toutes les étiquettes d'un coup ─────────────────────
-    await page.getByTestId('dlc-form-name').fill('Tomates tranchées (test)');
-    await page.getByTestId('dlc-form-value').fill('24');
-    await page.getByTestId('dlc-form-unit').selectOption('hours');
-    await page.getByTestId('dlc-form-storage').fill('');
-    await page.getByTestId('dlc-form-save').click();
+    // ── second produit, plusieurs événements : la fiche « ⋯ » choisit la décongélation ──────────
+    await page.getByTestId('dlc-new').click();
+    await page.getByTestId('dlc-ed-name').fill('Tomates tranchées (test)');
+    await page.getByTestId('dlc-ed-value-opened').fill('24');
+    await page.getByTestId('dlc-ed-unit-opened').selectOption('hours');
+    await page.getByTestId('dlc-ed-action-thawed').check();
+    await page.getByTestId('dlc-ed-value-thawed').fill('3');
+    await page.getByTestId('dlc-ed-save').click();
     const tile2 = page.locator('[data-testid^="dlc-product-"]', { hasText: 'Tomates tranchées (test)' });
     await expect(tile2).toBeVisible({ timeout: 15000 });
-    await expect(tile2).toContainText('DLC +24 h');
+    await expect(tile2).toContainText('2 événements');
+    const id2 = (await tile2.getAttribute('data-testid')).replace('dlc-product-', '');
+    await page.getByTestId(`dlc-more-${id2}`).click();
+    await expect(page.getByTestId('dlc-sheet')).toBeVisible();
+    await page.getByTestId('dlc-sheet-action-thawed').click();
+    await page.screenshot({ path: path.join(SHOTS, '03a-dlc-fiche.png'), fullPage: true });
+    await page.getByTestId('dlc-sheet-print').click();
+    await expect(page.getByTestId('dlc-sheet')).toHaveCount(0, { timeout: 30000 });
+    await expect(page.getByTestId('dlc-last')).toContainText('Décongélation');
+    await expect.poll(async () => (await jobs(page)).length, { timeout: 30000 }).toBe(2);
 
+    // ── sélection multiple : tout sélectionner, retirer une, imprimer la sélection ──────────────
     await page.getByTestId('dlc-mode-list').click();
     await expect(page.getByTestId('dlc-basket'), 'panier masqué tant qu’il est vide').toHaveCount(0);
-    await tile.click();
-    await tile.click();
-    await tile2.click();
-    await expect(tile.getByTestId('dlc-tile-count')).toHaveText('× 2');
-    await expect(page.getByTestId('dlc-basket-total')).toHaveText('3 étiquettes');
-    expect((await jobs(page)).length, 'rien ne part avant « Imprimer la liste »').toBe(1);
-    await page.screenshot({ path: path.join(SHOTS, '03b-dlc-liste-du-jour.png'), fullPage: true });
+    await page.getByTestId('dlc-select-all').click();
+    await expect(page.getByTestId('dlc-basket-total')).toHaveText('3 étiquettes'); // 2 (oignons) + 1 (tomates)
+    const id1 = (await tile.getAttribute('data-testid')).replace('dlc-product-', '');
+    await page.getByTestId(`dlc-minus-${id1}`).click();
+    await expect(page.getByTestId('dlc-basket-total')).toHaveText('2 étiquettes');
+    expect((await jobs(page)).length, 'rien ne part avant « Imprimer la sélection »').toBe(2);
+    await page.screenshot({ path: path.join(SHOTS, '03b-dlc-selection.png'), fullPage: true });
 
     await page.getByTestId('dlc-basket-print').click();
-    await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(3);
+    await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(4);
     const all = await jobs(page);
-    expect(all.slice(1).map((x) => x.pages), 'un travail par produit, dans l’ordre d’affichage').toEqual([2, 1]);
-    await expect(page.getByTestId('dlc-basket'), 'panier vidé après impression').toHaveCount(0);
-    await expect(page.getByTestId('dlc-last-batch')).toContainText('3 étiquettes imprimées');
-    const tomato = decodedMask(await jobBytes(page, 2), 0);
-    await savePng(page, '03c-dlc-tomates-decodee.png', tomato);
+    expect(all.slice(2).map((x) => x.pages).sort(), 'un travail par produit').toEqual([1, 1]);
+    await expect(page.getByTestId('dlc-basket'), 'sélection vidée après impression').toHaveCount(0);
+    await expect(page.getByTestId('dlc-last-batch')).toContainText('2 étiquettes imprimées');
+    const tomato = decodedMask(await jobBytes(page, 1), 0);
+    await savePng(page, '03c-dlc-tomates-decongelees-decodee.png', tomato);
     const counts = execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',
-        "select product_name, copies, status, timestampdiff(hour, opened_at, expires_at) from label_print_logs where product_name like '%(test)' order by id"], { encoding: 'utf8' }).trim().split('\n');
-    expect(counts).toEqual([
-        'Oignons émincés (test)\t2\tprinted\t48',
-        'Oignons émincés (test)\t2\tprinted\t48',
-        'Tomates tranchées (test)\t1\tprinted\t24',
+        "select product_name, copies, status, action, timestampdiff(hour, opened_at, expires_at) from label_print_logs where product_name like '%(test)' order by id"], { encoding: 'utf8' }).trim().split('\n');
+    expect(counts.length).toBe(4);
+    expect(counts[0]).toBe('Oignons émincés (test)\t2\tprinted\topened\t48');
+    expect(counts[1]).toBe('Tomates tranchées (test)\t1\tprinted\tthawed\t72');
+    expect(counts.slice(2).sort()).toEqual([
+        'Oignons émincés (test)\t1\tprinted\topened\t48',
+        'Tomates tranchées (test)\t1\tprinted\topened\t24',
     ]);
 });
 

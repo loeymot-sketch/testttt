@@ -109,7 +109,10 @@ class LabelController extends AdminController
         $validated = $request->validate([
             'product_id' => ['required', 'integer'],
             'copies' => ['nullable', 'integer', 'min:1', 'max:20'],
-        ], [], ['product_id' => 'produit', 'copies' => 'nombre d’étiquettes']);
+            'action' => ['nullable', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
+            // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ).
+            'original_dlc' => ['nullable', 'date_format:Y-m-d'],
+        ], [], ['product_id' => 'produit', 'copies' => 'nombre d’étiquettes', 'original_dlc' => 'DLC du fabricant']);
 
         $product = DlcLabelProduct::query()->where('is_active', true)->find($validated['product_id']);
         if (! $product) {
@@ -117,37 +120,76 @@ class LabelController extends AdminController
         }
 
         $openedAt = now();
-        $expiresAt = $product->expiresFrom($openedAt);
+        $action = $product->action($validated['action'] ?? null);
+        $expiresAt = $product->expiresFrom($openedAt, $action);
+
+        // Règle du plan de maîtrise sanitaire : la DLC secondaire ne dépasse JAMAIS la DLC du fabricant.
+        $original = $validated['original_dlc'] ?? null;
+        if ($product->ask_original_dlc && $original === null) {
+            return response()->json([
+                'message' => 'Indiquez la DLC du fabricant (sur l’emballage d’origine).',
+                'errors' => ['original_dlc' => ['Indiquez la DLC du fabricant (sur l’emballage d’origine).']],
+            ], 422);
+        }
+        $capped = false;
+        if ($original !== null) {
+            $originalEnd = \Carbon\Carbon::createFromFormat('Y-m-d', $original, config('app.timezone'))->endOfDay();
+            if ($originalEnd->lt($openedAt)) {
+                return response()->json([
+                    'status' => 'original_expired',
+                    'message' => 'DLC du fabricant dépassée : ce produit ne doit pas être utilisé.',
+                    'errors' => ['original_dlc' => ['DLC du fabricant dépassée : ce produit ne doit pas être utilisé.']],
+                ], 422);
+            }
+            if ($expiresAt->gt($originalEnd)) {
+                $expiresAt = $originalEnd->copy()->startOfMinute();
+                $capped = true;
+            }
+        }
+
         $user = $request->user();
+        $copies = (int) ($validated['copies'] ?? $product->default_copies ?: 1);
 
         $log = new LabelPrintLog([
             'user_id' => $user?->id,
             'kind' => LabelPrintLog::KIND_DLC,
             'dlc_product_id' => $product->id,
             'product_name' => $product->name,
-            'shelf_life_value' => $product->shelf_life_value,
-            'shelf_life_unit' => $product->shelf_life_unit,
+            'action' => $action['key'],
+            'shelf_life_value' => $action['value'],
+            'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
             'expires_at' => $expiresAt,
-            'copies' => (int) ($validated['copies'] ?? 1),
+            'original_dlc' => $original,
+            'capped' => $capped,
+            'copies' => $copies,
             'status' => LabelPrintLog::STATUS_CLAIMED,
             'claimed_at' => $openedAt,
         ]);
         // La ligne de journal appartient à la branche du PRODUIT (un administrateur sans branche voit toutes les branches).
         $log->branch_id = (int) ($product->branch_id ?: $this->branchId($request));
         $log->save();
+        // Numéro de lot : lien entre cette étiquette, le journal et l'emballage d'origine (traçabilité).
+        $log->forceFill(['lot' => 'L'.$openedAt->format('ymd').'-'.str_pad((string) $log->id, 4, '0', STR_PAD_LEFT)])->save();
 
         return response()->json([
             'log_id' => $log->id,
             'attempt' => 1,
             'name' => $product->name,
+            'category' => $product->category,
+            'action' => $action['key'],
             'storage' => $product->storage,
-            'shelf_life_value' => $product->shelf_life_value,
-            'shelf_life_unit' => $product->shelf_life_unit,
+            'note' => $product->note,
+            'allergens' => array_values((array) ($product->allergens ?? [])),
+            'shelf_life_value' => $action['value'],
+            'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt->toIso8601String(),
             'expires_at' => $expiresAt->toIso8601String(),
+            'original_dlc' => $original,
+            'capped' => $capped,
+            'lot' => $log->lot,
             'copies' => $log->copies,
-            'by' => $this->firstName($user?->name),
+            'by' => $product->print_operator ? $this->firstName($user?->name) : null,
         ]);
     }
 
@@ -236,6 +278,9 @@ class LabelController extends AdminController
             ->map(fn (LabelPrintLog $l): array => [
                 'id' => $l->id,
                 'product_name' => $l->product_name,
+                'action' => $l->action,
+                'lot' => $l->lot,
+                'capped' => (bool) $l->capped,
                 'order_id' => $l->order_id,
                 'copies' => $l->copies,
                 'labels_count' => $l->labels_count,
@@ -406,25 +451,69 @@ class LabelController extends AdminController
         $rawUnit = $request->input('shelf_life_unit');
         $unit = is_string($rawUnit) ? $rawUnit : DlcLabelProduct::UNIT_DAYS;
         $max = $unit === DlcLabelProduct::UNIT_HOURS ? 720 : 365;
+        $hasActions = is_array($request->input('actions')) && $request->input('actions') !== [];
 
         $data = $request->validate([
             'name' => ['required', 'string', 'min:1', 'max:120'],
-            'shelf_life_value' => ['required', 'integer', 'min:1', 'max:'.$max],
-            'shelf_life_unit' => ['required', Rule::in(DlcLabelProduct::UNITS)],
+            'category' => ['nullable', 'string', 'max:60'],
+            'shelf_life_value' => [$hasActions ? 'nullable' : 'required', 'integer', 'min:1', 'max:'.$max],
+            'shelf_life_unit' => [$hasActions ? 'nullable' : 'required', Rule::in(DlcLabelProduct::UNITS)],
+            'actions' => ['nullable', 'array', 'min:1', 'max:5'],
+            'actions.*.key' => ['required', 'distinct', Rule::in(DlcLabelProduct::ACTIONS)],
+            'actions.*.value' => ['required', 'integer', 'min:1', 'max:720'],
+            'actions.*.unit' => ['required', Rule::in(DlcLabelProduct::UNITS)],
+            'allergens' => ['nullable', 'array', 'max:14'],
+            'allergens.*' => ['distinct', Rule::in(DlcLabelProduct::ALLERGENS)],
             'storage' => ['nullable', 'string', 'max:60'],
+            'note' => ['nullable', 'string', 'max:80'],
+            'ask_original_dlc' => ['nullable', 'boolean'],
+            'print_operator' => ['nullable', 'boolean'],
+            'default_copies' => ['nullable', 'integer', 'min:1', 'max:20'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'is_active' => ['nullable', 'boolean'],
         ], [
             'shelf_life_value.max' => 'La durée ne peut pas dépasser '.$max.($unit === DlcLabelProduct::UNIT_HOURS ? ' heures (30 jours).' : ' jours.'),
+            'actions.*.key.distinct' => 'Chaque événement (ouverture, décongélation…) ne peut figurer qu’une fois.',
         ], [
             'name' => 'nom',
+            'category' => 'famille',
             'shelf_life_value' => 'durée',
             'shelf_life_unit' => 'unité',
             'storage' => 'conservation',
+            'note' => 'mention',
         ]);
 
+        // Durée par événement : 720 heures (30 jours) ou 365 jours au plus.
+        foreach ((array) ($data['actions'] ?? []) as $i => $a) {
+            $cap = $a['unit'] === DlcLabelProduct::UNIT_HOURS ? 720 : 365;
+            if ((int) $a['value'] > $cap) {
+                abort(response()->json([
+                    'message' => 'Durée trop longue.',
+                    'errors' => ["actions.$i.value" => ['La durée ne peut pas dépasser '.$cap.($a['unit'] === DlcLabelProduct::UNIT_HOURS ? ' heures (30 jours).' : ' jours.')]],
+                ], 422));
+            }
+        }
+
         $data['name'] = trim((string) $data['name']);
-        $data['storage'] = isset($data['storage']) && trim((string) $data['storage']) !== '' ? trim((string) $data['storage']) : null;
+        foreach (['storage', 'note', 'category'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = isset($data[$field]) && trim((string) $data[$field]) !== '' ? trim((string) $data[$field]) : null;
+            }
+        }
+
+        // La durée « historique » suit le premier événement : les écrans et journaux plus anciens restent justes.
+        if (! empty($data['actions'])) {
+            $data['actions'] = array_values(array_map(fn ($a) => [
+                'key' => $a['key'], 'value' => (int) $a['value'], 'unit' => $a['unit'],
+            ], $data['actions']));
+            $data['shelf_life_value'] = $data['actions'][0]['value'];
+            $data['shelf_life_unit'] = $data['actions'][0]['unit'];
+        } else {
+            unset($data['actions']);
+        }
+        if (array_key_exists('allergens', $data)) {
+            $data['allergens'] = array_values(array_unique((array) ($data['allergens'] ?? [])));
+        }
 
         $duplicate = DlcLabelProduct::query()
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($data['name'])])
@@ -437,11 +526,10 @@ class LabelController extends AdminController
             ], 422));
         }
 
-        if (! array_key_exists('is_active', $data) || $data['is_active'] === null) {
-            unset($data['is_active']);
-        }
-        if (! array_key_exists('sort_order', $data) || $data['sort_order'] === null) {
-            unset($data['sort_order']);
+        foreach (['is_active', 'sort_order', 'ask_original_dlc', 'print_operator', 'default_copies', 'shelf_life_value', 'shelf_life_unit'] as $optional) {
+            if (! array_key_exists($optional, $data) || $data[$optional] === null) {
+                unset($data[$optional]);
+            }
         }
 
         return $data;
@@ -452,9 +540,16 @@ class LabelController extends AdminController
         return [
             'id' => $p->id,
             'name' => $p->name,
+            'category' => $p->category,
             'shelf_life_value' => $p->shelf_life_value,
             'shelf_life_unit' => $p->shelf_life_unit,
+            'actions' => $p->actionList(),
+            'allergens' => array_values((array) ($p->allergens ?? [])),
             'storage' => $p->storage,
+            'note' => $p->note,
+            'ask_original_dlc' => (bool) $p->ask_original_dlc,
+            'print_operator' => $p->print_operator === null ? true : (bool) $p->print_operator,
+            'default_copies' => (int) ($p->default_copies ?: 1),
             'sort_order' => $p->sort_order,
             'is_active' => $p->is_active,
         ];

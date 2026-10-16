@@ -92,7 +92,7 @@ function AllergenBadge({ allergens, size = 'sm' }) {
       aria-label={`Allergènes : ${allergens.map(k => (ALLERGEN_META[k]?.label || k)).join(', ')}`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: isLg ? '6px 10px' : '2px 6px', background: 'var(--cream)', borderRadius: 999, fontSize: isLg ? 11 : 9, color: 'var(--gray-4)', fontWeight: 600 }}
     >
-      <span aria-hidden="true" style={{ fontSize: isLg ? 12 : 10 }}>⚠️</span>
+      <span aria-hidden="true" style={{ width: isLg ? 16 : 13, height: isLg ? 16 : 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid currentColor', borderRadius: 999, fontSize: isLg ? 10 : 8, fontWeight: 800, lineHeight: 1 }}>i</span>
       {allergens.slice(0, isLg ? 6 : 4).map((k, i) => {
         const m = ALLERGEN_META[k] || { icon: '•', label: k };
         return (
@@ -113,136 +113,104 @@ function ScreenHome({ go, name = '' }) {
   const screenRef = useScreenScrollReset('home');
   const safeName = String(name || '').trim();
   const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
+  const greeting = (new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour' : 'Bonsoir';
+  const featured = window.LC.menu.findItem('tacos-l') || window.LC.menu.items[0];
+  const featuredLines = featured ? featured.name.toUpperCase().split(' ') : ['LE', 'CAYENNE'];
+  const featuredTop = featuredLines.slice(0, 2).join(' ');
+  const featuredBottom = featuredLines.slice(2).join(' ');
+  const featuredItems = ITEMS.filter(i => i.is_featured).slice(0, 4);
+  const newItems = ITEMS.filter(i => (i.tags || []).includes('TOP')).slice(0, 4);
   return (
-    <div ref={screenRef} data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
-      <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
-        {/* header — centered logo, avatar L, bell R */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 2px', minHeight: 40 }}>
-          <button onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>{avatarInitial}</button>
-          <div data-lc-decoration style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <Logo size={14}/>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-4)' }}>
-              <span style={{ width: 5, height: 5, borderRadius: 999, background: '#22c55e', boxShadow: '0 0 6px #22c55e' }}/> Ouvert
-            </span>
+    <div ref={screenRef} data-screen-label="07 Home" className="lc-home">
+      <div className="lc-screen lc-home__scroll">
+        <header className="lc-home__header">
+          <button type="button" onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} className="lc-home__avatar">{avatarInitial}</button>
+          <div className="lc-home__brand" aria-label="Le Cayenne — restaurant ouvert">
+            <Logo size={16}/>
+            <span><i aria-hidden="true"/> Ouvert maintenant</span>
           </div>
-          <IconBtn bg="var(--cream)" ariaLabel="Notifications" onClick={() => go('toast', { msg: 'Notifications — bientôt disponibles', kind: 'info' })}><I.Bell size={18}/></IconBtn>
-        </div>
+          <IconBtn bg="var(--paper)" ariaLabel="Notifications" className="lc-home__notify" onClick={() => go('toast', { msg: 'Notifications — bientôt disponibles', kind: 'info' })}><I.Bell size={18}/></IconBtn>
+        </header>
 
-        {/* greeting */}
-        <div style={{ padding: '6px 20px 14px' }}>
-          <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9, color: 'var(--ink)' }}>{(new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour,' : 'Bonsoir,'}<br/><span style={{ color: 'var(--orange)' }}>{safeName || 'bienvenue'}</span> !</h1>
-          <p style={{ margin: '10px 0 0', color: 'var(--gray-4)', fontSize: 14 }}>Qu'est-ce qui te fait envie ce soir ?</p>
-        </div>
+        <section className="lc-home__intro" aria-labelledby="home-title">
+          <p className="lc-eyebrow">Le Cayenne · Hénin-Beaumont</p>
+          <h1 id="home-title" className="lc-display"><span>{greeting},</span><br/><em>{safeName || 'bienvenue'}</em> !</h1>
+          <p className="lc-home__lead">Le goût du fait maison, prêt quand tu l'es.</p>
+        </section>
 
-        {/* marquee categories */}
-        <Marquee items={['🌶 Sauce Cayenne maison', '🥖 Sandwichs faluche', '🌮 Tacos M & L', '🥣 Bols Frites/Riz', '🍔 Burgers brioché', '🍟 Frites Cheddar', '🧒 Menu enfant', '⚡ Prêt en 8 min']}/>
+        <Marquee items={['Sauce Cayenne maison', 'Sandwichs faluche', 'Tacos M & L', 'Bols frites / riz', 'Burgers briochés', 'Prêt en 8 min']}/>
 
-        {/* featured signature card */}
-        <div style={{ padding: '20px 20px 0' }}>
-          {(() => {
-            // Featured card pointing to a real Le Cayenne signature item.
-            const featured = window.LC.menu.findItem('tacos-l') || window.LC.menu.items[0];
-            return (
-              <div onClick={() => go('item', featured.slug)} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
-                <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span className="lc-pill lc-pill--ink" style={{ fontSize: 9 }}>SIGNATURE</span>
-                    <h3 className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.9 }}>{featured.name.toUpperCase().split(' ').slice(0, 2).join(' ')}<br/>{featured.name.toUpperCase().split(' ').slice(2).join(' ') || ''}</h3>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--gray-4)', lineHeight: 1.4 }}>{featured.description}</p>
-                  </div>
-                  <button className="lc-btn lc-btn--ink" style={{ height: 40, padding: '0 16px', fontSize: 11, alignSelf: 'flex-start' }}>Commander <I.Arrow size={14} stroke="var(--orange)"/></button>
-                </div>
-                <div style={{ width: 150, position: 'relative' }}>
-                  <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name} src={featured.hero} alt={featured.name} fit="contain"/>
-                  <div style={{ position: 'absolute', bottom: 14, right: 14, background: '#0A0A0A', color: '#FFD93D', fontFamily: 'var(--font-display)', fontSize: 22, padding: '6px 12px', borderRadius: 8 }}>{featured.price.toFixed(2).replace('.', ',')} €</div>
-                </div>
+        <section className="lc-home__hero-wrap" aria-label="Suggestion signature">
+          {featured && (
+            <button type="button" className="lc-home__hero lc-tap" aria-label={`Commander ${featured.name}`} onClick={() => go('item', featured.slug)}>
+              <div className="lc-home__hero-copy">
+                <span className="lc-pill lc-pill--yellow">Signature du Cayenne</span>
+                <h2 className="lc-display">{featuredTop}<br/>{featuredBottom}</h2>
+                <p>{featured.description}</p>
+                <span className="lc-home__hero-cta">Commander <I.Arrow size={15} stroke="var(--yellow)"/></span>
               </div>
-            );
-          })()}
-        </div>
+              <div className="lc-home__hero-art">
+                <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name} src={featured.hero} alt={featured.name} fit="contain"/>
+                <strong>{featured.price.toFixed(2).replace('.', ',')} €</strong>
+              </div>
+              <span className="lc-home__hero-stamp" aria-hidden="true">FAIT<br/>MAISON</span>
+            </button>
+          )}
+        </section>
 
-        {/* CATEGORIES */}
-        <div style={{ marginTop: 28 }}>
-          <div className="lc-sec-title">
-            <h3>Categories</h3>
-            <span className="more">{CATS.length} choix</span>
-          </div>
-          <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        <section className="lc-home__section" aria-labelledby="categories-title">
+          <div className="lc-home__section-head"><div><p className="lc-eyebrow">Choisir son envie</p><h2 id="categories-title" className="lc-display">Catégories</h2></div><span>{CATS.length} choix</span></div>
+          <div className="lc-home__categories">
             {CATS.map(c => (
-              <div key={c.id} role="button" tabIndex={0} aria-label={`Catégorie ${c.label}`} className="lc-tap" onClick={() => go('menu')} onKeyDown={window.lcTapKey(() => go('menu'))} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
-                <Slot id={`home-category-${c.id}`} h={64} radius={8} src={c.image} alt={c.label} fit="contain"/>
-                <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</div>
-              </div>
+              <button type="button" key={c.id} aria-label={`Catégorie ${c.label}`} className="lc-home__category lc-tap" onClick={() => go('menu', c.id)}>
+                <Slot id={`home-category-${c.id}`} h={88} radius={14} src={c.image} alt={c.label} fit="contain"/>
+                <span>{c.label}</span>
+                <I.Arrow size={13}/>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* LES ENVIES */}
-        <div style={{ marginTop: 28 }}>
-          <div className="lc-sec-title">
-            <h3>Les envies du moment</h3>
-            <button style={{ background: 'var(--cream)', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>Voir tout</button>
-          </div>
-          <div style={{ paddingLeft: 20, fontSize: 12, color: 'var(--gray-3)', marginTop: -8, marginBottom: 12 }}>Notre sélection de la semaine</div>
-          <div style={{ display: 'flex', gap: 12, padding: '0 20px', overflowX: 'auto' }}>
-            {ITEMS.filter(i => i.is_featured).slice(0, 4).map(it => (
-              <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
-                <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
-                  <button style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <I.Heart size={16}/>
-                  </button>
-                  {it.tags[0] && <div style={{ position: 'absolute', top: 8, left: 8 }}><Tag t={it.tags[0]}/></div>}
-                </div>
-                <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
-              </div>
+        <section className="lc-home__section" aria-labelledby="favourites-title">
+          <div className="lc-home__section-head"><div><p className="lc-eyebrow">Sélection de la semaine</p><h2 id="favourites-title" className="lc-display">Les envies du moment</h2></div><button type="button" onClick={() => go('menu')} className="lc-home__see-all">Voir tout <I.Arrow size={13}/></button></div>
+          <div className="lc-home__rail">
+            {featuredItems.map(it => (
+              <button type="button" key={it.id} aria-label={`Voir ${it.name}`} className="lc-home__product lc-tap" onClick={() => go('item', it.id)}>
+                <div className="lc-home__product-art"><Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>{it.tags[0] && <Tag t={it.tags[0]}/>}</div>
+                <div className="lc-home__product-meta"><strong>{it.name}</strong><span>{it.price.toFixed(2).replace('.', ',')} €</span></div>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* NOUVEAUTÉS */}
-        <div style={{ marginTop: 28 }}>
-          <div className="lc-sec-title">
-            <h3>Nouveautés</h3>
-            <span className="more">3 plats</span>
-          </div>
-          <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {ITEMS.filter(i => (i.tags || []).includes('TOP')).slice(0, 4).map(it => (
-              <div key={it.id} onClick={() => go('item', it.id)} style={{ cursor: 'pointer' }}>
-                <div style={{ position: 'relative', aspectRatio: '1/1', borderRadius: 14, overflow: 'hidden', background: 'var(--ink)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
-                  <div style={{ position: 'absolute', bottom: 8, left: 8 }}><Tag t="TOP"/></div>
-                </div>
-                <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
-              </div>
+        <section className="lc-home__section" aria-labelledby="new-title">
+          <div className="lc-home__section-head"><div><p className="lc-eyebrow">À découvrir</p><h2 id="new-title" className="lc-display">Nouveautés</h2></div><span>{newItems.length} plats</span></div>
+          <div className="lc-home__new-grid">
+            {newItems.map(it => (
+              <button type="button" key={it.id} aria-label={`Voir ${it.name}`} className="lc-home__new-card lc-tap" onClick={() => go('item', it.id)}>
+                <div className="lc-home__new-art"><Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/><Tag t="TOP"/></div>
+                <strong>{it.name}</strong><span>{it.price.toFixed(2).replace('.', ',')} €</span>
+              </button>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* RESTAURANT INFO */}
-        <div style={{ margin: '28px 20px 12px', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 22, position: 'relative', overflow: 'hidden' }}>
-          <div data-lc-decoration style={{ position: 'absolute', top: -10, right: -10, width: 120, height: 120, opacity: 0.08 }}>
-            <I.Pepper size={120} stroke="#FF5A1F"/>
-          </div>
-          <div style={{ width: 32, height: 4, background: 'var(--orange)', marginBottom: 12 }}/>
-          <h3 className="lc-display" style={{ margin: 0, fontSize: 26, color: 'var(--yellow)' }}>LE CAYENNE<br/>HÉNIN-BEAUMONT</h3>
-          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols Frites/Riz, tacos M & L — du peuple, pour le peuple.</p>
-          <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            <span>Ouvert 11h — 00h</span>
-            <span style={{ color: 'var(--orange)' }}>{branchPhoneInfo().display}</span>
-          </div>
-        </div>
+        <section className="lc-home__restaurant" aria-labelledby="restaurant-title">
+          <div className="lc-home__restaurant-mark"><I.Pepper size={74} stroke="var(--orange)"/></div>
+          <p className="lc-eyebrow">Notre maison</p>
+          <h2 id="restaurant-title" className="lc-display">Le Cayenne<br/><em>Hénin-Beaumont</em></h2>
+          <p>Abdoullah en cuisine, fait maison chaque jour. Sandwich Cayenne signature, bols frites/riz et tacos M & L — du peuple, pour le peuple.</p>
+          <div className="lc-home__restaurant-meta"><span><i aria-hidden="true"/> Ouvert 11h — 00h</span><a data-testid="branch-phone" aria-label={'Téléphone du restaurant : ' + branchPhoneInfo().display} href={branchPhoneInfo().href || undefined}>{branchPhoneInfo().display}</a></div>
+        </section>
       </div>
     </div>
   );
 }
 
 // MENU
-function ScreenMenu({ go, cart, addToCart }) {
+function ScreenMenu({ go, cart, addToCart, initialFilter = 'all' }) {
   const screenRef = useScreenScrollReset('menu');
-  const [filter, setFilter] = uS('all');
+  const [filter, setFilter] = uS(initialFilter || 'all');
   const filtered = filter === 'all' ? ITEMS : ITEMS.filter(i => i.cat === filter);
   return (
     <div ref={screenRef} data-screen-label="08 Menu" style={{ position: 'absolute', inset: 0, background: '#fff' }}>

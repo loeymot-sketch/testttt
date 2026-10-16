@@ -35,19 +35,90 @@ export function shelfLifeText(value, unit) {
 }
 
 /**
- * @param {{name:string, openedAt:string, expiresAt:string, storage?:string, by?:string,
+ * Événements qui ouvrent une DLC secondaire — vocabulaire des logiciels HACCP et du guide PMS (« entamé le… »).
+ * `verb` est imprimé devant la date de l'événement.
+ */
+export const DLC_ACTIONS = Object.freeze({
+    opened: { key: 'opened', label: 'Ouverture', verb: 'Entamé le', short: 'Ouvert' },
+    thawed: { key: 'thawed', label: 'Décongélation', verb: 'Décongelé le', short: 'Décongelé' },
+    prepared: { key: 'prepared', label: 'Préparation', verb: 'Préparé le', short: 'Préparé' },
+    cooked: { key: 'cooked', label: 'Cuisson', verb: 'Cuit le', short: 'Cuit' },
+    vacuum: { key: 'vacuum', label: 'Mise sous vide', verb: 'Mis sous vide le', short: 'Sous vide' },
+});
+export const DLC_ACTION_KEYS = Object.keys(DLC_ACTIONS);
+
+/** Les 14 allergènes à déclaration obligatoire (codes de l'application → libellé). */
+export const DLC_ALLERGENS = Object.freeze([
+    ['gluten', 'Gluten'], ['crustaces', 'Crustacés'], ['oeufs', 'Œufs'], ['poisson', 'Poisson'], ['arachides', 'Arachides'],
+    ['soja', 'Soja'], ['lait', 'Lait'], ['fruits_a_coque', 'Fruits à coque'], ['celeri', 'Céleri'], ['moutarde', 'Moutarde'],
+    ['sesame', 'Sésame'], ['sulfites', 'Sulfites'], ['lupin', 'Lupin'], ['mollusques', 'Mollusques'],
+]);
+const ALLERGEN_LABEL = Object.fromEntries(DLC_ALLERGENS);
+export function allergenLabels(codes) {
+    return (codes || []).map((c) => ALLERGEN_LABEL[c] || c);
+}
+
+/** Familles proposées (le restaurant peut en saisir une autre). */
+export const DLC_CATEGORIES = Object.freeze([
+    'Légumes & crudités', 'Fruits', 'Sauces', 'Viandes & volailles', 'Poissons', 'Charcuterie',
+    'Fromages & produits laitiers', 'Épicerie', 'Préparations maison', 'Desserts',
+]);
+
+/** Températures de conservation usuelles. */
+export const DLC_STORAGES = Object.freeze(['0 à +3 °C', '0 à +4 °C', '≤ −18 °C', 'Ambiante']);
+
+const DAYS = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+
+/** { day: 'DIM', date: '18/10/2026', time: '14:32' } dans le fuseau du restaurant. */
+export function dlcParts(iso, tz = RESTAURANT_TZ) {
+    const d = iso instanceof Date ? iso : new Date(iso);
+    if (Number.isNaN(d.getTime())) return { day: '', date: '—', time: '' };
+    const parts = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(d);
+    const get = (t) => (parts.find((p) => p.type === t) || {}).value || '';
+    const local = new Date(Date.UTC(Number(get('year')), Number(get('month')) - 1, Number(get('day'))));
+    const hour = get('hour') === '24' ? '00' : get('hour');
+    return { day: DAYS[local.getUTCDay()], date: `${get('day')}/${get('month')}/${get('year')}`, time: `${hour}:${get('minute')}` };
+}
+
+/**
+ * Durée lisible + date limite que donnerait un événement à l'instant `now` (aperçu AVANT impression ; la date imprimée,
+ * elle, vient toujours du serveur).
+ */
+export function previewExpiry(action, now = new Date()) {
+    const d = new Date(now.getTime());
+    if (action.unit === 'hours') d.setTime(d.getTime() + action.value * 3600000);
+    else d.setDate(d.getDate() + Number(action.value));
+    return d;
+}
+
+/**
+ * Étiquette DLC — au standard des logiciels HACCP : produit, famille, événement et sa date, DLC en grand avec le JOUR en
+ * pastille, limitation par la DLC du fabricant, allergènes, conservation, lot, opérateur.
+ *
+ * @param {{name:string, openedAt:string, expiresAt:string, action?:string, category?:string, note?:string,
+ *          storage?:string, by?:string, lot?:string, allergens?:string[], capped?:boolean, originalDlc?:string,
  *          shelfValue?:number, shelfUnit?:string}} d
  */
 export function dlcLabelBlocks(d) {
-    const blocks = [
-        { t: 'title', text: String(d.name || '').toUpperCase() },
-        { t: 'rule' },
-        { t: 'pair', left: 'Ouvert le', right: formatDlcDate(d.openedAt), size: 'md' },
-        { t: 'line', text: `À CONSOMMER AVANT\n${formatDlcDate(d.expiresAt)}`, size: 'lg', box: true, align: 'center' },
-    ];
+    const action = DLC_ACTIONS[d.action] || DLC_ACTIONS.opened;
+    const exp = dlcParts(d.expiresAt);
+    const head = [d.category, d.note].filter(Boolean).join(' · ');
+    const blocks = [{ t: 'title', text: String(d.name || '').toUpperCase() }];
+    if (head) blocks.push({ t: 'sub', text: head });
+    blocks.push({ t: 'rule' });
+    blocks.push({ t: 'pair', left: action.verb, right: formatDlcDate(d.openedAt), size: 'md' });
+    blocks.push({ t: 'dayline', day: exp.day, caption: 'À CONSOMMER JUSQU’AU', text: `${exp.date}  ${exp.time}` });
+    if (d.capped) {
+        const orig = d.originalDlc ? d.originalDlc.split('-').reverse().join('/') : '';
+        blocks.push({ t: 'line', text: `Limitée à la DLC du fabricant${orig ? ` (${orig})` : ''}`, size: 'sm' });
+    }
+    const allergens = allergenLabels(d.allergens);
+    if (allergens.length) blocks.push({ t: 'line', text: allergens.join(', '), prefix: 'ALLERGÈNES : ', size: 'md', box: true });
     const foot = [
-        shelfLifeText(d.shelfValue, d.shelfUnit) ? `Conservation ${shelfLifeText(d.shelfValue, d.shelfUnit)}` : '',
-        d.storage || '',
+        d.storage ? `Conserver ${d.storage}` : '',
+        d.lot ? `Lot ${d.lot}` : '',
         d.by ? `Par ${d.by}` : '',
     ].filter(Boolean).join(' · ');
     if (foot) blocks.push({ t: 'sub', text: foot });

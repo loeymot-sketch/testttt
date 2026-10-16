@@ -108,12 +108,29 @@ function TabBar({ active, onChange }) {
   );
 }
 
+// Neutral image state for assets that are not available locally yet. It is
+// deliberately brand-neutral: missing Hawaï/Fuze Tea/Perrier/Orangina
+// packshots must never be represented by another drink or an emoji.
+function NeutralAsset({ label = 'Photo indisponible', style = {} }) {
+  return (
+    <span
+      className="lc-image-fallback"
+      role="img"
+      aria-label={label}
+      style={style}
+    >
+      <span aria-hidden="true" className="lc-image-fallback__mark" />
+    </span>
+  );
+}
+
 // Image-slot wrapper that respects React.
 // Phase 6.A 2026-05-11 (real assets) — if `src` is provided, render a real <img>
-// with explicit fit for product cutouts + emoji fallback on error. Heroes keep
-// the default cover fit. Falls back to the legacy
-// <image-slot> drag-and-drop placeholder only when no src is provided.
-function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji, fit = 'cover' }) {
+// with explicit fit for product cutouts. A broken/missing asset falls back to a
+// neutral state, never to an emoji or another brand. Heroes keep the default
+// cover fit.
+function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji: _fallbackEmoji, fit = 'cover' }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const sharedBoxStyle = {
     display: 'block',
     width: w === undefined ? '100%' : w,
@@ -122,18 +139,15 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
     overflow: 'hidden',
     ...style,
   };
-  if (src) {
+  if (src && !imageFailed) {
     return (
-      <div style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }} aria-label={alt || placeholder}>
+      <div data-image-slot="true" data-image-src={src} data-image-state="loaded" style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }} aria-label={alt || placeholder}>
         <img
           src={src}
-          alt={alt || placeholder}
+          alt={alt === undefined ? placeholder : alt}
           loading="lazy"
           decoding="async"
-          onError={(e) => {
-            // Strict fallback chain: hide the broken img and let the emoji span (rendered below) take its place
-            e.currentTarget.style.display = 'none';
-          }}
+          onError={() => setImageFailed(true)}
           style={{
             display: 'block',
             width: '100%',
@@ -142,22 +156,27 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
             objectPosition: '50% 50%',
           }}
         />
-        {fallbackEmoji && (
-          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, pointerEvents: 'none', opacity: 0.001 }}>{fallbackEmoji}</span>
-        )}
       </div>
     );
   }
-  // Legacy image-slot drag-drop fallback (no src wired — used by dev tooling only)
+  if (src && imageFailed) {
+    return (
+      <div data-image-slot="true" data-image-src={src} data-image-state="fallback" style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }}>
+        <NeutralAsset label={`${alt || placeholder} — photo indisponible`} />
+      </div>
+    );
+  }
+  // Neutral fallback when no asset has been wired yet. This path is kept for
+  // dev tooling and makes missing product art explicit without inventing it.
   return (
-    <image-slot
-      slot-id={id}
-      placeholder={placeholder}
-      shape={shape}
-      style={sharedBoxStyle}
-    />
+    <div data-image-slot="true" data-image-state="fallback" style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative', pointerEvents: 'none' }}>
+      <NeutralAsset label={`${alt || placeholder} — photo indisponible`} />
+    </div>
   );
 }
+
+window.NeutralAsset = NeutralAsset;
+window.Slot = Slot;
 
 // Generic floating sticky CTA at bottom
 function StickyCTA({ children, bg = 'var(--ink)', color = '#fff', extraBottom = 84 }) {

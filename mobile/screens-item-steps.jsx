@@ -392,7 +392,7 @@ function ScreenStepPain({ item, selections, setSelections, headingRef }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
                 {p.image
                   ? <img src={p.image} alt="" aria-hidden="true" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 26 }}>{p.id === 'pain-galette' ? '🌯' : '🥖'}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${p.name} — photo indisponible`} style={{ width: 44, height: 44, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{p.name}</span>
                 <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
               </div>
@@ -439,7 +439,7 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
                 {/* Phase 6.A real-asset thumb (kiosk viande_*.png) */}
                 {m.image
                   ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}/>
-                  : <span aria-hidden="true">{m.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${m.name} — photo indisponible`} style={{ width: 32, height: 32, borderRadius: 6, flexShrink: 0 }} /> : null)}
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
               </span>
               <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -497,8 +497,8 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
                 {/* Phase 6.A real-asset color swatch (kiosk generated sauce_*.svg) */}
                 {s.image
                   ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                  : (s.is_spicy && <span aria-hidden="true">🌶️</span>)}
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}{s.is_spicy && s.image ? ' 🌶️' : ''}</span>
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${s.name} — photo indisponible`} style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0 }} /> : null)}
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
               </span>
             </ChoiceCard>
           );
@@ -595,7 +595,7 @@ function ExtraMeatSection({ item, selections, setSelections }) {
             >
               {m.image
                 ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                : <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>{m.emoji}</span>}
+                : (window.NeutralAsset ? <window.NeutralAsset label={`${m.name} — photo indisponible`} style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0, marginRight: 10 }} /> : null)}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{m.name}</div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {priceLabel} €</div>
@@ -761,7 +761,7 @@ function ScreenStepDrink({ item, selections, setSelections, headingRef }) {
                 {/* Phase 6.A real-asset thumb (kiosk drink png) */}
                 {d.image
                   ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${d.name} — photo indisponible`} style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
               </div>
             </ChoiceCard>
@@ -793,7 +793,7 @@ function ScreenStepFritesStyle({ item, selections, setSelections, headingRef }) 
                 {/* Phase 6.A real-asset thumb (kiosk frites/cheddar png) */}
                 {fs.image
                   ? <img src={fs.image} alt="" aria-hidden="true" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 24 }}>{fs.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${fs.name} — photo indisponible`} style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{fs.name}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -924,7 +924,7 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
                 {d.image
                   ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${d.name} — photo indisponible`} style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)', fontWeight: 700 }}>
                   +{price.toFixed(2).replace('.', ',')}€
@@ -1042,7 +1042,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
     <div style={{ padding: '20px 20px 210px' }}>
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: '14px 0 0', overflow: 'hidden' }}>
         <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span aria-hidden="true" style={{ fontSize: 28 }}>{item.kiosk_emoji || '🍽️'}</span>
+          <Slot id={`recap-${item.id}`} w={44} h={44} radius={10} placeholder={item.name} src={item.image} alt={item.name} fit="contain" />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
