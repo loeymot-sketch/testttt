@@ -25,6 +25,17 @@ class DlcLabelProduct extends Model
     /** Événements qui ouvrent une DLC secondaire (libellés français côté écran). */
     public const ACTIONS = ['opened', 'thawed', 'prepared', 'cooked', 'vacuum'];
 
+    /** Libellés des événements, pour les messages du serveur (les mêmes qu'à l'écran). */
+    public const ACTION_LABELS = [
+        'opened' => 'Ouverture', 'thawed' => 'Décongélation', 'prepared' => 'Préparation', 'cooked' => 'Cuisson', 'vacuum' => 'Mise sous vide',
+    ];
+
+    /**
+     * Un produit décongelé se garde au FROID POSITIF (GBPH restauration § 2.6 : « ne doit en aucun cas être recongelé ») :
+     * si sa fiche dit « ≤ −18 °C » (ou ne dit rien, ou « ambiante »), l'étiquette de décongélation imprime ceci.
+     */
+    public const THAWED_STORAGE = '0 à +4 °C';
+
     /** Les 14 allergènes à déclaration obligatoire (règlement UE 1169/2011), codes de l'application. */
     public const ALLERGENS = [
         'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait',
@@ -91,7 +102,7 @@ class DlcLabelProduct extends Model
         return $list;
     }
 
-    /** L'événement demandé, ou celui par défaut (le premier). */
+    /** L'événement demandé, ou celui par défaut (le premier) quand aucun n'est demandé. */
     public function action(?string $key): array
     {
         $list = $this->actionList();
@@ -100,6 +111,33 @@ class DlcLabelProduct extends Model
         }
 
         return $list[0];
+    }
+
+    /** L'événement est-il prévu par la fiche ? (un événement non prévu n'est jamais remplacé en silence par un autre) */
+    public function hasAction(string $key): bool
+    {
+        foreach ($this->actionList() as $a) {
+            if ($a['key'] === $key) return true;
+        }
+
+        return false;
+    }
+
+    /** La conservation à IMPRIMER pour cet événement : un produit décongelé ne retourne jamais au congélateur. */
+    public function storageFor(string $actionKey): ?string
+    {
+        $storage = $this->storage !== null && trim((string) $this->storage) !== '' ? trim((string) $this->storage) : null;
+        if ($actionKey === 'thawed' && ($storage === null || self::isFrozenOrAmbient($storage))) {
+            return self::THAWED_STORAGE;
+        }
+
+        return $storage;
+    }
+
+    /** « ≤ −18 °C », « -18 », « congélateur », « Ambiante » : tout ce qui n'est pas du froid positif. */
+    public static function isFrozenOrAmbient(string $storage): bool
+    {
+        return (bool) preg_match('/[−-]\s*\d|cong[eé]l|ambiant/iu', $storage);
     }
 
     /**
