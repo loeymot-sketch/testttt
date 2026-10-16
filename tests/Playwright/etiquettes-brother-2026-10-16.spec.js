@@ -444,9 +444,11 @@ test('4 · commandes : une étiquette par produit, k/N, aperçu == papier, impri
     await expect.poll(async () => (await jobs(page)).length, { timeout: 30000 }).toBe(4);
     await page.screenshot({ path: path.join(SHOTS, '04-commandes-imprimees.png'), fullPage: true });
 
-    const logs = execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',
+    // Le verdict de la 4ᵉ impression part APRÈS la fin du travail (file locale) : on attend qu'il soit inscrit au lieu de
+    // lire la base à l'instant (course relevée le 2026-10-16 : « 4  3 » une fois sur trois juste après un redémarrage).
+    const logs = () => execFileSync('mysql', ['-uroot', 'foodking_e2e', '-N', '-e',
         `select count(*), sum(status='printed') from label_print_logs where kind='order' and order_id in (${seeded.map((s) => s.id).join(',')})`], { encoding: 'utf8' }).trim();
-    expect(logs).toBe('4\t4');
+    await expect.poll(logs, { timeout: 15000 }).toBe('4\t4');
 });
 
 test('5 · automatique : seules les commandes ARRIVÉES APRÈS l’activation s’impriment, une seule fois, et seulement imprimante prête', async ({ page }) => {

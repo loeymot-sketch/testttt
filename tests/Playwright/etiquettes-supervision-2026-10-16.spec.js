@@ -257,6 +257,8 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         expert('Steak haché', 'Viandes & volailles', [{ key: 'thawed', value: 3, unit: 'days' }, { key: 'opened', value: 24, unit: 'hours' }], '≤ −18 °C', false);
         expert('Crème', 'Fromages & produits laitiers', [{ key: 'opened', value: 3, unit: 'days' }], '0 à +4 °C', true);
         expert('Poulet mariné', 'Viandes & volailles', [{ key: 'prepared', value: 2, unit: 'days' }, { key: 'cooked', value: 3, unit: 'days' }], '0 à +3 °C', false);
+        expert('Sauce maison', 'Sauces', [{ key: 'prepared', value: 48, unit: 'hours' }], '0 à +4 °C', false);
+        SQL("update dlc_label_products set needs_parent = 1 where name = 'Sauce maison (sup)'");
         const idOf = (n) => SQL(`select id from dlc_label_products where name='${n} (sup)'`).trim();
         // usage : « Tomates » le plus utilisées, puis « Olives »
         const log = (n, copies, exp) => SQL(`insert into label_print_logs (branch_id,user_id,kind,dlc_product_id,product_name,shelf_life_value,shelf_life_unit,opened_at,expires_at,copies,status,claimed_at,finished_at,created_at,updated_at) values (1,1,'dlc',${idOf(n)},'${n} (sup)',24,'hours',now(),${exp},${copies},'printed',now(),now(),now(),now())`);
@@ -290,6 +292,11 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await page.getByTestId('dlc-sheet-supplier-lot').fill('2345A');
         await snap(page, `dlc-${vp}-fiche-fabricant`);
         await page.getByTestId('dlc-sheet-close').click();
+        // « fait à partir d'un produit étiqueté » : l'origine (ou « produit neuf ») est obligatoire
+        await page.getByTestId(`dlc-product-${idOf('Sauce maison')}`).click();
+        await expect(page.getByTestId('dlc-sheet-parent-required')).toBeVisible();
+        await snap(page, `dlc-${vp}-fiche-origine-obligatoire`);
+        await page.getByTestId('dlc-sheet-close').click();
         await page.getByTestId('dlc-new').click();
         await expect(page.getByTestId('dlc-editor')).toBeVisible();
         await page.getByTestId('dlc-ed-name').fill('Exemple (sup)');
@@ -311,14 +318,20 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await page.locator('[data-testid^="dlc-product-"]').nth(0).click();
         await page.locator('[data-testid^="dlc-product-"]').nth(0).click();
         await page.locator('[data-testid^="dlc-product-"]').nth(1).click();
+        // un produit « DLC du fabricant » entre dans la sélection : sa date est demandée en une seule étape
+        await page.getByTestId(`dlc-product-${idOf('Crème')}`).click();
         await snap(page, `dlc-${vp}-liste-du-jour`);
         await page.getByTestId('dlc-basket-print').click();
-        await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(2);
+        await expect(page.getByTestId('dlc-originals')).toBeVisible();
+        await page.getByTestId(`dlc-originals-date-${idOf('Crème')}`).fill(new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10));
+        await snap(page, `dlc-${vp}-selection-dlc-fabricant`);
+        await page.getByTestId('dlc-originals-print').click();
+        await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(3);
         await snap(page, `dlc-${vp}-apres-impression`);
         // un appui en mode unitaire : résultat en notice fixe, avec « Annuler cette impression »
         await page.getByTestId('dlc-mode-single').click();
         await page.getByTestId(`dlc-product-${idOf('Maïs')}`).click();
-        await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(3);
+        await expect.poll(async () => (await jobs(page)).length, { timeout: 40000 }).toBe(4);
         await expect(page.getByTestId('dlc-last-cancel')).toBeVisible();
         await snap(page, `dlc-${vp}-resultat-unitaire`);
         await page.getByTestId('dlc-last-close').click();
@@ -338,6 +351,16 @@ for (const [vp, w, h] of [['paysage', 1280, 800], ['portrait', 800, 1280]]) {
         await expect(expired).toHaveCount(0, { timeout: 15000 });
         if (!(await page.getByTestId('dlc-form').isVisible())) await page.getByTestId('dlc-manage-toggle').click();
         await snap(page, `dlc-${vp}-gestion`);
+        // le tableau de bord mène aux étiquettes (accès rapide) et montre les DLC à surveiller
+        await page.goto(`${BASE}/admin/dashboard`, { waitUntil: 'domcontentloaded' });
+        await expect(page.getByTestId('dlc-watch-widget')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('a[href="/admin/labels/dlc"]').first()).toBeVisible();
+        // les autres widgets du tableau de bord posent un voile de chargement plein écran : on attend qu'il soit levé
+        await page.waitForLoadState('networkidle').catch(() => {});
+        await expect(page.locator('.velmld-overlay:visible')).toHaveCount(0, { timeout: 30000 });
+        await snap(page, `dlc-${vp}-tableau-de-bord`);
+        await page.getByTestId('dlc-watch-widget').scrollIntoViewIfNeeded();
+        await snap(page, `dlc-${vp}-tableau-de-bord-widget`);
     });
 
     test(`supervision ${vp} · commandes`, async ({ page }) => {

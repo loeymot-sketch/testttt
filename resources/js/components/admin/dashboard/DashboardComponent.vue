@@ -66,6 +66,8 @@
              (StockLowAlertsWidget.vue, endpoint admin/stock/low-alerts déjà câblé)
              mais n'était monté nulle part (grep repo-wide : aucun import). -->
         <ErrorBoundary><StockLowAlertsWidget/></ErrorBoundary>
+        <!-- [ETIQUETTES 2026-10-16 · owner] Les DLC à surveiller (lots expirés, du jour, sous 72 h) sur le tableau de bord. -->
+        <ErrorBoundary><DlcWatchWidget/></ErrorBoundary>
     </div>
 </template>
 
@@ -83,6 +85,7 @@ import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
 import AuditTrailComponent from "./AuditTrailComponent";
 import StockLowAlertsWidget from "./StockLowAlertsWidget";
+import DlcWatchWidget from "./DlcWatchWidget";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ENV from "../../../config/env";
 
@@ -102,6 +105,7 @@ export default {
         ChannelStatsComponent,
         AuditTrailComponent,
         StockLowAlertsWidget,
+        DlcWatchWidget,
         ErrorBoundary
     },
     data() {
@@ -174,6 +178,10 @@ export default {
             push('/admin/encaissement', this.$t('menu.encaissement'), 'lab lab-pos-bold', 'pos-orders', false);
             push('/admin/historique', this.$t('menu.historique'), 'lab lab-pos-orders', 'pos-orders', false);
             push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);
+            // [ETIQUETTES 2026-10-16 · owner « je ne trouve pas les fonctionnalités … en tableau de bord »] Imprimante
+            // d'étiquettes Brother : même porte que la barre latérale (`pos-orders`).
+            push('/admin/labels/orders', this.$t('menu.labels_orders'), 'fa-solid fa-tags', 'pos-orders', false);
+            push('/admin/labels/dlc', this.$t('menu.labels_dlc'), 'fa-solid fa-tags', 'pos-orders', false);
             push('/admin/order-status-screen', this.$t('menu.o_s_s'), 'lab lab-cds', 'order-status-screen', false);
             push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);
             push('/admin/ingredients', this.$t('menu.ingredients'), 'lab lab-item-attributes', 'ingredients_manage', false);
