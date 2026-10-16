@@ -4,7 +4,7 @@
       "/usr/local/bin/node",
       "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
       "test",
-      "tests/mobile-e2e/catalog-visual-critical.spec.js",
+      "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
       "--config=tests/mobile-e2e/playwright.config.js"
     ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
@@ -83,164 +83,53 @@
   },
   "suites": [
     {
-      "title": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-      "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+      "title": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "Phase 3 catalogue visuals",
-          "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-          "line": 153,
-          "column": 6,
-          "specs": [
+          "title": "S11 — RGPD opt-out hides QR + shows reactivation panel",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "home and menu expose real/neutral assets with compact allergen disclosure removed",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
                 {
-                  "timeout": 90000,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6223,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-16T16:50:43.269Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3273,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:44:00.823Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
+                  "attachments": []
                 }
               ],
-              "id": "3972c6a8b8425e01665c-ac79eab2c24f6ba64f1b",
-              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 154,
-              "column": 1
-            },
-            {
-              "title": "home Nouveautés prioritizes new arrivals and keeps every card navigable",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1663,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:44:04.294Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3972c6a8b8425e01665c-29335789c5938ae4e0f0",
-              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 184,
-              "column": 3
-            },
-            {
-              "title": "category → product personalization → cart keeps detail allergen disclosure and images",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3047,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:44:05.963Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3972c6a8b8425e01665c-b31b0f4b275293bd1ec3",
-              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 209,
-              "column": 3
-            },
-            {
-              "title": "home hero and category shortcuts open the contextual destination",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 90000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1667,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-16T16:44:09.018Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "3972c6a8b8425e01665c-74a7d33d3228a595a407",
-              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
-              "line": 268,
-              "column": 3
+              "status": "expected"
             }
-          ]
+          ],
+          "id": "857252f1f41b5b0437ff-09f54ead3065c1056f96",
+          "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+          "line": 6,
+          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-16T16:43:47.984Z",
-    "duration": 22774.575,
-    "expected": 4,
+    "startTime": "2026-10-16T16:50:30.793Z",
+    "duration": 19064.785,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0
