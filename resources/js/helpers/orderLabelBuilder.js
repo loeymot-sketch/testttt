@@ -195,13 +195,16 @@ export function describeItem(rawItem, ctx = {}) {
     if (supports.length) details.push({ kind: 'support', text: supports.join(', ') });
     if (sizes.length) details.push({ kind: 'size', text: `Taille : ${sizes.join(', ')}` });
     if (meats.length) details.push({ kind: 'meat', text: `${plural(meats.length, 'Viande', 'Viandes')} : ${meats.join(', ')}` });
-    if (allSauces.length) details.push({ kind: 'sauce', text: `${plural(allSauces.length, 'Sauce', 'Sauces')} : ${allSauces.join(', ')}` });
-    if (crudites.length) details.push({ kind: 'crudites', text: `Crudités : ${crudites.join(', ')}` });
+    if (allSauces.length) details.push({ kind: 'sauce', count: allSauces.length, text: `${plural(allSauces.length, 'Sauce', 'Sauces')} : ${allSauces.join(', ')}` });
+    if (crudites.length) details.push({ kind: 'crudites', count: crudites.length, text: `Crudités : ${crudites.join(', ')}` });
     if (garnitures.length) details.push({ kind: 'garniture', text: `Garniture : ${garnitures.join(', ')}` });
     others.forEach((values, group) => details.push({ kind: 'other', text: `${group} : ${values.join(', ')}` }));
     if (without.length) details.push({ kind: 'without', text: `SANS : ${without.join(', ')}` });
     // Écrite quel que soit le badge : une sauce frites annoncée sans formule détectée ne doit pas disparaître.
-    if (friesSauces.length) details.push({ kind: 'fries_sauce', text: `Sauce frites : ${friesSauces.join(', ')}` });
+    if (friesSauces.length) details.push({ kind: 'fries_sauce', count: friesSauces.length, text: `Sauce frites : ${friesSauces.join(', ')}` });
+    // Menu ou frites SANS sauce lue dans la commande : la ligne est écrite quand même. Une étiquette muette sur la sauce des
+    // frites laisse la cuisine deviner ; « non précisée » dit qu'il faut demander au client plutôt que de servir sans sauce.
+    else if (menu && (menu.kind === 'menu' || menu.kind === 'frites')) details.push({ kind: 'fries_sauce', missing: true, text: 'Sauce frites : non précisée' });
 
     // Notes du client. Trois sources, dédoublonnées :
     //   1. la note de la BORNE : « … . Note: allergie arachide » — écrite sur la MÊME ligne que la composition, que le
@@ -320,6 +323,12 @@ export function buildOrderLabels(order, opts = {}) {
     return { orderId: order?.id, number, total, labels, skipped };
 }
 
+/** « Crudités : Salade, Tomate » → « Crudités (2) : Salade, Tomate » : le nombre se lit sans compter. */
+function withCount(d) {
+    if (!d.count || !/^[^:]+ : /.test(d.text)) return d.text;
+    return d.text.replace(/^([^:]+?) : /, `$1 (${d.count}) : `);
+}
+
 /** Spécification d'étiquette → blocs de mise en page (voir labelLayout.js). */
 export function orderLabelBlocks(label) {
     const blocks = [
@@ -330,8 +339,13 @@ export function orderLabelBlocks(label) {
     if (label.menu) {
         blocks.push({ t: 'line', text: label.menu.text, size: 'lg', box: label.menu.kind !== 'seul', align: 'center' });
     }
-    label.details.forEach((d) => blocks.push({ t: 'line', text: d.text, size: 'md' }));
-    label.supplements.forEach((s) => blocks.push({ t: 'line', text: s, prefix: '+ ', size: 'md' }));
+    label.details.forEach((d) => blocks.push({ t: 'line', text: withCount(d), size: 'md' }));
+    // Les suppléments (payants) ont leur propre rubrique : on voit d'un coup d'œil combien et lesquels, sans les confondre
+    // avec les crudités ou les sauces incluses.
+    if (label.supplements.length) {
+        blocks.push({ t: 'line', text: `SUPPLÉMENTS (${label.supplements.length}) :`, size: 'md' });
+        label.supplements.forEach((s) => blocks.push({ t: 'line', text: s, prefix: '+ ', size: 'md', indent: 14 }));
+    }
     if (label.notes.length) {
         blocks.push({ t: 'line', text: label.notes.join(' / '), prefix: 'NOTE : ', size: 'md', box: true });
     }

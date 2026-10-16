@@ -532,6 +532,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('labels')->name('labels.')->group(function () {
         Route::get('/products', [\App\Http\Controllers\Admin\LabelController::class, 'products'])->name('products');
         Route::post('/products', [\App\Http\Controllers\Admin\LabelController::class, 'storeProduct'])->name('products.store');
+        Route::post('/products/install-recommended', [\App\Http\Controllers\Admin\LabelController::class, 'installRecommended'])->name('products.install');
         Route::match(['put', 'patch'], '/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'updateProduct'])
             ->where('product', '[0-9]{1,18}')->name('products.update');
         Route::delete('/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'destroyProduct'])
@@ -547,6 +548,22 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/orders', [\App\Http\Controllers\Admin\LabelController::class, 'orders'])->name('orders');
         Route::post('/orders/{order}/claim', [\App\Http\Controllers\Admin\LabelController::class, 'claim'])
             ->where('order', '[0-9]{1,18}')->name('orders.claim');
+    });
+
+    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Relevés de température (frigos positifs, congélateurs négatifs) : équipements,
+    // saisie du jour en un geste, journal. Même porte que les étiquettes (le personnel qui tient la tablette). Domaine NEUF,
+    // ADDITIF, HORS NF525 ; contrat du module : config/hygiene.php.
+    Route::prefix('hygiene/temperature')->name('hygiene.temperature.')->group(function () {
+        $c = \App\Http\Controllers\Admin\HygieneTemperatureController::class;
+        Route::get('/equipment', [$c, 'equipment'])->name('equipment');
+        Route::post('/equipment', [$c, 'storeEquipment'])->name('equipment.store');
+        Route::post('/equipment/quick-setup', [$c, 'quickSetup'])->name('equipment.quick');
+        Route::match(['put', 'patch'], '/equipment/{equipment}', [$c, 'updateEquipment'])->where('equipment', '[0-9]{1,18}')->name('equipment.update');
+        Route::delete('/equipment/{equipment}', [$c, 'destroyEquipment'])->where('equipment', '[0-9]{1,18}')->name('equipment.destroy');
+        Route::get('/today', [$c, 'today'])->name('today');
+        Route::post('/readings', [$c, 'storeReadings'])->name('readings.store');
+        Route::post('/readings/{reading}/void', [$c, 'voidReading'])->where('reading', '[0-9]{1,18}')->name('readings.void');
+        Route::get('/history', [$c, 'history'])->name('history');
     });
 
     Route::prefix('setting')->name('setting.')->group(function () {

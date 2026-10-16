@@ -492,8 +492,8 @@ describe('éditeur de produit', () => {
         await w.get('[data-testid="dlc-ed-action-thawed"]').setValue(true);
         await w.get('[data-testid="dlc-ed-value-thawed"]').setValue(3);
         await w.get('[data-testid="dlc-ed-allergen-moutarde"]').trigger('click');
-        // fiche neuve, produit entamé dans son emballage : la DLC du fabricant est demandée par défaut
-        expect(w.get('[data-testid="dlc-ed-ask-original"]').element.checked).toBe(true);
+        // fiche neuve : un appui suffit, la DLC du fabricant n'est demandée que si on coche l'option
+        expect(w.get('[data-testid="dlc-ed-ask-original"]').element.checked).toBe(false);
         // la conservation est obligatoire (imprimée sur l'étiquette)
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
         expect(w.emitted('save')).toBeUndefined();
@@ -511,7 +511,7 @@ describe('éditeur de produit', () => {
         await w.get('[data-testid="dlc-ed-save"]').trigger('click');
         const payload = w.emitted('save')[0][0];
         expect(payload).toMatchObject({
-            name: 'Poulet mariné', category: 'Viandes & volailles', allergens: ['moutarde'], ask_original_dlc: true,
+            name: 'Poulet mariné', category: 'Viandes & volailles', allergens: ['moutarde'], ask_original_dlc: false,
             print_operator: true, default_copies: 1, storage: '0 à +4 °C', thawed_storage: '0 à +2 °C', durations_checked: true,
             actions: [{ key: 'opened', value: 2, unit: 'days' }, { key: 'thawed', value: 3, unit: 'days' }],
         });
@@ -605,5 +605,50 @@ describe('éditeur de produit', () => {
         expect(w.get('[data-testid="dlc-ed-action-thawed"]').element.checked).toBe(true);
         expect(w.get('[data-testid="dlc-ed-action-opened"]').element.checked).toBe(false);
         expect(w.findAll('[data-testid^="dlc-ed-action-"]')[0].attributes('data-testid')).toBe('dlc-ed-action-thawed');
+    });
+});
+
+describe('écran DLC — catalogue recommandé (2026-10-17)', () => {
+    function withRecommended(meta, startWith = []) {
+        setup(startWith);
+        let current = startWith;
+        h.axios.get.mockImplementation(async (url) => {
+            if (url === 'admin/labels/products') return { data: { data: current, meta: { server_now: new Date().toISOString(), timezone: 'Europe/Paris', recommended: meta(current) } } };
+            return { data: { data: [] } };
+        });
+        h.axios.post.mockImplementation(async (url, body) => {
+            posts.push([url, body]);
+            if (url === 'admin/labels/products/install-recommended') {
+                current = [P({ id: 1, name: 'Tomates tranchées' }), P({ id: 2, name: 'Poulet mariné', allergens: [], allergens_unreviewed: true })];
+                return { data: { data: { added: 2, total: 2, missing: 0, never_configured: false } } };
+            }
+            return { data: {} };
+        });
+    }
+
+    it('premier lancement : le catalogue s’installe seul, une seule fois, et la liste apparaît prête à imprimer', async () => {
+        withRecommended((list) => ({ total: 2, missing: list.length ? 0 : 2, never_configured: list.length === 0 }));
+        const w = await mountScreen();
+        const installs = posts.filter(([u]) => u === 'admin/labels/products/install-recommended');
+        expect(installs).toEqual([['admin/labels/products/install-recommended', { only_if_empty: true }]]);
+        expect(w.find('[data-testid="dlc-empty"]').exists()).toBe(false);
+        expect(w.find('[data-testid="dlc-product-1"]').exists()).toBe(true);
+        expect(w.get('[data-testid="dlc-installed-note"]').text()).toMatch(/2 produits préconfigurés/);
+        await w.get('[data-testid="dlc-installed-dismiss"]').trigger('click');
+        expect(w.find('[data-testid="dlc-installed-note"]').exists()).toBe(false);
+        // un produit à recette variable dit que ses allergènes sont à renseigner (rien d'affirmé)
+        expect(w.get('[data-testid="dlc-product-2"] [data-testid="dlc-tile-review"]').text()).toBe('Allergènes à renseigner');
+        expect(w.find('[data-testid="dlc-product-1"] [data-testid="dlc-tile-review"]').exists()).toBe(false);
+    });
+
+    it('un restaurant qui a déjà configuré (ou supprimé) un produit ne reçoit rien tout seul', async () => {
+        withRecommended(() => ({ total: 2, missing: 2, never_configured: false }), [P({ id: 9, name: 'Mon produit' })]);
+        const w = await mountScreen();
+        expect(posts.some(([u]) => u === 'admin/labels/products/install-recommended')).toBe(false);
+        // …le bouton de gestion permet d'ajouter les manquants, sans only_if_empty
+        await w.get('[data-testid="dlc-manage-toggle"]').trigger('click');
+        await w.get('[data-testid="dlc-install-more"]').trigger('click');
+        await flushPromises();
+        expect(posts.filter(([u]) => u === 'admin/labels/products/install-recommended')).toEqual([['admin/labels/products/install-recommended', {}]]);
     });
 });

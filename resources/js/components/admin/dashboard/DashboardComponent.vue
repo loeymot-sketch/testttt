@@ -182,6 +182,8 @@ export default {
             // d'étiquettes Brother : même porte que la barre latérale (`pos-orders`).
             push('/admin/labels/orders', this.$t('menu.labels_orders'), 'fa-solid fa-tags', 'pos-orders', false);
             push('/admin/labels/dlc', this.$t('menu.labels_dlc'), 'fa-solid fa-tags', 'pos-orders', false);
+            // [CAYENNE HYGIÈNE 2026-10-17] Relevés de température : même porte (`pos-orders`).
+            push('/admin/hygiene/temperature', this.$t('menu.hygiene_temperature'), 'fa-solid fa-temperature-half', 'pos-orders', false);
             push('/admin/order-status-screen', this.$t('menu.o_s_s'), 'lab lab-cds', 'order-status-screen', false);
             push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);
             push('/admin/ingredients', this.$t('menu.ingredients'), 'lab lab-item-attributes', 'ingredients_manage', false);

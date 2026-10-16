@@ -116,7 +116,10 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).toContain('menu.labels_orders');
         expect(text).toContain('menu.labels_dlc');
         expect(text).toContain('menu.labels_printer');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(23);
+        // [CAYENNE HYGIÈNE 2026-10-17] « Hygiène » + « Températures »
+        expect(text).toContain('menu.hygiene');
+        expect(text).toContain('menu.hygiene_temperature');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(25);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

@@ -56,6 +56,117 @@ class LabelControllerTest extends TestCase
         return $p;
     }
 
+    // ───────────── catalogue recommandé (2026-10-17) ─────────────
+
+    public function test_le_catalogue_recommande_est_coherent_avec_les_regles_de_la_fiche(): void
+    {
+        $rows = \App\Support\Labels\RecommendedDlcCatalog::all();
+        $this->assertGreaterThan(60, count($rows));
+        $names = array_map(fn ($r) => mb_strtolower($r['name']), $rows);
+        $this->assertSame($names, array_values(array_unique($names)), 'aucun doublon de nom');
+
+        foreach ($rows as $r) {
+            $this->assertNotSame('', trim($r['storage']), $r['name'].' : conservation obligatoire');
+            foreach ($r['actions'] as $a) {
+                $this->assertContains($a['key'], DlcLabelProduct::ACTIONS, $r['name']);
+                $cap = $a['unit'] === 'hours' ? 720 : 365;
+                $this->assertTrue($a['value'] >= 1 && $a['value'] <= $cap, $r['name'].' : durée hors plafond');
+            }
+            foreach ($r['allergens'] as $code) {
+                $this->assertContains($code, DlcLabelProduct::ALLERGENS, $r['name']);
+            }
+            // décongélation prévue : conservation APRÈS décongélation = froid positif ou ambiante, jamais de repli
+            if ($r['actions'][0]['key'] === 'thawed') {
+                $this->assertNotNull($r['thawed_storage'], $r['name']);
+                $this->assertTrue(DlcLabelProduct::isValidThawedStorage($r['thawed_storage']), $r['name']);
+            }
+            // un produit prévu pour le froid positif n'est jamais annoncé congelé
+            if (! in_array($r['storage'], [\App\Support\Labels\RecommendedDlcCatalog::FROZEN, 'Ambiante'], true)) {
+                $this->assertTrue(DlcLabelProduct::isChilled($r['storage']), $r['name'].' : '.$r['storage']);
+            }
+            $this->assertFalse(! empty($r['allergens']) && $r['no_allergens'], $r['name'].' : allergènes ET « aucun »');
+        }
+        // la demande du propriétaire : marinade 3 jours, conserves ouvertes, viande hachée, cheddar
+        $by = collect($rows)->keyBy('name');
+        $this->assertSame([['key' => 'prepared', 'value' => 3, 'unit' => 'days']], $by['Poulet mariné']['actions']);
+        $this->assertSame(3, $by['Olives (boîte ouverte)']['actions'][0]['value']);
+        $this->assertSame(24, $by['Viande hachée façonnée']['actions'][0]['value']);
+        $this->assertContains('lait', $by['Cheddar tranché (ouvert)']['allergens']);
+    }
+
+    public function test_premier_lancement_installe_le_catalogue_sans_rien_demander(): void
+    {
+        $this->caisse();
+        $first = $this->getJson('/api/admin/labels/products')->assertOk();
+        $this->assertTrue($first->json('meta.recommended.never_configured'));
+        $this->assertSame(0, count($first->json('data')));
+
+        $res = $this->postJson('/api/admin/labels/products/install-recommended', ['only_if_empty' => true])->assertCreated();
+        $total = $res->json('data.total');
+        $this->assertSame($total, $res->json('data.added'));
+
+        $list = $this->getJson('/api/admin/labels/products')->assertOk();
+        $this->assertCount($total, $list->json('data'));
+        $this->assertSame(0, $list->json('meta.recommended.missing'));
+        $this->assertFalse($list->json('meta.recommended.never_configured'));
+        $mariné = collect($list->json('data'))->firstWhere('name', 'Poulet mariné');
+        $this->assertSame('Viandes & volailles', $mariné['category']);
+        $this->assertTrue($mariné['is_active']);
+        $this->assertTrue($mariné['allergens_unreviewed'], 'recette variable : allergènes à renseigner, rien d\'affirmé');
+        $oignons = collect($list->json('data'))->firstWhere('name', 'Oignons rouges émincés');
+        $this->assertFalse($oignons['allergens_unreviewed']);
+    }
+
+    public function test_l_installation_est_idempotente_et_ne_touche_pas_aux_fiches_existantes(): void
+    {
+        $this->caisse();
+        $mine = $this->product(['name' => 'tomates tranchées', 'shelf_life_value' => 5, 'shelf_life_unit' => 'days', 'storage' => '+3 °C']);
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertCreated();
+        $again = $this->postJson('/api/admin/labels/products/install-recommended')->assertOk();
+        $this->assertSame(0, $again->json('data.added'));
+
+        $this->assertSame(1, DlcLabelProduct::query()->whereRaw('LOWER(name) = ?', ['tomates tranchées'])->count());
+        $mine->refresh();
+        $this->assertSame(5, $mine->shelf_life_value);
+        $this->assertSame('+3 °C', $mine->storage);
+    }
+
+    public function test_l_installation_automatique_ne_revient_pas_apres_une_suppression_volontaire(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended', ['only_if_empty' => true])->assertCreated();
+        $id = $this->getJson('/api/admin/labels/products')->json('data.0.id');
+        $this->deleteJson("/api/admin/labels/products/$id")->assertOk();
+
+        $res = $this->postJson('/api/admin/labels/products/install-recommended', ['only_if_empty' => true])->assertOk();
+        $this->assertSame(0, $res->json('data.added'));
+        // …mais le bouton « ajouter les recommandés » (sans only_if_empty) le restaure
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertCreated();
+    }
+
+    public function test_le_catalogue_installe_est_propre_a_sa_branche(): void
+    {
+        $this->caisse(1);
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertCreated();
+        $this->caisse(2);
+        $state = $this->getJson('/api/admin/labels/products')->assertOk();
+        $this->assertTrue($state->json('meta.recommended.never_configured'));
+        $this->assertSame([], $state->json('data'));
+    }
+
+    public function test_un_produit_recommande_s_imprime_en_un_appui(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertCreated();
+        $list = collect($this->getJson('/api/admin/labels/products')->json('data'));
+        foreach (['Tomates tranchées', 'Poulet mariné', 'Steak haché décongelé', 'Olives (boîte ouverte)', 'Cheddar tranché (ouvert)', 'Pain décongelé'] as $name) {
+            $p = $list->firstWhere('name', $name);
+            $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id']])
+                ->assertSuccessful()
+                ->assertJsonPath('name', $name);
+        }
+    }
+
     // ───────────── accès ─────────────
 
     public function test_sans_authentification_tout_est_refuse(): void

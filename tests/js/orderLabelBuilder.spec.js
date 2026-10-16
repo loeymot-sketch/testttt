@@ -277,3 +277,44 @@ describe('complétude : rien de ce que le client a choisi ne manque sur l’éti
         expect(checked, 'le contrôle a bien examiné des choix client').toBeGreaterThan(25);
     });
 });
+
+describe('rubriques lisibles : nombre de crudités / sauces / suppléments, sauce des frites (2026-10-17)', () => {
+    const lines = (label) => orderLabelBlocks(label).filter((b) => b.t === 'line').map((b) => `${b.prefix || ''}${b.text}`);
+
+    it('le nombre est écrit dans chaque rubrique, les suppléments ont leur titre', () => {
+        const l = buildOrderLabels(orders[0]).labels[0];
+        const out = lines(l);
+        expect(out).toContain('Sauce (1) : Algérienne');
+        expect(out).toContain('Crudités (2) : Salade, Tomate');
+        expect(out).toContain('Sauce frites (1) : Mayonnaise');
+
+        const withExtras = buildOrderLabels(byNumber('A0114')).labels[0];
+        const label = { ...withExtras, supplements: ['Cheddar', 'Bacon'] };
+        const o = lines(label);
+        const i = o.indexOf('SUPPLÉMENTS (2) :');
+        expect(i).toBeGreaterThan(-1);
+        expect(o.slice(i + 1, i + 3)).toEqual(['+ Cheddar', '+ Bacon']);
+    });
+
+    it('sans supplément : pas de titre « SUPPLÉMENTS » inutile', () => {
+        const l = buildOrderLabels(orders[0]).labels[0];
+        expect(lines(l).some((x) => x.startsWith('SUPPLÉMENTS'))).toBe(false);
+    });
+
+    it('menu sans sauce frites lisible dans la commande : la ligne dit « non précisée » (jamais un silence)', () => {
+        const raw = JSON.parse(JSON.stringify(orders[0].order_items[0]));
+        raw.instruction = raw.instruction.replace(/\n↳ Sauce frites: Mayonnaise/, '');
+        const d = describeItem(raw);
+        expect(d.menu && d.menu.kind).toBe('menu');
+        expect(d.details.map((x) => x.text)).toContain('Sauce frites : non précisée');
+        // avec la sauce, c'est la sauce qui est écrite, pas « non précisée »
+        const ok = describeItem(orders[0].order_items[0]);
+        expect(ok.details.map((x) => x.text)).toContain('Sauce frites : Mayonnaise');
+        expect(ok.details.some((x) => x.missing)).toBe(false);
+    });
+
+    it('sandwich SEUL : aucune ligne sur les frites', () => {
+        const d = describeItem({ item_name: 'Cayenne', quantity: 1, instruction: '' });
+        expect(d.details.some((x) => x.kind === 'fries_sauce')).toBe(false);
+    });
+});

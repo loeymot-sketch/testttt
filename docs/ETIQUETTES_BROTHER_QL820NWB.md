@@ -96,3 +96,22 @@ Le test Playwright joue une **fausse Brother** (Web Serial simulé) qui enregist
 - Une fiche sans allergène coché n'imprime **aucune** ligne d'allergènes (« non renseigné » et « aucun » ne se distinguent pas sur le papier).
 - Tablette fermée en pleine impression automatique : la réclamation est rendue à la file après 120 s ; en théorie un doublon est possible si l'impression avait en fait abouti.
 - Le chef (permission `kitchen-display-system` seule) est admis par l'API mais pas par la route de l'écran (`pos-orders`), comme l'écran Uber photo.
+
+## Catalogue DLC recommandé et relevés de température (2026-10-17)
+
+**Catalogue préconfiguré.** `App\Support\Labels\RecommendedDlcCatalog` : ~80 produits (légumes à couper, conserves ouvertes,
+viandes et marinades, charcuterie, poissons, fromages, sauces, plats cuits, pains) avec durées prudentes, conservation et
+allergènes quand ils sont sans ambiguïté. Installé tout seul au PREMIER lancement d'un restaurant (`only_if_empty`), jamais
+après une suppression volontaire ; bouton « Ajouter les produits recommandés manquants » dans « Fiches produits » (idempotent,
+ne touche jamais une fiche existante). Aucun produit ne demande la « DLC du fabricant » : un appui suffit — durées courtes en
+contrepartie. Recette variable (marinade, sauce maison…) : allergènes laissés « à renseigner » (badge sur la tuile), jamais devinés.
+Un produit créé à la main n'impose plus la « DLC du fabricant » par défaut (case à cocher).
+
+**Étiquette de commande.** Chaque rubrique porte son nombre (« Crudités (2) : … », « Sauces (1) : … »), les suppléments ont leur
+titre (« SUPPLÉMENTS (2) : »), et un menu/frites sans sauce lue affiche « Sauce frites : non précisée ».
+
+**Températures (module « Cayenne Hygiène »).** `/admin/hygiene/temperature` — démarrage « 4 frigos + 2 congélateurs » en un geste
+(`/equipment/quick-setup`), saisie du jour (signe ± pour les négatifs), verdict calculé par le serveur
+(`TemperatureRules` : frigo 0 à +4 °C, congélateur ≤ −18 °C, bornes incluses), écart = action corrective obligatoire,
+journal append-only avec contexte copié (équipement, seuils, opérateur, moment), annulation avec motif. Contrat du module :
+`config/hygiene.php` ; tables `hygiene_*` ; API `/api/admin/hygiene/temperature/*`.

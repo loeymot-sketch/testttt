@@ -23,7 +23,11 @@
                         <strong>Aucun produit pour l'instant.</strong> Créez vos fiches (oignons, tomates, olives, champignons…) : famille,
                         durées après ouverture ou décongélation, conservation, allergènes. Chaque appui imprimera ensuite l'étiquette.
                     </p>
-                    <button type="button" class="dlc-btn dlc-btn--primary" data-testid="dlc-add-first" @click="openEditor(null)">
+                    <button v-if="recommended.missing" type="button" class="dlc-btn dlc-btn--primary" :disabled="installing"
+                            data-testid="dlc-install-empty" @click="installRecommended(false)">
+                        {{ installing ? "Installation…" : `Installer les ${recommended.total} produits recommandés` }}
+                    </button>
+                    <button type="button" class="dlc-btn" :class="{ 'dlc-btn--primary': !recommended.missing }" data-testid="dlc-add-first" @click="openEditor(null)">
                         ＋ Créer mon premier produit
                     </button>
                     <div class="dlc-suggest" data-testid="dlc-suggest">
@@ -36,6 +40,11 @@
                 </div>
 
                 <template v-else-if="loaded">
+                    <p v-if="justInstalled" class="dlc-note" role="status" data-testid="dlc-installed-note">
+                        <strong>{{ justInstalled }} produits préconfigurés</strong> (légumes à couper, conserves ouvertes, viandes, marinades, fromages, sauces…),
+                        avec leurs durées prudentes. Touchez un produit pour imprimer ; « Fiches produits » permet d'ajuster une durée à votre plan de maîtrise sanitaire.
+                        <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-installed-dismiss" @click="justInstalled = 0">OK</button>
+                    </p>
                     <!-- ── Barre d'outils ─────────────────────────────────────────────────── -->
                     <div class="dlc-toolbar">
                         <div class="dlc-search-row">
@@ -148,6 +157,7 @@
                                         <span class="dlc-tile-meta">
                                             <span v-if="p.actions.length > 1">{{ p.actions.length }} événements</span>
                                             <span v-if="p.allergens.length">⚠ {{ p.allergens.length }} allergène{{ p.allergens.length > 1 ? "s" : "" }}</span>
+                                            <span v-else-if="p.allergens_unreviewed" class="dlc-tile-review" data-testid="dlc-tile-review">Allergènes à renseigner</span>
                                             <span v-if="p.ask_original_dlc">DLC fabricant</span>
                                             <span v-if="p.needs_parent">Produit d'origine</span>
                                             <span v-if="ficheIncomplete(p)" class="dlc-tile-todo" data-testid="dlc-tile-todo">⚠ {{ ficheIncomplete(p) }}</span>
@@ -183,6 +193,12 @@
                     <button type="button" class="dlc-toggle" :aria-expanded="manage ? 'true' : 'false'" data-testid="dlc-manage-toggle" @click="manage = !manage">
                         {{ manage ? "▾" : "▸" }} Fiches produits ({{ products.length }})
                     </button>
+                    <p v-if="manage && recommended.missing" class="dlc-muted">
+                        <button type="button" class="dlc-btn dlc-btn--small" :disabled="installing" data-testid="dlc-install-more" @click="installRecommended(false)">
+                            ＋ Ajouter les {{ recommended.missing }} produits recommandés manquants
+                        </button>
+                        Vos fiches existantes ne sont jamais modifiées.
+                    </p>
                     <ul v-if="manage" class="dlc-list" data-testid="dlc-manage">
                         <li v-for="p in sortedProducts" :key="p.id" class="dlc-row" :class="{ 'is-off': !p.is_active }" :data-testid="`dlc-row-${p.id}`">
                             <span class="dlc-dot" :style="{ background: colorOf(p.category) }" aria-hidden="true"></span>
@@ -348,6 +364,10 @@ export default {
     data() {
         return {
             products: [],
+            recommended: { total: 0, missing: 0, never_configured: false },
+            installing: false,
+            justInstalled: 0,
+            autoInstallTried: false,
             history: [],
             watchRows: [],
             lotRows: [],
@@ -646,8 +666,35 @@ export default {
                 if (this.category && !this.categoryTabs.some((c) => c.name === this.category)) this.category = "";
                 this.loadError = "";
                 this.loaded = true;
+                const rec = data.meta && data.meta.recommended;
+                if (rec) this.recommended = { total: Number(rec.total) || 0, missing: Number(rec.missing) || 0, never_configured: Boolean(rec.never_configured) };
+                // Premier lancement : le catalogue arrive tout seul, une seule fois (jamais après une suppression volontaire).
+                if (this.recommended.never_configured && !this.autoInstallTried) {
+                    this.autoInstallTried = true;
+                    await this.installRecommended(true);
+                }
             } catch (e) {
                 this.loadError = "Liste des produits indisponible. Vérifiez la connexion puis rechargez la page.";
+            }
+        },
+        /** Ajoute les produits recommandés absents. `auto` : premier lancement (ne fait rien si le restaurant a déjà configuré). */
+        async installRecommended(auto) {
+            if (this.installing) return;
+            this.installing = true;
+            try {
+                const { data } = await axios.post("admin/labels/products/install-recommended", auto ? { only_if_empty: true } : {});
+                const added = Number(data && data.data && data.data.added) || 0;
+                if (added > 0) {
+                    await this.loadProducts();
+                    if (auto) this.justInstalled = added;
+                    else alertService.success(`${added} produit${added > 1 ? "s" : ""} ajouté${added > 1 ? "s" : ""}.`);
+                } else if (!auto) {
+                    alertService.success("Tous les produits recommandés sont déjà dans votre liste.");
+                }
+            } catch (e) {
+                alertService.error(this.apiMessage(e, "Installation impossible. Vérifiez la connexion puis réessayez."));
+            } finally {
+                this.installing = false;
             }
         },
         async loadHistory() {
@@ -1082,6 +1129,8 @@ export default {
 <style scoped>
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .dlc-alert { border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+.dlc-note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-size: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.dlc-tile-review { color: #b45309; font-weight: 700; }
 .dlc-empty { color: #475569; padding: 24px 8px; text-align: center; }
 .dlc-empty--cta { text-align: left; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 18px; }
 .dlc-empty--inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }

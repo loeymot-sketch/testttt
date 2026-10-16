@@ -167,6 +167,15 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
             Object.freeze({ url: 'labels/printer', language: 'labels_printer', icon: 'lab lab-list' }),
         ]),
     }),
+    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Relevés de température des frigos et congélateurs. Même gate que les étiquettes.
+    Object.freeze({
+        url: 'hygiene',
+        language: 'hygiene',
+        icon: 'fa-solid fa-temperature-half',
+        children: Object.freeze([
+            Object.freeze({ url: 'hygiene/temperature', language: 'hygiene_temperature', icon: 'lab lab-list' }),
+        ]),
+    }),
     /*
      * [ROUE 2026-08-13 · propriétaire : « accès admin caisse »] Les écrans de la roue existaient
      * et fonctionnaient, mais aucun lien n'y menait depuis le back-office.
@@ -210,6 +219,9 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     'labels/orders': 'pos-orders',
     'labels/dlc': 'pos-orders',
     'labels/printer': 'pos-orders',
+    // [CAYENNE HYGIÈNE 2026-10-17] Même gate que les étiquettes — voir l'entrée de menu.
+    hygiene: 'pos-orders',
+    'hygiene/temperature': 'pos-orders',
     // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
     // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
     // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,

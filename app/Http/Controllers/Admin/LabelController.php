@@ -7,6 +7,7 @@ use App\Models\DlcLabelProduct;
 use App\Models\LabelPrintLog;
 use App\Models\Order;
 use App\Services\KitchenDisplaySystemOrderService;
+use App\Support\Labels\RecommendedDlcCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,8 +69,63 @@ class LabelController extends AdminController
 
         return response()->json([
             'data' => $products,
-            'meta' => $this->clock(),
+            'meta' => ['recommended' => $this->recommendedState()] + $this->clock(),
         ]);
+    }
+
+    /**
+     * Catalogue recommandé (RecommendedDlcCatalog) : combien de produits manquent à CE restaurant, et s'il n'a jamais rien
+     * configuré (corbeille comprise : un produit supprimé exprès ne revient jamais tout seul à l'installation automatique).
+     */
+    private function recommendedState(): array
+    {
+        $existing = DlcLabelProduct::query()->withTrashed()->get(['name', 'deleted_at']);
+        $liveNames = $existing->whereNull('deleted_at')->map(fn ($p) => mb_strtolower(trim((string) $p->name)))->all();
+        $all = RecommendedDlcCatalog::all();
+        $missing = collect($all)->filter(fn ($r) => ! in_array(mb_strtolower($r['name']), $liveNames, true))->count();
+
+        return ['total' => count($all), 'missing' => $missing, 'never_configured' => $existing->isEmpty()];
+    }
+
+    /**
+     * Installe les produits recommandés absents (comparaison de nom sans casse). Idempotent : un second appel n'ajoute
+     * rien, et un produit déjà présent — modifié ou non — n'est jamais touché. `only_if_empty` : appel automatique du
+     * premier lancement, qui ne fait rien dès que le restaurant a déjà configuré (ou supprimé) un produit.
+     */
+    public function installRecommended(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['only_if_empty' => ['nullable', 'boolean']]);
+        $state = $this->recommendedState();
+        if (! empty($validated['only_if_empty']) && ! $state['never_configured']) {
+            return response()->json(['data' => ['added' => 0] + $state]);
+        }
+
+        $branch = $this->branchId($request);
+        $liveNames = DlcLabelProduct::query()->get(['name'])->map(fn ($p) => mb_strtolower(trim((string) $p->name)))->all();
+        $added = 0;
+        $order = (int) DlcLabelProduct::query()->max('sort_order');
+        foreach (RecommendedDlcCatalog::all() as $row) {
+            if (in_array(mb_strtolower($row['name']), $liveNames, true)) continue;
+            $p = new DlcLabelProduct([
+                'name' => $row['name'],
+                'category' => $row['category'],
+                'shelf_life_value' => $row['actions'][0]['value'],
+                'shelf_life_unit' => $row['actions'][0]['unit'],
+                'actions' => $row['actions'],
+                'storage' => $row['storage'],
+                'thawed_storage' => $row['thawed_storage'],
+                'allergens' => $row['allergens'],
+                'no_allergens' => $row['no_allergens'],
+                'default_copies' => $row['default_copies'],
+                'sort_order' => $order + $row['sort_order'],
+                'is_active' => true,
+            ]);
+            $p->branch_id = $branch;
+            $p->save();
+            $added++;
+        }
+
+        return response()->json(['data' => ['added' => $added] + $this->recommendedState()], $added > 0 ? 201 : 200);
     }
 
     public function storeProduct(Request $request): JsonResponse
@@ -949,6 +1005,8 @@ class LabelController extends AdminController
             'storage' => $p->storage,
             'thawed_storage' => $p->thawed_storage,
             'no_allergens' => (bool) $p->no_allergens,
+            // ni allergène coché ni « aucun des 14 » : la fiche ne dit rien, l'étiquette n'affirme rien — l'écran le signale
+            'allergens_unreviewed' => ! $p->no_allergens && empty($p->allergens),
             'needs_parent' => (bool) $p->needs_parent,
             'durations_checked_at' => $p->durations_checked_at?->toIso8601String(),
             'note' => $p->note,

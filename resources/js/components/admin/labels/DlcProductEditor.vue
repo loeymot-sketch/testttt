@@ -113,7 +113,7 @@
                     <label class="ed-switch">
                         <input v-model="form.ask_original_dlc" type="checkbox" data-testid="dlc-ed-ask-original" @change="askTouched = true" />
                         <span><b>Demander la DLC du fabricant</b> à chaque impression — la DLC imprimée ne la dépassera jamais
-                            (règle du plan de maîtrise sanitaire). Recommandé pour tout produit entamé dans son emballage d'origine.</span>
+                            (règle du plan de maîtrise sanitaire). À cocher pour un produit entamé dans son emballage d'origine dont la DLC est courte ; décoché, un appui suffit.</span>
                     </label>
                     <label class="ed-switch">
                         <input v-model="form.needs_parent" type="checkbox" data-testid="dlc-ed-needs-parent" />
@@ -169,7 +169,9 @@ import { previewUrls } from "../../../helpers/labelPrintJob";
 
 const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"] };
 /** Événements où le produit est encore dans son emballage d'origine : la DLC du fabricant est demandée par défaut. */
-const PACKAGED = ["opened", "vacuum"];
+// Une fiche neuve s'imprime en UN appui, sans question (demande du propriétaire, 2026-10-17) : « DLC du fabricant » est une
+// option à cocher produit par produit (fromage tranché, charcuterie…), jamais imposée à la création.
+const ASK_ORIGINAL_BY_DEFAULT = false;
 /** Viande ou poisson : décongelés, l'usage courant est 24 h (au-delà, le PMS doit le prévoir). Liste large, fast-food compris. */
 const MEAT_OR_FISH = /viande|volaille|poulet|chicken|dinde|b(?:oe|œ)uf|veau|porc|agneau|steak|hach|kebab|kefta|merguez|saucisse|chipolata|lardon|bacon|jambon|escalope|cordon|nugget|tender|wing|mexicano|fricadelle|boulette|poisson|saumon|thon|colin|cabillaud|merlu|capitaine|crevette|calamar|surimi|fruits de mer/iu;
 /**
@@ -205,7 +207,7 @@ export default {
             : (p.shelf_life_value ? [{ key: "opened", value: p.shelf_life_value, unit: p.shelf_life_unit }] : [{ key: "opened", value: 2, unit: "days" }]);
         const order = [...actions.map((a) => a.key), ...DLC_ACTION_KEYS.filter((k) => !actions.some((a) => a.key === k))];
         // Fiche neuve sans avis explicite : DLC du fabricant demandée si le produit est entamé dans son emballage.
-        const askDefault = p.ask_original_dlc === undefined ? PACKAGED.includes(actions[0].key) : Boolean(p.ask_original_dlc);
+        const askDefault = p.ask_original_dlc === undefined ? ASK_ORIGINAL_BY_DEFAULT : Boolean(p.ask_original_dlc);
         return {
             form: {
                 id: p.id || null,
@@ -284,10 +286,6 @@ export default {
         },
     },
     watch: {
-        // Tant que la personne n'a pas tranché, « DLC du fabricant » suit l'événement par défaut d'une fiche neuve.
-        defaultKey(key) {
-            if (!this.askTouched && !this.form.id) this.form.ask_original_dlc = PACKAGED.includes(key);
-        },
         warnings(now, before) {
             if (now.join() !== before.join()) this.durationsChecked = false;
         },
