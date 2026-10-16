@@ -124,7 +124,7 @@
                                     @click="watchLimit = 300">+ {{ watchMore }} autre{{ watchMore > 1 ? "s" : "" }} lot{{ watchMore > 1 ? "s" : "" }} — tout afficher</button>
                         </aside>
 
-                        <div ref="main" class="dlc-main" :class="{ 'has-toast': Boolean(last) }">
+                        <div ref="main" class="dlc-main">
                             <div v-if="query && !visibleProducts.length" class="dlc-empty dlc-empty--inline" data-testid="dlc-no-match">
                                 <span>Aucun produit ne correspond à « {{ query }} ».</span>
                                 <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-add-from-query" @click="openEditor({ name: query })">Créer « {{ query }} »</button>
@@ -480,7 +480,11 @@ export default {
             } else if (!now && before) {
                 const el = this.origReturnFocus;
                 this.origReturnFocus = null;
-                this.$nextTick(() => { if (el && el.focus && document.contains(el)) el.focus(); });
+                // le bouton d'origine (panier) a disparu après impression : le focus revient au mode « Sélection multiple »
+                this.$nextTick(() => {
+                    const target = el && document.contains(el) ? el : this.$el.querySelector('[data-testid="dlc-mode-list"]');
+                    if (target && target.focus) target.focus();
+                });
             }
         },
         // Un autre événement de lot : les produits qui ne le prévoient pas sortent de la sélection (jamais d'étiquette
@@ -1103,7 +1107,6 @@ export default {
 .dlc-watch-more { margin: 6px 0 0; color: #92400e; }
 .dlc-watch-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
 .dlc-watch-pending { margin-left: auto; color: #1e3a8a; font-weight: 700; font-size: 13px; }
-.dlc-main.has-toast { padding-bottom: 150px; } /* la dernière rangée reste atteignable au-dessus de la notice */
 .dlc-pending { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-weight: 600; }
 .dlc-watch li.is-expired .dlc-watch-n { color: #7f1d1d; }
 .dlc-tile-todo { background: #fef3c7 !important; color: #92400e; font-weight: 700; }
