@@ -734,7 +734,11 @@ class LabelControllerTest extends TestCase
     public function test_une_etiquette_de_decongelation_ne_dit_jamais_de_remettre_au_congelateur(): void
     {
         $this->caisse();
-        $p = $this->expertProduct(['name' => 'Steaks hachés', 'storage' => '≤ −18 °C']);
+        // fiche ANCIENNE (antérieure à la conservation après décongélation) : surgelée, sans valeur choisie → repli froid positif
+        $legacy = $this->product(['name' => 'Steaks hachés', 'storage' => '≤ −18 °C', 'actions' => [
+            ['key' => 'thawed', 'value' => 3, 'unit' => 'days'], ['key' => 'opened', 'value' => 48, 'unit' => 'hours'],
+        ]]);
+        $p = ['id' => $legacy->id];
 
         $thawed = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'thawed'])->assertOk()->json();
         $this->assertSame('0 à +4 °C', $thawed['storage']);
@@ -780,8 +784,8 @@ class LabelControllerTest extends TestCase
             ->assertStatus(422)->assertJsonPath('status', 'parent_expired');
         Carbon::setTestNow(Carbon::parse('2026-10-16 11:00:00', config('app.timezone')));
 
-        // produit d'origine sorti (jeté/utilisé) : refus
-        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$parent['log_id']], 'reason' => 'used'])->assertOk();
+        // produit d'origine JETÉ : refus (« utilisé » à l'instant reste accepté 2 h — voir le test dédié)
+        $this->postJson('/api/admin/labels/prints/discard', ['ids' => [$parent['log_id']], 'reason' => 'discarded'])->assertOk();
         $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $made['id'], 'parent_log_id' => $parent['log_id']])
             ->assertStatus(422)->assertJsonPath('status', 'parent_closed');
 
