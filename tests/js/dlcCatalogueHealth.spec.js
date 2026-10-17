@@ -204,3 +204,52 @@ describe('fiche produit — les huit états', () => {
         expect(w.emitted('save')[0][0].actions.map((a) => a.key)).toEqual(['prepared', 'frozen', 'witness', 'received']);
     });
 });
+
+describe('écran DLC — dupliquer une fiche (Komia : « précieux pour créer 20 produits proches »)', () => {
+    const printer = { isSupported: () => true, getState: () => ({ status: 'connected', printer: null }), onChange: () => () => {}, startKeepAlive() {}, stopKeepAlive() {}, isConnected: () => true };
+
+    async function screen(list) {
+        h.axios.get.mockReset();
+        h.axios.get.mockImplementation(async (url) => {
+            if (url === 'admin/labels/products') return { data: { data: list, meta: { server_now: new Date().toISOString(), timezone: 'Europe/Paris', health: { starting: [], allergens: [], no_category: [], neighbours: [] }, recommended: { total: 92, missing: 0, never_configured: false } } } };
+            return { data: { data: [], meta: { server_now: new Date().toISOString() } } };
+        });
+        window.localStorage.clear();
+        const w = mount(LabelDlcComponent, { global: { mocks: { $t: (k) => k }, stubs: { 'router-link': { template: '<a><slot /></a>' } } } });
+        await flushPromises();
+        return w;
+    }
+
+    it('« Dupliquer » ouvre une copie au nom libre, sans identifiant ni validation héritée ; rien n’est enregistré avant « Ajouter »', async () => {
+        const w = await screen([P({ id: 7, name: 'Oignons émincés', duration_review: 'validated', durations_checked_at: '2026-10-17T09:00:00Z', duration_source: 'GBPH' })]);
+        await w.get('[data-testid="dlc-manage-toggle"]').trigger('click');
+        await w.get('[data-testid="dlc-dup-7"]').trigger('click');
+        await flushPromises();
+        const editor = w.get('[data-testid="dlc-editor"]');
+        expect(editor.get('[data-testid="dlc-ed-name"]').element.value).toBe('Oignons émincés (copie)');
+        expect(editor.text()).toMatch(/Nouveau produit/);
+        // ne reprend ni la validation ni la source de l'original
+        expect(editor.get('[data-testid="dlc-ed-source"]').element.value).toBe('');
+        expect(editor.find('[data-testid="dlc-ed-durations-checked-at"]').exists()).toBe(false);
+        expect(editor.get('[data-testid="dlc-ed-validate"]').element.checked).toBe(false);
+        expect(h.axios.post).not.toHaveBeenCalled();
+        // mêmes durées et conservation que l'original
+        await editor.get('[data-testid="dlc-ed-save"]').trigger('click');
+        await flushPromises();
+        const [url, body] = h.axios.post.mock.calls.find((c) => c[0] === 'admin/labels/products');
+        expect(url).toBe('admin/labels/products');
+        expect(body.id).toBeNull();
+        expect(body.name).toBe('Oignons émincés (copie)');
+        expect(body.storage).toBe('0 à +4 °C');
+        expect(body.actions).toEqual([{ key: 'prepared', value: 24, unit: 'hours' }]);
+        expect(body.durations_checked).toBeUndefined();
+    });
+
+    it('une copie déjà prise : le nom suivant est libre (« copie 2 »)', async () => {
+        const w = await screen([P({ id: 7, name: 'Olives' }), P({ id: 8, name: 'Olives (copie)' })]);
+        await w.get('[data-testid="dlc-manage-toggle"]').trigger('click');
+        await w.get('[data-testid="dlc-dup-7"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-ed-name"]').element.value).toBe('Olives (copie 2)');
+    });
+});

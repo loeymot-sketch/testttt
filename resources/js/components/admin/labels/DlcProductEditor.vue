@@ -35,7 +35,7 @@
                                 <span>{{ a.label }}</span>
                             </label>
                             <template v-if="a.enabled">
-                                <input v-model.number="a.value" type="number" min="1" inputmode="numeric" class="db-field-control ed-num"
+                                <input v-model.number="a.value" type="number" min="1" inputmode="numeric" class="db-field-control ed-num" @focus="$event.target.select()"
                                        :aria-label="`Durée ${a.label}`" :data-testid="`dlc-ed-value-${a.key}`" />
                                 <select v-model="a.unit" class="db-field-control ed-unit" :aria-label="`Unité ${a.label}`" :data-testid="`dlc-ed-unit-${a.key}`">
                                     <option value="hours">heures</option>

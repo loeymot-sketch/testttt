@@ -216,6 +216,7 @@
                             <span v-if="p.duration_review === 'starting'" class="dlc-row-review" :data-testid="`dlc-row-review-${p.id}`">durées à valider</span>
                             <span v-else-if="p.duration_review === 'validated'" class="dlc-row-ok" :data-testid="`dlc-row-ok-${p.id}`">✓ validées</span>
                             <button type="button" class="dlc-btn dlc-btn--small" @click="toggleActive(p)">{{ p.is_active ? "Masquer" : "Réactiver" }}</button>
+                            <button type="button" class="dlc-btn dlc-btn--small" :data-testid="`dlc-dup-${p.id}`" :aria-label="`Dupliquer ${p.name}`" @click="duplicate(p)">Dupliquer</button>
                             <button type="button" class="dlc-btn dlc-btn--small" :data-testid="`dlc-edit-${p.id}`" @click="openEditor(p)">Modifier</button>
                         </li>
                     </ul>
@@ -1114,6 +1115,20 @@ export default {
             this.editorKey += 1;
             this.editing = product ? { ...product } : {};
         },
+        /**
+         * Dupliquer une fiche (« Précieux pour créer 20 produits proches ») : l'éditeur s'ouvre sur une COPIE au nom libre « X (copie) »,
+         * rien n'est enregistré avant « Ajouter ». Une copie n'hérite ni de la validation des durées ni de leur source : c'est une
+         * fiche nouvelle, à valider.
+         */
+        duplicate(p) {
+            const taken = new Set(this.products.map((x) => String(x.name).toLowerCase()));
+            const base = String(p.name).slice(0, 100);
+            let name = `${base} (copie)`;
+            for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} (copie ${n})`;
+            // eslint-disable-next-line no-unused-vars
+            const { id, duration_review, duration_source, durations_checked_at, uses_30d, sort_order, ...rest } = p;
+            this.openEditor({ ...rest, name });
+        },
         editFromHealth(p) {
             this.healthOpen = false;
             this.openEditor(p);
@@ -1170,6 +1185,11 @@ export default {
 .dlc-import-btn { margin: 0 0 8px 10px; }
 .dlc-btn--attention { border-color: #fdba74; background: #fff7ed; color: #7c2d12; }
 .dlc-health-n { display: inline-block; margin-left: 8px; min-width: 26px; padding: 1px 8px; border-radius: 999px; background: #D63D0B; color: #fff; font-size: 14px; font-weight: 800; text-align: center; }
+/* téléphone : trois boutons sur UNE ligne (Masquer · Dupliquer · Modifier), la mention « durées à valider » sur la sienne */
+@media (max-width: 599px) {
+    .dlc-row > .dlc-btn--small { flex: 1 1 28%; padding: 0 6px; }
+    .dlc-row-review, .dlc-row-ok { flex: 1 1 100%; }
+}
 .dlc-row-review { color: #b45309; font-weight: 700; font-size: 13px; }
 .dlc-row-ok { color: #15803d; font-weight: 700; font-size: 13px; }
 .dlc-empty { color: #475569; padding: 24px 8px; text-align: center; }
