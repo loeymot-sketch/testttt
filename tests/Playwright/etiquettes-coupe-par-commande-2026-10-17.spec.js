@@ -41,3 +41,31 @@ test('réglage de la découpe par commande', async ({ page }) => {
 
     expect(bad, bad.join('\n')).toEqual([]);
 });
+
+// L'aperçu d'une commande à plusieurs tickets montre le pointillé entre les tickets (sauf après le dernier) en mode « attachés ».
+// Prérequis local : une commande à ≥ 2 produits visible sur l'écran (id 5368 datée d'aujourd'hui dans la base e2e).
+test('aperçu d’une commande : pointillé entre les tickets, jamais après le dernier', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await loginAsAdmin(page);
+    const heights = async (mode) => {
+        await page.goto('/admin/labels/orders');
+        await page.evaluate((m) => localStorage.setItem('label_printer_settings', JSON.stringify({ mediaId: 'c62', autoCut: true, cutMode: m })), mode);
+        await page.reload();
+        const btn = page.locator('[data-testid^="label-preview-"]').first();
+        await expect(btn).toBeVisible({ timeout: 20_000 });
+        await btn.click();
+        const imgs = page.locator('[data-testid="label-previews"] img');
+        await expect(imgs.first()).toBeVisible({ timeout: 15_000 });
+        await page.waitForTimeout(500);
+        return imgs.evaluateAll((els) => els.map((e) => e.naturalHeight));
+    };
+    const each = await heights('each');
+    expect(each.length).toBeGreaterThan(1);
+    await page.screenshot({ path: path.join(OUT, 'b1-apercu-chaque.png') });
+    const order = await heights('order');
+    expect(order.length).toBe(each.length);
+    await page.screenshot({ path: path.join(OUT, 'b2-apercu-attaches.png') });
+    // chaque ticket sauf le dernier est plus haut de 28 points ; le dernier est identique à « chaque ticket »
+    order.slice(0, -1).forEach((h, i) => expect(h).toBe(each[i] + 28));
+    expect(order[order.length - 1]).toBe(each[each.length - 1]);
+});
