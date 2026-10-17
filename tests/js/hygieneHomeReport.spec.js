@@ -24,6 +24,42 @@ async function mountHome(tiles, meta) {
     return w;
 }
 
+describe('accueil — rappels et boutons d’action (2026-10-17)', () => {
+    const REM = [
+        { key: 'trace-silent', domain: 'trace', level: 'todo', text: 'Aucun produit tracé depuis 3 jours.', route: '/admin/hygiene/trace' },
+        { key: 'temperature-late-morning', domain: 'temperature', level: 'alert', text: 'Relevé du matin non fait : Frigo 1, Frigo 2.', route: '/admin/hygiene/temperature' },
+        { key: 'dlc-expired', domain: 'dlc', level: 'alert', text: '2 étiquettes DLC dépassées : à jeter, ou à marquer « utilisé ».', route: '/admin/labels/dlc' },
+    ];
+
+    it('« À traiter maintenant » : alertes d’abord, une phrase chacune, reliée à son écran', async () => {
+        const w = await mountHome([tile('temperature', 'alert', '0/2 relevés')], { alerts: 1, todo: 0, reminders: REM });
+        const items = w.findAll('[data-testid="home-reminder"]');
+        expect(items.map((i) => i.text())).toEqual([
+            expect.stringContaining('Relevé du matin non fait : Frigo 1, Frigo 2.'),
+            expect.stringContaining('2 étiquettes DLC dépassées'),
+            expect.stringContaining('Aucun produit tracé depuis 3 jours.'),
+        ]);
+        expect(items[0].classes()).toContain('is-alert');
+        expect(items[2].classes()).toContain('is-todo');
+        expect(items[0].get('a').attributes('href')).toBe('/admin/hygiene/temperature');
+        expect(items[1].get('a').attributes('href')).toBe('/admin/labels/dlc');
+    });
+
+    it('aucun rappel : la section n’existe pas (pas de « 0 chose à traiter »)', async () => {
+        const w = await mountHome([tile('tasks', 'ok', '5/5 fiches')], { alerts: 0, todo: 0, reminders: [] });
+        expect(w.find('[data-testid="home-reminders"]').exists()).toBe(false);
+        const w2 = await mountHome([tile('tasks', 'ok', '5/5 fiches')], { alerts: 0, todo: 0 });
+        expect(w2.find('[data-testid="home-reminders"]').exists()).toBe(false);
+    });
+
+    it('chaque tuile dit le geste à faire (« Réaliser un relevé »), pas « Ouvrir »', async () => {
+        const w = await mountHome([{ ...tile('temperature', 'todo', '1/6 relevés'), cta: 'Réaliser un relevé' }, { ...tile('oil', 'empty', 'À configurer'), cta: 'Configurer' }], { alerts: 0, todo: 1 });
+        expect(w.get('[data-testid="home-cta-temperature"]').text()).toBe('Réaliser un relevé →');
+        expect(w.get('[data-testid="home-cta-oil"]').text()).toBe('Configurer →');
+        expect(w.text()).not.toMatch(/Ouvrir/);
+    });
+});
+
 describe('accueil du module', () => {
     it('montre une tuile par domaine avec son compteur, plus le dossier de contrôle', async () => {
         const w = await mountHome([tile('temperature', 'alert', '4/6 relevés', '1 écart'), tile('tasks', 'todo', '3/5 fiches', '2 à faire'), tile('oil', 'empty', 'À configurer')], { alerts: 1, todo: 1 });

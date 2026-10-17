@@ -22,15 +22,43 @@ use App\Support\Hygiene\Kinds;
  */
 final class Overview
 {
-    /** @return list<array<string,mixed>> */
-    public function tiles(): array
+    /**
+     * Les tuiles du jour. Un RAPPEL en alerte (relevé du matin non fait, nettoyage en retard, DLC dépassées…) fait passer la tuile de son
+     * domaine en alerte : « vert » ou « à faire » ne dit plus la vérité une fois l'heure dépassée.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function tiles(?array $reminders = null): array
     {
-        return [$this->temperature(), $this->tasks(), $this->dlc(), $this->reception(), $this->trace(), $this->oil()];
+        $reminders = $reminders ?? (new Reminders)->all();
+        $tiles = [$this->temperature(), $this->tasks(), $this->dlc(), $this->reception(), $this->trace(), $this->oil()];
+
+        foreach ($tiles as &$tile) {
+            $late = array_values(array_filter($reminders, fn ($r) => $r['domain'] === $tile['key'] && $r['level'] === 'alert'));
+            if ($late !== [] && in_array($tile['status'], ['todo', 'ok', 'idle'], true)) {
+                $tile['status'] = 'alert';
+                $tile['detail'] = $late[0]['text'];
+            }
+            $tile['reminders'] = count(array_filter($reminders, fn ($r) => $r['domain'] === $tile['key']));
+        }
+        unset($tile);
+
+        return $tiles;
     }
+
+    /** Le bouton d'action de la tuile (un grand geste visible, comme les cartes d'action de Komia) : jamais « Ouvrir ». */
+    private const CTA = [
+        'temperature' => 'Réaliser un relevé', 'tasks' => 'Faire le nettoyage', 'dlc' => 'Imprimer une étiquette',
+        'reception' => 'Réceptionner une livraison', 'trace' => 'Tracer un produit', 'oil' => 'Tester l’huile',
+    ];
 
     private function tile(string $key, string $label, string $icon, string $status, string $headline, string $detail = '', array $counts = []): array
     {
-        return ['key' => $key, 'label' => $label, 'icon' => $icon, 'route' => $key === 'dlc' ? '/admin/labels/dlc' : '/admin/hygiene/'.$key, 'status' => $status, 'headline' => $headline, 'detail' => $detail, 'counts' => $counts];
+        return [
+            'key' => $key, 'label' => $label, 'icon' => $icon, 'route' => $key === 'dlc' ? '/admin/labels/dlc' : '/admin/hygiene/'.$key, 'status' => $status,
+            'headline' => $headline, 'detail' => $detail, 'counts' => $counts,
+            'cta' => $status === 'empty' ? 'Configurer' : (self::CTA[$key] ?? 'Ouvrir'),
+        ];
     }
 
     private function plural(int $n, string $one, ?string $many = null): string

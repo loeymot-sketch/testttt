@@ -97,6 +97,20 @@ return [
     ],
 
     /**
+     * Rappels (App\Services\Hygiene\Reminders) : à partir de quelle heure un geste attendu devient « en retard ». Ce sont des heures de
+     * RAPPEL, pas des obligations réglementaires : elles se règlent ici (ou par variable d'environnement) selon les horaires du restaurant.
+     *   temperature.morning / evening — relevé du matin / du soir. Le rappel du SOIR n'existe que si le restaurant relève réellement le
+     *                                   soir (au moins un relevé du soir dans les 7 derniers jours) : sinon il râlerait chaque jour pour rien ;
+     *   oil_test — test d'huile attendu chaque jour (même règle : seulement si des tests ont eu lieu dans les 7 derniers jours) ;
+     *   trace_silent_days — « aucun produit tracé depuis N jours » (2 par défaut, comme Komia), seulement si la traçabilité sert déjà.
+     */
+    'reminders' => [
+        'temperature' => ['morning' => env('HYGIENE_REMIND_TEMP_MORNING', '11:30'), 'evening' => env('HYGIENE_REMIND_TEMP_EVENING', '22:30')],
+        'oil_test' => env('HYGIENE_REMIND_OIL_TEST', '15:00'),
+        'trace_silent_days' => (int) env('HYGIENE_REMIND_TRACE_DAYS', 2),
+    ],
+
+    /**
      * Huile de friture. Limite LÉGALE : 25 % de composés polaires (décret n° 2008-1463) — au-delà l'huile doit être changée.
      * `polar_warn` : seuil « à surveiller » (valeur de départ prudente, sans valeur réglementaire). `bath_max_c` : au-delà de 180 °C
      * l'huile se dégrade vite (recommandation courante) — écart à corriger. Toutes ces valeurs se changent ici.

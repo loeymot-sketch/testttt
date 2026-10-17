@@ -90,6 +90,20 @@
 .hy-banner.is-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .hy-banner.is-todo { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 .hy-banner.is-alert { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.hy-reminders { border: 2px solid #fecaca; background: #fff; border-radius: 14px; padding: 10px 12px 6px; margin: 0 0 14px; }
+.hy-reminders-title { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: #991b1b; }
+.hy-reminders-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hy-reminders-list li { border-top: 1px solid #f1f5f9; }
+.hy-reminders-list li:first-child { border-top: 0; }
+.hy-reminder-link { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 4px; color: #111827; text-decoration: none; font-size: 16px; font-weight: 600; }
+.hy-reminder-link:hover { color: #111827; background: #f8fafc; border-radius: 8px; }
+.hy-reminder-icon { flex: 0 0 24px; text-align: center; color: #b91c1c; font-size: 18px; }
+.hy-reminders-list li.is-todo .hy-reminder-icon { color: #b45309; font-size: 12px; }
+.hy-reminder-text { flex: 1 1 auto; min-width: 0; line-height: 1.35; }
+.hy-reminder-go { flex: 0 0 auto; color: #475569; font-weight: 800; }
+.hy-tile-cta { margin-top: auto; padding-top: 8px; font-size: 15px; font-weight: 800; color: #1e40af; }
+.hy-tile.is-alert .hy-tile-cta { color: #991b1b; }
+.hy-tile.is-report .hy-tile-cta { color: #fff; }
 .hy-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .hy-tile { display: flex; flex-direction: column; gap: 4px; min-height: 150px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 16px; background: #fff; color: #111827; text-decoration: none; }
 .hy-tile:hover { border-color: #94a3b8; color: #111827; }
