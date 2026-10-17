@@ -594,6 +594,20 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/recall', [$c, 'recall'])->name('recall');
         });
 
+        // Huile de friture : tests (composés polaires), filtrage, vidange, par friteuse.
+        Route::prefix('oil')->name('oil.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\OilController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/controls', [$c, 'store'])->name('controls.store');
+            Route::post('/controls/{control}/void', [$c, 'void'])->where('control', '[0-9]{1,18}')->name('controls.void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/fryers', [$c, 'fryerList'])->name('fryers');
+            Route::post('/fryers', [$c, 'storeFryer'])->name('fryers.store');
+            Route::post('/fryers/quick-setup', [$c, 'quickSetup'])->name('fryers.quick');
+            Route::match(['put', 'patch'], '/fryers/{fryer}', [$c, 'updateFryer'])->where('fryer', '[0-9]{1,18}')->name('fryers.update');
+            Route::delete('/fryers/{fryer}', [$c, 'destroyFryer'])->where('fryer', '[0-9]{1,18}')->name('fryers.destroy');
+        });
+
         // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
         Route::prefix('tasks')->name('tasks.')->group(function () {
             $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;

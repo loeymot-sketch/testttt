@@ -7,6 +7,7 @@ const HygieneTemperatureComponent = () => import(/* webpackChunkName: "admin-she
 const HygieneTasksComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTasksComponent");
 const HygieneReceptionComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReceptionComponent");
 const HygieneTraceabilityComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTraceabilityComponent");
+const HygieneOilComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneOilComponent");
 
 export default [
     {
@@ -55,6 +56,17 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_trace",
+        },
+    },
+    {
+        path: "/admin/hygiene/oil",
+        component: HygieneOilComponent,
+        name: "admin.hygiene.oil",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_oil",
         },
     },
 ];

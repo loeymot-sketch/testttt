@@ -17,12 +17,16 @@ return [
      *   cold_room — chambre froide positive : 0 à +4 °C.
      *   display   — vitrine / saladette réfrigérée : 0 à +4 °C.
      *   freezer   — congélateur : −18 °C ou moins (jamais de borne basse).
+     *   fryer     — friteuse (domaine « oil » : suivi de l'huile, pas de relevé de température d'enceinte).
+     * `domain` : l'écran qui montre ce type (temperature | oil). Un équipement n'apparaît que dans SON écran.
      */
     'kinds' => [
-        'fridge' => ['label' => 'Réfrigérateur', 'short' => 'Frigo', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
-        'cold_room' => ['label' => 'Chambre froide', 'short' => 'Chambre froide', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
-        'display' => ['label' => 'Vitrine réfrigérée', 'short' => 'Vitrine', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
-        'freezer' => ['label' => 'Congélateur', 'short' => 'Congélateur', 'min' => null, 'max' => -18.0, 'negative' => true],
+        'fridge' => ['domain' => 'temperature', 'label' => 'Réfrigérateur', 'short' => 'Frigo', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
+        'cold_room' => ['domain' => 'temperature', 'label' => 'Chambre froide', 'short' => 'Chambre froide', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
+        'display' => ['domain' => 'temperature', 'label' => 'Vitrine réfrigérée', 'short' => 'Vitrine', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
+        'freezer' => ['domain' => 'temperature', 'label' => 'Congélateur', 'short' => 'Congélateur', 'min' => null, 'max' => -18.0, 'negative' => true],
+        // Friteuse : même référentiel d'équipements (comme Komia), mais jamais proposée au relevé de température d'enceinte froide.
+        'fryer' => ['domain' => 'oil', 'label' => 'Friteuse', 'short' => 'Friteuse', 'min' => null, 'max' => null, 'negative' => false],
     ],
 
     /** Valeur plausible d'un thermomètre d'enceinte froide : au-delà, c'est une faute de frappe (« 30 » pour « 3 »). */
@@ -70,5 +74,27 @@ return [
         ],
         /** Un écart (température hors limite ou contrôle non conforme) interdit « accepté » : réserve ou refus, avec un commentaire. */
         'decisions' => ['accepted' => 'Accepté', 'reserve' => 'Accepté avec réserve', 'refused' => 'Refusé'],
+    ],
+
+    /**
+     * Huile de friture. Limite LÉGALE : 25 % de composés polaires (décret n° 2008-1463) — au-delà l'huile doit être changée.
+     * `polar_warn` : seuil « à surveiller » (valeur de départ prudente, sans valeur réglementaire). `bath_max_c` : au-delà de 180 °C
+     * l'huile se dégrade vite (recommandation courante) — écart à corriger. Toutes ces valeurs se changent ici.
+     */
+    'oil' => [
+        'polar_limit' => 25.0,
+        'polar_warn' => 20.0,
+        'bath_max_c' => 180.0,
+        'plausible_polar' => [0.0, 60.0],
+        'plausible_bath' => [20.0, 260.0],
+        'types' => ['test' => 'Test de l’huile', 'filter' => 'Filtrage', 'change' => 'Vidange / changement'],
+        /** Écart (polaires au-dessus de la limite, bain trop chaud) : ce qui a été fait est OBLIGATOIRE. `note` : commentaire exigé. */
+        'corrective_actions' => [
+            'oil_changed' => ['label' => 'Huile changée', 'note' => false],
+            'fryer_stopped' => ['label' => 'Friteuse arrêtée', 'note' => false],
+            'thermostat_set' => ['label' => 'Température du bain réglée', 'note' => false],
+            'retest' => ['label' => 'Filtrée puis nouveau test', 'note' => false],
+            'other' => ['label' => 'Autre (à préciser)', 'note' => true],
+        ],
     ],
 ];

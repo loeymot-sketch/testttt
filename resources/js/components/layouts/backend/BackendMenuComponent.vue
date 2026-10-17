@@ -174,6 +174,7 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
         icon: 'fa-solid fa-temperature-half',
         children: Object.freeze([
             Object.freeze({ url: 'hygiene/temperature', language: 'hygiene_temperature', icon: 'lab lab-list' }),
+            Object.freeze({ url: 'hygiene/oil', language: 'hygiene_oil', icon: 'lab lab-list' }),
             Object.freeze({ url: 'hygiene/trace', language: 'hygiene_trace', icon: 'lab lab-list' }),
             Object.freeze({ url: 'hygiene/reception', language: 'hygiene_reception', icon: 'lab lab-list' }),
             Object.freeze({ url: 'hygiene/tasks', language: 'hygiene_tasks', icon: 'lab lab-list' }),
@@ -225,6 +226,7 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // [CAYENNE HYGIÈNE 2026-10-17] Même gate que les étiquettes — voir l'entrée de menu.
     hygiene: 'pos-orders',
     'hygiene/temperature': 'pos-orders',
+    'hygiene/oil': 'pos-orders',
     'hygiene/trace': 'pos-orders',
     'hygiene/reception': 'pos-orders',
     'hygiene/tasks': 'pos-orders',

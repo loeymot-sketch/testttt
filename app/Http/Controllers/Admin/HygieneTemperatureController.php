@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\HygieneEquipment;
 use App\Models\HygieneTemperatureReading;
 use App\Services\Hygiene\TemperatureRules;
+use App\Support\Hygiene\Kinds;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class HygieneTemperatureController extends AdminController
 
     public function equipment(): JsonResponse
     {
-        $rows = HygieneEquipment::query()->orderBy('sort_order')->orderBy('id')->get()
+        $rows = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->orderBy('sort_order')->orderBy('id')->get()
             ->map(fn (HygieneEquipment $e): array => $this->presentEquipment($e))->values();
 
         return response()->json([
@@ -65,7 +66,7 @@ class HygieneTemperatureController extends AdminController
 
     public function updateEquipment(Request $request, string $equipment): JsonResponse
     {
-        $model = HygieneEquipment::query()->findOrFail((int) $equipment);
+        $model = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->findOrFail((int) $equipment);
         $model->fill($this->validateEquipment($request, $model->id))->save();
 
         return response()->json(['data' => $this->presentEquipment($model->refresh())]);
@@ -74,7 +75,7 @@ class HygieneTemperatureController extends AdminController
     public function destroyEquipment(string $equipment): JsonResponse
     {
         // Suppression douce : le journal garde le nom et les seuils copiés à chaque relevé.
-        HygieneEquipment::query()->findOrFail((int) $equipment)->delete();
+        HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->findOrFail((int) $equipment)->delete();
 
         return response()->json(['status' => 'ok']);
     }
@@ -124,7 +125,7 @@ class HygieneTemperatureController extends AdminController
     {
         $now = now();
         $start = $now->copy()->startOfDay();
-        $equipments = HygieneEquipment::query()->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get();
+        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get();
 
         $todayRows = HygieneTemperatureReading::query()
             ->whereNull('voided_at')->where('recorded_at', '>=', $start)->orderBy('recorded_at')->orderBy('id')->get()
@@ -187,7 +188,7 @@ class HygieneTemperatureController extends AdminController
         $now = now();
         $branch = $this->branchId($request);
         $user = $request->user();
-        $equipments = HygieneEquipment::query()->where('is_active', true)
+        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)
             ->whereIn('id', collect($validated['readings'])->pluck('equipment_id')->unique()->all())->get()->keyBy('id');
 
         $errors = [];
@@ -316,7 +317,7 @@ class HygieneTemperatureController extends AdminController
 
     private function validateEquipment(Request $request, ?int $ignoreId = null): array
     {
-        $kinds = array_keys(config('hygiene.kinds'));
+        $kinds = Kinds::keys('temperature');
         $v = $request->validate([
             'name' => [$ignoreId ? 'sometimes' : 'required', 'filled', 'string', 'max:80'],
             'kind' => [$ignoreId ? 'sometimes' : 'required', Rule::in($kinds)],
@@ -396,7 +397,7 @@ class HygieneTemperatureController extends AdminController
 
     private function kinds(): array
     {
-        return collect(config('hygiene.kinds'))->map(fn ($k, $key) => ['key' => $key] + $k)->values()->all();
+        return collect(Kinds::all('temperature'))->map(fn ($k, $key) => ['key' => $key] + $k)->values()->all();
     }
 
     private function correctiveActions(): array
