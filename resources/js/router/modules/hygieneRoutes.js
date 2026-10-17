@@ -5,6 +5,7 @@
 // distribuée (écran inaccessible à tout le monde, propriétaire compris).
 const HygieneTemperatureComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTemperatureComponent");
 const HygieneTasksComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTasksComponent");
+const HygieneReceptionComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReceptionComponent");
 
 export default [
     {
@@ -31,6 +32,17 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_tasks",
+        },
+    },
+    {
+        path: "/admin/hygiene/reception",
+        component: HygieneReceptionComponent,
+        name: "admin.hygiene.reception",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_reception",
         },
     },
 ];

@@ -573,6 +573,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/attachments/{attachment}', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'show'])
             ->where('attachment', '[0-9]{1,18}')->name('attachments.show');
 
+        // Réception des marchandises : températures par famille, contrôles visuels, décision, fournisseurs.
+        Route::prefix('receptions')->name('receptions.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\ReceptionController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/{reception}/void', [$c, 'void'])->where('reception', '[0-9]{1,18}')->name('void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/suppliers', [$c, 'suppliers'])->name('suppliers');
+            Route::post('/suppliers', [$c, 'storeSupplier'])->name('suppliers.store');
+        });
+
         // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
         Route::prefix('tasks')->name('tasks.')->group(function () {
             $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;

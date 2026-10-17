@@ -47,4 +47,28 @@ return [
     /** Moments d'un relevé quotidien : avant 15 h = matin (ouverture), après = soir (fermeture). */
     'periods' => ['morning' => 'Matin', 'evening' => 'Soir', 'other' => 'Autre'],
     'evening_from_hour' => 15,
+
+    /**
+     * Réception des marchandises. Trois familles de température (comme le camion : frais / surgelé / ambiant), chacune avec SA limite.
+     * Valeurs de départ prudentes (GBPH restauration, arrêté du 21/12/2009) : le plan de maîtrise sanitaire du restaurant fait foi, et
+     * ces limites se changent ici. `ambient` : relevé tracé sans limite (aucun seuil réglementaire général).
+     * `plausible` : au-delà, c'est une faute de frappe (« 30 » pour « 3 ») et le relevé est refusé.
+     */
+    'reception' => [
+        'categories' => [
+            'chilled' => ['label' => 'Frais', 'max' => 4.0, 'negative' => false, 'plausible' => [-10.0, 40.0]],
+            'frozen' => ['label' => 'Surgelé', 'max' => -18.0, 'negative' => true, 'plausible' => [-45.0, 15.0]],
+            'ambient' => ['label' => 'Ambiant', 'max' => null, 'negative' => false, 'plausible' => [-10.0, 60.0]],
+        ],
+        /** Contrôles visuels : chacun doit être répondu (conforme ou non) avant d'enregistrer. */
+        'checks' => [
+            'packaging' => 'Emballages intacts et propres',
+            'dlc' => 'DLC / DLUO suffisantes',
+            'truck' => 'Véhicule et livreur propres',
+            'labelling' => 'Étiquetage et traçabilité présents',
+            'order' => 'Conforme à la commande (produits et quantités)',
+        ],
+        /** Un écart (température hors limite ou contrôle non conforme) interdit « accepté » : réserve ou refus, avec un commentaire. */
+        'decisions' => ['accepted' => 'Accepté', 'reserve' => 'Accepté avec réserve', 'refused' => 'Refusé'],
+    ],
 ];

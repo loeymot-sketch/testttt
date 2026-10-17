@@ -68,3 +68,17 @@
 .hy-photo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .hy-photo img { height: 64px; width: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; }
 .hy-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.hy-measure { display: flex; align-items: center; gap: 8px; }
+.hy-sign { width: 56px; height: 56px; border-radius: 12px; border: 2px solid #111827; background: #fff; color: #111827; font-size: 30px; font-weight: 900; cursor: pointer; flex: 0 0 56px; }
+.hy-sign[aria-pressed="true"] { background: #111827; color: #fff; }
+.hy-measure-input { flex: 1; min-width: 0; height: 56px; font-size: 30px; font-weight: 800; text-align: center; border: 2px solid #94a3b8; border-radius: 12px; color: #111827; background: #fff; }
+.hy-measure-input:focus { border-color: #2563eb; outline: none; }
+.hy-measure-unit { font-size: 22px; font-weight: 800; color: #475569; }
+.hy-verdict { margin: 0; padding: 8px 10px; border-radius: 10px; font-weight: 800; }
+.hy-verdict.is-ok { background: #ecfdf5; color: #065f46; }
+.hy-verdict.is-alert { background: #fee2e2; color: #991b1b; }
+.hy-segment { display: flex; gap: 6px; flex-wrap: wrap; }
+.hy-segment .hy-btn { min-height: 48px; }
+.hy-btn.is-ok { background: #16a34a; border-color: #16a34a; color: #fff; }
+.hy-btn.is-ko { background: #b91c1c; border-color: #b91c1c; color: #fff; }
