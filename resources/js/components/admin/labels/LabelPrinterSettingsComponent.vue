@@ -98,8 +98,21 @@
                     <label class="pr-check">
                         <input type="checkbox" :checked="settings.autoCut" data-testid="pr-autocut"
                                @change="updateSettings({ autoCut: $event.target.checked })" />
-                        Couper automatiquement après chaque étiquette
+                        Couper automatiquement
                     </label>
+                    <div v-if="settings.autoCut" class="pr-field" data-testid="pr-cutmode-field">
+                        <label for="pr-cutmode">Tickets d'une même commande</label>
+                        <select id="pr-cutmode" class="db-field-control" :value="settings.cutMode" data-testid="pr-cutmode"
+                                @change="updateSettings({ cutMode: $event.target.value })">
+                            <option value="each">Couper chaque ticket</option>
+                            <option value="order">Garder les tickets d'une commande attachés (une coupe par commande)</option>
+                        </select>
+                        <small class="pr-hint">
+                            Attachés : les tickets de la commande sortent en une bande, dans l'ordre, et la lame coupe une seule fois après le dernier.
+                            Sur le ruban continu, une ligne pointillée montre où séparer deux tickets.
+                            L'imprimante ne sait pas faire de demi-coupe (un « petit point » qui relie) : la séparation se fait à la main.
+                        </small>
+                    </div>
                     <label class="pr-check">
                         <input type="checkbox" :checked="settings.includeDrinks" data-testid="pr-drinks"
                                @change="updateSettings({ includeDrinks: $event.target.checked })" />

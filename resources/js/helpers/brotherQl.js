@@ -188,13 +188,13 @@ export function printInformation(media, rasterCount, pageIndex) {
 }
 
 /** Codes de commande d'une page (tout ce qui précède les lignes raster), manuel §2.1 (2). */
-function controlCodes(media, rasterCount, pageIndex, { autoCut, cutAtEnd }) {
+function controlCodes(media, rasterCount, pageIndex, { autoCut, cutAtEnd, cutEvery = 1 }) {
     const parts = [
         Uint8Array.of(ESC, 0x69, 0x61, 0x01),                       // ESC i a 1 : mode raster
         Uint8Array.of(ESC, 0x69, 0x21, 0x00),                       // ESC i ! 0 : notifications d'état activées
         printInformation(media, rasterCount, pageIndex),
         Uint8Array.of(ESC, 0x69, 0x4d, autoCut ? 0x40 : 0x00),      // ESC i M : bit 6 = coupe automatique
-        Uint8Array.of(ESC, 0x69, 0x41, 0x01),                       // ESC i A : coupe à chaque étiquette
+        Uint8Array.of(ESC, 0x69, 0x41, cutEvery),                   // ESC i A n : coupe toutes les n étiquettes (1 = chacune, §4)
         Uint8Array.of(ESC, 0x69, 0x4b, cutAtEnd ? 0x08 : 0x00),     // ESC i K : bit 3 = couper en fin de travail
         // ESC i d : marge d'avance. Interdite (0) sur étiquettes prédécoupées (§2.3.3).
         Uint8Array.of(ESC, 0x69, 0x64,
@@ -214,6 +214,35 @@ function concat(chunks) {
     return out;
 }
 
+/** `ESC i A` n'accepte que 1 à 255 ; toute autre valeur (absente, NaN, 0, 300…) retombe sur une coupe par étiquette ou le plafond. */
+export function clampCutEvery(n) {
+    const v = Math.floor(Number(n));
+    if (!Number.isFinite(v) || v < 1) return 1;
+    return Math.min(255, v);
+}
+
+/** Hauteur ajoutée sous un ticket pour sa ligne pointillée (points à 300 dpi ≈ 2,4 mm) et motif trait/blanc. */
+export const CUT_LINE_HEIGHT = 28;
+const CUT_DASH = 14;
+const CUT_GAP = 10;
+const CUT_THICKNESS = 3;
+
+/**
+ * Ajoute sous un ticket une ligne pointillée « à découper ici » (ruban continu : deux tickets qui ne sont pas séparés par
+ * la lame doivent montrer où couper). Pure : renvoie un NOUVEAU bitmap, plus haut de CUT_LINE_HEIGHT points.
+ */
+export function appendCutLine(bitmap) {
+    const out = createBitmap(bitmap.width, bitmap.height + CUT_LINE_HEIGHT);
+    out.pixels.set(bitmap.pixels);
+    const y0 = bitmap.height + Math.floor((CUT_LINE_HEIGHT - CUT_THICKNESS) / 2);
+    for (let y = y0; y < y0 + CUT_THICKNESS; y++) {
+        for (let x = 0; x < bitmap.width; x++) {
+            if (x % (CUT_DASH + CUT_GAP) < CUT_DASH) out.pixels[y * bitmap.width + x] = 1;
+        }
+    }
+    return out;
+}
+
 /**
  * Fabrique les octets d'un travail d'impression : une ou plusieurs étiquettes (pages).
  *
@@ -224,19 +253,24 @@ function concat(chunks) {
  *
  * @param {Bitmap[]} bitmaps  une image de lecture par étiquette
  * @param {object}   media
- * @param {{autoCut?:boolean, mirror?:boolean, turn180?:boolean}} [opts]
+ * @param {{autoCut?:boolean, mirror?:boolean, turn180?:boolean, cutEvery?:number}} [opts]
+ *        cutEvery : « couper toutes les n étiquettes » (manuel §4 `ESC i A`, 1–255, sans effet si la coupe auto est coupée).
+ *        1 = chaque étiquette (défaut) ; autant que d'étiquettes du travail = UNE seule coupe, à la fin (tickets d'une commande
+ *        qui restent attachés). Le manuel ne contient AUCUNE commande de demi-coupe ni de perforation : un « petit point qui relie »
+ *        ne peut pas être produit par l'imprimante.
  * @returns {{bytes:Uint8Array, pages:number, rows:number}}
  */
 export function buildPrintJob(bitmaps, media, opts = {}) {
     if (!Array.isArray(bitmaps) || bitmaps.length === 0) throw new Error('Aucune étiquette à imprimer.');
     const autoCut = opts.autoCut !== false;
+    const cutEvery = clampCutEvery(opts.cutEvery);
     const chunks = [new Uint8Array(INVALIDATE_BYTES), Uint8Array.of(ESC, 0x40)];
     let totalRows = 0;
 
     bitmaps.forEach((bitmap, index) => {
         const rows = bitmapToRasterRows(bitmap, media, opts);
         totalRows += rows.length;
-        chunks.push(controlCodes(media, rows.length, index, { autoCut, cutAtEnd: autoCut }));
+        chunks.push(controlCodes(media, rows.length, index, { autoCut, cutAtEnd: autoCut, cutEvery }));
         rows.forEach((row) => {
             chunks.push(Uint8Array.of(0x67, 0x00, RASTER_BYTES), row);
         });

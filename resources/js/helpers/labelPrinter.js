@@ -33,6 +33,8 @@ export const SETTINGS_STORAGE_KEY = 'label_printer_settings';
 export const DEFAULT_SETTINGS = Object.freeze({
     mediaId: DEFAULT_MEDIA_ID,
     autoCut: true,
+    /** `each` : chaque ticket coupé · `order` : les tickets d'une commande restent attachés, une coupe à la fin (ruban continu : ligne pointillée entre eux). */
+    cutMode: 'each',
     /** Miroir du sens des données dans la ligne raster (voir brotherQl.bitmapToRasterRows). */
     mirror: true,
     /** Rotation de 180° si les étiquettes sortent à l'envers. */

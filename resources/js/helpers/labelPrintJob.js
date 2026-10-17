@@ -5,7 +5,7 @@
  * Rien ici ne touche le DOM autrement que par le canvas de labelRender.js ; la fonction `print` renvoie
  * toujours un résultat (jamais d'exception) que l'écran traduit en message.
  */
-import { buildPrintJob, getMedia } from './brotherQl.js';
+import { buildPrintJob, getMedia, appendCutLine } from './brotherQl.js';
 import { renderLabel, bitmapToDataUrl } from './labelRender.js';
 
 /**
@@ -23,19 +23,39 @@ export function renderAll(blocksList, settings, env = {}) {
     };
 }
 
+/**
+ * « Une coupe par commande » : les tickets d'UNE commande restent attachés (une seule coupe, après le dernier) et dans l'ordre.
+ * Actif seulement pour un groupe (`group`), avec la coupe automatique, et au moins deux tickets.
+ */
+export function chainPlan(count, settings, group) {
+    const chained = Boolean(group) && settings.autoCut !== false && settings.cutMode === 'order' && count > 1;
+    return { chained, cutEvery: chained ? Math.min(255, count) : 1 };
+}
+
+/**
+ * Bitmaps à imprimer. En ruban continu, chaque ticket sauf le dernier reçoit sa ligne pointillée (rien ne le sépare du suivant
+ * que la lame ne coupe pas) ; sur étiquettes prédécoupées la séparation existe déjà sur le support, rien n'est ajouté.
+ */
+export function bitmapsFor(rendered, media, plan) {
+    return rendered.map((r, i) => (plan.chained && media.type === 'continuous' && i < rendered.length - 1 ? appendCutLine(r.bitmap) : r.bitmap));
+}
+
 /** URLs d'aperçu (PNG noir et blanc, point pour point ce qui sera imprimé). */
-export function previewUrls(blocksList, settings, env = {}) {
-    const { rendered, overflow } = renderAll(blocksList, settings, env);
-    return { urls: rendered.map((r) => bitmapToDataUrl(r.bitmap, env)), overflow };
+export function previewUrls(blocksList, settings, env = {}, opts = {}) {
+    const { media, rendered, overflow } = renderAll(blocksList, settings, env);
+    const bitmaps = bitmapsFor(rendered, media, chainPlan(rendered.length, settings, opts.group));
+    return { urls: bitmaps.map((b) => bitmapToDataUrl(b, env)), overflow };
 }
 
 /**
  * @param {object} printer   instance de labelPrinter()
  * @param {Array<Array<object>>} blocksList  une liste de blocs par étiquette
- * @param {object} settings  réglages de la tablette (mediaId, autoCut, mirror, turn180)
+ * @param {object} settings  réglages de la tablette (mediaId, autoCut, cutMode, mirror, turn180)
+ * @param {object} env
+ * @param {{group?:boolean}} [opts]  group : ces étiquettes sont les tickets d'UNE commande (voir chainPlan)
  * @returns {Promise<{ok:boolean, unconfirmed?:boolean, message?:string, pages?:number}>}
  */
-export async function printBlocks(printer, blocksList, settings, env = {}) {
+export async function printBlocks(printer, blocksList, settings, env = {}, opts = {}) {
     try {
         if (!blocksList.length) return { ok: false, message: 'Aucune étiquette à imprimer.' };
         const { media, rendered, overflow } = renderAll(blocksList, settings, env);
@@ -45,8 +65,10 @@ export async function printBlocks(printer, blocksList, settings, env = {}) {
                 message: `Étiquette trop longue pour le rouleau « ${media.label} ». Choisissez le rouleau 62 mm continu dans « Imprimante ».`,
             };
         }
-        const job = buildPrintJob(rendered.map((r) => r.bitmap), media, {
+        const plan = chainPlan(rendered.length, settings, opts.group);
+        const job = buildPrintJob(bitmapsFor(rendered, media, plan), media, {
             autoCut: settings.autoCut,
+            cutEvery: plan.cutEvery,
             mirror: settings.mirror,
             turn180: settings.turn180,
         });

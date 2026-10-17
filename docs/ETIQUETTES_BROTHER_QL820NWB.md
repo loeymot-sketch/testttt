@@ -97,6 +97,22 @@ Le test Playwright joue une **fausse Brother** (Web Serial simulé) qui enregist
 - Tablette fermée en pleine impression automatique : la réclamation est rendue à la file après 120 s ; en théorie un doublon est possible si l'impression avait en fait abouti.
 - Le chef (permission `kitchen-display-system` seule) est admis par l'API mais pas par la route de l'écran (`pos-orders`), comme l'écran Uber photo.
 
+## Tickets d'une commande attachés (2026-10-17)
+
+Réglage **Imprimante › Tickets d'une même commande** (par tablette, défaut = « Couper chaque ticket », comportement inchangé).
+Avec **« Garder les tickets d'une commande attachés »** : les N tickets d'une commande sortent en UNE bande, dans l'ordre, et la lame
+coupe une seule fois après le dernier ; la commande suivante est un autre travail, donc une autre bande. Sur le **ruban continu**
+(62 mm), chaque ticket sauf le dernier porte une ligne pointillée « à séparer ici » (28 points ajoutés sous le ticket) ; sur
+étiquettes prédécoupées la séparation existe déjà sur le support, rien n'est ajouté. Ne s'applique qu'aux tickets de commande, jamais
+aux copies d'une étiquette DLC (chacune va sur un contenant différent).
+
+**Ce que la machine ne sait PAS faire** : le « petit point qui relie » (demi-coupe, perforation). Vérifié dans le manuel Brother
+« Raster Command Reference QL-800/810W/820NWB v1.01 » (51 pages) : aucune commande de demi-coupe ni de perforation. Seules existent
+`ESC i M` (coupe auto), `ESC i A n` (couper toutes les n étiquettes, 1–255) et `ESC i K` (couper en fin de travail). La séparation
+des tickets attachés se fait donc à la main, le long du pointillé. À vérifier SUR LA MACHINE (non prouvé sans elle) : que la bande
+sortante de 5 tickets ne se coince pas dans la fente de sortie, et le confort du déchirement sur papier thermique.
+Tests : `tests/js/labelCutChain.spec.js` (octets lus par le décodeur indépendant), `tests/Playwright/etiquettes-coupe-par-commande-2026-10-17.spec.js`.
+
 ## Catalogue DLC recommandé et relevés de température (2026-10-17)
 
 **Catalogue préconfiguré.** `App\Support\Labels\RecommendedDlcCatalog` : ~80 produits (légumes à couper, conserves ouvertes,

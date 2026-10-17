@@ -463,7 +463,7 @@ export default {
             if (!row) return;
             this.previewId = orderId;
             try {
-                const { urls, overflow } = previewUrls(row.built.labels.map(orderLabelBlocks), this.settings);
+                const { urls, overflow } = previewUrls(row.built.labels.map(orderLabelBlocks), this.settings, {}, { group: true });
                 this.previewImages = urls;
                 this.previewOverflow = overflow;
                 // L'aperçu s'ouvre sous la carte : on l'amène à l'écran, sinon « il ne se passe rien ».
@@ -514,7 +514,7 @@ export default {
                 // Impression « en vol » : si la page est rechargée avant le verdict, il sera déclaré « non confirmé »
                 // au prochain chargement (jamais de réimpression automatique par erreur).
                 if (resultUrl) labelInflight(axios).begin(logId, resultUrl, attempt);
-                const result = await printBlocks(this.printerInstance(), labels.map(orderLabelBlocks), this.settings);
+                const result = await printBlocks(this.printerInstance(), labels.map(orderLabelBlocks), this.settings, {}, { group: true });
 
                 if (logId) {
                     const status = result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed";
