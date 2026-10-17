@@ -52,6 +52,9 @@
                     <button type="button" class="pr-btn pr-btn--primary" :disabled="testing || !printerReady" :aria-describedby="printerReady ? null : 'pr-test-why'" data-testid="pr-test" @click="printTest">
                         {{ testing ? "Impression…" : "🖨 Imprimer une étiquette test" }}
                     </button>
+                    <button type="button" class="pr-btn" :disabled="testing || !printerReady" data-testid="pr-cut-test" @click="printCutTest">
+                        {{ testing ? "Impression…" : "✂ Test de coupe (3 tickets attachés)" }}
+                    </button>
                     <button type="button" class="pr-btn" data-testid="pr-fallback" @click="fallbackPrint">
                         Secours : imprimer par Android
                     </button>
@@ -112,6 +115,10 @@
                             Sur le ruban continu, une ligne pointillée montre où séparer deux tickets.
                             L'imprimante ne sait pas faire de demi-coupe (un « petit point » qui relie) : la séparation se fait à la main.
                         </small>
+                        <small class="pr-hint" data-testid="pr-last-job">
+                            <b>Dernier travail envoyé par cette tablette :</b>
+                            {{ lastJobText || "aucun pour l'instant (imprimez une commande pour voir ce que l'imprimante reçoit)." }}
+                        </small>
                     </div>
                     <label class="pr-check">
                         <input type="checkbox" :checked="settings.includeDrinks" data-testid="pr-drinks"
@@ -154,7 +161,7 @@ import labelPrinterMixin, { chromeMajor } from "../../../helpers/labelPrinterMix
 import LabelPrinterBar from "./LabelPrinterBar";
 import { mediaList } from "../../../helpers/brotherQl";
 import { testLabelBlocks } from "../../../helpers/dlcLabelBuilder";
-import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
+import { printBlocks, previewUrls, readLastJob, describeLastJob } from "../../../helpers/labelPrintJob";
 import { printViaBrowser } from "../../../helpers/labelBrowserPrint";
 
 export default {
@@ -162,7 +169,7 @@ export default {
     components: { LabelPrinterBar },
     mixins: [labelPrinterMixin],
     data() {
-        return { testing: false, testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false };
+        return { testing: false, testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false, lastJobText: describeLastJob(readLastJob()) };
     },
     watch: {
         // Ouvert tant que l'imprimante n'est pas prête ; replié dès qu'elle l'est (sauf si on l'a ouvert exprès).
@@ -225,9 +232,32 @@ export default {
                 const blocks = testLabelBlocks(this.settings.mediaId, new Date());
                 try { this.testPreview = previewUrls([blocks], this.settings).urls[0] || ""; } catch (_) { this.testPreview = ""; }
                 const result = await printBlocks(this.printerInstance(), [blocks], this.settings);
+                this.lastJobText = describeLastJob(readLastJob());
                 this.testOk = result.ok;
                 this.testMessage = result.ok
                     ? (result.unconfirmed ? result.message : "Étiquette test envoyée : vérifiez le sens et la coupe.")
+                    : result.message;
+                if (!result.ok) alertService.error(result.message);
+            } finally {
+                this.testing = false;
+            }
+        },
+
+        /** 3 tickets d'essai attachés, QUEL QUE SOIT le réglage : dit si la machine suit la commande « une coupe à la fin ». */
+        async printCutTest() {
+            this.testing = true;
+            this.testMessage = "";
+            try {
+                const list = [1, 2, 3].map((i) => ([
+                    { t: "band", left: "TEST COUPE", right: `${i}/3` },
+                    { t: "title", text: i < 3 ? "ATTACHÉ AU SUIVANT" : "DERNIER : COUPE" },
+                    { t: "line", text: "Les 3 tickets doivent sortir en une seule bande, coupée une seule fois, après le n° 3.", size: "md" },
+                ]));
+                const result = await printBlocks(this.printerInstance(), list, { ...this.settings, autoCut: true, cutMode: "order" }, {}, { group: true });
+                this.lastJobText = describeLastJob(readLastJob());
+                this.testOk = result.ok;
+                this.testMessage = result.ok
+                    ? (result.unconfirmed ? result.message : "Test envoyé : 3 tickets en une bande. Si la machine a coupé entre chaque ticket, notez-le : l'imprimante ne suit pas la commande.")
                     : result.message;
                 if (!result.ok) alertService.error(result.message);
             } finally {

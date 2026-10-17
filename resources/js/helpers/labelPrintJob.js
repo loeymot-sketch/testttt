@@ -40,6 +40,32 @@ export function bitmapsFor(rendered, media, plan) {
     return rendered.map((r, i) => (plan.chained && media.type === 'continuous' && i < rendered.length - 1 ? appendCutLine(r.bitmap) : r.bitmap));
 }
 
+export const LAST_JOB_KEY = 'label_last_job';
+
+/** Garde, sur CETTE tablette, ce qu'elle vient d'envoyer à l'imprimante : l'écran « Imprimante » le relit pour dire la vérité. */
+export function rememberJob(job, storage = (typeof localStorage !== 'undefined' ? localStorage : null)) {
+    try { if (storage) storage.setItem(LAST_JOB_KEY, JSON.stringify(job)); } catch (_) { /* stockage indisponible : rien à garder */ }
+}
+
+export function readLastJob(storage = (typeof localStorage !== 'undefined' ? localStorage : null)) {
+    try {
+        const j = storage ? JSON.parse(storage.getItem(LAST_JOB_KEY) || 'null') : null;
+        return j && typeof j === 'object' && Number.isFinite(j.at) ? j : null;
+    } catch (_) { return null; }
+}
+
+/** Phrase lisible : « 14:32 — 4 étiquettes, UNE coupe à la fin (tickets attachés) — envoyé ». */
+export function describeLastJob(j) {
+    if (!j) return '';
+    const hm = new Date(j.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const n = `${j.pages} étiquette${j.pages > 1 ? 's' : ''}`;
+    const cut = j.pages < 2 ? 'une seule étiquette'
+        : j.cutEvery >= j.pages ? 'UNE coupe à la fin (tickets attachés)'
+            : j.cutEvery === 1 ? 'une coupe après chaque étiquette'
+                : `une coupe toutes les ${j.cutEvery} étiquettes`;
+    return `${hm} — ${n}, ${cut} — ${j.ok ? 'envoyé' : 'échec'}`;
+}
+
 /** URLs d'aperçu (PNG noir et blanc, point pour point ce qui sera imprimé). */
 export function previewUrls(blocksList, settings, env = {}, opts = {}) {
     const { media, rendered, overflow } = renderAll(blocksList, settings, env);
@@ -72,7 +98,9 @@ export async function printBlocks(printer, blocksList, settings, env = {}, opts 
             mirror: settings.mirror,
             turn180: settings.turn180,
         });
-        return await printer.print(job, media);
+        const result = await printer.print(job, media);
+        rememberJob({ at: Date.now(), pages: job.pages, cutEvery: plan.cutEvery, chained: plan.chained, ok: Boolean(result && result.ok) });
+        return result;
     } catch (err) {
         return { ok: false, message: 'Préparation de l’étiquette impossible : ' + ((err && err.message) || err) };
     }

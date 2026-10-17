@@ -10,7 +10,9 @@ import { createRequire } from 'node:module';
 import {
     MEDIA, createBitmap, buildPrintJob, clampCutEvery, appendCutLine, CUT_LINE_HEIGHT,
 } from '../../resources/js/helpers/brotherQl.js';
-import { chainPlan, bitmapsFor, printBlocks } from '../../resources/js/helpers/labelPrintJob.js';
+import {
+    chainPlan, bitmapsFor, printBlocks, rememberJob, readLastJob, describeLastJob, LAST_JOB_KEY,
+} from '../../resources/js/helpers/labelPrintJob.js';
 import { DEFAULT_SETTINGS, loadSettings } from '../../resources/js/helpers/labelPrinter.js';
 
 const require = createRequire(import.meta.url);
@@ -158,5 +160,30 @@ describe('printBlocks de bout en bout (imprimante factice, canvas factice)', () 
         await printBlocks(p, Array.from({ length: 3 }, () => blocks), settings, env);
         const d = decodeJob(p.sent[0].bytes);
         d.pages.forEach((pg) => expect(control(pg, 'A').n).toBe(1));
+    });
+});
+
+describe('dernier travail envoyé : ce que la tablette dit avoir envoyé', () => {
+    const mem = () => { const m = {}; return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = v; }, m }; };
+
+    it('se relit tel quel, et un contenu illisible ne casse rien', () => {
+        const st = mem();
+        expect(readLastJob(st)).toBeNull();
+        rememberJob({ at: 1_700_000_000_000, pages: 4, cutEvery: 4, chained: true, ok: true }, st);
+        expect(readLastJob(st)).toMatchObject({ pages: 4, cutEvery: 4, ok: true });
+        st.setItem(LAST_JOB_KEY, '{pas du json');
+        expect(readLastJob(st)).toBeNull();
+        st.setItem(LAST_JOB_KEY, JSON.stringify({ pages: 3 })); // sans horodatage
+        expect(readLastJob(st)).toBeNull();
+        expect(() => rememberJob({ at: 1 }, { setItem: () => { throw new Error('quota'); } })).not.toThrow();
+    });
+
+    it('dit en français ce qui a été envoyé', () => {
+        expect(describeLastJob(null)).toBe('');
+        const at = new Date(2026, 9, 18, 14, 32).getTime();
+        expect(describeLastJob({ at, pages: 4, cutEvery: 4, ok: true })).toBe('14:32 — 4 étiquettes, UNE coupe à la fin (tickets attachés) — envoyé');
+        expect(describeLastJob({ at, pages: 4, cutEvery: 1, ok: true })).toBe('14:32 — 4 étiquettes, une coupe après chaque étiquette — envoyé');
+        expect(describeLastJob({ at, pages: 6, cutEvery: 3, ok: false })).toBe('14:32 — 6 étiquettes, une coupe toutes les 3 étiquettes — échec');
+        expect(describeLastJob({ at, pages: 1, cutEvery: 1, ok: true })).toBe('14:32 — 1 étiquette, une seule étiquette — envoyé');
     });
 });
