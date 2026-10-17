@@ -1352,7 +1352,7 @@ class LabelControllerTest extends TestCase
         $this->assertSame(['cooked', 'frozen', 'witness', 'received'], array_column($p['actions'], 'key'));
 
         // Congelé : le congélateur, 90 jours — quelle que soit la conservation « froid positif » de la fiche
-        $frozen = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'frozen'])->assertOk()->json();
+        $frozen = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'frozen', 'parent_none' => true])->assertOk()->json();
         $this->assertSame('≤ −18 °C', $frozen['storage']);
         $this->assertSame('2027-01-15 10:00', Carbon::parse($frozen['expires_at'])->format('Y-m-d H:i'));
 
@@ -1550,6 +1550,83 @@ class LabelControllerTest extends TestCase
         $this->assertSame('2026-10-25 13:00', Carbon::parse($h['expires_at'])->setTimezone($tz)->format('Y-m-d H:i'), 'l’horloge murale a reculé d’une heure');
         $this->assertSame('2026-10-25 14:00', Carbon::parse($d['expires_at'])->setTimezone($tz)->format('Y-m-d H:i'), 'un jour = même heure le lendemain');
         $this->assertStringEndsWith('+01:00', $h['expires_at']);
+        Carbon::setTestNow();
+    }
+
+    // ───────────── relecture adverse (2026-10-17) ─────────────
+
+    public function test_une_congelation_exige_l_origine_ou_produit_neuf_sinon_la_garde_anti_recongelation_est_contournable(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $thaw = $this->expertProduct(['name' => 'Steak décongelé', 'thawed_storage' => '0 à +2 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);
+        $freeze = $this->expertProduct(['name' => 'Steak congelé', 'thawed_storage' => null, 'actions' => [['key' => 'frozen', 'value' => 30, 'unit' => 'days']]]);
+        $this->printed($thaw['id']);
+        // sans origine : refusé, avec la raison
+        $r = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $freeze['id']])->assertStatus(422);
+        $this->assertSame('parent_required', $r->json('status'));
+        $this->assertStringContainsString('ne se recongèle jamais', $r->json('message'));
+        // « produit neuf » déclaré : passe, et c'est journalisé
+        $ok = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $freeze['id'], 'parent_none' => true])->assertOk()->json();
+        $this->assertTrue((bool) LabelPrintLog::query()->findOrFail($ok['log_id'])->declared_new);
+        Carbon::setTestNow();
+    }
+
+    public function test_un_repas_temoin_se_conserve_cinq_jours_au_moins(): void
+    {
+        $this->caisse();
+        foreach ([['value' => 1, 'unit' => 'days'], ['value' => 119, 'unit' => 'hours']] as $short) {
+            $this->postJson('/api/admin/labels/products', ['name' => 'Témoin court', 'storage' => '0 à +3 °C', 'actions' => [['key' => 'witness'] + $short]])->assertStatus(422)
+                ->assertJsonValidationErrors('actions.0.value');
+        }
+        foreach ([['value' => 5, 'unit' => 'days'], ['value' => 120, 'unit' => 'hours']] as $i => $okDur) {
+            $this->postJson('/api/admin/labels/products', ['name' => 'Témoin '.$i, 'storage' => '0 à +3 °C', 'actions' => [['key' => 'witness'] + $okDur]])->assertCreated();
+        }
+    }
+
+    public function test_changer_l_evenement_par_defaut_ou_la_duree_historique_seule_fait_tomber_la_validation(): void
+    {
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Sauce', 'thawed_storage' => null, 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours'], ['key' => 'opened', 'value' => 3, 'unit' => 'days']]]);
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => [$p['id']]])->assertOk();
+        // réordonner : l'événement imprimé par défaut change
+        $r = $this->putJson('/api/admin/labels/products/'.$p['id'], ['name' => 'Sauce', 'storage' => $p['storage'], 'actions' => [['key' => 'opened', 'value' => 3, 'unit' => 'days'], ['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]])->assertOk()->json('data');
+        $this->assertNotSame('validated', $r['duration_review']);
+        // fiche ancienne : l'ancienne durée seule (sans `actions`) change aussi les chiffres
+        $q = $this->expertProduct(['name' => 'Olives', 'thawed_storage' => null, 'actions' => [['key' => 'opened', 'value' => 3, 'unit' => 'days']]]);
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => [$q['id']]])->assertOk();
+        $r2 = $this->putJson('/api/admin/labels/products/'.$q['id'], ['name' => 'Olives', 'shelf_life_value' => 9, 'shelf_life_unit' => 'days'])->assertOk()->json('data');
+        $this->assertNotSame('validated', $r2['duration_review']);
+        // et qui a validé se lit
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => [$p['id']]])->assertOk();
+        $this->assertSame('Karim Test', collect($this->getJson('/api/admin/labels/products')->json('data'))->firstWhere('id', $p['id'])['durations_checked_by_name']);
+    }
+
+    public function test_un_nom_a_peine_different_est_le_meme_produit_espace_insecable_accent_nfd(): void
+    {
+        $this->assertSame(DlcLabelProduct::nameKey('Tomate'), DlcLabelProduct::nameKey("Tomate\u{00A0}"));
+        $this->assertSame(DlcLabelProduct::nameKey('Tomaté'), DlcLabelProduct::nameKey("Tomate\u{0301}")); // NFD (Mac) = NFC (Excel)
+        $this->assertSame(DlcLabelProduct::nameKey('tomate'), DlcLabelProduct::nameKey('Tomaté'));
+        $this->assertSame(DlcLabelProduct::nameKey('To mate'), DlcLabelProduct::nameKey('To   mate'));
+        $this->assertSame(DlcLabelProduct::nameKey('Œufs durs'), DlcLabelProduct::nameKey('oeufs durs'));
+        $this->assertNotSame(DlcLabelProduct::nameKey('Tomate'), DlcLabelProduct::nameKey('Tomates'), 'le pluriel est une autre fiche, pas un doublon silencieux');
+    }
+
+    public function test_hors_ligne_une_conservation_imposee_differente_est_a_verifier(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Poulet', 'thawed_storage' => null, 'actions' => [['key' => 'frozen', 'value' => 30, 'unit' => 'days']]]);
+        $r = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-frozen001', 'product_id' => $p['id'], 'action' => 'frozen', 'copies' => 1, 'status' => 'printed', 'storage' => '0 à +4 °C',
+            'opened_at' => '2026-10-17T08:00:00Z', 'expires_at' => '2026-11-16T08:00:00Z',
+        ])->assertOk()->json();
+        $this->assertTrue($r['anomaly']);
+        $ok = $this->postJson('/api/admin/labels/dlc/offline', [
+            'client_ref' => 'tab-1-frozen002', 'product_id' => $p['id'], 'action' => 'frozen', 'copies' => 1, 'status' => 'printed', 'storage' => '≤ −18 °C',
+            'opened_at' => '2026-10-17T08:00:00Z', 'expires_at' => '2026-11-16T08:00:00Z',
+        ])->assertOk()->json();
+        $this->assertFalse($ok['anomaly']);
         Carbon::setTestNow();
     }
 }

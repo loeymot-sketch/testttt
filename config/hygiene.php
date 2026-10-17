@@ -43,8 +43,9 @@ return [
     'threshold_bounds' => [
         'cold' => ['max' => [0.0, 8.0], 'min' => [-5.0, 8.0]],
         'freezer' => ['max' => [-30.0, -15.0], 'min' => [-60.0, -15.0]],
-        // chaud : le seuil BAS (63 °C par défaut) se règle entre 55 et 75 °C ; le seuil haut est facultatif (jamais sous le seuil bas)
-        'hot' => ['min' => [55.0, 75.0], 'max' => [55.0, 99.9]],
+        // chaud : le seuil BAS se règle entre 63 °C (minimum de l'arrêté du 21/12/2009 : on peut être plus strict, jamais plus laxiste) et 75 °C ;
+        // le seuil haut est facultatif (jamais sous le seuil bas)
+        'hot' => ['min' => [63.0, 75.0], 'max' => [63.0, 99.9]],
     ],
 
     /** Valeur plausible d'un thermomètre d'enceinte froide : au-delà, c'est une faute de frappe (« 30 » pour « 3 »). */

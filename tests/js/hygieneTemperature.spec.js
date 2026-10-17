@@ -381,3 +381,37 @@ describe('écran températures — bain-marie et courbe', () => {
     });
 });
 
+describe('relecture adverse (2026-10-17) — courbe', () => {
+    it('refermer pendant le chargement la laisse fermée ; annuler un relevé rafraîchit la courbe ouverte', async () => {
+        setup([EQ(7, 'Bain-marie 1', 'hot_holding', 63, null, { hot: true, last_today: { id: 40, equipment_id: 7, value_c: 60, status: 'alert', alert_reason: 'too_cold', period: 'morning', recorded_at: '2026-10-17T08:01:00+02:00', operator_name: 'Karim', corrective_label: null }, state: 'alert' })]);
+        const base = h.axios.get.getMockImplementation();
+        let release;
+        let calls = 0;
+        h.axios.get.mockImplementation((url, cfg) => {
+            if (url === 'admin/hygiene/temperature/history') {
+                calls += 1;
+                const rows = calls >= 3 ? [] : [{ id: 40, equipment_id: 7, value_c: 60, status: 'alert', recorded_at: '2026-10-17T08:01:00+02:00', voided: false }];
+                if (calls === 1) return new Promise((resolve) => { release = () => resolve({ data: { data: rows } }); });
+                return Promise.resolve({ data: { data: rows } });
+            }
+            return base(url, cfg);
+        });
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-chart-toggle-7"]').trigger('click'); // ouvre : chargement lent
+        await w.get('[data-testid="tmp-chart-toggle-7"]').trigger('click'); // referme avant la réponse
+        release();
+        await flushPromises();
+        expect(w.find('[data-testid="tmp-chart"]').exists()).toBe(false);
+        expect(w.get('[data-testid="tmp-chart-toggle-7"]').attributes('aria-expanded')).toBe('false');
+        // rouverte : annuler le relevé rafraîchit la courbe (plus de relevé annulé dans le graphique)
+        await w.get('[data-testid="tmp-chart-toggle-7"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="tmp-chart-caption"]').text()).toMatch(/1 relevé sur 14 jours/);
+        await w.get('[data-testid="tmp-void-7"]').trigger('click');
+        await w.get('[data-testid="tmp-void-reason-7"]').setValue('faute de frappe');
+        await w.get('[data-testid="tmp-void-confirm-7"]').trigger('click');
+        await flushPromises();
+        expect(w.find('[data-testid="tmp-chart-caption"]').exists()).toBe(false);
+        expect(w.get('[data-testid="tmp-chart-empty"]').text()).toMatch(/Aucun relevé/);
+    });
+});

@@ -88,7 +88,7 @@ final class DlcCsvImporter
                 $cells[$a['key']] = $a['value'].' '.($a['unit'] === DlcLabelProduct::UNIT_HOURS ? 'h' : 'j');
             }
             $cells['allergens'] = $row['allergens'] ? implode('|', array_map(fn ($c) => self::allergenLabel($c), $row['allergens'])) : ($row['no_allergens'] ? 'aucun' : '');
-            $cells['source'] = 'Plan de maîtrise sanitaire';
+            // la source reste VIDE dans le modèle : l'importer tel quel ne doit pas faire croire à un plan de maîtrise sanitaire que personne n'a établi
             $lines[] = implode(';', array_map([self::class, 'csvCell'], $cells));
         }
 
@@ -105,11 +105,15 @@ final class DlcCsvImporter
         if ($table === null) {
             return self::fatal('Le fichier est vide.');
         }
+        if (isset($table['encoding'])) return self::fatal('Encodage non pris en charge : enregistrez le fichier en « CSV UTF-8 » (Excel : Enregistrer sous › CSV UTF-8).');
+        if (isset($table['quote'])) return self::fatal('Un guillemet n’est pas refermé dans le fichier : corrigez-le (ou retirez les guillemets) puis réessayez.');
         [$header, $lines] = $table;
         $map = self::mapHeader($header);
         if (! isset($map['name'])) {
             return self::fatal('Colonne « Produit » introuvable : utilisez le fichier-modèle (première ligne = en-têtes).');
         }
+        // les lignes vides (fin de feuille Excel : « ;;; ») ne comptent pas
+        $lines = array_values(array_filter($lines, fn ($cells) => implode('', array_map('trim', $cells)) !== ''));
         if (count($lines) > self::MAX_ROWS) {
             return self::fatal('Trop de lignes ('.count($lines).') : '.self::MAX_ROWS.' au plus par fichier.');
         }
@@ -117,12 +121,12 @@ final class DlcCsvImporter
         $rows = [];
         $seen = [];
         foreach ($lines as $i => $cells) {
-            $cell = fn (string $key) => isset($map[$key]) ? trim((string) ($cells[$map[$key]] ?? '')) : '';
+            // caractères de contrôle (NUL, ESC, retours à la ligne…) : jamais enregistrés dans un nom ou une mention
+            $cell = fn (string $key) => isset($map[$key]) ? trim((string) preg_replace('/[\p{Cc}\x{2028}\x{2029}]+/u', ' ', (string) ($cells[$map[$key]] ?? ''))) : '';
             $name = $cell('name');
-            if ($name === '' && implode('', array_map('trim', $cells)) === '') continue; // ligne vide
             $row = self::analyseRow($i + 2, $cell, $existingNames, $seen);
             $rows[] = $row;
-            if ($row['status'] !== 'invalid') $seen[mb_strtolower($row['name'])] = true;
+            if ($row['status'] !== 'invalid') $seen[DlcLabelProduct::nameKey($row['name'])] = true;
         }
 
         $summary = ['new' => 0, 'exists' => 0, 'invalid' => 0, 'total' => count($rows)];
@@ -138,7 +142,7 @@ final class DlcCsvImporter
     {
         $errors = [];
         $name = $cell('name');
-        $key = mb_strtolower($name);
+        $key = DlcLabelProduct::nameKey($name);
         if ($name === '') $errors[] = 'Nom du produit manquant.';
         elseif (mb_strlen($name) > 120) $errors[] = 'Nom trop long (120 caractères au plus).';
 
@@ -160,6 +164,11 @@ final class DlcCsvImporter
                 $errors[] = DlcLabelProduct::ACTION_LABELS[$k].' : '.$raw.' hors limites (1 à '.$cap.($d['unit'] === DlcLabelProduct::UNIT_HOURS ? ' h' : ' j').').';
                 continue;
             }
+            // Repas témoin : conservé au moins CINQ jours après la dernière présentation (arrêté du 21/12/2009, art. 31) — une durée plus courte est un défaut
+            if ($k === 'witness' && ($d['unit'] === DlcLabelProduct::UNIT_HOURS ? $d['value'] : $d['value'] * 24) < DlcLabelProduct::WITNESS_MIN_HOURS) {
+                $errors[] = 'Repas témoin : 5 jours (120 h) au moins, comme l’exige l’arrêté du 21/12/2009.';
+                continue;
+            }
             $actions[] = ['key' => $k] + $d;
         }
         if ($actions === [] && ! array_filter($errors, fn ($e) => str_contains($e, 'illisible') || str_contains($e, 'hors limites'))) {
@@ -167,6 +176,7 @@ final class DlcCsvImporter
         }
 
         $thawedStorage = $cell('thawed_storage');
+        if (mb_strlen($thawedStorage) > 60) $errors[] = 'Après décongélation trop long (60 caractères au plus).';
         $hasThaw = collect($actions)->contains(fn ($a) => $a['key'] === 'thawed');
         if ($hasThaw && $thawedStorage === '') {
             $errors[] = 'Décongélation : indiquez « Après décongélation » (ex. 0 à +2 °C, ambiante pour un pain).';
@@ -195,7 +205,7 @@ final class DlcCsvImporter
                 'allergens' => $allergens,
                 'no_allergens' => $none,
                 'note' => $cell('note') !== '' ? mb_substr($cell('note'), 0, 80) : null,
-                'duration_source' => $cell('source') !== '' ? mb_substr($cell('source'), 0, 80) : 'Import du restaurant',
+                'duration_source' => $cell('source') !== '' ? mb_substr($cell('source'), 0, 80) : DlcLabelProduct::SOURCE_IMPORTED,
             ] : null,
         ];
     }
@@ -203,6 +213,8 @@ final class DlcCsvImporter
     /** « 24 h », « 3 j », « 48 heures », « 2 jours » → {value, unit}. Un nombre seul est ambigu : refusé. @return array{value:int,unit:string}|null */
     public static function parseDuration(string $raw): ?array
     {
+        // « -5 h » ou « +5 h » ne sont pas des durées : refusés avant tout repli de ponctuation
+        if (preg_match('/[-+−–]/u', $raw)) return null;
         $s = self::fold($raw);
         if (! preg_match('/^(\d{1,4})\s*(h|heure|heures|j|jour|jours)$/', $s, $m)) return null;
 
@@ -219,7 +231,7 @@ final class DlcCsvImporter
         foreach (preg_split('/[|,\/+]/u', $raw) ?: [] as $token) {
             $t = self::fold($token);
             if ($t === '') continue;
-            if (in_array($t, ['aucun', 'aucune', 'sans', 'non', 'aucun allergene', 'aucun des 14'], true)) { $none = true; continue; }
+            if (in_array($t, ['aucun', 'aucune', 'aucun allergene', 'aucun des 14'], true)) { $none = true; continue; }
             if (! isset(self::ALLERGEN_WORDS[$t])) { $errors[] = 'Allergène inconnu : « '.trim($token).' ».'; continue; }
             $codes[self::ALLERGEN_WORDS[$t]] = true;
         }
@@ -232,16 +244,22 @@ final class DlcCsvImporter
 
     // ───────────────────────────── lecture du fichier ─────────────────────────────
 
-    /** @return array{0:list<string>,1:list<list<string>>}|null en-tête + lignes */
+    /** @return array{0:list<string>,1:list<list<string>>}|array{encoding:true}|array{quote:true}|null en-tête + lignes */
     private static function readTable(string $content): ?array
     {
-        $content = ltrim($content, "\xEF\xBB\xBF");
+        // UTF-16 (Excel « Texte Unicode ») : illisible ici, on le DIT au lieu d'annoncer une colonne introuvable
+        if (str_starts_with($content, "\xFF\xFE") || str_starts_with($content, "\xFE\xFF") || str_contains(substr($content, 0, 400), "\0")) {
+            return ['encoding' => true];
+        }
+        if (str_starts_with($content, "\xEF\xBB\xBF")) $content = substr($content, 3);
         // Excel français enregistre en Windows-1252 : on convertit plutôt que d'afficher des « � » dans les noms.
         if ($content !== '' && ! mb_check_encoding($content, 'UTF-8')) {
             $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
         }
         $content = str_replace(["\r\n", "\r"], "\n", $content);
         if (trim($content) === '') return null;
+        // un guillemet jamais refermé avalerait tout le reste du fichier sans un mot : refusé (les guillemets d'un CSV bien formé sont en nombre PAIR)
+        if (substr_count($content, '"') % 2 === 1) return ['quote' => true];
 
         $firstLine = strtok($content, "\n") ?: '';
         $delimiter = ';';
@@ -255,7 +273,7 @@ final class DlcCsvImporter
         fwrite($stream, $content);
         rewind($stream);
         $rows = [];
-        while (($cells = fgetcsv($stream, 0, $delimiter, '"', '\\')) !== false) {
+        while (($cells = fgetcsv($stream, 0, $delimiter, '"', '')) !== false) {
             if ($cells === [null]) continue;
             $rows[] = array_map(fn ($c) => (string) $c, $cells);
         }

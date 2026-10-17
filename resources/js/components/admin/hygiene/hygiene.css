@@ -95,6 +95,8 @@
 .hy-banner.is-todo { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 .hy-banner.is-alert { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .hy-reminders { border: 2px solid #fecaca; background: #fff; border-radius: 14px; padding: 10px 12px 6px; margin: 0 0 14px; }
+.hy-reminders.is-soft { border-color: #fde68a; }
+.hy-reminders.is-soft .hy-reminders-title { color: #92400e; }
 .hy-reminders-title { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: #991b1b; }
 .hy-reminders-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .hy-reminders-list li { border-top: 1px solid #f1f5f9; }

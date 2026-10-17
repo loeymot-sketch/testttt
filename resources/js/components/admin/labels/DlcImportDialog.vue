@@ -1,9 +1,9 @@
 <template>
-    <div class="im-overlay" data-testid="dlc-import" @keydown.esc="$emit('close')" @keydown.tab="trapTab">
+    <div class="im-overlay" data-testid="dlc-import" @keydown.esc="close" @keydown.tab="trapTab">
         <div class="im-panel" role="dialog" aria-modal="true" aria-label="Importer des produits depuis un fichier">
             <header class="im-head">
                 <h4>Importer des produits depuis un fichier</h4>
-                <button type="button" class="im-close" aria-label="Fermer" data-testid="dlc-import-close" @click="$emit('close')">✕</button>
+                <button type="button" class="im-close" aria-label="Fermer" data-testid="dlc-import-close" :disabled="busy" @click="close">✕</button>
             </header>
 
             <div class="im-body">
@@ -20,7 +20,7 @@
 
                 <label class="im-file">
                     <span class="im-label">Fichier CSV</span>
-                    <input ref="file" type="file" accept=".csv,.txt,text/csv,text/plain" data-testid="dlc-import-file" @change="onFile" />
+                    <input ref="file" type="file" accept=".csv,.txt,text/csv,text/plain" :disabled="busy" data-testid="dlc-import-file" @change="onFile" />
                 </label>
 
                 <p v-if="busy" class="im-muted" role="status">Lecture du fichier…</p>
@@ -42,14 +42,15 @@
                         </li>
                     </ul>
                     <p v-if="result.summary.new" class="im-help">
-                        Les durées importées ne sont <b>pas validées</b> : vous les confirmez ensuite dans « Contrôle du catalogue ».
+                        Les durées importées ne sont <b>pas validées</b> : celles sans source indiquée dans le fichier attendent votre confirmation dans « Contrôle du catalogue ».
+                        <template v-if="result.summary.invalid"> Les {{ result.summary.invalid }} ligne{{ result.summary.invalid > 1 ? "s" : "" }} « à corriger » ne seront <b>pas</b> importées.</template>
                     </p>
                 </template>
             </div>
 
             <footer class="im-foot">
                 <span class="im-spacer"></span>
-                <button type="button" class="im-btn" @click="$emit('close')">Fermer</button>
+                <button type="button" class="im-btn" :disabled="busy" @click="close">Fermer</button>
                 <button type="button" class="im-btn im-btn--primary" :disabled="!canImport || busy" data-testid="dlc-import-go" @click="doImport">
                     {{ busy && result ? "Import…" : result && result.summary.new ? `Importer ${result.summary.new} produit${result.summary.new > 1 ? "s" : ""}` : "Importer" }}
                 </button>
@@ -71,7 +72,7 @@ export default {
     name: "DlcImportDialog",
     emits: ["close", "imported"],
     data() {
-        return { file: null, result: null, busy: false, error: "", downloading: false, returnFocus: null };
+        return { file: null, result: null, busy: false, error: "", downloading: false, returnFocus: null, seq: 0 };
     },
     computed: {
         canImport() { return Boolean(this.file && this.result && this.result.summary.new > 0); },
@@ -111,26 +112,34 @@ export default {
                 this.downloading = false;
             }
         },
-        async send(commit) {
+        /** Fermer pendant une requête laisserait la liste périmée (le parent ne serait jamais prévenu) : on attend la réponse. */
+        close() { if (!this.busy) this.$emit("close"); },
+        async send(commit, file = this.file) {
             const fd = new FormData();
-            fd.append("file", this.file);
+            fd.append("file", file);
             fd.append("commit", commit ? "1" : "0");
             const { data } = await axios.post("admin/labels/products/import", fd);
             return data.data;
         },
         async onFile(e) {
-            this.file = (e.target.files && e.target.files[0]) || null;
+            const file = (e.target.files && e.target.files[0]) || null;
+            this.file = file;
             this.result = null;
             this.error = "";
-            if (!this.file) return;
+            if (!file) return;
+            // jeton : l'aperçu affiché est TOUJOURS celui du fichier retenu (une réponse lente d'un fichier précédent est ignorée)
+            const mine = ++this.seq;
             this.busy = true;
             try {
-                this.result = await this.send(false);
+                const preview = await this.send(false, file);
+                if (mine === this.seq) this.result = preview;
             } catch (err) {
-                this.error = this.message(err, "Lecture impossible : vérifiez le fichier (CSV) puis réessayez.");
+                if (mine === this.seq) this.error = this.message(err, "Lecture impossible : vérifiez le fichier (CSV) puis réessayez.");
             } finally {
-                this.busy = false;
+                if (mine === this.seq) this.busy = false;
             }
+            // même nom choisi à nouveau (fichier corrigé dans Excel) : sans cela le navigateur n'émet pas « change »
+            e.target.value = "";
         },
         async doImport() {
             if (!this.canImport || this.busy) return;

@@ -289,4 +289,68 @@ class RemindersTest extends TestCase
         $this->assertSame('Réceptionner une livraison', $tiles['reception']['cta']);
         $this->assertSame('Tracer un produit', $tiles['trace']['cta']);
     }
+
+    // ───────────── relecture adverse (2026-10-17) : fausses alertes ─────────────
+
+    public function test_un_releve_unique_a_16_heures_ne_laisse_pas_une_alerte_du_matin_permanente(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Frigo 1');
+        $this->now('2026-10-20 16:00');
+        // aucun relevé encore : le matin est bien en retard
+        [$reminders] = $this->overview();
+        $this->assertArrayHasKey('temperature-late-morning', $reminders->all());
+        // relevé pris à 16 h (période « soir » par l'horloge) : le relevé DU JOUR est fait, plus d'alerte
+        $this->reading($f, '2026-10-20 16:00', 'evening');
+        [$reminders, $tiles] = $this->overview();
+        $this->assertArrayNotHasKey('temperature-late-morning', $reminders->all());
+        $this->assertNotSame('alert', $tiles['temperature']['status']);
+    }
+
+    public function test_ce_qui_est_cree_apres_l_heure_du_rappel_n_etait_pas_encore_attendu(): void
+    {
+        $this->staff();
+        $this->now('2026-10-20 14:00');
+        $e = new HygieneEquipment(['name' => 'Frigo neuf', 'kind' => 'fridge', 'min_c' => 0, 'max_c' => 4, 'sort_order' => 10, 'is_active' => true]);
+        $e->branch_id = 1; // créé à 14 h, rappel du matin à 11 h 30
+        $e->save();
+        $t = new HygieneTaskTemplate(['name' => 'Hotte', 'checklist' => [['key' => 'k1', 'label' => 'Filtres']], 'frequency' => 'daily', 'due_time' => '10:00', 'sort_order' => 10, 'is_active' => true]);
+        $t->branch_id = 1; // créée à 14 h, prévue à 10 h
+        $t->save();
+        $f = new HygieneEquipment(['name' => 'Friteuse neuve', 'kind' => 'fryer', 'sort_order' => 10, 'is_active' => true]);
+        $f->branch_id = 1;
+        $f->save();
+        $this->oil($f, 'test', 'ok', 10.0, '2026-10-18 10:00');
+        [$reminders] = $this->overview();
+        $this->assertCount(0, $reminders, json_encode($reminders->all(), JSON_UNESCAPED_UNICODE));
+        // le lendemain, tout est bien attendu
+        $this->now('2026-10-21 16:00');
+        [$reminders] = $this->overview();
+        $this->assertArrayHasKey('temperature-late-morning', $reminders->all());
+        $this->assertArrayHasKey("tasks-late-{$t->id}", $reminders->all());
+        $this->assertArrayHasKey('oil-test-late', $reminders->all());
+    }
+
+    public function test_un_bain_marie_n_est_pas_exige_au_releve_du_matin(): void
+    {
+        $this->staff();
+        $this->equipment('Frigo 1');
+        $this->equipment('Bain-marie', 'hot_holding');
+        $this->now('2026-10-20 12:00');
+        [$reminders] = $this->overview();
+        $this->assertSame('Relevé du matin non fait : Frigo 1.', $reminders['temperature-late-morning']['text']);
+    }
+
+    public function test_un_bain_trop_chaud_avec_peu_de_polaires_dit_le_vrai_motif(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $o = new HygieneOilControl(['equipment_id' => $f->id, 'equipment_name' => $f->name, 'type' => 'test', 'polar_pct' => 10.0, 'bath_temp_c' => 190.0, 'status' => 'alert',
+            'reasons' => 'bath_hot', 'performed_at' => Carbon::parse('2026-10-20 08:00', config('app.timezone')), 'operator_name' => 'Karim']);
+        $o->branch_id = 1;
+        $o->save();
+        [$reminders] = $this->overview();
+        $this->assertSame('alert', $reminders["oil-change-{$f->id}"]['level']);
+        $this->assertSame('Huile « Friteuse 1 » : bain à 190 °C, trop chaud — à régler.', $reminders["oil-change-{$f->id}"]['text']);
+    }
 }

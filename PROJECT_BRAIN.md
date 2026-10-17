@@ -4869,6 +4869,16 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-10-17 (nuit) — Cayenne Hygiène : lot « méga-fichier » (P0 puis P1) — LOCAL, commits non poussés, NON déployé.**
+Source : `~/Downloads/mega-fichier/` (cahier des charges tiré de Komia, établi sur une prod encore vide : plusieurs « manques » étaient des modules construits mais non
+configurés — chaque ligne recoupée avec le code, cf. `docs/HYGIENE_FEUILLE_DE_ROUTE_KOMIA.md` § « Lot méga-fichier »). Livré : 8 états de DLC (+ congélation, repas témoin ≥ 5 j,
+réception ; jamais de recongélation sans origine dite), source + validation des durées (valeur de départ = À VALIDER), « Contrôle du catalogue » (allergènes, famille manquante,
+fiches voisines), import CSV (aperçu sans écriture, jamais d'écrasement, verrou), équipements chauds (bain-marie ≥ 63 °C) + courbe 14 jours, rappels « À traiter maintenant »
+(relevé en retard, nettoyage, huile, DLC, rien tracé) + bouton d'action par tuile, « Qui ? » jamais vide. **Défaut réel trouvé par le test des trois horaires :** `addHours` (Carbon 2)
+compte en heures murales → « 24 h » durait 25 h la nuit du changement d'heure ; corrigé (`addRealHours`). Deux relectures adverses indépendantes (backend, interface) : ~25 constats
+vérifiés puis corrigés avec test + mutation. NON fait : lecture du BL par OCR, notification poussée/SMS (aucun canal ; FCM en échec), P2/P3 (planning, stock, recettes, PWA).
+Non éprouvé : tablette réelle, Brother réelle. **Décision propriétaire en suspens : qui peut valider une durée** (aujourd'hui tout membre du personnel ; nom et heure gardés et affichés).
+
 **2026-10-16 (soir) — Production réunie avec la branche + étiquettes DLC aux normes HACCP + accès depuis le tableau de bord.**
 ⚠ **Historique** : la branche distante `pos/category-first-caisse-2026-06-23` avait été RÉÉCRITE après le 4 octobre (« forced update »
 vu sur le serveur) : 113 commits servis en production depuis le 4/10 (`af444386` : caisse R-005, sauces, audit compta, version

@@ -629,8 +629,10 @@ export default {
          * Imprimable en lot ? Les produits « DLC du fabricant » le sont (une étape commune demande leurs dates) ; restent
          * à part ceux qui exigent leur produit d'origine, une fiche sans conservation, ou un événement qu'ils ne prévoient pas.
          */
+        /** Cet événement exige de dire l'origine du produit (fiche « fait à partir de… », ou congélation : jamais de recongélation). */
+        needsOrigin(p, actionKey) { return Boolean(p.needs_parent) || (actionKey || (p.actions[0] && p.actions[0].key)) === "frozen"; },
         selectable(p) {
-            if (p.needs_parent || this.ficheIncomplete(p)) return false;
+            if (this.needsOrigin(p, this.batchAction) || this.ficheIncomplete(p)) return false;
             if (this.batchAction && !p.actions.some((a) => a.key === this.batchAction)) return false;
             return !(this.batchAction === "thawed" && !isValidThawedStorage(p.thawed_storage));
         },
@@ -646,7 +648,7 @@ export default {
         },
         apartReason(p) {
             if (this.ficheIncomplete(p) || this.batchIncomplete(p)) return "À part (fiche à compléter)";
-            if (p.needs_parent) return "À part (produit d'origine)";
+            if (this.needsOrigin(p, this.batchAction)) return "À part (produit d'origine)";
             return `Sans ${this.actionLabel(this.batchAction).toLowerCase()}`;
         },
         queuedCount(id) {
@@ -787,7 +789,7 @@ export default {
                     if (this.ficheIncomplete(p) || this.batchIncomplete(p)) {
                         return this.openEditorFor(p, `${this.ficheIncomplete(p) || "Conservation après décongélation à renseigner"} : elle est imprimée sur l’étiquette.`);
                     }
-                    if (p.needs_parent) return this.openSheet(p);
+                    if (this.needsOrigin(p, this.batchAction)) return this.openSheet(p);
                     alertService.error(`« ${p.name} » ne prévoit pas l'événement « ${this.actionLabel(this.batchAction)} ».`);
                     return null;
                 }
@@ -797,7 +799,7 @@ export default {
             }
             if (this.ficheIncomplete(p)) return this.openEditorFor(p, `${this.ficheIncomplete(p)} : elle est imprimée sur l’étiquette.`);
             // une saisie est obligatoire (DLC du fabricant, produit d'origine) : la fiche d'impression, jamais un tir à l'aveugle
-            if (p.ask_original_dlc || p.needs_parent) return this.openSheet(p);
+            if (p.ask_original_dlc || this.needsOrigin(p)) return this.openSheet(p);
             const now = Date.now();
             if (now - (this.lastTapAt[p.id] || 0) < DOUBLE_TAP_MS) return null; // rebond du doigt
             this.lastTapAt = { ...this.lastTapAt, [p.id]: now };
@@ -1117,8 +1119,8 @@ export default {
         },
         /**
          * Dupliquer une fiche (« Précieux pour créer 20 produits proches ») : l'éditeur s'ouvre sur une COPIE au nom libre « X (copie) »,
-         * rien n'est enregistré avant « Ajouter ». Une copie n'hérite ni de la validation des durées ni de leur source : c'est une
-         * fiche nouvelle, à valider.
+         * rien n'est enregistré avant « Ajouter ». Une copie n'hérite ni de la validation des durées, ni de leur source, ni des allergènes
+         * (« aucun des 14 » ne vaut que pour la recette d'origine) : c'est une fiche nouvelle, à valider et à renseigner.
          */
         duplicate(p) {
             const taken = new Set(this.products.map((x) => String(x.name).toLowerCase()));
@@ -1126,8 +1128,9 @@ export default {
             let name = `${base} (copie)`;
             for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} (copie ${n})`;
             // eslint-disable-next-line no-unused-vars
-            const { id, duration_review, duration_source, durations_checked_at, uses_30d, sort_order, ...rest } = p;
-            this.openEditor({ ...rest, name });
+            const { id, duration_review, duration_source, durations_checked_at, durations_checked_by_name, uses_30d, sort_order, allergens, no_allergens, allergens_unreviewed, ...rest } = p;
+            // une copie ne reprend PAS les allergènes : « aucun des 14 » est une affirmation sur UNE recette, pas sur celle qu'on va écrire
+            this.openEditor({ ...rest, name, allergens: [], no_allergens: false });
         },
         editFromHealth(p) {
             this.healthOpen = false;

@@ -44,9 +44,13 @@ class DlcLabelProduct extends Model
     public const SOURCE_STARTING = 'Valeur de départ Cayenne';
     /** Source d'une fiche dont le restaurant a changé les durées lui-même. */
     public const SOURCE_OWN = 'Saisie du restaurant';
+    /** Durées importées d'un fichier SANS source indiquée : à valider comme les valeurs de départ. */
+    public const SOURCE_IMPORTED = 'Import du restaurant';
 
     public const FROZEN_STORAGE = '≤ −18 °C';
     public const WITNESS_STORAGE = '0 à +3 °C';
+    /** Repas témoin : au moins cinq jours (120 h) — arrêté du 21/12/2009, art. 31. */
+    public const WITNESS_MIN_HOURS = 120;
 
     /**
      * Un produit décongelé ne retourne jamais au congélateur (GBPH restauration § 2.6 : « ne doit en aucun cas être
@@ -112,6 +116,21 @@ class DlcLabelProduct extends Model
     }
 
     /**
+     * Clé d'unicité d'un NOM de produit : sans casse, sans accent, sans espace insécable ni espaces multiples, en Unicode normalisé (un « é » saisi
+     * sur Mac et le même « é » d'Excel sont deux suites d'octets différentes). Même idée que l'égalité insensible aux accents de MySQL, appliquée
+     * partout où l'on décide « ce produit existe déjà » (import, installation du catalogue).
+     */
+    public static function nameKey(?string $name): string
+    {
+        $s = (string) $name;
+        if (class_exists(\Normalizer::class)) $s = \Normalizer::normalize($s, \Normalizer::FORM_C) ?: $s;
+        $s = mb_strtolower(str_replace(['œ', 'æ'], ['oe', 'ae'], mb_strtolower($s)));
+        $s = \Illuminate\Support\Str::ascii($s);
+
+        return trim((string) preg_replace('/[\s\x{00A0}\x{202F}\x{2007}]+/u', ' ', $s));
+    }
+
+    /**
      * Où en est la validation des durées : `validated` (le responsable les a confirmées : qui et quand sont gardés),
      * `starting` (valeur de départ du catalogue, jamais confirmée — À VALIDER), `own` (saisie par le restaurant).
      */
@@ -119,7 +138,7 @@ class DlcLabelProduct extends Model
     {
         if ($this->durations_checked_at !== null) return 'validated';
 
-        return $this->duration_source === self::SOURCE_STARTING ? 'starting' : 'own';
+        return in_array($this->duration_source, [self::SOURCE_STARTING, self::SOURCE_IMPORTED], true) ? 'starting' : 'own';
     }
 
     /**

@@ -121,6 +121,11 @@ describe('Contrôle du catalogue — l’écran', () => {
         await flushPromises();
         expect(h.axios.post).toHaveBeenCalledWith('admin/labels/products/validate-durations', { ids: [1, 2] });
         expect(w.emitted('changed')).toHaveLength(1);
+        // la confirmation vaut pour CE lot : sans la redonner, « Tout valider » reste inactif (pas de second appui accidentel)
+        expect(w.get('[data-testid="dlc-health-confirm"]').element.checked).toBe(false);
+        expect(w.get('[data-testid="dlc-health-validate-all"]').element.disabled).toBe(true);
+        expect(w.get('[data-testid="dlc-health-need"]').text()).toMatch(/Cochez d'abord/);
+        await w.get('[data-testid="dlc-health-confirm"]').setValue(true);
         // « Tout valider » regroupe toutes les familles
         await w.get('[data-testid="dlc-health-validate-all"]').trigger('click');
         await flushPromises();
@@ -251,5 +256,73 @@ describe('écran DLC — dupliquer une fiche (Komia : « précieux pour créer 2
         await w.get('[data-testid="dlc-dup-7"]').trigger('click');
         await flushPromises();
         expect(w.get('[data-testid="dlc-ed-name"]').element.value).toBe('Olives (copie 2)');
+    });
+});
+
+describe('relecture adverse (2026-10-17)', () => {
+    it('« Dupliquer » ne reprend JAMAIS « aucun des 14 allergènes » : la copie tombe dans la file « à renseigner »', async () => {
+        const printer = { isSupported: () => true, getState: () => ({ status: 'connected', printer: null }), onChange: () => () => {}, startKeepAlive() {}, stopKeepAlive() {}, isConnected: () => true };
+        void printer;
+        h.axios.get.mockReset();
+        h.axios.get.mockImplementation(async (url) => {
+            if (url === 'admin/labels/products') return { data: { data: [P({ id: 7, name: 'Salade verte', no_allergens: true, allergens: [] }), P({ id: 8, name: 'Fromage', allergens: ['lait'], no_allergens: false })], meta: { server_now: new Date().toISOString(), timezone: 'Europe/Paris', health: { starting: [], allergens: [], no_category: [], neighbours: [] }, recommended: { total: 92, missing: 0, never_configured: false } } } };
+            return { data: { data: [], meta: { server_now: new Date().toISOString() } } };
+        });
+        window.localStorage.clear();
+        const w = mount(LabelDlcComponent, { global: { mocks: { $t: (k) => k }, stubs: { 'router-link': { template: '<a><slot /></a>' } } } });
+        await flushPromises();
+        await w.get('[data-testid="dlc-manage-toggle"]').trigger('click');
+        await w.get('[data-testid="dlc-dup-7"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-ed-no-allergens"]').element.checked).toBe(false);
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        await flushPromises();
+        const body = h.axios.post.mock.calls.find((c) => c[0] === 'admin/labels/products')[1];
+        expect(body.no_allergens).toBe(false);
+        expect(body.allergens).toEqual([]);
+        // le fromage dupliqué ne garde pas « lait » non plus : c'est une AUTRE recette
+        h.axios.post.mockReset();
+        await w.get('[data-testid="dlc-dup-8"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-ed-allergen-lait"]').attributes('aria-pressed')).toBe('false');
+    });
+
+    it('un événement coché sans durée bloque l’enregistrement en disant lequel (il ne disparaît plus en silence)', async () => {
+        const w = mount(DlcProductEditor, { props: { product: P({ actions: [{ key: 'prepared', value: 24, unit: 'hours' }, { key: 'opened', value: 3, unit: 'days' }] }), settings } });
+        await w.get('[data-testid="dlc-ed-value-opened"]').setValue('');
+        await w.get('[data-testid="dlc-ed-save"]').trigger('click');
+        expect(w.emitted('save')).toBeUndefined();
+        expect(w.get('[data-testid="dlc-ed-error"]').text()).toBe('Durée à saisir pour : Ouverture.');
+    });
+
+    it('l’éditeur dit qui a validé, et prévient qu’enregistrer sans la case laisse les durées non validées', async () => {
+        const v = mount(DlcProductEditor, { props: { product: P({ duration_review: 'validated', durations_checked_at: '2026-10-17T09:00:00Z', durations_checked_by_name: 'Karim Benali' }), settings } });
+        expect(v.get('[data-testid="dlc-ed-durations-checked-at"]').text()).toMatch(/par Karim Benali/);
+        const s = mount(DlcProductEditor, { props: { product: P(), settings } });
+        expect(s.get('[data-testid="dlc-ed-unvalidated-hint"]').text()).toMatch(/non validées/);
+        await s.get('[data-testid="dlc-ed-validate"]').setValue(true);
+        expect(s.find('[data-testid="dlc-ed-unvalidated-hint"]').exists()).toBe(false);
+        expect(s.text()).toMatch(/→ DLC dans 24 h/);
+    });
+
+    it('le contrôle : un seul « durée » au singulier, « Modifier » nomme la fiche, et on ne ferme pas pendant la requête', async () => {
+        let release;
+        h.axios.post.mockReset();
+        h.axios.post.mockImplementation(() => new Promise((resolve) => { release = () => resolve({ data: { data: { validated: 1 } } }); }));
+        const w = mount(DlcCatalogueHealth, { props: { health: { starting: [1], allergens: [], no_category: [], neighbours: [] }, products: [P({ id: 1, name: 'Olives' })], categories: [] } });
+        await w.get('[data-testid="dlc-health-group-legumes-crudites"] summary').trigger('click');
+        expect(w.get('[data-testid="dlc-health-validate-legumes-crudites"]').text()).toBe('Valider la durée de « Légumes & crudités »');
+        expect(w.get('[data-testid="dlc-health-edit-1"]').attributes('aria-label')).toBe('Modifier Olives');
+        await w.get('[data-testid="dlc-health-confirm"]').setValue(true);
+        await w.get('[data-testid="dlc-health-validate-legumes-crudites"]').trigger('click');
+        expect(w.get('[data-testid="dlc-health-close"]').element.disabled).toBe(true);
+        await w.get('[data-testid="dlc-health-close"]').trigger('click');
+        await w.get('[data-testid="dlc-health"]').trigger('keydown', { key: 'Escape' });
+        expect(w.emitted('close')).toBeUndefined();
+        release();
+        await flushPromises();
+        expect(w.emitted('changed')).toHaveLength(1);
+        await w.get('[data-testid="dlc-health-close"]').trigger('click');
+        expect(w.emitted('close')).toHaveLength(1);
     });
 });

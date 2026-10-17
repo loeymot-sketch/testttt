@@ -113,11 +113,11 @@ class LabelController extends AdminController
         }
 
         $branch = $this->branchId($request);
-        $liveNames = DlcLabelProduct::query()->get(['name'])->map(fn ($p) => mb_strtolower(trim((string) $p->name)))->all();
+        $liveNames = DlcLabelProduct::query()->get(['name'])->map(fn ($p) => DlcLabelProduct::nameKey($p->name))->all();
         $added = 0;
         $order = (int) DlcLabelProduct::query()->max('sort_order');
         foreach (RecommendedDlcCatalog::all() as $row) {
-            if (in_array(mb_strtolower($row['name']), $liveNames, true)) continue;
+            if (in_array(DlcLabelProduct::nameKey($row['name']), $liveNames, true)) continue;
             $p = new DlcLabelProduct([
                 'name' => $row['name'],
                 'category' => $row['category'],
@@ -194,8 +194,13 @@ class LabelController extends AdminController
             return response()->json(['message' => 'Format non pris en charge : enregistrez le fichier en CSV (Excel : « CSV UTF-8 »).', 'errors' => ['file' => ['Format non pris en charge : CSV attendu.']]], 422);
         }
 
-        $existing = DlcLabelProduct::query()->get(['name'])->mapWithKeys(fn ($p) => [mb_strtolower(trim((string) $p->name)) => true])->all();
-        $result = DlcCsvImporter::parse((string) file_get_contents($file->getRealPath()), $existing);
+        $content = (string) file_get_contents($file->getRealPath());
+        $parse = function () use ($content) {
+            $existing = DlcLabelProduct::query()->get(['name'])->mapWithKeys(fn ($p) => [DlcLabelProduct::nameKey($p->name) => true])->all();
+
+            return DlcCsvImporter::parse($content, $existing);
+        };
+        $result = $parse();
         if ($result['fatal'] !== null) {
             return response()->json(['message' => $result['fatal'], 'errors' => ['file' => [$result['fatal']]]], 422);
         }
@@ -203,22 +208,35 @@ class LabelController extends AdminController
         $created = 0;
         if (! empty($validated['commit'])) {
             $branch = $this->branchId($request);
-            DB::transaction(function () use ($result, $branch, &$created) {
-                $order = (int) DlcLabelProduct::query()->max('sort_order');
-                foreach ($result['rows'] as $row) {
-                    if ($row['status'] !== 'new') continue;
-                    $d = $row['data'];
-                    $p = new DlcLabelProduct([
-                        'name' => $d['name'], 'category' => $d['category'], 'storage' => $d['storage'], 'thawed_storage' => $d['thawed_storage'],
-                        'shelf_life_value' => $d['actions'][0]['value'], 'shelf_life_unit' => $d['actions'][0]['unit'], 'actions' => $d['actions'],
-                        'allergens' => $d['allergens'], 'no_allergens' => $d['no_allergens'], 'note' => $d['note'], 'default_copies' => 1,
-                        'duration_source' => $d['duration_source'], 'sort_order' => ++$order, 'is_active' => true,
-                    ]);
-                    $p->branch_id = $branch;
-                    $p->save();
-                    $created++;
-                }
-            });
+            // Deux imports simultanés (double appui, deux tablettes) liraient les mêmes noms « existants » et créeraient tout en double : on
+            // sérialise par restaurant et on RELIT les noms une fois le verrou pris (l'aperçu peut dater de quelques secondes).
+            $lock = \Illuminate\Support\Facades\Cache::lock('dlc-import:'.$branch, 30);
+            try {
+                $lock->block(10);
+            } catch (\Illuminate\Contracts\Cache\LockTimeoutException) {
+                return response()->json(['message' => 'Un import est déjà en cours : patientez quelques secondes puis réessayez.', 'errors' => ['file' => ['Un import est déjà en cours.']]], 423);
+            }
+            try {
+                $result = $parse();
+                DB::transaction(function () use ($result, $branch, &$created) {
+                    $order = (int) DlcLabelProduct::query()->max('sort_order');
+                    foreach ($result['rows'] as $row) {
+                        if ($row['status'] !== 'new') continue;
+                        $d = $row['data'];
+                        $p = new DlcLabelProduct([
+                            'name' => $d['name'], 'category' => $d['category'], 'storage' => $d['storage'], 'thawed_storage' => $d['thawed_storage'],
+                            'shelf_life_value' => $d['actions'][0]['value'], 'shelf_life_unit' => $d['actions'][0]['unit'], 'actions' => $d['actions'],
+                            'allergens' => $d['allergens'], 'no_allergens' => $d['no_allergens'], 'note' => $d['note'], 'default_copies' => 1,
+                            'duration_source' => $d['duration_source'], 'sort_order' => ++$order, 'is_active' => true,
+                        ]);
+                        $p->branch_id = $branch;
+                        $p->save();
+                        $created++;
+                    }
+                });
+            } finally {
+                $lock->release();
+            }
         }
 
         $rows = array_map(fn ($r) => [
@@ -324,8 +342,11 @@ class LabelController extends AdminController
 
         // Produit fait à partir d'un produit étiqueté : l'origine (ou « produit neuf ») est obligatoire — un appui ne
         // remet jamais l'horloge à zéro par oubli.
-        if ($product->needs_parent && empty($validated['parent_log_id']) && empty($validated['parent_none'])) {
-            $message = 'Indiquez le produit d’origine de « '.$product->name.' » (sa DLC ne repart pas à zéro), ou « produit neuf ».';
+        // Congélation : « jamais de recongélation » ne se vérifie que si l'origine est connue — elle est donc OBLIGATOIRE (ou « produit neuf » déclaré).
+        if (($product->needs_parent || $action['key'] === 'frozen') && empty($validated['parent_log_id']) && empty($validated['parent_none'])) {
+            $message = $action['key'] === 'frozen' && ! $product->needs_parent
+                ? 'Congélation de « '.$product->name.' » : indiquez le produit d’origine (un produit décongelé ne se recongèle jamais), ou « produit neuf ».'
+                : 'Indiquez le produit d’origine de « '.$product->name.' » (sa DLC ne repart pas à zéro), ou « produit neuf ».';
 
             return response()->json(['status' => 'parent_required', 'message' => $message, 'errors' => ['parent_log_id' => [$message]]], 422);
         }
@@ -482,6 +503,11 @@ class LabelController extends AdminController
         }
         if ($openedAt->lt($now->copy()->subDays(7)) || $openedAt->gt($now->copy()->addMinutes(10))) {
             $anomalies[] = 'heure de la tablette incohérente';
+        }
+        // conservation IMPOSÉE par l'événement (congélateur, repas témoin) : un autre stockage imprimé hors ligne est à vérifier
+        if (in_array($validated['action'], ['frozen', 'witness'], true) && ! empty($validated['storage'])
+            && DlcLabelProduct::nameKey($validated['storage']) !== DlcLabelProduct::nameKey($validated['action'] === 'frozen' ? DlcLabelProduct::FROZEN_STORAGE : DlcLabelProduct::WITNESS_STORAGE)) {
+            $anomalies[] = 'conservation imprimée différente de celle de l’événement';
         }
         if ($validated['action'] === 'thawed' && ! empty($validated['storage'])
             && ! DlcLabelProduct::isValidThawedStorage((string) $validated['storage'])) {
@@ -1038,6 +1064,15 @@ class LabelController extends AdminController
             'note' => 'mention',
         ]);
 
+        // Repas témoin : au moins cinq jours (arrêté du 21/12/2009, art. 31) — une durée plus courte est refusée, pas imprimée.
+        foreach ((array) ($data['actions'] ?? []) as $i => $a) {
+            if ($a['key'] === 'witness' && ($a['unit'] === DlcLabelProduct::UNIT_HOURS ? (int) $a['value'] : (int) $a['value'] * 24) < DlcLabelProduct::WITNESS_MIN_HOURS) {
+                abort(response()->json([
+                    'message' => 'Repas témoin trop court.',
+                    'errors' => ["actions.$i.value" => ['Un repas témoin se conserve au moins 5 jours (120 heures) — arrêté du 21/12/2009.']],
+                ], 422));
+            }
+        }
         // Durée par événement : 720 heures (30 jours) ou 365 jours au plus.
         foreach ((array) ($data['actions'] ?? []) as $i => $a) {
             $cap = $a['unit'] === DlcLabelProduct::UNIT_HOURS ? 720 : 365;
@@ -1137,10 +1172,16 @@ class LabelController extends AdminController
         $same = fn ($a, $b) => trim((string) $a) === trim((string) $b);
         if (array_key_exists('storage', $data) && ! $same($data['storage'], $model->storage)) return true;
         if (array_key_exists('thawed_storage', $data) && ! $same($data['thawed_storage'], $model->thawed_storage)) return true;
-        if (! array_key_exists('actions', $data)) return false;
+        // fiche ancienne modifiée par l'ancienne durée seule (sans `actions`) : c'est le premier événement qui change
+        if (! array_key_exists('actions', $data)) {
+            return (array_key_exists('shelf_life_value', $data) && (int) $data['shelf_life_value'] !== (int) $model->action(null)['value'])
+                || (array_key_exists('shelf_life_unit', $data) && $data['shelf_life_unit'] !== null && $data['shelf_life_unit'] !== $model->action(null)['unit']);
+        }
         $key = fn (array $list) => collect($list)->map(fn ($a) => $a['key'].':'.(int) $a['value'].':'.$a['unit'])->sort()->values()->all();
+        // l'événement PAR DÉFAUT (le premier) est celui qu'imprime un appui : le changer change ce que dit l'étiquette
+        $first = fn (array $list) => isset($list[0]) ? $list[0]['key'] : null;
 
-        return $key($data['actions']) !== $key($model->actionList());
+        return $key($data['actions']) !== $key($model->actionList()) || $first($data['actions']) !== $first($model->actionList());
     }
 
     private function presentProduct(DlcLabelProduct $p): array
@@ -1161,6 +1202,8 @@ class LabelController extends AdminController
             'needs_parent' => (bool) $p->needs_parent,
             'durations_checked_at' => $p->durations_checked_at?->toIso8601String(),
             'duration_source' => $p->duration_source,
+            // QUI a validé (nom copié à l'affichage) : sans lui, « validé » ne se prouve pas à un contrôleur
+            'durations_checked_by_name' => $p->durations_checked_by ? \App\Models\User::query()->whereKey($p->durations_checked_by)->value('name') : null,
             // validated (confirmée par le responsable) · starting (valeur de départ, À VALIDER) · own (saisie du restaurant)
             'duration_review' => $p->durationReview(),
             'note' => $p->note,

@@ -101,9 +101,13 @@ class HygieneTemperatureController extends AdminController
             $want = (int) ($v[$kind] ?? 0);
             $short = config("hygiene.kinds.$kind.short");
             $defaults = TemperatureRules::defaults($kind);
-            for ($i = 1; $i <= $want; $i++) {
+            // « j'en ai N » = N équipements de ce type AU TOTAL (même renommés) : on ne crée que ce qui manque
+            $have = HygieneEquipment::query()->where('kind', $kind)->count();
+            $missing = max(0, $want - $have);
+            for ($i = 1, $made = 0; $made < $missing && $i <= 60; $i++) {
                 $name = $want === 1 ? $short : "$short $i";
                 if (in_array(mb_strtolower($name), $taken, true)) continue;
+                $made++;
                 $e = new HygieneEquipment(['name' => $name, 'kind' => $kind, 'min_c' => $defaults['min'], 'max_c' => $defaults['max'],
                     'sort_order' => $order += 10, 'is_active' => true]);
                 $e->branch_id = $branch;
@@ -218,6 +222,11 @@ class HygieneTemperatureController extends AdminController
             if ($verdict['status'] === HygieneTemperatureReading::STATUS_ALERT) {
                 if ($action === null) {
                     $errors["readings.$i.corrective_action"] = ['« '.$equipment->name.' » : '.$this->fmt($value).' °C est hors seuil — indiquez ce qui a été fait.'];
+                    continue;
+                }
+                $for = config("hygiene.corrective_actions.$action.for");
+                if ($for !== null && $for !== ($this->isHot($equipment->kind) ? 'hot' : 'cold')) {
+                    $errors["readings.$i.corrective_action"] = ['« '.$equipment->name.' » : cette action ne convient pas à ce type d’équipement — choisissez-en une autre.'];
                     continue;
                 }
                 if (config("hygiene.corrective_actions.$action.note") && $note === null) {

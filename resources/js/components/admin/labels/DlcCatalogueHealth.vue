@@ -1,9 +1,9 @@
 <template>
-    <div class="hc-overlay" data-testid="dlc-health" @keydown.esc="$emit('close')" @keydown.tab="trapTab">
+    <div class="hc-overlay" data-testid="dlc-health" @keydown.esc="close" @keydown.tab="trapTab">
         <div ref="panel" class="hc-panel" role="dialog" aria-modal="true" aria-label="Contrôle du catalogue">
             <header class="hc-head">
                 <h4>Contrôle du catalogue</h4>
-                <button type="button" class="hc-close" aria-label="Fermer" data-testid="dlc-health-close" @click="$emit('close')">✕</button>
+                <button type="button" class="hc-close" aria-label="Fermer" data-testid="dlc-health-close" :disabled="busy" @click="close">✕</button>
             </header>
 
             <div class="hc-body">
@@ -18,6 +18,7 @@
                         Ces durées sont des <b>valeurs de départ prudentes</b> (GBPH restauration, arrêté du 21/12/2009), pas celles de votre plan de
                         maîtrise sanitaire. Lisez-les, corrigez celles qui diffèrent (« Modifier »), puis validez : votre nom et l'heure sont gardés sur chaque fiche.
                     </p>
+                    <p v-if="!confirmed" class="hc-need" data-testid="dlc-health-need">Cochez d'abord la case ci-dessous : les boutons « Valider » restent inactifs sans votre confirmation.</p>
                     <label class="hc-confirm">
                         <input v-model="confirmed" type="checkbox" data-testid="dlc-health-confirm" />
                         <span>Je confirme que les durées que je valide sont celles de mon plan de maîtrise sanitaire.</span>
@@ -31,12 +32,12 @@
                             <li v-for="p in g.items" :key="p.id" class="hc-row">
                                 <span class="hc-row-name">{{ p.name }}</span>
                                 <span class="hc-row-life">{{ lifeText(p) }}</span>
-                                <button type="button" class="hc-btn hc-btn--small" :data-testid="`dlc-health-edit-${p.id}`" @click="$emit('edit', p)">Modifier</button>
+                                <button type="button" class="hc-btn hc-btn--small" :data-testid="`dlc-health-edit-${p.id}`" :aria-label="`Modifier ${p.name}`" @click="$emit('edit', p)">Modifier</button>
                             </li>
                         </ul>
                         <button type="button" class="hc-btn hc-btn--primary" :disabled="!confirmed || busy" :data-testid="`dlc-health-validate-${g.slug}`"
                                 @click="validate(g.items.map((p) => p.id))">
-                            Valider les {{ g.items.length }} durées de « {{ g.name }} »
+                            Valider {{ g.items.length > 1 ? `les ${g.items.length} durées` : "la durée" }} de « {{ g.name }} »
                         </button>
                     </details>
                     <button v-if="startingGroups.length > 1" type="button" class="hc-btn hc-btn--primary hc-all" :disabled="!confirmed || busy" data-testid="dlc-health-validate-all"
@@ -63,8 +64,10 @@
                     <p class="hc-help">Sans famille, la fiche échappe aux onglets et à « Tout sélectionner » par famille. La famille proposée vient du catalogue ; vous pouvez la changer.</p>
                     <ul class="hc-rows">
                         <li v-for="r in noCategory" :key="r.id" class="hc-row">
-                            <input v-model="r.checked" type="checkbox" class="hc-check" :aria-label="`Ranger ${r.name}`" :data-testid="`dlc-health-cat-check-${r.id}`" />
-                            <span class="hc-row-name">{{ r.name }}</span>
+                            <label class="hc-cat-label">
+                                <input v-model="r.checked" type="checkbox" class="hc-check" :data-testid="`dlc-health-cat-check-${r.id}`" />
+                                <span class="hc-row-name">{{ r.name }}</span>
+                            </label>
                             <input v-model="r.category" type="text" maxlength="60" class="db-field-control hc-cat" list="hc-categories" placeholder="Famille…"
                                    :aria-label="`Famille de ${r.name}`" :data-testid="`dlc-health-cat-${r.id}`" />
                         </li>
@@ -96,7 +99,7 @@
 
             <footer class="hc-foot">
                 <span class="hc-spacer"></span>
-                <button type="button" class="hc-btn" data-testid="dlc-health-done" @click="$emit('close')">Fermer</button>
+                <button type="button" class="hc-btn" data-testid="dlc-health-done" :disabled="busy" @click="close">Fermer</button>
             </footer>
         </div>
     </div>
@@ -163,6 +166,7 @@ export default {
             const events = (p.actions || []).map((a) => `${(DLC_ACTIONS[a.key] || DLC_ACTIONS.opened).label} ${shelfLifeText(a.value, a.unit)}`).join(" · ");
             return `${events}${p.storage ? ` · ${p.storage}` : ""}`;
         },
+        close() { if (!this.busy) this.$emit("close"); },
         editById(id) {
             const p = this.byId.get(id);
             if (p) this.$emit("edit", p);
@@ -174,6 +178,8 @@ export default {
                 const { data } = await axios.post("admin/labels/products/validate-durations", { ids });
                 const n = Number(data && data.data && data.data.validated) || 0;
                 alertService.success(`${n} fiche${n > 1 ? "s" : ""} validée${n > 1 ? "s" : ""}.`);
+                // la confirmation vaut pour CE lot : un second appui sur « Tout valider » exige de la redonner
+                this.confirmed = false;
                 this.$emit("changed");
             } catch (e) {
                 alertService.error("Validation impossible : vérifiez la connexion puis réessayez.");
@@ -229,6 +235,8 @@ export default {
 .hc-group-name { flex: 1 1 auto; }
 .hc-rows { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .hc-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 48px; padding: 2px 4px; border-bottom: 1px solid #f1f5f9; }
+.hc-need { margin: 0 0 8px; font-size: 14px; color: #92400e; font-weight: 700; }
+.hc-cat-label { display: flex; align-items: center; gap: 10px; flex: 1 1 200px; min-width: 0; min-height: 48px; cursor: pointer; margin: 0; }
 .hc-row-name { flex: 1 1 200px; min-width: 0; font-weight: 700; font-size: 15px; display: flex; flex-direction: column; color: #111827; }
 .hc-row-name small { font-weight: 500; color: #475569; font-size: 13px; }
 .hc-row-life { flex: 2 1 220px; min-width: 0; color: #475569; font-size: 14px; }

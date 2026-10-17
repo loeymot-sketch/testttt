@@ -9,7 +9,10 @@
                 {{ p.name }}<template v-if="p.is_me"> (moi)</template>
             </button>
             <!-- jamais une liste vide muette : on dit pourquoi, ce qui se passe en attendant, et où l'ajouter -->
-            <div v-if="!people.length" class="hy-operator-empty" data-testid="hy-operator-empty">
+            <div v-if="!people.length && loadFailed" class="hy-operator-empty" data-testid="hy-operator-failed">
+                <p class="hy-muted">Liste indisponible : vérifiez la connexion, puis rouvrez ce menu.</p>
+            </div>
+            <div v-else-if="!people.length" class="hy-operator-empty" data-testid="hy-operator-empty">
                 <p class="hy-muted">Aucun employé enregistré. En attendant, chaque geste est attribué au compte connecté.</p>
                 <router-link to="/admin/employees" class="hy-operator-add" data-testid="hy-operator-add">＋ Ajouter un employé</router-link>
             </div>
@@ -32,7 +35,7 @@ export default {
     props: { modelValue: { type: [Number, null], default: null } },
     emits: ["update:modelValue"],
     data() {
-        return { people: [], me: null, open: false, chosenId: null };
+        return { people: [], me: null, open: false, chosenId: null, loadFailed: false };
     },
     computed: {
         currentLabel() {
@@ -46,8 +49,10 @@ export default {
             const { data } = await axios.get("admin/hygiene/operators");
             this.people = data.data || [];
             this.me = data.meta ? data.meta.me : null;
+            this.loadFailed = false;
         } catch (_) {
             this.people = [];
+            this.loadFailed = true;
         }
         let saved = null;
         // le choix est mémorisé PAR utilisateur connecté : quand Bob se connecte, il n'hérite pas du choix d'Alice

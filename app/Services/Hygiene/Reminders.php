@@ -57,11 +57,12 @@ final class Reminders
     /** @return list<array<string,mixed>> */
     private function temperature(CarbonInterface $now): array
     {
-        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name']);
-        if ($equipments->isEmpty()) return [];
+        $all = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'kind', 'created_at']);
+        if ($all->isEmpty()) return [];
         $start = $now->copy()->startOfDay();
-        $byPeriod = HygieneTemperatureReading::query()->whereNull('voided_at')->where('recorded_at', '>=', $start)->whereIn('equipment_id', $equipments->pluck('id'))
-            ->get(['equipment_id', 'period'])->groupBy('period')->map(fn ($rows) => $rows->pluck('equipment_id')->unique()->all());
+        $readings = HygieneTemperatureReading::query()->whereNull('voided_at')->where('recorded_at', '>=', $start)->whereIn('equipment_id', $all->pluck('id'))->get(['equipment_id', 'period']);
+        $byPeriod = $readings->groupBy('period')->map(fn ($rows) => $rows->pluck('equipment_id')->unique()->all());
+        $anyToday = $readings->pluck('equipment_id')->unique()->all();
 
         $out = [];
         foreach (['morning' => 'matin', 'evening' => 'soir'] as $period => $label) {
@@ -69,8 +70,12 @@ final class Reminders
             if ($deadline === null || $now->lt($deadline)) continue;
             // le soir : seulement si le restaurant relève réellement le soir (sinon le rappel râlerait chaque jour pour rien)
             if ($period === 'evening' && ! HygieneTemperatureReading::query()->whereNull('voided_at')->where('period', 'evening')->where('recorded_at', '>=', $start->copy()->subDays(7))->exists()) continue;
-            $done = $byPeriod->get($period, []);
-            $missing = $equipments->reject(fn ($e) => in_array($e->id, $done, true));
+            // Matin : « fait » = relevé de CE jour, quelle que soit l'heure (relevé pris à 15 h 05 ou une seule fois par jour à 16 h : pas de fausse
+            // alerte permanente) ; soir : un relevé du soir. Un équipement créé APRÈS l'heure du rappel n'était pas encore attendu (même règle que le
+            // dossier de contrôle) ; un bain-marie ne sert qu'au service : il n'est pas exigé au relevé du matin.
+            $done = $period === 'morning' ? $anyToday : $byPeriod->get($period, []);
+            $missing = $all->reject(fn ($e) => in_array($e->id, $done, true) || $e->created_at->gte($deadline)
+                || ($period === 'morning' && config("hygiene.kinds.{$e->kind}.hot")));
             if ($missing->isEmpty()) continue;
             $out[] = $this->item("temperature-late-$period", 'temperature', 'alert',
                 "Relevé du $label non fait : ".$this->names($missing->pluck('name')->all()).'.', '/admin/hygiene/temperature');
@@ -89,7 +94,8 @@ final class Reminders
         $out = [];
         foreach ($templates as $t) {
             $due = TaskSchedule::dueAt($t, $day);
-            if ($due === null || in_array($t->id, $done, true) || $now->lte($due)) continue;
+            // une fiche créée APRÈS son heure limite du jour n'était pas encore attendue
+            if ($due === null || in_array($t->id, $done, true) || $now->lte($due) || $t->created_at->gte($due)) continue;
             $out[] = $this->item("tasks-late-{$t->id}", 'tasks', 'alert', "Nettoyage en retard : « {$t->name} » (prévu à ".$due->format('H:i').').', '/admin/hygiene/tasks');
         }
 
@@ -99,7 +105,7 @@ final class Reminders
     /** @return list<array<string,mixed>> */
     private function oil(CarbonInterface $now): array
     {
-        $fryers = HygieneEquipment::query()->where('kind', 'fryer')->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name']);
+        $fryers = HygieneEquipment::query()->where('kind', 'fryer')->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'created_at']);
         if ($fryers->isEmpty()) return [];
         $start = $now->copy()->startOfDay();
         $rows = HygieneOilControl::query()->whereNull('voided_at')->whereIn('equipment_id', $fryers->pluck('id'))->where('performed_at', '>=', $start->copy()->subDays(60))
@@ -116,9 +122,13 @@ final class Reminders
                 if (! $changedSince) {
                     $pct = str_replace('.', ',', rtrim(rtrim(number_format((float) $lastTest->polar_pct, 1, '.', ''), '0'), '.'));
                     $over = $lastTest->polar_pct !== null && (float) $lastTest->polar_pct > $limit;
-                    $out[] = $this->item("oil-change-{$f->id}", 'oil', $over ? 'alert' : 'todo',
-                        $over ? "Huile « {$f->name} » : $pct % de composés polaires, au-dessus de la limite légale — à changer."
-                              : "Huile « {$f->name} » : $pct % de composés polaires — changement à prévoir.", '/admin/hygiene/oil');
+                    // le VRAI motif de l'écart : un bain trop chaud avec des polaires bas n'est pas « 10 % — changement à prévoir »
+                    $bathOnly = ! $over && $lastTest->status === 'alert' && str_contains((string) $lastTest->reasons, 'bath_hot');
+                    $bath = $lastTest->bath_temp_c !== null ? str_replace('.', ',', rtrim(rtrim(number_format((float) $lastTest->bath_temp_c, 1, '.', ''), '0'), '.')) : '';
+                    $out[] = $this->item("oil-change-{$f->id}", 'oil', $over || $bathOnly ? 'alert' : 'todo',
+                        $bathOnly ? "Huile « {$f->name} » : bain à $bath °C, trop chaud — à régler."
+                        : ($over ? "Huile « {$f->name} » : $pct % de composés polaires, au-dessus de la limite légale — à changer."
+                                 : "Huile « {$f->name} » : $pct % de composés polaires — changement à prévoir."), '/admin/hygiene/oil');
                 }
             }
         }
@@ -128,7 +138,7 @@ final class Reminders
         if ($deadline !== null && $now->gte($deadline)) {
             $practised = $rows->flatten(1)->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start->copy()->subDays(7)));
             if ($practised) {
-                $missing = $fryers->reject(fn ($f) => $rows->get($f->id, collect())->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start)));
+                $missing = $fryers->reject(fn ($f) => $f->created_at->gte($deadline) || $rows->get($f->id, collect())->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start)));
                 if ($missing->isNotEmpty()) {
                     $out[] = $this->item('oil-test-late', 'oil', 'todo', 'Test d’huile non fait : '.$this->names($missing->pluck('name')->all()).'.', '/admin/hygiene/oil');
                 }

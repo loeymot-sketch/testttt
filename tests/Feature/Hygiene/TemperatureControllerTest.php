@@ -430,4 +430,37 @@ class TemperatureControllerTest extends TestCase
         $this->putJson(self::BASE.'/equipment/'.$id, ['max_c' => 60])->assertStatus(422)->assertJsonValidationErrors('max_c');
         $this->putJson(self::BASE.'/equipment/'.$id, ['max_c' => 90])->assertOk();
     }
+
+    // ───────────── relecture adverse (2026-10-17) ─────────────
+
+    public function test_le_seuil_bas_d_un_equipement_chaud_ne_descend_jamais_sous_63_degres(): void
+    {
+        $this->staff();
+        $id = $this->postJson(self::BASE.'/equipment', ['name' => 'Vitrine chaude', 'kind' => 'hot_holding'])->assertCreated()->json('data.id');
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 55])->assertStatus(422)->assertJsonValidationErrors('min_c');
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 62.9])->assertStatus(422);
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 63])->assertOk();
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 68])->assertOk(); // plus strict que la loi : permis
+    }
+
+    public function test_une_action_corrective_du_chaud_n_est_pas_acceptee_pour_un_frigo_ni_l_inverse(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 1, 'hot_holding' => 1])->assertCreated();
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo' => ['value' => 9, 'corrective_action' => 'reheated']]))->assertStatus(422);
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => ['value' => 50, 'corrective_action' => 'defrost']]))->assertStatus(422);
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo' => ['value' => 9, 'corrective_action' => 'defrost'], 'Bain-marie' => ['value' => 50, 'corrective_action' => 'reheated']]))->assertCreated();
+    }
+
+    public function test_j_en_ai_n_se_compte_au_total_meme_renomme_et_ne_cree_que_ce_qui_manque(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 1])->assertCreated();
+        HygieneEquipment::query()->where('name', 'Frigo')->update(['name' => 'Frigo burgers']);
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 1])->assertOk(); // déjà 1 : rien à créer
+        $this->assertSame(1, HygieneEquipment::query()->where('kind', 'fridge')->count());
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 3])->assertCreated();
+        $this->assertSame(3, HygieneEquipment::query()->where('kind', 'fridge')->count(), '3 au total, pas 1 + 3');
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 3])->assertOk();
+    }
 }

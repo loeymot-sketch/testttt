@@ -240,3 +240,17 @@ describe('photo jointe', () => {
         expect(created).toHaveLength(1);
     });
 });
+
+describe('relecture adverse (2026-10-17) — « Qui ? »', () => {
+    it('liste impossible à charger : on ne dit PAS « aucun employé enregistré »', async () => {
+        h.axios.get.mockReset();
+        window.localStorage.clear();
+        h.axios.get.mockRejectedValue(new Error('réseau'));
+        const w = mount(HygieneOperatorPicker, { props: { modelValue: null }, global: { stubs: { 'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' } } } });
+        await flushPromises();
+        await w.get('[data-testid="hy-operator-btn"]').trigger('click');
+        expect(w.get('[data-testid="hy-operator-failed"]').text()).toMatch(/Liste indisponible/);
+        expect(w.find('[data-testid="hy-operator-empty"]').exists()).toBe(false);
+        expect(w.find('[data-testid="hy-operator-add"]').exists()).toBe(false);
+    });
+});

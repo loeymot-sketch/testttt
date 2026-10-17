@@ -98,3 +98,52 @@ describe('import CSV des produits', () => {
         expect(create).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('relecture adverse (2026-10-17) — import', () => {
+    it('une réponse lente d’un ancien fichier ne remplace pas l’aperçu du fichier retenu, et c’est le bon fichier qui part', async () => {
+        const slow = [];
+        h.axios.post.mockReset();
+        h.axios.post.mockImplementation((url, fd) => new Promise((resolve) => {
+            const name = fd.get('file').name;
+            const rows = [{ line: 2, name: `Produit de ${name}`, status: 'new', errors: [], summary: 'Préparation 24 h · 0 à +4 °C' }];
+            const reply = () => resolve({ data: { data: { rows, summary: { new: 1, exists: 0, invalid: 0, total: 1 }, created: fd.get('commit') === '1' ? 1 : 0, committed: fd.get('commit') === '1' } } });
+            if (fd.get('commit') === '0') slow.push({ name, reply }); else reply();
+        }));
+        const w = mount(DlcImportDialog);
+        await pick(w, 'ancien.csv');
+        // le champ est verrouillé tant que l'analyse tourne
+        expect(w.get('[data-testid="dlc-import-file"]').element.disabled).toBe(true);
+        // le doigt a déjà choisi un autre fichier : on force le second choix (champ rouvert)
+        w.vm.busy = false;
+        await w.vm.$nextTick();
+        await pick(w, 'corrige.csv');
+        slow.find((s) => s.name === 'corrige.csv').reply();
+        await flushPromises();
+        slow.find((s) => s.name === 'ancien.csv').reply(); // arrive EN DERNIER
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-import-row-2"]').text()).toMatch(/Produit de corrige\.csv/);
+        await w.get('[data-testid="dlc-import-go"]').trigger('click');
+        await flushPromises();
+        const commit = h.axios.post.mock.calls.find((c) => c[1].get('commit') === '1');
+        expect(commit[1].get('file').name).toBe('corrige.csv');
+    });
+
+    it('on ne ferme pas pendant la requête (le parent resterait périmé) ; le message dit que les lignes à corriger ne partent pas', async () => {
+        let release;
+        h.axios.post.mockReset();
+        const preview = { rows: [{ line: 2, name: 'A', status: 'new', errors: [], summary: 'x' }, { line: 3, name: 'B', status: 'invalid', errors: ['Conservation obligatoire'], summary: null }], summary: { new: 1, exists: 0, invalid: 1, total: 2 }, created: 0, committed: false };
+        h.axios.post.mockResolvedValueOnce({ data: { data: preview } });
+        const w = mount(DlcImportDialog);
+        await pick(w);
+        await flushPromises();
+        expect(w.text()).toMatch(/Les 1 ligne « à corriger » ne seront pas importées/);
+        h.axios.post.mockImplementationOnce(() => new Promise((resolve) => { release = () => resolve({ data: { data: { ...preview, created: 1, committed: true } } }); }));
+        await w.get('[data-testid="dlc-import-go"]').trigger('click');
+        expect(w.get('[data-testid="dlc-import-close"]').element.disabled).toBe(true);
+        await w.get('[data-testid="dlc-import"]').trigger('keydown', { key: 'Escape' });
+        expect(w.emitted('close')).toBeUndefined();
+        release();
+        await flushPromises();
+        expect(w.emitted('imported')).toEqual([[1]]);
+    });
+});

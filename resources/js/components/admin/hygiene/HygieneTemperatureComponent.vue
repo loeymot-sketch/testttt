@@ -321,7 +321,9 @@ export default {
         async loadChart(e) {
             try {
                 const { data } = await axios.get("admin/hygiene/temperature/history", { params: { equipment_id: e.id, from: this.todayYmd(13), limit: 500 } });
-                this.charts = { ...this.charts, [e.id]: { open: true, loading: false, readings: data.data || [] } };
+                // l'état d'ouverture est celui d'AUJOURD'HUI (fermée pendant le chargement : elle reste fermée), pas celui du départ
+                const cur = this.charts[e.id];
+                this.charts = { ...this.charts, [e.id]: { open: cur ? cur.open : true, loading: false, readings: data.data || [] } };
             } catch (err) {
                 this.charts = { ...this.charts, [e.id]: { open: false, loading: false, readings: [] } };
                 alertService.error(this.apiMessage(err, "Courbe indisponible : réessayez."));
@@ -508,6 +510,7 @@ export default {
                 await axios.post(`admin/hygiene/temperature/readings/${this.voidTarget.id}/void`, { reason: this.voidReason.trim() });
                 this.voidTarget = null;
                 await this.loadToday();
+                await this.reloadCharts();
                 if (this.showHistory) await this.loadHistory();
                 alertService.success("Relevé annulé (il reste au journal).");
             } catch (e) {

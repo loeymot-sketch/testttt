@@ -10,10 +10,13 @@
                 <p v-if="!loaded && !loadError" class="hy-muted" role="status">Chargement…</p>
 
                 <template v-if="loaded">
-                    <p class="hy-banner" :class="`is-${bannerKind}`" role="status" data-testid="home-banner">{{ bannerText }}</p>
+                    <p v-if="stale" class="hy-banner is-todo" role="status" data-testid="home-stale">
+                        Réseau indisponible : ces chiffres datent de {{ staleSince }}. Ils ne sont peut-être plus à jour.
+                    </p>
+                    <p v-else class="hy-banner" :class="`is-${bannerKind}`" role="status" data-testid="home-banner">{{ bannerText }}</p>
 
                     <!-- Ce qui est en retard ou à traiter MAINTENANT : une phrase, un geste (touchez pour y aller) -->
-                    <section v-if="reminders.length" class="hy-reminders" aria-labelledby="home-reminders-title" data-testid="home-reminders">
+                    <section v-if="reminders.length" class="hy-reminders" :class="{ 'is-soft': !hasAlertReminder }" aria-labelledby="home-reminders-title" data-testid="home-reminders">
                         <h4 id="home-reminders-title" class="hy-reminders-title">À traiter maintenant</h4>
                         <ul class="hy-reminders-list">
                             <li v-for="r in reminders" :key="r.key" :class="`is-${r.level}`" data-testid="home-reminder">
@@ -59,9 +62,15 @@ import { formatDay } from "../../../helpers/hygieneCommon";
 export default {
     name: "HygieneHomeComponent",
     data() {
-        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], server_now: null, timezone: "Europe/Paris" }, loaded: false, loadError: "", timer: null };
+        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], server_now: null, timezone: "Europe/Paris" }, loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null };
     },
     computed: {
+        /** Après deux rafraîchissements ratés, « Tout est en ordre ✓ » ne doit plus s'afficher : ce serait une affirmation sur des données périmées. */
+        stale() { return this.loaded && this.failures >= 2; },
+        staleSince() {
+            try { return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: this.meta.timezone || "Europe/Paris" }).format(new Date(this.lastOkAt)); } catch (_) { return "tout à l'heure"; }
+        },
+        hasAlertReminder() { return this.reminders.some((r) => r.level === "alert"); },
         /** Les rappels du serveur : alertes d'abord, puis le reste à faire. */
         reminders() {
             const rank = { alert: 0, todo: 1 };
@@ -98,7 +107,10 @@ export default {
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
                 this.loaded = true;
+                this.failures = 0;
+                this.lastOkAt = Date.now();
             } catch (e) {
+                this.failures += 1;
                 // un rafraîchissement raté ne vide pas l'écran : on garde les dernières valeurs
                 if (!this.loaded) this.loadError = "Accueil indisponible. Vérifiez la connexion puis rechargez la page.";
             }

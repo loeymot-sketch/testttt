@@ -97,8 +97,11 @@
                             </p>
                             <label v-if="!warnings.length && (durationsDirty || !alreadyValidated)" class="ed-switch ed-switch--ok">
                                 <input v-model="validateNow" type="checkbox" data-testid="dlc-ed-validate" />
-                                <span><b>Je valide ces durées et cette conservation</b> (mon plan de maîtrise sanitaire) — votre nom et l'heure sont gardés sur la fiche.</span>
+                                <span><b>Je valide ces durées et cette conservation</b> : elles sont conformes à mon plan de maîtrise sanitaire. Votre nom et l'heure sont gardés sur la fiche.</span>
                             </label>
+                            <p v-if="!warnings.length && !validateNow && (durationsDirty || !alreadyValidated)" class="ed-help" data-testid="dlc-ed-unvalidated-hint">
+                                Sans cette case, la fiche s'enregistre mais ses durées restent <b>non validées</b>.
+                            </p>
                         </div>
                     </fieldset>
 
@@ -282,7 +285,8 @@ export default {
         },
         checkedText() {
             const at = this.product && this.product.durations_checked_at;
-            return at ? `Durées validées le ${formatDlcDate(at)}.` : "";
+            const by = this.product && this.product.durations_checked_by_name;
+            return at ? `Durées validées le ${formatDlcDate(at)}${by ? ` par ${by}` : ""}.` : "";
         },
         allergenChoices() { return DLC_ALLERGENS; },
         sourceChoices() { return DLC_DURATION_SOURCES; },
@@ -346,7 +350,7 @@ export default {
             if (!(v >= 1)) return "durée à saisir";
             // congelé / repas témoin : la conservation vient de l'événement (congélateur, 0 à +3 °C), pas du choix « Conservation » plus bas
             const imposed = a.key === "frozen" || a.key === "witness" ? ` · conservé à ${storageForAction("", a.key)}` : "";
-            return `→ DLC ${shelfLifeText(v, a.unit)} après${imposed}`;
+            return `→ DLC dans ${shelfLifeText(v, a.unit)}${imposed}`;
         },
         /** Durée inhabituelle (règles de prudence du guide PMS, et erreurs d'unité courantes). */
         warningOf(a) {
@@ -418,6 +422,12 @@ export default {
             }
             if (this.warnings.length && !this.durationsChecked) {
                 this.localError = "Durée inhabituelle : corrigez-la, ou cochez « Durées vérifiées ».";
+                return;
+            }
+            // un événement coché sans durée ne disparaît pas en silence de l'enregistrement : on dit lequel manque
+            const noDuration = this.actionRows.filter((a) => a.enabled && !(Number(a.value) >= 1));
+            if (noDuration.length) {
+                this.localError = `Durée à saisir pour : ${noDuration.map((a) => a.label).join(", ")}.`;
                 return;
             }
             this.$emit("save", {

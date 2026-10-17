@@ -722,3 +722,23 @@ describe('écran DLC — catalogue recommandé (2026-10-17)', () => {
         expect(posts.filter(([u]) => u === 'admin/labels/products/install-recommended')).toEqual([['admin/labels/products/install-recommended', {}]]);
     });
 });
+
+describe('relecture adverse (2026-10-17) — congélation', () => {
+    it('une congélation exige l’origine du produit (jamais de recongélation) : jamais dans un lot, un appui ouvre la fiche, « produit neuf » ou une origine est obligatoire', async () => {
+        setup([P({ id: 1 }), P({ id: 2, name: 'Steak congelé', actions: [{ key: 'frozen', value: 30, unit: 'days' }] })]);
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-mode-list"]').trigger('click');
+        expect(w.get('[data-testid="dlc-select-all"]').text()).toBe('Tout sélectionner (1)');
+        expect(w.get('[data-testid="dlc-product-2"]').text()).toMatch(/À part \(produit d'origine\)/);
+        await w.get('[data-testid="dlc-mode-single"]').trigger('click');
+        await w.get('[data-testid="dlc-product-2"]').trigger('click');
+        await flushPromises();
+        expect(prints).toEqual([]);
+        expect(w.get('[data-testid="dlc-sheet-parent-required"]').exists()).toBe(true);
+        expect(w.get('[data-testid="dlc-sheet-print"]').attributes('disabled')).toBeDefined();
+        await w.get('[data-testid="dlc-sheet-parent-none"]').trigger('click');
+        await w.get('[data-testid="dlc-sheet-print"]').trigger('click');
+        await flushPromises();
+        expect(prints).toEqual([expect.objectContaining({ product_id: 2, parent_none: true })]);
+    });
+});

@@ -48,10 +48,10 @@
 
                     <!-- Produit fait à partir d'un produit déjà étiqueté : la DLC ne repart pas à zéro (sauf cuisson). Pour une fiche
                          « fait à partir de… », le choix est OBLIGATOIRE : l'origine, ou « produit neuf » dit explicitement. -->
-                    <div v-if="parentChoices.length || product.needs_parent" class="sh-parent" :class="{ 'is-required': mustChooseParent }">
+                    <div v-if="parentChoices.length || parentRequired" class="sh-parent" :class="{ 'is-required': mustChooseParent }">
                         <button type="button" class="sh-toggle" :aria-expanded="showParents ? 'true' : 'false'" data-testid="dlc-sheet-parent-toggle"
                                 @click="showParents = !showParents">
-                            {{ showParents ? "▾" : "▸" }} {{ product.needs_parent ? "Produit d'origine (obligatoire)" : "Fait à partir d'un produit déjà étiqueté ?" }}
+                            {{ showParents ? "▾" : "▸" }} {{ parentRequired ? "Produit d'origine (obligatoire)" : "Fait à partir d'un produit déjà étiqueté ?" }}
                             <span v-if="parent" class="sh-parent-picked">— {{ parent.name }}</span>
                             <span v-else-if="parentChoice === 'none'" class="sh-parent-picked">— produit neuf</span>
                         </button>
@@ -180,7 +180,9 @@ export default {
         parentId() { return typeof this.parentChoice === "number" ? this.parentChoice : null; },
         parent() { return this.parentChoices.find((l) => l.id === this.parentId) || null; },
         parentEnd() { return this.parent ? new Date(this.parent.expiresAt) : null; },
-        mustChooseParent() { return Boolean(this.product.needs_parent) && this.parentChoice === null; },
+        /** Fiche « fait à partir de… », ou CONGÉLATION : un produit décongelé ne se recongèle jamais, ce qui ne se vérifie que si l'origine est dite. */
+        parentRequired() { return Boolean(this.product.needs_parent) || this.action === "frozen"; },
+        mustChooseParent() { return this.parentRequired && this.parentChoice === null; },
         rawExpiry() { return this.current ? previewExpiry(this.current, this.now) : this.now; },
         limit() { return this.limitFor(this.current); },
         capNote() {
@@ -231,7 +233,11 @@ export default {
             }
         },
     },
+    watch: {
+        parentRequired(now) { if (now) this.showParents = true; },
+    },
     mounted() {
+        if (this.parentRequired) this.showParents = true;
         // Le focus entre dans la fenêtre (clavier, lecteur d'écran) et revient d'où il venait à la fermeture.
         this.returnFocus = document.activeElement;
         this.$nextTick(() => {

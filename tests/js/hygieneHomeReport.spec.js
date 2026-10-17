@@ -241,3 +241,32 @@ describe('dossier de contrôle — réponses dans le désordre', () => {
         expect(w.get('[data-testid="rep-kpi-oil"]').text()).not.toMatch(/max\s*—/);
     });
 });
+
+describe('relecture adverse (2026-10-17) — accueil', () => {
+    it('après deux rafraîchissements ratés, plus de « Tout est en ordre » : on dit que les chiffres datent', async () => {
+        vi.useFakeTimers();
+        h.axios.get.mockReset();
+        h.axios.get.mockResolvedValue({ data: { data: [tile('tasks', 'ok', '5/5 fiches')], meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris', alerts: 0, todo: 0 } } });
+        const w = mount(HygieneHomeComponent, { global: { stubs: { 'router-link': RouterLinkStub } } });
+        await flushPromises();
+        expect(w.get('[data-testid="home-banner"]').text()).toContain('Tout est en ordre');
+        h.axios.get.mockRejectedValue(new Error('réseau coupé'));
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(w.find('[data-testid="home-stale"]').exists()).toBe(false); // un raté : on garde
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(w.get('[data-testid="home-stale"]').text()).toMatch(/Réseau indisponible : ces chiffres datent de/);
+        expect(w.find('[data-testid="home-banner"]').exists()).toBe(false);
+        h.axios.get.mockResolvedValue({ data: { data: [tile('tasks', 'ok', '5/5 fiches')], meta: { server_now: '2026-10-20T10:03:00+02:00', timezone: 'Europe/Paris', alerts: 0, todo: 0 } } });
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(w.find('[data-testid="home-stale"]').exists()).toBe(false);
+        expect(w.get('[data-testid="home-banner"]').text()).toContain('Tout est en ordre');
+        vi.useRealTimers();
+    });
+
+    it('« À traiter maintenant » n’est rouge que s’il contient une vraie alerte', async () => {
+        const soft = await mountHome([tile('trace', 'idle', 'Rien tracé')], { alerts: 0, todo: 0, reminders: [{ key: 'trace-silent', domain: 'trace', level: 'todo', text: 'Aucun produit tracé depuis 3 jours.', route: '/admin/hygiene/trace' }] });
+        expect(soft.get('[data-testid="home-reminders"]').classes()).toContain('is-soft');
+        const hard = await mountHome([tile('trace', 'idle', 'Rien tracé')], { alerts: 1, todo: 0, reminders: [{ key: 'dlc-expired', domain: 'dlc', level: 'alert', text: 'x', route: '/admin/labels/dlc' }] });
+        expect(hard.get('[data-testid="home-reminders"]').classes()).not.toContain('is-soft');
+    });
+});

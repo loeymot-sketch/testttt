@@ -111,8 +111,10 @@ class DlcCsvImportTest extends TestCase
         $this->assertSame(1, $poulet->branch_id);
         // aucune durée validée d'office : c'est au responsable
         $this->assertNull($poulet->durations_checked_at);
-        $this->assertSame('own', $poulet->durationReview());
+        // sans source indiquée dans le fichier : « à valider » (même file que les valeurs de départ) ; avec source : c'est la déclaration du restaurant
+        $this->assertSame('starting', $poulet->durationReview());
         $this->assertSame('Import du restaurant', $poulet->duration_source);
+        $this->assertSame('own', DlcLabelProduct::query()->where('name', 'Oignons émincés')->first()->durationReview());
         $this->assertSame('GBPH restauration', DlcLabelProduct::query()->where('name', 'Oignons émincés')->first()->duration_source);
 
         // rejouer le même fichier ne crée rien (idempotent)
@@ -199,5 +201,71 @@ class DlcCsvImportTest extends TestCase
         $this->assertSame(1, $r['created'], 'le « Olives » de l’autre restaurant n’est pas le mien');
         $this->assertSame(1, DlcLabelProduct::withoutGlobalScopes()->where('branch_id', 1)->where('name', 'Olives')->count());
         $this->assertSame(1, DlcLabelProduct::withoutGlobalScopes()->where('branch_id', 2)->where('name', 'Olives')->count());
+    }
+
+    // ───────────── relecture adverse (2026-10-17) ─────────────
+
+    public function test_un_guillemet_non_ferme_est_refuse_au_lieu_d_avaler_le_reste_du_fichier(): void
+    {
+        $this->caisse();
+        $csv = "Produit;Conservation;Préparation;Mention\nA;0 à +3 °C;2 j;\"oops\nB;0 à +3 °C;2 j;\nC;0 à +3 °C;2 j;\n";
+        $r = $this->upload($csv)->assertStatus(422);
+        $this->assertStringContainsString('guillemet', $r->json('message'));
+        // un guillemet bien fermé, ou un pouce « 12\" » en fin de nom, ne bloque plus rien
+        $ok = DlcCsvImporter::parse("Produit;Conservation;Préparation\n\"Pain, 12\"\"\";0 à +4 °C;2 j\nB;0 à +4 °C;2 j\n", []);
+        $this->assertNull($ok['fatal']);
+        $this->assertSame(['Pain, 12"', 'B'], array_column($ok['rows'], 'name'));
+    }
+
+    public function test_doublons_invisibles_thawed_trop_long_negatif_lignes_vides_et_encodages(): void
+    {
+        $this->caisse();
+        $e = new DlcLabelProduct(['name' => 'Tomate', 'shelf_life_value' => 3, 'shelf_life_unit' => 'days', 'storage' => '0 à +4 °C']);
+        $e->branch_id = 1;
+        $e->save();
+        $r = DlcCsvImporter::parse("Produit;Conservation;Ouverture\n\"Tomate\u{00A0}\";0 à +4 °C;3 j\nTomaté;0 à +4 °C;3 j\nTome\u{0301}te;0 à +4 °C;3 j\n", [DlcLabelProduct::nameKey('Tomate') => true]);
+        // 1re ligne : déjà en base (NBSP) ; 2e : même produit répété dans le fichier (accent) ; 3e : une vraie autre fiche
+        $this->assertSame(['exists', 'invalid', 'new'], array_column($r['rows'], 'status'), 'NBSP et accent : jamais un doublon silencieux');
+        $this->assertStringContainsString('déjà présent', $r['rows'][1]['errors'][0]);
+
+        $long = str_repeat('x', 70);
+        $d = DlcCsvImporter::parse("Produit;Conservation;Décongélation;Après décongélation\nA;-18 °C;24 h;0 à +2 °C $long\n", []);
+        $this->assertSame('invalid', $d['rows'][0]['status']);
+        $this->assertStringContainsString('60 caractères', implode(' ', $d['rows'][0]['errors']));
+
+        $n = DlcCsvImporter::parse("Produit;Conservation;Préparation\nA;0 à +4 °C;-5 h\nB;0 à +4 °C;+5 h\n", []);
+        $this->assertSame(['invalid', 'invalid'], array_column($n['rows'], 'status'), 'une durée négative n’est jamais lue en positive');
+
+        $blank = "Produit;Conservation;Ouverture\nOlives;0 à +4 °C;3 j\n".str_repeat(";;\n", 700);
+        $this->assertNull(DlcCsvImporter::parse($blank, [])['fatal'], 'les lignes vides de fin de feuille Excel ne comptent pas');
+
+        $this->assertStringContainsString('CSV UTF-8', DlcCsvImporter::parse(mb_convert_encoding("Produit;Conservation\nA;0 à +4 °C\n", 'UTF-16', 'UTF-8'), [])['fatal']);
+        // le BOM n'est retiré qu'en tête, et seulement tel quel (pas n'importe quel octet 0xEF/0xBB/0xBF)
+        $this->assertSame('ﾏ', DlcCsvImporter::parse("Produit;Conservation;Ouverture\nﾏ;0 à +4 °C;3 j\n", [])['rows'][0]['name']);
+        // « Non » / « Sans » ne sont pas « aucun des 14 » ; contrôles retirés
+        $a = DlcCsvImporter::parse("Produit;Conservation;Ouverture;Allergènes\nA;0 à +4 °C;3 j;Non\nB\u{0007}\u{001B}x;0 à +4 °C;3 j;aucun\n", []);
+        $this->assertSame('invalid', $a['rows'][0]['status']);
+        $this->assertSame('B x', $a['rows'][1]['name']);
+    }
+
+    public function test_un_repas_temoin_trop_court_est_refuse_a_l_import(): void
+    {
+        $r = DlcCsvImporter::parse("Produit;Conservation;Repas témoin\nA;0 à +3 °C;3 j\nB;0 à +3 °C;5 j\n", []);
+        $this->assertSame(['invalid', 'new'], array_column($r['rows'], 'status'));
+        $this->assertStringContainsString('5 jours', $r['rows'][0]['errors'][0]);
+    }
+
+    public function test_le_modele_ne_pretend_aucune_source(): void
+    {
+        $this->assertStringNotContainsString('Plan de maîtrise', DlcCsvImporter::template());
+    }
+
+    public function test_deux_imports_successifs_du_meme_fichier_ne_doublent_rien_meme_avec_un_nom_ecrit_autrement(): void
+    {
+        $this->caisse();
+        $this->upload("Produit;Conservation;Ouverture\nCrème fraîche;0 à +4 °C;3 j\n", 'a.csv', true)->assertCreated();
+        $r = $this->upload("Produit;Conservation;Ouverture\nCreme  fraiche;0 à +4 °C;9 j\n", 'b.csv', true)->assertOk()->json('data');
+        $this->assertSame(0, $r['created']);
+        $this->assertSame(1, DlcLabelProduct::query()->count());
     }
 }
