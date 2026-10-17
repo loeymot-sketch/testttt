@@ -46,7 +46,16 @@ export const DLC_ACTIONS = Object.freeze({
     prepared: { key: 'prepared', label: 'Préparation', verb: 'Préparé le', short: 'Préparé' },
     cooked: { key: 'cooked', label: 'Cuisson', verb: 'Cuit le', short: 'Cuit' },
     vacuum: { key: 'vacuum', label: 'Mise sous vide', verb: 'Mis sous vide le', short: 'Sous vide' },
+    // Congelé : conservation au congélateur (voir FROZEN_STORAGE) ; la durée est celle du restaurant (mois, en jours).
+    frozen: { key: 'frozen', label: 'Congélation', verb: 'Congelé le', short: 'Congelé' },
+    // Repas témoin : conservé au moins cinq jours après la dernière présentation au consommateur (arrêté du 21/12/2009).
+    witness: { key: 'witness', label: 'Repas témoin', verb: 'Repas témoin du', short: 'Témoin' },
+    received: { key: 'received', label: 'Réception', verb: 'Reçu le', short: 'Reçu' },
 });
+
+/** Conservation imposée par l'événement (miroir de DlcLabelProduct::FROZEN_STORAGE / WITNESS_STORAGE). */
+export const FROZEN_STORAGE = '≤ −18 °C';
+export const WITNESS_STORAGE = '0 à +3 °C';
 export const DLC_ACTION_KEYS = Object.keys(DLC_ACTIONS);
 
 /** Les 14 allergènes à déclaration obligatoire (codes de l'application → libellé). */
@@ -113,6 +122,8 @@ export function isFrozenOrAmbient(storage) {
  */
 export function storageForAction(storage, actionKey, thawedStorage = '') {
     if (actionKey === 'thawed') return String(thawedStorage || '').trim();
+    if (actionKey === 'frozen') return FROZEN_STORAGE;
+    if (actionKey === 'witness') return WITNESS_STORAGE;
     return String(storage || '').trim();
 }
 
@@ -183,6 +194,8 @@ export function dlcLabelBlocks(d) {
     blocks.push({ t: 'rule' });
     // GBPH § 2.6 : un produit décongelé « ne doit en aucun cas être recongelé » — en blanc sur noir, impossible à rater.
     if (action.key === 'thawed') blocks.push({ t: 'band', left: 'NE PAS RECONGELER', size: 'lg' });
+    // Repas témoin : à garder tel quel, jamais consommé — la bande le dit avant toute autre ligne.
+    if (action.key === 'witness') blocks.push({ t: 'band', left: 'REPAS TÉMOIN', size: 'lg' });
     blocks.push({ t: 'pair', left: action.verb, right: formatDlcDate(d.openedAt), size: 'md', stack: true });
     // La pastille du jour sert au tri de la semaine ; au-delà de 6 jours, le même jour reviendrait : on ne la met pas.
     const spanMs = Date.parse(d.expiresAt) - Date.parse(d.openedAt);

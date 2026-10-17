@@ -22,13 +22,31 @@ class DlcLabelProduct extends Model
     public const UNIT_DAYS = 'days';
     public const UNITS = [self::UNIT_HOURS, self::UNIT_DAYS];
 
-    /** Événements qui ouvrent une DLC secondaire (libellés français côté écran). */
-    public const ACTIONS = ['opened', 'thawed', 'prepared', 'cooked', 'vacuum'];
+    /**
+     * Événements qui ouvrent une DLC secondaire (libellés français côté écran). Les huit états de la restauration :
+     * ouverture, décongélation, préparation (« fabriqué »), cuisson, mise sous vide, congélation, repas témoin, réception.
+     */
+    public const ACTIONS = ['opened', 'thawed', 'prepared', 'cooked', 'vacuum', 'frozen', 'witness', 'received'];
 
     /** Libellés des événements, pour les messages du serveur (les mêmes qu'à l'écran). */
     public const ACTION_LABELS = [
         'opened' => 'Ouverture', 'thawed' => 'Décongélation', 'prepared' => 'Préparation', 'cooked' => 'Cuisson', 'vacuum' => 'Mise sous vide',
+        'frozen' => 'Congélation', 'witness' => 'Repas témoin', 'received' => 'Réception',
     ];
+
+    /**
+     * Conservation imposée par l'ÉVÉNEMENT, pas par la fiche : un produit congelé est au congélateur (−18 °C ou moins,
+     * même seuil que les relevés de température), un repas témoin se garde entre 0 et +3 °C (arrêté du 21/12/2009, art. 31 :
+     * conservé au moins cinq jours après la dernière présentation au consommateur). Valeurs de départ ; la durée, elle,
+     * reste celle du restaurant.
+     */
+    /** Source des durées d'un produit installé depuis le catalogue recommandé : une valeur de DÉPART, à valider par le responsable. */
+    public const SOURCE_STARTING = 'Valeur de départ Cayenne';
+    /** Source d'une fiche dont le restaurant a changé les durées lui-même. */
+    public const SOURCE_OWN = 'Saisie du restaurant';
+
+    public const FROZEN_STORAGE = '≤ −18 °C';
+    public const WITNESS_STORAGE = '0 à +3 °C';
 
     /**
      * Un produit décongelé ne retourne jamais au congélateur (GBPH restauration § 2.6 : « ne doit en aucun cas être
@@ -64,6 +82,7 @@ class DlcLabelProduct extends Model
         'needs_parent',
         'durations_checked_at',
         'durations_checked_by',
+        'duration_source',
         'print_operator',
         'default_copies',
         'sort_order',
@@ -90,6 +109,17 @@ class DlcLabelProduct extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new BranchScope);
+    }
+
+    /**
+     * Où en est la validation des durées : `validated` (le responsable les a confirmées : qui et quand sont gardés),
+     * `starting` (valeur de départ du catalogue, jamais confirmée — À VALIDER), `own` (saisie par le restaurant).
+     */
+    public function durationReview(): string
+    {
+        if ($this->durations_checked_at !== null) return 'validated';
+
+        return $this->duration_source === self::SOURCE_STARTING ? 'starting' : 'own';
     }
 
     /**
@@ -145,6 +175,8 @@ class DlcLabelProduct extends Model
         $clean = fn ($v) => $v !== null && trim((string) $v) !== '' ? trim((string) $v) : null;
         // décongélation : la conservation APRÈS décongélation de la fiche, et rien d'autre (aucun repli)
         if ($actionKey === 'thawed') return $clean($this->thawed_storage);
+        if ($actionKey === 'frozen') return self::FROZEN_STORAGE;
+        if ($actionKey === 'witness') return self::WITNESS_STORAGE;
 
         return $clean($this->storage);
     }

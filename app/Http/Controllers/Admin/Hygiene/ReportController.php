@@ -122,7 +122,7 @@ class ReportController extends HygieneController
                 return [['Date', 'Friteuse', 'Opération', 'Composés polaires %', 'Bain °C', 'Litres', 'Huile', 'Verdict', 'Action corrective', 'Commentaire', 'Opérateur', 'Annulation'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['fryer'], $r['type'], $this->num($r['polar_pct']), $this->num($r['bath_temp_c']), $this->num($r['oil_litres']), $r['oil_brand'], $status($r['status']), $r['action'], $r['note'], $r['operator'], $void($r)], $rows)];
             default: // dlc
-                $labels = ['opened' => 'Ouverture', 'thawed' => 'Décongélation', 'prepared' => 'Préparation', 'cooked' => 'Cuisson', 'vacuum' => 'Mise sous vide'];
+                $labels = \App\Models\DlcLabelProduct::ACTION_LABELS;
 
                 return [['Date', 'Produit', 'Événement', 'N° de lot', 'Lot fournisseur', 'DLC', 'Étiquettes', 'Conservation', 'Sortie', 'Date de sortie'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['product'], $labels[$r['action']] ?? $r['action'], $r['lot'], $r['supplier_lot'], $this->dt($r['expires_at']), $r['copies'], $r['storage'],

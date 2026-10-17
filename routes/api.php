@@ -533,6 +533,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/products', [\App\Http\Controllers\Admin\LabelController::class, 'products'])->name('products');
         Route::post('/products', [\App\Http\Controllers\Admin\LabelController::class, 'storeProduct'])->name('products.store');
         Route::post('/products/install-recommended', [\App\Http\Controllers\Admin\LabelController::class, 'installRecommended'])->name('products.install');
+        // Contrôle du catalogue (2026-10-17) : valider les durées / ranger les fiches sans famille, en lot, sans jamais modifier une durée.
+        Route::post('/products/validate-durations', [\App\Http\Controllers\Admin\LabelController::class, 'validateDurations'])->name('products.validate');
+        Route::post('/products/classify', [\App\Http\Controllers\Admin\LabelController::class, 'classify'])->name('products.classify');
         Route::match(['put', 'patch'], '/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'updateProduct'])
             ->where('product', '[0-9]{1,18}')->name('products.update');
         Route::delete('/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'destroyProduct'])

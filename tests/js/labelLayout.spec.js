@@ -244,6 +244,23 @@ describe('étiquette DLC', () => {
         expect(verb('inconnu')).toBe('Entamé le');
     });
 
+    it('congelé, repas témoin, reçu : verbe, conservation imposée par l’événement, bande « REPAS TÉMOIN »', () => {
+        const blocksOf = (action, storage) => dlcLabelBlocks({ name: 'Poulet', action, storage, openedAt: '2026-10-17T10:00:00Z', expiresAt: '2026-10-22T10:00:00Z' });
+        const verb = (action) => blocksOf(action).find((b) => b.t === 'pair').left;
+        expect(verb('frozen')).toBe('Congelé le');
+        expect(verb('witness')).toBe('Repas témoin du');
+        expect(verb('received')).toBe('Reçu le');
+        // la conservation vient de l'événement, pas de la fiche « froid positif »
+        expect(storageForAction('0 à +4 °C', 'frozen')).toBe('≤ −18 °C');
+        expect(storageForAction('0 à +4 °C', 'witness')).toBe('0 à +3 °C');
+        expect(storageForAction('0 à +4 °C', 'received')).toBe('0 à +4 °C');
+        expect(storagePhrase(storageForAction('0 à +4 °C', 'frozen'))).toBe('À conserver à −18 °C ou moins');
+        // la bande ne concerne que le repas témoin
+        expect(blocksOf('witness', '0 à +3 °C')).toContainEqual({ t: 'band', left: 'REPAS TÉMOIN', size: 'lg' });
+        expect(JSON.stringify(blocksOf('frozen'))).not.toContain('REPAS TÉMOIN');
+        expect(JSON.stringify(blocksOf('frozen'))).not.toContain('NE PAS RECONGELER');
+    });
+
     it('DLC limitée par celle du fabricant : mention explicite sur l’étiquette', () => {
         const blocks = dlcLabelBlocks({ name: 'Crème', openedAt: '2026-10-16T08:00:00Z', expiresAt: '2026-10-18T21:59:00Z', capped: true, originalDlc: '2026-10-18' });
         expect(blocks).toContainEqual({ t: 'line', text: 'Limitée à la DLC du fabricant (18/10/2026)', size: 'sm' });

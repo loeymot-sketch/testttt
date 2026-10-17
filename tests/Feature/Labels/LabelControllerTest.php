@@ -1333,4 +1333,181 @@ class LabelControllerTest extends TestCase
         $this->assertNull($restored->discard_reason);
         $this->assertNull($restored->discarded_by);
     }
+
+    // ───────────── huit états (2026-10-17 · méga-fichier P1.5) ─────────────
+
+    public function test_les_huit_etats_existent_chacun_avec_sa_duree_et_sa_conservation(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $p = $this->expertProduct([
+            'name' => 'Poulet rôti', 'thawed_storage' => '0 à +2 °C', 'storage' => '0 à +3 °C',
+            'actions' => [
+                ['key' => 'cooked', 'value' => 3, 'unit' => 'days'],
+                ['key' => 'frozen', 'value' => 90, 'unit' => 'days'],
+                ['key' => 'witness', 'value' => 5, 'unit' => 'days'],
+                ['key' => 'received', 'value' => 2, 'unit' => 'days'],
+            ],
+        ]);
+        $this->assertSame(['cooked', 'frozen', 'witness', 'received'], array_column($p['actions'], 'key'));
+
+        // Congelé : le congélateur, 90 jours — quelle que soit la conservation « froid positif » de la fiche
+        $frozen = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'frozen'])->assertOk()->json();
+        $this->assertSame('≤ −18 °C', $frozen['storage']);
+        $this->assertSame('2027-01-15 10:00', Carbon::parse($frozen['expires_at'])->format('Y-m-d H:i'));
+
+        // Repas témoin : 0 à +3 °C, 5 jours
+        $witness = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'witness'])->assertOk()->json();
+        $this->assertSame('0 à +3 °C', $witness['storage']);
+        $this->assertSame('2026-10-22 10:00', Carbon::parse($witness['expires_at'])->format('Y-m-d H:i'));
+
+        // Reçu : la conservation de la fiche
+        $received = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'received'])->assertOk()->json();
+        $this->assertSame('0 à +3 °C', $received['storage']);
+        $this->assertSame('2026-10-19 10:00', Carbon::parse($received['expires_at'])->format('Y-m-d H:i'));
+
+        // le journal garde l'événement et la conservation IMPRIMÉE
+        $log = LabelPrintLog::query()->findOrFail($frozen['log_id']);
+        $this->assertSame('frozen', $log->action);
+        $this->assertSame('≤ −18 °C', $log->storage);
+        Carbon::setTestNow();
+    }
+
+    public function test_un_produit_decongele_ne_se_recongele_jamais_sauf_cuit_entre_temps(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 10:00:00', config('app.timezone')));
+        $this->caisse();
+        $thaw = $this->expertProduct(['name' => 'Steak décongelé', 'thawed_storage' => '0 à +2 °C', 'actions' => [['key' => 'thawed', 'value' => 24, 'unit' => 'hours']]]);
+        $refreeze = $this->expertProduct(['name' => 'Steak recongelé', 'thawed_storage' => null, 'actions' => [['key' => 'frozen', 'value' => 30, 'unit' => 'days']]]);
+        $cook = $this->expertProduct(['name' => 'Steak cuit', 'thawed_storage' => null, 'actions' => [['key' => 'cooked', 'value' => 24, 'unit' => 'hours']]]);
+        $freezeCooked = $this->expertProduct(['name' => 'Steak cuit congelé', 'thawed_storage' => null, 'actions' => [['key' => 'frozen', 'value' => 30, 'unit' => 'days']]]);
+
+        $thawed = $this->printed($thaw['id']);
+        // décongelé → congelé : refusé, avec la raison
+        $r = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $refreeze['id'], 'parent_log_id' => $thawed['log_id']])->assertStatus(422);
+        $this->assertSame('refreeze_forbidden', $r->json('status'));
+
+        // décongelé → CUIT → congelé : permis (la cuisson est un traitement assainissant)
+        $cooked = $this->printed($cook['id'], ['parent_log_id' => $thawed['log_id']]);
+        $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $freezeCooked['id'], 'parent_log_id' => $cooked['log_id']])->assertOk();
+        Carbon::setTestNow();
+    }
+
+    public function test_un_nombre_d_evenements_au_dela_des_huit_ou_inconnu_est_refuse(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products', [
+            'name' => 'Test', 'storage' => '0 à +4 °C', 'actions' => [['key' => 'teleport', 'value' => 1, 'unit' => 'days']],
+        ])->assertStatus(422);
+        $this->assertCount(8, DlcLabelProduct::ACTIONS);
+    }
+
+    // ───────────── source et validation des durées · contrôle du catalogue (2026-10-17 · méga-fichier P0) ─────────────
+
+    public function test_le_catalogue_installe_dit_que_ses_durees_sont_a_valider(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertStatus(201);
+        $rows = $this->getJson('/api/admin/labels/products')->assertOk()->json('data');
+        $this->assertNotEmpty($rows);
+        foreach ($rows as $r) {
+            $this->assertSame('starting', $r['duration_review'], $r['name']);
+            $this->assertSame('Valeur de départ Cayenne', $r['duration_source'], $r['name']);
+            $this->assertNull($r['durations_checked_at']);
+        }
+        // une fiche faite à la main n'est pas une « valeur de départ » : c'est celle du restaurant
+        $mine = $this->expertProduct(['name' => 'Ma sauce maison']);
+        $this->assertSame('own', $mine['duration_review']);
+    }
+
+    public function test_valider_les_durees_garde_qui_et_quand_et_ne_touche_a_aucune_duree(): void
+    {
+        $user = $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertStatus(201);
+        $before = $this->getJson('/api/admin/labels/products')->json('data');
+        $ids = array_slice(array_column($before, 'id'), 0, 3);
+        Carbon::setTestNow(Carbon::parse('2026-10-17 11:00:00', config('app.timezone')));
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => $ids])->assertOk()->assertJsonPath('data.validated', 3);
+        // idempotent : la première validation reste
+        Carbon::setTestNow(Carbon::parse('2026-10-18 09:00:00', config('app.timezone')));
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => $ids])->assertOk()->assertJsonPath('data.validated', 0);
+
+        $after = collect($this->getJson('/api/admin/labels/products')->json('data'))->keyBy('id');
+        foreach ($ids as $id) {
+            $this->assertSame('validated', $after[$id]['duration_review']);
+            $this->assertSame('2026-10-17 11:00', Carbon::parse($after[$id]['durations_checked_at'])->setTimezone(config('app.timezone'))->format('Y-m-d H:i'));
+            $this->assertSame($user->id, DlcLabelProduct::query()->find($id)->durations_checked_by);
+        }
+        foreach ($before as $b) {
+            $this->assertSame($b['actions'], $after[$b['id']]['actions'], 'valider ne change aucune durée');
+        }
+        $this->assertSame('starting', $after[array_column($before, 'id')[5]]['duration_review'], 'les autres restent à valider');
+        Carbon::setTestNow();
+    }
+
+    public function test_changer_une_duree_fait_tomber_la_validation_et_la_valeur_de_depart_devient_celle_du_restaurant(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertStatus(201);
+        $one = $this->getJson('/api/admin/labels/products')->json('data.0');
+        $this->postJson('/api/admin/labels/products/validate-durations', ['ids' => [$one['id']]])->assertOk();
+
+        // le même enregistrement sans changement de chiffres : la validation reste
+        $same = $this->putJson('/api/admin/labels/products/'.$one['id'], ['name' => $one['name'], 'actions' => $one['actions'], 'storage' => $one['storage'], 'note' => 'Bac 3'])->assertOk()->json('data');
+        $this->assertSame('validated', $same['duration_review']);
+
+        // une durée change : l'ancienne validation portait sur d'autres chiffres
+        $changed = $this->putJson('/api/admin/labels/products/'.$one['id'], [
+            'name' => $one['name'], 'storage' => $one['storage'], 'thawed_storage' => $one['thawed_storage'],
+            'actions' => [['key' => $one['actions'][0]['key'], 'value' => $one['actions'][0]['value'] + 1, 'unit' => $one['actions'][0]['unit']]] + array_slice($one['actions'], 1),
+        ])->assertOk()->json('data');
+        $this->assertSame('own', $changed['duration_review']);
+        $this->assertSame('Saisie du restaurant', $changed['duration_source']);
+        $this->assertNull($changed['durations_checked_at']);
+
+        // …sauf si le responsable les revalide dans le même geste, en disant d'où elles viennent
+        $again = $this->putJson('/api/admin/labels/products/'.$one['id'], [
+            'name' => $one['name'], 'storage' => $one['storage'], 'thawed_storage' => $one['thawed_storage'],
+            'actions' => $changed['actions'], 'durations_checked' => true, 'duration_source' => 'Plan de maîtrise sanitaire',
+        ])->assertOk()->json('data');
+        $this->assertSame('validated', $again['duration_review']);
+        $this->assertSame('Plan de maîtrise sanitaire', $again['duration_source']);
+    }
+
+    public function test_le_controle_du_catalogue_signale_sans_famille_allergenes_et_fiches_voisines(): void
+    {
+        $this->caisse();
+        $this->postJson('/api/admin/labels/products/install-recommended')->assertStatus(201);
+        // les fiches de test du propriétaire (cas réel de la production) : sans famille, et voisines du catalogue
+        $tomate = $this->postJson('/api/admin/labels/products', ['name' => 'Tomate', 'storage' => '0 à +3 °C', 'actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']]])->assertCreated()->json('data');
+        $poivron = $this->postJson('/api/admin/labels/products', ['name' => 'Poivron', 'storage' => '0 à +3 °C', 'category' => 'Légumes & crudités', 'actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']]])->assertCreated()->json('data');
+        $double = $this->postJson('/api/admin/labels/products', ['name' => 'Tomates', 'storage' => '0 à +3 °C', 'category' => 'Légumes & crudités', 'actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']]])->assertCreated()->json('data');
+
+        $health = $this->getJson('/api/admin/labels/products')->assertOk()->json('meta.health');
+
+        $noCat = collect($health['no_category'])->keyBy('id');
+        $this->assertTrue($noCat->has($tomate['id']));
+        $this->assertSame('Légumes & crudités', $noCat[$tomate['id']]['suggested'], 'la famille probable vient du catalogue, jamais d’une devinette');
+
+        $this->assertContains($tomate['id'], $health['allergens'], 'une fiche qui ne dit rien des allergènes reste à renseigner');
+
+        $pairs = collect($health['neighbours']);
+        $dup = $pairs->first(fn ($n) => $n['kind'] === 'duplicate' && in_array($tomate['id'], $n['ids'], true) && in_array($double['id'], $n['ids'], true));
+        $this->assertNotNull($dup, '« Tomate » et « Tomates » sont le même produit écrit deux fois');
+        $differs = $pairs->first(fn ($n) => $n['kind'] === 'storage_differs' && in_array($poivron['id'], $n['ids'], true));
+        $this->assertNotNull($differs, '« Poivron » 0/+3 °C face à « Poivrons coupés » 0/+4 °C');
+        $this->assertContains('0 à +3 °C', $differs['storages']);
+        $this->assertContains('0 à +4 °C', $differs['storages']);
+        $this->assertSame(0, $pairs->filter(fn ($n) => $n['ids'][0] !== $tomate['id'] && $n['ids'][1] !== $tomate['id'] && ! in_array($poivron['id'], $n['ids'], true) && ! in_array($double['id'], $n['ids'], true))->count(),
+            'le catalogue seul est cohérent : aucune alerte entre deux fiches du catalogue');
+    }
+
+    public function test_classer_les_fiches_sans_famille_en_lot(): void
+    {
+        $this->caisse();
+        $tomate = $this->postJson('/api/admin/labels/products', ['name' => 'Tomate', 'storage' => '0 à +3 °C', 'actions' => [['key' => 'opened', 'value' => 2, 'unit' => 'days']]])->assertCreated()->json('data');
+        $this->postJson('/api/admin/labels/products/classify', ['assignments' => [['id' => $tomate['id'], 'category' => 'Légumes & crudités']]])->assertOk()->assertJsonPath('data.classified', 1);
+        $this->assertSame('Légumes & crudités', DlcLabelProduct::query()->find($tomate['id'])->category);
+        $this->postJson('/api/admin/labels/products/classify', ['assignments' => [['id' => $tomate['id'], 'category' => '']]])->assertStatus(422);
+    }
 }

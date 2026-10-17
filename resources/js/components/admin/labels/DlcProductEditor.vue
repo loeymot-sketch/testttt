@@ -54,7 +54,8 @@
                             <span><b>Durées vérifiées</b> : ces durées et températures sont validées par notre plan de maîtrise sanitaire ou
                                 indiquées par le fabricant (votre nom et l'heure sont gardés sur la fiche).</span>
                         </label>
-                        <p v-if="checkedText" class="ed-help" data-testid="dlc-ed-durations-checked-at">{{ checkedText }}</p>
+                        <p v-if="checkedText && !durationsDirty" class="ed-help" data-testid="dlc-ed-durations-checked-at">{{ checkedText }}</p>
+
                     </fieldset>
 
                     <fieldset class="ed-fieldset">
@@ -78,6 +79,26 @@
                             </div>
                             <p class="ed-note" data-testid="dlc-ed-thawed-note">L'étiquette de décongélation indiquera « {{ thawedPrinted }} » et « NE PAS RECONGELER ».
                                 Viande hachée : 0 à +2 °C ; poisson : 0 à +2 °C ; pain : ambiante.</p>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="ed-fieldset">
+                        <legend>Source et validation des durées</legend>
+                        <!-- D'où vient la durée, et qui l'a confirmée : une durée sans source ne vaut rien en contrôle. -->
+                        <div data-testid="dlc-ed-source-block">
+                            <label for="dlc-ed-source" class="ed-label">Source des durées</label>
+                            <input id="dlc-ed-source" v-model="form.duration_source" type="text" maxlength="80" class="db-field-control"
+                                   list="dlc-ed-sources" placeholder="Plan de maîtrise sanitaire, GBPH, fabricant…" autocomplete="off" data-testid="dlc-ed-source" />
+                            <datalist id="dlc-ed-sources">
+                                <option v-for="src in sourceChoices" :key="src" :value="src" />
+                            </datalist>
+                            <p v-if="isStarting && !durationsDirty" class="ed-note ed-note--warn" data-testid="dlc-ed-starting">
+                                Valeur de départ proposée par l'application, <b>pas encore validée</b> : confirmez-la, ou corrigez-la, avant qu'elle fasse foi.
+                            </p>
+                            <label v-if="!warnings.length && (durationsDirty || !alreadyValidated)" class="ed-switch ed-switch--ok">
+                                <input v-model="validateNow" type="checkbox" data-testid="dlc-ed-validate" />
+                                <span><b>Je valide ces durées et cette conservation</b> (mon plan de maîtrise sanitaire) — votre nom et l'heure sont gardés sur la fiche.</span>
+                            </label>
                         </div>
                     </fieldset>
 
@@ -167,7 +188,13 @@ import {
 } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
-const DEFAULT_DURATION = { opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"] };
+/** D'où peut venir une durée (suggestions ; le restaurant écrit ce qui est vrai pour lui). */
+const DLC_DURATION_SOURCES = ["Plan de maîtrise sanitaire", "GBPH restauration", "Fabricant (emballage)", "Autocontrôle du restaurant", "Fiche technique"];
+
+const DEFAULT_DURATION = {
+    opened: [2, "days"], thawed: [3, "days"], prepared: [24, "hours"], cooked: [3, "days"], vacuum: [6, "days"],
+    frozen: [90, "days"], witness: [5, "days"], received: [3, "days"],
+};
 /** Événements où le produit est encore dans son emballage d'origine : la DLC du fabricant est demandée par défaut. */
 // Une fiche neuve s'imprime en UN appui, sans question (demande du propriétaire, 2026-10-17) : « DLC du fabricant » est une
 // option à cocher produit par produit (fromage tranché, charcuterie…), jamais imposée à la création.
@@ -222,6 +249,7 @@ export default {
                 ask_original_dlc: askDefault,
                 print_operator: p.print_operator === undefined ? true : Boolean(p.print_operator),
                 default_copies: Number(p.default_copies) || 1,
+                duration_source: p.duration_source || "",
             },
             actionRows: order.map((key) => {
                 const existing = actions.find((a) => a.key === key);
@@ -234,6 +262,8 @@ export default {
             defaultKey: actions[0].key,
             askTouched: p.ask_original_dlc !== undefined,
             durationsChecked: false,
+            validateNow: false,
+            sourceAtOpen: p.duration_source || "",
             localError: "",
             confirmDelete: false,
             returnFocus: null,
@@ -252,9 +282,22 @@ export default {
         },
         checkedText() {
             const at = this.product && this.product.durations_checked_at;
-            return at ? `Durées inhabituelles vérifiées le ${formatDlcDate(at)}.` : "";
+            return at ? `Durées validées le ${formatDlcDate(at)}.` : "";
         },
         allergenChoices() { return DLC_ALLERGENS; },
+        sourceChoices() { return DLC_DURATION_SOURCES; },
+        alreadyValidated() { return Boolean(this.product && this.product.durations_checked_at); },
+        isStarting() { return Boolean(this.product && this.product.duration_review === "starting"); },
+        /** Les chiffres couverts par la validation (événements, durées, conservations) ont-ils changé depuis l'ouverture ? */
+        durationsDirty() {
+            const p = this.product;
+            if (!p || !p.id) return true;
+            const sig = (list) => (list || []).map((a) => `${a.key}:${Number(a.value)}:${a.unit}`).sort().join("|");
+            const was = Array.isArray(p.actions) ? p.actions : [];
+            return sig(this.enabledActions) !== sig(was)
+                || String(this.form.storage || "").trim() !== String(p.storage || "").trim()
+                || String(this.thawingEnabled ? this.form.thawed_storage || "" : "").trim() !== String(p.thawed_storage || "").trim();
+        },
         /** Les événements cochés, l'événement « par défaut » en premier (c'est lui qu'imprime un appui). */
         enabledActions() {
             const list = this.actionRows.filter((a) => a.enabled && Number(a.value) >= 1).map((a) => ({ key: a.key, value: Number(a.value), unit: a.unit }));
@@ -301,7 +344,9 @@ export default {
         hint(a) {
             const v = Number(a.value);
             if (!(v >= 1)) return "durée à saisir";
-            return `→ DLC ${shelfLifeText(v, a.unit)} après`;
+            // congelé / repas témoin : la conservation vient de l'événement (congélateur, 0 à +3 °C), pas du choix « Conservation » plus bas
+            const imposed = a.key === "frozen" || a.key === "witness" ? ` · conservé à ${storageForAction("", a.key)}` : "";
+            return `→ DLC ${shelfLifeText(v, a.unit)} après${imposed}`;
         },
         /** Durée inhabituelle (règles de prudence du guide PMS, et erreurs d'unité courantes). */
         warningOf(a) {
@@ -324,7 +369,8 @@ export default {
                 return "Viande ou poisson décongelé : 24 h est l'usage courant ; au-delà, votre plan de maîtrise sanitaire doit le prévoir.";
             }
             if (a.key === "thawed" && h > 72) return "Un produit décongelé se garde en général 3 jours au plus.";
-            const cold = !this.form.storage || !isFrozenOrAmbient(this.form.storage) || a.key === "thawed";
+            // Congelé : la durée se compte en mois, le « 7 jours au froid positif » ne le concerne pas.
+            const cold = a.key !== "frozen" && (!this.form.storage || !isFrozenOrAmbient(this.form.storage) || a.key === "thawed");
             if (cold && h > 7 * 24) return "Plus de 7 jours au froid positif : durée inhabituelle.";
             return "";
         },
@@ -384,7 +430,10 @@ export default {
                 allergens: this.form.allergens,
                 no_allergens: this.form.allergens.length ? false : this.form.no_allergens,
                 needs_parent: this.form.needs_parent,
-                durations_checked: this.warnings.length && this.durationsChecked ? true : undefined,
+                durations_checked: (this.warnings.length ? this.durationsChecked : this.validateNow) ? true : undefined,
+                // la source n'est renvoyée que si on l'a changée : sinon le serveur sait qu'une valeur de départ modifiée devient celle du restaurant
+                duration_source: String(this.form.duration_source || "").trim() !== String(this.sourceAtOpen).trim()
+                    ? (String(this.form.duration_source || "").trim() || null) : undefined,
                 actions: this.enabledActions,
                 ask_original_dlc: this.form.ask_original_dlc,
                 print_operator: this.form.print_operator,
@@ -430,6 +479,9 @@ export default {
 .ed-action-hint { color: #64748b; font-size: 14px; }
 .ed-action-warn { flex-basis: 100%; color: #92400e; font-size: 14px; font-weight: 700; padding-left: 36px; }
 .ed-switch--warn { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.ed-switch.ed-switch--ok { background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 8px 10px; margin-top: 10px; }
+.ed-source { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+.ed-note.ed-note--warn { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
 .ed-switch--inline { margin-bottom: 8px; }
 .ed-thawed { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
 .ed-note { margin: 8px 0 0; font-size: 14px; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; }

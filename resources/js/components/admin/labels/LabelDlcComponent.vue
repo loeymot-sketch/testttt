@@ -54,6 +54,9 @@
                             <button v-if="query" type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-search-clear" @click="query = ''">Effacer</button>
                         </div>
                         <button type="button" class="dlc-btn dlc-btn--primary" data-testid="dlc-new" @click="openEditor(null)">＋ Nouveau produit</button>
+                        <button type="button" class="dlc-btn" :class="{ 'dlc-btn--attention': healthCount > 0 }" data-testid="dlc-health-open" @click="healthOpen = true">
+                            Contrôle du catalogue<span v-if="healthCount" class="dlc-health-n" data-testid="dlc-health-count">{{ healthCount }}</span>
+                        </button>
                         <!-- Étroit (portrait) : la liste « À surveiller » passe sous la grille ; l'alerte reste ici, en tête. -->
                         <button v-if="expiredCount" type="button" class="dlc-alert-chip" data-testid="dlc-watch-chip" @click="scrollToWatch">
                             ⚠ {{ expiredCount }} lot{{ expiredCount > 1 ? "s" : "" }} expiré{{ expiredCount > 1 ? "s" : "" }} — voir
@@ -208,6 +211,8 @@
                             <span class="dlc-dot" :style="{ background: colorOf(p.category) }" aria-hidden="true"></span>
                             <span class="dlc-row-name">{{ p.name }}<small v-if="p.category"> · {{ p.category }}</small></span>
                             <span class="dlc-row-life">{{ p.actions.map((a) => `${actionLabel(a.key)} ${lifeOf(a)}`).join(" · ") }}</span>
+                            <span v-if="p.duration_review === 'starting'" class="dlc-row-review" :data-testid="`dlc-row-review-${p.id}`">durées à valider</span>
+                            <span v-else-if="p.duration_review === 'validated'" class="dlc-row-ok" :data-testid="`dlc-row-ok-${p.id}`">✓ validées</span>
                             <button type="button" class="dlc-btn dlc-btn--small" @click="toggleActive(p)">{{ p.is_active ? "Masquer" : "Réactiver" }}</button>
                             <button type="button" class="dlc-btn dlc-btn--small" :data-testid="`dlc-edit-${p.id}`" @click="openEditor(p)">Modifier</button>
                         </li>
@@ -265,6 +270,8 @@
             </div>
         </div>
 
+        <DlcCatalogueHealth v-if="healthOpen" :health="health" :products="products" :categories="knownCategories"
+                            @close="healthOpen = false" @edit="editFromHealth" @changed="loadProducts" />
         <DlcProductEditor v-if="editing" :key="editorKey" :product="editing" :categories="knownCategories" :settings="settings"
                           :saving="saving" :error="formError" @save="saveProduct" @cancel="closeEditor" @delete="deleteProduct" />
         <DlcPrintSheet v-if="sheetProduct" :product="sheetProduct" :settings="settings" :server-offset-ms="serverOffsetMs" :busy="busyId === sheetProduct.id || queuedCount(sheetProduct.id) > 0"
@@ -326,6 +333,7 @@ import labelPrinterMixin from "../../../helpers/labelPrinterMixin";
 import LabelPrinterBar from "./LabelPrinterBar";
 import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
+import DlcCatalogueHealth from "./DlcCatalogueHealth";
 import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { searchProducts } from "../../../helpers/dlcSearch";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
@@ -364,12 +372,15 @@ const SUGGESTIONS = [
 
 export default {
     name: "LabelDlcComponent",
-    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet },
+    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth },
     mixins: [labelPrinterMixin],
     data() {
         return {
             products: [],
             recommended: { total: 0, missing: 0, never_configured: false },
+            // Contrôle du catalogue (serveur) : durées de départ à valider, allergènes à renseigner, fiches sans famille, fiches voisines
+            health: { starting: [], allergens: [], no_category: [], neighbours: [] },
+            healthOpen: false,
             installing: false,
             justInstalled: 0,
             autoInstallTried: false,
@@ -426,6 +437,10 @@ export default {
             return [...new Set(this.products.map((p) => p.category).filter(Boolean))];
         },
         NO_FAMILY() { return NO_FAMILY; },
+        healthCount() {
+            const h = this.health;
+            return h.starting.length + h.allergens.length + h.no_category.length + h.neighbours.length;
+        },
         uncategorizedCount() { return this.activeProducts.filter((p) => !p.category).length; },
         todayIso() {
             return new Intl.DateTimeFormat("fr-CA", { timeZone: this.timezone }).format(new Date(this.nowMs + this.serverOffsetMs));
@@ -673,6 +688,11 @@ export default {
                 if (this.category && !this.categoryTabs.some((c) => c.name === this.category)) this.category = "";
                 this.loadError = "";
                 this.loaded = true;
+                const hl = data.meta && data.meta.health;
+                this.health = {
+                    starting: (hl && hl.starting) || [], allergens: (hl && hl.allergens) || [],
+                    no_category: (hl && hl.no_category) || [], neighbours: (hl && hl.neighbours) || [],
+                };
                 const rec = data.meta && data.meta.recommended;
                 if (rec) this.recommended = { total: Number(rec.total) || 0, missing: Number(rec.missing) || 0, never_configured: Boolean(rec.never_configured) };
                 // Premier lancement : le catalogue arrive tout seul, une seule fois (jamais après une suppression volontaire).
@@ -1089,6 +1109,10 @@ export default {
             this.editorKey += 1;
             this.editing = product ? { ...product } : {};
         },
+        editFromHealth(p) {
+            this.healthOpen = false;
+            this.openEditor(p);
+        },
         closeEditor() {
             this.editing = null;
             this.formError = "";
@@ -1138,6 +1162,10 @@ export default {
 .dlc-alert { border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
 .dlc-note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-size: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .dlc-tile-review { color: #b45309; font-weight: 700; }
+.dlc-btn--attention { border-color: #fdba74; background: #fff7ed; color: #7c2d12; }
+.dlc-health-n { display: inline-block; margin-left: 8px; min-width: 26px; padding: 1px 8px; border-radius: 999px; background: #D63D0B; color: #fff; font-size: 14px; font-weight: 800; text-align: center; }
+.dlc-row-review { color: #b45309; font-weight: 700; font-size: 13px; }
+.dlc-row-ok { color: #15803d; font-weight: 700; font-size: 13px; }
 .dlc-empty { color: #475569; padding: 24px 8px; text-align: center; }
 .dlc-empty--cta { text-align: left; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 18px; }
 .dlc-empty--inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }

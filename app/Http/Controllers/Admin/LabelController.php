@@ -7,6 +7,7 @@ use App\Models\DlcLabelProduct;
 use App\Models\LabelPrintLog;
 use App\Models\Order;
 use App\Services\KitchenDisplaySystemOrderService;
+use App\Support\Labels\CatalogueHealth;
 use App\Support\Labels\RecommendedDlcCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -60,16 +61,18 @@ class LabelController extends AdminController
             ->groupBy('dlc_product_id')
             ->pluck('total', 'dlc_product_id');
 
-        $products = DlcLabelProduct::query()
+        $models = DlcLabelProduct::query()
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get()
+            ->get();
+        $products = $models
             ->map(fn (DlcLabelProduct $p): array => $this->presentProduct($p) + ['uses_30d' => (int) ($uses[$p->id] ?? 0)])
             ->values();
 
         return response()->json([
             'data' => $products,
-            'meta' => ['recommended' => $this->recommendedState()] + $this->clock(),
+            // `health` : le contrôle du catalogue (durées à valider, allergènes à renseigner, fiches sans famille, fiches voisines)
+            'meta' => ['recommended' => $this->recommendedState(), 'health' => CatalogueHealth::analyse($models)] + $this->clock(),
         ]);
     }
 
@@ -125,6 +128,8 @@ class LabelController extends AdminController
                 'allergens' => $row['allergens'],
                 'no_allergens' => $row['no_allergens'],
                 'default_copies' => $row['default_copies'],
+                // une valeur de DÉPART : le responsable la valide (ou la corrige) avant qu'elle fasse foi
+                'duration_source' => DlcLabelProduct::SOURCE_STARTING,
                 'sort_order' => $order + $row['sort_order'],
                 'is_active' => true,
             ]);
@@ -162,6 +167,39 @@ class LabelController extends AdminController
         DlcLabelProduct::query()->findOrFail((int) $product)->delete();
 
         return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Le responsable CONFIRME les durées de ces fiches (plan de maîtrise sanitaire) : qui et quand sont gardés sur chacune.
+     * Idempotent : une fiche déjà validée garde sa première validation. Ne modifie jamais une durée.
+     */
+    public function validateDurations(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['ids' => ['required', 'array', 'min:1', 'max:300'], 'ids.*' => ['integer', 'min:1']]);
+        $by = $request->user()?->id;
+        $count = DlcLabelProduct::query()->whereIn('id', $validated['ids'])->whereNull('durations_checked_at')->get()
+            ->each(fn (DlcLabelProduct $p) => $p->forceFill(['durations_checked_at' => now(), 'durations_checked_by' => $by])->save())->count();
+
+        return response()->json(['data' => ['validated' => $count]]);
+    }
+
+    /** Range des fiches dans une famille (proposée par le contrôle du catalogue, confirmée par le responsable). */
+    public function classify(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'assignments' => ['required', 'array', 'min:1', 'max:200'],
+            'assignments.*.id' => ['required', 'integer', 'min:1'],
+            'assignments.*.category' => ['required', 'string', 'min:1', 'max:60'],
+        ]);
+        $count = 0;
+        foreach ($validated['assignments'] as $a) {
+            $model = DlcLabelProduct::query()->find((int) $a['id']);
+            if (! $model) continue;
+            $model->forceFill(['category' => trim((string) $a['category'])])->save();
+            $count++;
+        }
+
+        return response()->json(['data' => ['classified' => $count]]);
     }
 
     // ───────────────────────────── Impression DLC ─────────────────────────────
@@ -282,6 +320,11 @@ class LabelController extends AdminController
             }
             if ($parent->expires_at->lte($openedAt)) {
                 return $refuse('parent_expired', 'Le produit d’origine '.$ref.' est périmé : il ne doit pas être utilisé.');
+            }
+            // Jamais de recongélation : un produit qui a été décongelé (sans cuisson depuis) ne retourne pas au congélateur
+            // (GBPH restauration § 2.6 : « ne doit en aucun cas être recongelé »). Cuit entre-temps, il peut être congelé.
+            if ($action['key'] === 'frozen' && $this->chainWasThawedUncooked($parent)) {
+                return $refuse('refreeze_forbidden', 'Le produit d’origine '.$ref.' a été décongelé : il ne doit jamais être recongelé (sauf s’il a été cuit depuis).');
             }
             // Une SEULE remise en température : cuire un produit qui a DÉJÀ été cuit — même plusieurs étiquettes plus haut
             // (cuit → mis sous vide → recuit) — ne lui redonne pas de durée (GBPH § 2.7 ; toxines thermostables
@@ -470,6 +513,24 @@ class LabelController extends AdminController
         $current = $parent;
         for ($depth = 0; $current && $depth < 25 && ! isset($seen[$current->id]); $depth++) {
             if ($current->action === 'cooked') return true;
+            $seen[$current->id] = true;
+            $current = $current->parent_log_id ? LabelPrintLog::query()->find($current->parent_log_id) : null;
+        }
+
+        return false;
+    }
+
+    /**
+     * En remontant la chaîne d'origine (le plus récent d'abord) : une DÉCONGÉLATION rencontrée avant toute CUISSON — le
+     * produit a été décongelé et n'a pas été cuit depuis. Même borne de 25 niveaux, sans boucle.
+     */
+    private function chainWasThawedUncooked(LabelPrintLog $parent): bool
+    {
+        $seen = [];
+        $current = $parent;
+        for ($depth = 0; $current && $depth < 25 && ! isset($seen[$current->id]); $depth++) {
+            if ($current->action === 'cooked') return false;
+            if ($current->action === 'thawed') return true;
             $seen[$current->id] = true;
             $current = $current->parent_log_id ? LabelPrintLog::query()->find($current->parent_log_id) : null;
         }
@@ -880,7 +941,7 @@ class LabelController extends AdminController
             // une modification partielle (masquer / réactiver) n'a pas à renvoyer la durée
             'shelf_life_value' => [$hasActions || $ignoreId ? 'nullable' : 'required', 'integer', 'min:1', 'max:'.$max],
             'shelf_life_unit' => [$hasActions || $ignoreId ? 'nullable' : 'required', Rule::in(DlcLabelProduct::UNITS)],
-            'actions' => ['nullable', 'array', 'min:1', 'max:5'],
+            'actions' => ['nullable', 'array', 'min:1', 'max:'.count(DlcLabelProduct::ACTIONS)],
             'actions.*.key' => ['required', 'distinct', Rule::in(DlcLabelProduct::ACTIONS)],
             'actions.*.value' => ['required', 'integer', 'min:1', 'max:720'],
             'actions.*.unit' => ['required', Rule::in(DlcLabelProduct::UNITS)],
@@ -895,6 +956,8 @@ class LabelController extends AdminController
             'needs_parent' => ['nullable', 'boolean'],
             // « Durées vérifiées » coché pour une durée inhabituelle : qui et quand sont gardés sur la fiche
             'durations_checked' => ['nullable', 'boolean'],
+            // D'où vient la durée (GBPH, plan de maîtrise sanitaire, fabricant…), écrite par le responsable
+            'duration_source' => ['nullable', 'string', 'max:80'],
             'note' => ['nullable', 'string', 'max:80'],
             'ask_original_dlc' => ['nullable', 'boolean'],
             'print_operator' => ['nullable', 'boolean'],
@@ -927,7 +990,7 @@ class LabelController extends AdminController
         }
 
         $data['name'] = trim((string) $data['name']);
-        foreach (['storage', 'thawed_storage', 'note', 'category'] as $field) {
+        foreach (['storage', 'thawed_storage', 'note', 'category', 'duration_source'] as $field) {
             if (array_key_exists($field, $data)) {
                 $data[$field] = isset($data[$field]) && trim((string) $data[$field]) !== '' ? trim((string) $data[$field]) : null;
             }
@@ -977,6 +1040,14 @@ class LabelController extends AdminController
         if (! empty($data['durations_checked'])) {
             $data['durations_checked_at'] = now();
             $data['durations_checked_by'] = $request->user()?->id;
+        } elseif ($model && $this->durationsChanged($model, $data)) {
+            // Les durées ou la conservation ONT CHANGÉ : l'ancienne validation portait sur d'autres chiffres, elle tombe. Une valeur de
+            // départ du catalogue modifiée à la main devient celle du restaurant (et doit être validée à son tour).
+            $data['durations_checked_at'] = null;
+            $data['durations_checked_by'] = null;
+            if (! array_key_exists('duration_source', $data) && $model->duration_source === DlcLabelProduct::SOURCE_STARTING) {
+                $data['duration_source'] = DlcLabelProduct::SOURCE_OWN;
+            }
         }
         unset($data['durations_checked']);
 
@@ -1000,6 +1071,18 @@ class LabelController extends AdminController
         return $data;
     }
 
+    /** Les chiffres qu'une validation couvre (événements, durées, conservations) ont-ils changé par rapport à la fiche enregistrée ? */
+    private function durationsChanged(DlcLabelProduct $model, array $data): bool
+    {
+        $same = fn ($a, $b) => trim((string) $a) === trim((string) $b);
+        if (array_key_exists('storage', $data) && ! $same($data['storage'], $model->storage)) return true;
+        if (array_key_exists('thawed_storage', $data) && ! $same($data['thawed_storage'], $model->thawed_storage)) return true;
+        if (! array_key_exists('actions', $data)) return false;
+        $key = fn (array $list) => collect($list)->map(fn ($a) => $a['key'].':'.(int) $a['value'].':'.$a['unit'])->sort()->values()->all();
+
+        return $key($data['actions']) !== $key($model->actionList());
+    }
+
     private function presentProduct(DlcLabelProduct $p): array
     {
         return [
@@ -1017,6 +1100,9 @@ class LabelController extends AdminController
             'allergens_unreviewed' => ! $p->no_allergens && empty($p->allergens),
             'needs_parent' => (bool) $p->needs_parent,
             'durations_checked_at' => $p->durations_checked_at?->toIso8601String(),
+            'duration_source' => $p->duration_source,
+            // validated (confirmée par le responsable) · starting (valeur de départ, À VALIDER) · own (saisie du restaurant)
+            'duration_review' => $p->durationReview(),
             'note' => $p->note,
             'ask_original_dlc' => (bool) $p->ask_original_dlc,
             'print_operator' => $p->print_operator === null ? true : (bool) $p->print_operator,
