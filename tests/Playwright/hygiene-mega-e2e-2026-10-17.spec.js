@@ -261,6 +261,41 @@ test.describe('Équipements chauds et courbe', () => {
     });
 });
 
+test.describe('Qui ? sur les relevés de température', () => {
+    const NAME = 'E2E Sarah Lopez';
+    test.beforeAll(() => {
+        resetHygiene();
+        tinker(`DB::table('users')->where('name', '${NAME}')->delete();
+            $u = App\\Models\\User::factory()->create(['name' => '${NAME}', 'branch_id' => 1]); $u->assignRole('Chef');`);
+    });
+    test.afterAll(() => tinker(`DB::table('users')->where('name', '${NAME}')->delete();`));
+
+    test('le relevé est signé de la personne choisie, pas du compte de la tablette', async ({ page }) => {
+        const bad = watch(page);
+        await loginAsAdmin(page);
+        await page.goto('/admin/hygiene/temperature', { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('[data-testid="tmp-setup"]')).toBeVisible({ timeout: 30_000 });
+        await page.locator('[data-testid="tmp-setup-go"]').click();
+        await expect(page.locator('[data-testid^="tmp-card-"]').first()).toBeVisible({ timeout: 15_000 });
+
+        await page.locator('[data-testid="hy-operator-btn"]').click();
+        await page.locator('[data-testid="hy-operator-list"] button', { hasText: NAME }).click();
+        await expect(page.locator('[data-testid="hy-operator-btn"]')).toContainText('E2E L.'); // le bouton abrège (prénom + initiale)
+
+        const card = page.locator('.tmp-card', { hasText: 'Frigo' }).first();
+        const id = (await card.getAttribute('data-testid')).replace('tmp-card-', '');
+        await page.locator(`[data-testid="tmp-take-${id}"]`).click();
+        await page.locator(`[data-testid="tmp-input-${id}"]`).fill('3');
+        await page.screenshot({ path: path.join(OUT, 'e1-qui.png') });
+        await page.locator('[data-testid="tmp-submit"]').click();
+        await expect(page.locator(`[data-testid="tmp-done-${id}"]`)).toContainText(/E2E (Sarah|L\.)/, { timeout: 15_000 });
+        const row = tinker(`echo json_encode(DB::table('hygiene_temperature_readings')->latest('id')->first(['operator_name']), JSON_UNESCAPED_UNICODE);`);
+        expect(row).toContain(NAME);
+        await page.screenshot({ path: path.join(OUT, 'e2-signe.png') });
+        expect(bad).toEqual([]);
+    });
+});
+
 test.describe('Accueil : rappels et boutons d’action', () => {
     test.beforeAll(() => {
         resetHygiene();

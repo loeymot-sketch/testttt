@@ -39,6 +39,9 @@
                         <span class="tmp-chip is-ok" data-testid="tmp-sum-ok">{{ summary.ok }} conforme{{ summary.ok > 1 ? "s" : "" }}</span>
                         <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
                     </div>
+                    <div class="tmp-who">
+                        <HygieneOperatorPicker v-model="operatorId" />
+                    </div>
 
                     <!-- ── Un équipement = une carte ───────────────────────────────────────────────── -->
                     <div class="tmp-grid">
@@ -209,6 +212,7 @@ import { parseTemperature, previewVerdict, formatTemperature, limitText } from "
 import { refFor, latest } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import HygieneTempChart from "./HygieneTempChart";
+import HygieneOperatorPicker from "./HygieneOperatorPicker";
 
 const historySeq = latest();
 
@@ -218,10 +222,11 @@ function clientRef() {
 
 export default {
     name: "HygieneTemperatureComponent",
-    components: { HygieneTempChart },
+    components: { HygieneTempChart, HygieneOperatorPicker },
     mixins: [hygieneRefresh],
     data() {
         return {
+            operatorId: null,
             items: [],
             equipment: [],
             meta: { period: "morning", periods: {}, summary: { total: 0, todo: 0, ok: 0, alert: 0 }, kinds: [], corrective_actions: [], server_now: null },
@@ -470,6 +475,7 @@ export default {
             const sent = this.pendingList;
             try {
                 const { data } = await axios.post("admin/hygiene/temperature/readings", {
+                    operator_user_id: this.operatorId || undefined,
                     readings: sent.map((e) => {
                         const entry = this.entries[e.id];
                         const verdict = this.verdictOf(e);
@@ -594,6 +600,7 @@ export default {
 .tmp-step { width: 48px; height: 48px; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; font-size: 26px; font-weight: 800; cursor: pointer; }
 
 .tmp-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.tmp-who { margin-bottom: 12px; }
 .tmp-period { background: #111827; color: #fff; border-radius: 999px; padding: 6px 14px; font-weight: 800; }
 .tmp-chip { border-radius: 999px; padding: 6px 12px; background: #f1f5f9; color: #334155; font-weight: 700; border: 1px solid transparent; font-size: 15px; }
 .tmp-chip.is-todo { background: #fffbeb; color: #92400e; border-color: #fde68a; }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Hygiene\HygieneController;
 use App\Models\HygieneEquipment;
 use App\Models\HygieneTemperatureReading;
 use App\Services\Hygiene\TemperatureRules;
@@ -22,15 +23,8 @@ use Illuminate\Validation\Rule;
  * Porte : la même que les étiquettes (permission:pos-orders|pos|kitchen-display-system) — le personnel qui tient la tablette.
  * Domaine NEUF, ADDITIF, HORS NF525. Contrat du module : config/hygiene.php.
  */
-class HygieneTemperatureController extends AdminController
+class HygieneTemperatureController extends HygieneController
 {
-    public function __construct()
-    {
-        parent::__construct();
-
-        $this->middleware(['permission:pos-orders|pos|kitchen-display-system']);
-    }
-
     // ───────────────────────────── Équipements ─────────────────────────────
 
     public function equipment(): JsonResponse
@@ -186,13 +180,14 @@ class HygieneTemperatureController extends AdminController
             'readings.*.corrective_action' => ['nullable', Rule::in(array_keys(config('hygiene.corrective_actions')))],
             'readings.*.corrective_note' => ['nullable', 'string', 'max:200'],
             'readings.*.client_ref' => ['nullable', 'string', 'max:40'],
+            'operator_user_id' => ['nullable', 'integer'],
         ], [], ['readings' => 'relevés', 'readings.*.value' => 'température']);
 
         $min = (float) config('hygiene.plausible_min');
         $max = (float) config('hygiene.plausible_max');
         $now = now();
         $branch = $this->branchId($request);
-        $user = $request->user();
+        $op = $this->operator($request); // tablette partagée : la personne choisie sous « Qui ? », sinon le compte connecté
         $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)
             ->whereIn('id', collect($validated['readings'])->pluck('equipment_id')->unique()->all())->get()->keyBy('id');
 
@@ -260,7 +255,7 @@ class HygieneTemperatureController extends AdminController
         }
 
         $saved = [];
-        DB::transaction(function () use ($prepared, $branch, $user, $now, &$saved): void {
+        DB::transaction(function () use ($prepared, $branch, $op, $now, &$saved): void {
             foreach ($prepared as $p) {
                 if ($p['client_ref'] !== null) {
                     $dup = HygieneTemperatureReading::query()->where('client_ref', $p['client_ref'])->first();
@@ -279,8 +274,8 @@ class HygieneTemperatureController extends AdminController
                     'source' => 'manual',
                     'recorded_at' => $now,
                     'timezone' => config('app.timezone'),
-                    'user_id' => $user?->id,
-                    'operator_name' => $user?->name ? mb_substr(trim((string) $user->name), 0, 80) : null,
+                    'user_id' => $op['user_id'],
+                    'operator_name' => $op['name'],
                     'corrective_action' => $p['action'],
                     'corrective_note' => $p['note'],
                     'client_ref' => $p['client_ref'],
@@ -483,20 +478,4 @@ class HygieneTemperatureController extends AdminController
         return str_replace('.', ',', rtrim(rtrim(number_format($v, 1, '.', ''), '0'), '.'));
     }
 
-    private function clock(): array
-    {
-        return ['server_now' => now()->toIso8601String(), 'timezone' => config('app.timezone')];
-    }
-
-    private function branchId(Request $request): int
-    {
-        return (int) ($request->user()?->branch_id ?: config('hygiene.branch_id', 1));
-    }
-
-    private function isUniqueViolation(QueryException $e): bool
-    {
-        $sqlState = (string) ($e->errorInfo[0] ?? $e->getCode());
-
-        return $sqlState === '23000' || $sqlState === '23505';
-    }
 }

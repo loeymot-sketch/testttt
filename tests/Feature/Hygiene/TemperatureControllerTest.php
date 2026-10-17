@@ -463,4 +463,48 @@ class TemperatureControllerTest extends TestCase
         $this->assertSame(3, HygieneEquipment::query()->where('kind', 'fridge')->count(), '3 au total, pas 1 + 3');
         $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 3])->assertOk();
     }
+    // ───────────── « Qui ? » sur une tablette partagée ─────────────
+
+    public function test_le_releve_est_signe_de_la_personne_choisie_pas_du_compte_de_la_tablette(): void
+    {
+        $this->staff(); // compte connecté de la tablette : « Karim Test »
+        $sarah = User::factory()->create(['branch_id' => 1, 'name' => 'Sarah Lopez']);
+        $sarah->assignRole('Chef');
+        $this->setupSix();
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => 3.0]) + ['operator_user_id' => $sarah->id])
+            ->assertCreated()->assertJsonPath('data.0.operator_name', 'Sarah Lopez');
+
+        $row = HygieneTemperatureReading::query()->firstOrFail();
+        $this->assertSame($sarah->id, $row->user_id);
+        $this->assertSame('Sarah Lopez', $row->operator_name);
+    }
+
+    public function test_sans_choix_le_releve_reste_signe_du_compte_connecte(): void
+    {
+        $user = $this->staff();
+        $this->setupSix();
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => 3.0]))->assertCreated();
+
+        $row = HygieneTemperatureReading::query()->firstOrFail();
+        $this->assertSame($user->id, $row->user_id);
+        $this->assertSame('Karim Test', $row->operator_name);
+    }
+
+    public function test_une_personne_hors_du_personnel_est_refusee_et_rien_n_est_enregistre(): void
+    {
+        $this->staff();
+        $outsider = User::factory()->create(['branch_id' => 2, 'name' => 'Autre Site']);
+        $outsider->assignRole('Chef');
+        $customer = User::factory()->create(['branch_id' => 1, 'name' => 'Un Client']);
+        $customer->assignRole('Customer');
+        $this->setupSix();
+
+        foreach ([$outsider->id, $customer->id, 999999] as $bad) {
+            $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => 3.0]) + ['operator_user_id' => $bad])
+                ->assertStatus(422)->assertJsonValidationErrors('operator_user_id');
+        }
+        $this->assertSame(0, HygieneTemperatureReading::query()->count());
+    }
 }
