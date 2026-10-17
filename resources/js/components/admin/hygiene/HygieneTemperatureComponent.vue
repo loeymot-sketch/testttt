@@ -10,7 +10,7 @@
                 <p v-if="!loaded && !loadError" class="tmp-muted" role="status">Chargement…</p>
 
                 <!-- ── Démarrage : « j'ai 4 frigos et 2 congélateurs » ───────────────────────────── -->
-                <div v-else-if="loaded && !items.length && !loadError" class="tmp-setup" data-testid="tmp-setup">
+                <div v-else-if="loaded && !items.length && !manageHasRows" class="tmp-setup" data-testid="tmp-setup">
                     <p>
                         <strong>Aucun équipement pour l'instant.</strong> Dites combien vous en avez : les équipements sont créés avec leurs seuils
                         (frigo 0 à +4 °C, congélateur −18 °C ou moins). Vous pourrez les renommer ensuite.
@@ -31,6 +31,7 @@
                 </div>
 
                 <template v-else-if="loaded">
+                    <p v-if="!items.length" class="tmp-muted" data-testid="tmp-all-hidden">Tous les équipements sont masqués : réactivez-en un dans « Équipements » ci-dessous.</p>
                     <!-- ── Bandeau du jour ─────────────────────────────────────────────────────────── -->
                     <div class="tmp-summary" data-testid="tmp-summary">
                         <span class="tmp-period" data-testid="tmp-period">{{ periodLabel }}</span>
@@ -38,8 +39,6 @@
                         <span class="tmp-chip is-ok" data-testid="tmp-sum-ok">{{ summary.ok }} conforme{{ summary.ok > 1 ? "s" : "" }}</span>
                         <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
                     </div>
-
-                    <p v-if="formError" class="tmp-alert" role="alert" data-testid="tmp-form-error">{{ formError }}</p>
 
                     <!-- ── Un équipement = une carte ───────────────────────────────────────────────── -->
                     <div class="tmp-grid">
@@ -104,7 +103,7 @@
                                 </div>
                                 <button v-else type="button" class="tmp-take" :data-testid="`tmp-take-${e.id}`" @click="startEntry(e)">
                                     <span>Saisir la température</span>
-                                    <small v-if="e.previous">hier {{ fmt(e.previous.value_c) }} °C</small>
+                                    <small v-if="e.previous">{{ previousWhen(e.previous.recorded_at) }} {{ fmt(e.previous.value_c) }} °C</small>
                                 </button>
                             </template>
 
@@ -123,7 +122,8 @@
                     </div>
 
                     <!-- ── Barre de validation ───────────────────────────────────────────────────── -->
-                    <div class="tmp-bar" data-testid="tmp-bar">
+                    <div v-if="items.length" class="tmp-bar" data-testid="tmp-bar">
+                        <p v-if="formError" class="tmp-alert" role="alert" style="flex:1 1 100%;margin:0" data-testid="tmp-form-error">{{ formError }}</p>
                         <span class="tmp-bar-text">
                             <strong data-testid="tmp-pending">{{ pendingList.length }}</strong> relevé{{ pendingList.length > 1 ? "s" : "" }} saisi{{ pendingList.length > 1 ? "s" : "" }}
                             <template v-if="missingActions"> — <span class="tmp-bar-warn">{{ missingActions }} écart{{ missingActions > 1 ? "s" : "" }} sans action</span></template>
@@ -138,7 +138,7 @@
                 </template>
 
                 <!-- ── Journal ───────────────────────────────────────────────────────────────────── -->
-                <div v-if="loaded && items.length" class="tmp-section">
+                <div v-if="loaded && (items.length || manageHasRows)" class="tmp-section">
                     <button type="button" class="tmp-toggle" :aria-expanded="showHistory ? 'true' : 'false'" data-testid="tmp-history-toggle" @click="toggleHistory">
                         {{ showHistory ? "▾" : "▸" }} Journal des relevés
                     </button>
@@ -160,7 +160,7 @@
                 </div>
 
                 <!-- ── Équipements ───────────────────────────────────────────────────────────────── -->
-                <div v-if="loaded && items.length" class="tmp-section">
+                <div v-if="loaded && (items.length || manageHasRows)" class="tmp-section">
                     <button type="button" class="tmp-toggle" :aria-expanded="manage ? 'true' : 'false'" data-testid="tmp-manage-toggle" @click="toggleManage">
                         {{ manage ? "▾" : "▸" }} Équipements ({{ items.length }})
                     </button>
@@ -199,6 +199,10 @@
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import { parseTemperature, previewVerdict, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
+import { refFor, latest } from "../../../helpers/hygieneCommon";
+import hygieneRefresh from "../../../helpers/hygieneRefresh";
+
+const historySeq = latest();
 
 function clientRef() {
     return `t${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -206,6 +210,7 @@ function clientRef() {
 
 export default {
     name: "HygieneTemperatureComponent",
+    mixins: [hygieneRefresh],
     data() {
         return {
             items: [],
@@ -224,6 +229,7 @@ export default {
             newEq: { name: "", kind: "fridge" },
             voidTarget: null,
             voidReason: "",
+            manageHasRows: false,
             serverOffsetMs: 0,
             nowMs: Date.now(),
             tick: null,
@@ -268,6 +274,8 @@ export default {
         if (this.tick) clearInterval(this.tick);
     },
     methods: {
+        hyDraft() { return Object.keys(this.entries).length > 0 || this.voidTarget !== null; },
+        hyReload() { return this.loadToday(); },
         fmt(v) { return formatTemperature(v); },
         limitText(e) { return limitText(e.min_c, e.max_c); },
         hm(iso) {
@@ -370,6 +378,11 @@ export default {
                 // une saisie en cours pour un équipement disparu n'a plus de carte
                 const ids = new Set(this.items.map((i) => i.id));
                 this.entries = Object.fromEntries(Object.entries(this.entries).filter(([id]) => ids.has(Number(id))));
+                if (!this.items.length) {
+                    // des équipements existent peut-être, tous masqués : pas de « démarrage » dans ce cas
+                    const all = await axios.get("admin/hygiene/temperature/equipment");
+                    this.manageHasRows = (all.data.data || []).length > 0;
+                }
                 this.loadError = "";
                 this.loaded = true;
             } catch (e) {
@@ -377,9 +390,10 @@ export default {
             }
         },
         async loadHistory() {
+            const id = historySeq.next();
             try {
                 const { data } = await axios.get("admin/hygiene/temperature/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
-                this.history = data.data || [];
+                if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Journal indisponible."));
             }
@@ -415,7 +429,7 @@ export default {
                         return {
                             equipment_id: e.id,
                             value: this.valueOf(e),
-                            client_ref: entry.ref,
+                            client_ref: refFor(entry.ref, { v: this.valueOf(e), a: entry.action, n: entry.note }),
                             ...(verdict.status === "alert" ? { corrective_action: entry.action, corrective_note: entry.note || undefined } : {}),
                         };
                     }),
@@ -432,6 +446,7 @@ export default {
             } catch (e) {
                 // refus du serveur (écart sans action, valeur absurde…) : la saisie reste, la personne corrige et revalide
                 this.formError = this.apiMessage(e, "Enregistrement impossible : vérifiez la connexion puis revalidez (rien n'est doublé).");
+                alertService.error(this.formError);
             } finally {
                 this.saving = false;
             }
@@ -469,14 +484,22 @@ export default {
         },
 
         // ── équipements ───────────────────────────────────────────────────────
+        /** Seuil saisi → nombre, null (aucun seuil, champ vide) ou NaN (illisible : refusé, jamais envoyé comme « aucun seuil »). */
         thresholdPayload(v) {
             const s = String(v ?? "").replace(/[−–—]/g, "-").replace(",", ".").trim();
-            return s === "" ? null : Number(s);
+            return s === "" ? null : (/^-?\d{1,2}(\.\d)?$/.test(s) ? Number(s) : NaN);
         },
         async saveEquipment(q) {
+            const min = this.thresholdPayload(q.min_c);
+            const max = this.thresholdPayload(q.max_c);
+            if (Number.isNaN(min) || Number.isNaN(max)) {
+                // jamais envoyé comme « aucun seuil » : NaN serait sérialisé en null et désarmerait silencieusement le contrôle
+                alertService.error(`Seuil illisible pour « ${q.name.trim()} » : tapez un nombre (ex. 4 ou −18), ou laissez vide pour aucun seuil.`);
+                return;
+            }
             try {
                 await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, {
-                    name: q.name, min_c: this.thresholdPayload(q.min_c), max_c: this.thresholdPayload(q.max_c),
+                    name: q.name, min_c: min, max_c: max,
                 });
                 await Promise.all([this.loadEquipment(), this.loadToday()]);
                 alertService.success(`« ${q.name.trim()} » enregistré.`);

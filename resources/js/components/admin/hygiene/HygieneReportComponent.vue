@@ -85,15 +85,17 @@
  */
 import axios from "axios";
 import alertService from "../../../services/alertService";
-import { apiMessage, formatDayHm, todayIso, addDaysIso, downloadFile } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatDayHm, todayIso, addDaysIso, downloadFile, latest } from "../../../helpers/hygieneCommon";
+
+const loadSeq = latest();
 
 const MODULE_NAMES = { temperature: "Températures", tasks: "Nettoyage", receptions: "Réception", trace: "Traçabilité", oil: "Huile" };
 
 export default {
     name: "HygieneReportComponent",
     data() {
-        const today = todayIso();
-        return { preset: "month", from: `${today.slice(0, 8)}01`, to: today, data: null, loading: false, error: "", busy: "", today };
+        // période et « aujourd'hui » viennent du SERVEUR (1er chargement sans période) : une tablette mal réglée ne décale rien
+        return { preset: "month", from: "", to: "", data: null, loading: false, error: "", busy: "", today: "" };
     },
     computed: {
         presets() {
@@ -105,7 +107,7 @@ export default {
                 { key: "trace", label: "Traçabilité" }, { key: "oil", label: "Huile" }, { key: "dlc", label: "Étiquettes DLC" }];
         },
     },
-    created() { this.load(); },
+    created() { this.load(true); },
     methods: {
         pct(v) { return v === null || v === undefined ? "—" : `${String(v).replace(".", ",")} %`; },
         plural(n, w) { return `${n} ${w}${n > 1 ? "s" : ""}`; },
@@ -115,6 +117,7 @@ export default {
         rateClass(v) { return v === null || v === undefined ? "" : (v >= 100 ? "is-done" : (v >= 90 ? "is-partial" : "is-alert")); },
         choose(key) {
             const t = this.today;
+            if (!t) return;
             if (key === "custom") { this.preset = key; return; }
             if (key === "today") { this.from = t; this.to = t; }
             else if (key === "week") { this.from = addDaysIso(t, -6); this.to = t; }
@@ -129,19 +132,27 @@ export default {
             this.preset = key;
             this.load();
         },
-        async load() {
-            if (!this.from || !this.to) return;
-            if (this.to < this.from) { this.error = "La date de fin précède la date de début."; this.data = null; return; }
+        async load(initial = false) {
+            if (!initial && (!this.from || !this.to)) return;
+            if (!initial && this.to < this.from) { this.error = "La date de fin précède la date de début."; this.data = null; return; }
+            const id = loadSeq.next();
             this.loading = true;
             this.error = "";
             try {
-                const { data } = await axios.get("admin/hygiene/report/summary", { params: { from: this.from, to: this.to } });
+                const { data } = await axios.get("admin/hygiene/report/summary", { params: initial ? {} : { from: this.from, to: this.to } });
+                if (!loadSeq.isCurrent(id)) return; // une réponse plus lente d'une ancienne période n'écrase jamais la dernière demandée
+                if (initial) {
+                    this.from = data.data.period.from;
+                    this.to = data.data.period.to;
+                    this.today = todayIso(data.meta.timezone || "Europe/Paris", new Date(data.meta.server_now || Date.now()));
+                }
                 this.data = data.data;
             } catch (e) {
+                if (!loadSeq.isCurrent(id)) return;
                 this.data = null;
                 this.error = apiMessage(e, "Résumé indisponible. Vérifiez la connexion puis réessayez.");
             } finally {
-                this.loading = false;
+                if (loadSeq.isCurrent(id)) this.loading = false;
             }
         },
         async pdf() {

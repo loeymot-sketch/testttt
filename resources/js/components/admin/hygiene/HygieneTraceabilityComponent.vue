@@ -85,7 +85,7 @@
                             <p v-if="form.error" class="hy-alert" role="alert" data-testid="trc-form-error">{{ form.error }}</p>
                             <div style="display:flex;gap:8px;flex-wrap:wrap">
                                 <button type="button" class="hy-btn hy-btn--primary" :disabled="saving || !canSubmit" data-testid="trc-submit" @click="submit">{{ saving ? "Enregistrement…" : "Enregistrer" }}</button>
-                                <button type="button" class="hy-btn" data-testid="trc-cancel" @click="form = null">Annuler</button>
+                                <button type="button" class="hy-btn" data-testid="trc-cancel" @click="form = null">Abandonner la saisie</button>
                             </div>
                         </div>
 
@@ -185,10 +185,14 @@ import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygienePhotoField from "./HygienePhotoField";
 import HygienePhotoView from "./HygienePhotoView";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import hygieneRefresh from "../../../helpers/hygieneRefresh";
+
+const historySeq = latest();
 
 export default {
     name: "HygieneTraceabilityComponent",
+    mixins: [hygieneRefresh],
     components: { HygieneOperatorPicker, HygienePhotoField, HygienePhotoView },
     data() {
         return {
@@ -223,6 +227,8 @@ export default {
     created() { this.load(); },
     beforeUnmount() { if (this.timer) clearTimeout(this.timer); },
     methods: {
+        hyDraft() { return this.form !== null || this.voidTarget !== null; },
+        hyReload() { return this.load(); },
         hm(iso) { return formatHm(iso, this.meta.timezone); },
         dayHm(iso) { return iso ? formatDayHm(iso, this.meta.timezone) : ""; },
         day(d) { return String(d).split("-").reverse().join("/"); },
@@ -240,9 +246,10 @@ export default {
         },
         setTab(k) { this.tab = k; if (k === "journal") this.loadHistory(); },
         async loadHistory() {
+            const id = historySeq.next();
             try {
                 const { data } = await axios.get("admin/hygiene/trace/history", { params: { q: this.q.trim() || undefined, limit: 200 } });
-                this.history = data.data || [];
+                if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
             }
@@ -262,7 +269,8 @@ export default {
                     ...(f.productId ? { dlc_product_id: f.productId } : { product_name: f.product.trim() }),
                     ...(f.supplierId ? { supplier_id: f.supplierId } : { supplier_name: f.supplierName.trim() || undefined }),
                     reception_id: f.receptionId || undefined, lot: f.lot.trim() || undefined, dlc_date: f.dlc || undefined, dlc_kind: f.kind,
-                    note: f.note.trim() || undefined, attachment_id: f.photo || undefined, operator_user_id: this.operatorId || undefined, client_ref: f.ref,
+                    note: f.note.trim() || undefined, attachment_id: f.photo || undefined, operator_user_id: this.operatorId || undefined,
+                    client_ref: refFor(f.ref, { p: f.productId || f.product.trim(), s: f.supplierId || f.supplierName.trim(), r: f.receptionId, l: f.lot.trim(), d: f.dlc, k: f.kind, n: f.note.trim(), ph: f.photo, o: this.operatorId }),
                 });
                 this.form = null;
                 await this.load();

@@ -13,18 +13,22 @@ import { loadPhotoUrl } from "../../../helpers/hygieneCommon";
 export default {
     name: "HygienePhotoView",
     props: { id: { type: Number, required: true }, label: { type: String, default: "📷 Voir la photo" } },
-    data() { return { shown: false, url: "", error: "" }; },
+    data() { return { shown: false, url: "", error: "", loading: false }; },
     beforeUnmount() { this.release(); },
     methods: {
         release() { if (this.url) { URL.revokeObjectURL(this.url); this.url = ""; } },
         async toggle() {
+            if (this.loading) return;
             if (this.shown) { this.shown = false; this.release(); return; }
             this.error = "";
+            this.loading = true;
             try {
                 this.url = await loadPhotoUrl(this.id);
                 this.shown = true;
             } catch (_) {
                 this.error = "Photo indisponible.";
+            } finally {
+                this.loading = false;
             }
         },
     },

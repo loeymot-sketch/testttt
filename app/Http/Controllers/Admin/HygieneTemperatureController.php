@@ -233,6 +233,21 @@ class HygieneTemperatureController extends AdminController
             return response()->json(['message' => 'Relevés refusés : '.collect($errors)->flatten()->first(), 'errors' => $errors], 422);
         }
 
+        // une référence d'envoi désigne UN relevé : réutilisée pour un autre équipement ou une autre valeur, elle ne doit pas rendre l'ancienne
+        // ligne en silence (la correction serait perdue sous un « enregistré »), ni deux fois dans le même lot
+        $refs = [];
+        foreach ($prepared as $p) {
+            if ($p['client_ref'] === null) continue;
+            if (isset($refs[$p['client_ref']])) {
+                return response()->json(['message' => 'Référence d’envoi en double dans le lot.', 'errors' => ['readings' => ['Référence d’envoi en double dans le lot.']]], 422);
+            }
+            $refs[$p['client_ref']] = true;
+            $dup = HygieneTemperatureReading::query()->where('client_ref', $p['client_ref'])->first();
+            if ($dup && ($dup->equipment_id !== $p['equipment']->id || round((float) $dup->value_c, 1) !== round((float) $p['value'], 1))) {
+                return response()->json(['message' => 'Cette référence d’envoi a déjà enregistré un autre relevé : rechargez l’écran et ressaisissez.', 'errors' => ['readings' => ['Référence d’envoi déjà utilisée par un autre relevé.']]], 409);
+            }
+        }
+
         $saved = [];
         DB::transaction(function () use ($prepared, $branch, $user, $now, &$saved): void {
             foreach ($prepared as $p) {
@@ -339,17 +354,43 @@ class HygieneTemperatureController extends AdminController
         if (array_key_exists('location', $v)) {
             $v['location'] = isset($v['location']) && trim((string) $v['location']) !== '' ? trim((string) $v['location']) : null;
         }
-        if (isset($v['min_c'], $v['max_c']) && (float) $v['min_c'] > (float) $v['max_c']) {
-            abort(response()->json(['message' => 'Seuils incohérents.', 'errors' => ['min_c' => ['Le seuil bas ne peut pas dépasser le seuil haut.']]], 422));
-        }
         foreach (['min_c', 'max_c'] as $f) {
             if (array_key_exists($f, $v) && $v[$f] !== null) $v[$f] = round((float) $v[$f], 1);
         }
+        $this->assertThresholds($v, $ignoreId);
         foreach (['sort_order', 'is_active'] as $f) {
             if (array_key_exists($f, $v) && $v[$f] === null) unset($v[$f]);
         }
 
         return $v;
+    }
+
+    /**
+     * Un seuil se règle dans des BORNES (config threshold_bounds) et ne se désarme jamais : seuil haut obligatoire, seuil bas jamais au-dessus.
+     * Vérifié sur les valeurs EFFECTIVES (celles envoyées, sinon celles déjà enregistrées) : une mise à jour partielle ne peut pas
+     * produire des seuils incohérents. À la création sans seuil, les valeurs du type s'appliquent (storeEquipment).
+     */
+    private function assertThresholds(array $v, ?int $ignoreId): void
+    {
+        $current = $ignoreId ? HygieneEquipment::query()->find($ignoreId) : null;
+        $kind = $v['kind'] ?? $current?->kind;
+        $touched = array_key_exists('min_c', $v) || array_key_exists('max_c', $v);
+        if ($kind === null || (! $touched && $ignoreId && ! isset($v['kind']))) return;
+
+        $defaults = TemperatureRules::defaults($kind);
+        $max = array_key_exists('max_c', $v) ? $v['max_c'] : ($current ? $current->max_c : $defaults['max']);
+        $min = array_key_exists('min_c', $v) ? $v['min_c'] : ($current ? $current->min_c : $defaults['min']);
+        $bounds = config('hygiene.threshold_bounds.'.(config("hygiene.kinds.$kind.negative") ? 'freezer' : 'cold'));
+        $fail = fn (string $field, string $msg) => abort(response()->json(['message' => $msg, 'errors' => [$field => [$msg]]], 422));
+
+        if ($max === null) $fail('max_c', 'Le seuil haut est obligatoire : un équipement sans seuil ne signalerait plus jamais un écart.');
+        [$lo, $hi] = $bounds['max'];
+        if ($max < $lo || $max > $hi) $fail('max_c', 'Seuil haut hors limites pour ce type d’équipement : entre '.$this->fmt($lo).' et '.$this->fmt($hi).' °C.');
+        if ($min !== null) {
+            [$mlo, $mhi] = $bounds['min'];
+            if ($min < $mlo || $min > $mhi) $fail('min_c', 'Seuil bas hors limites : entre '.$this->fmt($mlo).' et '.$this->fmt($mhi).' °C.');
+            if ($min > $max) $fail('min_c', 'Le seuil bas ne peut pas dépasser le seuil haut.');
+        }
     }
 
     private function presentEquipment(HygieneEquipment $e): array

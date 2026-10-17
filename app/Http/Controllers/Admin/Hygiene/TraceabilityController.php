@@ -62,6 +62,7 @@ class TraceabilityController extends HygieneController
 
         if (! empty($v['client_ref'])) {
             $dup = HygieneTraceEntry::query()->where('client_ref', $v['client_ref'])->first();
+            if ($dup && ! empty($v['lot']) && trim($v['lot']) !== (string) $dup->lot) return response()->json(['message' => 'Cette référence d’envoi a déjà enregistré un autre élément : rechargez l’écran et recommencez.', 'errors' => ['client_ref' => ['Référence d’envoi déjà utilisée.']]], 409);
             if ($dup) return response()->json(['data' => $this->present($dup)], 200);
         }
         $branch = $this->branchId($request);

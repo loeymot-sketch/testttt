@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AttachmentController extends HygieneController
 {
     private const MAX_SIDE = 1600;
+    private const MAX_PIXELS = 40_000_000;
 
     public function store(Request $request): JsonResponse
     {
@@ -31,6 +32,10 @@ class AttachmentController extends HygieneController
         $info = $raw === false ? false : @getimagesizefromstring($raw);
         if ($info === false || ! in_array($info[2] ?? 0, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
             return response()->json(['message' => 'Ce fichier n’est pas une photo (JPEG, PNG ou WebP).', 'errors' => ['file' => ['Photo illisible.']]], 422);
+        }
+        // un PNG de 400 Ko peut déclarer 20 000 × 20 000 px et réclamer ~1 Go au décodage : on refuse AVANT de décoder
+        if ((int) $info[0] * (int) $info[1] > self::MAX_PIXELS) {
+            return response()->json(['message' => 'Photo trop grande (plus de 40 mégapixels).', 'errors' => ['file' => ['Photo trop grande.']]], 422);
         }
         $img = @imagecreatefromstring($raw);
         if ($img === false) {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Hygiene;
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Models\User;
+use App\Enums\Status;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
@@ -43,6 +44,7 @@ abstract class HygieneController extends AdminController
 
         return User::query()
             ->whereHas('roles', fn ($q) => $q->whereIn('roles.name', self::STAFF_ROLES))
+            ->where('status', Status::ACTIVE) // un ancien salarié désactivé n'est plus proposé ni accepté comme opérateur
             ->where(fn ($q) => $q->where('branch_id', $branch)->orWhere('branch_id', 0));
     }
 

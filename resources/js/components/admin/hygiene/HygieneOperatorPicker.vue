@@ -45,17 +45,19 @@ export default {
             this.people = [];
         }
         let saved = null;
-        try { saved = Number(window.localStorage.getItem(STORE_KEY)) || null; } catch (_) { /* stockage indisponible : on retombe sur « moi » */ }
+        // le choix est mémorisé PAR utilisateur connecté : quand Bob se connecte, il n'hérite pas du choix d'Alice
+        try { saved = Number(window.localStorage.getItem(this.storeKey())) || null; } catch (_) { /* stockage indisponible : on retombe sur « moi » */ }
         const known = (id) => this.people.some((p) => p.id === id);
         this.chosenId = known(this.modelValue) ? this.modelValue : (known(saved) ? saved : this.me);
         this.$emit("update:modelValue", this.chosenId === this.me ? null : this.chosenId);
     },
     methods: {
+        storeKey() { return `${STORE_KEY}.${this.me}`; },
         toggle() { this.open = !this.open; },
         choose(p) {
             this.chosenId = p.id;
             this.open = false;
-            try { window.localStorage.setItem(STORE_KEY, String(p.id)); } catch (_) { /* confort seulement */ }
+            try { window.localStorage.setItem(this.storeKey(), String(p.id)); } catch (_) { /* confort seulement */ }
             this.$emit("update:modelValue", p.id === this.me ? null : p.id);
         },
     },

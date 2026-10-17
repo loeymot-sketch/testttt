@@ -237,7 +237,8 @@ class OverviewAndReportTest extends TestCase
     public function test_period_is_validated(): void
     {
         $this->staff();
-        $this->getJson(self::BASE.'/report/summary')->assertStatus(422);
+        $this->getJson(self::BASE.'/report/summary')->assertOk(); // sans période : mois en cours (horloge serveur)
+        $this->getJson(self::BASE.'/report/summary?from=2026-10-01')->assertStatus(422); // une moitié de période est refusée
         $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-19')->assertStatus(422);
         $this->getJson(self::BASE.'/report/summary?from=2025-01-01&to=2026-10-20')->assertStatus(422)->assertJsonValidationErrors('to');
         $this->getJson(self::BASE.'/report/summary?from=2025-10-20&to=2026-10-20')->assertOk();

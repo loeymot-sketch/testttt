@@ -191,12 +191,16 @@ import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygienePhotoField from "./HygienePhotoField";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import hygieneRefresh from "../../../helpers/hygieneRefresh";
+
+const historySeq = latest();
 
 const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 export default {
     name: "HygieneTasksComponent",
+    mixins: [hygieneRefresh],
     components: { HygieneOperatorPicker, HygienePhotoField },
     data() {
         return {
@@ -237,6 +241,8 @@ export default {
     },
     created() { this.load(); },
     methods: {
+        hyDraft() { return Object.keys(this.forms).length > 0 || this.edit !== null || this.voidTarget !== null; },
+        hyReload() { return this.load(); },
         hm(iso) { return formatHm(iso, this.meta.timezone); },
         dayHm(iso) { return formatDayHm(iso, this.meta.timezone); },
         frequencyText(p) {
@@ -308,7 +314,7 @@ export default {
                     ...(all ? { all: true } : { done: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), note: f.note.trim() }),
                     attachment_id: f.photo || undefined,
                     operator_user_id: this.operatorId || undefined,
-                    client_ref: f.ref,
+                    client_ref: refFor(f.ref, { all, d: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), n: f.note.trim(), p: f.photo, o: this.operatorId }),
                 });
                 this.closeCard(t);
                 await this.load();
@@ -337,9 +343,10 @@ export default {
 
         // ── journal ─────────────────────────────────────────────────────────
         async loadHistory() {
+            const id = historySeq.next();
             try {
                 const { data } = await axios.get("admin/hygiene/tasks/history", { params: { incomplete_only: this.incompleteOnly ? 1 : 0, limit: 200 } });
-                this.history = data.data || [];
+                if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
             }

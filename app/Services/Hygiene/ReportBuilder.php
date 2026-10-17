@@ -23,11 +23,21 @@ use Carbon\CarbonInterface;
  */
 final class ReportBuilder
 {
-    /** Au-delà, les lignes d'un journal sont tronquées dans le PDF (le CSV, lui, donne tout). */
-    public const ROW_LIMIT = 3000;
+    /** Lignes de journal par domaine dans le PDF : au-delà, les PLUS RÉCENTES sont listées et le PDF dit combien manquent (le CSV donne tout). */
+    public const PDF_ROW_CAP = 250;
+
+    /** null = toutes les lignes (CSV) ; un nombre = les plus récentes seulement (PDF). Les compteurs et taux, eux, portent TOUJOURS sur la période entière. */
+    private ?int $rowCap = null;
 
     public function __construct(private readonly CarbonInterface $from, private readonly CarbonInterface $to)
     {
+    }
+
+    public function capRows(?int $n): self
+    {
+        $this->rowCap = $n;
+
+        return $this;
     }
 
     /** Début/fin de journée dans le fuseau de l'application. */
@@ -85,6 +95,22 @@ final class ReportBuilder
         return Carbon::parse($ts)->timezone(config('app.timezone'))->toDateString();
     }
 
+    /** Dernier jour où l'élément était attendu : sa suppression, ou le moment où il a été masqué (approximé par sa dernière modification). null = toujours actif. */
+    private function endDate($model): ?string
+    {
+        if ($model->deleted_at) return $this->localDate($model->deleted_at);
+
+        return $model->is_active ? null : ($model->updated_at ? $this->localDate($model->updated_at) : null);
+    }
+
+    /** Un élément masqué/supprimé avant le début de la période n'a rien attendu pendant celle-ci. */
+    private function stillRelevant($model): bool
+    {
+        $end = $this->endDate($model);
+
+        return $end === null || $end >= $this->from->toDateString();
+    }
+
     private function rate(int $done, int $expected): ?float
     {
         return $expected > 0 ? round($done / $expected * 100, 1) : null;
@@ -96,7 +122,8 @@ final class ReportBuilder
     {
         $rows = HygieneTemperatureReading::query()->whereBetween('recorded_at', [$this->from, $this->to])->orderBy('recorded_at')->orderBy('id')->get();
         $live = $rows->whereNull('voided_at');
-        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)->get();
+        // masqué ou supprimé : ses jours manqués AVANT ce moment restent attendus (masquer un frigo n'efface pas les trous de la période)
+        $equipments = HygieneEquipment::query()->withTrashed()->whereIn('kind', Kinds::keys('temperature'))->get()->filter(fn ($e) => $this->stillRelevant($e));
 
         $covered = $live->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->recorded_at))->unique()->flip());
         [$expected, $done] = $this->coverage($equipments, $covered);
@@ -105,19 +132,19 @@ final class ReportBuilder
 
         return [
             'count' => $live->count(), 'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(),
-            'equipment' => $equipments->count(), 'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
+            'equipment' => $equipments->where('is_active', true)->whereNull('deleted_at')->count(), 'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
             'incidents' => $alerts->map(fn ($r) => [
                 'at' => $r->recorded_at->toIso8601String(), 'module' => 'temperature',
                 'text' => $r->equipment_name.' : '.str_replace('.', ',', (string) $r->value_c).' °C ('.($r->alert_reason === 'too_cold' ? 'trop froid' : 'trop chaud').')',
                 'action' => $r->corrective_action ? (config("hygiene.corrective_actions.{$r->corrective_action}.label").($r->corrective_note ? ' — '.$r->corrective_note : '')) : null,
                 'operator' => $r->operator_name,
             ])->values()->all(),
-            'rows' => $withRows ? $this->limit($rows->map(fn ($r) => [
+            ...($withRows ? $this->capped($rows->map(fn ($r) => [
                 'at' => $r->recorded_at->toIso8601String(), 'equipment' => $r->equipment_name, 'value_c' => $r->value_c, 'min_c' => $r->min_c, 'max_c' => $r->max_c,
                 'status' => $r->status, 'period' => $r->period, 'operator' => $r->operator_name,
                 'action' => $r->corrective_action ? config("hygiene.corrective_actions.{$r->corrective_action}.label") : null, 'note' => $r->corrective_note,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : [],
+            ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -136,9 +163,10 @@ final class ReportBuilder
         $expected = $done = 0;
         foreach ($equipments as $e) {
             $created = $e->created_at ? $this->localDate($e->created_at) : '0000-00-00';
+            $end = $this->endDate($e);
             $set = $coveredByEquipment->get($e->id);
             foreach ($days as $d) {
-                if ($d < $created) continue;
+                if ($d < $created || ($end !== null && $d > $end)) continue;
                 $expected++;
                 if ($set && isset($set[$d])) $done++;
             }
@@ -154,7 +182,7 @@ final class ReportBuilder
     {
         $rows = HygieneTaskCompletion::query()->whereBetween('completed_at', [$this->from, $this->to])->orderBy('completed_at')->orderBy('id')->get();
         $live = $rows->whereNull('voided_at');
-        $templates = HygieneTaskTemplate::query()->where('is_active', true)->get();
+        $templates = HygieneTaskTemplate::query()->withTrashed()->get()->filter(fn ($t) => $this->stillRelevant($t));
 
         $byKey = $live->groupBy(fn ($r) => $r->template_id.'|'.$r->due_date->toDateString());
         $days = $this->pastDays();
@@ -164,8 +192,9 @@ final class ReportBuilder
         $missedList = [];
         foreach ($templates as $t) {
             $created = $t->created_at ? $this->localDate($t->created_at) : '0000-00-00';
-            $check = function (string $d) use ($t, $byKey, &$expected, &$done, &$partial, &$missed, &$missedList, $created): void {
-                if ($d < $created || ! TaskSchedule::isDueOn($t, Carbon::parse($d, config('app.timezone')))) return;
+            $end = $this->endDate($t);
+            $check = function (string $d) use ($t, $byKey, &$expected, &$done, &$partial, &$missed, &$missedList, $created, $end): void {
+                if ($d < $created || ($end !== null && $d > $end) || ! TaskSchedule::isDueOn($t, Carbon::parse($d, config('app.timezone')))) return;
                 $g = $byKey->get($t->id.'|'.$d);
                 $expected++;
                 if ($g && $g->contains('complete', true)) $done++;
@@ -188,12 +217,12 @@ final class ReportBuilder
                 'at' => $r->completed_at->toIso8601String(), 'module' => 'tasks',
                 'text' => $r->task_name.' : '.$r->items_done.'/'.$r->items_total.' points faits', 'action' => $r->note, 'operator' => $r->operator_name,
             ])->values()->all(),
-            'rows' => $withRows ? $this->limit($rows->map(fn ($r) => [
+            ...($withRows ? $this->capped($rows->map(fn ($r) => [
                 'at' => $r->completed_at->toIso8601String(), 'due_date' => $r->due_date->toDateString(), 'task' => $r->task_name, 'zone' => $r->zone,
                 'items_done' => $r->items_done, 'items_total' => $r->items_total, 'complete' => $r->complete, 'late' => $r->late, 'note' => $r->note,
                 'not_done' => collect($r->items)->where('done', false)->pluck('label')->values()->all(), 'operator' => $r->operator_name,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : [],
+            ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -213,13 +242,13 @@ final class ReportBuilder
                 'text' => $r->supplier_name.($r->delivery_note_no ? ' · '.$r->delivery_note_no : '').' : '.mb_strtolower((string) config("hygiene.reception.decisions.{$r->decision}")),
                 'action' => $r->note, 'operator' => $r->operator_name,
             ])->values()->all(),
-            'rows' => $withRows ? $this->limit($rows->map(fn ($r) => [
+            ...($withRows ? $this->capped($rows->map(fn ($r) => [
                 'at' => $r->received_at->toIso8601String(), 'supplier' => $r->supplier_name, 'delivery_note' => $r->delivery_note_no, 'driver' => $r->delivered_by,
                 'temperatures' => collect($r->temperatures)->map(fn ($t) => ['label' => $t['label'], 'value_c' => $t['value_c'], 'max_c' => $t['max_c'], 'status' => $t['status']])->all(),
                 'checks_ko' => collect($r->checks)->where('ok', false)->pluck('label')->values()->all(), 'status' => $r->status,
                 'decision' => config("hygiene.reception.decisions.{$r->decision}"), 'note' => $r->note, 'operator' => $r->operator_name,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : [],
+            ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -237,11 +266,11 @@ final class ReportBuilder
                 'at' => $r->traced_at->toIso8601String(), 'module' => 'trace', 'text' => $r->product_name.' (lot '.($r->lot ?: '—').') : DLC dépassée à la réception',
                 'action' => $r->note, 'operator' => $r->operator_name,
             ])->values()->all(),
-            'rows' => $withRows ? $this->limit($rows->map(fn ($r) => [
+            ...($withRows ? $this->capped($rows->map(fn ($r) => [
                 'at' => $r->traced_at->toIso8601String(), 'product' => $r->product_name, 'supplier' => $r->supplier_name, 'delivery_note' => $r->delivery_note_no, 'lot' => $r->lot,
                 'dlc_date' => $r->dlc_date?->toDateString(), 'dlc_kind' => $r->dlc_kind, 'status' => $r->status, 'note' => $r->note, 'operator' => $r->operator_name,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : [],
+            ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -252,14 +281,14 @@ final class ReportBuilder
         $rows = HygieneOilControl::query()->whereBetween('performed_at', [$this->from, $this->to])->orderBy('performed_at')->orderBy('id')->get();
         $live = $rows->whereNull('voided_at');
         $tests = $live->where('type', 'test');
-        $fryers = HygieneEquipment::query()->where('kind', 'fryer')->where('is_active', true)->get();
+        $fryers = HygieneEquipment::query()->withTrashed()->where('kind', 'fryer')->get()->filter(fn ($e) => $this->stillRelevant($e));
         $covered = $tests->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->performed_at))->unique()->flip());
         [$expected, $done] = $this->coverage($fryers, $covered);
         $alerts = $live->where('status', 'alert');
 
         return [
             'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $live->where('type', 'change')->count(),
-            'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(), 'fryers' => $fryers->count(),
+            'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(), 'fryers' => $fryers->where('is_active', true)->whereNull('deleted_at')->count(),
             'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
             'max_polar' => $tests->max('polar_pct'),
             'incidents' => $alerts->map(fn ($r) => [
@@ -268,12 +297,12 @@ final class ReportBuilder
                 'action' => $r->corrective_action ? (config("hygiene.oil.corrective_actions.{$r->corrective_action}.label").($r->corrective_note ? ' — '.$r->corrective_note : '')) : null,
                 'operator' => $r->operator_name,
             ])->values()->all(),
-            'rows' => $withRows ? $this->limit($rows->map(fn ($r) => [
+            ...($withRows ? $this->capped($rows->map(fn ($r) => [
                 'at' => $r->performed_at->toIso8601String(), 'fryer' => $r->equipment_name, 'type' => config("hygiene.oil.types.{$r->type}"), 'polar_pct' => $r->polar_pct,
                 'bath_temp_c' => $r->bath_temp_c, 'oil_litres' => $r->oil_litres, 'oil_brand' => $r->oil_brand, 'status' => $r->status,
                 'action' => $r->corrective_action ? config("hygiene.oil.corrective_actions.{$r->corrective_action}.label") : null, 'note' => $r->corrective_note ?: $r->note,
                 'operator' => $r->operator_name, 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
-            ])->all()) : [],
+            ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];
     }
 
@@ -281,27 +310,39 @@ final class ReportBuilder
 
     private function dlc(bool $withRows): array
     {
-        $rows = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)
-            ->whereBetween('opened_at', [$this->from, $this->to])->orderBy('opened_at')->orderBy('id')->limit(self::ROW_LIMIT + 1)->get();
         $now = now();
-        $kept = $rows->filter(fn ($l) => $l->discard_reason !== LabelPrintLog::DISCARD_CANCELLED);
+        // Les COMPTEURS sont calculés par la base sur la période entière (jamais sur un échantillon) ; seules les lignes détaillées peuvent être plafonnées.
+        $base = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)
+            ->whereBetween('opened_at', [$this->from, $this->to])
+            ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED));
+
+        $rows = ['rows' => [], 'rows_total' => 0];
+        if ($withRows) {
+            $list = $base()->orderBy('opened_at')->orderBy('id')
+                ->get(['opened_at', 'product_name', 'action', 'lot', 'supplier_lot', 'expires_at', 'copies', 'storage', 'discarded_at', 'discard_reason'])
+                ->map(fn ($l) => [
+                    'at' => $l->opened_at?->toIso8601String(), 'product' => $l->product_name, 'action' => $l->action, 'lot' => $l->lot, 'supplier_lot' => $l->supplier_lot,
+                    'expires_at' => $l->expires_at?->toIso8601String(), 'copies' => $l->copies, 'storage' => $l->storage,
+                    'out' => $l->discarded_at ? ['at' => $l->discarded_at->toIso8601String(), 'reason' => $l->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED] : null,
+                ])->values()->all();
+            $rows = $this->capped($list);
+        }
 
         return [
-            'count' => $kept->count(), 'copies' => (int) $kept->sum('copies'),
-            'discarded' => $kept->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->count(),
-            'used' => $kept->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->count(),
+            'count' => $base()->count(), 'copies' => (int) $base()->sum('copies'),
+            'discarded' => $base()->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->count(),
+            'used' => $base()->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->count(),
             // échus et jamais sortis : le point que regarde un contrôleur
-            'expired_not_out' => $kept->filter(fn ($l) => $l->discarded_at === null && $l->expires_at !== null && $l->expires_at->lt($now))->count(),
-            'rows' => $withRows ? $this->limit($kept->map(fn ($l) => [
-                'at' => $l->opened_at?->toIso8601String(), 'product' => $l->product_name, 'action' => $l->action, 'lot' => $l->lot, 'supplier_lot' => $l->supplier_lot,
-                'expires_at' => $l->expires_at?->toIso8601String(), 'copies' => $l->copies, 'storage' => $l->storage,
-                'out' => $l->discarded_at ? ['at' => $l->discarded_at->toIso8601String(), 'reason' => $l->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED] : null,
-            ])->values()->all()) : [],
+            'expired_not_out' => $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
+            ...$rows,
         ];
     }
 
-    private function limit(array $rows): array
+    /** @return array{rows: array, rows_total: int} */
+    private function capped(array $rows): array
     {
-        return count($rows) > self::ROW_LIMIT ? array_slice($rows, 0, self::ROW_LIMIT) : $rows;
+        $total = count($rows);
+
+        return ['rows' => $this->rowCap !== null && $total > $this->rowCap ? array_slice($rows, -$this->rowCap) : $rows, 'rows_total' => $total];
     }
 }

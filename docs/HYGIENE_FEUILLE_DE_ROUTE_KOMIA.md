@@ -21,11 +21,11 @@ règles viennent du GBPH / de la réglementation et restent **modifiables par le
 |---|---|---|
 | DLC : 11 « types de préparation », jours seulement | pas d'heures, pas de catalogue | **FAIT** — heures/jours, catalogue ~80 produits, lots à surveiller (jeté/utilisé) |
 | Température : froid/chaud, ±0,5, valeur préremplie | pas de seuil, pas d'action corrective | **FAIT** — seuils par équipement, verdict serveur, action corrective, journal |
-| Tâches : 5 fiches à interrupteurs, « 0/5 » rouge | pas d'horaire, pas de preuve, pas de « tout cocher » | **Slice 1** |
-| Réception : 3 températures + BL + photo | pas de seuil, pas de conforme/non conforme | **Slice 2** |
-| Traçabilité : photo + lot + DLC + BL | pas de recherche de lot, pas de rappel | **Slice 3** |
-| Huile : « changement » seulement | pas de test polaire, pas de seuil | **Slice 4** |
-| Historique : 6 listes | pas de rapport DDPP, pas de tableau de bord, pas d'export | **Slice 5** (accueil + dossier de contrôle PDF + CSV) |
+| Tâches : 5 fiches à interrupteurs, « 0/5 » rouge | pas d'horaire, pas de preuve, pas de « tout cocher » | **FAIT** (slice 1) — `/admin/hygiene/tasks` |
+| Réception : 3 températures + BL + photo | pas de seuil, pas de conforme/non conforme | **FAIT** (slice 2) — `/admin/hygiene/reception` |
+| Traçabilité : photo + lot + DLC + BL | pas de recherche de lot, pas de rappel | **FAIT** (slice 3) — `/admin/hygiene/trace`, fiche de rappel de lot |
+| Huile : « changement » seulement | pas de test polaire, pas de seuil | **FAIT** (slice 4) — `/admin/hygiene/oil` |
+| Historique : 6 listes | pas de rapport DDPP, pas de tableau de bord, pas d'export | **FAIT** (slice 5) — accueil `/admin/hygiene/home`, dossier `/admin/hygiene/report` (PDF + CSV) |
 | Stock / Pertes / Production | — | existent déjà dans Le Cayenne (stock, repas/pertes) → liens depuis l'accueil, pas de doublon |
 | Planning / Pointage | — | hors périmètre hygiène (module RH) — à traiter à part |
 
@@ -44,3 +44,14 @@ règles viennent du GBPH / de la réglementation et restent **modifiables par le
 ## À valider par le restaurant (non inventé)
 Durées DLC, fréquences de nettoyage, seuils de réception : valeurs de départ prudentes (GBPH restauration, arrêté du 21/12/2009),
 toutes éditables. Références réglementaires à sourcer par le restaurant : règlement (CE) 852/2004, arrêté du 21/12/2009, décret 2008-1463.
+
+## État au 2026-10-17
+Slices 0 à 5 livrées et testées (PHPUnit `tests/Feature/Hygiene`, Vitest `tests/js/hygiene*.spec.js`), vérifiées visuellement (harnais isolé), **non encore déployées** hors températures + DLC.
+
+## Reste à faire (non démarré)
+- Rappels et alertes de retard (push / SMS) : nécessite un canal de notification et un planificateur — à cadrer.
+- Capteurs / sondes connectés (relevé automatique) : la colonne `source` des relevés est prête (`manual` aujourd'hui).
+- Alerte « produit non tracé depuis x jours » et alerte de stock bas par produit (idées Komia) : demandent une colonne par produit.
+- Import des produits DLC par fichier ; boutique de rouleaux.
+- Planning et pointage : module RH distinct, hors hygiène.
+- Application « Cayenne Hygiène » autonome : extraction de `config/hygiene.php`, `hygiene_*`, `/admin/hygiene/*`, `components/admin/hygiene/`.

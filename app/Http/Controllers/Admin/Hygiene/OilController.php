@@ -86,6 +86,7 @@ class OilController extends HygieneController
 
         if (! empty($v['client_ref'])) {
             $dup = HygieneOilControl::query()->where('client_ref', $v['client_ref'])->first();
+            if ($dup && ($dup->equipment_id !== (int) $v['equipment_id'] || $dup->type !== $v['type'])) return response()->json(['message' => 'Cette référence d’envoi a déjà enregistré un autre élément : rechargez l’écran et recommencez.', 'errors' => ['client_ref' => ['Référence d’envoi déjà utilisée.']]], 409);
             if ($dup) return response()->json(['data' => $this->present($dup)], 200);
         }
         $fryer = $this->fryers()->where('is_active', true)->find((int) $v['equipment_id']);

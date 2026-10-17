@@ -110,7 +110,7 @@
                                 <button type="button" class="hy-btn hy-btn--primary" :disabled="saving || !canSubmit" data-testid="rcp-submit" @click="submit">
                                     {{ saving ? "Enregistrement…" : "Enregistrer la réception" }}
                                 </button>
-                                <button type="button" class="hy-btn" data-testid="rcp-cancel" @click="form = null">Annuler</button>
+                                <button type="button" class="hy-btn" data-testid="rcp-cancel" @click="form = null">Abandonner la saisie</button>
                             </div>
                             <p v-if="!canSubmit && blockReason" class="hy-sub" data-testid="rcp-block">{{ blockReason }}</p>
                         </div>
@@ -184,11 +184,15 @@ import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygieneMeasureInput from "./HygieneMeasureInput";
 import HygienePhotoField from "./HygienePhotoField";
 import HygienePhotoView from "./HygienePhotoView";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import { parseTemperature, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
+
+const historySeq = latest();
 
 export default {
     name: "HygieneReceptionComponent",
+    mixins: [hygieneRefresh],
     components: { HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField, HygienePhotoView },
     data() {
         return {
@@ -240,6 +244,8 @@ export default {
     },
     created() { this.load(); },
     methods: {
+        hyDraft() { return this.form !== null || this.voidTarget !== null; },
+        hyReload() { return this.load(); },
         fmt(v) { return formatTemperature(v); },
         /** « 2210 » → « BL 2210 » ; « BL-2210 » reste tel quel (jamais « BL BL-2210 »). */
         blText(n) { return /^bl/i.test(String(n).trim()) ? String(n).trim() : `BL ${String(n).trim()}`; },
@@ -260,9 +266,10 @@ export default {
         },
         setTab(k) { this.tab = k; if (k === "journal") this.loadHistory(); },
         async loadHistory() {
+            const id = historySeq.next();
             try {
                 const { data } = await axios.get("admin/hygiene/receptions/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
-                this.history = data.data || [];
+                if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
             }
@@ -311,7 +318,8 @@ export default {
                     temperatures, checks: { ...f.checks },
                     ...(this.hasDeviation ? { decision: f.decision } : {}),
                     note: f.note.trim() || undefined, attachment_id: f.photo || undefined,
-                    operator_user_id: this.operatorId || undefined, client_ref: f.ref,
+                    operator_user_id: this.operatorId || undefined,
+                    client_ref: refFor(f.ref, { s: f.newSupplier ? f.supplierName.trim() : f.supplierId, bl: f.bl, dr: f.driver, t: temperatures, c: f.checks, d: this.hasDeviation ? f.decision : "", n: f.note, p: f.photo, o: this.operatorId }),
                 });
                 this.form = null;
                 await this.load();

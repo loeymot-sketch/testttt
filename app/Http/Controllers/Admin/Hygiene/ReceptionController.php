@@ -60,6 +60,7 @@ class ReceptionController extends HygieneController
 
         if (! empty($v['client_ref'])) {
             $dup = HygieneReception::query()->where('client_ref', $v['client_ref'])->first();
+            if ($dup && ($dup->delivery_note_no ?? '') !== (trim((string) ($v['delivery_note_no'] ?? '')))) return response()->json(['message' => 'Cette référence d’envoi a déjà enregistré un autre élément : rechargez l’écran et recommencez.', 'errors' => ['client_ref' => ['Référence d’envoi déjà utilisée.']]], 409);
             if ($dup) return response()->json(['data' => $this->present($dup)], 200);
         }
 
@@ -217,8 +218,13 @@ class ReceptionController extends HygieneController
 
             return $s;
         }
-        $existing = $this->supplierQuery($branch)->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
-        if ($existing) return $existing;
+        // corbeille comprise : (branch_id, name) est unique même pour un fournisseur supprimé — on le RESTAURE au lieu d'échouer
+        $existing = $this->supplierQuery($branch)->withTrashed()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+        if ($existing) {
+            if ($existing->trashed()) $existing->restore();
+
+            return $existing;
+        }
 
         try {
             return Supplier::query()->create(['branch_id' => $branch, 'name' => mb_substr($name, 0, 80)]);
@@ -226,7 +232,7 @@ class ReceptionController extends HygieneController
             // deux livraisons saisies en même temps pour un nouveau fournisseur : (branch_id, name) est unique, on reprend le gagnant
             if (! $this->isUniqueViolation($e)) throw $e;
 
-            return $this->supplierQuery($branch)->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->firstOrFail();
+            return $this->supplierQuery($branch)->withTrashed()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->firstOrFail();
         }
     }
 

@@ -64,7 +64,9 @@ final class Overview
         }
         $done = HygieneTaskCompletion::query()->whereNull('voided_at')->whereDate('due_date', $day->toDateString())->get()->groupBy('template_id');
         $total = $templates->count();
-        $finished = $templates->filter(fn ($t) => $done->has($t->id))->count();
+        // « faite » = validée COMPLÈTE : une fiche validée avec des points non faits reste à reprendre (même règle que l'écran du jour et le dossier)
+        $finished = $templates->filter(fn ($t) => $done->has($t->id) && $done->get($t->id)->contains('complete', true))->count();
+        $partial = $templates->filter(fn ($t) => $done->has($t->id) && ! $done->get($t->id)->contains('complete', true))->count();
         $overdue = $templates->filter(function ($t) use ($done, $now, $day) {
             $due = TaskSchedule::dueAt($t, $day);
 
@@ -73,7 +75,8 @@ final class Overview
         $status = $total === 0 ? 'ok' : ($overdue > 0 ? 'alert' : ($finished < $total ? 'todo' : 'ok'));
 
         return $this->tile('tasks', 'Nettoyage', 'fa-solid fa-broom', $status, $total === 0 ? 'Rien à faire' : "$finished/$total fiches",
-            $overdue > 0 ? $overdue.' en retard' : ($finished < $total ? ($total - $finished).' à faire' : 'Tout est fait'), ['done' => $finished, 'total' => $total, 'overdue' => $overdue]);
+            $overdue > 0 ? $overdue.' en retard' : ($finished < $total ? ($partial > 0 ? $this->plural($partial, 'incomplète').' · ' : '').($total - $finished - $partial).' à faire' : 'Tout est fait'),
+            ['done' => $finished, 'total' => $total, 'overdue' => $overdue, 'partial' => $partial]);
     }
 
     private function dlc(): array

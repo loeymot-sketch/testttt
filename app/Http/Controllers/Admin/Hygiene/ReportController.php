@@ -19,6 +19,10 @@ class ReportController extends HygieneController
 
     public function summary(Request $request): JsonResponse
     {
+        // sans période : le MOIS EN COURS d'après l'horloge du SERVEUR (une tablette mal réglée ne décale jamais la période du dossier)
+        if (! $request->has('from') && ! $request->has('to')) {
+            $request->merge(['from' => now()->startOfMonth()->toDateString(), 'to' => now()->toDateString()]);
+        }
         [$from, $to] = $this->validated($request);
         $data = ReportBuilder::between($from, $to)->build(false);
         // l'écran ne reçoit que le résumé : les journaux complets sont dans le PDF et les CSV
@@ -30,7 +34,10 @@ class ReportController extends HygieneController
     public function pdf(Request $request)
     {
         [$from, $to] = $this->validated($request);
-        $report = ReportBuilder::between($from, $to)->build(true);
+        // un dossier d'inspection doit sortir sur un serveur ordinaire : lignes plafonnées (les plus récentes, avec le nombre manquant), taux et incidents complets
+        @ini_set('memory_limit', '768M');
+        @set_time_limit(120);
+        $report = ReportBuilder::between($from, $to)->capRows(ReportBuilder::PDF_ROW_CAP)->build(true);
         $company = app(\App\Services\CompanyService::class)->list();
         $generatedAt = now()->timezone(config('app.timezone'))->format('d/m/Y à H:i');
         $generatedBy = $request->user()?->name;

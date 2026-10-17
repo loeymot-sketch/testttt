@@ -165,11 +165,15 @@ import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygieneMeasureInput from "./HygieneMeasureInput";
 import HygienePhotoField from "./HygienePhotoField";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import { parseTemperature, formatTemperature } from "../../../helpers/hygieneTemperature";
+
+const historySeq = latest();
 
 export default {
     name: "HygieneOilComponent",
+    mixins: [hygieneRefresh],
     components: { HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField },
     data() {
         return {
@@ -188,6 +192,8 @@ export default {
     },
     created() { this.load(); },
     methods: {
+        hyDraft() { return Object.keys(this.forms).length > 0 || this.voidTarget !== null; },
+        hyReload() { return this.load(); },
         hm(iso) { return formatHm(iso, this.meta.timezone); },
         dayHm(iso) { return formatDayHm(iso, this.meta.timezone); },
         num(v) { return formatTemperature(v).replace(/,0$/, ""); },
@@ -286,7 +292,7 @@ export default {
             if (!x || this.saving || !this.canSubmit(f)) return;
             this.saving = true;
             x.error = "";
-            const body = { equipment_id: f.id, type: x.type, operator_user_id: this.operatorId || undefined, client_ref: x.ref };
+            const body = { equipment_id: f.id, type: x.type, operator_user_id: this.operatorId || undefined };
             if (x.type === "test") {
                 body.polar_pct = this.polarOf(f);
                 if (this.bathOf(f) !== null) body.bath_temp_c = this.bathOf(f);
@@ -297,6 +303,7 @@ export default {
                 if (this.litresOf(f) !== null) body.oil_litres = this.litresOf(f);
                 if (x.brand.trim()) body.oil_brand = x.brand.trim();
             }
+            body.client_ref = refFor(x.ref, body); // même saisie = même référence (rejeu sûr) ; saisie corrigée = nouvelle référence
             try {
                 await axios.post("admin/hygiene/oil/controls", body);
                 this.closeForm(f);
@@ -325,9 +332,10 @@ export default {
 
         // ── journal et friteuses ───────────────────────────────────────────
         async loadHistory() {
+            const id = historySeq.next();
             try {
                 const { data } = await axios.get("admin/hygiene/oil/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
-                this.history = data.data || [];
+                if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
             }

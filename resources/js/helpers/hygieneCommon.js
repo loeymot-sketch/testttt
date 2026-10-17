@@ -110,3 +110,20 @@ export async function downloadFile(url, params, filename) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(href), 1000);
 }
+
+/**
+ * Référence d'envoi dérivée du CONTENU : rejouer la même requête (coupure réseau) garde la même référence — le serveur ne double rien ;
+ * corriger la saisie après un refus change la référence — le serveur n'ignore pas la correction en rendant l'ancienne ligne.
+ */
+export function refFor(base, payload) {
+    const s = JSON.stringify(payload);
+    let h = 5381;
+    for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+    return `${base}-${h.toString(36)}`;
+}
+
+/** Compteur de requêtes : seule la DERNIÈRE réponse a le droit d'écrire à l'écran (une réponse lente d'un ancien filtre ne l'écrase pas). */
+export function latest() {
+    let n = 0;
+    return { next: () => { n += 1; return n; }, isCurrent: (id) => id === n };
+}

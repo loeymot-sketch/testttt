@@ -6,7 +6,8 @@
 
 /** « 3,5 » / « 3.5 » → 3.5 ; vide ou illisible → null. Le signe est porté par le bouton ±, jamais par la frappe. */
 export function parseTemperature(raw, intDigits = 2) {
-    const s = String(raw ?? '').replace(/[−–—-]/g, '').replace(',', '.').trim();
+    // Le signe est porté par le bouton ± : un moins en tête est toléré, un moins AU MILIEU (« 3-5 ») est illisible, jamais « 35 ».
+    const s = String(raw ?? '').trim().replace(/^[−–—-]/, '').replace(',', '.').trim();
     if (s === '' || !new RegExp(`^\\d{1,${intDigits}}(\\.\\d{0,1})?$`).test(s)) return null;
     const n = Number(s);
     return Number.isFinite(n) ? n : null;

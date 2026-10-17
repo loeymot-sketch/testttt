@@ -11,7 +11,7 @@ vi.mock('../../resources/js/services/alertService', () => ({ default: { success:
 
 import HygieneHomeComponent from '../../resources/js/components/admin/hygiene/HygieneHomeComponent.vue';
 import HygieneReportComponent from '../../resources/js/components/admin/hygiene/HygieneReportComponent.vue';
-import { addDaysIso, todayIso } from '../../resources/js/helpers/hygieneCommon';
+import { addDaysIso } from '../../resources/js/helpers/hygieneCommon';
 
 const tile = (key, status, headline, detail = '') => ({ key, label: key, icon: 'fa-solid fa-x', route: `/admin/hygiene/${key}`, status, headline, detail, counts: {} });
 const RouterLinkStub = { props: ['to'], template: '<a :href="to"><slot /></a>' };
@@ -67,6 +67,7 @@ describe('dossier de contrôle', () => {
         dlc: { count: 40, discarded: 12, used: 20, expired_not_out: 2 },
         incidents: [{ at: '2026-10-19T18:00:00+02:00', module: 'temperature', text: 'Frigo 2 : 7,5 °C (trop chaud)', action: 'Produits jetés', operator: 'Karim' }],
     };
+    const SERVER = { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' };
     let gets;
     let clicks;
     let createdUrl;
@@ -78,7 +79,7 @@ describe('dossier de contrôle', () => {
         h.axios.get.mockImplementation(async (url, cfg) => {
             gets.push([url, cfg]);
             if (cfg && cfg.responseType === 'blob') return { data: new Blob(['x']) };
-            return { data: { data: SUMMARY, meta: {} } };
+            return { data: { data: SUMMARY, meta: SERVER } };
         });
         createdUrl = vi.fn(() => 'blob:x');
         globalThis.URL.createObjectURL = createdUrl;
@@ -92,8 +93,9 @@ describe('dossier de contrôle', () => {
         await flushPromises();
         const [url, cfg] = gets[0];
         expect(url).toBe('admin/hygiene/report/summary');
-        expect(cfg.params.from).toBe(`${todayIso().slice(0, 8)}01`);
-        expect(cfg.params.to).toBe(todayIso());
+        expect(cfg.params).toEqual({}); // 1er chargement SANS période : le serveur choisit le mois en cours (horloge serveur, pas celle de la tablette)
+        expect(w.get('[data-testid="rep-from"]').element.value).toBe('2026-10-01');
+        expect(w.get('[data-testid="rep-to"]').element.value).toBe('2026-10-20');
         expect(w.get('[data-testid="rep-kpi-temperature"]').text()).toContain('90 %');
         expect(w.get('[data-testid="rep-kpi-temperature"]').text()).toContain('108 sur 120');
         expect(w.get('[data-testid="rep-kpi-temperature"]').classes()).toContain('is-partial');
@@ -107,7 +109,7 @@ describe('dossier de contrôle', () => {
     it('les préréglages calculent la bonne période', async () => {
         const w = mount(HygieneReportComponent);
         await flushPromises();
-        const t = todayIso();
+        const t = '2026-10-20'; // « aujourd'hui » = date du serveur
         await w.get('[data-testid="rep-preset-week"]').trigger('click');
         await flushPromises();
         expect(gets.at(-1)[1].params).toEqual({ from: addDaysIso(t, -6), to: t });
@@ -136,7 +138,8 @@ describe('dossier de contrôle', () => {
     it('le PDF et chaque CSV se téléchargent avec la période et un nom de fichier parlant', async () => {
         const w = mount(HygieneReportComponent);
         await flushPromises();
-        const { from, to } = gets[0][1].params;
+        const from = '2026-10-01';
+        const to = '2026-10-20';
         expect(w.get('[data-testid="rep-pdf"]').attributes('disabled')).toBeUndefined(); // une chaîne vide ne désactive pas le bouton
         await w.get('[data-testid="rep-pdf"]').trigger('click');
         await flushPromises();
@@ -151,10 +154,35 @@ describe('dossier de contrôle', () => {
     });
 
     it('aucun incident : message clair', async () => {
-        h.axios.get.mockResolvedValue({ data: { data: { ...SUMMARY, incidents: [], tasks: { ...SUMMARY.tasks, missed: 0, missed_list: [] } }, meta: {} } });
+        h.axios.get.mockResolvedValue({ data: { data: { ...SUMMARY, incidents: [], tasks: { ...SUMMARY.tasks, missed: 0, missed_list: [] } }, meta: SERVER } });
         const w = mount(HygieneReportComponent);
         await flushPromises();
         expect(w.get('[data-testid="rep-no-incident"]').text()).toContain('Aucun incident');
         expect(w.find('[data-testid="rep-missed"]').exists()).toBe(false);
+    });
+});
+
+
+describe('dossier de contrôle — réponses dans le désordre', () => {
+    it('une réponse lente d’une ancienne période n’écrase pas la dernière demandée', async () => {
+        const mk = (count) => ({ period: { from: '2026-10-01', to: '2026-10-20', days: 20 }, temperature: { count: 1, alerts: 0, expected: 1, covered: 1, coverage_pct: 100 },
+            tasks: { count: 0, expected: 0, done: 0, partial: 0, missed: 0, completion_pct: null, missed_list: [] }, receptions: { count, alerts: 0, refused: 0 },
+            trace: { count: 0, alerts: 0, without_lot: 0 }, oil: { tests: 0, alerts: 0, coverage_pct: null, max_polar: null }, dlc: { count: 0, discarded: 0, used: 0, expired_not_out: 0 }, incidents: [] });
+        let release;
+        h.axios.get.mockReset();
+        h.axios.get.mockImplementation((url, cfg) => {
+            if (!cfg.params.from) return Promise.resolve({ data: { data: mk(1), meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } });
+            if (cfg.params.from === cfg.params.to) return Promise.resolve({ data: { data: mk(2), meta: {} } });
+            return new Promise((resolve) => { release = () => resolve({ data: { data: mk(99), meta: {} } }); });
+        });
+        const w = mount(HygieneReportComponent);
+        await flushPromises();
+        await w.get('[data-testid="rep-preset-week"]').trigger('click'); // lente, restera en attente
+        await w.get('[data-testid="rep-preset-today"]').trigger('click'); // rapide
+        await flushPromises();
+        release(); // la réponse lente de « 7 jours » arrive APRÈS
+        await flushPromises();
+        expect(w.get('[data-testid="rep-kpi-receptions"]').text()).toContain('2'); // « aujourd'hui », pas 99
+        expect(w.get('[data-testid="rep-preset-today"]').classes()).toContain('is-on');
     });
 });

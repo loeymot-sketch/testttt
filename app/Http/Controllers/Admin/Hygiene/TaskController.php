@@ -8,6 +8,7 @@ use App\Models\HygieneTaskTemplate;
 use App\Services\Hygiene\TaskSchedule;
 use App\Support\Hygiene\RecommendedTasks;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -84,6 +85,7 @@ class TaskController extends HygieneController
 
         if (! empty($v['client_ref'])) {
             $dup = HygieneTaskCompletion::query()->where('client_ref', $v['client_ref'])->first();
+            if ($dup && $dup->template_id !== (int) $v['template_id']) return $this->refConflict();
             if ($dup) return response()->json(['data' => $this->presentCompletion($dup)], 200);
         }
 
@@ -91,10 +93,6 @@ class TaskController extends HygieneController
         if (! $t) return response()->json(['message' => 'Fiche introuvable ou désactivée.'], 404);
         if (! TaskSchedule::isDueOn($t, $day)) {
             return response()->json(['message' => 'Cette fiche n’est pas à faire aujourd’hui.', 'errors' => ['template_id' => ['Pas due aujourd’hui.']]], 422);
-        }
-        $already = HygieneTaskCompletion::query()->whereNull('voided_at')->where('template_id', $t->id)->whereDate('due_date', $day->toDateString())->where('complete', true)->exists();
-        if ($already) {
-            return response()->json(['message' => '« '.$t->name.' » est déjà validée aujourd’hui. Annulez la validation pour la refaire.', 'errors' => ['template_id' => ['Déjà validée.']]], 422);
         }
 
         $checklist = collect($t->checklist ?? []);
@@ -123,6 +121,7 @@ class TaskController extends HygieneController
 
         $op = $this->operator($request);
         $dueAt = TaskSchedule::dueAt($t, $day);
+        $alreadyMsg = '« '.$t->name.' » est déjà validée aujourd’hui. Annulez la validation pour la refaire.';
         $row = new HygieneTaskCompletion([
             'template_id' => $t->id, 'task_name' => $t->name, 'zone' => $t->zone, 'due_date' => $day->toDateString(),
             'items' => $items, 'items_total' => $total, 'items_done' => $doneCount, 'complete' => $complete, 'note' => $complete ? null : $note,
@@ -131,7 +130,18 @@ class TaskController extends HygieneController
         ]);
         $row->branch_id = $branch;
         try {
-            $row->save();
+            // Verrou sur la fiche : deux validations « complètes » simultanées (double appui, deux tablettes) ne passent pas toutes les deux.
+            $refused = DB::transaction(function () use ($t, $day, $row): bool {
+                HygieneTaskTemplate::query()->whereKey($t->id)->lockForUpdate()->first();
+                $already = HygieneTaskCompletion::query()->whereNull('voided_at')->where('template_id', $t->id)->whereDate('due_date', $day->toDateString())->where('complete', true)->exists();
+                if ($already) return true;
+                $row->save();
+
+                return false;
+            });
+            if ($refused) {
+                return response()->json(['message' => $alreadyMsg, 'errors' => ['template_id' => ['Déjà validée.']]], 422);
+            }
         } catch (QueryException $e) {
             if (empty($v['client_ref']) || ! $this->isUniqueViolation($e)) throw $e;
             $row = HygieneTaskCompletion::query()->where('client_ref', $v['client_ref'])->firstOrFail();
@@ -234,6 +244,11 @@ class TaskController extends HygieneController
 
     // ───────────────────────────── utilitaires ─────────────────────────────
 
+    private function refConflict(): JsonResponse
+    {
+        return response()->json(['message' => 'Cette référence d’envoi a déjà enregistré une autre fiche : rechargez l’écran et recommencez.', 'errors' => ['client_ref' => ['Référence d’envoi déjà utilisée.']]], 409);
+    }
+
     private function recommendedState(): array
     {
         $existing = HygieneTaskTemplate::query()->withTrashed()->get(['catalog_key', 'name', 'deleted_at']);
@@ -286,6 +301,12 @@ class TaskController extends HygieneController
         ], [], ['name' => 'nom', 'checklist' => 'points à vérifier', 'due_time' => 'horaire']);
 
         if (isset($v['checklist'])) {
+            foreach ($v['checklist'] as $raw) {
+                $okShape = is_string($raw) || (is_array($raw) && is_string($raw['label'] ?? null) && (! isset($raw['key']) || is_string($raw['key'])));
+                if (! $okShape) {
+                    abort(response()->json(['message' => 'Point à vérifier invalide.', 'errors' => ['checklist' => ['Chaque point doit être un texte (libellé de 1 à 80 caractères).']]], 422));
+                }
+            }
             $items = $this->keyed($v['checklist']);
             foreach ($items as $it) {
                 if ($it['label'] === '' || mb_strlen($it['label']) > 80) {

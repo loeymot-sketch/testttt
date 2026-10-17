@@ -29,6 +29,17 @@ return [
         'fryer' => ['domain' => 'oil', 'label' => 'Friteuse', 'short' => 'Friteuse', 'min' => null, 'max' => null, 'negative' => false],
     ],
 
+    /**
+     * Bornes que la SEUIL d'un équipement ne peut pas franchir (le seuil se règle, il ne se désarme pas) : sans elles, n'importe quel
+     * membre du personnel pourrait vider ou relever un seuil puis enregistrer 55 °C comme « conforme ». Seuil haut obligatoire.
+     *   max : plage du seuil haut ; min : plage du seuil bas (facultatif, jamais au-dessus du seuil haut).
+     * Valeurs de départ prudentes (GBPH : jusqu'à +8 °C au plus pour le froid positif, −15 °C au plus pour le surgelé).
+     */
+    'threshold_bounds' => [
+        'cold' => ['max' => [0.0, 8.0], 'min' => [-5.0, 8.0]],
+        'freezer' => ['max' => [-30.0, -15.0], 'min' => [-60.0, -15.0]],
+    ],
+
     /** Valeur plausible d'un thermomètre d'enceinte froide : au-delà, c'est une faute de frappe (« 30 » pour « 3 »). */
     'plausible_min' => -60.0,
     'plausible_max' => 60.0,

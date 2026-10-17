@@ -38,6 +38,7 @@
     $st = fn ($s) => $s === 'alert' ? '<span class="ko">écart</span>' : ($s === 'warn' ? '<span class="warn">à surveiller</span>' : '<span class="ok">conforme</span>');
     $mod = ['temperature' => 'Températures', 'tasks' => 'Nettoyage', 'receptions' => 'Réception', 'trace' => 'Traçabilité', 'oil' => 'Huile'];
     $p = $report['period'];
+    $cut = fn ($m) => ($m['rows_total'] ?? 0) > count($m['rows'] ?? []) ? '<p class="warn">Liste réduite : les '.count($m['rows']).' lignes les plus récentes sur '.$m['rows_total'].'. Le détail complet est dans l\'export CSV.</p>' : '';
     $t = $report['temperature']; $k = $report['tasks']; $r = $report['receptions']; $z = $report['trace']; $o = $report['oil']; $l = $report['dlc'];
 @endphp
 
@@ -76,6 +77,7 @@
 
 <h2>Relevés de température ({{ $t['count'] }})</h2>
 @if (empty($t['rows']))<p class="empty">Aucun relevé.</p>@else
+    {!! $cut($t) !!}
     <table class="data"><tr><th>Date</th><th>Équipement</th><th>°C</th><th>Seuils</th><th>Verdict</th><th>Moment</th><th>Opérateur</th><th>Action corrective</th></tr>
     @foreach ($t['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['equipment'] }}</td><td>{{ $n($x['value_c']) }}</td>
@@ -90,6 +92,7 @@
     <p class="ko">Fiches non faites ({{ $k['missed'] }}) : @foreach ($k['missed_list'] as $m){{ $d($m['date']) }} {{ $m['task'] }}{{ $loop->last ? '' : ' ; ' }}@endforeach</p>
 @endif
 @if (empty($k['rows']))<p class="empty">Aucune validation.</p>@else
+    {!! $cut($k) !!}
     <table class="data"><tr><th>Date</th><th>Jour</th><th>Fiche</th><th>Points</th><th>Non faits / commentaire</th><th>Opérateur</th></tr>
     @foreach ($k['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : (!$x['complete'] ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $d($x['due_date']) }}</td><td>{{ $x['task'] }}</td>
@@ -101,6 +104,7 @@
 
 <h2>Réceptions de marchandises ({{ $r['count'] }})</h2>
 @if (empty($r['rows']))<p class="empty">Aucune réception.</p>@else
+    {!! $cut($r) !!}
     <table class="data"><tr><th>Date</th><th>Fournisseur</th><th>BL</th><th>Températures</th><th>Contrôles non conformes</th><th>Décision</th><th>Commentaire</th><th>Opérateur</th></tr>
     @foreach ($r['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['supplier'] }}</td><td>{{ $x['delivery_note'] }}</td>
@@ -112,6 +116,7 @@
 
 <h2>Traçabilité amont ({{ $z['count'] }})</h2>
 @if (empty($z['rows']))<p class="empty">Aucun produit tracé.</p>@else
+    {!! $cut($z) !!}
     <table class="data"><tr><th>Date</th><th>Produit</th><th>Fournisseur</th><th>BL</th><th>Lot</th><th>DLC / DLUO</th><th>Commentaire</th><th>Opérateur</th></tr>
     @foreach ($z['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['product'] }}</td><td>{{ $x['supplier'] }}</td><td>{{ $x['delivery_note'] }}</td>
@@ -122,6 +127,7 @@
 
 <h2>Huile de friture ({{ $o['tests'] }} test(s), {{ $o['changes'] }} vidange(s), {{ $o['filters'] }} filtrage(s))</h2>
 @if (empty($o['rows']))<p class="empty">Aucune opération.</p>@else
+    {!! $cut($o) !!}
     <table class="data"><tr><th>Date</th><th>Friteuse</th><th>Opération</th><th>Polaires</th><th>Bain °C</th><th>Verdict</th><th>Action corrective</th><th>Opérateur</th></tr>
     @foreach ($o['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['fryer'] }}</td><td>{{ $x['type'] }}@if($x['oil_litres']) · {{ $n($x['oil_litres']) }} L @endif</td>
@@ -133,6 +139,7 @@
 
 <h2>Étiquettes DLC imprimées ({{ $l['count'] }})</h2>
 @if (empty($l['rows']))<p class="empty">Aucune étiquette.</p>@else
+    {!! $cut($l) !!}
     <table class="data"><tr><th>Date</th><th>Produit</th><th>N° de lot</th><th>DLC</th><th>Étiq.</th><th>Conservation</th><th>Sortie</th></tr>
     @foreach ($l['rows'] as $x)
         <tr><td>{{ $dt($x['at']) }}</td><td>{{ $x['product'] }}</td><td>{{ $x['lot'] }}@if($x['supplier_lot']) (fourn. {{ $x['supplier_lot'] }})@endif</td><td>{{ $dt($x['expires_at']) }}</td><td>{{ $x['copies'] }}</td><td>{{ $x['storage'] }}</td>
