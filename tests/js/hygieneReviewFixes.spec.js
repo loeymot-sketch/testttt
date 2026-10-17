@@ -201,6 +201,28 @@ describe('qui est-ce ? — choix mémorisé par utilisateur connecté', () => {
     });
 });
 
+describe('qui est-ce ? — jamais une liste vide muette (méga-fichier : défaut n° 1 de Komia)', () => {
+    it('aucun employé : le dit, explique ce qui se passe en attendant, et propose d’en ajouter', async () => {
+        h.axios.get.mockReset();
+        window.localStorage.clear();
+        h.axios.get.mockResolvedValue({ data: { data: [], meta: { me: 7 } } });
+        const w = mount(HygieneOperatorPicker, { props: { modelValue: null }, global: { stubs: { 'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' } } } });
+        await flushPromises();
+        await w.get('[data-testid="hy-operator-btn"]').trigger('click');
+        const empty = w.get('[data-testid="hy-operator-empty"]');
+        expect(empty.text()).toMatch(/Aucun employé enregistré/);
+        expect(empty.text()).toMatch(/attribué au compte connecté/);
+        expect(w.get('[data-testid="hy-operator-add"]').attributes('href')).toBe('/admin/employees');
+        expect(w.get('[data-testid="hy-operator-btn"]').text()).toContain('moi');
+        // et il y a du monde : pas de message
+        h.axios.get.mockResolvedValue({ data: { data: [{ id: 7, name: 'Alice A', short: 'Alice A.', is_me: true }], meta: { me: 7 } } });
+        const w2 = mount(HygieneOperatorPicker, { props: { modelValue: null } });
+        await flushPromises();
+        await w2.get('[data-testid="hy-operator-btn"]').trigger('click');
+        expect(w2.find('[data-testid="hy-operator-empty"]').exists()).toBe(false);
+    });
+});
+
 describe('photo jointe', () => {
     it('un double appui avant l’arrivée de l’image ne crée pas deux liens à libérer', async () => {
         const created = [];

@@ -8,7 +8,11 @@
                     :class="{ 'is-on': p.id === chosenId }" :data-testid="`hy-operator-${p.id}`" @click="choose(p)">
                 {{ p.name }}<template v-if="p.is_me"> (moi)</template>
             </button>
-            <p v-if="!people.length" class="hy-muted">Aucun membre du personnel trouvé.</p>
+            <!-- jamais une liste vide muette : on dit pourquoi, ce qui se passe en attendant, et où l'ajouter -->
+            <div v-if="!people.length" class="hy-operator-empty" data-testid="hy-operator-empty">
+                <p class="hy-muted">Aucun employé enregistré. En attendant, chaque geste est attribué au compte connecté.</p>
+                <router-link to="/admin/employees" class="hy-operator-add" data-testid="hy-operator-add">＋ Ajouter un employé</router-link>
+            </div>
         </div>
     </div>
 </template>
@@ -33,7 +37,8 @@ export default {
     computed: {
         currentLabel() {
             const p = this.people.find((x) => x.id === this.chosenId);
-            return p ? p.short : "…";
+            // liste vide (aucun employé enregistré) : le geste est attribué au compte connecté — le dire plutôt qu'afficher « … »
+            return p ? p.short : (this.chosenId !== null && this.chosenId === this.me ? "moi" : "…");
         },
     },
     async created() {
