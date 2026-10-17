@@ -566,6 +566,28 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/history', [$c, 'history'])->name('history');
     });
 
+    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Socle commun du module : « qui est-ce ? » et pièces jointes photo.
+    Route::prefix('hygiene')->name('hygiene.')->group(function () {
+        Route::get('/operators', [\App\Http\Controllers\Admin\Hygiene\OperatorController::class, 'index'])->name('operators');
+        Route::post('/attachments', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'store'])->name('attachments.store');
+        Route::get('/attachments/{attachment}', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'show'])
+            ->where('attachment', '[0-9]{1,18}')->name('attachments.show');
+
+        // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
+        Route::prefix('tasks')->name('tasks.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/completions', [$c, 'complete'])->name('completions.store');
+            Route::post('/completions/{completion}/void', [$c, 'void'])->where('completion', '[0-9]{1,18}')->name('completions.void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/templates', [$c, 'templates'])->name('templates');
+            Route::post('/templates', [$c, 'storeTemplate'])->name('templates.store');
+            Route::post('/templates/install-recommended', [$c, 'installRecommended'])->name('templates.install');
+            Route::match(['put', 'patch'], '/templates/{template}', [$c, 'updateTemplate'])->where('template', '[0-9]{1,18}')->name('templates.update');
+            Route::delete('/templates/{template}', [$c, 'destroyTemplate'])->where('template', '[0-9]{1,18}')->name('templates.destroy');
+        });
+    });
+
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
             Route::get('/', [CompanyController::class, 'index']);

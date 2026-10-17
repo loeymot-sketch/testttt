@@ -1,0 +1,70 @@
+/* [CAYENNE HYGIÈNE 2026-10-17] Styles communs des écrans hygiène (préfixe hy-). Tablette d'abord : cibles ≥ 44 px, contrastes AA. */
+.hy-muted { color: #475569; padding: 12px 4px; }
+.hy-alert { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-weight: 600; }
+.hy-note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-weight: 600; }
+.hy-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.hy-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.hy-chip { border-radius: 999px; padding: 6px 12px; background: #f1f5f9; color: #334155; font-weight: 700; border: 1px solid transparent; font-size: 15px; line-height: 1.25; }
+.hy-chip.is-todo { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+.hy-chip.is-ok { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.hy-chip.is-alert { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.hy-chip.is-dark { background: #111827; color: #fff; }
+.hy-chip--btn { cursor: pointer; min-height: 44px; background: #fff; border-color: #cbd5e1; }
+.hy-chip--btn.is-on { background: #111827; color: #fff; border-color: #111827; }
+
+.hy-btn { min-height: 52px; padding: 0 18px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; color: #111827; font-size: 16px; font-weight: 800; cursor: pointer; }
+.hy-btn:disabled { opacity: .45; cursor: not-allowed; }
+.hy-btn--primary { background: #111827; color: #fff; border-color: #111827; }
+.hy-btn--small { min-height: 44px; padding: 0 12px; font-size: 15px; }
+.hy-btn--danger { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+
+.hy-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; border-bottom: 2px solid #e2e8f0; }
+.hy-tab { min-height: 48px; padding: 0 16px; border: 0; background: none; font-size: 16px; font-weight: 800; color: #475569; cursor: pointer; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+.hy-tab.is-on { color: #111827; border-bottom-color: #111827; }
+.hy-tab small { font-weight: 800; background: #e2e8f0; color: #334155; border-radius: 999px; padding: 1px 8px; margin-left: 4px; }
+
+.hy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+.hy-card { border: 2px solid #e2e8f0; border-radius: 14px; padding: 12px; background: #fff; display: flex; flex-direction: column; gap: 10px; color: #111827; }
+.hy-card.is-done { border-color: #86efac; background: #f0fdf4; }
+.hy-card.is-partial { border-color: #fcd34d; background: #fffbeb; }
+.hy-card.is-alert { border-color: #f87171; background: #fef2f2; }
+.hy-card.is-open { border-color: #2563eb; }
+.hy-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.hy-name { display: block; font-size: 19px; color: #111827; }
+.hy-sub { color: #64748b; font-size: 14px; }
+.hy-tag { background: #e0f2fe; color: #075985; border-radius: 8px; padding: 4px 8px; font-weight: 800; font-size: 14px; white-space: nowrap; }
+.hy-tag.is-late { background: #fee2e2; color: #991b1b; }
+
+.hy-field { display: flex; flex-direction: column; gap: 4px; }
+.hy-label { font-weight: 700; font-size: 14px; color: #334155; }
+.hy-input, .hy-select, .hy-textarea { min-height: 48px; border: 1px solid #94a3b8; border-radius: 10px; padding: 6px 10px; font-size: 16px; color: #111827; background: #fff; width: 100%; }
+.hy-textarea { min-height: 72px; }
+.hy-input:focus, .hy-select:focus, .hy-textarea:focus { border-color: #2563eb; outline: 2px solid #bfdbfe; }
+
+.hy-toggles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hy-toggle { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 12px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; font-size: 16px; font-weight: 700; color: #111827; cursor: pointer; text-align: left; }
+.hy-toggle .hy-box { flex: 0 0 28px; height: 28px; border-radius: 8px; border: 2px solid #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; color: #fff; }
+.hy-toggle[aria-pressed="true"] { border-color: #16a34a; background: #f0fdf4; }
+.hy-toggle[aria-pressed="true"] .hy-box { background: #16a34a; border-color: #16a34a; }
+
+.hy-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 12px; background: #fff; border: 2px solid #111827; border-radius: 14px; box-shadow: 0 -6px 18px rgba(15, 23, 42, .12); color: #111827; }
+
+.hy-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.hy-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #111827; }
+.hy-row.is-alert { border-color: #fecaca; background: #fef2f2; }
+.hy-row.is-void { opacity: .55; text-decoration: line-through; }
+.hy-row-when { color: #64748b; min-width: 100px; }
+.hy-row-name { font-weight: 700; min-width: 120px; }
+.hy-row-name--wide { flex: 0 0 260px; }
+.hy-summary-link { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; color: #1d4ed8; }
+.hy-row-meta { color: #475569; font-size: 14px; flex: 1; min-width: 200px; }
+
+.hy-operator { position: relative; display: inline-block; }
+.hy-operator-pop { position: absolute; right: 0; z-index: 20; top: calc(100% + 6px); min-width: 240px; max-height: 320px; overflow: auto; background: #fff; border: 2px solid #111827; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 12px 28px rgba(15, 23, 42, .18); }
+.hy-operator-pop button { min-height: 48px; border-radius: 8px; border: 0; background: #f8fafc; font-size: 16px; font-weight: 700; text-align: left; padding: 0 12px; cursor: pointer; color: #111827; }
+.hy-operator-pop button.is-on { background: #111827; color: #fff; }
+
+.hy-photo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hy-photo img { height: 64px; width: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; }
+.hy-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

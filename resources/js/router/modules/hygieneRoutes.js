@@ -4,6 +4,7 @@
 // le personnel qui tient la tablette. Une permission neuve ne serait portée par aucun rôle tant qu'un seeder ne l'aurait pas
 // distribuée (écran inaccessible à tout le monde, propriétaire compris).
 const HygieneTemperatureComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTemperatureComponent");
+const HygieneTasksComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTasksComponent");
 
 export default [
     {
@@ -19,6 +20,17 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_temperature",
+        },
+    },
+    {
+        path: "/admin/hygiene/tasks",
+        component: HygieneTasksComponent,
+        name: "admin.hygiene.tasks",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_tasks",
         },
     },
 ];

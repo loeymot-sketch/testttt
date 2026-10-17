@@ -174,6 +174,7 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
         icon: 'fa-solid fa-temperature-half',
         children: Object.freeze([
             Object.freeze({ url: 'hygiene/temperature', language: 'hygiene_temperature', icon: 'lab lab-list' }),
+            Object.freeze({ url: 'hygiene/tasks', language: 'hygiene_tasks', icon: 'lab lab-list' }),
         ]),
     }),
     /*
@@ -222,6 +223,7 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // [CAYENNE HYGIÈNE 2026-10-17] Même gate que les étiquettes — voir l'entrée de menu.
     hygiene: 'pos-orders',
     'hygiene/temperature': 'pos-orders',
+    'hygiene/tasks': 'pos-orders',
     // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
     // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
     // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,
