@@ -36,6 +36,13 @@ describe('accueil du module', () => {
         expect(w.find('[data-testid="home-tile-report"]').exists()).toBe(true);
     });
 
+    it('une tuile « idle » (rien attendu, rien eu lieu) reste neutre et ne fait pas dire « à configurer »', async () => {
+        const w = await mountHome([tile('tasks', 'ok', '5/5 fiches'), tile('reception', 'idle', 'Aucune livraison'), tile('trace', 'idle', 'Rien tracé')], { alerts: 0, todo: 0 });
+        expect(w.get('[data-testid="home-tile-trace"]').classes()).toContain('is-idle');
+        expect(w.get('[data-testid="home-tile-trace"]').classes()).not.toContain('is-ok');
+        expect(w.get('[data-testid="home-banner"]').text()).toContain('Tout est en ordre');
+    });
+
     it('la bannière dit l’essentiel : alertes d’abord, puis le reste à faire, puis « tout est en ordre »', async () => {
         let w = await mountHome([tile('temperature', 'alert', 'x')], { alerts: 2, todo: 3 });
         expect(w.get('[data-testid="home-banner"]').text()).toBe('2 domaines en alerte à traiter · 3 autres à compléter');

@@ -108,6 +108,9 @@ class OverviewAndReportTest extends TestCase
         $this->assertSame('empty', $tiles['tasks']['status']);
         $this->assertSame('empty', $tiles['oil']['status']);
         $this->assertSame('ok', $tiles['dlc']['status']);
+        // rien reçu, rien tracé : neutre, JAMAIS vert (« vert » = fait et conforme)
+        $this->assertSame('idle', $tiles['reception']['status']);
+        $this->assertSame('idle', $tiles['trace']['status']);
         $this->assertSame('/admin/labels/dlc', $tiles['dlc']['route']);
         $this->assertSame('/admin/hygiene/temperature', $tiles['temperature']['route']);
     }

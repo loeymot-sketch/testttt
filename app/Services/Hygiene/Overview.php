@@ -17,6 +17,8 @@ use App\Support\Hygiene\Kinds;
  * en alerte (comme la tuile rouge « 0/5 effectués » de Komia, pour tous les domaines). LECTURE SEULE.
  *
  * status : alert (à traiter maintenant) · todo (à faire) · ok (tout est fait) · empty (rien de configuré : l'écran propose de démarrer).
+ * idle : rien n'est attendu et rien n'a eu lieu aujourd'hui (réception, traçabilité) — neutre, jamais vert : « vert » dit « fait et conforme »,
+ * pas « aucune donnée ».
  */
 final class Overview
 {
@@ -98,7 +100,7 @@ final class Overview
         $rows = HygieneReception::query()->whereNull('voided_at')->where('received_at', '>=', now()->startOfDay())->get(['status', 'decision']);
         $alerts = $rows->where('status', 'alert')->count();
 
-        return $this->tile('reception', 'Réception', 'fa-solid fa-truck', $alerts > 0 ? 'alert' : 'ok', $rows->isEmpty() ? 'Aucune livraison' : $this->plural($rows->count(), 'livraison'),
+        return $this->tile('reception', 'Réception', 'fa-solid fa-truck', $alerts > 0 ? 'alert' : ($rows->isEmpty() ? 'idle' : 'ok'), $rows->isEmpty() ? 'Aucune livraison' : $this->plural($rows->count(), 'livraison'),
             $alerts > 0 ? $this->plural($alerts, 'écart') : ($rows->isEmpty() ? '' : 'Toutes conformes'), ['count' => $rows->count(), 'alerts' => $alerts]);
     }
 
@@ -107,7 +109,7 @@ final class Overview
         $rows = HygieneTraceEntry::query()->whereNull('voided_at')->where('traced_at', '>=', now()->startOfDay())->get(['status']);
         $alerts = $rows->where('status', 'alert')->count();
 
-        return $this->tile('trace', 'Traçabilité', 'fa-solid fa-barcode', $alerts > 0 ? 'alert' : 'ok', $rows->isEmpty() ? 'Rien tracé' : $this->plural($rows->count(), 'produit tracé', 'produits tracés'),
+        return $this->tile('trace', 'Traçabilité', 'fa-solid fa-barcode', $alerts > 0 ? 'alert' : ($rows->isEmpty() ? 'idle' : 'ok'), $rows->isEmpty() ? 'Rien tracé' : $this->plural($rows->count(), 'produit tracé', 'produits tracés'),
             $alerts > 0 ? $this->plural($alerts, 'écart') : '', ['count' => $rows->count(), 'alerts' => $alerts]);
     }
 
