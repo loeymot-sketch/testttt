@@ -4869,7 +4869,11 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
-**2026-10-17 (nuit) — Cayenne Hygiène : lot « méga-fichier » (P0 puis P1) — LOCAL, commits non poussés, NON déployé.**
+**2026-10-17 (soir, suite) — DÉPLOYÉ en production : HEAD `1b1ce7335`, avance rapide depuis `03a4f725f`.** e2e réel 4/4, Vitest 5238, PHPUnit Hygiène 128 / Étiquettes 103,
+zones gelées inchangées, chaîne NF525 OK, snapshot SQL 4,3 Mo + sauvegarde JSON de `dlc_label_products` (95 lignes). La lecture de la prod AVANT de déployer a révélé que 95 produits
+du catalogue étaient déjà installés (0 validé) : sans rattrapage ils seraient passés pour des durées du restaurant. La migration `duration_source` marque donc « Valeur de départ
+Cayenne » les 92 dont les durées sont encore celles du catalogue ; 3 produits hors catalogue (Fromage râpé, Poivron, Tomate) restent « saisis par le restaurant ».
+**2026-10-17 (nuit) — Cayenne Hygiène : lot « méga-fichier » (P0 puis P1) — (livré, voir ci-dessus).**
 Source : `~/Downloads/mega-fichier/` (cahier des charges tiré de Komia, établi sur une prod encore vide : plusieurs « manques » étaient des modules construits mais non
 configurés — chaque ligne recoupée avec le code, cf. `docs/HYGIENE_FEUILLE_DE_ROUTE_KOMIA.md` § « Lot méga-fichier »). Livré : 8 états de DLC (+ congélation, repas témoin ≥ 5 j,
 réception ; jamais de recongélation sans origine dite), source + validation des durées (valeur de départ = À VALIDER), « Contrôle du catalogue » (allergènes, famille manquante,
