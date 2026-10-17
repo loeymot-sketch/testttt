@@ -123,6 +123,9 @@ test.describe('DLC · catalogue prêt à imprimer + recherche tolérante', () =>
             expect(found.some((t) => expected.test(t)), `« ${q} » → ${expected}`).toBeTruthy();
             expect(await page.locator('[data-testid="dlc-fuzzy-note"]').count(), `avertissement « proches » pour « ${q} »`).toBe(fuzzy ? 1 : 0);
             await page.screenshot({ path: path.join(OUT, `e2-recherche-${q}.png`), fullPage: false });
+            // « un appui = une étiquette » : le 1er résultat doit être visible SANS défiler (les familles s'effacent en cherchant)
+            const top = await page.locator('[data-testid^="dlc-product-"]').first().evaluate((e) => e.getBoundingClientRect().top);
+            expect(top, `1er résultat de « ${q} » visible sans défiler`).toBeLessThan(page.viewportSize().height - 120);
         }
         const none = await search(page, 'zzzzzz');
         expect(none).toEqual([]);
@@ -171,9 +174,9 @@ test.describe('Hygiène · chaque écran se charge pour de bon', () => {
             expect(text.length).toBeGreaterThan(80);
             expect(text, 'clé de traduction ou valeur brute visible').not.toMatch(/hygiene_(home|temperature|tasks|reception|oil|trace|report)|\bundefined\b|\bNaN\b|\[object /);
             expect(bad, `erreurs sur ${url}`).toEqual([]);
-            // titre en français (le thème met « Capitalize » partout : « Dossier De Contrôle », « Samedi 17 Octobre »)
-            const title = await page.locator('.db-card-title.hy-title').first().innerText();
-            expect(title, 'casse du titre').not.toMatch(/\b(De|Du|Des|Sanitaire|Octobre|Novembre)\b.*\b(Contrôle|Octobre)\b|Dossier De/);
+            // titre en français : le thème met « Capitalize » (« Samedi 17 Octobre », « Dossier De Contrôle ») — on lit le style CALCULÉ, pas une regex sur le texte
+            const transform = await page.locator('.db-card-title.hy-title').first().evaluate((e) => getComputedStyle(e).textTransform);
+            expect(transform, `casse du titre de ${url}`).toBe('none');
             if (name === 'home') {
                 // tant qu'un domaine n'est pas configuré, jamais « Tout est en ordre »
                 const unconfigured = await page.locator('.hy-tile.is-empty').count();

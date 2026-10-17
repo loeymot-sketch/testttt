@@ -38,10 +38,10 @@ describe('accueil du module', () => {
 
     it('la bannière dit l’essentiel : alertes d’abord, puis le reste à faire, puis « tout est en ordre »', async () => {
         let w = await mountHome([tile('temperature', 'alert', 'x')], { alerts: 2, todo: 3 });
-        expect(w.get('[data-testid="home-banner"]').text()).toBe('2 alertes à traiter · 3 choses à faire');
+        expect(w.get('[data-testid="home-banner"]').text()).toBe('2 domaines en alerte à traiter · 3 autres à compléter');
         expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-alert');
         w = await mountHome([tile('tasks', 'todo', 'x')], { alerts: 0, todo: 1 });
-        expect(w.get('[data-testid="home-banner"]').text()).toBe('1 chose à faire aujourd\'hui');
+        expect(w.get('[data-testid="home-banner"]').text()).toBe('1 domaine à compléter aujourd\'hui');
         w = await mountHome([tile('tasks', 'ok', 'x')], { alerts: 0, todo: 0 });
         expect(w.get('[data-testid="home-banner"]').text()).toContain('Tout est en ordre');
         expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-ok');

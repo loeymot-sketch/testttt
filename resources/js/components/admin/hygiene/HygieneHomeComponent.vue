@@ -56,8 +56,9 @@ export default {
         bannerText() {
             const a = this.meta.alerts;
             const t = this.meta.todo;
-            if (a > 0) return `${a} alerte${a > 1 ? "s" : ""} à traiter${t > 0 ? ` · ${t} chose${t > 1 ? "s" : ""} à faire` : ""}`;
-            if (t > 0) return `${t} chose${t > 1 ? "s" : ""} à faire aujourd'hui`;
+            // a et t comptent des DOMAINES (tuiles), pas des tâches : le dire, sinon « 1 chose à faire » contredit « 5 à faire » sur la tuile
+            if (a > 0) return `${a} domaine${a > 1 ? "s" : ""} en alerte à traiter${t > 0 ? ` · ${t} autre${t > 1 ? "s" : ""} à compléter` : ""}`;
+            if (t > 0) return `${t} domaine${t > 1 ? "s" : ""} à compléter aujourd'hui`;
             if (this.tiles.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
             if (this.unconfigured.length) return `Rien d'urgent, mais à configurer : ${this.unconfigured.map((u) => u.label).join(", ")}.`;
             return "Tout est en ordre ✓";

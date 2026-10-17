@@ -60,7 +60,8 @@
                         </button>
                     </div>
 
-                    <div class="dlc-cats" role="tablist" aria-label="Familles">
+                    <!-- en cherchant (famille « Tous »), les résultats passent juste sous la recherche : 3 rangées de familles les repoussaient hors de l'écran -->
+                    <div v-show="!(query && !category)" class="dlc-cats" role="tablist" aria-label="Familles" data-testid="dlc-cats">
                         <button type="button" class="dlc-cat" role="tab" :aria-selected="category === '' ? 'true' : 'false'" :class="{ 'is-on': category === '' }"
                                 data-testid="dlc-cat-all" @click="category = ''">Tous <span class="dlc-cat-n">{{ activeProducts.length }}</span></button>
                         <button v-if="uncategorizedCount && categoryTabs.length" type="button" class="dlc-cat" role="tab"

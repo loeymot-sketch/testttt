@@ -533,6 +533,8 @@ export default {
 </script>
 
 <style scoped>
+/* Le thème met les titres de carte en « Capitalize » (anglais) : « Samedi 17 Octobre ». Cet écran n'importe pas hygiene.css. */
+.db-card-header .db-card-title.hy-title { text-transform: none; }
 .tmp-muted { color: #475569; padding: 12px 4px; }
 .tmp-alert { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-weight: 600; }
 .tmp-setup { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 18px; }

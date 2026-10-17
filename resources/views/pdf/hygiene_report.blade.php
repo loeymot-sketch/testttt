@@ -56,7 +56,7 @@
     <td><p class="kpi-l">Relevés de température faits</p><p class="kpi-v">{{ $pct($t['coverage_pct']) }}</p><p class="sub">{{ $t['covered'] }} sur {{ $t['expected'] }} attendus · {{ $t['alerts'] }} écart(s)</p></td>
     <td><p class="kpi-l">Fiches de nettoyage faites</p><p class="kpi-v">{{ $pct($k['completion_pct']) }}</p><p class="sub">{{ $k['done'] }} sur {{ $k['expected'] }} · {{ $k['partial'] }} incomplète(s) · {{ $k['missed'] }} non faite(s)</p></td>
     <td><p class="kpi-l">Réceptions</p><p class="kpi-v">{{ $r['count'] }}</p><p class="sub">{{ $r['alerts'] }} écart(s) · {{ $r['refused'] }} refusée(s)</p></td>
-    <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · max {{ $pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p></td>
+    <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · {{ $o['max_polar'] === null ? 'aucune mesure de polaires' : 'max '.$pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p></td>
 </tr><tr>
     <td><p class="kpi-l">Produits tracés</p><p class="kpi-v">{{ $z['count'] }}</p><p class="sub">{{ $z['without_lot'] }} sans lot (expliqué) · {{ $z['alerts'] }} écart(s)</p></td>
     <td><p class="kpi-l">Étiquettes DLC</p><p class="kpi-v">{{ $l['count'] }}</p><p class="sub">{{ $l['copies'] }} étiquette(s) · {{ $l['discarded'] }} jetée(s) · {{ $l['used'] }} utilisée(s)</p></td>
@@ -148,7 +148,7 @@
     </table>
 @endif
 
-<p class="legal">Les durées de conservation, fréquences de nettoyage et seuils sont ceux du plan de maîtrise sanitaire du restaurant. Les lignes annulées sont conservées et barrées. Empreinte SHA-256 du jeu de données : {{ $fingerprint }}</p>
+<p class="legal">Les durées de conservation, fréquences de nettoyage et seuils sont ceux enregistrés dans l'application : des valeurs de départ prudentes que l'établissement ajuste et valide dans son plan de maîtrise sanitaire. Les lignes annulées sont conservées et barrées. Empreinte SHA-256 du jeu de données : {{ $fingerprint }}</p>
 
 <script type="text/php">
     if (isset($pdf)) { $pdf->page_script('$pdf->text(500, 826, "page ".$PAGE_NUM."/".$PAGE_COUNT, $fontMetrics->get_font("DejaVu Sans"), 8, array(0.58,0.64,0.72));'); }

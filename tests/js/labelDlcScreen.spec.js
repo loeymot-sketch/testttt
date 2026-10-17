@@ -109,6 +109,23 @@ describe('écran DLC — recherche tolérante (2026-10-17)', () => {
         expect(w.get('[data-testid="dlc-add-from-query"]').text()).toMatch(/Créer « zzzzzz »/);
     });
 
+    it('en cherchant, les familles s’effacent pour que les résultats soient juste sous la recherche — sauf si une famille est choisie', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        const cats = () => w.get('[data-testid="dlc-cats"]').attributes('style') || '';
+        expect(cats()).not.toMatch(/display:\s*none/);
+        await w.get('[data-testid="dlc-search"]').setValue('oignon');
+        expect(cats()).toMatch(/display:\s*none/);
+        await w.get('[data-testid="dlc-search"]').setValue('');
+        expect(cats()).not.toMatch(/display:\s*none/);
+        // une famille choisie reste visible : on voit dans quoi on cherche
+        await w.get('[data-testid="dlc-cat-all"]').trigger('click');
+        const family = w.findAll('.dlc-cat').find((b) => /Viandes/.test(b.text()));
+        await family.trigger('click');
+        await w.get('[data-testid="dlc-search"]').setValue('poulet');
+        expect(cats()).not.toMatch(/display:\s*none/);
+    });
+
     it('sélection multiple : on cherche, on coche plusieurs produits, la sélection survit à une autre recherche', async () => {
         setup(LIST());
         const w = await mountScreen();
