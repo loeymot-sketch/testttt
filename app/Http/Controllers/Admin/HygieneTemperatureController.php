@@ -81,7 +81,7 @@ class HygieneTemperatureController extends AdminController
     }
 
     /**
-     * Démarrage en un geste : « j'ai 4 frigos et 2 congélateurs ». Crée « Frigo 1 »… « Congélateur 2 » avec les seuils du type.
+     * Démarrage en un geste : « j'ai 4 frigos, 2 congélateurs et un bain-marie ». Crée « Frigo 1 »… « Congélateur 2 », « Bain-marie » avec les seuils du type.
      * Idempotent : un nom déjà pris (sans tenir compte de la casse) n'est pas recréé ; la numérotation reprend là où elle s'est arrêtée.
      */
     public function quickSetup(Request $request): JsonResponse
@@ -91,12 +91,13 @@ class HygieneTemperatureController extends AdminController
             'freezer' => ['nullable', 'integer', 'min:0', 'max:20'],
             'cold_room' => ['nullable', 'integer', 'min:0', 'max:10'],
             'display' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'hot_holding' => ['nullable', 'integer', 'min:0', 'max:10'],
         ]);
         $branch = $this->branchId($request);
         $taken = HygieneEquipment::query()->get(['name'])->map(fn ($e) => mb_strtolower(trim((string) $e->name)))->all();
         $order = (int) HygieneEquipment::query()->max('sort_order');
         $added = 0;
-        foreach (['fridge', 'cold_room', 'display', 'freezer'] as $kind) {
+        foreach (['fridge', 'cold_room', 'display', 'freezer', 'hot_holding'] as $kind) {
             $want = (int) ($v[$kind] ?? 0);
             $short = config("hygiene.kinds.$kind.short");
             $defaults = TemperatureRules::defaults($kind);
@@ -206,8 +207,9 @@ class HygieneTemperatureController extends AdminController
             }
             $seenEquipment[$equipment->id] = true;
             $value = round((float) $r['value'], 1);
-            if ($value < $min || $value > $max) {
-                $errors["readings.$i.value"] = ['« '.$equipment->name.' » : '.$this->fmt($value).' °C n’est pas plausible pour une enceinte froide (faute de frappe ?).'];
+            [$lo, $hi] = config("hygiene.kinds.{$equipment->kind}.plausible") ?? [$min, $max];
+            if ($value < $lo || $value > $hi) {
+                $errors["readings.$i.value"] = ['« '.$equipment->name.' » : '.$this->fmt($value).' °C n’est pas plausible pour '.($this->isHot($equipment->kind) ? 'un équipement chaud' : 'une enceinte froide').' (faute de frappe ?).'];
                 continue;
             }
             $verdict = TemperatureRules::evaluate($value, $equipment->min_c, $equipment->max_c);
@@ -337,8 +339,8 @@ class HygieneTemperatureController extends AdminController
             'name' => [$ignoreId ? 'sometimes' : 'required', 'filled', 'string', 'max:80'],
             'kind' => [$ignoreId ? 'sometimes' : 'required', Rule::in($kinds)],
             'location' => ['nullable', 'string', 'max:60'],
-            'min_c' => ['nullable', 'numeric', 'between:-60,60'],
-            'max_c' => ['nullable', 'numeric', 'between:-60,60'],
+            'min_c' => ['nullable', 'numeric', 'between:-60,99.9'],
+            'max_c' => ['nullable', 'numeric', 'between:-60,99.9'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'is_active' => ['nullable', 'boolean'],
         ], [], ['name' => 'nom', 'kind' => 'type', 'min_c' => 'seuil bas', 'max_c' => 'seuil haut']);
@@ -380,8 +382,23 @@ class HygieneTemperatureController extends AdminController
         $defaults = TemperatureRules::defaults($kind);
         $max = array_key_exists('max_c', $v) ? $v['max_c'] : ($current ? $current->max_c : $defaults['max']);
         $min = array_key_exists('min_c', $v) ? $v['min_c'] : ($current ? $current->min_c : $defaults['min']);
-        $bounds = config('hygiene.threshold_bounds.'.(config("hygiene.kinds.$kind.negative") ? 'freezer' : 'cold'));
         $fail = fn (string $field, string $msg) => abort(response()->json(['message' => $msg, 'errors' => [$field => [$msg]]], 422));
+
+        // Équipement chaud : c'est le seuil BAS qui protège (le plat ne doit pas descendre sous 63 °C) ; le haut est facultatif.
+        if ($this->isHot($kind)) {
+            $hot = config('hygiene.threshold_bounds.hot');
+            if ($min === null) $fail('min_c', 'Le seuil bas est obligatoire pour un équipement chaud : sans lui, un plat tiède ne serait jamais signalé.');
+            [$hlo, $hhi] = $hot['min'];
+            if ($min < $hlo || $min > $hhi) $fail('min_c', 'Seuil bas hors limites pour un équipement chaud : entre '.$this->fmt($hlo).' et '.$this->fmt($hhi).' °C.');
+            if ($max !== null) {
+                [$xlo, $xhi] = $hot['max'];
+                if ($max < $xlo || $max > $xhi) $fail('max_c', 'Seuil haut hors limites : entre '.$this->fmt($xlo).' et '.$this->fmt($xhi).' °C.');
+                if ($max < $min) $fail('max_c', 'Le seuil haut ne peut pas être sous le seuil bas.');
+            }
+
+            return;
+        }
+        $bounds = config('hygiene.threshold_bounds.'.(config("hygiene.kinds.$kind.negative") ? 'freezer' : 'cold'));
 
         if ($max === null) $fail('max_c', 'Le seuil haut est obligatoire : un équipement sans seuil ne signalerait plus jamais un écart.');
         [$lo, $hi] = $bounds['max'];
@@ -401,6 +418,7 @@ class HygieneTemperatureController extends AdminController
             'kind' => $e->kind,
             'kind_label' => config("hygiene.kinds.{$e->kind}.label"),
             'negative' => (bool) config("hygiene.kinds.{$e->kind}.negative"),
+            'hot' => $this->isHot($e->kind),
             'location' => $e->location,
             'min_c' => $e->min_c,
             'max_c' => $e->max_c,
@@ -434,6 +452,11 @@ class HygieneTemperatureController extends AdminController
             'voided_at' => $r->voided_at?->toIso8601String(),
             'void_reason' => $r->void_reason,
         ];
+    }
+
+    private function isHot(?string $kind): bool
+    {
+        return $kind !== null && (bool) config("hygiene.kinds.$kind.hot");
     }
 
     private function kinds(): array

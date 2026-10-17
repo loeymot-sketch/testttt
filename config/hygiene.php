@@ -17,7 +17,10 @@ return [
      *   cold_room — chambre froide positive : 0 à +4 °C.
      *   display   — vitrine / saladette réfrigérée : 0 à +4 °C.
      *   freezer   — congélateur : −18 °C ou moins (jamais de borne basse).
+     *   hot_holding — bain-marie, vitrine ou armoire chauffante (liaison chaude) : 63 °C ou plus (arrêté du 21/12/2009 : les plats
+     *                 maintenus chauds restent à +63 °C minimum). SEUIL BAS obligatoire, jamais de seuil haut par défaut. `hot` = vrai.
      *   fryer     — friteuse (domaine « oil » : suivi de l'huile, pas de relevé de température d'enceinte).
+     * `plausible` (facultatif) : plage d'un thermomètre pour CE type ; à défaut `plausible_min` / `plausible_max` (enceinte froide).
      * `domain` : l'écran qui montre ce type (temperature | oil). Un équipement n'apparaît que dans SON écran.
      */
     'kinds' => [
@@ -25,6 +28,8 @@ return [
         'cold_room' => ['domain' => 'temperature', 'label' => 'Chambre froide', 'short' => 'Chambre froide', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
         'display' => ['domain' => 'temperature', 'label' => 'Vitrine réfrigérée', 'short' => 'Vitrine', 'min' => 0.0, 'max' => 4.0, 'negative' => false],
         'freezer' => ['domain' => 'temperature', 'label' => 'Congélateur', 'short' => 'Congélateur', 'min' => null, 'max' => -18.0, 'negative' => true],
+        // Maintien au chaud : on vérifie que le plat ne descend PAS sous 63 °C (relevé 20 à 99,9 °C : au-delà, faute de frappe).
+        'hot_holding' => ['domain' => 'temperature', 'label' => 'Bain-marie / maintien au chaud', 'short' => 'Bain-marie', 'min' => 63.0, 'max' => null, 'negative' => false, 'hot' => true, 'plausible' => [20.0, 99.9]],
         // Friteuse : même référentiel d'équipements (comme Komia), mais jamais proposée au relevé de température d'enceinte froide.
         'fryer' => ['domain' => 'oil', 'label' => 'Friteuse', 'short' => 'Friteuse', 'min' => null, 'max' => null, 'negative' => false],
     ],
@@ -38,6 +43,8 @@ return [
     'threshold_bounds' => [
         'cold' => ['max' => [0.0, 8.0], 'min' => [-5.0, 8.0]],
         'freezer' => ['max' => [-30.0, -15.0], 'min' => [-60.0, -15.0]],
+        // chaud : le seuil BAS (63 °C par défaut) se règle entre 55 et 75 °C ; le seuil haut est facultatif (jamais sous le seuil bas)
+        'hot' => ['min' => [55.0, 75.0], 'max' => [55.0, 99.9]],
     ],
 
     /** Valeur plausible d'un thermomètre d'enceinte froide : au-delà, c'est une faute de frappe (« 30 » pour « 3 »). */
@@ -50,8 +57,10 @@ return [
      */
     'corrective_actions' => [
         'recheck' => ['label' => 'Nouvelle mesure après quelques minutes', 'note' => false],
-        'door_closed' => ['label' => 'Porte mal fermée, refermée', 'note' => false],
-        'defrost' => ['label' => 'Dégivrage en cours', 'note' => false],
+        // `for` : le type d'équipement concerné (cold | hot) ; sans `for`, l'action vaut pour tous
+        'door_closed' => ['label' => 'Porte mal fermée, refermée', 'note' => false, 'for' => 'cold'],
+        'defrost' => ['label' => 'Dégivrage en cours', 'note' => false, 'for' => 'cold'],
+        'reheated' => ['label' => 'Plats réchauffés à plus de 63 °C à cœur', 'note' => false, 'for' => 'hot'],
         'products_checked' => ['label' => 'Produits contrôlés (température à cœur)', 'note' => false],
         'products_moved' => ['label' => 'Produits déplacés vers un autre équipement', 'note' => false],
         'products_discarded' => ['label' => 'Produits jetés', 'note' => false],

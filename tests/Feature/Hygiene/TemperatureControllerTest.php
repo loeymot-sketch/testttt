@@ -359,4 +359,75 @@ class TemperatureControllerTest extends TestCase
         $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $id, 'value' => 3]]])->assertStatus(422);
         $this->patchJson(self::BASE."/equipment/$id", ['name' => 'Pirate'])->assertNotFound();
     }
+
+    // ───────────── équipements chauds · bain-marie (2026-10-17 · méga-fichier P1.1) ─────────────
+
+    public function test_un_bain_marie_se_cree_avec_63_degres_minimum_et_sans_seuil_haut(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 1, 'hot_holding' => 2])->assertCreated();
+        $names = HygieneEquipment::query()->orderBy('sort_order')->pluck('name')->all();
+        $this->assertSame(['Frigo', 'Bain-marie 1', 'Bain-marie 2'], $names);
+        $bm = HygieneEquipment::query()->where('name', 'Bain-marie 1')->firstOrFail();
+        $this->assertSame('hot_holding', $bm->kind);
+        $this->assertEquals(63.0, (float) $bm->min_c);
+        $this->assertNull($bm->max_c);
+        $row = collect($this->getJson(self::BASE.'/today')->json('data'))->firstWhere('name', 'Bain-marie 1');
+        $this->assertTrue($row['hot']);
+        $this->assertSame('Bain-marie / maintien au chaud', $row['kind_label']);
+        // le frigo, lui, n'est pas « chaud »
+        $this->assertFalse(collect($this->getJson(self::BASE.'/today')->json('data'))->firstWhere('name', 'Frigo')['hot']);
+    }
+
+    public function test_un_plat_sous_63_degres_est_un_ecart_et_exige_une_action_adaptee_au_chaud(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['hot_holding' => 1])->assertCreated();
+        // 71 °C : conforme ; 63,0 : conforme (borne incluse) ; 62,9 : écart
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 71]))->assertCreated();
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 63.0]))->assertCreated();
+        $this->assertSame(['ok', 'ok'], HygieneTemperatureReading::query()->orderBy('id')->pluck('status')->all());
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 62.9]))->assertStatus(422);
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => ['value' => 62.9, 'corrective_action' => 'reheated']]))->assertCreated();
+        $alert = HygieneTemperatureReading::query()->orderByDesc('id')->firstOrFail();
+        $this->assertSame('alert', $alert->status);
+        $this->assertSame('too_cold', $alert->alert_reason);
+        $this->assertSame('reheated', $alert->corrective_action);
+        $this->assertEquals(63.0, (float) $alert->min_c);
+
+        // les actions proposées disent à quel type elles servent (l'écran ne propose pas « dégivrage » à un bain-marie)
+        $actions = collect($this->getJson(self::BASE.'/today')->json('meta.corrective_actions'))->keyBy('key');
+        $this->assertSame('hot', $actions['reheated']['for']);
+        $this->assertSame('cold', $actions['defrost']['for']);
+        $this->assertArrayNotHasKey('for', $actions['recheck']);
+    }
+
+    public function test_une_valeur_chaude_plausible_passe_et_une_faute_de_frappe_est_refusee(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['hot_holding' => 1, 'fridge' => 1])->assertCreated();
+        $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 95]))->assertCreated();   // 95 °C : un bain-marie bouillant, plausible
+        $r = $this->postJson(self::BASE.'/readings', $this->readings(['Bain-marie' => 5]))->assertStatus(422);  // 5 °C : un thermomètre de frigo
+        $this->assertStringContainsString('équipement chaud', json_encode($r->json('errors'), JSON_UNESCAPED_UNICODE));
+        // et 95 °C reste absurde pour un frigo
+        $f = $this->postJson(self::BASE.'/readings', $this->readings(['Frigo' => 95]))->assertStatus(422);
+        $this->assertStringContainsString('enceinte froide', json_encode($f->json('errors'), JSON_UNESCAPED_UNICODE));
+    }
+
+    public function test_le_seuil_bas_d_un_equipement_chaud_se_regle_dans_des_bornes_et_ne_se_desarme_pas(): void
+    {
+        $this->staff();
+        $id = $this->postJson(self::BASE.'/equipment', ['name' => 'Vitrine chaude', 'kind' => 'hot_holding'])->assertCreated()->json('data.id');
+        $this->assertEquals(63.0, $this->getJson(self::BASE.'/equipment')->json('data.0.min_c'));
+        // désarmer (vider le seuil bas) : refusé
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => null])->assertStatus(422)->assertJsonValidationErrors('min_c');
+        // trop bas (50 °C : ce n'est plus du maintien au chaud) / trop haut (80)
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 50])->assertStatus(422);
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 80])->assertStatus(422);
+        // un réglage dans les bornes passe ; un seuil haut facultatif ne peut pas être sous le seuil bas
+        $this->putJson(self::BASE.'/equipment/'.$id, ['min_c' => 65])->assertOk();
+        $this->putJson(self::BASE.'/equipment/'.$id, ['max_c' => 60])->assertStatus(422)->assertJsonValidationErrors('max_c');
+        $this->putJson(self::BASE.'/equipment/'.$id, ['max_c' => 90])->assertOk();
+    }
 }

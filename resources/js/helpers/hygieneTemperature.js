@@ -38,3 +38,46 @@ export function limitText(min, max) {
     if (hasMin) return `≥ ${f(Number(min))} °C`;
     return 'sans seuil';
 }
+
+/**
+ * Courbe d'un équipement : relevés (du plus ancien au plus récent) → coordonnées d'un graphique SVG, avec les seuils en lignes
+ * pointillées. Pur : l'écran n'a plus qu'à dessiner. Les relevés annulés n'y figurent pas (ils restent au journal).
+ *
+ * @param {Array<{value_c:number, recorded_at:string, status:string, voided?:boolean}>} readings
+ * @returns {{empty:boolean, w:number, h:number, line:string, dots:Array, lines:Array, ticks:Array, alerts:number, count:number, minV:?number, maxV:?number}}
+ */
+export function chartModel(readings, min, max, w = 600, h = 190) {
+    const pts = (readings || [])
+        .filter((r) => !r.voided && Number.isFinite(Number(r.value_c)) && Number.isFinite(Date.parse(r.recorded_at)))
+        .map((r) => ({ v: Number(r.value_c), t: Date.parse(r.recorded_at), alert: r.status === 'alert', at: r.recorded_at }))
+        .sort((a, b) => a.t - b.t);
+    const empty = { empty: true, w, h, line: '', dots: [], lines: [], ticks: [], alerts: 0, count: 0, minV: null, maxV: null };
+    if (!pts.length) return empty;
+
+    const hasMin = min !== null && min !== undefined && min !== '';
+    const hasMax = max !== null && max !== undefined && max !== '';
+    const bounds = [...pts.map((p) => p.v), ...(hasMin ? [Number(min)] : []), ...(hasMax ? [Number(max)] : [])];
+    let lo = Math.min(...bounds);
+    let hi = Math.max(...bounds);
+    const pad = Math.max(1, (hi - lo) * 0.12);
+    lo -= pad;
+    hi += pad;
+    const L = 40;
+    const R = 10;
+    const T = 10;
+    const B = 22;
+    const x = (t) => (pts.length === 1 || pts[pts.length - 1].t === pts[0].t ? L + (w - L - R) / 2 : L + ((t - pts[0].t) / (pts[pts.length - 1].t - pts[0].t)) * (w - L - R));
+    const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (h - T - B);
+    const r1 = (n) => Math.round(n * 10) / 10;
+    const dots = pts.map((p) => ({ x: r1(x(p.t)), y: r1(y(p.v)), alert: p.alert, value: p.v, at: p.at }));
+    const lines = [];
+    if (hasMax) lines.push({ y: r1(y(Number(max))), label: `max ${formatTemperature(max).replace(/,0$/, '')}`, kind: 'max' });
+    if (hasMin) lines.push({ y: r1(y(Number(min))), label: `min ${formatTemperature(min).replace(/,0$/, '')}`, kind: 'min' });
+    const ticks = [lo + pad, (lo + hi) / 2, hi - pad].map((v) => ({ y: r1(y(v)), label: formatTemperature(v).replace(/,0$/, '') }));
+    return {
+        empty: false, w, h, dots, lines, ticks,
+        line: dots.map((d, i) => `${i ? 'L' : 'M'}${d.x} ${d.y}`).join(' '),
+        alerts: pts.filter((p) => p.alert).length, count: pts.length,
+        minV: Math.min(...pts.map((p) => p.v)), maxV: Math.max(...pts.map((p) => p.v)),
+    };
+}

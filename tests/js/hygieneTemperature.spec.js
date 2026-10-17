@@ -9,7 +9,7 @@ const h = vi.hoisted(() => ({ axios: { get: vi.fn(), post: vi.fn(), put: vi.fn()
 vi.mock('axios', () => ({ default: h.axios }));
 vi.mock('../../resources/js/services/alertService', () => ({ default: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
-import { parseTemperature, previewVerdict, formatTemperature, limitText } from '../../resources/js/helpers/hygieneTemperature.js';
+import { parseTemperature, previewVerdict, formatTemperature, limitText, chartModel } from '../../resources/js/helpers/hygieneTemperature.js';
 import HygieneTemperatureComponent from '../../resources/js/components/admin/hygiene/HygieneTemperatureComponent.vue';
 
 describe('hygieneTemperature — fonctions pures', () => {
@@ -114,7 +114,7 @@ describe('écran températures — la saisie du propriétaire', () => {
         expect(w.get('[data-testid="tmp-setup-freezer"]').text()).toBe('2');
         await w.get('[data-testid="tmp-setup-go"]').trigger('click');
         await flushPromises();
-        expect(posts).toEqual([['admin/hygiene/temperature/equipment/quick-setup', { fridge: 4, freezer: 2, cold_room: 0, display: 0 }]]);
+        expect(posts).toEqual([['admin/hygiene/temperature/equipment/quick-setup', { fridge: 4, freezer: 2, cold_room: 0, display: 0, hot_holding: 0 }]]);
         expect(w.find('[data-testid="tmp-setup"]').exists()).toBe(false);
         expect(w.find('[data-testid="tmp-card-6"]').exists()).toBe(true);
     });
@@ -260,3 +260,124 @@ describe('écran températures — la saisie du propriétaire', () => {
         expect(w.get('[data-testid="tmp-fill-all"]').attributes('disabled')).toBeDefined();
     });
 });
+
+// ───────────── équipements chauds et courbe (2026-10-17 · méga-fichier P1.1) ─────────────
+
+describe('hygieneTemperature — chaud et courbe (fonctions pures)', () => {
+    it('un équipement chaud : seuil bas seul (63 °C), « pas assez chaud » en dessous', () => {
+        expect(previewVerdict(63, 63, null).status).toBe('ok');
+        expect(previewVerdict(62.9, 63, null)).toEqual({ status: 'alert', reason: 'too_cold' });
+        expect(previewVerdict(95, 63, null).status).toBe('ok');
+        expect(limitText(63, null)).toBe('≥ +63 °C');
+    });
+
+    it('chartModel : points du plus ancien au plus récent, seuils en lignes, écarts comptés, annulés ignorés', () => {
+        const m = chartModel([
+            { value_c: 6.5, recorded_at: '2026-10-17T08:00:00+02:00', status: 'alert' },
+            { value_c: 3, recorded_at: '2026-10-15T08:00:00+02:00', status: 'ok' },
+            { value_c: 33, recorded_at: '2026-10-16T08:00:00+02:00', status: 'ok', voided: true },
+            { value_c: 2.5, recorded_at: '2026-10-16T18:00:00+02:00', status: 'ok' },
+        ], 0, 4);
+        expect(m.empty).toBe(false);
+        expect(m.count).toBe(3);
+        expect(m.alerts).toBe(1);
+        expect(m.minV).toBe(2.5);
+        expect(m.maxV).toBe(6.5);
+        expect(m.dots.map((d) => d.value)).toEqual([3, 2.5, 6.5]);
+        expect(m.dots[0].x).toBeLessThan(m.dots[2].x);
+        // plus chaud = plus haut sur l'écran (y plus petit)
+        expect(m.dots[2].y).toBeLessThan(m.dots[0].y);
+        expect(m.lines.map((l) => l.kind)).toEqual(['max', 'min']);
+        expect(m.lines[0].label).toBe('max 4');
+        expect(m.lines[0].y).toBeLessThan(m.lines[1].y);
+        expect(m.line.startsWith('M')).toBe(true);
+    });
+
+    it('chartModel : un seul relevé est centré, une série vide est « vide », seuil unique accepté', () => {
+        expect(chartModel([], 0, 4).empty).toBe(true);
+        expect(chartModel([{ value_c: 33, recorded_at: '2026-10-16T08:00:00+02:00', status: 'ok', voided: true }], 0, 4).empty).toBe(true);
+        const one = chartModel([{ value_c: -19, recorded_at: '2026-10-16T08:00:00+02:00', status: 'ok' }], null, -18);
+        expect(one.dots).toHaveLength(1);
+        expect(one.dots[0].x).toBeCloseTo(one.w / 2 + 15, 0);
+        expect(one.lines.map((l) => l.kind)).toEqual(['max']);
+    });
+});
+
+describe('écran températures — bain-marie et courbe', () => {
+    const HOT = () => EQ(7, 'Bain-marie 1', 'hot_holding', 63, null, { kind_label: 'Bain-marie / maintien au chaud', hot: true });
+    const COLD = () => EQ(1, 'Frigo 1', 'fridge', 0, 4, { hot: false });
+    const ACTIONS2 = [
+        { key: 'defrost', label: 'Dégivrage en cours', note: false, for: 'cold' },
+        { key: 'reheated', label: 'Plats réchauffés à plus de 63 °C à cœur', note: false, for: 'hot' },
+        { key: 'other', label: 'Autre (à préciser)', note: true },
+    ];
+
+    function chaud() {
+        setup([COLD(), HOT()]);
+        const base = h.axios.get.getMockImplementation();
+        h.axios.get.mockImplementation(async (url, cfg) => {
+            if (url === 'admin/hygiene/temperature/today') {
+                const r = await base(url, cfg);
+                r.data.meta.corrective_actions = ACTIONS2;
+                r.data.meta.kinds = [{ key: 'fridge', label: 'Réfrigérateur' }, { key: 'hot_holding', label: 'Bain-marie / maintien au chaud', hot: true }];
+                return r;
+            }
+            if (url === 'admin/hygiene/temperature/history') {
+                h.history = cfg;
+                return { data: { data: [
+                    { id: 3, equipment_id: cfg.params.equipment_id, value_c: 71, status: 'ok', recorded_at: '2026-10-16T12:00:00+02:00', voided: false },
+                    { id: 4, equipment_id: cfg.params.equipment_id, value_c: 60, status: 'alert', recorded_at: '2026-10-17T12:00:00+02:00', voided: false },
+                ] } };
+            }
+            return base(url, cfg);
+        });
+    }
+
+    it('un plat à 60 °C : « pas assez chaud », et seules les actions du chaud sont proposées', async () => {
+        chaud();
+        const w = await mountScreen();
+        expect(w.get('[data-testid="tmp-card-7"]').text()).toMatch(/≥ \+63 °C/);
+        await type(w, 7, '60');
+        expect(w.get('[data-testid="tmp-verdict-7"]').text()).toMatch(/Hors seuil : 60,0 °C \(pas assez chaud\)/);
+        const keys = w.findAll('[data-testid^="tmp-action-7-"]').map((x) => x.attributes('data-testid'));
+        expect(keys).toEqual(['tmp-action-7-reheated', 'tmp-action-7-other']);
+        // le frigo, lui, garde ses actions de froid et dit « trop chaud »
+        await type(w, 1, '6');
+        expect(w.get('[data-testid="tmp-verdict-1"]').text()).toMatch(/\(trop chaud\)/);
+        expect(w.findAll('[data-testid^="tmp-action-1-"]').map((x) => x.attributes('data-testid'))).toEqual(['tmp-action-1-defrost', 'tmp-action-1-other']);
+    });
+
+    it('à 71 °C le bain-marie est conforme, sans rien demander', async () => {
+        chaud();
+        const w = await mountScreen();
+        await type(w, 7, '71');
+        expect(w.get('[data-testid="tmp-verdict-7"]').text()).toMatch(/Conforme : 71,0 °C/);
+        expect(w.find('[data-testid="tmp-corrective-7"]').exists()).toBe(false);
+    });
+
+    it('« Courbe 14 jours » charge les relevés de CET équipement, les dessine avec le seuil, et se referme', async () => {
+        chaud();
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-chart-toggle-7"]').trigger('click');
+        await flushPromises();
+        expect(h.history.params.equipment_id).toBe(7);
+        expect(h.history.params.from).toBe('2026-10-04');
+        expect(w.get('[data-testid="tmp-card-7"] [data-testid="tmp-chart"] svg').exists()).toBe(true);
+        expect(w.get('[data-testid="tmp-card-7"] [data-testid="tmp-chart-caption"]').text()).toMatch(/2 relevés sur 14 jours, de 60,0 à 71,0 °C, dont 1 écart/);
+        expect(w.findAll('[data-testid="tmp-card-7"] circle')).toHaveLength(2);
+        expect(w.find('[data-testid="tmp-card-1"] [data-testid="tmp-chart"]').exists()).toBe(false);
+        await w.get('[data-testid="tmp-chart-toggle-7"]').trigger('click');
+        expect(w.find('[data-testid="tmp-card-7"] [data-testid="tmp-chart"]').exists()).toBe(false);
+    });
+
+    it('le démarrage propose les bains-marie (chaud) à côté des frigos et congélateurs', async () => {
+        setup([]);
+        const w = await mountScreen();
+        expect(w.find('[data-testid="tmp-setup-hot_holding"]').exists()).toBe(true);
+        await w.get('[data-testid="tmp-setup-hot_holding-plus"]').trigger('click');
+        await w.get('[data-testid="tmp-setup-go"]').trigger('click');
+        await flushPromises();
+        expect(posts[0][1].hot_holding).toBe(1);
+    });
+});
+

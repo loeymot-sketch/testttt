@@ -13,7 +13,7 @@
                 <div v-else-if="loaded && !items.length && !manageHasRows" class="tmp-setup" data-testid="tmp-setup">
                     <p>
                         <strong>Aucun équipement pour l'instant.</strong> Dites combien vous en avez : les équipements sont créés avec leurs seuils
-                        (frigo 0 à +4 °C, congélateur −18 °C ou moins). Vous pourrez les renommer ensuite.
+                        (frigo 0 à +4 °C, congélateur −18 °C ou moins, bain-marie 63 °C ou plus). Vous pourrez les renommer ensuite.
                     </p>
                     <div class="tmp-steppers">
                         <div v-for="k in setupKinds" :key="k.key" class="tmp-stepper">
@@ -86,13 +86,13 @@
                                     <p v-if="rawError(e)" class="tmp-hint is-alert" role="status" :data-testid="`tmp-raw-error-${e.id}`">{{ rawError(e) }}</p>
                                     <template v-else-if="valueOf(e) !== null">
                                         <p class="tmp-verdict" :class="verdictOf(e).status === 'alert' ? 'is-alert' : 'is-ok'" :data-testid="`tmp-verdict-${e.id}`">
-                                            {{ verdictOf(e).status === "alert" ? `⚠ Hors seuil : ${fmt(valueOf(e))} °C (${verdictOf(e).reason === "too_warm" ? "trop chaud" : "trop froid"})` : `✓ Conforme : ${fmt(valueOf(e))} °C` }}
+                                            {{ verdictOf(e).status === "alert" ? `⚠ Hors seuil : ${fmt(valueOf(e))} °C (${reasonText(verdictOf(e).reason, e.hot)})` : `✓ Conforme : ${fmt(valueOf(e))} °C` }}
                                         </p>
                                         <!-- écart : ce qui a été fait est OBLIGATOIRE -->
                                         <div v-if="verdictOf(e).status === 'alert'" class="tmp-corrective" :data-testid="`tmp-corrective-${e.id}`">
                                             <span class="tmp-label">Qu'avez-vous fait ? (obligatoire)</span>
                                             <div class="tmp-actions">
-                                                <button v-for="a in actions" :key="a.key" type="button" class="tmp-chip tmp-chip--btn"
+                                                <button v-for="a in actionsFor(e)" :key="a.key" type="button" class="tmp-chip tmp-chip--btn"
                                                         :class="{ 'is-on': entries[e.id].action === a.key }" :aria-pressed="entries[e.id].action === a.key ? 'true' : 'false'"
                                                         :data-testid="`tmp-action-${e.id}-${a.key}`" @click="entries[e.id].action = a.key">{{ a.label }}</button>
                                             </div>
@@ -106,6 +106,13 @@
                                     <small v-if="e.previous">{{ previousWhen(e.previous.recorded_at) }} {{ fmt(e.previous.value_c) }} °C</small>
                                 </button>
                             </template>
+
+                            <!-- courbe des 14 derniers jours -->
+                            <button type="button" class="tmp-link" :aria-expanded="charts[e.id] && charts[e.id].open ? 'true' : 'false'" :data-testid="`tmp-chart-toggle-${e.id}`" @click="toggleChart(e)">
+                                {{ charts[e.id] && charts[e.id].open ? "▾" : "▸" }} Courbe 14 jours
+                            </button>
+                            <p v-if="charts[e.id] && charts[e.id].open && charts[e.id].loading" class="tmp-muted" role="status">Chargement de la courbe…</p>
+                            <HygieneTempChart v-else-if="charts[e.id] && charts[e.id].open" :readings="charts[e.id].readings" :min="e.min_c" :max="e.max_c" :days="14" />
 
                             <!-- annulation d'un relevé : motif obligatoire, la ligne reste au journal -->
                             <div v-if="voidTarget && voidTarget.equipment_id === e.id" class="tmp-void" :data-testid="`tmp-void-box-${e.id}`">
@@ -201,6 +208,7 @@ import alertService from "../../../services/alertService";
 import { parseTemperature, previewVerdict, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
 import { refFor, latest } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
+import HygieneTempChart from "./HygieneTempChart";
 
 const historySeq = latest();
 
@@ -210,6 +218,7 @@ function clientRef() {
 
 export default {
     name: "HygieneTemperatureComponent",
+    components: { HygieneTempChart },
     mixins: [hygieneRefresh],
     data() {
         return {
@@ -221,7 +230,8 @@ export default {
             loadError: "",
             formError: "",
             saving: false,
-            setup: { fridge: 4, freezer: 2, cold_room: 0, display: 0 },
+            setup: { fridge: 4, freezer: 2, cold_room: 0, display: 0, hot_holding: 0 },
+            charts: {},
             history: [],
             showHistory: false,
             alertsOnly: false,
@@ -243,6 +253,7 @@ export default {
             return [
                 { key: "fridge", label: "Réfrigérateur", plural: "Réfrigérateurs" }, { key: "freezer", label: "Congélateur", plural: "Congélateurs" },
                 { key: "cold_room", label: "Chambre froide", plural: "Chambres froides" }, { key: "display", label: "Vitrine", plural: "Vitrines" },
+                { key: "hot_holding", label: "Bain-marie", plural: "Bains-marie (chaud)" },
             ];
         },
         setupTotal() { return Object.values(this.setup).reduce((a, b) => a + b, 0); },
@@ -293,7 +304,41 @@ export default {
             return this.dayHm(iso).split(" ")[0];
         },
         periodName(p) { return (this.meta.periods && this.meta.periods[p]) || ""; },
-        alertText(r) { return r.alert_reason === "too_cold" ? "Trop froid" : "Trop chaud"; },
+        alertText(r) {
+            const hot = this.kinds.some((k) => k.key === r.equipment_kind && k.hot);
+            const text = this.reasonText(r.alert_reason, hot);
+
+            return text.charAt(0).toUpperCase() + text.slice(1);
+        },
+        /** Un équipement chaud sort du seuil en refroidissant (« pas assez chaud ») ; un froid, en se réchauffant (« trop chaud »). */
+        reasonText(reason, hot) { return reason === "too_cold" ? (hot ? "pas assez chaud" : "trop froid") : "trop chaud"; },
+        /** Les actions correctives qui ont un sens pour CET équipement (pas de « dégivrage » pour un bain-marie). */
+        actionsFor(e) { return this.actions.filter((a) => !a.for || a.for === (e.hot ? "hot" : "cold")); },
+        todayYmd(minusDays = 0) {
+            const d = new Date(this.nowMs + this.serverOffsetMs - minusDays * 86400000);
+            try { return new Intl.DateTimeFormat("fr-CA", { timeZone: this.meta.timezone || "Europe/Paris" }).format(d); } catch (_) { return d.toISOString().slice(0, 10); }
+        },
+        async loadChart(e) {
+            try {
+                const { data } = await axios.get("admin/hygiene/temperature/history", { params: { equipment_id: e.id, from: this.todayYmd(13), limit: 500 } });
+                this.charts = { ...this.charts, [e.id]: { open: true, loading: false, readings: data.data || [] } };
+            } catch (err) {
+                this.charts = { ...this.charts, [e.id]: { open: false, loading: false, readings: [] } };
+                alertService.error(this.apiMessage(err, "Courbe indisponible : réessayez."));
+            }
+        },
+        async toggleChart(e) {
+            const cur = this.charts[e.id];
+            if (cur && cur.open) {
+                this.charts = { ...this.charts, [e.id]: { ...cur, open: false } };
+                return;
+            }
+            this.charts = { ...this.charts, [e.id]: { open: true, loading: true, readings: cur ? cur.readings : [] } };
+            await this.loadChart(e);
+        },
+        reloadCharts() {
+            return Promise.all(this.items.filter((e) => this.charts[e.id] && this.charts[e.id].open).map((e) => this.loadChart(e)));
+        },
         apiMessage(e, fallback) {
             const data = e && e.response && e.response.data;
             if (data && data.errors) {
@@ -438,6 +483,7 @@ export default {
                 sent.forEach((e) => { delete rest[e.id]; });
                 this.entries = rest;
                 await this.loadToday();
+                await this.reloadCharts();
                 if (this.showHistory) await this.loadHistory();
                 const n = (data.data || []).length;
                 const alerts = Number(data.meta && data.meta.alerts) || 0;
@@ -550,6 +596,7 @@ export default {
 .tmp-chip.is-todo { background: #fffbeb; color: #92400e; border-color: #fde68a; }
 .tmp-chip.is-ok { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
 .tmp-chip.is-alert { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.tmp-link { background: none; border: 0; padding: 6px 0; min-height: 48px; font-size: 14px; font-weight: 700; color: #1e40af; cursor: pointer; text-align: left; }
 .tmp-chip--btn { cursor: pointer; min-height: 44px; background: #fff; border-color: #cbd5e1; }
 .tmp-chip--btn.is-on { background: #111827; color: #fff; border-color: #111827; }
 
