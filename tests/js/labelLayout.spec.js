@@ -261,6 +261,24 @@ describe('étiquette DLC', () => {
         expect(JSON.stringify(blocksOf('frozen'))).not.toContain('NE PAS RECONGELER');
     });
 
+    it('l’heure imprimée est celle de Paris à trois horaires, même si le serveur parle en UTC (03 h 55, 14 h 22, 23 h 50)', () => {
+        // le même instant écrit avec le décalage de Paris ou en UTC : le papier dit toujours l'heure du restaurant
+        expect(formatDlcDate('2026-10-17T03:55:00+02:00')).toBe('sam 17/10/2026 03:55');
+        expect(formatDlcDate('2026-10-17T01:55:00Z')).toBe('sam 17/10/2026 03:55');
+        expect(formatDlcDate('2026-10-17T14:22:00+02:00')).toBe('sam 17/10/2026 14:22');
+        expect(formatDlcDate('2026-10-17T12:22:00Z')).toBe('sam 17/10/2026 14:22');
+        expect(formatDlcDate('2026-10-17T23:50:00+02:00')).toBe('sam 17/10/2026 23:50');
+        expect(formatDlcDate('2026-10-17T21:50:00Z')).toBe('sam 17/10/2026 23:50');
+        // 23 h 50 UTC le samedi, c'est déjà dimanche 01 h 50 à Paris : le jour change avec l'heure
+        expect(formatDlcDate('2026-10-17T23:50:00Z')).toBe('dim 18/10/2026 01:50');
+        // heure d'hiver (à partir du 25/10 03 h) : +01:00
+        expect(formatDlcDate('2026-10-26T08:00:00Z')).toBe('lun 26/10/2026 09:00');
+        // l'étiquette complète : date d'ouverture ET limite lisent la même horloge
+        const blocks = dlcLabelBlocks({ name: 'Salade', action: 'prepared', openedAt: '2026-10-17T12:22:00Z', expiresAt: '2026-10-18T12:22:00Z' });
+        expect(blocks.find((b) => b.t === 'pair').right).toBe('sam 17/10/2026 14:22');
+        expect(blocks.find((b) => b.t === 'dayline').text).toBe('18/10/2026  14:22');
+    });
+
     it('DLC limitée par celle du fabricant : mention explicite sur l’étiquette', () => {
         const blocks = dlcLabelBlocks({ name: 'Crème', openedAt: '2026-10-16T08:00:00Z', expiresAt: '2026-10-18T21:59:00Z', capped: true, originalDlc: '2026-10-18' });
         expect(blocks).toContainEqual({ t: 'line', text: 'Limitée à la DLC du fabricant (18/10/2026)', size: 'sm' });

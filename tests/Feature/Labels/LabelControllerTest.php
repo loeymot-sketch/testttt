@@ -1510,4 +1510,46 @@ class LabelControllerTest extends TestCase
         $this->assertSame('Légumes & crudités', DlcLabelProduct::query()->find($tomate['id'])->category);
         $this->postJson('/api/admin/labels/products/classify', ['assignments' => [['id' => $tomate['id'], 'category' => '']]])->assertStatus(422);
     }
+
+    // ───────────── l'heure imprimée = l'heure réelle du restaurant (2026-10-17 · méga-fichier P0.1) ─────────────
+
+    public function test_l_heure_imprimee_est_celle_du_restaurant_a_trois_horaires(): void
+    {
+        $this->caisse();
+        $tz = 'Europe/Paris';
+        $p = $this->expertProduct(['name' => 'Salade iceberg', 'thawed_storage' => null, 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]]);
+
+        // 03 h 55 (la nuit : un serveur en UTC dirait 01 h 55), 14 h 22 (l'aperçu du propriétaire), 23 h 50 (juste avant minuit)
+        foreach ([['2026-10-17 03:55', '2026-10-18 03:55'], ['2026-10-17 14:22', '2026-10-18 14:22'], ['2026-10-17 23:50', '2026-10-18 23:50']] as [$now, $expires]) {
+            Carbon::setTestNow(Carbon::parse($now, $tz));
+            $r = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id']])->assertOk()->json();
+            // ce que la tablette imprime : l'instant exact, avec le décalage de Paris (+02:00 en octobre avant le 25)
+            $this->assertSame(Carbon::parse($now, $tz)->toIso8601String(), $r['opened_at']);
+            $this->assertStringEndsWith('+02:00', $r['opened_at'], $now);
+            $this->assertSame($expires, Carbon::parse($r['expires_at'])->setTimezone($tz)->format('Y-m-d H:i'), $now);
+            // et le journal d'hygiène dit la même chose que le papier
+            $log = LabelPrintLog::query()->findOrFail($r['log_id']);
+            $this->assertSame($now, $log->opened_at->copy()->setTimezone($tz)->format('Y-m-d H:i'), $now);
+            $this->assertSame($expires, $log->expires_at->copy()->setTimezone($tz)->format('Y-m-d H:i'), $now);
+        }
+        Carbon::setTestNow();
+    }
+
+    public function test_au_passage_a_l_heure_d_hiver_vingt_quatre_heures_restent_vingt_quatre_heures_et_un_jour_reste_la_meme_heure(): void
+    {
+        $this->caisse();
+        $tz = 'Europe/Paris';
+        $hours = $this->expertProduct(['name' => 'Sauce 24 h', 'thawed_storage' => null, 'actions' => [['key' => 'prepared', 'value' => 24, 'unit' => 'hours']]]);
+        $days = $this->expertProduct(['name' => 'Sauce 1 jour', 'thawed_storage' => null, 'actions' => [['key' => 'prepared', 'value' => 1, 'unit' => 'days']]]);
+
+        // samedi 24 octobre 14 h (+02:00) ; dimanche 25 à 03 h on recule d'une heure (+01:00)
+        Carbon::setTestNow(Carbon::parse('2026-10-24 14:00', $tz));
+        $h = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $hours['id']])->assertOk()->json();
+        $d = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $days['id']])->assertOk()->json();
+        $this->assertSame(24 * 3600, Carbon::parse($h['expires_at'])->getTimestamp() - Carbon::parse($h['opened_at'])->getTimestamp(), '24 h = 24 h exactes');
+        $this->assertSame('2026-10-25 13:00', Carbon::parse($h['expires_at'])->setTimezone($tz)->format('Y-m-d H:i'), 'l’horloge murale a reculé d’une heure');
+        $this->assertSame('2026-10-25 14:00', Carbon::parse($d['expires_at'])->setTimezone($tz)->format('Y-m-d H:i'), 'un jour = même heure le lendemain');
+        $this->assertStringEndsWith('+01:00', $h['expires_at']);
+        Carbon::setTestNow();
+    }
 }

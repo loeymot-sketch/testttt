@@ -217,7 +217,11 @@ class DlcLabelProduct extends Model
     }
 
     /**
-     * Date limite pour un événement à `$at`. Heures : ajout exact ; jours : même heure, N jours plus tard.
+     * Date limite pour un événement à `$at`. Heures : N heures RÉELLES écoulées ; jours : même heure murale, N jours plus tard.
+     *
+     * « 24 heures » = 24 heures exactes, y compris la nuit du changement d'heure : `addHours` (Carbon 2) compte en heures MURALES, ce qui
+     * donnait 25 h de conservation la nuit où l'on recule l'horloge (et 23 h celle où on l'avance) — une DLC d'une heure trop longue sur
+     * le papier. `addRealHours` compte le temps qui passe vraiment ; l'aperçu de la tablette (millisecondes) disait déjà la même chose.
      */
     public function expiresFrom(CarbonInterface $at, ?array $action = null): CarbonInterface
     {
@@ -225,7 +229,7 @@ class DlcLabelProduct extends Model
         $expires = $at->copy();
 
         return $action['unit'] === self::UNIT_HOURS
-            ? $expires->addHours($action['value'])
+            ? $expires->addRealHours($action['value'])
             : $expires->addDays($action['value']);
     }
 }
