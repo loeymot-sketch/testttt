@@ -72,6 +72,14 @@ final class RecommendedDlcCatalog
         $add($veg, 'Persil / ciboulette ciselés', 'prepared', $h(48), ['none' => true]);
         $add($veg, 'Ail haché', 'prepared', $h(48), ['none' => true]);
         $add($veg, 'Légumes grillés', 'cooked', $d(3), ['none' => true]);
+        $add($veg, 'Tomates cerises coupées', 'prepared', $h(48), ['none' => true]);
+        $add($veg, 'Épinards / jeunes pousses', 'prepared', $h(24), ['none' => true]);
+        $add($veg, 'Courgettes / aubergines coupées', 'prepared', $h(48), ['none' => true]);
+        $add($veg, 'Champignons cuits / sautés', 'cooked', $d(3), ['none' => true]);
+        $add($veg, 'Poivrons grillés', 'cooked', $d(3), ['none' => true]);
+        $add($veg, 'Oignons caramélisés', 'cooked', $d(3));
+        $add($veg, 'Oignons frits (sachet ouvert)', 'opened', $d(7), ['storage' => 'Ambiante']);
+        $add($veg, 'Pommes de terre cuites', 'cooked', $d(3), ['none' => true]);
 
         // ── Conserves & bocaux (après ouverture) ────────────────────────────────────────────────────────
         $can = 'Conserves & bocaux';
@@ -84,6 +92,8 @@ final class RecommendedDlcCatalog
         $add($can, 'Tomates séchées (ouvertes)', 'opened', $d(7), ['none' => true]);
         $add($can, 'Ananas (boîte ouverte)', 'opened', $d(3), ['none' => true]);
         $add($can, 'Conserve de légumes (ouverte)', 'opened', $d(3), ['none' => true]);
+        $add($can, 'Tomates concassées (boîte ouverte)', 'opened', $d(3), ['none' => true]);
+        $add($can, 'Haricots rouges (boîte ouverte)', 'opened', $d(3), ['none' => true]);
 
         // ── Viandes & volailles ─────────────────────────────────────────────────────────────────────────
         $meat = 'Viandes & volailles';
@@ -93,6 +103,11 @@ final class RecommendedDlcCatalog
         $add($meat, 'Poulet mariné', 'prepared', $d(3), ['storage' => self::COLD]);
         $add($meat, 'Viande marinée (bœuf / agneau)', 'prepared', $d(3), ['storage' => self::COLD]);
         $add($meat, 'Poulet cuit émincé', 'cooked', $d(3), ['none' => true]);
+        $add($meat, 'Blanc de poulet cru', 'prepared', $h(24), ['storage' => self::COLD, 'none' => true]);
+        $add($meat, 'Cuisses / pilons de poulet crus', 'prepared', $h(24), ['storage' => self::COLD, 'none' => true]);
+        $add($meat, 'Poulet rôti / grillé cuit', 'cooked', $d(3), ['none' => true]);
+        $add($meat, 'Tenders / nuggets cuits', 'cooked', $h(24));
+        $add($meat, 'Dinde crue tranchée', 'prepared', $h(24), ['storage' => self::COLD, 'none' => true]);
         $add($meat, 'Viande cuite (kebab, grillée)', 'cooked', $h(48), ['none' => true]);
         $add($meat, 'Viande hachée cuite', 'cooked', $h(48), ['none' => true]);
         $add($meat, 'Poulet décongelé', 'thawed', $h(24), ['storage' => self::FROZEN, 'thawed_storage' => self::COLD, 'none' => true]);
@@ -125,6 +140,8 @@ final class RecommendedDlcCatalog
         $add($cheese, 'Boursin / fromage frais (ouvert)', 'opened', $d(3), ['allergens' => ['lait']]);
         $add($cheese, 'Fromage bleu (ouvert)', 'opened', $d(5), ['allergens' => ['lait']]);
         $add($cheese, 'Crème fraîche (ouverte)', 'opened', $d(3), ['allergens' => ['lait']]);
+        $add($cheese, 'Parmesan / fromage à gratiner (ouvert)', 'opened', $d(7), ['allergens' => ['lait']]);
+        $add($cheese, 'Lait (brique ouverte)', 'opened', $d(3), ['allergens' => ['lait']]);
 
         // ── Sauces ──────────────────────────────────────────────────────────────────────────────────────
         $sauce = 'Sauces';
@@ -144,6 +161,7 @@ final class RecommendedDlcCatalog
         $add($meal, 'Riz cuit', 'cooked', $h(24), ['none' => true]);
         $add($meal, 'Pâtes cuites', 'cooked', $d(3), ['allergens' => ['gluten']]);
         $add($meal, 'Œufs durs', 'cooked', $d(3), ['allergens' => ['oeufs']]);
+        $add($meal, 'Œufs liquides / cassés', 'prepared', $h(24), ['storage' => self::COLD, 'allergens' => ['oeufs']]);
         $add($meal, 'Plat cuisiné maison', 'cooked', $d(3));
 
         // ── Pains & desserts ────────────────────────────────────────────────────────────────────────────

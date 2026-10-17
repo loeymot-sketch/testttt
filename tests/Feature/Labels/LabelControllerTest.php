@@ -117,6 +117,41 @@ class LabelControllerTest extends TestCase
         $this->assertFalse($oignons['allergens_unreviewed']);
     }
 
+    public function test_un_restaurant_qui_a_teste_avec_quelques_fiches_recoit_quand_meme_le_catalogue(): void
+    {
+        // Cas réel (prod 2026-10-17) : 3 fiches faites à la main → le catalogue ne s'installait jamais.
+        $this->caisse();
+        $mine = $this->product(['name' => 'Poivron', 'shelf_life_value' => 3, 'shelf_life_unit' => 'days', 'storage' => '0 à +3 °C']);
+        $this->product(['name' => 'Tomate', 'shelf_life_value' => 3, 'shelf_life_unit' => 'days', 'storage' => '0 à +3 °C']);
+
+        $state = $this->getJson('/api/admin/labels/products')->assertOk();
+        $this->assertTrue($state->json('meta.recommended.never_configured'));
+
+        $res = $this->postJson('/api/admin/labels/products/install-recommended', ['only_if_empty' => true])->assertCreated();
+        $this->assertSame($res->json('data.total'), $res->json('data.added'));
+
+        $list = $this->getJson('/api/admin/labels/products')->assertOk();
+        $this->assertFalse($list->json('meta.recommended.never_configured'));
+        $this->assertCount($res->json('data.total') + 2, $list->json('data'));
+        $names = collect($list->json('data'))->pluck('name');
+        foreach (['Oignons rouges émincés', 'Tomates tranchées', 'Poivrons coupés', 'Champignons frais émincés', 'Poulet cuit émincé', 'Poivron', 'Tomate'] as $n) {
+            $this->assertContains($n, $names, $n);
+        }
+        $mine->refresh();
+        $this->assertSame(3, $mine->shelf_life_value, 'la fiche faite à la main n\'est pas touchée');
+
+        // et un second lancement automatique ne refait rien
+        $this->postJson('/api/admin/labels/products/install-recommended', ['only_if_empty' => true])->assertOk()->assertJsonPath('data.added', 0);
+    }
+
+    public function test_quelques_fiches_du_meme_nom_que_le_catalogue_ne_comptent_pas_comme_catalogue_installe(): void
+    {
+        $this->caisse();
+        $this->product(['name' => 'Tomates tranchées']);
+        $this->product(['name' => 'Riz cuit']);
+        $this->assertTrue($this->getJson('/api/admin/labels/products')->json('meta.recommended.never_configured'));
+    }
+
     public function test_l_installation_est_idempotente_et_ne_touche_pas_aux_fiches_existantes(): void
     {
         $this->caisse();

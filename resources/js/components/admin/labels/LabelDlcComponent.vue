@@ -136,8 +136,11 @@
                         <div ref="main" class="dlc-main">
                             <div v-if="query && !visibleProducts.length" class="dlc-empty dlc-empty--inline" data-testid="dlc-no-match">
                                 <span>Aucun produit ne correspond à « {{ query }} ».</span>
+                                <button v-if="recommended.missing" type="button" class="dlc-btn dlc-btn--small" :disabled="installing" data-testid="dlc-install-from-query"
+                                        @click="installRecommended(false)">Ajouter les {{ recommended.missing }} produits recommandés</button>
                                 <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-add-from-query" @click="openEditor({ name: query })">Créer « {{ query }} »</button>
                             </div>
+                            <p v-else-if="searchFuzzy" class="dlc-muted dlc-fuzzy-note" data-testid="dlc-fuzzy-note">Résultats proches de « {{ query }} ».</p>
 
                             <div class="dlc-grid" data-testid="dlc-grid">
                                 <div v-for="p in visibleProducts" :key="p.id" class="dlc-cell">
@@ -323,6 +326,7 @@ import LabelPrinterBar from "./LabelPrinterBar";
 import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
 import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
+import { searchProducts } from "../../../helpers/dlcSearch";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
 import { labelResultQueue, labelInflight } from "../../../helpers/labelResultQueue";
 
@@ -463,13 +467,15 @@ export default {
         },
         suggestions() { return SUGGESTIONS; },
         /** Famille, recherche ; les plus utilisés (30 jours) d'abord, puis l'ordre alphabétique. */
-        visibleProducts() {
-            const q = this.norm(this.query);
-            return this.activeProducts
+        visibleProducts() { return this.searchResult.items; },
+        /** Recherche tolérante (accents, pluriel, fautes de frappe) : les correspondances exactes d'abord, les proches ensuite. */
+        searchResult() {
+            const inFamily = this.activeProducts
                 .filter((p) => !this.category || (this.category === NO_FAMILY ? !p.category : p.category === this.category))
-                .filter((p) => !q || this.norm(p.name).includes(q) || this.norm(p.category).includes(q))
                 .sort((a, b) => (b.uses_30d || 0) - (a.uses_30d || 0) || a.name.localeCompare(b.name, "fr"));
+            return searchProducts(inFamily, this.query);
         },
+        searchFuzzy() { return Boolean(this.query) && this.searchResult.fuzzy; },
         // `nowMs` avance toutes les 30 s : sans lui, l'écran laissé ouvert ne verrait jamais un lot devenir « expiré ».
         // Les étiquettes imprimées hors ligne pas encore journalisées y figurent aussi (sans « Jeté » : rien à acquitter
         // côté serveur tant qu'elles n'y sont pas).
@@ -1146,7 +1152,8 @@ export default {
 .dlc-search-row { display: flex; gap: 8px; align-items: center; flex: 1 1 320px; }
 .dlc-search-row .db-field-control { min-height: 52px; flex: 1 1 auto; font-size: 16px; }
 
-.dlc-cats { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; scrollbar-width: thin; }
+/* Les familles passent à la ligne (9 avec le catalogue) : une rangée qui défile sans indice cachait Viandes, Sauces, Plats cuits… */
+.dlc-cats { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 8px; }
 .dlc-cat { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; font-size: 15px; font-weight: 700; color: #334155; cursor: pointer; white-space: nowrap; }
 .dlc-cat.is-on { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
 .dlc-cat-n { background: #e2e8f0; color: #334155; border-radius: 999px; padding: 0 8px; font-size: 13px; }

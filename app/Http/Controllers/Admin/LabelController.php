@@ -74,23 +74,31 @@ class LabelController extends AdminController
     }
 
     /**
-     * Catalogue recommandé (RecommendedDlcCatalog) : combien de produits manquent à CE restaurant, et s'il n'a jamais rien
-     * configuré (corbeille comprise : un produit supprimé exprès ne revient jamais tout seul à l'installation automatique).
+     * Catalogue recommandé (RecommendedDlcCatalog) : combien de produits manquent à CE restaurant, et si le catalogue
+     * lui a déjà été installé un jour. `never_configured` = « jamais installé » : moins de CATALOGUE_INSTALLED_MIN produits
+     * du catalogue ont existé chez lui (corbeille comprise : un produit supprimé exprès ne revient jamais tout seul).
+     * Quelques produits faits à la main (même nom qu'une recommandation) ou un essai de 2-3 fiches ne comptent donc pas
+     * comme « catalogue installé » — sinon le restaurant qui a testé avec trois produits ne le recevait jamais.
      */
+    private const CATALOGUE_INSTALLED_MIN = 10;
+
     private function recommendedState(): array
     {
         $existing = DlcLabelProduct::query()->withTrashed()->get(['name', 'deleted_at']);
         $liveNames = $existing->whereNull('deleted_at')->map(fn ($p) => mb_strtolower(trim((string) $p->name)))->all();
+        $everNames = $existing->map(fn ($p) => mb_strtolower(trim((string) $p->name)))->all();
         $all = RecommendedDlcCatalog::all();
         $missing = collect($all)->filter(fn ($r) => ! in_array(mb_strtolower($r['name']), $liveNames, true))->count();
+        $ever = collect($all)->filter(fn ($r) => in_array(mb_strtolower($r['name']), $everNames, true))->count();
 
-        return ['total' => count($all), 'missing' => $missing, 'never_configured' => $existing->isEmpty()];
+        return ['total' => count($all), 'missing' => $missing, 'never_configured' => $ever < self::CATALOGUE_INSTALLED_MIN];
     }
 
     /**
      * Installe les produits recommandés absents (comparaison de nom sans casse). Idempotent : un second appel n'ajoute
      * rien, et un produit déjà présent — modifié ou non — n'est jamais touché. `only_if_empty` : appel automatique du
-     * premier lancement, qui ne fait rien dès que le restaurant a déjà configuré (ou supprimé) un produit.
+     * premier lancement, qui ne fait rien dès que le catalogue a déjà été installé (ou en partie supprimé) chez lui —
+     * les produits faits à la main restent, le catalogue s'ajoute autour.
      */
     public function installRecommended(Request $request): JsonResponse
     {

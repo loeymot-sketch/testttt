@@ -72,6 +72,59 @@ async function mountScreen() {
 
 beforeEach(() => { vi.useRealTimers(); });
 
+describe('écran DLC — recherche tolérante (2026-10-17)', () => {
+    const LIST = () => [
+        P({ id: 1, name: 'Oignons rouges émincés' }), P({ id: 2, name: 'Champignons frais émincés' }),
+        P({ id: 3, name: 'Poulet mariné', category: 'Viandes & volailles' }), P({ id: 4, name: 'Poivrons coupés' }),
+    ];
+    const shown = (w) => w.findAll('[data-testid^="dlc-product-"]').map((x) => x.attributes('data-testid'));
+
+    it('« ognion » retrouve les oignons, signale des résultats proches, et un appui imprime', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-search"]').setValue('ognion');
+        expect(shown(w)).toEqual(['dlc-product-1']);
+        expect(w.get('[data-testid="dlc-fuzzy-note"]').text()).toMatch(/proches de « ognion »/);
+        await w.get('[data-testid="dlc-product-1"]').trigger('click');
+        await flushPromises();
+        expect(prints.map((p) => p.product_id)).toEqual([1]);
+    });
+
+    it('« chompignion » et le pluriel « poivrons » ; une saisie juste n’affiche aucun avertissement', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-search"]').setValue('chompignion');
+        expect(shown(w)).toEqual(['dlc-product-2']);
+        await w.get('[data-testid="dlc-search"]').setValue('poivrons');
+        expect(shown(w)).toEqual(['dlc-product-4']);
+        expect(w.find('[data-testid="dlc-fuzzy-note"]').exists()).toBe(false);
+    });
+
+    it('rien de proche : « Créer » est proposé ; et le catalogue manquant aussi s’il y en a', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-search"]').setValue('zzzzzz');
+        expect(shown(w)).toEqual([]);
+        expect(w.find('[data-testid="dlc-fuzzy-note"]').exists()).toBe(false);
+        expect(w.get('[data-testid="dlc-add-from-query"]').text()).toMatch(/Créer « zzzzzz »/);
+    });
+
+    it('sélection multiple : on cherche, on coche plusieurs produits, la sélection survit à une autre recherche', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        await w.get('[data-testid="dlc-mode-list"]').trigger('click');
+        await w.get('[data-testid="dlc-search"]').setValue('oignon');
+        await w.get('[data-testid="dlc-product-1"]').trigger('click');
+        await w.get('[data-testid="dlc-search"]').setValue('poulet');
+        await w.get('[data-testid="dlc-product-3"]').trigger('click');
+        await w.get('[data-testid="dlc-search"]').setValue('');
+        expect(w.get('[data-testid="dlc-basket-total"]').text()).toMatch(/2 étiquettes/);
+        await w.get('[data-testid="dlc-basket-print"]').trigger('click');
+        await flushPromises();
+        expect(prints.map((p) => p.product_id).sort()).toEqual([1, 3]);
+    });
+});
+
 describe('écran DLC — un par un', () => {
     it('un appui imprime aussitôt, avec le nombre et l’événement habituels du produit', async () => {
         setup([P({ default_copies: 2 })]);
