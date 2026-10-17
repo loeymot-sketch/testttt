@@ -584,6 +584,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/suppliers', [$c, 'storeSupplier'])->name('suppliers.store');
         });
 
+        // Traçabilité amont : lot, DLC fournisseur, BL, photo d'étiquette ; fiche de rappel d'un lot.
+        Route::prefix('trace')->name('trace.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TraceabilityController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/{entry}/void', [$c, 'void'])->where('entry', '[0-9]{1,18}')->name('void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/recall', [$c, 'recall'])->name('recall');
+        });
+
         // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
         Route::prefix('tasks')->name('tasks.')->group(function () {
             $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;

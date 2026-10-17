@@ -82,3 +82,6 @@
 .hy-segment .hy-btn { min-height: 48px; }
 .hy-btn.is-ok { background: #16a34a; border-color: #16a34a; color: #fff; }
 .hy-btn.is-ko { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+
+.hy-h { font-size: 16px; font-weight: 800; color: #111827; margin: 14px 0 6px; }
+.hy-h--big { font-size: 20px; margin-top: 8px; }
