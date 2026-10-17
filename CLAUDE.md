@@ -455,7 +455,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **27 models** (baseline locked par
+- `BranchScope` global appliqué sur **35 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,

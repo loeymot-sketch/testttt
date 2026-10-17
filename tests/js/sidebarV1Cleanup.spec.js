@@ -116,14 +116,16 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).toContain('menu.labels_orders');
         expect(text).toContain('menu.labels_dlc');
         expect(text).toContain('menu.labels_printer');
-        // [CAYENNE HYGIÈNE 2026-10-17] « Hygiène » (parent) + ses sous-écrans : Températures, Nettoyage, Réception, Traçabilité, Huile (+1 par écran livré)
+        // [CAYENNE HYGIÈNE 2026-10-17] « Hygiène » (parent) + ses sous-écrans : Températures, Nettoyage, Réception, Traçabilité, Huile, Accueil, Dossier de contrôle (+1 par écran livré)
         expect(text).toContain('menu.hygiene');
         expect(text).toContain('menu.hygiene_temperature');
         expect(text).toContain('menu.hygiene_tasks');
         expect(text).toContain('menu.hygiene_reception');
         expect(text).toContain('menu.hygiene_trace');
         expect(text).toContain('menu.hygiene_oil');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(29);
+        expect(text).toContain('menu.hygiene_home');
+        expect(text).toContain('menu.hygiene_report');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(31);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

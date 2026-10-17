@@ -81,3 +81,32 @@ export async function loadPhotoUrl(id) {
     const { data } = await axios.get(`admin/hygiene/attachments/${id}`, { responseType: "blob" });
     return URL.createObjectURL(data);
 }
+
+/** Date du jour AAAA-MM-JJ dans le fuseau du restaurant (jamais celui de la tablette : une tablette mal réglée ne décale pas une période). */
+export function todayIso(tz = "Europe/Paris", now = new Date()) {
+    try {
+        return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: tz }).format(now);
+    } catch (_) {
+        return now.toISOString().slice(0, 10);
+    }
+}
+
+/** AAAA-MM-JJ + n jours (calcul en UTC pur : aucun décalage d'heure d'été). */
+export function addDaysIso(iso, n) {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+}
+
+/** Télécharge un fichier protégé : chargé avec le jeton (blob), puis proposé au navigateur sous `filename`. */
+export async function downloadFile(url, params, filename) {
+    const { data } = await axios.get(url, { params, responseType: "blob" });
+    const href = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+}

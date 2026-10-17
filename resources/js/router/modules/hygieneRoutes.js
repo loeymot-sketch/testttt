@@ -8,11 +8,13 @@ const HygieneTasksComponent = () => import(/* webpackChunkName: "admin-shell" */
 const HygieneReceptionComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReceptionComponent");
 const HygieneTraceabilityComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTraceabilityComponent");
 const HygieneOilComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneOilComponent");
+const HygieneReportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReportComponent");
+const HygieneHomeComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneHomeComponent");
 
 export default [
     {
         path: "/admin/hygiene",
-        redirect: "/admin/hygiene/temperature",
+        redirect: "/admin/hygiene/home",
     },
     {
         path: "/admin/hygiene/temperature",
@@ -67,6 +69,28 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_oil",
+        },
+    },
+    {
+        path: "/admin/hygiene/report",
+        component: HygieneReportComponent,
+        name: "admin.hygiene.report",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_report",
+        },
+    },
+    {
+        path: "/admin/hygiene/home",
+        component: HygieneHomeComponent,
+        name: "admin.hygiene.home",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_home",
         },
     },
 ];

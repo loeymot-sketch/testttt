@@ -85,3 +85,27 @@
 
 .hy-h { font-size: 16px; font-weight: 800; color: #111827; margin: 14px 0 6px; }
 .hy-h--big { font-size: 20px; margin-top: 8px; }
+
+.hy-banner { font-size: 18px; font-weight: 800; border-radius: 12px; padding: 12px 16px; margin: 0 0 14px; }
+.hy-banner.is-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.hy-banner.is-todo { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.hy-banner.is-alert { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.hy-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.hy-tile { display: flex; flex-direction: column; gap: 4px; min-height: 150px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 16px; background: #fff; color: #111827; text-decoration: none; }
+.hy-tile:hover { border-color: #94a3b8; color: #111827; }
+.hy-tile.is-ok { border-color: #86efac; background: #f0fdf4; }
+.hy-tile.is-todo { border-color: #fcd34d; background: #fffbeb; }
+.hy-tile.is-alert { border-color: #f87171; background: #fef2f2; }
+.hy-tile.is-empty { border-style: dashed; background: #f8fafc; }
+.hy-tile.is-report { background: #111827; border-color: #111827; color: #fff; }
+.hy-tile.is-report .hy-tile-detail, .hy-tile.is-report .hy-tile-label { color: #cbd5e1; }
+.hy-tile-icon { width: 44px; height: 44px; border-radius: 999px; background: #e0f2fe; color: #0369a1; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; }
+.hy-tile.is-alert .hy-tile-icon { background: #fee2e2; color: #b91c1c; }
+.hy-tile.is-ok .hy-tile-icon { background: #dcfce7; color: #166534; }
+.hy-tile.is-todo .hy-tile-icon { background: #fef3c7; color: #b45309; }
+.hy-tile.is-report .hy-tile-icon { background: #1f2937; color: #fff; }
+.hy-tile-label { font-weight: 700; color: #475569; font-size: 15px; margin-top: 4px; }
+.hy-tile-headline { font-size: 22px; line-height: 1.2; }
+.hy-tile-detail { font-size: 15px; font-weight: 700; color: #475569; }
+.hy-tile.is-alert .hy-tile-detail { color: #b91c1c; }
+.hy-kpi { font-size: 30px; line-height: 1.1; }

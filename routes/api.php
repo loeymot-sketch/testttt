@@ -608,6 +608,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::delete('/fryers/{fryer}', [$c, 'destroyFryer'])->where('fryer', '[0-9]{1,18}')->name('fryers.destroy');
         });
 
+        // Accueil du module (tuiles à compteurs) et dossier de contrôle sanitaire (résumé, PDF, CSV). Lecture seule.
+        Route::get('/overview', [\App\Http\Controllers\Admin\Hygiene\OverviewController::class, 'index'])->name('overview');
+        Route::prefix('report')->name('report.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\ReportController::class;
+            Route::get('/summary', [$c, 'summary'])->name('summary');
+            Route::get('/pdf', [$c, 'pdf'])->name('pdf');
+            Route::get('/csv', [$c, 'csv'])->name('csv');
+        });
+
         // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
         Route::prefix('tasks')->name('tasks.')->group(function () {
             $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;
