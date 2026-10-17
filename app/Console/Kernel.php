@@ -218,6 +218,15 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [CAYENNE HYGIÈNE 2026-10-18] Alertes d'hygiène par e-mail (relevé en retard, nettoyage, huile, DLC, traçabilité). Ne fait RIEN
+        // tant que le responsable n'a pas activé les alertes (Hygiène › Alertes) ; chaque envoi est journalisé.
+        $schedule->command('hygiene:notify')
+            ->everyFiveMinutes()
+            ->name('hygiene-notify')
+            ->description('Prévient par e-mail les responsables des rappels d\'hygiène à traiter maintenant')
+            ->withoutOverlapping(10)
+            ->onOneServer();
+
         // [RED-team P0 / Outbox unbounded growth — 2026-05-17]
         // domain_events grows unbounded without this prune. NF525 6y retention
         // applies to audit_logs + z_reports ONLY (CLAUDE.md §8), NOT to this

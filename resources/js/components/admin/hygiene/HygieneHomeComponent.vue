@@ -45,6 +45,9 @@
                             <span class="hy-tile-detail">Pour l'inspection sanitaire</span>
                         </router-link>
                     </div>
+                    <p class="hy-home-links">
+                        <router-link to="/admin/hygiene/alerts" class="hy-btn hy-btn--small" data-testid="home-alerts-link">🔔 Alertes par e-mail aux responsables</router-link>
+                    </p>
                 </template>
             </div>
         </div>

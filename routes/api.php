@@ -623,6 +623,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/csv', [$c, 'csv'])->name('csv');
         });
 
+        // Alertes sortantes (e-mail) vers les responsables : réglage (permission `settings`), essai, journal des envois.
+        Route::prefix('alerts')->name('alerts.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\AlertController::class;
+            Route::get('/', [$c, 'show'])->name('show');
+            Route::put('/', [$c, 'update'])->name('update');
+            Route::post('/test', [$c, 'test'])->name('test');
+        });
+
         // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
         Route::prefix('tasks')->name('tasks.')->group(function () {
             $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;

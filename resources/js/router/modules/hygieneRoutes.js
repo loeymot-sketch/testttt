@@ -9,6 +9,7 @@ const HygieneReceptionComponent = () => import(/* webpackChunkName: "admin-shell
 const HygieneTraceabilityComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTraceabilityComponent");
 const HygieneOilComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneOilComponent");
 const HygieneReportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReportComponent");
+const HygieneAlertsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneAlertsComponent");
 const HygieneHomeComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneHomeComponent");
 
 export default [
@@ -91,6 +92,18 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_home",
+        },
+    },
+    {
+        // Réglage des alertes e-mail : la porte du module pour entrer, mais le serveur exige en plus `settings` (le responsable).
+        path: "/admin/hygiene/alerts",
+        component: HygieneAlertsComponent,
+        name: "admin.hygiene.alerts",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_alerts",
         },
     },
 ];

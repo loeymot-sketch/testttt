@@ -133,3 +133,6 @@
 
 /* Le thème met tous les titres de carte en « Capitalize » (anglais) : « Dossier De Contrôle », « Samedi 17 Octobre ». En français, seule la 1re lettre. */
 .db-card-header .db-card-title.hy-title { text-transform: none; }
+
+.hy-home-links { margin: 16px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }
+.hy-home-links .hy-btn { display: inline-flex; align-items: center; text-decoration: none; }

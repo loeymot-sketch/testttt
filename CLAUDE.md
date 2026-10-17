@@ -455,7 +455,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur **35 models** (baseline locked par
+- `BranchScope` global appliqué sur **37 models** (baseline locked par
   `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
   Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
   PosParkedOrder, KioskMachine, StockLevel, StockMovement,
@@ -473,7 +473,7 @@ Loi de Finance France — non-négociable, prison time si violé.
   le cycle de LIVRAISON ne se mêle jamais à la machine à états de la CUISINE),
   DlcLabelProduct (produits d'hygiène/DLC à étiqueter 2026-10-16 — le catalogue de durées de
   conservation appartient à SON restaurant), LabelPrintLog (journal d'impression des étiquettes
-  2026-10-16 — traçabilité d'hygiène + verrou d'impression automatique, par branche). HygieneEquipment + HygieneTemperatureReading (relevés de température frigos/congélateurs 2026-10-17 — équipements et journal append-only, par branche ; contrat du module : `config/hygiene.php`). HygieneAttachment + HygieneTaskTemplate + HygieneTaskCompletion + HygieneReception + HygieneTraceEntry + HygieneOilControl (photos jointes et plan de nettoyage 2026-10-17 — par branche, journal append-only).
+  2026-10-16 — traçabilité d'hygiène + verrou d'impression automatique, par branche). HygieneEquipment + HygieneTemperatureReading (relevés de température frigos/congélateurs 2026-10-17 — équipements et journal append-only, par branche ; contrat du module : `config/hygiene.php`). HygieneAttachment + HygieneTaskTemplate + HygieneTaskCompletion + HygieneReception + HygieneTraceEntry + HygieneOilControl (photos jointes et plan de nettoyage 2026-10-17 — par branche, journal append-only). HygieneAlertSetting + HygieneAlertDispatch (alertes e-mail d'hygiène 2026-10-18 — réglages et journal d'envoi append-only, par branche).
 - Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
 - ⚠️ **`User` N'EST PAS ISOLÉ PAR BRANCHE — corrigé dans CE document le 2026-08-14 après
   vérification en lecture de code (décision owner).** `User.php` enregistre bien le scope
