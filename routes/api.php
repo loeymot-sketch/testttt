@@ -536,6 +536,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // Contrôle du catalogue (2026-10-17) : valider les durées / ranger les fiches sans famille, en lot, sans jamais modifier une durée.
         Route::post('/products/validate-durations', [\App\Http\Controllers\Admin\LabelController::class, 'validateDurations'])->name('products.validate');
         Route::post('/products/classify', [\App\Http\Controllers\Admin\LabelController::class, 'classify'])->name('products.classify');
+        // Import CSV (2026-10-17) : fichier-modèle, aperçu sans écriture, puis création des seules lignes valides et nouvelles.
+        Route::get('/products/import-template', [\App\Http\Controllers\Admin\LabelController::class, 'importTemplate'])->name('products.import.template');
+        Route::post('/products/import', [\App\Http\Controllers\Admin\LabelController::class, 'importProducts'])->name('products.import');
         Route::match(['put', 'patch'], '/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'updateProduct'])
             ->where('product', '[0-9]{1,18}')->name('products.update');
         Route::delete('/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'destroyProduct'])

@@ -30,6 +30,7 @@
                     <button type="button" class="dlc-btn" :class="{ 'dlc-btn--primary': !recommended.missing }" data-testid="dlc-add-first" @click="openEditor(null)">
                         ＋ Créer mon premier produit
                     </button>
+                    <button type="button" class="dlc-btn" data-testid="dlc-import-open-empty" @click="importOpen = true">⬆ Importer un fichier (CSV)</button>
                     <div class="dlc-suggest" data-testid="dlc-suggest">
                         <span class="dlc-suggest-label">Ou partez d'un exemple (durées à adapter à votre plan de maîtrise sanitaire) :</span>
                         <button v-for="sg in suggestions" :key="sg.name" type="button" class="dlc-chip dlc-chip--wide"
@@ -200,6 +201,7 @@
                     <button type="button" class="dlc-toggle" :aria-expanded="manage ? 'true' : 'false'" data-testid="dlc-manage-toggle" @click="manage = !manage">
                         {{ manage ? "▾" : "▸" }} Fiches produits ({{ products.length }})
                     </button>
+                    <button type="button" class="dlc-btn dlc-btn--small dlc-import-btn" data-testid="dlc-import-open" @click="importOpen = true">⬆ Importer un fichier (CSV)</button>
                     <p v-if="manage && recommended.missing" class="dlc-muted">
                         <button type="button" class="dlc-btn dlc-btn--small" :disabled="installing" data-testid="dlc-install-more" @click="installRecommended(false)">
                             ＋ Ajouter les {{ recommended.missing }} produits recommandés manquants
@@ -270,6 +272,7 @@
             </div>
         </div>
 
+        <DlcImportDialog v-if="importOpen" @close="importOpen = false" @imported="loadProducts" />
         <DlcCatalogueHealth v-if="healthOpen" :health="health" :products="products" :categories="knownCategories"
                             @close="healthOpen = false" @edit="editFromHealth" @changed="loadProducts" />
         <DlcProductEditor v-if="editing" :key="editorKey" :product="editing" :categories="knownCategories" :settings="settings"
@@ -334,6 +337,7 @@ import LabelPrinterBar from "./LabelPrinterBar";
 import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
 import DlcCatalogueHealth from "./DlcCatalogueHealth";
+import DlcImportDialog from "./DlcImportDialog";
 import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { searchProducts } from "../../../helpers/dlcSearch";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
@@ -372,7 +376,7 @@ const SUGGESTIONS = [
 
 export default {
     name: "LabelDlcComponent",
-    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth },
+    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog },
     mixins: [labelPrinterMixin],
     data() {
         return {
@@ -381,6 +385,7 @@ export default {
             // Contrôle du catalogue (serveur) : durées de départ à valider, allergènes à renseigner, fiches sans famille, fiches voisines
             health: { starting: [], allergens: [], no_category: [], neighbours: [] },
             healthOpen: false,
+            importOpen: false,
             installing: false,
             justInstalled: 0,
             autoInstallTried: false,
@@ -1162,6 +1167,7 @@ export default {
 .dlc-alert { border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
 .dlc-note { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; font-size: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .dlc-tile-review { color: #b45309; font-weight: 700; }
+.dlc-import-btn { margin: 0 0 8px 10px; }
 .dlc-btn--attention { border-color: #fdba74; background: #fff7ed; color: #7c2d12; }
 .dlc-health-n { display: inline-block; margin-left: 8px; min-width: 26px; padding: 1px 8px; border-radius: 999px; background: #D63D0B; color: #fff; font-size: 14px; font-weight: 800; text-align: center; }
 .dlc-row-review { color: #b45309; font-weight: 700; font-size: 13px; }

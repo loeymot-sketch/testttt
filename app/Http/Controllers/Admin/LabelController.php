@@ -8,6 +8,7 @@ use App\Models\LabelPrintLog;
 use App\Models\Order;
 use App\Services\KitchenDisplaySystemOrderService;
 use App\Support\Labels\CatalogueHealth;
+use App\Support\Labels\DlcCsvImporter;
 use App\Support\Labels\RecommendedDlcCatalog;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -167,6 +168,65 @@ class LabelController extends AdminController
         DlcLabelProduct::query()->findOrFail((int) $product)->delete();
 
         return response()->json(['status' => 'ok']);
+    }
+
+    /** Le fichier-modèle d'import : en-têtes + trois exemples du catalogue (CSV « ; », UTF-8 avec BOM : s'ouvre dans Excel). */
+    public function importTemplate()
+    {
+        return response(DlcCsvImporter::template(), 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="modele-produits-dlc.csv"',
+        ]);
+    }
+
+    /**
+     * Import de produits depuis un fichier CSV. Sans `commit` : APERÇU (aucune écriture) — chaque ligne est dite « à ajouter »,
+     * « déjà présente » (jamais écrasée) ou « à corriger » avec la raison. Avec `commit` : ne crée que les lignes valides et
+     * nouvelles ; aucune durée n'est validée (le responsable les valide ensuite dans le contrôle du catalogue).
+     */
+    public function importProducts(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['file' => ['required', 'file', 'max:1024'], 'commit' => ['nullable', 'boolean']], [
+            'file.max' => 'Fichier trop lourd (1 Mo au plus).',
+        ], ['file' => 'fichier']);
+        $file = $request->file('file');
+        if (! in_array(strtolower((string) $file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
+            return response()->json(['message' => 'Format non pris en charge : enregistrez le fichier en CSV (Excel : « CSV UTF-8 »).', 'errors' => ['file' => ['Format non pris en charge : CSV attendu.']]], 422);
+        }
+
+        $existing = DlcLabelProduct::query()->get(['name'])->mapWithKeys(fn ($p) => [mb_strtolower(trim((string) $p->name)) => true])->all();
+        $result = DlcCsvImporter::parse((string) file_get_contents($file->getRealPath()), $existing);
+        if ($result['fatal'] !== null) {
+            return response()->json(['message' => $result['fatal'], 'errors' => ['file' => [$result['fatal']]]], 422);
+        }
+
+        $created = 0;
+        if (! empty($validated['commit'])) {
+            $branch = $this->branchId($request);
+            DB::transaction(function () use ($result, $branch, &$created) {
+                $order = (int) DlcLabelProduct::query()->max('sort_order');
+                foreach ($result['rows'] as $row) {
+                    if ($row['status'] !== 'new') continue;
+                    $d = $row['data'];
+                    $p = new DlcLabelProduct([
+                        'name' => $d['name'], 'category' => $d['category'], 'storage' => $d['storage'], 'thawed_storage' => $d['thawed_storage'],
+                        'shelf_life_value' => $d['actions'][0]['value'], 'shelf_life_unit' => $d['actions'][0]['unit'], 'actions' => $d['actions'],
+                        'allergens' => $d['allergens'], 'no_allergens' => $d['no_allergens'], 'note' => $d['note'], 'default_copies' => 1,
+                        'duration_source' => $d['duration_source'], 'sort_order' => ++$order, 'is_active' => true,
+                    ]);
+                    $p->branch_id = $branch;
+                    $p->save();
+                    $created++;
+                }
+            });
+        }
+
+        $rows = array_map(fn ($r) => [
+            'line' => $r['line'], 'name' => $r['name'], 'status' => $r['status'], 'errors' => $r['errors'],
+            'summary' => $r['data'] ? collect($r['data']['actions'])->map(fn ($a) => DlcLabelProduct::ACTION_LABELS[$a['key']].' '.$a['value'].($a['unit'] === 'hours' ? ' h' : ' j'))->implode(' · ').' · '.$r['data']['storage'] : null,
+        ], $result['rows']);
+
+        return response()->json(['data' => ['rows' => $rows, 'summary' => $result['summary'], 'created' => $created, 'committed' => ! empty($validated['commit'])]], ! empty($validated['commit']) && $created > 0 ? 201 : 200);
     }
 
     /**
