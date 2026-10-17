@@ -46,7 +46,7 @@ Durées DLC, fréquences de nettoyage, seuils de réception : valeurs de départ
 toutes éditables. Références réglementaires à sourcer par le restaurant : règlement (CE) 852/2004, arrêté du 21/12/2009, décret 2008-1463.
 
 ## État au 2026-10-17
-Slices 0 à 5 livrées et testées (PHPUnit `tests/Feature/Hygiene`, Vitest `tests/js/hygiene*.spec.js`), vérifiées visuellement (harnais isolé), **non encore déployées** hors températures + DLC.
+Slices 0 à 5 livrées et testées (PHPUnit `tests/Feature/Hygiene`, Vitest `tests/js/hygiene*.spec.js`), vérifiées visuellement (harnais isolé), revue adverse corrigée. **Déployées en production le 2026-10-17 (HEAD `cfb659a3b`)** : 4 migrations `hygiene_*` passées, chaîne NF525 intacte, healthz vert. Non éprouvé : tablette réelle, imprimante Brother, rendu PDF réel.
 
 ## Reste à faire (non démarré)
 - Rappels et alertes de retard (push / SMS) : nécessite un canal de notification et un planificateur — à cadrer.
