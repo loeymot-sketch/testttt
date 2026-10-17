@@ -2,7 +2,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header">
-                <h3 class="db-card-title">Huile de friture — {{ todayLabel }}</h3>
+                <h3 class="db-card-title hy-title">Huile de friture — {{ todayLabel }}</h3>
             </div>
 
             <div class="db-card-body">

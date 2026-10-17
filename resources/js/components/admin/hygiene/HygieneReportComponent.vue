@@ -2,7 +2,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header">
-                <h3 class="db-card-title">Dossier de contrôle sanitaire</h3>
+                <h3 class="db-card-title hy-title">Dossier de contrôle sanitaire</h3>
             </div>
 
             <div class="db-card-body">
@@ -33,7 +33,7 @@
                         <div class="hy-card" :class="rateClass(data.oil.coverage_pct)" data-testid="rep-kpi-oil">
                             <span class="hy-sub">Tests d'huile faits</span>
                             <strong class="hy-kpi">{{ pct(data.oil.coverage_pct) }}</strong>
-                            <span class="hy-sub">{{ data.oil.tests }} test(s) · max {{ pct(data.oil.max_polar) }} de polaires · {{ plural(data.oil.alerts, "écart") }}</span>
+                            <span class="hy-sub">{{ data.oil.tests }} test(s) · {{ data.oil.max_polar === null || data.oil.max_polar === undefined ? "aucune mesure de polaires" : `max ${pct(data.oil.max_polar)} de polaires` }} · {{ plural(data.oil.alerts, "écart") }}</span>
                         </div>
                         <div class="hy-card" :class="data.receptions.alerts ? 'is-partial' : ''" data-testid="rep-kpi-receptions">
                             <span class="hy-sub">Réceptions</span>

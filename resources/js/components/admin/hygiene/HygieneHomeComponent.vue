@@ -2,7 +2,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header">
-                <h3 class="db-card-title">Cayenne Hygiène — {{ todayLabel }}</h3>
+                <h3 class="db-card-title hy-title">Cayenne Hygiène — {{ todayLabel }}</h3>
             </div>
 
             <div class="db-card-body">
@@ -47,13 +47,19 @@ export default {
     },
     computed: {
         todayLabel() { return formatDay(this.meta.server_now || new Date().toISOString(), this.meta.timezone); },
-        bannerKind() { return this.meta.alerts > 0 ? "alert" : (this.meta.todo > 0 ? "todo" : (this.tiles.every((t) => t.status === "empty") ? "todo" : "ok")); },
+        /** Domaines pas encore configurés (aucun frigo, aucun plan…) : « tout est en ordre » serait faux tant qu'il en reste. */
+        unconfigured() { return this.tiles.filter((t) => t.status === "empty"); },
+        bannerKind() {
+            if (this.meta.alerts > 0) return "alert";
+            return this.meta.todo > 0 || this.unconfigured.length > 0 ? "todo" : "ok";
+        },
         bannerText() {
             const a = this.meta.alerts;
             const t = this.meta.todo;
             if (a > 0) return `${a} alerte${a > 1 ? "s" : ""} à traiter${t > 0 ? ` · ${t} chose${t > 1 ? "s" : ""} à faire` : ""}`;
             if (t > 0) return `${t} chose${t > 1 ? "s" : ""} à faire aujourd'hui`;
-            if (this.tiles.every((t2) => t2.status === "empty")) return "Commencez par configurer un domaine : touchez une tuile.";
+            if (this.tiles.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
+            if (this.unconfigured.length) return `Rien d'urgent, mais à configurer : ${this.unconfigured.map((u) => u.label).join(", ")}.`;
             return "Tout est en ordre ✓";
         },
     },

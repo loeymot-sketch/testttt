@@ -109,3 +109,6 @@
 .hy-tile-detail { font-size: 15px; font-weight: 700; color: #475569; }
 .hy-tile.is-alert .hy-tile-detail { color: #b91c1c; }
 .hy-kpi { font-size: 30px; line-height: 1.1; }
+
+/* Le thème met tous les titres de carte en « Capitalize » (anglais) : « Dossier De Contrôle », « Samedi 17 Octobre ». En français, seule la 1re lettre. */
+.db-card-header .db-card-title.hy-title { text-transform: none; }

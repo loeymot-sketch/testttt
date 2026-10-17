@@ -47,6 +47,15 @@ describe('accueil du module', () => {
         expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-ok');
         w = await mountHome([tile('tasks', 'empty', 'x'), tile('oil', 'empty', 'x')], { alerts: 0, todo: 0 });
         expect(w.get('[data-testid="home-banner"]').text()).toContain('configurer');
+        // un domaine non configuré à côté de domaines sans alerte : JAMAIS « tout est en ordre » (cas vu en e2e le 2026-10-17)
+        w = await mountHome([tile('temperature', 'empty', 'À configurer'), tile('oil', 'empty', 'À configurer'), tile('trace', 'ok', 'Rien tracé')], { alerts: 0, todo: 0 });
+        const banner = w.get('[data-testid="home-banner"]');
+        expect(banner.text()).not.toContain('Tout est en ordre');
+        expect(banner.text()).toBe('Rien d\'urgent, mais à configurer : temperature, oil.');
+        expect(banner.classes()).toContain('is-todo');
+        // une alerte l'emporte toujours, même avec un domaine à configurer
+        w = await mountHome([tile('temperature', 'alert', 'x'), tile('oil', 'empty', 'x')], { alerts: 1, todo: 0 });
+        expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-alert');
     });
 
     it('serveur injoignable au premier chargement : message clair', async () => {
@@ -184,5 +193,8 @@ describe('dossier de contrôle — réponses dans le désordre', () => {
         await flushPromises();
         expect(w.get('[data-testid="rep-kpi-receptions"]').text()).toContain('2'); // « aujourd'hui », pas 99
         expect(w.get('[data-testid="rep-preset-today"]').classes()).toContain('is-on');
+        // aucune mesure de polaires : jamais « max — de polaires » (vu en e2e le 2026-10-17)
+        expect(w.get('[data-testid="rep-kpi-oil"]').text()).toContain('aucune mesure de polaires');
+        expect(w.get('[data-testid="rep-kpi-oil"]').text()).not.toMatch(/max\s*—/);
     });
 });

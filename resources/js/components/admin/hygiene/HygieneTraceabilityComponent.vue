@@ -2,7 +2,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header">
-                <h3 class="db-card-title">Traçabilité — {{ todayLabel }}</h3>
+                <h3 class="db-card-title hy-title">Traçabilité — {{ todayLabel }}</h3>
             </div>
 
             <div class="db-card-body">
