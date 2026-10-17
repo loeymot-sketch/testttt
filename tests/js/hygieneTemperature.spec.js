@@ -66,6 +66,7 @@ let posts;
 function setup(items, opts = {}) {
     today = items;
     posts = [];
+    window.localStorage.clear(); // la file hors ligne d'un test ne doit jamais être rejouée par le suivant
     h.axios.get.mockReset();
     h.axios.post.mockReset();
     h.axios.get.mockImplementation(async (url) => {
@@ -78,7 +79,7 @@ function setup(items, opts = {}) {
     h.axios.post.mockImplementation(async (url, body) => {
         posts.push([url, body]);
         if (url === 'admin/hygiene/temperature/readings') {
-            if (opts.reject) { const e = new Error('422'); e.response = { data: { message: opts.reject, errors: { 'readings.0.corrective_action': [opts.reject] } } }; throw e; }
+            if (opts.reject) { const e = new Error('422'); e.response = { status: 422, data: { message: opts.reject, errors: { 'readings.0.corrective_action': [opts.reject] } } }; throw e; }
             today = today.map((e) => {
                 const r = body.readings.find((x) => x.equipment_id === e.id);
                 if (!r) return e;
@@ -223,7 +224,7 @@ describe('écran températures — la saisie du propriétaire', () => {
         h.axios.post.mockImplementation(async (url, body) => {
             refs.push(body.readings[0].client_ref);
             const e = new Error('réseau');
-            e.response = { data: { message: 'Relevés refusés : test' } };
+            e.response = { status: 422, data: { message: 'Relevés refusés : test' } };
             throw e;
         });
         await first.get('[data-testid="tmp-submit"]').trigger('click');

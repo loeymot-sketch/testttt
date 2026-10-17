@@ -6,8 +6,20 @@
             </div>
 
             <div class="db-card-body">
+                <!-- ── Hors ligne : ce qui est gardé sur la tablette, et ce que le serveur a refusé ───────────── -->
+                <div v-if="queuedPending.length" class="tmp-offline" role="status" data-testid="tmp-offline">
+                    <strong>⏳ {{ queuedReadingsCount }} relevé{{ queuedReadingsCount > 1 ? "s" : "" }} gardé{{ queuedReadingsCount > 1 ? "s" : "" }} sur cette tablette, en attente de réseau.</strong>
+                    Ils partent tout seuls dès que la connexion revient (même si vous rechargez la page) et gardent l'heure de la mesure.
+                    <button type="button" class="tmp-btn tmp-btn--small" :disabled="flushing" data-testid="tmp-offline-retry" @click="flushQueue">{{ flushing ? "Envoi…" : "Réessayer maintenant" }}</button>
+                </div>
+                <div v-for="r in queuedRejected" :key="r.qid" class="tmp-alert tmp-refused" role="alert" data-testid="tmp-refused">
+                    <strong>Relevés refusés par le serveur ({{ r.label }}) :</strong> {{ r.reason }} <em>Ressaisissez-les : rien n'a été enregistré.</em>
+                    <button type="button" class="tmp-btn tmp-btn--small" data-testid="tmp-refused-ok" @click="dismissRefused(r.qid)">J'ai compris</button>
+                </div>
+
                 <p v-if="loadError" class="tmp-alert" role="alert" data-testid="tmp-error">{{ loadError }}</p>
                 <p v-if="!loaded && !loadError" class="tmp-muted" role="status">Chargement…</p>
+
 
                 <!-- ── Démarrage : « j'ai 4 frigos et 2 congélateurs » ───────────────────────────── -->
                 <div v-else-if="loaded && !items.length && !manageHasRows" class="tmp-setup" data-testid="tmp-setup">
@@ -71,7 +83,11 @@
 
                             <!-- saisie -->
                             <template v-else>
-                                <div v-if="entries[e.id]" class="tmp-entry">
+                                <div v-if="queuedFor(e) && !entries[e.id]" class="tmp-queued" :data-testid="`tmp-queued-${e.id}`">
+                                    <span class="tmp-done-value">⏳ {{ fmt(queuedFor(e).value) }} °C</span>
+                                    <span class="tmp-done-meta">{{ hm(queuedFor(e).at) }} · gardé sur la tablette, en attente d'envoi</span>
+                                </div>
+                                <div v-else-if="entries[e.id]" class="tmp-entry">
                                     <div class="tmp-input-row">
                                         <button type="button" class="tmp-sign" :aria-pressed="entries[e.id].neg ? 'true' : 'false'"
                                                 :aria-label="entries[e.id].neg ? 'Température négative' : 'Température positive'" :data-testid="`tmp-sign-${e.id}`"
@@ -162,7 +178,7 @@
                                 <strong class="tmp-row-value">{{ fmt(r.value_c) }} °C</strong>
                                 <span class="tmp-row-meta">
                                     {{ r.voided ? `Annulé : ${r.void_reason}` : (r.status === "alert" ? `${alertText(r)}${r.corrective_label ? " — " + r.corrective_label : ""}${r.corrective_note ? " (" + r.corrective_note + ")" : ""}` : "Conforme") }}
-                                    · {{ periodName(r.period) }}<template v-if="r.operator_name"> · {{ r.operator_name }}</template>
+                                    · {{ periodName(r.period) }}<template v-if="r.operator_name"> · {{ r.operator_name }}</template><template v-if="r.offline"> · saisi hors ligne, envoyé à {{ hm(r.synced_at) }}</template>
                                 </span>
                             </li>
                         </ul>
@@ -213,6 +229,7 @@ import { refFor, latest } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import HygieneTempChart from "./HygieneTempChart";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
+import { hygieneQueue, isRetriable } from "../../../helpers/hygieneOfflineQueue";
 
 const historySeq = latest();
 
@@ -227,6 +244,10 @@ export default {
     data() {
         return {
             operatorId: null,
+            queued: [],
+            flushing: false,
+            onlineHandler: null,
+            queueTimer: null,
             items: [],
             equipment: [],
             meta: { period: "morning", periods: {}, summary: { total: 0, todo: 0, ok: 0, alert: 0 }, kinds: [], corrective_actions: [], server_now: null },
@@ -278,6 +299,15 @@ export default {
         canSubmit() {
             return this.pendingList.length > 0 && this.missingActions === 0;
         },
+        queuedPending() { return this.queued.filter((i) => i.state === "pending"); },
+        queuedRejected() { return this.queued.filter((i) => i.state === "rejected"); },
+        queuedReadingsCount() { return this.queuedPending.reduce((n, i) => n + ((i.body && i.body.readings) || []).length, 0); },
+        /** equipment_id → le dernier relevé gardé sur la tablette (valeur, heure de la mesure) : la carte le dit, pour qu'on ne le ressaisisse pas. */
+        queuedByEquipment() {
+            const map = {};
+            this.queuedPending.forEach((i) => ((i.body && i.body.readings) || []).forEach((r) => { map[r.equipment_id] = { value: r.value, at: r.measured_at }; }));
+            return map;
+        },
         todoWithoutEntry() {
             return this.items.filter((e) => !this.entries[e.id] && !e.done_this_period).length;
         },
@@ -285,11 +315,41 @@ export default {
     created() {
         this.loadToday();
         this.tick = setInterval(() => { this.nowMs = Date.now(); }, 60000);
+        // hors ligne : ce qui est gardé sur la tablette repart dès que le réseau revient (événement « online », puis toutes les 30 s)
+        this.refreshQueue();
+        this.flushQueue();
+        this.onlineHandler = () => this.flushQueue();
+        if (typeof window !== "undefined") window.addEventListener("online", this.onlineHandler);
+        this.queueTimer = setInterval(() => { if (this.queuedPending.length) this.flushQueue(); }, 30000);
     },
     beforeUnmount() {
         if (this.tick) clearInterval(this.tick);
+        if (this.queueTimer) clearInterval(this.queueTimer);
+        if (typeof window !== "undefined" && this.onlineHandler) window.removeEventListener("online", this.onlineHandler);
     },
     methods: {
+        queue() { return hygieneQueue(axios); },
+        refreshQueue() { this.queued = this.queue().items().filter((i) => i.kind === "temperature"); },
+        queuedFor(e) { return this.queuedByEquipment[e.id] || null; },
+        dismissRefused(qid) { this.queue().dismiss(qid); this.refreshQueue(); },
+        async flushQueue() {
+            if (this.flushing) return;
+            this.refreshQueue();
+            if (!this.queuedPending.length) return;
+            this.flushing = true;
+            try {
+                const r = await this.queue().flush();
+                this.refreshQueue();
+                if (r.sent > 0) {
+                    await this.loadToday();
+                    await this.reloadCharts();
+                    if (this.showHistory) await this.loadHistory();
+                    alertService.success(`${r.sent} envoi${r.sent > 1 ? "s" : ""} gardé${r.sent > 1 ? "s" : ""} hors ligne ${r.sent > 1 ? "ont" : "a"} été enregistré${r.sent > 1 ? "s" : ""}.`);
+                }
+            } finally {
+                this.flushing = false;
+            }
+        },
         hyDraft() { return Object.keys(this.entries).length > 0 || this.voidTarget !== null; },
         hyReload() { return this.loadToday(); },
         fmt(v) { return formatTemperature(v); },
@@ -473,20 +533,23 @@ export default {
             this.formError = "";
             this.saving = true;
             const sent = this.pendingList;
+            // L'heure de la mesure n'est envoyée QUE hors ligne (l'horloge d'une tablette peut être fausse : en ligne, c'est le serveur qui date).
+            const bodyFor = (stamp) => ({
+                operator_user_id: this.operatorId || undefined,
+                readings: sent.map((e) => {
+                    const entry = this.entries[e.id];
+                    const verdict = this.verdictOf(e);
+                    return {
+                        equipment_id: e.id,
+                        value: this.valueOf(e),
+                        client_ref: refFor(entry.ref, { v: this.valueOf(e), a: entry.action, n: entry.note }),
+                        ...(verdict.status === "alert" ? { corrective_action: entry.action, corrective_note: entry.note || undefined } : {}),
+                        ...(stamp ? { measured_at: stamp } : {}),
+                    };
+                }),
+            });
             try {
-                const { data } = await axios.post("admin/hygiene/temperature/readings", {
-                    operator_user_id: this.operatorId || undefined,
-                    readings: sent.map((e) => {
-                        const entry = this.entries[e.id];
-                        const verdict = this.verdictOf(e);
-                        return {
-                            equipment_id: e.id,
-                            value: this.valueOf(e),
-                            client_ref: refFor(entry.ref, { v: this.valueOf(e), a: entry.action, n: entry.note }),
-                            ...(verdict.status === "alert" ? { corrective_action: entry.action, corrective_note: entry.note || undefined } : {}),
-                        };
-                    }),
-                });
+                const { data } = await axios.post("admin/hygiene/temperature/readings", bodyFor(null));
                 const rest = { ...this.entries };
                 sent.forEach((e) => { delete rest[e.id]; });
                 this.entries = rest;
@@ -498,6 +561,22 @@ export default {
                 if (alerts > 0) alertService.error(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""} — ${alerts} écart${alerts > 1 ? "s" : ""} tracé${alerts > 1 ? "s" : ""}.`);
                 else alertService.success(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""}.`);
             } catch (e) {
+                if (isRetriable(e)) {
+                    // pas de réseau (ou serveur indisponible) : le relevé est GARDÉ sur la tablette avec l'heure de la mesure, jamais perdu
+                    const n = sent.length;
+                    const kept = this.queue().enqueue({ url: "admin/hygiene/temperature/readings", body: bodyFor(new Date().toISOString()), label: `${n} relevé${n > 1 ? "s" : ""}`, kind: "temperature" });
+                    if (kept) {
+                        const rest = { ...this.entries };
+                        sent.forEach((x) => { delete rest[x.id]; });
+                        this.entries = rest;
+                        this.refreshQueue();
+                        alertService.info(`Pas de réseau : ${n} relevé${n > 1 ? "s" : ""} gardé${n > 1 ? "s" : ""} sur la tablette. Ils partiront tout seuls dès que la connexion revient.`);
+                        return;
+                    }
+                    this.formError = "Pas de réseau, et la tablette ne peut pas garder ces relevés (mémoire pleine ou navigation privée). Ne fermez pas cet écran : revalidez dès que la connexion revient.";
+                    alertService.error(this.formError);
+                    return;
+                }
                 // refus du serveur (écart sans action, valeur absurde…) : la saisie reste, la personne corrige et revalide
                 this.formError = this.apiMessage(e, "Enregistrement impossible : vérifiez la connexion puis revalidez (rien n'est doublé).");
                 alertService.error(this.formError);
@@ -601,6 +680,9 @@ export default {
 
 .tmp-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .tmp-who { margin-bottom: 12px; }
+.tmp-offline { border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.tmp-refused { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.tmp-queued { display: flex; flex-direction: column; gap: 2px; border: 2px dashed #f59e0b; background: #fffbeb; border-radius: 12px; padding: 10px 12px; color: #78350f; }
 .tmp-period { background: #111827; color: #fff; border-radius: 999px; padding: 6px 14px; font-weight: 800; }
 .tmp-chip { border-radius: 999px; padding: 6px 12px; background: #f1f5f9; color: #334155; font-weight: 700; border: 1px solid transparent; font-size: 15px; }
 .tmp-chip.is-todo { background: #fffbeb; color: #92400e; border-color: #fde68a; }

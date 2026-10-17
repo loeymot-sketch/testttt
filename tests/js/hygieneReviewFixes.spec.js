@@ -98,7 +98,7 @@ describe('températures — défauts de la revue', () => {
     it('un refus du serveur s’affiche DANS la barre de validation et déclenche une alerte visible', async () => {
         setup([EQ()]);
         const w = await mountTemp();
-        h.axios.post.mockImplementationOnce(async () => { const e = new Error('x'); e.response = { data: { message: 'Relevés refusés : écart sans action.' } }; throw e; });
+        h.axios.post.mockImplementationOnce(async () => { const e = new Error('x'); e.response = { status: 422, data: { message: 'Relevés refusés : écart sans action.' } }; throw e; });
         await w.get('[data-testid="tmp-take-1"]').trigger('click');
         await w.get('[data-testid="tmp-input-1"]').setValue('3');
         await w.get('[data-testid="tmp-submit"]').trigger('click');
@@ -132,24 +132,75 @@ describe('températures — défauts de la revue', () => {
         expect(label).toContain('15/10');
     });
 
-    it('corriger une saisie refusée change la référence d’envoi ; rejouer la même saisie la garde', async () => {
+    it('coupure réseau : le relevé est GARDÉ sur la tablette (pas perdu, pas doublé), rejoué à l’identique, puis la file se vide', async () => {
         setup([EQ()]);
         const w = await mountTemp();
-        const fail = async (url, body) => { posts.push([url, body]); throw new Error('net'); };
-        h.axios.post.mockImplementationOnce(fail).mockImplementationOnce(fail); // coupure réseau, deux fois
+        const net = async (url, body) => { posts.push([url, body]); throw new Error('Network Error'); };
+        h.axios.post.mockImplementationOnce(net).mockImplementationOnce(net); // coupure : l'envoi puis le premier rejeu échouent
         await w.get('[data-testid="tmp-take-1"]').trigger('click');
         await w.get('[data-testid="tmp-input-1"]').setValue('3');
         await w.get('[data-testid="tmp-submit"]').trigger('click');
         await flushPromises();
-        await w.get('[data-testid="tmp-submit"]').trigger('click'); // rejeu à l'identique
+
+        // gardé : la saisie est partie de l'écran, la carte et la bannière le disent
+        expect(w.find('[data-testid="tmp-input-1"]').exists()).toBe(false);
+        expect(w.get('[data-testid="tmp-offline"]').text()).toContain('1 relevé gardé sur cette tablette');
+        expect(w.get('[data-testid="tmp-queued-1"]').text()).toContain('3,0 °C');
+        expect(h.alert.info).toHaveBeenCalledWith(expect.stringContaining('gardé'));
+
+        await w.get('[data-testid="tmp-offline-retry"]').trigger('click'); // le réseau n'est pas revenu
         await flushPromises();
-        await w.get('[data-testid="tmp-input-1"]').setValue('2'); // saisie corrigée
+        expect(w.find('[data-testid="tmp-offline"]').exists()).toBe(true);
+
+        await w.get('[data-testid="tmp-offline-retry"]').trigger('click'); // le réseau est revenu
+        await flushPromises();
+        expect(w.find('[data-testid="tmp-offline"]').exists()).toBe(false);
+        const sent = posts.filter(([u]) => u === 'admin/hygiene/temperature/readings').map(([, b]) => b);
+        expect(sent).toHaveLength(3);
+        expect(sent[0].readings[0].measured_at).toBeUndefined(); // en ligne, c'est le serveur qui date
+        expect(sent[1].readings[0].client_ref).toBe(sent[0].readings[0].client_ref); // même référence : jamais de doublon
+        expect(sent[2].readings[0].client_ref).toBe(sent[0].readings[0].client_ref);
+        expect(Number.isFinite(Date.parse(sent[1].readings[0].measured_at))).toBe(true); // l'heure de la mesure part avec le rejeu
+        expect(sent[2].readings[0].measured_at).toBe(sent[1].readings[0].measured_at);
+    });
+
+    it('un rejeu REFUSÉ par le serveur n’est pas jeté en silence : la raison s’affiche jusqu’à ce que la personne l’ait lue', async () => {
+        setup([EQ()]);
+        const w = await mountTemp();
+        h.axios.post.mockImplementationOnce(async () => { throw new Error('Network Error'); })
+            .mockImplementationOnce(async () => { const e = new Error('422'); e.response = { status: 422, data: { message: 'x', errors: { 'readings.0.measured_at': ['« Frigo 1 » : ce relevé date de plus de 72 h — ressaisissez-le.'] } } }; throw e; });
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('3');
         await w.get('[data-testid="tmp-submit"]').trigger('click');
         await flushPromises();
-        const refs = posts.filter(([u]) => u === 'admin/hygiene/temperature/readings').map(([, b]) => b.readings[0].client_ref);
-        expect(refs).toHaveLength(3);
-        expect(refs[1]).toBe(refs[0]);
-        expect(refs[2]).not.toBe(refs[0]);
+        await w.get('[data-testid="tmp-offline-retry"]').trigger('click');
+        await flushPromises();
+
+        expect(w.find('[data-testid="tmp-offline"]').exists()).toBe(false);
+        const refused = w.get('[data-testid="tmp-refused"]');
+        expect(refused.text()).toContain('plus de 72 h');
+        expect(refused.text()).toContain("rien n'a été enregistré");
+        await w.get('[data-testid="tmp-refused-ok"]').trigger('click');
+        expect(w.find('[data-testid="tmp-refused"]').exists()).toBe(false);
+    });
+
+    it('la file survit à un rechargement de la page : un relevé gardé repart à l’ouverture de l’écran', async () => {
+        setup([EQ()]);
+        const w1 = await mountTemp();
+        h.axios.post.mockImplementationOnce(async () => { throw new Error('Network Error'); });
+        await w1.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w1.get('[data-testid="tmp-input-1"]').setValue('3');
+        await w1.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        w1.unmount();
+
+        h.axios.post.mockReset();
+        h.axios.post.mockImplementation(async (url, body) => { posts.push([url, body]); return { data: { data: [], meta: { alerts: 0 } } }; });
+        const w2 = await mountTemp(); // « rechargement » : le réseau est revenu
+        await flushPromises();
+        expect(posts.filter(([u]) => u === 'admin/hygiene/temperature/readings').length).toBeGreaterThanOrEqual(1);
+        expect(w2.find('[data-testid="tmp-offline"]').exists()).toBe(false);
+        expect(h.alert.success).toHaveBeenCalledWith(expect.stringContaining('hors ligne'));
     });
 });
 

@@ -180,6 +180,7 @@ class HygieneTemperatureController extends HygieneController
             'readings.*.corrective_action' => ['nullable', Rule::in(array_keys(config('hygiene.corrective_actions')))],
             'readings.*.corrective_note' => ['nullable', 'string', 'max:200'],
             'readings.*.client_ref' => ['nullable', 'string', 'max:40'],
+            'readings.*.measured_at' => ['nullable', 'date'],
             'operator_user_id' => ['nullable', 'integer'],
         ], [], ['readings' => 'relevés', 'readings.*.value' => 'température']);
 
@@ -205,6 +206,20 @@ class HygieneTemperatureController extends HygieneController
                 continue;
             }
             $seenEquipment[$equipment->id] = true;
+            // Heure du relevé : saisi hors ligne, il garde l'heure où il a été PRIS (envoyée par la tablette), dans des bornes ; sinon l'heure du serveur.
+            $measured = null;
+            if (! empty($r['measured_at'])) {
+                $m = \Carbon\Carbon::parse($r['measured_at'])->setTimezone(config('app.timezone'));
+                if ($m->gt($now->copy()->addMinutes((int) config('hygiene.offline.future_minutes', 5)))) {
+                    $errors["readings.$i.measured_at"] = ['« '.$equipment->name.' » : l’heure de la tablette est en avance sur celle du serveur — corrigez l’heure de la tablette puis ressaisissez le relevé.'];
+                    continue;
+                }
+                if ($m->lt($now->copy()->subHours((int) config('hygiene.offline.max_hours', 72)))) {
+                    $errors["readings.$i.measured_at"] = ['« '.$equipment->name.' » : ce relevé date de plus de '.(int) config('hygiene.offline.max_hours', 72).' h — ressaisissez-le avec une mesure actuelle.'];
+                    continue;
+                }
+                $measured = $m;
+            }
             $value = round((float) $r['value'], 1);
             [$lo, $hi] = config("hygiene.kinds.{$equipment->kind}.plausible") ?? [$min, $max];
             if ($value < $lo || $value > $hi) {
@@ -233,7 +248,13 @@ class HygieneTemperatureController extends HygieneController
                 $action = null;
                 $note = null;
             }
-            $prepared[] = compact('equipment', 'value', 'verdict', 'action', 'note') + ['period' => $r['period'] ?? TemperatureRules::periodFor($now), 'client_ref' => $r['client_ref'] ?? null];
+            $prepared[] = compact('equipment', 'value', 'verdict', 'action', 'note') + [
+                'period' => $r['period'] ?? TemperatureRules::periodFor($measured ?? $now),
+                'client_ref' => $r['client_ref'] ?? null,
+                'recorded_at' => $measured ?? $now,
+                // la tablette n'envoie l'heure de la mesure QUE lorsqu'elle a gardé le relevé hors ligne : sa présence suffit (dit au journal, jamais caché)
+                'source' => $measured !== null ? 'offline' : 'manual',
+            ];
         }
         if ($errors !== []) {
             return response()->json(['message' => 'Relevés refusés : '.collect($errors)->flatten()->first(), 'errors' => $errors], 422);
@@ -271,8 +292,8 @@ class HygieneTemperatureController extends HygieneController
                     'status' => $p['verdict']['status'],
                     'alert_reason' => $p['verdict']['reason'],
                     'period' => $p['period'],
-                    'source' => 'manual',
-                    'recorded_at' => $now,
+                    'source' => $p['source'],
+                    'recorded_at' => $p['recorded_at'],
                     'timezone' => config('app.timezone'),
                     'user_id' => $op['user_id'],
                     'operator_name' => $op['name'],
@@ -447,6 +468,8 @@ class HygieneTemperatureController extends HygieneController
             'alert_reason' => $r->alert_reason,
             'period' => $r->period,
             'source' => $r->source,
+            'offline' => $r->source === 'offline',
+            'synced_at' => $r->source === 'offline' ? $r->created_at?->toIso8601String() : null,
             'recorded_at' => $r->recorded_at->toIso8601String(),
             'operator_name' => $r->operator_name,
             'corrective_action' => $action,

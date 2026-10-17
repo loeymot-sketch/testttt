@@ -507,4 +507,96 @@ class TemperatureControllerTest extends TestCase
         }
         $this->assertSame(0, HygieneTemperatureReading::query()->count());
     }
+
+    // ───────────── relevé saisi hors ligne, envoyé plus tard ─────────────
+
+    public function test_un_releve_saisi_hors_ligne_garde_l_heure_de_la_mesure_pas_celle_de_l_envoi(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 16:40', config('app.timezone')));
+
+        $r = $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T10:12:00+02:00', 'client_ref' => 'off-1']]))
+            ->assertCreated();
+
+        $row = HygieneTemperatureReading::query()->firstOrFail();
+        $this->assertSame('2026-10-20 10:12', $row->recorded_at->setTimezone(config('app.timezone'))->format('Y-m-d H:i'));
+        $this->assertSame('morning', $row->period, 'la période suit l\'heure de la MESURE (matin), pas celle de l\'envoi (soir)');
+        $this->assertSame('offline', $row->source);
+        $r->assertJsonPath('data.0.offline', true)->assertJsonPath('data.0.synced_at', fn ($v) => is_string($v) && str_contains($v, '2026-10-20T16:40'));
+    }
+
+    public function test_un_releve_en_ligne_garde_l_heure_du_serveur_et_la_source_manuelle(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => 3.0]))->assertCreated()->assertJsonPath('data.0.offline', false);
+
+        $row = HygieneTemperatureReading::query()->firstOrFail();
+        $this->assertSame('manual', $row->source);
+        $this->assertSame('2026-10-20 10:00', $row->recorded_at->setTimezone(config('app.timezone'))->format('Y-m-d H:i'));
+    }
+
+    public function test_une_courte_coupure_est_aussi_dite_hors_ligne(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00:30', config('app.timezone')));
+
+        // la tablette a gardé le relevé 30 s : l'heure de mesure est envoyée, donc c'est un envoi différé, dit comme tel
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 2' => ['value' => 3.0, 'measured_at' => '2026-10-20T10:00:00+02:00']]))
+            ->assertCreated()->assertJsonPath('data.0.offline', true);
+        $this->assertSame('offline', HygieneTemperatureReading::query()->firstOrFail()->source);
+    }
+
+    public function test_une_heure_de_mesure_dans_le_futur_est_refusee_avec_la_raison_et_rien_n_est_enregistre(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T12:00:00+02:00']]))
+            ->assertStatus(422)->assertJsonValidationErrors('readings.0.measured_at');
+        $this->assertSame(0, HygieneTemperatureReading::query()->count());
+    }
+
+    public function test_une_mesure_de_plus_de_72_heures_est_refusee(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-16T10:00:00+02:00']]))
+            ->assertStatus(422)->assertJsonValidationErrors('readings.0.measured_at');
+        // juste dans la limite : accepté
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-17T10:30:00+02:00']]))->assertCreated();
+        $this->assertSame(1, HygieneTemperatureReading::query()->count());
+    }
+
+    public function test_le_rejeu_d_un_releve_hors_ligne_ne_double_jamais_le_journal(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 16:40', config('app.timezone')));
+        $body = $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T10:12:00+02:00', 'client_ref' => 'off-2']]);
+
+        $this->postJson(self::BASE.'/readings', $body)->assertCreated();
+        $this->postJson(self::BASE.'/readings', $body)->assertCreated(); // la tablette ne sait pas si le premier envoi a abouti : elle rejoue
+
+        $this->assertSame(1, HygieneTemperatureReading::query()->count());
+    }
+
+    public function test_un_ecart_saisi_hors_ligne_exige_toujours_l_action_corrective(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 16:40', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 9.0, 'measured_at' => '2026-10-20T10:12:00+02:00']]))
+            ->assertStatus(422)->assertJsonValidationErrors('readings.0.corrective_action');
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 9.0, 'corrective_action' => 'door_closed', 'measured_at' => '2026-10-20T10:12:00+02:00']]))
+            ->assertCreated()->assertJsonPath('data.0.status', 'alert');
+    }
 }

@@ -53,6 +53,12 @@ return [
     'plausible_max' => 60.0,
 
     /**
+     * Relevé saisi HORS LIGNE puis envoyé au retour du réseau : il garde l'heure OÙ IL A ÉTÉ PRIS (jamais l'heure d'envoi), dans des bornes.
+     * Plus ancien que `max_hours` : refusé (ressaisir). Dans le futur de plus de `future_minutes` : refusé (horloge de la tablette fausse).
+     */
+    'offline' => ['max_hours' => 72, 'future_minutes' => 5],
+
+    /**
      * Action corrective, OBLIGATOIRE quand le relevé sort des seuils (HACCP : tout écart est tracé avec ce qui a été fait).
      * `note` : un commentaire libre est exigé avec cette action.
      */
