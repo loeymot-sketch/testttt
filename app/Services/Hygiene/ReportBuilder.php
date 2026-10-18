@@ -298,6 +298,21 @@ final class ReportBuilder
 
     // ───────────────────────────── huile ─────────────────────────────
 
+    /**
+     * Nombre de changements d'huile : une ligne « vidange » = un changement ; un test d'écart déclaré « Huile changée » en est un AUSSI (même définition que
+     * l'écran, la tuile et le rappel), mais jamais DEUX pour une seule huile : si la vidange est ensuite saisie (litres, marque), le même jour et sur la même
+     * friteuse, la déclaration et la ligne désignent le même changement (tour 6 : « 2 vidange(s) » dans un PDF d'inspection pour une seule huile changée).
+     */
+    private function oilChanges($live): int
+    {
+        $rows = $live->where('type', 'change');
+        $key = fn ($r) => $r->equipment_id.'|'.$this->localDate($r->performed_at);
+        $realDays = $rows->map($key)->unique();
+        $declared = $live->filter(fn ($r) => $r->type === 'test' && $r->corrective_action === 'oil_changed')->map($key)->unique()->reject(fn ($k) => $realDays->contains($k));
+
+        return $rows->count() + $declared->count();
+    }
+
     private function oil(bool $withRows): array
     {
         $rows = HygieneOilControl::query()->whereBetween('performed_at', [$this->from, $this->to])->orderBy('performed_at')->orderBy('id')->get();
@@ -309,7 +324,7 @@ final class ReportBuilder
         $alerts = $live->where('status', 'alert');
 
         return [
-            'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $live->filter(fn ($r) => $r->countsAsChange())->count(),
+            'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $this->oilChanges($live),
             'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(), 'fryers' => $fryers->where('is_active', true)->whereNull('deleted_at')->count(),
             'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
             'today' => $this->includesToday() ? ['expected' => $todayTotal, 'done' => $todayDone] : null,

@@ -429,6 +429,11 @@ describe('dossier de contrôle — la journée en cours est dite à part (tour 4
         expect(text).toBe('Aucun jour attendu dans la période (éléments créés récemment ou rien de configuré), donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 3.');
     });
 
+    it('restaurant sans friteuse : la carte Huile (domaine facultatif) ne dit pas « Aujourd’hui : 0 sur 0 »', async () => {
+        const w = await mountReport(base({ oil: { ...base().oil, fryers: 0, tests: 0, today: { expected: 0, done: 0 } } }));
+        expect(w.find('[data-testid="rep-today-oil"]').exists()).toBe(false);
+    });
+
     it('la carte Huile dit aussi sa journée en cours', async () => {
         const w = await mountReport(base());
         expect(w.get('[data-testid="rep-today-oil"]').text()).toBe('Aucun jour écoulé dans la période, donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 1.');

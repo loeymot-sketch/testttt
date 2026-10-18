@@ -314,6 +314,36 @@ class RemindersTest extends TestCase
         $this->assertSame('ok', collect($this->getJson('/api/admin/hygiene/oil/today')->json('data'))->first()['state'], 'même verdict sur l\'écran (>= et non >)');
     }
 
+    public function test_dossier_une_seule_huile_changee_n_est_jamais_comptee_deux_fois(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $count = fn () => $this->getJson('/api/admin/hygiene/report/summary?from=2026-10-18&to=2026-10-20')->json('data.oil.changes');
+        // déclarée sur le test SEULE : une vidange
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'oil_changed');
+        $this->assertSame(1, $count());
+        // …puis la vidange est saisie (litres, marque) le même jour : la MÊME huile, toujours une vidange
+        $this->oil($f, 'change', 'ok', null, '2026-10-20 09:05');
+        $this->assertSame(1, $count(), 'déclaration + ligne de vidange le même jour = un seul changement');
+        // deux déclarations le même jour sans ligne de vidange : toujours un seul
+        $g = $this->equipment('Friteuse 2', 'fryer');
+        $this->oil($g, 'test', 'alert', 28.0, '2026-10-20 10:00', 'oil_changed');
+        $this->oil($g, 'test', 'alert', 29.0, '2026-10-20 10:30', 'oil_changed');
+        $this->assertSame(2, $count(), 'friteuse 1 : 1 ; friteuse 2 : 1 (deux déclarations du même jour)');
+        // un autre jour = un autre changement
+        $this->oil($g, 'test', 'alert', 28.0, '2026-10-19 10:00', 'oil_changed');
+        $this->assertSame(3, $count());
+    }
+
+    public function test_dossier_la_carte_huile_ne_dit_rien_d_aujourd_hui_sans_friteuse(): void
+    {
+        $this->staff();
+        $d = $this->getJson('/api/admin/hygiene/report/summary?from=2026-10-20&to=2026-10-20')->json('data.oil');
+        $this->assertSame(0, $d['fryers']);
+        $html = view('pdf.hygiene_report', ['report' => \App\Services\Hygiene\ReportBuilder::between('2026-10-20', '2026-10-20')->build(true), 'company' => [], 'generatedAt' => 'x', 'generatedBy' => 'y', 'fingerprint' => 'z'])->render();
+        $this->assertStringNotContainsString('0 sur 0.</p></td>', preg_replace('/\s+/', ' ', substr($html, (int) strpos($html, 'Huile : tests faits'), 600)), 'pas de « Aujourd\'hui : 0 sur 0 » pour un domaine facultatif non configuré');
+    }
+
     public function test_huile_a_surveiller_n_est_pas_une_tuile_verte(): void
     {
         $this->staff();

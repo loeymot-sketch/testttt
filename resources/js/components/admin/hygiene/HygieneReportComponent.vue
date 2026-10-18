@@ -37,7 +37,7 @@
                             <span class="hy-sub">Tests d'huile faits</span>
                             <strong class="hy-kpi">{{ pct(data.oil.coverage_pct) }}</strong>
                             <span class="hy-sub">{{ data.oil.tests }} test(s) · {{ data.oil.max_polar === null || data.oil.max_polar === undefined ? "aucune mesure de polaires" : `max ${pct(data.oil.max_polar)} de polaires` }} · {{ plural(data.oil.alerts, "écart") }}</span>
-                            <span v-if="data.oil.today" class="hy-sub" data-testid="rep-today-oil">{{ todayLine(data.oil.today, data.oil.expected, data.period.past_days) }}</span>
+                            <span v-if="data.oil.today && data.oil.fryers > 0" class="hy-sub" data-testid="rep-today-oil">{{ todayLine(data.oil.today, data.oil.expected, data.period.past_days) }}</span>
                         </div>
                         <div class="hy-card" :class="data.receptions.alerts ? 'is-partial' : ''" data-testid="rep-kpi-receptions">
                             <span class="hy-sub">Réceptions</span>

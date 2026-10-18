@@ -434,6 +434,16 @@ class OverviewAndReportTest extends TestCase
         $this->assertSame('Nouvelle mesure à faire avant 10:10', $tile['detail']);
     }
 
+    public function test_dossier_une_etiquette_qui_expire_dans_l_heure_n_est_pas_echue(): void
+    {
+        $this->staff();
+        $this->dlcLabel('Bientôt', now()->addMinutes(30));
+        $this->dlcLabel('Échue', now()->subMinutes(30));
+        $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-19&to=2026-10-20')->json('data.dlc'); // le helper ouvre l'étiquette la veille
+        $this->assertSame(2, $d['count']);
+        $this->assertSame(1, $d['expired_not_out'], 'seule celle dont la DLC est passée est « échue non sortie »');
+    }
+
     // ───────────── rapport : taux de couverture ─────────────
 
     public function test_temperature_coverage_counts_only_days_that_were_expected(): void
