@@ -134,7 +134,8 @@ class HygieneTemperatureController extends HygieneController
             ->orderByDesc('recorded_at')->get()->unique('equipment_id')->keyBy('equipment_id');
 
         $period = TemperatureRules::periodFor($now);
-        $items = $equipments->map(function (HygieneEquipment $e) use ($todayRows, $previous, $period): array {
+        $followUps = \App\Services\Hygiene\TemperatureFollowUp::pending($equipments->pluck('id')->all(), $now); // nouvelle mesure attendue après un écart traité
+        $items = $equipments->map(function (HygieneEquipment $e) use ($todayRows, $previous, $period, $followUps): array {
             $rows = $todayRows->get($e->id, collect());
             $last = $rows->last();
             $prev = $previous->get($e->id);
@@ -145,6 +146,7 @@ class HygieneTemperatureController extends HygieneController
                 'previous' => $prev ? ['value_c' => $prev->value_c, 'recorded_at' => $prev->recorded_at->toIso8601String(), 'status' => $prev->status] : null,
                 'done_periods' => $rows->pluck('period')->unique()->values()->all(),
                 'done_this_period' => $rows->contains(fn ($r) => $r->period === $period),
+                'followup' => $followUps[$e->id] ?? null,
             ];
         })->values();
 
@@ -161,6 +163,7 @@ class HygieneTemperatureController extends HygieneController
                 ],
                 'kinds' => $this->kinds(),
                 'corrective_actions' => $this->correctiveActions(),
+                'followup_minutes' => (int) config('hygiene.followup.minutes', 30),
             ] + $this->clock(),
         ]);
     }

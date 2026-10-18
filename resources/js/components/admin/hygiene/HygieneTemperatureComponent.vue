@@ -75,8 +75,11 @@
                                 <span v-if="e.last_today.status === 'alert'" class="tmp-done-alert">
                                     {{ alertText(e.last_today) }}<template v-if="e.last_today.corrective_label"> — {{ e.last_today.corrective_label }}</template>
                                 </span>
+                                <span v-if="e.followup" class="tmp-followup" :class="{ 'is-overdue': followupOverdue(e) }" role="status" :data-testid="`tmp-followup-${e.id}`">
+                                    ⏱ {{ followupOverdue(e) ? "Nouvelle mesure en retard : attendue depuis" : "Nouvelle mesure à faire avant" }} {{ hm(e.followup.due_at) }}
+                                </span>
                                 <div class="tmp-done-actions">
-                                    <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
+                                    <button type="button" class="tmp-btn tmp-btn--small" :class="{ 'tmp-btn--primary': e.followup }" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
                                     <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-void-${e.id}`" @click="askVoid(e.last_today)">Annuler ce relevé</button>
                                 </div>
                             </div>
@@ -115,6 +118,9 @@
                                                         :class="{ 'is-on': entries[e.id].action === a.key }" :aria-pressed="entries[e.id].action === a.key ? 'true' : 'false'"
                                                         :data-testid="`tmp-action-${e.id}-${a.key}`" @click="entries[e.id].action = a.key">{{ a.label }}</button>
                                             </div>
+                                            <p v-if="followupAction(e)" class="tmp-hint" :data-testid="`tmp-followup-hint-${e.id}`">
+                                                ⏱ Une nouvelle mesure vous sera demandée dans {{ meta.followup_minutes || 30 }} minutes pour prouver que c'est réglé.
+                                            </p>
                                             <input v-if="needsNote(e)" v-model="entries[e.id].note" type="text" maxlength="200" class="tmp-note" placeholder="Précisez…"
                                                    :aria-label="`Précision pour ${e.name}`" :data-testid="`tmp-note-${e.id}`" />
                                         </div>
@@ -328,6 +334,13 @@ export default {
         if (typeof window !== "undefined" && this.onlineHandler) window.removeEventListener("online", this.onlineHandler);
     },
     methods: {
+        followupOverdue(e) { return Boolean(e.followup) && Date.parse(e.followup.due_at) <= this.nowMs + this.serverOffsetMs; },
+        /** L'action choisie dit « c'est réglé » : elle appelle une nouvelle mesure (annoncé avant de valider). */
+        followupAction(e) {
+            const entry = this.entries[e.id];
+            const a = entry && entry.action ? this.actions.find((x) => x.key === entry.action) : null;
+            return Boolean(a && a.followup);
+        },
         queue() { return hygieneQueue(axios); },
         refreshQueue() { this.queued = this.queue().items().filter((i) => i.kind === "temperature"); },
         queuedFor(e) { return this.queuedByEquipment[e.id] || null; },
@@ -681,6 +694,8 @@ export default {
 
 .tmp-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .tmp-who { margin-bottom: 12px; }
+.tmp-followup { display: block; border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; border-radius: 10px; padding: 6px 10px; font-weight: 700; }
+.tmp-followup.is-overdue { border-color: #dc2626; background: #fef2f2; color: #7f1d1d; }
 .tmp-offline { border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 .tmp-refused { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
 .tmp-queued { display: flex; flex-direction: column; gap: 2px; border: 2px dashed #f59e0b; background: #fffbeb; border-radius: 12px; padding: 10px 12px; color: #78350f; }

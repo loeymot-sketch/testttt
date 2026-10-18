@@ -65,15 +65,22 @@ return [
     'operator' => ['max_failures' => 5, 'lock_minutes' => 10, 'token_minutes' => 10, 'pin_min_digits' => 4, 'pin_max_digits' => 6],
 
     /**
+     * Suivi après écart : une action qui dit « le problème est réglé » (porte refermée, dégivrage, plats réchauffés, nouvelle mesure) doit être
+     * PROUVÉE par une nouvelle mesure. `minutes` : délai laissé pour la faire ; passé ce délai, un rappel urgent est levé (écran, e-mail) tant
+     * qu'aucun nouveau relevé n'a été pris. Les actions marquées `followup` ci-dessous sont celles concernées.
+     */
+    'followup' => ['minutes' => 30],
+
+    /**
      * Action corrective, OBLIGATOIRE quand le relevé sort des seuils (HACCP : tout écart est tracé avec ce qui a été fait).
      * `note` : un commentaire libre est exigé avec cette action.
      */
     'corrective_actions' => [
-        'recheck' => ['label' => 'Nouvelle mesure après quelques minutes', 'note' => false],
+        'recheck' => ['label' => 'Nouvelle mesure après quelques minutes', 'note' => false, 'followup' => true],
         // `for` : le type d'équipement concerné (cold | hot) ; sans `for`, l'action vaut pour tous
-        'door_closed' => ['label' => 'Porte mal fermée, refermée', 'note' => false, 'for' => 'cold'],
-        'defrost' => ['label' => 'Dégivrage en cours', 'note' => false, 'for' => 'cold'],
-        'reheated' => ['label' => 'Plats réchauffés à plus de 63 °C à cœur', 'note' => false, 'for' => 'hot'],
+        'door_closed' => ['label' => 'Porte mal fermée, refermée', 'note' => false, 'for' => 'cold', 'followup' => true],
+        'defrost' => ['label' => 'Dégivrage en cours', 'note' => false, 'for' => 'cold', 'followup' => true],
+        'reheated' => ['label' => 'Plats réchauffés à plus de 63 °C à cœur', 'note' => false, 'for' => 'hot', 'followup' => true],
         'products_checked' => ['label' => 'Produits contrôlés (température à cœur)', 'note' => false],
         'products_moved' => ['label' => 'Produits déplacés vers un autre équipement', 'note' => false],
         'products_discarded' => ['label' => 'Produits jetés', 'note' => false],

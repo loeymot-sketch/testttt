@@ -305,3 +305,51 @@ describe('relecture adverse (2026-10-17) — « Qui ? »', () => {
         expect(w.find('[data-testid="hy-operator-add"]').exists()).toBe(false);
     });
 });
+
+describe('suivi après écart (2026-10-18)', () => {
+    const ACTIONS2 = [{ key: 'recheck', label: 'Nouvelle mesure après quelques minutes', note: false, followup: true }, { key: 'technician', label: 'Technicien appelé', note: false }];
+
+    async function mountWith(items, meta = {}) {
+        h.axios.get.mockReset(); h.axios.post.mockReset(); window.localStorage.clear();
+        h.axios.get.mockImplementation(async (url) => {
+            if (url === 'admin/hygiene/temperature/today') return { data: { data: items, meta: { period: 'morning', periods: { morning: 'Matin' }, summary: { total: items.length, todo: 0, ok: 0, alert: 1 }, kinds: [{ key: 'fridge', label: 'Réfrigérateur' }], corrective_actions: ACTIONS2, followup_minutes: 30, server_now: '2026-10-20T10:20:00+02:00', timezone: 'Europe/Paris', ...meta } } };
+            return { data: { data: [] } };
+        });
+        const w = mount(HygieneTemperatureComponent, { global: { mocks: { $t: (k) => k } } });
+        await flushPromises();
+        return w;
+    }
+    const alertCard = (followup) => EQ({ state: 'alert', done_this_period: true, last_today: { id: 5, equipment_id: 1, value_c: 9, status: 'alert', alert_reason: 'too_warm', period: 'morning', recorded_at: '2026-10-20T10:00:00+02:00', operator_name: 'Karim', corrective_action: 'recheck', corrective_label: 'Nouvelle mesure après quelques minutes', voided: false }, followup });
+
+    it('la carte dit l’heure avant laquelle la nouvelle mesure est attendue et met « Nouveau relevé » en avant', async () => {
+        const w = await mountWith([alertCard({ reading_id: 5, value_c: 9, recorded_at: '2026-10-20T10:00:00+02:00', due_at: '2026-10-20T10:30:00+02:00', overdue: false, minutes: 30 })]);
+        const t = w.get('[data-testid="tmp-followup-1"]');
+        expect(t.text()).toContain('Nouvelle mesure à faire avant 10:30');
+        expect(t.classes()).not.toContain('is-overdue');
+        expect(w.get('[data-testid="tmp-again-1"]').classes()).toContain('tmp-btn--primary');
+    });
+
+    it('passé l’heure, la carte le dit en rouge', async () => {
+        const w = await mountWith([alertCard({ reading_id: 5, value_c: 9, recorded_at: '2026-10-20T09:00:00+02:00', due_at: '2026-10-20T09:30:00+02:00', overdue: true, minutes: 30 })]);
+        const t = w.get('[data-testid="tmp-followup-1"]');
+        expect(t.text()).toContain('Nouvelle mesure en retard : attendue depuis 09:30');
+        expect(t.classes()).toContain('is-overdue');
+    });
+
+    it('sans suivi attendu, rien n’est affiché', async () => {
+        const w = await mountWith([alertCard(null)]);
+        expect(w.find('[data-testid="tmp-followup-1"]').exists()).toBe(false);
+        expect(w.get('[data-testid="tmp-again-1"]').classes()).not.toContain('tmp-btn--primary');
+    });
+
+    it('choisir une action « c’est réglé » annonce la nouvelle mesure ; une action sans suivi ne l’annonce pas', async () => {
+        const w = await mountWith([EQ()]);
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('9');
+        expect(w.find('[data-testid="tmp-followup-hint-1"]').exists()).toBe(false); // aucune action choisie
+        await w.get('[data-testid="tmp-action-1-recheck"]').trigger('click');
+        expect(w.get('[data-testid="tmp-followup-hint-1"]').text()).toContain('dans 30 minutes');
+        await w.get('[data-testid="tmp-action-1-technician"]').trigger('click');
+        expect(w.find('[data-testid="tmp-followup-hint-1"]').exists()).toBe(false);
+    });
+});

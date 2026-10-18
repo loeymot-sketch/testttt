@@ -81,6 +81,17 @@ final class Reminders
                 "Relevé du $label non fait : ".$this->names($missing->pluck('name')->all()).'.', '/admin/hygiene/temperature');
         }
 
+        // Écart traité mais PAS encore prouvé : la nouvelle mesure est attendue (`followup.minutes` après l'écart) — rappel urgent tant qu'elle manque.
+        $names = $all->pluck('name', 'id');
+        foreach (TemperatureFollowUp::pending($all->pluck('id')->all(), $now) as $equipmentId => $f) {
+            if (! $f['overdue']) continue;
+            $due = \Carbon\Carbon::parse($f['due_at'])->setTimezone($now->getTimezone());
+            $at = \Carbon\Carbon::parse($f['recorded_at'])->setTimezone($now->getTimezone());
+            $v = str_replace('.', ',', rtrim(rtrim(number_format($f['value_c'], 1, '.', ''), '0'), '.'));
+            $out[] = $this->item("temperature-followup-$equipmentId", 'temperature', 'alert',
+                'Contrôle de suite à faire : « '.($names[$equipmentId] ?? 'Équipement')." » était à $v °C à ".$at->format('H:i').' — nouvelle mesure attendue depuis '.$due->format('H:i').'.', '/admin/hygiene/temperature');
+        }
+
         return $out;
     }
 
