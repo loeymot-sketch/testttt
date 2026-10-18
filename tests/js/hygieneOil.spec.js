@@ -185,3 +185,27 @@ describe('huile — état de la friteuse', () => {
         expect(w.get('[data-testid="oil-change-1"]').text()).toContain('Aucune vidange');
     });
 });
+
+describe('un « − » tapé sur un champ SANS signe possible est illisible, jamais jeté en silence (tour 10)', () => {
+    it('polaires « -8 » : message « Valeur illisible », bouton bloqué ; « 8 » : accepté', async () => {
+        const w = await mountScreen();
+        await w.get('[data-testid="oil-open-test-1"]').trigger('click');
+        await polar(w, '-8');
+        expect(w.text()).toContain('Valeur illisible');
+        expect(w.get('[data-testid="oil-submit-1"]').attributes('disabled')).toBeDefined();
+        expect(w.get('[data-testid="oil-polar-1-input"]').element.value, 'le moins reste visible dans le champ').toBe('-8');
+        await polar(w, '8');
+        expect(w.text()).not.toContain('Valeur illisible');
+        expect(w.get('[data-testid="oil-submit-1"]').attributes('disabled')).toBeUndefined();
+    });
+
+    it('bain « −5 » (vrai signe moins) et litres « -12,5 » : illisibles aussi', async () => {
+        const w = await mountScreen();
+        await w.get('[data-testid="oil-open-test-1"]').trigger('click');
+        await polar(w, '12');
+        await w.get('[data-testid="oil-bath-1-input"]').setValue('−5');
+        expect(w.text()).toContain('Valeur illisible');
+        await w.get('[data-testid="oil-bath-1-input"]').setValue('170');
+        expect(w.text()).not.toContain('Valeur illisible');
+    });
+});

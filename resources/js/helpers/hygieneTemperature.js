@@ -11,7 +11,10 @@ export function hasTypedMinus(raw) { return TYPED_MINUS.test(String(raw ?? ''));
 export function stripTypedMinus(raw) { return String(raw ?? '').replace(TYPED_MINUS, ''); }
 
 /** « 3,5 » / « 3.5 » → 3.5 ; vide ou illisible → null. Le signe se règle par le bouton ± OU par un moins tapé (le composant bascule alors le bouton : jamais ignoré). */
-export function parseTemperature(raw, intDigits = 2) {
+export function parseTemperature(raw, intDigits = 2, allowMinus = true) {
+    // Champ SANS signe possible (pourcentage de polaires, litres, bain : `allowMinus = false`) : un moins tapé est ILLISIBLE, jamais jeté en silence
+    // (tour 10 : « -8 » dans les polaires s'enregistrait « 8 % »).
+    if (!allowMinus && TYPED_MINUS.test(String(raw ?? ''))) return null;
     // Le signe est porté par le bouton ± : un moins en tête est toléré, un moins AU MILIEU (« 3-5 ») est illisible, jamais « 35 ».
     const s = String(raw ?? '').trim().replace(/^[−–—-]/, '').replace(',', '.').trim();
     if (s === '' || !new RegExp(`^\\d{1,${intDigits}}(\\.\\d{0,1})?$`).test(s)) return null;

@@ -515,6 +515,17 @@ describe('un « − » tapé au clavier est honoré (tour 9 : « -2 » dans un f
     });
 });
 
+describe('parseTemperature : un moins tapé sur un champ sans signe est illisible (tour 10)', () => {
+    it('allowMinus=false : « -8 », « −8 », « – 8 » → null ; sans moins inchangé ; allowMinus par défaut = comportement des champs signés', () => {
+        expect(parseTemperature('-8', 2, false)).toBeNull();
+        expect(parseTemperature('−8', 2, false)).toBeNull();
+        expect(parseTemperature(' – 8', 2, false)).toBeNull();
+        expect(parseTemperature('8', 2, false)).toBe(8);
+        expect(parseTemperature('12,5', 3, false)).toBe(12.5);
+        expect(parseTemperature('-8')).toBe(8);
+    });
+});
+
 describe('saisie partagée (réception, huile) : même règle du moins tapé', () => {
     it('champ signé : « -3 » → bouton « − » et « 3 » ; champ non signé (litres) : rien n’est réécrit', async () => {
         const signed = mount(HygieneMeasureInput, { props: { modelValue: { raw: '', neg: false }, label: 'Frais', testid: 'm', signed: true } });

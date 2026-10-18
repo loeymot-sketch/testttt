@@ -250,9 +250,9 @@ export default {
             this.forms = { ...this.forms, [f.id]: { type, polar: { raw: "", neg: false }, bath: { raw: "", neg: false }, litres: { raw: "", neg: false }, brand: "", action: "", note: "", photo: null, error: "", ref: newClientRef("o") } };
         },
         closeForm(f) { const { [f.id]: _x, ...rest } = this.forms; this.forms = rest; },
-        polarOf(f) { return parseTemperature(this.forms[f.id].polar.raw, 2); },
-        bathOf(f) { return parseTemperature(this.forms[f.id].bath.raw, 3); },
-        litresOf(f) { return parseTemperature(this.forms[f.id].litres.raw, 3); },
+        polarOf(f) { return parseTemperature(this.forms[f.id].polar.raw, 2, false); },
+        bathOf(f) { return parseTemperature(this.forms[f.id].bath.raw, 3, false); },
+        litresOf(f) { return parseTemperature(this.forms[f.id].litres.raw, 3, false); },
         readError(f) {
             const x = this.forms[f.id];
             if (x.type === "test") return (String(x.polar.raw).trim() !== "" && this.polarOf(f) === null) || (String(x.bath.raw).trim() !== "" && this.bathOf(f) === null);
