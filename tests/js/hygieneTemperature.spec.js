@@ -10,6 +10,7 @@ vi.mock('axios', () => ({ default: h.axios }));
 vi.mock('../../resources/js/services/alertService', () => ({ default: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 import { parseTemperature, previewVerdict, formatTemperature, limitText, chartModel } from '../../resources/js/helpers/hygieneTemperature.js';
+import alertService from '../../resources/js/services/alertService';
 import HygieneTemperatureComponent from '../../resources/js/components/admin/hygiene/HygieneTemperatureComponent.vue';
 
 describe('hygieneTemperature — fonctions pures', () => {
@@ -166,6 +167,20 @@ describe('écran températures — la saisie du propriétaire', () => {
         expect(sent.find((r) => r.equipment_id === 2)).toMatchObject({ value: 7, corrective_action: 'products_checked' });
         expect(sent.find((r) => r.equipment_id === 1)).not.toHaveProperty('corrective_action');
         expect(w.get('[data-testid="tmp-sum-alert"]').text()).toBe('1 écart');
+    });
+
+    it('récompense honnête : « plus que N » tant qu’il en reste, « relevé complet » à la fin', async () => {
+        setup(SIX());
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        for (const id of [1, 2, 3, 4]) await type(w, id, '3');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).toHaveBeenLastCalledWith('4 relevés enregistrés ✓ — plus que 2 équipements à relever.');
+        for (const id of [5, 6]) await type(w, id, '18');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).toHaveBeenLastCalledWith('2 relevés enregistrés ✓ — relevé « matin » complet, merci !');
     });
 
     it('« Autre » exige une précision', async () => {

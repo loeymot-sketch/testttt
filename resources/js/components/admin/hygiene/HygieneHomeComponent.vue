@@ -16,6 +16,45 @@
                     </p>
                     <p v-else class="hy-banner" :class="`is-${bannerKind}`" role="status" data-testid="home-banner">{{ bannerText }}</p>
 
+                    <!-- Mise en place : où j'en suis, ce qu'il reste, LA prochaine étape (rien à cocher : tout se déduit des journaux) -->
+                    <section v-if="showSetup" class="hy-setup" :class="{ 'is-complete': setup.complete }" aria-labelledby="home-setup-title" data-testid="home-setup">
+                        <div class="hy-setup-head">
+                            <h4 id="home-setup-title" class="hy-setup-title" data-testid="home-setup-title">{{ setupTitle }}</h4>
+                            <span class="hy-setup-count" data-testid="home-setup-count">{{ setup.required_done }}/{{ setup.required_total }}</span>
+                        </div>
+                        <div class="hy-setup-bar" role="progressbar" aria-valuemin="0" :aria-valuemax="setup.required_total" :aria-valuenow="setup.required_done" aria-label="Mise en place" data-testid="home-setup-bar">
+                            <span class="hy-setup-fill" :style="{ width: setupPct + '%' }"></span>
+                        </div>
+                        <p class="hy-setup-sub" data-testid="home-setup-sub">{{ setupSub }}</p>
+
+                        <router-link v-if="setup.next && !setup.complete" :to="setup.next.route" class="hy-setup-next" data-testid="home-setup-next">
+                            <span class="hy-setup-next-label">Prochaine étape</span>
+                            <strong>{{ setup.next.label }}</strong>
+                            <span class="hy-setup-next-detail">{{ setup.next.detail }}</span>
+                            <span class="hy-setup-next-cta">{{ setup.next.cta }} →</span>
+                        </router-link>
+
+                        <ul class="hy-setup-steps" data-testid="home-setup-steps">
+                            <li v-for="st in requiredSteps" :key="st.key" :class="{ 'is-done': st.done, 'is-next': setup.next && setup.next.key === st.key }" :data-testid="`home-setup-step-${st.key}`">
+                                <span class="hy-setup-mark" aria-hidden="true">{{ st.done ? "✓" : "○" }}</span>
+                                <span class="hy-setup-label">{{ st.label }}<span class="sr-only">{{ st.done ? " : fait" : " : à faire" }}</span></span>
+                            </li>
+                        </ul>
+
+                        <details v-if="optionalSteps.length" class="hy-setup-more" data-testid="home-setup-more">
+                            <summary>Pour aller plus loin ({{ optionalSteps.filter((o) => o.done).length }}/{{ optionalSteps.length }})</summary>
+                            <ul class="hy-setup-steps">
+                                <li v-for="st in optionalSteps" :key="st.key" :class="{ 'is-done': st.done }" :data-testid="`home-setup-step-${st.key}`">
+                                    <span class="hy-setup-mark" aria-hidden="true">{{ st.done ? "✓" : "○" }}</span>
+                                    <router-link v-if="!st.done" :to="st.route" class="hy-setup-label">{{ st.label }} <span class="hy-setup-opt">— {{ st.cta }}</span></router-link>
+                                    <span v-else class="hy-setup-label">{{ st.label }}</span>
+                                </li>
+                            </ul>
+                        </details>
+
+                        <button v-if="setup.complete" type="button" class="hy-btn hy-btn--small hy-setup-dismiss" data-testid="home-setup-dismiss" @click="dismissSetup">Compris, masquer ce guide</button>
+                    </section>
+
                     <!-- Ce qui est en retard ou à traiter MAINTENANT : une phrase, un geste (touchez pour y aller) -->
                     <section v-if="reminders.length" class="hy-reminders" :class="{ 'is-soft': !hasAlertReminder }" aria-labelledby="home-reminders-title" data-testid="home-reminders">
                         <h4 id="home-reminders-title" class="hy-reminders-title">À traiter maintenant</h4>
@@ -69,13 +108,32 @@ export default {
     name: "HygieneHomeComponent",
     components: { HygieneQueueBanner },
     data() {
-        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], server_now: null, timezone: "Europe/Paris" }, loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null };
+        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], setup: null, server_now: null, timezone: "Europe/Paris" }, setupDismissed: this.readDismissed(), loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null };
     },
     computed: {
         /** Après deux rafraîchissements ratés, « Tout est en ordre ✓ » ne doit plus s'afficher : ce serait une affirmation sur des données périmées. */
         stale() { return this.loaded && this.failures >= 2; },
         staleSince() {
             try { return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: this.meta.timezone || "Europe/Paris" }).format(new Date(this.lastOkAt)); } catch (_) { return "tout à l'heure"; }
+        },
+        setup() { return this.meta.setup && Array.isArray(this.meta.setup.steps) ? this.meta.setup : null; },
+        requiredSteps() { return this.setup ? this.setup.steps.filter((x) => !x.optional) : []; },
+        optionalSteps() { return this.setup ? this.setup.steps.filter((x) => x.optional) : []; },
+        /** Le guide reste tant que la mise en place n'est pas finie ; une fois finie, il se félicite puis se masque quand on l'a lu. */
+        showSetup() { return !!this.setup && !(this.setup.complete && this.setupDismissed); },
+        setupPct() { return this.setup && this.setup.required_total ? Math.round((this.setup.required_done / this.setup.required_total) * 100) : 0; },
+        setupTitle() {
+            if (!this.setup) return "";
+            if (this.setup.complete) return "Mise en place terminée 🎉";
+            return this.setup.required_done === 0 ? "Mettons votre registre en route" : "Votre registre prend forme";
+        },
+        setupSub() {
+            if (!this.setup) return "";
+            const left = this.setup.required_total - this.setup.required_done;
+            if (this.setup.complete) return "Tout est prêt : vous êtes en règle pour un contrôle. Chaque relevé, chaque nettoyage, chaque étiquette s'ajoute désormais au dossier.";
+            if (this.setup.required_done === 0) return `${this.setup.required_total} étapes, quelques minutes en tout. Les réglages sont déjà préparés pour vous.`;
+            if (left === 1) return "Plus qu'une étape : vous y êtes presque !";
+            return `Bien joué : encore ${left} étapes.`;
         },
         hasAlertReminder() { return this.reminders.some((r) => r.level === "alert"); },
         /** Les rappels du serveur : alertes d'abord, puis le reste à faire. */
@@ -98,7 +156,16 @@ export default {
             if (t > 0) return `${t} domaine${t > 1 ? "s" : ""} à compléter aujourd'hui`;
             if (this.tiles.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
             if (this.unconfigured.length) return `Rien d'urgent, mais à configurer : ${this.unconfigured.map((u) => u.label).join(", ")}.`;
-            return "Tout est en ordre ✓";
+            return this.doneSummary ? `Journée en règle ✓ · ${this.doneSummary}` : "Tout est en ordre ✓";
+        },
+        /** Ce qui est VRAIMENT fait aujourd'hui, en chiffres : un « tout est en ordre » vague ne récompense personne. */
+        doneSummary() {
+            const parts = [];
+            const t = this.tiles.find((x) => x.key === "temperature");
+            if (t && t.counts && t.counts.total > 0) parts.push(`${t.counts.done}/${t.counts.total} relevés`);
+            const k = this.tiles.find((x) => x.key === "tasks");
+            if (k && k.counts && k.counts.total > 0) parts.push(`${k.counts.done}/${k.counts.total} fiches de nettoyage`);
+            return parts.join(" · ");
         },
     },
     created() {
@@ -107,6 +174,13 @@ export default {
     },
     beforeUnmount() { if (this.timer) clearInterval(this.timer); },
     methods: {
+        readDismissed() {
+            try { return window.localStorage.getItem("hygiene.setup.dismissed") === "1"; } catch (_) { return false; }
+        },
+        dismissSetup() {
+            this.setupDismissed = true;
+            try { window.localStorage.setItem("hygiene.setup.dismissed", "1"); } catch (_) { /* navigation privée : le guide reviendra, sans conséquence */ }
+        },
         async load() {
             try {
                 const { data } = await axios.get("admin/hygiene/overview");

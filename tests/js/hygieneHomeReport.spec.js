@@ -270,3 +270,93 @@ describe('relecture adverse (2026-10-17) — accueil', () => {
         expect(hard.get('[data-testid="home-reminders"]').classes()).not.toContain('is-soft');
     });
 });
+
+describe('accueil — guide de mise en place et journée en règle (2026-10-18, rapport Komia)', () => {
+    const step = (key, done, optional = false, extra = {}) => ({ key, label: `Étape ${key}`, detail: `Détail ${key}`, done, route: `/admin/hygiene/${key}`, cta: `Faire ${key}`, optional, ...extra });
+    const setup = (doneKeys, extraOptional = []) => {
+        const req = ['equipment', 'tasks', 'durations', 'reading', 'label'].map((k) => step(k, doneKeys.includes(k)));
+        const opt = ['fryer', 'team', 'alerts'].map((k) => step(k, extraOptional.includes(k), true));
+        const requiredDone = req.filter((x) => x.done).length;
+        return { steps: [...req, ...opt], required_total: 5, required_done: requiredDone, complete: requiredDone === 5, next: req.find((x) => !x.done) || opt.find((x) => !x.done) || null };
+    };
+
+    beforeEach(() => { try { window.localStorage.clear(); } catch (_) { /* ignoré */ } });
+
+    it('restaurant neuf : 0/5, barre vide, UNE prochaine étape reliée à son écran, rien de coché', async () => {
+        const w = await mountHome([tile('temperature', 'empty', 'À configurer')], { alerts: 0, todo: 0, setup: setup([]) });
+        expect(w.get('[data-testid="home-setup-count"]').text()).toBe('0/5');
+        expect(w.get('[data-testid="home-setup-bar"]').attributes('aria-valuenow')).toBe('0');
+        expect(w.get('[data-testid="home-setup-title"]').text()).toBe('Mettons votre registre en route');
+        const next = w.get('[data-testid="home-setup-next"]');
+        expect(next.text()).toContain('Étape equipment');
+        expect(next.attributes('href')).toBe('/admin/hygiene/equipment');
+        expect(w.findAll('[data-testid="home-setup-steps"] li.is-done')).toHaveLength(0);
+        expect(w.find('[data-testid="home-setup-dismiss"]').exists()).toBe(false);
+    });
+
+    it('progression : la barre avance, le texte encourage, la prochaine étape saute les étapes faites', async () => {
+        const w = await mountHome([tile('temperature', 'todo', 'x')], { alerts: 0, todo: 1, setup: setup(['equipment', 'tasks', 'durations']) });
+        expect(w.get('[data-testid="home-setup-count"]').text()).toBe('3/5');
+        expect(w.get('[data-testid="home-setup-bar"] .hy-setup-fill').attributes('style')).toContain('width: 60%');
+        expect(w.get('[data-testid="home-setup-sub"]').text()).toBe('Bien joué : encore 2 étapes.');
+        expect(w.get('[data-testid="home-setup-next"]').text()).toContain('Étape reading');
+        expect(w.findAll('[data-testid="home-setup-steps"] li.is-done')).toHaveLength(3);
+        expect(w.get('[data-testid="home-setup-step-reading"]').classes()).toContain('is-next');
+    });
+
+    it('à une étape de la fin : le texte le dit au singulier', async () => {
+        const w = await mountHome([tile('temperature', 'todo', 'x')], { alerts: 0, todo: 1, setup: setup(['equipment', 'tasks', 'durations', 'reading']) });
+        expect(w.get('[data-testid="home-setup-sub"]').text()).toBe('Plus qu\'une étape : vous y êtes presque !');
+    });
+
+    it('terminé : félicitation, plus de « prochaine étape », bouton pour masquer ; masqué = mémorisé, et la carte revient si une étape se rouvre', async () => {
+        let w = await mountHome([tile('temperature', 'ok', 'x')], { alerts: 0, todo: 0, setup: setup(['equipment', 'tasks', 'durations', 'reading', 'label']) });
+        expect(w.get('[data-testid="home-setup-title"]').text()).toContain('Mise en place terminée');
+        expect(w.find('[data-testid="home-setup-next"]').exists()).toBe(false);
+        await w.get('[data-testid="home-setup-dismiss"]').trigger('click');
+        expect(w.find('[data-testid="home-setup"]').exists()).toBe(false);
+        // rechargement : toujours masquée
+        w = await mountHome([tile('temperature', 'ok', 'x')], { alerts: 0, todo: 0, setup: setup(['equipment', 'tasks', 'durations', 'reading', 'label']) });
+        expect(w.find('[data-testid="home-setup"]').exists()).toBe(false);
+        // une durée de départ réapparaît (import) : le guide revient, même masqué
+        w = await mountHome([tile('temperature', 'ok', 'x')], { alerts: 0, todo: 0, setup: setup(['equipment', 'tasks', 'reading', 'label']) });
+        expect(w.get('[data-testid="home-setup-next"]').text()).toContain('Étape durations');
+    });
+
+    it('une étape non terminée ne peut JAMAIS être masquée', async () => {
+        const w = await mountHome([tile('temperature', 'todo', 'x')], { alerts: 0, todo: 1, setup: setup(['equipment']) });
+        expect(w.find('[data-testid="home-setup-dismiss"]').exists()).toBe(false);
+    });
+
+    it('les étapes facultatives sont rangées à part, sans compter dans le score ; les non faites sont des liens', async () => {
+        const w = await mountHome([tile('temperature', 'ok', 'x')], { alerts: 0, todo: 0, setup: setup(['equipment', 'tasks', 'durations', 'reading', 'label'], ['team']) });
+        expect(w.get('[data-testid="home-setup-count"]').text()).toBe('5/5');
+        expect(w.get('[data-testid="home-setup-more"] summary').text()).toBe('Pour aller plus loin (1/3)');
+        expect(w.get('[data-testid="home-setup-step-fryer"] a').attributes('href')).toBe('/admin/hygiene/fryer');
+        expect(w.find('[data-testid="home-setup-step-team"] a').exists()).toBe(false);
+    });
+
+    it('serveur sans guide (ancienne réponse) : aucune carte, aucune erreur', async () => {
+        const w = await mountHome([tile('tasks', 'ok', 'x')], { alerts: 0, todo: 0 });
+        expect(w.find('[data-testid="home-setup"]').exists()).toBe(false);
+    });
+
+    it('journée en règle : la bannière chiffre ce qui est fait aujourd’hui', async () => {
+        const tiles = [{ ...tile('temperature', 'ok', '4/4 relevés'), counts: { done: 4, total: 4, alerts: 0 } }, { ...tile('tasks', 'ok', '6/6 fiches'), counts: { done: 6, total: 6, overdue: 0 } }];
+        const w = await mountHome(tiles, { alerts: 0, todo: 0 });
+        expect(w.get('[data-testid="home-banner"]').text()).toBe('Journée en règle ✓ · 4/4 relevés · 6/6 fiches de nettoyage');
+        expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-ok');
+    });
+
+    it('journée en règle : un domaine sans rien d’attendu aujourd’hui n’affiche pas « 0/0 »', async () => {
+        const tiles = [{ ...tile('temperature', 'ok', '2/2 relevés'), counts: { done: 2, total: 2, alerts: 0 } }, { ...tile('tasks', 'ok', 'Rien à faire'), counts: { done: 0, total: 0, overdue: 0 } }];
+        const w = await mountHome(tiles, { alerts: 0, todo: 0 });
+        expect(w.get('[data-testid="home-banner"]').text()).toBe('Journée en règle ✓ · 2/2 relevés');
+    });
+
+    it('journée en règle : jamais affichée s’il reste quelque chose à faire ou une alerte', async () => {
+        const tiles = [{ ...tile('temperature', 'todo', '3/4 relevés'), counts: { done: 3, total: 4, alerts: 0 } }];
+        const w = await mountHome(tiles, { alerts: 0, todo: 1 });
+        expect(w.get('[data-testid="home-banner"]').text()).not.toContain('Journée en règle');
+    });
+});

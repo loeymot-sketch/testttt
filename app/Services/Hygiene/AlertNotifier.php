@@ -40,7 +40,7 @@ final class AlertNotifier
     /** Réglages de la branche (valeurs par défaut si rien n'a été enregistré). @return array<string,mixed> */
     public static function settings(?int $branch = null): array
     {
-        $row = HygieneAlertSetting::withoutGlobalScopes()->where('branch_id', $branch ?? self::branchId())->first();
+        $row = HygieneAlertSetting::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch ?? self::branchId())->first();
         $emails = is_array($row?->recipients) ? $row->recipients : [];
 
         return [
@@ -124,7 +124,7 @@ final class AlertNotifier
      */
     private function isDue(int $branch, string $key, CarbonInterface $now, array $s): bool
     {
-        $rows = HygieneAlertDispatch::withoutGlobalScopes()->where('branch_id', $branch)->whereDate('day', $now->toDateString())
+        $rows = HygieneAlertDispatch::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->whereDate('day', $now->toDateString())
             ->where('reminder_key', $key)->get(['status', 'sent_at', 'recipient', 'created_at']);
         $sentAt = $rows->where('status', HygieneAlertDispatch::STATUS_SENT)->pluck('sent_at')->filter()->map(fn ($d) => $d->timestamp)->unique()->sort()->values();
 
@@ -162,7 +162,7 @@ final class AlertNotifier
             }
             $error === null ? $sent++ : $failed++;
             foreach ($items as $i) {
-                HygieneAlertDispatch::withoutGlobalScopes()->create([
+                HygieneAlertDispatch::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->create([
                     'branch_id' => $branch, 'day' => $now->toDateString(), 'reminder_key' => mb_substr($i['key'], 0, 80),
                     'domain' => $i['domain'], 'level' => $i['level'], 'text' => mb_substr($i['text'], 0, 300), 'channel' => 'mail',
                     'recipient' => mb_substr($to, 0, 190), 'status' => $error === null ? $okStatus : HygieneAlertDispatch::STATUS_FAILED,

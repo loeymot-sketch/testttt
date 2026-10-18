@@ -90,6 +90,11 @@
                                             <textarea :id="`tsk-note-${t.id}`" v-model="forms[t.id].note" class="hy-textarea" maxlength="200" :data-testid="`tsk-note-${t.id}`"></textarea>
                                         </div>
                                         <HygienePhotoField v-model="forms[t.id].photo" kind="task" label="📷 Photo (facultatif)" />
+                                        <!-- L'engagement : une phrase, une case. Valider n'est plus un simple appui : c'est dire « c'est vrai, et on pourra me le demander ». -->
+                                        <button type="button" class="hy-toggle tsk-attest" :aria-pressed="forms[t.id].attest ? 'true' : 'false'" :data-testid="`tsk-attest-${t.id}`" @click="forms[t.id].attest = !forms[t.id].attest">
+                                            <span class="hy-box" aria-hidden="true">{{ forms[t.id].attest ? "✓" : "" }}</span>
+                                            <span>Je confirme l'exactitude des informations et je comprends qu'un responsable pourra les contrôler.</span>
+                                        </button>
                                         <p v-if="forms[t.id].error" class="hy-alert" role="alert" :data-testid="`tsk-form-error-${t.id}`">{{ forms[t.id].error }}</p>
                                         <div style="display:flex;gap:8px;flex-wrap:wrap">
                                             <button type="button" class="hy-btn hy-btn--primary" :disabled="saving || !canSubmit(t)" :data-testid="`tsk-submit-${t.id}`" @click="submit(t)">
@@ -293,14 +298,15 @@ export default {
         },
 
         // ── remplir une fiche ───────────────────────────────────────────────
-        openCard(t) { this.forms = { ...this.forms, [t.id]: { checked: {}, note: "", photo: null, error: "", ref: newClientRef("k") } }; },
+        openCard(t) { this.forms = { ...this.forms, [t.id]: { checked: {}, note: "", photo: null, error: "", attest: false, ref: newClientRef("k") } }; },
         closeCard(t) { const { [t.id]: _x, ...rest } = this.forms; this.forms = rest; },
         toggle(t, key) { const f = this.forms[t.id]; f.checked = { ...f.checked, [key]: !f.checked[key] }; },
         checkAll(t) { this.forms[t.id].checked = Object.fromEntries(t.checklist.map((i) => [i.key, true])); },
         missing(t) { const f = this.forms[t.id]; return f ? t.checklist.filter((i) => !f.checked[i.key]).length : 0; },
         canSubmit(t) {
             const f = this.forms[t.id];
-            return Boolean(f) && (this.missing(t) === 0 || f.note.trim().length >= 3);
+            // l'engagement est coché PAR la personne : sans lui, rien ne se valide
+            return Boolean(f) && f.attest && (this.missing(t) === 0 || f.note.trim().length >= 3);
         },
         async submit(t) {
             const f = this.forms[t.id];
@@ -313,13 +319,17 @@ export default {
                     template_id: t.id,
                     ...(all ? { all: true } : { done: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), note: f.note.trim() }),
                     attachment_id: f.photo || undefined,
+                    attested: true,
                     operator_user_id: this.operatorId || undefined,
                     operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { all, d: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), n: f.note.trim(), p: f.photo, o: this.operatorId }),
                 });
                 this.closeCard(t);
                 await this.load();
-                alertService.success(all ? `« ${t.name} » validée.` : `« ${t.name} » validée avec réserve (points non faits tracés).`);
+                // récompense honnête : ce qu'il reste (chiffre du serveur) ou la fin de la journée ; une fiche « avec réserve » n'est jamais fêtée
+                const left = Number(this.summary.todo) || 0;
+                const rest = left > 0 ? ` Plus que ${left} fiche${left > 1 ? "s" : ""} à faire.` : (this.summary.partial ? "" : " Toutes les fiches du jour sont faites, bravo !");
+                alertService.success(all ? `« ${t.name} » validée ✓${rest}` : `« ${t.name} » validée avec réserve (points non faits tracés).${rest}`);
             } catch (e) {
                 f.error = apiMessage(e, "Validation impossible : vérifiez la connexion puis revalidez (rien n'est doublé).");
             } finally {

@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({ axios: { get: vi.fn(), post: vi.fn(), put: vi.fn()
 vi.mock('axios', () => ({ default: h.axios }));
 vi.mock('../../resources/js/services/alertService', () => ({ default: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
+import alertService from '../../resources/js/services/alertService';
 import HygieneTasksComponent from '../../resources/js/components/admin/hygiene/HygieneTasksComponent.vue';
 
 const T = (over) => ({
@@ -78,6 +79,7 @@ describe('plan de nettoyage — fiches du jour', () => {
         const w = await mountScreen();
         await w.get('[data-testid="tsk-open-1"]').trigger('click');
         await w.get('[data-testid="tsk-item-1-k1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click'); // l'engagement est coché par la personne
         expect(w.get('[data-testid="tsk-submit-1"]').attributes('disabled')).toBeDefined();
         expect(w.get('[data-testid="tsk-submit-1"]').text()).toContain('avec réserve');
         await w.get('[data-testid="tsk-note-1"]').setValue('ab');
@@ -102,6 +104,7 @@ describe('plan de nettoyage — fiches du jour', () => {
         await w.get('[data-testid="tsk-all-1"]').trigger('click');
         expect(w.find('[data-testid="tsk-note-1"]').exists()).toBe(false);
         expect(w.get('[data-testid="tsk-submit-1"]').text()).toBe('Valider');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
         await w.get('[data-testid="tsk-submit-1"]').trigger('click');
         await flushPromises();
         const [, body] = posts.find(([u]) => u === 'admin/hygiene/tasks/completions');
@@ -109,15 +112,65 @@ describe('plan de nettoyage — fiches du jour', () => {
         expect(body.note).toBeUndefined();
     });
 
+    it('récompense honnête : « plus que N fiches » tant qu’il en reste, « bravo » à la dernière, jamais sur une fiche avec réserve', async () => {
+        setup([T({ id: 1 }), T({ id: 2, name: 'Cuisine' })]);
+        const base = h.axios.post.getMockImplementation();
+        h.axios.post.mockImplementation(async (url, body) => {
+            const r = await base(url, body);
+            if (url === 'admin/hygiene/tasks/completions') today = { ...today, items: today.items.map((i) => (i.id === body.template_id ? { ...i, state: body.all ? 'done' : 'partial' } : i)) };
+            return r;
+        });
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        const validate = async (id) => {
+            await w.get(`[data-testid="tsk-open-${id}"]`).trigger('click');
+            await w.get(`[data-testid="tsk-all-${id}"]`).trigger('click');
+            await w.get(`[data-testid="tsk-attest-${id}"]`).trigger('click');
+            await w.get(`[data-testid="tsk-submit-${id}"]`).trigger('click');
+            await flushPromises();
+        };
+        await validate(1);
+        expect(alertService.success).toHaveBeenLastCalledWith('« Salle » validée ✓ Plus que 1 fiche à faire.');
+        await validate(2);
+        expect(alertService.success).toHaveBeenLastCalledWith('« Cuisine » validée ✓ Toutes les fiches du jour sont faites, bravo !');
+    });
+
     it('« moi » n’envoie pas d’opérateur (le serveur prend l’utilisateur connecté)', async () => {
         setup([T({ id: 1 })]);
         const w = await mountScreen();
         await w.get('[data-testid="tsk-open-1"]').trigger('click');
         await w.get('[data-testid="tsk-all-1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
         await w.get('[data-testid="tsk-submit-1"]').trigger('click');
         await flushPromises();
         const [, body] = posts.find(([u]) => u === 'admin/hygiene/tasks/completions');
         expect(body.operator_user_id).toBeUndefined();
+    });
+
+    it('l’engagement est obligatoire : sans la case cochée, « Valider » reste grisé même tout coché ; coché, il part avec la validation', async () => {
+        setup([T()]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tsk-open-1"]').trigger('click');
+        await w.get('[data-testid="tsk-all-1"]').trigger('click');
+        expect(w.get('[data-testid="tsk-submit-1"]').attributes('disabled')).toBeDefined();
+        expect(w.get('[data-testid="tsk-attest-1"]').text()).toContain("Je confirme l'exactitude des informations");
+        expect(w.get('[data-testid="tsk-attest-1"]').attributes('aria-pressed')).toBe('false');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
+        expect(w.get('[data-testid="tsk-attest-1"]').attributes('aria-pressed')).toBe('true');
+        expect(w.get('[data-testid="tsk-submit-1"]').attributes('disabled')).toBeUndefined();
+        await w.get('[data-testid="tsk-submit-1"]').trigger('click');
+        await flushPromises();
+        expect(posts.find(([u]) => u === 'admin/hygiene/tasks/completions')[1].attested).toBe(true);
+    });
+
+    it('décocher l’engagement referme le bouton Valider', async () => {
+        setup([T()]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tsk-open-1"]').trigger('click');
+        await w.get('[data-testid="tsk-all-1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
+        expect(w.get('[data-testid="tsk-submit-1"]').attributes('disabled')).toBeDefined();
     });
 
     it('le refus du serveur reste dans la carte et conserve la saisie', async () => {
@@ -126,6 +179,7 @@ describe('plan de nettoyage — fiches du jour', () => {
         const w = await mountScreen();
         await w.get('[data-testid="tsk-open-1"]').trigger('click');
         await w.get('[data-testid="tsk-all-1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
         await w.get('[data-testid="tsk-submit-1"]').trigger('click');
         await flushPromises();
         expect(w.get('[data-testid="tsk-form-error-1"]').text()).toContain('pas à faire aujourd’hui');

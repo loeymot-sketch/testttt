@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\KDSOrderDetailsResource;
+use App\Http\Controllers\Concerns\ResolvesOperator;
 use App\Models\DlcLabelProduct;
 use App\Models\LabelPrintLog;
 use App\Models\Order;
@@ -39,6 +40,8 @@ use Illuminate\Validation\Rule;
  */
 class LabelController extends AdminController
 {
+    use ResolvesOperator; // « Qui ? » + code personnel : la même règle que les relevés (une étiquette dit QUI l'a faite)
+
     public function __construct(private readonly KitchenDisplaySystemOrderService $kitchen)
     {
         parent::__construct();
@@ -309,6 +312,9 @@ class LabelController extends AdminController
         $validated = $request->validate([
             'product_id' => ['required', 'integer'],
             'copies' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'operator_user_id' => ['nullable', 'integer'],
+            'operator_token' => ['nullable', 'string', 'max:400'],
+            'operator_pin' => ['nullable', 'string', 'max:6'],
             'action' => ['nullable', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
             // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ), et son numéro de lot.
             'original_dlc' => ['nullable', 'date_format:Y-m-d'],
@@ -435,14 +441,15 @@ class LabelController extends AdminController
             }
         }
 
-        $user = $request->user();
+        // la personne qui fait l'étiquette : celle choisie sous « Qui ? » (avec son code si elle en a un), sinon le compte connecté
+        $op = $this->operator($request);
         $copies = (int) ($validated['copies'] ?? $product->default_copies ?: 1);
         $storage = $product->storageFor($action['key']);
         $supplierLot = isset($validated['supplier_lot']) && trim((string) $validated['supplier_lot']) !== ''
             ? trim((string) $validated['supplier_lot']) : null;
 
         $log = new LabelPrintLog([
-            'user_id' => $user?->id,
+            'user_id' => $op['user_id'],
             'kind' => LabelPrintLog::KIND_DLC,
             'dlc_product_id' => $product->id,
             'product_name' => $product->name,
@@ -474,7 +481,7 @@ class LabelController extends AdminController
         // Numéro de l'étiquette : lien entre ce papier, le journal et les produits faits à partir de lui (traçabilité).
         $log->forceFill(['lot' => $this->lotNumber($openedAt, $log->id)])->save();
 
-        return response()->json($this->presentDlcLabel($product, $log, $parent, $user) + ['attempt' => 1]);
+        return response()->json($this->presentDlcLabel($product, $log, $parent, $op['name']) + ['attempt' => 1]);
     }
 
     /**
@@ -497,6 +504,9 @@ class LabelController extends AdminController
             'expires_at' => ['required', 'date'],
             'storage' => ['nullable', 'string', 'max:60'],
             'parent_none' => ['nullable', 'boolean'],
+            'operator_user_id' => ['nullable', 'integer'],
+            'operator_token' => ['nullable', 'string', 'max:400'],
+            'operator_pin' => ['nullable', 'string', 'max:6'],
             'status' => ['required', Rule::in([LabelPrintLog::STATUS_PRINTED, LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_FAILED])],
             'message' => ['nullable', 'string', 'max:300'],
         ]);
@@ -513,6 +523,14 @@ class LabelController extends AdminController
         $now = now();
 
         $anomalies = [];
+        // L'étiquette est DÉJÀ sur le bac : une signature qu'on ne peut plus prouver (code expiré, jeton absent) ne la fait jamais disparaître du
+        // journal. Elle est inscrite au compte connecté et signalée « à vérifier » : on ne ment ni sur le papier ni sur la personne.
+        try {
+            $op = $this->operator($request, $openedAt);
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            $op = ['user_id' => $request->user()?->id, 'name' => $request->user()?->name];
+            $anomalies[] = 'signature de la personne non vérifiée (code absent ou expiré au retour du réseau)';
+        }
         $product = DlcLabelProduct::withTrashed()->find($validated['product_id']);
         if (! $product) {
             $anomalies[] = 'produit introuvable';
@@ -546,7 +564,7 @@ class LabelController extends AdminController
             : ($validated['message'] ?? 'Imprimée hors ligne, journalisée au retour du réseau.');
 
         $log = new LabelPrintLog([
-            'user_id' => $request->user()?->id,
+            'user_id' => $op['user_id'],
             'kind' => LabelPrintLog::KIND_DLC,
             'dlc_product_id' => $product?->id,
             'product_name' => $product?->name ?? (trim((string) ($validated['product_name'] ?? '')) ?: 'Produit #'.$validated['product_id']),
@@ -584,7 +602,7 @@ class LabelController extends AdminController
     }
 
     /** Ce que la tablette imprime : exactement ce que dit le journal. */
-    private function presentDlcLabel(DlcLabelProduct $product, LabelPrintLog $log, ?LabelPrintLog $parent, $user): array
+    private function presentDlcLabel(DlcLabelProduct $product, LabelPrintLog $log, ?LabelPrintLog $parent, ?string $operatorName): array
     {
         return [
             'log_id' => $log->id,
@@ -606,7 +624,7 @@ class LabelController extends AdminController
             'parent' => $parent ? ['lot' => $parent->lot, 'name' => $parent->product_name] : null,
             'lot' => $log->lot,
             'copies' => $log->copies,
-            'by' => $product->print_operator ? $this->firstName($user?->name) : null,
+            'by' => $product->print_operator ? $this->firstName($operatorName) : null,
         ];
     }
 

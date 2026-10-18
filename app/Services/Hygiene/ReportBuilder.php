@@ -223,6 +223,7 @@ final class ReportBuilder
                 'at' => $r->completed_at->toIso8601String(), 'due_date' => $r->due_date->toDateString(), 'task' => $r->task_name, 'zone' => $r->zone,
                 'items_done' => $r->items_done, 'items_total' => $r->items_total, 'complete' => $r->complete, 'late' => $r->late, 'note' => $r->note,
                 'not_done' => collect($r->items)->where('done', false)->pluck('label')->values()->all(), 'operator' => $r->operator_name,
+                'attested' => $r->attested_at !== null,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
             ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];

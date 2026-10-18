@@ -573,7 +573,12 @@ export default {
                 const n = (data.data || []).length;
                 const alerts = Number(data.meta && data.meta.alerts) || 0;
                 if (alerts > 0) alertService.error(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""} — ${alerts} écart${alerts > 1 ? "s" : ""} tracé${alerts > 1 ? "s" : ""}.`);
-                else alertService.success(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""}.`);
+                else {
+                    // récompense honnête : ce qu'il reste à relever (chiffre du serveur), ou la fin de la période — jamais un « bravo » sur un reste à faire
+                    const left = Number(this.summary.todo) || 0;
+                    const base = `${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""} ✓`;
+                    alertService.success(left > 0 ? `${base} — plus que ${left} équipement${left > 1 ? "s" : ""} à relever.` : `${base} — relevé ${this.periodLabel ? `« ${this.periodLabel.toLowerCase()} » ` : ""}complet, merci !`);
+                }
             } catch (e) {
                 if (isRetriable(e)) {
                     // pas de réseau (ou serveur / session indisponible) : le relevé est GARDÉ sur la tablette avec l'heure de la mesure, jamais perdu

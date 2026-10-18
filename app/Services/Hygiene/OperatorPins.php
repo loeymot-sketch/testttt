@@ -26,7 +26,7 @@ final class OperatorPins
 
     private function row(int $branch, int $userId): ?HygieneOperatorPin
     {
-        return HygieneOperatorPin::withoutGlobalScopes()->where('branch_id', $branch)->where('user_id', $userId)->first();
+        return HygieneOperatorPin::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->where('user_id', $userId)->first();
     }
 
     public function has(int $branch, int $userId): bool
@@ -39,7 +39,7 @@ final class OperatorPins
     {
         $now = $now ?? now();
 
-        return HygieneOperatorPin::withoutGlobalScopes()->where('branch_id', $branch)->get()
+        return HygieneOperatorPin::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->get()
             ->mapWithKeys(fn (HygieneOperatorPin $r) => [$r->user_id => ['set_at' => $r->updated_at->toIso8601String(), 'locked' => $r->locked_until !== null && $r->locked_until->gt($now)]])
             ->all();
     }
@@ -47,7 +47,7 @@ final class OperatorPins
     public function set(int $branch, int $userId, string $pin, ?int $by): void
     {
         // updateOrCreate : deux « définir » simultanés sur la même personne ne créent pas deux lignes (la colonne user_id est unique)
-        $row = HygieneOperatorPin::withoutGlobalScopes()->updateOrCreate(['user_id' => $userId], [
+        $row = HygieneOperatorPin::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->updateOrCreate(['user_id' => $userId], [
             'branch_id' => $branch, 'pin_hash' => Hash::make($this->peppered($pin)), 'failed_attempts' => 0, 'locked_until' => null, 'set_by' => $by,
         ]);
         $row->touch(); // un code redéfini à l'identique invalide quand même les jetons d'avant
@@ -65,7 +65,7 @@ final class OperatorPins
 
     public function remove(int $branch, int $userId): void
     {
-        HygieneOperatorPin::withoutGlobalScopes()->where('branch_id', $branch)->where('user_id', $userId)->delete();
+        HygieneOperatorPin::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->where('user_id', $userId)->delete();
     }
 
     /**
@@ -77,7 +77,7 @@ final class OperatorPins
         $now = $now ?? now();
 
         return DB::transaction(function () use ($branch, $userId, $pin, $now): array {
-            $row = HygieneOperatorPin::withoutGlobalScopes()->where('branch_id', $branch)->where('user_id', $userId)->lockForUpdate()->first();
+            $row = HygieneOperatorPin::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->where('user_id', $userId)->lockForUpdate()->first();
             if (! $row) return ['result' => 'none', 'remaining' => 0, 'locked_minutes' => 0];
             if ($row->locked_until !== null && $row->locked_until->gt($now)) {
                 return ['result' => 'locked', 'remaining' => 0, 'locked_minutes' => (int) max(1, ceil($now->diffInSeconds($row->locked_until) / 60))];

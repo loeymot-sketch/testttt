@@ -48,6 +48,10 @@
                     </p>
                     <!-- ── Barre d'outils ─────────────────────────────────────────────────── -->
                     <div class="dlc-toolbar">
+                        <!-- Qui fait les étiquettes ? Le nom (et le code, s'il y en a un) est vérifié par le serveur ; la personne est écrite sur la ligne du journal. -->
+                        <div class="dlc-who" data-testid="dlc-who">
+                            <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" @update:me="operatorMe = $event" />
+                        </div>
                         <div class="dlc-search-row">
                             <label for="dlc-search" class="sr-only">Chercher un produit</label>
                             <input id="dlc-search" v-model="query" type="search" class="db-field-control" placeholder="🔍 Chercher un produit…"
@@ -355,6 +359,7 @@ import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
 import DlcCatalogueHealth from "./DlcCatalogueHealth";
 import DlcImportDialog from "./DlcImportDialog";
+import HygieneOperatorPicker from "../hygiene/HygieneOperatorPicker";
 import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { searchProducts } from "../../../helpers/dlcSearch";
 import { printBlocks, previewUrls } from "../../../helpers/labelPrintJob";
@@ -394,7 +399,7 @@ const SUGGESTIONS = [
 
 export default {
     name: "LabelDlcComponent",
-    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog },
+    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog, HygieneOperatorPicker },
     mixins: [labelPrinterMixin],
     data() {
         return {
@@ -429,6 +434,7 @@ export default {
             onlineHandler: null,
             loaded: false,
             discarding: false,
+            operatorId: null, operatorToken: null, operatorMe: null,
             favoriteBusy: {},
             undo: null,
             undoTimer: null,
@@ -965,7 +971,7 @@ export default {
                         original_dlc: orig ? orig.original_dlc : undefined, supplier_lot: orig ? orig.supplier_lot : undefined,
                     });
                     batch.push({ name: p.name, copies: count, ok: result.ok, message: result.message, ids: result.ids || [], offline: result.offline });
-                    if (!result.ok && !result.refused) break; // panne d'imprimante : inutile d'enchaîner, la sélection reste pour réessayer
+                    if (!result.ok && (!result.refused || result.operatorRefused)) break; // panne d'imprimante OU refus de « Qui ? » : inutile d'enchaîner, la sélection reste pour réessayer
                     if (!result.ok) continue; // refusé (ce produit seulement) : il reste sélectionné, les autres partent
                     const { [p.id]: _done, ...rest } = this.selection;
                     this.selection = rest;
@@ -1041,13 +1047,17 @@ export default {
                     product_id: product.id, copies, action: opts.action || undefined, original_dlc: opts.original_dlc || undefined,
                     supplier_lot: opts.supplier_lot || undefined, parent_log_id: opts.parent_log_id || undefined,
                     parent_none: opts.parent_none || undefined,
+                    operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
                 });
                 data = res.data;
             } catch (e) {
                 if (e && e.response && e.response.status && e.response.status < 500) {
                     const message = this.apiMessage(e, "Impression refusée.");
                     alertService.error(message);
-                    return { ok: false, message, refused: true }; // refus propre à CE produit : l'imprimante, elle, va bien
+                    // le refus vient de « Qui ? » (code manquant, expiré, bloqué) : il vaut pour TOUS les produits, inutile d'enchaîner le lot
+                    const errs = e.response.data && e.response.data.errors ? Object.keys(e.response.data.errors) : [];
+                    const operatorRefused = errs.some((k) => k.startsWith("operator_"));
+                    return { ok: false, message, refused: true, operatorRefused }; // refus propre à CE produit : l'imprimante, elle, va bien
                 }
                 if (product.ask_original_dlc || opts.parent_log_id) {
                     const message = product.ask_original_dlc
@@ -1102,6 +1112,8 @@ export default {
                     copies: data.copies, opened_at: data.opened_at, expires_at: data.expires_at, storage: data.storage || null,
                     // « produit neuf » déclaré pour une préparation : la déclaration suit l'étiquette au journal
                     parent_none: opts.parent_none || undefined,
+                    // la personne est écrite EN TOUTES LETTRES (« moi » = le compte qui a imprimé, pas celui qui sera connecté au rejeu)
+                    operator_user_id: this.operatorId || this.operatorMe || undefined, operator_token: this.operatorToken || undefined,
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",
                     message: result.message ? String(result.message).slice(0, 290) : null,
                 }, { maxAgeMs: OFFLINE_KEEP_MS });
@@ -1308,6 +1320,7 @@ export default {
 
 .dlc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; padding-bottom: 8px; }
 .dlc-cell { position: relative; }
+.dlc-who { display: flex; align-items: center; }
 .dlc-star { position: absolute; right: 8px; top: 8px; width: 44px; height: 44px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; z-index: 2; }
 .dlc-star.is-on { border-color: #f59e0b; background: #fffbeb; color: #d97706; }
 .dlc-star:disabled { opacity: .6; cursor: progress; }

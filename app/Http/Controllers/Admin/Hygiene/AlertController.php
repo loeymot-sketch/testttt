@@ -36,7 +36,7 @@ class AlertController extends HygieneController
         $branch = AlertNotifier::branchId();
         $staff = $this->staffQuery($request)->whereNotNull('email')->where('email', '<>', '')->orderBy('name')->get(['id', 'name', 'email'])
             ->map(fn ($u) => ['id' => $u->id, 'name' => $this->cleanName($u->name), 'email' => $u->email])->values();
-        $recent = HygieneAlertDispatch::withoutGlobalScopes()->where('branch_id', $branch)->orderByDesc('id')->limit(100)->get()
+        $recent = HygieneAlertDispatch::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('branch_id', $branch)->orderByDesc('id')->limit(100)->get()
             ->map(fn (HygieneAlertDispatch $d) => [
                 'id' => $d->id, 'at' => ($d->sent_at ?? $d->created_at)->toIso8601String(), 'recipient' => $d->recipient, 'status' => $d->status,
                 'domain' => $d->domain, 'text' => $d->text, 'error' => $d->error,
@@ -84,7 +84,7 @@ class AlertController extends HygieneController
         }
 
         $branch = AlertNotifier::branchId();
-        $row = HygieneAlertSetting::withoutGlobalScopes()->firstOrNew(['branch_id' => $branch]);
+        $row = HygieneAlertSetting::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->firstOrNew(['branch_id' => $branch]);
         $row->forceFill([
             'branch_id' => $branch, 'enabled' => $v['enabled'], 'recipients' => $recipients,
             'domains' => array_values(array_intersect(AlertNotifier::DOMAINS, $v['domains'])),

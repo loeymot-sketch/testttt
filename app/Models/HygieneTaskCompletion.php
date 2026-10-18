@@ -21,6 +21,7 @@ class HygieneTaskCompletion extends Model
         'template_id' => 'integer',
         'due_date' => 'date:Y-m-d',
         'items' => 'array',
+        'attested_at' => 'datetime',
         'items_total' => 'integer',
         'items_done' => 'integer',
         'complete' => 'boolean',

@@ -147,3 +147,36 @@
 .hy-operator-pop.is-left { left: 0; right: auto; }
 .hy-operator-pop.is-right { right: 0; left: auto; }
 .hy-operator-pop.hy-pin { width: min(320px, calc(100vw - 32px)); }
+
+/* ───── Guide de mise en place (Accueil) · 2026-10-18 · progression visible, UNE prochaine étape, félicitation à la fin ───── */
+.hy-setup { border: 2px solid #fed7aa; background: #fff7ed; border-radius: 16px; padding: 16px; margin: 0 0 16px; }
+.hy-setup.is-complete { border-color: #a7f3d0; background: #ecfdf5; }
+.hy-setup-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.hy-setup-title { margin: 0; font-size: 20px; font-weight: 900; color: #7c2d12; }
+.hy-setup.is-complete .hy-setup-title { color: #065f46; }
+.hy-setup-count { font-size: 18px; font-weight: 900; color: #9a3412; font-variant-numeric: tabular-nums; }
+.hy-setup.is-complete .hy-setup-count { color: #047857; }
+.hy-setup-bar { height: 12px; border-radius: 999px; background: #fde4cc; overflow: hidden; margin: 10px 0 8px; }
+.hy-setup.is-complete .hy-setup-bar { background: #bbf7d0; }
+.hy-setup-fill { display: block; height: 100%; background: #ea580c; border-radius: 999px; transition: width .6s ease; }
+.hy-setup.is-complete .hy-setup-fill { background: #059669; }
+.hy-setup-sub { margin: 0 0 12px; font-size: 16px; line-height: 1.45; color: #431407; }
+.hy-setup.is-complete .hy-setup-sub { color: #064e3b; }
+.hy-setup-next { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; margin: 0 0 12px; border-radius: 14px; background: #fff; border: 2px solid #ea580c; color: #431407; text-decoration: none; min-height: 44px; }
+.hy-setup-next:hover, .hy-setup-next:focus-visible { background: #ffedd5; outline: 3px solid #fdba74; outline-offset: 2px; }
+.hy-setup-next-label { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #9a3412; }
+.hy-setup-next strong { font-size: 18px; }
+.hy-setup-next-detail { font-size: 15px; color: #57534e; }
+.hy-setup-next-cta { margin-top: 4px; font-size: 16px; font-weight: 900; color: #c2410c; }
+.hy-setup-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hy-setup-steps li { display: flex; gap: 10px; align-items: baseline; font-size: 16px; color: #431407; }
+.hy-setup-steps li.is-done { color: #065f46; }
+.hy-setup-steps li.is-done .hy-setup-label { text-decoration: line-through; text-decoration-color: rgba(6, 95, 70, .35); }
+.hy-setup-steps li.is-next { font-weight: 900; }
+.hy-setup-mark { width: 22px; flex: 0 0 22px; text-align: center; font-weight: 900; }
+.hy-setup-opt { color: #9a3412; font-size: 14px; }
+.hy-setup-more { margin-top: 12px; }
+.hy-setup-more summary { cursor: pointer; font-weight: 800; color: #7c2d12; min-height: 44px; display: flex; align-items: center; }
+.hy-setup-dismiss { margin-top: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { .hy-setup-fill { transition: none; } }

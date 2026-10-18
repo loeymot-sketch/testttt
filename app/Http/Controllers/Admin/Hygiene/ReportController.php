@@ -111,8 +111,8 @@ class ReportController extends HygieneController
                     array_map(fn ($r) => [$this->dt($r['at']), $r['equipment'], $this->num($r['value_c']), $this->num($r['min_c']), $this->num($r['max_c']), $status($r['status']), config("hygiene.periods.{$r['period']}") ?? $r['period'], $r['operator'],
                         ! empty($r['offline']) ? 'hors ligne, envoyé le '.$this->dt($r['synced_at']) : 'direct', $r['action'], $r['note'], $r['followup_closed'] ?? '', $void($r)], $rows)];
             case 'tasks':
-                return [['Date', 'Jour concerné', 'Fiche', 'Zone', 'Points faits', 'Points total', 'Complète', 'Après l\'heure', 'Points non faits', 'Commentaire', 'Opérateur', 'Annulation'],
-                    array_map(fn ($r) => [$this->dt($r['at']), $r['due_date'], $r['task'], $r['zone'], $r['items_done'], $r['items_total'], $r['complete'], $r['late'], $r['not_done'], $r['note'], $r['operator'], $void($r)], $rows)];
+                return [['Date', 'Jour concerné', 'Fiche', 'Zone', 'Points faits', 'Points total', 'Complète', 'Après l\'heure', 'Points non faits', 'Commentaire', 'Opérateur', 'Engagement', 'Annulation'],
+                    array_map(fn ($r) => [$this->dt($r['at']), $r['due_date'], $r['task'], $r['zone'], $r['items_done'], $r['items_total'], $r['complete'], $r['late'], $r['not_done'], $r['note'], $r['operator'], ! empty($r['attested']) ? 'oui' : 'non', $void($r)], $rows)];
             case 'receptions':
                 return [['Date', 'Fournisseur', 'N° BL', 'Livreur', 'Températures', 'Contrôles non conformes', 'Verdict', 'Décision', 'Commentaire', 'Opérateur', 'Annulation'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['supplier'], $r['delivery_note'], $r['driver'], implode(' | ', array_map(fn ($t) => $t['label'].' '.$this->num($t['value_c']).' °C', $r['temperatures'])), $r['checks_ko'], $status($r['status']), $r['decision'], $r['note'], $r['operator'], $void($r)], $rows)];

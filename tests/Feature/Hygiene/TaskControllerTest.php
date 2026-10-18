@@ -307,4 +307,44 @@ class TaskControllerTest extends TestCase
         $this->getJson(self::BASE.'/today')->assertForbidden();
         $this->postJson(self::BASE.'/completions', [])->assertForbidden();
     }
+
+    // ───────────── engagement (« je confirme l'exactitude des informations… ») ─────────────
+
+    public function test_l_engagement_coche_est_date_et_reste_au_journal_et_au_dossier(): void
+    {
+        $this->staff();
+        $this->install();
+        $t = $this->template('salle');
+        $r = $this->postJson(self::BASE.'/completions', ['template_id' => $t->id, 'all' => true, 'attested' => true])->assertCreated();
+
+        $r->assertJsonPath('data.attested', true);
+        $row = HygieneTaskCompletion::query()->firstOrFail();
+        $this->assertNotNull($row->attested_at);
+        $this->assertEquals(now()->startOfMinute(), $row->attested_at->startOfMinute());
+
+        $csv = $this->get('/api/admin/hygiene/report/csv?module=tasks&from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->streamedContent();
+        $this->assertStringContainsString('Engagement', $csv);
+        $this->assertStringContainsString(';oui;', $csv);
+    }
+
+    public function test_sans_engagement_la_validation_est_enregistree_mais_dite_sans_engagement(): void
+    {
+        $this->staff();
+        $this->install();
+        $t = $this->template('salle');
+        $r = $this->postJson(self::BASE.'/completions', ['template_id' => $t->id, 'all' => true])->assertCreated();
+        $r->assertJsonPath('data.attested', false);
+        $this->assertNull(HygieneTaskCompletion::query()->firstOrFail()->attested_at);
+        $csv = $this->get('/api/admin/hygiene/report/csv?module=tasks&from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->streamedContent();
+        $this->assertStringContainsString(';non;', $csv);
+    }
+
+    public function test_un_engagement_non_booleen_est_refuse(): void
+    {
+        $this->staff();
+        $this->install();
+        $t = $this->template('salle');
+        $this->postJson(self::BASE.'/completions', ['template_id' => $t->id, 'all' => true, 'attested' => 'peut-être'])->assertStatus(422)->assertJsonValidationErrors('attested');
+        $this->assertSame(0, HygieneTaskCompletion::query()->count());
+    }
 }

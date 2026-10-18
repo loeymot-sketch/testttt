@@ -229,15 +229,21 @@ describe('sélecteur « Qui ? » avec code', () => {
         }
     });
 
-    it('une personne protégée n’est jamais rétablie toute seule depuis la mémoire de la tablette ; une personne libre l’est', async () => {
+    it('une personne protégée n’est jamais rétablie toute seule depuis la mémoire de la tablette ; une personne libre l’est — mais seulement 30 minutes', async () => {
         setupOps({ verify: vi.fn() });
-        window.localStorage.setItem('hygiene.operator.1', '7');
+        window.localStorage.setItem('hygiene.operator.1', JSON.stringify({ id: 7, at: Date.now() }));
         let w = await mountPicker();
         expect(lastEmit(w, 'update:modelValue')).toEqual([null]);
-        expect(q(w, 'hy-operator-btn').text()).toContain('Compte T.'); // retour sur le compte de la tablette
-        window.localStorage.setItem('hygiene.operator.1', '8');
+        expect(q(w, 'hy-operator-btn').text()).toContain('Compte T.');
+        window.localStorage.setItem('hygiene.operator.1', JSON.stringify({ id: 8, at: Date.now() - 5 * 60000 }));
         w = await mountPicker();
-        expect(lastEmit(w, 'update:modelValue')).toEqual([8]);
+        expect(lastEmit(w, 'update:modelValue')).toEqual([8]);                         // choisi il y a 5 min : rétabli
+        window.localStorage.setItem('hygiene.operator.1', JSON.stringify({ id: 8, at: Date.now() - 31 * 60000 }));
+        w = await mountPicker();
+        expect(lastEmit(w, 'update:modelValue')).toEqual([null]);                      // choisi il y a 31 min : on repart sur le compte de la tablette
+        window.localStorage.setItem('hygiene.operator.1', '8');                        // ancien format (sans date) : jamais rétabli
+        w = await mountPicker();
+        expect(lastEmit(w, 'update:modelValue')).toEqual([null]);
     });
 });
 

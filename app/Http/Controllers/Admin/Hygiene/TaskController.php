@@ -76,6 +76,7 @@ class TaskController extends HygieneController
             'note' => ['nullable', 'string', 'max:200'],
             'attachment_id' => ['nullable', 'integer'],
             'operator_user_id' => ['nullable', 'integer'],
+            'attested' => ['nullable', 'boolean'],
             'client_ref' => ['nullable', 'string', 'max:40'],
         ], [], ['note' => 'commentaire']);
 
@@ -129,6 +130,8 @@ class TaskController extends HygieneController
             'user_id' => $op['user_id'], 'operator_name' => $op['name'], 'attachment_id' => $attachmentId, 'client_ref' => $v['client_ref'] ?? null,
         ]);
         $row->branch_id = $branch;
+        // l'engagement (« je confirme l'exactitude… ») est daté quand la personne l'a coché ; absent = validation sans engagement (anciens écrans)
+        $row->attested_at = ! empty($v['attested']) ? $now : null;
         try {
             // Verrou sur la fiche : deux validations « complètes » simultanées (double appui, deux tablettes) ne passent pas toutes les deux.
             $refused = DB::transaction(function () use ($t, $day, $row): bool {
@@ -354,7 +357,7 @@ class TaskController extends HygieneController
             'id' => $r->id, 'template_id' => $r->template_id, 'task_name' => $r->task_name, 'zone' => $r->zone,
             'due_date' => $r->due_date?->toDateString(), 'items' => $r->items, 'items_total' => $r->items_total, 'items_done' => $r->items_done,
             'complete' => $r->complete, 'note' => $r->note, 'late' => $r->late, 'completed_at' => $r->completed_at->toIso8601String(),
-            'operator_name' => $r->operator_name, 'attachment_id' => $r->attachment_id,
+            'operator_name' => $r->operator_name, 'attachment_id' => $r->attachment_id, 'attested' => $r->attested_at !== null,
             'voided' => $r->voided_at !== null, 'voided_at' => $r->voided_at?->toIso8601String(), 'void_reason' => $r->void_reason,
         ];
     }
