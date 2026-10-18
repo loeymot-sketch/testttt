@@ -115,3 +115,23 @@ V1 mono-branche (planificateur et alertes sur `hygiene.branch_id`) ; un ticket d
 **Migrations non déployées** : `2026_10_18_140000_add_attested_at_to_hygiene_task_completions`, `2026_10_18_150000_add_meal_slot_to_label_print_logs`. Le code tolère la fenêtre entre le reset et `migrate` (colonnes écrites seulement si renseignées).
 
 **Non fait / assumé** : « mariné » et étiquette vierge avec « Qui ? » (pas de besoin exprimé) ; engagement non exigé par l'API (nullable : l'absence se lit « non » au dossier) ; la tuile DLC passe « à compléter » dès qu'une étiquette expire sous 24 h, ce qui retient souvent « Journée en règle » (décision produit à prendre, pas un défaut de ce lot) ; `LABELS_BRANCH_ID` et `HYGIENE_BRANCH_ID` sont deux variables distinctes (sans effet en V1 mono-branche).
+
+## Inventaire Komia par l'extension Chrome (2026-10-18) — recoupé avec Cayenne
+
+Source : rapport de l'extension (appli, aide, site, stores). **À re-vérifier avant d'agir** : seul ce qui est marqué « vu » a été observé dans l'appli ; « aide » et « site » sont des déclarations de Komia, et le rapport relève lui-même 9 contradictions entre ses sources. La session Administrateur (configuration, objectifs HACCP, étiquettes, employés, paie) n'a **pas** été vue.
+
+**Décision d'interface (propriétaire, 2026-10-18)** : une seule entrée dans la barre latérale ouvrant un hub de tuiles. Komia fait pareil sur mobile (tuiles avec coche verte ou « 0/5 » rouge) et propose 12 interrupteurs « modules activables » : le hub doit pouvoir masquer un module.
+
+**Écarts réels, par ordre de valeur**
+1. Relevés d'un autre type : température à cœur (cuisson), refroidissement rapide (cellule), livraison, buffet, pH du riz. Le refroidissement rapide est une exigence courante du GBPH : seuils à faire valider par le restaurant. Cayenne n'a que froid, chaud, suite d'écart.
+2. Sonde connectée : l'aide de Komia parle de capteurs + passerelle 4G, mesure toutes les 10 min, alerte e-mail et téléphone (le site dit « Bluetooth » : contradiction non tranchée). Cayenne a la colonne `source`, pas de point d'entrée machine.
+3. Tâches : Komia annonce ponctuelle, hebdo, mensuelle, annuelle, personnalisée, équipe ou employé, photo de preuve. Cayenne : quotidienne, hebdo, mensuelle, sans assignation.
+4. Étiquettes : « sans date » (congelé), étiquette vierge, types de DLC activables, étiquettes de vente (prix, code-barres). Cayenne n'a ni l'un ni l'autre.
+5. Documents : drive documentaire (PMS, procédures) et formations d'hygiène du personnel. Cayenne a des pièces jointes, pas de rangement par document ni d'échéance de formation.
+6. Objectifs HACCP quotidiens ou hebdomadaires réglables, avec rappels répétés. Cayenne a des heures de rappel dans `config/hygiene.php`, pas réglables à l'écran.
+7. « Employé requis » partout. Cayenne signe du compte connecté par défaut ; un mode tablette pourrait l'imposer.
+8. Réception « simplifiée » (moins d'étapes) ; scan du BL en bêta (OCR : hors périmètre « 0 cloud »).
+
+**Où Cayenne est déjà devant** : seuils et verdict côté serveur, action corrective avec preuve par nouvelle mesure, code personnel, hors ligne des températures, dossier PDF avec engagement, alertes e-mail, guide de mise en place, imprimante pilotée depuis le web (Komia : iOS/Android seulement), pas de gamification faussée.
+
+**Hors hygiène** : planning, pointage, congés, paie, multi-sites, caisse connectée, commandes fournisseurs. Module RH et stock à décider à part.
