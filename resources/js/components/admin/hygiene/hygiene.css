@@ -176,6 +176,7 @@
 .hy-setup-mark { width: 22px; flex: 0 0 22px; text-align: center; font-weight: 900; }
 .hy-setup-opt { color: #9a3412; font-size: 14px; }
 .hy-setup-more { margin-top: 12px; }
+.hy-setup-steps li a.hy-setup-label { display: inline-flex; align-items: center; min-height: 44px; color: inherit; }
 .hy-setup-more summary { cursor: pointer; font-weight: 800; color: #7c2d12; min-height: 44px; display: flex; align-items: center; }
 .hy-setup-dismiss { margin-top: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

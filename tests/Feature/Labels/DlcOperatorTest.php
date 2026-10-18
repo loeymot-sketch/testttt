@@ -149,6 +149,26 @@ class DlcOperatorTest extends TestCase
         $this->assertTrue((bool) $log->anomaly);
     }
 
+    public function test_un_papier_antidate_de_deux_jours_ne_reprend_pas_un_jeton_de_dix_minutes(): void
+    {
+        $this->pin($this->sarah);
+        $token = $this->token($this->sarah); // 10:00 → 10:10
+        Carbon::setTestNow(Carbon::parse('2026-10-22 10:00', config('app.timezone')));
+
+        // le jeton couvre « 10 h 02 » — mais c'était il y a 48 h : au-delà de la file hors ligne des relevés (72 h) rien ne se prouve, ici déjà moins
+        // l'heure du papier est choisie par la tablette ; le serveur ne la laisse pas ressusciter un jeton périmé depuis plus de 72 h
+        $this->postJson('/api/admin/labels/dlc/offline', $this->offlineBody(['operator_user_id' => $this->sarah->id, 'operator_token' => $token, 'opened_at' => '2026-10-20T10:02:00+02:00', 'expires_at' => '2026-10-23T10:02:00+02:00']))->assertOk();
+        // 48 h : encore dans la fenêtre de 72 h, donc rejoué comme avant (compatibilité des files en attente)
+        $this->assertSame($this->sarah->id, LabelPrintLog::query()->firstOrFail()->user_id);
+
+        LabelPrintLog::query()->delete();
+        Carbon::setTestNow(Carbon::parse('2026-10-24 10:00', config('app.timezone')));
+        $this->postJson('/api/admin/labels/dlc/offline', $this->offlineBody(['client_ref' => 'offline-ref-0002', 'operator_user_id' => $this->sarah->id, 'operator_token' => $token, 'opened_at' => '2026-10-20T10:02:00+02:00', 'expires_at' => '2026-10-23T10:02:00+02:00']))->assertOk();
+        $log = LabelPrintLog::query()->firstOrFail();
+        $this->assertSame($this->tablet->id, $log->user_id, '4 jours après : jamais attribuée à Sarah');
+        $this->assertStringContainsString('signature de la personne non vérifiée', (string) $log->message);
+    }
+
     public function test_le_rejeu_hors_ligne_ne_double_pas_et_garde_la_premiere_signature(): void
     {
         $this->pin($this->sarah);

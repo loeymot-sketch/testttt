@@ -18,10 +18,11 @@ export default {
         });
     },
 
-    success: function (message = "Success", position = "top-right") {
+    success: function (message = "Success", position = "top-right", options = {}) {
         const toast = useToast();
         toast.success(message, {
             position: position,
+            ...options,
         });
     },
 

@@ -164,6 +164,20 @@ describe('repas témoin — écran', () => {
         expect(printed).toContainEqual({ t: 'band', left: 'REPAS TÉMOIN · SOIR', size: 'lg' });
     });
 
+    it('sélection multiple, événement « Repas témoin » : le produit « À part » ouvre la fiche SUR le repas témoin (jamais sur Préparation), service exigé', async () => {
+        setup([P({ id: 6, name: 'Poulet rôti', actions: [{ key: 'prepared', value: 3, unit: 'days' }, { key: 'witness', value: 5, unit: 'days' }] })]);
+        const w = await mountScreen();
+        await q(w, 'dlc-mode-list').trigger('click');
+        await q(w, 'dlc-batch-action').setValue('witness');
+        await q(w, 'dlc-product-6').trigger('click');
+        await flushPromises();
+        expect(q(w, 'dlc-sheet').exists()).toBe(true);
+        expect(q(w, 'dlc-sheet-action-witness').attributes('aria-checked')).toBe('true');
+        expect(q(w, 'dlc-sheet-slot-required').exists()).toBe(true);
+        expect(q(w, 'dlc-sheet-print').attributes('disabled')).toBeDefined();
+        expect(printPosts()).toHaveLength(0);
+    });
+
     it('un produit sans repas témoin s’imprime toujours en un appui', async () => {
         setup([P({ id: 1 })]);
         const w = await mountScreen();

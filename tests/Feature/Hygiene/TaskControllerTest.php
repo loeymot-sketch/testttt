@@ -323,8 +323,10 @@ class TaskControllerTest extends TestCase
         $this->assertEquals(now()->startOfMinute(), $row->attested_at->startOfMinute());
 
         $csv = $this->get('/api/admin/hygiene/report/csv?module=tasks&from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->streamedContent();
-        $this->assertStringContainsString('Engagement', $csv);
-        $this->assertStringContainsString(';oui;', $csv);
+        $rows = array_map(fn ($l) => str_getcsv($l, ';'), array_values(array_filter(explode("\n", trim(substr($csv, 3))))));
+        $col = array_search('Engagement', $rows[0], true);
+        $this->assertNotFalse($col, 'la colonne Engagement existe');
+        $this->assertSame('oui', $rows[1][$col], 'lu dans SA colonne, pas dans « Complète »');
     }
 
     public function test_sans_engagement_la_validation_est_enregistree_mais_dite_sans_engagement(): void
@@ -336,7 +338,8 @@ class TaskControllerTest extends TestCase
         $r->assertJsonPath('data.attested', false);
         $this->assertNull(HygieneTaskCompletion::query()->firstOrFail()->attested_at);
         $csv = $this->get('/api/admin/hygiene/report/csv?module=tasks&from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->streamedContent();
-        $this->assertStringContainsString(';non;', $csv);
+        $rows = array_map(fn ($l) => str_getcsv($l, ';'), array_values(array_filter(explode("\n", trim(substr($csv, 3))))));
+        $this->assertSame('non', $rows[1][array_search('Engagement', $rows[0], true)]);
     }
 
     public function test_un_engagement_non_booleen_est_refuse(): void

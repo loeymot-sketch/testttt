@@ -329,7 +329,7 @@ export default {
                 // récompense honnête : ce qu'il reste (chiffre du serveur) ou la fin de la journée ; une fiche « avec réserve » n'est jamais fêtée
                 const left = Number(this.summary.todo) || 0;
                 const rest = left > 0 ? ` Plus que ${left} fiche${left > 1 ? "s" : ""} à faire.` : (this.summary.partial ? "" : " Toutes les fiches du jour sont faites, bravo !");
-                alertService.success(all ? `« ${t.name} » validée ✓${rest}` : `« ${t.name} » validée avec réserve (points non faits tracés).${rest}`);
+                alertService.success(all ? `« ${t.name} » validée ✓${rest}` : `« ${t.name} » validée avec réserve (points non faits tracés).${rest}`, "top-right", { timeout: 6000 });
             } catch (e) {
                 f.error = apiMessage(e, "Validation impossible : vérifiez la connexion puis revalidez (rien n'est doublé).");
             } finally {

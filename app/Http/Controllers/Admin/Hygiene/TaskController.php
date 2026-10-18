@@ -131,7 +131,7 @@ class TaskController extends HygieneController
         ]);
         $row->branch_id = $branch;
         // l'engagement (« je confirme l'exactitude… ») est daté quand la personne l'a coché ; absent = validation sans engagement (anciens écrans)
-        $row->attested_at = ! empty($v['attested']) ? $now : null;
+        if (! empty($v['attested'])) $row->attested_at = $now; // jamais écrit sans engagement : le code reste compatible avant la migration
         try {
             // Verrou sur la fiche : deux validations « complètes » simultanées (double appui, deux tablettes) ne passent pas toutes les deux.
             $refused = DB::transaction(function () use ($t, $day, $row): bool {

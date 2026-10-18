@@ -140,10 +140,18 @@ class SetupProgressTest extends TestCase
         };
         $mk(LabelPrintLog::STATUS_CLAIMED);
         $mk(LabelPrintLog::STATUS_FAILED);
-        $mk(LabelPrintLog::STATUS_UNCONFIRMED);
         $this->assertFalse($this->step($this->setup_(), 'label')['done']);
-        $mk('printed');
+        // « non confirmée » : l'imprimante n'a pas répondu mais le papier est sorti — comme le dossier et la surveillance, ça compte
+        $mk(LabelPrintLog::STATUS_UNCONFIRMED);
         $this->assertTrue($this->step($this->setup_(), 'label')['done']);
+    }
+
+    public function test_a_cancelled_label_is_not_a_first_label(): void
+    {
+        $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => 1, 'product_name' => 'P', 'opened_at' => now(), 'expires_at' => now()->addDay(), 'discard_reason' => LabelPrintLog::DISCARD_CANCELLED, 'discarded_at' => now()]);
+        $l->branch_id = 1;
+        $l->save();
+        $this->assertFalse($this->step($this->setup_(), 'label')['done']);
     }
 
     public function test_another_restaurants_setup_never_leaks_in(): void
@@ -177,6 +185,7 @@ class SetupProgressTest extends TestCase
         $this->equipment(1, 'fryer');
         $other = User::factory()->create(['branch_id' => 1, 'name' => 'Sam Test']);
         app(OperatorPins::class)->set(1, $other->id, '4821', $other->id);
+        config(['mail.default' => 'smtp']);
         $a = new HygieneAlertSetting(['enabled' => true, 'recipients' => ['a@b.fr']]);
         $a->branch_id = 1;
         $a->save();
@@ -186,6 +195,21 @@ class SetupProgressTest extends TestCase
         $this->assertTrue($this->step($s, 'team')['done']);
         $this->assertTrue($this->step($s, 'alerts')['done']);
         $this->assertSame(0, $s['required_done']);
+    }
+
+    public function test_alerts_are_only_active_when_they_can_really_leave(): void
+    {
+        config(['mail.default' => 'log']);
+        $a = new HygieneAlertSetting(['enabled' => true, 'recipients' => ['a@b.fr']]);
+        $a->branch_id = 1;
+        $a->save();
+        $this->assertFalse($this->step($this->setup_(), 'alerts')['done'], 'messagerie = journal : rien ne partira');
+        config(['mail.default' => 'smtp']);
+        $this->assertTrue($this->step($this->setup_(), 'alerts')['done']);
+        $a->forceFill(['recipients' => ['pas-un-mail']])->save();
+        $this->assertFalse($this->step($this->setup_(), 'alerts')['done'], 'aucun destinataire valide');
+        $a->forceFill(['recipients' => ['a@b.fr'], 'enabled' => false])->save();
+        $this->assertFalse($this->step($this->setup_(), 'alerts')['done']);
     }
 
     public function test_a_fryer_is_not_a_temperature_equipment(): void

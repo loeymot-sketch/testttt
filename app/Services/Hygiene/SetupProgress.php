@@ -3,7 +3,6 @@
 namespace App\Services\Hygiene;
 
 use App\Models\DlcLabelProduct;
-use App\Models\HygieneAlertSetting;
 use App\Models\HygieneEquipment;
 use App\Models\HygieneOperatorPin;
 use App\Models\HygieneTaskTemplate;
@@ -31,10 +30,12 @@ final class SetupProgress
         $toValidate = DlcLabelProduct::query()->where('is_active', true)->whereNull('durations_checked_at')
             ->whereIn('duration_source', [DlcLabelProduct::SOURCE_STARTING, DlcLabelProduct::SOURCE_IMPORTED])->count();
         $reading = HygieneTemperatureReading::query()->whereNull('voided_at')->exists();
-        $label = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->where('status', LabelPrintLog::STATUS_PRINTED)->exists(); // « envoyée » sans confirmation de l'imprimante ne prouve pas qu'une étiquette est sortie
+        $label = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED))->exists(); // comme le dossier et la surveillance : « non confirmée » compte (une imprimante qui ne confirme jamais ne bloque pas la mise en place), « annulée » jamais
         $fryers = HygieneEquipment::query()->where('kind', 'fryer')->where('is_active', true)->count();
         $pins = HygieneOperatorPin::query()->count();
-        $alerts = (bool) (HygieneAlertSetting::query()->where('branch_id', AlertNotifier::branchId())->value('enabled'));
+        // « actives » = réellement capables de partir : activées, un destinataire valide ET une messagerie réelle (pas le journal)
+        $cfg = AlertNotifier::settings();
+        $alerts = $cfg['enabled'] && $cfg['recipients'] !== [] && AlertNotifier::mailReady();
 
         $s = fn (string $key, string $label, string $detail, bool $done, string $route, string $cta, bool $optional = false): array => compact('key', 'label', 'detail', 'done', 'route', 'cta', 'optional');
 

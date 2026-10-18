@@ -75,6 +75,7 @@ test('restaurant neuf : guide 0/5 → progression réelle → félicitation, ré
     await page.getByTestId(`tmp-input-${ids[1]}`).fill('2');
     await page.getByTestId('tmp-submit').click();
     await expect(page.getByText(/1 relevé enregistré ✓ — relevé .* complet, merci !/)).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, 'c2-releve-complet.png') });
 
     // D. nettoyage : l'engagement est OBLIGATOIRE, puis « bravo » à la dernière fiche

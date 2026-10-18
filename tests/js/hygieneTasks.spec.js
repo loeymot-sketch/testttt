@@ -130,9 +130,29 @@ describe('plan de nettoyage — fiches du jour', () => {
             await flushPromises();
         };
         await validate(1);
-        expect(alertService.success).toHaveBeenLastCalledWith('« Salle » validée ✓ Plus que 1 fiche à faire.');
+        expect(alertService.success).toHaveBeenLastCalledWith('« Salle » validée ✓ Plus que 1 fiche à faire.', 'top-right', { timeout: 6000 });
         await validate(2);
-        expect(alertService.success).toHaveBeenLastCalledWith('« Cuisine » validée ✓ Toutes les fiches du jour sont faites, bravo !');
+        expect(alertService.success).toHaveBeenLastCalledWith('« Cuisine » validée ✓ Toutes les fiches du jour sont faites, bravo !', 'top-right', { timeout: 6000 });
+    });
+
+    it('une fiche validée AVEC réserve n’est jamais fêtée : pas de « bravo » même si c’est la dernière', async () => {
+        setup([T({ id: 1 })]);
+        const base = h.axios.post.getMockImplementation();
+        h.axios.post.mockImplementation(async (url, body) => {
+            const r = await base(url, body);
+            if (url === 'admin/hygiene/tasks/completions') today = { ...today, items: today.items.map((i) => ({ ...i, state: 'partial' })) };
+            return r;
+        });
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        await w.get('[data-testid="tsk-open-1"]').trigger('click');
+        await w.get('[data-testid="tsk-note-1"]').setValue('Frigo en panne');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
+        await w.get('[data-testid="tsk-submit-1"]').trigger('click');
+        await flushPromises();
+        const msg = alertService.success.mock.calls.at(-1)[0];
+        expect(msg).toContain('validée avec réserve');
+        expect(msg).not.toMatch(/bravo/);
     });
 
     it('« moi » n’envoie pas d’opérateur (le serveur prend l’utilisateur connecté)', async () => {

@@ -100,6 +100,35 @@ class DlcWitnessMealTest extends TestCase
         $this->assertSame('evening', $row['meal_slot']);
     }
 
+    public function test_le_pdf_du_dossier_montre_l_evenement_le_service_et_l_engagement(): void
+    {
+        $this->print($this->product(), ['action' => 'witness', 'meal_slot' => 'evening'])->assertOk();
+        $this->print($this->product(), ['action' => 'prepared'])->assertOk();
+        LabelPrintLog::query()->update(['status' => 'printed']);
+        $t = new \App\Models\HygieneTaskTemplate(['name' => 'Salle', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 1, 'is_active' => true]);
+        $t->branch_id = 1;
+        $t->save();
+        $c = new \App\Models\HygieneTaskCompletion(['template_id' => $t->id, 'task_name' => 'Salle', 'due_date' => '2026-10-20', 'items' => [['key' => 'k1', 'label' => 'Sols', 'done' => true]], 'items_total' => 1, 'items_done' => 1, 'complete' => true, 'completed_at' => now(), 'operator_name' => 'K']);
+        $c->branch_id = 1;
+        $c->forceFill(['attested_at' => now()])->save();
+        $report = \App\Services\Hygiene\ReportBuilder::between('2026-10-19', '2026-10-21')->build(true);
+        $html = view('pdf.hygiene_report', ['report' => $report, 'company' => [], 'generatedAt' => 'x', 'generatedBy' => 'y', 'fingerprint' => 'z'])->render();
+        $this->assertStringContainsString('<th>Événement</th>', $html);
+        $this->assertStringContainsString('Repas témoin (Soir)', $html);
+        $this->assertMatchesRegularExpression('/Préparation\s*<\/td>/u', $html, 'un événement sans service n\'affiche aucune parenthèse');
+        $this->assertStringContainsString('<th>Engagement</th>', $html);
+        $this->assertMatchesRegularExpression('/K<\/td><td>oui<\/td>/u', $html);
+    }
+
+    public function test_entre_le_code_et_la_migration_une_etiquette_ordinaire_n_ecrit_pas_la_colonne(): void
+    {
+        $sql = [];
+        \Illuminate\Support\Facades\DB::listen(function ($q) use (&$sql) { if (str_starts_with($q->sql, 'insert into `label_print_logs`') || str_starts_with($q->sql, 'insert into "label_print_logs"')) $sql[] = $q->sql; });
+        $this->print($this->product(), ['action' => 'prepared'])->assertOk();
+        $this->assertCount(1, $sql);
+        $this->assertStringNotContainsString('meal_slot', $sql[0]);
+    }
+
     private function offline(array $extra = []): array
     {
         return $this->postJson('/api/admin/labels/dlc/offline', array_merge([

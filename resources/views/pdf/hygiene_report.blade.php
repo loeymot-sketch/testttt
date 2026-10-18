@@ -93,11 +93,11 @@
 @endif
 @if (empty($k['rows']))<p class="empty">Aucune validation.</p>@else
     {!! $cut($k) !!}
-    <table class="data"><tr><th>Date</th><th>Jour</th><th>Fiche</th><th>Points</th><th>Non faits / commentaire</th><th>Opérateur</th></tr>
+    <table class="data"><tr><th>Date</th><th>Jour</th><th>Fiche</th><th>Points</th><th>Non faits / commentaire</th><th>Opérateur</th><th>Engagement</th></tr>
     @foreach ($k['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : (!$x['complete'] ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $d($x['due_date']) }}</td><td>{{ $x['task'] }}</td>
             <td>{{ $x['items_done'] }}/{{ $x['items_total'] }}@if($x['late']) · après l'heure @endif</td>
-            <td>{{ implode(', ', $x['not_done']) }}@if($x['note']) — {{ $x['note'] }}@endif @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td></tr>
+            <td>{{ implode(', ', $x['not_done']) }}@if($x['note']) — {{ $x['note'] }}@endif @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td><td>{{ !empty($x['attested']) ? 'oui' : 'non' }}</td></tr>
     @endforeach
     </table>
 @endif
@@ -140,9 +140,9 @@
 <h2>Étiquettes DLC imprimées ({{ $l['count'] }})</h2>
 @if (empty($l['rows']))<p class="empty">Aucune étiquette.</p>@else
     {!! $cut($l) !!}
-    <table class="data"><tr><th>Date</th><th>Produit</th><th>N° de lot</th><th>DLC</th><th>Étiq.</th><th>Conservation</th><th>Sortie</th></tr>
+    <table class="data"><tr><th>Date</th><th>Produit</th><th>Événement</th><th>N° de lot</th><th>DLC</th><th>Étiq.</th><th>Conservation</th><th>Sortie</th></tr>
     @foreach ($l['rows'] as $x)
-        <tr><td>{{ $dt($x['at']) }}</td><td>{{ $x['product'] }}</td><td>{{ $x['lot'] }}@if($x['supplier_lot']) (fourn. {{ $x['supplier_lot'] }})@endif</td><td>{{ $dt($x['expires_at']) }}</td><td>{{ $x['copies'] }}</td><td>{{ $x['storage'] }}</td>
+        <tr><td>{{ $dt($x['at']) }}</td><td>{{ $x['product'] }}</td><td>{{ \App\Models\DlcLabelProduct::ACTION_LABELS[$x['action']] ?? $x['action'] }}@if(!empty($x['meal_slot'])) ({{ \App\Models\LabelPrintLog::MEAL_SLOTS[$x['meal_slot']] ?? $x['meal_slot'] }})@endif</td><td>{{ $x['lot'] }}@if($x['supplier_lot']) (fourn. {{ $x['supplier_lot'] }})@endif</td><td>{{ $dt($x['expires_at']) }}</td><td>{{ $x['copies'] }}</td><td>{{ $x['storage'] }}</td>
             <td>@if($x['out']){{ ['discarded' => 'Jeté', 'used' => 'Utilisé'][$x['out']['reason']] ?? $x['out']['reason'] }} le {{ $dt($x['out']['at']) }}@endif</td></tr>
     @endforeach
     </table>

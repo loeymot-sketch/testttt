@@ -130,7 +130,7 @@ export default {
         setupSub() {
             if (!this.setup) return "";
             const left = this.setup.required_total - this.setup.required_done;
-            if (this.setup.complete) return "Tout est prêt : vous êtes en règle pour un contrôle. Chaque relevé, chaque nettoyage, chaque étiquette s'ajoute désormais au dossier.";
+            if (this.setup.complete) return "Votre registre est prêt : chaque relevé, chaque nettoyage, chaque étiquette s'ajoute désormais au dossier de contrôle.";
             if (this.setup.required_done === 0) return `${this.setup.required_total} étapes, quelques minutes en tout. Les réglages sont déjà préparés pour vous.`;
             if (left === 1) return "Plus qu'une étape : vous y êtes presque !";
             return `Bien joué : encore ${left} étapes.`;
@@ -148,7 +148,8 @@ export default {
         blocking() { return this.unconfigured.filter((t) => t.key !== "oil"); },
         bannerKind() {
             if (this.meta.alerts > 0) return "alert";
-            return this.meta.todo > 0 || this.blocking.length > 0 ? "todo" : "ok";
+            // un rappel « à traiter » (huile à changer, traçabilité muette…) ne promeut pas sa tuile en alerte : la bannière ne dit jamais « en règle » à côté de lui
+            return this.meta.todo > 0 || this.blocking.length > 0 || this.reminders.length > 0 ? "todo" : "ok";
         },
         bannerText() {
             const a = this.meta.alerts;
@@ -158,6 +159,7 @@ export default {
             if (t > 0) return `${t} domaine${t > 1 ? "s" : ""} à compléter aujourd'hui`;
             if (this.tiles.length && this.blocking.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
             if (this.blocking.length) return `Rien d'urgent, mais à configurer : ${this.blocking.map((u) => u.label).join(", ")}.`;
+            if (this.reminders.length) return `Rien d'urgent, mais ${this.reminders.length} point${this.reminders.length > 1 ? "s" : ""} à traiter ci-dessous.`;
             return this.doneSummary ? `Journée en règle ✓ · ${this.doneSummary}` : "Tout est en ordre ✓";
         },
         /** Ce qui est VRAIMENT fait aujourd'hui, en chiffres : un « tout est en ordre » vague ne récompense personne. */

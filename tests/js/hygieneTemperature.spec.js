@@ -176,11 +176,22 @@ describe('écran températures — la saisie du propriétaire', () => {
         for (const id of [1, 2, 3, 4]) await type(w, id, '3');
         await w.get('[data-testid="tmp-submit"]').trigger('click');
         await flushPromises();
-        expect(alertService.success).toHaveBeenLastCalledWith('4 relevés enregistrés ✓ — plus que 2 équipements à relever.');
+        expect(alertService.success).toHaveBeenLastCalledWith('4 relevés enregistrés ✓ — plus que 2 équipements à relever.', 'top-right', { timeout: 6000 });
         for (const id of [5, 6]) await type(w, id, '18');
         await w.get('[data-testid="tmp-submit"]').trigger('click');
         await flushPromises();
-        expect(alertService.success).toHaveBeenLastCalledWith('2 relevés enregistrés ✓ — relevé « matin » complet, merci !');
+        expect(alertService.success).toHaveBeenLastCalledWith('2 relevés enregistrés ✓ — relevé « matin » complet, merci !', 'top-right', { timeout: 6000 });
+    });
+
+    it('le « complet, merci » suit la PÉRIODE de l’écran, pas la journée : relevé du matin fait, un seul frigo relevé le soir ⇒ « plus que 1 »', async () => {
+        // état serveur : tout a été relevé ce matin (state ok → summary.todo = 0), mais aucun relevé de la période courante
+        setup(SIX().slice(0, 2).map((e) => ({ ...e, state: 'ok', done_this_period: false })));
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        await type(w, 1, '3');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).toHaveBeenLastCalledWith('1 relevé enregistré ✓ — plus que 1 équipement à relever.', 'top-right', { timeout: 6000 });
     });
 
     it('« Autre » exige une précision', async () => {

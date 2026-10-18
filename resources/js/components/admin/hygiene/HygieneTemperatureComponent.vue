@@ -575,9 +575,9 @@ export default {
                 if (alerts > 0) alertService.error(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""} — ${alerts} écart${alerts > 1 ? "s" : ""} tracé${alerts > 1 ? "s" : ""}.`);
                 else {
                     // récompense honnête : ce qu'il reste à relever (chiffre du serveur), ou la fin de la période — jamais un « bravo » sur un reste à faire
-                    const left = Number(this.summary.todo) || 0;
+                    const left = this.items.filter((e) => !e.done_this_period && !this.queuedFor(e)).length;
                     const base = `${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""} ✓`;
-                    alertService.success(left > 0 ? `${base} — plus que ${left} équipement${left > 1 ? "s" : ""} à relever.` : `${base} — relevé ${this.periodLabel ? `« ${this.periodLabel.toLowerCase()} » ` : ""}complet, merci !`);
+                    alertService.success(left > 0 ? `${base} — plus que ${left} équipement${left > 1 ? "s" : ""} à relever.` : `${base} — relevé ${this.periodLabel ? `« ${this.periodLabel.toLowerCase()} » ` : ""}complet, merci !`, "top-right", { timeout: 6000 });
                 }
             } catch (e) {
                 if (isRetriable(e)) {

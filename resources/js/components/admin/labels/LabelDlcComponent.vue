@@ -118,7 +118,7 @@
                             Touchez les produits préparés (chaque appui ajoute une étiquette), ou <b>Tout sélectionner</b>, puis
                             <b>Imprimer la sélection</b>.
                             <span v-if="apartCount" class="dlc-hint-apart" data-testid="dlc-apart-hint">
-                                {{ apartCount }} produit{{ apartCount > 1 ? "s" : "" }} hors sélection (marqué{{ apartCount > 1 ? "s" : "" }} « À part ») : produit d'origine à indiquer,
+                                {{ apartCount }} produit{{ apartCount > 1 ? "s" : "" }} hors sélection (marqué{{ apartCount > 1 ? "s" : "" }} « À part ») : produit d'origine à indiquer, service d'un repas témoin à choisir,
                                 fiche à compléter ou événement non prévu — touchez-le pour savoir quoi faire.
                             </span>
                         </template>
@@ -298,7 +298,7 @@
                             @close="healthOpen = false" @edit="editFromHealth" @changed="loadProducts" />
         <DlcProductEditor v-if="editing" :key="editorKey" :product="editing" :categories="knownCategories" :settings="settings"
                           :saving="saving" :error="formError" @save="saveProduct" @cancel="closeEditor" @delete="deleteProduct" />
-        <DlcPrintSheet v-if="sheetProduct" :product="sheetProduct" :settings="settings" :server-offset-ms="serverOffsetMs" :busy="busyId === sheetProduct.id || queuedCount(sheetProduct.id) > 0"
+        <DlcPrintSheet v-if="sheetProduct" :key="`${sheetProduct.id}-${sheetAction}`" :product="sheetProduct" :initial-action="sheetAction" :settings="settings" :server-offset-ms="serverOffsetMs" :busy="busyId === sheetProduct.id || queuedCount(sheetProduct.id) > 0"
                        :lots="lotRows.length ? lotRows : activeLots" :lots-partial="lotsError" :last-original="lastOriginalFor(sheetProduct.id)" :timezone="timezone"
                        @print="printFromSheet" @close="sheetProduct = null" @edit="editFromSheet" />
 
@@ -448,6 +448,7 @@ export default {
             editing: null,
             editorKey: 0,
             sheetProduct: null,
+            sheetAction: "",
             formError: "",
             saving: false,
             serverOffsetMs: 0,
@@ -843,7 +844,7 @@ export default {
                     if (this.ficheIncomplete(p) || this.batchIncomplete(p)) {
                         return this.openEditorFor(p, `${this.ficheIncomplete(p) || "Conservation après décongélation à renseigner"} : elle est imprimée sur l’étiquette.`);
                     }
-                    if (this.needsOrigin(p, this.batchAction)) return this.openSheet(p);
+                    if (this.needsOrigin(p, this.batchAction)) return this.openSheet(p, this.batchAction);
                     alertService.error(`« ${p.name} » ne prévoit pas l'événement « ${this.actionLabel(this.batchAction)} ».`);
                     return null;
                 }
@@ -873,7 +874,8 @@ export default {
                 this.selection = { ...this.selection, [p.id]: n };
             }
         },
-        openSheet(p) {
+        openSheet(p, action = "") {
+            this.sheetAction = action || "";
             this.sheetProduct = p;
             this.loadLots();
         },

@@ -464,7 +464,6 @@ class LabelController extends AdminController
             'dlc_product_id' => $product->id,
             'product_name' => $product->name,
             'action' => $action['key'],
-            'meal_slot' => $mealSlot,
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
@@ -488,6 +487,8 @@ class LabelController extends AdminController
         ]);
         // La ligne de journal appartient à la branche du PRODUIT (un administrateur sans branche voit toutes les branches).
         $log->branch_id = (int) ($product->branch_id ?: $this->branchId($request));
+        // la colonne n'est écrite que pour un repas témoin : entre la mise à jour du code et la migration, toute autre étiquette s'imprime encore
+        if ($mealSlot !== null) $log->meal_slot = $mealSlot;
         $log->save();
         // Numéro de l'étiquette : lien entre ce papier, le journal et les produits faits à partir de lui (traçabilité).
         $log->forceFill(['lot' => $this->lotNumber($openedAt, $log->id)])->save();
@@ -538,7 +539,9 @@ class LabelController extends AdminController
         // L'étiquette est DÉJÀ sur le bac : une signature qu'on ne peut plus prouver (code expiré, jeton absent) ne la fait jamais disparaître du
         // journal. Elle est inscrite au compte connecté et signalée « à vérifier » : on ne ment ni sur le papier ni sur la personne.
         try {
-            $op = $this->operator($request, $openedAt);
+            // le jeton se juge à l'heure du papier, mais jamais plus loin que la file hors ligne des relevés : un papier « antidaté » de 2 jours ne reprend pas un jeton de 10 minutes
+            $proofAt = $openedAt->lt(now()->subHours((int) config('hygiene.offline.max_hours', 72))) ? now() : $openedAt;
+            $op = $this->operator($request, $proofAt);
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             $op = ['user_id' => $request->user()?->id, 'name' => $request->user()?->name];
             $anomalies[] = 'signature de la personne non vérifiée (code absent ou expiré au retour du réseau)';
@@ -585,7 +588,6 @@ class LabelController extends AdminController
             'dlc_product_id' => $product?->id,
             'product_name' => $product?->name ?? (trim((string) ($validated['product_name'] ?? '')) ?: 'Produit #'.$validated['product_id']),
             'action' => $action['key'],
-            'meal_slot' => $action['key'] === 'witness' ? ($validated['meal_slot'] ?? null) : null,
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
@@ -604,6 +606,7 @@ class LabelController extends AdminController
             'finished_at' => $now,
         ]);
         $log->branch_id = (int) ($product?->branch_id ?: $this->branchId($request));
+        if ($action['key'] === 'witness' && ! empty($validated['meal_slot'])) $log->meal_slot = $validated['meal_slot'];
         try {
             $log->save();
         } catch (QueryException $e) {

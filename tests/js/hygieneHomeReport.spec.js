@@ -365,6 +365,23 @@ describe('accueil — guide de mise en place et journée en règle (2026-10-18, 
         expect(w.get('[data-testid="home-banner"]').text()).not.toContain('Journée en règle');
     });
 
+    it('journée en règle : jamais à côté d’un rappel « à traiter » (même sans alerte ni domaine à compléter)', async () => {
+        const tiles = [{ ...tile('temperature', 'ok', '2/2 relevés'), counts: { done: 2, total: 2, alerts: 0 } }];
+        const reminders = [{ key: 'oil-change-1', domain: 'oil', level: 'todo', text: 'Huile « F1 » : 22 % de composés polaires — changement à prévoir.', route: '/admin/hygiene/oil' }];
+        const w = await mountHome(tiles, { alerts: 0, todo: 0, reminders });
+        const banner = w.get('[data-testid="home-banner"]');
+        expect(banner.text()).not.toContain('Journée en règle');
+        expect(banner.text()).toBe('Rien d\'urgent, mais 1 point à traiter ci-dessous.');
+        expect(banner.classes()).toContain('is-todo');
+        expect(w.find('[data-testid="home-reminders"]').exists()).toBe(true);
+    });
+
+    it('mise en place terminée : la carte ne promet jamais d’être « en règle » (c’est l’état du jour, pas celui du registre)', async () => {
+        const w = await mountHome([{ ...tile('temperature', 'alert', '0/2 relevés'), counts: { done: 0, total: 2, alerts: 1 } }], { alerts: 1, todo: 0, setup: setup(['equipment', 'tasks', 'durations', 'reading', 'label']) });
+        expect(w.get('[data-testid="home-setup-sub"]').text()).not.toMatch(/en règle/);
+        expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-alert');
+    });
+
     it('journée en règle : jamais affichée s’il reste quelque chose à faire ou une alerte', async () => {
         const tiles = [{ ...tile('temperature', 'todo', '3/4 relevés'), counts: { done: 3, total: 4, alerts: 0 } }];
         const w = await mountHome(tiles, { alerts: 0, todo: 1 });
