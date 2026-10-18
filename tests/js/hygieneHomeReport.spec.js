@@ -392,7 +392,7 @@ describe('dossier de contrôle — la journée en cours est dite à part (tour 4
         tasks: { count: 0, voided: 0, expected: 0, done: 0, partial: 0, missed: 0, completion_pct: null, today: { expected: 8, done: 1, partial: 0 }, missed_list: [], incidents: [], rows: [], rows_total: 0 },
         receptions: { count: 0, voided: 0, alerts: 0, refused: 0, reserve: 0, incidents: [], rows: [], rows_total: 0 }, trace: { count: 0, without_lot: 0, alerts: 0, voided: 0, incidents: [], rows: [], rows_total: 0 },
         oil: { tests: 1, filters: 0, changes: 0, voided: 0, alerts: 0, fryers: 1, expected: 0, covered: 0, coverage_pct: null, today: { expected: 1, done: 1 }, max_polar: 10, incidents: [], rows: [], rows_total: 0 },
-        dlc: { count: 0, copies: 0, discarded: 0, used: 0, expired_not_out: 0, rows: [], rows_total: 0 }, incidents: [], ...over });
+        dlc: { count: 3, copies: 5, discarded: 0, used: 0, expired_not_out: 5, rows: [], rows_total: 0 }, incidents: [], ...over });
 
     async function mountReport(data) {
         h.axios.get.mockReset();
@@ -437,5 +437,12 @@ describe('dossier de contrôle — la journée en cours est dite à part (tour 4
     it('la carte Huile dit aussi sa journée en cours', async () => {
         const w = await mountReport(base());
         expect(w.get('[data-testid="rep-today-oil"]').text()).toBe('Aucun jour écoulé dans la période, donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 1.');
+    });
+    it('carte Étiquettes DLC : l’unité est l’ÉTIQUETTE (5), pas la ligne de journal (3) ; les impressions sont dites à côté', async () => {
+        const w = await mountReport(base());
+        const k = w.get('[data-testid="rep-kpi-dlc"]');
+        expect(w.get('[data-testid="rep-dlc-labels"]').text()).toBe('5');
+        expect(k.text()).toContain('3 impression(s)');
+        expect(k.text()).toContain('5 échue(s) non sortie(s)');
     });
 });

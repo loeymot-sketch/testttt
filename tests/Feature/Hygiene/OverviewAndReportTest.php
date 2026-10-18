@@ -397,12 +397,12 @@ class OverviewAndReportTest extends TestCase
         $l->branch_id = 1;
         $l->save();
         $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.dlc');
-        $this->assertSame([1, 2, 1], [$d['count'], $d['copies'], $d['expired_not_out']], 'l\'échue ne dépasse jamais le total');
-        $this->assertLessThanOrEqual($d['count'], $d['expired_not_out']);
+        $this->assertSame([1, 2, 2], [$d['count'], $d['copies'], $d['expired_not_out']], 'unité = l\'étiquette physique : 2 copies échues sur 2 ; l\'échue ne dépasse jamais le total');
+        $this->assertLessThanOrEqual($d['copies'], $d['expired_not_out'], 'même unité (l\'étiquette) : l\'échue ne dépasse jamais le total');
         // le geste « Jeté » sur cette étiquette doit apparaître au dossier
         $l->forceFill(['discarded_at' => now(), 'discard_reason' => 'discarded'])->save();
         $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.dlc');
-        $this->assertSame([1, 1, 0], [$d['count'], $d['discarded'], $d['expired_not_out']]);
+        $this->assertSame([1, 2, 0], [$d['count'], $d['discarded'], $d['expired_not_out']], 'jeté : 2 étiquettes (copies), 1 impression');
     }
 
     public function test_frontiere_de_dix_minutes_des_reservees(): void
@@ -442,6 +442,60 @@ class OverviewAndReportTest extends TestCase
         $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-19&to=2026-10-20')->json('data.dlc'); // le helper ouvre l'étiquette la veille
         $this->assertSame(2, $d['count']);
         $this->assertSame(1, $d['expired_not_out'], 'seule celle dont la DLC est passée est « échue non sortie »');
+    }
+
+    public function test_dlc_une_seule_unite_l_etiquette_physique_pour_la_tuile_le_rappel_et_le_dossier(): void
+    {
+        $this->staff();
+        foreach ([['Poulet', 3, 2], ['Sauce', 1, 1], ['Sauce', 1, 1]] as [$name, $copies, $hours]) {
+            $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => $copies, 'product_name' => $name, 'opened_at' => now()->subDay(), 'expires_at' => now()->subHours($hours)]);
+            $l->branch_id = 1;
+            $l->save();
+        }
+        // 5 étiquettes physiques dans 3 lignes de journal
+        $res = $this->getJson(self::BASE.'/overview');
+        $tile = collect($res->json('data'))->keyBy('key')['dlc'];
+        $this->assertSame('5 DLC dépassées', $tile['headline']);
+        $this->assertSame(5, $tile['counts']['expired']);
+        $reminder = collect($res->json('meta.reminders'))->first(fn ($r) => $r['domain'] === 'dlc');
+        $this->assertSame('5 étiquettes DLC dépassées : à jeter, ou à marquer « utilisé ».', $reminder['text']);
+        $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-19&to=2026-10-20')->json('data.dlc');
+        $this->assertSame([3, 5, 5], [$d['count'], $d['copies'], $d['expired_not_out']], '3 impressions, 5 étiquettes, 5 échues : la carte ne se contredit pas');
+        $html = view('pdf.hygiene_report', ['report' => \App\Services\Hygiene\ReportBuilder::between('2026-10-19', '2026-10-20')->build(true), 'company' => [], 'generatedAt' => 'x', 'generatedBy' => 'y', 'fingerprint' => 'z'])->render();
+        $this->assertStringContainsString('3 impression(s)', $html);
+        $this->assertMatchesRegularExpression('/Étiquettes DLC<\/p><p class="kpi-v">5<\/p>/u', $html, 'le chiffre principal de la carte est le nombre d\'ÉTIQUETTES (5), pas de lignes de journal (3)');
+        $this->assertStringContainsString('Étiquettes DLC imprimées (5 étiquette(s), 3 impression(s))', $html);
+    }
+
+    public function test_dlc_une_non_confirmee_plus_lointaine_que_l_ecran_n_est_pas_annoncee_mais_une_anomalie_oui(): void
+    {
+        $this->staff();
+        $mk = function (string $name, array $extra) {
+            $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'unconfirmed', 'copies' => 1, 'product_name' => $name, 'opened_at' => now()->subHour()] + $extra);
+            $l->branch_id = 1;
+            $l->save();
+        };
+        $mk('Proche', ['expires_at' => now()->addHours(48)]);   // dans les 72 h que l'écran « À surveiller » liste
+        $mk('Lointaine', ['expires_at' => now()->addDays(5)]);  // au-delà : introuvable à l'écran
+        $d = $this->dlcTile();
+        $this->assertSame('2 étiquettes en cours', $d['headline']);
+        $this->assertSame('dont 1 non confirmée', $d['detail'], 'seule la non confirmée visible à l\'écran est annoncée');
+        $mk('Anomalie lointaine', ['status' => 'printed', 'anomaly' => true, 'expires_at' => now()->addDays(9)]);
+        $this->assertStringContainsString("1 à\u{00A0}vérifier", $this->dlcTile()['detail'], 'une anomalie est signalée tout de suite, quelle que soit la DLC');
+    }
+
+    public function test_un_taux_ne_dit_jamais_100_tant_qu_il_manque_quelque_chose(): void
+    {
+        $rate = new \ReflectionMethod(\App\Services\Hygiene\ReportBuilder::class, 'rate');
+        $rate->setAccessible(true);
+        $rb = \App\Services\Hygiene\ReportBuilder::between('2026-10-19', '2026-10-20');
+        $this->assertSame(99.9, $rate->invoke($rb, 2189, 2190), '2189 sur 2190 s\'arrondissait à 100 %');
+        $this->assertSame(99.9, $rate->invoke($rb, 1999, 2000));
+        $this->assertSame(100.0, $rate->invoke($rb, 2190, 2190));
+        $this->assertSame(33.3, $rate->invoke($rb, 1, 3));
+        $this->assertSame(66.7, $rate->invoke($rb, 2, 3), 'l\'arrondi ordinaire reste inchangé sous 100');
+        $this->assertSame(0.0, $rate->invoke($rb, 0, 5));
+        $this->assertNull($rate->invoke($rb, 0, 0));
     }
 
     // ───────────── rapport : taux de couverture ─────────────

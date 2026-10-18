@@ -115,7 +115,11 @@ final class ReportBuilder
 
     private function rate(int $done, int $expected): ?float
     {
-        return $expected > 0 ? round($done / $expected * 100, 1) : null;
+        if ($expected <= 0) return null;
+        $pct = round($done / $expected * 100, 1);
+
+        // « 100 % » ne se dit que si RIEN ne manque : 2189 sur 2190 s'arrondissait à 100,0 (carte verte à côté d'un bandeau rouge « 1 fiche non faite »)
+        return ($pct >= 100.0 && $done < $expected) ? 99.9 : $pct;
     }
 
     // ───────────────────────────── températures ─────────────────────────────
@@ -369,11 +373,13 @@ final class ReportBuilder
         }
 
         return [
+            // UNITÉ = l'étiquette physique (copies), comme le rappel et la tuile de l'accueil ; `count` = nombre d'impressions (lignes de journal).
+            // (Tour 8 : « 3 » pour 3 lignes, « 5 étiquette(s) » dans la même carte, « 2 lots » à l'écran DLC pour les mêmes 5 étiquettes.)
             'count' => $base()->count(), 'copies' => (int) $base()->sum('copies'),
-            'discarded' => $base()->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->count(),
-            'used' => $base()->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->count(),
+            'discarded' => (int) $base()->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->sum('copies'),
+            'used' => (int) $base()->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->sum('copies'),
             // échus et jamais sortis : le point que regarde un contrôleur
-            'expired_not_out' => $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
+            'expired_not_out' => (int) $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->sum('copies'),
             ...$rows,
         ];
     }

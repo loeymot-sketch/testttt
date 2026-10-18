@@ -442,3 +442,36 @@ describe('relecture adverse (2026-10-17) — courbe', () => {
         expect(w.get('[data-testid="tmp-chart-empty"]').text()).toMatch(/Aucun relevé/);
     });
 });
+
+describe('suivi d’écart hérité de la veille — visible et clôturable sans relevé aujourd’hui (tour 8)', () => {
+    const inherited = () => EQ(1, 'Frigo A', 'fridge', 0, 4, { followup: { reading_id: 77, value_c: 9, recorded_at: '2020-01-01T23:50:00+02:00', due_at: '2020-01-02T00:20:00+02:00', overdue: true, minutes: 30, min_minutes: 10 } });
+
+    it('un suivi sans relevé aujourd’hui est annoncé sur la carte, comme le rappel de l’accueil', async () => {
+        setup([inherited()]);
+        const w = await mountScreen();
+        const f = w.get('[data-testid="tmp-followup-1"]');
+        expect(f.text()).toContain('Nouvelle mesure en retard : attendue depuis');
+        expect(w.find('[data-testid="tmp-done-1"]').exists(), 'aucun relevé aujourd’hui : pas de carte « fait »').toBe(false);
+        expect(w.find('[data-testid="tmp-take-1"]').exists(), 'la saisie reste proposée').toBe(true);
+    });
+
+    it('« Mesure impossible » clôt le suivi depuis cette carte, avec un motif d’au moins 5 caractères', async () => {
+        setup([inherited()]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-close-open-1"]').trigger('click');
+        await w.get('[data-testid="tmp-close-reason-1"]').setValue('off');
+        expect(w.get('[data-testid="tmp-close-go-1"]').attributes('disabled')).toBeDefined();
+        await w.get('[data-testid="tmp-close-reason-1"]').setValue('Équipement éteint pour dégivrage');
+        await w.get('[data-testid="tmp-close-go-1"]').trigger('click');
+        await flushPromises();
+        const post = posts.find((p) => p[0] === 'admin/hygiene/temperature/readings/77/followup-close');
+        expect(post, 'la clôture n’a pas été envoyée').toBeTruthy();
+        expect(post[1].reason).toBe('Équipement éteint pour dégivrage');
+    });
+
+    it('un équipement sans suivi n’affiche aucun bloc de suivi', async () => {
+        setup([EQ(1, 'Frigo A', 'fridge', 0, 4)]);
+        const w = await mountScreen();
+        expect(w.find('[data-testid="tmp-followup-orphan-1"]').exists()).toBe(false);
+    });
+});

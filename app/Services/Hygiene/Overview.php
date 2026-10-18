@@ -119,14 +119,19 @@ final class Overview
     {
         $now = now();
         $done = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereNull('discarded_at')->whereNotNull('expires_at');
-        $rows = $done()->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))->get(['expires_at']);
-        $expired = $rows->filter(fn ($l) => $l->expires_at->lt($now))->count();
-        $soon = $rows->count() - $expired;
-        $live = $done()->where('expires_at', '>=', $now)->get(['status', 'anomaly']);
-        // une réservée sans verdict depuis plus de 10 min est surveillée comme « non confirmée » (même définition que l'écran DLC)
-        $unconfirmed = $live->whereIn('status', [LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_CLAIMED])->count();
-        $anomaly = $live->filter(fn ($l) => (bool) $l->anomaly)->count();
-        $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $live->count(), 'unconfirmed' => $unconfirmed, 'anomaly' => $anomaly];
+        $copies = fn ($rows) => $rows->sum(fn ($l) => max(1, (int) $l->copies)); // UNITÉ = l'étiquette physique, comme le rappel et le dossier
+        $rows = $done()->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))->get(['expires_at', 'copies']);
+        $expiredRows = $rows->filter(fn ($l) => $l->expires_at->lt($now));
+        $expired = $copies($expiredRows);
+        $soon = $copies($rows) - $expired;
+        $live = $done()->where('expires_at', '>=', $now)->get(['status', 'anomaly', 'copies', 'expires_at']);
+        $watchUntil = $now->copy()->addHours(LabelPrintLog::WATCH_AHEAD_HOURS);
+        // une réservée sans verdict depuis plus de 10 min est surveillée comme « non confirmée » (même définition que l'écran DLC) ; l'écran ne liste
+        // que les 72 h à venir : une non confirmée plus lointaine n'est pas annoncée ici (elle serait introuvable à l'écran). Une anomalie, elle, est signalée tout de suite.
+        $unconfirmed = $copies($live->whereIn('status', [LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_CLAIMED])->filter(fn ($l) => $l->expires_at->lte($watchUntil)));
+        $anomaly = $copies($live->filter(fn ($l) => (bool) $l->anomaly));
+        $liveCopies = $copies($live);
+        $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $liveCopies, 'unconfirmed' => $unconfirmed, 'anomaly' => $anomaly];
         $nbsp = "\u{00A0}"; // « 24 h », « à échéance », « à vérifier » ne se coupent jamais en laissant « h » ou « à » seul au bout de la ligne
         $soonText = $soon.' à'.$nbsp.'échéance sous 24'.$nbsp.'h';
 
@@ -144,7 +149,7 @@ final class Overview
             $anomaly > 0 ? $anomaly.' à'.$nbsp.'vérifier' : '',
         ]));
 
-        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'ok', $this->plural($live->count(), 'étiquette').' en cours', $parts === [] ? '' : 'dont '.implode(', ', $parts), $counts);
+        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'ok', $this->plural($liveCopies, 'étiquette').' en cours', $parts === [] ? '' : 'dont '.implode(', ', $parts), $counts);
     }
 
     private function reception(): array

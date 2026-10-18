@@ -62,7 +62,7 @@
     <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · {{ $o['max_polar'] === null ? 'aucune mesure de polaires' : 'max '.$pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p>@if(!empty($o['today']) && $o['fryers'] > 0)<p class="sub">{{ $headOf($o['expected']) }}Aujourd'hui (journée en cours, hors taux) : {{ $o['today']['done'] }} sur {{ $o['today']['expected'] }}.</p>@endif</td>
 </tr><tr>
     <td><p class="kpi-l">Produits tracés</p><p class="kpi-v">{{ $z['count'] }}</p><p class="sub">{{ $z['without_lot'] }} sans lot (expliqué) · {{ $z['alerts'] }} écart(s)</p></td>
-    <td><p class="kpi-l">Étiquettes DLC</p><p class="kpi-v">{{ $l['count'] }}</p><p class="sub">{{ $l['copies'] }} étiquette(s) · {{ $l['discarded'] }} jetée(s) · {{ $l['used'] }} utilisée(s)</p></td>
+    <td><p class="kpi-l">Étiquettes DLC</p><p class="kpi-v">{{ $l['copies'] }}</p><p class="sub">{{ $l['count'] }} impression(s) · {{ $l['discarded'] }} jetée(s) · {{ $l['used'] }} utilisée(s)</p></td>
     <td><p class="kpi-l">DLC échues non sorties</p><p class="kpi-v {{ $l['expired_not_out'] ? 'ko' : '' }}">{{ $l['expired_not_out'] }}</p></td>
     <td><p class="kpi-l">Incidents tracés</p><p class="kpi-v">{{ count($report['incidents']) }}</p></td>
 </tr></table>
@@ -140,7 +140,7 @@
     </table>
 @endif
 
-<h2>Étiquettes DLC imprimées ({{ $l['count'] }})</h2>
+<h2>Étiquettes DLC imprimées ({{ $l['copies'] }} étiquette(s), {{ $l['count'] }} impression(s))</h2>
 @if (empty($l['rows']))<p class="empty">Aucune étiquette.</p>@else
     {!! $cut($l) !!}
     <table class="data"><tr><th>Date</th><th>Produit</th><th>Événement</th><th>N° de lot</th><th>DLC</th><th>Étiq.</th><th>Conservation</th><th>Sortie</th></tr>

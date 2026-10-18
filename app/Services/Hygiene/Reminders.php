@@ -169,8 +169,11 @@ final class Reminders
     /** @return list<array<string,mixed>> */
     private function dlc(CarbonInterface $now): array
     {
+        // UNITÉ = l'étiquette physique (copies) : « 3 étiquettes DLC dépassées » pour un lot de 3, pas « 1 » (tour 8 : le rappel, la tuile, l'écran et le dossier
+        // comptaient chacun une unité différente : lignes de journal, copies, lots)
         $expired = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereNull('discarded_at')
-            ->whereNotNull('expires_at')->where('expires_at', '<', $now)->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->count();
+            ->whereNotNull('expires_at')->where('expires_at', '<', $now)->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))
+            ->get(['copies'])->sum(fn ($l) => max(1, (int) $l->copies));
         if ($expired === 0) return [];
 
         return [$this->item("dlc-expired-$expired", 'dlc', 'alert', $expired.' étiquette'.($expired > 1 ? 's' : '').' DLC dépassée'.($expired > 1 ? 's' : '').' : à jeter, ou à marquer « utilisé ».', '/admin/labels/dlc')];

@@ -51,8 +51,8 @@
                         </div>
                         <div class="hy-card" :class="data.dlc.expired_not_out ? 'is-alert' : ''" data-testid="rep-kpi-dlc">
                             <span class="hy-sub">Étiquettes DLC</span>
-                            <strong class="hy-kpi">{{ data.dlc.count }}</strong>
-                            <span class="hy-sub">{{ data.dlc.discarded }} jetée(s) · {{ data.dlc.used }} utilisée(s) · {{ data.dlc.expired_not_out }} échue(s) non sortie(s)</span>
+                            <strong class="hy-kpi" data-testid="rep-dlc-labels">{{ data.dlc.copies }}</strong>
+                            <span class="hy-sub">{{ data.dlc.count }} impression(s) · {{ data.dlc.discarded }} jetée(s) · {{ data.dlc.used }} utilisée(s) · {{ data.dlc.expired_not_out }} échue(s) non sortie(s)</span>
                         </div>
                     </div>
 

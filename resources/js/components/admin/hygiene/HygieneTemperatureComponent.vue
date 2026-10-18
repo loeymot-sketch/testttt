@@ -59,6 +59,26 @@
                                 <span class="tmp-limit" :class="{ 'is-neg': e.negative }">{{ limitText(e) }}</span>
                             </div>
 
+                            <!-- Suivi d'écart HÉRITÉ (écart d'hier soir, aucun relevé aujourd'hui) : le rappel de l'accueil dit « nouvelle mesure attendue » ; l'écran doit le dire
+                                 aussi et laisser clore « mesure impossible » (avant : ce bloc n'existait que dans la carte « relevé fait aujourd'hui », donc nulle part ici). -->
+                            <div v-if="e.followup && !e.last_today && !entries[e.id]" class="tmp-done is-alert" :data-testid="`tmp-followup-orphan-${e.id}`">
+                                <span class="tmp-followup" :class="{ 'is-overdue': followupOverdue(e) }" role="status" :data-testid="`tmp-followup-${e.id}`">
+                                    ⏱ {{ followupOverdue(e) ? "Nouvelle mesure en retard : attendue depuis" : "Nouvelle mesure à faire avant" }} {{ hm(e.followup.due_at) }}
+                                </span>
+                                <div v-if="closeTarget === e.id" class="tmp-close" :data-testid="`tmp-close-${e.id}`">
+                                    <label class="tmp-label" :for="`tmp-close-reason-${e.id}`">Pourquoi la mesure est impossible ?</label>
+                                    <input :id="`tmp-close-reason-${e.id}`" v-model="closeReason" type="text" maxlength="120" class="tmp-note" placeholder="Équipement éteint, en panne…" :data-testid="`tmp-close-reason-${e.id}`" />
+                                    <p v-if="closeError" class="tmp-hint is-alert" role="alert" :data-testid="`tmp-close-error-${e.id}`">{{ closeError }}</p>
+                                    <div class="tmp-done-actions">
+                                        <button type="button" class="tmp-btn tmp-btn--small tmp-btn--primary" :disabled="saving || closeReason.trim().length < 5" :data-testid="`tmp-close-go-${e.id}`" @click="confirmCloseFollowup(e)">Enregistrer</button>
+                                        <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-close-cancel-${e.id}`" @click="cancelClose">Annuler</button>
+                                    </div>
+                                </div>
+                                <div v-else class="tmp-done-actions">
+                                    <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-close-open-${e.id}`" @click="askCloseFollowup(e)">Mesure impossible</button>
+                                </div>
+                            </div>
+
                             <!-- relevé déjà fait pour ce moment de la journée -->
                             <div v-if="e.last_today && !entries[e.id]" class="tmp-done" :class="{ 'is-alert': e.last_today.status === 'alert' }" :data-testid="`tmp-done-${e.id}`">
                                 <span class="tmp-done-value">{{ e.last_today.status === "alert" ? "⚠" : "✓" }} {{ fmt(e.last_today.value_c) }} °C</span>
