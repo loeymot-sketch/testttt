@@ -344,6 +344,37 @@ class RemindersTest extends TestCase
         $this->assertStringNotContainsString('0 sur 0.</p></td>', preg_replace('/\s+/', ' ', substr($html, (int) strpos($html, 'Huile : tests faits'), 600)), 'pas de « Aujourd\'hui : 0 sur 0 » pour un domaine facultatif non configuré');
     }
 
+    public function test_dossier_vidanges_les_lignes_annulees_et_les_autres_actions_ne_comptent_pas(): void
+    {
+        $this->staff();
+        $count = fn () => $this->getJson('/api/admin/hygiene/report/summary?from=2026-10-18&to=2026-10-20')->json('data.oil.changes');
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        // « Friteuse arrêtée » n'est PAS un changement d'huile
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'fryer_stopped');
+        $this->assertSame(0, $count());
+        // une déclaration ANNULÉE (test annulé) ne compte pas
+        $g = $this->equipment('Friteuse 2', 'fryer');
+        $this->oil($g, 'test', 'alert', 28.0, '2026-10-20 09:10', 'oil_changed');
+        \App\Models\HygieneOilControl::query()->where('equipment_id', $g->id)->update(['voided_at' => now(), 'void_reason' => 'erreur']);
+        $this->assertSame(0, $count());
+        // une vidange ANNULÉE ne masque pas la déclaration du même jour : c'est elle qui compte
+        $h = $this->equipment('Friteuse 3', 'fryer');
+        $this->oil($h, 'test', 'alert', 28.0, '2026-10-20 09:20', 'oil_changed');
+        $this->oil($h, 'change', 'ok', null, '2026-10-20 09:25');
+        \App\Models\HygieneOilControl::query()->where('equipment_id', $h->id)->where('type', 'change')->update(['voided_at' => now(), 'void_reason' => 'erreur']);
+        $this->assertSame(1, $count(), 'vidange annulée + déclaration du jour = 1 changement (la déclaration)');
+    }
+
+    public function test_dossier_vidanges_le_jour_se_lit_en_heure_locale_pas_en_utc(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        // même jour LOCAL (le 20), mais de part et d'autre de minuit UTC : 01:30 locale = 23:30 UTC la veille ; 03:00 locale = 01:00 UTC le jour même
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 01:30', 'oil_changed');
+        $this->oil($f, 'change', 'ok', null, '2026-10-20 03:00');
+        $this->assertSame(1, $this->getJson('/api/admin/hygiene/report/summary?from=2026-10-19&to=2026-10-20')->json('data.oil.changes'));
+    }
+
     public function test_huile_a_surveiller_n_est_pas_une_tuile_verte(): void
     {
         $this->staff();
