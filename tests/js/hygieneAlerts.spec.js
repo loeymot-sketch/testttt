@@ -11,8 +11,8 @@ vi.mock('../../resources/js/services/alertService', () => ({ default: h.alert })
 
 import HygieneAlertsComponent from '../../resources/js/components/admin/hygiene/HygieneAlertsComponent.vue';
 
-const DOMAINS = [['temperature', 'Relevés de température'], ['tasks', 'Nettoyage'], ['oil', 'Huile de friture'], ['dlc', 'DLC dépassées'], ['trace', 'Traçabilité']].map(([key, label]) => ({ key, label }));
-const BASE = { enabled: false, recipients: [], domains: ['temperature', 'tasks', 'oil', 'dlc', 'trace'], send_from: '09:00', send_until: '23:30', repeat_minutes: 60, max_sends: 3 };
+const DOMAINS = [['temperature', 'Relevés de température'], ['tasks', 'Nettoyage'], ['oil', 'Huile de friture'], ['dlc', 'DLC dépassées']].map(([key, label]) => ({ key, label }));
+const BASE = { enabled: false, recipients: [], domains: ['temperature', 'tasks', 'oil', 'dlc'], send_from: '09:00', send_until: '23:30', repeat_minutes: 60, max_sends: 3 };
 const STAFF = [{ id: 7, name: 'Sarah Lopez', email: 'Sarah@Example.test' }];
 const payload = (settings = {}, meta = {}, recent = []) => ({ data: { data: { settings: { ...BASE, ...settings }, staff: STAFF, recent }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris', ...meta } } });
 
@@ -53,7 +53,7 @@ describe('alertes e-mail — écran', () => {
 
     it('choisir un employé, ajouter une adresse, décocher un type : enregistre exactement cela, adresses en minuscules et sans doublon', async () => {
         const w = await mountWith(async () => payload());
-        h.axios.put.mockResolvedValue({ data: { data: { settings: { ...BASE, enabled: true, recipients: ['sarah@example.test', 'chef@example.test'], domains: ['temperature', 'tasks', 'dlc', 'trace'] } } } });
+        h.axios.put.mockResolvedValue({ data: { data: { settings: { ...BASE, enabled: true, recipients: ['sarah@example.test', 'chef@example.test'], domains: ['temperature', 'tasks', 'dlc'] } } } });
 
         await q(w, 'al-enabled').trigger('click');
         await q(w, 'al-staff-7').trigger('click');
@@ -69,7 +69,7 @@ describe('alertes e-mail — écran', () => {
         expect(url).toBe('admin/hygiene/alerts');
         expect(body.enabled).toBe(true);
         expect(body.recipients).toEqual(['sarah@example.test', 'chef@example.test']);
-        expect(body.domains).toEqual(['temperature', 'tasks', 'dlc', 'trace']);
+        expect(body.domains).toEqual(['temperature', 'tasks', 'dlc']);
         expect(q(w, 'al-message').text()).toContain('les alertes sont actives');
         expect(q(w, 'al-save').attributes('disabled')).toBeDefined(); // plus rien à enregistrer
     });
@@ -80,6 +80,22 @@ describe('alertes e-mail — écran', () => {
         await q(w, 'al-add').trigger('click');
         expect(q(w, 'al-email-error').text()).toContain("pas valide");
         expect(h.axios.put).not.toHaveBeenCalled();
+    });
+
+    it('une adresse déjà présente est dite (pas ignorée en silence) ; la limite de dix vaut aussi pour les employés cochés', async () => {
+        const staff = Array.from({ length: 12 }, (_, i) => ({ id: 100 + i, name: `Employé ${i}`, email: `e${i}@example.test` }));
+        h.axios.get.mockReset(); h.axios.put.mockReset(); h.axios.post.mockReset();
+        h.axios.get.mockImplementation(async () => ({ data: { data: { settings: { ...BASE, recipients: ['chef@example.test'] }, staff, recent: [] }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris' } } }));
+        const w = mount(HygieneAlertsComponent, { global: { mocks: { $t: (k) => k } } });
+        await flushPromises();
+        await q(w, 'al-new-email').setValue('CHEF@example.test');
+        await q(w, 'al-add').trigger('click');
+        expect(q(w, 'al-email-error').text()).toContain('déjà dans la liste');
+        for (let i = 0; i < 9; i += 1) await q(w, `al-staff-${100 + i}`).trigger('click'); // 1 + 9 = 10
+        expect(q(w, 'al-email-error').exists()).toBe(false);
+        await q(w, 'al-staff-109').trigger('click');                                        // le 11e
+        expect(q(w, 'al-email-error').text()).toContain('Dix destinataires au plus');
+        expect(q(w, 'al-staff-109').attributes('aria-pressed')).toBe('false');
     });
 
     it('le refus du serveur est affiché tel quel et les réglages restent modifiables', async () => {

@@ -353,3 +353,154 @@ describe('suivi après écart (2026-10-18)', () => {
         expect(w.find('[data-testid="tmp-followup-hint-1"]').exists()).toBe(false);
     });
 });
+
+describe('relevés hors ligne — revue adverse (2026-10-18)', () => {
+    const NET = () => new Error('Network Error');
+    async function mountOps({ items = [EQ()], operators } = {}) {
+        h.axios.get.mockReset(); h.axios.post.mockReset(); window.localStorage.clear();
+        h.axios.get.mockImplementation(async (url) => {
+            if (url === 'admin/hygiene/operators') return { data: { data: operators || [{ id: 1, name: 'Compte Tablette', short: 'Compte T.', is_me: true, has_pin: false }], meta: { me: 1 } } };
+            if (url === 'admin/hygiene/temperature/today') return { data: { data: items, meta: { period: 'morning', periods: { morning: 'Matin' }, summary: { total: items.length, todo: items.length, ok: 0, alert: 0 }, kinds: [{ key: 'fridge', label: 'Réfrigérateur' }], corrective_actions: ACTIONS, server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } };
+            return { data: { data: [] } };
+        });
+        const w = mount(HygieneTemperatureComponent, { global: { mocks: { $t: (k) => k } } });
+        await flushPromises();
+        return w;
+    }
+    const queued = () => JSON.parse(window.localStorage.getItem('hygiene_offline_queue') || '[]');
+
+    it('ce qui est gardé hors ligne est EXACTEMENT ce qui a été validé, même si la saisie est retouchée pendant l’attente', async () => {
+        const w = await mountOps();
+        const posts = [];
+        let fail;
+        h.axios.post.mockImplementation((url, body) => { posts.push(body); return new Promise((_, reject) => { fail = () => reject(NET()); }); });
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('3');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');       // l'envoi traîne
+        expect(w.get('[data-testid="tmp-input-1"]').attributes('readonly')).toBeDefined(); // la saisie est figée pendant l'attente
+        expect(w.get('[data-testid="tmp-cancel-1"]').attributes('disabled')).toBeDefined();
+        fail();
+        await flushPromises();
+        const q1 = queued();
+        expect(q1).toHaveLength(1);
+        expect(q1[0].body.readings[0].value).toBe(3);                     // la valeur validée
+        expect(q1[0].body.readings[0].client_ref).toBe(posts[0].readings[0].client_ref); // la même référence : un rejeu, jamais un doublon
+        expect(q1[0].body.readings[0].equipment_name).toBe('Frigo 1');    // dit CE qui est gardé, même sans la liste des équipements
+    });
+
+    it('si la carte disparaît pendant l’attente, rien n’est perdu en silence (plus de TypeError)', async () => {
+        const w = await mountOps();
+        let fail;
+        h.axios.post.mockImplementation(() => new Promise((_, reject) => { fail = () => reject(NET()); }));
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('3');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        w.vm.entries = {};                                                // un rechargement retire la saisie pendant l'attente
+        fail();
+        await flushPromises();
+        expect(queued()).toHaveLength(1);
+        expect(queued()[0].body.readings[0].value).toBe(3);
+        expect(h.alert.info).toHaveBeenCalledWith(expect.stringContaining('gardé'));
+    });
+
+    it('« moi » est écrit en toutes lettres dans l’entrée gardée : un autre compte qui la rejoue ne la signe pas à sa place', async () => {
+        const w = await mountOps();
+        h.axios.post.mockImplementation(async () => { throw NET(); });
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('3');
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(queued()[0].body.operator_user_id).toBe(1);               // le compte qui a SAISI
+        // en ligne, rien de changé : « moi » reste implicite
+        const posts = [];
+        h.axios.post.mockReset();
+        h.axios.post.mockImplementation(async (url, body) => { posts.push(body); return { data: { data: [{ id: 1 }], meta: { alerts: 0 } } }; });
+        await w.get('[data-testid="tmp-offline-retry"]').trigger('click');
+        await flushPromises();
+        expect(posts[0].operator_user_id).toBe(1);
+        expect(posts[0].client_now).toBeTruthy();                        // l'heure de la tablette part avec l'envoi (correction de dérive côté serveur)
+    });
+
+    it('un relevé gardé pour un équipement déjà relevé se voit sur sa carte, et « Saisir tout ce qui reste » ne le rouvre pas', async () => {
+        const done = EQ({ state: 'ok', done_this_period: true, last_today: { id: 5, equipment_id: 1, value_c: 3, status: 'ok', period: 'morning', recorded_at: '2026-10-20T08:00:00+02:00', operator_name: 'Karim', voided: false } });
+        const w = await mountOps({ items: [done, EQ({ id: 2, name: 'Frigo 2' })] });
+        window.localStorage.setItem('hygiene_offline_queue', JSON.stringify([{ qid: 'a', url: 'admin/hygiene/temperature/readings', kind: 'temperature', at: Date.now(), tries: 1, state: 'pending', reason: '', label: '1 relevé',
+            body: { readings: [{ equipment_id: 1, value: 4.5, measured_at: '2026-10-20T09:40:00+02:00', client_ref: 'x1', equipment_name: 'Frigo 1' }] } }]));
+        w.vm.refreshQueue();
+        await flushPromises();
+        expect(w.get('[data-testid="tmp-queued-inline-1"]').text()).toContain('4,5 °C gardée sur la tablette');
+        expect(w.find('[data-testid="tmp-again-1"]').exists()).toBe(false);                     // pas de ressaisie qui ferait un doublon
+        await w.get('[data-testid="tmp-fill-all"]').trigger('click');
+        expect(w.find('[data-testid="tmp-input-2"]').exists()).toBe(true);                       // Frigo 2 s'ouvre
+        expect(w.find('[data-testid="tmp-input-1"]').exists()).toBe(false);                      // pas le Frigo 1, déjà gardé
+    });
+
+    it('une mesure déjà gardée n’est pas rouverte à la main non plus : on dit pourquoi', async () => {
+        const w = await mountOps();
+        window.localStorage.setItem('hygiene_offline_queue', JSON.stringify([{ qid: 'a', url: 'u', kind: 'temperature', at: Date.now(), tries: 1, state: 'pending', reason: '', label: '1 relevé',
+            body: { readings: [{ equipment_id: 1, value: 4.5, measured_at: '2026-10-20T09:40:00+02:00', client_ref: 'x1', equipment_name: 'Frigo 1' }] } }]));
+        w.vm.refreshQueue();
+        await flushPromises();
+        w.vm.startEntry(w.vm.items[0]);
+        await flushPromises();
+        expect(w.find('[data-testid="tmp-input-1"]').exists()).toBe(false);
+        expect(h.alert.info).toHaveBeenCalledWith(expect.stringContaining('déjà gardée'));
+    });
+
+    it('le bandeau dit CE qui est gardé (équipement, valeur, heure), et un refus garde ses valeurs sous les yeux', async () => {
+        const w = await mountOps();
+        window.localStorage.setItem('hygiene_offline_queue', JSON.stringify([
+            { qid: 'p', url: 'u', kind: 'temperature', at: Date.now(), tries: 1, state: 'pending', reason: '', label: '1 relevé', body: { readings: [{ equipment_id: 1, value: 3, measured_at: '2026-10-20T10:12:00+02:00', client_ref: 'a', equipment_name: 'Frigo 1' }] } },
+            { qid: 'r', url: 'u', kind: 'temperature', at: Date.now(), tries: 2, state: 'rejected', reason: '« Frigo 2 » : 99 °C n’est pas plausible.', label: '1 relevé', body: { readings: [{ equipment_id: 2, value: 99, measured_at: '2026-10-20T10:20:00+02:00', client_ref: 'b', equipment_name: 'Frigo 2' }] } },
+        ]));
+        w.vm.refreshQueue();
+        await flushPromises();
+        expect(w.get('[data-testid="tmp-offline-lines"]').text()).toContain('Frigo 1 : 3,0 °C à 10:12');
+        const refused = w.get('[data-testid="tmp-refused"]');
+        expect(refused.text()).toContain('pas plausible');
+        expect(w.get('[data-testid="tmp-refused-lines"]').text()).toContain('Frigo 2 : 99,0 °C à 10:20');
+    });
+
+    it('la cause réelle est dite : session expirée ≠ pas de réseau ≠ serveur en panne', async () => {
+        const cases = [[401, 'Session expirée'], [403, 'Droit refusé'], [500, 'Serveur indisponible'], [undefined, 'Pas de réseau']];
+        for (const [status, text] of cases) {
+            h.alert.info.mockReset();
+            const w = await mountOps();
+            h.axios.post.mockImplementation(async () => { const e = new Error('x'); if (status) e.response = { status, data: {} }; throw e; });
+            await w.get('[data-testid="tmp-take-1"]').trigger('click');
+            await w.get('[data-testid="tmp-input-1"]').setValue('3');
+            await w.get('[data-testid="tmp-submit"]').trigger('click');
+            await flushPromises();
+            expect(h.alert.info, String(status)).toHaveBeenCalledWith(expect.stringContaining(text));
+            w.unmount();
+        }
+    });
+
+    it('un suivi impossible se clôt en disant pourquoi (au moins 5 caractères), signé de la personne désignée', async () => {
+        const alertCard = EQ({ state: 'alert', done_this_period: true, last_today: { id: 5, equipment_id: 1, value_c: 55, status: 'alert', alert_reason: 'too_cold', period: 'morning', recorded_at: '2026-10-20T09:00:00+02:00', operator_name: 'Karim', corrective_action: 'reheated', corrective_label: 'Plats réchauffés', voided: false },
+            followup: { reading_id: 5, value_c: 55, recorded_at: '2026-10-20T09:00:00+02:00', due_at: '2026-10-20T09:30:00+02:00', overdue: true, minutes: 30 } });
+        const w = await mountOps({ items: [alertCard] });
+        h.axios.post.mockImplementation(async () => ({ data: { data: {} } }));
+        await w.get('[data-testid="tmp-close-open-1"]').trigger('click');
+        await w.get('[data-testid="tmp-close-reason-1"]').setValue('off');
+        expect(w.get('[data-testid="tmp-close-go-1"]').attributes('disabled')).toBeDefined();
+        await w.get('[data-testid="tmp-close-reason-1"]').setValue('appareil éteint, service terminé');
+        await w.get('[data-testid="tmp-close-go-1"]').trigger('click');
+        await flushPromises();
+        expect(h.axios.post).toHaveBeenCalledWith('admin/hygiene/temperature/readings/5/followup-close', { reason: 'appareil éteint, service terminé', operator_user_id: undefined, operator_token: undefined });
+        expect(w.find('[data-testid="tmp-close-1"]').exists()).toBe(false);
+    });
+
+    it('un refus de la clôture est affiché et la saisie reste', async () => {
+        const alertCard = EQ({ state: 'alert', done_this_period: true, last_today: { id: 5, equipment_id: 1, value_c: 55, status: 'alert', alert_reason: 'too_cold', period: 'morning', recorded_at: '2026-10-20T09:00:00+02:00', operator_name: 'Karim', corrective_action: 'reheated', voided: false },
+            followup: { reading_id: 5, value_c: 55, recorded_at: '2026-10-20T09:00:00+02:00', due_at: '2026-10-20T09:30:00+02:00', overdue: true, minutes: 30 } });
+        const w = await mountOps({ items: [alertCard] });
+        h.axios.post.mockImplementation(async () => { const e = new Error('422'); e.response = { status: 422, data: { message: 'x', errors: { reading: ['Aucun suivi n’est attendu pour ce relevé.'] } } }; throw e; });
+        await w.get('[data-testid="tmp-close-open-1"]').trigger('click');
+        await w.get('[data-testid="tmp-close-reason-1"]').setValue('appareil éteint');
+        await w.get('[data-testid="tmp-close-go-1"]').trigger('click');
+        await flushPromises();
+        expect(w.get('[data-testid="tmp-close-error-1"]').text()).toContain('Aucun suivi');
+        expect(w.get('[data-testid="tmp-close-reason-1"]').element.value).toBe('appareil éteint');
+    });
+});

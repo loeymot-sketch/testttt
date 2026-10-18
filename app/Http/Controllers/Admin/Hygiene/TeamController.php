@@ -31,7 +31,7 @@ class TeamController extends HygieneController
 
         return response()->json([
             'data' => $rows,
-            'meta' => ['without_pin' => $rows->where('has_pin', false)->count(), 'pin_digits' => [(int) config('hygiene.operator.pin_min_digits', 4), (int) config('hygiene.operator.pin_max_digits', 6)]] + $this->clock(),
+            'meta' => ['without_pin' => $rows->where('has_pin', false)->count(), 'token_minutes' => OperatorPins::tokenMinutes(), 'pin_digits' => [(int) config('hygiene.operator.pin_min_digits', 4), (int) config('hygiene.operator.pin_max_digits', 6)]] + $this->clock(),
         ]);
     }
 

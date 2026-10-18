@@ -6,6 +6,7 @@
             </div>
 
             <div class="db-card-body">
+                <HygieneQueueBanner :timezone="meta.timezone || 'Europe/Paris'" />
                 <p v-if="loadError" class="hy-alert" role="alert" data-testid="home-error">{{ loadError }}</p>
                 <p v-if="!loaded && !loadError" class="hy-muted" role="status">Chargement…</p>
 
@@ -62,9 +63,11 @@
  */
 import axios from "axios";
 import { formatDay } from "../../../helpers/hygieneCommon";
+import HygieneQueueBanner from "./HygieneQueueBanner";
 
 export default {
     name: "HygieneHomeComponent",
+    components: { HygieneQueueBanner },
     data() {
         return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], server_now: null, timezone: "Europe/Paris" }, loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null };
     },

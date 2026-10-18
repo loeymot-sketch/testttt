@@ -156,6 +156,8 @@ export default {
         has(email) { return this.form.recipients.includes(String(email).toLowerCase()); },
         toggleEmail(email) {
             const e = String(email).toLowerCase();
+            this.emailError = "";
+            if (!this.has(e) && this.form.recipients.length >= 10) { this.emailError = "Dix destinataires au plus : retirez-en un avant d'en ajouter."; return; }
             this.form.recipients = this.has(e) ? this.form.recipients.filter((x) => x !== e) : [...this.form.recipients, e];
             this.touch();
         },
@@ -168,7 +170,9 @@ export default {
             this.emailError = "";
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { this.emailError = "Cette adresse e-mail n'est pas valide."; return; }
             if (this.form.recipients.length >= 10) { this.emailError = "Dix destinataires au plus."; return; }
-            if (!this.has(e)) { this.form.recipients = [...this.form.recipients, e]; this.touch(); }
+            if (this.has(e)) { this.emailError = "Cette adresse est déjà dans la liste."; return; }
+            this.form.recipients = [...this.form.recipients, e];
+            this.touch();
             this.newEmail = "";
         },
         when(iso) {

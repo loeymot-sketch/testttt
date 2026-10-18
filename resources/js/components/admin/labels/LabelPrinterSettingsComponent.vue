@@ -50,10 +50,10 @@
                         Déconnecter
                     </button>
                     <button type="button" class="pr-btn pr-btn--primary" :disabled="testing || !printerReady" :aria-describedby="printerReady ? null : 'pr-test-why'" data-testid="pr-test" @click="printTest">
-                        {{ testing ? "Impression…" : "🖨 Imprimer une étiquette test" }}
+                        {{ testing && testingKind === "label" ? "Impression…" : "🖨 Imprimer une étiquette test" }}
                     </button>
                     <button type="button" class="pr-btn" :disabled="testing || !printerReady" data-testid="pr-cut-test" @click="printCutTest">
-                        {{ testing ? "Impression…" : "✂ Test de coupe (3 tickets attachés)" }}
+                        {{ testing && testingKind === "cut" ? "Impression…" : "✂ Test de coupe (3 tickets attachés)" }}
                     </button>
                     <button type="button" class="pr-btn" data-testid="pr-fallback" @click="fallbackPrint">
                         Secours : imprimer par Android
@@ -115,11 +115,11 @@
                             Sur le ruban continu, une ligne pointillée montre où séparer deux tickets.
                             L'imprimante ne sait pas faire de demi-coupe (un « petit point » qui relie) : la séparation se fait à la main.
                         </small>
-                        <small class="pr-hint" data-testid="pr-last-job">
-                            <b>Dernier travail envoyé par cette tablette :</b>
-                            {{ lastJobText || "aucun pour l'instant (imprimez une commande pour voir ce que l'imprimante reçoit)." }}
-                        </small>
                     </div>
+                    <small class="pr-hint" data-testid="pr-last-job">
+                        <b>Dernier travail envoyé par cette tablette :</b>
+                        {{ lastJobText || "aucun pour l'instant (imprimez une commande pour voir ce que l'imprimante reçoit)." }}
+                    </small>
                     <label class="pr-check">
                         <input type="checkbox" :checked="settings.includeDrinks" data-testid="pr-drinks"
                                @change="updateSettings({ includeDrinks: $event.target.checked })" />
@@ -169,7 +169,7 @@ export default {
     components: { LabelPrinterBar },
     mixins: [labelPrinterMixin],
     data() {
-        return { testing: false, testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false, lastJobText: describeLastJob(readLastJob()) };
+        return { testing: false, testingKind: "", testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false, lastJobText: describeLastJob(readLastJob()) };
     },
     watch: {
         // Ouvert tant que l'imprimante n'est pas prête ; replié dès qu'elle l'est (sauf si on l'a ouvert exprès).
@@ -227,6 +227,7 @@ export default {
     methods: {
         async printTest() {
             this.testing = true;
+            this.testingKind = "label";
             this.testMessage = "";
             try {
                 const blocks = testLabelBlocks(this.settings.mediaId, new Date());
@@ -246,7 +247,9 @@ export default {
         /** 3 tickets d'essai attachés, QUEL QUE SOIT le réglage : dit si la machine suit la commande « une coupe à la fin ». */
         async printCutTest() {
             this.testing = true;
+            this.testingKind = "cut";
             this.testMessage = "";
+            this.testPreview = ""; // l'image de l'étiquette test précédente ne doit pas rester sous le message du test de coupe
             try {
                 const list = [1, 2, 3].map((i) => ([
                     { t: "band", left: "TEST COUPE", right: `${i}/3` },
@@ -257,7 +260,7 @@ export default {
                 this.lastJobText = describeLastJob(readLastJob());
                 this.testOk = result.ok;
                 this.testMessage = result.ok
-                    ? (result.unconfirmed ? result.message : "Test envoyé : 3 tickets en une bande. Si la machine a coupé entre chaque ticket, notez-le : l'imprimante ne suit pas la commande.")
+                    ? (result.unconfirmed ? result.message : "Test envoyé (coupe automatique forcée pour ce test, même si elle est éteinte dans vos réglages) : 3 tickets en une bande. Si la machine a coupé entre chaque ticket, notez-le : l'imprimante ne suit pas la commande.")
                     : result.message;
                 if (!result.ok) alertService.error(result.message);
             } finally {

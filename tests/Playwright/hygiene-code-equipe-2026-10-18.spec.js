@@ -48,6 +48,7 @@ test('code personnel : défini par le responsable, demandé sur la tablette, jet
     await page.screenshot({ path: path.join(OUT, 'a1-equipe-sans-code.png') });
     await page.getByTestId(`tm-set-${uid}`).click();
     await page.getByTestId(`tm-input-${uid}`).fill('4821');
+    await page.getByTestId(`tm-confirm-${uid}`).fill('4821');
     await page.getByTestId(`tm-save-${uid}`).click();
     await expect(page.getByTestId('tm-message')).toContainText('enregistré', { timeout: 15_000 });
     await expect(page.getByTestId(`tm-state-${uid}`)).toHaveText('Code défini');

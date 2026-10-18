@@ -9,7 +9,9 @@
  *     « refusée » avec la raison et reste affichée jusqu'à ce que la personne l'ait lue (`dismiss`) — une mesure sanitaire ne disparaît
  *     jamais sans que quelqu'un le sache ;
  *   · au-delà de 72 h hors ligne, l'entrée est refusée sans appel au serveur (il la refuserait de toute façon) ;
- *   · le rejeu est idempotent côté serveur (`client_ref`) : jamais de doublon, même si le premier envoi avait en fait abouti.
+ *   · un lot REFUSÉ en bloc (le serveur est « tout ou rien ») est rejoué relevé par relevé : les mesures valides ne sont pas perdues avec l'invalide ;
+ *   · le rejeu est idempotent côté serveur (`client_ref`) : jamais de doublon, même si le premier envoi avait en fait abouti ;
+ *   · le jeton de signature d'une personne protégée reste dans l'entrée (le code, jamais) : il ne vaut que pour des mesures prises dans sa fenêtre de 10 min.
  * Aucune fonction ne lève d'exception.
  */
 export const QUEUE_KEY = 'hygiene_offline_queue';
@@ -75,10 +77,12 @@ export function createHygieneQueue({ post, storage, now = Date.now }) {
             flushing = (async () => {
                 const snapshot = load(storage);
                 const seen = new Set(snapshot.map((i) => i.qid));
+                const work = [...snapshot];
                 const out = [];
                 let sent = 0;
                 let offline = false;
-                for (const item of snapshot) {
+                for (let idx = 0; idx < work.length; idx += 1) {
+                    const item = work[idx];
                     if (item.state !== 'pending' || offline) { out.push(item); continue; }
                     if (now() - item.at > MAX_AGE_MS) {
                         out.push({ ...item, state: 'rejected', reason: 'Gardé plus de 72 h hors ligne : ressaisissez ces relevés avec une mesure actuelle.' });
@@ -91,6 +95,10 @@ export function createHygieneQueue({ post, storage, now = Date.now }) {
                         if (isRetriable(err)) {
                             out.push({ ...item, tries: item.tries + 1 });
                             offline = true; // le réseau est encore absent : inutile d'insister sur les suivantes
+                        } else if (!item.split && item.body && Array.isArray(item.body.readings) && item.body.readings.length > 1) {
+                            // lot refusé en bloc : chaque relevé est rejoué SEUL, juste après (les valides passent, seul le fautif reste « refusé »)
+                            const parts = item.body.readings.map((r) => ({ ...item, qid: newId(now), body: { ...item.body, readings: [r] }, label: '1 relevé', split: true }));
+                            work.splice(idx + 1, 0, ...parts);
                         } else {
                             out.push({ ...item, state: 'rejected', reason: refusalReason(err) });
                         }
@@ -123,7 +131,8 @@ export function hygieneQueue(axios) {
     if (!singleton) {
         let storage = null;
         try { storage = typeof localStorage !== 'undefined' ? localStorage : null; } catch (_) { storage = null; }
-        singleton = createHygieneQueue({ post: (url, body) => axios.post(url, body), storage });
+        // `client_now` : l'heure de la tablette AU MOMENT de cet envoi. Le serveur en tire la dérive de son horloge et corrige l'heure des mesures gardées.
+        singleton = createHygieneQueue({ post: (url, body) => axios.post(url, body && Array.isArray(body.readings) ? { ...body, client_now: new Date().toISOString() } : body), storage });
     }
     return singleton;
 }

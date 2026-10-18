@@ -143,6 +143,42 @@ describe('favoris DLC', () => {
         expect(shown(w)).toEqual([1]);
     });
 
+    it('retirer un favori de la sélection en cours le retire AUSSI du panier : il ne s’imprime pas, invisible', async () => {
+        setup([P({ id: 1, is_favorite: true }), P({ id: 2, name: 'Tomates', is_favorite: true }), P({ id: 3, name: 'Cheddar', is_favorite: true })]);
+        const w = await mountScreen();
+        await q(w, 'dlc-cat-fav').trigger('click');
+        await q(w, 'dlc-fav-prepare').trigger('click');
+        expect(q(w, 'dlc-basket-total').text()).toContain('3 étiquettes');
+        await q(w, 'dlc-fav-2').trigger('click');                 // on retire Tomates des favoris : sa tuile disparaît de la vue
+        await flushPromises();
+        expect(shown(w).sort()).toEqual([1, 3]);
+        expect(q(w, 'dlc-basket-total').text()).toContain('2 étiquettes');
+        await q(w, 'dlc-basket-print').trigger('click');
+        await flushPromises();
+        expect(prints.map((x) => x.product_id).sort()).toEqual([1, 3]);   // Tomates (2) n'est PAS imprimée
+    });
+
+    it('modifier une fiche (masquer, réactiver…) ne renvoie pas la personne sur « Tous » : la vue ★ Favoris reste', async () => {
+        setup([P({ id: 1, is_favorite: true }), P({ id: 2, name: 'Tomates', is_favorite: false })]);
+        const w = await mountScreen();
+        await q(w, 'dlc-cat-fav').trigger('click');
+        expect(shown(w)).toEqual([1]);
+        await w.vm.loadProducts();                                   // ce que font masquer / réactiver / enregistrer une fiche
+        await flushPromises();
+        expect(q(w, 'dlc-cat-fav').attributes('aria-selected')).toBe('true');
+        expect(shown(w)).toEqual([1]);
+    });
+
+    it('deux étoiles différentes se changent en parallèle, mais une même étoile n’envoie jamais deux requêtes à la fois', async () => {
+        setup(LIST());
+        const w = await mountScreen();
+        q(w, 'dlc-fav-1').trigger('click');
+        q(w, 'dlc-fav-2').trigger('click');
+        q(w, 'dlc-fav-1').trigger('click');                          // A de nouveau avant le retour de la première requête
+        await flushPromises();
+        expect(puts.map((x) => x[0]).sort()).toEqual(['admin/labels/products/1/favorite', 'admin/labels/products/2/favorite']);
+    });
+
     it('un produit désactivé n’est pas compté dans les favoris', async () => {
         setup([P({ id: 1, is_favorite: true, is_active: false }), P({ id: 2, name: 'Tomates', is_favorite: true })]);
         const w = await mountScreen();

@@ -72,3 +72,45 @@ test('écart traité par « porte refermée » : nouvelle mesure annoncée, rapp
     expect(rem).not.toContain('Contrôle de suite');
     expect(bad, bad.join('\n')).toEqual([]);
 });
+
+test('suivi impossible (équipement éteint) : clos avec un motif qui reste au journal, au lieu d’un faux relevé', async ({ page }) => {
+    const bad = [];
+    page.on('pageerror', (e) => bad.push(`pageerror: ${e.message}`));
+    reset();
+    tinker(`DB::table('hygiene_equipments')->insert(['branch_id'=>1,'name'=>'Bain-marie','kind'=>'hot_holding','min_c'=>63,'max_c'=>null,'sort_order'=>10,'is_active'=>1,'created_at'=>now()->subDays(5),'updated_at'=>now()->subDays(5)]);`);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await loginAsAdmin(page);
+    await page.goto('/admin/hygiene/temperature', { waitUntil: 'domcontentloaded' });
+    const card = page.locator('.tmp-card', { hasText: 'Bain-marie' });
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const id = (await card.getAttribute('data-testid')).replace('tmp-card-', '');
+    await page.locator(`[data-testid="tmp-take-${id}"]`).click();
+    await page.locator(`[data-testid="tmp-input-${id}"]`).fill('55');
+    await page.locator(`[data-testid="tmp-action-${id}-reheated"]`).click();
+    await page.locator('[data-testid="tmp-submit"]').click();
+    await expect(page.getByTestId(`tmp-followup-${id}`)).toBeVisible({ timeout: 15_000 });
+    tinker(`DB::table('hygiene_temperature_readings')->update(['recorded_at' => now()->subMinutes(50)]);`);
+    await page.reload();
+    await expect(page.getByTestId(`tmp-followup-${id}`)).toContainText('en retard', { timeout: 30_000 });
+
+    // la mesure est impossible : on le dit (5 caractères au moins) au lieu d'inventer un relevé
+    await page.getByTestId(`tmp-close-open-${id}`).click();
+    await page.getByTestId(`tmp-close-reason-${id}`).fill('off');
+    await expect(page.getByTestId(`tmp-close-go-${id}`)).toBeDisabled();
+    await page.getByTestId(`tmp-close-reason-${id}`).fill('appareil éteint, service terminé');
+    await page.screenshot({ path: path.join(OUT, 'c1-cloture-suivi.png') });
+    await page.getByTestId(`tmp-close-go-${id}`).click();
+    await expect(page.getByTestId(`tmp-followup-${id}`)).toHaveCount(0, { timeout: 15_000 });
+
+    // le journal garde la raison ; l'accueil ne rappelle plus rien
+    await page.getByTestId('tmp-history-toggle').click();
+    await expect(page.getByTestId('tmp-history')).toContainText('suivi clos : appareil éteint, service terminé', { timeout: 15_000 });
+    const row = tinker(`echo json_encode(DB::table('hygiene_temperature_readings')->first(['followup_close_reason','voided_at']), JSON_UNESCAPED_UNICODE);`);
+    expect(row).toContain('appareil éteint');
+    expect(row).toContain('"voided_at":null'); // l'écart reste au journal, non annulé
+    await page.goto('/admin/hygiene/home', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('home-banner')).toBeVisible({ timeout: 30_000 });
+    const rem = (await page.getByTestId('home-reminders').count()) ? await page.getByTestId('home-reminders').innerText() : '';
+    expect(rem).not.toContain('Contrôle de suite');
+    expect(bad, bad.join('\n')).toEqual([]);
+});

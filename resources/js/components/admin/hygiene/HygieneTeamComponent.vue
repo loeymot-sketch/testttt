@@ -33,9 +33,12 @@
 
                             <template v-if="editing === u.id">
                                 <input ref="pinInput" v-model="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password"
-                                       class="hy-input tm-pin" placeholder="4 à 6 chiffres" :aria-label="`Nouveau code de ${u.name}`" :data-testid="`tm-input-${u.id}`"
+                                       class="hy-input tm-pin" placeholder="4 à 6 chiffres" :aria-label="`Nouveau code de ${u.name}`" :data-testid="`tm-input-${u.id}`" />
+                                <input v-model="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password"
+                                       class="hy-input tm-pin" placeholder="Confirmez" :aria-label="`Confirmez le code de ${u.name}`" :data-testid="`tm-confirm-${u.id}`"
                                        @keydown.enter.prevent="save(u)" />
-                                <button type="button" class="hy-btn hy-btn--primary hy-btn--small" :disabled="busy || !validPin" :data-testid="`tm-save-${u.id}`" @click="save(u)">Enregistrer</button>
+                                <span v-if="pin2 && pin !== pin2" class="hy-sub is-alert" role="alert" :data-testid="`tm-mismatch-${u.id}`">Les deux codes ne sont pas identiques.</span>
+                                <button type="button" class="hy-btn hy-btn--primary hy-btn--small" :disabled="busy || !validPin || pin !== pin2" :data-testid="`tm-save-${u.id}`" @click="save(u)">Enregistrer</button>
                                 <button type="button" class="hy-btn hy-btn--small" :data-testid="`tm-cancel-${u.id}`" @click="cancel">Annuler</button>
                             </template>
                             <template v-else-if="removing === u.id">
@@ -45,6 +48,7 @@
                             </template>
                             <template v-else>
                                 <button type="button" class="hy-btn hy-btn--small" :data-testid="`tm-set-${u.id}`" @click="startEdit(u)">{{ u.has_pin ? "Changer le code" : "Définir un code" }}</button>
+                                <button v-if="u.locked" type="button" class="hy-btn hy-btn--small hy-btn--primary" :disabled="busy" :data-testid="`tm-unlock-${u.id}`" @click="unlock(u)">Débloquer</button>
                                 <button v-if="u.has_pin" type="button" class="hy-btn hy-btn--small" :data-testid="`tm-remove-${u.id}`" @click="removing = u.id">Retirer</button>
                             </template>
                         </li>
@@ -69,11 +73,11 @@ import alertService from "../../../services/alertService";
 export default {
     name: "HygieneTeamComponent",
     data() {
-        return { loaded: false, loadError: "", forbidden: false, people: [], meta: { without_pin: 0, timezone: "Europe/Paris" }, editing: null, removing: null, pin: "", busy: false, message: "", messageOk: true };
+        return { loaded: false, loadError: "", forbidden: false, people: [], meta: { without_pin: 0, token_minutes: 10, timezone: "Europe/Paris" }, editing: null, removing: null, pin: "", pin2: "", busy: false, message: "", messageOk: true };
     },
     computed: {
         validPin() { return /^\d{4,6}$/.test(this.pin); },
-        tokenMinutes() { return 10; },
+        tokenMinutes() { return this.meta.token_minutes || 10; },
     },
     mounted() { this.load(); },
     methods: {
@@ -93,22 +97,22 @@ export default {
             }
         },
         startEdit(u) {
-            this.editing = u.id; this.removing = null; this.pin = ""; this.message = "";
+            this.editing = u.id; this.removing = null; this.pin = ""; this.pin2 = ""; this.message = "";
             this.$nextTick(() => { const el = this.$refs.pinInput; const input = Array.isArray(el) ? el[0] : el; if (input) input.focus(); });
         },
-        cancel() { this.editing = null; this.pin = ""; },
+        cancel() { this.editing = null; this.pin = ""; this.pin2 = ""; },
         errorText(e, fallback) {
             const d = e && e.response && e.response.data;
             if (d && d.errors) { const first = Object.values(d.errors)[0]; if (Array.isArray(first) && first[0]) return first[0]; }
             return (d && d.message) || fallback;
         },
         async save(u) {
-            if (this.busy || !this.validPin) return;
+            if (this.busy || !this.validPin || this.pin !== this.pin2) return;
             this.busy = true;
             this.message = "";
             try {
                 await axios.put(`admin/hygiene/team/${u.id}/pin`, { pin: this.pin });
-                this.editing = null; this.pin = "";
+                this.editing = null; this.pin = ""; this.pin2 = "";
                 this.messageOk = true;
                 this.message = `Code de ${u.name} enregistré. Communiquez-le à la personne : il ne s'affichera plus jamais.`;
                 alertService.success("Code enregistré.");
@@ -116,6 +120,21 @@ export default {
             } catch (e) {
                 this.messageOk = false;
                 this.message = this.errorText(e, "Enregistrement impossible : vérifiez la connexion puis réessayez.");
+            } finally { this.busy = false; }
+        },
+        /** Une personne bloquée par trop d'essais : on la débloque sans changer son code. */
+        async unlock(u) {
+            if (this.busy) return;
+            this.busy = true;
+            this.message = "";
+            try {
+                await axios.post(`admin/hygiene/team/${u.id}/unlock`);
+                this.messageOk = true;
+                this.message = `${u.name} est débloqué(e) : son code reste le même.`;
+                await this.load();
+            } catch (e) {
+                this.messageOk = false;
+                this.message = this.errorText(e, "Déblocage impossible : vérifiez la connexion puis réessayez.");
             } finally { this.busy = false; }
         },
         async remove(u) {

@@ -6,16 +6,8 @@
             </div>
 
             <div class="db-card-body">
-                <!-- ── Hors ligne : ce qui est gardé sur la tablette, et ce que le serveur a refusé ───────────── -->
-                <div v-if="queuedPending.length" class="tmp-offline" role="status" data-testid="tmp-offline">
-                    <strong>⏳ {{ queuedReadingsCount }} relevé{{ queuedReadingsCount > 1 ? "s" : "" }} gardé{{ queuedReadingsCount > 1 ? "s" : "" }} sur cette tablette, en attente de réseau.</strong>
-                    Ils partent tout seuls dès que la connexion revient (même si vous rechargez la page) et gardent l'heure de la mesure.
-                    <button type="button" class="tmp-btn tmp-btn--small" :disabled="flushing" data-testid="tmp-offline-retry" @click="flushQueue">{{ flushing ? "Envoi…" : "Réessayer maintenant" }}</button>
-                </div>
-                <div v-for="r in queuedRejected" :key="r.qid" class="tmp-alert tmp-refused" role="alert" data-testid="tmp-refused">
-                    <strong>Relevés refusés par le serveur ({{ r.label }}) :</strong> {{ r.reason }} <em>Ressaisissez-les : rien n'a été enregistré.</em>
-                    <button type="button" class="tmp-btn tmp-btn--small" data-testid="tmp-refused-ok" @click="dismissRefused(r.qid)">J'ai compris</button>
-                </div>
+                <!-- ── Hors ligne : ce qui est gardé sur la tablette, ce que le serveur a refusé (partagé avec l'Accueil) ─────────── -->
+                <HygieneQueueBanner ref="qbanner" :names="equipmentNames" :timezone="meta.timezone || 'Europe/Paris'" @changed="onQueueChanged" @sent="afterQueueSent" />
 
                 <p v-if="loadError" class="tmp-alert" role="alert" data-testid="tmp-error">{{ loadError }}</p>
                 <p v-if="!loaded && !loadError" class="tmp-muted" role="status">Chargement…</p>
@@ -52,7 +44,7 @@
                         <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
                     </div>
                     <div class="tmp-who">
-                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" @update:me="operatorMe = $event" />
                     </div>
 
                     <!-- ── Un équipement = une carte ───────────────────────────────────────────────── -->
@@ -78,8 +70,21 @@
                                 <span v-if="e.followup" class="tmp-followup" :class="{ 'is-overdue': followupOverdue(e) }" role="status" :data-testid="`tmp-followup-${e.id}`">
                                     ⏱ {{ followupOverdue(e) ? "Nouvelle mesure en retard : attendue depuis" : "Nouvelle mesure à faire avant" }} {{ hm(e.followup.due_at) }}
                                 </span>
+                                <span v-if="queuedFor(e)" class="tmp-queued tmp-queued--inline" role="status" :data-testid="`tmp-queued-inline-${e.id}`">
+                                    ⏳ Nouvelle mesure {{ fmt(queuedFor(e).value) }} °C gardée sur la tablette à {{ hm(queuedFor(e).at) }}, en attente d'envoi.
+                                </span>
+                                <div v-if="e.followup && closeTarget === e.id" class="tmp-close" :data-testid="`tmp-close-${e.id}`">
+                                    <label class="tmp-label" :for="`tmp-close-reason-${e.id}`">Pourquoi la mesure est impossible ?</label>
+                                    <input :id="`tmp-close-reason-${e.id}`" v-model="closeReason" type="text" maxlength="120" class="tmp-note" placeholder="Équipement éteint, en panne…" :data-testid="`tmp-close-reason-${e.id}`" />
+                                    <p v-if="closeError" class="tmp-hint is-alert" role="alert" :data-testid="`tmp-close-error-${e.id}`">{{ closeError }}</p>
+                                    <div class="tmp-done-actions">
+                                        <button type="button" class="tmp-btn tmp-btn--small tmp-btn--primary" :disabled="saving || closeReason.trim().length < 5" :data-testid="`tmp-close-go-${e.id}`" @click="confirmCloseFollowup(e)">Clore le suivi</button>
+                                        <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-close-cancel-${e.id}`" @click="cancelClose">Annuler</button>
+                                    </div>
+                                </div>
                                 <div class="tmp-done-actions">
-                                    <button type="button" class="tmp-btn tmp-btn--small" :class="{ 'tmp-btn--primary': e.followup }" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
+                                    <button v-if="e.followup && closeTarget !== e.id" type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-close-open-${e.id}`" @click="askCloseFollowup(e)">Mesure impossible</button>
+                                    <button v-if="!queuedFor(e)" type="button" class="tmp-btn tmp-btn--small" :class="{ 'tmp-btn--primary': e.followup }" :data-testid="`tmp-again-${e.id}`" @click="startEntry(e)">Nouveau relevé</button>
                                     <button type="button" class="tmp-btn tmp-btn--small" :data-testid="`tmp-void-${e.id}`" @click="askVoid(e.last_today)">Annuler ce relevé</button>
                                 </div>
                             </div>
@@ -95,7 +100,7 @@
                                         <button type="button" class="tmp-sign" :aria-pressed="entries[e.id].neg ? 'true' : 'false'"
                                                 :aria-label="entries[e.id].neg ? 'Température négative' : 'Température positive'" :data-testid="`tmp-sign-${e.id}`"
                                                 @click="entries[e.id].neg = !entries[e.id].neg">{{ entries[e.id].neg ? "−" : "+" }}</button>
-                                        <input v-model="entries[e.id].raw" type="text" inputmode="decimal" autocomplete="off" class="tmp-input" placeholder="0,0"
+                                        <input v-model="entries[e.id].raw" type="text" inputmode="decimal" autocomplete="off" class="tmp-input" placeholder="0,0" :readonly="saving"
                                                :aria-label="`Température de ${e.name}`" :data-testid="`tmp-input-${e.id}`" @focus="$event.target.select()" />
                                         <span class="tmp-unit">°C</span>
                                     </div>
@@ -103,7 +108,7 @@
                                         <button v-if="e.previous" type="button" class="tmp-chip tmp-chip--btn" :data-testid="`tmp-same-${e.id}`" @click="sameAsPrevious(e)">
                                             = {{ fmt(e.previous.value_c) }} °C ({{ previousWhen(e.previous.recorded_at) }})
                                         </button>
-                                        <button type="button" class="tmp-chip tmp-chip--btn" :data-testid="`tmp-cancel-${e.id}`" @click="stopEntry(e)">Annuler</button>
+                                        <button type="button" class="tmp-chip tmp-chip--btn" :disabled="saving" :data-testid="`tmp-cancel-${e.id}`" @click="stopEntry(e)">Annuler</button>
                                     </div>
                                     <p v-if="rawError(e)" class="tmp-hint is-alert" role="status" :data-testid="`tmp-raw-error-${e.id}`">{{ rawError(e) }}</p>
                                     <template v-else-if="valueOf(e) !== null">
@@ -184,7 +189,7 @@
                                 <strong class="tmp-row-value">{{ fmt(r.value_c) }} °C</strong>
                                 <span class="tmp-row-meta">
                                     {{ r.voided ? `Annulé : ${r.void_reason}` : (r.status === "alert" ? `${alertText(r)}${r.corrective_label ? " — " + r.corrective_label : ""}${r.corrective_note ? " (" + r.corrective_note + ")" : ""}` : "Conforme") }}
-                                    · {{ periodName(r.period) }}<template v-if="r.operator_name"> · {{ r.operator_name }}</template><template v-if="r.offline"> · saisi hors ligne, envoyé à {{ hm(r.synced_at) }}</template>
+                                    · {{ periodName(r.period) }}<template v-if="r.operator_name"> · {{ r.operator_name }}</template><template v-if="r.offline"> · saisi hors ligne, envoyé à {{ hm(r.synced_at) }}</template><template v-if="r.followup_closed"> · suivi clos : {{ r.followup_close_reason }}</template>
                                 </span>
                             </li>
                         </ul>
@@ -235,6 +240,7 @@ import { refFor, latest } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import HygieneTempChart from "./HygieneTempChart";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
+import HygieneQueueBanner from "./HygieneQueueBanner";
 import { hygieneQueue, isRetriable } from "../../../helpers/hygieneOfflineQueue";
 
 const historySeq = latest();
@@ -245,15 +251,13 @@ function clientRef() {
 
 export default {
     name: "HygieneTemperatureComponent",
-    components: { HygieneTempChart, HygieneOperatorPicker },
+    components: { HygieneTempChart, HygieneOperatorPicker, HygieneQueueBanner },
     mixins: [hygieneRefresh],
     data() {
         return {
-            operatorId: null, operatorToken: null,
+            operatorId: null, operatorToken: null, operatorMe: null,
+            closeTarget: null, closeReason: "", closeError: "",
             queued: [],
-            flushing: false,
-            onlineHandler: null,
-            queueTimer: null,
             items: [],
             equipment: [],
             meta: { period: "morning", periods: {}, summary: { total: 0, todo: 0, ok: 0, alert: 0 }, kinds: [], corrective_actions: [], server_now: null },
@@ -314,24 +318,22 @@ export default {
             this.queuedPending.forEach((i) => ((i.body && i.body.readings) || []).forEach((r) => { map[r.equipment_id] = { value: r.value, at: r.measured_at }; }));
             return map;
         },
+        equipmentNames() {
+            const m = {};
+            this.items.forEach((e) => { m[e.id] = e.name; });
+            return m;
+        },
         todoWithoutEntry() {
-            return this.items.filter((e) => !this.entries[e.id] && !e.done_this_period).length;
+            return this.items.filter((e) => !this.entries[e.id] && !e.done_this_period && !this.queuedFor(e)).length;
         },
     },
     created() {
         this.loadToday();
         this.tick = setInterval(() => { this.nowMs = Date.now(); }, 60000);
-        // hors ligne : ce qui est gardé sur la tablette repart dès que le réseau revient (événement « online », puis toutes les 30 s)
         this.refreshQueue();
-        this.flushQueue();
-        this.onlineHandler = () => this.flushQueue();
-        if (typeof window !== "undefined") window.addEventListener("online", this.onlineHandler);
-        this.queueTimer = setInterval(() => { if (this.queuedPending.length) this.flushQueue(); }, 30000);
     },
     beforeUnmount() {
         if (this.tick) clearInterval(this.tick);
-        if (this.queueTimer) clearInterval(this.queueTimer);
-        if (typeof window !== "undefined" && this.onlineHandler) window.removeEventListener("online", this.onlineHandler);
     },
     methods: {
         followupOverdue(e) { return Boolean(e.followup) && Date.parse(e.followup.due_at) <= this.nowMs + this.serverOffsetMs; },
@@ -342,26 +344,18 @@ export default {
             return Boolean(a && a.followup);
         },
         queue() { return hygieneQueue(axios); },
-        refreshQueue() { this.queued = this.queue().items().filter((i) => i.kind === "temperature"); },
+        refreshQueue() {
+            this.queued = this.queue().items().filter((i) => i.kind === "temperature");
+            if (this.$refs.qbanner) this.$refs.qbanner.refresh();
+        },
         queuedFor(e) { return this.queuedByEquipment[e.id] || null; },
-        dismissRefused(qid) { this.queue().dismiss(qid); this.refreshQueue(); },
-        async flushQueue() {
-            if (this.flushing) return;
-            this.refreshQueue();
-            if (!this.queuedPending.length) return;
-            this.flushing = true;
-            try {
-                const r = await this.queue().flush();
-                this.refreshQueue();
-                if (r.sent > 0) {
-                    await this.loadToday();
-                    await this.reloadCharts();
-                    if (this.showHistory) await this.loadHistory();
-                    alertService.success(`${r.sent} envoi${r.sent > 1 ? "s" : ""} gardé${r.sent > 1 ? "s" : ""} hors ligne ${r.sent > 1 ? "ont" : "a"} été enregistré${r.sent > 1 ? "s" : ""}.`);
-                }
-            } finally {
-                this.flushing = false;
-            }
+        /** La bannière partagée a relu la file : la carte de chaque équipement dit ce qui est gardé. */
+        onQueueChanged(items) { this.queued = items; },
+        /** Des relevés gardés viennent d'être enregistrés : on relit l'écran. */
+        async afterQueueSent() {
+            await this.loadToday();
+            await this.reloadCharts();
+            if (this.showHistory) await this.loadHistory();
         },
         hyDraft() { return Object.keys(this.entries).length > 0 || this.voidTarget !== null; },
         hyReload() { return this.loadToday(); },
@@ -437,6 +431,7 @@ export default {
 
         // ── saisie ────────────────────────────────────────────────────────────
         startEntry(e) {
+            if (this.queuedFor(e)) { alertService.info(`Une mesure de « ${e.name} » est déjà gardée sur la tablette : elle partira dès que le réseau revient.`); return; }
             this.voidTarget = null;
             this.entries = { ...this.entries, [e.id]: { raw: "", neg: Boolean(e.negative), action: "", note: "", ref: clientRef() } };
             this.$nextTick(() => {
@@ -447,7 +442,7 @@ export default {
         startAll() {
             const next = { ...this.entries };
             this.items.forEach((e) => {
-                if (!next[e.id] && !e.done_this_period) next[e.id] = { raw: "", neg: Boolean(e.negative), action: "", note: "", ref: clientRef() };
+                if (!next[e.id] && !e.done_this_period && !this.queuedFor(e)) next[e.id] = { raw: "", neg: Boolean(e.negative), action: "", note: "", ref: clientRef() };
             });
             this.entries = next;
         },
@@ -546,27 +541,32 @@ export default {
             this.formError = "";
             this.saving = true;
             const sent = this.pendingList;
-            // L'heure de la mesure n'est envoyée QUE hors ligne (l'horloge d'une tablette peut être fausse : en ligne, c'est le serveur qui date).
-            const bodyFor = (stamp) => ({
-                operator_user_id: this.operatorId || undefined,
-                operator_token: this.operatorToken || undefined,
-                readings: sent.map((e) => {
-                    const entry = this.entries[e.id];
-                    const verdict = this.verdictOf(e);
-                    return {
-                        equipment_id: e.id,
-                        value: this.valueOf(e),
-                        client_ref: refFor(entry.ref, { v: this.valueOf(e), a: entry.action, n: entry.note }),
-                        ...(verdict.status === "alert" ? { corrective_action: entry.action, corrective_note: entry.note || undefined } : {}),
-                        ...(stamp ? { measured_at: stamp } : {}),
-                    };
-                }),
+            // TOUT est figé ICI, avant le moindre envoi : valeurs, références, personne et jeton. Pendant l'attente (jusqu'à 30 s sans réseau) l'écran vit
+            // encore ; ce qui est rejoué ou gardé hors ligne est EXACTEMENT ce qui a été validé, jamais ce que la personne a retouché entre-temps.
+            const stamp = new Date().toISOString(); // l'heure de la mesure = le moment de la validation
+            const readings = sent.map((e) => {
+                const entry = this.entries[e.id];
+                const verdict = this.verdictOf(e);
+                return {
+                    equipment_id: e.id,
+                    value: this.valueOf(e),
+                    client_ref: refFor(entry.ref, { v: this.valueOf(e), a: entry.action, n: entry.note }),
+                    ...(verdict.status === "alert" ? { corrective_action: entry.action, corrective_note: entry.note || undefined } : {}),
+                };
             });
-            try {
-                const { data } = await axios.post("admin/hygiene/temperature/readings", bodyFor(null));
+            const who = { operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined };
+            // hors ligne, la personne est écrite en toutes lettres (« moi » = SON compte, pas celui qui sera connecté au moment du rejeu)
+            const whoOffline = { ...who, operator_user_id: this.operatorId || this.operatorMe || undefined };
+            const ids = sent.map((e) => e.id);
+            const clearEntries = () => {
                 const rest = { ...this.entries };
-                sent.forEach((e) => { delete rest[e.id]; });
+                ids.forEach((id) => { delete rest[id]; });
                 this.entries = rest;
+            };
+            try {
+                // en ligne, l'heure de la mesure n'est PAS envoyée : l'horloge d'une tablette peut être fausse, c'est le serveur qui date
+                const { data } = await axios.post("admin/hygiene/temperature/readings", { ...who, readings });
+                clearEntries();
                 await this.loadToday();
                 await this.reloadCharts();
                 if (this.showHistory) await this.loadHistory();
@@ -576,15 +576,16 @@ export default {
                 else alertService.success(`${n} relevé${n > 1 ? "s" : ""} enregistré${n > 1 ? "s" : ""}.`);
             } catch (e) {
                 if (isRetriable(e)) {
-                    // pas de réseau (ou serveur indisponible) : le relevé est GARDÉ sur la tablette avec l'heure de la mesure, jamais perdu
-                    const n = sent.length;
-                    const kept = this.queue().enqueue({ url: "admin/hygiene/temperature/readings", body: bodyFor(new Date().toISOString()), label: `${n} relevé${n > 1 ? "s" : ""}`, kind: "temperature" });
+                    // pas de réseau (ou serveur / session indisponible) : le relevé est GARDÉ sur la tablette avec l'heure de la mesure, jamais perdu
+                    const n = readings.length;
+                    const kept = this.queue().enqueue({
+                        url: "admin/hygiene/temperature/readings", label: `${n} relevé${n > 1 ? "s" : ""}`, kind: "temperature",
+                        body: { ...whoOffline, readings: readings.map((r) => ({ ...r, measured_at: stamp, equipment_name: (this.equipmentNames[r.equipment_id] || undefined) })) },
+                    });
                     if (kept) {
-                        const rest = { ...this.entries };
-                        sent.forEach((x) => { delete rest[x.id]; });
-                        this.entries = rest;
+                        clearEntries();
                         this.refreshQueue();
-                        alertService.info(`Pas de réseau : ${n} relevé${n > 1 ? "s" : ""} gardé${n > 1 ? "s" : ""} sur la tablette. Ils partiront tout seuls dès que la connexion revient.`);
+                        alertService.info(`${this.offlineCause(e)} ${n} relevé${n > 1 ? "s" : ""} gardé${n > 1 ? "s" : ""} sur la tablette : ${n > 1 ? "ils partiront" : "il partira"} dès que ça revient.`);
                         return;
                     }
                     this.formError = "Pas de réseau, et la tablette ne peut pas garder ces relevés (mémoire pleine ou navigation privée). Ne fermez pas cet écran : revalidez dès que la connexion revient.";
@@ -598,6 +599,36 @@ export default {
                 this.saving = false;
             }
         },
+        /** Dit la VRAIE cause : un relevé gardé parce que la session a expiré ou que le serveur est en panne n'est pas « un manque de réseau ». */
+        offlineCause(e) {
+            const status = e && e.response && e.response.status;
+            if (status === 401 || status === 419) return "Session expirée (reconnectez-vous).";
+            if (status === 403) return "Droit refusé pour le moment.";
+            if (status === 429) return "Serveur trop sollicité.";
+            if (status >= 500) return "Serveur indisponible.";
+            return "Pas de réseau.";
+        },
+        askCloseFollowup(e) { this.closeTarget = e.id; this.closeReason = ""; this.closeError = ""; },
+        cancelClose() { this.closeTarget = null; this.closeReason = ""; this.closeError = ""; },
+        /** Le suivi est impossible (équipement éteint, en panne) : on le CLÔT en disant pourquoi — la raison et la personne restent au journal. */
+        async confirmCloseFollowup(e) {
+            if (this.saving || !e.followup || this.closeReason.trim().length < 5) return;
+            this.saving = true;
+            this.closeError = "";
+            try {
+                await axios.post(`admin/hygiene/temperature/readings/${e.followup.reading_id}/followup-close`, {
+                    reason: this.closeReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
+                });
+                this.cancelClose();
+                await this.loadToday();
+                if (this.showHistory) await this.loadHistory();
+                alertService.success("Suivi clos : la raison est au journal.");
+            } catch (err) {
+                this.closeError = this.apiMessage(err, "Clôture impossible : vérifiez la connexion puis réessayez.");
+            } finally {
+                this.saving = false;
+            }
+        },
         askVoid(reading) {
             this.voidReason = "";
             this.voidTarget = reading;
@@ -606,7 +637,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/temperature/readings/${this.voidTarget.id}/void`, { reason: this.voidReason.trim() });
+                await axios.post(`admin/hygiene/temperature/readings/${this.voidTarget.id}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
                 this.voidTarget = null;
                 await this.loadToday();
                 await this.reloadCharts();
@@ -736,7 +767,7 @@ export default {
 .tmp-corrective { display: flex; flex-direction: column; gap: 8px; }
 .tmp-label { font-weight: 700; font-size: 14px; color: #334155; }
 .tmp-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.tmp-note { width: 100%; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 6px 10px; font-size: 16px; }
+.tmp-note { width: 100%; min-height: 44px; border: 1px solid #94a3b8; border-radius: 10px; padding: 6px 10px; font-size: 16px; color: #111827; background: #fff; }
 
 .tmp-done { display: flex; flex-direction: column; gap: 4px; }
 .tmp-done-value { font-size: 28px; font-weight: 900; color: #166534; }

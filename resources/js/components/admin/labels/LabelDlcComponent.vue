@@ -188,7 +188,7 @@
                                         <span v-else-if="queuedCount(p.id)" class="dlc-tile-busy dlc-tile-busy--queued" data-testid="dlc-tile-queued">En attente ×{{ queuedCount(p.id) }}</span>
                                     </button>
                                     <button type="button" class="dlc-star" :class="{ 'is-on': p.is_favorite }" :aria-pressed="p.is_favorite ? 'true' : 'false'"
-                                            :aria-label="p.is_favorite ? `Retirer des favoris : ${p.name}` : `Ajouter aux favoris : ${p.name}`" :disabled="favoriteBusy === p.id"
+                                            :aria-label="p.is_favorite ? `Retirer des favoris : ${p.name}` : `Ajouter aux favoris : ${p.name}`" :disabled="Boolean(favoriteBusy[p.id])"
                                             :data-testid="`dlc-fav-${p.id}`" @click="toggleFavorite(p)">{{ p.is_favorite ? "★" : "☆" }}</button>
                                     <button v-if="selectMode && selection[p.id]" type="button" class="dlc-corner" :aria-label="`Retirer une étiquette ${p.name}`"
                                             :data-testid="`dlc-minus-${p.id}`" @click="minus(p)">−</button>
@@ -429,7 +429,7 @@ export default {
             onlineHandler: null,
             loaded: false,
             discarding: false,
-            favoriteBusy: null,
+            favoriteBusy: {},
             undo: null,
             undoTimer: null,
             selectMode: false,
@@ -713,7 +713,8 @@ export default {
                     const server = Date.parse(data.meta.server_now);
                     if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
                 }
-                if (this.category && !this.categoryTabs.some((c) => c.name === this.category)) this.category = "";
+                // ★ Favoris n'est pas une famille : une modification de fiche ne doit jamais renvoyer la personne sur « Tous » sans explication
+                if (this.category && this.category !== FAVORITES && !(this.category === NO_FAMILY && this.uncategorizedCount) && !this.categoryTabs.some((c) => c.name === this.category)) this.category = "";
                 this.loadError = "";
                 this.loaded = true;
                 const hl = data.meta && data.meta.health;
@@ -804,10 +805,15 @@ export default {
         },
         /** Étoile : change tout de suite à l'écran, puis le serveur confirme ; un échec remet l'étoile comme avant et le dit. */
         async toggleFavorite(p) {
-            if (this.favoriteBusy === p.id) return;
+            if (this.favoriteBusy[p.id]) return; // une requête par produit à la fois (A, B puis A de nouveau avant le retour : pas deux envois concurrents sur A)
             const want = !p.is_favorite;
-            this.favoriteBusy = p.id;
+            this.favoriteBusy = { ...this.favoriteBusy, [p.id]: true };
             p.is_favorite = want;
+            // un produit retiré des favoris DISPARAÎT de la vue ★ : il ne doit pas rester dans la sélection, invisible, et s'imprimer
+            if (!want && this.category === FAVORITES && this.selection[p.id]) {
+                const { [p.id]: _gone, ...rest } = this.selection;
+                this.selection = rest;
+            }
             try {
                 const { data } = await axios.put(`admin/labels/products/${p.id}/favorite`, { favorite: want });
                 p.is_favorite = Boolean(data && data.data ? data.data.is_favorite : want);
@@ -815,7 +821,8 @@ export default {
                 p.is_favorite = !want;
                 alertService.error("Favori non enregistré : vérifiez la connexion puis réessayez.");
             } finally {
-                this.favoriteBusy = null;
+                const { [p.id]: _done, ...rest } = this.favoriteBusy;
+                this.favoriteBusy = rest;
             }
         },
         setSelectMode(on) {

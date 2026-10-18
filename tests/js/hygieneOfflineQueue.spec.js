@@ -77,6 +77,31 @@ describe('file hors ligne des relevés', () => {
         expect(q.items()).toHaveLength(0);
     });
 
+    it('un lot refusé en bloc est rejoué relevé par relevé : les valides passent, seul le fautif reste refusé', async () => {
+        const post = vi.fn(async (url, body) => {
+            if (body.readings.length > 1) throw err(422, { errors: { 'readings.1.value': ['Lot refusé'] } }); // « tout ou rien »
+            if (body.readings[0].equipment_id === 2) throw err(422, { errors: { 'readings.0.value': ['« Frigo 2 » : 99 °C n’est pas plausible.'] } });
+            return {};
+        });
+        const q = createHygieneQueue({ post, storage: mem() });
+        q.enqueue({ url: 'u', body: { readings: [1, 2, 3].map((n) => ({ equipment_id: n, value: 3, measured_at: '2026-10-20T10:12:00+02:00', client_ref: `r${n}` })) }, label: '3 relevés' });
+        const r = await q.flush();
+        expect(r).toEqual({ sent: 2, pending: 0, rejected: 1 });
+        expect(q.rejected()).toHaveLength(1);
+        expect(q.rejected()[0].body.readings[0].equipment_id).toBe(2); // la mesure fautive reste visible avec ses valeurs
+        expect(q.rejected()[0].reason).toContain('Frigo 2');
+        expect(post.mock.calls.map((c) => c[1].readings.map((x) => x.equipment_id))).toEqual([[1, 2, 3], [1], [2], [3]]);
+    });
+
+    it('un seul relevé refusé n’est pas redécoupé (rien à isoler)', async () => {
+        const post = vi.fn(async () => { throw err(422, { errors: { x: ['non'] } }); });
+        const q = createHygieneQueue({ post, storage: mem() });
+        q.enqueue(entry(1));
+        await q.flush();
+        expect(post).toHaveBeenCalledTimes(1);
+        expect(q.rejected()).toHaveLength(1);
+    });
+
     it('plus de 72 h hors ligne : refusé sans appel au serveur', async () => {
         let t = 1_700_000_000_000;
         const post = vi.fn(async () => ({}));

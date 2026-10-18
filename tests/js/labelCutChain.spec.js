@@ -181,9 +181,19 @@ describe('dernier travail envoyé : ce que la tablette dit avoir envoyé', () =>
     it('dit en français ce qui a été envoyé', () => {
         expect(describeLastJob(null)).toBe('');
         const at = new Date(2026, 9, 18, 14, 32).getTime();
-        expect(describeLastJob({ at, pages: 4, cutEvery: 4, ok: true })).toBe('14:32 — 4 étiquettes, UNE coupe à la fin (tickets attachés) — envoyé');
-        expect(describeLastJob({ at, pages: 4, cutEvery: 1, ok: true })).toBe('14:32 — 4 étiquettes, une coupe après chaque étiquette — envoyé');
-        expect(describeLastJob({ at, pages: 6, cutEvery: 3, ok: false })).toBe('14:32 — 6 étiquettes, une coupe toutes les 3 étiquettes — échec');
-        expect(describeLastJob({ at, pages: 1, cutEvery: 1, ok: true })).toBe('14:32 — 1 étiquette, une seule étiquette — envoyé');
+        const now = at + 3600_000; // même jour
+        expect(describeLastJob({ at, pages: 4, cutEvery: 4, ok: true }, now)).toBe('14:32 — 4 étiquettes, UNE coupe à la fin (tickets attachés) — envoyé');
+        expect(describeLastJob({ at, pages: 4, cutEvery: 1, ok: true }, now)).toBe('14:32 — 4 étiquettes, une coupe après chaque étiquette — envoyé');
+        expect(describeLastJob({ at, pages: 6, cutEvery: 3, ok: false }, now)).toBe('14:32 — 6 étiquettes, une coupe toutes les 3 étiquettes — échec');
+        expect(describeLastJob({ at, pages: 1, cutEvery: 1, ok: true }, now)).toBe('14:32 — 1 étiquette, une seule étiquette — envoyé');
+    });
+
+    it('un travail d’un autre jour dit sa date ; coupe automatique éteinte = aucune coupe ; le rouleau est nommé', () => {
+        const at = new Date(2026, 9, 17, 14, 32).getTime();
+        const now = new Date(2026, 9, 18, 9, 0).getTime();
+        expect(describeLastJob({ at, pages: 4, cutEvery: 1, ok: true }, now)).toContain('17/10 14:32');
+        expect(describeLastJob({ at: now, pages: 4, cutEvery: 1, autoCut: false, ok: true }, now)).toContain('aucune coupe (coupe automatique éteinte)');
+        expect(describeLastJob({ at: now, pages: 4, cutEvery: 1, autoCut: false, ok: true }, now)).not.toContain('une coupe après chaque');
+        expect(describeLastJob({ at: now, pages: 2, cutEvery: 2, media: 'c62', ok: true }, now)).toContain('(rouleau c62)');
     });
 });

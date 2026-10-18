@@ -55,15 +55,20 @@ export function readLastJob(storage = (typeof localStorage !== 'undefined' ? loc
 }
 
 /** Phrase lisible : « 14:32 — 4 étiquettes, UNE coupe à la fin (tickets attachés) — envoyé ». */
-export function describeLastJob(j) {
+export function describeLastJob(j, now = Date.now()) {
     if (!j) return '';
-    const hm = new Date(j.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(j.at);
+    const hm = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    // un travail d'hier ne se lit pas comme celui d'aujourd'hui : la date est dite dès qu'il n'est pas du jour
+    const sameDay = d.toDateString() === new Date(now).toDateString();
+    const when = sameDay ? hm : `${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} ${hm}`;
     const n = `${j.pages} étiquette${j.pages > 1 ? 's' : ''}`;
-    const cut = j.pages < 2 ? 'une seule étiquette'
-        : j.cutEvery >= j.pages ? 'UNE coupe à la fin (tickets attachés)'
-            : j.cutEvery === 1 ? 'une coupe après chaque étiquette'
-                : `une coupe toutes les ${j.cutEvery} étiquettes`;
-    return `${hm} — ${n}, ${cut} — ${j.ok ? 'envoyé' : 'échec'}`;
+    const cut = j.autoCut === false ? 'aucune coupe (coupe automatique éteinte)'
+        : j.pages < 2 ? 'une seule étiquette'
+            : j.cutEvery >= j.pages ? 'UNE coupe à la fin (tickets attachés)'
+                : j.cutEvery === 1 ? 'une coupe après chaque étiquette'
+                    : `une coupe toutes les ${j.cutEvery} étiquettes`;
+    return `${when} — ${n}, ${cut}${j.media ? ` (rouleau ${j.media})` : ''} — ${j.ok ? 'envoyé' : 'échec'}`;
 }
 
 /** URLs d'aperçu (PNG noir et blanc, point pour point ce qui sera imprimé). */
@@ -99,7 +104,7 @@ export async function printBlocks(printer, blocksList, settings, env = {}, opts 
             turn180: settings.turn180,
         });
         const result = await printer.print(job, media);
-        rememberJob({ at: Date.now(), pages: job.pages, cutEvery: plan.cutEvery, chained: plan.chained, ok: Boolean(result && result.ok) });
+        rememberJob({ at: Date.now(), pages: job.pages, cutEvery: plan.cutEvery, chained: plan.chained, autoCut: settings.autoCut !== false, media: media.id, ok: Boolean(result && result.ok) });
         return result;
     } catch (err) {
         return { ok: false, message: 'Préparation de l’étiquette impossible : ' + ((err && err.message) || err) };

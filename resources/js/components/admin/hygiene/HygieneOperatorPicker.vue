@@ -1,5 +1,5 @@
 <template>
-    <div class="hy-operator" data-testid="hy-operator">
+    <div class="hy-operator" data-testid="hy-operator" @keydown.esc="closeAll">
         <button type="button" class="hy-chip hy-chip--btn" :aria-expanded="open ? 'true' : 'false'" aria-haspopup="listbox" data-testid="hy-operator-btn" @click="toggle">
             Qui ? <strong>{{ currentLabel }}</strong> ▾
         </button>
@@ -19,7 +19,7 @@
         <div v-else-if="open" class="hy-operator-pop" :class="`is-${side}`" role="listbox" aria-label="Qui fait ce relevé ?" data-testid="hy-operator-list">
             <button v-for="p in people" :key="p.id" type="button" role="option" :aria-selected="p.id === chosenId ? 'true' : 'false'"
                     :class="{ 'is-on': p.id === chosenId }" :data-testid="`hy-operator-${p.id}`" @click="choose(p)">
-                {{ p.name }}<template v-if="p.is_me"> (moi)</template><template v-if="p.has_pin && !p.is_me"> 🔒</template>
+                {{ p.name }}<template v-if="p.is_me"> (moi)</template><template v-if="p.has_pin && !p.is_me"> <span aria-label="protégé par un code" role="img">🔒</span></template>
             </button>
             <!-- jamais une liste vide muette : on dit pourquoi, ce qui se passe en attendant, et où l'ajouter -->
             <div v-if="!people.length && loadFailed" class="hy-operator-empty" data-testid="hy-operator-failed">
@@ -46,7 +46,7 @@ const STORE_KEY = "hygiene.operator";
 export default {
     name: "HygieneOperatorPicker",
     props: { modelValue: { type: [Number, null], default: null }, token: { type: [String, null], default: null } },
-    emits: ["update:modelValue", "update:token"],
+    emits: ["update:modelValue", "update:token", "update:me"],
     data() {
         return { people: [], me: null, open: false, chosenId: null, loadFailed: false, pinTarget: null, pinValue: "", pinError: "", pinBusy: false, expiredNote: "", expiryTimer: null, side: "left" };
     },
@@ -58,30 +58,40 @@ export default {
         },
     },
     async created() {
-        try {
-            const { data } = await axios.get("admin/hygiene/operators");
-            this.people = data.data || [];
-            this.me = data.meta ? data.meta.me : null;
-            this.loadFailed = false;
-        } catch (_) {
-            this.people = [];
-            this.loadFailed = true;
-        }
-        let saved = null;
-        // le choix est mémorisé PAR utilisateur connecté : quand Bob se connecte, il n'hérite pas du choix d'Alice
-        try { saved = Number(window.localStorage.getItem(this.storeKey())) || null; } catch (_) { /* stockage indisponible : on retombe sur « moi » */ }
-        // une personne protégée par un code n'est JAMAIS rétablie toute seule : le code n'est pas gardé sur la tablette (et le jeton est en mémoire)
-        const known = (id) => this.people.some((p) => p.id === id && !p.has_pin);
-        this.chosenId = known(this.modelValue) ? this.modelValue : (known(saved) ? saved : this.me);
-        this.$emit("update:modelValue", this.chosenId === this.me ? null : this.chosenId);
-        this.$emit("update:token", null);
+        await this.loadPeople();
     },
     beforeUnmount() { this.clearExpiry(); },
     methods: {
+        /** Charge la liste ; rappelée à l'ouverture du menu tant qu'elle a échoué (le message promet « rouvrez ce menu »). */
+        async loadPeople() {
+            try {
+                const { data } = await axios.get("admin/hygiene/operators");
+                this.people = data.data || [];
+                this.me = data.meta ? data.meta.me : null;
+                this.loadFailed = false;
+            } catch (_) {
+                this.people = [];
+                this.loadFailed = true;
+                return;
+            }
+            let saved = null;
+            // le choix est mémorisé PAR utilisateur connecté : quand Bob se connecte, il n'hérite pas du choix d'Alice
+            try { saved = Number(window.localStorage.getItem(this.storeKey())) || null; } catch (_) { /* stockage indisponible : on retombe sur « moi » */ }
+            // une personne protégée par un code n'est JAMAIS rétablie toute seule : le code n'est pas gardé sur la tablette (et le jeton est en mémoire)
+            const known = (id) => this.people.some((p) => p.id === id && !p.has_pin);
+            this.chosenId = known(this.modelValue) ? this.modelValue : (known(saved) ? saved : this.me);
+            this.$emit("update:modelValue", this.chosenId === this.me ? null : this.chosenId);
+            this.$emit("update:token", null);
+            this.$emit("update:me", this.me); // les écrans qui gardent une saisie hors ligne écrivent la personne en toutes lettres
+        },
+        /** Ferme le menu ET efface tout code à moitié tapé : un collègue qui touche la pastille ensuite ne retrouve jamais le code d'un autre. */
+        closeAll() { this.open = false; this.cancelPin(); },
         storeKey() { return `${STORE_KEY}.${this.me}`; },
         toggle() {
-            this.open = !this.open;
-            if (this.open) this.placePopover();
+            if (this.open) { this.closeAll(); return; }
+            this.open = true;
+            this.placePopover();
+            if (this.loadFailed) this.loadPeople();
         },
         /** Ouvre la fenêtre du côté où il y a de la place : le bouton peut être au bord gauche (températures) ou droit (huile), jamais coupée. */
         placePopover() {
@@ -112,26 +122,27 @@ export default {
             this.$emit("update:token", token || null);
             if (token && expiresAt) {
                 const ms = Math.max(1000, Date.parse(expiresAt) - Date.now());
-                // le code expire : retour sur « moi », dit clairement (personne ne signe au nom d'un autre par oubli)
+                // le code expire : la personne reste affichée mais sans jeton, donc la prochaine écriture est REFUSÉE avec un message clair
+                // (retomber sur « moi » en silence ferait signer du compte partagé sans que personne le voie)
                 this.expiryTimer = setTimeout(() => {
-                    const who = p.short;
-                    this.chosenId = this.me;
-                    this.$emit("update:modelValue", null);
                     this.$emit("update:token", null);
-                    this.expiredNote = `Le code de ${who} a expiré : retour sur « moi ». Choisissez de nouveau votre nom pour signer.`;
+                    this.expiredNote = `Le code de ${p.short} a expiré : touchez « Qui ? » et saisissez-le de nouveau pour signer.`;
                 }, ms);
             }
         },
         cancelPin() { this.pinTarget = null; this.pinValue = ""; this.pinError = ""; },
         async submitPin() {
             if (this.pinBusy || !this.pinTarget || !/^\d{4,6}$/.test(this.pinValue)) return;
+            const target = this.pinTarget; // figée : si on change de personne pendant l'attente, la réponse de l'une ne s'applique pas à l'autre
             this.pinBusy = true;
             this.pinError = "";
             try {
-                const { data } = await axios.post("admin/hygiene/operators/verify", { user_id: this.pinTarget.id, pin: this.pinValue });
+                const { data } = await axios.post("admin/hygiene/operators/verify", { user_id: target.id, pin: this.pinValue });
+                if (this.pinTarget !== target) return;
                 const d = data.data || {};
-                this.applyChoice(this.pinTarget, d.token || null, d.expires_at || null);
+                this.applyChoice(target, d.token || null, d.expires_at || null);
             } catch (e) {
+                if (this.pinTarget !== target) return;
                 const r = e && e.response;
                 this.pinValue = "";
                 if (!r) this.pinError = "Vérification impossible : pas de réseau. Réessayez quand la connexion revient.";

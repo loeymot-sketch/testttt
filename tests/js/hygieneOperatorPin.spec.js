@@ -137,7 +137,7 @@ describe('sélecteur « Qui ? » avec code', () => {
         expect(lastEmit(w, 'update:modelValue')).toEqual([null]);
     });
 
-    it('au bout de la validité du jeton, retour sur « moi » avec une explication', async () => {
+    it('au bout de la validité du jeton, la personne reste affichée SANS jeton (jamais de retour silencieux sur le compte partagé) avec une explication', async () => {
         vi.useFakeTimers();
         setupOps({ verify: async () => ({ data: { data: { token: 'T', expires_at: new Date(Date.now() + 600000).toISOString() } } }) });
         const w = await mountPicker();
@@ -147,13 +147,86 @@ describe('sélecteur « Qui ? » avec code', () => {
         await q(w, 'hy-pin-ok').trigger('click');
         await flushPromises();
         expect(lastEmit(w, 'update:modelValue')).toEqual([7]);
+        expect(lastEmit(w, 'update:token')).toEqual(['T']);
 
         vi.advanceTimersByTime(601000);
         await flushPromises();
-        expect(lastEmit(w, 'update:modelValue')).toEqual([null]);
-        expect(lastEmit(w, 'update:token')).toEqual([null]);
+        expect(lastEmit(w, 'update:token')).toEqual([null]);          // le jeton n'est plus joint…
+        expect(lastEmit(w, 'update:modelValue')).toEqual([7]);        // …mais la personne reste désignée : la prochaine écriture est REFUSÉE par le serveur, pas signée « moi »
         expect(q(w, 'hy-operator-expired').text()).toContain('Le code de Sarah L. a expiré');
-        expect(q(w, 'hy-operator-btn').text()).toContain('Compte T.'); // retour sur le compte de la tablette
+        expect(q(w, 'hy-operator-btn').text()).toContain('Sarah L.');
+    });
+
+    it('refermer le menu efface un code à moitié tapé : un collègue qui touche la pastille ensuite ne retrouve jamais le code d’un autre', async () => {
+        const verify = vi.fn(async () => ({ data: { data: { token: 'T', expires_at: new Date(Date.now() + 600000).toISOString() } } }));
+        setupOps({ verify });
+        const w = await mountPicker();
+        await q(w, 'hy-operator-btn').trigger('click');
+        await q(w, 'hy-operator-7').trigger('click');
+        await q(w, 'hy-pin-input').setValue('4821');
+        await q(w, 'hy-operator-btn').trigger('click');           // on referme sans valider
+        expect(q(w, 'hy-pin').exists()).toBe(false);
+        await q(w, 'hy-operator-btn').trigger('click');           // le collègue rouvre
+        expect(q(w, 'hy-pin').exists()).toBe(false);              // pas de saisie de code : la LISTE
+        expect(q(w, 'hy-operator-list').exists()).toBe(true);
+        await q(w, 'hy-operator-7').trigger('click');
+        expect(q(w, 'hy-pin-input').element.value).toBe('');      // et le champ est vide
+        expect(verify).not.toHaveBeenCalled();
+    });
+
+    it('Échap ferme le menu et efface le code', async () => {
+        setupOps({ verify: vi.fn() });
+        const w = await mountPicker();
+        await q(w, 'hy-operator-btn').trigger('click');
+        await q(w, 'hy-operator-7').trigger('click');
+        await q(w, 'hy-pin-input').setValue('4821');
+        await q(w, 'hy-operator').trigger('keydown', { key: 'Escape' });
+        expect(q(w, 'hy-pin').exists()).toBe(false);
+        expect(q(w, 'hy-operator-list').exists()).toBe(false);
+        await q(w, 'hy-operator-btn').trigger('click');
+        await q(w, 'hy-operator-7').trigger('click');
+        expect(q(w, 'hy-pin-input').element.value).toBe('');
+    });
+
+    it('la liste est rechargée à l’ouverture du menu quand son premier chargement a échoué (comme le message le promet)', async () => {
+        let calls = 0;
+        h.axios.get.mockReset(); h.axios.post.mockReset(); window.localStorage.clear();
+        h.axios.get.mockImplementation(async (url) => {
+            if (url !== 'admin/hygiene/operators') return { data: { data: [] } };
+            calls += 1;
+            if (calls === 1) throw new Error('Network Error');
+            return { data: { data: PEOPLE, meta: { me: 1 } } };
+        });
+        const w = mount(HygieneOperatorPicker, { global: { mocks: { $t: (k) => k } } });
+        await flushPromises();
+        await q(w, 'hy-operator-btn').trigger('click'); // ouvre → recharge
+        await flushPromises();
+        expect(calls).toBe(2);
+        expect(q(w, 'hy-operator-7').exists()).toBe(true);
+        expect(q(w, 'hy-operator-btn').text()).toContain('Compte T.');
+    });
+
+    it('si on change de personne pendant la vérification, la réponse de la première ne s’applique pas à la seconde', async () => {
+        let release;
+        setupOps({ verify: () => new Promise((resolve) => { release = () => resolve({ data: { data: { token: 'JETON-DE-SARAH', expires_at: new Date(Date.now() + 600000).toISOString() } } }); }) });
+        setupOps2();
+        const w = await mountPicker();
+        await q(w, 'hy-operator-btn').trigger('click');
+        await q(w, 'hy-operator-7').trigger('click');
+        await q(w, 'hy-pin-input').setValue('4821');
+        await q(w, 'hy-pin-ok').trigger('click');             // vérification en cours (lente)
+        await q(w, 'hy-pin-cancel').trigger('click');         // on annule
+        await q(w, 'hy-operator-9').trigger('click');         // et on choisit Lina, protégée elle aussi
+        release();                                             // la réponse de Sarah arrive MAINTENANT
+        await flushPromises();
+        expect(lastEmit(w, 'update:modelValue')).toEqual([null]);       // Lina n'est PAS validée
+        expect(lastEmit(w, 'update:token')).not.toEqual(['JETON-DE-SARAH']);
+        expect(q(w, 'hy-pin').text()).toContain('Code de Lina R.');     // on attend toujours SON code
+
+        function setupOps2() {
+            h.axios.get.mockImplementation(async (url) => (url === 'admin/hygiene/operators'
+                ? { data: { data: [...PEOPLE, { id: 9, name: 'Lina Roy', short: 'Lina R.', is_me: false, has_pin: true }], meta: { me: 1 } } } : { data: { data: [] } }));
+        }
     });
 
     it('une personne protégée n’est jamais rétablie toute seule depuis la mémoire de la tablette ; une personne libre l’est', async () => {
@@ -205,6 +278,12 @@ describe('écran du responsable : codes de l’équipe', () => {
         await q(w, 'tm-input-8').setValue('12');
         expect(q(w, 'tm-save-8').attributes('disabled')).toBeDefined();
         await q(w, 'tm-input-8').setValue('4821');
+        expect(q(w, 'tm-save-8').attributes('disabled')).toBeDefined();           // pas encore confirmé
+        await q(w, 'tm-confirm-8').setValue('4812');                               // faute de frappe à la confirmation
+        expect(q(w, 'tm-mismatch-8').text()).toContain('pas identiques');
+        expect(q(w, 'tm-save-8').attributes('disabled')).toBeDefined();
+        await q(w, 'tm-confirm-8').setValue('4821');
+        expect(q(w, 'tm-mismatch-8').exists()).toBe(false);
         await q(w, 'tm-save-8').trigger('click');
         await flushPromises();
         expect(h.axios.put).toHaveBeenCalledWith('admin/hygiene/team/8/pin', { pin: '4821' });
@@ -227,11 +306,28 @@ describe('écran du responsable : codes de l’équipe', () => {
         expect(q(w, 'tm-message').text()).toContain('Code de Sarah Lopez retiré');
     });
 
+    it('une personne bloquée a un bouton « Débloquer » qui ne change pas son code', async () => {
+        const w = await mountTeam();
+        h.axios.post.mockResolvedValue({ data: { data: { id: 9, has_pin: true, locked: false } } });
+        expect(q(w, 'tm-unlock-7').exists()).toBe(false);
+        await q(w, 'tm-unlock-9').trigger('click');
+        await flushPromises();
+        expect(h.axios.post).toHaveBeenCalledWith('admin/hygiene/team/9/unlock');
+        expect(h.axios.put).not.toHaveBeenCalled();
+        expect(q(w, 'tm-message').text()).toContain('son code reste le même');
+    });
+
+    it('la durée de validité annoncée est celle du serveur', async () => {
+        const w = await mountTeam(async () => ({ data: { data: TEAM, meta: { without_pin: 1, token_minutes: 15, timezone: 'Europe/Paris' } } }));
+        expect(w.text()).toContain('15 minutes');
+    });
+
     it('un refus du serveur est affiché et la saisie reste', async () => {
         const w = await mountTeam();
         h.axios.put.mockRejectedValue(err(422, { message: 'x', errors: { pin: ['Le code se compose de 4 à 6 chiffres.'] } }));
         await q(w, 'tm-set-8').trigger('click');
         await q(w, 'tm-input-8').setValue('1234');
+        await q(w, 'tm-confirm-8').setValue('1234');
         await q(w, 'tm-save-8').trigger('click');
         await flushPromises();
         expect(q(w, 'tm-message').text()).toContain('4 à 6 chiffres');
