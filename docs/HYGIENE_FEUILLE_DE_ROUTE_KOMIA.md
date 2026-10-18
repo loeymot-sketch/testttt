@@ -107,3 +107,11 @@ V1 mono-branche (planificateur et alertes sur `hygiene.branch_id`) ; un ticket d
 - Lecture automatique du bon de livraison par photo (OCR) ; boutique de rouleaux .
 - Planning et pointage : module RH distinct, hors hygiène.
 - Application « Cayenne Hygiène » autonome : extraction de `config/hygiene.php`, `hygiene_*`, `/admin/hygiene/*`, `components/admin/hygiene/`.
+
+## Lot « rapport ultra-deep » + psychologie (2026-10-18)
+
+**Livré** (commits `61fddb18b`, `ff6617fe5`, `cb4d090ba`) : « Qui ? » signé sur les étiquettes DLC ; engagement obligatoire (interface) sur la validation d'une fiche de nettoyage (`attested_at`, colonne CSV + PDF) ; guide de mise en place déduit des journaux (`SetupProgress`, 5 étapes obligatoires + 3 facultatives, une seule « prochaine étape », félicitation, masquage mémorisé) ; bannière « Journée en règle » chiffrée, jamais à côté d'un rappel ; messages de validation honnêtes (« plus que N », « complet, merci ») ; repas témoin avec service Matin/Midi/Soir obligatoire (jamais deviné, imprimé, journalisé, au CSV et au PDF).
+
+**Migrations non déployées** : `2026_10_18_140000_add_attested_at_to_hygiene_task_completions`, `2026_10_18_150000_add_meal_slot_to_label_print_logs`. Le code tolère la fenêtre entre le reset et `migrate` (colonnes écrites seulement si renseignées).
+
+**Non fait / assumé** : « mariné » et étiquette vierge avec « Qui ? » (pas de besoin exprimé) ; engagement non exigé par l'API (nullable : l'absence se lit « non » au dossier) ; la tuile DLC passe « à compléter » dès qu'une étiquette expire sous 24 h, ce qui retient souvent « Journée en règle » (décision produit à prendre, pas un défaut de ce lot) ; `LABELS_BRANCH_ID` et `HYGIENE_BRANCH_ID` sont deux variables distinctes (sans effet en V1 mono-branche).
