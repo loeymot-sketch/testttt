@@ -206,12 +206,26 @@ class TaskControllerTest extends TestCase
         $this->assertSame(1, HygieneTaskCompletion::query()->count());
     }
 
+    public function test_une_fiche_creee_apres_son_heure_limite_n_est_ni_en_retard_ni_validee_en_retard(): void
+    {
+        $this->staff();
+        $this->install();
+        $t = $this->template('salle');
+        $t->forceFill(['due_time' => '09:00'])->save(); // créée à 10:00 (maintenant), heure limite 09:00 : pas encore attendue
+        $row = collect($this->getJson(self::BASE.'/today')->json('data'))->firstWhere('catalog_key', 'salle');
+        $this->assertFalse($row['overdue']);
+        $this->assertSame(0, $this->getJson(self::BASE.'/today')->json('meta.summary.overdue'));
+        $r = $this->postJson(self::BASE.'/completions', ['template_id' => $t->id, 'all' => true])->assertCreated();
+        $this->assertFalse($r->json('data.late'), 'validée « après l\'heure » une fiche qui n\'existait pas encore à cette heure-là');
+    }
+
     public function test_overdue_and_late_follow_the_sheet_time(): void
     {
         $this->staff();
         $this->install();
         $t = $this->template('salle');
-        $t->forceFill(['due_time' => '09:00'])->save(); // il est 10:00
+        // il est 10:00 ; la fiche existe depuis plusieurs jours (une fiche créée APRÈS son heure limite n'est pas encore attendue : voir OverviewAndReportTest)
+        $t->forceFill(['due_time' => '09:00', 'created_at' => now()->subDays(5)])->save();
         $row = collect($this->getJson(self::BASE.'/today')->json('data'))->firstWhere('catalog_key', 'salle');
         $this->assertTrue($row['overdue']);
         $this->assertSame(1, $this->getJson(self::BASE.'/today')->json('meta.summary.overdue'));

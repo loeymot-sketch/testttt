@@ -189,7 +189,7 @@ class OverviewAndReportTest extends TestCase
         $d = $this->dlcTile();
         $this->assertSame('ok', $d['status'], 'le fonctionnement normal d\'une cuisine (DLC de 24 h) n\'est pas « à compléter »');
         $this->assertSame('2 étiquettes en cours', $d['headline']);
-        $this->assertSame("dont 1 à échéance sous 24\u{00A0}h", $d['detail'], '« 24 h » est insécable');
+        $this->assertSame("dont 1 à\u{00A0}échéance sous 24\u{00A0}h", $d['detail'], '« 24 h » est insécable');
         $this->assertSame(['expired' => 0, 'soon' => 1, 'live' => 2, 'unconfirmed' => 0, 'anomaly' => 0], $d['counts']);
         // et la bannière du hub ne reçoit aucun « domaine à compléter » à cause d'elle
         $this->assertSame(0, $this->getJson(self::BASE.'/overview')->json('meta.todo'));
@@ -233,7 +233,7 @@ class OverviewAndReportTest extends TestCase
         // « Journée en règle » jusqu'à l'expiration. On la DIT, on ne s'en sert pas pour refuser un bravo.
         $this->assertSame('ok', $d['status']);
         $this->assertSame('3 étiquettes en cours', $d['headline']);
-        $this->assertSame('dont 1 non confirmée, 1 à vérifier', $d['detail']);
+        $this->assertSame("dont 1 non confirmée, 1 à\u{00A0}vérifier", $d['detail'], '« à » ne reste jamais seul au bout de la ligne');
         $this->assertSame(1, $d['counts']['unconfirmed']);
         $this->assertSame(1, $d['counts']['anomaly']);
     }
@@ -246,7 +246,7 @@ class OverviewAndReportTest extends TestCase
         $d = $this->dlcTile();
         $this->assertSame('alert', $d['status']);
         $this->assertSame('1 DLC dépassée', $d['headline']);
-        $this->assertSame("1 à échéance sous 24\u{00A0}h", $d['detail']);
+        $this->assertSame("1 à\u{00A0}échéance sous 24\u{00A0}h", $d['detail']);
     }
 
     // ───────────── nettoyage : la tuile dit la même chose que les rappels ─────────────
@@ -271,6 +271,30 @@ class OverviewAndReportTest extends TestCase
         $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['tasks'];
         $this->assertSame('Rien à faire', $tile['headline']);
         $this->assertSame('', $tile['detail'], '« Rien à faire » + « Tout est fait » se contredisent');
+        $this->assertSame('idle', $tile['status'], 'aucune fiche due : neutre, jamais vert (« vert » = fait et conforme)');
+    }
+
+    public function test_tuile_nettoyage_et_ecran_du_jour_disent_la_meme_chose_du_retard(): void
+    {
+        $this->staff();
+        // fiche créée APRÈS son heure limite : « à faire » PARTOUT (tuile, rappels ET écran du jour) ; fiche créée avant : « en retard » PARTOUT
+        $this->template('2026-10-20 09:30')->forceFill(['name' => 'Après', 'due_time' => '09:00'])->save();
+        $this->template('2026-10-01')->forceFill(['name' => 'Avant', 'due_time' => '09:00', 'sort_order' => 20])->save();
+        $screen = collect($this->getJson(self::BASE.'/tasks/today')->json('data'))->keyBy('name');
+        $this->assertFalse($screen['Après']['overdue'], 'l\'écran ne crie pas « en retard » pour une fiche pas encore attendue');
+        $this->assertTrue($screen['Avant']['overdue']);
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['tasks'];
+        $this->assertSame(1, $tile['counts']['overdue']);
+        $this->assertSame($this->getJson(self::BASE.'/tasks/today')->json('meta.summary.overdue'), $tile['counts']['overdue'], 'même compte sur l\'écran et sur la tuile');
+    }
+
+    public function test_une_fiche_ancienne_sans_date_de_creation_ne_fait_pas_tomber_l_accueil(): void
+    {
+        $this->staff();
+        $t = $this->template('2026-10-01');
+        $t->forceFill(['due_time' => '09:00'])->save();
+        \DB::table('hygiene_task_templates')->where('id', $t->id)->update(['created_at' => null]);
+        $this->getJson(self::BASE.'/overview')->assertOk();
     }
 
     // ───────────── rapport : taux de couverture ─────────────

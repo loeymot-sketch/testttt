@@ -107,10 +107,8 @@ final class Reminders
         $done = HygieneTaskCompletion::query()->whereNull('voided_at')->whereDate('due_date', $day->toDateString())->pluck('template_id')->unique()->all();
         $late = [];
         foreach ($templates as $t) {
-            $due = TaskSchedule::dueAt($t, $day);
-            // une fiche créée APRÈS son heure limite du jour n'était pas encore attendue
-            if ($due === null || in_array($t->id, $done, true) || $now->lte($due) || $t->created_at->gte($due)) continue;
-            $late[] = [$t, $due];
+            if (in_array($t->id, $done, true) || ! TaskSchedule::isLate($t, $now, $day)) continue;
+            $late[] = [$t, TaskSchedule::dueAt($t, $day)];
         }
         // Jusqu'à 3 fiches : une phrase chacune. Au-delà, UNE phrase (10 lignes quasi identiques enterraient le relevé de température non fait, sous le pli d'un téléphone).
         if (count($late) <= self::LATE_TASKS_LISTED) {

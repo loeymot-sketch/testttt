@@ -35,4 +35,21 @@ final class TaskSchedule
 
         return $day->copy()->setTime((int) $m[1], (int) $m[2], 0);
     }
+
+    /**
+     * UNE définition du « en retard » pour tout le module (écran du jour, tuile de l'accueil, rappels, indicateur « après l'heure » d'une validation) :
+     * l'heure limite du jour est passée ET la fiche existait déjà à cette heure-là. Une fiche créée APRÈS son heure limite (le propriétaire installe
+     * son plan en cours de journée) n'était pas encore attendue : elle est « à faire », jamais « en retard ». La règle vivait en trois exemplaires
+     * qui divergeaient (tour 3 : l'accueil disait « à faire », l'écran Nettoyage criait « en retard »). Sans `created_at` (ligne ancienne) : attendue.
+     * L'appelant ajoute ses propres conditions (fiche non validée…).
+     */
+    public static function isLate(HygieneTaskTemplate $t, CarbonInterface $now, CarbonInterface $day): bool
+    {
+        $due = self::dueAt($t, $day);
+        if ($due === null || $now->lte($due)) {
+            return false;
+        }
+
+        return $t->created_at === null || $t->created_at->lt($due);
+    }
 }

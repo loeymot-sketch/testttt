@@ -41,7 +41,7 @@ class TaskController extends HygieneController
 
             return $this->presentTemplate($t) + [
                 'state' => $state,
-                'overdue' => $state === 'todo' && $dueAt !== null && $now->gt($dueAt),
+                'overdue' => $state === 'todo' && TaskSchedule::isLate($t, $now, $day),
                 'due_at' => $dueAt?->toIso8601String(),
                 'completion' => $last ? $this->presentCompletion($last) : null,
             ];
@@ -126,7 +126,7 @@ class TaskController extends HygieneController
         $row = new HygieneTaskCompletion([
             'template_id' => $t->id, 'task_name' => $t->name, 'zone' => $t->zone, 'due_date' => $day->toDateString(),
             'items' => $items, 'items_total' => $total, 'items_done' => $doneCount, 'complete' => $complete, 'note' => $complete ? null : $note,
-            'late' => $dueAt !== null && $now->gt($dueAt), 'completed_at' => $now, 'timezone' => config('app.timezone'),
+            'late' => TaskSchedule::isLate($t, $now, $day), 'completed_at' => $now, 'timezone' => config('app.timezone'),
             'user_id' => $op['user_id'], 'operator_name' => $op['name'], 'attachment_id' => $attachmentId, 'client_ref' => $v['client_ref'] ?? null,
         ]);
         $row->branch_id = $branch;

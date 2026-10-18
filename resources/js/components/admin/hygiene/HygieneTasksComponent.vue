@@ -31,7 +31,7 @@
                     <!-- ── À faire / Faites ─────────────────────────────────────────────────────── -->
                     <template v-if="tab === 'todo' || tab === 'done'">
                         <p v-if="!items.length" class="hy-muted" data-testid="tsk-empty">
-                            Aucune fiche à faire aujourd'hui. Ajoutez-en dans l'onglet « Plan de nettoyage ».
+                            Aucune fiche n'est prévue aujourd'hui. Le plan complet est dans l'onglet « Plan de nettoyage ».
                         </p>
                         <p v-else-if="!shown.length && tab === 'todo' && summary.partial > 0" class="hy-note is-todo" data-testid="tsk-partial-left">
                             Plus de fiche à faire, mais {{ summary.partial }} fiche{{ summary.partial > 1 ? "s" : "" }} incomplète{{ summary.partial > 1 ? "s" : "" }} à reprendre : dans « Faites aujourd'hui », annulez la validation puis refaites la fiche.
