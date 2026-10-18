@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title">Imprimante Brother QL‑820NWB</h3>
@@ -156,6 +157,7 @@
  * Chrome (≥ 138) la propose dans une liste après un appui — c'est une règle de sécurité du navigateur, d'où le
  * pas à pas ci‑dessus. La page de diagnostic dit exactement ce qui manque si rien ne se connecte.
  */
+import HygieneHubBar from "../hygiene/HygieneHubBar";
 import alertService from "../../../services/alertService";
 import labelPrinterMixin, { chromeMajor } from "../../../helpers/labelPrinterMixin";
 import LabelPrinterBar from "./LabelPrinterBar";
@@ -166,7 +168,7 @@ import { printViaBrowser } from "../../../helpers/labelBrowserPrint";
 
 export default {
     name: "LabelPrinterSettingsComponent",
-    components: { LabelPrinterBar },
+    components: { HygieneHubBar, LabelPrinterBar },
     mixins: [labelPrinterMixin],
     data() {
         return { testing: false, testingKind: "", testMessage: "", testOk: false, testPreview: "", guideOpen: true, guideTouched: false, lastJobText: describeLastJob(readLastJob()) };

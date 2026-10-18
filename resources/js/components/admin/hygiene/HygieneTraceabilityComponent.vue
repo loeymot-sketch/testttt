@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Traçabilité — {{ todayLabel }}</h3>
@@ -180,6 +181,7 @@
  * [CAYENNE HYGIÈNE 2026-10-17 · owner] Traçabilité amont : produit · fournisseur · lot · DLC · BL · photo de l'étiquette, et la fiche de
  * rappel d'un lot. Le serveur impose le lot (ou une explication) et un commentaire si la DLC est déjà dépassée ; l'écran le dit avant.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
@@ -193,7 +195,7 @@ const historySeq = latest();
 export default {
     name: "HygieneTraceabilityComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneOperatorPicker, HygienePhotoField, HygienePhotoView },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygienePhotoField, HygienePhotoView },
     data() {
         return {
             rows: [], meta: { summary: { count: 0, alerts: 0 }, products: [], suppliers: [], receptions: [], server_now: null, timezone: "Europe/Paris" },

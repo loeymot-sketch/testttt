@@ -108,24 +108,17 @@ describe('V1 admin sidebar cleanup', () => {
         // la même autorisation `catalog.compose` que le composeur → 19 rows. Compteur remonté
         // DANS la session qui livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.wizard_pages');
-        // [ETIQUETTES 2026-10-16] +4 : « Étiquettes » (imprimante Brother QL-820NWB) = 1 entrée parent
-        // + ses 3 sous-écrans (commandes, DLC/hygiène, imprimante) — les enfants comptent comme des
-        // lignes, comme ceux de `items` et `promo-flyer`. Même porte que la caisse (`pos-orders`) → 23 rows.
-        // Compteur remonté DANS la session qui livre l'entrée, pas découvert plus tard.
-        expect(text).toContain('menu.labels');
-        expect(text).toContain('menu.labels_orders');
-        expect(text).toContain('menu.labels_dlc');
-        expect(text).toContain('menu.labels_printer');
-        // [CAYENNE HYGIÈNE 2026-10-17] « Hygiène » (parent) + ses sous-écrans : Températures, Nettoyage, Réception, Traçabilité, Huile, Accueil, Dossier de contrôle (+1 par écran livré)
-        expect(text).toContain('menu.hygiene');
-        expect(text).toContain('menu.hygiene_temperature');
-        expect(text).toContain('menu.hygiene_tasks');
-        expect(text).toContain('menu.hygiene_reception');
-        expect(text).toContain('menu.hygiene_trace');
-        expect(text).toContain('menu.hygiene_oil');
-        expect(text).toContain('menu.hygiene_home');
-        expect(text).toContain('menu.hygiene_report');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(31);
+        // [CAYENNE HYGIÈNE 2026-10-18 · owner : « une seule colonne »] Étiquettes (4 lignes) + Hygiène (8 lignes) = 12 lignes ont laissé
+        // la place à UNE entrée : le hub « Hygiène & étiquettes ». Tout le reste s'ouvre depuis l'accueil du module. Aucune des anciennes
+        // sous-entrées ne doit revenir dans la barre : c'est l'objet du test (31 - 12 + 1 = 20 lignes).
+        expect(text).toContain('menu.hygiene_hub');
+        for (const gone of ['menu.labels_orders', 'menu.labels_dlc', 'menu.labels_printer', 'menu.hygiene_temperature', 'menu.hygiene_tasks', 'menu.hygiene_reception', 'menu.hygiene_trace', 'menu.hygiene_oil', 'menu.hygiene_home', 'menu.hygiene_report']) {
+            expect(text, `${gone} est revenu dans la barre latérale`).not.toContain(gone);
+        }
+        const hubLinks = wrapper.findAllComponents(RouterLink).filter((c) => /hygiene|labels/.test(String(c.props('to'))));
+        expect(hubLinks).toHaveLength(1);
+        expect(hubLinks[0].props('to')).toBe('/admin/hygiene/home');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(20);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Huile de friture — {{ todayLabel }}</h3>
@@ -160,6 +161,7 @@
  * affiché n'est qu'un APERÇU des mêmes limites que le serveur (25 % de composés polaires = limite légale) : le serveur décide et
  * exige l'action corrective en cas d'écart. Journal append-only, annulation motivée.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
@@ -174,7 +176,7 @@ const historySeq = latest();
 export default {
     name: "HygieneOilComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField },
     data() {
         return {
             items: [], fryers: [], history: [],

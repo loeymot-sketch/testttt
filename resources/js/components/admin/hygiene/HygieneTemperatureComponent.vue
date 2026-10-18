@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Températures — {{ todayLabel }}</h3>
@@ -233,6 +234,7 @@
  * Le verdict affiché pendant la saisie n'est qu'un APERÇU (mêmes seuils que le serveur) : c'est le serveur qui décide, enregistre
  * et refuse un écart sans action corrective. Un relevé n'est jamais modifié : une faute de frappe s'annule avec un motif.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import { parseTemperature, previewVerdict, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
@@ -251,7 +253,7 @@ function clientRef() {
 
 export default {
     name: "HygieneTemperatureComponent",
-    components: { HygieneTempChart, HygieneOperatorPicker, HygieneQueueBanner },
+    components: { HygieneHubBar, HygieneTempChart, HygieneOperatorPicker, HygieneQueueBanner },
     mixins: [hygieneRefresh],
     data() {
         return {

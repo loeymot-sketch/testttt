@@ -32,7 +32,8 @@
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </a>
-                    <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu">
+                    <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu"
+                                 :class="{ 'router-link-active': isPrefixActive(menu) }">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -101,6 +102,17 @@ const VIRTUAL_CHILDREN_BY_URL = Object.freeze({
 });
 
 const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
+    // [CAYENNE HYGIÈNE 2026-10-18 · owner : « une seule colonne, on rentre dedans »] UNE seule entrée pour tout le module :
+    // PLACÉE EN TÊTE de la bande V1 (juste sous POS) : à la fin de la liste elle était hors écran sans défilement de la barre. L'accueil Hygiène est le hub (températures, nettoyage, huile, réception, traçabilité, étiquettes DLC et de commande, imprimante,
+    // dossier de contrôle, alertes, équipe). Avant : deux groupes (Étiquettes + Hygiène) = 12 lignes dans la barre. Les routes ne
+    // changent pas ; `activePrefixes` garde la ligne allumée sur chacun de ces écrans. Même gate que la caisse (`pos-orders`) : une
+    // permission neuve ne serait portée par aucun rôle (même raison que l'entrée Uber).
+    Object.freeze({
+        url: 'hygiene/home',
+        language: 'hygiene_hub',
+        icon: 'fa-solid fa-clipboard-check',
+        activePrefixes: Object.freeze(['/admin/hygiene', '/admin/labels']),
+    }),
     // [CATALOG-HUB 2026-07-21] Single unified entry → tab wrapper (Catalogue +
     // Stock). Label kept as `stock_rupture` ("Produits & Stock"). The
     // admin.stock.rupture route stays alive for deep-links.
@@ -154,34 +166,6 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // cuisine. Même gate réutilisée (`pos-orders`) et même raison qu'au-dessus : une permission
     // neuve ne serait portée par aucun rôle, l'écran serait inaccessible à tout le monde.
     Object.freeze({ url: 'uber-photo', language: 'uber_photo', icon: 'fa-solid fa-camera' }),
-    // [ETIQUETTES 2026-10-16 · owner] Imprimante d'étiquettes Brother QL-820NWB (Bluetooth sur la tablette) :
-    // étiquettes par produit de commande, étiquettes d'hygiène (DLC), réglages de l'imprimante. Même gate
-    // réutilisée (`pos-orders`) et même raison que l'entrée Uber : une permission neuve ne serait portée par aucun rôle.
-    Object.freeze({
-        url: 'labels',
-        language: 'labels',
-        icon: 'fa-solid fa-tags',
-        children: Object.freeze([
-            Object.freeze({ url: 'labels/orders', language: 'labels_orders', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'labels/dlc', language: 'labels_dlc', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'labels/printer', language: 'labels_printer', icon: 'lab lab-list' }),
-        ]),
-    }),
-    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Relevés de température des frigos et congélateurs. Même gate que les étiquettes.
-    Object.freeze({
-        url: 'hygiene',
-        language: 'hygiene',
-        icon: 'fa-solid fa-temperature-half',
-        children: Object.freeze([
-            Object.freeze({ url: 'hygiene/home', language: 'hygiene_home', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/temperature', language: 'hygiene_temperature', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/tasks', language: 'hygiene_tasks', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/reception', language: 'hygiene_reception', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/oil', language: 'hygiene_oil', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/trace', language: 'hygiene_trace', icon: 'lab lab-list' }),
-            Object.freeze({ url: 'hygiene/report', language: 'hygiene_report', icon: 'lab lab-list' }),
-        ]),
-    }),
     /*
      * [ROUE 2026-08-13 · propriétaire : « accès admin caisse »] Les écrans de la roue existaient
      * et fonctionnaient, mais aucun lien n'y menait depuis le back-office.
@@ -473,6 +457,13 @@ export default {
             } else {
                 document?.querySelector('.router-link-exact-active')?.parentElement?.classList?.add('active');
             }
+        },
+        /** Entrée « module » (hub) : allumée sur TOUS les écrans du module, pas seulement sur sa page d'accueil. */
+        isPrefixActive(menu) {
+            const prefixes = menu && menu.activePrefixes;
+            if (!prefixes || !prefixes.length) return false;
+            const path = (this.$route && this.$route.path) || '';
+            return prefixes.some((p) => path === p || path.startsWith(p + '/'));
         },
         showSidebarParentNavRow(menu) {
             if (!menu || menu.url === '#') return false;

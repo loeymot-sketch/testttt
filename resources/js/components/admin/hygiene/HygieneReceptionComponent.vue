@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Réception de marchandises — {{ todayLabel }}</h3>
@@ -178,6 +179,7 @@
  * avec leur limite, contrôles visuels, photo du BL ; un écart impose une décision et un commentaire. Le verdict affiché n'est qu'un
  * APERÇU : le serveur décide, enregistre et refuse une livraison non conforme « acceptée » sans réserve.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
@@ -193,7 +195,7 @@ const historySeq = latest();
 export default {
     name: "HygieneReceptionComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField, HygienePhotoView },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygieneMeasureInput, HygienePhotoField, HygienePhotoView },
     data() {
         return {
             rows: [],

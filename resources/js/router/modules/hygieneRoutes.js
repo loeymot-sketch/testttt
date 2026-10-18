@@ -92,7 +92,7 @@ export default [
             isFrontend: false,
             auth: true,
             permissionUrl: "pos-orders",
-            breadcrumb: "hygiene_home",
+            breadcrumb: "hygiene_hub",
         },
     },
     {

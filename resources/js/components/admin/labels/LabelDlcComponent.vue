@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title">Étiquettes DLC — hygiène</h3>
@@ -351,6 +352,7 @@
  *
  * Les appuis rapides sur plusieurs produits ne se perdent pas : ils attendent leur tour dans une file d'impression.
  */
+import HygieneHubBar from "../hygiene/HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import labelPrinterMixin from "../../../helpers/labelPrinterMixin";
@@ -399,7 +401,7 @@ const SUGGESTIONS = [
 
 export default {
     name: "LabelDlcComponent",
-    components: { LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog, HygieneOperatorPicker },
+    components: { HygieneHubBar, LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog, HygieneOperatorPicker },
     mixins: [labelPrinterMixin],
     data() {
         return {

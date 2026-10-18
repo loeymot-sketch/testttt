@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title">Étiquettes — commandes en cours</h3>
@@ -192,6 +193,7 @@
  * Impression : le serveur n'imprime jamais (cloud ≠ Bluetooth). Il tient seulement le journal et le VERROU :
  * `claim` accorde l'impression automatique d'une commande à UNE seule tablette, une seule fois.
  */
+import HygieneHubBar from "../hygiene/HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import labelPrinterMixin from "../../../helpers/labelPrinterMixin";
@@ -212,7 +214,7 @@ const AUTO_MAX_AGE_MS = 90 * 60 * 1000;
 
 export default {
     name: "LabelOrdersComponent",
-    components: { LabelPrinterBar },
+    components: { HygieneHubBar, LabelPrinterBar },
     mixins: [labelPrinterMixin],
     data() {
         return {

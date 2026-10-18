@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Codes de l'équipe</h3>
@@ -67,11 +68,13 @@
  * [CAYENNE HYGIÈNE 2026-10-18 · rapport Komia P1 « Qui ? sans code »] Le responsable donne, change ou retire le code personnel de chaque employé.
  * Le serveur décide (permission « settings », format, personnel du restaurant) ; le code n'est jamais relu ni affiché.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 
 export default {
     name: "HygieneTeamComponent",
+    components: { HygieneHubBar },
     data() {
         return { loaded: false, loadError: "", forbidden: false, people: [], meta: { without_pin: 0, token_minutes: 10, timezone: "Europe/Paris" }, editing: null, removing: null, pin: "", pin2: "", busy: false, message: "", messageOk: true };
     },

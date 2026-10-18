@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Dossier de contrôle sanitaire</h3>
@@ -83,6 +84,7 @@
  * faits sur ceux qui étaient attendus) et les incidents avec l'action corrective, puis télécharger le PDF à remettre à l'inspection
  * ou un CSV par domaine. Tout vient du serveur (une seule source pour l'écran, le PDF et les CSV).
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import { apiMessage, formatDayHm, todayIso, addDaysIso, downloadFile, latest } from "../../../helpers/hygieneCommon";
@@ -93,6 +95,7 @@ const MODULE_NAMES = { temperature: "Températures", tasks: "Nettoyage", recepti
 
 export default {
     name: "HygieneReportComponent",
+    components: { HygieneHubBar },
     data() {
         // période et « aujourd'hui » viennent du SERVEUR (1er chargement sans période) : une tablette mal réglée ne décale rien
         return { preset: "month", from: "", to: "", data: null, loading: false, error: "", busy: "", today: "" };

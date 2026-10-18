@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Nettoyage — {{ todayLabel }}</h3>
@@ -192,6 +193,7 @@
  * photo, point non fait motivé). Une fiche = une checklist ; on coche, on dit qui, on valide. La validation est un événement
  * du journal (jamais modifiée) ; une erreur s'annule avec un motif.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
@@ -206,7 +208,7 @@ const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "
 export default {
     name: "HygieneTasksComponent",
     mixins: [hygieneRefresh],
-    components: { HygieneOperatorPicker, HygienePhotoField },
+    components: { HygieneHubBar, HygieneOperatorPicker, HygienePhotoField },
     data() {
         return {
             WEEKDAYS,

@@ -85,10 +85,26 @@
                             <span class="hy-tile-detail">Pour l'inspection sanitaire</span>
                         </router-link>
                     </div>
-                    <p class="hy-home-links">
-                        <router-link to="/admin/hygiene/alerts" class="hy-btn hy-btn--small" data-testid="home-alerts-link">🔔 Alertes par e-mail aux responsables</router-link>
-                        <router-link to="/admin/hygiene/team" class="hy-btn hy-btn--small" data-testid="home-team-link">🔒 Codes de l'équipe</router-link>
-                    </p>
+                    <!-- Tout le reste du module, en un coup d'œil : ce qui n'a pas de compteur du jour (étiquettes de commande, imprimante,
+                         alertes, équipe). Rien n'est caché dans la barre latérale : elle n'a plus qu'UNE entrée. -->
+                    <section class="hy-tools" aria-labelledby="home-tools-title" data-testid="home-tools">
+                        <h4 id="home-tools-title" class="hy-tools-title">Autres outils</h4>
+                        <div v-for="g in toolGroups" :key="g.key" class="hy-tools-group" :data-testid="`home-tools-${g.key}`">
+                            <h5 class="hy-tools-group-title">{{ g.title }}</h5>
+                            <ul class="hy-tools-list">
+                                <li v-for="t in g.items" :key="t.key">
+                                    <router-link :to="t.route" class="hy-tool" :data-testid="t.testid">
+                                        <span class="hy-tool-icon" aria-hidden="true"><i :class="t.icon"></i></span>
+                                        <span class="hy-tool-body">
+                                            <strong>{{ t.label }}</strong>
+                                            <span>{{ t.detail }}</span>
+                                        </span>
+                                        <span class="hy-tool-go" aria-hidden="true">→</span>
+                                    </router-link>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
                 </template>
             </div>
         </div>
@@ -101,7 +117,7 @@
  * (la tuile rouge « 0/5 effectués » de Komia, pour tous les domaines). Les compteurs viennent du serveur ; l'écran se rafraîchit seul.
  */
 import axios from "axios";
-import { formatDay } from "../../../helpers/hygieneCommon";
+import { formatDay, scrollShellToTop } from "../../../helpers/hygieneCommon";
 import HygieneQueueBanner from "./HygieneQueueBanner";
 
 export default {
@@ -115,6 +131,19 @@ export default {
         stale() { return this.loaded && this.failures >= 2; },
         staleSince() {
             try { return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: this.meta.timezone || "Europe/Paris" }).format(new Date(this.lastOkAt)); } catch (_) { return "tout à l'heure"; }
+        },
+        /** Les outils sans compteur du jour, par famille (les tuiles ci-dessus portent les six domaines et le dossier de contrôle). */
+        toolGroups() {
+            return [
+                { key: "labels", title: "Étiquettes et imprimante", items: [
+                    { key: "orders", label: "Étiquettes des commandes", detail: "Une étiquette par produit commandé", route: "/admin/labels/orders", icon: "fa-solid fa-receipt", testid: "home-tool-labels-orders" },
+                    { key: "printer", label: "Imprimante d'étiquettes", detail: "Brother QL-820NWB : connexion et réglages", route: "/admin/labels/printer", icon: "fa-solid fa-print", testid: "home-tool-labels-printer" },
+                ] },
+                { key: "settings", title: "Réglages du module", items: [
+                    { key: "alerts", label: "Alertes par e-mail", detail: "Qui est prévenu, et quand", route: "/admin/hygiene/alerts", icon: "fa-solid fa-bell", testid: "home-alerts-link" },
+                    { key: "team", label: "Codes de l'équipe", detail: "Le code personnel pour signer un relevé", route: "/admin/hygiene/team", icon: "fa-solid fa-lock", testid: "home-team-link" },
+                ] },
+            ];
         },
         setup() { return this.meta.setup && Array.isArray(this.meta.setup.steps) ? this.meta.setup : null; },
         requiredSteps() { return this.setup ? this.setup.steps.filter((x) => !x.optional) : []; },
@@ -176,6 +205,7 @@ export default {
         this.load();
         this.timer = setInterval(() => this.load(), 60000);
     },
+    mounted() { scrollShellToTop(); },
     beforeUnmount() { if (this.timer) clearInterval(this.timer); },
     methods: {
         readDismissed() {

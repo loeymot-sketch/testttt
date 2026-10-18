@@ -134,8 +134,25 @@
 /* Le thème met tous les titres de carte en « Capitalize » (anglais) : « Dossier De Contrôle », « Samedi 17 Octobre ». En français, seule la 1re lettre. */
 .db-card-header .db-card-title.hy-title { text-transform: none; }
 
-.hy-home-links { margin: 16px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }
-.hy-home-links .hy-btn { display: inline-flex; align-items: center; text-decoration: none; }
+/* Retour au hub : en tête de chaque écran du module, une cible de 44 px au moins */
+.hy-hubbar { margin: 0 0 12px; }
+.hy-hubbar-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 2px solid #e2e8f0; background: #fff; color: #0f172a; font-weight: 700; font-size: 15px; text-decoration: none; }
+.hy-hubbar-link:hover { border-color: #94a3b8; color: #0f172a; }
+.hy-hubbar-link:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+/* Autres outils du hub : des lignes larges (cible ≥ 56 px), pas des petits boutons */
+.hy-tools { margin: 22px 0 0; }
+.hy-tools-title { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: #111827; }
+.hy-tools-group { margin-top: 12px; }
+.hy-tools-group-title { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #475569; }
+.hy-tools-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.hy-tool { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 14px; background: #fff; color: #111827; text-decoration: none; }
+.hy-tool:hover { border-color: #94a3b8; color: #111827; }
+.hy-tool:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.hy-tool-icon { flex: none; width: 40px; height: 40px; border-radius: 999px; background: #e0f2fe; color: #0369a1; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+.hy-tool-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hy-tool-body strong { font-size: 16px; }
+.hy-tool-body span { font-size: 14px; color: #475569; }
+.hy-tool-go { flex: none; font-size: 20px; color: #475569; }
 
 /* Code personnel (Qui ?) */
 .hy-pin { display: flex; flex-direction: column; gap: 8px; min-width: 240px; padding: 12px; }

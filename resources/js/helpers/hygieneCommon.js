@@ -127,3 +127,16 @@ export function latest() {
     let n = 0;
     return { next: () => { n += 1; return n; }, isCurrent: (id) => id === n };
 }
+
+
+/**
+ * [CAYENNE HYGIÈNE 2026-10-18] Le conteneur qui défile dans l'admin est `.db-main` (h-screen, overflow-auto), PAS la fenêtre : le
+ * `scrollBehavior` du routeur ne le remet donc jamais en haut. Une page ouverte depuis le bas du hub (« Autres outils ») s'ouvrait défilée,
+ * titre et bouton « retour au hub » hors de vue. Chaque écran du module remet le conteneur en haut en s'ouvrant.
+ */
+export function scrollShellToTop() {
+    try {
+        const main = typeof document !== "undefined" ? document.querySelector(".db-main") : null;
+        if (main && main.scrollTop) main.scrollTop = 0;
+    } catch (_) { /* sans effet : au pire l'écran s'ouvre là où il était */ }
+}

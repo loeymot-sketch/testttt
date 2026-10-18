@@ -1,5 +1,6 @@
 <template>
     <div class="col-12">
+        <HygieneHubBar />
         <div class="db-card">
             <div class="db-card-header">
                 <h3 class="db-card-title hy-title">Alertes d'hygiène par e-mail</h3>
@@ -131,6 +132,7 @@
  * Le serveur décide (permission « settings », validation, messagerie réelle) ; cet écran dit la vérité sur ce qui part et laisse
  * un journal. Rien n'est actif par défaut.
  */
+import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 
@@ -138,6 +140,7 @@ const DEFAULT_FORM = () => ({ enabled: false, recipients: [], domains: [], send_
 
 export default {
     name: "HygieneAlertsComponent",
+    components: { HygieneHubBar },
     data() {
         return {
             loaded: false, loadError: "", forbidden: false, busy: "",
