@@ -76,7 +76,7 @@ class AlertControllerTest extends TestCase
         $names = collect($r->json('data.staff'))->pluck('name')->all();
         $this->assertContains('Sarah Lopez', $names);
         $this->assertNotContains('Un Client', $names);
-        $this->assertCount(5, $r->json('meta.domains'));
+        $this->assertCount(4, $r->json('meta.domains')); // la traçabilité reste un rappel sans urgence : jamais par courriel
     }
 
     public function test_enregistrer_active_et_normalise_les_adresses(): void

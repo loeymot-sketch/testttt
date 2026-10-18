@@ -22,7 +22,6 @@ class AlertController extends HygieneController
         'tasks' => 'Nettoyage',
         'oil' => 'Huile de friture',
         'dlc' => 'DLC dépassées',
-        'trace' => 'Traçabilité',
     ];
 
     public function __construct()
@@ -37,7 +36,7 @@ class AlertController extends HygieneController
         $branch = AlertNotifier::branchId();
         $staff = $this->staffQuery($request)->whereNotNull('email')->where('email', '<>', '')->orderBy('name')->get(['id', 'name', 'email'])
             ->map(fn ($u) => ['id' => $u->id, 'name' => $this->cleanName($u->name), 'email' => $u->email])->values();
-        $recent = HygieneAlertDispatch::withoutGlobalScopes()->where('branch_id', $branch)->orderByDesc('id')->limit(40)->get()
+        $recent = HygieneAlertDispatch::withoutGlobalScopes()->where('branch_id', $branch)->orderByDesc('id')->limit(100)->get()
             ->map(fn (HygieneAlertDispatch $d) => [
                 'id' => $d->id, 'at' => ($d->sent_at ?? $d->created_at)->toIso8601String(), 'recipient' => $d->recipient, 'status' => $d->status,
                 'domain' => $d->domain, 'text' => $d->text, 'error' => $d->error,
@@ -106,13 +105,17 @@ class AlertController extends HygieneController
         if (! AlertNotifier::mailReady()) {
             return $this->fail('enabled', 'Aucune messagerie n\'est configurée sur ce serveur.');
         }
+        // un essai toutes les 30 secondes au plus : le bouton ne sert pas à inonder une boîte (les destinataires peuvent être externes)
+        if (! \Illuminate\Support\Facades\Cache::add('hygiene:alert-test:'.AlertNotifier::branchId(), 1, 30)) {
+            return $this->fail('recipients', 'Un essai vient de partir : patientez 30 secondes avant le suivant.', 429);
+        }
         $r = app(AlertNotifier::class)->sendTest();
 
         return response()->json(['data' => $r], $r['failed'] > 0 && $r['sent'] === 0 ? 502 : 200);
     }
 
-    private function fail(string $field, string $message): JsonResponse
+    private function fail(string $field, string $message, int $status = 422): JsonResponse
     {
-        return response()->json(['message' => $message, 'errors' => [$field => [$message]]], 422);
+        return response()->json(['message' => $message, 'errors' => [$field => [$message]]], $status);
     }
 }

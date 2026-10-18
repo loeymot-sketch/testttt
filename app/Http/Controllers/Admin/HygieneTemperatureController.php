@@ -184,6 +184,7 @@ class HygieneTemperatureController extends HygieneController
             'readings.*.corrective_note' => ['nullable', 'string', 'max:200'],
             'readings.*.client_ref' => ['nullable', 'string', 'max:40'],
             'readings.*.measured_at' => ['nullable', 'date'],
+            'client_now' => ['nullable', 'date'],
             'operator_user_id' => ['nullable', 'integer'],
         ], [], ['readings' => 'relevés', 'readings.*.value' => 'température']);
 
@@ -191,19 +192,43 @@ class HygieneTemperatureController extends HygieneController
         $max = (float) config('hygiene.plausible_max');
         $now = now();
         $branch = $this->branchId($request);
-        // tablette partagée : la personne choisie sous « Qui ? », sinon le compte connecté. Si elle a un code, le jeton doit couvrir l'heure du
-        // GESTE : celle de la mesure pour un lot gardé hors ligne (la plus ancienne), sinon maintenant.
-        $stamps = collect($validated['readings'])->pluck('measured_at')->filter()->map(fn ($m) => \Carbon\Carbon::parse($m));
-        $op = $this->operator($request, $stamps->isNotEmpty() ? $stamps->min() : null);
-        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)
+
+        // Horloge de la tablette : un relevé gardé hors ligne porte l'heure de la MESURE lue sur l'horloge de la tablette. Si cette horloge a dérivé,
+        // l'heure est corrigée de l'écart mesuré à l'envoi (`client_now` = l'heure de la tablette au moment de CET envoi) ; sans `client_now`, aucune correction.
+        $skew = 0;
+        if (! empty($validated['client_now'])) {
+            $skew = (int) round($now->diffInSeconds(\Carbon\Carbon::parse($validated['client_now']), false) * -1); // serveur − tablette
+            if (abs($skew) < 30) $skew = 0; // latence, pas dérive
+        }
+        $measuredAt = [];
+        foreach ($validated['readings'] as $i => $r) {
+            $measuredAt[$i] = empty($r['measured_at']) ? null : \Carbon\Carbon::parse($r['measured_at'])->setTimezone(config('app.timezone'))->addSeconds($skew);
+        }
+
+        // tablette partagée : la personne choisie sous « Qui ? », sinon le compte connecté. Si elle a un code, le jeton doit couvrir l'heure de CHAQUE
+        // geste du lot : celle de la mesure pour un relevé gardé hors ligne, sinon maintenant.
+        $op = $this->operator($request, collect($validated['readings'])->keys()->map(fn ($i) => $measuredAt[$i] ?? $now)->all());
+
+        // Un équipement DÉSACTIVÉ depuis la mesure reste valable pour un relevé gardé hors ligne (la mesure date d'avant) ; pas pour un relevé en direct.
+        $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))
             ->whereIn('id', collect($validated['readings'])->pluck('equipment_id')->unique()->all())->get()->keyBy('id');
+
+        // Rejeu d'un lot DÉJÀ enregistré (réponse perdue) : reconnu par `client_ref` AVANT toute validation, sinon un équipement désactivé depuis
+        // ferait refuser en bloc un envoi déjà accepté. Une référence réutilisée pour un autre équipement ou une autre valeur reste refusée (409 plus bas).
+        $knownRefs = HygieneTemperatureReading::query()->whereIn('client_ref', collect($validated['readings'])->pluck('client_ref')->filter()->unique()->all())->get()->keyBy('client_ref');
+        $already = [];
 
         $errors = [];
         $prepared = [];
         $seenEquipment = [];
         foreach ($validated['readings'] as $i => $r) {
             $equipment = $equipments->get((int) $r['equipment_id']);
-            if (! $equipment) {
+            $ref = $r['client_ref'] ?? null;
+            if ($ref !== null && $knownRefs->has($ref) && $equipment && $knownRefs[$ref]->equipment_id === $equipment->id && round((float) $knownRefs[$ref]->value_c, 1) === round((float) $r['value'], 1)) {
+                $already[] = $knownRefs[$ref]; // déjà enregistré : rien à revalider, rien à refaire
+                continue;
+            }
+            if (! $equipment || (! $equipment->is_active && $measuredAt[$i] === null)) {
                 $errors["readings.$i.equipment_id"] = ['Équipement introuvable ou désactivé.'];
                 continue;
             }
@@ -212,19 +237,18 @@ class HygieneTemperatureController extends HygieneController
                 continue;
             }
             $seenEquipment[$equipment->id] = true;
-            // Heure du relevé : saisi hors ligne, il garde l'heure où il a été PRIS (envoyée par la tablette), dans des bornes ; sinon l'heure du serveur.
-            $measured = null;
-            if (! empty($r['measured_at'])) {
-                $m = \Carbon\Carbon::parse($r['measured_at'])->setTimezone(config('app.timezone'));
-                if ($m->gt($now->copy()->addMinutes((int) config('hygiene.offline.future_minutes', 5)))) {
+            // Heure du relevé : saisi hors ligne, il garde l'heure où il a été PRIS (corrigée de la dérive de l'horloge de la tablette), dans des bornes ;
+            // sinon l'heure du serveur.
+            $measured = $measuredAt[$i];
+            if ($measured !== null) {
+                if ($measured->gt($now->copy()->addMinutes((int) config('hygiene.offline.future_minutes', 5)))) {
                     $errors["readings.$i.measured_at"] = ['« '.$equipment->name.' » : l’heure de la tablette est en avance sur celle du serveur — corrigez l’heure de la tablette puis ressaisissez le relevé.'];
                     continue;
                 }
-                if ($m->lt($now->copy()->subHours((int) config('hygiene.offline.max_hours', 72)))) {
+                if ($measured->lt($now->copy()->subHours((int) config('hygiene.offline.max_hours', 72)))) {
                     $errors["readings.$i.measured_at"] = ['« '.$equipment->name.' » : ce relevé date de plus de '.(int) config('hygiene.offline.max_hours', 72).' h — ressaisissez-le avec une mesure actuelle.'];
                     continue;
                 }
-                $measured = $m;
             }
             $value = round((float) $r['value'], 1);
             [$lo, $hi] = config("hygiene.kinds.{$equipment->kind}.plausible") ?? [$min, $max];
@@ -255,7 +279,9 @@ class HygieneTemperatureController extends HygieneController
                 $note = null;
             }
             $prepared[] = compact('equipment', 'value', 'verdict', 'action', 'note') + [
-                'period' => $r['period'] ?? TemperatureRules::periodFor($measured ?? $now),
+                // le moment de la journée se déduit de l'HEURE du relevé, jamais d'un champ envoyé par la tablette (un relevé « du soir » posté à 10 h
+                // aurait fait taire le rappel du soir)
+                'period' => TemperatureRules::periodFor($measured ?? $now),
                 'client_ref' => $r['client_ref'] ?? null,
                 'recorded_at' => $measured ?? $now,
                 // la tablette n'envoie l'heure de la mesure QUE lorsqu'elle a gardé le relevé hors ligne : sa présence suffit (dit au journal, jamais caché)
@@ -281,7 +307,7 @@ class HygieneTemperatureController extends HygieneController
             }
         }
 
-        $saved = [];
+        $saved = $already;
         DB::transaction(function () use ($prepared, $branch, $op, $now, &$saved): void {
             foreach ($prepared as $p) {
                 if ($p['client_ref'] !== null) {

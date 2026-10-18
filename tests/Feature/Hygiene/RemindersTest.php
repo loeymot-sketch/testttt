@@ -235,8 +235,8 @@ class RemindersTest extends TestCase
             $l->save();
         }
         [$reminders, $tiles] = $this->overview();
-        $this->assertSame('2 étiquettes DLC dépassées : à jeter, ou à marquer « utilisé ».', $reminders['dlc-expired']['text']);
-        $this->assertSame('/admin/labels/dlc', $reminders['dlc-expired']['route']);
+        $this->assertSame('2 étiquettes DLC dépassées : à jeter, ou à marquer « utilisé ».', $reminders['dlc-expired-2']['text']);
+        $this->assertSame('/admin/labels/dlc', $reminders['dlc-expired-2']['route']);
         $this->assertSame('alert', $tiles['dlc']['status']);
     }
 

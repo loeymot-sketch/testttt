@@ -6,6 +6,7 @@ use App\Mail\HygieneAlertMail;
 use App\Models\HygieneAlertDispatch;
 use App\Models\HygieneAlertSetting;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -22,9 +23,12 @@ use Illuminate\Support\Facades\Mail;
  */
 final class AlertNotifier
 {
-    public const DOMAINS = ['temperature', 'tasks', 'oil', 'dlc', 'trace'];
-    /** Au-delà, on renonce pour la journée : un serveur de messagerie en panne ne doit pas être martelé toutes les 5 minutes. */
-    private const MAX_FAILURES_PER_KEY_AND_RECIPIENT = 3;
+    /** Les domaines qui peuvent lever un rappel URGENT. La traçabilité (« rien tracé depuis N jours ») reste un rappel sans urgence : à l'écran seulement. */
+    public const DOMAINS = ['temperature', 'tasks', 'oil', 'dlc'];
+    /** Panne de messagerie : on retente avec un délai qui double (10, 20, 40, 80 min, plafonné à 2 h) ; après ce nombre de tours sans succès, on renonce pour la journée. */
+    private const MAX_FAILURE_ROUNDS = 8;
+    /** Tolérance sur l'espacement des relances : un passage du planificateur à quelques secondes près ne décale pas une relance de 5 minutes. */
+    private const REPEAT_TOLERANCE_SECONDS = 90;
 
     public function __construct(private readonly ?Reminders $reminders = null) {}
 
@@ -67,6 +71,18 @@ final class AlertNotifier
         $branch = self::branchId();
         $out = fn (string $status, int $due = 0, int $sent = 0, int $failed = 0): array => compact('status', 'due', 'sent', 'failed');
 
+        // Un seul passage à la fois : le planificateur ET un lancement à la main ne doivent jamais envoyer deux fois le même courriel.
+        $lock = Cache::lock('hygiene:notify:'.$branch, 600);
+        if (! $lock->get()) return $out('busy');
+        try {
+            return $this->runLocked($now, $branch, $out);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runLocked(CarbonInterface $now, int $branch, \Closure $out): array
+    {
         $s = self::settings($branch);
         if (! $s['enabled']) return $out('disabled');
         if ($s['recipients'] === []) return $out('no_recipients');
@@ -102,18 +118,28 @@ final class AlertNotifier
         return $hm >= $from && $hm <= $until;
     }
 
-    /** Premier envoi du jour ; ensuite relance tous les `repeat_minutes`, au plus `max_sends` fois ; renonce après trop d'échecs. */
+    /**
+     * Premier envoi du jour ; ensuite relance tous les `repeat_minutes` (à `REPEAT_TOLERANCE_SECONDS` près), au plus `max_sends` fois. Tant que RIEN n'est
+     * parti (messagerie en panne), on retente avec un délai qui double, et on ne renonce qu'après `MAX_FAILURE_ROUNDS` tours.
+     */
     private function isDue(int $branch, string $key, CarbonInterface $now, array $s): bool
     {
         $rows = HygieneAlertDispatch::withoutGlobalScopes()->where('branch_id', $branch)->whereDate('day', $now->toDateString())
-            ->where('reminder_key', $key)->get(['status', 'sent_at', 'recipient']);
+            ->where('reminder_key', $key)->get(['status', 'sent_at', 'recipient', 'created_at']);
         $sentAt = $rows->where('status', HygieneAlertDispatch::STATUS_SENT)->pluck('sent_at')->filter()->map(fn ($d) => $d->timestamp)->unique()->sort()->values();
-        $failures = $rows->where('status', HygieneAlertDispatch::STATUS_FAILED)->count();
-        if ($failures >= self::MAX_FAILURES_PER_KEY_AND_RECIPIENT * max(1, count($s['recipients'])) && $sentAt->isEmpty()) return false;
-        if ($sentAt->isEmpty()) return true;
+
+        if ($sentAt->isEmpty()) {
+            $failed = $rows->where('status', HygieneAlertDispatch::STATUS_FAILED);
+            if ($failed->isEmpty()) return true;
+            $rounds = (int) ceil($failed->count() / max(1, count($s['recipients'])));
+            if ($rounds >= self::MAX_FAILURE_ROUNDS) return false;
+            $wait = min(120, 10 * (2 ** ($rounds - 1)));
+
+            return $failed->max('created_at')->copy()->addMinutes($wait)->lte($now);
+        }
         if ($sentAt->count() >= $s['max_sends']) return false;
 
-        return $sentAt->last() <= $now->copy()->subMinutes($s['repeat_minutes'])->timestamp;
+        return $sentAt->last() <= $now->copy()->subMinutes($s['repeat_minutes'])->timestamp + self::REPEAT_TOLERANCE_SECONDS;
     }
 
     /**

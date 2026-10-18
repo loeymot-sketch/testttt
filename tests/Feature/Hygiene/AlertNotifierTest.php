@@ -129,8 +129,8 @@ class AlertNotifierTest extends TestCase
 
         $this->moment('2026-10-20 12:05');
         $this->assertSame('nothing_due', $this->passage()['status']);
-        $this->moment('2026-10-20 12:59');
-        $this->assertSame('nothing_due', $this->passage()['status']);
+        $this->moment('2026-10-20 12:57');
+        $this->assertSame('nothing_due', $this->passage()['status']); // 3 minutes trop tôt : pas de relance
         Mail::assertSent(HygieneAlertMail::class, 1);
     }
 
@@ -146,6 +146,17 @@ class AlertNotifierTest extends TestCase
         $this->assertSame('nothing_due', $this->passage()['status']); // plafond atteint : 3 envois
 
         Mail::assertSent(HygieneAlertMail::class, 3);
+    }
+
+    public function test_une_gigue_de_quelques_secondes_ne_decale_pas_la_relance_de_cinq_minutes(): void
+    {
+        $this->lateFridge();
+        $this->settings(['repeat_minutes' => 60]);
+        $this->moment('2026-10-20 12:00:30');
+        $this->passage();
+        $this->moment('2026-10-20 13:00:00'); // 59 min 30 s plus tard : la relance est due, pas à 13:05
+        $this->assertSame('done', $this->passage()['status']);
+        Mail::assertSent(HygieneAlertMail::class, 2);
     }
 
     public function test_le_lendemain_le_compteur_repart(): void
@@ -241,14 +252,79 @@ class AlertNotifierTest extends TestCase
         $this->assertStringContainsString('Connection could not be established', (string) $row->error);
     }
 
-    public function test_apres_trop_d_echecs_on_renonce_pour_la_journee(): void
+    public function test_une_panne_de_messagerie_est_retentee_avec_un_delai_qui_double_puis_on_renonce_au_bout_de_huit_tours(): void
     {
         $this->lateFridge();
         $this->settings();
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('smtp down'));
-        for ($i = 0; $i < 3; $i++) { $this->passage(); }
+
+        $this->passage();                                    // 12:00 : 1er échec, prochain essai à 12:10
+        $this->moment('2026-10-20 12:05');
         $this->assertSame('nothing_due', $this->passage()['status']);
-        $this->assertSame(3, HygieneAlertDispatch::withoutGlobalScopes()->where('status', 'failed')->count());
+        $this->moment('2026-10-20 12:10');
+        $this->passage();                                    // 2e échec, prochain essai 20 min plus tard
+        $this->moment('2026-10-20 12:25');
+        $this->assertSame('nothing_due', $this->passage()['status']);
+        $this->moment('2026-10-20 12:30');
+        $this->passage();                                    // 3e échec, +40 min
+        $this->moment('2026-10-20 13:10'); $this->passage(); // 4e, +80 min
+        $this->moment('2026-10-20 14:30'); $this->passage(); // 5e, +120 min (plafond)
+        $this->moment('2026-10-20 16:30'); $this->passage(); // 6e
+        $this->moment('2026-10-20 18:30'); $this->passage(); // 7e
+        $this->moment('2026-10-20 20:30'); $this->passage(); // 8e : on renonce pour la journée
+        $this->moment('2026-10-20 23:00');
+        $this->assertSame('nothing_due', $this->passage()['status']);
+        $this->assertSame(8, HygieneAlertDispatch::withoutGlobalScopes()->where('status', 'failed')->count());
+    }
+
+    public function test_apres_une_panne_courte_le_rappel_repart_des_que_la_messagerie_revient(): void
+    {
+        $this->lateFridge();
+        $this->settings();
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('smtp down'));
+        $this->passage();                                    // 12:00 : échec
+        Mail::swap(new \Illuminate\Mail\MailManager($this->app)); // la messagerie revient
+        Mail::fake();
+        $this->moment('2026-10-20 12:10');
+        $this->assertSame('done', $this->passage()['status']);
+        Mail::assertSent(HygieneAlertMail::class, 1);
+    }
+
+    public function test_deux_passages_en_meme_temps_n_envoient_qu_une_fois(): void
+    {
+        $this->lateFridge();
+        $this->settings();
+        $lock = \Illuminate\Support\Facades\Cache::lock('hygiene:notify:1', 600);
+        $this->assertTrue($lock->get());                     // un autre passage est en cours
+        $this->assertSame('busy', $this->passage()['status']);
+        Mail::assertNothingSent();
+        $lock->release();
+        $this->assertSame('done', $this->passage()['status']);
+    }
+
+    public function test_la_traçabilite_n_est_pas_un_type_d_alerte_par_courriel(): void
+    {
+        $this->assertNotContains('trace', AlertNotifier::DOMAINS);
+        $this->settings(['domains' => ['trace', 'temperature']]);
+        $this->assertSame(['temperature'], AlertNotifier::settings()['domains']);
+    }
+
+    public function test_un_nouveau_lot_de_dlc_depassees_leve_un_nouveau_rappel_meme_apres_le_plafond_d_envois(): void
+    {
+        $this->settings(['max_sends' => 1]);
+        $log = function (int $n): void {
+            for ($i = 0; $i < $n; $i++) {
+                $l = new \App\Models\LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => 1, 'product_name' => 'Tomates', 'opened_at' => now()->subDays(2), 'expires_at' => now()->subHours(2)]);
+                $l->branch_id = 1;
+                $l->save();
+            }
+        };
+        $log(1);
+        $this->assertSame('done', $this->passage()['status']);       // 1 DLC dépassée : envoyé
+        $this->moment('2026-10-20 14:00');
+        $this->assertSame('nothing_due', $this->passage()['status']); // plafond atteint pour « 1 »
+        $log(2);                                                      // deux lots de plus : « 3 étiquettes dépassées » est un NOUVEAU rappel
+        $this->assertSame('done', $this->passage()['status']);
     }
 
     // ───────────── le message d'essai ─────────────

@@ -599,4 +599,94 @@ class TemperatureControllerTest extends TestCase
         $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 9.0, 'corrective_action' => 'door_closed', 'measured_at' => '2026-10-20T10:12:00+02:00']]))
             ->assertCreated()->assertJsonPath('data.0.status', 'alert');
     }
+
+    // ───────────── revue adverse : horloge, période, équipement désactivé, rejeu ─────────────
+
+    public function test_la_periode_se_deduit_de_l_heure_du_releve_jamais_du_champ_envoye(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'period' => 'evening']]))->assertCreated()->assertJsonPath('data.0.period', 'morning');
+        $this->assertSame('morning', HygieneTemperatureReading::query()->firstOrFail()->period);
+    }
+
+    public function test_une_tablette_en_retard_de_trois_heures_est_remise_a_l_heure_du_serveur(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 14:00:00', config('app.timezone')));
+
+        // l'horloge de la tablette indique 11:00 à l'envoi ; elle a pris la mesure à 10:55 (heure tablette) = 13:55 réelle
+        $body = $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T10:55:00+02:00']]) + ['client_now' => '2026-10-20T11:00:00+02:00'];
+        $this->postJson(self::BASE.'/readings', $body)->assertCreated();
+
+        $row = HygieneTemperatureReading::query()->firstOrFail();
+        $this->assertSame('2026-10-20 13:55', $row->recorded_at->setTimezone(config('app.timezone'))->format('Y-m-d H:i'));
+        $this->assertSame('morning', $row->period, 'la période suit l\'heure CORRIGÉE (13 h 55, avant la bascule de 15 h), pas l\'heure brute de la tablette ni celle de l\'envoi (14 h)');
+    }
+
+    public function test_sans_client_now_ou_pour_une_derive_de_moins_de_30_secondes_aucune_correction(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 14:00:00', config('app.timezone')));
+
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T13:50:00+02:00']]))->assertCreated();
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 2' => ['value' => 3.0, 'measured_at' => '2026-10-20T13:50:00+02:00']]) + ['client_now' => '2026-10-20T13:59:45+02:00'])->assertCreated();
+
+        $this->assertSame(['13:50', '13:50'], HygieneTemperatureReading::query()->orderBy('id')->get()->map(fn ($r) => $r->recorded_at->setTimezone(config('app.timezone'))->format('H:i'))->all());
+    }
+
+    public function test_une_tablette_en_avance_dont_la_mesure_corrigee_reste_dans_le_futur_est_refusee(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 10:00:00', config('app.timezone')));
+
+        // tablette en avance de 2 h (13:00 pour 10:00 réelles), mesure « à 13:00 » = maintenant corrigé : acceptée à 10:00
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 1' => ['value' => 3.0, 'measured_at' => '2026-10-20T13:00:00+03:00']]) + ['client_now' => '2026-10-20T13:00:00+03:00'])->assertCreated();
+        // la même tablette sans correction (pas de client_now) : l'heure est dans le futur, refusée
+        $this->postJson(self::BASE.'/readings', $this->readings(['Frigo 2' => ['value' => 3.0, 'measured_at' => '2026-10-20T13:00:00+02:00']]))->assertStatus(422)->assertJsonValidationErrors('readings.0.measured_at');
+    }
+
+    public function test_le_rejeu_d_un_lot_deja_enregistre_n_est_pas_refuse_parce_qu_un_equipement_a_ete_desactive_depuis(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        $ids = HygieneEquipment::query()->whereIn('name', ['Frigo 1', 'Frigo 2'])->pluck('id', 'name');
+        $body = ['readings' => [
+            ['equipment_id' => $ids['Frigo 1'], 'value' => 3.0, 'client_ref' => 'lot-a'],
+            ['equipment_id' => $ids['Frigo 2'], 'value' => 2.0, 'client_ref' => 'lot-b'],
+        ]];
+        $this->postJson(self::BASE.'/readings', $body)->assertCreated();
+
+        HygieneEquipment::query()->where('id', $ids['Frigo 2'])->update(['is_active' => false]);
+        $this->postJson(self::BASE.'/readings', $body)->assertCreated(); // la réponse du premier envoi s'était perdue : rejeu reconnu, rien refusé
+
+        $this->assertSame(2, HygieneTemperatureReading::query()->count());
+    }
+
+    public function test_un_releve_garde_hors_ligne_reste_valable_si_l_equipement_a_ete_desactive_depuis_mais_pas_un_releve_en_direct(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        Carbon::setTestNow(Carbon::parse('2026-10-20 12:00', config('app.timezone')));
+        $id = HygieneEquipment::query()->where('name', 'Frigo 1')->value('id');
+        HygieneEquipment::query()->where('id', $id)->update(['is_active' => false]);
+
+        $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $id, 'value' => 3.0]]])->assertStatus(422)->assertJsonValidationErrors('readings.0.equipment_id');
+        $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $id, 'value' => 3.0, 'measured_at' => '2026-10-20T10:00:00+02:00']]])->assertCreated();
+    }
+
+    public function test_une_reference_reutilisee_pour_un_autre_equipement_reste_refusee_meme_apres_desactivation(): void
+    {
+        $this->staff();
+        $this->setupSix();
+        $ids = HygieneEquipment::query()->whereIn('name', ['Frigo 1', 'Frigo 2'])->pluck('id', 'name');
+        $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $ids['Frigo 1'], 'value' => 3.0, 'client_ref' => 'ref-x']]])->assertCreated();
+        $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $ids['Frigo 2'], 'value' => 3.0, 'client_ref' => 'ref-x']]])->assertStatus(409);
+        $this->assertSame(1, HygieneTemperatureReading::query()->count());
+    }
 }

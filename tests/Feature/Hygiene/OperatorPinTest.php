@@ -245,6 +245,33 @@ class OperatorPinTest extends TestCase
         $this->sign(['operator_token' => $token, '_reading' => ['measured_at' => '2026-10-20T09:30:00+02:00']])->assertStatus(422);
     }
 
+    public function test_chaque_geste_du_lot_doit_tomber_dans_la_fenetre_du_jeton_pas_seulement_le_plus_ancien(): void
+    {
+        $this->givePin($this->sarah);
+        $token = $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '4821'])->json('data.token'); // 10:00 → 10:10
+        Carbon::setTestNow(Carbon::parse('2026-10-20 16:00', config('app.timezone')));
+        $ids = HygieneEquipment::query()->whereIn('name', ['Frigo 1', 'Frigo 2'])->pluck('id', 'name');
+
+        // A mesuré dans la fenêtre, B mesuré à 15 h 59 (hors fenêtre) : le lot entier est refusé
+        $this->postJson(self::TEMP.'/readings', ['operator_user_id' => $this->sarah->id, 'operator_token' => $token, 'readings' => [
+            ['equipment_id' => $ids['Frigo 1'], 'value' => 3.0, 'measured_at' => '2026-10-20T10:05:00+02:00'],
+            ['equipment_id' => $ids['Frigo 2'], 'value' => 3.0, 'measured_at' => '2026-10-20T15:59:00+02:00'],
+        ]])->assertStatus(422)->assertJsonValidationErrors('operator_token');
+
+        // A dans la fenêtre, B SANS heure de mesure (= maintenant, 16 h) : refusé aussi
+        $this->postJson(self::TEMP.'/readings', ['operator_user_id' => $this->sarah->id, 'operator_token' => $token, 'readings' => [
+            ['equipment_id' => $ids['Frigo 1'], 'value' => 3.0, 'measured_at' => '2026-10-20T10:05:00+02:00'],
+            ['equipment_id' => $ids['Frigo 2'], 'value' => 3.0],
+        ]])->assertStatus(422)->assertJsonValidationErrors('operator_token');
+        $this->assertSame(0, HygieneTemperatureReading::query()->count());
+
+        // tous dans la fenêtre : accepté
+        $this->postJson(self::TEMP.'/readings', ['operator_user_id' => $this->sarah->id, 'operator_token' => $token, 'readings' => [
+            ['equipment_id' => $ids['Frigo 1'], 'value' => 3.0, 'measured_at' => '2026-10-20T10:02:00+02:00'],
+            ['equipment_id' => $ids['Frigo 2'], 'value' => 3.0, 'measured_at' => '2026-10-20T10:08:00+02:00'],
+        ]])->assertCreated();
+    }
+
     // ───────────── le responsable ─────────────
 
     private function manager(): User

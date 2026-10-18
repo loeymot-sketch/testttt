@@ -78,6 +78,12 @@ class TemperatureFollowUpTest extends TestCase
         return array_column((new Reminders)->all(), 'key');
     }
 
+    /** Le rappel de suite d'un équipement (sa clé porte aussi l'identifiant du relevé d'écart : un nouvel écart = un nouveau rappel). */
+    private function followupReminder(string $name): ?array
+    {
+        return collect((new Reminders)->all())->first(fn ($i) => str_starts_with($i['key'], 'temperature-followup-'.$this->eq($name).'-'));
+    }
+
     public function test_un_ecart_regle_par_la_porte_refermee_attend_une_nouvelle_mesure_dans_les_30_minutes(): void
     {
         $this->take('Frigo 1', 9.0, 'door_closed');
@@ -88,7 +94,7 @@ class TemperatureFollowUpTest extends TestCase
         $this->assertFalse($f['overdue']);
         $this->assertSame(30, $f['minutes']);
         $this->assertStringContainsString('2026-10-20T10:30', $f['due_at']);
-        $this->assertNotContains('temperature-followup-'.$this->eq('Frigo 1'), $this->reminderKeys(), 'pas encore dû : pas de rappel');
+        $this->assertNull($this->followupReminder('Frigo 1'), 'pas encore dû : pas de rappel');
     }
 
     public function test_passe_le_delai_un_rappel_urgent_nomme_l_equipement_la_valeur_et_les_heures(): void
@@ -97,7 +103,7 @@ class TemperatureFollowUpTest extends TestCase
 
         $this->moment('2026-10-20 10:31');
         $this->assertTrue($this->followup('Frigo 1')['overdue']);
-        $item = collect((new Reminders)->all())->firstWhere('key', 'temperature-followup-'.$this->eq('Frigo 1'));
+        $item = $this->followupReminder('Frigo 1');
         $this->assertNotNull($item);
         $this->assertSame(['temperature', 'alert', '/admin/hygiene/temperature'], [$item['domain'], $item['level'], $item['route']]);
         $this->assertSame('Contrôle de suite à faire : « Frigo 1 » était à 9 °C à 10:00 — nouvelle mesure attendue depuis 10:30.', $item['text']);
@@ -111,7 +117,7 @@ class TemperatureFollowUpTest extends TestCase
 
         $this->take('Frigo 1', 3.0);
         $this->assertNull($this->followup('Frigo 1'));
-        $this->assertNotContains('temperature-followup-'.$this->eq('Frigo 1'), $this->reminderKeys());
+        $this->assertNull($this->followupReminder('Frigo 1'));
     }
 
     public function test_un_nouvel_ecart_ouvre_son_propre_suivi_a_partir_de_sa_propre_heure(): void
@@ -140,7 +146,7 @@ class TemperatureFollowUpTest extends TestCase
         $this->take('Bain-marie', 55.0, 'reheated');
         $this->moment('2026-10-20 10:45');
         $this->assertTrue($this->followup('Bain-marie')['overdue']);
-        $this->assertContains('temperature-followup-'.$this->eq('Bain-marie'), $this->reminderKeys());
+        $this->assertNotNull($this->followupReminder('Bain-marie'));
     }
 
     public function test_le_releve_d_ecart_annule_pour_erreur_supprime_l_attente(): void
@@ -150,7 +156,7 @@ class TemperatureFollowUpTest extends TestCase
         $this->postJson(self::BASE."/readings/{$id}/void", ['reason' => 'faute de frappe'])->assertOk();
         $this->moment('2026-10-20 10:45');
         $this->assertNull($this->followup('Frigo 1'));
-        $this->assertNotContains('temperature-followup-'.$this->eq('Frigo 1'), $this->reminderKeys());
+        $this->assertNull($this->followupReminder('Frigo 1'));
     }
 
     public function test_la_mesure_d_un_autre_equipement_ne_cloture_pas_l_attente(): void
@@ -197,6 +203,24 @@ class TemperatureFollowUpTest extends TestCase
         $this->moment('2026-10-20 10:35');
         $this->assertSame('done', app(AlertNotifier::class)->run()['status']);
         Mail::assertSent(HygieneAlertMail::class, fn (HygieneAlertMail $m) => str_contains($m->items[0]['text'], 'Contrôle de suite à faire'));
+    }
+
+    public function test_un_second_ecart_le_meme_jour_est_rappele_meme_apres_le_plafond_d_envois_du_premier(): void
+    {
+        Mail::fake();
+        HygieneAlertSetting::withoutGlobalScopes()->create(['branch_id' => 1, 'enabled' => true, 'recipients' => ['chef@example.test'], 'domains' => null,
+            'send_from' => '09:00', 'send_until' => '23:30', 'repeat_minutes' => 60, 'max_sends' => 1]);
+        $this->take('Frigo 1', 9.0, 'recheck');             // épisode 1 : écart à 10:00
+        $this->moment('2026-10-20 10:35');
+        $this->assertSame('done', app(AlertNotifier::class)->run()['status']);
+        $this->moment('2026-10-20 10:40');
+        $this->take('Frigo 1', 3.0);                         // résolu
+        $this->moment('2026-10-20 14:00');
+        $this->take('Frigo 1', 9.5, 'recheck');             // épisode 2 : nouvel écart à 14:00
+
+        $this->moment('2026-10-20 14:35');
+        $this->assertSame('done', app(AlertNotifier::class)->run()['status']); // le plafond d'envois de l'épisode 1 ne le fait pas taire
+        Mail::assertSent(HygieneAlertMail::class, 2);
     }
 
     public function test_le_service_ne_rend_rien_sans_equipement(): void

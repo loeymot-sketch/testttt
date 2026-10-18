@@ -88,7 +88,7 @@ final class Reminders
             $due = \Carbon\Carbon::parse($f['due_at'])->setTimezone($now->getTimezone());
             $at = \Carbon\Carbon::parse($f['recorded_at'])->setTimezone($now->getTimezone());
             $v = str_replace('.', ',', rtrim(rtrim(number_format($f['value_c'], 1, '.', ''), '0'), '.'));
-            $out[] = $this->item("temperature-followup-$equipmentId", 'temperature', 'alert',
+            $out[] = $this->item("temperature-followup-$equipmentId-{$f['reading_id']}", 'temperature', 'alert',
                 'Contrôle de suite à faire : « '.($names[$equipmentId] ?? 'Équipement')." » était à $v °C à ".$at->format('H:i').' — nouvelle mesure attendue depuis '.$due->format('H:i').'.', '/admin/hygiene/temperature');
         }
 
@@ -166,7 +166,7 @@ final class Reminders
             ->whereNotNull('expires_at')->where('expires_at', '<', $now)->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->count();
         if ($expired === 0) return [];
 
-        return [$this->item('dlc-expired', 'dlc', 'alert', $expired.' étiquette'.($expired > 1 ? 's' : '').' DLC dépassée'.($expired > 1 ? 's' : '').' : à jeter, ou à marquer « utilisé ».', '/admin/labels/dlc')];
+        return [$this->item("dlc-expired-$expired", 'dlc', 'alert', $expired.' étiquette'.($expired > 1 ? 's' : '').' DLC dépassée'.($expired > 1 ? 's' : '').' : à jeter, ou à marquer « utilisé ».', '/admin/labels/dlc')];
     }
 
     /** @return list<array<string,mixed>> */
