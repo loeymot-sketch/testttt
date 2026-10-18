@@ -108,6 +108,7 @@ class DlcLabelProduct extends Model
         'default_copies' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
+        'is_favorite' => 'boolean',
     ];
 
     protected static function booted(): void

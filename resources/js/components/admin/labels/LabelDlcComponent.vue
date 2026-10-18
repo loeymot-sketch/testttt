@@ -66,6 +66,8 @@
 
                     <!-- en cherchant (famille « Tous »), les résultats passent juste sous la recherche : 3 rangées de familles les repoussaient hors de l'écran -->
                     <div v-show="!(query && !category)" class="dlc-cats" role="tablist" aria-label="Familles" data-testid="dlc-cats">
+                        <button type="button" class="dlc-cat dlc-cat--fav" role="tab" :aria-selected="category === FAVORITES ? 'true' : 'false'" :class="{ 'is-on': category === FAVORITES }"
+                                data-testid="dlc-cat-fav" @click="category = FAVORITES">★ Favoris <span class="dlc-cat-n" data-testid="dlc-fav-count">{{ favoriteCount }}</span></button>
                         <button type="button" class="dlc-cat" role="tab" :aria-selected="category === '' ? 'true' : 'false'" :class="{ 'is-on': category === '' }"
                                 data-testid="dlc-cat-all" @click="category = ''">Tous <span class="dlc-cat-n">{{ activeProducts.length }}</span></button>
                         <button v-if="uncategorizedCount && categoryTabs.length" type="button" class="dlc-cat" role="tab"
@@ -147,6 +149,17 @@
                             </div>
                             <p v-else-if="searchFuzzy" class="dlc-muted dlc-fuzzy-note" data-testid="dlc-fuzzy-note">Résultats proches de « {{ query }} ».</p>
 
+                            <div v-if="category === FAVORITES && !favoriteCount" class="dlc-empty dlc-empty--inline" data-testid="dlc-fav-empty">
+                                <span>Aucun favori pour l'instant. Touchez <b>☆</b> sur un produit que vous utilisez tout le temps : il sera ici, prêt à imprimer.</span>
+                                <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-fav-go-all" @click="category = ''">Voir tous les produits</button>
+                            </div>
+                            <div v-else-if="category === FAVORITES && !selectMode && !query" class="dlc-fav-bar">
+                                <button type="button" class="dlc-btn dlc-btn--primary" :disabled="listBusy || !selectableVisible.length" data-testid="dlc-fav-prepare" @click="prepareFavorites">
+                                    ☑ Préparer toute ma liste ({{ selectableVisible.length }})
+                                </button>
+                                <span class="dlc-muted">Sélectionne tous les favoris : il ne reste qu'à toucher « Imprimer la sélection ».</span>
+                            </div>
+
                             <div class="dlc-grid" data-testid="dlc-grid">
                                 <div v-for="p in visibleProducts" :key="p.id" class="dlc-cell">
                                     <button type="button" class="dlc-tile"
@@ -174,6 +187,9 @@
                                         <span v-if="busyId === p.id" class="dlc-tile-busy">Impression…{{ queuedCount(p.id) ? ` (+${queuedCount(p.id)} en attente)` : "" }}</span>
                                         <span v-else-if="queuedCount(p.id)" class="dlc-tile-busy dlc-tile-busy--queued" data-testid="dlc-tile-queued">En attente ×{{ queuedCount(p.id) }}</span>
                                     </button>
+                                    <button type="button" class="dlc-star" :class="{ 'is-on': p.is_favorite }" :aria-pressed="p.is_favorite ? 'true' : 'false'"
+                                            :aria-label="p.is_favorite ? `Retirer des favoris : ${p.name}` : `Ajouter aux favoris : ${p.name}`" :disabled="favoriteBusy === p.id"
+                                            :data-testid="`dlc-fav-${p.id}`" @click="toggleFavorite(p)">{{ p.is_favorite ? "★" : "☆" }}</button>
                                     <button v-if="selectMode && selection[p.id]" type="button" class="dlc-corner" :aria-label="`Retirer une étiquette ${p.name}`"
                                             :data-testid="`dlc-minus-${p.id}`" @click="minus(p)">−</button>
                                     <button v-else-if="!selectMode" type="button" class="dlc-corner dlc-corner--more" :aria-label="`Options d'impression : ${p.name}`"
@@ -360,6 +376,7 @@ const WATCH_REFRESH_MS = 180000;
 /** Une étiquette imprimée hors ligne attend son inscription au journal jusqu'à 7 jours (longue coupure). */
 const OFFLINE_KEEP_MS = 7 * 24 * 3600 * 1000;
 const NO_FAMILY = "__none__";
+const FAVORITES = "__fav__";
 
 function clientRef() {
     return `t${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -412,6 +429,7 @@ export default {
             onlineHandler: null,
             loaded: false,
             discarding: false,
+            favoriteBusy: null,
             undo: null,
             undoTimer: null,
             selectMode: false,
@@ -443,6 +461,8 @@ export default {
             return [...new Set(this.products.map((p) => p.category).filter(Boolean))];
         },
         NO_FAMILY() { return NO_FAMILY; },
+        FAVORITES() { return FAVORITES; },
+        favoriteCount() { return this.activeProducts.filter((p) => p.is_favorite).length; },
         healthCount() {
             const h = this.health;
             return h.starting.length + h.allergens.length + h.no_category.length + h.neighbours.length;
@@ -493,7 +513,7 @@ export default {
         /** Recherche tolérante (accents, pluriel, fautes de frappe) : les correspondances exactes d'abord, les proches ensuite. */
         searchResult() {
             const inFamily = this.activeProducts
-                .filter((p) => !this.category || (this.category === NO_FAMILY ? !p.category : p.category === this.category))
+                .filter((p) => !this.category || (this.category === FAVORITES ? p.is_favorite : this.category === NO_FAMILY ? !p.category : p.category === this.category))
                 .sort((a, b) => (b.uses_30d || 0) - (a.uses_30d || 0) || a.name.localeCompare(b.name, "fr"));
             return searchProducts(inFamily, this.query);
         },
@@ -777,6 +797,27 @@ export default {
         },
 
         // ── impression ─────────────────────────────────────────────────────────
+        /** « Mes produits du jour » : sélectionne tous les favoris d'un appui ; l'impression se fait ensuite d'un seul appui sur le panier. */
+        prepareFavorites() {
+            this.setSelectMode(true);
+            this.selectAll();
+        },
+        /** Étoile : change tout de suite à l'écran, puis le serveur confirme ; un échec remet l'étoile comme avant et le dit. */
+        async toggleFavorite(p) {
+            if (this.favoriteBusy === p.id) return;
+            const want = !p.is_favorite;
+            this.favoriteBusy = p.id;
+            p.is_favorite = want;
+            try {
+                const { data } = await axios.put(`admin/labels/products/${p.id}/favorite`, { favorite: want });
+                p.is_favorite = Boolean(data && data.data ? data.data.is_favorite : want);
+            } catch (e) {
+                p.is_favorite = !want;
+                alertService.error("Favori non enregistré : vérifiez la connexion puis réessayez.");
+            } finally {
+                this.favoriteBusy = null;
+            }
+        },
         setSelectMode(on) {
             this.selectMode = on;
             this.selection = {};
@@ -1260,6 +1301,12 @@ export default {
 
 .dlc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; padding-bottom: 8px; }
 .dlc-cell { position: relative; }
+.dlc-star { position: absolute; right: 8px; top: 8px; width: 44px; height: 44px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; z-index: 2; }
+.dlc-star.is-on { border-color: #f59e0b; background: #fffbeb; color: #d97706; }
+.dlc-star:disabled { opacity: .6; cursor: progress; }
+.dlc-cat--fav { border-color: #f59e0b; color: #92400e; }
+.dlc-cat--fav.is-on { background: #fffbeb; border-color: #d97706; color: #78350f; box-shadow: inset 0 0 0 1px #d97706; }
+.dlc-fav-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
 .dlc-tile {
     position: relative; width: 100%; height: 100%; min-height: 128px; border-radius: 14px; border: 2px solid #e2e8f0; border-left: 8px solid var(--cat, #94a3b8);
     background: #fff; padding: 10px 12px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; cursor: pointer;
@@ -1270,7 +1317,7 @@ export default {
 .dlc-tile.is-expired { border-color: #dc2626; border-left-color: #dc2626; background: #fef2f2; }
 .dlc-tile.is-apart { background: #f8fafc; border-style: dashed; }
 .dlc-tile-apart { background: #fef3c7; color: #92400e; border-radius: 999px; padding: 1px 10px; font-weight: 800; font-size: 12px; }
-.dlc-tile-top { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 24px; flex-wrap: wrap; }
+.dlc-tile-top { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 24px; flex-wrap: wrap; padding-right: 48px; }
 .dlc-check { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #94a3b8; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
 .dlc-check.is-on { background: #D63D0B; border-color: #D63D0B; }
 .dlc-tile-cat { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .04em; flex: 1 1 auto; }

@@ -162,6 +162,24 @@ class LabelController extends AdminController
         return response()->json(['data' => $this->presentProduct($model->refresh())]);
     }
 
+    /**
+     * Favori (« mes produits du jour ») : partagé par toutes les tablettes du restaurant. Idempotent : demander deux fois la même valeur
+     * ne change rien. N'altère ni la durée ni la validation de la fiche (ce n'est pas une modification de fiche).
+     */
+    public function setFavorite(Request $request, string $product): JsonResponse
+    {
+        $validated = $request->validate(['favorite' => ['required', 'boolean']]);
+        $model = DlcLabelProduct::query()->findOrFail((int) $product);
+        $want = (bool) $validated['favorite'];
+        if ($model->is_favorite !== $want) {
+            // updated_at ne bouge pas : mettre en favori n'est pas modifier la fiche (la validation des durées reste intacte)
+            $model->timestamps = false;
+            $model->forceFill(['is_favorite' => $want])->save();
+        }
+
+        return response()->json(['data' => $this->presentProduct($model->refresh())]);
+    }
+
     public function destroyProduct(string $product): JsonResponse
     {
         // Suppression douce : le journal d'hygiène garde le nom et la durée copiés à l'impression.
@@ -1212,6 +1230,7 @@ class LabelController extends AdminController
             'default_copies' => (int) ($p->default_copies ?: 1),
             'sort_order' => $p->sort_order,
             'is_active' => $p->is_active,
+            'is_favorite' => (bool) $p->is_favorite,
         ];
     }
 
