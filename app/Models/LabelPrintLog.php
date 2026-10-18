@@ -18,6 +18,9 @@ class LabelPrintLog extends Model
     public const KIND_DLC = 'dlc';
     public const KIND_ORDER = 'order';
 
+    /** Repas témoin : le service dont il est issu (clé => libellé imprimé). */
+    public const MEAL_SLOTS = ['morning' => 'Matin', 'noon' => 'Midi', 'evening' => 'Soir'];
+
     public const STATUS_CLAIMED = 'claimed';
     public const STATUS_PRINTED = 'printed';
     public const STATUS_FAILED = 'failed';
@@ -62,6 +65,7 @@ class LabelPrintLog extends Model
         'dlc_product_id',
         'product_name',
         'action',
+        'meal_slot',
         'lot',
         'original_dlc',
         'capped',

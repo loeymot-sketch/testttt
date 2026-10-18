@@ -283,6 +283,19 @@ class OverviewAndReportTest extends TestCase
         $this->get(self::BASE.'/report/pdf?from=2026-10-19&to=2026-10-20')->assertOk();
     }
 
+    public function test_dlc_csv_names_the_service_of_a_witness_meal_and_only_of_that(): void
+    {
+        $this->staff();
+        foreach ([['witness', 'noon'], ['prepared', null]] as $i => [$action, $slot]) {
+            $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => 1, 'product_name' => "Plat$i", 'action' => $action, 'meal_slot' => $slot, 'opened_at' => Carbon::parse('2026-10-20 09:00'), 'expires_at' => Carbon::parse('2026-10-25 09:00')]);
+            $l->branch_id = 1;
+            $l->save();
+        }
+        $csv = $this->get(self::BASE.'/report/csv?module=dlc&from=2026-10-19&to=2026-10-20')->assertOk()->streamedContent();
+        $this->assertStringContainsString('Plat0;"Repas témoin (Midi)"', $csv);
+        $this->assertMatchesRegularExpression('/Plat1;Préparation;/u', $csv);
+    }
+
     public function test_csv_has_bom_semicolons_french_decimals_and_neutralises_formulas(): void
     {
         $this->staff();

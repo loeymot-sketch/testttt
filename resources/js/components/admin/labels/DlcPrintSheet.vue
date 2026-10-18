@@ -31,6 +31,16 @@
                         « {{ storageText }} ».
                     </p>
 
+                    <!-- Repas témoin : le SERVICE dont il est issu est obligatoire (jamais deviné d'après l'heure) -->
+                    <div v-if="action === 'witness'" class="sh-slot" :class="{ 'is-required': !mealSlot }" data-testid="dlc-sheet-slot">
+                        <span class="sh-label" id="dlc-sheet-slot-label">Service concerné (obligatoire)</span>
+                        <div class="sh-slot-buttons" role="radiogroup" aria-labelledby="dlc-sheet-slot-label">
+                            <button v-for="(label, key) in slots" :key="key" type="button" class="sh-slot-btn" role="radio" :aria-checked="mealSlot === key ? 'true' : 'false'"
+                                    :class="{ 'is-on': mealSlot === key }" :data-testid="`dlc-sheet-slot-${key}`" @click="mealSlot = key">{{ label }}</button>
+                        </div>
+                        <p v-if="!mealSlot" class="sh-cap is-bad" data-testid="dlc-sheet-slot-required">Dites de quel service est issu ce repas témoin (matin, midi ou soir).</p>
+                    </div>
+
                     <div v-if="product.ask_original_dlc" class="sh-original">
                         <label for="dlc-sheet-original" class="sh-label">DLC du fabricant (sur l'emballage d'origine)</label>
                         <input id="dlc-sheet-original" v-model="original" type="date" class="db-field-control" :min="todayIso"
@@ -107,7 +117,7 @@
  * jamais), produit d'origine déjà étiqueté (la DLC suit la sienne, sauf cuisson — GBPH § 2.7), aperçu fidèle.
  * S'ouvre seulement quand il y a un choix à faire : sinon un appui sur la tuile imprime directement.
  */
-import { DLC_ACTIONS, dlcLabelBlocks, previewExpiry, shelfLifeText, formatDlcDate, storageForAction, storagePhrase, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
+import { DLC_ACTIONS, MEAL_SLOTS, dlcLabelBlocks, previewExpiry, shelfLifeText, formatDlcDate, storageForAction, storagePhrase, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { previewUrls } from "../../../helpers/labelPrintJob";
 
 function isoDay(d) {
@@ -137,6 +147,8 @@ export default {
         const start = actions.find((a) => a.key === this.initialAction) || actions[0] || { key: "opened" };
         return {
             action: start.key, copies: Number(this.product.default_copies) || 1,
+            // jamais pré-choisi : un service coché par défaut serait faux une fois sur trois
+            mealSlot: "", slots: MEAL_SLOTS,
             // jamais pré-remplie : la DLC d'un nouvel emballage se lit sur l'emballage (« Même emballage » la reprend)
             original: "",
             supplierLot: "",
@@ -212,6 +224,7 @@ export default {
             if (this.thawedMissing) return false;
             if (this.product.ask_original_dlc && (!this.original || this.originalExpired)) return false;
             if (this.mustChooseParent) return false;
+            if (this.current.key === "witness" && !this.mealSlot) return false;
             return true;
         },
         preview() {
@@ -225,7 +238,7 @@ export default {
                     capped: Boolean(this.limit.source), capSource: this.limit.source,
                     originalDlc: this.original, supplierLot: this.supplierLot.trim(),
                     parent: this.parent ? { lot: this.parent.lot, name: this.parent.name } : null,
-                    by: this.product.print_operator ? "Prénom" : "", lot: "L000000-0000",
+                    by: this.product.print_operator ? "Prénom" : "", lot: "L000000-0000", mealSlot: this.mealSlot,
                 });
                 return previewUrls([blocks], this.settings).urls[0] || "";
             } catch (_) {
@@ -283,6 +296,7 @@ export default {
                 action: this.current.key, copies: this.copies, original_dlc: this.original || null,
                 supplier_lot: this.supplierLot.trim() || null, parent_log_id: this.parentId,
                 parent_none: this.parentChoice === "none" || undefined,
+                meal_slot: this.current.key === "witness" ? this.mealSlot : undefined,
             });
         },
     },
@@ -316,6 +330,11 @@ export default {
 .sh-parent { border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 10px 8px; }
 .sh-parent.is-required { border-color: #f59e0b; background: #fffbeb; }
 .sh-parent-search { min-height: 48px; margin-bottom: 4px; }
+.sh-slot { border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 10px 10px; }
+.sh-slot.is-required { border-color: #f59e0b; background: #fffbeb; }
+.sh-slot-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
+.sh-slot-btn { min-height: 56px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; font-size: 18px; font-weight: 800; color: #111827; cursor: pointer; }
+.sh-slot-btn.is-on { border-color: #D63D0B; background: #fff7f3; color: #9a3412; }
 .sh-anomaly { color: #9a3412; font-weight: 700; font-size: 13px; }
 .sh-same { margin-top: 8px; display: block; text-align: left; height: auto; padding: 10px 14px; line-height: 1.3; }
 .sh-toggle { background: none; border: 0; font-size: 15px; font-weight: 700; color: #334155; min-height: 48px; cursor: pointer; padding: 0; text-align: left; }

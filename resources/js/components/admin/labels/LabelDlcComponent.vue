@@ -655,8 +655,8 @@ export default {
          * Imprimable en lot ? Les produits « DLC du fabricant » le sont (une étape commune demande leurs dates) ; restent
          * à part ceux qui exigent leur produit d'origine, une fiche sans conservation, ou un événement qu'ils ne prévoient pas.
          */
-        /** Cet événement exige de dire l'origine du produit (fiche « fait à partir de… », ou congélation : jamais de recongélation). */
-        needsOrigin(p, actionKey) { return Boolean(p.needs_parent) || (actionKey || (p.actions[0] && p.actions[0].key)) === "frozen"; },
+        /** Cet événement exige une saisie sur la fiche : l'origine du produit (fiche « fait à partir de… », congélation : jamais de recongélation) ou le service d'un repas témoin. */
+        needsOrigin(p, actionKey) { const key = actionKey || (p.actions[0] && p.actions[0].key); return Boolean(p.needs_parent) || key === "frozen" || key === "witness"; }, // repas témoin : le service se choisit sur la fiche, jamais en un appui à l'aveugle
         selectable(p) {
             if (this.needsOrigin(p, this.batchAction) || this.ficheIncomplete(p)) return false;
             if (this.batchAction && !p.actions.some((a) => a.key === this.batchAction)) return false;
@@ -674,7 +674,7 @@ export default {
         },
         apartReason(p) {
             if (this.ficheIncomplete(p) || this.batchIncomplete(p)) return "À part (fiche à compléter)";
-            if (this.needsOrigin(p, this.batchAction)) return "À part (produit d'origine)";
+            if (this.needsOrigin(p, this.batchAction)) return (this.batchAction || (p.actions[0] && p.actions[0].key)) === "witness" ? "À part (service à choisir)" : "À part (produit d'origine)";
             return `Sans ${this.actionLabel(this.batchAction).toLowerCase()}`;
         },
         queuedCount(id) {
@@ -1046,7 +1046,7 @@ export default {
                 const res = await axios.post("admin/labels/dlc/print", {
                     product_id: product.id, copies, action: opts.action || undefined, original_dlc: opts.original_dlc || undefined,
                     supplier_lot: opts.supplier_lot || undefined, parent_log_id: opts.parent_log_id || undefined,
-                    parent_none: opts.parent_none || undefined,
+                    parent_none: opts.parent_none || undefined, meal_slot: opts.meal_slot || undefined,
                     operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
                 });
                 data = res.data;
@@ -1081,7 +1081,7 @@ export default {
                     storage: storageForAction(product.storage, action.key, product.thawed_storage), allergens: product.allergens,
                     no_allergens: product.no_allergens, action: action.key,
                     opened_at: now.toISOString(), expires_at: previewExpiry(action, now).toISOString(), copies,
-                    by: null, lot: null, capped: false, offline: true, client_ref: ref,
+                    by: null, lot: null, capped: false, offline: true, client_ref: ref, meal_slot: opts.meal_slot || null,
                 };
             }
 
@@ -1090,7 +1090,7 @@ export default {
                 openedAt: data.opened_at, expiresAt: data.expires_at, storage: data.storage, by: data.by, lot: data.lot,
                 allergens: data.allergens, noAllergens: Boolean(data.no_allergens), capped: data.capped, capSource: data.cap_source,
                 originalDlc: data.original_dlc, supplierLot: data.supplier_lot, parent: data.parent, offline: Boolean(data.offline),
-                offlineRef: data.client_ref ? this.offlineRefOf(data.client_ref) : "",
+                offlineRef: data.client_ref ? this.offlineRefOf(data.client_ref) : "", mealSlot: data.meal_slot || "",
             });
             const resultUrl = data.log_id ? `admin/labels/prints/${data.log_id}/result` : null;
             if (resultUrl) labelInflight(axios).begin(data.log_id, resultUrl, data.attempt || null);
@@ -1111,7 +1111,7 @@ export default {
                     client_ref: data.client_ref, product_id: product.id, product_name: product.name, action: data.action,
                     copies: data.copies, opened_at: data.opened_at, expires_at: data.expires_at, storage: data.storage || null,
                     // « produit neuf » déclaré pour une préparation : la déclaration suit l'étiquette au journal
-                    parent_none: opts.parent_none || undefined,
+                    parent_none: opts.parent_none || undefined, meal_slot: data.action === "witness" ? (opts.meal_slot || undefined) : undefined,
                     // la personne est écrite EN TOUTES LETTRES (« moi » = le compte qui a imprimé, pas celui qui sera connecté au rejeu)
                     operator_user_id: this.operatorId || this.operatorMe || undefined, operator_token: this.operatorToken || undefined,
                     status: result.ok ? (result.unconfirmed ? "unconfirmed" : "printed") : "failed",

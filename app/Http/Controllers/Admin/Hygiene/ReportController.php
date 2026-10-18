@@ -126,7 +126,7 @@ class ReportController extends HygieneController
                 $labels = \App\Models\DlcLabelProduct::ACTION_LABELS;
 
                 return [['Date', 'Produit', 'Événement', 'N° de lot', 'Lot fournisseur', 'DLC', 'Étiquettes', 'Conservation', 'Sortie', 'Date de sortie'],
-                    array_map(fn ($r) => [$this->dt($r['at']), $r['product'], $labels[$r['action']] ?? $r['action'], $r['lot'], $r['supplier_lot'], $this->dt($r['expires_at']), $r['copies'], $r['storage'],
+                    array_map(fn ($r) => [$this->dt($r['at']), $r['product'], ($labels[$r['action']] ?? $r['action']).(! empty($r['meal_slot']) ? ' ('.(\App\Models\LabelPrintLog::MEAL_SLOTS[$r['meal_slot']] ?? $r['meal_slot']).')' : ''), $r['lot'], $r['supplier_lot'], $this->dt($r['expires_at']), $r['copies'], $r['storage'],
                         $r['out'] ? ['discarded' => 'jeté', 'used' => 'utilisé'][$r['out']['reason']] ?? $r['out']['reason'] : '', $r['out'] ? $this->dt($r['out']['at']) : ''], $rows)];
         }
     }

@@ -53,6 +53,9 @@ export const DLC_ACTIONS = Object.freeze({
     received: { key: 'received', label: 'Réception', verb: 'Reçu le', short: 'Reçu' },
 });
 
+/** Repas témoin : le service dont il est issu (miroir de LabelPrintLog::MEAL_SLOTS). */
+export const MEAL_SLOTS = { morning: 'Matin', noon: 'Midi', evening: 'Soir' };
+
 /** Conservation imposée par l'événement (miroir de DlcLabelProduct::FROZEN_STORAGE / WITNESS_STORAGE). */
 export const FROZEN_STORAGE = '≤ −18 °C';
 export const WITNESS_STORAGE = '0 à +3 °C';
@@ -183,7 +186,7 @@ export function previewExpiry(action, now = new Date()) {
  * @param {{name:string, openedAt:string, expiresAt:string, action?:string, category?:string, note?:string,
  *          storage?:string, by?:string, lot?:string, allergens?:string[], noAllergens?:boolean, capped?:boolean,
  *          capSource?:string, originalDlc?:string, supplierLot?:string, parent?:{lot?:string, name?:string}|null,
- *          offline?:boolean, offlineRef?:string}} d
+ *          offline?:boolean, offlineRef?:string, mealSlot?:'morning'|'noon'|'evening'}} d
  */
 export function dlcLabelBlocks(d) {
     const action = DLC_ACTIONS[d.action] || DLC_ACTIONS.opened;
@@ -195,7 +198,8 @@ export function dlcLabelBlocks(d) {
     // GBPH § 2.6 : un produit décongelé « ne doit en aucun cas être recongelé » — en blanc sur noir, impossible à rater.
     if (action.key === 'thawed') blocks.push({ t: 'band', left: 'NE PAS RECONGELER', size: 'lg' });
     // Repas témoin : à garder tel quel, jamais consommé — la bande le dit avant toute autre ligne.
-    if (action.key === 'witness') blocks.push({ t: 'band', left: 'REPAS TÉMOIN', size: 'lg' });
+    // … avec le SERVICE dont il est issu : c'est ce qui relie le plat gardé à ce qu'il couvre.
+    if (action.key === 'witness') blocks.push({ t: 'band', left: `REPAS TÉMOIN${MEAL_SLOTS[d.mealSlot] ? ` · ${MEAL_SLOTS[d.mealSlot].toUpperCase()}` : ''}`, size: 'lg' });
     blocks.push({ t: 'pair', left: action.verb, right: formatDlcDate(d.openedAt), size: 'md', stack: true });
     // La pastille du jour sert au tri de la semaine ; au-delà de 6 jours, le même jour reviendrait : on ne la met pas.
     const spanMs = Date.parse(d.expiresAt) - Date.parse(d.openedAt);

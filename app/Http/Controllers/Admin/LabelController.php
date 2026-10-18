@@ -316,6 +316,8 @@ class LabelController extends AdminController
             'operator_token' => ['nullable', 'string', 'max:400'],
             'operator_pin' => ['nullable', 'string', 'max:6'],
             'action' => ['nullable', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
+            // Repas témoin : le service (matin / midi / soir) dont il est issu — obligatoire pour cet événement, ignoré pour les autres.
+            'meal_slot' => ['nullable', 'string', Rule::in(array_keys(LabelPrintLog::MEAL_SLOTS))],
             // DLC imprimée par le FABRICANT sur l'emballage d'origine (AAAA-MM-JJ), et son numéro de lot.
             'original_dlc' => ['nullable', 'date_format:Y-m-d'],
             'supplier_lot' => ['nullable', 'string', 'max:40'],
@@ -362,6 +364,14 @@ class LabelController extends AdminController
             $message = 'Renseignez '.$what.' de « '.$product->name.' » (Modifier la fiche) : elle est imprimée sur l’étiquette.';
 
             return response()->json(['status' => $status, 'message' => $message, 'errors' => [$field => [$message]]], 422);
+        }
+
+        // Repas témoin : sans le service, l'étiquette ne relie le plat à rien — refusé, jamais deviné d'après l'heure.
+        $mealSlot = $action['key'] === 'witness' ? ($validated['meal_slot'] ?? null) : null;
+        if ($action['key'] === 'witness' && $mealSlot === null) {
+            $message = 'Repas témoin de « '.$product->name.' » : indiquez le service (matin, midi ou soir).';
+
+            return response()->json(['status' => 'meal_slot_required', 'message' => $message, 'errors' => ['meal_slot' => [$message]]], 422);
         }
 
         // Produit fait à partir d'un produit étiqueté : l'origine (ou « produit neuf ») est obligatoire — un appui ne
@@ -454,6 +464,7 @@ class LabelController extends AdminController
             'dlc_product_id' => $product->id,
             'product_name' => $product->name,
             'action' => $action['key'],
+            'meal_slot' => $mealSlot,
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
@@ -499,6 +510,7 @@ class LabelController extends AdminController
             'product_id' => ['required', 'integer'],
             'product_name' => ['nullable', 'string', 'max:120'],
             'action' => ['required', 'string', Rule::in(DlcLabelProduct::ACTIONS)],
+            'meal_slot' => ['nullable', 'string', Rule::in(array_keys(LabelPrintLog::MEAL_SLOTS))],
             'copies' => ['required', 'integer', 'min:1', 'max:20'],
             'opened_at' => ['required', 'date'],
             'expires_at' => ['required', 'date'],
@@ -545,6 +557,10 @@ class LabelController extends AdminController
             && DlcLabelProduct::nameKey($validated['storage']) !== DlcLabelProduct::nameKey($validated['action'] === 'frozen' ? DlcLabelProduct::FROZEN_STORAGE : DlcLabelProduct::WITNESS_STORAGE)) {
             $anomalies[] = 'conservation imprimée différente de celle de l’événement';
         }
+        // l'étiquette est déjà sur le plat : un service manquant ne la fait pas disparaître du journal, il la signale
+        if ($validated['action'] === 'witness' && empty($validated['meal_slot'])) {
+            $anomalies[] = 'service du repas témoin non précisé';
+        }
         if ($validated['action'] === 'thawed' && ! empty($validated['storage'])
             && ! DlcLabelProduct::isValidThawedStorage((string) $validated['storage'])) {
             $anomalies[] = 'conservation après décongélation imprimée invalide';
@@ -569,6 +585,7 @@ class LabelController extends AdminController
             'dlc_product_id' => $product?->id,
             'product_name' => $product?->name ?? (trim((string) ($validated['product_name'] ?? '')) ?: 'Produit #'.$validated['product_id']),
             'action' => $action['key'],
+            'meal_slot' => $action['key'] === 'witness' ? ($validated['meal_slot'] ?? null) : null,
             'shelf_life_value' => $action['value'],
             'shelf_life_unit' => $action['unit'],
             'opened_at' => $openedAt,
@@ -609,6 +626,7 @@ class LabelController extends AdminController
             'name' => $product->name,
             'category' => $product->category,
             'action' => $log->action,
+            'meal_slot' => $log->meal_slot,
             'storage' => $log->storage,
             'note' => $product->note,
             'allergens' => array_values((array) ($product->allergens ?? [])),
@@ -874,6 +892,7 @@ class LabelController extends AdminController
             'dlc_product_id' => $l->dlc_product_id,
             'product_name' => $l->product_name,
             'action' => $l->action,
+            'meal_slot' => $l->meal_slot,
             'lot' => $l->lot,
             'capped' => (bool) $l->capped,
             'cap_source' => $l->cap_source,

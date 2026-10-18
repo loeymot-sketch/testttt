@@ -322,9 +322,9 @@ final class ReportBuilder
         $rows = ['rows' => [], 'rows_total' => 0];
         if ($withRows) {
             $list = $base()->orderBy('opened_at')->orderBy('id')
-                ->get(['opened_at', 'product_name', 'action', 'lot', 'supplier_lot', 'expires_at', 'copies', 'storage', 'discarded_at', 'discard_reason'])
+                ->get(['opened_at', 'product_name', 'action', 'meal_slot', 'lot', 'supplier_lot', 'expires_at', 'copies', 'storage', 'discarded_at', 'discard_reason'])
                 ->map(fn ($l) => [
-                    'at' => $l->opened_at?->toIso8601String(), 'product' => $l->product_name, 'action' => $l->action, 'lot' => $l->lot, 'supplier_lot' => $l->supplier_lot,
+                    'at' => $l->opened_at?->toIso8601String(), 'product' => $l->product_name, 'action' => $l->action, 'meal_slot' => $l->meal_slot, 'lot' => $l->lot, 'supplier_lot' => $l->supplier_lot,
                     'expires_at' => $l->expires_at?->toIso8601String(), 'copies' => $l->copies, 'storage' => $l->storage,
                     'out' => $l->discarded_at ? ['at' => $l->discarded_at->toIso8601String(), 'reason' => $l->discard_reason ?: LabelPrintLog::DISCARD_DISCARDED] : null,
                 ])->values()->all();

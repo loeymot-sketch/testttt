@@ -94,7 +94,8 @@ describe('accueil du module', () => {
         w = await mountHome([tile('temperature', 'empty', 'À configurer'), tile('oil', 'empty', 'À configurer'), tile('trace', 'ok', 'Rien tracé')], { alerts: 0, todo: 0 });
         const banner = w.get('[data-testid="home-banner"]');
         expect(banner.text()).not.toContain('Tout est en ordre');
-        expect(banner.text()).toBe('Rien d\'urgent, mais à configurer : temperature, oil.');
+        // la friture est facultative : elle n'est pas réclamée dans la bannière (le guide la propose sans reproche)
+        expect(banner.text()).toBe('Rien d\'urgent, mais à configurer : temperature.');
         expect(banner.classes()).toContain('is-todo');
         // une alerte l'emporte toujours, même avec un domaine à configurer
         w = await mountHome([tile('temperature', 'alert', 'x'), tile('oil', 'empty', 'x')], { alerts: 1, todo: 0 });
@@ -352,6 +353,16 @@ describe('accueil — guide de mise en place et journée en règle (2026-10-18, 
         const tiles = [{ ...tile('temperature', 'ok', '2/2 relevés'), counts: { done: 2, total: 2, alerts: 0 } }, { ...tile('tasks', 'ok', 'Rien à faire'), counts: { done: 0, total: 0, overdue: 0 } }];
         const w = await mountHome(tiles, { alerts: 0, todo: 0 });
         expect(w.get('[data-testid="home-banner"]').text()).toBe('Journée en règle ✓ · 2/2 relevés');
+    });
+
+    it('journée en règle : la friture non configurée (facultative) ne la retire pas ; un autre domaine non configuré, si', async () => {
+        const ok = [{ ...tile('temperature', 'ok', '2/2 relevés'), counts: { done: 2, total: 2, alerts: 0 } }, tile('oil', 'empty', 'À configurer')];
+        let w = await mountHome(ok, { alerts: 0, todo: 0 });
+        expect(w.get('[data-testid="home-banner"]').text()).toBe('Journée en règle ✓ · 2/2 relevés');
+        expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-ok');
+        w = await mountHome([...ok.slice(0, 1), tile('tasks', 'empty', 'À configurer'), tile('oil', 'empty', 'À configurer')], { alerts: 0, todo: 0 });
+        expect(w.get('[data-testid="home-banner"]').classes()).toContain('is-todo');
+        expect(w.get('[data-testid="home-banner"]').text()).not.toContain('Journée en règle');
     });
 
     it('journée en règle : jamais affichée s’il reste quelque chose à faire ou une alerte', async () => {

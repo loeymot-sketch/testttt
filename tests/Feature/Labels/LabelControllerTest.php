@@ -1357,7 +1357,7 @@ class LabelControllerTest extends TestCase
         $this->assertSame('2027-01-15 10:00', Carbon::parse($frozen['expires_at'])->format('Y-m-d H:i'));
 
         // Repas témoin : 0 à +3 °C, 5 jours
-        $witness = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'witness'])->assertOk()->json();
+        $witness = $this->postJson('/api/admin/labels/dlc/print', ['product_id' => $p['id'], 'action' => 'witness', 'meal_slot' => 'noon'])->assertOk()->json();
         $this->assertSame('0 à +3 °C', $witness['storage']);
         $this->assertSame('2026-10-22 10:00', Carbon::parse($witness['expires_at'])->format('Y-m-d H:i'));
 

@@ -144,9 +144,11 @@ export default {
         todayLabel() { return formatDay(this.meta.server_now || new Date().toISOString(), this.meta.timezone); },
         /** Domaines pas encore configurés (aucun frigo, aucun plan…) : « tout est en ordre » serait faux tant qu'il en reste. */
         unconfigured() { return this.tiles.filter((t) => t.status === "empty"); },
+        /** Un domaine FACULTATIF (la friture : beaucoup de restaurants n'en ont pas) ne retire jamais « journée en règle » : le guide le propose, sans reproche. */
+        blocking() { return this.unconfigured.filter((t) => t.key !== "oil"); },
         bannerKind() {
             if (this.meta.alerts > 0) return "alert";
-            return this.meta.todo > 0 || this.unconfigured.length > 0 ? "todo" : "ok";
+            return this.meta.todo > 0 || this.blocking.length > 0 ? "todo" : "ok";
         },
         bannerText() {
             const a = this.meta.alerts;
@@ -154,8 +156,8 @@ export default {
             // a et t comptent des DOMAINES (tuiles), pas des tâches : le dire, sinon « 1 chose à faire » contredit « 5 à faire » sur la tuile
             if (a > 0) return `${a} domaine${a > 1 ? "s" : ""} en alerte à traiter${t > 0 ? ` · ${t} autre${t > 1 ? "s" : ""} à compléter` : ""}`;
             if (t > 0) return `${t} domaine${t > 1 ? "s" : ""} à compléter aujourd'hui`;
-            if (this.tiles.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
-            if (this.unconfigured.length) return `Rien d'urgent, mais à configurer : ${this.unconfigured.map((u) => u.label).join(", ")}.`;
+            if (this.tiles.length && this.blocking.length && this.unconfigured.length === this.tiles.length) return "Commencez par configurer un domaine : touchez une tuile.";
+            if (this.blocking.length) return `Rien d'urgent, mais à configurer : ${this.blocking.map((u) => u.label).join(", ")}.`;
             return this.doneSummary ? `Journée en règle ✓ · ${this.doneSummary}` : "Tout est en ordre ✓";
         },
         /** Ce qui est VRAIMENT fait aujourd'hui, en chiffres : un « tout est en ordre » vague ne récompense personne. */
