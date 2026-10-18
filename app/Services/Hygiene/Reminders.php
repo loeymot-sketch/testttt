@@ -77,7 +77,7 @@ final class Reminders
             // alerte permanente) ; soir : un relevé du soir. Un équipement créé APRÈS l'heure du rappel n'était pas encore attendu (même règle que le
             // dossier de contrôle) ; un bain-marie ne sert qu'au service : il n'est pas exigé au relevé du matin.
             $done = $period === 'morning' ? $anyToday : $byPeriod->get($period, []);
-            $missing = $all->reject(fn ($e) => in_array($e->id, $done, true) || $e->created_at->gte($deadline)
+            $missing = $all->reject(fn ($e) => in_array($e->id, $done, true) || ($e->created_at !== null && $e->created_at->gte($deadline))
                 || ($period === 'morning' && config("hygiene.kinds.{$e->kind}.hot")));
             if ($missing->isEmpty()) continue;
             $out[] = $this->item("temperature-late-$period", 'temperature', 'alert',
@@ -134,10 +134,10 @@ final class Reminders
         foreach ($fryers as $f) {
             $mine = $rows->get($f->id, collect());
             $lastTest = $mine->first(fn ($r) => $r->type === 'test');
-            if ($lastTest && in_array($lastTest->status, ['warn', 'alert'], true)) {
-                // l'huile a été changée depuis ce test : le rappel n'a plus lieu d'être
+            if ($lastTest) {
+                // l'huile a été changée depuis ce test (vidange saisie) ou déclarée changée sur le test lui-même : le rappel n'a plus lieu d'être
                 $changedSince = $mine->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($lastTest->performed_at));
-                if (! $changedSince) {
+                if (OilRules::isOpen((string) $lastTest->status, $lastTest->corrective_action, $changedSince)) {
                     $pct = str_replace('.', ',', rtrim(rtrim(number_format((float) $lastTest->polar_pct, 1, '.', ''), '0'), '.'));
                     $over = $lastTest->polar_pct !== null && (float) $lastTest->polar_pct > $limit;
                     // le VRAI motif de l'écart : un bain trop chaud avec des polaires bas n'est pas « 10 % — changement à prévoir »
@@ -156,7 +156,7 @@ final class Reminders
         if ($deadline !== null && $now->gte($deadline)) {
             $practised = $rows->flatten(1)->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start->copy()->subDays(7)));
             if ($practised) {
-                $missing = $fryers->reject(fn ($f) => $f->created_at->gte($deadline) || $rows->get($f->id, collect())->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start)));
+                $missing = $fryers->reject(fn ($f) => ($f->created_at !== null && $f->created_at->gte($deadline)) || $rows->get($f->id, collect())->contains(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start)));
                 if ($missing->isNotEmpty()) {
                     $out[] = $this->item('oil-test-late', 'oil', 'todo', 'Test d’huile non fait : '.$this->names($missing->pluck('name')->all()).'.', '/admin/hygiene/oil');
                 }
@@ -169,7 +169,7 @@ final class Reminders
     /** @return list<array<string,mixed>> */
     private function dlc(CarbonInterface $now): array
     {
-        $expired = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)->whereNull('discarded_at')
+        $expired = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereNull('discarded_at')
             ->whereNotNull('expires_at')->where('expires_at', '<', $now)->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->count();
         if ($expired === 0) return [];
 

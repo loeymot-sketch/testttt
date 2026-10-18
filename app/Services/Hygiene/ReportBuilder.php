@@ -71,7 +71,7 @@ final class ReportBuilder
 
     // ───────────────────────────── jours ─────────────────────────────
 
-    /** Les jours de la période déjà écoulés (hier et avant) ; aujourd'hui n'est « attendu » que s'il est déjà fait (la journée n'est pas finie). */
+    /** Les jours de la période déjà écoulés (hier et avant) ; aujourd'hui n'entre jamais dans le taux (la journée n'est pas finie : il est dit à part). */
     private function pastDays(): array
     {
         $today = now()->startOfDay();
@@ -126,13 +126,15 @@ final class ReportBuilder
         $equipments = HygieneEquipment::query()->withTrashed()->whereIn('kind', Kinds::keys('temperature'))->get()->filter(fn ($e) => $this->stillRelevant($e));
 
         $covered = $live->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->recorded_at))->unique()->flip());
-        [$expected, $done] = $this->coverage($equipments, $covered);
+        [$expected, $done, $todayTotal, $todayDone] = $this->coverage($equipments, $covered);
 
         $alerts = $live->where('status', 'alert');
 
         return [
             'count' => $live->count(), 'offline' => $live->where('source', 'offline')->count(), 'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(),
             'equipment' => $equipments->where('is_active', true)->whereNull('deleted_at')->count(), 'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
+            // la journée EN COURS n'est pas finie : jamais comptée dans le taux (ni comme faite, ni comme manquée), dite à part, comme l'accueil
+            'today' => $this->includesToday() ? ['expected' => $todayTotal, 'done' => $todayDone] : null,
             'incidents' => $alerts->map(fn ($r) => [
                 'at' => $r->recorded_at->toIso8601String(), 'module' => 'temperature',
                 'text' => $r->equipment_name.' : '.str_replace('.', ',', (string) $r->value_c).' °C ('.($r->alert_reason === 'too_cold' ? 'trop froid' : 'trop chaud').')',
@@ -151,31 +153,39 @@ final class ReportBuilder
     }
 
     /**
-     * Pour chaque équipement : un jour attendu = un jour écoulé depuis sa création ; couvert si au moins une ligne ce jour-là.
-     * Aujourd'hui compte seulement s'il est déjà couvert (la journée n'est pas terminée).
+     * Pour chaque équipement : un jour attendu = un jour ÉCOULÉ entre sa création et son retrait ; couvert si au moins une ligne ce jour-là.
+     *  - Le jour de CRÉATION et le jour de RETRAIT sont des journées partielles (l'heure n'est pas connue : « installer le plan puis retirer ce qui ne
+     *    convient pas » le jour même) : comptées seulement si couvertes, JAMAIS « manquées » (tour 4 : un frigo créé puis supprimé le même jour
+     *    abaissait le taux d'un dossier d'inspection, sans moyen de le retirer).
+     *  - AUJOURD'HUI n'entre pas dans le taux : la journée n'est pas finie. Il est dit à part (`today`), calculé comme la tuile de l'accueil.
      *
      * @param  \Illuminate\Support\Collection<int,HygieneEquipment>  $equipments
-     * @return array{0:int,1:int} [attendus, couverts]
+     * @return array{0:int,1:int,2:int,3:int} [attendus, couverts, aujourd'hui attendus, aujourd'hui faits]
      */
     private function coverage($equipments, $coveredByEquipment): array
     {
         $days = $this->pastDays();
         $today = now()->toDateString();
         $todayIn = $this->includesToday();
-        $expected = $done = 0;
+        $expected = $done = $todayTotal = $todayDone = 0;
         foreach ($equipments as $e) {
             $created = $e->created_at ? $this->localDate($e->created_at) : '0000-00-00';
             $end = $this->endDate($e);
             $set = $coveredByEquipment->get($e->id);
             foreach ($days as $d) {
                 if ($d < $created || ($end !== null && $d > $end)) continue;
+                $isCovered = (bool) ($set && isset($set[$d]));
+                if (! $isCovered && ($d === $created || $d === $end)) continue;
                 $expected++;
-                if ($set && isset($set[$d])) $done++;
+                if ($isCovered) $done++;
             }
-            if ($todayIn && $set && isset($set[$today])) { $expected++; $done++; }
+            if ($todayIn && $end === null && $today >= $created) {
+                $todayTotal++;
+                if ($set && isset($set[$today])) $todayDone++;
+            }
         }
 
-        return [$expected, $done];
+        return [$expected, $done, $todayTotal, $todayDone];
     }
 
     // ───────────────────────────── nettoyage ─────────────────────────────
@@ -191,6 +201,7 @@ final class ReportBuilder
         $today = now()->startOfDay();
         $todayIn = $this->includesToday();
         $expected = $done = $partial = $missed = 0;
+        $todayTotal = $todayDone = $todayPartial = 0;
         $missedList = [];
         foreach ($templates as $t) {
             $created = $t->created_at ? $this->localDate($t->created_at) : '0000-00-00';
@@ -198,15 +209,20 @@ final class ReportBuilder
             $check = function (string $d) use ($t, $byKey, &$expected, &$done, &$partial, &$missed, &$missedList, $created, $end): void {
                 if ($d < $created || ($end !== null && $d > $end) || ! TaskSchedule::isDueOn($t, Carbon::parse($d, config('app.timezone')))) return;
                 $g = $byKey->get($t->id.'|'.$d);
+                // jour de création / de retrait : journée partielle (heure inconnue), comptée seulement si la fiche a été traitée — jamais « manquée »
+                if ($g === null && ($d === $created || $d === $end)) return;
                 $expected++;
                 if ($g && $g->contains('complete', true)) $done++;
                 elseif ($g) $partial++;
                 else { $missed++; $missedList[] = ['date' => $d, 'task' => $t->name]; }
             };
             foreach ($days as $d) $check($d);
-            if ($todayIn) {
-                $td = $today->toDateString();
-                if ($byKey->has($t->id.'|'.$td)) $check($td); // aujourd'hui : seulement si déjà traité
+            // aujourd'hui : hors du taux (journée en cours), dit à part comme la tuile de l'accueil (fiches actives dues aujourd'hui)
+            if ($todayIn && $end === null && $today->toDateString() >= $created && TaskSchedule::isDueOn($t, $today)) {
+                $g = $byKey->get($t->id.'|'.$today->toDateString());
+                $todayTotal++;
+                if ($g && $g->contains('complete', true)) $todayDone++;
+                elseif ($g) $todayPartial++;
             }
         }
 
@@ -215,6 +231,7 @@ final class ReportBuilder
         return [
             'count' => $live->count(), 'voided' => $rows->count() - $live->count(), 'expected' => $expected, 'done' => $done, 'partial' => $partial, 'missed' => $missed,
             'completion_pct' => $this->rate($done, $expected), 'missed_list' => array_slice($missedList, -100),
+            'today' => $todayIn ? ['expected' => $todayTotal, 'done' => $todayDone, 'partial' => $todayPartial] : null,
             'incidents' => $partials->map(fn ($r) => [
                 'at' => $r->completed_at->toIso8601String(), 'module' => 'tasks',
                 'text' => $r->task_name.' : '.$r->items_done.'/'.$r->items_total.' points faits', 'action' => $r->note, 'operator' => $r->operator_name,
@@ -286,13 +303,14 @@ final class ReportBuilder
         $tests = $live->where('type', 'test');
         $fryers = HygieneEquipment::query()->withTrashed()->where('kind', 'fryer')->get()->filter(fn ($e) => $this->stillRelevant($e));
         $covered = $tests->groupBy('equipment_id')->map(fn ($g) => $g->map(fn ($r) => $this->localDate($r->performed_at))->unique()->flip());
-        [$expected, $done] = $this->coverage($fryers, $covered);
+        [$expected, $done, $todayTotal, $todayDone] = $this->coverage($fryers, $covered);
         $alerts = $live->where('status', 'alert');
 
         return [
             'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $live->where('type', 'change')->count(),
             'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(), 'fryers' => $fryers->where('is_active', true)->whereNull('deleted_at')->count(),
             'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
+            'today' => $this->includesToday() ? ['expected' => $todayTotal, 'done' => $todayDone] : null,
             'max_polar' => $tests->max('polar_pct'),
             'incidents' => $alerts->map(fn ($r) => [
                 'at' => $r->performed_at->toIso8601String(), 'module' => 'oil',
@@ -336,7 +354,10 @@ final class ReportBuilder
             'discarded' => $base()->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->count(),
             'used' => $base()->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->count(),
             // échus et jamais sortis : le point que regarde un contrôleur
-            'expired_not_out' => $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
+            // même définition que l'écran DLC et l'accueil (LabelPrintLog::scopeWatchable) : une réservée sans verdict depuis plus de 10 min compte aussi
+            'expired_not_out' => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereBetween('opened_at', [$this->from, $this->to])
+                ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED))
+                ->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
             ...$rows,
         ];
     }

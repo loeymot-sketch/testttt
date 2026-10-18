@@ -297,6 +297,62 @@ class OverviewAndReportTest extends TestCase
         $this->getJson(self::BASE.'/overview')->assertOk();
     }
 
+    public function test_tuile_temperatures_une_nouvelle_mesure_attendue_n_est_pas_tout_est_releve(): void
+    {
+        $this->staff();
+        $e = $this->equipment('Frigo', 'fridge', '2026-10-10');
+        // écart à 09:40 traité par « porte refermée » (action à suivi), puis 3 °C à 09:43 : trop tôt pour prouver le retour à la normale
+        $this->reading($e, '2026-10-20 09:40', 9.0, 'alert', ['corrective_action' => 'door_closed']);
+        $this->reading($e, '2026-10-20 09:43', 3.0);
+        $res = $this->getJson(self::BASE.'/overview');
+        $tile = collect($res->json('data'))->keyBy('key')['temperature'];
+        $this->assertSame('todo', $tile['status'], 'l\'écran des relevés dit « nouvelle mesure à faire » : le hub ne dit pas « Tout est relevé »');
+        $this->assertSame('Nouvelle mesure à faire avant 10:10', $tile['detail']);
+        $this->assertSame(1, $tile['counts']['followups']);
+        $this->assertGreaterThanOrEqual(1, $res->json('meta.todo'), 'la bannière ne peut pas dire « Journée en règle »');
+        // une mesure prise assez longtemps après l'écart referme l'attente : la tuile redevient verte
+        $this->reading($e, '2026-10-20 09:55', 3.0);
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['temperature'];
+        $this->assertSame('ok', $tile['status']);
+        $this->assertSame('Tout est relevé', $tile['detail']);
+    }
+
+    public function test_dlc_reservee_sans_verdict_est_comptee_par_la_tuile_et_le_dossier_comme_par_l_ecran(): void
+    {
+        $this->staff();
+        $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'claimed', 'copies' => 1, 'product_name' => 'Sauce', 'opened_at' => now()->subHours(3), 'expires_at' => now()->subHours(2), 'claimed_at' => now()->subMinutes(30)]);
+        $l->branch_id = 1;
+        $l->save();
+        $this->assertSame('alert', $this->dlcTile()['status']);
+        $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->assertOk()->json('data.dlc');
+        $this->assertSame(1, $d['expired_not_out'], 'le dossier ne dit pas « 0 échue non sortie » quand l\'écran DLC dit « EXPIRÉE »');
+    }
+
+    public function test_dossier_nettoyage_aujourd_hui_est_dit_a_part_comme_la_tuile(): void
+    {
+        $this->staff();
+        $a = $this->template('2026-10-10');
+        $this->template('2026-10-10')->forceFill(['name' => 'Autre'])->save();
+        $this->completion($a, '2026-10-20', true);
+        $k = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->assertOk()->json('data.tasks');
+        $this->assertSame(['expected' => 0, 'done' => 0, 'missed' => 0], collect($k)->only(['expected', 'done', 'missed'])->all());
+        $this->assertNull($k['completion_pct']);
+        $this->assertSame(['expected' => 2, 'done' => 1, 'partial' => 0], $k['today']);
+    }
+
+    public function test_le_pdf_dit_la_journee_en_cours_a_part_et_n_affiche_pas_100_pour_cent(): void
+    {
+        $this->staff();
+        $a = $this->equipment('Frigo 1', 'fridge', '2026-10-10');
+        $this->equipment('Frigo 2', 'fridge', '2026-10-10');
+        $this->reading($a, '2026-10-20 08:00', 3);
+        $report = \App\Services\Hygiene\ReportBuilder::between('2026-10-20', '2026-10-20')->build(true);
+        $html = view('pdf.hygiene_report', ['report' => $report, 'company' => [], 'generatedAt' => 'x', 'generatedBy' => 'y', 'fingerprint' => 'z'])->render();
+        $this->assertStringContainsString('Aucun jour écoulé : pas de taux.', $html);
+        $this->assertStringContainsString('Aujourd\'hui (journée en cours, hors taux) : 1 sur 2.', $html);
+        $this->assertStringNotContainsString('100 %', $html, 'un dossier d\'inspection généré à 10 h ne dit pas 100 %');
+    }
+
     // ───────────── rapport : taux de couverture ─────────────
 
     public function test_temperature_coverage_counts_only_days_that_were_expected(): void
@@ -313,9 +369,53 @@ class OverviewAndReportTest extends TestCase
         $this->assertEquals(60, $t['coverage_pct']);
         $this->assertSame(1, $t['voided']);
 
-        $this->reading($e, '2026-10-20 07:30', 3); // aujourd'hui déjà couvert → compte
+        // aujourd'hui, même couvert, n'entre PAS dans le taux (journée en cours) : il est dit à part, comme la tuile de l'accueil
+        $this->reading($e, '2026-10-20 07:30', 3);
         $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-15&to=2026-10-20')->json('data.temperature');
-        $this->assertSame([6, 4], [$t['expected'], $t['covered']]);
+        $this->assertSame([5, 3], [$t['expected'], $t['covered']]);
+        $this->assertSame(['expected' => 1, 'done' => 1], $t['today']);
+    }
+
+    public function test_le_dossier_d_aujourd_hui_ne_dit_pas_100_pour_cent_quand_l_accueil_dit_un_sur_trois(): void
+    {
+        $this->staff();
+        $a = $this->equipment('Frigo 1', 'fridge', '2026-10-10');
+        $this->equipment('Frigo 2', 'fridge', '2026-10-10');
+        $this->equipment('Frigo 3', 'fridge', '2026-10-10');
+        $this->reading($a, '2026-10-20 08:00', 3);
+        $home = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['temperature'];
+        $this->assertSame('1/3 relevés', $home['headline']);
+        $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->assertOk()->json('data.temperature');
+        $this->assertNull($t['coverage_pct'], 'aucun jour écoulé : pas de taux (jamais « 100 % — 1 sur 1 »)');
+        $this->assertSame(0, $t['expected']);
+        $this->assertSame(['expected' => 3, 'done' => 1], $t['today'], 'même chiffre que l\'accueil : 1 sur 3');
+        // une période qui ne contient pas aujourd'hui n'a pas de bloc « aujourd'hui »
+        $this->assertNull($this->getJson(self::BASE.'/report/summary?from=2026-10-12&to=2026-10-14')->json('data.temperature.today'));
+    }
+
+    public function test_un_equipement_ou_une_fiche_cree_puis_retire_le_meme_jour_n_est_jamais_manque(): void
+    {
+        $this->staff();
+        $e = $this->equipment('Frigo 4 (erreur)', 'fridge', '2026-10-18 15:00');
+        $e->forceFill(['deleted_at' => '2026-10-18 15:10:00'])->save();
+        $tpl = $this->template('2026-10-18 15:00');
+        $tpl->forceFill(['deleted_at' => '2026-10-18 15:10:00'])->save();
+        $ok = $this->equipment('Frigo 1', 'fridge', '2026-10-10');
+        $this->reading($ok, '2026-10-18 08:00', 3);
+        $k = $this->getJson(self::BASE.'/report/summary?from=2026-10-18&to=2026-10-20')->assertOk()->json('data');
+        // le frigo de l'erreur n'a jamais été attendu : seul « Frigo 1 » compte (18 couvert, 19 manqué)
+        $this->assertSame([2, 1], [$k['temperature']['expected'], $k['temperature']['covered']]);
+        $this->assertSame(0, $k['tasks']['missed'], 'une fiche créée puis supprimée le même jour n\'est pas « non faite »');
+        $this->assertSame([], $k['tasks']['missed_list']);
+    }
+
+    public function test_le_jour_de_creation_compte_quand_l_element_a_ete_traite(): void
+    {
+        $this->staff();
+        $e = $this->equipment('Frigo neuf', 'fridge', '2026-10-18 12:00');
+        $this->reading($e, '2026-10-18 13:00', 3);
+        $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-10&to=2026-10-20')->json('data.temperature');
+        $this->assertSame([2, 1], [$t['expected'], $t['covered']], '18 (créé et relevé) et 19 (manqué)');
     }
 
     public function test_an_equipment_created_mid_period_is_only_expected_from_its_creation(): void
@@ -323,14 +423,14 @@ class OverviewAndReportTest extends TestCase
         $this->staff();
         $this->equipment('Frigo neuf', 'fridge', '2026-10-18 12:00');
         $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-10&to=2026-10-20')->json('data.temperature');
-        $this->assertSame(2, $t['expected'], '18 et 19 seulement');
+        $this->assertSame(1, $t['expected'], '19 seulement : le 18 est le jour de création (heure inconnue), compté seulement s\'il est couvert');
         $this->assertSame(0, $t['covered']);
     }
 
     public function test_task_coverage_distinguishes_done_partial_and_missed(): void
     {
         $this->staff();
-        $t = $this->template('2026-10-17');
+        $t = $this->template('2026-10-16'); // le 16 est son jour de création : journée partielle, jamais « manquée »
         $this->completion($t, '2026-10-18', true);
         $this->completion($t, '2026-10-19', false);
         $this->completion($t, '2026-10-17', true)->forceFill(['voided_at' => now(), 'void_reason' => 'erreur'])->save();

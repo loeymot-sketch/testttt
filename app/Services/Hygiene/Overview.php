@@ -78,10 +78,14 @@ final class Overview
         $total = $equipments->count();
         $done = $last->count();
         $alerts = $last->where('status', 'alert')->count();
-        $status = $alerts > 0 ? 'alert' : ($done < $total ? 'todo' : 'ok');
+        // Écart traité mais PAS encore prouvé : la nouvelle mesure est attendue (même source que l'écran des relevés et les rappels). Tant qu'elle
+        // manque, « tout est relevé » serait faux : la tuile reste « à faire » (elle passe en alerte quand l'échéance est dépassée, par le rappel).
+        $followups = TemperatureFollowUp::pending($equipments->pluck('id')->all());
+        $status = $alerts > 0 ? 'alert' : ($done < $total || $followups !== [] ? 'todo' : 'ok');
+        $due = $followups === [] ? null : \Carbon\Carbon::parse(collect($followups)->min('due_at'))->setTimezone(now()->getTimezone())->format('H:i');
+        $detail = $alerts > 0 ? $this->plural($alerts, 'écart') : ($done < $total ? ($total - $done).' à relever' : ($followups !== [] ? 'Nouvelle mesure à faire avant '.$due : 'Tout est relevé'));
 
-        return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', $status, "$done/$total relevés",
-            $alerts > 0 ? $this->plural($alerts, 'écart') : ($done < $total ? ($total - $done).' à relever' : 'Tout est relevé'), ['done' => $done, 'total' => $total, 'alerts' => $alerts]);
+        return $this->tile('temperature', 'Températures', 'fa-solid fa-temperature-half', $status, "$done/$total relevés", $detail, ['done' => $done, 'total' => $total, 'alerts' => $alerts, 'followups' => count($followups)]);
     }
 
     private function tasks(): array
@@ -114,12 +118,13 @@ final class Overview
     private function dlc(): array
     {
         $now = now();
-        $done = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)->whereNull('discarded_at')->whereNotNull('expires_at');
+        $done = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereNull('discarded_at')->whereNotNull('expires_at');
         $rows = $done()->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))->get(['expires_at']);
         $expired = $rows->filter(fn ($l) => $l->expires_at->lt($now))->count();
         $soon = $rows->count() - $expired;
         $live = $done()->where('expires_at', '>=', $now)->get(['status', 'anomaly']);
-        $unconfirmed = $live->where('status', LabelPrintLog::STATUS_UNCONFIRMED)->count();
+        // une réservée sans verdict depuis plus de 10 min est surveillée comme « non confirmée » (même définition que l'écran DLC)
+        $unconfirmed = $live->whereIn('status', [LabelPrintLog::STATUS_UNCONFIRMED, LabelPrintLog::STATUS_CLAIMED])->count();
         $anomaly = $live->filter(fn ($l) => (bool) $l->anomaly)->count();
         $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $live->count(), 'unconfirmed' => $unconfirmed, 'anomaly' => $anomaly];
         $nbsp = "\u{00A0}"; // « 24 h », « à échéance », « à vérifier » ne se coupent jamais en laissant « h » ou « à » seul au bout de la ligne
@@ -167,14 +172,24 @@ final class Overview
         if ($fryers->isEmpty()) {
             return $this->tile('oil', 'Huile', 'fa-solid fa-bacon', 'empty', 'À configurer', 'Friteuses');
         }
-        $last = HygieneOilControl::query()->whereNull('voided_at')->where('type', 'test')->where('performed_at', '>=', $start)->whereIn('equipment_id', $fryers->pluck('id'))
-            ->orderBy('performed_at')->orderBy('id')->get()->groupBy('equipment_id')->map->last();
+        $today = HygieneOilControl::query()->whereNull('voided_at')->where('performed_at', '>=', $start)->whereIn('equipment_id', $fryers->pluck('id'))
+            ->orderBy('performed_at')->orderBy('id')->get()->groupBy('equipment_id');
         $total = $fryers->count();
-        $done = $last->count();
-        $alerts = $last->where('status', 'alert')->count();
-        $status = $alerts > 0 ? 'alert' : ($done < $total ? 'todo' : 'ok');
+        $done = $alerts = $warns = 0;
+        foreach ($fryers as $f) {
+            $rows = $today->get($f->id, collect());
+            $test = $rows->last(fn ($r) => $r->type === 'test');
+            if ($test === null) continue;
+            $done++;
+            // UNE règle (OilRules::isOpen) pour la tuile, le rappel et l'écran : un écart soldé par « Huile changée » ou par une vidange saisie
+            // ensuite n'est plus « à traiter » ; des polaires « à surveiller » ne sont pas « conformes » (tuile verte, écran ambre : tour 4).
+            $changedSince = $rows->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($test->performed_at));
+            if (! OilRules::isOpen((string) $test->status, $test->corrective_action, $changedSince)) continue;
+            $test->status === 'alert' ? $alerts++ : $warns++;
+        }
+        $status = $alerts > 0 ? 'alert' : ($done < $total || $warns > 0 ? 'todo' : 'ok');
+        $detail = $alerts > 0 ? $this->plural($alerts, 'écart') : ($warns > 0 ? $warns.' à surveiller' : ($done < $total ? ($total - $done).' à tester' : 'Toutes testées'));
 
-        return $this->tile('oil', 'Huile', 'fa-solid fa-bacon', $status, "$done/$total testées",
-            $alerts > 0 ? $this->plural($alerts, 'écart') : ($done < $total ? ($total - $done).' à tester' : 'Toutes testées'), ['done' => $done, 'total' => $total, 'alerts' => $alerts]);
+        return $this->tile('oil', 'Huile', 'fa-solid fa-bacon', $status, "$done/$total testées", $detail, ['done' => $done, 'total' => $total, 'alerts' => $alerts, 'warns' => $warns]);
     }
 }

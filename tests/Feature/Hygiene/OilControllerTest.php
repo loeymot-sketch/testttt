@@ -190,7 +190,7 @@ class OilControllerTest extends TestCase
         $body = ['equipment_id' => $f1, 'type' => 'test', 'polar_pct' => 12, 'client_ref' => 'oil-1'];
         $id = $this->postJson(self::BASE.'/controls', $body)->assertCreated()->json('data.id');
         $this->assertSame($id, $this->postJson(self::BASE.'/controls', $body)->assertOk()->json('data.id'));
-        $this->postJson(self::BASE.'/controls', ['equipment_id' => $f1, 'type' => 'test', 'polar_pct' => 28, 'corrective_action' => 'oil_changed'])->assertCreated();
+        $this->postJson(self::BASE.'/controls', ['equipment_id' => $f1, 'type' => 'test', 'polar_pct' => 28, 'corrective_action' => 'fryer_stopped'])->assertCreated(); // « Huile changée » solderait l'écart (OilRules::isOpen) : on veut ici un écart qui reste ouvert
 
         $this->postJson(self::BASE."/controls/$id/void", ['reason' => 'x'])->assertStatus(422);
         $this->postJson(self::BASE."/controls/$id/void", ['reason' => 'Mauvaise friteuse'])->assertOk()->assertJsonPath('data.voided', true);

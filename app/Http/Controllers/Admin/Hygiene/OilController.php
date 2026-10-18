@@ -43,7 +43,8 @@ class OilController extends HygieneController
             $lastFilter = $rows->first(fn ($r) => $r->type === 'filter');
 
             return $this->presentFryer($f) + [
-                'state' => $testToday ? $testToday->status : 'todo',
+                // même règle que la tuile et le rappel : un écart soldé (« Huile changée », vidange saisie ensuite) n'est plus « à traiter »
+                'state' => $testToday ? $this->openState($testToday, $rows) : 'todo',
                 'tested_today' => $testToday !== null,
                 'last_test' => $lastTest ? $this->present($lastTest) : null,
                 'last_change' => $lastChange ? $this->present($lastChange) : null,
@@ -278,6 +279,14 @@ class OilController extends HygieneController
     private function presentFryer(HygieneEquipment $e): array
     {
         return ['id' => $e->id, 'name' => $e->name, 'location' => $e->location, 'sort_order' => $e->sort_order, 'is_active' => $e->is_active];
+    }
+
+    /** État affiché d'un test du jour : son verdict, sauf s'il est soldé par un changement d'huile (alors « ok » : le journal garde l'écart et l'action). */
+    private function openState(HygieneOilControl $test, $rows): string
+    {
+        $changedSince = $rows->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($test->performed_at));
+
+        return OilRules::isOpen((string) $test->status, $test->corrective_action, $changedSince) || ! in_array($test->status, ['warn', 'alert'], true) ? (string) $test->status : 'ok';
     }
 
     private function present(HygieneOilControl $r): array

@@ -242,7 +242,9 @@ class ReviewHardeningTest extends TestCase
         $this->putJson(self::TEMP."/equipment/{$f->id}", ['is_active' => false])->assertOk();
         Carbon::setTestNow(Carbon::parse('2026-10-20 10:00:00', config('app.timezone')));
         $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-10&to=2026-10-20')->json('data.temperature');
-        $this->assertSame(6, $t['expected'], '10 à 15 inclus (jour du masquage compris) : les jours manqués avant le masquage restent attendus');
+        // 11 à 14 : les jours manqués AVANT le masquage restent attendus. Le 10 (création) et le 15 (masquage) sont des journées partielles dont l'heure est
+        // inconnue : comptées seulement si couvertes, jamais « manquées » (un frigo créé puis retiré le même jour ne salit pas un dossier d'inspection).
+        $this->assertSame(4, $t['expected'], '11 à 14 : les jours manqués avant le masquage restent attendus');
         $this->assertSame(0, $t['covered']);
         $this->assertSame(0, $t['equipment'], 'plus actif');
         // une période entièrement APRÈS le masquage n'attend plus rien de lui

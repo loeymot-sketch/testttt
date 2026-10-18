@@ -386,3 +386,40 @@ describe('accueil — guide de mise en place et journée en règle (2026-10-18, 
         expect(w.get('[data-testid="home-banner"]').text()).not.toContain('Journée en règle');
     });
 });
+
+describe('dossier de contrôle — la journée en cours est dite à part (tour 4 : « 100 % — 1 sur 1 » à côté d’un accueil à 1/3)', () => {
+    const base = (over) => ({ period: { from: '2026-10-20', to: '2026-10-20', days: 1 }, temperature: { count: 1, offline: 0, voided: 0, alerts: 0, equipment: 3, expected: 0, covered: 0, coverage_pct: null, today: { expected: 3, done: 1 }, incidents: [], rows: [], rows_total: 0 },
+        tasks: { count: 0, voided: 0, expected: 0, done: 0, partial: 0, missed: 0, completion_pct: null, today: { expected: 8, done: 1, partial: 0 }, missed_list: [], incidents: [], rows: [], rows_total: 0 },
+        receptions: { count: 0, voided: 0, alerts: 0, refused: 0, reserve: 0, incidents: [], rows: [], rows_total: 0 }, trace: { count: 0, without_lot: 0, alerts: 0, voided: 0, incidents: [], rows: [], rows_total: 0 },
+        oil: { tests: 0, filters: 0, changes: 0, voided: 0, alerts: 0, fryers: 0, expected: 0, covered: 0, coverage_pct: null, today: null, max_polar: null, incidents: [], rows: [], rows_total: 0 },
+        dlc: { count: 0, copies: 0, discarded: 0, used: 0, expired_not_out: 0, rows: [], rows_total: 0 }, incidents: [], ...over });
+
+    async function mountReport(data) {
+        h.axios.get.mockReset();
+        h.axios.get.mockResolvedValue({ data: { data, meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris', today: '2026-10-20' } } });
+        const w = mount(HygieneReportComponent, { global: { stubs: { 'router-link': RouterLinkStub } } });
+        await flushPromises();
+        return w;
+    }
+
+    it('aucun jour écoulé : « — », jamais « 100 % », et « Aujourd’hui : 1 sur 3 » comme l’accueil', async () => {
+        const w = await mountReport(base());
+        const k = w.get('[data-testid="rep-kpi-temperature"]');
+        expect(k.text()).toContain('—');
+        expect(k.text()).not.toContain('100');
+        expect(w.get('[data-testid="rep-today-temperature"]').text()).toBe('Aucun jour écoulé dans la période, donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 3.');
+        expect(w.get('[data-testid="rep-today-tasks"]').text()).toContain('1 sur 8');
+        expect(k.classes()).not.toContain('is-done');
+    });
+
+    it('période passée sans aujourd’hui : aucune ligne « aujourd’hui »', async () => {
+        const w = await mountReport(base({ temperature: { ...base().temperature, expected: 5, covered: 3, coverage_pct: 60, today: null } }));
+        expect(w.find('[data-testid="rep-today-temperature"]').exists()).toBe(false);
+        expect(w.get('[data-testid="rep-kpi-temperature"]').text()).toContain('60');
+    });
+
+    it('période avec jours écoulés ET aujourd’hui : le taux garde son sens, aujourd’hui est ajouté sans le préfixe « aucun jour écoulé »', async () => {
+        const w = await mountReport(base({ temperature: { ...base().temperature, expected: 5, covered: 5, coverage_pct: 100, today: { expected: 3, done: 1 } } }));
+        expect(w.get('[data-testid="rep-today-temperature"]').text()).toBe('Aujourd\'hui (journée en cours, hors taux) : 1 sur 3.');
+    });
+});

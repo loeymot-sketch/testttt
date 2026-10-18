@@ -53,8 +53,8 @@
 
 <h2>Synthèse</h2>
 <table class="kpi"><tr>
-    <td><p class="kpi-l">Relevés de température faits</p><p class="kpi-v">{{ $pct($t['coverage_pct']) }}</p><p class="sub">{{ $t['covered'] }} sur {{ $t['expected'] }} attendus · {{ $t['alerts'] }} écart(s)</p></td>
-    <td><p class="kpi-l">Fiches de nettoyage faites</p><p class="kpi-v">{{ $pct($k['completion_pct']) }}</p><p class="sub">{{ $k['done'] }} sur {{ $k['expected'] }} · {{ $k['partial'] }} incomplète(s) · {{ $k['missed'] }} non faite(s)</p></td>
+    <td><p class="kpi-l">Relevés de température faits</p><p class="kpi-v">{{ $pct($t['coverage_pct']) }}</p><p class="sub">{{ $t['covered'] }} sur {{ $t['expected'] }} attendus · {{ $t['alerts'] }} écart(s)</p>@if(!empty($t['today']))<p class="sub">{{ $t['expected'] === 0 ? 'Aucun jour écoulé : pas de taux. ' : '' }}Aujourd'hui (journée en cours, hors taux) : {{ $t['today']['done'] }} sur {{ $t['today']['expected'] }}.</p>@endif</td>
+    <td><p class="kpi-l">Fiches de nettoyage faites</p><p class="kpi-v">{{ $pct($k['completion_pct']) }}</p><p class="sub">{{ $k['done'] }} sur {{ $k['expected'] }} · {{ $k['partial'] }} incomplète(s) · {{ $k['missed'] }} non faite(s)</p>@if(!empty($k['today']))<p class="sub">{{ $k['expected'] === 0 ? 'Aucun jour écoulé : pas de taux. ' : '' }}Aujourd'hui (journée en cours, hors taux) : {{ $k['today']['done'] }} sur {{ $k['today']['expected'] }}.</p>@endif</td>
     <td><p class="kpi-l">Réceptions</p><p class="kpi-v">{{ $r['count'] }}</p><p class="sub">{{ $r['alerts'] }} écart(s) · {{ $r['refused'] }} refusée(s)</p></td>
     <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · {{ $o['max_polar'] === null ? 'aucune mesure de polaires' : 'max '.$pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p></td>
 </tr><tr>

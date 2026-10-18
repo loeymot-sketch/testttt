@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Scopes\BranchScope;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -41,6 +43,9 @@ class LabelPrintLog extends Model
      */
     public const WATCH_AHEAD_HOURS = 72;
     public const WATCH_BEHIND_DAYS = 30;
+
+    /** Une étiquette réservée dont le verdict n'est jamais arrivé (réseau coupé PENDANT l'impression) est surveillée comme « non confirmée » passé ce délai. */
+    public const CLAIM_GRACE_MINUTES = 10;
 
     /**
      * Une réclamation jamais conclue (onglet fermé en pleine impression) est rendue à la file après ce
@@ -142,4 +147,18 @@ class LabelPrintLog extends Model
 
     /** Délai pendant lequel un lot marqué « utilisé » peut encore servir d'origine (on étiquette souvent juste après). */
     public const PARENT_USED_GRACE_HOURS = 2;
+
+    /**
+     * UNE définition de l'étiquette à surveiller, pour l'écran DLC, la tuile et les rappels de l'accueil, et le dossier de contrôle : verdict reçu
+     * (imprimée, non confirmée) OU réservée depuis plus de CLAIM_GRACE_MINUTES sans verdict — peut-être imprimée, jamais perdue en silence.
+     * (Tour 4 : l'écran DLC la signalait « EXPIRÉE », l'accueil disait « Journée en règle » et le dossier « 0 échue non sortie ».)
+     */
+    public function scopeWatchable(Builder $q, ?CarbonInterface $now = null): Builder
+    {
+        $now = $now ?? now();
+
+        return $q->where(fn ($st) => $st->whereIn('status', self::DONE_STATUSES)->orWhere(fn ($c) => $c
+            ->where('status', self::STATUS_CLAIMED)
+            ->where('claimed_at', '<', $now->copy()->subMinutes(self::CLAIM_GRACE_MINUTES))));
+    }
 }

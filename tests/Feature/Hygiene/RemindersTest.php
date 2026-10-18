@@ -79,10 +79,10 @@ class RemindersTest extends TestCase
         $r->save();
     }
 
-    private function oil(HygieneEquipment $f, string $type, string $status, ?float $polar, string $at): void
+    private function oil(HygieneEquipment $f, string $type, string $status, ?float $polar, string $at, ?string $action = null): void
     {
         $o = new HygieneOilControl([
-            'equipment_id' => $f->id, 'equipment_name' => $f->name, 'type' => $type, 'polar_pct' => $polar, 'status' => $status,
+            'equipment_id' => $f->id, 'equipment_name' => $f->name, 'type' => $type, 'polar_pct' => $polar, 'status' => $status, 'corrective_action' => $action,
             'performed_at' => Carbon::parse($at, config('app.timezone')), 'operator_name' => 'Karim Benali',
         ]);
         $o->branch_id = $f->branch_id;
@@ -253,6 +253,62 @@ class RemindersTest extends TestCase
         $this->oil($f, 'change', 'ok', null, '2026-10-20 09:30');
         [$reminders] = $this->overview();
         $this->assertArrayNotHasKey("oil-change-{$f->id}", $reminders->all());
+    }
+
+    public function test_huile_changee_declaree_sur_le_test_solde_le_rappel_la_tuile_et_l_ecran(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        // test à 28 % : l'opérateur déclare « Huile changée » (aucune vidange saisie à part)
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'oil_changed');
+        [$reminders, $tiles] = $this->overview();
+        $this->assertArrayNotHasKey("oil-change-{$f->id}", $reminders->all(), 'plus de « à changer » ni d\'e-mail de relance : l\'huile a été changée');
+        $this->assertSame('ok', $tiles['oil']['status']);
+        $this->assertSame(0, $tiles['oil']['counts']['alerts']);
+        $screen = collect($this->getJson('/api/admin/hygiene/oil/today')->json('data'))->first();
+        $this->assertSame('ok', $screen['state'], 'même verdict sur l\'écran Huile');
+        // les autres actions ne solderaient rien : l'écart reste à traiter
+        $g = $this->equipment('Friteuse 2', 'fryer');
+        $this->oil($g, 'test', 'alert', 28.0, '2026-10-20 09:05', 'fryer_stopped');
+        [$reminders, $tiles] = $this->overview();
+        $this->assertArrayHasKey("oil-change-{$g->id}", $reminders->all());
+        $this->assertSame('alert', $tiles['oil']['status']);
+    }
+
+    public function test_huile_changee_ensuite_solde_aussi_la_tuile_pas_seulement_le_rappel(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'fryer_stopped');
+        $this->oil($f, 'change', 'ok', null, '2026-10-20 09:30');
+        [$reminders, $tiles] = $this->overview();
+        $this->assertArrayNotHasKey("oil-change-{$f->id}", $reminders->all());
+        $this->assertNotSame('alert', $tiles['oil']['status'], 'tuile rouge sans rappel : « 1 écart » alors que l\'huile est changée');
+        $screen = collect($this->getJson('/api/admin/hygiene/oil/today')->json('data'))->first();
+        $this->assertSame('ok', $screen['state']);
+    }
+
+    public function test_huile_a_surveiller_n_est_pas_une_tuile_verte(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $this->oil($f, 'test', 'warn', 22.0, '2026-10-20 09:00');
+        [, $tiles] = $this->overview();
+        $this->assertSame('todo', $tiles['oil']['status'], 'à surveiller (écran ambre) : la tuile ne dit pas « conforme »');
+        $this->assertSame('1 à surveiller', $tiles['oil']['detail']);
+    }
+
+    public function test_une_etiquette_reservee_sans_verdict_depuis_plus_de_dix_minutes_est_surveillee_comme_l_ecran_dlc(): void
+    {
+        $this->staff();
+        foreach ([['Ancienne', 30], ['Récente', 5]] as [$name, $minutes]) {
+            $l = new \App\Models\LabelPrintLog(['kind' => 'dlc', 'status' => 'claimed', 'copies' => 1, 'product_name' => $name, 'opened_at' => now()->subHours(3), 'expires_at' => now()->subHours(2), 'claimed_at' => now()->subMinutes($minutes)]);
+            $l->branch_id = 1;
+            $l->save();
+        }
+        [$reminders, $tiles] = $this->overview();
+        $this->assertSame('1 étiquette DLC dépassée : à jeter, ou à marquer « utilisé ».', $reminders->first(fn ($r) => $r['domain'] === 'dlc')['text'], 'seule la réservée de plus de 10 min est comptée, comme l\'écran');
+        $this->assertSame('alert', $tiles['dlc']['status']);
     }
 
     public function test_test_d_huile_du_jour_non_fait_seulement_si_le_restaurant_teste(): void

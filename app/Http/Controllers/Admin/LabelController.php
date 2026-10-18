@@ -796,11 +796,8 @@ class LabelController extends AdminController
         $rows = LabelPrintLog::query()
             ->with('user:id,name')
             ->where('kind', LabelPrintLog::KIND_DLC)
-            // une étiquette réservée dont le verdict n'est jamais arrivé (réseau coupé PENDANT l'impression) a peut-être
-            // été imprimée : passé 10 minutes, elle est surveillée comme « non confirmée » — jamais perdue en silence
-            ->where(fn ($st) => $st->whereIn('status', LabelPrintLog::DONE_STATUSES)->orWhere(fn ($c) => $c
-                ->where('status', LabelPrintLog::STATUS_CLAIMED)
-                ->where('claimed_at', '<', $now->copy()->subMinutes(10))))
+            // verdict reçu, OU réservée sans verdict depuis plus de 10 min (peut-être imprimée) : UNE définition, partagée avec l'accueil et le dossier
+            ->watchable($now)
             ->whereNull('discarded_at')
             ->whereNotNull('expires_at')
             ->where(fn ($q) => $q

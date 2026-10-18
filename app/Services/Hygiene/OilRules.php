@@ -30,4 +30,14 @@ final class OilRules
 
         return ['status' => $status, 'reasons' => $reasons];
     }
+
+    /**
+     * Un test d'huile en écart ou « à surveiller » reste À TRAITER tant que l'huile n'a pas été changée : soit l'opérateur l'a déclaré (action corrective
+     * « Huile changée » sur le test), soit une vidange a été saisie ensuite. UNE définition pour la tuile, le rappel et l'écran (tour 4 : « Huile changée »
+     * ne clôturait rien ; le rappel « à changer » et ses e-mails continuaient).
+     */
+    public static function isOpen(string $status, ?string $correctiveAction, bool $changedSince): bool
+    {
+        return in_array($status, ['warn', 'alert'], true) && $correctiveAction !== 'oil_changed' && ! $changedSince;
+    }
 }
