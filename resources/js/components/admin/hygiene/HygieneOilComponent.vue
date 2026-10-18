@@ -30,7 +30,7 @@
                             <span v-if="summary.warn" class="hy-chip is-todo" data-testid="oil-sum-warn">{{ summary.warn }} à surveiller</span>
                             <span v-if="summary.alert" class="hy-chip is-alert" data-testid="oil-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
                         </div>
-                        <HygieneOperatorPicker v-model="operatorId" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
                     </div>
 
                     <div class="hy-tabs" role="tablist">
@@ -179,7 +179,7 @@ export default {
         return {
             items: [], fryers: [], history: [],
             meta: { summary: { total: 0, todo: 0, ok: 0, warn: 0, alert: 0 }, types: [], corrective_actions: [], limits: { polar_limit: 25, polar_warn: 20, bath_max_c: 180 }, server_now: null, timezone: "Europe/Paris" },
-            loaded: false, loadError: "", tab: "today", operatorId: null, forms: {}, saving: false, setupCount: 2, newFryer: "",
+            loaded: false, loadError: "", tab: "today", operatorId: null, operatorToken: null, forms: {}, saving: false, setupCount: 2, newFryer: "",
             alertsOnly: false, voidTarget: null, voidReason: "", manageHasRows: false,
         };
     },
@@ -292,7 +292,7 @@ export default {
             if (!x || this.saving || !this.canSubmit(f)) return;
             this.saving = true;
             x.error = "";
-            const body = { equipment_id: f.id, type: x.type, operator_user_id: this.operatorId || undefined };
+            const body = { equipment_id: f.id, type: x.type, operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined };
             if (x.type === "test") {
                 body.polar_pct = this.polarOf(f);
                 if (this.bathOf(f) !== null) body.bath_temp_c = this.bathOf(f);

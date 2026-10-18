@@ -136,3 +136,14 @@
 
 .hy-home-links { margin: 16px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }
 .hy-home-links .hy-btn { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* Code personnel (Qui ?) */
+.hy-pin { display: flex; flex-direction: column; gap: 8px; min-width: 240px; padding: 12px; }
+.hy-pin-title { margin: 0; font-size: 16px; }
+.hy-pin-input { font-size: 28px; letter-spacing: .4em; text-align: center; min-height: 56px; }
+.hy-pin-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.hy-operator-note { margin: 6px 0 0; font-size: 14px; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 6px 10px; }
+
+.hy-operator-pop.is-left { left: 0; right: auto; }
+.hy-operator-pop.is-right { right: 0; left: auto; }
+.hy-operator-pop.hy-pin { width: min(320px, calc(100vw - 32px)); }

@@ -16,7 +16,7 @@
                             <span class="hy-chip" :class="{ 'is-alert': summary.alerts }" data-testid="rcp-alerts">{{ summary.alerts }} écart{{ summary.alerts > 1 ? "s" : "" }}</span>
                             <span v-if="summary.refused" class="hy-chip is-alert" data-testid="rcp-refused">{{ summary.refused }} refusée{{ summary.refused > 1 ? "s" : "" }}</span>
                         </div>
-                        <HygieneOperatorPicker v-model="operatorId" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
                     </div>
 
                     <div class="hy-tabs" role="tablist">
@@ -201,7 +201,7 @@ export default {
             loaded: false,
             loadError: "",
             tab: "today",
-            operatorId: null,
+            operatorId: null, operatorToken: null,
             form: null,
             saving: false,
             voidTarget: null,
@@ -319,6 +319,7 @@ export default {
                     ...(this.hasDeviation ? { decision: f.decision } : {}),
                     note: f.note.trim() || undefined, attachment_id: f.photo || undefined,
                     operator_user_id: this.operatorId || undefined,
+                    operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { s: f.newSupplier ? f.supplierName.trim() : f.supplierId, bl: f.bl, dr: f.driver, t: temperatures, c: f.checks, d: this.hasDeviation ? f.decision : "", n: f.note, p: f.photo, o: this.operatorId }),
                 });
                 this.form = null;

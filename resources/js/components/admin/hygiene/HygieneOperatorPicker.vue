@@ -3,10 +3,23 @@
         <button type="button" class="hy-chip hy-chip--btn" :aria-expanded="open ? 'true' : 'false'" aria-haspopup="listbox" data-testid="hy-operator-btn" @click="toggle">
             Qui ? <strong>{{ currentLabel }}</strong> ▾
         </button>
-        <div v-if="open" class="hy-operator-pop" role="listbox" aria-label="Qui fait ce relevé ?" data-testid="hy-operator-list">
+        <p v-if="expiredNote" class="hy-operator-note" role="status" data-testid="hy-operator-expired">{{ expiredNote }}</p>
+        <div v-if="open && pinTarget" class="hy-operator-pop hy-pin" :class="`is-${side}`" role="dialog" :aria-label="`Code de ${pinTarget.short}`" data-testid="hy-pin">
+            <p class="hy-pin-title"><strong>Code de {{ pinTarget.short }}</strong></p>
+            <input ref="pinInput" v-model="pinValue" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code"
+                   class="hy-input hy-pin-input" placeholder="••••" :aria-label="`Code de ${pinTarget.short}`" data-testid="hy-pin-input" @keydown.enter.prevent="submitPin" />
+            <p v-if="pinError" class="hy-alert" role="alert" data-testid="hy-pin-error">{{ pinError }}</p>
+            <div class="hy-pin-actions">
+                <button type="button" class="hy-btn hy-btn--small" data-testid="hy-pin-cancel" @click="cancelPin">Annuler</button>
+                <button type="button" class="hy-btn hy-btn--primary hy-btn--small" :disabled="pinBusy || !/^\d{4,6}$/.test(pinValue)" data-testid="hy-pin-ok" @click="submitPin">
+                    {{ pinBusy ? "Vérification…" : "Valider" }}
+                </button>
+            </div>
+        </div>
+        <div v-else-if="open" class="hy-operator-pop" :class="`is-${side}`" role="listbox" aria-label="Qui fait ce relevé ?" data-testid="hy-operator-list">
             <button v-for="p in people" :key="p.id" type="button" role="option" :aria-selected="p.id === chosenId ? 'true' : 'false'"
                     :class="{ 'is-on': p.id === chosenId }" :data-testid="`hy-operator-${p.id}`" @click="choose(p)">
-                {{ p.name }}<template v-if="p.is_me"> (moi)</template>
+                {{ p.name }}<template v-if="p.is_me"> (moi)</template><template v-if="p.has_pin && !p.is_me"> 🔒</template>
             </button>
             <!-- jamais une liste vide muette : on dit pourquoi, ce qui se passe en attendant, et où l'ajouter -->
             <div v-if="!people.length && loadFailed" class="hy-operator-empty" data-testid="hy-operator-failed">
@@ -32,10 +45,10 @@ const STORE_KEY = "hygiene.operator";
 
 export default {
     name: "HygieneOperatorPicker",
-    props: { modelValue: { type: [Number, null], default: null } },
-    emits: ["update:modelValue"],
+    props: { modelValue: { type: [Number, null], default: null }, token: { type: [String, null], default: null } },
+    emits: ["update:modelValue", "update:token"],
     data() {
-        return { people: [], me: null, open: false, chosenId: null, loadFailed: false };
+        return { people: [], me: null, open: false, chosenId: null, loadFailed: false, pinTarget: null, pinValue: "", pinError: "", pinBusy: false, expiredNote: "", expiryTimer: null, side: "left" };
     },
     computed: {
         currentLabel() {
@@ -57,18 +70,75 @@ export default {
         let saved = null;
         // le choix est mémorisé PAR utilisateur connecté : quand Bob se connecte, il n'hérite pas du choix d'Alice
         try { saved = Number(window.localStorage.getItem(this.storeKey())) || null; } catch (_) { /* stockage indisponible : on retombe sur « moi » */ }
-        const known = (id) => this.people.some((p) => p.id === id);
+        // une personne protégée par un code n'est JAMAIS rétablie toute seule : le code n'est pas gardé sur la tablette (et le jeton est en mémoire)
+        const known = (id) => this.people.some((p) => p.id === id && !p.has_pin);
         this.chosenId = known(this.modelValue) ? this.modelValue : (known(saved) ? saved : this.me);
         this.$emit("update:modelValue", this.chosenId === this.me ? null : this.chosenId);
+        this.$emit("update:token", null);
     },
+    beforeUnmount() { this.clearExpiry(); },
     methods: {
         storeKey() { return `${STORE_KEY}.${this.me}`; },
-        toggle() { this.open = !this.open; },
+        toggle() {
+            this.open = !this.open;
+            if (this.open) this.placePopover();
+        },
+        /** Ouvre la fenêtre du côté où il y a de la place : le bouton peut être au bord gauche (températures) ou droit (huile), jamais coupée. */
+        placePopover() {
+            try {
+                const r = this.$el.getBoundingClientRect();
+                this.side = r.left + 340 > window.innerWidth - 16 && r.right - 340 > 0 ? "right" : "left";
+            } catch (_) { this.side = "left"; }
+        },
+        clearExpiry() { if (this.expiryTimer) { clearTimeout(this.expiryTimer); this.expiryTimer = null; } },
         choose(p) {
+            this.expiredNote = "";
+            // une personne avec un code : on le demande (sauf SOI-MÊME : la connexion est déjà la preuve)
+            if (p.has_pin && p.id !== this.me) {
+                this.pinTarget = p; this.pinValue = ""; this.pinError = "";
+                this.$nextTick(() => { if (this.$refs.pinInput) this.$refs.pinInput.focus(); });
+                return;
+            }
+            this.applyChoice(p, null, null);
+        },
+        applyChoice(p, token, expiresAt) {
+            this.clearExpiry();
             this.chosenId = p.id;
             this.open = false;
-            try { window.localStorage.setItem(this.storeKey(), String(p.id)); } catch (_) { /* confort seulement */ }
+            this.pinTarget = null; this.pinValue = ""; this.pinError = "";
+            // le choix d'une personne SANS code est mémorisé (confort) ; celui d'une personne AVEC code ne l'est jamais
+            if (!token) { try { window.localStorage.setItem(this.storeKey(), String(p.id)); } catch (_) { /* confort seulement */ } }
             this.$emit("update:modelValue", p.id === this.me ? null : p.id);
+            this.$emit("update:token", token || null);
+            if (token && expiresAt) {
+                const ms = Math.max(1000, Date.parse(expiresAt) - Date.now());
+                // le code expire : retour sur « moi », dit clairement (personne ne signe au nom d'un autre par oubli)
+                this.expiryTimer = setTimeout(() => {
+                    const who = p.short;
+                    this.chosenId = this.me;
+                    this.$emit("update:modelValue", null);
+                    this.$emit("update:token", null);
+                    this.expiredNote = `Le code de ${who} a expiré : retour sur « moi ». Choisissez de nouveau votre nom pour signer.`;
+                }, ms);
+            }
+        },
+        cancelPin() { this.pinTarget = null; this.pinValue = ""; this.pinError = ""; },
+        async submitPin() {
+            if (this.pinBusy || !this.pinTarget || !/^\d{4,6}$/.test(this.pinValue)) return;
+            this.pinBusy = true;
+            this.pinError = "";
+            try {
+                const { data } = await axios.post("admin/hygiene/operators/verify", { user_id: this.pinTarget.id, pin: this.pinValue });
+                const d = data.data || {};
+                this.applyChoice(this.pinTarget, d.token || null, d.expires_at || null);
+            } catch (e) {
+                const r = e && e.response;
+                this.pinValue = "";
+                if (!r) this.pinError = "Vérification impossible : pas de réseau. Réessayez quand la connexion revient.";
+                else this.pinError = (r.data && r.data.errors && r.data.errors.pin && r.data.errors.pin[0]) || (r.data && r.data.message) || "Code non vérifié : réessayez.";
+            } finally {
+                this.pinBusy = false;
+            }
         },
     },
 };

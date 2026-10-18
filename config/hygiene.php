@@ -59,6 +59,12 @@ return [
     'offline' => ['max_hours' => 72, 'future_minutes' => 5],
 
     /**
+     * Code personnel d'un employé pour signer un relevé (facultatif par personne). `max_failures` codes faux de suite verrouillent la personne
+     * `lock_minutes` minutes ; le jeton remis après un bon code vaut `token_minutes` (fenêtre de signature, y compris hors ligne).
+     */
+    'operator' => ['max_failures' => 5, 'lock_minutes' => 10, 'token_minutes' => 10, 'pin_min_digits' => 4, 'pin_max_digits' => 6],
+
+    /**
      * Action corrective, OBLIGATOIRE quand le relevé sort des seuils (HACCP : tout écart est tracé avec ce qui a été fait).
      * `note` : un commentaire libre est exigé avec cette action.
      */

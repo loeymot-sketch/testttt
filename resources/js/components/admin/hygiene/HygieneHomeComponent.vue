@@ -47,6 +47,7 @@
                     </div>
                     <p class="hy-home-links">
                         <router-link to="/admin/hygiene/alerts" class="hy-btn hy-btn--small" data-testid="home-alerts-link">🔔 Alertes par e-mail aux responsables</router-link>
+                        <router-link to="/admin/hygiene/team" class="hy-btn hy-btn--small" data-testid="home-team-link">🔒 Codes de l'équipe</router-link>
                     </p>
                 </template>
             </div>

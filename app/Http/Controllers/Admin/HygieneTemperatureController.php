@@ -188,7 +188,10 @@ class HygieneTemperatureController extends HygieneController
         $max = (float) config('hygiene.plausible_max');
         $now = now();
         $branch = $this->branchId($request);
-        $op = $this->operator($request); // tablette partagée : la personne choisie sous « Qui ? », sinon le compte connecté
+        // tablette partagée : la personne choisie sous « Qui ? », sinon le compte connecté. Si elle a un code, le jeton doit couvrir l'heure du
+        // GESTE : celle de la mesure pour un lot gardé hors ligne (la plus ancienne), sinon maintenant.
+        $stamps = collect($validated['readings'])->pluck('measured_at')->filter()->map(fn ($m) => \Carbon\Carbon::parse($m));
+        $op = $this->operator($request, $stamps->isNotEmpty() ? $stamps->min() : null);
         $equipments = HygieneEquipment::query()->whereIn('kind', Kinds::keys('temperature'))->where('is_active', true)
             ->whereIn('id', collect($validated['readings'])->pluck('equipment_id')->unique()->all())->get()->keyBy('id');
 

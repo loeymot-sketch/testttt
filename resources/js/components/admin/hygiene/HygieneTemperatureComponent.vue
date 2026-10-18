@@ -52,7 +52,7 @@
                         <span class="tmp-chip" :class="{ 'is-alert': summary.alert }" data-testid="tmp-sum-alert">{{ summary.alert }} écart{{ summary.alert > 1 ? "s" : "" }}</span>
                     </div>
                     <div class="tmp-who">
-                        <HygieneOperatorPicker v-model="operatorId" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
                     </div>
 
                     <!-- ── Un équipement = une carte ───────────────────────────────────────────────── -->
@@ -243,7 +243,7 @@ export default {
     mixins: [hygieneRefresh],
     data() {
         return {
-            operatorId: null,
+            operatorId: null, operatorToken: null,
             queued: [],
             flushing: false,
             onlineHandler: null,
@@ -536,6 +536,7 @@ export default {
             // L'heure de la mesure n'est envoyée QUE hors ligne (l'horloge d'une tablette peut être fausse : en ligne, c'est le serveur qui date).
             const bodyFor = (stamp) => ({
                 operator_user_id: this.operatorId || undefined,
+                operator_token: this.operatorToken || undefined,
                 readings: sent.map((e) => {
                     const entry = this.entries[e.id];
                     const verdict = this.verdictOf(e);

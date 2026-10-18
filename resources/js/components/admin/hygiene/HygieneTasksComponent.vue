@@ -17,7 +17,7 @@
                             <span v-if="summary.overdue" class="hy-chip is-alert" data-testid="tsk-sum-overdue">{{ summary.overdue }} en retard</span>
                             <span v-if="summary.partial" class="hy-chip is-todo" data-testid="tsk-sum-partial">{{ summary.partial }} incomplète{{ summary.partial > 1 ? "s" : "" }}</span>
                         </div>
-                        <HygieneOperatorPicker v-model="operatorId" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
                     </div>
 
                     <div class="hy-tabs" role="tablist">
@@ -211,7 +211,7 @@ export default {
             loadError: "",
             tab: "todo",
             forms: {},
-            operatorId: null,
+            operatorId: null, operatorToken: null,
             saving: false,
             voidTarget: null,
             voidReason: "",
@@ -314,6 +314,7 @@ export default {
                     ...(all ? { all: true } : { done: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), note: f.note.trim() }),
                     attachment_id: f.photo || undefined,
                     operator_user_id: this.operatorId || undefined,
+                    operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { all, d: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), n: f.note.trim(), p: f.photo, o: this.operatorId }),
                 });
                 this.closeCard(t);

@@ -15,7 +15,7 @@
                             <span class="hy-chip is-dark" data-testid="trc-count">{{ summary.count }} produit{{ summary.count > 1 ? "s" : "" }} tracé{{ summary.count > 1 ? "s" : "" }}</span>
                             <span v-if="summary.alerts" class="hy-chip is-alert" data-testid="trc-alerts">{{ summary.alerts }} écart{{ summary.alerts > 1 ? "s" : "" }}</span>
                         </div>
-                        <HygieneOperatorPicker v-model="operatorId" />
+                        <HygieneOperatorPicker v-model="operatorId" v-model:token="operatorToken" />
                     </div>
 
                     <div class="hy-tabs" role="tablist">
@@ -197,7 +197,7 @@ export default {
     data() {
         return {
             rows: [], meta: { summary: { count: 0, alerts: 0 }, products: [], suppliers: [], receptions: [], server_now: null, timezone: "Europe/Paris" },
-            loaded: false, loadError: "", tab: "today", operatorId: null, form: null, saving: false,
+            loaded: false, loadError: "", tab: "today", operatorId: null, operatorToken: null, form: null, saving: false,
             voidTarget: null, voidReason: "", history: [], q: "", timer: null, recallLot: "", recall: null, recallError: "",
         };
     },
@@ -269,7 +269,7 @@ export default {
                     ...(f.productId ? { dlc_product_id: f.productId } : { product_name: f.product.trim() }),
                     ...(f.supplierId ? { supplier_id: f.supplierId } : { supplier_name: f.supplierName.trim() || undefined }),
                     reception_id: f.receptionId || undefined, lot: f.lot.trim() || undefined, dlc_date: f.dlc || undefined, dlc_kind: f.kind,
-                    note: f.note.trim() || undefined, attachment_id: f.photo || undefined, operator_user_id: this.operatorId || undefined,
+                    note: f.note.trim() || undefined, attachment_id: f.photo || undefined, operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { p: f.productId || f.product.trim(), s: f.supplierId || f.supplierName.trim(), r: f.receptionId, l: f.lot.trim(), d: f.dlc, k: f.kind, n: f.note.trim(), ph: f.photo, o: this.operatorId }),
                 });
                 this.form = null;

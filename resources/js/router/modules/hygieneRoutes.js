@@ -10,6 +10,7 @@ const HygieneTraceabilityComponent = () => import(/* webpackChunkName: "admin-sh
 const HygieneOilComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneOilComponent");
 const HygieneReportComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneReportComponent");
 const HygieneAlertsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneAlertsComponent");
+const HygieneTeamComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneTeamComponent");
 const HygieneHomeComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/hygiene/HygieneHomeComponent");
 
 export default [
@@ -104,6 +105,18 @@ export default [
             auth: true,
             permissionUrl: "pos-orders",
             breadcrumb: "hygiene_alerts",
+        },
+    },
+    {
+        // Codes personnels des employés : la porte du module pour entrer, mais le serveur exige en plus `settings` (le responsable).
+        path: "/admin/hygiene/team",
+        component: HygieneTeamComponent,
+        name: "admin.hygiene.team",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos-orders",
+            breadcrumb: "hygiene_team",
         },
     },
 ];

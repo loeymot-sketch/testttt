@@ -52,9 +52,13 @@ abstract class HygieneController extends AdminController
      * Qui a fait le geste ? Tablette partagée : `operator_user_id` désigne la personne, sinon l'utilisateur connecté.
      * Un identifiant hors du personnel du restaurant est REFUSÉ (jamais d'attribution à un inconnu).
      *
+     * Si la personne désignée a un CODE PERSONNEL (hygiene_operator_pins), il faut le prouver : `operator_token` (remis après vérification du
+     * code, valable quelques minutes, y compris pour un relevé gardé hors ligne : `$at` = l'heure du geste) ou, à défaut, `operator_pin`.
+     * Choisir SOI-MÊME (le compte connecté) ne demande rien : la connexion est déjà la preuve.
+     *
      * @return array{user_id:?int, name:?string}
      */
-    protected function operator(Request $request): array
+    protected function operator(Request $request, ?\Carbon\CarbonInterface $at = null): array
     {
         $id = $request->input('operator_user_id');
         if ($id !== null && $id !== '' && (int) $id !== (int) $request->user()?->id) {
@@ -62,12 +66,41 @@ abstract class HygieneController extends AdminController
             if (! $person) {
                 abort(response()->json(['message' => 'Opérateur inconnu.', 'errors' => ['operator_user_id' => ['Cette personne ne fait pas partie du personnel.']]], 422));
             }
+            $this->assertPinProven($request, $person, $at ?? now());
 
             return ['user_id' => $person->id, 'name' => $this->cleanName($person->name)];
         }
         $user = $request->user();
 
         return ['user_id' => $user?->id, 'name' => $this->cleanName($user?->name)];
+    }
+
+    private function assertPinProven(Request $request, $person, \Carbon\CarbonInterface $at): void
+    {
+        $pins = app(\App\Services\Hygiene\OperatorPins::class);
+        $branch = $this->branchId($request);
+        if (! $pins->has($branch, (int) $person->id)) return; // aucun code : libre, comme avant
+        $name = $this->cleanName($person->name) ?? 'cette personne';
+        $refuse = fn (string $field, string $message, int $status = 422) => abort(response()->json(['message' => $message, 'errors' => [$field => [$message]]], $status));
+
+        $token = $request->input('operator_token');
+        if (is_string($token) && $token !== '') {
+            $r = $pins->checkToken($branch, (int) $person->id, $token, $at);
+            if ($r === 'ok') return;
+            $refuse('operator_token', $r === 'expired'
+                ? "Le code de $name a expiré : choisissez de nouveau son nom et saisissez son code."
+                : "Code de $name non valide : choisissez de nouveau son nom et saisissez son code.");
+        }
+        $pin = $request->input('operator_pin');
+        if (is_string($pin) && $pin !== '') {
+            $v = $pins->verify($branch, (int) $person->id, $pin);
+            if ($v['result'] === 'ok' || $v['result'] === 'none') return;
+            if ($v['result'] === 'locked') {
+                $refuse('operator_pin', "Trop d'essais : le code de $name est bloqué pendant {$v['locked_minutes']} minutes.", 423);
+            }
+            $refuse('operator_pin', "Code de $name incorrect ({$v['remaining']} essai".($v['remaining'] > 1 ? 's' : '').' restant'.($v['remaining'] > 1 ? 's' : '').').');
+        }
+        $refuse('operator_pin', "Le code de $name est requis pour signer à son nom.");
     }
 
     protected function cleanName(?string $name): ?string

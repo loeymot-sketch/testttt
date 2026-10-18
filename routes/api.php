@@ -577,6 +577,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // [CAYENNE HYGIÈNE 2026-10-17 · owner] Socle commun du module : « qui est-ce ? » et pièces jointes photo.
     Route::prefix('hygiene')->name('hygiene.')->group(function () {
         Route::get('/operators', [\App\Http\Controllers\Admin\Hygiene\OperatorController::class, 'index'])->name('operators');
+        Route::post('/operators/verify', [\App\Http\Controllers\Admin\Hygiene\OperatorController::class, 'verify'])->name('operators.verify');
+        // Codes personnels des employés (réservé au responsable : permission `settings` en plus de la porte du module).
+        Route::prefix('team')->name('team.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TeamController::class;
+            Route::get('/', [$c, 'index'])->name('index');
+            Route::put('/{user}/pin', [$c, 'setPin'])->where('user', '[0-9]{1,18}')->name('pin.set');
+            Route::delete('/{user}/pin', [$c, 'removePin'])->where('user', '[0-9]{1,18}')->name('pin.remove');
+        });
         Route::post('/attachments', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/attachments/{attachment}', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'show'])
             ->where('attachment', '[0-9]{1,18}')->name('attachments.show');
