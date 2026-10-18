@@ -189,8 +189,31 @@ class RemindersTest extends TestCase
         $late = array_filter($rem, fn ($r) => $r['domain'] === 'tasks');
         $this->assertCount(1, $late, '4 fiches : UNE phrase, pas quatre');
         $this->assertSame('4 nettoyages en retard : « Fiche 1 », « Fiche 2 », « Fiche 3 » et 1 autre.', $rem['tasks-late-many']['text']);
+        // la tuile Nettoyage garde son propre détail court (« 4 en retard »), jamais la longue phrase du rappel
+        $tile = $this->overview()[1]['tasks'];
+        $this->assertSame('4 en retard', $tile['detail']);
+        $this->assertSame('alert', $tile['status']);
         $this->assertSame('alert', $rem['tasks-late-many']['level']);
         $this->assertSame('/admin/hygiene/tasks', $rem['tasks-late-many']['route']);
+    }
+
+    public function test_nettoyages_regroupes_nomment_les_trois_premiers_selon_l_ordre_de_l_ecran_pas_au_hasard_de_l_index(): void
+    {
+        $this->staff();
+        // sort_order inverse de l'id : l'écran trie par (sort_order, id) ; le rappel doit nommer les mêmes fiches
+        foreach ([5 => 'Cinquième', 4 => 'Quatrième', 3 => 'Troisième', 2 => 'Deuxième', 1 => 'Première'] as $order => $name) {
+            $t = new HygieneTaskTemplate(['name' => $name, 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'due_time' => '09:00', 'sort_order' => $order, 'is_active' => true]);
+            $t->branch_id = 1;
+            $t->created_at = Carbon::parse('2026-10-01');
+            $t->save();
+        }
+        // l'ordre ne doit pas dépendre du hasard de l'index (SQLite et MySQL ne le garantissent pas sans ORDER BY) : on exige la clause elle-même
+        $sql = [];
+        \DB::listen(function ($q) use (&$sql) { if (str_contains($q->sql, 'hygiene_task_templates') && str_contains($q->sql, 'is_active')) $sql[] = $q->sql; });
+        $text = $this->overview()[0]['tasks-late-many']['text'];
+        $ordered = array_filter($sql, fn ($q) => (bool) preg_match('/order by [`"]?sort_order[`"]?[^,]*,\s*[`"]?id[`"]?/i', $q));
+        $this->assertNotEmpty($ordered, 'la lecture des fiches pour les rappels doit trier par (sort_order, id), comme l\'écran');
+        $this->assertSame('5 nettoyages en retard : « Première », « Deuxième », « Troisième » et 2 autres.', $text);
     }
 
     public function test_nettoyage_en_retard_puis_fait(): void

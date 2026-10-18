@@ -34,7 +34,7 @@
                             Aucune fiche à faire aujourd'hui. Ajoutez-en dans l'onglet « Plan de nettoyage ».
                         </p>
                         <p v-else-if="!shown.length && tab === 'todo' && summary.partial > 0" class="hy-note is-todo" data-testid="tsk-partial-left">
-                            Plus de fiche à faire, mais {{ summary.partial }} fiche{{ summary.partial > 1 ? "s" : "" }} incomplète{{ summary.partial > 1 ? "s" : "" }} à reprendre : ouvrez « Faites aujourd'hui ».
+                            Plus de fiche à faire, mais {{ summary.partial }} fiche{{ summary.partial > 1 ? "s" : "" }} incomplète{{ summary.partial > 1 ? "s" : "" }} à reprendre : dans « Faites aujourd'hui », annulez la validation puis refaites la fiche.
                         </p>
                         <p v-else-if="!shown.length" class="hy-note" data-testid="tsk-all-done">
                             {{ tab === "todo" ? "Tout est fait pour aujourd'hui. Bravo." : "Rien n'a encore été validé aujourd'hui." }}

@@ -100,12 +100,14 @@ final class Overview
         $overdue = $templates->filter(function ($t) use ($done, $now, $day) {
             $due = TaskSchedule::dueAt($t, $day);
 
-            return ! $done->has($t->id) && $due !== null && $now->gt($due);
+            // même règle que Reminders::tasks : une fiche créée APRÈS son heure limite du jour n'était pas encore attendue (sinon la tuile
+            // criait « en retard » sans qu'aucun rappel n'explique quoi faire)
+            return ! $done->has($t->id) && $due !== null && $now->gt($due) && $t->created_at->lt($due);
         })->count();
         $status = $total === 0 ? 'ok' : ($overdue > 0 ? 'alert' : ($finished < $total ? 'todo' : 'ok'));
 
         return $this->tile('tasks', 'Nettoyage', 'fa-solid fa-broom', $status, $total === 0 ? 'Rien à faire' : "$finished/$total fiches",
-            $overdue > 0 ? $overdue.' en retard' : ($finished < $total ? ($partial > 0 ? $this->plural($partial, 'incomplète').' · ' : '').($total - $finished - $partial).' à faire' : 'Tout est fait'),
+            $total === 0 ? '' : ($overdue > 0 ? $overdue.' en retard' : ($finished < $total ? ($partial > 0 ? $this->plural($partial, 'incomplète').' · ' : '').($total - $finished - $partial).' à faire' : 'Tout est fait')),
             ['done' => $finished, 'total' => $total, 'overdue' => $overdue, 'partial' => $partial]);
     }
 
@@ -121,18 +123,28 @@ final class Overview
         $rows = $done()->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))->get(['expires_at']);
         $expired = $rows->filter(fn ($l) => $l->expires_at->lt($now))->count();
         $soon = $rows->count() - $expired;
-        $live = $done()->where('expires_at', '>=', $now)->count();
-        $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $live];
-        $cta = $soon > 0 ? $soon.' à échéance sous 24 h' : '';
+        $live = $done()->where('expires_at', '>=', $now)->get(['status', 'anomaly']);
+        $unconfirmed = $live->where('status', LabelPrintLog::STATUS_UNCONFIRMED)->count();
+        $anomaly = $live->filter(fn ($l) => (bool) $l->anomaly)->count();
+        $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $live->count(), 'unconfirmed' => $unconfirmed, 'anomaly' => $anomaly];
+        $nbsp = "\u{00A0}"; // « 24 h » ne se coupe jamais en laissant « h » seul sur la ligne suivante
+        $soonText = $soon.' à échéance sous 24'.$nbsp.'h';
 
         if ($expired > 0) {
-            return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'alert', $this->plural($expired, 'DLC dépassée'), $soon > 0 ? $cta : '', $counts);
+            return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'alert', $this->plural($expired, 'DLC dépassée'), $soon > 0 ? $soonText : '', $counts);
         }
-        if ($live === 0) {
+        if ($live->isEmpty()) {
             return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'idle', 'Aucune étiquette en cours', '', $counts);
         }
+        // Une impression « non confirmée » ne se lève par aucune action (seulement la jeter ou la réimprimer) : la compter « à compléter » retiendrait
+        // « Journée en règle » jusqu'à l'expiration. On la DIT à côté du chiffre, sans la transformer en reproche impossible à lever.
+        $parts = array_values(array_filter([
+            $soon > 0 ? $soonText : '',
+            $unconfirmed > 0 ? $unconfirmed.' '.($unconfirmed > 1 ? 'non confirmées' : 'non confirmée') : '',
+            $anomaly > 0 ? $anomaly.' à vérifier' : '',
+        ]));
 
-        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'ok', $this->plural($live, 'étiquette').' en cours', $soon > 0 ? 'dont '.$cta : '', $counts);
+        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'ok', $this->plural($live->count(), 'étiquette').' en cours', $parts === [] ? '' : 'dont '.implode(', ', $parts), $counts);
     }
 
     private function reception(): array

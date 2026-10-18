@@ -31,6 +31,8 @@ test('barre latérale : une seule entrée ; le hub ouvre chaque outil ; la ligne
     const hubRow = side.locator('a.db-sidebar-nav-menu', { hasText: 'Hygiène & étiquettes' });
     await expect(hubRow).toHaveCount(1);
     await expect(hubRow).toHaveClass(/router-link-active/);
+    // sur la page exacte du hub, c'est le routeur qui pose aria-current="page" (notre liaison ne doit pas l'écraser : régression du tour 2)
+    await expect(hubRow).toHaveAttribute('aria-current', 'page');
     // la ligne du hub est visible SANS défiler la barre (elle était hors écran quand elle fermait la liste)
     const hb = await hubRow.boundingBox();
     expect(hb.y + hb.height, 'la ligne du hub est hors de la fenêtre').toBeLessThanOrEqual(900);
@@ -66,6 +68,7 @@ test('barre latérale : une seule entrée ; le hub ouvre chaque outil ; la ligne
         await page.locator(sel).click();
         await expect(page).toHaveURL(new RegExp(url.replace(/\//g, '\\/') + '$'), { timeout: 30_000 });
         await expect(hubRow, `${url} : la ligne du hub n'est plus allumée`).toHaveClass(/router-link-active/);
+        await expect(hubRow, `${url} : la ligne allumée n'est pas exposée comme page courante`).toHaveAttribute('aria-current', url === '/admin/hygiene/home' ? 'page' : 'true');
         // la page s'ouvre en HAUT, même quand on a cliqué tout en bas du hub (le conteneur qui défile est .db-main, pas la fenêtre)
         expect(await page.evaluate(() => (document.querySelector('.db-main') || {}).scrollTop || 0), `${url} s'ouvre défilée`).toBe(0);
         const back = page.getByTestId('hub-bar-link');
@@ -85,6 +88,8 @@ test('barre latérale : une seule entrée ; le hub ouvre chaque outil ; la ligne
     await expect(page.locator('.db-sidebar')).toBeVisible({ timeout: 30_000 });
     await expect(hubRow).not.toHaveClass(/router-link-active/);
     await expect(page.getByTestId('hub-bar-link')).toHaveCount(0);
+    // une AUTRE entrée sur sa propre page garde le aria-current="page" du routeur
+    await expect(page.locator('.db-sidebar a.db-sidebar-nav-menu[href="/admin/pos-orders"]')).toHaveAttribute('aria-current', 'page');
 
     expect(bad, `erreurs réseau/JS : ${bad.join(' | ')}`).toEqual([]);
 });

@@ -102,7 +102,7 @@ final class Reminders
     private function tasks(CarbonInterface $now): array
     {
         $day = $now->copy()->startOfDay();
-        $templates = HygieneTaskTemplate::query()->where('is_active', true)->get()->filter(fn ($t) => TaskSchedule::isDueOn($t, $day));
+        $templates = HygieneTaskTemplate::query()->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get()->filter(fn ($t) => TaskSchedule::isDueOn($t, $day))->values();
         if ($templates->isEmpty()) return [];
         $done = HygieneTaskCompletion::query()->whereNull('voided_at')->whereDate('due_date', $day->toDateString())->pluck('template_id')->unique()->all();
         $late = [];

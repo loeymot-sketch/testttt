@@ -241,7 +241,7 @@ export default {
         /** Écran qui se réveille ou réseau qui revient : rafraîchir si les chiffres ont plus de WAKE_MIN_AGE_MS (pas à chaque va-et-vient d'onglet). */
         onWake() {
             if (this.hidden()) return;
-            if (!this.lastOkAt || Date.now() - this.lastOkAt >= WAKE_MIN_AGE_MS || this.failures > 0) this.load();
+            if (!this.lastOkAt || Date.now() - this.lastOkAt >= WAKE_MIN_AGE_MS) this.load();
         },
         async load() {
             // jamais deux appels en même temps : une réponse lente + le tour suivant doublaient la charge, et la plus ancienne pouvait gagner

@@ -153,7 +153,7 @@ class OverviewAndReportTest extends TestCase
         }
         $d = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['dlc'];
         $this->assertSame('alert', $d['status']);
-        $this->assertSame(['expired' => 1, 'soon' => 1, 'live' => 1], $d['counts']);
+        $this->assertSame(['expired' => 1, 'soon' => 1, 'live' => 1, 'unconfirmed' => 0, 'anomaly' => 0], $d['counts']);
     }
 
     // ───────────── DLC : seule une étiquette DÉPASSÉE appelle une action ─────────────
@@ -189,10 +189,53 @@ class OverviewAndReportTest extends TestCase
         $d = $this->dlcTile();
         $this->assertSame('ok', $d['status'], 'le fonctionnement normal d\'une cuisine (DLC de 24 h) n\'est pas « à compléter »');
         $this->assertSame('2 étiquettes en cours', $d['headline']);
-        $this->assertSame('dont 1 à échéance sous 24 h', $d['detail']);
-        $this->assertSame(['expired' => 0, 'soon' => 1, 'live' => 2], $d['counts']);
+        $this->assertSame("dont 1 à échéance sous 24\u{00A0}h", $d['detail'], '« 24 h » est insécable');
+        $this->assertSame(['expired' => 0, 'soon' => 1, 'live' => 2, 'unconfirmed' => 0, 'anomaly' => 0], $d['counts']);
         // et la bannière du hub ne reçoit aucun « domaine à compléter » à cause d'elle
         $this->assertSame(0, $this->getJson(self::BASE.'/overview')->json('meta.todo'));
+    }
+
+    public function test_dlc_ne_compte_en_cours_que_les_etiquettes_dlc_imprimees_pas_les_echecs_ni_les_commandes(): void
+    {
+        $this->staff();
+        // une étiquette DE COMMANDE (kind=order), un échec, une réservation récente : aucune n'est une étiquette DLC « en cours »
+        foreach ([['order', 'printed'], ['dlc', 'failed'], ['dlc', 'claimed']] as $i => [$kind, $status]) {
+            $l = new LabelPrintLog(['kind' => $kind, 'status' => $status, 'copies' => 1, 'product_name' => "X$i", 'opened_at' => now()->subHour(), 'expires_at' => now()->addDays(2)]);
+            $l->branch_id = 1;
+            $l->save();
+        }
+        $d = $this->dlcTile();
+        $this->assertSame('idle', $d['status']);
+        $this->assertSame(0, $d['counts']['live']);
+    }
+
+    public function test_dlc_une_seule_etiquette_se_dit_au_singulier(): void
+    {
+        $this->staff();
+        $this->dlcLabel('Seule', now()->addDays(2));
+        $d = $this->dlcTile();
+        $this->assertSame('1 étiquette en cours', $d['headline']);
+        $this->assertSame('', $d['detail']);
+    }
+
+    public function test_dlc_non_confirmee_et_a_verifier_sont_dites_sans_retenir_la_journee(): void
+    {
+        $this->staff();
+        $this->dlcLabel('Imprimée', now()->addDays(2));
+        $u = new LabelPrintLog(['kind' => 'dlc', 'status' => 'unconfirmed', 'copies' => 1, 'product_name' => 'Non confirmée', 'opened_at' => now()->subHour(), 'expires_at' => now()->addDays(2)]);
+        $u->branch_id = 1;
+        $u->save();
+        $a = new LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => 1, 'product_name' => 'Anomalie', 'opened_at' => now()->subHour(), 'expires_at' => now()->addDays(2), 'anomaly' => true]);
+        $a->branch_id = 1;
+        $a->save();
+        $d = $this->dlcTile();
+        // une impression « non confirmée » ne se lève par aucune action (seule la jeter ou la réimprimer) : l'afficher comme bloquante retiendrait
+        // « Journée en règle » jusqu'à l'expiration. On la DIT, on ne s'en sert pas pour refuser un bravo.
+        $this->assertSame('ok', $d['status']);
+        $this->assertSame('3 étiquettes en cours', $d['headline']);
+        $this->assertSame('dont 1 non confirmée, 1 à vérifier', $d['detail']);
+        $this->assertSame(1, $d['counts']['unconfirmed']);
+        $this->assertSame(1, $d['counts']['anomaly']);
     }
 
     public function test_dlc_depassee_reste_une_alerte_avec_le_detail_des_echeances_proches(): void
@@ -203,7 +246,31 @@ class OverviewAndReportTest extends TestCase
         $d = $this->dlcTile();
         $this->assertSame('alert', $d['status']);
         $this->assertSame('1 DLC dépassée', $d['headline']);
-        $this->assertSame('1 à échéance sous 24 h', $d['detail']);
+        $this->assertSame("1 à échéance sous 24\u{00A0}h", $d['detail']);
+    }
+
+    // ───────────── nettoyage : la tuile dit la même chose que les rappels ─────────────
+
+    public function test_tuile_nettoyage_une_fiche_creee_apres_son_heure_limite_n_est_pas_en_retard(): void
+    {
+        $this->staff();
+        $t = $this->template('2026-10-20 09:30'); // créée à 09:30, aujourd'hui, APRÈS son heure limite
+        $t->forceFill(['due_time' => '09:00'])->save();
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['tasks'];
+        $this->assertSame(0, $tile['counts']['overdue']);
+        $this->assertSame('todo', $tile['status'], 'à faire, pas « en retard » : aucun rappel n\'existe pour elle');
+        $this->assertSame('1 à faire', $tile['detail']);
+    }
+
+    public function test_tuile_nettoyage_aucune_fiche_due_ne_dit_pas_tout_est_fait(): void
+    {
+        $this->staff();
+        $t = $this->template('2026-10-01');
+        // fiche hebdomadaire d'un AUTRE jour que le mardi 20 octobre
+        $t->forceFill(['frequency' => 'weekly', 'weekday' => 1])->save();
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['tasks'];
+        $this->assertSame('Rien à faire', $tile['headline']);
+        $this->assertSame('', $tile['detail'], '« Rien à faire » + « Tout est fait » se contredisent');
     }
 
     // ───────────── rapport : taux de couverture ─────────────

@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
+import { createRouter, createMemoryHistory } from 'vue-router';
 
 // Chaque test démonte ses composants : un accueil resté monté garde ses écouteurs (réveil, réseau) et répondrait aux événements du test suivant.
 enableAutoUnmount(afterEach);
@@ -371,5 +372,101 @@ describe('barre latérale — le tiroir se referme après un appui sur un lien (
         await hubItem(w).trigger('click');
         expect(w.element.classList.contains('active')).toBe(false);
         w.unmount();
+    });
+});
+
+describe('barre latérale — VRAI routeur : aria-current (le stub de RouterLink cachait la régression du tour 2)', () => {
+    async function realMenu(path) {
+        const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', name: 'frontend.home', component: { template: '<div />' } }, { path: '/:pathMatch(.*)*', component: { template: '<div />' } }] });
+        router.push(path);
+        await router.isReady();
+        const w = mount(BackendMenuComponent, {
+            global: {
+                plugins: [router],
+                mocks: { $t: (k) => k, $store: { getters: { 'frontendSetting/lists': { theme_logo: '/l.png' }, authMenu: [], 'globalState/lists': { topSidebar: false } }, dispatch: () => Promise.resolve() } },
+            },
+        });
+        await flushPromises();
+        return w;
+    }
+    const link = (w, href) => w.findAll('a.db-sidebar-nav-menu').find((a) => a.attributes('href') === href);
+
+    it('une AUTRE entrée sur sa propre page garde le aria-current="page" du routeur (la liaison du hub ne l’écrase pas)', async () => {
+        const w = await realMenu('/admin/pos-orders');
+        expect(link(w, '/admin/pos-orders').attributes('aria-current')).toBe('page');
+        expect(link(w, '/admin/hygiene/home').attributes('aria-current')).toBeUndefined();
+    });
+
+    it('le hub sur SA page exacte : « page » (posé par le routeur), pas « true »', async () => {
+        const w = await realMenu('/admin/hygiene/home');
+        expect(link(w, '/admin/hygiene/home').attributes('aria-current')).toBe('page');
+    });
+
+    it.each(['/admin/hygiene/oil', '/admin/labels/printer'])('le hub sur le sous-écran %s : « true » et ligne allumée', async (path) => {
+        const w = await realMenu(path);
+        const a = link(w, '/admin/hygiene/home');
+        expect(a.attributes('aria-current')).toBe('true');
+        expect(a.classes()).toContain('router-link-active');
+    });
+});
+
+describe('accueil — réveil : chaque garde est exigée par un test', () => {
+    const META = { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris', reminders: [] };
+    const vis = (state) => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state }); document.dispatchEvent(new Event('visibilitychange')); };
+    const calls = () => h.axios.get.mock.calls.filter((c) => c[0] === 'admin/hygiene/overview').length;
+
+    it('écran MASQUÉ avec des chiffres périmés : l’événement n’appelle PAS le serveur (il attend d’être visible)', async () => {
+        vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+        try {
+            h.axios.get.mockReset();
+            h.axios.get.mockResolvedValue({ data: { data: [], meta: META } });
+            mount(HygieneHomeComponent, { global: { stubs: { 'router-link': RouterLink } } });
+            await flushPromises();
+            await vi.advanceTimersByTimeAsync(40000); // chiffres de 40 s : périmés pour le réveil
+            vis('hidden');
+            await flushPromises();
+            expect(calls(), 'appel écran masqué').toBe(1);
+            vis('visible');
+            await flushPromises();
+            expect(calls()).toBe(2);
+        } finally { vi.useRealTimers(); Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); }
+    });
+});
+
+describe('barre latérale — un titre de section n’est pas un lien : il ne ferme pas le tiroir', () => {
+    it('sidebarActive sans lien dans l’élément cliqué : rien ne se ferme', () => {
+        window.matchMedia = vi.fn().mockReturnValue({ matches: true, addEventListener() {}, removeEventListener() {} });
+        document.body.innerHTML = '<div class="db-main expand"></div>';
+        const w = mount(BackendMenuComponent, {
+            attachTo: document.body,
+            global: { stubs: { RouterLink }, mocks: { $route: { path: '/admin/items' }, $t: (k) => k, $store: { getters: { 'frontendSetting/lists': { theme_logo: '/l.png' }, authMenu: [], 'globalState/lists': { topSidebar: false } }, dispatch: () => Promise.resolve() } } },
+        });
+        w.element.classList.add('active');
+        const title = document.createElement('li');
+        title.innerHTML = '<button type="button">Section</button>';
+        w.vm.sidebarActive({ currentTarget: title });
+        expect(w.element.classList.contains('active'), 'un titre a fermé le tiroir').toBe(true);
+        const withLink = document.createElement('li');
+        withLink.innerHTML = '<a href="/admin/x">x</a>';
+        w.vm.sidebarActive({ currentTarget: withLink });
+        expect(w.element.classList.contains('active')).toBe(false);
+        w.unmount();
+    });
+});
+
+describe('styles — un message d’avertissement n’est jamais vert (régression du tour 2)', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, '../../resources/js/components/admin/hygiene/hygiene.css'), 'utf8');
+
+    it('`.hy-note.is-todo` existe, ambre, et vient APRÈS la règle verte `.hy-note` (sinon elle ne l’emporte pas)', () => {
+        const base = css.indexOf('.hy-note {');
+        const warn = css.indexOf('.hy-note.is-todo {');
+        expect(base, '.hy-note de base introuvable').toBeGreaterThanOrEqual(0);
+        expect(warn, '.hy-note.is-todo absente : « fiche incomplète à reprendre » s’affiche en vert').toBeGreaterThan(base);
+        expect(css.slice(warn, css.indexOf('}', warn))).toMatch(/#fffbeb/);
+    });
+
+    it('l’écran Nettoyage emploie bien cette variante pour les fiches incomplètes', () => {
+        const src = fs.readFileSync(path.resolve(__dirname, '../../resources/js/components/admin/hygiene/HygieneTasksComponent.vue'), 'utf8');
+        expect(src).toMatch(/class="hy-note is-todo"[^>]*data-testid="tsk-partial-left"/);
     });
 });

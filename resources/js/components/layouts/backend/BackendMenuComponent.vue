@@ -34,7 +34,7 @@
                     </a>
                     <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu"
                                  :class="{ 'router-link-active': isPrefixActive(menu) }"
-                                 :aria-current="isPrefixActive(menu) ? 'true' : null">
+                                 v-bind="prefixAriaAttrs(menu)">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -476,6 +476,16 @@ export default {
             // le routeur ne distingue pas les majuscules (/admin/LABELS/printer ouvre la même page) : la ligne non plus
             const path = ((this.$route && this.$route.path) || '').toLowerCase();
             return prefixes.some((p) => path === p || path.startsWith(p + '/'));
+        },
+        /**
+         * `aria-current` d'une entrée « module » allumée sur un sous-écran. Le routeur le pose LUI-MÊME (« page ») sur le lien exact ; un attribut
+         * passé au router-link, même `null`, ÉCRASE le sien (tour 2 : toutes les autres lignes de la barre perdaient leur aria-current). On ne lie
+         * donc rien (objet vide) sauf quand la ligne est allumée par le PRÉFIXE seulement (« true » : l'entrée contient la page courante).
+         */
+        prefixAriaAttrs(menu) {
+            if (!this.isPrefixActive(menu)) return {};
+            const here = ((this.$route && this.$route.path) || '').toLowerCase().replace(/\/+$/, '');
+            return here === ('/admin/' + menu.url).toLowerCase() ? {} : { 'aria-current': 'true' };
         },
         showSidebarParentNavRow(menu) {
             if (!menu || menu.url === '#') return false;
