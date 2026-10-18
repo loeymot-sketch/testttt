@@ -4869,6 +4869,11 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-10-18 (nuit) — Cayenne Hygiène : lot « rapport Komia phase 3 » — LOCAL (commits `b12076fc1`…`5b14c04bd`), NON déployé ; Brother (`787e0aa3b`, `e8e330049`) DÉPLOYÉ `e8e33004`.**
+Source `~/Downloads/komia-phase3/` (analyse Komia par Claude Chrome). Chaque écart recoupé avec le code/la prod avant codage (détail et réfutations : `docs/HYGIENE_FEUILLE_DE_ROUTE_KOMIA.md` § « rapport Komia phase 3 »).
+Livré : alertes e-mail aux responsables (`hygiene:notify`, 2 tables BranchScope), relevés de température hors ligne (heure de la mesure), code personnel « Qui ? » (jeton signé 10 min, 1 table BranchScope), favoris DLC (colonne `is_favorite`),
+suivi après écart (nouvelle mesure exigée/rappelée). 3 migrations additives à jouer au déploiement (`hygiene_alert_*`, `is_favorite`, `hygiene_operator_pins`). BranchScope : 38 modèles (CLAUDE.md §9 mis à jour).
+Brother : option « tickets d'une commande attachés » (le manuel n'a AUCUNE demi-coupe), « dernier travail envoyé », « test de coupe ». Non éprouvé : tablette et Brother réelles, SMTP réel.
 **2026-10-17 (soir, suite) — DÉPLOYÉ en production : HEAD `1b1ce7335`, avance rapide depuis `03a4f725f`.** e2e réel 4/4, Vitest 5238, PHPUnit Hygiène 128 / Étiquettes 103,
 zones gelées inchangées, chaîne NF525 OK, snapshot SQL 4,3 Mo + sauvegarde JSON de `dlc_label_products` (95 lignes). La lecture de la prod AVANT de déployer a révélé que 95 produits
 du catalogue étaient déjà installés (0 validé) : sans rattrapage ils seraient passés pour des durées du restaurant. La migration `duration_source` marque donc « Valeur de départ

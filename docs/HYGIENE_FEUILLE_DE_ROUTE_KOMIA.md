@@ -72,10 +72,30 @@ sur une prod encore vide : plusieurs « manques » y étaient en réalité des m
 Hors de ce lot (P2/P3 du méga-fichier) : planning/pointage/congés, stock théorique / inventaire / production / commandes reliés au POS, recettes et coût matière,
 PWA hors-ligne, scan code-barres, produit vendable seul. Non éprouvé : tablette réelle, imprimante Brother, notification poussée.
 
+## Lot « rapport Komia phase 3 » (2026-10-18)
+Source : `~/Downloads/komia-phase3/RAPPORT_KOMIA_PHASE3.md` + `TABLEAU_PARITE.md` (analyse de Komia par Claude dans Chrome, sans salarié : aucun flux d'écriture observé).
+Chaque écart du rapport a été recoupé avec le code et la production AVANT d'être codé.
+
+| Écart du rapport | Réalité vérifiée | Résultat |
+|---|---|---|
+| P0 « imprimée » alors que l'imprimante est « non connectée » (C08) | `printed` n'est écrit que sur confirmation de page par l'imprimante (`labelPrinter.js`), sinon `unconfirmed`/`failed` ; un historique garde les impressions passées. Prod : 32 `printed`, 2 `failed`, 0 incohérence | **non confirmé** (lecture d'un historique pris pour un état courant) |
+| P1 « à jeter aujourd'hui / demain » absent | la liste « À surveiller » (lots expirés ou proches) avec « Jeté ✓ » / « Utilisé » existe sur l'écran DLC | **déjà fait** |
+| P1 recherche par lot / rappel | `GET /hygiene/trace/recall` existait | **déjà fait** |
+| P2 récurrence mensuelle | `frequency` daily/weekly/monthly existait ; annuelle absente | partiel, non repris |
+| P0 alertes hors écran | aucun rappel ne sortait de l'écran ; FCM sans jeton (0 en prod), SMTP Brevo configuré en prod | **fait** : e-mail aux responsables (`hygiene:notify` /5 min, désactivé par défaut, plage d'envoi, relance espacée et plafonnée, journal en ajout seul, essai à la demande, réglage réservé à `settings`) |
+| P0 hors ligne | relevés perdus si le réseau tombe | **fait** pour les températures : file locale, heure de la MESURE gardée (bornée, ≤ 72 h), dit « saisi hors ligne » au journal, rejeu idempotent, refus jamais jeté en silence. **Reste** : huile, réception, traçabilité, nettoyage (photos à téléverser d'abord) |
+| P1 « Qui ? » sans code | n'importe qui signait pour n'importe qui | **fait** : code personnel facultatif par employé (haché), jeton signé de 10 min (le code n'est jamais gardé, y compris hors ligne), 5 faux codes = blocage 10 min, écran « Codes de l'équipe » |
+| P1 relevé de suivi après écart | « Nouvelle mesure après quelques minutes » n'était qu'un libellé | **fait** : nouvelle mesure annoncée, attendue 30 min après, rappelée (écran + e-mail) tant qu'elle manque |
+| Demande n°1 du propriétaire : favoris | absents (la sélection multiple + panier existait) | **fait** : étoile, onglet « Favoris », « Préparer toute ma liste » |
+| Demande du propriétaire : tickets d'une commande attachés (Brother) | le manuel Brother n'a **aucune demi-coupe** ; seulement « couper toutes les n étiquettes » | **fait en option** (une coupe par commande + pointillé entre tickets) ; « dernier travail envoyé » et « test de coupe » pour départager tablette et machine |
+
+**Non fait** (décisions ou matériel) : WhatsApp (aucune preuve que Komia le fasse ; aucun fournisseur choisi, paquet de décision du 2026-08-12 : d'abord PWA/push) ; sonde Bluetooth (le rapport lui-même contredit Bluetooth / Dragino + passerelle 4G : modèle exact à fixer) ; rappels par équipement ou par service ; assignation de tâches ; bibliothèque d'équipements typés ; PWA ; hors ligne des autres écrans ; états « mariné » et « étiquette vierge ».
+**Non éprouvé** : tablette et Brother réelles ; envoi SMTP réel (le code journalise l'échec et le dit ; la messagerie locale pointe sur un hôte factice).
+
 ## Reste à faire (non démarré)
-- Notification poussée / SMS des rappels : nécessite un canal (FCM à réparer ou fournisseur SMS) et un planificateur — à cadrer.
+- Notification poussée / SMS / WhatsApp des rappels : l'e-mail est fait (2026-10-18) ; les autres canaux se branchent dans `AlertNotifier::deliver` sans toucher au calcul des rappels — fournisseur à choisir.
 - Capteurs / sondes connectés (relevé automatique) : la colonne `source` des relevés est prête (`manual` aujourd'hui).
 - Alerte « produit non tracé depuis x jours » PAR PRODUIT et alerte de stock bas par produit (idées Komia) : demandent une colonne par produit (aujourd'hui : « rien tracé depuis N jours » global).
-- Lecture automatique du bon de livraison par photo (OCR) ; boutique de rouleaux ; favoris manuels de produits.
+- Lecture automatique du bon de livraison par photo (OCR) ; boutique de rouleaux .
 - Planning et pointage : module RH distinct, hors hygiène.
 - Application « Cayenne Hygiène » autonome : extraction de `config/hygiene.php`, `hygiene_*`, `/admin/hygiene/*`, `components/admin/hygiene/`.
