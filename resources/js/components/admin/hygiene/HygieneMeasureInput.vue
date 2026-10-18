@@ -5,7 +5,7 @@
             {{ modelValue.neg ? "−" : "+" }}
         </button>
         <input :value="modelValue.raw" type="text" inputmode="decimal" autocomplete="off" class="hy-measure-input" placeholder="0,0"
-               :aria-label="label" :data-testid="`${testid}-input`" @input="set({ raw: $event.target.value })" @focus="$event.target.select()" />
+               :aria-label="label" :data-testid="`${testid}-input`" @input="onInput($event)" @focus="$event.target.select()" />
         <span class="hy-measure-unit">{{ unit }}</span>
     </div>
 </template>
@@ -16,6 +16,8 @@
  * Le signe est porté par un bouton ± (un clavier de tablette n'a pas toujours le « − »). Valeur lue par `readMeasure(entry)`.
  * `modelValue` = { raw: string, neg: boolean }.
  */
+import { hasTypedMinus, stripTypedMinus } from "../../../helpers/hygieneTemperature";
+
 export default {
     name: "HygieneMeasureInput",
     props: {
@@ -28,6 +30,17 @@ export default {
     emits: ["update:modelValue"],
     methods: {
         set(patch) { this.$emit("update:modelValue", { ...this.modelValue, ...patch }); },
+        /** Un moins tapé sur un champ signé est honoré (bouton ± sur « − »), jamais jeté en silence. */
+        onInput(ev) {
+            const v = ev.target.value;
+            if (this.signed && hasTypedMinus(v)) {
+                const stripped = stripTypedMinus(v);
+                ev.target.value = stripped;
+                this.set({ raw: stripped, neg: true });
+            } else {
+                this.set({ raw: v });
+            }
+        },
     },
 };
 </script>

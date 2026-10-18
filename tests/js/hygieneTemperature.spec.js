@@ -11,6 +11,7 @@ vi.mock('../../resources/js/services/alertService', () => ({ default: { success:
 
 import { parseTemperature, previewVerdict, formatTemperature, limitText, chartModel } from '../../resources/js/helpers/hygieneTemperature.js';
 import alertService from '../../resources/js/services/alertService';
+import HygieneMeasureInput from '../../resources/js/components/admin/hygiene/HygieneMeasureInput.vue';
 import HygieneTemperatureComponent from '../../resources/js/components/admin/hygiene/HygieneTemperatureComponent.vue';
 
 describe('hygieneTemperature — fonctions pures', () => {
@@ -473,5 +474,54 @@ describe('suivi d’écart hérité de la veille — visible et clôturable sans
         setup([EQ(1, 'Frigo A', 'fridge', 0, 4)]);
         const w = await mountScreen();
         expect(w.find('[data-testid="tmp-followup-orphan-1"]').exists()).toBe(false);
+    });
+});
+
+describe('un « − » tapé au clavier est honoré (tour 9 : « -2 » dans un frigo s’enregistrait « +2,0 °C — Conforme »)', () => {
+    it('frigo (0 à +4 °C) : taper « -2 » passe le bouton sur « − », garde « 2 » dans le champ, verdict « trop froid », et envoie −2', async () => {
+        setup([EQ(1, 'Frigo 1', 'fridge', 0, 4)]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        expect(w.get('[data-testid="tmp-sign-1"]').attributes('aria-pressed')).toBe('false');
+        await w.get('[data-testid="tmp-input-1"]').setValue('-2');
+        expect(w.get('[data-testid="tmp-sign-1"]').attributes('aria-pressed')).toBe('true');
+        expect(w.get('[data-testid="tmp-input-1"]').element.value).toBe('2');
+        // le verdict affiché est celui de −2 °C (frigo 0 à +4 °C : trop froid), jamais « Conforme : 2,0 °C »
+        const verdict = w.get('[data-testid="tmp-verdict-1"]');
+        expect(verdict.classes()).toContain('is-alert');
+        expect(verdict.text()).not.toContain('Conforme');
+        expect(verdict.text()).toContain('−2,0');
+    });
+
+    it('le vrai signe moins (U+2212) et le tiret demi-cadratin sont honorés pareil ; un moins AU MILIEU reste illisible', async () => {
+        setup([EQ(1, 'Frigo 1', 'fridge', 0, 4)]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-take-1"]').trigger('click');
+        await w.get('[data-testid="tmp-input-1"]').setValue('−5');
+        expect(w.get('[data-testid="tmp-sign-1"]').attributes('aria-pressed')).toBe('true');
+        expect(w.get('[data-testid="tmp-input-1"]').element.value).toBe('5');
+        await w.get('[data-testid="tmp-input-1"]').setValue('3-5');
+        expect(w.get('[data-testid="tmp-input-1"]').element.value).toBe('3-5');
+    });
+
+    it('congélateur : « 18 » reste −18 (bouton par défaut), « -18 » aussi, « + » ne le rend pas positif en silence', async () => {
+        setup([EQ(5, 'Congélateur 1', 'freezer', null, -18)]);
+        const w = await mountScreen();
+        await w.get('[data-testid="tmp-take-5"]').trigger('click');
+        expect(w.get('[data-testid="tmp-sign-5"]').attributes('aria-pressed')).toBe('true');
+        await w.get('[data-testid="tmp-input-5"]').setValue('-18');
+        expect(w.get('[data-testid="tmp-sign-5"]').attributes('aria-pressed')).toBe('true');
+        expect(w.get('[data-testid="tmp-input-5"]').element.value).toBe('18');
+    });
+});
+
+describe('saisie partagée (réception, huile) : même règle du moins tapé', () => {
+    it('champ signé : « -3 » → bouton « − » et « 3 » ; champ non signé (litres) : rien n’est réécrit', async () => {
+        const signed = mount(HygieneMeasureInput, { props: { modelValue: { raw: '', neg: false }, label: 'Frais', testid: 'm', signed: true } });
+        await signed.get('[data-testid="m-input"]').setValue('-3');
+        expect(signed.emitted('update:modelValue').at(-1)[0]).toEqual({ raw: '3', neg: true });
+        const plain = mount(HygieneMeasureInput, { props: { modelValue: { raw: '', neg: false }, label: 'Litres', testid: 'l', signed: false, unit: 'L' } });
+        await plain.get('[data-testid="l-input"]').setValue('-3');
+        expect(plain.emitted('update:modelValue').at(-1)[0]).toEqual({ raw: '-3', neg: false });
     });
 });

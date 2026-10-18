@@ -30,12 +30,14 @@ let products;
 let prints;
 let posts;
 let watchRows;
+let watchHidden = 0;
 
 function setup(list, opts = {}) {
     products = list;
     prints = [];
     posts = [];
     watchRows = opts.watch || [];
+    watchHidden = opts.expiredHidden || 0;
     h.printer = printer;
     h.printBlocks.mockReset();
     h.printBlocks.mockResolvedValue({ ok: true, pages: 1 });
@@ -44,7 +46,7 @@ function setup(list, opts = {}) {
     h.axios.put.mockReset();
     h.axios.get.mockImplementation(async (url) => {
         if (url === 'admin/labels/products') return { data: { data: products, meta: { server_now: new Date().toISOString(), timezone: 'Europe/Paris' } } };
-        if (url === 'admin/labels/watch') return { data: { data: watchRows, meta: { server_now: new Date().toISOString() } } };
+        if (url === 'admin/labels/watch') return { data: { data: watchRows, meta: { server_now: new Date().toISOString(), expired_hidden: watchHidden } } };
         return { data: { data: [] } };
     });
     h.axios.post.mockImplementation(async (url, body) => {
@@ -433,6 +435,20 @@ describe('écran laissé ouvert', () => {
 
 describe('à surveiller', () => {
     const lot = (over) => ({ id: 7, dlc_product_id: 1, status: 'printed', product_name: 'Olives', copies: 3, lot: 'L261010-0007', expires_at: new Date(Date.now() - 35 * 3600000).toISOString(), ...over });
+
+    it('la pastille dit des LOTS et des ÉTIQUETTES (unité de l’accueil Hygiène, du rappel et du dossier)', async () => {
+        setup([P({ id: 1, name: 'Olives' })], { watch: [lot({ id: 7, copies: 3 }), lot({ id: 8, product_name: 'Sauce', copies: 2, lot: 'L2' })] });
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-watch-chip"]').text()).toMatch(/2 lots expirés \(5 étiquettes\)/);
+    });
+
+    it('un plafond côté serveur est DIT : « + N lignes échues plus anciennes non affichées »', async () => {
+        setup([P({ id: 1, name: 'Olives' })], { watch: [lot()], expiredHidden: 250 });
+        const w = await mountScreen();
+        expect(w.get('[data-testid="dlc-watch-hidden"]').text()).toMatch(/\+ 250 lignes échues plus anciennes non affichées/);
+        setup([P({ id: 1, name: 'Olives' })], { watch: [lot()], expiredHidden: 0 });
+        expect((await mountScreen()).find('[data-testid="dlc-watch-hidden"]').exists()).toBe(false);
+    });
 
     it('un lot échu depuis 35 h, jamais sorti, reste signalé (liste du serveur) ; « Utilisé » le sort avec sa raison', async () => {
         setup([P({ id: 1, name: 'Olives' })], { watch: [lot()] });

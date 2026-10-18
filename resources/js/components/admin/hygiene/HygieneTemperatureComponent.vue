@@ -122,7 +122,7 @@
                                                 :aria-label="entries[e.id].neg ? 'Température négative' : 'Température positive'" :data-testid="`tmp-sign-${e.id}`"
                                                 @click="entries[e.id].neg = !entries[e.id].neg">{{ entries[e.id].neg ? "−" : "+" }}</button>
                                         <input v-model="entries[e.id].raw" type="text" inputmode="decimal" autocomplete="off" class="tmp-input" placeholder="0,0" :readonly="saving"
-                                               :aria-label="`Température de ${e.name}`" :data-testid="`tmp-input-${e.id}`" @focus="$event.target.select()" />
+                                               :aria-label="`Température de ${e.name}`" :data-testid="`tmp-input-${e.id}`" @focus="$event.target.select()" @input="onTypedSign(e)" />
                                         <span class="tmp-unit">°C</span>
                                     </div>
                                     <div class="tmp-quick">
@@ -257,7 +257,7 @@
 import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
-import { parseTemperature, previewVerdict, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
+import { parseTemperature, previewVerdict, formatTemperature, limitText, hasTypedMinus, stripTypedMinus } from "../../../helpers/hygieneTemperature";
 import { refFor, latest } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import HygieneTempChart from "./HygieneTempChart";
@@ -634,6 +634,16 @@ export default {
             if (status === 429) return "Serveur trop sollicité.";
             if (status >= 500) return "Serveur indisponible.";
             return "Pas de réseau.";
+        },
+        /**
+         * Un moins TAPÉ au clavier est honoré : le bouton ± passe sur « − » et le moins sort de la saisie. Avant, il était jeté en silence :
+         * « -2 » dans un frigo (0 à +4 °C) s'enregistrait « +2,0 °C — Conforme » alors que −2 °C est « trop froid » (tour 9).
+         */
+        onTypedSign(e) {
+            const en = this.entries[e.id];
+            if (!en || !hasTypedMinus(en.raw)) return;
+            en.neg = true;
+            en.raw = stripTypedMinus(en.raw);
         },
         askCloseFollowup(e) { this.closeTarget = e.id; this.closeReason = ""; this.closeError = ""; },
         cancelClose() { this.closeTarget = null; this.closeReason = ""; this.closeError = ""; },

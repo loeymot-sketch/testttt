@@ -40,6 +40,9 @@ use Illuminate\Validation\Rule;
  */
 class LabelController extends AdminController
 {
+    /** Plafond des lots ÉCHUS renvoyés par la surveillance (les plus récents d'abord) ; le reste est annoncé par `meta.expired_hidden`. */
+    private const WATCH_EXPIRED_CAP = 200;
+
     use ResolvesOperator; // « Qui ? » + code personnel : la même règle que les relevés (une étiquette dit QUI l'a faite)
 
     public function __construct(private readonly KitchenDisplaySystemOrderService $kitchen)
@@ -793,7 +796,7 @@ class LabelController extends AdminController
     public function watch(): JsonResponse
     {
         $now = now();
-        $rows = LabelPrintLog::query()
+        $base = fn () => LabelPrintLog::query()
             ->with('user:id,name')
             ->where('kind', LabelPrintLog::KIND_DLC)
             // verdict reçu, OU réservée sans verdict depuis plus de 10 min (peut-être imprimée) : UNE définition, partagée avec l'accueil et le dossier
@@ -807,14 +810,20 @@ class LabelController extends AdminController
                 ])
                 // une étiquette imprimée hors ligne « à vérifier » est signalée TOUT DE SUITE, quelle que soit sa DLC
                 // imprimée (elle peut être plus longue que la vraie) — jamais seulement à son échéance
-                ->orWhere(fn ($a) => $a->where('anomaly', true)->where('created_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))))
-            ->orderBy('expires_at')
-            ->limit(300)
-            ->get()
+                ->orWhere(fn ($a) => $a->where('anomaly', true)->where('created_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))));
+
+        // Deux plafonds SÉPARÉS : un restaurant qui n'utilise pas « Jeté » accumule des centaines de lignes échues, et un plafond unique trié par échéance
+        // (les plus anciennes d'abord) coupait justement les lots qui expirent bientôt — l'accueil disait « 5 à échéance sous 24 h », le tableau de bord
+        // « Sous 72 h : 0 » (tour 9). Les échus les plus récents d'abord ; les à-venir tous (jusqu'à 300).
+        $expired = $base()->where('expires_at', '<', $now)->orderByDesc('expires_at')->limit(self::WATCH_EXPIRED_CAP)->get();
+        $upcoming = $base()->where('expires_at', '>=', $now)->orderBy('expires_at')->limit(300)->get();
+        $expiredTotal = (int) $base()->where('expires_at', '<', $now)->count();
+
+        $rows = $expired->concat($upcoming)->sortBy('expires_at')->values()
             ->map(fn (LabelPrintLog $l): array => $this->presentLog($l))
             ->values();
 
-        return response()->json(['data' => $rows, 'meta' => $this->clock()]);
+        return response()->json(['data' => $rows, 'meta' => $this->clock() + ['expired_hidden' => max(0, $expiredTotal - $expired->count())]]);
     }
 
     /**

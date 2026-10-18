@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\KeepsHideMoment;
 use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /** [CAYENNE HYGIÈNE 2026-10-17] Une fiche du plan de nettoyage : checklist + fréquence + horaire facultatif. */
 class HygieneTaskTemplate extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, KeepsHideMoment;
 
     protected $table = 'hygiene_task_templates';
 

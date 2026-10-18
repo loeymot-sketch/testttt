@@ -29,6 +29,8 @@
                         <span v-if="counts.unconfirmed" class="rounded-lg px-3 py-1.5 text-sm font-semibold bg-blue-100 text-blue-900"
                               data-testid="dlc-watch-widget-count-unconfirmed">{{ $t('label.dlc_watch_unconfirmed') }} : {{ counts.unconfirmed }}</span>
                     </div>
+                    <p class="text-xs text-gray-500 mb-2" data-testid="dlc-watch-widget-unit">Chiffres en étiquettes (un lot peut en regrouper plusieurs).</p>
+                    <p v-if="expiredHidden > 0" class="text-xs text-red-700 mb-2" data-testid="dlc-watch-widget-hidden">+ {{ expiredHidden }} lignes échues plus anciennes non affichées : ouvrez l'écran DLC pour les jeter.</p>
                     <p v-if="!items.length" class="text-sm text-gray-600" data-testid="dlc-watch-widget-none">{{ $t('label.dlc_watch_none') }}</p>
                     <ul v-else class="text-sm">
                         <li v-for="w in items.slice(0, 5)" :key="w.key" class="flex justify-between gap-3 py-1.5 border-b border-gray-50"
@@ -58,7 +60,7 @@ import { watchList } from '../../../helpers/dlcLabelBuilder';
 export default {
     name: 'DlcWatchWidget',
     data() {
-        return { rows: [], loaded: false, fetchError: false, serverOffsetMs: 0, nowMs: Date.now(), timer: null };
+        return { rows: [], expiredHidden: 0, loaded: false, fetchError: false, serverOffsetMs: 0, nowMs: Date.now(), timer: null };
     },
     computed: {
         allowed() {
@@ -69,13 +71,15 @@ export default {
         },
         all() { return watchList(this.rows, this.nowMs + this.serverOffsetMs, 300).items; },
         items() { return this.all; },
+        // UNITÉ = l'étiquette physique (comme l'accueil Hygiène, le rappel et le dossier) : un lot de 3 copies compte 3, pas 1 (tour 9 : « 11 » à l'accueil, « 2 » ici)
         counts() {
+            const n = (arr) => arr.reduce((sum, w) => sum + (Number(w.copies) || 1), 0);
             return {
-                expired: this.all.filter((w) => w.level === 'expired').length,
-                today: this.all.filter((w) => w.level === 'today').length,
-                soon: this.all.filter((w) => w.level === 'soon').length,
-                anomaly: this.all.filter((w) => w.anomaly).length,
-                unconfirmed: this.all.filter((w) => w.unconfirmed).length,
+                expired: n(this.all.filter((w) => w.level === 'expired')),
+                today: n(this.all.filter((w) => w.level === 'today')),
+                soon: n(this.all.filter((w) => w.level === 'soon')),
+                anomaly: n(this.all.filter((w) => w.anomaly)),
+                unconfirmed: n(this.all.filter((w) => w.unconfirmed)),
             };
         },
     },
@@ -93,6 +97,7 @@ export default {
             try {
                 const { data } = await axios.get('admin/labels/watch');
                 this.rows = data.data || [];
+                this.expiredHidden = Number(data.meta && data.meta.expired_hidden) || 0;
                 const server = data.meta && Date.parse(data.meta.server_now);
                 if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
                 this.nowMs = Date.now();

@@ -37,6 +37,29 @@ describe('tableau de bord — DLC à surveiller', () => {
         expect(w.get('[data-testid="dlc-watch-widget-open"]').attributes('href')).toBe('/admin/labels/dlc');
     });
 
+    it('UNITÉ = l’étiquette physique : un lot de 3 copies compte 3, comme l’accueil Hygiène (tour 9 : « 11 » à l’accueil, « 2 » ici)', async () => {
+        const now = Date.now();
+        h.axios.get.mockResolvedValue({ data: { data: [
+            lot({ id: 1, product_name: 'Poulet', copies: 3, expires_at: new Date(now - 2 * 3600000).toISOString() }),
+            lot({ id: 2, product_name: 'Sauce', copies: 2, lot: 'L2', expires_at: new Date(now - 1 * 3600000).toISOString() }),
+            lot({ id: 3, product_name: 'Riz', copies: 4, lot: 'L3', expires_at: new Date(now + 20 * 60000).toISOString() }),
+        ], meta: { server_now: new Date(now).toISOString() } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch-widget-count-expired"]').text()).toContain(': 5');
+        expect(w.get('[data-testid="dlc-watch-widget-count-today"]').text()).toContain(': 4');
+        expect(w.get('[data-testid="dlc-watch-widget-expired-badge"]').text()).toBe('5');
+        expect(w.get('[data-testid="dlc-watch-widget-unit"]').text()).toContain('en étiquettes');
+    });
+
+    it('les lignes échues plus anciennes non renvoyées par le serveur sont annoncées', async () => {
+        const now = Date.now();
+        h.axios.get.mockResolvedValue({ data: { data: [lot({ id: 1, expires_at: new Date(now - 3600000).toISOString() })], meta: { server_now: new Date(now).toISOString(), expired_hidden: 250 } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch-widget-hidden"]').text()).toContain('+ 250 lignes échues plus anciennes non affichées');
+    });
+
     it('étiquette « à vérifier » comptée à part ; au-delà de 5 lots, le reste est annoncé avec un lien', async () => {
         const now = Date.now();
         const rows = Array.from({ length: 7 }, (_, i) => lot({ id: i + 1, product_name: `P${i}`, expires_at: new Date(now + (i + 1) * 3600000).toISOString() }));

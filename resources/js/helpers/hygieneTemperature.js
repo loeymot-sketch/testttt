@@ -4,7 +4,13 @@
  * aperçu applique les mêmes seuils pour dire tout de suite « conforme » ou « il faut dire ce qui a été fait ».
  */
 
-/** « 3,5 » / « 3.5 » → 3.5 ; vide ou illisible → null. Le signe est porté par le bouton ±, jamais par la frappe. */
+/** Un moins tapé en tête de saisie (« -2 », « −18 ») : le signe est un FAIT que l'opérateur a exprimé, pas du bruit. */
+const TYPED_MINUS = /^\s*[−–—-]\s*/;
+export function hasTypedMinus(raw) { return TYPED_MINUS.test(String(raw ?? '')); }
+/** Saisie sans son moins de tête (la valeur numérique reste lue par parseTemperature). */
+export function stripTypedMinus(raw) { return String(raw ?? '').replace(TYPED_MINUS, ''); }
+
+/** « 3,5 » / « 3.5 » → 3.5 ; vide ou illisible → null. Le signe se règle par le bouton ± OU par un moins tapé (le composant bascule alors le bouton : jamais ignoré). */
 export function parseTemperature(raw, intDigits = 2) {
     // Le signe est porté par le bouton ± : un moins en tête est toléré, un moins AU MILIEU (« 3-5 ») est illisible, jamais « 35 ».
     const s = String(raw ?? '').trim().replace(/^[−–—-]/, '').replace(',', '.').trim();

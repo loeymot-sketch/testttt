@@ -65,7 +65,7 @@
                         </button>
                         <!-- Étroit (portrait) : la liste « À surveiller » passe sous la grille ; l'alerte reste ici, en tête. -->
                         <button v-if="expiredCount" type="button" class="dlc-alert-chip" data-testid="dlc-watch-chip" @click="scrollToWatch">
-                            ⚠ {{ expiredCount }} lot{{ expiredCount > 1 ? "s" : "" }} expiré{{ expiredCount > 1 ? "s" : "" }} — voir
+                            ⚠ {{ expiredCount }} lot{{ expiredCount > 1 ? "s" : "" }} expiré{{ expiredCount > 1 ? "s" : "" }} ({{ expiredLabels }} étiquette{{ expiredLabels > 1 ? "s" : "" }}) — voir
                         </button>
                     </div>
 
@@ -141,6 +141,9 @@
                                     </span>
                                 </li>
                             </ul>
+                            <p v-if="watchExpiredHidden > 0" class="dlc-hint" role="status" data-testid="dlc-watch-hidden">
+                                + {{ watchExpiredHidden }} ligne{{ watchExpiredHidden > 1 ? "s" : "" }} échue{{ watchExpiredHidden > 1 ? "s" : "" }} plus ancienne{{ watchExpiredHidden > 1 ? "s" : "" }} non affichée{{ watchExpiredHidden > 1 ? "s" : "" }} : jetez celles ci-dessus pour les faire apparaître.
+                            </p>
                             <button v-if="watchMore" type="button" class="dlc-btn dlc-btn--small dlc-watch-more" data-testid="dlc-watch-more"
                                     @click="watchLimit = 300">+ {{ watchMore }} autre{{ watchMore > 1 ? "s" : "" }} lot{{ watchMore > 1 ? "s" : "" }} — tout afficher</button>
                         </aside>
@@ -416,6 +419,7 @@ export default {
             autoInstallTried: false,
             history: [],
             watchRows: [],
+            watchExpiredHidden: 0,
             lotRows: [],
             watchLimit: 30,
             nowMs: Date.now(),
@@ -499,6 +503,10 @@ export default {
         },
         expiredCount() {
             return this.watchItems.filter((w) => w.level === "expired").length;
+        },
+        /** Les mêmes lots échus, comptés en ÉTIQUETTES (unité de l'accueil Hygiène, du rappel et du dossier). */
+        expiredLabels() {
+            return this.watchItems.filter((w) => w.level === "expired").reduce((sum, w) => sum + (Number(w.copies) || 1), 0);
         },
         /** Lots en cours (journal + surveillance, sans doublon) : origines possibles d'une préparation. */
         activeLots() {
@@ -773,6 +781,7 @@ export default {
                 this.watchRows = watch.value.data.data || [];
                 this.nowMs = Date.now();
                 const meta = watch.value.data.meta;
+                this.watchExpiredHidden = Number(meta && meta.expired_hidden) || 0;
                 const server = meta && Date.parse(meta.server_now);
                 if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
             }

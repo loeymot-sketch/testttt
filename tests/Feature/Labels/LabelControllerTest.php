@@ -1629,4 +1629,36 @@ class LabelControllerTest extends TestCase
         $this->assertFalse($ok['anomaly']);
         Carbon::setTestNow();
     }
+
+    public function test_la_surveillance_garde_les_lots_urgents_meme_avec_des_centaines_d_echus_non_jetes(): void
+    {
+        $this->caisse();
+        $p = $this->expertProduct(['name' => 'Olives', 'actions' => [['key' => 'opened', 'value' => 24, 'unit' => 'hours']]]);
+        // un restaurant qui n'utilise pas « Jeté » : 250 lignes échues sur 30 jours
+        for ($i = 0; $i < 250; $i++) {
+            $row = new LabelPrintLog(['kind' => LabelPrintLog::KIND_DLC, 'dlc_product_id' => $p['id'], 'product_name' => 'Olives', 'action' => 'opened', 'opened_at' => now()->subDays(20), 'expires_at' => now()->subHours(30 + $i),
+                'copies' => 1, 'status' => LabelPrintLog::STATUS_PRINTED]);
+            $row->branch_id = 1;
+            $row->save();
+        }
+        $urgent = [];
+        foreach ([1, 20] as $h) {
+            $row = new LabelPrintLog(['kind' => LabelPrintLog::KIND_DLC, 'dlc_product_id' => $p['id'], 'product_name' => 'Sauce', 'action' => 'opened', 'opened_at' => now(), 'expires_at' => now()->addHours($h),
+                'copies' => 1, 'status' => LabelPrintLog::STATUS_PRINTED]);
+            $row->branch_id = 1;
+            $row->save();
+            $urgent[] = $row->id;
+        }
+        $r = $this->getJson('/api/admin/labels/watch')->assertOk();
+        $ids = collect($r->json('data'))->pluck('id')->all();
+        foreach ($urgent as $id) {
+            $this->assertContains($id, $ids, 'un lot qui expire dans la journée n\'est jamais coupé par un arriéré d\'échus');
+        }
+        $this->assertCount(202, $ids, '200 échus (les plus récents) + les 2 lots à venir');
+        $this->assertSame(50, $r->json('meta.expired_hidden'), 'le plafond est DIT : 50 lignes échues plus anciennes non renvoyées');
+        $sorted = collect($r->json('data'))->pluck('expires_at')->all();
+        $copy = $sorted;
+        sort($copy);
+        $this->assertSame($copy, $sorted, 'liste triée par échéance');
+    }
 }

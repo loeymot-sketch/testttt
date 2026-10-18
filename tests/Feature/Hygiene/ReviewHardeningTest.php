@@ -232,6 +232,52 @@ class ReviewHardeningTest extends TestCase
         $this->assertSame(5, $dlc['expired_not_out']);
     }
 
+    public function test_renommer_un_equipement_masque_ne_deplace_pas_sa_date_de_masquage_dans_le_dossier(): void
+    {
+        $this->staff();
+        $f = $this->fridge();
+        $f->forceFill(['created_at' => Carbon::parse('2026-10-01')])->save();
+        // masqué le 10/10
+        Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', config('app.timezone')));
+        $this->putJson(self::TEMP."/equipment/{$f->id}", ['is_active' => false])->assertOk();
+        // renommé le 18/10 : le masquage reste daté du 10/10 (sinon 8 jours « non faits » inventés dans le dossier)
+        Carbon::setTestNow(Carbon::parse('2026-10-18 09:00:00', config('app.timezone')));
+        $before = $this->getJson(self::BASE.'/report/summary?from=2026-10-01&to=2026-10-18')->json('data.temperature.expected');
+        $this->putJson(self::TEMP."/equipment/{$f->id}", ['name' => 'Frigo renommé'])->assertOk();
+        $this->assertSame('2026-10-10', $f->fresh()->updated_at->toDateString(), 'renommer un élément masqué ne touche pas updated_at');
+        $after = $this->getJson(self::BASE.'/report/summary?from=2026-10-01&to=2026-10-18')->json('data.temperature.expected');
+        $this->assertSame($before, $after, 'le dossier ne crée aucun jour manqué fantôme');
+        // le réactiver puis le masquer de nouveau DATE bien le nouveau masquage
+        Carbon::setTestNow(Carbon::parse('2026-10-19 09:00:00', config('app.timezone')));
+        $this->putJson(self::TEMP."/equipment/{$f->id}", ['is_active' => true])->assertOk();
+        $this->assertSame('2026-10-19', $f->fresh()->updated_at->toDateString());
+        Carbon::setTestNow(Carbon::parse('2026-10-20 09:00:00', config('app.timezone')));
+        $this->putJson(self::TEMP."/equipment/{$f->id}", ['is_active' => false])->assertOk();
+        $this->assertSame('2026-10-20', $f->fresh()->updated_at->toDateString());
+    }
+
+    public function test_renommer_une_fiche_masquee_ne_cree_pas_de_non_faites_fantomes(): void
+    {
+        $this->staff();
+        $t = new \App\Models\HygieneTaskTemplate(['name' => 'Salle', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 10, 'is_active' => true]);
+        $t->branch_id = 1;
+        $t->created_at = Carbon::parse('2026-10-01');
+        $t->save();
+        Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', config('app.timezone')));
+        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk();
+        $maskedAt = $t->fresh()->updated_at;
+        Carbon::setTestNow(Carbon::parse('2026-10-18 09:00:00', config('app.timezone')));
+        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['name' => 'Salle renommée'])->assertOk();
+        $this->assertSame($maskedAt->toDateTimeString(), $t->fresh()->updated_at->toDateTimeString());
+        // une fiche ACTIVE renommée, elle, est bien horodatée (la règle ne vaut que pour un élément resté masqué)
+        $g = new \App\Models\HygieneTaskTemplate(['name' => 'Cuisine', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 20, 'is_active' => true]);
+        $g->branch_id = 1;
+        $g->save();
+        Carbon::setTestNow(Carbon::parse('2026-10-18 10:00:00', config('app.timezone')));
+        $this->patchJson(self::BASE.'/tasks/templates/'.$g->id, ['name' => 'Cuisine renommée'])->assertOk();
+        $this->assertSame('2026-10-18 10:00:00', $g->fresh()->updated_at->toDateTimeString());
+    }
+
     public function test_hiding_an_equipment_does_not_erase_its_past_gaps_from_the_report(): void
     {
         $this->staff();
