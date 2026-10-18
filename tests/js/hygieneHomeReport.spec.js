@@ -388,10 +388,10 @@ describe('accueil — guide de mise en place et journée en règle (2026-10-18, 
 });
 
 describe('dossier de contrôle — la journée en cours est dite à part (tour 4 : « 100 % — 1 sur 1 » à côté d’un accueil à 1/3)', () => {
-    const base = (over) => ({ period: { from: '2026-10-20', to: '2026-10-20', days: 1 }, temperature: { count: 1, offline: 0, voided: 0, alerts: 0, equipment: 3, expected: 0, covered: 0, coverage_pct: null, today: { expected: 3, done: 1 }, incidents: [], rows: [], rows_total: 0 },
+    const base = (over) => ({ period: { from: '2026-10-20', to: '2026-10-20', days: 1, past_days: 0 }, temperature: { count: 1, offline: 0, voided: 0, alerts: 0, equipment: 3, expected: 0, covered: 0, coverage_pct: null, today: { expected: 3, done: 1 }, incidents: [], rows: [], rows_total: 0 },
         tasks: { count: 0, voided: 0, expected: 0, done: 0, partial: 0, missed: 0, completion_pct: null, today: { expected: 8, done: 1, partial: 0 }, missed_list: [], incidents: [], rows: [], rows_total: 0 },
         receptions: { count: 0, voided: 0, alerts: 0, refused: 0, reserve: 0, incidents: [], rows: [], rows_total: 0 }, trace: { count: 0, without_lot: 0, alerts: 0, voided: 0, incidents: [], rows: [], rows_total: 0 },
-        oil: { tests: 0, filters: 0, changes: 0, voided: 0, alerts: 0, fryers: 0, expected: 0, covered: 0, coverage_pct: null, today: null, max_polar: null, incidents: [], rows: [], rows_total: 0 },
+        oil: { tests: 1, filters: 0, changes: 0, voided: 0, alerts: 0, fryers: 1, expected: 0, covered: 0, coverage_pct: null, today: { expected: 1, done: 1 }, max_polar: 10, incidents: [], rows: [], rows_total: 0 },
         dlc: { count: 0, copies: 0, discarded: 0, used: 0, expired_not_out: 0, rows: [], rows_total: 0 }, incidents: [], ...over });
 
     async function mountReport(data) {
@@ -419,7 +419,18 @@ describe('dossier de contrôle — la journée en cours est dite à part (tour 4
     });
 
     it('période avec jours écoulés ET aujourd’hui : le taux garde son sens, aujourd’hui est ajouté sans le préfixe « aucun jour écoulé »', async () => {
-        const w = await mountReport(base({ temperature: { ...base().temperature, expected: 5, covered: 5, coverage_pct: 100, today: { expected: 3, done: 1 } } }));
+        const w = await mountReport(base({ period: { from: '2026-10-15', to: '2026-10-20', days: 6, past_days: 5 }, temperature: { ...base().temperature, expected: 5, covered: 5, coverage_pct: 100, today: { expected: 3, done: 1 } } }));
         expect(w.get('[data-testid="rep-today-temperature"]').text()).toBe('Aujourd\'hui (journée en cours, hors taux) : 1 sur 3.');
+    });
+    it('« aucun jour écoulé » vient du serveur : un frigo créé hier (expected 0, jours écoulés > 0) ne reçoit PAS cette phrase fausse', async () => {
+        const w = await mountReport(base({ period: { from: '2026-10-12', to: '2026-10-20', days: 9, past_days: 8 } }));
+        const text = w.get('[data-testid="rep-today-temperature"]').text();
+        expect(text).not.toContain('Aucun jour écoulé');
+        expect(text).toBe('Aucun jour attendu dans la période (éléments créés récemment ou rien de configuré), donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 3.');
+    });
+
+    it('la carte Huile dit aussi sa journée en cours', async () => {
+        const w = await mountReport(base());
+        expect(w.get('[data-testid="rep-today-oil"]').text()).toBe('Aucun jour écoulé dans la période, donc pas de taux. Aujourd\'hui (journée en cours, hors taux) : 1 sur 1.');
     });
 });

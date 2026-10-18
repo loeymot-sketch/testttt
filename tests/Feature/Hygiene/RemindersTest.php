@@ -288,6 +288,32 @@ class RemindersTest extends TestCase
         $this->assertSame('ok', $screen['state']);
     }
 
+    public function test_huile_changee_declaree_sur_le_test_compte_comme_derniere_vidange_partout(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'oil_changed');
+        $screen = collect($this->getJson('/api/admin/hygiene/oil/today')->json('data'))->first();
+        $this->assertSame('ok', $screen['state']);
+        $this->assertNotNull($screen['last_change'], 'l\'écran ne dit pas « Aucune vidange enregistrée » à côté de « Conforme »');
+        $this->assertSame(0, $screen['days_since_change']);
+        $report = $this->getJson('/api/admin/hygiene/report/summary?from=2026-10-20&to=2026-10-20')->json('data.oil');
+        $this->assertSame(1, $report['changes'], 'le dossier compte la vidange déclarée ; l\'écart reste dans ses incidents');
+        $this->assertSame(1, $report['alerts']);
+    }
+
+    public function test_huile_test_et_vidange_a_la_meme_seconde_solde_l_ecart_partout(): void
+    {
+        $this->staff();
+        $f = $this->equipment('Friteuse 1', 'fryer');
+        $this->oil($f, 'test', 'alert', 28.0, '2026-10-20 09:00', 'fryer_stopped');
+        $this->oil($f, 'change', 'ok', null, '2026-10-20 09:00');
+        [$reminders, $tiles] = $this->overview();
+        $this->assertArrayNotHasKey("oil-change-{$f->id}", $reminders->all());
+        $this->assertNotSame('alert', $tiles['oil']['status']);
+        $this->assertSame('ok', collect($this->getJson('/api/admin/hygiene/oil/today')->json('data'))->first()['state'], 'même verdict sur l\'écran (>= et non >)');
+    }
+
     public function test_huile_a_surveiller_n_est_pas_une_tuile_verte(): void
     {
         $this->staff();

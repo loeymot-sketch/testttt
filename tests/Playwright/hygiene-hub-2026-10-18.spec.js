@@ -146,3 +146,23 @@ test('téléphone 390 px : le tiroir de la barre se referme après un appui sur 
     expect(x, 'le tiroir recouvre encore le hub une fois la transition finie').toBeLessThanOrEqual(0);
     await page.screenshot({ path: path.join(OUT, 'm3-hub-apres-tiroir.png') });
 });
+
+// Tour 4-5 : le dossier de contrôle ne dit jamais « 100 % » pour une journée en cours, ni « aucun jour écoulé » à tort.
+test('dossier de contrôle : « Aujourd\'hui » est dit à part, sans taux, et la phrase « aucun jour écoulé » ne s\'affiche que si c\'est vrai', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loginAsAdmin(page);
+    await page.goto('/admin/hygiene/report', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('rep-kpis')).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: /Aujourd.hui/ }).first().click();
+    await expect(page.getByTestId('rep-today-tasks')).toBeVisible({ timeout: 30_000 });
+    const today = await page.getByTestId('rep-today-tasks').innerText();
+    expect(today).toContain("Aujourd'hui (journée en cours, hors taux)");
+    expect(today, 'période = aujourd\'hui seul : aucun jour écoulé').toContain('Aucun jour écoulé');
+    const kpis = await page.getByTestId('rep-kpis').innerText();
+    expect(kpis, 'jamais « 100 % » pour une journée qui n\'est pas finie').not.toMatch(/100\s*%/);
+    await page.screenshot({ path: path.join(OUT, 'r1-dossier-aujourdhui.png') });
+    // une période qui contient des jours écoulés : plus de phrase « aucun jour écoulé »
+    await page.getByRole("button", { name: /7 derniers jours/ }).first().click();
+    await expect.poll(async () => (await page.getByTestId('rep-today-tasks').innerText()), { timeout: 30_000 }).not.toContain('Aucun jour écoulé');
+    await page.screenshot({ path: path.join(OUT, 'r2-dossier-7-jours.png') });
+});

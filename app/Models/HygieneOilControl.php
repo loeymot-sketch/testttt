@@ -35,4 +35,13 @@ class HygieneOilControl extends Model
     {
         static::addGlobalScope(new BranchScope);
     }
+
+    /**
+     * UNE définition de « l'huile a été changée » : une ligne de vidange, OU un test d'écart dont l'action corrective est « Huile changée » (le geste le
+     * plus naturel : sans cela l'écran disait « Conforme » et « Aucune vidange enregistrée » en même temps, et le dossier comptait 0 vidange).
+     */
+    public function countsAsChange(): bool
+    {
+        return $this->type === 'change' || ($this->type === 'test' && $this->corrective_action === 'oil_changed');
+    }
 }

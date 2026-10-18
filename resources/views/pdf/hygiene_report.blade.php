@@ -35,6 +35,9 @@
     $d = fn ($iso) => $iso ? \Carbon\Carbon::parse($iso)->format('d/m/Y') : '';
     $n = fn ($v) => $v === null ? '—' : str_replace('.', ',', (string) $v);
     $pct = fn ($v) => $v === null ? '—' : str_replace('.', ',', (string) $v).' %';
+    // « aucun jour écoulé » vient du serveur (period.past_days), jamais de expected === 0 (un élément créé hier n'a aucun jour attendu)
+    $pastDays = $report['period']['past_days'] ?? null;
+    $headOf = fn ($expected) => $pastDays === 0 ? 'Aucun jour écoulé : pas de taux. ' : ($expected === 0 ? 'Aucun jour attendu : pas de taux. ' : '');
     $st = fn ($s) => $s === 'alert' ? '<span class="ko">écart</span>' : ($s === 'warn' ? '<span class="warn">à surveiller</span>' : '<span class="ok">conforme</span>');
     $mod = ['temperature' => 'Températures', 'tasks' => 'Nettoyage', 'receptions' => 'Réception', 'trace' => 'Traçabilité', 'oil' => 'Huile'];
     $p = $report['period'];
@@ -53,10 +56,10 @@
 
 <h2>Synthèse</h2>
 <table class="kpi"><tr>
-    <td><p class="kpi-l">Relevés de température faits</p><p class="kpi-v">{{ $pct($t['coverage_pct']) }}</p><p class="sub">{{ $t['covered'] }} sur {{ $t['expected'] }} attendus · {{ $t['alerts'] }} écart(s)</p>@if(!empty($t['today']))<p class="sub">{{ $t['expected'] === 0 ? 'Aucun jour écoulé : pas de taux. ' : '' }}Aujourd'hui (journée en cours, hors taux) : {{ $t['today']['done'] }} sur {{ $t['today']['expected'] }}.</p>@endif</td>
-    <td><p class="kpi-l">Fiches de nettoyage faites</p><p class="kpi-v">{{ $pct($k['completion_pct']) }}</p><p class="sub">{{ $k['done'] }} sur {{ $k['expected'] }} · {{ $k['partial'] }} incomplète(s) · {{ $k['missed'] }} non faite(s)</p>@if(!empty($k['today']))<p class="sub">{{ $k['expected'] === 0 ? 'Aucun jour écoulé : pas de taux. ' : '' }}Aujourd'hui (journée en cours, hors taux) : {{ $k['today']['done'] }} sur {{ $k['today']['expected'] }}.</p>@endif</td>
+    <td><p class="kpi-l">Relevés de température faits</p><p class="kpi-v">{{ $pct($t['coverage_pct']) }}</p><p class="sub">{{ $t['covered'] }} sur {{ $t['expected'] }} attendus · {{ $t['alerts'] }} écart(s)</p>@if(!empty($t['today']))<p class="sub">{{ $headOf($t['expected']) }}Aujourd'hui (journée en cours, hors taux) : {{ $t['today']['done'] }} sur {{ $t['today']['expected'] }}.</p>@endif</td>
+    <td><p class="kpi-l">Fiches de nettoyage faites</p><p class="kpi-v">{{ $pct($k['completion_pct']) }}</p><p class="sub">{{ $k['done'] }} sur {{ $k['expected'] }} · {{ $k['partial'] }} incomplète(s) · {{ $k['missed'] }} non faite(s)</p>@if(!empty($k['today']))<p class="sub">{{ $headOf($k['expected']) }}Aujourd'hui (journée en cours, hors taux) : {{ $k['today']['done'] }} sur {{ $k['today']['expected'] }}.</p>@endif</td>
     <td><p class="kpi-l">Réceptions</p><p class="kpi-v">{{ $r['count'] }}</p><p class="sub">{{ $r['alerts'] }} écart(s) · {{ $r['refused'] }} refusée(s)</p></td>
-    <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · {{ $o['max_polar'] === null ? 'aucune mesure de polaires' : 'max '.$pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p></td>
+    <td><p class="kpi-l">Huile : tests faits</p><p class="kpi-v">{{ $pct($o['coverage_pct']) }}</p><p class="sub">{{ $o['tests'] }} test(s) · {{ $o['max_polar'] === null ? 'aucune mesure de polaires' : 'max '.$pct($o['max_polar']) }} · {{ $o['alerts'] }} écart(s)</p>@if(!empty($o['today']))<p class="sub">{{ $headOf($o['expected']) }}Aujourd'hui (journée en cours, hors taux) : {{ $o['today']['done'] }} sur {{ $o['today']['expected'] }}.</p>@endif</td>
 </tr><tr>
     <td><p class="kpi-l">Produits tracés</p><p class="kpi-v">{{ $z['count'] }}</p><p class="sub">{{ $z['without_lot'] }} sans lot (expliqué) · {{ $z['alerts'] }} écart(s)</p></td>
     <td><p class="kpi-l">Étiquettes DLC</p><p class="kpi-v">{{ $l['count'] }}</p><p class="sub">{{ $l['copies'] }} étiquette(s) · {{ $l['discarded'] }} jetée(s) · {{ $l['used'] }} utilisée(s)</p></td>

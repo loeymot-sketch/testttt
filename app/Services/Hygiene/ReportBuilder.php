@@ -63,7 +63,9 @@ final class ReportBuilder
             ->sortByDesc('at')->values()->all();
 
         return [
-            'period' => ['from' => $this->from->toDateString(), 'to' => $this->to->toDateString(), 'days' => (int) $this->from->copy()->startOfDay()->diffInDays($this->to->copy()->startOfDay()) + 1],
+            'period' => ['from' => $this->from->toDateString(), 'to' => $this->to->toDateString(), 'days' => (int) $this->from->copy()->startOfDay()->diffInDays($this->to->copy()->startOfDay()) + 1,
+                // jours ÉCOULÉS de la période (hors aujourd'hui) : l'écran et le PDF en déduisent « aucun jour écoulé », jamais de `expected === 0` (un élément créé hier n'a aucun jour attendu)
+                'past_days' => count($this->pastDays())],
             'temperature' => $temperature, 'tasks' => $tasks, 'receptions' => $receptions, 'trace' => $trace, 'oil' => $oil, 'dlc' => $dlc,
             'incidents' => $incidents,
         ];
@@ -307,7 +309,7 @@ final class ReportBuilder
         $alerts = $live->where('status', 'alert');
 
         return [
-            'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $live->where('type', 'change')->count(),
+            'tests' => $tests->count(), 'filters' => $live->where('type', 'filter')->count(), 'changes' => $live->filter(fn ($r) => $r->countsAsChange())->count(),
             'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(), 'fryers' => $fryers->where('is_active', true)->whereNull('deleted_at')->count(),
             'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
             'today' => $this->includesToday() ? ['expected' => $todayTotal, 'done' => $todayDone] : null,
@@ -333,7 +335,9 @@ final class ReportBuilder
     {
         $now = now();
         // Les COMPTEURS sont calculés par la base sur la période entière (jamais sur un échantillon) ; seules les lignes détaillées peuvent être plafonnées.
-        $base = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)
+        // MÊME définition que l'écran DLC, la tuile et les rappels (LabelPrintLog::scopeWatchable) : une réservée sans verdict depuis plus de 10 min est comptée,
+        // listée (PDF, CSV) et peut être « jetée » au journal — sinon « échue non sortie » dépassait le total et le geste « Jeté » n'apparaissait nulle part
+        $base = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)
             ->whereBetween('opened_at', [$this->from, $this->to])
             ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED));
 
@@ -354,10 +358,7 @@ final class ReportBuilder
             'discarded' => $base()->where('discard_reason', LabelPrintLog::DISCARD_DISCARDED)->whereNotNull('discarded_at')->count(),
             'used' => $base()->where('discard_reason', LabelPrintLog::DISCARD_USED)->whereNotNull('discarded_at')->count(),
             // échus et jamais sortis : le point que regarde un contrôleur
-            // même définition que l'écran DLC et l'accueil (LabelPrintLog::scopeWatchable) : une réservée sans verdict depuis plus de 10 min compte aussi
-            'expired_not_out' => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->watchable($now)->whereBetween('opened_at', [$this->from, $this->to])
-                ->where(fn ($q) => $q->whereNull('discard_reason')->orWhere('discard_reason', '!=', LabelPrintLog::DISCARD_CANCELLED))
-                ->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
+            'expired_not_out' => $base()->whereNull('discarded_at')->whereNotNull('expires_at')->where('expires_at', '<', $now)->count(),
             ...$rows,
         ];
     }

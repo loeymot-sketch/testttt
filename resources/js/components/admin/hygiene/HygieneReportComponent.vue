@@ -25,18 +25,19 @@
                             <span class="hy-sub">Relevés de température faits</span>
                             <strong class="hy-kpi">{{ pct(data.temperature.coverage_pct) }}</strong>
                             <span class="hy-sub">{{ data.temperature.covered }} sur {{ data.temperature.expected }} attendus · {{ plural(data.temperature.alerts, "écart") }}</span>
-                            <span v-if="data.temperature.today" class="hy-sub" data-testid="rep-today-temperature">{{ todayLine(data.temperature.today, data.temperature.expected) }}</span>
+                            <span v-if="data.temperature.today" class="hy-sub" data-testid="rep-today-temperature">{{ todayLine(data.temperature.today, data.temperature.expected, data.period.past_days) }}</span>
                         </div>
                         <div class="hy-card" :class="rateClass(data.tasks.completion_pct)" data-testid="rep-kpi-tasks">
                             <span class="hy-sub">Fiches de nettoyage faites</span>
                             <strong class="hy-kpi">{{ pct(data.tasks.completion_pct) }}</strong>
                             <span class="hy-sub">{{ data.tasks.done }} sur {{ data.tasks.expected }} · {{ data.tasks.partial }} incomplète(s) · {{ data.tasks.missed }} non faite(s)</span>
-                            <span v-if="data.tasks.today" class="hy-sub" data-testid="rep-today-tasks">{{ todayLine(data.tasks.today, data.tasks.expected) }}</span>
+                            <span v-if="data.tasks.today" class="hy-sub" data-testid="rep-today-tasks">{{ todayLine(data.tasks.today, data.tasks.expected, data.period.past_days) }}</span>
                         </div>
                         <div class="hy-card" :class="rateClass(data.oil.coverage_pct)" data-testid="rep-kpi-oil">
                             <span class="hy-sub">Tests d'huile faits</span>
                             <strong class="hy-kpi">{{ pct(data.oil.coverage_pct) }}</strong>
                             <span class="hy-sub">{{ data.oil.tests }} test(s) · {{ data.oil.max_polar === null || data.oil.max_polar === undefined ? "aucune mesure de polaires" : `max ${pct(data.oil.max_polar)} de polaires` }} · {{ plural(data.oil.alerts, "écart") }}</span>
+                            <span v-if="data.oil.today" class="hy-sub" data-testid="rep-today-oil">{{ todayLine(data.oil.today, data.oil.expected, data.period.past_days) }}</span>
                         </div>
                         <div class="hy-card" :class="data.receptions.alerts ? 'is-partial' : ''" data-testid="rep-kpi-receptions">
                             <span class="hy-sub">Réceptions</span>
@@ -119,9 +120,15 @@ export default {
         day(iso) { return String(iso).split("-").reverse().join("/"); },
         dayHm(iso) { return formatDayHm(iso); },
         moduleName(m) { return MODULE_NAMES[m] || m; },
-        /** La journée EN COURS n'entre jamais dans le taux (elle n'est pas finie) : dite à part, avec le même chiffre que l'accueil (1 sur 3). */
-        todayLine(t, pastExpected) {
-            const head = pastExpected === 0 ? "Aucun jour écoulé dans la période, donc pas de taux. " : "";
+        /**
+         * La journée EN COURS n'entre jamais dans le taux (elle n'est pas finie) : dite à part, avec le même chiffre que l'accueil (1 sur 3).
+         * « Aucun jour écoulé » vient du SERVEUR (`period.past_days`), jamais de `expected === 0` : un frigo créé hier ou aucune fiche configurée
+         * n'a aucun jour attendu alors que des jours se sont écoulés (tour 5 : la phrase était fausse).
+         */
+        todayLine(t, expected, pastDays) {
+            let head = "";
+            if (pastDays === 0) head = "Aucun jour écoulé dans la période, donc pas de taux. ";
+            else if (expected === 0) head = "Aucun jour attendu dans la période (éléments créés récemment ou rien de configuré), donc pas de taux. ";
             return `${head}Aujourd'hui (journée en cours, hors taux) : ${t.done} sur ${t.expected}.`;
         },
         rateClass(v) { return v === null || v === undefined ? "" : (v >= 100 ? "is-done" : (v >= 90 ? "is-partial" : "is-alert")); },

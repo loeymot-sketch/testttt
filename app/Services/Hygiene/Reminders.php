@@ -136,7 +136,7 @@ final class Reminders
             $lastTest = $mine->first(fn ($r) => $r->type === 'test');
             if ($lastTest) {
                 // l'huile a été changée depuis ce test (vidange saisie) ou déclarée changée sur le test lui-même : le rappel n'a plus lieu d'être
-                $changedSince = $mine->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($lastTest->performed_at));
+                $changedSince = $mine->contains(fn ($r) => $r->countsAsChange() && $r->performed_at->gte($lastTest->performed_at));
                 if (OilRules::isOpen((string) $lastTest->status, $lastTest->corrective_action, $changedSince)) {
                     $pct = str_replace('.', ',', rtrim(rtrim(number_format((float) $lastTest->polar_pct, 1, '.', ''), '0'), '.'));
                     $over = $lastTest->polar_pct !== null && (float) $lastTest->polar_pct > $limit;

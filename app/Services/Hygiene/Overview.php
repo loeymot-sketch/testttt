@@ -183,7 +183,7 @@ final class Overview
             $done++;
             // UNE règle (OilRules::isOpen) pour la tuile, le rappel et l'écran : un écart soldé par « Huile changée » ou par une vidange saisie
             // ensuite n'est plus « à traiter » ; des polaires « à surveiller » ne sont pas « conformes » (tuile verte, écran ambre : tour 4).
-            $changedSince = $rows->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($test->performed_at));
+            $changedSince = $rows->contains(fn ($r) => $r->countsAsChange() && $r->performed_at->gte($test->performed_at));
             if (! OilRules::isOpen((string) $test->status, $test->corrective_action, $changedSince)) continue;
             $test->status === 'alert' ? $alerts++ : $warns++;
         }

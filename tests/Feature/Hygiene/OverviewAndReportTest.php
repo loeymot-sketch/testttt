@@ -353,6 +353,87 @@ class OverviewAndReportTest extends TestCase
         $this->assertStringNotContainsString('100 %', $html, 'un dossier d\'inspection généré à 10 h ne dit pas 100 %');
     }
 
+    public function test_le_dossier_donne_les_jours_ecoules_pour_que_l_ecran_ne_deduise_pas_aucun_jour_de_expected_zero(): void
+    {
+        $this->staff();
+        $this->equipment('Frigo créé aujourd\'hui', 'fridge', '2026-10-20 08:00');
+        $r = $this->getJson(self::BASE.'/report/summary?from=2026-10-01&to=2026-10-20')->assertOk()->json('data');
+        $this->assertSame(0, $r['temperature']['expected'], 'aucun jour attendu pour un frigo créé aujourd\'hui…');
+        $this->assertSame(19, $r['period']['past_days'], '…alors que 19 jours se sont écoulés : l\'écran ne doit pas dire « aucun jour écoulé »');
+        $this->assertSame(0, $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.period.past_days'));
+        $html = view('pdf.hygiene_report', ['report' => \App\Services\Hygiene\ReportBuilder::between('2026-10-01', '2026-10-20')->build(true), 'company' => [], 'generatedAt' => 'x', 'generatedBy' => 'y', 'fingerprint' => 'z'])->render();
+        $this->assertStringNotContainsString('Aucun jour écoulé', $html);
+        $this->assertStringContainsString('Aucun jour attendu : pas de taux.', $html);
+    }
+
+    public function test_dossier_un_equipement_retire_n_est_pas_dans_le_bloc_aujourd_hui(): void
+    {
+        $this->staff();
+        $this->equipment('Actif', 'fridge', '2026-10-10');
+        $gone = $this->equipment('Retiré', 'fridge', '2026-10-10');
+        // retiré AUJOURD'HUI : encore « pertinent » pour la période (sa fin tombe dans la période), mais plus attendu aujourd'hui, comme sur l'accueil
+        $gone->forceFill(['deleted_at' => '2026-10-20 08:00:00'])->save();
+        $t = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.temperature');
+        $this->assertSame(['expected' => 1, 'done' => 0], $t['today'], 'seul l\'équipement actif est attendu aujourd\'hui, comme sur l\'accueil');
+    }
+
+    public function test_dossier_une_fiche_retiree_n_est_pas_dans_le_bloc_aujourd_hui_et_son_jour_de_retrait_n_est_pas_manque(): void
+    {
+        $this->staff();
+        $this->template('2026-10-10');
+        $gone = $this->template('2026-10-10');
+        $gone->forceFill(['name' => 'Retirée', 'deleted_at' => '2026-10-19 10:00:00'])->save();
+        $k = $this->getJson(self::BASE.'/report/summary?from=2026-10-19&to=2026-10-20')->json('data.tasks');
+        $this->assertSame(['expected' => 1, 'done' => 0, 'partial' => 0], $k['today'], 'seule la fiche active est due aujourd\'hui');
+        // le 19 : « Salle » est active et manquée ; « Retirée » est retirée CE jour-là (journée partielle, jamais manquée)
+        $this->assertSame(1, $k['missed']);
+        $this->assertSame(['Salle'], array_column($k['missed_list'], 'task'));
+    }
+
+    public function test_une_reservee_sans_verdict_est_comptee_listee_et_jetable_dans_le_dossier(): void
+    {
+        $this->staff();
+        $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'claimed', 'copies' => 2, 'product_name' => 'Sauce', 'opened_at' => now()->subHours(3), 'expires_at' => now()->subHours(2), 'claimed_at' => now()->subMinutes(30)]);
+        $l->branch_id = 1;
+        $l->save();
+        $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.dlc');
+        $this->assertSame([1, 2, 1], [$d['count'], $d['copies'], $d['expired_not_out']], 'l\'échue ne dépasse jamais le total');
+        $this->assertLessThanOrEqual($d['count'], $d['expired_not_out']);
+        // le geste « Jeté » sur cette étiquette doit apparaître au dossier
+        $l->forceFill(['discarded_at' => now(), 'discard_reason' => 'discarded'])->save();
+        $d = $this->getJson(self::BASE.'/report/summary?from=2026-10-20&to=2026-10-20')->json('data.dlc');
+        $this->assertSame([1, 1, 0], [$d['count'], $d['discarded'], $d['expired_not_out']]);
+    }
+
+    public function test_frontiere_de_dix_minutes_des_reservees(): void
+    {
+        $this->staff();
+        foreach ([['Neuf', 9], ['Onze', 11]] as [$name, $m]) {
+            $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'claimed', 'copies' => 1, 'product_name' => $name, 'opened_at' => now()->subHours(3), 'expires_at' => now()->subHours(2), 'claimed_at' => now()->subMinutes($m)]);
+            $l->branch_id = 1;
+            $l->save();
+        }
+        $this->assertSame(1, $this->dlcTile()['counts']['expired'], 'réservée depuis 9 min : écartée ; depuis 11 min : surveillée');
+    }
+
+    public function test_tuile_temperatures_annonce_l_echeance_la_plus_proche_pas_la_plus_lointaine(): void
+    {
+        $this->staff();
+        $a = $this->equipment('Frigo A', 'fridge', '2026-10-10');
+        $b = $this->equipment('Frigo B', 'fridge', '2026-10-10');
+        $this->reading($a, '2026-10-20 09:40', 9.0, 'alert', ['corrective_action' => 'door_closed']); // échéance 10:10
+        $this->reading($b, '2026-10-20 09:50', 9.0, 'alert', ['corrective_action' => 'door_closed']); // échéance 10:20
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['temperature'];
+        $this->assertSame(2, $tile['counts']['followups']);
+        $this->assertSame('alert', $tile['status'], 'deux écarts hors seuil du jour : alerte (le détail suit alors le compte d\'écarts)');
+        // deux relevés conformes ensuite (trop tôt pour solder) : la tuile est « à faire » avec l'échéance la plus proche
+        $this->reading($a, '2026-10-20 09:43', 3.0);
+        $this->reading($b, '2026-10-20 09:53', 3.0);
+        $tile = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['temperature'];
+        $this->assertSame('todo', $tile['status']);
+        $this->assertSame('Nouvelle mesure à faire avant 10:10', $tile['detail']);
+    }
+
     // ───────────── rapport : taux de couverture ─────────────
 
     public function test_temperature_coverage_counts_only_days_that_were_expected(): void

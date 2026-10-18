@@ -39,7 +39,7 @@ class OilController extends HygieneController
             $rows = $live->get($f->id, collect());
             $testToday = $rows->first(fn ($r) => $r->type === 'test' && $r->performed_at->gte($start));
             $lastTest = $rows->first(fn ($r) => $r->type === 'test');
-            $lastChange = $rows->first(fn ($r) => $r->type === 'change');
+            $lastChange = $rows->first(fn ($r) => $r->countsAsChange());
             $lastFilter = $rows->first(fn ($r) => $r->type === 'filter');
 
             return $this->presentFryer($f) + [
@@ -284,7 +284,7 @@ class OilController extends HygieneController
     /** État affiché d'un test du jour : son verdict, sauf s'il est soldé par un changement d'huile (alors « ok » : le journal garde l'écart et l'action). */
     private function openState(HygieneOilControl $test, $rows): string
     {
-        $changedSince = $rows->contains(fn ($r) => $r->type === 'change' && $r->performed_at->gte($test->performed_at));
+        $changedSince = $rows->contains(fn ($r) => $r->countsAsChange() && $r->performed_at->gte($test->performed_at));
 
         return OilRules::isOpen((string) $test->status, $test->corrective_action, $changedSince) || ! in_array($test->status, ['warn', 'alert'], true) ? (string) $test->status : 'ok';
     }
