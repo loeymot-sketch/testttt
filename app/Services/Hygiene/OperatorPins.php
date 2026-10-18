@@ -46,9 +46,21 @@ final class OperatorPins
 
     public function set(int $branch, int $userId, string $pin, ?int $by): void
     {
-        $row = $this->row($branch, $userId) ?? new HygieneOperatorPin(['branch_id' => $branch, 'user_id' => $userId]);
-        $row->forceFill(['branch_id' => $branch, 'pin_hash' => Hash::make($pin), 'failed_attempts' => 0, 'locked_until' => null, 'set_by' => $by])->save();
+        // updateOrCreate : deux « définir » simultanés sur la même personne ne créent pas deux lignes (la colonne user_id est unique)
+        $row = HygieneOperatorPin::withoutGlobalScopes()->updateOrCreate(['user_id' => $userId], [
+            'branch_id' => $branch, 'pin_hash' => Hash::make($this->peppered($pin)), 'failed_attempts' => 0, 'locked_until' => null, 'set_by' => $by,
+        ]);
         $row->touch(); // un code redéfini à l'identique invalide quand même les jetons d'avant
+    }
+
+    /** Débloque une personne (essais remis à zéro) SANS changer son code ni invalider ses jetons. */
+    public function unlock(int $branch, int $userId): bool
+    {
+        $row = $this->row($branch, $userId);
+        if (! $row) return false;
+        $this->bookkeeping($row, ['failed_attempts' => 0, 'locked_until' => null]);
+
+        return true;
     }
 
     public function remove(int $branch, int $userId): void
@@ -70,7 +82,7 @@ final class OperatorPins
             if ($row->locked_until !== null && $row->locked_until->gt($now)) {
                 return ['result' => 'locked', 'remaining' => 0, 'locked_minutes' => (int) max(1, ceil($now->diffInSeconds($row->locked_until) / 60))];
             }
-            if (Hash::check($pin, $row->pin_hash)) {
+            if (Hash::check($this->peppered($pin), $row->pin_hash)) {
                 $this->bookkeeping($row, ['failed_attempts' => 0, 'locked_until' => null]);
                 $exp = $now->copy()->addMinutes(self::tokenMinutes());
 
@@ -117,6 +129,15 @@ final class OperatorPins
         $body = rtrim(strtr(base64_encode(json_encode(['b' => $branch, 'u' => $userId, 'v' => $version, 'i' => $iat->timestamp, 'e' => $exp->timestamp])), '+/', '-_'), '=');
 
         return $body.'.'.$this->sign($body);
+    }
+
+    /**
+     * Un code de 4 à 6 chiffres n'a que 10⁴ à 10⁶ valeurs : si la base fuitait, bcrypt seul se casserait hors ligne en quelques minutes. Le code est
+     * donc d'abord mêlé à un secret du serveur (clé d'application) : sans elle, la base volée ne permet aucune attaque hors ligne.
+     */
+    private function peppered(string $pin): string
+    {
+        return hash_hmac('sha256', $pin, 'hygiene-pin|'.config('app.key'));
     }
 
     private function sign(string $body): string

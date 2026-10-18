@@ -75,14 +75,14 @@
     </table>
 @endif
 
-<h2>Relevés de température ({{ $t['count'] }})</h2>
+<h2>Relevés de température ({{ $t['count'] }}@if(!empty($t['offline'])), dont {{ $t['offline'] }} saisi{{ $t['offline'] > 1 ? 's' : '' }} hors ligne{{ '' }}@endif)</h2>
 @if (empty($t['rows']))<p class="empty">Aucun relevé.</p>@else
     {!! $cut($t) !!}
     <table class="data"><tr><th>Date</th><th>Équipement</th><th>°C</th><th>Seuils</th><th>Verdict</th><th>Moment</th><th>Opérateur</th><th>Action corrective</th></tr>
     @foreach ($t['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['equipment'] }}</td><td>{{ $n($x['value_c']) }}</td>
             <td>{{ $x['min_c'] !== null ? $n($x['min_c']).' à ' : '≤ ' }}{{ $n($x['max_c']) }}</td><td>{!! $st($x['status']) !!}@if($x['voided']) — annulé : {{ $x['void_reason'] }}@endif</td>
-            <td>{{ config("hygiene.periods.{$x['period']}") }}</td><td>{{ $x['operator'] }}</td><td>{{ $x['action'] }}@if($x['note']) — {{ $x['note'] }}@endif</td></tr>
+            <td>{{ config("hygiene.periods.{$x['period']}") }}</td><td>{{ $x['operator'] }}@if(!empty($x['offline'])) — saisi hors ligne, envoyé le {{ $dt($x['synced_at']) }}@endif</td><td>{{ $x['action'] }}@if($x['note']) — {{ $x['note'] }}@endif @if(!empty($x['followup_closed'])) — suivi clos : {{ $x['followup_closed'] }}@endif</td></tr>
     @endforeach
     </table>
 @endif

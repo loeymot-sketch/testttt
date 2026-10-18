@@ -262,6 +262,27 @@ class OverviewAndReportTest extends TestCase
         $this->assertStringStartsWith('%PDF', $r->streamedContent());
     }
 
+    public function test_le_dossier_distingue_un_releve_saisi_hors_ligne_et_dit_quand_il_a_ete_envoye_et_les_suivis_clos(): void
+    {
+        $this->staff();
+        $e = $this->equipment('Frigo', 'fridge', '2026-10-01');
+        $this->reading($e, '2026-10-19 08:00', 3.0);
+        $this->reading($e, '2026-10-19 18:00', 3.0, 'ok', ['source' => 'offline']);
+        $this->reading($e, '2026-10-19 19:00', 9.0, 'alert', ['corrective_action' => 'recheck'])
+            ->forceFill(['followup_closed_at' => now(), 'followup_close_reason' => 'équipement éteint en fin de service'])->save();
+
+        $csv = $this->get(self::BASE.'/report/csv?module=temperature&from=2026-10-19&to=2026-10-20')->assertOk()->streamedContent();
+        $lines = array_values(array_filter(explode("\n", trim(substr($csv, 3)))));
+        $this->assertStringContainsString(';Saisie;', $lines[0]);
+        $this->assertStringContainsString(';direct;', $lines[1]);
+        $this->assertStringContainsString(';"hors ligne, envoyé le ', $lines[2], 'le relevé hors ligne est reconnaissable, avec sa date d\'envoi');
+        $this->assertStringContainsString('équipement éteint en fin de service', $lines[3], 'la clôture motivée du suivi figure au dossier');
+
+        $sum = $this->getJson(self::BASE.'/report/summary?from=2026-10-19&to=2026-10-20')->assertOk();
+        $this->assertSame(1, $sum->json('data.temperature.offline'));
+        $this->get(self::BASE.'/report/pdf?from=2026-10-19&to=2026-10-20')->assertOk();
+    }
+
     public function test_csv_has_bom_semicolons_french_decimals_and_neutralises_formulas(): void
     {
         $this->staff();

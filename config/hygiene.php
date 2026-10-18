@@ -69,7 +69,7 @@ return [
      * PROUVÉE par une nouvelle mesure. `minutes` : délai laissé pour la faire ; passé ce délai, un rappel urgent est levé (écran, e-mail) tant
      * qu'aucun nouveau relevé n'a été pris. Les actions marquées `followup` ci-dessous sont celles concernées.
      */
-    'followup' => ['minutes' => 30],
+    'followup' => ['minutes' => 30, 'min_minutes' => 10], // min_minutes : une mesure prise plus tôt après l'écart ne le clôt pas (le temps de redescendre)
 
     /**
      * Action corrective, OBLIGATOIRE quand le relevé sort des seuils (HACCP : tout écart est tracé avec ce qui a été fait).

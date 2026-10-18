@@ -78,6 +78,11 @@ class TemperatureFollowUpTest extends TestCase
         return array_column((new Reminders)->all(), 'key');
     }
 
+    private function reminderFor(string $name): ?array
+    {
+        return $this->followupReminder($name);
+    }
+
     /** Le rappel de suite d'un équipement (sa clé porte aussi l'identifiant du relevé d'écart : un nouvel écart = un nouveau rappel). */
     private function followupReminder(string $name): ?array
     {
@@ -221,6 +226,75 @@ class TemperatureFollowUpTest extends TestCase
         $this->moment('2026-10-20 14:35');
         $this->assertSame('done', app(AlertNotifier::class)->run()['status']); // le plafond d'envois de l'épisode 1 ne le fait pas taire
         Mail::assertSent(HygieneAlertMail::class, 2);
+    }
+
+    public function test_une_mesure_prise_trop_tot_apres_l_ecart_ne_le_cloture_pas(): void
+    {
+        $this->take('Frigo 1', 9.0, 'recheck');              // 10:00
+        $this->moment('2026-10-20 10:03');
+        $this->take('Frigo 1', 3.0);                          // 3 minutes après : le temps de redescendre n'est pas passé
+
+        $this->assertNotNull($this->followup('Frigo 1'), 'une mesure à 3 minutes ne prouve rien');
+        $this->moment('2026-10-20 10:11');
+        $this->take('Frigo 1', 3.0);                          // 11 minutes après : clôt
+        $this->assertNull($this->followup('Frigo 1'));
+    }
+
+    public function test_le_delai_minimal_est_reglable(): void
+    {
+        config(['hygiene.followup.min_minutes' => 2]);
+        $this->take('Frigo 1', 9.0, 'recheck');
+        $this->moment('2026-10-20 10:03');
+        $this->take('Frigo 1', 3.0);
+        $this->assertNull($this->followup('Frigo 1'));
+    }
+
+    public function test_un_suivi_impossible_se_cloture_avec_un_motif_qui_reste_au_journal(): void
+    {
+        $this->take('Bain-marie', 55.0, 'reheated');
+        $this->moment('2026-10-20 14:00');
+        $id = HygieneTemperatureReading::query()->firstOrFail()->id;
+        $this->assertNotNull($this->reminderFor('Bain-marie'));
+
+        $this->postJson(self::BASE."/readings/{$id}/followup-close", ['reason' => 'non'])->assertStatus(422)->assertJsonValidationErrors('reason');
+        $r = $this->postJson(self::BASE."/readings/{$id}/followup-close", ['reason' => 'appareil éteint, service terminé'])->assertOk();
+
+        $r->assertJsonPath('data.followup_closed', true)->assertJsonPath('data.followup_close_reason', 'appareil éteint, service terminé');
+        $row = HygieneTemperatureReading::query()->find($id);
+        $this->assertNotNull($row->followup_closed_by);
+        $this->assertNull($this->followup('Bain-marie'));
+        $this->assertNull($this->reminderFor('Bain-marie'));
+        $this->assertFalse((bool) $row->voided_at, 'le relevé d\'écart reste au journal, non annulé');
+    }
+
+    public function test_on_ne_peut_clore_que_le_suivi_reellement_attendu(): void
+    {
+        // action sans suivi
+        $this->take('Frigo 1', 9.0, 'technician');
+        $id = HygieneTemperatureReading::query()->firstOrFail()->id;
+        $this->postJson(self::BASE."/readings/{$id}/followup-close", ['reason' => 'sans objet du tout'])->assertStatus(422)->assertJsonValidationErrors('reading');
+
+        // relevé conforme
+        $this->take('Frigo 2', 3.0);
+        $ok = HygieneTemperatureReading::query()->where('equipment_id', $this->eq('Frigo 2'))->value('id');
+        $this->postJson(self::BASE."/readings/{$ok}/followup-close", ['reason' => 'sans objet du tout'])->assertStatus(422);
+
+        // écart suivi puis déjà clos par une vraie mesure : plus rien à clore
+        $this->take('Bain-marie', 55.0, 'reheated');
+        $alert = HygieneTemperatureReading::query()->where('equipment_id', $this->eq('Bain-marie'))->value('id');
+        $this->moment('2026-10-20 10:15');
+        $this->take('Bain-marie', 70.0);
+        $this->postJson(self::BASE."/readings/{$alert}/followup-close", ['reason' => 'sans objet du tout'])->assertStatus(422);
+    }
+
+    public function test_clore_un_suivi_est_signe_de_la_personne_designee(): void
+    {
+        $sarah = User::factory()->create(['branch_id' => 1, 'name' => 'Sarah Lopez']);
+        $sarah->assignRole('Chef');
+        $this->take('Bain-marie', 55.0, 'reheated');
+        $id = HygieneTemperatureReading::query()->firstOrFail()->id;
+        $this->postJson(self::BASE."/readings/{$id}/followup-close", ['reason' => 'appareil éteint', 'operator_user_id' => $sarah->id])->assertOk();
+        $this->assertSame($sarah->id, HygieneTemperatureReading::query()->find($id)->followup_closed_by);
     }
 
     public function test_le_service_ne_rend_rien_sans_equipement(): void

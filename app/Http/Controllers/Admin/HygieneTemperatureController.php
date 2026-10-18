@@ -349,6 +349,24 @@ class HygieneTemperatureController extends HygieneController
         return response()->json(['data' => $rows, 'meta' => ['alerts' => $rows->where('status', 'alert')->count()] + $this->clock()], 201);
     }
 
+    /**
+     * Clôt un suivi après écart IMPOSSIBLE à faire (équipement éteint, en panne…) : il faut dire POURQUOI ; la raison et la personne restent au journal
+     * et au dossier de contrôle. Réservé à l'écart dont le suivi est réellement attendu (pas un moyen de masquer un écart quelconque).
+     */
+    public function closeFollowUp(Request $request, string $reading): JsonResponse
+    {
+        $v = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:120']], ['reason.min' => 'Dites en quelques mots pourquoi la mesure est impossible (5 caractères au moins).'], ['reason' => 'motif']);
+        $row = HygieneTemperatureReading::query()->findOrFail((int) $reading);
+        $pending = \App\Services\Hygiene\TemperatureFollowUp::pending([(int) $row->equipment_id]);
+        if (($pending[(int) $row->equipment_id]['reading_id'] ?? null) !== $row->id) {
+            return response()->json(['message' => 'Aucun suivi n’est attendu pour ce relevé.', 'errors' => ['reading' => ['Aucun suivi n’est attendu pour ce relevé.']]], 422);
+        }
+        $op = $this->operator($request);
+        $row->forceFill(['followup_closed_at' => now(), 'followup_closed_by' => $op['user_id'], 'followup_close_reason' => trim($v['reason'])])->save();
+
+        return response()->json(['data' => $this->presentReading($row->refresh())]);
+    }
+
     /** Annule un relevé (faute de frappe) : motif obligatoire, la ligne reste au journal. */
     public function voidReading(Request $request, string $reading): JsonResponse
     {
@@ -356,7 +374,7 @@ class HygieneTemperatureController extends HygieneController
         $row = HygieneTemperatureReading::query()->findOrFail((int) $reading);
         if ($row->voided_at === null) {
             $row->forceFill([
-                'voided_at' => now(), 'voided_by' => $request->user()?->id, 'void_reason' => trim($v['reason']),
+                'voided_at' => now(), 'voided_by' => $this->operator($request)['user_id'], 'void_reason' => trim($v['reason']),
             ])->save();
         }
 
@@ -507,6 +525,8 @@ class HygieneTemperatureController extends HygieneController
             'corrective_action' => $action,
             'corrective_label' => $action ? config("hygiene.corrective_actions.$action.label") : null,
             'corrective_note' => $r->corrective_note,
+            'followup_closed' => $r->followup_closed_at !== null,
+            'followup_close_reason' => $r->followup_close_reason,
             'voided' => $r->voided_at !== null,
             'voided_at' => $r->voided_at?->toIso8601String(),
             'void_reason' => $r->void_reason,

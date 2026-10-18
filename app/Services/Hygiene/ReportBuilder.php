@@ -131,7 +131,7 @@ final class ReportBuilder
         $alerts = $live->where('status', 'alert');
 
         return [
-            'count' => $live->count(), 'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(),
+            'count' => $live->count(), 'offline' => $live->where('source', 'offline')->count(), 'voided' => $rows->count() - $live->count(), 'alerts' => $alerts->count(),
             'equipment' => $equipments->where('is_active', true)->whereNull('deleted_at')->count(), 'expected' => $expected, 'covered' => $done, 'coverage_pct' => $this->rate($done, $expected),
             'incidents' => $alerts->map(fn ($r) => [
                 'at' => $r->recorded_at->toIso8601String(), 'module' => 'temperature',
@@ -143,6 +143,8 @@ final class ReportBuilder
                 'at' => $r->recorded_at->toIso8601String(), 'equipment' => $r->equipment_name, 'value_c' => $r->value_c, 'min_c' => $r->min_c, 'max_c' => $r->max_c,
                 'status' => $r->status, 'period' => $r->period, 'operator' => $r->operator_name,
                 'action' => $r->corrective_action ? config("hygiene.corrective_actions.{$r->corrective_action}.label") : null, 'note' => $r->corrective_note,
+                'offline' => $r->source === 'offline', 'synced_at' => $r->source === 'offline' ? $r->created_at?->toIso8601String() : null,
+                'followup_closed' => $r->followup_close_reason,
                 'voided' => $r->voided_at !== null, 'void_reason' => $r->void_reason,
             ])->all()) : ['rows' => [], 'rows_total' => 0]),
         ];

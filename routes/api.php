@@ -571,6 +571,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/today', [$c, 'today'])->name('today');
         Route::post('/readings', [$c, 'storeReadings'])->name('readings.store');
         Route::post('/readings/{reading}/void', [$c, 'voidReading'])->where('reading', '[0-9]{1,18}')->name('readings.void');
+        Route::post('/readings/{reading}/followup-close', [$c, 'closeFollowUp'])->where('reading', '[0-9]{1,18}')->name('readings.followup.close');
         Route::get('/history', [$c, 'history'])->name('history');
     });
 
@@ -584,6 +585,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/', [$c, 'index'])->name('index');
             Route::put('/{user}/pin', [$c, 'setPin'])->where('user', '[0-9]{1,18}')->name('pin.set');
             Route::delete('/{user}/pin', [$c, 'removePin'])->where('user', '[0-9]{1,18}')->name('pin.remove');
+            Route::post('/{user}/unlock', [$c, 'unlock'])->where('user', '[0-9]{1,18}')->name('pin.unlock');
         });
         Route::post('/attachments', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'store'])->name('attachments.store');
         Route::get('/attachments/{attachment}', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'show'])

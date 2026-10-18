@@ -331,7 +331,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/tasks/completions/${this.voidTarget}/void`, { reason: this.voidReason.trim() });
+                await axios.post(`admin/hygiene/tasks/completions/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
                 this.voidTarget = null;
                 await this.load();
                 alertService.success("Validation annulée (elle reste au journal).");

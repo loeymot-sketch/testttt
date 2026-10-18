@@ -118,7 +118,7 @@ class OperatorPinTest extends TestCase
         $row = HygieneOperatorPin::withoutGlobalScopes()->firstOrFail();
         $this->assertNotSame('4821', $row->pin_hash);
         $this->assertStringNotContainsString('4821', json_encode($row->toArray()));
-        $this->assertTrue(\Hash::check('4821', $row->pin_hash));
+        $this->assertTrue(\Hash::check(hash_hmac('sha256', '4821', 'hygiene-pin|'.config('app.key')), $row->pin_hash));
     }
 
     // ───────────── vérification et jeton ─────────────
@@ -272,6 +272,31 @@ class OperatorPinTest extends TestCase
         ]])->assertCreated();
     }
 
+    public function test_annuler_un_releve_au_nom_d_une_personne_protegee_exige_son_code_et_est_signe_d_elle(): void
+    {
+        $this->givePin($this->sarah);
+        $this->postJson(self::TEMP.'/readings', $this->reading([], 'Frigo 1'))->assertCreated();
+        $id = HygieneTemperatureReading::query()->firstOrFail()->id;
+
+        // sans preuve : refusé, rien n'est annulé
+        $this->postJson(self::TEMP."/readings/{$id}/void", ['reason' => 'faute de frappe', 'operator_user_id' => $this->sarah->id])->assertStatus(422)->assertJsonValidationErrors('operator_pin');
+        $this->assertNull(HygieneTemperatureReading::query()->find($id)->voided_at);
+
+        $token = $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '4821'])->json('data.token');
+        $this->postJson(self::TEMP."/readings/{$id}/void", ['reason' => 'faute de frappe', 'operator_user_id' => $this->sarah->id, 'operator_token' => $token])->assertOk();
+        $row = HygieneTemperatureReading::query()->find($id);
+        $this->assertNotNull($row->voided_at);
+        $this->assertSame($this->sarah->id, $row->voided_by, 'annulé PAR Sarah, pas par le compte partagé de la tablette');
+    }
+
+    public function test_annuler_sans_designer_personne_reste_signe_du_compte_connecte(): void
+    {
+        $this->postJson(self::TEMP.'/readings', $this->reading([], 'Frigo 1'))->assertCreated();
+        $id = HygieneTemperatureReading::query()->firstOrFail()->id;
+        $this->postJson(self::TEMP."/readings/{$id}/void", ['reason' => 'faute de frappe'])->assertOk();
+        $this->assertSame($this->tablet->id, HygieneTemperatureReading::query()->find($id)->voided_by);
+    }
+
     // ───────────── le responsable ─────────────
 
     private function manager(): User
@@ -316,8 +341,58 @@ class OperatorPinTest extends TestCase
 
         $this->manager();
         $this->getJson(self::TEAM)->assertJsonPath('data.'.collect($this->getJson(self::TEAM)->json('data'))->search(fn ($u) => $u['id'] === $this->sarah->id).'.locked', true);
-        $this->putJson(self::TEAM."/{$this->sarah->id}/pin", ['pin' => '5555'])->assertOk();
-        $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '5555'])->assertOk();
+        $this->putJson(self::TEAM."/{$this->sarah->id}/pin", ['pin' => '5826'])->assertOk();
+        $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '5826'])->assertOk();
+    }
+
+    public function test_les_codes_trop_faciles_sont_refuses_a_la_definition(): void
+    {
+        $this->manager();
+        foreach (['0000', '1111', '9999', '1234', '4321', '2345', '123456', '654321', '000000'] as $weak) {
+            $this->putJson(self::TEAM."/{$this->sarah->id}/pin", ['pin' => $weak])->assertStatus(422)->assertJsonValidationErrors('pin');
+        }
+        foreach (['4821', '1357', '2468', '908172'] as $ok) {
+            $this->putJson(self::TEAM."/{$this->sarah->id}/pin", ['pin' => $ok])->assertOk();
+        }
+    }
+
+    public function test_le_responsable_debloque_une_personne_sans_changer_son_code(): void
+    {
+        $this->givePin($this->sarah);
+        $token = $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '4821'])->json('data.token');
+        for ($i = 0; $i < 5; $i++) { $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '0000']); }
+        $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '4821'])->assertStatus(423);
+
+        $this->manager();
+        $this->postJson(self::TEAM."/{$this->sarah->id}/unlock")->assertOk()->assertJsonPath('data.locked', false);
+        $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '4821'])->assertOk(); // même code, de nouveau accepté
+        // et un jeton émis AVANT n'a pas été tué par le déblocage (le code n'a pas changé)
+        $this->sign(['operator_token' => $token])->assertCreated();
+    }
+
+    public function test_debloquer_demande_la_permission_et_une_personne_qui_a_un_code(): void
+    {
+        $this->givePin($this->sarah);
+        $this->postJson(self::TEAM."/{$this->sarah->id}/unlock")->assertForbidden();
+        $this->manager();
+        $this->postJson(self::TEAM."/{$this->tablet->id}/unlock")->assertNotFound(); // aucun code à débloquer
+        $this->postJson(self::TEAM.'/999999/unlock')->assertNotFound();
+    }
+
+    public function test_le_code_est_poivre_une_base_volee_ne_permet_aucune_attaque_hors_ligne(): void
+    {
+        $this->givePin($this->sarah, '4821');
+        $hash = HygieneOperatorPin::withoutGlobalScopes()->firstOrFail()->pin_hash;
+        $this->assertFalse(\Hash::check('4821', $hash), 'bcrypt du seul code : cassable hors ligne en quelques minutes');
+        $this->assertTrue(\Hash::check(hash_hmac('sha256', '4821', 'hygiene-pin|'.config('app.key')), $hash));
+    }
+
+    public function test_definir_deux_fois_le_code_d_une_personne_ne_cree_qu_une_ligne(): void
+    {
+        $this->givePin($this->sarah, '4821');
+        $this->givePin($this->sarah, '1357');
+        $this->assertSame(1, HygieneOperatorPin::withoutGlobalScopes()->where('user_id', $this->sarah->id)->count());
+        $this->postJson(self::OPS.'/verify', ['user_id' => $this->sarah->id, 'pin' => '1357'])->assertOk();
     }
 
     public function test_le_format_du_code_est_controle_et_la_personne_doit_etre_du_personnel(): void
@@ -351,6 +426,8 @@ class OperatorPinTest extends TestCase
             $src = file_get_contents($f);
             // une ligne qui écrit « operator_name » depuis l'utilisateur connecté (au lieu de $op[...]) contournerait le code personnel
             $this->assertDoesNotMatchRegularExpression('/[\'"]operator_name[\'"]\s*=>\s*\$(?:request->user|user)\b/', $src, basename($f).' signe sans passer par operator()');
+            // idem pour l'annulation : « annulé par » est la personne désignée (avec son code si elle en a un), pas le compte partagé de la tablette
+            $this->assertDoesNotMatchRegularExpression('/[\'"]voided_by[\'"]\s*=>\s*\$request->user/', $src, basename($f).' annule sans passer par operator()');
         }
     }
 }

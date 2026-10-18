@@ -107,8 +107,9 @@ class ReportController extends HygieneController
 
         switch ($module) {
             case 'temperature':
-                return [['Date', 'Équipement', 'Température °C', 'Seuil bas', 'Seuil haut', 'Verdict', 'Moment', 'Opérateur', 'Action corrective', 'Commentaire', 'Annulation'],
-                    array_map(fn ($r) => [$this->dt($r['at']), $r['equipment'], $this->num($r['value_c']), $this->num($r['min_c']), $this->num($r['max_c']), $status($r['status']), config("hygiene.periods.{$r['period']}") ?? $r['period'], $r['operator'], $r['action'], $r['note'], $void($r)], $rows)];
+                return [['Date', 'Équipement', 'Température °C', 'Seuil bas', 'Seuil haut', 'Verdict', 'Moment', 'Opérateur', 'Saisie', 'Action corrective', 'Commentaire', 'Suivi après écart clos', 'Annulation'],
+                    array_map(fn ($r) => [$this->dt($r['at']), $r['equipment'], $this->num($r['value_c']), $this->num($r['min_c']), $this->num($r['max_c']), $status($r['status']), config("hygiene.periods.{$r['period']}") ?? $r['period'], $r['operator'],
+                        ! empty($r['offline']) ? 'hors ligne, envoyé le '.$this->dt($r['synced_at']) : 'direct', $r['action'], $r['note'], $r['followup_closed'] ?? '', $void($r)], $rows)];
             case 'tasks':
                 return [['Date', 'Jour concerné', 'Fiche', 'Zone', 'Points faits', 'Points total', 'Complète', 'Après l\'heure', 'Points non faits', 'Commentaire', 'Opérateur', 'Annulation'],
                     array_map(fn ($r) => [$this->dt($r['at']), $r['due_date'], $r['task'], $r['zone'], $r['items_done'], $r['items_total'], $r['complete'], $r['late'], $r['not_done'], $r['note'], $r['operator'], $void($r)], $rows)];

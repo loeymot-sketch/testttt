@@ -9,10 +9,12 @@ use Carbon\CarbonInterface;
  * [CAYENNE HYGIÈNE 2026-10-18 · rapport Komia P1 « relevé de suivi après écart »] Un écart traité par « porte refermée », « dégivrage »,
  * « plats réchauffés » ou « nouvelle mesure » n'est PAS clos tant qu'une nouvelle mesure n'a pas prouvé le retour à la normale.
  *
- * Un suivi est ATTENDU pour un équipement quand son DERNIER relevé (non annulé, des dernières 24 h) est un écart dont l'action corrective est
- * marquée `followup` (config/hygiene.php) et qu'aucun relevé plus récent n'existe. Il est DÛ `followup.minutes` après l'écart. Un relevé plus
- * récent, conforme OU non, clôt cette attente (un nouvel écart ouvre la sienne). Annuler le relevé d'écart (erreur de saisie) la supprime.
- * LECTURE SEULE, une seule vérité pour l'écran des relevés et les rappels.
+ * On suit chaque équipement dans l'ordre de ses relevés (non annulés, des dernières 24 h). Un écart dont l'action est marquée `followup`
+ * (config/hygiene.php) OUVRE une attente, due `followup.minutes` après lui. Elle se CLÔT par un relevé pris au moins `followup.min_minutes` après
+ * l'écart (conforme OU non : un nouvel écart ouvre la sienne) — une mesure prise une minute après n'a pas laissé le temps de redescendre et ne
+ * prouve rien. Elle se clôt aussi par `followup_closed_at` : le responsable du geste a dit POURQUOI la mesure est impossible (équipement éteint,
+ * en panne…), ce qui reste au journal. Annuler le relevé d'écart (erreur de saisie) la supprime. LECTURE SEULE, une seule vérité pour l'écran
+ * des relevés et les rappels.
  */
 final class TemperatureFollowUp
 {
@@ -25,19 +27,27 @@ final class TemperatureFollowUp
         $now = $now ?? now();
         if ($equipmentIds === []) return [];
         $minutes = (int) config('hygiene.followup.minutes', 30);
+        $minGap = (int) config('hygiene.followup.min_minutes', 10);
 
-        $last = HygieneTemperatureReading::query()->whereNull('voided_at')->whereIn('equipment_id', $equipmentIds)
+        $byEquipment = HygieneTemperatureReading::query()->whereNull('voided_at')->whereIn('equipment_id', $equipmentIds)
             ->where('recorded_at', '>=', $now->copy()->subHours(24))->where('recorded_at', '<=', $now)
-            ->orderBy('recorded_at')->orderBy('id')->get()->groupBy('equipment_id')->map(fn ($rows) => $rows->last());
+            ->orderBy('recorded_at')->orderBy('id')->get()->groupBy('equipment_id');
 
         $out = [];
-        foreach ($last as $equipmentId => $r) {
-            if ($r->status !== HygieneTemperatureReading::STATUS_ALERT) continue;
-            if (! config("hygiene.corrective_actions.{$r->corrective_action}.followup")) continue;
-            $due = $r->recorded_at->copy()->addMinutes($minutes);
+        foreach ($byEquipment as $equipmentId => $rows) {
+            $open = null;
+            foreach ($rows as $r) {
+                // une mesure prise assez longtemps après l'écart (ou une clôture motivée) ferme l'attente en cours
+                if ($open !== null && $r->recorded_at->gte($open->recorded_at->copy()->addMinutes($minGap))) $open = null;
+                if ($r->status === HygieneTemperatureReading::STATUS_ALERT && config("hygiene.corrective_actions.{$r->corrective_action}.followup") && $r->followup_closed_at === null) {
+                    $open = $r;
+                }
+            }
+            if ($open === null) continue;
+            $due = $open->recorded_at->copy()->addMinutes($minutes);
             $out[(int) $equipmentId] = [
-                'reading_id' => $r->id, 'value_c' => (float) $r->value_c, 'recorded_at' => $r->recorded_at->toIso8601String(),
-                'due_at' => $due->toIso8601String(), 'overdue' => $now->gte($due), 'minutes' => $minutes,
+                'reading_id' => $open->id, 'value_c' => (float) $open->value_c, 'recorded_at' => $open->recorded_at->toIso8601String(),
+                'due_at' => $due->toIso8601String(), 'overdue' => $now->gte($due), 'minutes' => $minutes, 'min_minutes' => $minGap,
             ];
         }
 

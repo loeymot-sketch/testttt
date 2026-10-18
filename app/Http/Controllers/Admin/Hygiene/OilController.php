@@ -150,7 +150,7 @@ class OilController extends HygieneController
         $v = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:120']], [], ['reason' => 'motif']);
         $row = HygieneOilControl::query()->findOrFail((int) $control);
         if ($row->voided_at === null) {
-            $row->forceFill(['voided_at' => now(), 'voided_by' => $request->user()?->id, 'void_reason' => trim($v['reason'])])->save();
+            $row->forceFill(['voided_at' => now(), 'voided_by' => $this->operator($request)['user_id'], 'void_reason' => trim($v['reason'])])->save();
         }
 
         return response()->json(['data' => $this->present($row->refresh())]);
