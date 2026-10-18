@@ -20,3 +20,6 @@ export default {
     mounted() { scrollShellToTop(); },
 };
 </script>
+
+<!-- La barre porte SA feuille : les écrans d'étiquettes (commandes, imprimante) n'importent pas hygiene.css, et la barre y restait un lien nu après un F5. -->
+<style src="./hygiene.css"></style>

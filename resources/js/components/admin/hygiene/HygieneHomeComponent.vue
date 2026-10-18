@@ -2,7 +2,7 @@
     <div class="col-12">
         <div class="db-card">
             <div class="db-card-header">
-                <h3 class="db-card-title hy-title">Cayenne Hygiène — {{ todayLabel }}</h3>
+                <h3 class="db-card-title hy-title">Hygiène &amp; étiquettes — {{ todayLabel }}</h3>
             </div>
 
             <div class="db-card-body">
@@ -15,6 +15,20 @@
                         Réseau indisponible : ces chiffres datent de {{ staleSince }}. Ils ne sont peut-être plus à jour.
                     </p>
                     <p v-else class="hy-banner" :class="`is-${bannerKind}`" role="status" data-testid="home-banner">{{ bannerText }}</p>
+
+                    <!-- Ce qui est en retard ou à traiter MAINTENANT : une phrase, un geste (touchez pour y aller) -->
+                    <section v-if="reminders.length" class="hy-reminders" :class="{ 'is-soft': !hasAlertReminder }" aria-labelledby="home-reminders-title" data-testid="home-reminders">
+                        <h4 id="home-reminders-title" class="hy-reminders-title">À traiter maintenant</h4>
+                        <ul class="hy-reminders-list">
+                            <li v-for="r in reminders" :key="r.key" :class="`is-${r.level}`" data-testid="home-reminder">
+                                <router-link :to="r.route" class="hy-reminder-link">
+                                    <span class="hy-reminder-icon" aria-hidden="true">{{ r.level === "alert" ? "⚠" : "●" }}</span>
+                                    <span class="hy-reminder-text">{{ r.text }}</span>
+                                    <span class="hy-reminder-go" aria-hidden="true">→</span>
+                                </router-link>
+                            </li>
+                        </ul>
+                    </section>
 
                     <!-- Mise en place : où j'en suis, ce qu'il reste, LA prochaine étape (rien à cocher : tout se déduit des journaux) -->
                     <section v-if="showSetup" class="hy-setup" :class="{ 'is-complete': setup.complete }" aria-labelledby="home-setup-title" data-testid="home-setup">
@@ -55,20 +69,6 @@
                         <button v-if="setup.complete" type="button" class="hy-btn hy-btn--small hy-setup-dismiss" data-testid="home-setup-dismiss" @click="dismissSetup">Compris, masquer ce guide</button>
                     </section>
 
-                    <!-- Ce qui est en retard ou à traiter MAINTENANT : une phrase, un geste (touchez pour y aller) -->
-                    <section v-if="reminders.length" class="hy-reminders" :class="{ 'is-soft': !hasAlertReminder }" aria-labelledby="home-reminders-title" data-testid="home-reminders">
-                        <h4 id="home-reminders-title" class="hy-reminders-title">À traiter maintenant</h4>
-                        <ul class="hy-reminders-list">
-                            <li v-for="r in reminders" :key="r.key" :class="`is-${r.level}`" data-testid="home-reminder">
-                                <router-link :to="r.route" class="hy-reminder-link">
-                                    <span class="hy-reminder-icon" aria-hidden="true">{{ r.level === "alert" ? "⚠" : "●" }}</span>
-                                    <span class="hy-reminder-text">{{ r.text }}</span>
-                                    <span class="hy-reminder-go" aria-hidden="true">→</span>
-                                </router-link>
-                            </li>
-                        </ul>
-                    </section>
-
                     <div class="hy-tiles">
                         <router-link v-for="t in tiles" :key="t.key" :to="t.route" class="hy-tile" :class="`is-${t.status}`" :data-testid="`home-tile-${t.key}`">
                             <span class="hy-tile-icon" aria-hidden="true"><i :class="t.icon"></i></span>
@@ -83,6 +83,7 @@
                             <span class="hy-tile-label">Dossier de contrôle</span>
                             <strong class="hy-tile-headline">PDF et exports</strong>
                             <span class="hy-tile-detail">Pour l'inspection sanitaire</span>
+                            <span class="hy-tile-cta" data-testid="home-cta-report">Voir le dossier →</span>
                         </router-link>
                     </div>
                     <!-- Tout le reste du module, en un coup d'œil : ce qui n'a pas de compteur du jour (étiquettes de commande, imprimante,
@@ -118,32 +119,43 @@
  */
 import axios from "axios";
 import { formatDay, scrollShellToTop } from "../../../helpers/hygieneCommon";
+import { hasPermissionAccess } from "../../../shared/permission-match";
 import HygieneQueueBanner from "./HygieneQueueBanner";
+
+/** Rafraîchissement du hub : toutes les 60 s écran visible ; au réveil, seulement si les chiffres ont plus de 15 s. */
+const REFRESH_MS = 60000;
+const WAKE_MIN_AGE_MS = 15000;
 
 export default {
     name: "HygieneHomeComponent",
     components: { HygieneQueueBanner },
     data() {
-        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], setup: null, server_now: null, timezone: "Europe/Paris" }, setupDismissed: this.readDismissed(), loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null };
+        return { tiles: [], meta: { alerts: 0, todo: 0, reminders: [], setup: null, server_now: null, timezone: "Europe/Paris" }, setupDismissed: this.readDismissed(), loaded: false, loadError: "", timer: null, failures: 0, lastOkAt: null, inFlight: false };
     },
     computed: {
-        /** Après deux rafraîchissements ratés, « Tout est en ordre ✓ » ne doit plus s'afficher : ce serait une affirmation sur des données périmées. */
-        stale() { return this.loaded && this.failures >= 2; },
+        /** Dès le PREMIER rafraîchissement raté, « Journée en règle ✓ » ne doit plus s'afficher : ce serait une affirmation sur des données qu'on n'a pas pu vérifier (le tour suivant est dans 60 s). */
+        stale() { return this.loaded && this.failures >= 1; },
         staleSince() {
             try { return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: this.meta.timezone || "Europe/Paris" }).format(new Date(this.lastOkAt)); } catch (_) { return "tout à l'heure"; }
         },
         /** Les outils sans compteur du jour, par famille (les tuiles ci-dessus portent les six domaines et le dossier de contrôle). */
         toolGroups() {
-            return [
+            // « needs » : le droit que le SERVEUR exige. Une carte vers un écran qui répondrait 403 est une impasse (59 caissiers + 22 responsables de site).
+            // Liste de droits pas encore chargée : on propose tout (même règle que la barre latérale).
+            const perms = "$store" in this && this.$store.getters ? this.$store.getters.authPermission : null; // `in` : pas d'avertissement quand la coquille n'a pas de store (tests)
+            const groups = [
                 { key: "labels", title: "Étiquettes et imprimante", items: [
                     { key: "orders", label: "Étiquettes des commandes", detail: "Une étiquette par produit commandé", route: "/admin/labels/orders", icon: "fa-solid fa-receipt", testid: "home-tool-labels-orders" },
                     { key: "printer", label: "Imprimante d'étiquettes", detail: "Brother QL-820NWB : connexion et réglages", route: "/admin/labels/printer", icon: "fa-solid fa-print", testid: "home-tool-labels-printer" },
                 ] },
                 { key: "settings", title: "Réglages du module", items: [
-                    { key: "alerts", label: "Alertes par e-mail", detail: "Qui est prévenu, et quand", route: "/admin/hygiene/alerts", icon: "fa-solid fa-bell", testid: "home-alerts-link" },
-                    { key: "team", label: "Codes de l'équipe", detail: "Le code personnel pour signer un relevé", route: "/admin/hygiene/team", icon: "fa-solid fa-lock", testid: "home-team-link" },
+                    { key: "alerts", label: "Alertes par e-mail", detail: "Qui est prévenu, et quand", route: "/admin/hygiene/alerts", icon: "fa-solid fa-bell", testid: "home-alerts-link", needs: "settings" },
+                    { key: "team", label: "Codes de l'équipe", detail: "Le code personnel pour signer un relevé", route: "/admin/hygiene/team", icon: "fa-solid fa-lock", testid: "home-team-link", needs: "settings" },
                 ] },
             ];
+            return groups
+                .map((g) => ({ ...g, items: g.items.filter((t) => !t.needs || hasPermissionAccess(perms, t.needs)) }))
+                .filter((g) => g.items.length > 0);
         },
         setup() { return this.meta.setup && Array.isArray(this.meta.setup.steps) ? this.meta.setup : null; },
         requiredSteps() { return this.setup ? this.setup.steps.filter((x) => !x.optional) : []; },
@@ -203,10 +215,20 @@ export default {
     },
     created() {
         this.load();
-        this.timer = setInterval(() => this.load(), 60000);
+        this.timer = setInterval(() => { if (!this.hidden()) this.load(); }, REFRESH_MS);
     },
-    mounted() { scrollShellToTop(); },
-    beforeUnmount() { if (this.timer) clearInterval(this.timer); },
+    mounted() {
+        scrollShellToTop();
+        // Tablette de cuisine allumée toute la journée : on n'interroge pas le serveur écran masqué, et au réveil / au retour du réseau
+        // on rafraîchit tout de suite (sinon l'écran réveillé affichait « Journée en règle » d'il y a une heure jusqu'au prochain tour).
+        document.addEventListener("visibilitychange", this.onWake);
+        window.addEventListener("online", this.onWake);
+    },
+    beforeUnmount() {
+        if (this.timer) clearInterval(this.timer);
+        document.removeEventListener("visibilitychange", this.onWake);
+        window.removeEventListener("online", this.onWake);
+    },
     methods: {
         readDismissed() {
             try { return window.localStorage.getItem("hygiene.setup.dismissed") === "1"; } catch (_) { return false; }
@@ -215,10 +237,22 @@ export default {
             this.setupDismissed = true;
             try { window.localStorage.setItem("hygiene.setup.dismissed", "1"); } catch (_) { /* navigation privée : le guide reviendra, sans conséquence */ }
         },
+        hidden() { return typeof document !== "undefined" && document.visibilityState === "hidden"; },
+        /** Écran qui se réveille ou réseau qui revient : rafraîchir si les chiffres ont plus de WAKE_MIN_AGE_MS (pas à chaque va-et-vient d'onglet). */
+        onWake() {
+            if (this.hidden()) return;
+            if (!this.lastOkAt || Date.now() - this.lastOkAt >= WAKE_MIN_AGE_MS || this.failures > 0) this.load();
+        },
         async load() {
+            // jamais deux appels en même temps : une réponse lente + le tour suivant doublaient la charge, et la plus ancienne pouvait gagner
+            if (this.inFlight) return;
+            this.inFlight = true;
             try {
                 const { data } = await axios.get("admin/hygiene/overview");
-                this.tiles = data.data || [];
+                // Une réponse 200 qui n'a pas la forme attendue (portail captif, proxy, page de connexion, {}) n'est pas « tout est en ordre » :
+                // sans tuile ni rappel, la bannière aurait dit « Tout est en ordre ✓ » sur AUCUNE donnée. Un vrai serveur envoie toujours l'horloge.
+                if (!data || !Array.isArray(data.data) || !data.meta || typeof data.meta !== "object" || !data.meta.server_now) throw new Error("réponse inattendue");
+                this.tiles = data.data;
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
                 this.loaded = true;
@@ -228,6 +262,8 @@ export default {
                 this.failures += 1;
                 // un rafraîchissement raté ne vide pas l'écran : on garde les dernières valeurs
                 if (!this.loaded) this.loadError = "Accueil indisponible. Vérifiez la connexion puis rechargez la page.";
+            } finally {
+                this.inFlight = false;
             }
         },
     },

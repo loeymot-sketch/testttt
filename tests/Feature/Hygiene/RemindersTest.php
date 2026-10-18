@@ -169,6 +169,30 @@ class RemindersTest extends TestCase
         $this->assertArrayNotHasKey('temperature-late-morning', $reminders->all());
     }
 
+    public function test_nettoyages_en_retard_jusqu_a_trois_une_phrase_chacun_au_dela_une_seule_phrase(): void
+    {
+        $this->staff();
+        $ids = [];
+        foreach (range(1, 4) as $n) {
+            $t = new HygieneTaskTemplate(['name' => "Fiche $n", 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'due_time' => '09:00', 'sort_order' => 10 + $n, 'is_active' => true]);
+            $t->branch_id = 1;
+            $t->created_at = Carbon::parse('2026-10-01');
+            $t->save();
+            $ids[] = $t->id;
+            if ($n === 3) {
+                $keys = array_keys($this->overview()[0]->all());
+                $this->assertCount(3, array_filter($keys, fn ($k) => str_starts_with($k, 'tasks-late-')), '3 fiches : une phrase chacune');
+                $this->assertNotContains('tasks-late-many', $keys);
+            }
+        }
+        $rem = $this->overview()[0]->all();
+        $late = array_filter($rem, fn ($r) => $r['domain'] === 'tasks');
+        $this->assertCount(1, $late, '4 fiches : UNE phrase, pas quatre');
+        $this->assertSame('4 nettoyages en retard : « Fiche 1 », « Fiche 2 », « Fiche 3 » et 1 autre.', $rem['tasks-late-many']['text']);
+        $this->assertSame('alert', $rem['tasks-late-many']['level']);
+        $this->assertSame('/admin/hygiene/tasks', $rem['tasks-late-many']['route']);
+    }
+
     public function test_nettoyage_en_retard_puis_fait(): void
     {
         $this->staff();

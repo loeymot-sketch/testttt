@@ -107,7 +107,8 @@ class OverviewAndReportTest extends TestCase
         $this->assertSame('empty', $tiles['temperature']['status']);
         $this->assertSame('empty', $tiles['tasks']['status']);
         $this->assertSame('empty', $tiles['oil']['status']);
-        $this->assertSame('ok', $tiles['dlc']['status']);
+        // aucune étiquette en cours : neutre aussi, JAMAIS vert (relecture adverse 2026-10-18 : « Aucune alerte » en vert au premier jour disait « conforme » sur rien)
+        $this->assertSame('idle', $tiles['dlc']['status']);
         // rien reçu, rien tracé : neutre, JAMAIS vert (« vert » = fait et conforme)
         $this->assertSame('idle', $tiles['reception']['status']);
         $this->assertSame('idle', $tiles['trace']['status']);
@@ -152,7 +153,57 @@ class OverviewAndReportTest extends TestCase
         }
         $d = collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['dlc'];
         $this->assertSame('alert', $d['status']);
-        $this->assertSame(['expired' => 1, 'soon' => 1], $d['counts']);
+        $this->assertSame(['expired' => 1, 'soon' => 1, 'live' => 1], $d['counts']);
+    }
+
+    // ───────────── DLC : seule une étiquette DÉPASSÉE appelle une action ─────────────
+
+    private function dlcLabel(string $name, $expires, bool $discarded = false): void
+    {
+        $l = new LabelPrintLog(['kind' => 'dlc', 'status' => 'printed', 'copies' => 1, 'product_name' => $name, 'opened_at' => now()->subDay(), 'expires_at' => $expires, 'discarded_at' => $discarded ? now() : null, 'discard_reason' => $discarded ? 'discarded' : null]);
+        $l->branch_id = 1;
+        $l->save();
+    }
+
+    private function dlcTile(): array
+    {
+        return collect($this->getJson(self::BASE.'/overview')->json('data'))->keyBy('key')['dlc'];
+    }
+
+    public function test_dlc_aucune_etiquette_en_cours_est_neutre_jamais_verte(): void
+    {
+        $this->staff();
+        $d = $this->dlcTile();
+        $this->assertSame('idle', $d['status']);
+        $this->assertSame('Aucune étiquette en cours', $d['headline']);
+        // une étiquette jetée ou périmée depuis longtemps ne rend pas la tuile « verte » : rien n'est en cours
+        $this->dlcLabel('Jetée', now()->addDays(2), true);
+        $this->assertSame('idle', $this->dlcTile()['status']);
+    }
+
+    public function test_dlc_une_etiquette_qui_expire_dans_la_journee_ne_retient_plus_la_journee_en_regle(): void
+    {
+        $this->staff();
+        $this->dlcLabel('Sauce maison', now()->addHours(12));
+        $this->dlcLabel('Oignons', now()->addDays(3));
+        $d = $this->dlcTile();
+        $this->assertSame('ok', $d['status'], 'le fonctionnement normal d\'une cuisine (DLC de 24 h) n\'est pas « à compléter »');
+        $this->assertSame('2 étiquettes en cours', $d['headline']);
+        $this->assertSame('dont 1 à échéance sous 24 h', $d['detail']);
+        $this->assertSame(['expired' => 0, 'soon' => 1, 'live' => 2], $d['counts']);
+        // et la bannière du hub ne reçoit aucun « domaine à compléter » à cause d'elle
+        $this->assertSame(0, $this->getJson(self::BASE.'/overview')->json('meta.todo'));
+    }
+
+    public function test_dlc_depassee_reste_une_alerte_avec_le_detail_des_echeances_proches(): void
+    {
+        $this->staff();
+        $this->dlcLabel('Périmée', now()->subHours(2));
+        $this->dlcLabel('Bientôt', now()->addHours(5));
+        $d = $this->dlcTile();
+        $this->assertSame('alert', $d['status']);
+        $this->assertSame('1 DLC dépassée', $d['headline']);
+        $this->assertSame('1 à échéance sous 24 h', $d['detail']);
     }
 
     // ───────────── rapport : taux de couverture ─────────────

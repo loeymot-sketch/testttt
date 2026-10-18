@@ -256,3 +256,26 @@ describe('plan de nettoyage — éditeur de fiches', () => {
         expect(body.checklist.map((c) => c.label)).toEqual(['Bac vidé', 'Joints lavés']);
     });
 });
+
+describe('relecture adverse (2026-10-18) — « faite » veut dire la même chose que sur le hub', () => {
+    const partial = () => T({ id: 1, name: 'Cuisine', state: 'partial', completion: { id: 3, complete: false, items_done: 1, items_total: 3, completed_at: '2026-10-20T09:00:00+02:00', operator_name: 'Karim B.', late: false, note: 'sol mouillé', items: [{ key: 'k1', label: 'Mobilier', done: true }, { key: 'k2', label: 'Sols', done: false }, { key: 'k3', label: 'Vitrines', done: false }] } });
+
+    it('une fiche validée INCOMPLÈTE n’est pas comptée « faite » : 0/1, jamais « 1/1 faites » ni « Bravo »', async () => {
+        setup([partial()]);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="tsk-progress"]').text()).toBe('0/1 faites');
+        expect(w.get('[data-testid="tsk-sum-partial"]').text()).toContain('1 incomplète');
+        expect(w.text()).not.toContain('Bravo');
+        expect(w.find('[data-testid="tsk-all-done"]').exists()).toBe(false);
+        const left = w.get('[data-testid="tsk-partial-left"]').text();
+        expect(left).toContain('1 fiche incomplète à reprendre');
+    });
+
+    it('le « Bravo » ne vient que quand plus rien n’est à faire NI à reprendre', async () => {
+        setup([T({ id: 1, state: 'done', completion: { id: 3, complete: true, items_done: 3, items_total: 3, completed_at: '2026-10-20T09:00:00+02:00', operator_name: 'Karim B.', late: false, note: null, items: [] } })]);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="tsk-progress"]').text()).toBe('1/1 faites');
+        expect(w.get('[data-testid="tsk-all-done"]').text()).toContain('Bravo');
+        expect(w.find('[data-testid="tsk-partial-left"]').exists()).toBe(false);
+    });
+});

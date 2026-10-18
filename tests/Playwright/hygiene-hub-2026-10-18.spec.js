@@ -104,3 +104,40 @@ test('téléphone 390 px : les outils du hub sont lisibles, cibles tactiles >= 4
     await page.getByTestId('home-tools').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(OUT, 'm1-hub-mobile.png'), fullPage: true });
 });
+
+// Relecture adverse 2026-10-18 : les écrans d'étiquettes n'importent pas hygiene.css ; chargés DIRECTEMENT (F5, favori, lien), la barre « retour »
+// était un lien nu de 24 px. Les parcours ci-dessus partaient du hub (feuille déjà chargée) et masquaient le défaut.
+test('chargement DIRECT (F5, favori) : la barre « retour au hub » est une pastille de 44 px sur chaque écran du module', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loginAsAdmin(page);
+    for (const url of ['/admin/labels/orders', '/admin/labels/printer', '/admin/labels/dlc', '/admin/hygiene/temperature', '/admin/hygiene/report', '/admin/hygiene/team']) {
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        const back = page.getByTestId('hub-bar-link');
+        await expect(back, `${url} : pas de barre`).toBeVisible({ timeout: 30_000 });
+        const m = await back.evaluate((el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return { h: r.height, border: cs.borderTopWidth, radius: cs.borderTopLeftRadius }; });
+        expect(m.h, `${url} chargé en direct : barre de ${m.h} px`).toBeGreaterThanOrEqual(44);
+        expect(m.border, `${url} : pas de bordure (feuille de style absente)`).toBe('2px');
+        if (url === '/admin/labels/printer') await page.screenshot({ path: path.join(OUT, 'd1-imprimante-chargement-direct.png') });
+    }
+});
+
+test('téléphone 390 px : le tiroir de la barre se referme après un appui sur « Hygiène & étiquettes » et le hub est visible', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginAsAdmin(page);
+    await page.goto('/admin/hygiene/temperature', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('hub-bar-link')).toBeVisible({ timeout: 30_000 });
+    const drawerOpen = () => page.evaluate(() => document.querySelector('.db-sidebar').classList.contains('active'));
+    expect(await drawerOpen()).toBe(false);
+    await page.locator('button.db-header-nav').click();
+    await expect.poll(drawerOpen).toBe(true);
+    await page.screenshot({ path: path.join(OUT, 'm2-tiroir-ouvert.png') });
+    await page.locator('.db-sidebar a.db-sidebar-nav-menu', { hasText: 'Hygiène & étiquettes' }).click();
+    await expect(page).toHaveURL(/\/admin\/hygiene\/home$/, { timeout: 30_000 });
+    await expect.poll(drawerOpen, { message: 'le tiroir est resté ouvert devant le hub' }).toBe(false);
+    await expect(page.getByTestId('home-tools')).toBeVisible({ timeout: 30_000 });
+    // le tiroir glisse (transition CSS) : mesurer la position FINALE, pas le milieu de l'animation
+    await page.waitForTimeout(700);
+    const x = await page.locator('.db-sidebar').evaluate((el) => el.getBoundingClientRect().right);
+    expect(x, 'le tiroir recouvre encore le hub une fois la transition finie').toBeLessThanOrEqual(0);
+    await page.screenshot({ path: path.join(OUT, 'm3-hub-apres-tiroir.png') });
+});

@@ -155,3 +155,18 @@ Source : rapport de l'extension (appli, aide, site, stores). **À re-vérifier a
 | Stock, pertes, production | existent hors du module (stock, repas/pertes) : liens, pas de doublon |
 
 **Reste réel du plan** (déjà listé plus haut, rien de nouveau) : relevés « refroidissement rapide » et « température à cœur », étiquettes « sans date » et vierge, tâches ponctuelles/annuelles/attribuées, documents et formations, sondes connectées, PWA/hors ligne des autres écrans. Les seuils de refroidissement sont une valeur réglementaire à faire valider par le responsable avant affichage « conforme ».
+
+## Cycle test-e2e du hub — 3 relecteurs adverses indépendants (2026-10-18)
+
+Trois relecteurs (visuel/UX, accessibilité/droits/traduction/navigation, robustesse selon les états de données) ont attaqué le code SERVI, sans rien corriger. 27 constats ; chacun recoupé dans le code avant d'agir.
+
+**Corrigés (avec test qui échoue sans le correctif)** :
+- P0 : une réponse 200 vide ou HTML (portail captif, proxy) affichait « Tout est en ordre ✓ » sur AUCUNE donnée → réponse sans la forme attendue = échec (erreur au premier chargement ; tuiles gardées + « chiffres périmés » ensuite).
+- P0 : l'écran Nettoyage comptait une fiche validée INCOMPLÈTE « faite » et disait « Bravo » pendant que le hub disait « 0/1 » → même définition partout.
+- P1 : la barre « retour au hub » redevenait un lien nu de 24 px en chargement direct (F5, favori) sur les écrans d'étiquettes (hygiene.css non importé) ; les e2e partaient du hub, ce qui masquait le défaut → la barre porte sa feuille ; e2e en chargement direct.
+- P1 : une étiquette DLC qui expire dans la journée (20 produits du catalogue durent 24 h) retenait « Journée en règle » avec un bouton « Imprimer » absurde → seule une étiquette DÉPASSÉE appelle une action. (Décision produit jusque-là reportée : tranchée par les preuves.)
+- P1 : le guide de mise en place passait avant « À traiter maintenant » → l'urgent d'abord.
+- P2 : tuile DLC verte « Aucune alerte » au premier jour → neutre ; « chiffres périmés » dès le premier échec (et non le deuxième) ; la ligne active est exposée (`aria-current`) ; cartes Alertes/Codes d'équipe masquées sans le droit « settings » (impasse 403 pour 59 caissiers + 22 responsables) ; tiroir mobile qui restait ouvert devant le hub ; rappels de nettoyage regroupés au-delà de 3 ; URL en majuscules ; nom du module cohérent ; appel du dossier de contrôle ; hauteurs des cartes d'outils.
+- Optimisation : plus d'appel au serveur écran masqué, rafraîchissement au réveil / retour du réseau si les chiffres ont plus de 15 s, jamais deux appels en même temps.
+
+**Constatés, NON corrigés (préexistants au hub, hors de sa portée)** : double allumage de la barre après retour navigateur (classe `active` posée au clic, partout) ; focus clavier laissé sur `body` et titre d'onglet fixe « Le Cayenne » après navigation (toute l'admin) ; contraste de la ligne active 3,27:1 et bouton du tiroir « Fermer » de 36 px / mal nommé (coquille partagée) ; Chef / Waiter (droit `kitchen-display-system` seul) acceptés par l'API mais sans entrée dans l'interface ; « Codes de l'équipe » : 62 lignes sans recherche, plafond silencieux à 200 ; une alerte levée par « produits jetés » reste jusqu'à une nouvelle mesure (par conception) ; bain-marie non relevé = tuile « à faire » toute la journée alors que le rappel du matin l'en dispense ; texte de la barre de retour en français en dur (en anglais seul le menu change). Non vérifié : lecteur d'écran réel, tablette physique, Safari/Firefox, mode sombre, passage de minuit.

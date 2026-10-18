@@ -33,6 +33,9 @@
                         <p v-if="!items.length" class="hy-muted" data-testid="tsk-empty">
                             Aucune fiche à faire aujourd'hui. Ajoutez-en dans l'onglet « Plan de nettoyage ».
                         </p>
+                        <p v-else-if="!shown.length && tab === 'todo' && summary.partial > 0" class="hy-note is-todo" data-testid="tsk-partial-left">
+                            Plus de fiche à faire, mais {{ summary.partial }} fiche{{ summary.partial > 1 ? "s" : "" }} incomplète{{ summary.partial > 1 ? "s" : "" }} à reprendre : ouvrez « Faites aujourd'hui ».
+                        </p>
                         <p v-else-if="!shown.length" class="hy-note" data-testid="tsk-all-done">
                             {{ tab === "todo" ? "Tout est fait pour aujourd'hui. Bravo." : "Rien n'a encore été validé aujourd'hui." }}
                         </p>
@@ -232,7 +235,8 @@ export default {
     computed: {
         summary() { return this.meta.summary; },
         recommended() { return this.meta.recommended; },
-        doneCount() { return this.summary.done + this.summary.partial; },
+        /** « faites » = validées COMPLÈTES, comme sur le hub : une fiche validée avec des points non faits reste à reprendre (jamais comptée faite). */
+        doneCount() { return this.summary.done; },
         todo() { return this.items.filter((t) => t.state === "todo"); },
         finished() { return this.items.filter((t) => t.state !== "todo"); },
         shown() { return this.tab === "todo" ? this.todo : this.finished; },

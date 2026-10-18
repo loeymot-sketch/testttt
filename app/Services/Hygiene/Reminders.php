@@ -25,6 +25,9 @@ use Carbon\CarbonInterface;
  */
 final class Reminders
 {
+    /** Au-delà de ce nombre de fiches de nettoyage en retard, les rappels se regroupent en une seule phrase. */
+    private const LATE_TASKS_LISTED = 3;
+
     /** @return list<array{key:string, domain:string, level:string, text:string, route:string}> */
     public function all(?CarbonInterface $now = null): array
     {
@@ -102,15 +105,21 @@ final class Reminders
         $templates = HygieneTaskTemplate::query()->where('is_active', true)->get()->filter(fn ($t) => TaskSchedule::isDueOn($t, $day));
         if ($templates->isEmpty()) return [];
         $done = HygieneTaskCompletion::query()->whereNull('voided_at')->whereDate('due_date', $day->toDateString())->pluck('template_id')->unique()->all();
-        $out = [];
+        $late = [];
         foreach ($templates as $t) {
             $due = TaskSchedule::dueAt($t, $day);
             // une fiche créée APRÈS son heure limite du jour n'était pas encore attendue
             if ($due === null || in_array($t->id, $done, true) || $now->lte($due) || $t->created_at->gte($due)) continue;
-            $out[] = $this->item("tasks-late-{$t->id}", 'tasks', 'alert', "Nettoyage en retard : « {$t->name} » (prévu à ".$due->format('H:i').').', '/admin/hygiene/tasks');
+            $late[] = [$t, $due];
         }
+        // Jusqu'à 3 fiches : une phrase chacune. Au-delà, UNE phrase (10 lignes quasi identiques enterraient le relevé de température non fait, sous le pli d'un téléphone).
+        if (count($late) <= self::LATE_TASKS_LISTED) {
+            return array_map(fn ($l) => $this->item("tasks-late-{$l[0]->id}", 'tasks', 'alert', "Nettoyage en retard : « {$l[0]->name} » (prévu à ".$l[1]->format('H:i').').', '/admin/hygiene/tasks'), $late);
+        }
+        $names = array_map(fn ($l) => '« '.$l[0]->name.' »', array_slice($late, 0, self::LATE_TASKS_LISTED));
+        $more = count($late) - self::LATE_TASKS_LISTED;
 
-        return $out;
+        return [$this->item('tasks-late-many', 'tasks', 'alert', count($late).' nettoyages en retard : '.implode(', ', $names).' et '.$more.' autre'.($more > 1 ? 's' : '').'.', '/admin/hygiene/tasks')];
     }
 
     /** @return list<array<string,mixed>> */

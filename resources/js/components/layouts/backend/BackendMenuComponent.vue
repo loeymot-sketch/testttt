@@ -33,7 +33,8 @@
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </a>
                     <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu"
-                                 :class="{ 'router-link-active': isPrefixActive(menu) }">
+                                 :class="{ 'router-link-active': isPrefixActive(menu) }"
+                                 :aria-current="isPrefixActive(menu) ? 'true' : null">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -444,7 +445,17 @@ export default {
 
             return out;
         },
+        /**
+         * Téléphone / tablette portrait (< lg) : `.db-sidebar.active` = tiroir OUVERT. Il restait ouvert après un appui sur un lien : la page
+         * se chargeait DERRIÈRE le tiroir et l'appui semblait ne rien faire (le hub unique n'a que cette porte sur téléphone). Au-delà de lg,
+         * `active` veut dire « replié » : on n'y touche pas.
+         */
+        closeDrawerOnSmallScreens() {
+            if (typeof window === 'undefined' || !window.matchMedia || !window.matchMedia('(max-width: 1023px)').matches) return;
+            if (document.querySelector('.db-sidebar')?.classList?.contains('active')) this.handleSidebar();
+        },
         sidebarActive: function (e) {
+            if (e?.currentTarget?.querySelector?.('a')) this.closeDrawerOnSmallScreens();
             const activeMenu = document.querySelector('.db-sidebar-nav-item.active');
             if (activeMenu) {
                 activeMenu.classList.remove('active');
@@ -462,7 +473,8 @@ export default {
         isPrefixActive(menu) {
             const prefixes = menu && menu.activePrefixes;
             if (!prefixes || !prefixes.length) return false;
-            const path = (this.$route && this.$route.path) || '';
+            // le routeur ne distingue pas les majuscules (/admin/LABELS/printer ouvre la même page) : la ligne non plus
+            const path = ((this.$route && this.$route.path) || '').toLowerCase();
             return prefixes.some((p) => path === p || path.startsWith(p + '/'));
         },
         showSidebarParentNavRow(menu) {

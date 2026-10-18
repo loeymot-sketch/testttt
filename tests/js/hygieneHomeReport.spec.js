@@ -244,7 +244,7 @@ describe('dossier de contrôle — réponses dans le désordre', () => {
 });
 
 describe('relecture adverse (2026-10-17) — accueil', () => {
-    it('après deux rafraîchissements ratés, plus de « Tout est en ordre » : on dit que les chiffres datent', async () => {
+    it('dès le PREMIER rafraîchissement raté, plus de « Tout est en ordre » : on dit que les chiffres datent', async () => {
         vi.useFakeTimers();
         h.axios.get.mockReset();
         h.axios.get.mockResolvedValue({ data: { data: [tile('tasks', 'ok', '5/5 fiches')], meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris', alerts: 0, todo: 0 } } });
@@ -252,8 +252,6 @@ describe('relecture adverse (2026-10-17) — accueil', () => {
         await flushPromises();
         expect(w.get('[data-testid="home-banner"]').text()).toContain('Tout est en ordre');
         h.axios.get.mockRejectedValue(new Error('réseau coupé'));
-        await vi.advanceTimersByTimeAsync(60000);
-        expect(w.find('[data-testid="home-stale"]').exists()).toBe(false); // un raté : on garde
         await vi.advanceTimersByTimeAsync(60000);
         expect(w.get('[data-testid="home-stale"]').text()).toMatch(/Réseau indisponible : ces chiffres datent de/);
         expect(w.find('[data-testid="home-banner"]').exists()).toBe(false);

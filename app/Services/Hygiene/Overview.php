@@ -109,18 +109,30 @@ final class Overview
             ['done' => $finished, 'total' => $total, 'overdue' => $overdue, 'partial' => $partial]);
     }
 
+    /**
+     * DLC : seule une étiquette DÉPASSÉE appelle une action (la jeter, ou la marquer « utilisée ») — c'est le rappel `dlc-expired`. Une étiquette qui
+     * expire dans la journée est le fonctionnement NORMAL d'une cuisine (20 produits du catalogue durent 24 h) : elle s'affiche, elle ne retient plus
+     * « Journée en règle ». Et « vert » dit « fait et conforme », pas « aucune donnée » : sans aucune étiquette en cours la tuile est neutre (`idle`).
+     */
     private function dlc(): array
     {
         $now = now();
-        $rows = LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)->whereNull('discarded_at')
-            ->whereNotNull('expires_at')->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))
-            ->get(['expires_at']);
+        $done = fn () => LabelPrintLog::query()->where('kind', LabelPrintLog::KIND_DLC)->whereIn('status', LabelPrintLog::DONE_STATUSES)->whereNull('discarded_at')->whereNotNull('expires_at');
+        $rows = $done()->where('expires_at', '>=', $now->copy()->subDays(LabelPrintLog::WATCH_BEHIND_DAYS))->where('expires_at', '<=', $now->copy()->addHours(24))->get(['expires_at']);
         $expired = $rows->filter(fn ($l) => $l->expires_at->lt($now))->count();
         $soon = $rows->count() - $expired;
-        $status = $expired > 0 ? 'alert' : ($soon > 0 ? 'todo' : 'ok');
+        $live = $done()->where('expires_at', '>=', $now)->count();
+        $counts = ['expired' => $expired, 'soon' => $soon, 'live' => $live];
+        $cta = $soon > 0 ? $soon.' à échéance sous 24 h' : '';
 
-        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', $status, $expired > 0 ? $this->plural($expired, 'DLC dépassée') : ($soon > 0 ? $soon.' à échéance 24 h' : 'Aucune alerte'),
-            $expired > 0 && $soon > 0 ? $soon.' à échéance sous 24 h' : '', ['expired' => $expired, 'soon' => $soon]);
+        if ($expired > 0) {
+            return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'alert', $this->plural($expired, 'DLC dépassée'), $soon > 0 ? $cta : '', $counts);
+        }
+        if ($live === 0) {
+            return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'idle', 'Aucune étiquette en cours', '', $counts);
+        }
+
+        return $this->tile('dlc', 'DLC', 'fa-solid fa-tags', 'ok', $this->plural($live, 'étiquette').' en cours', $soon > 0 ? 'dont '.$cta : '', $counts);
     }
 
     private function reception(): array
