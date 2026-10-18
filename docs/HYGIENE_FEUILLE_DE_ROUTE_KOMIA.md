@@ -135,3 +135,23 @@ Source : rapport de l'extension (appli, aide, site, stores). **À re-vérifier a
 **Où Cayenne est déjà devant** : seuils et verdict côté serveur, action corrective avec preuve par nouvelle mesure, code personnel, hors ligne des températures, dossier PDF avec engagement, alertes e-mail, guide de mise en place, imprimante pilotée depuis le web (Komia : iOS/Android seulement), pas de gamification faussée.
 
 **Hors hygiène** : planning, pointage, congés, paie, multi-sites, caisse connectée, commandes fournisseurs. Module RH et stock à décider à part.
+
+## Hub unique « Hygiène & étiquettes » + plan « parité Komia » recoupé avec le code (2026-10-18)
+
+**Livré** (commit « un seul bouton… ») : la barre latérale passe de 12 lignes (groupes Étiquettes + Hygiène) à UNE, placée sous POS et allumée sur tous les écrans du module ; l'accueil Hygiène est le hub (tuiles du jour + « Autres outils » : étiquettes de commande, imprimante, alertes, codes d'équipe) ; chaque écran du module pose une barre « ← Hygiène & étiquettes » et remet `.db-main` en haut (le routeur ne scrolle que la fenêtre : une page ouverte depuis le bas du hub s'ouvrait défilée de 658 px, bouton de retour hors de vue). Les routes sont inchangées. Preuves : Vitest 5399, mutations rouges puis restaurées, e2e réel `hygiene-hub-2026-10-18`.
+
+**Le plan « Méga plan Cayenne Hygiène — parité fonctionnelle Komia » (document partagé) a été écrit SANS accès au code** (il le dit : « pile de Cayenne non vue »). Recoupé ligne à ligne :
+
+| Le plan dit | Le code dit |
+|---|---|
+| P0 : afficher le vrai statut d'impression | déjà : `printed` seulement sur trame d'achèvement, sinon `unconfirmed` / `failed` |
+| DLC « à compléter : repas témoin avec moment » | fait le 2026-10-18 (service Matin/Midi/Soir obligatoire, jamais deviné) |
+| allergènes « à ajouter sur l'étiquette » | déjà : les 14 allergènes, ou « sans allergène », imprimés |
+| « Rien tracé » affiché en vert | la tuile est neutre (`idle`), jamais verte |
+| seuils, courbe 14 j, action corrective, polaires de l'huile | faits |
+| import CSV produits, « Tout cocher », compteurs | faits |
+| alertes e-mail | faites ; push / SMS / WhatsApp non |
+| Planning, pointage, congés, paie | **absents de Cayenne** (aucune route, aucune table) : module RH distinct, décision propriétaire |
+| Stock, pertes, production | existent hors du module (stock, repas/pertes) : liens, pas de doublon |
+
+**Reste réel du plan** (déjà listé plus haut, rien de nouveau) : relevés « refroidissement rapide » et « température à cœur », étiquettes « sans date » et vierge, tâches ponctuelles/annuelles/attribuées, documents et formations, sondes connectées, PWA/hors ligne des autres écrans. Les seuils de refroidissement sont une valeur réglementaire à faire valider par le responsable avant affichage « conforme ».
