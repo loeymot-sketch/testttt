@@ -4873,6 +4873,7 @@ Plateforme restaurant fast-food complète :
 Source `~/Downloads/komia-phase3/` (analyse Komia par Claude Chrome). Chaque écart recoupé avec le code/la prod avant codage (détail et réfutations : `docs/HYGIENE_FEUILLE_DE_ROUTE_KOMIA.md` § « rapport Komia phase 3 »).
 Livré : alertes e-mail aux responsables (`hygiene:notify`, 2 tables BranchScope), relevés de température hors ligne (heure de la mesure), code personnel « Qui ? » (jeton signé 10 min, 1 table BranchScope), favoris DLC (colonne `is_favorite`),
 suivi après écart (nouvelle mesure exigée/rappelée). 3 migrations additives à jouer au déploiement (`hygiene_alert_*`, `is_favorite`, `hygiene_operator_pins`). BranchScope : 38 modèles (CLAUDE.md §9 mis à jour).
+Relecture adverse (2 agents, ~45 constats revérifiés puis corrigés, 3 commits `20b479a7c`, `7b4683906`, `970fa0ced`) : +2 migrations additives (`followup_close_*` sur les relevés). 4 migrations au total à jouer.
 Brother : option « tickets d'une commande attachés » (le manuel n'a AUCUNE demi-coupe), « dernier travail envoyé », « test de coupe ». Non éprouvé : tablette et Brother réelles, SMTP réel.
 **2026-10-17 (soir, suite) — DÉPLOYÉ en production : HEAD `1b1ce7335`, avance rapide depuis `03a4f725f`.** e2e réel 4/4, Vitest 5238, PHPUnit Hygiène 128 / Étiquettes 103,
 zones gelées inchangées, chaîne NF525 OK, snapshot SQL 4,3 Mo + sauvegarde JSON de `dlc_label_products` (95 lignes). La lecture de la prod AVANT de déployer a révélé que 95 produits

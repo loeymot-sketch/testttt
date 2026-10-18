@@ -89,6 +89,14 @@ Chaque écart du rapport a été recoupé avec le code et la production AVANT d'
 | Demande n°1 du propriétaire : favoris | absents (la sélection multiple + panier existait) | **fait** : étoile, onglet « Favoris », « Préparer toute ma liste » |
 | Demande du propriétaire : tickets d'une commande attachés (Brother) | le manuel Brother n'a **aucune demi-coupe** ; seulement « couper toutes les n étiquettes » | **fait en option** (une coupe par commande + pointillé entre tickets) ; « dernier travail envoyé » et « test de coupe » pour départager tablette et machine |
 
+**Relecture adverse du lot (2026-10-18)** — deux relecteurs indépendants (backend, interface) : ~45 constats, chacun revérifié dans le code puis corrigé avec test + mutation. Les plus graves :
+la fenêtre du jeton « Qui ? » n'était jugée que sur la mesure la plus ancienne du lot ; la période d'un relevé venait d'un champ envoyé par la tablette (un relevé « du soir » posté à 10 h taisait le rappel du soir) ;
+les annulations ignoraient le code personnel ; l'envoi hors ligne relisait la saisie APRÈS l'attente (relevé perdu en silence ou doublé) ; « moi » n'était pas figé dans la file (un autre compte qui rejouait signait à sa place) ;
+un lot refusé en bloc perdait aussi ses relevés valides ; la file ne se vidait que sur l'écran Températures ; l'expiration du code ramenait en silence sur le compte partagé ; une panne de messagerie de 15 minutes abandonnait l'alerte
+pour la journée ; un second écart le même jour n'était jamais rappelé après le plafond d'envois ; le dossier de contrôle ne distinguait pas un relevé saisi hors ligne. **Résiduel assumé** : annuler sans désigner personne reste signé du compte
+connecté (pas de code imposé à tous) ; le jeton de signature (10 min) reste dans la file hors ligne (le code, jamais) ; la liste « Qui ? » n'a pas de navigation clavier ; le brouillon n'est écrit dans la file qu'après l'échec de l'envoi (≤ 30 s) ;
+V1 mono-branche (planificateur et alertes sur `hygiene.branch_id`) ; un ticket de plus d'1 m de papier avec pointillé pourrait dépasser la limite du rouleau continu.
+
 **Non fait** (décisions ou matériel) : WhatsApp (aucune preuve que Komia le fasse ; aucun fournisseur choisi, paquet de décision du 2026-08-12 : d'abord PWA/push) ; sonde Bluetooth (le rapport lui-même contredit Bluetooth / Dragino + passerelle 4G : modèle exact à fixer) ; rappels par équipement ou par service ; assignation de tâches ; bibliothèque d'équipements typés ; PWA ; hors ligne des autres écrans ; états « mariné » et « étiquette vierge ».
 **Non éprouvé** : tablette et Brother réelles ; envoi SMTP réel (le code journalise l'échec et le dit ; la messagerie locale pointe sur un hôte factice).
 
