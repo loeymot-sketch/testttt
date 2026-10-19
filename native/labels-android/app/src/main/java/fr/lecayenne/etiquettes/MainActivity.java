@@ -3,11 +3,16 @@ package fr.lecayenne.etiquettes;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.PermissionRequest;
@@ -19,6 +24,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 /**
  * « Le Cayenne Étiquettes » — le back-office (écran Étiquettes) dans une WebView, avec un pont Java vers l'imprimante
@@ -33,6 +39,10 @@ public class MainActivity extends Activity {
 
     /** Demande micro de la page en attente de la réponse de l'utilisateur à la permission Android. */
     private PermissionRequest pendingMicRequest;
+
+    /** Téléchargement de mise à jour en cours (identifiant DownloadManager), -1 si aucun. */
+    private long updateDownloadId = -1;
+    private BroadcastReceiver updateReceiver;
 
     private WebView web;
     private PrinterBridge bridge;
@@ -91,8 +101,10 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                // Wi‑Fi coupé au lancement ou pendant une coupure : la page d'erreur de Chrome ne se relance pas toute seule.
-                if (request.isForMainFrame()) view.postDelayed(() -> view.loadUrl(startUrl), 10000);
+                // [GARDE DE CONNEXION 2026-10-19 · owner « je ne veux plus de blocage, je rafraîchis plusieurs fois »] Wi‑Fi coupé au
+                // lancement ou longtemps : plus de page d'erreur muette. Un écran clair « Pas de connexion », qui vérifie toutes les
+                // 4 s si le serveur répond et rouvre l'application TOUT SEUL dès que c'est le cas.
+                if (request.isForMainFrame()) showOfflinePage(view, startUrl);
             }
 
             @Override
@@ -105,6 +117,17 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Mise à jour de l'application depuis le serveur : le site propose « Mettre à jour », le téléchargement du fichier
+        // .apk est pris en charge ici (téléchargement Android puis installation, avec la confirmation du système).
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            Uri u = Uri.parse(url);
+            boolean notreSite = host != null && host.equalsIgnoreCase(u.getHost());
+            String chemin = u.getPath() == null ? "" : u.getPath().toLowerCase();
+            if (notreSite && chemin.endsWith(".apk")) startUpdate(url);
+            else try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) { /* rien pour l'ouvrir */ }
+        });
+        registerUpdateReceiver();
+
         bridge = new PrinterBridge(this, web);
         web.addJavascriptInterface(bridge, "LabelNative");
 
@@ -116,6 +139,70 @@ public class MainActivity extends Activity {
         // restoreState() renvoie null quand l'état sauvegardé ne contient pas de WebView (recreate() après un plantage) :
         // sans cette garde, la page restait blanche.
         if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) web.loadUrl(startUrl);
+    }
+
+    /** Écran local affiché quand le serveur est injoignable : il se rouvre seul dès que la connexion revient. */
+    private void showOfflinePage(WebView view, String startUrl) {
+        String html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
+                + "<body style='margin:0;font-family:sans-serif;background:#111;color:#fff;display:flex;flex-direction:column;"
+                + "align-items:center;justify-content:center;height:100vh;text-align:center'>"
+                + "<div style='font-size:56px'>&#128268;</div>"
+                + "<div style='font-size:26px;font-weight:700;margin:12px 0'>Pas de connexion</div>"
+                + "<div style='font-size:18px;opacity:.85'>Reconnexion automatique&hellip; rien &agrave; faire.</div>"
+                + "<button onclick=\"location.href='" + startUrl + "'\" style='margin-top:22px;background:#F4501E;color:#fff;border:0;"
+                + "border-radius:10px;padding:14px 26px;font-size:20px;font-weight:700'>R&eacute;essayer maintenant</button>"
+                + "<script>setInterval(function(){fetch('" + startUrl.replaceAll("^(https?://[^/]+).*$", "$1")
+                + "/api/health/live',{mode:'no-cors',cache:'no-store'}).then(function(){location.href='" + startUrl + "';}).catch(function(){});},4000);</script>"
+                + "</body></html>";
+        view.loadDataWithBaseURL(startUrl, html, "text/html", "utf-8", null);
+    }
+
+    /** Télécharge la nouvelle version (gestionnaire de téléchargements Android) ; l'installation démarre à la fin. */
+    private void startUpdate(String url) {
+        try {
+            if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                // Une seule fois : autoriser CETTE application à installer des mises à jour.
+                Toast.makeText(this, "Autorisez « Le Cayenne Étiquettes » à installer des applications, puis touchez « Mettre à jour » de nouveau.", Toast.LENGTH_LONG).show();
+                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName())));
+                return;
+            }
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setMimeType("application/vnd.android.package-archive");
+            req.setTitle("Le Cayenne Étiquettes — mise à jour");
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationInExternalFilesDir(this, android.os.Environment.DIRECTORY_DOWNLOADS, "LeCayenne-Etiquettes-update.apk");
+            updateDownloadId = dm.enqueue(req);
+            Toast.makeText(this, "Téléchargement de la mise à jour…", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            // Dernier recours : le navigateur télécharge, l'utilisateur ouvre le fichier.
+            try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception ignored) { /* rien pour l'ouvrir */ }
+        }
+    }
+
+    private void registerUpdateReceiver() {
+        updateReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id == -1 || id != updateDownloadId) return;
+                updateDownloadId = -1;
+                try {
+                    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    Uri apk = dm.getUriForDownloadedFile(id);
+                    if (apk == null) { Toast.makeText(MainActivity.this, "Téléchargement impossible, réessayez.", Toast.LENGTH_LONG).show(); return; }
+                    Intent install = new Intent(Intent.ACTION_VIEW);
+                    install.setDataAndType(apk, "application/vnd.android.package-archive");
+                    install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(install);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Installation impossible : ouvrez le fichier dans Téléchargements.", Toast.LENGTH_LONG).show();
+                }
+            }
+        };
+        IntentFilter f = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(updateReceiver, f, Context.RECEIVER_EXPORTED);
+        else registerReceiver(updateReceiver, f);
     }
 
     /**
@@ -183,6 +270,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (updateReceiver != null) { try { unregisterReceiver(updateReceiver); } catch (Exception ignored) { /* déjà retiré */ } updateReceiver = null; }
         if (pendingMicRequest != null) { pendingMicRequest.deny(); pendingMicRequest = null; }
         if (bridge != null) bridge.shutdown();
         if (web != null) {

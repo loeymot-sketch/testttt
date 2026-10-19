@@ -8,6 +8,20 @@ Le protocole Brother (octets raster, état, confirmation de page) reste celui de
 `labelPrinter.js`, déjà prouvés contre le manuel. Seul le transport change : `labelPrinterNative.js` fait ressembler le pont à Web
 Serial. Le Java ne fait que transporter des octets (`PrinterBridge.java`).
 
+## Lien de téléchargement et mises à jour
+
+- **Lien unique, toujours la dernière version** : `https://vps-418872ac.vps.ovh.net/etiquettes.apk` (version lue dans
+  `https://vps-418872ac.vps.ovh.net/etiquettes-app.json`). Le fichier est dans le dépôt (`public/etiquettes.apk`) et part avec
+  chaque déploiement ; `tests/js/etiquettesApkCoherence.spec.js` refuse qu'il diverge de `build.gradle` ou de son descripteur.
+- **Publier une nouvelle version** : monter `versionCode` + `versionName` dans `app/build.gradle`, compiler et signer (voir
+  « Compiler »), copier l'APK signé en `public/etiquettes.apk`, mettre à jour `public/etiquettes-app.json` (version + SHA-256
+  `shasum -a 256 public/etiquettes.apk`), committer, déployer.
+- **Mise à jour directement dans l'application** : l'application compare sa version à `etiquettes-app.json` et affiche en haut
+  « 📲 Nouvelle version de l'application » avec un bouton **Mettre à jour** (un appui : téléchargement puis installation ; Android
+  demande une confirmation, et une seule fois « autoriser cette source »). Les mises à jour du SITE n'ont pas besoin de ça : le
+  contenu vient du serveur et l'écran se met à jour tout seul (voir `resources/js/shared/app-resilience.js`).
+- **Sans connexion** : l'application affiche « Pas de connexion — reconnexion automatique » et rouvre le site toute seule.
+
 ## Installer sur la tablette
 
 1. Copier `LeCayenne-Etiquettes.apk` sur la tablette (câble, AirDrop, Drive…) et l'ouvrir ; autoriser « Installer des applis

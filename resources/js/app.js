@@ -39,7 +39,7 @@ import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
-import { startNewVersionWatcher } from './shared/new-version-banner';
+import { demarrerGardeDeConnexion } from './shared/app-resilience';
 
 
 /* Start tooltip alert code */
@@ -81,7 +81,11 @@ installInFlightGetDedupe(axios);
 // [Root cause 2026-09-24 · owner] Un onglet caisse/admin laissé ouvert avant
 // un déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
 // shared/new-version-banner.js. Best-effort, jamais bloquant.
-startNewVersionWatcher();
+// [GARDE DE CONNEXION 2026-10-19 · owner « je rafraîchis plusieurs fois pour que ça marche »] Remplace le bandeau à
+// bouton seul : pastille Connecté / Reconnexion / Pas de connexion, rechargement AUTOMATIQUE quand l'écran est libre
+// (nouvelle version, retour après une longue coupure, réveil de la tablette, fichier du site introuvable, écran
+// blanc). Voir shared/app-resilience.js. Exclut la borne (gestion propre).
+demarrerGardeDeConnexion();
 /**
  * Response interceptor: handle 401 globally.
  * - Kiosk + auto-login → silent re-login puis rejoue la requête une fois (__retry401Kiosk)

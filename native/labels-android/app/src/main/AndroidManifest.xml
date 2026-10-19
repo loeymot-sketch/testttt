@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- [DICTÉE 2026-10-19 · owner « l'app demande l'autorisation et elle n'existe pas »] Micro : dictée des étiquettes DLC.
          Sans cette déclaration Android ne PROPOSE même pas l'autorisation (elle est absente de Réglages › Applications). -->
+    <!-- [MISE À JOUR DANS L'APPLICATION 2026-10-19] Installer la nouvelle version téléchargée depuis le serveur (Android demande
+         une confirmation à l'utilisateur à chaque installation, et une seule fois « Autoriser cette source »). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 

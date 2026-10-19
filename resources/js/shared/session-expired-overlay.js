@@ -20,10 +20,25 @@
  * reconnexion" au lieu de laisser chaque widget afficher son propre zéro.
  */
 let _shown = false;
+let _minuteur = null;
+let _veille = null;
 
-export function showSessionExpiredOverlay(message = 'Session expirée — reconnexion…') {
+const surPageDeConnexion = () => typeof window !== 'undefined' && /^\/(login|admin\/login)(\/|$)/.test(window.location.pathname);
+
+/**
+ * [GARDE DE CONNEXION 2026-10-19 · owner « je rafraîchis plusieurs fois pour que ça fonctionne »] Cet écran était
+ * POSÉ et jamais ENLEVÉ : la navigation vers la connexion (router.push) échouait en silence sur l'écran cuisine
+ * et l'écran restait figé sur « Session expirée — reconnexion… » (reproduit au navigateur). Désormais :
+ *  - un bouton « Se reconnecter » toujours là ;
+ *  - un repli AUTOMATIQUE : si au bout de 4 s on n'est pas sur la page de connexion, redirection franche (rechargement) ;
+ *  - l'écran s'efface seul dès qu'on est sur la page de connexion (navigation SPA réussie).
+ */
+export function showSessionExpiredOverlay(message = 'Session expirée — reconnexion…', options = {}) {
     if (_shown || typeof document === 'undefined') return;
     _shown = true;
+
+    const aller = options.aller || (() => { window.location.assign('/login'); });
+    const delai = Number.isFinite(options.delaiMs) ? options.delaiMs : 4000;
 
     const overlay = document.createElement('div');
     overlay.setAttribute('role', 'alert');
@@ -39,5 +54,26 @@ export function showSessionExpiredOverlay(message = 'Session expirée — reconn
         <div style="font-size:32px;">🔒</div>
         <div>${message}</div>
     `;
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.setAttribute('data-testid', 'session-expired-reconnect');
+    bouton.textContent = 'Se reconnecter';
+    bouton.style.cssText = 'margin-top:8px;background:#F4501E;color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:18px;font-weight:700;cursor:pointer';
+    bouton.addEventListener('click', () => aller());
+    overlay.appendChild(bouton);
     document.body.appendChild(overlay);
+
+    const retirer = () => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (_minuteur) clearTimeout(_minuteur);
+        if (_veille) clearInterval(_veille);
+        _minuteur = null;
+        _veille = null;
+        _shown = false;
+    };
+
+    // Navigation SPA réussie vers la connexion : l'écran sombre n'a plus de raison d'être.
+    _veille = setInterval(() => { if (surPageDeConnexion()) retirer(); }, 300);
+    // Navigation restée sans effet : on force.
+    _minuteur = setTimeout(() => { if (!surPageDeConnexion()) aller(); }, delai);
 }

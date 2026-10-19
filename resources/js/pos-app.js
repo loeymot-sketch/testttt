@@ -45,7 +45,7 @@ import { applySharedAxiosDefaults } from './shared/axios-setup';
 import { installBlobErrorNormalizer } from './shared/blob-error';
 import { installInFlightGetDedupe } from './shared/inflight-dedupe';
 import { showSessionExpiredOverlay } from './shared/session-expired-overlay';
-import { startNewVersionWatcher } from './shared/new-version-banner';
+import { demarrerGardeDeConnexion } from './shared/app-resilience';
 applySharedAxiosDefaults(axios, store);
 // [GOAL-OPS-SWAP W1 2026-08-12] Jumeau de app.js — installé ici AUSSI, et pas
 // « plus tard » : une entrée corrigée et l'autre pas, c'est la divergence
@@ -57,7 +57,11 @@ installInFlightGetDedupe(axios);
 // [Root cause 2026-09-24 · owner] Un onglet caisse laissé ouvert avant un
 // déploiement tourne l'ancien code indéfiniment sans aucun signal — voir
 // shared/new-version-banner.js. Best-effort, jamais bloquant.
-startNewVersionWatcher();
+// [GARDE DE CONNEXION 2026-10-19 · owner « je rafraîchis plusieurs fois pour que ça marche »] Remplace le bandeau à
+// bouton seul : pastille Connecté / Reconnexion / Pas de connexion, rechargement AUTOMATIQUE quand l'écran est libre
+// (nouvelle version, retour après une longue coupure, réveil de la tablette, fichier du site introuvable, écran
+// blanc). Voir shared/app-resilience.js. Exclut la borne (gestion propre).
+demarrerGardeDeConnexion();
 
 // 401 RESPONSE handler — POS-only variant.
 // Divergence vs app.js intentional: pos-app.js has no `auth.login` named route
