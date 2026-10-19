@@ -272,3 +272,40 @@ test('tablette : une commande ANNULÉE affiche toujours « à retirer du passe �
   await page.screenshot({ path: path.join(SHOTS, 'x-annulee-1024x600.png') });
   console.log('ANNULEE', await page.locator('body').innerText().then((t) => /A0777/.test(t)));
 });
+
+// [KDS-TABLETTE auto 2026-10-20] La tablette de la cuisine passe toute seule en mode tablette
+// (tactile sans souris + petit écran physique) ; le grand écran, jamais.
+test('tablette tactile : mode tablette AUTOMATIQUE, sans adresse spéciale', async ({ browser }) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 960, height: 540 }, screen: { width: 960, height: 540 },
+    hasTouch: true, isMobile: true, deviceScaleFactor: 2,
+  });
+  const page = await ctx.newPage();
+  await loginAsChefOperator(page);
+  await avecPayload(page, { data: fileDe(6), meta: BASE.meta });
+  await ouvrir(page, '/admin/kitchen-display-system');   // l'adresse HABITUELLE, rien d'autre
+  expect(await page.evaluate(() => document.documentElement.classList.contains('kds-tablette'))).toBe(true);
+  await expect(page.locator('#kds-toolbar')).toHaveCount(0);
+  await expect(page.locator('.db-header')).toBeHidden();
+  await expect(page.locator('[data-testid="kds-card-cta-ready"]')).toHaveCount(0);
+  await page.screenshot({ path: path.join(SHOTS, 'auto-tablette-tactile-960x540.png') });
+
+  // Issue de secours : `?tablette=0` rend le grand écran ET l'appareil s'en souvient.
+  await ouvrir(page, '/admin/kitchen-display-system?tablette=0');
+  await ouvrir(page, '/admin/kitchen-display-system');
+  expect(await page.evaluate(() => document.documentElement.classList.contains('kds-tablette'))).toBe(false);
+  await ctx.close();
+});
+
+test('grand écran à souris (1280×720) : JAMAIS en mode tablette tout seul', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, screen: { width: 1280, height: 720 } });
+  const page = await ctx.newPage();
+  await loginAsChefOperator(page);
+  await avecPayload(page, { data: fileDe(6), meta: BASE.meta });
+  await ouvrir(page, '/admin/kitchen-display-system');
+  expect(await page.evaluate(() => document.documentElement.classList.contains('kds-tablette'))).toBe(false);
+  await expect(page.locator('#kds-toolbar')).toBeVisible();
+  await expect(page.locator('.db-header')).toBeVisible();
+  await expect(page.locator('[data-testid="kds-card-cta-ready"]').first()).toBeVisible();
+  await ctx.close();
+});

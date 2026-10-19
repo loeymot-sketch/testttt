@@ -8,6 +8,7 @@ import {
     modeTabletteActif,
     fichesParEcranTablette,
     KDS_CLE_TABLETTE,
+    appareilTablette,
 } from '../../resources/js/helpers/kdsTablette.js';
 
 /**
@@ -23,10 +24,15 @@ import {
 const RACINE = path.resolve(__dirname, '../..');
 const lire = (p) => fs.readFileSync(path.join(RACINE, p), 'utf8');
 
-function fenetre({ search = '', stocke = null, stockageCasse = false } = {}) {
+const MQ = (tactile, souris = false) => (q) => ({
+    matches: (q === '(pointer: coarse)' && tactile) || (q === '(hover: none)' && tactile && !souris),
+});
+function fenetre({ search = '', stocke = null, stockageCasse = false, tactile = false, ecran = null } = {}) {
     const mem = new Map(stocke === null ? [] : [[KDS_CLE_TABLETTE, stocke]]);
     return {
         location: { search },
+        matchMedia: MQ(tactile),
+        screen: ecran || { width: 1920, height: 1080 },
         localStorage: stockageCasse
             ? { getItem() { throw new Error('quota'); }, setItem() { throw new Error('quota'); }, removeItem() { throw new Error('quota'); } }
             : {
@@ -38,7 +44,7 @@ function fenetre({ search = '', stocke = null, stockageCasse = false } = {}) {
     };
 }
 
-describe('mode tablette — activation EXPLICITE, jamais par la taille de l\'écran', () => {
+describe('mode tablette — activation explicite ou appareil tablette, jamais par la taille de la fenêtre', () => {
     it('par défaut : le grand écran (rien n\'est activé)', () => {
         expect(modeTabletteActif(fenetre())).toBe(false);
     });
@@ -51,10 +57,11 @@ describe('mode tablette — activation EXPLICITE, jamais par la taille de l\'éc
         expect(modeTabletteActif({ ...w, location: { search: '' } })).toBe(true);
     });
 
-    it('?tablette=0 désactive ET efface la mémoire', () => {
-        const w = fenetre({ search: '?tablette=0', stocke: '1' });
+    it('?tablette=0 désactive ET mémorise le refus (la détection ne le réactive pas)', () => {
+        const w = fenetre({ search: '?tablette=0', stocke: '1', tactile: true, ecran: { width: 800, height: 1280 } });
         expect(modeTabletteActif(w)).toBe(false);
-        expect(w._mem.has(KDS_CLE_TABLETTE)).toBe(false);
+        expect(w._mem.get(KDS_CLE_TABLETTE)).toBe('0');
+        expect(modeTabletteActif({ ...w, location: { search: '' } })).toBe(false);
     });
 
     it('stockage indisponible : le paramètre vaut pour la page, sinon grand écran (jamais de plantage)', () => {
@@ -66,10 +73,42 @@ describe('mode tablette — activation EXPLICITE, jamais par la taille de l\'éc
         expect(modeTabletteActif(null)).toBe(false);
     });
 
-    it('la taille de la fenêtre N\'ACTIVE PAS le mode (le grand écran mesure aussi 1280×720)', () => {
+    it('tablette détectée toute seule : tactile sans souris + petit écran physique', () => {
+        expect(modeTabletteActif(fenetre({ tactile: true, ecran: { width: 600, height: 960 } }))).toBe(true);
+        expect(modeTabletteActif(fenetre({ tactile: true, ecran: { width: 1280, height: 800 } }))).toBe(true);
+        // Détection non mémorisée : si l'appareil change, la décision change.
+        const w = fenetre({ tactile: true, ecran: { width: 600, height: 960 } });
+        modeTabletteActif(w);
+        expect(w._mem.has(KDS_CLE_TABLETTE)).toBe(false);
+    });
+
+    it('le GRAND écran n\'est jamais pris pour une tablette (souris, ou grand écran physique)', () => {
+        // PC à souris, même petite résolution 1280×720
+        expect(modeTabletteActif(fenetre({ tactile: false, ecran: { width: 1280, height: 720 } }))).toBe(false);
+        // grand écran tactile sans souris (borne, téléviseur) : écran physique trop grand
+        expect(modeTabletteActif(fenetre({ tactile: true, ecran: { width: 1920, height: 1080 } }))).toBe(false);
+    });
+
+    it('PC tactile AVEC souris (survol disponible) et petite résolution : grand écran, pas tablette', () => {
+        const w = { ...fenetre({ ecran: { width: 1280, height: 720 } }), matchMedia: MQ(true, true) };
+        expect(modeTabletteActif(w)).toBe(false);
+    });
+
+    it('la mémoire « 1 » ou « 0 » prime sur la détection', () => {
+        expect(modeTabletteActif(fenetre({ stocke: '1' }))).toBe(true);
+        expect(modeTabletteActif(fenetre({ stocke: '0', tactile: true, ecran: { width: 600, height: 960 } }))).toBe(false);
+    });
+
+    it('détection impossible (matchMedia / screen absents ou en erreur) : grand écran', () => {
+        expect(appareilTablette({})).toBe(false);
+        expect(appareilTablette({ matchMedia() { throw new Error('x'); }, screen: { width: 600, height: 900 } })).toBe(false);
+        expect(appareilTablette({ matchMedia: MQ(true), screen: { width: NaN, height: NaN } })).toBe(false);
+    });
+
+    it('la largeur de la FENÊTRE n\'entre pas dans la détection (le grand écran fait aussi 1280×720)', () => {
         const src = lire('resources/js/helpers/kdsTablette.js');
-        const corps = src.slice(src.indexOf('export function modeTabletteActif'), src.indexOf('export function fichesParEcranTablette'));
-        expect(/innerWidth|innerHeight|matchMedia|screen\./.test(corps)).toBe(false);
+        const corps = src.slice(src.indexOf('export function appareilTablette'), src.indexOf('export function fichesParEcranTablette'));
+        expect(/innerWidth|innerHeight|outerWidth|clientWidth/.test(corps)).toBe(false);
     });
 });
 
