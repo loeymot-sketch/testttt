@@ -165,6 +165,13 @@ const baseRoutes = [
         redirect: { name: "admin.kitchen-display-system" },
     },
     {
+        // [KDS-TABLETTE 2026-10-19] Adresse courte du poste « tablette » (pain / sauces / crudités) :
+        // même écran cuisine, réduit aux seules commandes. Le `?tablette=1` active ET mémorise le
+        // mode sur l'appareil (helpers/kdsTablette.js) — l'adresse ne se saisit qu'une fois.
+        path: "/kds-tablette",
+        redirect: { name: "admin.kitchen-display-system", query: { tablette: "1" } },
+    },
+    {
         // Wave Y C-002 — /admin root URL was rendering Vue SPA 404 even when
         // authenticated. Redirect to admin.dashboard mirrors the /kds pattern.
         path: "/admin",

@@ -240,7 +240,9 @@ export function demarrerGardeDeConnexion(o = {}) {
         const point = doc.createElement('span');
         point.style.cssText = `width:9px;height:9px;border-radius:50%;background:${couleurs[etat]};display:inline-block`;
         const texte = doc.createElement('span');
+        texte.className = 'cx-texte'; // la feuille de style du poste tablette le masque quand tout va bien
         texte.textContent = libelleEtat(etat === 'hors-ligne' ? 'hors-ligne' : etat, depuis);
+        pastille.setAttribute('aria-label', texte.textContent);
         pastille.appendChild(point);
         pastille.appendChild(texte);
         pastille.setAttribute('data-etat', etat);

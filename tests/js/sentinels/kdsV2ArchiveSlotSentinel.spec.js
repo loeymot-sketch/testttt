@@ -88,7 +88,7 @@ describe('KDS Wave U — Prêt archive partition (FK-WAVE-U-KDS-ARCHIVE-001)', (
     });
 
     it('grid template renders the recentlyServed strip with v-if guard', () => {
-        expect(gridSource).toMatch(/v-if="recentlyServed\.length\s*>\s*0"/);
+        expect(gridSource).toMatch(/v-if="recentlyServed\.length\s*>\s*0(?: && !tablette)?"/);
         expect(gridSource).toMatch(/kds-v2__served/);
         // Each pill must show queue_number and the relative servedAgoLabel
         expect(gridSource).toMatch(/servedAgoLabel\s*\(\s*o\s*\)/);

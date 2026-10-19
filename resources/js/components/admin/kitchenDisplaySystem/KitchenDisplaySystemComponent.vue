@@ -20,7 +20,8 @@
 
     `id` indispensable — c'est la cible du Teleport de KdsV2Grid.
   -->
-  <div class="kds-history-trigger-row kds-toolbar" id="kds-toolbar" data-testid="kds-toolbar">
+  <!-- [KDS-TABLETTE 2026-10-19] Poste tablette : aucune barre, la place va aux commandes. -->
+  <div v-if="!modeTablette" class="kds-history-trigger-row kds-toolbar" id="kds-toolbar" data-testid="kds-toolbar">
     <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3 + W6 heal P2] Bouton « Rupture »
          cuisine — rendu au-dessus des DEUX layouts (V2 + legacy), gate miroir du
          serveur (Stuff/Waiter sans availability_toggle ne voient pas un bouton
@@ -85,7 +86,7 @@
   <!-- [F2 2026-07-24] Panneau légende repliable — RACINE (visible en V2 + legacy).
        Clé des symboles groupée par rôle (Support / Viande / Sauce / Crudités /
        Formule), miroir des tables owner de resources/js/helpers/kdsSymbolic.js. -->
-  <div v-show="showSymbolLegend" id="kds-symbol-legend" role="region"
+  <div v-show="showSymbolLegend && !modeTablette" id="kds-symbol-legend" role="region"
     aria-label="Légende des symboles cuisine" data-testid="kds-symbol-legend"
     class="db-card px-3 py-2.5 mb-3">
     <div class="text-xs font-bold uppercase tracking-wide text-paragraph mb-2">🔑 Légende des symboles cuisine</div>
@@ -103,6 +104,7 @@
     </div>
   </div>
   <KdsHistoryDrawer
+    v-if="!modeTablette"
     :open="historyDrawerOpen"
     :dir="direction"
     @close="historyDrawerOpen = false"
@@ -111,6 +113,7 @@
   <!-- [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) cuisine —
        propagation borne/caisse/web via ItemAvailabilityChanged + outbox. -->
   <AvailabilityTogglePanel
+    v-if="!modeTablette"
     :visible="showAvailabilityPanel"
     @close="showAvailabilityPanel = false"
   />
@@ -126,7 +129,7 @@
        layouts V2 + legacy), même alimentation par le poll existant (meta.recently_canceled),
        même repli : liste vide ou meta absente ⇒ rien ne s'affiche. -->
   <KdsCanceledBanner :entries="kdsRecentlyCanceled" />
-  <KdsScheduledBanner :entries="kdsScheduledUpcoming" />
+  <KdsScheduledBanner v-if="!modeTablette" :entries="kdsScheduledUpcoming" />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
     (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
@@ -140,9 +143,10 @@
     :dir="direction"
     :offline-since="v2OfflineSince"
     :list-at-cap="kdsOrderListAtCap"
-    :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
-    :admin-polling-hint="kdsIsCentralAdmin"
-    :bump-local-only-notice="showBumpInfo && !kdsHideBumpInfo"
+    :tablette="modeTablette"
+    :fallback-mode="!modeTablette && !wsConnected && !kdsSuppressFallbackBanner"
+    :admin-polling-hint="!modeTablette && kdsIsCentralAdmin"
+    :bump-local-only-notice="!modeTablette && showBumpInfo && !kdsHideBumpInfo"
     :sync-uncertain="syncBadgeUncertain"
     :error-message="kdsErrorBanner.visible ? kdsErrorBanner.message : ''"
     :auto-transition-enabled="v2AutoTransitionEnabled"
@@ -1286,6 +1290,8 @@ import { printEscPosViaKitchenBridge, hasKitchenPrinted, markKitchenPrinted, see
 const KITCHEN_PRINT_RETRY_MS = 20000;
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
+// [KDS-TABLETTE 2026-10-19] Poste tablette (pain / sauces / crudités) : commandes seules.
+import { modeTabletteActif } from "../../../helpers/kdsTablette.js";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
 import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 // [GOAL RUPTURE-CARNET 2026-07-15 / W3] Panel rupture (86) partagé caisse+cuisine.
@@ -1422,6 +1428,9 @@ export default {
       // l'écran (design owner) — la légende est un complément. Persistée localStorage
       // 'kds.show_symbol_legend' comme les autres prefs KDS (défaut masqué).
       showSymbolLegend: false,
+      // [KDS-TABLETTE 2026-10-19] Évalué UNE fois, à la création : `?tablette=1` mémorise le mode
+      // sur l'appareil, `?tablette=0` l'efface. Voir helpers/kdsTablette.js.
+      tablette: modeTabletteActif(),
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
@@ -1541,6 +1550,11 @@ export default {
     // The legacy 4-column path remains intact in the v-else branch so
     // operators in the kitchen can revert in one URL keystroke if a
     // regression surfaces during the rollout window.
+    // [KDS-TABLETTE 2026-10-19] Le mode tablette ne s'applique qu'à la mise en page V2 (celle de
+    // production) : l'ancienne mise en page 4 colonnes n'est qu'un secours et reste intacte.
+    modeTablette() {
+      return this.tablette && this.useV2Layout;
+    },
     useV2Layout() {
       try {
         if (typeof window === 'undefined') {
@@ -1828,6 +1842,12 @@ export default {
     // autres pages admin.
     if (this.useV2Layout) {
       document?.querySelector('.db-main')?.classList?.add('db-main--kds');
+    }
+    // [KDS-TABLETTE 2026-10-19] La coquille d'administration (barre du haut, menu latéral,
+    // marges) se masque par CSS, route-scopée : classes posées ici, retirées au démontage.
+    if (this.modeTablette) {
+      document?.querySelector('.db-main')?.classList?.add('db-main--kds-tablette');
+      document?.documentElement?.classList?.add('kds-tablette');
     }
     this.refreshOrderList();
     this.startAutoRefresh();
@@ -3179,6 +3199,8 @@ export default {
     this._kdsStatusInterceptorId = null;
     // [KDS-A-01 2026-07-06] Retire l'override flex-column route-scoped (cf. mounted).
     document?.querySelector('.db-main')?.classList?.remove('db-main--kds');
+    document?.querySelector('.db-main')?.classList?.remove('db-main--kds-tablette');
+    document?.documentElement?.classList?.remove('kds-tablette');
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();

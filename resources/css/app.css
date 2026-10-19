@@ -343,6 +343,36 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
        réduit UNIQUEMENT ici — la classe est posée/retirée par l'écran cuisine, le reste de
        l'administration garde sa respiration. */
     .db-main.db-main--kds { @apply flex flex-col lg:pt-[62px] pt-[62px] }
+    /* [KDS-TABLETTE 2026-10-19 · owner « pas d'espace en haut, ni logo, ni rien »] Poste tablette
+       (pain / sauces / crudités, 7-8" paysage) : la coquille d'administration disparaît — plus de barre
+       du haut, plus de menu latéral, plus aucune marge — et l'écran n'affiche QUE les commandes.
+       Route-scopé : `kds-tablette` est posé sur <html> par l'écran cuisine quand le mode est actif et
+       retiré au démontage ; le grand écran et le reste de l'administration ne sont pas touchés.
+       `!important` nécessaire : les marges de `.db-main` varient par palier d'écran (sm:, lg:, xh:). */
+    html.kds-tablette .db-header,
+    html.kds-tablette .db-sidebar { display: none !important }
+    /* La pastille de connexion (garde de connexion) se réduit à un point de 9 px dans le coin tant que
+       tout va bien : posée en bas à gauche avec son texte, elle recouvrait le bas de la première commande.
+       Au moindre souci (reconnexion, pas de connexion) elle reprend sa forme complète — ça, on veut le voir. */
+    html.kds-tablette [data-testid="connexion-pastille"][data-etat="ok"] {
+        left: auto !important;
+        right: 3px !important;
+        bottom: 3px !important;
+        padding: 3px !important;
+        gap: 0 !important;
+    }
+    html.kds-tablette [data-testid="connexion-pastille"][data-etat="ok"] .cx-texte { display: none }
+    /* La page elle-même ne défile jamais : seuls les corps de fiches et la rangée de commandes défilent.
+       Mesuré : les conteneurs de notifications (fixes, 100 vh décalés de 16 px) lui donnaient 32 px de
+       défilement parasite, qui faisait « bouger » tout l'écran sous le doigt. */
+    html.kds-tablette,
+    html.kds-tablette body { overflow: hidden !important; height: 100% }
+    html.kds-tablette .db-main.db-main--kds-tablette {
+        padding: 0 !important;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
 
     /* BACKLDROP */
     .backdrop { @apply w-full h-full fixed top-0 left-0 z-40 invisible opacity-0 bg-black/60 transition }
