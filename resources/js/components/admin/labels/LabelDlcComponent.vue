@@ -58,6 +58,7 @@
                             <input id="dlc-search" v-model="query" type="search" class="db-field-control" placeholder="🔍 Chercher un produit…"
                                    autocomplete="off" data-testid="dlc-search" />
                             <button v-if="query" type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-search-clear" @click="query = ''">Effacer</button>
+                            <DlcVoiceButton v-if="!voiceOff" :disabled="listBusy || draining" @result="applyVoice" @error="onVoiceError" @unavailable="onVoiceUnavailable" />
                         </div>
                         <button type="button" class="dlc-btn dlc-btn--primary" data-testid="dlc-new" @click="openEditor(null)">＋ Nouveau produit</button>
                         <button type="button" class="dlc-btn" :class="{ 'dlc-btn--attention': healthCount > 0 }" data-testid="dlc-health-open" @click="healthOpen = true">
@@ -67,6 +68,23 @@
                         <button v-if="expiredCount" type="button" class="dlc-alert-chip" data-testid="dlc-watch-chip" @click="scrollToWatch">
                             ⚠ {{ expiredCount }} lot{{ expiredCount > 1 ? "s" : "" }} expiré{{ expiredCount > 1 ? "s" : "" }} ({{ expiredLabels }} étiquette{{ expiredLabels > 1 ? "s" : "" }}) — voir
                         </button>
+                    </div>
+
+                    <!-- Dictée : ce qui a été ENTENDU et compris, toujours montré avant d'imprimer (la voix se trompe parfois). Juste sous la recherche : le panier fixé en bas d'écran cacherait tout ce qui est plus bas. -->
+                    <div v-if="voice" class="dlc-voice" role="status" data-testid="dlc-voice-note">
+                        <p class="dlc-voice-heard" data-testid="dlc-voice-heard">🎤 J'ai entendu : « {{ voice.transcript || "…" }} »</p>
+                        <p v-if="voice.added.length" data-testid="dlc-voice-added">
+                            <strong>{{ voice.added.length }} produit{{ voice.added.length > 1 ? "s" : "" }} sélectionné{{ voice.added.length > 1 ? "s" : "" }}</strong> :
+                            {{ voice.added.map((a) => `${a.name} × ${a.copies}`).join(" · ") }}.
+                            Vérifiez la sélection, puis <b>Imprimer la sélection</b>.
+                        </p>
+                        <p v-if="voice.apart.length" class="dlc-voice-warn" data-testid="dlc-voice-apart">
+                            À imprimer à part : {{ voice.apart.map((a) => `${a.name} (${a.reason})`).join(" · ") }}.
+                        </p>
+                        <p v-if="voice.unmatched.length" class="dlc-voice-warn" data-testid="dlc-voice-unmatched">
+                            Pas compris : « {{ voice.unmatched.join(" », « ") }} » — cherchez-le dans la liste.
+                        </p>
+                        <button type="button" class="dlc-btn dlc-btn--small" data-testid="dlc-voice-close" @click="voice = null">Fermer</button>
                     </div>
 
                     <!-- en cherchant (famille « Tous »), les résultats passent juste sous la recherche : 3 rangées de familles les repoussaient hors de l'écran -->
@@ -364,6 +382,7 @@ import DlcProductEditor from "./DlcProductEditor";
 import DlcPrintSheet from "./DlcPrintSheet";
 import DlcCatalogueHealth from "./DlcCatalogueHealth";
 import DlcImportDialog from "./DlcImportDialog";
+import DlcVoiceButton from "./DlcVoiceButton";
 import HygieneOperatorPicker from "../hygiene/HygieneOperatorPicker";
 import { DLC_ACTIONS, dlcLabelBlocks, formatDlcDate, previewExpiry, shelfLifeText, storageForAction, watchList, isValidThawedStorage } from "../../../helpers/dlcLabelBuilder";
 import { searchProducts } from "../../../helpers/dlcSearch";
@@ -404,7 +423,7 @@ const SUGGESTIONS = [
 
 export default {
     name: "LabelDlcComponent",
-    components: { HygieneHubBar, LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog, HygieneOperatorPicker },
+    components: { HygieneHubBar, LabelPrinterBar, DlcProductEditor, DlcPrintSheet, DlcCatalogueHealth, DlcImportDialog, DlcVoiceButton, HygieneOperatorPicker },
     mixins: [labelPrinterMixin],
     data() {
         return {
@@ -446,6 +465,9 @@ export default {
             undoTimer: null,
             selectMode: false,
             selection: {},
+            // Dictée vocale : ce que le serveur a compris (affiché AVANT toute impression) ; coupée si le restaurant ne l'a pas activée.
+            voice: null,
+            voiceOff: false,
             batchAction: "",
             listBusy: false,
             last: null,
@@ -846,6 +868,42 @@ export default {
         setSelectMode(on) {
             this.selectMode = on;
             this.selection = {};
+            this.voice = null;
+        },
+        /**
+         * Dictée : les produits compris REMPLISSENT la sélection (sans la vider : « imprime aussi… » ajoute). Rien n'est
+         * imprimé — l'appui sur « Imprimer la sélection » garde toutes ses protections (Qui ?, DLC du fabricant, journal).
+         * Redire une phrase ne double pas les étiquettes : on garde le plus grand nombre. Sans nombre dit (1), l'habituel du produit.
+         */
+        applyVoice(data) {
+            const byId = new Map(this.activeProducts.map((p) => [p.id, p]));
+            const added = [];
+            const apart = [];
+            const unmatched = [...(data.unmatched || [])];
+            const selection = this.selectMode ? { ...this.selection } : {};
+            for (const it of data.items || []) {
+                const p = byId.get(it.product_id);
+                if (!p) { unmatched.push(it.heard || it.name); continue; } // fiche supprimée entre-temps
+                if (!this.selectable(p)) { apart.push({ name: p.name, reason: this.apartReason(p) }); continue; }
+                const wanted = it.copies > 1 ? it.copies : Math.max(1, p.default_copies || 1);
+                selection[p.id] = Math.min(20, Math.max(selection[p.id] || 0, wanted));
+                added.push({ id: p.id, name: p.name, copies: selection[p.id] });
+            }
+            if (!added.length && !apart.length && !unmatched.length && !data.transcript) {
+                alertService.error(data.message || "Je n’ai rien entendu : rapprochez-vous de la tablette et réessayez.");
+                return;
+            }
+            this.selectMode = true;
+            this.selection = selection;
+            this.voice = { transcript: data.transcript || "", added, apart, unmatched };
+            this.$nextTick(() => { const n = this.$el.querySelector && this.$el.querySelector('[data-testid="dlc-voice-note"]'); if (n && n.scrollIntoView) n.scrollIntoView({ block: "nearest", behavior: "smooth" }); });
+        },
+        onVoiceError(message) {
+            alertService.error(message);
+        },
+        onVoiceUnavailable(message) {
+            this.voiceOff = true;
+            alertService.error(message);
         },
         /** Un appui : imprime tout de suite (ou ouvre la fiche si une saisie est obligatoire) ; en sélection, ajoute. */
         onTile(p) {
@@ -968,6 +1026,8 @@ export default {
                 }
             }
             this.listBusy = true;
+            // Les produits dictés partent : on ne garde de la note que ce qui reste À FAIRE (pas compris, à part).
+            if (this.voice) this.voice = this.voice.unmatched.length || this.voice.apart.length ? { ...this.voice, added: [] } : null;
             const batch = [];
             const skipped = [];
             try {
@@ -1291,6 +1351,10 @@ export default {
 .dlc-cat.is-on .dlc-cat-n { background: #fff; color: #1a1a1a; }
 .dlc-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
 
+.dlc-voice { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 10px; padding: 10px 12px; margin: 8px 0 12px; font-size: 15px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.dlc-voice p { margin: 0; }
+.dlc-voice-heard { font-style: italic; }
+.dlc-voice-warn { color: #92400e; font-weight: 600; }
 .dlc-modes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0 2px; }
 .dlc-mode { min-height: 48px; padding: 0 16px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
 .dlc-mode.is-on { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }

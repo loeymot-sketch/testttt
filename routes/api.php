@@ -547,6 +547,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->where('product', '[0-9]{1,18}')->name('products.destroy');
         Route::post('/dlc/print', [\App\Http\Controllers\Admin\LabelController::class, 'dlcPrint'])->name('dlc.print');
         Route::post('/dlc/offline', [\App\Http\Controllers\Admin\LabelController::class, 'dlcOffline'])->name('dlc.offline');
+        // [2026-10-19 · owner] Dictée vocale : la phrase devient une sélection de produits (ne fait que comprendre : rien d'imprimé ni d'écrit).
+        Route::post('/dlc/voice', [\App\Http\Controllers\Admin\LabelVoiceController::class, 'interpret'])->middleware('throttle:20,1')->name('dlc.voice');
         Route::get('/watch', [\App\Http\Controllers\Admin\LabelController::class, 'watch'])->name('watch');
         Route::get('/lots', [\App\Http\Controllers\Admin\LabelController::class, 'lots'])->name('lots');
         Route::post('/prints/discard', [\App\Http\Controllers\Admin\LabelController::class, 'discard'])->name('prints.discard');
