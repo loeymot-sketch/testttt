@@ -94,3 +94,34 @@ test('caisse : le champ de recherche annonce « N° ou client » en entier', asy
   expect(m.texte).toBeLessThanOrEqual(m.w); // le placeholder n'est plus coupé
   await page.screenshot({ path: path.join(SHOTS, 'c3-champ-recherche.png') });
 });
+
+// [ÉTIQUETTES-COMMANDE 2026-10-19 · owner] « L'étiquette de commande en fonction séparée, en barre latérale. »
+test('barre latérale : « Étiquettes commandes » a sa ligne, le hub Hygiène ne s\'allume plus dessus', async ({ page }) => {
+  const { loginAsPosOperator } = require('../e2e/helpers/login');
+  await loginAsPosOperator(page);
+  await page.goto('/admin/labels/orders', { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(2500);
+  const ligne = page.locator('a.db-sidebar-nav-menu[href$="/admin/labels/orders"]');
+  const hub = page.locator('a.db-sidebar-nav-menu[href$="/admin/hygiene/home"]');
+  await expect(ligne).toBeVisible({ timeout: 15_000 });
+  await expect(hub).toBeVisible();
+  const etat = await page.evaluate(() => {
+    const a = document.querySelector('a.db-sidebar-nav-menu[href$="/admin/labels/orders"]');
+    const h = document.querySelector('a.db-sidebar-nav-menu[href$="/admin/hygiene/home"]');
+    return { ligneActive: a.classList.contains('router-link-active') || a.classList.contains('active'), hubActive: h.classList.contains('router-link-active') || h.classList.contains('active'), texte: a.innerText.trim() };
+  });
+  console.log('SIDEBAR', JSON.stringify(etat));
+  expect(etat.ligneActive).toBe(true);
+  expect(etat.hubActive).toBe(false);
+  await expect(page.locator('[data-testid="hub-bar-link"]')).toHaveCount(0); // plus de barre « retour au hub » sur cet écran
+  await page.screenshot({ path: path.join(SHOTS, 's1-sidebar-etiquettes-commandes.png') });
+  await page.goto('/admin/labels/dlc', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2500);
+  const apres = await page.evaluate(() => ({
+    ligne: document.querySelector('a.db-sidebar-nav-menu[href$="/admin/labels/orders"]').classList.contains('router-link-active'),
+    hub: document.querySelector('a.db-sidebar-nav-menu[href$="/admin/hygiene/home"]').classList.contains('router-link-active'),
+  }));
+  expect(apres.hub).toBe(true);
+  expect(apres.ligne).toBe(false);
+});

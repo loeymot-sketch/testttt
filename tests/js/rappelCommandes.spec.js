@@ -85,13 +85,42 @@ describe('rappel périodique des commandes à traiter', () => {
     });
 });
 
+describe('rappel : une commande qui ARRIVE repart d\'un intervalle plein (revue adverse)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('pas de rappel collé à la sonnerie d\'arrivée : le compteur qui monte réarme la minuterie', () => {
+        const jouer = vi.fn();
+        const r = creerRappelPeriodique();
+        r.actualiser(1, jouer);
+        vi.advanceTimersByTime(INTERVALLE_RAPPEL_MS - 1000); // t = 119 s
+        r.actualiser(2, jouer); // une 2e commande arrive (sonnerie d'arrivée)
+        vi.advanceTimersByTime(2000); // t = 121 s : AVANT, le rappel tombait à t = 120 s
+        expect(jouer).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(INTERVALLE_RAPPEL_MS);
+        expect(jouer).toHaveBeenCalledTimes(1);
+        expect(jouer).toHaveBeenLastCalledWith(2);
+    });
+
+    it('un compteur qui BAISSE ne repousse pas le rappel', () => {
+        const jouer = vi.fn();
+        const r = creerRappelPeriodique();
+        r.actualiser(3, jouer);
+        vi.advanceTimersByTime(60000);
+        r.actualiser(2, jouer);
+        vi.advanceTimersByTime(60000);
+        expect(jouer).toHaveBeenCalledTimes(1);
+        expect(jouer).toHaveBeenLastCalledWith(2);
+    });
+});
+
 describe('câblage dans le suivi des commandes', () => {
     const SRC = fs.readFileSync(
         path.resolve(__dirname, '../../resources/js/components/admin/pos/PosOrdersTrackerComponent.vue'), 'utf8'
     );
 
-    it('le compteur « web à traiter » arme le rappel, et le démontage le coupe', () => {
-        expect(SRC).toMatch(/webActionableCount\(n\)\s*\{[\s\S]{0,600}this\._actualiserRappel\(n\)/);
+    it('le compteur « à traiter » (site + borne) arme le rappel, et le démontage le coupe', () => {
+        expect(SRC).toMatch(/rappelCount\(n\)\s*\{[\s\S]{0,200}this\._actualiserRappel\(n\)/);
         expect(SRC).toMatch(/_rappelCommandes\?\.arreter\?\.\(\)/);
         expect(SRC).toContain('creerRappelPeriodique');
     });
@@ -101,3 +130,14 @@ describe('câblage dans le suivi des commandes', () => {
         expect(bloc.slice(0, 900)).toMatch(/_newOrderSoundEnabled\(\)/);
     });
 });
+
+describe('câblage sur l\'écran de vente (PosComponent)', () => {
+    const POS = fs.readFileSync(path.resolve(__dirname, '../../resources/js/components/admin/pos/PosComponent.vue'), 'utf8');
+
+    it('le panneau « commandes web » arme le même rappel, et le démontage le coupe', () => {
+        expect(POS).toContain('creerRappelPeriodique');
+        expect(POS).toMatch(/"webOrders\.length"\(n\)\s*\{[\s\S]{0,120}_actualiserRappelWeb\(n\)/);
+        expect(POS).toMatch(/_rappelCommandes\?\.arreter\?\.\(\)/);
+    });
+});
+

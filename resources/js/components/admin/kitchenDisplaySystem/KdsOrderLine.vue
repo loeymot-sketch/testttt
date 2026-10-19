@@ -357,6 +357,10 @@ export default {
    2 notes distinctes se lisaient d'un seul bloc à l'écran. */
 .kds-line__instruction-text {
   white-space: pre-line;
+  /* [REVUE ADVERSE 2026-10-19] En 24 px gras, un mot long (« compréhension ») était coupé net par
+     le débordement masqué de la carte, dans une carte étroite (écran cuisine de 1024 px). */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .kds-instruction--note {
   color: #111827;

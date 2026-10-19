@@ -92,14 +92,15 @@ describe('suivi des commandes — les actions se nomment', () => {
         ).toBe(true);
     });
 
-    it('la troncature est bien la raison d\'être de ce garde', () => {
+    it('le nom n\'est plus tronqué (retour à la ligne) : le title reste un filet, plus une nécessité', () => {
         const src = source();
-        // Si la règle CSS de troncature disparaissait, le title deviendrait superflu — mais
-        // tant qu'elle est là, il est indispensable. On documente le lien.
-        expect(
-            /\.pos-tracker-card-customer span\s*\{[^}]*text-overflow:\s*ellipsis/.test(src),
-            'la règle de troncature a changé de forme : revérifier que le nom complet reste '
-            + 'accessible, ou retirer ce garde devenu sans objet.'
-        ).toBe(true);
+        // [REVUE ADVERSE 2026-10-19] Le nom du client est le geste principal du caissier : il passe à la
+        // ligne (« Éloïse Martin ») au lieu d'être coupé en « Éloïs… ». Le `title` (AB-015) est conservé :
+        // il reste utile, mais ce n'est plus le SEUL accès au nom complet. Si la troncature revenait, ce
+        // garde exigerait de nouveau le title — on verrouille donc l'une OU l'autre issue.
+        const regle = (src.match(/\.pos-tracker-card-customer span\s*\{([^}]*)\}/) || [])[1] || '';
+        const tronque = /text-overflow:\s*ellipsis/.test(regle);
+        const passeALaLigne = /white-space:\s*normal/.test(regle) && /overflow-wrap:\s*anywhere/.test(regle);
+        expect(tronque || passeALaLigne, 'le nom doit être soit tronqué AVEC title, soit mis à la ligne').toBe(true);
     });
 });

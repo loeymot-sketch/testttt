@@ -84,4 +84,17 @@ class TicketNomClientTest extends TestCase
         $b = $this->client($this->order('pos', null, 'Caissier Admin'));
         $this->assertStringNotContainsString('Client :', $b);
     }
+
+    public function test_la_livraison_du_site_reprend_le_nom_du_compte(): void
+    {
+        // [REVUE ADVERSE 2026-10-19] surface « delivery » (forcée par FrontendOrder::creating) : le ticket
+        // sortait sans aucun nom alors que l'écran caisse affichait le client.
+        $this->assertStringContainsString('Client : Sofia Martin', $this->client($this->order('delivery', null, 'Sofia Martin')));
+    }
+
+    public function test_un_nom_de_substitution_invite_n_est_jamais_imprime(): void
+    {
+        $this->assertStringNotContainsString('Client :', $this->client($this->order('web', null, 'Guest User')));
+        $this->assertStringNotContainsString('Client :', $this->cuisine($this->order('web', null, 'Guest User')));
+    }
 }

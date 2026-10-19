@@ -92,7 +92,7 @@ class InterrupteurService
             'cle'         => 'kds.counter_auto_print',
             'libelle'     => 'Impression automatique à la caisse (borne, site, livraison)',
             'description' => "Imprime seul, sur l'imprimante de la caisse, chaque commande qui arrive de la borne, du site ou d'une livraison.",
-            'consequence' => "Désactivée (défaut), plus aucun papier ne sort seul à la caisse ; la cuisine continue d'imprimer et l'écran cuisine ne change pas. La réimpression manuelle reste possible.",
+            'consequence' => "Désactivée (défaut), plus aucun ticket de COMMANDE ne sort seul à la caisse à son arrivée ; la cuisine continue d'imprimer et l'écran cuisine ne change pas. Le ticket d'encaissement reste imprimé à la demande du caissier. Réactivée, seules les commandes arrivées APRÈS le réglage s'impriment (jamais l'arriéré).",
         ],
     ];
 
@@ -125,6 +125,12 @@ class InterrupteurService
         }
         $cle = self::CATALOGUE[$nom]['cle'];
         Settings::group(self::GROUPE)->set($cle, $actif);
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · revue adverse] Rallumer l'impression caisse ne doit JAMAIS
+        // déverser l'arriéré des 30 dernières minutes d'un coup (c'est le symptôme d'origine : du papier
+        // qui sort sans qu'on l'attende). On date l'allumage ; le pont ne sert que ce qui arrive après.
+        if ($cle === 'kds.counter_auto_print' && $actif) {
+            Settings::group(self::GROUPE)->set('kds.counter_auto_print_since', now()->toIso8601String());
+        }
         // Prise en compte immédiate dans la requête en cours, sans attendre le
         // prochain démarrage : sinon l'écran afficherait l'ancien état.
         Config::set($cle, $actif);

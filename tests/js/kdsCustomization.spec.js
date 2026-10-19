@@ -391,3 +391,22 @@ describe('kdsVariationGroupValue / kdsVariationLine — shape-agnostic GROUP:VAL
         expect(kdsVariationGroupValue(null)).toEqual({ group: '', value: '' });
     });
 });
+
+
+// [REVUE ADVERSE 2026-10-19 · P0] Une note du client EN MAJUSCULES (verrouillage majuscules, commande du site)
+// était jetée comme « écho du nom du produit ». Jumeau PHP : TicketNotesMajusculesTest.
+describe('sanitizeKdsInstruction : notes en majuscules', () => {
+    it.each(['SANS OEUF', 'ALLERGIE ARACHIDES', 'PAS DE MAYONNAISE SVP', 'NO ONION', 'BIEN CUIT'])(
+        'garde la consigne « %s »', (note) => {
+            expect(sanitizeKdsInstruction(note, 'Tacos M')).toBe(note);
+        }
+    );
+    it("supprime toujours l'écho du nom du produit écrit par le wizard", () => {
+        expect(sanitizeKdsInstruction('TACOS', 'Tacos M')).toBe('');
+        expect(sanitizeKdsInstruction('SANDWICH CAYENNE', 'Cayenne')).toBe('');
+    });
+    it('les notes en minuscules ou entre crochets restent intactes', () => {
+        expect(sanitizeKdsInstruction('sans oeuf', 'Tacos M')).toBe('sans oeuf');
+        expect(sanitizeKdsInstruction('[SANS OEUF]', 'Tacos M')).toBe('[SANS OEUF]');
+    });
+});

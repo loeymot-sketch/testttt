@@ -112,7 +112,18 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
         url: 'hygiene/home',
         language: 'hygiene_hub',
         icon: 'fa-solid fa-clipboard-check',
-        activePrefixes: Object.freeze(['/admin/hygiene', '/admin/labels']),
+        // [ÉTIQUETTES-COMMANDE 2026-10-19] L'étiquette de COMMANDE n'est plus dans le hub : elle a sa propre ligne
+        // juste dessous. Le hub ne s'allume donc plus sur /admin/labels/orders (sinon deux lignes allumées).
+        activePrefixes: Object.freeze(['/admin/hygiene', '/admin/labels/dlc', '/admin/labels/printer']),
+    }),
+    // [ÉTIQUETTES-COMMANDE 2026-10-19 · owner : « l'étiquette de commande, je veux l'avoir comme fonctionnalité séparée, en
+    // barre latérale »] Une étiquette par produit commandé, imprimée à l'arrivée des commandes : un outil de service, pas de
+    // l'hygiène. Même gate que la caisse (`pos-orders`) — voir MENU_URL_TO_PERMISSION_URL.
+    Object.freeze({
+        url: 'labels/orders',
+        language: 'labels_orders',
+        icon: 'fa-solid fa-tags',
+        activePrefixes: Object.freeze(['/admin/labels/orders']),
     }),
     // [CATALOG-HUB 2026-07-21] Single unified entry → tab wrapper (Catalogue +
     // Stock). Label kept as `stock_rupture` ("Produits & Stock"). The

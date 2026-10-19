@@ -335,14 +335,13 @@ class FrontendOrderService
                 // Prevents any client-manipulated value from persisting even transiently.
                 unset($validatedRequest['total'], $validatedRequest['subtotal'], $validatedRequest['discount']);
 
-                // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom saisi à la borne est du texte libre :
-                // il finit imprimé sur un ticket et affiché en caisse. On retire les caractères de
-                // contrôle (un octet ESC/POS glissé dans un nom pilotait l'imprimante), on replie les
-                // espaces et on borne à 60. Vide après nettoyage = aucun nom (jamais une chaîne vide).
+                // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom saisi à la borne est du texte libre : il
+                // finit imprimé sur un ticket et affiché en caisse. Une seule définition du nettoyage
+                // (App\Support\NomClient), partagée avec le chemin caisse : caractères de contrôle,
+                // noms invisibles, longueur. Aucune lettre = aucun nom (jamais une chaîne vide).
                 if (array_key_exists('pos_customer_name', $validatedRequest)) {
-                    $nom = preg_replace('/[\p{C}]+/u', ' ', (string) $validatedRequest['pos_customer_name']);
-                    $nom = mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) $nom)), 0, 60);
-                    if ($nom === '') {
+                    $nom = \App\Support\NomClient::nettoyer((string) $validatedRequest['pos_customer_name']);
+                    if ($nom === null) {
                         unset($validatedRequest['pos_customer_name']);
                     } else {
                         $validatedRequest['pos_customer_name'] = $nom;

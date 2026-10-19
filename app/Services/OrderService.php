@@ -844,8 +844,10 @@ class OrderService
                         'status' => $posInitialStatus,
                         'token' => $request->token,
                         // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → imprimé sur le ticket.
+                        // [NOM-COMMANDE-BORNE 2026-10-19] Même nettoyage que la borne (TAB/LF et noms
+                        // invisibles passaient ici) — une seule définition : App\Support\NomClient.
                         'pos_customer_name' => $request->filled('pos_customer_name')
-                            ? mb_substr(trim((string) $request->input('pos_customer_name')), 0, 60)
+                            ? \App\Support\NomClient::nettoyer((string) $request->input('pos_customer_name'))
                             : null,
                         // [C4-CAISSE-TELEPHONE 2026-07-07] Téléphone du client (optionnel) → noté sur
                         // la commande téléphone pour la rappeler/reconnaître, imprimé sur le ticket.

@@ -133,4 +133,20 @@ class KioskNomCommandeTest extends TestCase
 
         $this->assertNull($order->pos_customer_name);
     }
+
+    public function test_un_nom_braille_vide_ou_sans_lettre_vaut_aucun_nom(): void
+    {
+        // [REVUE ADVERSE 2026-10-19] U+2800 / U+3164 traversaient le nettoyage : nom « invisible ».
+        foreach (["\u{2800}\u{2800}", "\u{3164}\u{3164}", '12', '--'] as $faux) {
+            $this->payload['items'] = $this->payload['items']; // même panier, nouvelle commande
+            $this->assertNull($this->commander(['pos_customer_name' => $faux])->pos_customer_name, 'refusé : '.bin2hex($faux));
+        }
+    }
+
+    public function test_un_nom_avec_joiner_reste_entier(): void
+    {
+        $order = $this->commander(['pos_customer_name' => "می\u{200C}خواهم"]);
+
+        $this->assertSame('میخواهم', $order->pos_customer_name);
+    }
 }

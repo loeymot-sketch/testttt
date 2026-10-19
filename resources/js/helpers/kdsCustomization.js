@@ -276,6 +276,13 @@ function extractFormuleDrinkLines(raw) {
  *        « BOISSON: X »). Jumeau STRICT : KitchenTicketSymbolicFormatter::cleanInstruction.
  * @returns {string} cleaned instruction (may be empty → caller emits no line)
  */
+// [NOTES-EN-MAJUSCULES 2026-10-19 · revue adverse] Une ligne TOUT EN MAJUSCULES est l'écho du nom du
+// produit écrit par le wizard (« TACOS ») — MAIS une note du client tapée en capitales (verrouillage
+// majuscules d'un téléphone : « SANS OEUF », « ALLERGIE ARACHIDE ») était jetée de la même façon, en
+// silence, sur l'écran ET le ticket. On la GARDE dès qu'elle porte un mot de consigne. Jumeau STRICT :
+// KitchenTicketSymbolicFormatter::MOT_CONSIGNE_RE.
+const MOT_CONSIGNE_RE = /(?<![\p{L}\p{N}])(sans|pas|no|without|allerg\p{L}*|gluten|arach\p{L}*|cacahu\p{L}*|lactos\p{L}*|soja|intol\p{L}*|extra|cuit|saignant|part|svp|merci|attention|urgent|ajout\p{L}*|enlev\p{L}*|retir\p{L}*)(?![\p{L}\p{N}])/iu;
+
 export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
     if (typeof raw !== 'string') {
         return '';
@@ -302,7 +309,7 @@ export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
         if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
         // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
         // écrit par le wizard (« TACOS », « SANDWICH CAYENNE ») → drop (la L1 le montre déjà).
-        if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t)) return false;
+        if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t) && !MOT_CONSIGNE_RE.test(t)) return false;
         if (insideBracketNote) {                            // continuation d'une note libre multi-ligne → KEEP
             if (t.includes(']')) insideBracketNote = false;
             return true;

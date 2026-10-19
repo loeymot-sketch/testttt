@@ -641,13 +641,21 @@ final class OrderReceiptEscPosRenderer
             return $saisi;
         }
 
-        if (! in_array((string) ($order->source_surface ?? ''), ['web', 'online'], true)) {
+        // Le site (web / en ligne) ET la LIVRAISON du site : le client est absent, le titulaire du compte
+        // EST le client. Même périmètre que l'écran caisse (SimpleOrderResource), moins le téléphone
+        // dont le compte porteur est un client « de passage » choisi par le caissier.
+        // (par SURFACE, jamais par type de commande : une commande de CAISSE de type livraison, sans nom
+        // saisi, n'imprime aucune ligne client — cf. KitchenTicketCustomerNameTest.)
+        $clientAbsent = in_array((string) ($order->source_surface ?? ''), ['web', 'online', 'delivery'], true);
+        if (! $clientAbsent) {
             return '';
         }
 
         $user = $order->relationLoaded('user') ? $order->getRelation('user') : null;
+        $nom = trim((string) ($user->name ?? ''));
 
-        return trim((string) ($user->name ?? ''));
+        // « Guest User » est un nom de substitution de compte invité, pas une personne.
+        return \App\Support\NomClient::estGenerique($nom) ? '' : $nom;
     }
 
     /** [TICKET-FEED] Nb de lignes vierges (hauteur normale) avancées avant la coupe. */

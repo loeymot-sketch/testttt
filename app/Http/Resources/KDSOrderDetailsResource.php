@@ -128,7 +128,15 @@ class KDSOrderDetailsResource extends JsonResource
         );
 
         $utilisateur = $this->relationLoaded('user') ? $this->user : null;
-        $nom = $nomCommande !== '' ? $nomCommande : trim((string) ($utilisateur->name ?? ''));
+        // [NOM-COMMANDE-BORNE 2026-10-19] La borne n'emprunte JAMAIS le compte porteur (technique :
+        // « Compte Borne… ») : sans nom saisi, l'écran cuisine n'affiche aucun client plutôt qu'un faux
+        // — même règle que le ticket et la caisse. Un nom de substitution invité n'est pas une personne.
+        $nomCompte = trim((string) ($utilisateur->name ?? ''));
+        if (strtolower(trim((string) ($this->source_surface ?? ''))) === 'kiosk'
+            || \App\Support\NomClient::estGenerique($nomCompte)) {
+            $nomCompte = '';
+        }
+        $nom = $nomCommande !== '' ? $nomCommande : $nomCompte;
 
         if ($nom === '') {
             return null;

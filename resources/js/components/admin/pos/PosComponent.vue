@@ -2479,7 +2479,7 @@ const MESSAGE_SUPPLEMENT_SANS_PRODUIT = 'Ajoutez d\'abord un produit : un suppl�
 import { printEscPosViaCaisseBridge } from '../../../helpers/posLocalPrinter';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec le suivi commandes,
 // l'écran cuisine et l'écran de statut.
-import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
+import { creerSequenceurDeSonnerie, creerRappelPeriodique } from '../../../helpers/orderArrivalChime';
 // [QA 2026-09-28 P0-18] Règle partagée avec /admin/encaissement — une seule définition.
 import { queueNumberDateBadge } from '../../../helpers/queueNumberDateBadge';
 import LoadingComponent from "../components/LoadingComponent.vue";
@@ -3733,6 +3733,8 @@ export default {
             this._sequenceurSonnerie.annuler();
             this._sequenceurSonnerie = null;
         }
+        try { this._rappelCommandes?.arreter?.(); } catch (e) { /* defensive */ }
+        this._rappelCommandes = null;
         if (this._webOrderAlertTimers) {
             this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
             this._webOrderAlertTimers = [];
@@ -4974,6 +4976,22 @@ export default {
          * empilait ses minuteries sans borne, et cinq commandes en une minute donnaient quinze
          * bips entrelacés — un bruit continu qu'on finit par ignorer.
          */
+        _actualiserRappelWeb(n) {
+            if (!this._rappelCommandes) {
+                this._rappelCommandes = creerRappelPeriodique();
+            }
+            this._rappelCommandes.actualiser(n, (restantes) => {
+                try {
+                    alertService.info(`${restantes} commande${restantes > 1 ? 's' : ''} web à traiter`);
+                } catch (e) { /* defensive */ }
+                try {
+                    const s = this.$store.getters['frontendSetting/lists'] || {};
+                    const flag = s.pos_new_order_sound_enabled;
+                    const son = flag === undefined || flag === null ? true : (String(flag) === '1' || flag === true);
+                    if (son) this._emettreSonnerie();
+                } catch (e) { /* defensive */ }
+            });
+        },
         _sonnerieArrivee() {
             if (!this._sequenceurSonnerie) {
                 this._sequenceurSonnerie = creerSequenceurDeSonnerie();
@@ -7564,6 +7582,12 @@ export default {
         // ─────────────────────────────────────────────────────────────────────────
     },
     watch: {
+        // [RAPPEL-COMMANDES 2026-10-19 · revue adverse] Le caissier passe l'essentiel de son temps sur CET
+        // écran, pas sur le suivi : le rappel (son + bandeau toutes les 2 min tant qu'il reste une commande
+        // web à traiter) doit y sonner aussi. Même mécanisme que le suivi (helpers/orderArrivalChime.js).
+        "webOrders.length"(n) {
+            this._actualiserRappelWeb(n);
+        },
         "customerProps.form.password"(newValue) {
             this.customerProps.form.password_confirmation = newValue;
         },

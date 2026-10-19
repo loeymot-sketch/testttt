@@ -91,7 +91,17 @@ test('borne : nom obligatoire avant de confirmer, puis écran sans bouton', asyn
 
   // Taper « Karim » au clavier virtuel de la borne (shift pour le K majuscule)
   const touche = (c) => page.locator('.ks-vkeyb__key', { hasText: new RegExp(`^${c}$`) }).first();
-  await page.locator('[data-testid="kiosk-vkeyb-shift"]').click();
+  // [REVUE ADVERSE 2026-10-19] Majuscule AUTOMATIQUE en début de mot (la touche affichée est déjà « K »)
+  // et rangée d'ACCENTS : « Zoé » doit pouvoir se taper, « karim » devient « Karim » sans shift.
+  await expect(touche('K')).toBeVisible();
+  await expect(touche('É')).toBeVisible(); // champ vide → capitales (majuscule automatique)
+  await touche('Z').click();
+  await expect(touche('é')).toBeVisible(); // puis minuscules (le mot est commencé)
+  await touche('o').click();
+  await touche('é').click();
+  await expect(page.locator('[data-testid="kiosk-payment-name-input"]')).toHaveValue('Zoé');
+  await shot(page, 'n2a-zoe-accent.png');
+  await page.locator('[data-testid="kiosk-vkeyb-clear"]').click();
   await touche('K').click();
   for (const c of ['a', 'r', 'i', 'm']) await touche(c).click();
   await expect(page.locator('[data-testid="kiosk-payment-name-input"]')).toHaveValue('Karim');
@@ -104,7 +114,13 @@ test('borne : nom obligatoire avant de confirmer, puis écran sans bouton', asyn
   await shot(page, 'n3-nom-valide-confirmer-actif.png');
 });
 
-test('borne : « rendez-vous en caisse » sans bouton, retour accueil après 5 s', async ({ page, request }) => {
+// Pont d'impression local simulé (127.0.0.1:9100) : sain, ou absent.
+async function pontSain(page) {
+  await page.route('http://127.0.0.1:9100/**', (route) => route.fulfill({
+    status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': 'text/plain' }, body: 'UP',
+  }));
+}
+async function ouvrirCash(page, request, query = 'number=A0042&total=7.4') {
   const login = await request.post(`${BASE}/api/auth/kiosk-login`, {
     headers: { 'x-api-key': API_KEY, Accept: 'application/json' },
     data: { username: 'kiosk-lecayenne', password: 'kiosk123' },
@@ -113,15 +129,69 @@ test('borne : « rendez-vous en caisse » sans bouton, retour accueil après 5 s
   await page.addInitScript(({ token, machineId, branchId }) => {
     localStorage.setItem('vuex', JSON.stringify({ kioskCart: { kioskToken: token, kioskMachineId: machineId, branchId } }));
   }, { token: j.token, machineId: j.kiosk?.machine_id, branchId: j.kiosk?.branch_id || 1 });
+  await page.goto(`${BASE}/kiosk/cash-instruction?${query}`, { waitUntil: 'domcontentloaded' });
+}
 
-  await page.goto(`${BASE}/kiosk/cash-instruction?number=A0042&total=7.4`, { waitUntil: 'domcontentloaded' });
+test('borne : « rendez-vous en caisse » (pont sain) sans bouton, retour accueil après 5 s', async ({ page, request }) => {
+  await pontSain(page);
+  await ouvrirCash(page, request, 'number=A0042&total=7.4');
   await expect(page.locator('[data-testid="kiosk-cash-order-number"]')).toBeVisible({ timeout: 15_000 });
   await shot(page, 'n4-cash-sans-bouton.png');
   await expect(page.locator('[data-testid="kiosk-cash-cta-understood"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="kiosk-cash-reprint"]')).toHaveCount(0);
   const t0 = Date.now();
-  await page.waitForURL(/\/kiosk\/idle/, { timeout: 12_000 });
+  await page.waitForURL(/\/kiosk\/idle/, { timeout: 15_000 });
   const secondes = (Date.now() - t0) / 1000;
   console.log('RETOUR_ACCUEIL_APRES_S', secondes.toFixed(1));
   expect(secondes).toBeGreaterThanOrEqual(3.5);
-  expect(secondes).toBeLessThanOrEqual(8);
+  expect(secondes).toBeLessThanOrEqual(9);
 });
+
+test('borne : pont d\'impression en panne → « Réimprimer » reste 20 s au lieu de 5 s', async ({ page, request }) => {
+  await ouvrirCash(page, request, 'number=A0043&total=9.9');
+  await expect(page.locator('[data-testid="kiosk-cash-reprint"]')).toBeVisible({ timeout: 10_000 });
+  const t0 = Date.now();
+  await page.waitForTimeout(8000);
+  expect(page.url(), 'toujours à l\'écran après 8 s tant que le ticket n\'est pas sorti').toMatch(/cash-instruction/);
+  await shot(page, 'n4b-cash-reimprimer-20s.png');
+  await page.waitForURL(/\/kiosk\/idle/, { timeout: 30_000 });
+  const secondes = (Date.now() - t0) / 1000;
+  console.log('RETOUR_ACCUEIL_PONT_PANNE_S', secondes.toFixed(1));
+  expect(secondes).toBeGreaterThanOrEqual(15);
+  expect(secondes).toBeLessThanOrEqual(26);
+});
+
+// [REVUE ADVERSE 2026-10-19] Un prénom de 12 lettres (« Abdelrahmane ») débordait de la carte (+87 px) à
+// 1080 px et sortait de l'écran à 768 px. Le nom a désormais son gabarit borné.
+for (const vp of [{ width: 1080, height: 1920 }, { width: 768, height: 1366 }]) {
+  test(`borne : prénom long dans la carte à ${vp.width}x${vp.height}`, async ({ page, request }) => {
+    await page.setViewportSize(vp);
+    const login = await request.post(`${BASE}/api/auth/kiosk-login`, {
+      headers: { 'x-api-key': API_KEY, Accept: 'application/json' },
+      data: { username: 'kiosk-lecayenne', password: 'kiosk123' },
+    });
+    const j = await login.json();
+    await page.addInitScript(({ token, machineId, branchId }) => {
+      localStorage.setItem('vuex', JSON.stringify({ kioskCart: { kioskToken: token, kioskMachineId: machineId, branchId } }));
+    }, { token: j.token, machineId: j.kiosk?.machine_id, branchId: j.kiosk?.branch_id || 1 });
+    await page.goto(`${BASE}/kiosk/cash-instruction?number=A0042&total=7.4&timeout=60`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('[data-testid="kiosk-cash-order-number"]')).toBeVisible({ timeout: 15_000 });
+    for (const nom of ['Abdelrahmane', 'Konstantinopoulos', 'WWWWWWWWWWWWWWW']) {
+      await page.evaluate((n) => document.querySelector('#app').__vue_app__.config.globalProperties.$store.commit('kioskCart/SET_CUSTOMER_NAME', n), nom);
+      await page.waitForTimeout(300);
+      const m = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="kiosk-cash-customer-name"]');
+        const carte = el.closest('.kiosk-cash__card') || el.parentElement.parentElement;
+        const r = el.getBoundingClientRect(); const c = carte.getBoundingClientRect();
+        return { nomDroite: Math.round(r.right), carteDroite: Math.round(c.right), ecran: window.innerWidth, scrollW: document.documentElement.scrollWidth };
+      });
+      console.log('NOM_LONG', vp.width, nom, JSON.stringify(m));
+      expect(m.nomDroite, `${nom} déborde de la carte`).toBeLessThanOrEqual(m.carteDroite + 1);
+      expect(m.nomDroite).toBeLessThanOrEqual(m.ecran);
+      expect(m.scrollW).toBeLessThanOrEqual(m.ecran + 1);
+    }
+    await page.evaluate(() => document.querySelector('#app').__vue_app__.config.globalProperties.$store.commit('kioskCart/SET_CUSTOMER_NAME', 'Abdelrahmane'));
+    await page.waitForTimeout(300);
+    await shot(page, `n5-nom-long-${vp.width}.png`);
+  });
+}

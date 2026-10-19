@@ -39,9 +39,19 @@ const hubLink = (w) => w.findAllComponents(RouterLink).find((c) => c.props('to')
 describe('barre latérale — une seule entrée pour tout le module', () => {
     it.each([
         '/admin/hygiene/home', '/admin/hygiene/temperature', '/admin/hygiene/oil', '/admin/hygiene/report',
-        '/admin/labels/dlc', '/admin/labels/orders', '/admin/labels/printer',
+        '/admin/labels/dlc', '/admin/labels/printer',
     ])('%s : la ligne du hub est allumée', (path) => {
         expect(hubLink(mountMenu(path)).classes()).toContain('router-link-active');
+    });
+
+    // [ÉTIQUETTES-COMMANDE 2026-10-19 · owner] L'étiquette de commande est une fonction SÉPARÉE : sa propre ligne, et le hub
+    // ne s'allume plus sur son écran (jamais deux lignes allumées à la fois).
+    it('/admin/labels/orders : SA ligne est allumée, pas celle du hub', () => {
+        const w = mountMenu('/admin/labels/orders');
+        const ligne = w.findAllComponents(RouterLink).find((c) => c.props('to') === '/admin/labels/orders');
+        expect(ligne, 'la ligne « Étiquettes commandes » existe dans la barre latérale').toBeTruthy();
+        expect(ligne.classes()).toContain('router-link-active');
+        expect(hubLink(w).classes()).not.toContain('router-link-active');
     });
 
     it.each(['/admin/hygiene/oil', '/admin/labels/printer'])('%s : la ligne allumée est aussi EXPOSÉE comme page courante (aria-current), pas seulement colorée', (path) => {
@@ -99,7 +109,8 @@ describe('barre « retour au hub » — en tête de chaque écran du module', ()
     it.each(screens.map((f) => [path.basename(f, '.vue'), f]))('%s : pose la barre de retour (sauf l’accueil, qui est le hub)', (name, file) => {
         const src = fs.readFileSync(file, 'utf8');
         const tpl = src.slice(0, src.indexOf('</template>\n\n<script') > 0 ? src.indexOf('</template>\n\n<script') : src.indexOf('<script'));
-        if (name === 'HygieneHomeComponent') {
+        if (name === 'HygieneHomeComponent' || name === 'LabelOrdersComponent') {
+            // l'accueil EST le hub ; les étiquettes de commande sont une fonction séparée (ligne propre de la barre latérale)
             expect(tpl).not.toContain('<HygieneHubBar');
         } else {
             expect(tpl, `${name} n'a pas de barre « retour au hub »`).toContain('<HygieneHubBar />');
@@ -127,14 +138,14 @@ describe('ouverture d’un écran du module : le conteneur de l’admin revient 
 });
 
 describe('accueil — tous les outils sans compteur sont là', () => {
-    it('étiquettes de commande, imprimante, alertes et codes d’équipe sont atteignables depuis l’accueil', async () => {
+    it('imprimante, alertes et codes d’équipe sont atteignables depuis l’accueil (les étiquettes de commande ont leur ligne de barre latérale)', async () => {
         h.axios.get.mockReset();
         h.axios.get.mockResolvedValue({ data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris', reminders: [] } } });
         const w = mount(HygieneHomeComponent, { global: { stubs: { 'router-link': RouterLink } } });
         await flushPromises();
         const tools = w.get('[data-testid="home-tools"]');
         const hrefs = tools.findAll('a').map((a) => a.attributes('href'));
-        expect(hrefs).toEqual(['/admin/labels/orders', '/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']);
+        expect(hrefs).toEqual(['/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']);
         expect(w.find('[data-testid="home-alerts-link"]').exists()).toBe(true);
         expect(w.find('[data-testid="home-team-link"]').exists()).toBe(true);
     });
@@ -150,20 +161,20 @@ describe('accueil — tous les outils sans compteur sont là', () => {
         }
         const hrefs = (w) => w.get('[data-testid="home-tools"]').findAll('a').map((a) => a.attributes('href'));
 
-        it('responsable (droit « settings ») : les 4 outils', async () => {
+        it('responsable (droit « settings ») : les 3 outils', async () => {
             const w = await mountWith({ getters: { authPermission: perms(['pos-orders', 'settings']) } });
-            expect(hrefs(w)).toEqual(['/admin/labels/orders', '/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']);
+            expect(hrefs(w)).toEqual(['/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']);
         });
 
         it('caissier (sans « settings ») : alertes et codes d’équipe ne sont PAS proposés', async () => {
             const w = await mountWith({ getters: { authPermission: perms(['pos-orders', 'pos']) } });
-            expect(hrefs(w)).toEqual(['/admin/labels/orders', '/admin/labels/printer']);
+            expect(hrefs(w)).toEqual(['/admin/labels/printer']);
             expect(w.find('[data-testid="home-tools-settings"]').exists(), 'groupe vide affiché').toBe(false);
         });
 
         it('droits pas encore chargés (démarrage à froid) : on propose tout, comme la barre latérale', async () => {
             const w = await mountWith({ getters: { authPermission: {} } });
-            expect(hrefs(w)).toHaveLength(4);
+            expect(hrefs(w)).toHaveLength(3);
         });
     });
 
@@ -176,7 +187,7 @@ describe('accueil — tous les outils sans compteur sont là', () => {
         const w = mount(HygieneHomeComponent, { global: { stubs: { 'router-link': RouterLink } } });
         await flushPromises();
         const hrefs = new Set(w.findAll('a').map((a) => a.attributes('href')));
-        for (const old of ['/admin/hygiene/temperature', '/admin/hygiene/tasks', '/admin/hygiene/reception', '/admin/hygiene/oil', '/admin/hygiene/trace', '/admin/hygiene/report', '/admin/labels/dlc', '/admin/labels/orders', '/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']) {
+        for (const old of ['/admin/hygiene/temperature', '/admin/hygiene/tasks', '/admin/hygiene/reception', '/admin/hygiene/oil', '/admin/hygiene/trace', '/admin/hygiene/report', '/admin/labels/dlc', '/admin/labels/printer', '/admin/hygiene/alerts', '/admin/hygiene/team']) {
             expect(hrefs.has(old), `${old} n’est plus atteignable depuis le hub`).toBe(true);
         }
     });

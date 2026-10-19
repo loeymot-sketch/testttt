@@ -24,6 +24,9 @@ namespace App\Services\Hardware;
  */
 final class KitchenTicketSymbolicFormatter
 {
+    /** Mots qui font d'une ligne en capitales une CONSIGNE du client (jumeau : kdsCustomization.js). */
+    private const MOT_CONSIGNE_RE = '/(?<![\p{L}\p{N}])(sans|pas|no|without|allerg\p{L}*|gluten|arach\p{L}*|cacahu\p{L}*|lactos\p{L}*|soja|intol\p{L}*|extra|cuit|saignant|part|svp|merci|attention|urgent|ajout\p{L}*|enlev\p{L}*|retir\p{L}*)(?![\p{L}\p{N}])/iu';
+
     /** @var array<int, array{0:string,1:string}> regex => symbol */
     private const MEAT_TABLE = [
         ['/hach|steak|b[oe]uf/', 'K'],
@@ -1101,7 +1104,11 @@ final class KitchenTicketSymbolicFormatter
             // 1re ligne (ex « TACOS », « SANDWICH CAYENNE ») — souvent ≠ du nom stocké.
             // Toute ligne 100% MAJUSCULES (lettres/espaces, sans chiffre) = écho produit → drop
             // (la ligne 1 symbolique montre déjà le produit ; les vraies notes ont des minuscules).
-            if (! $insideBracket && preg_match('/^[\p{Lu}][\p{Lu}\s\'\-]*$/u', $t) && mb_strlen($t) >= 2) {
+            // [NOTES-EN-MAJUSCULES 2026-10-19 · revue adverse] … SAUF une note du client tapée en capitales
+            // (« SANS OEUF », « ALLERGIE ARACHIDE ») : elle portait un mot de consigne et disparaissait du
+            // ticket en silence. Jumeau STRICT : kdsCustomization.js MOT_CONSIGNE_RE.
+            if (! $insideBracket && preg_match('/^[\p{Lu}][\p{Lu}\s\'\-]*$/u', $t) && mb_strlen($t) >= 2
+                && ! preg_match(self::MOT_CONSIGNE_RE, $t)) {
                 continue;
             }
             if ($insideBracket) {

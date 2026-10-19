@@ -9,8 +9,13 @@
     <!-- Android 12+ : permission d'exécution « appareils à proximité » -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- [DICTÉE 2026-10-19 · owner « l'app demande l'autorisation et elle n'existe pas »] Micro : dictée des étiquettes DLC.
+         Sans cette déclaration Android ne PROPOSE même pas l'autorisation (elle est absente de Réglages › Applications). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
         android:label="Le Cayenne Étiquettes"

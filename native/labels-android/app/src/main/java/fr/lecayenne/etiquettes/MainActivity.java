@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.PermissionRequest;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -28,6 +29,10 @@ import android.widget.FrameLayout;
  */
 public class MainActivity extends Activity {
     static final int REQ_BT = 41;
+    static final int REQ_MIC = 42;
+
+    /** Demande micro de la page en attente de la réponse de l'utilisateur à la permission Android. */
+    private PermissionRequest pendingMicRequest;
 
     private WebView web;
     private PrinterBridge bridge;
@@ -60,7 +65,19 @@ public class MainActivity extends Activity {
 
         final String startUrl = startUrl();
         final String host = Uri.parse(startUrl).getHost();
-        web.setWebChromeClient(new WebChromeClient());
+        web.setWebChromeClient(new WebChromeClient() {
+            // [DICTÉE 2026-10-19] La page (getUserMedia) demande le micro : la WebView ne l'accorde JAMAIS toute seule — sans ce
+            // relais la demande échoue en silence (« NotAllowedError ») et l'autorisation n'apparaît nulle part dans Android.
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> handleWebPermission(request, host));
+            }
+
+            @Override
+            public void onPermissionRequestCanceled(PermissionRequest request) {
+                if (pendingMicRequest == request) pendingMicRequest = null;
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -101,10 +118,42 @@ public class MainActivity extends Activity {
         if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) web.loadUrl(startUrl);
     }
 
+    /**
+     * Relaie la demande de micro de la page : uniquement pour NOTRE site (même hôte que l'adresse de l'application) et uniquement
+     * le micro (jamais la caméra ni la position). Puis demande la permission d'exécution Android « Micro » si besoin.
+     */
+    private void handleWebPermission(PermissionRequest request, String host) {
+        boolean notreSite = host != null && request.getOrigin() != null && host.equalsIgnoreCase(request.getOrigin().getHost());
+        boolean veutLeMicro = false;
+        for (String r : request.getResources()) {
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) veutLeMicro = true;
+        }
+        if (!notreSite || !veutLeMicro) {
+            request.deny();
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            return;
+        }
+        if (pendingMicRequest != null) pendingMicRequest.deny(); // une seule demande à la fois
+        pendingMicRequest = request;
+        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQ_BT && bridge != null) bridge.onBluetoothPermissionResult();
+        if (requestCode == REQ_MIC && pendingMicRequest != null) {
+            PermissionRequest req = pendingMicRequest;
+            pendingMicRequest = null;
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                req.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            } else {
+                req.deny();
+            }
+        }
     }
 
     @Override
@@ -134,6 +183,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (pendingMicRequest != null) { pendingMicRequest.deny(); pendingMicRequest = null; }
         if (bridge != null) bridge.shutdown();
         if (web != null) {
             ((FrameLayout) web.getParent()).removeView(web);

@@ -1374,7 +1374,11 @@ export default {
             return base;
         },
         filteredOrders() {
-            const q = this.filters.query.toLowerCase();
+            // [REVUE ADVERSE 2026-10-19] Recherche insensible aux ACCENTS et à l'ordre des mots : « eloise »
+            // trouve « Éloïse Martin », « martin eloise » aussi ; le téléphone se cherche (« 0699 »).
+            const plier = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            const jetons = plier(this.filters.query).split(/\s+/).filter(Boolean);
+            const q = jetons.length ? jetons.join(' ') : '';
             const src = this.filters.source;
             return this.orders.filter((o) => {
                 if (src !== 'all' && this.sourceOf(o) !== src) return false;
@@ -1383,8 +1387,9 @@ export default {
                     // par une jusqu'à trouver celle de X » : la recherche lit aussi le NOM de la commande
                     // (`customer_name`, saisi à la borne / à la caisse / compte du site). Elle ne lisait que
                     // `o.user`, que le serveur n'envoie pas à cet écran → chercher « Karim » ne trouvait rien.
-                    const hay = String(o.queue_number || '') + ' ' + String(o.order_serial_no || '') + ' ' + String(o.user?.name || '') + ' ' + String(o.user?.first_name || '') + ' ' + String(o.customer_name || '');
-                    if (!hay.toLowerCase().includes(q)) return false;
+                    const hay = String(o.queue_number || '') + ' ' + String(o.order_serial_no || '') + ' ' + String(o.user?.name || '') + ' ' + String(o.user?.first_name || '') + ' ' + String(o.customer_name || '') + ' ' + String(o.customer_phone || '');
+                    const meule = plier(hay);
+                    if (!jetons.every((j) => meule.includes(j))) return false;
                 }
                 return true;
             });
@@ -1618,6 +1623,14 @@ export default {
                 'Erreur de commande',
             ];
         },
+        rappelCount() {
+            const borne = this.orders.reduce((n, o) => {
+                const s = parseInt(o.order_status ?? o.status ?? 0, 10);
+                if (this.isRefunded(o) || this.isTerminalStatus(s)) return n;
+                return this.isCashPending(o) && this.sourceOf(o) === 'kiosk' ? n + 1 : n;
+            }, 0);
+            return this.webActionableCount + borne;
+        },
         webActionableCount() {
             return this.orders.reduce((n, o) => {
                 const s = parseInt(o.order_status ?? o.status ?? 0, 10);
@@ -1634,9 +1647,12 @@ export default {
         // dans la barre d'onglets — complément visuel de l'alerte sonore.
         webActionableCount(n) {
             this._updateDocTitle(n);
-            // [RAPPEL-COMMANDES 2026-10-19 · owner « parfois on les oublie »] Tant qu'une commande
-            // reste à traiter, un rappel (son + bandeau) revient toutes les 2 minutes ; il se tait
-            // tout seul quand le compteur retombe à zéro.
+        },
+        // [RAPPEL-COMMANDES 2026-10-19 · owner « parfois on les oublie »] Tant qu'une commande reste à
+        // traiter, un rappel (son + bandeau) revient toutes les 2 minutes ; il se tait tout seul quand
+        // le compteur retombe à zéro. Le compteur couvre le site ET la borne (commande en attente de
+        // paiement à la caisse) : une commande borne se perd aussi bien qu'une commande web.
+        rappelCount(n) {
             this._actualiserRappel(n);
         },
     },
@@ -2753,7 +2769,7 @@ export default {
             }
             this._rappelCommandes.actualiser(n, (restantes) => {
                 try {
-                    alertService.info(`${restantes} commande${restantes > 1 ? 's' : ''} web à traiter`);
+                    alertService.info(`${restantes} commande${restantes > 1 ? 's' : ''} à traiter`);
                 } catch (_e) { /* defensive */ }
                 if (this._newOrderSoundEnabled()) this._playNewOrderBeep();
             });
@@ -2989,9 +3005,10 @@ export default {
     border: 1px solid var(--pos-tracker-border);
     border-radius: 10px;
     padding: 0 10px;
-    /* [NOM-COMMANDE-BORNE 2026-10-19] 252 px : « Rechercher par N° ou client » tient en entier — la
-       recherche par nom est désormais le geste principal du caissier. */
-    min-width: 252px;
+    /* [NOM-COMMANDE-BORNE 2026-10-19] Le placeholder fr est « N° ou nom du client » : il tient en entier
+       dans 200 px (un « Rechercher par N° ou client » exigeait 252 px et faisait passer « Retour caisse »
+       à la ligne dès 1366 px — relevé par la revue adverse). */
+    min-width: 200px;
 }
 
 .pos-tracker-search i {
@@ -3536,16 +3553,16 @@ export default {
     color: var(--pos-tracker-text);
     display: flex;
     align-items: center;
-    gap: 6px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* [REVUE ADVERSE 2026-10-19] Le NOM est ce que cherche le caissier : il passe sur sa propre ligne
+       (retour à la ligne, jamais « Éloïs… ») et le téléphone se place dessous si la place manque. */
+    flex-wrap: wrap;
+    gap: 2px 6px;
 }
 
 .pos-tracker-card-customer span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 /* [OWNER 2026-07-31] Téléphone client = action visible (rappel de confirmation

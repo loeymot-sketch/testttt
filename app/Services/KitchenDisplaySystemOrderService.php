@@ -319,7 +319,9 @@ class KitchenDisplaySystemOrderService
                         // app TZ) — désambiguïsation multi-jours côté bandeau.
                         'scheduled_date'  => $order->scheduled_at?->format('Y-m-d'),
                         'order_type'      => $order->order_type === null ? null : (int) $order->order_type,
-                        'customer_name'   => $order->pos_customer_name ?: $order->user?->name,
+                        // [NOM-COMMANDE-BORNE 2026-10-19] La borne n'emprunte jamais le compte porteur.
+                        'customer_name'   => $order->pos_customer_name
+                            ?: (strtolower((string) $order->source_surface) === 'kiosk' ? null : $order->user?->name),
                     ];
                 })
                 ->values()

@@ -189,8 +189,9 @@ export function buildKioskOrderPayload(state, { orderType, paymentMethod, quote,
     });
     payload.payment_method = PAYMENT_METHOD_MAP[resolvedPaymentMethod] ?? PAYMENT_METHOD_MAP.cash;
 
-    // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom pris à la borne voyage avec la commande (jamais
-    // avec le devis : il n'a aucun effet sur un prix). Absent ou vide = aucun champ envoyé.
+    // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom pris à la borne voyage avec la commande. Le devis
+    // le reçoit aussi (même constructeur de payload) et l'ignore : il n'a aucun effet sur un prix ni sur
+    // la signature. Absent ou vide = aucun champ envoyé.
     const nom = String(state.customerName || '').trim();
     if (nom) payload.pos_customer_name = nom.slice(0, 60);
 

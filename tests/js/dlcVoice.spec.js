@@ -284,3 +284,28 @@ describe('dictée — bouton', () => {
         vi.useRealTimers();
     });
 });
+
+
+// [DICTÉE 2026-10-19 · owner « l'app sur tablette demande l'autorisation et elle n'existe pas »] Dans l'application
+// tablette (WebView), une version ancienne ne déclarait pas le micro : le « cadenas près de l'adresse » n'existe pas.
+describe('micErrorMessage dans l\'application tablette', () => {
+    afterEach(() => { delete window.LabelNative; });
+
+    it('navigateur : renvoie au cadenas de l\'adresse', () => {
+        expect(micErrorMessage({ name: 'NotAllowedError' })).toMatch(/cadenas/);
+    });
+
+    it('application tablette (pont LabelNative) : renvoie aux Réglages Android et à la mise à jour, jamais au cadenas', () => {
+        window.LabelNative = {};
+        const m = micErrorMessage({ name: 'NotAllowedError' });
+        expect(m).toMatch(/Réglages Android/);
+        expect(m).toMatch(/Micro/);
+        expect(m).toMatch(/dernière version/);
+        expect(m).not.toMatch(/cadenas/);
+    });
+
+    it('les autres erreurs ne changent pas dans l\'application', () => {
+        window.LabelNative = {};
+        expect(micErrorMessage({ name: 'NotFoundError' })).toMatch(/Aucun micro/);
+    });
+});

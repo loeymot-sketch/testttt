@@ -112,13 +112,17 @@ describe('V1 admin sidebar cleanup', () => {
         // la place à UNE entrée : le hub « Hygiène & étiquettes ». Tout le reste s'ouvre depuis l'accueil du module. Aucune des anciennes
         // sous-entrées ne doit revenir dans la barre : c'est l'objet du test (31 - 12 + 1 = 20 lignes).
         expect(text).toContain('menu.hygiene_hub');
-        for (const gone of ['menu.labels_orders', 'menu.labels_dlc', 'menu.labels_printer', 'menu.hygiene_temperature', 'menu.hygiene_tasks', 'menu.hygiene_reception', 'menu.hygiene_trace', 'menu.hygiene_oil', 'menu.hygiene_home', 'menu.hygiene_report']) {
+        // [ÉTIQUETTES-COMMANDE 2026-10-19 · owner] … SAUF les étiquettes de COMMANDE, redevenues une fonction séparée :
+        // une ligne propre, juste sous le hub (20 + 1 = 21 lignes).
+        expect(text).toContain('menu.labels_orders');
+        for (const gone of ['menu.labels_dlc', 'menu.labels_printer', 'menu.hygiene_temperature', 'menu.hygiene_tasks', 'menu.hygiene_reception', 'menu.hygiene_trace', 'menu.hygiene_oil', 'menu.hygiene_home', 'menu.hygiene_report']) {
             expect(text, `${gone} est revenu dans la barre latérale`).not.toContain(gone);
         }
         const hubLinks = wrapper.findAllComponents(RouterLink).filter((c) => /hygiene|labels/.test(String(c.props('to'))));
-        expect(hubLinks).toHaveLength(1);
+        expect(hubLinks).toHaveLength(2);
         expect(hubLinks[0].props('to')).toBe('/admin/hygiene/home');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(20);
+        expect(hubLinks[1].props('to')).toBe('/admin/labels/orders');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(21);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

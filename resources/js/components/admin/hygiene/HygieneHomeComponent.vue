@@ -145,7 +145,6 @@ export default {
             const perms = "$store" in this && this.$store.getters ? this.$store.getters.authPermission : null; // `in` : pas d'avertissement quand la coquille n'a pas de store (tests)
             const groups = [
                 { key: "labels", title: "Étiquettes et imprimante", items: [
-                    { key: "orders", label: "Étiquettes des commandes", detail: "Une étiquette par produit commandé", route: "/admin/labels/orders", icon: "fa-solid fa-receipt", testid: "home-tool-labels-orders" },
                     { key: "printer", label: "Imprimante d'étiquettes", detail: "Brother QL-820NWB : connexion et réglages", route: "/admin/labels/printer", icon: "fa-solid fa-print", testid: "home-tool-labels-printer" },
                 ] },
                 { key: "settings", title: "Réglages du module", items: [

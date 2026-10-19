@@ -173,6 +173,7 @@ export function creerRappelPeriodique(options = {}) {
          * @param {Function} jouer   émet UN son de rappel, reçoit le nombre en attente
          */
         actualiser(n, jouer) {
+            const precedent = compte;
             compte = Math.max(0, Number(n) || 0);
             if (typeof jouer === 'function') {
                 rappeler = jouer;
@@ -182,7 +183,13 @@ export function creerRappelPeriodique(options = {}) {
                 return;
             }
             if (minuterie !== null) {
-                return; // déjà armé : le prochain rappel lira le compteur à jour
+                // [REVUE ADVERSE 2026-10-19] Une commande qui ARRIVE repart d'un intervalle plein : sans
+                // ça, le rappel pouvait tomber 1 s après la sonnerie d'arrivée (deux bips collés). Un
+                // compteur stable ou en baisse garde la minuterie (le prochain rappel lit le nombre à jour).
+                if (compte <= precedent) {
+                    return;
+                }
+                arreter();
             }
             minuterie = poser(() => {
                 if (compte === 0) {

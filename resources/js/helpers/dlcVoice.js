@@ -78,6 +78,11 @@ export function voiceSupported() {
 /** Message lisible pour une erreur du micro. */
 export function micErrorMessage(e) {
     const name = e && e.name;
+    if ((name === "NotAllowedError" || name === "SecurityError") && typeof window !== "undefined" && window.LabelNative) {
+        // [DICTÉE 2026-10-19] Dans l'application tablette « Le Cayenne Étiquettes » : une version ANCIENNE ne déclare pas le micro
+        // (l'autorisation est alors introuvable dans Android). Dire quoi faire plutôt que renvoyer vers un « cadenas » qui n'existe pas.
+        return "Micro non autorisé pour l’application : ouvrez Réglages Android › Applications › Le Cayenne Étiquettes › Autorisations › Micro, ou installez la dernière version de l’application.";
+    }
     if (name === "NotAllowedError" || name === "SecurityError") return "Le micro est bloqué : autorisez-le dans le navigateur (cadenas près de l’adresse), puis réessayez.";
     if (name === "NotFoundError" || name === "OverconstrainedError") return "Aucun micro détecté sur cet appareil.";
     if (name === "NotReadableError") return "Le micro est utilisé par une autre application.";

@@ -146,6 +146,15 @@ class KitchenTicketQueueController extends Controller
         $impressionAutoCoupee = $destination === self::DESTINATION_COMPTOIR
             && ! config('kds.counter_auto_print', false);
 
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · revue adverse] Rallumée, la caisse ne sert que les
+        // commandes arrivées APRÈS l'allumage : jamais l'arriéré des 30 dernières minutes d'un coup.
+        if (! $impressionAutoCoupee && $destination === self::DESTINATION_COMPTOIR) {
+            $depuis = $this->allumageCaisseDepuis();
+            if ($depuis !== null) {
+                $query->where('created_at', '>=', $depuis);
+            }
+        }
+
         $candidates = $impressionAutoCoupee ? collect() : $query->limit(self::MAX_PAR_CYCLE)->get();
 
         $reclamees = [];
@@ -195,6 +204,18 @@ class KitchenTicketQueueController extends Controller
         }
 
         return response()->json(['orders' => $reclamees, 'destination' => $destination]);
+    }
+
+    /** Date d'allumage de l'impression automatique caisse (interrupteur), null si jamais datée. */
+    private function allumageCaisseDepuis(): ?\Illuminate\Support\Carbon
+    {
+        try {
+            $brut = \Smartisan\Settings\Facades\Settings::group('pilotage')->get('kds.counter_auto_print_since', null);
+
+            return $brut ? \Illuminate\Support\Carbon::parse((string) $brut) : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
