@@ -1379,7 +1379,11 @@ export default {
             return this.orders.filter((o) => {
                 if (src !== 'all' && this.sourceOf(o) !== src) return false;
                 if (q) {
-                    const hay = String(o.queue_number || '') + ' ' + String(o.order_serial_no || '') + ' ' + String(o.user?.name || '') + ' ' + String(o.user?.first_name || '');
+                    // [NOM-COMMANDE-BORNE 2026-10-19 · owner] « Il ne veut pas ouvrir la liste et voir une
+                    // par une jusqu'à trouver celle de X » : la recherche lit aussi le NOM de la commande
+                    // (`customer_name`, saisi à la borne / à la caisse / compte du site). Elle ne lisait que
+                    // `o.user`, que le serveur n'envoie pas à cet écran → chercher « Karim » ne trouvait rien.
+                    const hay = String(o.queue_number || '') + ' ' + String(o.order_serial_no || '') + ' ' + String(o.user?.name || '') + ' ' + String(o.user?.first_name || '') + ' ' + String(o.customer_name || '');
                     if (!hay.toLowerCase().includes(q)) return false;
                 }
                 return true;
@@ -2985,7 +2989,9 @@ export default {
     border: 1px solid var(--pos-tracker-border);
     border-radius: 10px;
     padding: 0 10px;
-    min-width: 200px;
+    /* [NOM-COMMANDE-BORNE 2026-10-19] 252 px : « Rechercher par N° ou client » tient en entier — la
+       recherche par nom est désormais le geste principal du caissier. */
+    min-width: 252px;
 }
 
 .pos-tracker-search i {
@@ -2998,7 +3004,7 @@ export default {
     border: 0;
     background: transparent;
     padding: 8px 6px;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--pos-tracker-text);
     outline: none;
     min-width: 0;
@@ -3522,8 +3528,12 @@ export default {
 }
 
 .pos-tracker-card-customer {
-    font-size: 12px;
-    color: var(--pos-tracker-muted);
+    /* [NOM-COMMANDE-BORNE 2026-10-19 · owner] « Un client vient, il me dit : j'ai la commande au nom
+       de X. » Le nom est ce que le caissier cherche des yeux : 16 px gras, couleur d'encre — plus le
+       détail grisé de 12 px qu'il était. */
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--pos-tracker-text);
     display: flex;
     align-items: center;
     gap: 6px;

@@ -27,6 +27,28 @@
         <span>{{ $t('kiosk.pay_screen.total_prefix') }}</span>
         <strong>{{ formatPrice(cartTotal) }}</strong>
       </div>
+      <!-- [NOM-COMMANDE-BORNE 2026-10-19 · owner] Dernière étape avant de confirmer : le NOM de la
+           commande. « Quand un client vient, il me dit : j'ai la commande au nom de X » — la caisse
+           la retrouve sans parcourir la liste. Obligatoire (2 lettres minimum) ; clavier virtuel de
+           la borne (Windows kiosque sans clavier tactile natif). -->
+      <div v-if="!submitting && !submitted" class="kiosk-pay-name" data-testid="kiosk-payment-name-block">
+        <label class="kiosk-pay-name-label" for="kiosk-pay-name-input">{{ $t('kiosk.pay_screen.name_label') }}</label>
+        <input
+          id="kiosk-pay-name-input"
+          :value="customerName"
+          type="text"
+          class="kiosk-pay-name-input"
+          :class="{ 'kiosk-pay-name-input--active': nameKeyboardOpen, 'kiosk-pay-name-input--ok': nameValid }"
+          :placeholder="$t('kiosk.pay_screen.name_placeholder')"
+          maxlength="30"
+          readonly
+          autocomplete="off"
+          data-testid="kiosk-payment-name-input"
+          @click="nameKeyboardOpen = true"
+          @focus="nameKeyboardOpen = true"
+        />
+        <p v-if="!nameValid" class="kiosk-pay-name-hint" data-testid="kiosk-payment-name-hint">{{ $t('kiosk.pay_screen.name_hint') }}</p>
+      </div>
       <div v-if="submitting" class="kiosk-pay-counter-spinner" aria-hidden="true"></div>
       <p v-if="submitting" class="kiosk-pay-counter-processing">
         {{ $t('kiosk.pay_screen.counter_route_processing') }}
@@ -41,6 +63,8 @@
         v-if="!submitting && !submitted"
         type="button"
         class="kiosk-btn-confirm"
+        :disabled="!nameValid"
+        :aria-disabled="!nameValid ? 'true' : 'false'"
         @click="confirmCounterRoute"
         data-testid="kiosk-payment-counter-confirm"
       >
@@ -267,6 +291,17 @@
       </div>
     </div>
 
+    <KsVirtualKeyboard
+      :model-value="customerName"
+      :visible="paymentRouteAllToCounter && nameKeyboardOpen && !submitting && !submitted"
+      layout="fr"
+      :max-length="30"
+      :show-preview="false"
+      @update:model-value="onNameInput"
+      @submit="nameKeyboardOpen = false"
+      @close="nameKeyboardOpen = false"
+    />
+
   </div>
 </template>
 
@@ -287,9 +322,15 @@ import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 import { buildKioskOrderPayload } from '../../../store/modules/kioskCart';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+import KsVirtualKeyboard from './ds/KsVirtualKeyboard.vue';
+
+// [NOM-COMMANDE-BORNE 2026-10-19 · owner] Longueur minimale d'un nom de commande : un seul
+// caractère ne permet pas de retrouver quelqu'un parmi vingt commandes.
+const NOM_COMMANDE_MIN = 2;
 
 export default {
   name: 'KioskPaymentComponent',
+  components: { KsVirtualKeyboard },
   mixins: [kioskPriceMixin],
 
   inject: {
@@ -316,6 +357,10 @@ export default {
       // les 3 CTAs : retenter / payer au comptoir / annuler. Évite la boucle
       // "essaye, refusé, toast, essaye encore" frustrante et indéfinie.
       paymentFailureCount: 0,
+      // [NOM-COMMANDE-BORNE 2026-10-19] Nom saisi à la borne ; le clavier s'ouvre tout seul : le
+      // nom est la première chose à faire sur cet écran.
+      customerName: '',
+      nameKeyboardOpen: true,
     };
   },
 
@@ -345,6 +390,12 @@ export default {
     // Read from window.foodkingConfig.kiosk.paymentRouteAllToCounter (config/kiosk.php +
     // master.blade.php injection). When true, KioskPaymentComponent hides method
     // selection UI and auto-submits with payment_method=1 (CASH_ON_DELIVERY).
+    nameValid() {
+      // Hors « tout à la caisse » le nom reste facultatif : l'écran de choix du mode de paiement
+      // historique n'a pas de champ nom.
+      if (!this.paymentRouteAllToCounter) return true;
+      return String(this.customerName || '').trim().length >= NOM_COMMANDE_MIN;
+    },
     paymentRouteAllToCounter() {
       try {
         return !!(window?.foodkingConfig?.kiosk?.paymentRouteAllToCounter);
@@ -443,8 +494,20 @@ export default {
     // Force method='cash' (payment_method=CASH_ON_DELIVERY=1 backend mapping) and
     // reuse confirmPayment() pipeline. Order goes PENDING_COUNTER, cashier collects
     // at POS (espèces tiroir OR carte ticket+manual terminal). No TPE at kiosk.
+    onNameInput(next) {
+      // Le serveur nettoie à nouveau (caractères de contrôle, espaces) : ici on borne seulement.
+      this.customerName = String(next || '').slice(0, 30);
+      this.$store.commit('kioskCart/SET_CUSTOMER_NAME', this.customerName);
+    },
+
     async confirmCounterRoute() {
       if (this.submitting) return;
+      // Défense en profondeur : le bouton est désactivé, mais un appui clavier ou un test ne doit
+      // jamais créer une commande sans nom en mode « tout à la caisse ».
+      if (!this.nameValid) {
+        this.nameKeyboardOpen = true;
+        return;
+      }
       this.method = 'cash';
       this.error = null;
       // Delegate to existing confirmPayment which already routes 'cash' to
@@ -462,7 +525,7 @@ export default {
      */
     buildPaymentNavTarget({ orderId, queueNum, total, isOfflineId }) {
       if (this.method === 'cash') {
-        const query = { number: queueNum, total, timeout: 45 };
+        const query = { number: queueNum, total, timeout: 5 };
         if (orderId && !isOfflineId) query.orderId = String(orderId);
         return { name: 'kiosk.cash-instruction', query };
       }
@@ -1080,6 +1143,43 @@ export default {
   font-weight: 900;
   line-height: 0.92;
 }
+/* [NOM-COMMANDE-BORNE 2026-10-19] Champ « nom de la commande » : grand, tactile, bordure orange. */
+.kiosk-pay-name {
+  width: min(640px, calc(100vw - 64px));
+  margin: 12px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kiosk-pay-name-label {
+  font-size: clamp(20px, 2.4vw, 28px);
+  font-weight: 800;
+  color: var(--kiosk-text, #0F0F0F);
+}
+.kiosk-pay-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 84px;
+  padding: 0 24px;
+  border-radius: 22px;
+  border: 3px solid var(--kiosk-border, #E5E5E5);
+  background: #FFFFFF;
+  color: var(--kiosk-text, #0F0F0F);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  text-align: center;
+}
+.kiosk-pay-name-input::placeholder { color: var(--kiosk-text-muted, #5A5A5A); font-weight: 600; }
+.kiosk-pay-name-input--active { border-color: var(--kiosk-primary, #F4501E); box-shadow: 0 0 0 5px rgba(244, 80, 30, 0.18); }
+.kiosk-pay-name-input--ok { border-color: #15803D; }
+.kiosk-pay-name-hint {
+  margin: 0;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 700;
+  color: var(--kiosk-primary, #F4501E);
+  text-align: center;
+}
+.kiosk-btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
 .kiosk-pay-counter-spinner {
   width: 64px;
   height: 64px;

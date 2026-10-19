@@ -79,6 +79,8 @@ class FrontendOrder extends Model implements BroadcastableOrder
         // [AUDIT-P50-BUG3] source_surface must be fillable for analytics/tracing (kiosk, web, mobile)
         'source_surface',
         'loyalty_customer_code',
+        // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom pris à la borne — même colonne que la caisse.
+        'pos_customer_name',
         'transaction_id',
         'card_type',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] flag set when fiscal_seq

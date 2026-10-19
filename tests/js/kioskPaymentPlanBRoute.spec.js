@@ -80,8 +80,9 @@ describe('Z1 Plan B — kiosk payment routes all to counter', () => {
         // confirmCounterRoute pins method='cash' and delegates to confirmPayment
         // which routes to processCashPayment → no TPE, navigation to
         // kiosk.cash-instruction (already wired by B5b counter-payment flow).
-        expect(source).toMatch(/confirmCounterRoute\s*\(\)\s*{[\s\S]{0,400}this\.method\s*=\s*['"]cash['"]/);
-        expect(source).toMatch(/confirmCounterRoute[\s\S]{0,400}this\.confirmPayment\(\)/);
+        // (fenêtre élargie à 900 car la garde « nom obligatoire » du 2026-10-19 précède l'affectation)
+        expect(source).toMatch(/confirmCounterRoute\s*\(\)\s*{[\s\S]{0,900}this\.method\s*=\s*['"]cash['"]/);
+        expect(source).toMatch(/confirmCounterRoute[\s\S]{0,900}this\.confirmPayment\(\)/);
 
         // The existing confirmPayment routes 'cash' to processCashPayment which
         // never opens a drawer at the kiosk — sister spec

@@ -208,6 +208,10 @@ class OrderRequest extends FormRequest
             // nullable reste (le backend traite l'absence) ; toute valeur EXPLICITE hors {1,4,5} → 422.
             'payment_method' => ['nullable', 'numeric', 'in:1,4,5'],
             'token' => ['nullable', 'string'],
+            // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom donné par le client à la borne, avant de
+            // confirmer : « j'ai la commande au nom de X » — la caisse retrouve la commande sans
+            // parcourir la liste. Texte libre court, nettoyé côté service ; jamais monétaire.
+            'pos_customer_name' => ['nullable', 'string', 'max:60'],
             'items' => ['required', 'json', new ValidJsonOrder]
         ];
     }

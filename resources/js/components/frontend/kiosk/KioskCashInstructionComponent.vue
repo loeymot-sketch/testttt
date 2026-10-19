@@ -20,6 +20,11 @@
               #{{ displayOrderNumber || '—' }}
             </strong>
           </div>
+          <div v-if="customerName" class="kiosk-cash__divider" aria-hidden="true" />
+          <div v-if="customerName" class="kiosk-cash__row" data-testid="kiosk-cash-customer-name-row">
+            <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.name_label') }}</span>
+            <strong class="kiosk-cash__number" data-testid="kiosk-cash-customer-name">{{ customerName }}</strong>
+          </div>
           <div class="kiosk-cash__divider" aria-hidden="true" />
           <div class="kiosk-cash__row">
             <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.amount_label') }}</span>
@@ -53,15 +58,8 @@
       >
         🖨️ Réimprimer le ticket
       </KsButton>
-      <KsButton
-        variant="primary"
-        size="lg"
-        full-width
-        data-testid="kiosk-cash-cta-understood"
-        @click="acknowledge('user')"
-      >
-        {{ $t('kiosk.cash_instruction.cta_understood') }}
-      </KsButton>
+      <!-- [CAISSE-SANS-BOUTON 2026-10-19 · owner] Plus de bouton « J'ai compris » : le client sait
+           qu'il doit passer à la caisse ; l'écran revient seul à l'accueil après 5 secondes. -->
     </footer>
   </section>
 </template>
@@ -81,7 +79,7 @@ import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, is
  * Props :
  *  - orderNumber : string | number — affichage central
  *  - orderTotal  : number (EUR)    — affichage via KsPriceLine (format FR)
- *  - autoRedirectSeconds : number  — défaut 45 s, redirige /kiosk/idle
+ *  - autoRedirectSeconds : number  — défaut 5 s, redirige /kiosk/idle
  *
  * Events :
  *  - "acknowledged" (reason: 'user'|'timeout')
@@ -94,7 +92,8 @@ export default {
     props: {
         orderNumber: { type: [String, Number], default: '' },
         orderTotal: { type: Number, default: null },
-        autoRedirectSeconds: { type: Number, default: 45 },
+        // [CAISSE-SANS-BOUTON 2026-10-19 · owner] 5 s : « ça va passer cinq secondes et revenir à l'accueil ».
+        autoRedirectSeconds: { type: Number, default: 5 },
         // [TICKET-BORNE-SERVEUR 2026-07-06] id backend de la commande (query orderId,
         // posé par KioskPaymentComponent). Présent → impression via le RENDERER SERVEUR
         // (design caisse, « A REGLER EN CAISSE ») ; absent → fallback builder legacy.
@@ -115,6 +114,15 @@ export default {
         };
     },
     computed: {
+        // [NOM-COMMANDE-BORNE 2026-10-19] Le nom donné par le client, relu dans le store (la commande
+        // vient d'être créée ; le store n'est vidé qu'au retour à l'accueil).
+        customerName() {
+            try {
+                return String(this.$store?.state?.kioskCart?.customerName || '').trim();
+            } catch (_) {
+                return '';
+            }
+        },
         displayOrderNumber() {
             if (this.orderNumber) return this.orderNumber;
             if (this.orderId) return String(this.orderId).slice(-4).padStart(4, '0');

@@ -44,3 +44,53 @@ test('KDS : la note du client est grande et grasse', async ({ page }) => {
   expect(st.style).toBe('normal');
   expect(st.text).toMatch(/sans oeuf/i);
 });
+
+// [NOM-COMMANDE-BORNE 2026-10-19] La commande 7591 porte TEMPORAIREMENT le nom « Karim » (restaurée après).
+test('caisse : le nom de la commande est en grand sur la carte, et la recherche le trouve', async ({ page }) => {
+  const { loginAsPosOperator } = require('../e2e/helpers/login');
+  await loginAsPosOperator(page);
+  await page.goto('/admin/pos-orders-tracker', { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: path.join(SHOTS, 'c1-suivi-commandes.png') });
+
+  const champ = page.locator('.pos-tracker-search input');
+  await champ.fill('karim');
+  await page.waitForTimeout(800);
+  const cartes = page.locator('.pos-tracker-card-customer', { hasText: 'Karim' });
+  await expect(cartes.first()).toBeVisible({ timeout: 15_000 });
+  const st = await cartes.first().evaluate((el) => {
+    const c = getComputedStyle(el);
+    return { size: parseFloat(c.fontSize), weight: Number(c.fontWeight) };
+  });
+  console.log('NOM_CARTE', JSON.stringify(st));
+  expect(st.size).toBeGreaterThanOrEqual(16);
+  expect(st.weight).toBeGreaterThanOrEqual(800);
+  await page.screenshot({ path: path.join(SHOTS, 'c2-recherche-karim.png') });
+
+  await champ.fill('zzzzintrouvable');
+  await page.waitForTimeout(800);
+  await expect(page.locator('.pos-tracker-card-customer', { hasText: 'Karim' })).toHaveCount(0);
+});
+
+test('caisse : le champ de recherche annonce « N° ou client » en entier', async ({ page }) => {
+  const { loginAsPosOperator } = require('../e2e/helpers/login');
+  await loginAsPosOperator(page);
+  await page.goto('/admin/pos-orders-tracker', { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(2500);
+  const champ = page.locator('.pos-tracker-search input');
+  await expect(champ).toBeVisible({ timeout: 15_000 });
+  // scrollWidth ne compte PAS le placeholder : on mesure sa largeur réelle avec la police du champ.
+  const m = await champ.evaluate((el) => {
+    const c = getComputedStyle(el);
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = `${c.fontWeight} ${c.fontSize} ${c.fontFamily}`;
+    const pad = parseFloat(c.paddingLeft) + parseFloat(c.paddingRight);
+    return { w: el.clientWidth - pad, texte: ctx.measureText(el.placeholder).width, ph: el.placeholder };
+  });
+  console.log('RECHERCHE', JSON.stringify(m));
+  expect(m.ph.toLowerCase()).toContain('client');
+  expect(m.texte).toBeLessThanOrEqual(m.w); // le placeholder n'est plus coupé
+  await page.screenshot({ path: path.join(SHOTS, 'c3-champ-recherche.png') });
+});

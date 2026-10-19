@@ -68,9 +68,9 @@ describe('Phase 3 — cash-instruction props extractor', () => {
         expect(props.autoRedirectSeconds).toBe(60);
     });
 
-    it('defaults autoRedirectSeconds to 45 when missing', () => {
+    it('defaults autoRedirectSeconds to 5 when missing (owner 2026-10-19 : 5 s puis accueil)', () => {
         const props = route.props({ query: {} });
-        expect(props.autoRedirectSeconds).toBe(45);
+        expect(props.autoRedirectSeconds).toBe(5);
     });
 
     it('handles empty orderTotal gracefully (null)', () => {
@@ -84,7 +84,7 @@ describe('Phase 3 — cash-instruction props extractor', () => {
         });
         expect(props.orderNumber).toBe('<script>'); // Vue escapera en template
         expect(Number.isNaN(props.orderTotal)).toBe(true); // parseFloat('NaN_injection') = NaN
-        expect(props.autoRedirectSeconds).toBe(45); // parseInt('abc')=NaN → ||45
+        expect(props.autoRedirectSeconds).toBe(5); // parseInt('abc')=NaN → ||5
     });
 });
 

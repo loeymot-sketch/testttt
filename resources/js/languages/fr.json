@@ -2254,7 +2254,8 @@
             "amount_label": "Montant à régler",
             "help": "Réglez votre commande à la caisse : espèces, carte bleue ou titres-restaurant.",
             "cta_understood": "J'ai compris",
-            "auto_redirect": "Retour à l'accueil dans {n} s"
+            "auto_redirect": "Retour à l'accueil dans {n} s",
+            "name_label": "Au nom de"
         },
         "error": {
             "something_wrong": "Une erreur est survenue. Veuillez réessayer.",
@@ -2413,7 +2414,10 @@
             "counter_route_title": "Paiement à la caisse",
             "counter_route_sub": "Veuillez payer à la caisse",
             "counter_route_processing": "Enregistrement de votre commande…",
-            "counter_route_confirm_btn": "Confirmer ma commande"
+            "counter_route_confirm_btn": "Confirmer ma commande",
+            "name_label": "Votre prénom pour la commande",
+            "name_placeholder": "Touchez ici pour écrire votre prénom",
+            "name_hint": "Écrivez un nom pour retrouver votre commande à la caisse"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",

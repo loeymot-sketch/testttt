@@ -153,9 +153,12 @@ final class OrderReceiptEscPosRenderer
             $b .= EscPosCommandBuilder::doubleHeight(false).EscPosCommandBuilder::bold(false);
         }
         // [C2-CAISSE 2026-07-05] Nom du client (optionnel) → appeler la commande par le nom.
-        $clientName = trim((string) ($order->pos_customer_name ?? ''));
+        // [NOM-COMMANDE-BORNE 2026-10-19 · owner] « Quand un client vient, il me dit : j'ai la commande
+        // au nom de X. » Le NOM est donc en double hauteur + gras (lisible d'un coup d'œil par le
+        // caissier), comme le numéro de commande juste au-dessus.
+        $clientName = $this->nomClientPourTicket($order);
         if ($clientName !== '') {
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::doubleHeight(true).EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Client : '.$clientName, $w).EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleHeight(false);
         }
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone du client (commande téléphone
         // différée surtout) → rappeler/reconnaître le client au comptoir. Ligne propre
@@ -368,7 +371,7 @@ final class OrderReceiptEscPosRenderer
             $b .= $headerLine('*** '.mb_strtoupper($orderType).' ***');
         }
         // [C2-CAISSE 2026-07-05] Nom du client aussi en cuisine (appel de commande).
-        $kClientName = trim((string) ($order->pos_customer_name ?? ''));
+        $kClientName = $this->nomClientPourTicket($order);
         if ($kClientName !== '') {
             $b .= $headerLine('Client : '.$kClientName);
         }
@@ -620,6 +623,31 @@ final class OrderReceiptEscPosRenderer
         $b .= EscPosCommandBuilder::cut($this->cutIsPartial());
 
         return EscPosCommandBuilder::encodeForPrinter($b, $this->encodingFor($codePage));
+    }
+
+    /**
+     * [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom imprimé sur les tickets.
+     *
+     * Un nom SAISI pour cette commande (`pos_customer_name` : borne, caisse, téléphone, agrégateur)
+     * prime toujours. À défaut, seules les commandes du SITE (client absent, titulaire du compte =
+     * le client) reprennent le nom du compte, comme l'écran caisse. La borne et le comptoir ne
+     * l'empruntent JAMAIS : leur compte porteur est technique (« Admin Le Cayenne ») — un nom faux
+     * fait chercher quelqu'un qui n'existe pas (cf. SimpleOrderResource::displayCustomerName).
+     */
+    private function nomClientPourTicket(BroadcastableOrder $order): string
+    {
+        $saisi = trim((string) ($order->pos_customer_name ?? ''));
+        if ($saisi !== '') {
+            return $saisi;
+        }
+
+        if (! in_array((string) ($order->source_surface ?? ''), ['web', 'online'], true)) {
+            return '';
+        }
+
+        $user = $order->relationLoaded('user') ? $order->getRelation('user') : null;
+
+        return trim((string) ($user->name ?? ''));
     }
 
     /** [TICKET-FEED] Nb de lignes vierges (hauteur normale) avancées avant la coupe. */

@@ -189,6 +189,11 @@ export function buildKioskOrderPayload(state, { orderType, paymentMethod, quote,
     });
     payload.payment_method = PAYMENT_METHOD_MAP[resolvedPaymentMethod] ?? PAYMENT_METHOD_MAP.cash;
 
+    // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom pris à la borne voyage avec la commande (jamais
+    // avec le devis : il n'a aucun effet sur un prix). Absent ou vide = aucun champ envoyé.
+    const nom = String(state.customerName || '').trim();
+    if (nom) payload.pos_customer_name = nom.slice(0, 60);
+
     if (quote?.quote_token && quote?.signature) {
         payload.quote_token = quote.quote_token;
         payload.quote_signature = quote.signature;
@@ -228,6 +233,9 @@ export const kioskCart = {
         kioskToken: null,
         kioskMachineId: null,
         paymentMethod: null,
+        // [NOM-COMMANDE-BORNE 2026-10-19] Nom donné par le client à la borne. Volontairement HORS de
+        // la persistance du store : une donnée personnelle ne survit pas à la session du client.
+        customerName: '',
         // [K-02] Sur place (25=KIOSK) ou à emporter (10=TAKEAWAY) must be explicit.
         orderType: null,
         orderQuote: null,
@@ -429,6 +437,9 @@ export const kioskCart = {
         SET_PAYMENT_METHOD(state, method) {
             state.paymentMethod = method || null;
         },
+        SET_CUSTOMER_NAME(state, name) {
+            state.customerName = String(name || '').slice(0, 60);
+        },
         // [GAP-22-1] Set order type: 25=KIOSK (sur place), 10=TAKEAWAY (à emporter)
         SET_ORDER_TYPE(state, orderType) {
             state.orderQuote = null;
@@ -451,6 +462,7 @@ export const kioskCart = {
             state.loyaltyRedeemPoints = 0;
             state.idempotencyKey = null;
             state.paymentMethod = null;
+            state.customerName = '';
             state.orderType = null;
             state.orderQuote = null;
             // Kiosk Phase 9.1.6 — promo reset au retour idle (comme loyalty).

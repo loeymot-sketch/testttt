@@ -255,9 +255,10 @@ export default [
                     orderTotal: route.query.total !== undefined && route.query.total !== ''
                         ? parseFloat(route.query.total)
                         : null,
+                    // [CAISSE-SANS-BOUTON 2026-10-19 · owner] 5 s par défaut (était 45 s + bouton).
                     autoRedirectSeconds: route.query.timeout !== undefined
-                        ? parseInt(route.query.timeout, 10) || 45
-                        : 45,
+                        ? parseInt(route.query.timeout, 10) || 5
+                        : 5,
                     // [TICKET-BORNE-SERVEUR 2026-07-06] id backend de la commande : permet
                     // à l'écran d'imprimer via le renderer SERVEUR (design caisse) au lieu
                     // du builder client legacy. Absent (deep-link/offline) → fallback legacy.
