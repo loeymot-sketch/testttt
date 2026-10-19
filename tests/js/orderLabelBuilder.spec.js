@@ -181,6 +181,18 @@ describe('blocs de mise en page', () => {
         expect(blocks.find((b) => b.t === 'sub').text).toMatch(/UBER EATS/);
     });
 
+    it("le NOM du client n'est jamais imprimé sur l'étiquette — l'appel se fait au numéro", () => {
+        const o = { ...byNumber('U2RZA'), customer: { name: 'Mohamed Dupont' } };
+        const r = buildOrderLabels(o);
+        r.labels.forEach((l) => {
+            const texte = JSON.stringify(orderLabelBlocks(l));
+            expect(texte).not.toMatch(/Mohamed|Dupont/);
+            expect(l.sub).not.toMatch(/Mohamed|Dupont/);
+            // …et le numéro d'appel + « k/N » restent bien là
+            expect(orderLabelBlocks(l)[0].left).toBe('N° U2RZA');
+        });
+    });
+
     it('normalizeInstruction met chaque rubrique sur sa ligne', () => {
         expect(normalizeInstruction('A: x · B: y')).toBe('A: x\nB: y');
         expect(normalizeInstruction(null)).toBe('');

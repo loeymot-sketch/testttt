@@ -138,7 +138,15 @@ class KitchenTicketQueueController extends Controller
         // `created_at` à 20 h 40). Même SSOT que le board et le mur client.
         KitchenReleaseRule::applyScheduledBoardFilter($query, now());
 
-        $candidates = $query->limit(self::MAX_PAR_CYCLE)->get();
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Plus de papier AUTOMATIQUE à la caisse.
+        // Seule la destination « counter » est coupée : la cuisine imprime comme avant. On filtre
+        // ICI, côté serveur, et non dans le poste : un navigateur resté sur l'ancien paquet
+        // continuerait sinon d'interroger la file et de sortir le papier. La réimpression
+        // demandée à la main (plus bas) reste servie — un humain l'a voulue.
+        $impressionAutoCoupee = $destination === self::DESTINATION_COMPTOIR
+            && ! config('kds.counter_auto_print', false);
+
+        $candidates = $impressionAutoCoupee ? collect() : $query->limit(self::MAX_PAR_CYCLE)->get();
 
         $reclamees = [];
         foreach ($candidates as $order) {

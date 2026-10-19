@@ -1032,7 +1032,7 @@ import { resumeTechnique as resumeTechniqueCommande } from '../../../support/com
 import { bornerTempsPreparation } from '../../../helpers/posTempsPreparation';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
 // cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
-import { creerSequenceurDeSonnerie } from '../../../helpers/orderArrivalChime';
+import { creerSequenceurDeSonnerie, creerRappelPeriodique } from '../../../helpers/orderArrivalChime';
 // [T-SUIVI-MINUIT 2026-08-19 · GOAL owner] Journée de SERVICE plutôt que jour
 // calendaire : une commande de 23 h 50 ne doit pas disparaître à minuit.
 import { serviceDayRange } from '../../../helpers/posServiceDay';
@@ -1630,6 +1630,10 @@ export default {
         // dans la barre d'onglets — complément visuel de l'alerte sonore.
         webActionableCount(n) {
             this._updateDocTitle(n);
+            // [RAPPEL-COMMANDES 2026-10-19 · owner « parfois on les oublie »] Tant qu'une commande
+            // reste à traiter, un rappel (son + bandeau) revient toutes les 2 minutes ; il se tait
+            // tout seul quand le compteur retombe à zéro.
+            this._actualiserRappel(n);
         },
     },
     mounted() {
@@ -1663,6 +1667,8 @@ export default {
         // reste vidé pour les contextes fabriqués par les bancs d'essai, qui le renseignent.
         try { this._sequenceurSonnerie?.annuler?.(); } catch (_e) { /* defensive */ }
         this._sequenceurSonnerie = null;
+        try { this._rappelCommandes?.arreter?.(); } catch (_e) { /* defensive */ }
+        this._rappelCommandes = null;
         this._webOrderAlertTimers.forEach((t) => clearTimeout(t));
         this._webOrderAlertTimers = [];
         // [RED heal P3 2026-08-06] Libère l'AudioContext (les navigateurs en
@@ -2733,6 +2739,20 @@ export default {
                 if (!this._baseDocTitle) this._baseDocTitle = document.title || '';
                 document.title = n > 0 ? `(${n}) ${this._baseDocTitle}` : this._baseDocTitle;
             } catch (_e) { /* environnement sans document */ }
+        },
+        // [RAPPEL-COMMANDES 2026-10-19 · owner] Rappel périodique tant que des commandes web attendent.
+        // Créé à la demande (comme le séquenceur) pour que les bancs d'essai puissent appeler la
+        // méthode sur un contexte fabriqué à la main.
+        _actualiserRappel(n) {
+            if (!this._rappelCommandes) {
+                this._rappelCommandes = creerRappelPeriodique();
+            }
+            this._rappelCommandes.actualiser(n, (restantes) => {
+                try {
+                    alertService.info(`${restantes} commande${restantes > 1 ? 's' : ''} web à traiter`);
+                } catch (_e) { /* defensive */ }
+                if (this._newOrderSoundEnabled()) this._playNewOrderBeep();
+            });
         },
         // Réglage son : même clé que PosComponent (pos_new_order_sound_enabled,
         // défaut ON) — un seul interrupteur pour toutes les surfaces caisse.

@@ -305,8 +305,11 @@ export function buildOrderLabels(order, opts = {}) {
 
     const total = units.length;
     const number = orderNumber(order);
-    const customer = order?.customer && order.customer.name ? String(order.customer.name).trim() : '';
-    const sub = [orderSourceLabel(order), formatTime(order?.created_at_iso), customer,
+    // [ETIQUETTE-SANS-NOM 2026-10-19 · owner] Le NOM du client n'est plus imprimé sur l'étiquette :
+    // saisi à la main au comptoir ou au téléphone, il est souvent mal écrit, et l'appel se fait au
+    // NUMÉRO (bandeau « N° … k/N » ci-dessous, le même que sur le ticket et l'écran cuisine).
+    // Le nom reste lisible sur l'écran de la liste ; il ne va simplement plus sur le papier.
+    const sub = [orderSourceLabel(order), formatTime(order?.created_at_iso),
         order?.scheduled_hm ? `pour ${order.scheduled_hm}` : '', order?.table_name || '']
         .filter(Boolean).join(' · ');
 

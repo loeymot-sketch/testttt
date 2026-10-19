@@ -87,6 +87,13 @@ class InterrupteurService
             'description' => "À l'encaissement, imprime automatiquement le ticket client sans clic du caissier.",
             'consequence' => 'Désactivée (défaut), le ticket reste imprimable à la demande via le bouton dédié — rien ne se perd, juste plus de clic requis.',
         ],
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Le papier qui sortait seul à la caisse.
+        'impression_caisse_auto' => [
+            'cle'         => 'kds.counter_auto_print',
+            'libelle'     => 'Impression automatique à la caisse (borne, site, livraison)',
+            'description' => "Imprime seul, sur l'imprimante de la caisse, chaque commande qui arrive de la borne, du site ou d'une livraison.",
+            'consequence' => "Désactivée (défaut), plus aucun papier ne sort seul à la caisse ; la cuisine continue d'imprimer et l'écran cuisine ne change pas. La réimpression manuelle reste possible.",
+        ],
     ];
 
     private const GROUPE = 'pilotage';

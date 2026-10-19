@@ -596,10 +596,18 @@ final class OrderReceiptEscPosRenderer
                 }
                 $b .= EscPosCommandBuilder::bold(false);
             }
-            foreach ($blk['notes'] as $n) {
-                foreach (EscPosCommandBuilder::wrapIndented('** '.$n, $w - 2, '  ') as $noteLine) {
-                    $b .= EscPosCommandBuilder::textLine('  '.$noteLine);
+            // [NOTES-EN-GRAND 2026-10-19 · owner] La note du client (« sans œuf », « bien cuit »…) sort en
+            // GRAS et en DOUBLE TAILLE, comme la ligne produit : « on oublie de les lire » quand elle
+            // est écrite plus petit que tout le reste. Enroulée à la MOITIÉ de la largeur (un
+            // caractère double largeur prend 2 colonnes) pour ne jamais être coupée par l'imprimante.
+            if ($blk['notes'] !== []) {
+                $b .= EscPosCommandBuilder::doubleSize(true).EscPosCommandBuilder::bold(true);
+                foreach ($blk['notes'] as $n) {
+                    foreach (EscPosCommandBuilder::wrapIndented('** '.$n, $halfW, '  ') as $noteLine) {
+                        $b .= EscPosCommandBuilder::textLine($noteLine);
+                    }
                 }
+                $b .= EscPosCommandBuilder::bold(false).EscPosCommandBuilder::doubleSize(false).EscPosCommandBuilder::doubleHeight(true);
             }
             $b .= EscPosCommandBuilder::textLine('');
         }

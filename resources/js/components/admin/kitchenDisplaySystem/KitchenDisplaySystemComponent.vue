@@ -3271,8 +3271,12 @@ export default {
 }
 
 .kds-instruction {
-  line-height: 1.5;
-  border-left: 3px solid #e0e0e0;
+  /* [NOTES-EN-GRAND 2026-10-19 · owner] Même règle que la disposition V2 (KdsOrderLine) : la note
+     du client est lue à un mètre, elle ne doit plus jamais être le détail le plus fin de la fiche. */
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.3;
+  border-left: 5px solid #e0e0e0;
   padding-left: 0.4rem;
 }
 .kds-instruction--note {
@@ -3286,7 +3290,7 @@ export default {
   color: #7c2d12;
   border-left-color: #f97316;
   background: #fff7ed;
-  font-weight: 600;
+  font-weight: 900;
   border-radius: 0 4px 4px 0;
   padding: 0.2rem 0.35rem 0.2rem 0.4rem;
   box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);

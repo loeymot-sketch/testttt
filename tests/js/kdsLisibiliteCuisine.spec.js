@@ -127,3 +127,41 @@ describe('contraste ≥ 7:1 sur tous les états de la fiche', () => {
         expect(body).not.toMatch(/opacity\s*:/);
     });
 });
+
+// [NOTES-EN-GRAND 2026-10-19 · owner] « Les notes sont toujours en écriture très fine sur l'écran
+// cuisine et on oublie de les lire » (ex. : « sans œuf » dans une formule).
+describe('notes du client : grandes et grasses', () => {
+    const LEGACY = sansCommentaires(read('KitchenDisplaySystemComponent.vue'));
+
+    it('V2 : la note fait au moins 22 px, en gras ≥ 800, droite (jamais italique fin)', () => {
+        const body = rule(LINE, '.kds-line__instruction');
+        expect(body).not.toBeNull();
+        expect(parseInt(prop(body, 'font-size'), 10)).toBeGreaterThanOrEqual(22);
+        expect(Number(prop(body, 'font-weight'))).toBeGreaterThanOrEqual(800);
+        expect(prop(body, 'font-style')).toBe('normal');
+    });
+
+    it("V2 : la note est plus grande que le détail le plus gros de la fiche hors produit (16 px)", () => {
+        const note = parseInt(prop(rule(LINE, '.kds-line__instruction'), 'font-size'), 10);
+        const addon = parseInt(prop(rule(LINE, '.kds-line__menu-child,\n.kds-line__addon') || rule(LINE, '.kds-line__addon') || 'font-size: 16px;', 'font-size') || '16', 10);
+        expect(note).toBeGreaterThan(addon);
+    });
+
+    it('V2 : exclusions et allergènes en gras 900', () => {
+        expect(Number(prop(rule(LINE, '.kds-instruction--exclusion'), 'font-weight'))).toBeGreaterThanOrEqual(900);
+        expect(Number(prop(rule(LINE, '.kds-instruction--allergen'), 'font-weight'))).toBeGreaterThanOrEqual(900);
+    });
+
+    it('disposition historique : la note est aussi grande et grasse', () => {
+        const body = rule(LEGACY, '.kds-instruction');
+        expect(body).not.toBeNull();
+        expect(parseFloat(prop(body, 'font-size'))).toBeGreaterThanOrEqual(1.3);
+        expect(Number(prop(body, 'font-weight'))).toBeGreaterThanOrEqual(800);
+    });
+
+    it('le texte de la note est rendu dans une ligne qui porte la classe grande/grasse', () => {
+        const w = mount(KdsOrderLine, { props: { line: { type: 'instruction', label: 'sans oeuf', visualClass: 'kds-instruction--exclusion' } }, global: { mocks: { $t: (k) => k } } });
+        expect(w.find('.kds-line__instruction').classes()).toContain('kds-instruction--exclusion');
+        expect(w.text()).toContain('sans oeuf');
+    });
+});

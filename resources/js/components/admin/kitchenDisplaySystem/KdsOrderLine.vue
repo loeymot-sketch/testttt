@@ -329,16 +329,24 @@ export default {
   flex-shrink: 0;
 }
 
-/* INSTRUCTION — italic note with class-based emphasis */
+/* INSTRUCTION — note du client, GRANDE et GRASSE.
+   [NOTES-EN-GRAND 2026-10-19 · owner] « Les notes sont toujours en écriture très fine sur l'écran
+   cuisine, on oublie de les lire » (ex. : « sans œuf » sur une formule). Avant : 16 px italique,
+   la taille d'un détail. Maintenant : 24 px gras 800 droit (l'italique fin se lit mal à un mètre),
+   barre pleine à gauche pour que l'œil la trouve sans chercher. Les couleurs ne changent pas :
+   leur contraste ≥ 7:1 est déjà verrouillé par kdsLisibiliteCuisine.spec.js. */
 .kds-line__instruction {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  font-size: 16px;
-  font-style: italic;
-  padding-inline-start: 56px;
-  margin-top: 4px;
-  line-height: 1.3;
+  gap: 8px;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 800;
+  margin-inline-start: 44px;
+  padding-inline-start: 10px;
+  border-inline-start: 6px solid currentColor;
+  margin-top: 6px;
+  line-height: 1.25;
 }
 .kds-line__instruction-prefix {
   opacity: 0.55;
@@ -351,15 +359,15 @@ export default {
   white-space: pre-line;
 }
 .kds-instruction--note {
-  color: #374151;
+  color: #111827;
 }
 .kds-instruction--exclusion {
   color: #7C2D12;
-  font-weight: 600;
+  font-weight: 900;
 }
 .kds-instruction--allergen {
   color: #7C2D12;
-  font-weight: 700;
+  font-weight: 900;
 }
 
 /* ALLERGEN BLOCK — "⚠ Allergènes : gluten · lait" */
