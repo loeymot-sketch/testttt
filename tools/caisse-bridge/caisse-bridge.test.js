@@ -23,7 +23,7 @@ const cp = require('child_process');
 // ── Faux worker PowerShell (persistant) ──────────────────────────────────────
 const spawnCalls = [];
 // [FILE-PERIMEE 2026-10-20] État simulé de l'imprimante + journal de ce que le worker reçoit.
-const fake = { status: 'online', purged: 0, lines: [] };
+const fake = { status: 'online', purged: 0, tickResponds: true, printResponds: true, lines: [] };
 function fakeSpawn(cmd, args, opts) {
   spawnCalls.push({ cmd, args, opts });
   const child = new EventEmitter();
@@ -38,11 +38,11 @@ function fakeSpawn(cmd, args, opts) {
       fake.lines.push(txt);
       if (txt.startsWith('#TICK|')) {
         // Commande de contrôle : réponse immédiate « OK tick <état> <supprimés> ».
-        setTimeout(() => child.stdout.emit('data', 'OK tick ' + fake.status + ' ' + fake.purged + '\n'), 1);
+        if (fake.tickResponds) setTimeout(() => child.stdout.emit('data', 'OK tick ' + fake.status + ' ' + fake.purged + '\n'), 1);
         return true;
       }
       const file = txt.split('|')[1];
-      setTimeout(() => child.stdout.emit('data', 'OK ' + file + '\n'), 300);
+      if (fake.printResponds) setTimeout(() => child.stdout.emit('data', 'OK ' + file + '\n'), 300);
       return true;
     },
   };
@@ -144,6 +144,16 @@ async function main() {
   assert.strictEqual(derniere, '#TICK|' + bridge.PRINTER + '|120', 'commande attendue, reçu ' + derniere);
   fake.purged = 0;
 
+  // 9b. Contrôle en direct FIGÉ : la porte ne suspend pas la réponse HTTP, elle laisse passer après 3 s.
+  fake.status = 'offline';
+  await bridge.tickPrinter(120);
+  fake.tickResponds = false; fake.printResponds = false;   // worker figé : ne répond plus à RIEN
+  const t1 = Date.now();
+  const fige = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x47]));
+  const attente = Date.now() - t1;
+  assert.strictEqual(fige.status, 202, 'contrôle figé : le ticket doit passer, reçu ' + fige.status);
+  assert.ok(attente >= 2500 && attente < 4500, 'la porte doit attendre ~3 s puis laisser passer — mesuré ' + attente + ' ms');
+
   // 10. Le script PowerShell du worker ne touche QUE les jobs de CETTE imprimante, plus vieux que
   //     la limite, et jamais ceux sans date (un « null » est plus ancien que tout en PowerShell).
   const src = require('fs').readFileSync(require('path').join(__dirname, 'caisse-bridge.js'), 'utf8');
@@ -152,7 +162,7 @@ async function main() {
   assert.ok(!/Get-PrintJob\s*\|/.test(src) && !/Get-PrintJob -ErrorAction/.test(src), 'jamais « tous les jobs de toutes les imprimantes »');
 
   await new Promise((r) => server.close(r));
-  console.log('caisse-bridge.test.js — 10/10 assertions groupes OK (202 queued immédiat, compile unique, health, 400 vide, windowsHide, porte hors ligne 503, imprimante revenue, fail-open, purge périmés, périmètre PowerShell)');
+  console.log('caisse-bridge.test.js — 11/11 assertions groupes OK (202 queued immédiat, compile unique, health, 400 vide, windowsHide, porte hors ligne 503, imprimante revenue, fail-open, purge périmés, périmètre PowerShell)');
   process.exit(0);
 }
 

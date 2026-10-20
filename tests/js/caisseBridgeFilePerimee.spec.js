@@ -12,9 +12,15 @@ import path from 'node:path';
  * NON couvert ici (à vérifier sur le vrai PC caisse) : la requête CIM / Get-PrintJob de Windows.
  */
 describe('pont caisse — file d\'impression périmée', () => {
+    it('pont CUISINE : même porte hors ligne (503, le KDS réessaie), même purge, worker figé sans blocage', () => {
+        const script = path.resolve(__dirname, '../../tools/kitchen-bridge/kitchen-bridge.test.js');
+        const out = execFileSync(process.execPath, [script], { encoding: 'utf8', timeout: 30000 });
+        expect(out).toMatch(/13\/13 groupes/);
+    });
+
     it('contrat du pont : porte hors ligne, purge des tickets périmés, porte ouverte au doute', () => {
         const script = path.resolve(__dirname, '../../tools/caisse-bridge/caisse-bridge.test.js');
         const out = execFileSync(process.execPath, [script], { encoding: 'utf8', timeout: 30000 });
-        expect(out).toMatch(/10\/10 assertions/);
+        expect(out).toMatch(/11\/11 assertions/);
     });
 });

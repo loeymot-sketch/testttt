@@ -182,7 +182,7 @@ function startWorker() {
       const job = workerState.pending.shift();
       if (job) {
         if (job.tmp) { try { fs.unlinkSync(job.tmp); } catch (_) {} }
-        if (/^OK /.test(line)) job.resolve({ ok: true, line });
+        if (/^OK /.test(line)) job.resolve(job.tmp ? { ok: true } : { ok: true, line }); // « line » : commandes de contrôle seulement
         else job.resolve({ ok: false, error: line });
       }
     }
@@ -282,8 +282,13 @@ async function tickPrinter(maxAgeSeconds) {
 async function printerIsOffline() {
   if (!OFFLINE_GATE) return false;
   if (printerState.status !== 'offline' || Date.now() - printerState.at > STATE_FRESH_MS) return false;
-  const live = await tickPrinter(STALE_JOB_SECONDS);
-  return live.status === 'offline' && Date.now() - live.at <= STATE_FRESH_MS;
+  // Un worker figé ne doit jamais suspendre la réponse HTTP : sans réponse en 3 s, on laisse passer.
+  // (La commande reste dans la file FIFO du worker : sa réponse tardive lui sera bien attribuée.)
+  const live = await Promise.race([
+    tickPrinter(STALE_JOB_SECONDS),
+    new Promise((resolve) => { const t = setTimeout(() => resolve(null), 3000); if (t.unref) t.unref(); }),
+  ]);
+  return !!live && live.status === 'offline' && Date.now() - live.at <= STATE_FRESH_MS;
 }
 
 let tickTimer = null;
