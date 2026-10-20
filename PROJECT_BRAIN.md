@@ -71,6 +71,10 @@ Plateforme restaurant fast-food complète :
 >   que les tests PHP ne voyaient pas : polygone `branches.zone` refusant le restaurant (désormais optionnel, désactivé),
 >   formulaire peint sur le total/bouton Commande (limite CSS documentée, corrigée), quota public partagé (routes caisse dédiées).
 >   `tests/Playwright/livraison-caisse.spec.js` : 16/16 sur 4 passages consécutifs.
+> - **Test réel 3 surfaces** (`livraison-parcours-complet.spec.js`) : commande web → cuisine → caisse désigne le livreur → remise avec
+>   photo → base relue (livrée, payée, numéro fiscal, photo privée, NF525 OK). Il a trouvé un défaut ANTÉRIEUR à ce chantier : une
+>   livraison web payée à la porte restait `PENDING_COUNTER` sans numéro fiscal (`source_surface='delivery'` non reconnu par
+>   `OrderService`) — corrigé + testé ; et une tournée déjà partie qui acceptait encore des commandes — corrigé.
 > - **À décider / non fait** : preuve du téléphone (aucun SMS), preuve de l'e-mail à la caisse, notification d'attribution au
 >   livreur, carte à la porte (TPE), copie « 100 % à emporter » du site à relire avant ouverture publique.
 

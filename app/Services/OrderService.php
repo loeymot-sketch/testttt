@@ -2099,8 +2099,13 @@ class OrderService
                 // issu d'un flip web-LIVRAISON (source_surface='web' + DELIVERY), sans toucher la
                 // logique fiscale en aval (allocation seq/escrow inchangées). Restreint à la livraison :
                 // le takeaway web s'encaisse au comptoir (counter-collect), jamais au doorstep.
+                // [LIVRAISON 2026-10-20 · trouvé par le test réel navigateur] Une commande de livraison créée par l'API du site
+                // porte `source_surface = 'delivery'` (FrontendOrder::creating), pas 'web' : la comparaison stricte à 'web'
+                // ne la reconnaissait JAMAIS → livrée et encaissée à la porte mais restée PENDING_COUNTER, sans numéro fiscal
+                // (vente hors chaîne NF525 — exactement ce que P1-3 voulait empêcher). Même ensemble que
+                // OnlineOrderController::changeStatus (l.149), qui produit ce PENDING_COUNTER.
                 $isWebDeliveryDeferred = (int) $locked->payment_status === (int) PaymentStatus::PENDING_COUNTER
-                    && $locked->source_surface === 'web'
+                    && in_array(strtolower((string) $locked->source_surface), ['web', 'delivery'], true)
                     && (int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY;
                 $wasUnpaidCash = (! $transaction)
                     && ((int) $locked->payment_status === (int) PaymentStatus::UNPAID || $isWebDeliveryDeferred);

@@ -79,6 +79,18 @@
   restaurant (« Too Many Attempts » en plein service). Elle a maintenant ses routes authentifiées
   `GET /api/admin/pos-delivery/suggest` et `POST /api/admin/pos-delivery/quote`, limitées par utilisateur.
 
+## 3quater. Trouvé par le test réel de bout en bout (`tests/Playwright/livraison-parcours-complet.spec.js`)
+
+Une vraie livraison traverse les trois surfaces : commande web par l'API (comme le site) → cuisine → la caisse désigne le livreur
+(navigateur) → le livreur part, arrive avec une vraie photo, remet et encaisse (navigateur) → relecture de la base.
+- **Vente livraison hors chaîne NF525 (défaut ANTÉRIEUR, corrigé)** : une commande de livraison créée par l'API du site porte
+  `source_surface = 'delivery'` ; `OrderService::deliveryBoyOrderChangeStatus` ne reconnaissait que `'web'`. Résultat : livrée et
+  encaissée à la porte, la commande restait `PENDING_COUNTER`, **sans numéro fiscal**. Le test existant fixait `'web'` à la main,
+  ce qui masquait la réalité. Même ensemble que `OnlineOrderController` désormais ; test de non-régression avec la vraie valeur.
+- **Tournée déjà partie** : un livreur peut partir en avance ; une commande dont le premier départ possible tombait sur ce même
+  créneau rejoignait la tournée partie (injoignable). Une tournée partie est désormais fermée : plus de commande, plus de créneau
+  proposé ni accepté.
+
 ## 4. Lancer la livraison (rien n'est publié tant que ce n'est pas fait)
 
 1. Déployer le **backend** (migrations `2026_10_20_100000` et `2026_10_20_100100` : additives) — voir la mémoire

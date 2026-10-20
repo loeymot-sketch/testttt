@@ -113,6 +113,50 @@ class DeliveryWaveServiceTest extends TestCase
         $this->assertSame('20:30', $b->wave_at->format('H:i'));
     }
 
+    /**
+     * [LIVRAISON 2026-10-20 · trouvé par le test réel] Un livreur peut partir EN AVANCE (commandes prêtes avant l'heure de la
+     * tournée). Une commande passée ensuite, dont le premier départ possible tombe sur CETTE même heure, rejoignait la tournée
+     * déjà partie : injoignable (livreur parti, caisse sans bouton pour désigner quelqu'un).
+     */
+    public function test_an_order_never_joins_a_wave_whose_courier_already_left_early(): void
+    {
+        // 19:02 → première tournée 19:30. Le livreur part tout de suite (en avance de 28 minutes).
+        $a = $this->waves->assign($this->deliveryOrder());
+        $a->update(['left_at' => now()]);
+
+        Carbon::setTestNow(Carbon::parse('2026-10-20 19:10:00')); // 19:10 + 20 min = 19:30 pile : le même créneau
+        $b = $this->waves->assign($this->deliveryOrder(50.44, 2.97));
+
+        $this->assertSame('19:30', $a->fresh()->wave_at->format('H:i'));
+        $this->assertSame('20:00', $b->wave_at->format('H:i'), 'La tournée de 19:30 est partie : la commande va à la suivante.');
+    }
+
+    public function test_a_customer_cannot_pick_a_slot_whose_courier_already_left(): void
+    {
+        $a = $this->waves->assign($this->deliveryOrder());
+        $a->update(['left_at' => now()]);
+        Carbon::setTestNow(Carbon::parse('2026-10-20 19:10:00'));
+
+        try {
+            $this->waves->assign($this->deliveryOrder(50.44, 2.97), Carbon::parse('2026-10-20 19:30:00'));
+            $this->fail('Un créneau déjà parti aurait dû être refusé.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('delivery_slot_at', $e->errors());
+        }
+    }
+
+    public function test_available_waves_do_not_offer_a_wave_that_has_left(): void
+    {
+        $a = $this->waves->assign($this->deliveryOrder());
+        $a->update(['left_at' => now()]);
+        Carbon::setTestNow(Carbon::parse('2026-10-20 19:10:00'));
+
+        $list = collect($this->waves->availableWaves($this->branch->id, null, 3))->keyBy('time');
+
+        $this->assertTrue($list['19:30']['full'], 'Une tournée partie est présentée comme indisponible.');
+        $this->assertFalse($list['20:00']['full']);
+    }
+
     public function test_a_wave_that_has_left_is_never_modified(): void
     {
         $a = $this->waves->assign($this->deliveryOrder());

@@ -62,12 +62,14 @@ class DeliveryWaveService
         while (count($out) < $limit && $cursor->lte($horizon)) {
             if ($this->inServiceWindow($cursor)) {
                 $stops = DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $cursor)->whereNull('left_at')->count();
+                $closed = $this->waveHasLeft($branchId, $cursor);
                 $out[] = [
                     'wave_at' => $cursor->toDateTimeString(),
                     'time'    => $cursor->format('H:i'),
                     'label'   => $cursor->isSameDay(Carbon::now()) ? $cursor->format('H:i') : $cursor->translatedFormat('D H:i'),
                     'stops'   => $stops,
-                    'full'    => $stops >= $max,
+                    // Une tournée dont le livreur est déjà parti n'accepte plus personne : même traitement qu'une tournée pleine.
+                    'full'    => $closed || $stops >= $max,
                 ];
             }
             $cursor = $cursor->copy()->addMinutes($this->waveMinutes());
@@ -245,7 +247,7 @@ class DeliveryWaveService
         // Sinon : premier créneau de la grille qui n'est pas plein.
         for ($i = 0; $i < 48; $i++) {
             $count = DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $candidate)->whereNull('left_at')->lockForUpdate()->count();
-            if ($count < $max && $this->inServiceWindow($candidate)) {
+            if ($count < $max && $this->inServiceWindow($candidate) && ! $this->waveHasLeft($branchId, $candidate)) {
                 return $candidate;
             }
             $candidate = $this->nextInServiceWindow($candidate->copy()->addMinutes($this->waveMinutes()));
@@ -273,11 +275,20 @@ class DeliveryWaveService
             $fail('Ce créneau est en dehors des heures de livraison.');
         }
         $count = DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNull('left_at')->lockForUpdate()->count();
-        if ($count >= (int) config('delivery.max_stops_per_wave', 6)) {
+        if ($count >= (int) config('delivery.max_stops_per_wave', 6) || $this->waveHasLeft($branchId, $wave)) {
             $fail('Ce créneau est complet : choisissez le suivant.');
         }
 
         return $wave;
+    }
+
+    /**
+     * Le livreur est-il DÉJÀ PARTI avec cette tournée ? Il peut partir en avance (commandes prêtes avant l'heure) :
+     * une commande qui la rejoindrait ensuite serait injoignable (livreur parti, personne à désigner à la caisse).
+     */
+    public function waveHasLeft(int $branchId, CarbonInterface $wave): bool
+    {
+        return DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNotNull('left_at')->exists();
     }
 
     // ── grille et horaires ──────────────────────────────────────────────────────────────────
