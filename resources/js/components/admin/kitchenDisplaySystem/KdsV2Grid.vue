@@ -123,6 +123,7 @@
       :data-count="visibleActiveOrders.length"
       :data-cols="colonnesAffichees"
       :style="{ '--kds-cols': colonnesAffichees }"
+      @scroll.passive="majFleches"
     >
       <KdsOrderCard
         v-for="(o, idx) in visibleActiveOrders"
@@ -153,6 +154,27 @@
       data-testid="kds-scroll-right"
       @click="scrollGrid(1)"
     >▶</button>
+
+    <!-- [KDS-TABLETTE 2026-10-20 · owner « petites flèches à droite et à gauche pour défiler les tickets »]
+         Poste tablette : une flèche de chaque côté, visible SEULEMENT quand il reste des commandes
+         dans ce sens (pas de flèche gauche au début, pas de flèche droite à la fin). Un appui fait
+         défiler d'un écran de fiches. Le glissement au doigt reste possible. -->
+    <button
+      v-if="tablette && peutGauche"
+      type="button"
+      class="kds-fleche-tablette kds-fleche-tablette--gauche"
+      aria-label="Commandes précédentes"
+      data-testid="kds-tablette-fleche-gauche"
+      @click="defilerTablette(-1)"
+    >‹</button>
+    <button
+      v-if="tablette && peutDroite"
+      type="button"
+      class="kds-fleche-tablette kds-fleche-tablette--droite"
+      aria-label="Commandes suivantes"
+      data-testid="kds-tablette-fleche-droite"
+      @click="defilerTablette(1)"
+    >›</button>
 
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
          Renders the 4 most recently PREPARED orders with elapsed-since-served.
@@ -220,6 +242,10 @@ import {
     ORDER_STATUS,
 } from '../../../helpers/kdsState.js';
 import { fichesParEcranTablette } from '../../../helpers/kdsTablette.js';
+
+// [KDS-TABLETTE 2026-10-20] Écart (px) en deçà duquel la grille est considérée au bord : bien moins
+// qu'une fiche (≥ 380 px), donc jamais une commande réellement cachée.
+const MARGE_FLECHES = 12;
 
 const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -291,6 +317,9 @@ export default {
             // absente ne doit JAMAIS faire disparaître le réglage — le chef s'en sert.
             barreUniquePresente: false,
             largeurFenetre: typeof window !== 'undefined' ? window.innerWidth : 1280,
+            // [KDS-TABLETTE 2026-10-20] Reste-t-il des commandes hors de vue à gauche / à droite ?
+            peutGauche: false,
+            peutDroite: false,
             cartesParEcran: KDS_CARTES_PAR_ECRAN_DEFAUT,
             choixCartes: KDS_CHOIX_CARTES,
             now: Date.now(),
@@ -407,6 +436,10 @@ export default {
         },
     },
     watch: {
+        // [KDS-TABLETTE 2026-10-20] La file change (commande qui arrive / part) ou la largeur
+        // change : on recalcule quelles flèches afficher une fois le DOM à jour.
+        'activeOrders.length'() { this.$nextTick(this.majFleches); },
+        largeurFenetre() { this.$nextTick(this.majFleches); },
         // Auto-transition watcher: when the queue updates AND no order is in
         // PREPARING AND there's a NEW order at the head, promote it.
         // [Wave U 2026-05-21] Switched from visibleOrders → activeOrders so the
@@ -453,6 +486,7 @@ export default {
             window.addEventListener('keydown', this.onKey);
         }
         window.addEventListener('resize', this.surLaTailleDeFenetre);
+        this.$nextTick(this.majFleches);
     },
     beforeUnmount() {
         if (this.tickerId) {
@@ -467,6 +501,30 @@ export default {
     methods: {
         surLaTailleDeFenetre() {
             this.largeurFenetre = window.innerWidth;
+        },
+        /**
+         * [KDS-TABLETTE 2026-10-20] Recalcule les flèches : à gauche s'il y a de la place avant la
+         * position actuelle, à droite s'il en reste après. La marge absorbe le décalage de calage
+         * (marge intérieure de la grille) : mesuré, une grille « au début » a scrollLeft = 4 — sans marge
+         * la flèche gauche restait affichée devant la toute première commande.
+         */
+        majFleches() {
+            const el = this.$refs.gridEl;
+            if (!this.tablette || !el) {
+                this.peutGauche = false;
+                this.peutDroite = false;
+                return;
+            }
+            this.peutGauche = el.scrollLeft > MARGE_FLECHES;
+            this.peutDroite = el.scrollLeft + el.clientWidth < el.scrollWidth - MARGE_FLECHES;
+        },
+        /** Un appui = un écran de fiches (autant que de colonnes affichées), jamais moins d'une. */
+        defilerTablette(sens) {
+            const el = this.$refs.gridEl;
+            if (!el) return;
+            const premiere = el.firstElementChild;
+            const pas = premiere ? premiere.getBoundingClientRect().width + 6 : el.clientWidth;
+            el.scrollBy({ left: sens * pas * Math.max(1, this.colonnesAffichees), behavior: 'smooth' });
         },
         /**
          * [KDS-COLONNES 2026-08-07 owner] Change le nombre de commandes visibles à la fois.
@@ -933,6 +991,32 @@ export default {
 .kds-v2--tablette .kds-v2__grid::-webkit-scrollbar-thumb {
     border-width: 1px;
 }
+/* [KDS-TABLETTE 2026-10-20 · owner] Petites flèches ‹ › de chaque côté pour passer d'une commande à
+   l'autre. Étroites et translucides pour cacher le moins possible de la fiche, mais cible tactile
+   de 48 px de large (WCAG 2.5.8). Elles n'existent que s'il reste des commandes dans ce sens. */
+.kds-fleche-tablette {
+    position: absolute;
+    /* En bas des fiches et non au milieu : la colonne des quantités (« 1× ») est collée au bord
+       gauche, une flèche à mi-hauteur en cachait la moitié (constaté sur capture). Le bas d'une fiche
+       est vide tant que la commande tient à l'écran. Au-dessus du point de connexion (coin droit). */
+    bottom: 40px;
+    z-index: 90;
+    width: 48px;
+    height: 64px;
+    padding: 0 0 4px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(26, 26, 26, 0.62);
+    color: #fff;
+    font-size: 40px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.kds-fleche-tablette:active { background: #F4501E; }
+.kds-fleche-tablette--gauche { left: 4px; }
+.kds-fleche-tablette--droite { right: 4px; }
 .kds-v2--tablette .kds-v2__empty {
     padding: 12px;
 }

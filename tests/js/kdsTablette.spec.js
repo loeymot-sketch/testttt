@@ -199,7 +199,7 @@ describe('grille tablette — commandes seules', () => {
         expect(grille().find('.kds-cols-picker').exists()).toBe(true);
     });
 
-    it('tablette : ni sélecteur, ni boutons de défilement, ni bande « servies », ni « Prêt »', () => {
+    it('tablette : ni sélecteur, ni boutons de défilement du grand écran, ni bande « servies », ni « Prêt »', () => {
         const w = grille({ tablette: true, orders: [ORDRE, { ...ORDRE, id: 9002 }, { ...ORDRE, id: 9003 }, { ...ORDRE, id: 9004 }, { ...ORDRE, id: 9005 }, { ...ORDRE, id: 9006 }, { ...ORDRE, id: 9007 }, { ...ORDRE, id: 9008 }] });
         expect(w.find('.kds-cols-picker').exists()).toBe(false);
         expect(w.find('.kds-scroll-btn').exists()).toBe(false);
@@ -208,6 +208,79 @@ describe('grille tablette — commandes seules', () => {
         expect(w.classes()).toContain('kds-v2--tablette');
         // aucun raccourci [A]… sur les fiches
         expect(w.find('.kds-card__shortcut').exists()).toBe(false);
+    });
+
+    describe('flèches ‹ › de défilement des tickets (tablette)', () => {
+        const NEUF = Array.from({ length: 9 }, (_, i) => ({ ...ORDRE, id: 9100 + i }));
+        // jsdom ne mesure rien : on fixe les dimensions de la grille à la main.
+        const mesurer = (w, { gauche, largeur, total }) => {
+            const el = w.find('.kds-v2__grid').element;
+            Object.defineProperty(el, 'clientWidth', { configurable: true, value: largeur });
+            Object.defineProperty(el, 'scrollWidth', { configurable: true, value: total });
+            el.scrollLeft = gauche;
+            return el;
+        };
+        const G = '[data-testid="kds-tablette-fleche-gauche"]';
+        const D = '[data-testid="kds-tablette-fleche-droite"]';
+
+        it('au début : seulement la flèche droite', async () => {
+            const w = grille({ tablette: true, orders: NEUF });
+            const el = mesurer(w, { gauche: 4, largeur: 1000, total: 3000 }); // 4 = calage mesuré au début
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            expect(w.find(G).exists()).toBe(false);
+            expect(w.find(D).exists()).toBe(true);
+        });
+
+        it('au milieu : les deux flèches', async () => {
+            const w = grille({ tablette: true, orders: NEUF });
+            const el = mesurer(w, { gauche: 800, largeur: 1000, total: 3000 });
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            expect(w.find(G).exists()).toBe(true);
+            expect(w.find(D).exists()).toBe(true);
+        });
+
+        it('à la fin : seulement la flèche gauche', async () => {
+            const w = grille({ tablette: true, orders: NEUF });
+            const el = mesurer(w, { gauche: 2000, largeur: 1000, total: 3000 });
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            expect(w.find(G).exists()).toBe(true);
+            expect(w.find(D).exists()).toBe(false);
+        });
+
+        it('rien à défiler : aucune flèche', async () => {
+            const w = grille({ tablette: true });
+            const el = mesurer(w, { gauche: 0, largeur: 1000, total: 1000 });
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            expect(w.find(G).exists()).toBe(false);
+            expect(w.find(D).exists()).toBe(false);
+        });
+
+        it('grand écran : jamais les flèches tablette (il a les siennes)', async () => {
+            const w = grille({ tablette: false, orders: NEUF });
+            const el = mesurer(w, { gauche: 800, largeur: 1000, total: 3000 });
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            expect(w.find(G).exists()).toBe(false);
+            expect(w.find(D).exists()).toBe(false);
+        });
+
+        it('un appui défile d\'un écran de fiches dans le bon sens', async () => {
+            const w = grille({ tablette: true, orders: NEUF });
+            const el = mesurer(w, { gauche: 800, largeur: 1000, total: 3000 });
+            const appels = [];
+            el.scrollBy = (o) => appels.push(o.left);
+            el.dispatchEvent(new Event('scroll'));
+            await w.vm.$nextTick();
+            await w.find(D).trigger('click');
+            await w.find(G).trigger('click');
+            expect(appels).toHaveLength(2);
+            expect(appels[0]).toBeGreaterThan(0);
+            expect(appels[1]).toBe(-appels[0]);
+        });
     });
 
     it('tablette : les raccourcis clavier [A]–[H] ne valident rien', async () => {

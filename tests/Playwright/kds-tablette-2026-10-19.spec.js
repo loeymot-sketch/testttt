@@ -248,6 +248,60 @@ test('tablette : file longue (9 commandes) → la rangée défile, largeur des f
   await page.screenshot({ path: path.join(SHOTS, 'x-file-longue-fin.png') });
 });
 
+test('tablette : flèches ‹ › — apparaissent seulement quand il reste des commandes, et font défiler', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await loginAsChefOperator(page);
+  const base = BASE.data;
+  const file = [];
+  for (let i = 0; i < 9; i += 1) file.push(commande(base[i % base.length], 9300 + i, `A04${i}`, 20 - i, i % 2 ? 4 : 7));
+  await avecPayload(page, { data: file, meta: BASE.meta });
+  await ouvrir(page, '/kds-tablette');
+  const G = '[data-testid="kds-tablette-fleche-gauche"]';
+  const D = '[data-testid="kds-tablette-fleche-droite"]';
+  const pos = () => page.evaluate(() => Math.round(document.querySelector('.kds-v2__grid').scrollLeft));
+
+  // Début de file : rien à gauche, une flèche à droite (taille tactile suffisante).
+  await expect(page.locator(G)).toHaveCount(0);
+  await expect(page.locator(D)).toBeVisible();
+  const boite = await page.locator(D).boundingBox();
+  expect(boite.width).toBeGreaterThanOrEqual(44);
+  await page.screenshot({ path: path.join(SHOTS, 'fleches-debut.png') });
+
+  // Un appui à droite : la grille avance, la flèche gauche apparaît.
+  await page.locator(D).click();
+  await page.waitForTimeout(900);
+  const apres = await pos();
+  expect(apres).toBeGreaterThan(100);
+  await expect(page.locator(G)).toBeVisible();
+  await page.screenshot({ path: path.join(SHOTS, 'fleches-milieu.png') });
+
+  // Jusqu'au bout : la flèche droite disparaît.
+  for (let i = 0; i < 8 && (await page.locator(D).count()) > 0; i += 1) {
+    await page.locator(D).click();
+    await page.waitForTimeout(800);
+  }
+  await expect(page.locator(D)).toHaveCount(0);
+  await expect(page.locator(G)).toBeVisible();
+  await page.screenshot({ path: path.join(SHOTS, 'fleches-fin.png') });
+
+  // Retour : la flèche gauche ramène en arrière, puis disparaît au début.
+  for (let i = 0; i < 8 && (await page.locator(G).count()) > 0; i += 1) {
+    await page.locator(G).click();
+    await page.waitForTimeout(800);
+  }
+  await expect(page.locator(G)).toHaveCount(0);
+  expect(await pos()).toBeLessThanOrEqual(2);
+});
+
+test('tablette : file courte (tout tient à l\'écran) → aucune flèche', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await loginAsChefOperator(page);
+  await avecPayload(page, { data: fileDe(3), meta: BASE.meta });
+  await ouvrir(page, '/kds-tablette');
+  await expect(page.locator('[data-testid="kds-tablette-fleche-gauche"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="kds-tablette-fleche-droite"]')).toHaveCount(0);
+});
+
 test('tablette : file vide → message sobre, rien d\'autre', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 600 });
   await loginAsChefOperator(page);
