@@ -47,6 +47,34 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-20 — GOAL « livraison fonctionnelle » : barème par commune, tournées de 30 min, caisse + livreur + site.**
+> **Rien n'est déployé ni poussé. La livraison reste SUSPENDUE** (`order_setup_delivery = DISABLE`) : on la remet depuis la
+> caisse. Contrat complet, lancement et limites : **`docs/LIVRAISON.md`**.
+> - **Barème propriétaire** (remplace « 4 € ≤3 km puis +2 €/km ») : Hénin-Beaumont **3,90 €** ; autre commune ≤5 km 4,90 €,
+>   ≤8 km 5,90 €, ≤10 km 6,90 € ; **>10 km refusé → Uber Eats**. Source : `config/delivery.php` → `DeliveryTariff`.
+>   Le prix est **toujours** recalculé par le serveur depuis l'adresse enregistrée ; distance/montant d'un écran ignorés.
+> - **Adresse** : géocodée par le SERVEUR (Base Adresse Nationale, indice de proximité = restaurant), commune structurée,
+>   enregistrée **une seule fois** par client. Les coordonnées du navigateur ne sont plus crues (sentinelle
+>   `AddressServerGeocodingTest`). Panne du fournisseur = refus (jamais de prix inventé).
+> - **Tournées** : grille :00/:30, regroupement (2ᵉ commande <30 min = même départ, décalé d'un cran si besoin), créneau
+>   choisi validé avant paiement, ordre de passage + ETA estimée. Table `delivery_stops` — **`OrderStateMachine` (gelée) non touchée**.
+> - **Caisse** : bouton suspendre/remettre (2 appuis), Tournées, client par téléphone + adresses connues, devis serveur.
+>   Plus de saisie manuelle des km, ni de faux e-mail `@pos.local`/mot de passe fixe.
+> - **Livreur** : `/livreur` (téléphone) — Waze, montant et mode d'encaissement, arrivée + **photo privée**, remise via la voie
+>   officielle (fiscal/audit inchangés). **Site** : tunnel livraison (adresse vérifiée, créneaux, Uber Eats >10 km), état lu
+>   auprès du serveur ; sources + compilé + `?v=` prêts dans le dépôt du site, **non commités** (arbre déjà sale d'une autre session).
+> - **Preuves** : PHPUnit livraison (tarif, géocodeur, tournées, API publique, caisse, livreur, bout-en-bout web→tournée),
+>   Vitest (miroir tarifaire, helpers caisse, `ensureDeliveryCustomerAndAddress`), 4 mutations injectées dont 1 survivante
+>   corrigée par un test, navigateur : écran livreur, caisse (bascule, adresse, devis, hors-rayon, Tournées), tunnel du site.
+> - **Navigateur réel (Playwright)** : parcours complet validé — client inconnu → téléphone → adresse → devis 3,90 € → espèces →
+>   `POST /admin/pos 201`, commande au bon client (≠ client de passage), palier, adresse BAN, tournée. Il a révélé trois défauts
+>   que les tests PHP ne voyaient pas : polygone `branches.zone` refusant le restaurant (désormais optionnel, désactivé),
+>   formulaire peint sur le total/bouton Commande (limite CSS documentée, corrigée), quota public partagé (routes caisse dédiées).
+>   `tests/Playwright/livraison-caisse.spec.js` : 16/16 sur 4 passages consécutifs.
+> - **À décider / non fait** : preuve du téléphone (aucun SMS), preuve de l'e-mail à la caisse, notification d'attribution au
+>   livreur, carte à la porte (TPE), copie « 100 % à emporter » du site à relire avant ouverture publique.
+
+
 > **2026-10-04 (plus tard) — ✅ DÉPLOYÉ ET VÉRIFIÉ EN PRODUCTION : `8b164074`. L'entrée suivante
 > (« PAS déployé ») est PÉRIMÉE.**
 > - **Livré** : les 78 commits de `3133cba3` à `8b164074`, en avance rapide pure (`merge --ff-only`,

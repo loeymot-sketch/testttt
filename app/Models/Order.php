@@ -28,6 +28,10 @@ class Order extends Model implements BroadcastableOrder
         'subtotal',
         'discount',
         'delivery_charge',
+        // [LIVRAISON 2026-10-20] distance retenue, palier appliqué, départ de tournée
+        'delivery_distance_km',
+        'delivery_tier',
+        'delivery_slot_at',
         'total_tax',
         'total',
         'order_type',
@@ -114,6 +118,7 @@ class Order extends Model implements BroadcastableOrder
         'preparation_time_confirmed_at' => 'datetime',
         'preparing_at' => 'datetime',
         'prepared_at' => 'datetime',
+        'delivery_slot_at' => 'datetime',
     ];
 
     /**

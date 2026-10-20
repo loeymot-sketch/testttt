@@ -641,6 +641,8 @@ class OrderService
                             'apartment' => $address->apartment,
                             'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
+                            'city' => $address->city,
+                            'postal_code' => $address->postal_code,
                         ]);
                     }
                 }
@@ -1353,6 +1355,8 @@ class OrderService
                             'apartment' => $address->apartment,
                             'latitude' => $address->latitude,
                             'longitude' => $address->longitude,
+                            'city' => $address->city,
+                            'postal_code' => $address->postal_code,
                         ]);
                     } else {
                         // [Y5 FIX] Address not found or doesn't belong to customer — fail explicitly
@@ -3220,6 +3224,13 @@ class OrderService
         try {
             $order->delivery_boy_id = (int) $targetId;
             $order->save();
+
+            // [LIVRAISON 2026-10-20 · relecture adverse P1] Le livreur est porté par DEUX endroits (la commande,
+            // que vérifie le changement de statut, et son arrêt de tournée, que lit l'écran livreur). Les garder
+            // synchrones : sinon le livreur B choisi ici ne voit rien et le livreur A voit l'arrêt mais reçoit 403.
+            \App\Models\DeliveryStop::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('order_id', $order->id)->whereNull('left_at')
+                ->update(['delivery_boy_id' => (int) $targetId]);
 
             // [P0-LIV-01 trace] Audit-log the assignment so the same chain
             // also records WHO assigned WHICH driver to WHICH order. Mirrors

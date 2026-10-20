@@ -11,7 +11,7 @@ use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Models\PaymentTerminal;
 use App\Rules\ValidJsonOrder;
-use App\Services\Delivery\DeliveryFeeService;
+use App\Services\Delivery\DeliveryQuoteService;
 use Illuminate\Foundation\Http\FormRequest;
 use Smartisan\Settings\Facades\Settings;
 
@@ -19,6 +19,7 @@ class PosOrderRequest extends FormRequest
 {
     use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
+    use \App\Http\Requests\Concerns\ValidatesDeliverySlot;
     use ValidatesOrderItemVariations;
 
     protected function prepareForValidation(): void
@@ -44,21 +45,29 @@ class PosOrderRequest extends FormRequest
         // (endpoint /pos/quote), sinon l'intent scellé du quote diverge de l'intent re-dérivé
         // au commit (OrderQuoteService:463) → 401 « quote intent mismatch ».
         if ((int) $this->input('order_type', 0) === OrderType::DELIVERY) {
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
-            // POS walk-in DELIVERY path resolves the per-branch fee config when
-            // branch_id is in the payload. Mirrors OrderRequest:117 and
-            // DeliveryQuoteService:63. Null-safe: unknown branch -> legacy formula.
-            $branchId = (int) $this->input('branch_id', 0);
-            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-
-            $this->merge([
-                'delivery_charge' => app(DeliveryFeeService::class)->fromDistanceKm(
-                    $this->filled('delivery_distance_km') ? $this->input('delivery_distance_km') : 0,
-                    $branch,
-                ),
-            ]);
+            // [LIVRAISON 2026-10-20] Frais TOUJOURS dérivés de l'adresse enregistrée du client de la
+            // commande (coordonnées + commune posées par le géocodeur serveur). La distance saisie
+            // ou calculée dans le navigateur n'est plus jamais crue. Miroir exact :
+            // PosController::normalizePosRuntimePayload (/pos/quote), sinon « quote intent mismatch ».
+            if ($this->filled('address_id') && (int) $this->input('customer_id', 0) > 0) {
+                $quote = app(DeliveryQuoteService::class)->quoteForPos(
+                    (int) $this->input('branch_id', 0),
+                    (int) ($this->user()?->branch_id ?? 0),
+                    (int) $this->input('address_id'),
+                    (int) $this->input('customer_id')
+                );
+                $this->merge([
+                    'delivery_charge' => $quote['delivery_charge'],
+                    'delivery_distance_km' => $quote['distance_km'],
+                    'delivery_tier' => $quote['delivery_tier'],
+                ]);
+            } else {
+                // Adresse ou client manquant : la validation (address_id requis) refusera ;
+                // en attendant aucun montant client ne survit.
+                $this->merge(['delivery_charge' => 0, 'delivery_distance_km' => 0]);
+            }
         } else {
-            $this->merge(['delivery_charge' => 0]);
+            $this->merge(['delivery_charge' => 0, 'delivery_slot_at' => null, 'delivery_tier' => null]);
         }
 
         // [F-SPLIT-PAYMENT-001] When the multi-tender feature flag is OFF,
@@ -134,6 +143,9 @@ class PosOrderRequest extends FormRequest
                 'min:0',
             ] : ['nullable', 'numeric', 'min:0'],
             'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
+            'delivery_tier' => ['nullable', 'string', 'max:24'],
+            // [LIVRAISON 2026-10-20] Créneau de départ choisi par le client (grille 30 min) ; vérifié dans withValidator.
+            'delivery_slot_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
             // [POS-9.1.8] total is recomputed server-side in OrderService::posOrderStore;
             // payload value is only used as a UX cross-check for cash payments
             // (see withValidator below). nullable so a desynced UI cannot bypass
@@ -242,6 +254,7 @@ class PosOrderRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            $this->validateDeliverySlotAfter($validator);
             // [SELF-AUDIT P1 2026-07-05] Split (payment_breakdown) sur commande DIFFÉRÉE au comptoir
             // = invalide : confirmCounterPayment (encaissement) est MONO-tender et ne peut pas honorer
             // un split ; persister les tranches à la création double-compte le tiroir (NF525 §8).

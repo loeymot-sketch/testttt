@@ -99,4 +99,26 @@ describe('POS delivery feature flag (order_setup_delivery)', () => {
         // sinon un rechargement réactiverait la livraison désactivée.
         expect(src).toMatch(/orderTypeEnum\.DELIVERY\s*&&\s*this\.deliveryEnabled/);
     });
+
+    // [LIVRAISON 2026-10-20] La caisse peut suspendre / remettre la livraison : l'état lu auprès du serveur
+    // prime sur le réglage chargé avec la page (qui peut dater de plusieurs heures).
+    it("l'état serveur « suspendue » prime sur un réglage de page encore ENABLE", () => {
+        const enabled = PosComponent.computed.deliveryEnabled.call({ setting: { order_setup_delivery: ACTIVITY_ENABLE }, deliveryLive: false });
+        expect(enabled).toBe(false);
+    });
+
+    it("l'état serveur « active » prime sur un réglage de page encore DISABLE", () => {
+        const enabled = PosComponent.computed.deliveryEnabled.call({ setting: { order_setup_delivery: ACTIVITY_DISABLE }, deliveryLive: true });
+        expect(enabled).toBe(true);
+    });
+
+    it("sans état serveur lu (null), on retombe sur le réglage de la page", () => {
+        expect(PosComponent.computed.deliveryEnabled.call({ setting: { order_setup_delivery: ACTIVITY_ENABLE }, deliveryLive: null })).toBe(true);
+    });
+
+    it('le gabarit expose le bouton suspendre / remettre et le bouton Tournées', () => {
+        const src = readFileSync(resolve(process.cwd(), 'resources/js/components/admin/pos/PosComponent.vue'), 'utf8');
+        expect(src).toContain('data-testid="pos-delivery-toggle"');
+        expect(src).toContain('data-testid="pos-delivery-board-open"');
+    });
 });

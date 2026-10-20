@@ -82,6 +82,8 @@ use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\PrintKioskOrderToCounter;
 use App\Listeners\PrintKioskKitchenTicketOnOrderCreated;
+use App\Listeners\AssignDeliveryWaveOnOrderCreated;
+use App\Listeners\ReleaseDeliveryStopOnOrderClosed;
 use App\Listeners\PrintFiscalReceiptAndOpenDrawerOnCounterPaid;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -155,6 +157,8 @@ class EventServiceProvider extends ServiceProvider
         // try/catch (defense in depth) so it never throws upward.
         OrderStatusChanged::class => [
             PersistOrderStatusChangedToOutbox::class,
+            // [LIVRAISON 2026-10-20] Commande refusée / annulée par changement de statut : libère son arrêt.
+            ReleaseDeliveryStopOnOrderClosed::class,
             // [KITCHEN-AUTOPRINT 2026-08-07 owner] Le ticket cuisine sort SEUL dès l'entrée en
             // cuisine, quelle que soit la surface (la caisse était la grande oubliée : elle
             // exigeait un clic). Doublon impossible — garde atomique en base.
@@ -186,6 +190,8 @@ class EventServiceProvider extends ServiceProvider
             PrintKioskOrderToCounter::class,
             // [BORNE-KITCHEN 2026-06-28] + ticket CUISINE sur la station 'kitchen' (best-effort).
             PrintKioskKitchenTicketOnOrderCreated::class,
+            // [LIVRAISON 2026-10-20] Rattache la commande de livraison à sa tournée de 30 minutes (best-effort).
+            AssignDeliveryWaveOnOrderCreated::class,
             // [ARCH_STOCK_INTELLIGENT_BOM P2a — B3 2026-07-23] Consommation matière
             // THÉORIQUE (ShouldQueue, hors-ligne). Placé EN DERNIER + isolé en
             // try/catch : il ne peut ni ralentir ni casser le cascade ci-dessus
@@ -205,6 +211,8 @@ class EventServiceProvider extends ServiceProvider
         // [F-01 + NEW-05] Compensating release of stock counters on cancel / refund.
         // Idempotent via order_items.released_qty ledger inside AvailabilityService.
         OrderCanceled::class => [
+            // [LIVRAISON 2026-10-20] Libère la place de la tournée (hors nourriture déjà partie).
+            ReleaseDeliveryStopOnOrderClosed::class,
             ReleaseStockOnOrderCanceled::class,
             ReleaseAvailabilityOnOrderCanceled::class,
             // [ARCH_STOCK_INTELLIGENT_BOM B-1 2026-07-23] Reprise (rendu) du stock

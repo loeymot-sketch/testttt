@@ -42,6 +42,12 @@ return [
         // destructive-logique (annulation + audit). EncaissementComponent envoie déjà la clé ; un
         // double appui ne doit pas relancer la purge.
         'api/admin/pos/counter-collect/purge-previous',
+        // [LIVRAISON 2026-10-20] Les trois gestes du livreur (départ, arrivée + photo, remise) : la remise
+        // déclenche l'encaissement à la porte et la séquence fiscale ; un double appui réseau ne doit jamais
+        // les rejouer. L'écran /livreur envoie déjà la clé sur chaque écriture.
+        'api/frontend/delivery-run/depart',
+        'api/frontend/delivery-run/stops/*/arrive',
+        'api/frontend/delivery-run/stops/*/deliver',
         // [GOAL REMARQUES 2026-10-03 · R-060] Même famille : suppression d'un geste des commandes
         // téléphone du jour. Un double appui ne doit pas relancer la purge (revue adverse vague 2).
         'api/admin/pos/counter-collect/purge-phone-today',

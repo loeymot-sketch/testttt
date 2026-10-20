@@ -81,6 +81,12 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
 // (inline vanilla JS) — PAS la SPA admin, PAS de Sanctum. Le toggle délègue au
 // SSOT AvailabilityService::toggle. Déclaré AVANT le catch-all. Fail-closed :
 // MOBILE_STOCK_PIN vide => accès entièrement refusé.
+// [LIVRAISON 2026-10-20] Écran du livreur (page autonome pour téléphone). L'authentification et les données
+// passent par l'API (/api/auth/login puis /api/frontend/delivery-run) ; la page elle-même est publique et vide.
+Route::get('/livreur', function () {
+    return view('livreur');
+})->middleware(['installed'])->name('livreur');
+
 Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
     Route::get('/', function () {
         return view('mobile-stock');

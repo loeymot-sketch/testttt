@@ -22,6 +22,7 @@ class OrderRequest extends FormRequest
 {
     use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
+    use \App\Http\Requests\Concerns\ValidatesDeliverySlot;
     use ValidatesOrderItemVariations;
 
     /**
@@ -96,15 +97,13 @@ class OrderRequest extends FormRequest
 
         $isDelivery = (int) $this->input('order_type', 0) === OrderType::DELIVERY;
 
-        if ($isDelivery && $this->filled('delivery_distance_km') && $this->filled('address_id') && $this->user() && ! $this->filled('branch_id')) {
-            throw new GeocodeUnavailableException();
-        }
-
-        if ($isDelivery
-            && $this->filled('delivery_distance_km')
-            && $this->filled('branch_id')
-            && $this->filled('address_id')
-            && $this->user()) {
+        // [LIVRAISON 2026-10-20] Le prix d'une livraison est TOUJOURS dérivé de l'adresse
+        // enregistrée du client (coordonnées + commune posées par le géocodeur serveur) : plus
+        // aucune distance ni aucun montant venus du navigateur ne sont crus.
+        if ($isDelivery && $this->filled('address_id')) {
+            if (! $this->user() || ! $this->filled('branch_id')) {
+                throw new GeocodeUnavailableException();
+            }
             $quote = app(DeliveryQuoteService::class)->quoteForSavedAddress(
                 (int) $this->input('branch_id'),
                 (int) $this->input('address_id'),
@@ -113,19 +112,15 @@ class OrderRequest extends FormRequest
             $this->merge([
                 'delivery_distance_km' => $quote['distance_km'],
                 'delivery_charge' => $quote['delivery_charge'],
+                'delivery_tier' => $quote['delivery_tier'],
             ]);
-        } elseif ($isDelivery && $this->filled('delivery_distance_km')) {
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-02 P0] DEL-5 wire-up.
-            // Legacy-fallback branch (no saved address) must also honour the
-            // per-branch fee config when branch_id is supplied. Branch::find
-            // is null-safe: an unknown branch_id falls back to the legacy
-            // `max(5, ceil(d/5)*5)` formula (DeliveryFeeService:33).
-            $branchId = (int) $this->input('branch_id', 0);
-            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-            $this->merge([
-                'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
-            ]);
+        } elseif ($isDelivery) {
+            // Pas d'adresse : la validation `address_id` requis refusera. En attendant on neutralise
+            // tout montant client pour qu'il ne survive nulle part.
+            $this->merge(['delivery_charge' => 0, 'delivery_distance_km' => 0]);
+        } else {
+            // Hors livraison : aucun créneau de tournée ne doit survivre.
+            $this->merge(['delivery_slot_at' => null, 'delivery_tier' => null]);
         }
     }
 
@@ -154,9 +149,10 @@ class OrderRequest extends FormRequest
                 'numeric',
                 'min:0',
             ] : ['nullable', 'numeric', 'min:0'],
-            'delivery_distance_km' => $isDelivery
-                ? ['required', 'numeric', 'min:0']
-                : ['nullable', 'numeric', 'min:0'],
+            'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
+            // [LIVRAISON 2026-10-20] Créneau de départ choisi par le client (grille 30 min) ; vérifié dans withValidator.
+            'delivery_slot_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
+            'delivery_tier' => ['nullable', 'string', 'max:24'],
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
             // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
             'total' => ['nullable', 'numeric', 'min:0'],
@@ -236,6 +232,7 @@ class OrderRequest extends FormRequest
             // placées AVANT les early-returns kiosk pour couvrir toutes les surfaces
             // (web/app/borne). Champ absent = ASAP, no-op strict.
             $this->validateScheduledAtAfter($validator);
+            $this->validateDeliverySlotAfter($validator);
 
             $orderType = request('order_type');
             $orderTypeInt = (int) $orderType;

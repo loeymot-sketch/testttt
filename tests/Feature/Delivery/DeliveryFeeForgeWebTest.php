@@ -47,6 +47,7 @@ class DeliveryFeeForgeWebTest extends TestCase
             'address' => '10 Rue de Test',
             'latitude' => '48.8566',
             'longitude' => '2.3522',
+            'geocode_status' => 'OK',
         ]);
         $item = $this->activeItem();
 
@@ -77,8 +78,9 @@ class DeliveryFeeForgeWebTest extends TestCase
         $this->assertContains($response->status(), [200, 201], $response->getContent());
 
         $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
-        $this->assertSame(5.0, (float) $order->delivery_charge);
-        $this->assertSame(15.0, (float) $order->total);
+        // Adresse sans commune connue, distance 0 → tarif « autre commune ≤ 5 km » = 4,90 € (jamais le 999 forgé).
+        $this->assertSame(4.9, (float) $order->delivery_charge);
+        $this->assertSame(14.9, (float) $order->total);
     }
 
     /**

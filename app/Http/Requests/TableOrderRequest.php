@@ -28,6 +28,12 @@ class TableOrderRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizeAdvanceOrder();
+
+        // [LIVRAISON 2026-10-20 · relecture adverse P0] Une commande de TABLE (QR, publique) n'a ni adresse ni
+        // frais de livraison : le serveur ne dérive de prix de livraison que depuis une adresse enregistrée
+        // (OrderRequest / PosOrderRequest). Ici le champ était lu tel quel → livraison gratuite forgée par un
+        // appelant anonyme. On force donc zéro, quoi qu'envoie le client, et on refuse le type LIVRAISON.
+        $this->merge(['delivery_charge' => 0, 'address_id' => null]);
     }
 
     /**
@@ -58,6 +64,9 @@ class TableOrderRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            if ((int) $this->input('order_type', 0) === OrderType::DELIVERY) {
+                $validator->errors()->add('order_type', 'La livraison ne se commande pas depuis une table.');
+            }
             if (request('order_type') == OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
                 $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } elseif (request('order_type') == OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {

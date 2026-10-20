@@ -2025,6 +2025,25 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->name('deduct-manual');
     });
 
+    // [LIVRAISON 2026-10-20] Pilotage de la livraison DEPUIS LA CAISSE : suspendre / remettre, client par
+    // téléphone, adresse enregistrée une fois (géocodée serveur) avec son prix. Porte : permission:pos.
+    // Pas d'`idempotency` ici : chaque écriture est NATURELLEMENT rejouable (état posé, client retrouvé par téléphone,
+    // adresse dédupliquée, livreur désigné) — rejouer ne produit jamais de doublon.
+    Route::prefix('pos-delivery')->name('posDelivery.')->middleware('permission:pos')->group(function () {
+        Route::get('/status', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'status']);
+        Route::post('/toggle', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'toggle'])->middleware('throttle:30,1');
+        // Suggestions et devis de la CAISSE : routes authentifiées, limitées PAR UTILISATEUR. La caisse ne doit pas
+        // dépendre des routes publiques du site, dont le quota est partagé par toute l'adresse IP du restaurant
+        // (constaté en navigateur : « Too Many Attempts » en plein service).
+        Route::get('/suggest', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'suggest'])->middleware('throttle:240,1');
+        Route::post('/quote', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'quote'])->middleware('throttle:120,1');
+        Route::get('/lookup', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'lookup'])->middleware('throttle:pos-loyalty-lookup');
+        Route::post('/customer', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'customer'])->middleware('throttle:pos-loyalty-lookup');
+        Route::post('/address', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'address'])->middleware('throttle:30,1');
+        Route::get('/board', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'board']);
+        Route::post('/waves/assign', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'assignCourier']);
+    });
+
     Route::prefix('pos-category')->name('pos-category.')->group(function () {
         Route::get('/', [PosCategoryController::class, 'index']);
     });
@@ -2158,6 +2177,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // [SEC-26-2] Rate limit subscriber spam: 5 subscriptions/min per IP
         Route::post('/', [FrontendSubscriberController::class, 'store'])
             ->middleware('throttle:5,1');
+    });
+
+    // [LIVRAISON 2026-10-20] Livraison propre du Cayenne — endpoints PUBLICS en lecture (site + application).
+    // Throttle serré : suggest/quote appellent un fournisseur de géocodage externe.
+    Route::prefix('delivery')->name('delivery.')->group(function () {
+        Route::get('status', [\App\Http\Controllers\Frontend\DeliveryController::class, 'status'])->middleware('throttle:60,1');
+        Route::get('suggest', [\App\Http\Controllers\Frontend\DeliveryController::class, 'suggest'])->middleware('throttle:40,1');
+        Route::post('quote', [\App\Http\Controllers\Frontend\DeliveryController::class, 'quote'])->middleware('throttle:20,1');
+        Route::get('waves', [\App\Http\Controllers\Frontend\DeliveryController::class, 'waves'])->middleware('throttle:60,1');
     });
 
     Route::prefix('address')->name('address.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
@@ -2409,6 +2437,16 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/web', [TokenStoreController::class, 'webToken']);
         Route::post('/mobile', [TokenStoreController::class, 'deviceToken']);
         Route::post('/kiosk', [TokenStoreController::class, 'kioskDeviceToken']);
+    });
+
+    // [LIVRAISON 2026-10-20] Tournées du livreur (départs de 30 min, itinéraire Waze, encaissement, photo d'arrivée).
+    // La remise réutilise OrderService::deliveryBoyOrderChangeStatus (fiscal + audit inchangés).
+    Route::prefix('delivery-run')->name('delivery-run.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'index']);
+        Route::post('/depart', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'depart'])->middleware('idempotency');
+        Route::post('/stops/{stop}/arrive', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'arrive'])->middleware('idempotency');
+        Route::post('/stops/{stop}/deliver', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'deliver'])->middleware('idempotency');
+        Route::get('/stops/{stop}/photo', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'photo']);
     });
 
     Route::prefix('delivery-boy-order')->name('delivery-boy-order.')->middleware(['auth:sanctum'])->group(function () {

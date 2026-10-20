@@ -4,27 +4,26 @@ namespace Tests\Feature\Pos;
 
 use App\Enums\OrderType;
 use App\Http\Requests\PosOrderRequest;
+use App\Exceptions\Delivery\OutsideDeliveryZoneException;
+use App\Models\Address;
 use App\Models\Branch;
-use App\Services\Delivery\DeliveryFeeService;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
  * [S2-02 / P2-f — REGISTRE_FINAL goal-intelligence-2026-07-18]
+ * [LIVRAISON 2026-10-20 — réécrit pour le barème propriétaire]
  *
- * En POS DELIVERY SANS `delivery_distance_km`, l'ancien code laissait passer le
- * `delivery_charge` CLIENT : PosOrderRequest::prepareForValidation ne recalculait le
- * fee QUE lorsqu'une distance était fournie, sinon la valeur client persistait
- * (le store ne unset que total/subtotal/discount) jusqu'au moteur de pricing. Sous
- * le seuil de livraison offerte, un fee forgé (0, négatif ou gonflé) était facturé
- * tel quel → violation de « prix 100% backend » (CLAUDE.md §8).
+ * Invariant : le `delivery_charge` d'une DELIVERY POS est TOUJOURS une valeur SERVEUR autoritative,
+ * dérivée de l'adresse ENREGISTRÉE du client de la commande (`customer_id` + `address_id`, géocodée
+ * serveur : coordonnées + commune), jamais de la valeur ni de la distance envoyées par le navigateur
+ * (« prix 100% backend », CLAUDE.md §8). Sans adresse/client exploitable, le montant est neutralisé à 0
+ * (la validation `address_id` refuse ensuite) — plus aucun repli silencieux sur un forfait.
  *
- * Ce test verrouille l'invariant : le `delivery_charge` d'une DELIVERY est TOUJOURS
- * une valeur SERVEUR autoritative — fee depuis la distance si fournie (flux POS
- * normal, PosComponent.vue:3911), sinon fee de config branche (fromDistanceKm(0)) —
- * et jamais la valeur client. La même garde (prepareForValidation) alimente le
- * commit ; PosController::normalizePosRuntimePayload en est le miroir exact pour
- * l'endpoint /pos/quote (intents identiques → pas de 401 « quote intent mismatch »).
+ * La même garde (prepareForValidation) alimente le commit ; PosController::normalizePosRuntimePayload
+ * en est le miroir exact pour /pos/quote (intents identiques → pas de 401 « quote intent mismatch »).
+ * Géométrie : +0,054° de latitude ≈ 6,0 km (palier ≤ 8 km = 5,90 €).
  */
 class PosDeliveryChargeServerAuthoritativeTest extends TestCase
 {
@@ -41,47 +40,53 @@ class PosDeliveryChargeServerAuthoritativeTest extends TestCase
         return $request;
     }
 
+    private function branchAt(float $lat = 48.8566, float $lng = 2.3522): Branch
+    {
+        return Branch::factory()->create(['latitude' => (string) $lat, 'longitude' => (string) $lng]);
+    }
+
+    private function savedAddress(Branch $branch, float $lat, float $lng, ?string $city, ?string $postal): array
+    {
+        $customer = User::factory()->create(['branch_id' => $branch->id]);
+        $address = Address::query()->create([
+            'user_id' => $customer->id,
+            'label' => 'Domicile',
+            'address' => '10 Rue de Test',
+            'latitude' => (string) $lat,
+            'longitude' => (string) $lng,
+            'city' => $city,
+            'postal_code' => $postal,
+            'geocode_status' => 'OK',
+        ]);
+
+        return [$customer, $address];
+    }
+
     /**
-     * (a) DELIVERY + `delivery_charge` CLIENT forgé + SANS distance → le fee SERVEUR
-     *     (config branche) est utilisé, jamais la valeur client (0 / négatif / gonflé).
+     * (a) DELIVERY + `delivery_charge` CLIENT forgé + SANS adresse enregistrée → frais neutralisés à 0,
+     *     jamais la valeur client (0 / négatif / gonflé), jamais une distance client.
      *
      * @test
      *
      * @dataProvider forgedClientChargeProvider
      */
-    public function delivery_without_distance_uses_server_fee_not_client(mixed $forged): void
+    public function delivery_without_saved_address_neutralises_client_charge(mixed $forged): void
     {
-        // Branche avec config fee explicite → valeur serveur déterministe : base=4, mini=4,
-        // free_km=5 → fromDistanceKm(0) = max(4, 4 + 1*0) = 4.00.
-        $branch = Branch::factory()->create([
-            'delivery_fee_base' => 4.00,
-            'delivery_fee_per_km' => 1.00,
-            'delivery_fee_minimum' => 4.00,
-            'delivery_fee_free_km' => 5.00,
-        ]);
-
-        $expectedServerFee = app(DeliveryFeeService::class)->fromDistanceKm(0, $branch); // 4.00
+        $branch = $this->branchAt();
 
         $request = $this->prepared([
             'order_type' => OrderType::DELIVERY,
             'branch_id' => $branch->id,
-            'address_id' => 123,          // adresse quelconque : ignorée, le fee reste config serveur
             'customer_id' => 7,
-            'delivery_charge' => $forged, // valeur CLIENT à ignorer
-            // pas de delivery_distance_km
+            'delivery_charge' => $forged,   // valeur CLIENT à ignorer
+            'delivery_distance_km' => 2.0,  // distance CLIENT à ignorer aussi
+            // pas d'address_id
         ]);
 
-        $this->assertEqualsWithDelta(
-            $expectedServerFee,
-            (float) $request->input('delivery_charge'),
-            0.001,
-            'Sans distance, le delivery_charge doit venir de la config SERVEUR, pas du client.'
-        );
-        $this->assertNotEquals(
-            (float) $forged,
-            (float) $request->input('delivery_charge'),
-            'La valeur CLIENT forgée ne doit jamais être facturée.'
-        );
+        $this->assertEqualsWithDelta(0.0, (float) $request->input('delivery_charge'), 0.001,
+            'Sans adresse enregistrée, aucun montant client ne doit survivre.');
+        $this->assertEqualsWithDelta(0.0, (float) $request->input('delivery_distance_km'), 0.001,
+            'La distance client ne doit pas survivre sans adresse enregistrée.');
     }
 
     public static function forgedClientChargeProvider(): array
@@ -94,62 +99,87 @@ class PosDeliveryChargeServerAuthoritativeTest extends TestCase
     }
 
     /**
-     * (a-bis) SANS branche configurée ni distance → repli sur la formule legacy (5€),
-     *          jamais la valeur client.
+     * (a-bis) adresse fournie mais SANS client de commande (`customer_id`) : l'adresse n'est pas
+     *          vérifiable (propriété) → neutralisé à 0, jamais la valeur client.
      *
      * @test
      */
-    public function delivery_without_distance_or_branch_falls_back_to_legacy_fee(): void
+    public function delivery_with_address_but_without_customer_neutralises_client_charge(): void
     {
-        $request = $this->prepared([
-            'order_type' => OrderType::DELIVERY,
-            'delivery_charge' => 0, // client forge 0 → doit être ignoré
-            // ni branch_id, ni distance → repli legacy fromDistanceKm(0, null) = 5€
-        ]);
-
-        $legacyFee = app(DeliveryFeeService::class)->fromDistanceKm(0, null); // 5.0
-
-        $this->assertEqualsWithDelta(
-            $legacyFee,
-            (float) $request->input('delivery_charge'),
-            0.001,
-            'Sans branche ni distance, le fee doit être le repli SERVEUR legacy, pas le 0 client.'
-        );
-        $this->assertGreaterThan(
-            0.0,
-            (float) $request->input('delivery_charge'),
-            'Un fee serveur > 0 doit remplacer le 0 forgé par le client.'
-        );
-    }
-
-    /**
-     * (b) DELIVERY + distance → recalcul depuis la distance (comportement existant préservé).
-     *
-     * @test
-     */
-    public function delivery_with_distance_recomputes_from_distance(): void
-    {
-        $branch = Branch::factory()->create(); // pas de config → formule legacy
-        $expected = app(DeliveryFeeService::class)->fromDistanceKm(5.01, $branch); // max(5, ceil(5.01/5)*5) = 10
+        $branch = $this->branchAt();
+        [, $address] = $this->savedAddress($branch, 48.9106, 2.3522, 'Oignies', '62590');
 
         $request = $this->prepared([
             'order_type' => OrderType::DELIVERY,
             'branch_id' => $branch->id,
-            'delivery_distance_km' => 5.01,
-            'delivery_charge' => 999, // client ignoré
+            'address_id' => $address->id,
+            'delivery_charge' => 0, // client forge 0 → ignoré
         ]);
 
-        $this->assertEqualsWithDelta(
-            $expected,
-            (float) $request->input('delivery_charge'),
-            0.001,
-            'Avec distance, le fee est recalculé depuis la distance (comportement existant).'
-        );
-        $this->assertNotEquals(
-            999.0,
-            (float) $request->input('delivery_charge'),
-            'La valeur client ne doit pas être conservée avec une distance fournie.'
-        );
+        $this->assertEqualsWithDelta(0.0, (float) $request->input('delivery_charge'), 0.001);
+    }
+
+    /**
+     * (b) DELIVERY + adresse enregistrée du client → frais et distance dérivés du SERVEUR ;
+     *     charge et distance forgées par le navigateur sont écrasées.
+     *
+     * @test
+     */
+    public function delivery_with_saved_address_recomputes_from_server_geometry(): void
+    {
+        $branch = $this->branchAt();
+        [$customer, $address] = $this->savedAddress($branch, 48.9106, 2.3522, 'Oignies', '62590'); // ≈ 6 km
+
+        $request = $this->prepared([
+            'order_type' => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'customer_id' => $customer->id,
+            'address_id' => $address->id,
+            'delivery_distance_km' => 0.1, // forgé
+            'delivery_charge' => 999,      // forgé
+        ]);
+
+        $this->assertEqualsWithDelta(5.9, (float) $request->input('delivery_charge'), 0.001,
+            'Le fee est recalculé par le barème serveur depuis l\'adresse enregistrée.');
+        $this->assertEqualsWithDelta(6.0, (float) $request->input('delivery_distance_km'), 0.05,
+            'La distance est mesurée par le serveur (haversine), pas celle du client.');
+    }
+
+    /** @test — Hénin-Beaumont : forfait 3,90 € quelle que soit la distance. */
+    public function delivery_to_home_city_is_flat_3_90(): void
+    {
+        $branch = $this->branchAt();
+        [$customer, $address] = $this->savedAddress($branch, 48.9106, 2.3522, 'Hénin-Beaumont', '62110');
+
+        $request = $this->prepared([
+            'order_type' => OrderType::DELIVERY,
+            'branch_id' => $branch->id,
+            'customer_id' => $customer->id,
+            'address_id' => $address->id,
+            'delivery_charge' => 999,
+        ]);
+
+        $this->assertEqualsWithDelta(3.9, (float) $request->input('delivery_charge'), 0.001);
+    }
+
+    /** @test — au-delà de 10 km hors Hénin-Beaumont : refus 422 OUTSIDE_DELIVERY_ZONE (Uber Eats). */
+    public function delivery_beyond_ten_km_is_refused(): void
+    {
+        $branch = $this->branchAt();
+        [$customer, $address] = $this->savedAddress($branch, 48.9566, 2.3522, 'Lens', '62300'); // ≈ 11 km
+
+        try {
+            $this->prepared([
+                'order_type' => OrderType::DELIVERY,
+                'branch_id' => $branch->id,
+                'customer_id' => $customer->id,
+                'address_id' => $address->id,
+                'delivery_charge' => 0,
+            ]);
+            $this->fail('Une adresse à plus de 10 km doit être refusée.');
+        } catch (OutsideDeliveryZoneException $e) {
+            $this->assertTrue($e->suggestUberEats);
+        }
     }
 
     /**

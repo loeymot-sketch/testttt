@@ -55,6 +55,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [LIVRAISON 2026-10-20] Filet : une commande de livraison sans tournée y est rattachée.
+        $schedule->command('delivery:assign-pending')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // [DEEP-R2 2026-07-15 / P1] Rattrapage des libérations stock/quota perdues
         // (crash entre le commit d'un cancel/destroy et ses listeners synchrones).
         $schedule->command('foodking:reconcile-releases')

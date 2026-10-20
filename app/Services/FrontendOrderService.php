@@ -782,6 +782,8 @@ class FrontendOrderService
                         'apartment' => $address->apartment,
                         'latitude'  => $address->latitude,
                         'longitude' => $address->longitude,
+                        'city'        => $address->city,
+                        'postal_code' => $address->postal_code,
                     ]);
                 }
 

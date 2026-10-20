@@ -1242,6 +1242,32 @@
             <fieldset class="mt-3">
                 <legend class="pos-v5-cart__eyebrow mb-2">{{ $t('label.select_order_type') }}</legend>
 
+                <!-- [LIVRAISON 2026-10-20] La livraison se pilote d'ici : suspendre / remettre d'un appui
+                     (deux temps pour éviter l'appui accidentel) et voir les tournées du jour. -->
+                <div class="mb-2 flex flex-wrap items-center gap-2" data-testid="pos-delivery-controls">
+                    <button
+                        type="button"
+                        class="h-8 rounded-full border px-3 text-xs font-bold transition"
+                        :class="deliveryEnabled ? 'border-green-400 text-green-800 bg-green-50' : 'border-red-300 text-red-700 bg-red-50'"
+                        :disabled="deliveryToggleBusy"
+                        data-testid="pos-delivery-toggle"
+                        :aria-label="deliveryEnabled ? 'Suspendre la livraison' : 'Remettre la livraison'"
+                        @click.prevent="onToggleDelivery"
+                    >
+                        <template v-if="deliveryToggleArmed">{{ deliveryEnabled ? 'Confirmer : suspendre ?' : 'Confirmer : remettre ?' }}</template>
+                        <template v-else>🛵 Livraison {{ deliveryEnabled ? 'active — suspendre' : 'suspendue — remettre' }}</template>
+                    </button>
+                    <button
+                        v-if="deliveryEnabled"
+                        type="button"
+                        class="h-8 rounded-full border border-[#D9DBE9] px-3 text-xs font-bold text-heading hover:bg-[#F5F5F7]"
+                        data-testid="pos-delivery-board-open"
+                        @click.prevent="showDeliveryBoard = true"
+                    >
+                        Tournées
+                    </button>
+                </div>
+
                 <div class="pos-v5-segmented" role="radiogroup">
                     <!-- [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). -->
                     <label
@@ -1427,12 +1453,40 @@
                                     id="pos-delivery-phone"
                                     type="tel"
                                     v-model="deliveryInline.phone"
+                                    @input="onDeliveryPhoneInput"
                                     placeholder="Téléphone"
                                     autocomplete="tel"
                                     inputmode="tel"
                                     class="w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                                 />
                             </div>
+                        </div>
+                        <!-- [LIVRAISON 2026-10-20] Client retrouvé par son téléphone : ses adresses déjà
+                             enregistrées sont proposées d'un appui (adresse saisie UNE seule fois). -->
+                        <div
+                            v-if="deliveryInline.customerId"
+                            class="rounded-lg border border-[#D9DBE9] bg-[#FAFAFB] px-3 py-2"
+                            data-testid="pos-delivery-known-customer"
+                        >
+                            <div class="flex items-center justify-between gap-2 text-xs font-semibold text-heading">
+                                <span>Client connu : {{ deliveryInline.customerName || 'sans nom' }}</span>
+                                <span v-if="deliveryInline.emailVerified === false" class="text-[#9A3412]">E-mail non vérifié</span>
+                                <span v-else-if="deliveryInline.emailVerified === true" class="text-green-700">E-mail vérifié ✓</span>
+                            </div>
+                            <div v-if="deliveryInline.savedAddresses.length" class="mt-1.5 flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="a in deliveryInline.savedAddresses"
+                                    :key="a.id"
+                                    type="button"
+                                    class="max-w-full truncate rounded-full border px-3 py-1 text-xs font-semibold transition"
+                                    :class="[a.allowed ? 'border-primary text-primary hover:bg-[#FFE8DD]' : 'border-red-200 text-red-500', checkoutProps.form.address_id === a.id ? 'bg-[#FFE8DD]' : '']"
+                                    :data-testid="'pos-delivery-saved-address-' + a.id"
+                                    @click.prevent="pickSavedDeliveryAddress(a)"
+                                >
+                                    {{ a.address }} · {{ a.allowed ? (Number(a.fee).toFixed(2).replace('.', ',') + ' €') : (a.tier === 'unverified' ? 'à ressaisir' : 'hors zone') }}
+                                </button>
+                            </div>
+                            <p v-else class="mt-1 text-[11px] text-gray-500">Aucune adresse enregistrée : saisissez-la ci-dessous, elle sera gardée pour la prochaine fois.</p>
                         </div>
                         <!-- Row 2: Adresse autocomplete -->
                         <div class="relative">
@@ -1473,9 +1527,12 @@
                                 </button>
                             </div>
                             <!-- Suggestions dropdown -->
+                            <!-- [LIVRAISON 2026-10-20] Liste DANS LE FLUX (plus `absolute`) : elle pousse le contenu au lieu de
+                                 flotter, donc l'en-tête du ticket peut défiler sans que le formulaire se peigne sur le total. -->
                             <ul
                                 v-if="deliveryInline.suggestions.length > 0"
-                                class="absolute z-50 w-full mt-1 bg-white border border-[#D9DBE9] rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                                ref="deliverySuggestionList"
+                                class="w-full mt-1 bg-white border border-[#D9DBE9] rounded-lg shadow-lg max-h-48 overflow-y-auto"
                             >
                                 <li
                                     v-for="(s, idx) in deliveryInline.suggestions"
@@ -1488,48 +1545,26 @@
                                     <span class="leading-tight">{{ s.description }}</span>
                                 </li>
                             </ul>
-                            <!-- [C3 2026-07-05] Repli SANS Google Maps : dès qu'une adresse
-                                 est tapée sans suggestion/confirmation, l'opérateur saisit la
-                                 distance (km) et confirme en texte libre. Le tarif se calcule
-                                 via la même règle SSOT (base + km au-delà du seuil offert). -->
+                            <!-- [LIVRAISON 2026-10-20] Résultat du devis SERVEUR (commune, palier, distance, trajet estimé).
+                                 Plus de saisie manuelle des kilomètres : le serveur ignore toute distance venue de l'écran. -->
                             <div
-                                v-if="!deliveryInline.confirmed && deliveryInline.suggestions.length === 0 && (deliveryInline.addressText || '').trim().length >= 3"
-                                class="mt-2 rounded-lg border border-[#FFD8C6] bg-[#FFF6F1] px-3 py-2.5"
+                                v-if="deliveryInline.quote"
+                                class="mt-2 rounded-lg border px-3 py-2 text-xs font-semibold"
+                                :class="deliveryInline.quote.allowed ? 'border-green-300 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-700'"
+                                data-testid="pos-delivery-quote"
+                                role="status"
                             >
-                                <div class="flex items-center gap-2 text-xs font-semibold text-[#9A3412] mb-1.5">
-                                    <i class="fa-solid fa-ruler-horizontal"></i>
-                                    <span>Saisie manuelle (sans carte)</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div class="relative flex-1">
-                                        <label for="pos-delivery-manual-km" class="sr-only">Distance de livraison en kilomètres</label>
-                                        <input
-                                            id="pos-delivery-manual-km"
-                                            type="number"
-                                            min="0"
-                                            step="0.1"
-                                            inputmode="decimal"
-                                            v-model="deliveryInline.manualDistanceKm"
-                                            @keydown.enter.prevent="confirmDeliveryManual"
-                                            placeholder="Distance en km"
-                                            data-testid="pos-delivery-manual-km"
-                                            class="w-full h-9 text-sm rounded-lg border pl-3 pr-9 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                                        />
-                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">km</span>
-                                    </div>
-                                    <button
-                                        @click.prevent="confirmDeliveryManual"
-                                        type="button"
-                                        data-testid="pos-delivery-manual-confirm"
-                                        class="h-9 px-3 flex items-center gap-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:opacity-90 transition flex-shrink-0"
-                                    >
-                                        <i class="fa-solid fa-check"></i>
-                                        Confirmer
-                                    </button>
-                                </div>
-                                <p class="mt-1.5 text-[11px] text-gray-500 leading-tight">
-                                    Le tarif de livraison sera calculé automatiquement à partir de la distance.
-                                </p>
+                                {{ deliveryQuoteText }}
+                            </div>
+                            <div v-if="deliveryInline.quote && deliveryInline.quote.allowed && !deliveryInline.confirmed" class="mt-2">
+                                <label for="pos-delivery-apartment" class="sr-only">Complément d'adresse</label>
+                                <input
+                                    id="pos-delivery-apartment"
+                                    v-model="deliveryInline.apartment"
+                                    type="text"
+                                    placeholder="Étage, interphone, code… (facultatif)"
+                                    class="w-full h-9 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
+                                />
                             </div>
                             <div
                                 v-if="deliveryGeocodeError"
@@ -2460,6 +2495,7 @@
       repli si le MP3 est refusé (autoplay, fichier absent) : mieux vaut un son faible que
       pas de son.
     -->
+    <PosDeliveryBoard v-if="showDeliveryBoard" @close="showDeliveryBoard = false" />
     <audio ref="posNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
     </section>
 </template>
@@ -2502,6 +2538,8 @@ import alertService from "../../../services/alertService";
 // hardware_event server-side in production for audit trail.
 import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHardware";
 import PaymentComponent from "./PaymentComponent.vue";
+import PosDeliveryBoard from "./PosDeliveryBoard.vue";
+import * as livraison from "../../../helpers/posLivraison";
 // [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT sibling modal.
 // Replaces Wave W mode-picker template-block + methods (eb43fa180).
 // PaymentComponent.vue is CLAUDE.md §7 frozen — sibling preserves
@@ -2607,6 +2645,7 @@ import { customerDisplay } from "../../../helpers/posCustomerDisplay";
 export default {
     name: "PosComponent",
     components: {
+        PosDeliveryBoard,
         CreateCustomerAddressComponent,
         CustomerAddressCreateComponent,
         ConnectionStatusBanner,
@@ -2979,6 +3018,12 @@ export default {
             },
             clearAddresses: false,
             deliveryGeocodeError: '',
+            // [LIVRAISON 2026-10-20] Interrupteur livraison piloté depuis la caisse (null = pas encore lu :
+            // on retombe sur le réglage chargé avec la page).
+            deliveryLive: null,
+            deliveryToggleArmed: false,
+            deliveryToggleBusy: false,
+            showDeliveryBoard: false,
 
             // [P4] Inline delivery form — no separate modal, no map
             deliveryInline: {
@@ -2997,6 +3042,13 @@ export default {
                 // et on calcule le tarif via la MÊME règle SSOT (base+km).
                 manual: false,
                 manualDistanceKm: '',
+                // [LIVRAISON 2026-10-20] Client retrouvé par téléphone + devis serveur de l'adresse choisie.
+                apartment: '',
+                customerId: null,
+                customerName: '',
+                emailVerified: null,
+                savedAddresses: [],
+                quote: null,
             },
             _deliveryAcTimer: null,
             _deliveryAcService: null,
@@ -3352,9 +3404,17 @@ export default {
          * explicite, jamais de coercion `String(...) === '1'` qui serait fausse ici.
          */
         deliveryEnabled: function () {
+            // [LIVRAISON 2026-10-20] L'état lu auprès du serveur (suspendre / remettre depuis la caisse) prime
+            // sur le réglage chargé avec la page, qui peut être périmé de plusieurs heures.
+            if (typeof this.deliveryLive === 'boolean') {
+                return this.deliveryLive;
+            }
             const s = this.setting || {};
             const raw = s.order_setup_delivery;
             return Number(raw) === activityEnum.ENABLE;
+        },
+        deliveryQuoteText: function () {
+            return livraison.describeQuote(this.deliveryInline.quote);
         },
         /**
          * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
@@ -3636,6 +3696,8 @@ export default {
         // [CAISSE-ZOOM 2026-06-25] Retire le zoom caisse pour ne pas rétrécir les
         // autres pages admin (dashboard, rapports, etc.) après navigation.
         clearCaisseZoom(document);
+        clearInterval(this._deliveryLiveTimer);
+        clearTimeout(this._deliveryPhoneTimer);
         // [CUSTOMER-DISPLAY 2026-06-28] Stoppe le timer de refresh afficheur client.
         if (this._cdTimer) {
             clearTimeout(this._cdTimer);
@@ -3745,6 +3807,10 @@ export default {
         // (catégories + produits + panier lisibles sur un écran 16"). Le 0.67 testé
         // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
         applyCaisseZoom(document, resolveCaisseZoom(window.localStorage));
+        // [LIVRAISON 2026-10-20] Relit l'état de la livraison auprès du serveur (une autre caisse a pu la
+        // suspendre) au démarrage puis chaque minute.
+        this.refreshDeliveryLive();
+        this._deliveryLiveTimer = setInterval(() => this.refreshDeliveryLive(), 60000);
         // [CUSTOMER-DISPLAY 2026-06-28] Écran client en veille au démarrage (accueil).
         // [AFFICHEUR-CLIENT 2026-09-30] Reprend d'abord, sans geste, le port série déjà
         // autorisé dans ce Chrome, puis affiche le total courant (ou l'accueil).
@@ -4466,6 +4532,9 @@ export default {
 
         assignWalkInCustomer(customer) {
             if (!customer || !customer.id) return false;
+            // [LIVRAISON 2026-10-20 · relecture adverse P1] On retient QUI est le client de passage : en livraison
+            // ce compte partagé ne doit jamais recevoir l'adresse ni la commande d'un vrai client.
+            this._walkInCustomerId = customer.id;
             this.checkoutProps.form.customer_id = customer.id;
             this.address.form.user_id = customer.id;
             this.gettingUserAddress(customer.id);
@@ -7335,7 +7404,12 @@ export default {
                     return false;
                 }
                 this.checkoutProps.form.delivery_distance_km = distance;
-                this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(this.checkoutProps.form.delivery_distance_km);
+                // Aperçu seulement (le serveur recalcule) : la commune de l'adresse décide du forfait Hénin-Beaumont.
+                this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(
+                    this.checkoutProps.form.delivery_distance_km,
+                    this.selectedAddress && this.selectedAddress.city,
+                    this.selectedAddress && this.selectedAddress.postal_code
+                );
                 return true;
             } catch (err) {
                 this.loading.isActive = false;
@@ -7367,105 +7441,186 @@ export default {
             });
         },
 
-        // ─── [P4] Inline delivery autocomplete ───────────────────────────────────
+        // ─── [LIVRAISON 2026-10-20] Adresse de livraison : TOUT passe par le serveur ─────────────────────
+        // Suggestions = Base Adresse Nationale via /frontend/delivery/suggest ; prix, commune et distance
+        // = devis serveur. Le navigateur ne géocode plus et ne calcule plus aucun prix qui compte.
         onDeliveryAddressInput() {
             this.clearDeliveryGeocodeError();
             this.deliveryInline.confirmed = false;
             this.deliveryInline.manual = false;
             this.deliveryInline.latitude = '';
             this.deliveryInline.longitude = '';
+            this.deliveryInline.quote = null;
             this.checkoutProps.form.address_id = null;
+            this.checkoutProps.form.delivery_charge = 0;
+            this.checkoutProps.form.delivery_distance_km = null;
             clearTimeout(this._deliveryAcTimer);
             const q = (this.deliveryInline.addressText || '').trim();
             if (q.length < 3) { this.deliveryInline.suggestions = []; return; }
             this._deliveryAcTimer = setTimeout(() => this._fetchDeliverySuggestions(q), 300);
         },
 
-        _getDeliveryAcService() {
-            if (this._deliveryAcService) return this._deliveryAcService;
-            if (window.google && window.google.maps && window.google.maps.places) {
-                this._deliveryAcService = new window.google.maps.places.AutocompleteService();
-                return this._deliveryAcService;
-            }
-            return null;
-        },
-
-        _fetchDeliverySuggestions(query) {
-            const svc = this._getDeliveryAcService();
-            if (!svc) {
-                // Fallback: no Google Maps loaded — skip suggestions
-                this.deliveryInline.suggestions = [];
-                return;
-            }
+        async _fetchDeliverySuggestions(query) {
             this.deliveryInline.loading = true;
-            const req = { input: query, types: ['geocode'] };
-            // Bias toward branch location if known
-            if (this.location && this.location.lat && this.location.lng) {
-                req.location = new window.google.maps.LatLng(this.location.lat, this.location.lng);
-                req.radius = 50000;
-            }
-            svc.getPlacePredictions(req, (predictions, status) => {
-                this.deliveryInline.loading = false;
-                if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-                    this.deliveryInline.suggestions = predictions.slice(0, 6);
-                } else {
-                    this.deliveryInline.suggestions = [];
+            try {
+                const list = await livraison.suggestAddresses(axios, query);
+                // Réponse périmée (le caissier a continué de taper) : on l'ignore.
+                if ((this.deliveryInline.addressText || '').trim() === query) {
+                    this.deliveryInline.suggestions = list.slice(0, 6);
+                    // La liste est dans une zone qui défile : on la ramène dans la fenêtre.
+                    this.$nextTick(() => {
+                        const el = this.$refs.deliverySuggestionList;
+                        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+                    });
                 }
-            });
+            } catch (e) {
+                this.deliveryInline.suggestions = [];
+            } finally {
+                this.deliveryInline.loading = false;
+            }
         },
 
-        selectDeliverySuggestion(suggestion) {
+        async selectDeliverySuggestion(suggestion) {
             this.deliveryInline.suggestions = [];
             this.deliveryInline.addressText = suggestion.description;
             this.deliveryInline.loading = true;
-            // Geocode to get lat/lng
-            if (window.google && window.google.maps) {
-                const geocoder = new window.google.maps.Geocoder();
-                geocoder.geocode({ placeId: suggestion.place_id }, (results, status) => {
-                    this.deliveryInline.loading = false;
-                    if (status === 'OK' && results && results[0]) {
-                        const loc = results[0].geometry.location;
-                        this.deliveryInline.latitude = loc.lat();
-                        this.deliveryInline.longitude = loc.lng();
-                        this.deliveryInline.address = suggestion.description;
-                        this.deliveryInline.confirmed = true;
-                    } else {
-                        this.deliveryInline.address = '';
-                        this.deliveryInline.confirmed = false;
-                        this.showDeliveryGeocodeError();
-                    }
-                });
-            } else {
-                this.deliveryInline.address = '';
+            this.clearDeliveryGeocodeError();
+            try {
+                const q = await livraison.quoteAddress(axios, suggestion.description);
+                this.deliveryInline.quote = q;
+                if (q.enabled === false) {
+                    this.deliveryGeocodeError = 'La livraison est suspendue.';
+                    return;
+                }
+                if (!q.allowed) {
+                    // Au-delà du rayon : on le dit, on propose Uber Eats, on ne facture rien.
+                    this.deliveryInline.confirmed = false;
+                    this.checkoutProps.form.delivery_charge = 0;
+                    return;
+                }
+                this.deliveryInline.address = suggestion.description;
+                this.deliveryInline.confirmed = true;
+                // Aperçu seulement : le serveur recalcule le prix depuis l'adresse enregistrée.
+                this.checkoutProps.form.delivery_charge = Number(q.fee) || 0;
+                this.checkoutProps.form.delivery_distance_km = q.distance_km;
+            } catch (e) {
+                this.deliveryInline.quote = null;
                 this.deliveryInline.confirmed = false;
-                this.showDeliveryGeocodeError();
+                this.deliveryGeocodeError = e?.response?.data?.message || 'Adresse non reconnue. Vérifiez la rue, le code postal et la ville.';
+            } finally {
                 this.deliveryInline.loading = false;
             }
         },
 
-        // [C3 2026-07-05] Confirme une adresse SANS géocodage Google : texte libre
-        // + distance saisie manuellement. Le tarif suit la règle SSOT
-        // (calculateDeliveryChargeFromDistance = miroir du DeliveryFeeService backend).
-        confirmDeliveryManual() {
-            const addr = (this.deliveryInline.addressText || '').trim();
-            if (addr.length < 3) {
-                alertService.error('Veuillez saisir une adresse de livraison.');
+        // Téléphone tapé : dès qu'il est complet, on cherche le client (sans rien créer).
+        onDeliveryPhoneInput() {
+            clearTimeout(this._deliveryPhoneTimer);
+            const digits = String(this.deliveryInline.phone || '').replace(/\D/g, '');
+            if (digits.length < 9) {
+                this.clearDeliveryKnownCustomer();
                 return;
             }
-            const km = parseFloat(this.deliveryInline.manualDistanceKm);
-            if (!Number.isFinite(km) || km < 0) {
-                alertService.error('Veuillez saisir une distance valide (en km).');
-                return;
+            this._deliveryPhoneTimer = setTimeout(() => this.lookupDeliveryCustomer(), 350);
+        },
+
+        async lookupDeliveryCustomer() {
+            const phone = String(this.deliveryInline.phone || '').trim();
+            try {
+                const c = await livraison.lookupCustomer(axios, phone);
+                if (String(this.deliveryInline.phone || '').trim() !== phone) return; // périmé
+                if (!c) { this.clearDeliveryKnownCustomer(); return; }
+                this.deliveryInline.customerId = c.id;
+                this.deliveryInline.customerName = c.name;
+                this.deliveryInline.emailVerified = c.email_verified;
+                this.deliveryInline.savedAddresses = c.addresses || [];
+                if (!this.deliveryInline.name) this.deliveryInline.name = c.name;
+                this.checkoutProps.form.customer_id = c.id;
+            } catch (e) {
+                this.clearDeliveryKnownCustomer();
             }
-            this.deliveryInline.suggestions = [];
-            this.deliveryInline.address = addr;
-            this.deliveryInline.latitude = '';
-            this.deliveryInline.longitude = '';
-            this.deliveryInline.manual = true;
-            this.deliveryInline.confirmed = true;
-            this.checkoutProps.form.delivery_distance_km = km;
-            this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(km);
+        },
+
+        // Client réellement identifié pour la livraison : celui retrouvé par téléphone, ou celui choisi
+        // volontairement dans la liste — JAMAIS le client de passage (compte partagé).
+        deliveryCustomerId() {
+            if (this.deliveryInline.customerId) return this.deliveryInline.customerId;
+            const id = this.checkoutProps.form.customer_id;
+            return id && id !== this._walkInCustomerId ? id : null;
+        },
+
+        clearDeliveryKnownCustomer() {
+            const hadCustomer = !!this.deliveryInline.customerId;
+            if (hadCustomer) {
+                // Le numéro a changé : le client précédent, son adresse et son prix ne valent plus.
+                this.checkoutProps.form.customer_id = this._walkInCustomerId || null;
+                this.checkoutProps.form.address_id = null;
+                this.checkoutProps.form.delivery_charge = 0;
+                this.checkoutProps.form.delivery_distance_km = null;
+                this.deliveryInline.confirmed = false;
+                this.deliveryInline.quote = null;
+            }
+            this.deliveryInline.customerId = null;
+            this.deliveryInline.customerName = '';
+            this.deliveryInline.emailVerified = null;
+            this.deliveryInline.savedAddresses = [];
+        },
+
+        // Adresse déjà enregistrée choisie d'un appui : plus rien à saisir.
+        pickSavedDeliveryAddress(a) {
             this.clearDeliveryGeocodeError();
+            this.deliveryInline.addressText = a.address;
+            this.deliveryInline.address = a.address;
+            this.deliveryInline.suggestions = [];
+            this.deliveryInline.quote = {
+                enabled: true, allowed: a.allowed, fee: a.fee, tier: a.tier, suggest_uber_eats: a.suggest_uber_eats,
+                distance_km: a.distance_km, address: { city: a.city, postal_code: a.postal_code },
+            };
+            if (!a.allowed) {
+                this.deliveryInline.confirmed = false;
+                this.checkoutProps.form.address_id = null;
+                this.checkoutProps.form.delivery_charge = 0;
+                return;
+            }
+            this.deliveryInline.confirmed = true;
+            this.checkoutProps.form.customer_id = this.deliveryInline.customerId;
+            this.checkoutProps.form.address_id = a.id;
+            this.checkoutProps.form.delivery_charge = Number(a.fee) || 0;
+            this.checkoutProps.form.delivery_distance_km = a.distance_km;
+        },
+
+        // ─── [LIVRAISON 2026-10-20] Suspendre / remettre la livraison depuis la caisse ────────────────
+        async refreshDeliveryLive() {
+            try {
+                this.deliveryLive = await livraison.fetchDeliveryStatus(axios);
+            } catch (e) {
+                // Serveur injoignable : on garde l'état connu plutôt que d'inventer un changement.
+            }
+        },
+
+        async onToggleDelivery() {
+            if (!this.deliveryToggleArmed) {
+                this.deliveryToggleArmed = true;
+                clearTimeout(this._deliveryArmTimer);
+                this._deliveryArmTimer = setTimeout(() => { this.deliveryToggleArmed = false; }, 4000);
+                return;
+            }
+            clearTimeout(this._deliveryArmTimer);
+            this.deliveryToggleArmed = false;
+            this.deliveryToggleBusy = true;
+            try {
+                const wanted = !this.deliveryEnabled;
+                this.deliveryLive = await livraison.setDeliveryEnabled(axios, wanted);
+                if (!this.deliveryLive && this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY) {
+                    // Livraison suspendue pendant une commande en cours : retour à emporter.
+                    this.checkoutProps.form.order_type = orderTypeEnum.TAKEAWAY;
+                    this.resetDeliveryInline();
+                }
+                alertService.success(this.deliveryLive ? 'Livraison remise.' : 'Livraison suspendue.');
+            } catch (e) {
+                alertService.error(e?.response?.data?.message || 'Impossible de changer l\'état de la livraison.');
+            } finally {
+                this.deliveryToggleBusy = false;
+            }
         },
 
         deliveryNavDown() {
@@ -7498,6 +7653,9 @@ export default {
             this.deliveryInline.manualDistanceKm = '';
             this.deliveryInline.loading = false;
             this.deliveryInline.activeIdx = -1;
+            this.deliveryInline.apartment = '';
+            this.deliveryInline.quote = null;
+            this.clearDeliveryKnownCustomer();
             this.checkoutProps.form.address_id = null;
             this.checkoutProps.form.delivery_distance_km = null;
             this.checkoutProps.form.delivery_charge = 0;
@@ -7505,77 +7663,47 @@ export default {
         },
 
         async ensureDeliveryCustomerAndAddress() {
-            // If address_id already set (legacy flow), nothing to do
+            // Adresse enregistrée déjà choisie (adresse connue du client) : rien à créer.
             if (this.checkoutProps.form.address_id) return true;
-            // Inline form must have at minimum an address
-            const deliveryAddress = (this.deliveryInline.address || this.deliveryInline.addressText || '').trim();
-            if (!deliveryAddress) {
-                alertService.error('Veuillez saisir une adresse de livraison.');
+            const deliveryAddress = (this.deliveryInline.address || '').trim();
+            if (!deliveryAddress || !this.deliveryInline.confirmed) {
+                alertService.error('Choisissez l\'adresse de livraison dans la liste proposée.');
                 return false;
             }
-            // [C3 2026-07-05] En mode manuel (sans Google Maps), on n'exige PAS de
-            // lat/lng : l'adresse texte libre + la distance saisie suffisent.
-            if (!this.deliveryInline.manual && (!this.deliveryInline.latitude || !this.deliveryInline.longitude)) {
-                this.showDeliveryGeocodeError();
-                alertService.error(this.deliveryGeocodeError);
+            // [LIVRAISON 2026-10-20] Le téléphone est la clé du client (même numéro = même compte, adresse
+            // retrouvée au prochain appel). Plus de faux e-mail @pos.local ni de mot de passe fixe.
+            const phone = String(this.deliveryInline.phone || '').trim();
+            let customerId = this.deliveryCustomerId();
+            if (!customerId && String(phone).replace(/\D/g, '').length < 9) {
+                alertService.error('Le numéro de téléphone du client est nécessaire pour la livraison.');
                 return false;
             }
             try {
                 this.loading.isActive = true;
-                // 1. Create or reuse customer
-                let customerId = this.checkoutProps.form.customer_id;
                 if (!customerId) {
-                    const customerRes = await axios.post('/admin/users', {
-                        name: this.deliveryInline.name || 'Client livraison',
-                        phone: this.deliveryInline.phone || null,
-                        email: `delivery_${Date.now()}@pos.local`,
-                        password: 'delivery123',
-                        password_confirmation: 'delivery123',
-                        status: statusEnum.ACTIVE,
-                        country_code: this.customerProps.form.country_code || this.country_code || '+33',
-                    });
-                    customerId = customerRes.data.data.id;
+                    const c = await livraison.ensureCustomer(axios, { phone, name: this.deliveryInline.name });
+                    customerId = c.id;
                     this.checkoutProps.form.customer_id = customerId;
                 }
-                // 2. Save address under that customer
-                // [C3 2026-07-05] En mode manuel il n'y a pas de géocodage : l'endpoint
-                // adresse exige lat/lng (required). On envoie un pin cosmétique (coords
-                // de la branche, sinon '0') pour passer la validation — SANS impact sur
-                // la facturation, car le fee est recalculé serveur depuis la distance.
-                const addrLat = this.deliveryInline.latitude || (this.location && this.location.lat) || '0';
-                const addrLng = this.deliveryInline.longitude || (this.location && this.location.lng) || '0';
-                const addrRes = await axios.post(`/admin/users/address/${customerId}`, {
+                const saved = await livraison.saveAddress(axios, {
+                    customerId,
                     address: deliveryAddress,
-                    apartment: '',
-                    latitude: addrLat,
-                    longitude: addrLng,
-                    label: 'Livraison',
+                    apartment: this.deliveryInline.apartment,
                 });
-                this.checkoutProps.form.address_id = addrRes.data.data.id;
-                // Update delivery charge if lat/lng available
-                this.selectedAddress = {
-                    id: addrRes.data.data.id,
-                    address: deliveryAddress,
-                    latitude: this.deliveryInline.latitude,
-                    longitude: this.deliveryInline.longitude,
-                };
-                // [C3 2026-07-05] Mode manuel : le tarif est déjà calculé depuis la
-                // distance saisie (confirmDeliveryManual). On ne re-géocode pas.
-                if (this.deliveryInline.manual) {
-                    this.checkoutProps.form.delivery_charge = calculateDeliveryChargeFromDistance(this.checkoutProps.form.delivery_distance_km);
+                if (!saved.allowed) {
+                    this.deliveryInline.quote = { enabled: true, allowed: false, suggest_uber_eats: saved.suggest_uber_eats, fee: 0 };
                     this.loading.isActive = false;
-                    return true;
-                }
-                if (! await this.applyDeliveryChargeFromCoordinates(this.deliveryInline.latitude, this.deliveryInline.longitude)) {
-                    this.loading.isActive = false;
+                    alertService.error(livraison.describeQuote(this.deliveryInline.quote));
                     return false;
                 }
+                this.checkoutProps.form.address_id = saved.id;
+                this.checkoutProps.form.delivery_charge = Number(saved.fee) || 0;
+                this.checkoutProps.form.delivery_distance_km = saved.distance_km;
                 this.loading.isActive = false;
                 return true;
             } catch (err) {
                 this.loading.isActive = false;
-                const msg = err.response?.data?.message || 'Erreur lors de la sauvegarde de l\'adresse.';
-                alertService.error(msg);
+                alertService.error(err.message || 'Erreur lors de la sauvegarde de l\'adresse.');
                 return false;
             }
         },

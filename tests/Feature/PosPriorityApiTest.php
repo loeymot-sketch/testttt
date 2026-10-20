@@ -144,15 +144,14 @@ class PosPriorityApiTest extends TestCase
             ]]),
         ];
 
-        $payload = $this->payloadWithPosQuote($admin, $payload);
-
+        // [LIVRAISON 2026-10-20] L'adresse d'un AUTRE client est désormais refusée dès le DEVIS (le prix
+        // est dérivé de l'adresse du client de la commande) — plus tôt qu'avant, même garantie.
         $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
-            ->postJson('/api/admin/pos', $payload);
+            ->postJson('/api/admin/pos/quote', $payload);
 
         $response->assertStatus(422);
-        $response->assertJsonFragment(['status' => false]);
-        $this->assertStringContainsStringIgnoringCase('adresse', $response->json('message'));
+        $this->assertStringContainsStringIgnoringCase('adresse', (string) $response->json('message'));
         $this->assertEquals(0, Order::count());
     }
 }
