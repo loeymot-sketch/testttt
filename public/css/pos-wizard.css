@@ -465,6 +465,14 @@
     font-family: 'Rubik', sans-serif;
 }
 
+.wizard-option .option-reco {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #D98200;
+}
+
 .wizard-option .option-price {
     font-size: 11px;
     color: #8E8EA9;

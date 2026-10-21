@@ -15,14 +15,14 @@ c'est le préparateur qui propose, la mention l'aide à le faire.
 
 1. Construction de `paidExtras` : un drapeau `recommended` (lu dans `ex.is_recommended`, posé par le serveur d'après
    `config/menu_recommended_supplements.php`) et un tri stable qui met les recommandés en tête.
-2. Un helper `recoTag(it)` ajoute « (recommandé) » après le nom dans les 4 grilles de suppléments.
+2. Un helper `recoTag(it)` ajoute « (recommandé) » après le nom dans les grilles de suppléments (4 rendus par étape + le rendu « page unique » `_renderSupplBlock`, le seul réellement utilisé par la caisse en production, où `supplements` est aussi trié recommandés en tête).
 3. CSS : `.wizard-option .option-reco` (petite mention ambrée sous le nom).
 
 Aucun prix, aucun identifiant, aucune sélection ni payload n'est touché : le nom envoyé reste `s.name`, la mention n'est que du rendu.
 
 ## Vérification
 
-Playwright caisse (capture lue), Vitest, sentinelle `FrozenZone` après mise à jour de la baseline.
+Playwright caisse (`tests/Playwright/caisse-recommandes-pain-2026-10-21.spec.js`, capture lue : Cheddar et Boursin « (recommandé) » en tête pour le Cayenne, 0 erreur JS), Vitest, sentinelle `FrozenZone` après mise à jour de la baseline.
 
 ## Autorisation
 

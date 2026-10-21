@@ -250,6 +250,9 @@
      * @param {boolean} isMicro - Small size
      * @param {boolean} forceEmoji - [S24] Force emoji-only mode (for sauces, garnitures)
      */
+    // [OWNER 2026-10-21] « (recommandé) » après le nom d'un supplément recommandé (rendu seul, jamais envoyé au serveur).
+    function recoTag(it) { return it && it.recommended ? ' <span class="option-reco">(recommandé)</span>' : ''; }
+
     function renderOptionIcon(thumb, emoji, isMicro, forceEmoji) {
         // [S24 FIX] For sauces and garnitures, always use emoji/pictogram
         if (forceEmoji) {
@@ -841,7 +844,9 @@
                     name: ex.name,
                     price: price,
                     currencyPrice: ex.currency_price || fmtPrice(price),
-                    thumb: ex.thumb || null
+                    thumb: ex.thumb || null,
+                    // [OWNER 2026-10-21] suppléments « recommandés » (config/menu_recommended_supplements.php) : mise en avant seule
+                    recommended: ex.is_recommended === true
                 };
                 if (price <= 0) {
                     freeExtras.push(obj);
@@ -849,6 +854,9 @@
                     paidExtras.push(obj);
                 }
             });
+            // Les recommandés en tête, ordre d'origine conservé dans chaque groupe.
+            paidExtras = paidExtras.filter(function (x) { return x.recommended; })
+                .concat(paidExtras.filter(function (x) { return !x.recommended; }));
         }
 
         // Prepare menu addons
@@ -1627,7 +1635,7 @@
             h += '<div class="wizard-option micro-opt' + sel + '" data-type="supplement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(SUPPLEMENT_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for supplements
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + item.name + recoTag(item) + '</span>';
             h += '<span class="option-price paid">+' + item.currencyPrice + '</span>';
             h += '</div>';
         });
@@ -1967,7 +1975,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -2053,7 +2061,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji);
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -2264,7 +2272,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -3169,6 +3177,9 @@
                 if (/viande\s*suppl/.test(nn)) return false;
                 return extra.convert_price > 0 || isSupplementName(extra.name);
             });
+            // [OWNER 2026-10-21] Les suppléments « recommandés » en tête (ordre d'origine conservé dans chaque groupe).
+            supplements = supplements.filter(function (x) { return x.is_recommended === true; })
+                .concat(supplements.filter(function (x) { return x.is_recommended !== true; }));
             hasSupplements = supplements.length > 0;
         }
 
@@ -3217,7 +3228,7 @@
                 sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
                 sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
-                sh += '<span class="option-name">' + sup.name + '</span>';
+                sh += '<span class="option-name">' + sup.name + recoTag({ recommended: sup.is_recommended === true }) + '</span>';
                 sh += '<span class="option-price paid">+' + price + '</span>';
                 sh += '</div>';
             });
