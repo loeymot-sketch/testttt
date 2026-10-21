@@ -103,6 +103,17 @@ Une vraie livraison traverse les trois surfaces : commande web par l'API (comme 
   (limite 20) ; côté caisse, 30 suggestions bloquaient la bascule et l'enregistrement d'adresse. Chaque route a maintenant son limiteur
   nommé (`delivery-*`, `pos-delivery-*` dans `RouteServiceProvider`). Tests : `DeliveryPublicThrottleIsolationTest`, `PosDeliveryControllerTest`.
   ⚠️ Toute NOUVELLE route de livraison doit recevoir son propre limiteur nommé, jamais un `throttle:N,M` nu.
+- **Adresse** : quand la BAN ne connaît pas le numéro (« 1 rue Jean Jaurès 62590 Oignies » revenait « Rue Jean Jaurès »), le numéro tapé est
+  **conservé dans le libellé** envoyé au livreur (`AddressGeocoder::keepTypedHouseNumber`) ; le point et le prix restent ceux de la rue.
+  ⚠️ Connu et non traité : la BAN peut substituer une autre rue de la même commune, ou comprendre une autre commune si la saisie n'a ni code
+  postal ni numéro — le libellé compris est toujours affiché au client et au caissier, jamais caché.
+- **Caisse / livreur (relecture visuelle adversariale)** : le complément d'adresse (étage, interphone) restait inaccessible une fois l'adresse choisie ;
+  un texte illisible ne donnait aucun message ; le refus hors zone se soldait par « Choisissez l'adresse dans la liste » ; le devis se retrouvait
+  rogné sous l'en-tête défilant du ticket ; sur l'écran livreur, une remise terminée réclamait encore l'encaissement et « commande(s) pas prête(s) »
+  s'effaçait aussitôt après « Je pars ». Tous corrigés, mesurés dans `tests/Playwright/livraison-supervisor-captures.spec.js`.
+- **Décision propriétaire en attente (zone gelée `PricingService`)** : le Z fiscal applique déjà 10 % de TVA sur les frais de livraison
+  (`ZReportService`, décision du 2026-07-07), mais le **ticket** ne montre qu'une TVA sur les articles (0,09 € pour 1,00 € + 3,90 € de frais).
+  Afficher la TVA des frais sur le ticket demande de toucher `PricingService` : à trancher.
 - **À vérifier en production avant d'ouvrir** : `Settings delivery.free_delivery_above` doit valoir **0** (le code retombe sur 30 € s'il
   est absent ; la migration `2026_07_27_093000` le pose à 0) ; `users.branch_id` du livreur doit être > 0 (sinon la garde d'idempotence
   répond 422 au départ/arrivée/remise).

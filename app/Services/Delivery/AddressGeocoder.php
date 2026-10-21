@@ -65,7 +65,7 @@ class AddressGeocoder
                 return null;
             }
 
-            return $best;
+            return $best ? $this->keepTypedHouseNumber($text, $best) : null;
         });
 
         if (! is_array($hit)) {
@@ -73,6 +73,28 @@ class AddressGeocoder
         }
 
         return $hit;
+    }
+
+    /**
+     * [Supervision E2E 2026-10-21 · V-03] Quand la BAN ne connaît pas le numéro (« 1 rue Jean Jaurès 62590 Oignies » revient
+     * « Rue Jean Jaurès », type `street`), le libellé enregistré — celui que reçoit le livreur — perdait le numéro tapé.
+     * Le point (donc le prix) reste celui de la rue ; le numéro, lui, est conservé tel que le client l'a saisi. Seul un
+     * numéro de 1 à 4 chiffres en TÊTE de saisie compte (un code postal de 5 chiffres n'est pas un numéro de rue).
+     *
+     * @param  array<string, mixed>  $best
+     * @return array<string, mixed>
+     */
+    private function keepTypedHouseNumber(string $typed, array $best): array
+    {
+        if (($best['type'] ?? '') !== 'street' || ! preg_match('/^\s*(\d{1,4}\s?(?:bis|ter|quater)?)(?=[\s,]+\p{L})/iu', $typed, $m)) {
+            return $best;
+        }
+
+        $number = trim(preg_replace('/\s+/', ' ', $m[1]));
+        $best['street'] = $number . ' ' . ltrim((string) $best['street']);
+        $best['label']  = $number . ' ' . ltrim((string) $best['label']);
+
+        return $best;
     }
 
     /** @return array<int, array<string, mixed>> */

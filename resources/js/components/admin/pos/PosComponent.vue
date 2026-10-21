@@ -1552,11 +1552,12 @@
                                 class="mt-2 rounded-lg border px-3 py-2 text-xs font-semibold"
                                 :class="deliveryInline.quote.allowed ? 'border-green-300 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-700'"
                                 data-testid="pos-delivery-quote"
+                                ref="deliveryQuoteBox"
                                 role="status"
                             >
                                 {{ deliveryQuoteText }}
                             </div>
-                            <div v-if="deliveryInline.quote && deliveryInline.quote.allowed && !deliveryInline.confirmed" class="mt-2">
+                            <div v-if="deliveryInline.quote && deliveryInline.quote.allowed" class="mt-2">
                                 <label for="pos-delivery-apartment" class="sr-only">Complément d'adresse</label>
                                 <input
                                     id="pos-delivery-apartment"
@@ -1568,6 +1569,7 @@
                             </div>
                             <div
                                 v-if="deliveryGeocodeError"
+                                ref="deliveryErrorBox"
                                 class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700"
                                 role="alert"
                             >
@@ -7427,6 +7429,24 @@ export default {
             this.deliveryGeocodeError = '';
         },
 
+        // [Supervision E2E 2026-10-21 · P-6] L'en-tête du ticket défile : quand la liste de suggestions disparaît, il rétrécit
+        // sans recaler son défilement et le devis (ou le refus) se retrouvait caché sous son bord (2 px visibles à 1280×720 et
+        // 1440×900). On ramène le bloc dans la fenêtre, comme la liste de suggestions.
+        revealDeliveryFeedback() {
+            const reveal = () => {
+                const el = this.$refs.deliveryQuoteBox || this.$refs.deliveryErrorBox;
+                const head = el && el.closest ? el.closest('.pos-v5-cart__head') : null;
+                if (!el || !head) return;
+                // On règle le défilement de l'EN-TÊTE seulement (scrollIntoView aurait aussi fait défiler la page) et on
+                // attend la fin du rendu : le champ « complément » apparaît sous le devis et allonge le contenu.
+                const e = el.getBoundingClientRect();
+                const h = head.getBoundingClientRect();
+                if (e.bottom > h.bottom) head.scrollTop += e.bottom - h.bottom + 6;
+                else if (e.top < h.top) head.scrollTop -= h.top - e.top + 6;
+            };
+            this.$nextTick(() => { reveal(); setTimeout(reveal, 150); });
+        },
+
         showDeliveryGeocodeError() {
             this.deliveryGeocodeError = 'Adresse non reconnue. Vérifiez l’adresse avant de valider la livraison.';
             this.focusDeliveryAddressField();
@@ -7467,6 +7487,12 @@ export default {
                 // Réponse périmée (le caissier a continué de taper) : on l'ignore.
                 if ((this.deliveryInline.addressText || '').trim() === query) {
                     this.deliveryInline.suggestions = list.slice(0, 6);
+                    // [Supervision E2E 2026-10-21 · P-1] « zzzzqqq » ne donnait RIEN : ni liste, ni message. Le caissier doit savoir
+                    // que le serveur n'a rien compris, pas croire que l'écran est figé.
+                    if (list.length === 0) {
+                        this.deliveryGeocodeError = 'Aucune adresse trouvée. Précisez la rue et la ville (ex. « 12 rue Jean Jaurès Oignies »).';
+                        this.revealDeliveryFeedback();
+                    }
                     // La liste est dans une zone qui défile : on la ramène dans la fenêtre.
                     this.$nextTick(() => {
                         const el = this.$refs.deliverySuggestionList;
@@ -7475,6 +7501,7 @@ export default {
                 }
             } catch (e) {
                 this.deliveryInline.suggestions = [];
+                this.deliveryGeocodeError = 'La recherche d\u2019adresse est momentanément indisponible. Réessayez dans un instant.';
             } finally {
                 this.deliveryInline.loading = false;
             }
@@ -7488,6 +7515,7 @@ export default {
             try {
                 const q = await livraison.quoteAddress(axios, suggestion.description);
                 this.deliveryInline.quote = q;
+                this.revealDeliveryFeedback();
                 if (q.enabled === false) {
                     this.deliveryGeocodeError = 'La livraison est suspendue.';
                     return;
@@ -7667,7 +7695,12 @@ export default {
             if (this.checkoutProps.form.address_id) return true;
             const deliveryAddress = (this.deliveryInline.address || '').trim();
             if (!deliveryAddress || !this.deliveryInline.confirmed) {
-                alertService.error('Choisissez l\'adresse de livraison dans la liste proposée.');
+                // [Supervision E2E 2026-10-21 · P-2] Adresse refusée (hors rayon) : le message dit le refus et propose Uber Eats,
+                // il ne renvoie pas le caissier chercher dans une liste qui n'existe plus.
+                const refused = this.deliveryInline.quote && this.deliveryInline.quote.allowed === false;
+                alertService.error(refused
+                    ? livraison.describeQuote(this.deliveryInline.quote)
+                    : 'Choisissez l\'adresse de livraison dans la liste proposée.');
                 return false;
             }
             // [LIVRAISON 2026-10-20] Le téléphone est la clé du client (même numéro = même compte, adresse

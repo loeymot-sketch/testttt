@@ -109,7 +109,11 @@
                   : s.left_at ? '<span class="chip go">En route · ETA ' + hm(s.eta_at) + '</span>'
                   : s.ready ? '<span class="chip">Prête · ETA ' + hm(s.eta_at) + '</span>'
                   : '<span class="chip wait">En préparation</span>';
-        var collect = s.amount_due_cents > 0
+        // [Supervision E2E 2026-10-21 · P-5] Une remise terminée n'a plus rien à encaisser : l'arrêt livré affichait encore
+        // « Encaisser en espèces : 4,90 € » à côté de « Remise 21:42 ».
+        var collect = done
+            ? '<div class="collect paid">✓ Remise terminée</div>'
+            : s.amount_due_cents > 0
             ? '<div class="collect pay">' + esc(s.collect_label) + ' : ' + eur(s.amount_due) + '</div>'
             : '<div class="collect paid">✓ Déjà payé</div>';
         var actions = '';
@@ -141,8 +145,8 @@
         }).join('');
     }
 
-    function load() {
-        api('GET', '/api/frontend/delivery-run').then(function (j) { $('app-err').textContent = ''; render(j.data || []); })
+    function load(keepMessage) {
+        return api('GET', '/api/frontend/delivery-run').then(function (j) { if (!keepMessage) $('app-err').textContent = ''; render(j.data || []); })
             .catch(function (e) { $('app-err').textContent = e.message; });
     }
 
@@ -158,14 +162,17 @@
         if (!t) return;
         if (t.dataset.depart) {
             api('POST', '/api/frontend/delivery-run/depart', { wave_at: t.dataset.depart }).then(function (j) {
-                if (j.not_ready && j.not_ready.length) $('app-err').textContent = j.not_ready.length + ' commande(s) pas encore prête(s) : elles restent à prendre.';
-                load();
+                // [Supervision E2E 2026-10-21 · P-4] load() effaçait ce message dans la foulée : le livreur partait sans savoir
+                // qu'une commande restait au restaurant. Le rechargement garde désormais le message qu'on vient d'afficher.
+                var notReady = (j.not_ready && j.not_ready.length) ? j.not_ready.length + ' commande(s) pas encore prête(s) : elles restent à prendre.' : '';
+                if (notReady) $('app-err').textContent = notReady;
+                load(!!notReady);
             }).catch(function (er) { $('app-err').textContent = er.message; });
         } else if (t.dataset.deliver) {
             var due = Number(t.dataset.due || 0);
             if (due > 0 && !window.confirm('Confirmez-vous avoir encaissé ' + eur(due / 100) + ' ?')) return;
             api('POST', '/api/frontend/delivery-run/stops/' + t.dataset.deliver + '/deliver', due > 0 ? { collected_cents: due } : {})
-                .then(load).catch(function (er) { $('app-err').textContent = er.message; });
+                .then(function () { return load(); }).catch(function (er) { $('app-err').textContent = er.message; });
         }
     });
 
@@ -179,7 +186,7 @@
             fd.append('photo', inp.files[0]);
             if (pos.lat != null) { fd.append('lat', pos.lat); fd.append('lng', pos.lng); }
             return api('POST', '/api/frontend/delivery-run/stops/' + inp.dataset.arrive + '/arrive', fd, true);
-        }).then(load).catch(function (er) { $('app-err').textContent = er.message; if (lbl) { lbl.classList.remove('off'); } load(); });
+        }).then(function () { return load(); }).catch(function (er) { $('app-err').textContent = er.message; if (lbl) { lbl.classList.remove('off'); } load(); });
     });
 
     show(!!token);

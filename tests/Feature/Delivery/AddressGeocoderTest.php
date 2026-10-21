@@ -114,6 +114,36 @@ class AddressGeocoderTest extends TestCase
         $this->assertSame('housenumber', app(AddressGeocoder::class)->geocode('437 rue elie gruyelle')['type']);
     }
 
+    /**
+     * [Supervision E2E 2026-10-21 · V-03] La BAN ne connaît pas toujours le numéro : « 1 rue Jean Jaurès 62590 Oignies »
+     * revenait « Rue Jean Jaurès » et le livreur ne recevait aucun numéro. Le numéro tapé est conservé dans le libellé.
+     */
+    public function test_a_typed_house_number_is_kept_when_the_provider_only_knows_the_street(): void
+    {
+        $f = $this->feature('Rue Jean Jaurès 62590 Oignies', '62590', 'Oignies', 2.9937, 50.4677, 0.97);
+        $f['properties'] = array_merge($f['properties'], ['type' => 'street', 'housenumber' => null, 'street' => 'Rue Jean Jaurès']);
+        unset($f['properties']['housenumber']);
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([$f]))]);
+
+        $g = app(AddressGeocoder::class)->geocode('1 rue Jean Jaurès 62590 Oignies');
+
+        $this->assertSame('1 Rue Jean Jaurès 62590 Oignies', $g['label']);
+        $this->assertSame('1 Rue Jean Jaurès', $g['street']);
+        $this->assertEqualsWithDelta(50.4677, $g['latitude'], 0.0001, 'le point reste celui de la rue');
+    }
+
+    public function test_a_postcode_or_a_bare_street_is_never_mistaken_for_a_house_number(): void
+    {
+        $f = $this->feature('Rue Jean Jaurès 62590 Oignies', '62590', 'Oignies', 2.9937, 50.4677, 0.97);
+        $f['properties'] = array_merge($f['properties'], ['type' => 'street', 'street' => 'Rue Jean Jaurès']);
+        unset($f['properties']['housenumber']);
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([$f]))]);
+
+        $this->assertSame('Rue Jean Jaurès 62590 Oignies', app(AddressGeocoder::class)->geocode('rue Jean Jaurès 62590 Oignies')['label']);
+        Cache::flush();
+        $this->assertSame('Rue Jean Jaurès 62590 Oignies', app(AddressGeocoder::class)->geocode('62590 Oignies rue Jean Jaurès')['label']);
+    }
+
     public function test_the_restaurant_position_is_sent_as_a_proximity_hint(): void
     {
         Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([
