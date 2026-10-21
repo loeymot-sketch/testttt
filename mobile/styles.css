@@ -353,13 +353,14 @@ image-slot {
 .lc-home__header {
   min-height: 48px;
   padding: 0 20px 4px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 12px;
   align-items: center;
-  justify-content: space-between;
 }
 .lc-home__avatar {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 14px;
   background: var(--ink);
@@ -374,20 +375,30 @@ image-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-self: center;
+  width: 132px;
+  max-width: 100%;
+  min-width: 0;
+  gap: 5px;
   transform: translateY(1px);
 }
-.lc-home__brand img { width: 116px !important; }
-.lc-home__brand > span {
+.lc-home__brand > [role="img"] { max-width: 100%; }
+.lc-home__brand img { width: 132px !important; max-width: 100%; }
+.lc-home__brand > .lc-home__status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 5px;
   color: var(--gray-3);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: .13em;
+  line-height: 1.4;
+  letter-spacing: .06em;
+  text-align: center;
   text-transform: uppercase;
 }
+.lc-home__status i { flex-shrink: 0; }
 .lc-home__brand i,
 .lc-home__restaurant-meta i {
   width: 6px;
@@ -415,7 +426,6 @@ image-slot {
 }
 .lc-home__lead {
   margin: 14px 0 0;
-  max-width: 250px;
   color: var(--gray-4);
   font-size: 14px;
   line-height: 1.45;

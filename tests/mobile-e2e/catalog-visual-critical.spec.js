@@ -17,6 +17,11 @@ const canonicalPngFiles = [
   'sandwich-supreme.png',
   'sandwich-mega.png',
   'sandwich-terminator.png',
+  'cheese-burger.png',
+  'double-cheese.png',
+  'fish-burger.png',
+  'big-burger.png',
+  'grill-burger.png',
   'tacos-cayenne.png',
   'galette.png',
   'cat-sandwich-cayenne.png',
@@ -31,6 +36,11 @@ const canonicalProductImages = {
   supreme: 'assets/menu/sandwich-supreme.png',
   mega: 'assets/menu/sandwich-mega.png',
   terminator: 'assets/menu/sandwich-terminator.png',
+  'cheese-burger': 'assets/menu/cheese-burger.png',
+  'double-cheese': 'assets/menu/double-cheese.png',
+  'fish-burger': 'assets/menu/fish-burger.png',
+  'big-burger': 'assets/menu/big-burger.png',
+  'grill-burger': 'assets/menu/grill-burger.png',
   'galette-normale': 'assets/menu/galette.png',
   'galette-cayenne': 'assets/menu/galette.png',
   'tacos-m': 'assets/menu/tacos-cayenne.png',
@@ -54,7 +64,6 @@ const canonicalDrinkImages = {
   sprite: 'assets/menu/sprite.png',
   'eau-plate': 'assets/menu/eau.png',
   'capri-sun': 'assets/menu/capri-sun.png',
-  'fuze-tea': 'assets/menu/fuze-tea.png',
 };
 const canonicalMeatImages = {
   'm-mexicanos': 'assets/menu/viande_mexicain.png',
@@ -71,6 +80,8 @@ const canonicalFormulaImages = {
   boisson: 'assets/menu/boisson.png',
 };
 const missingExactDrinkImages = {
+  orangina: 'assets/menu/item-default.svg',
+  'fuze-tea': 'assets/menu/item-default.svg',
   hawai: 'assets/menu/item-default.svg',
   perrier: 'assets/menu/item-default.svg',
 };
@@ -337,6 +348,7 @@ test('home and menu expose real/neutral assets with compact allergen disclosure 
         await expect(allergenSummary).toHaveText(/Informations allergènes/);
         await expect(allergenRegion).toBeVisible();
         await expect(allergenDisclosure.locator('li')).not.toHaveCount(0);
+        await expect(allergenDisclosure).toContainText(/Gluten|Lactose|Œuf|Arachide|Poisson/);
         await expect(allergenDisclosure).not.toContainText(/[🌾🥛🥚🥜🌰🫘🐟🦐🦑🥬🍇🌿⚠️❗]/);
         await allergenSummary.focus();
         await expect(allergenSummary).toBeFocused();

@@ -2,24 +2,24 @@
 
 ## CURRENT ACTIVE MOBILE CYCLE — 2026-10-16 — PHASE 22 LATEST PRODUCT ASSET PARITY
 
-TASK_ID: MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016
-PHASE: GATE
-CLOSURE_NOTE: Phase 21 remains recorded below as REWORK; superseded by the owner's explicit request for a new bounded image-parity subject.
-PLAN_FILE: plans/PLAN_MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016_2026-10-16.md
-REPORT_FILE: reports/execution/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/report.md
-GATE_FILE: docs/gates/GATE_MOBILE-EXCELLENCE-PHASE12-IMAGE-CONVERGENCE-2026-10-16.md
+TASK_ID: MOBILE-OPTIMIZATION-BOOT-20261018
+PHASE: VALIDATE
+CLOSURE_NOTE: Mega App Store cycle validated locally; owner requested a bounded startup optimization pass.
+PLAN_FILE: plans/PLAN_MOBILE-OPTIMIZATION-BOOT-20261018_2026-10-18.md
+REPORT_FILE: reports/execution/MOBILE-OPTIMIZATION-BOOT-20261018/report.md
+GATE_FILE:
 RUNNER_MODE: single-session
 PRIMARY_EXECUTION_MODEL: gpt-5.5-pro (fallback implementation: foodking-complex-implementer)
-EXECUTE_DELEGATION: multi_agent_v1-complex-implementer
-FALLBACK_REASON:
+EXECUTE_DELEGATION: foodking-complex-implementer (codex-extension-fallback)
+FALLBACK_REASON: codex plan-review/execute binary failed with ENOENT after two documented retries; delegated bounded UI patch to complex fallback.
 AUDIT_CHANNEL: fallback-subagent
 AUDIT_FALLBACK_REASON: Claude terminal wrapper could not find claude on PATH; fallback audit returned REWORK on shared-worktree evidence/guard blockers.
-AUDIT_VERDICT: REWORK
+AUDIT_VERDICT: NEEDS_EXTERNAL_GATES
 GPT_FINAL_AUDIT_CHANNEL: pending
 GPT_FINAL_AUDIT_MODEL: gpt-5.5-pro
 GPT_FINAL_AUDIT_REASONING_EFFORT: xhigh
 GPT_FINAL_AUDIT_VERDICT: PENDING
-SUBSYSTEMS_TOUCHED: mobile/data/menu.js, mobile/assets/menu/cat-sandwich-cayenne.png, mobile/assets/menu/cat-galette.png, mobile/assets/menu/cat-tacos.png, mobile/assets/menu/sandwich-cayenne.png, mobile/assets/menu/sandwich-supreme.png, mobile/assets/menu/sandwich-mega.png, mobile/assets/menu/sandwich-terminator.png, mobile/assets/menu/galette.png, mobile/assets/menu/tacos-cayenne.png, mobile/tests/mobile-catalog-visual.spec.js, tests/mobile-e2e/catalog-visual-critical.spec.js, tasks/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016.md, plans/PLAN_MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016_2026-10-16.md, reports/execution/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/report.md, missions/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016/input.json, .cursor/ACTIVE_CYCLE.md, reports/AGENT_ACTIVITY_LOG.md
+SUBSYSTEMS_TOUCHED: mobile/index.html, mobile/tests/mobile-preview-freshness.spec.js, mobile/tests/mobile-ui-excellence.spec.js, tests/mobile-e2e/utils/waitForLoyaltyReady.js, tasks/MOBILE-OPTIMIZATION-BOOT-20261018.md, plans/PLAN_MOBILE-OPTIMIZATION-BOOT-20261018_2026-10-18.md, reports/execution/MOBILE-OPTIMIZATION-BOOT-20261018/report.md, .cursor/ACTIVE_CYCLE.md, reports/AGENT_ACTIVITY_LOG.md
 SUBSYSTEMS_OFF_LIMITS: backend PHP/config, database/migrations, pricing/order data, payment/Mollie, loyalty policy, auth/SMS, branch isolation, dispatch, OrderService/FrontendOrderService, POS/caisse/KDS/kiosk runtime, native iOS packaging/signing
 
 | **FIELD** | **VALUE** |

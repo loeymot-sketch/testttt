@@ -5,21 +5,28 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+// The dev-only helper is injected at runtime and is intentionally excluded
+// from the production resource manifest below.
+const productionHtml = html.replace(/document\.write\('[\s\S]*?'\);/, '');
 const VERSION = 'v=20261016';
 const VERSION_BY_RESOURCE = new Map([
-  ['styles.css', 'v=20261016-r2'],
+  ['styles.css', 'v=20261018-r1'],
   ['redesigns-styles.css', 'v=20261016-r2'],
-  ['screens-main.jsx', 'v=20261016-r2'],
+  ['api/client.js', 'v=20261016-r1'],
+  ['data/menu.js', 'v=20261018-r1'],
+  ['screens-main.jsx', 'v=20261018-r1'],
+  ['screens-item-steps.jsx', 'v=20261018-r1'],
+  ['screens-modals.jsx', 'v=20261016-r1'],
 ]);
 
-const localScriptOrder = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)]
+const localScriptOrder = [...productionHtml.matchAll(/<script[^>]+src="([^"]+)"/g)]
   .map(match => match[1])
   .filter(src => !src.startsWith('http'))
   .map(src => src.split('?')[0]);
 const expectedOrder = [
   'api/storage.js', 'api/client.js', 'data/menu.js', 'data/loyalty.js',
   'data/loyaltyRewardState.js', 'data/orders.js', 'data/user.js',
-  'data/wallet-spec.js', 'data/dev-helpers.js', 'image-slot.js', 'icons.jsx',
+  'data/wallet-spec.js', 'image-slot.js', 'icons.jsx',
   'shared.jsx', 'vendor/qrcode.js', 'hooks/useCountdown.js',
   'hooks/useLoyaltyQR.js', 'components/BarcodeMock.jsx', 'components/LoyaltyQR.jsx',
   'components/WizardRedeem.jsx', 'screens-onboarding.jsx', 'screens-item-steps.jsx',
@@ -27,14 +34,14 @@ const expectedOrder = [
 ];
 assert.deepEqual(localScriptOrder, expectedOrder, 'local script order is unchanged');
 
-const localResources = [...html.matchAll(/<(?:script[^>]+src|link[^>]+href)="([^"]+)"/g)]
+const localResources = [...productionHtml.matchAll(/<(?:script[^>]+src|link[^>]+href)="([^"]+)"/g)]
   .map(match => match[1])
   .filter(url => !url.startsWith('http'));
 const expectedLocalResources = [
   'styles.css', 'redesigns-styles.css',
   ...expectedOrder,
 ];
-assert.equal(localResources.length, expectedLocalResources.length, 'exactly 24 local resources are present');
+assert.equal(localResources.length, expectedLocalResources.length, 'exactly 23 local resources are present in the production boot');
 assert.deepEqual(
   localResources.map(url => url.split('?')[0]),
   expectedLocalResources,
@@ -65,5 +72,7 @@ assert.doesNotMatch(html, /fonts\.googleapis\.com[^\"']*v=20261016/, 'Google Fon
 assert.equal(html.match(/apiBase: '([^']+)'/)?.[1], 'http://127.0.0.1:8766', 'apiBase baseline unchanged');
 assert.equal(html.match(/branchId: (\d+)/)?.[1], '1', 'branchId baseline unchanged');
 assert.equal(html.match(/onlineCardEnabled: (true|false)/)?.[1], 'false', 'online payment baseline unchanged');
+assert.match(html, /URLSearchParams\(window\.location\.search\)\.has\('dev'\)/, 'dev mode is explicit');
+assert.match(html, /data\/dev-helpers\.js\?v=20261018-opt1/, 'dev helpers are loaded only in dev mode');
 
 console.log(`PASS: ${localResources.length} local resources versioned; CDN order, integrity and runtime config preserved`);

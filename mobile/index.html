@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261016-r4">
+<link rel="stylesheet" href="styles.css?v=20261018-r1">
 <link rel="stylesheet" href="redesigns-styles.css?v=20261016-r2">
 
 <style>
@@ -80,14 +80,22 @@
 <!-- [GOAL-SYNC 2026-07-08] Couche réseau RÉELLE (window.LC.mobileApi) — auth OTP, résolution
      par NOM canonique, commandes, fidélité. Chargée juste après storage.js (setAuth). -->
 <script src="api/client.js?v=20261016-r1"></script>
-<script src="data/menu.js?v=20261016"></script>
+<script src="data/menu.js?v=20261018-r1"></script>
 <script src="data/loyalty.js?v=20261016"></script>
 <script src="data/loyaltyRewardState.js?v=20261016"></script>
 <script src="data/orders.js?v=20261016"></script>
 <script src="data/user.js?v=20261016"></script>
 <script src="data/wallet-spec.js?v=20261016"></script>
 <!-- Dev helpers last: wire onto LC.loyalty + LC.storage + LC.user. -->
-<script src="data/dev-helpers.js?v=20261016"></script>
+<!-- Dev-only helpers: excluded from the normal app boot to avoid shipping test
+     seeders, mock loyalty mutations and render instrumentation to customers. -->
+<script>
+  if (new URLSearchParams(window.location.search).has('dev')) {
+    const devScript = document.createElement('script');
+    devScript.src = 'data/dev-helpers.js?v=20261018-opt1';
+    document.currentScript.after(devScript);
+  }
+</script>
 
 <!-- React + Babel runtime (prototype-grade ; en prod = build Vite/esbuild) -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
@@ -111,8 +119,8 @@
 
 <!-- Screens -->
 <script type="text/babel" src="screens-onboarding.jsx?v=20261016"></script>
-<script type="text/babel" src="screens-item-steps.jsx?v=20261016-r4"></script>
-<script type="text/babel" src="screens-main.jsx?v=20261016-r3"></script>
+<script type="text/babel" src="screens-item-steps.jsx?v=20261018-r1"></script>
+<script type="text/babel" src="screens-main.jsx?v=20261018-r1"></script>
 <script type="text/babel" src="screens-modals.jsx?v=20261016-r1"></script>
 
 <!-- App root -->
@@ -245,6 +253,14 @@ function App() {
         queue_number: placed.queue_number || null,
         total: realTotal, eta, items: cart,
       });
+      // Relire le solde et l'historique serveur après succès, sans crédit local.
+      // La synchronisation ne doit ni retarder ni invalider la confirmation.
+      const loyalty = window.LC.loyalty;
+      if (loyalty && typeof loyalty.refreshFromServer === 'function') {
+        Promise.resolve().then(() => loyalty.refreshFromServer()).catch(() => {
+          // La commande reste confirmée ; le prochain écran pourra resynchroniser.
+        });
+      }
       return true;
     } catch (e) {
       if (e && e.kind === 'network') {

@@ -41,8 +41,29 @@ assert.match(home, /featured\.price\.toFixed/, 'hero price comes from catalog da
 assert.match(home, /it\.price\.toFixed/, 'card prices come from catalog data');
 assert.match(home, /onClick=\{\(\) => go\('menu'/, 'category and see-all navigation remains wired');
 assert.match(home, /href=\{branchPhoneInfo\(\)\.href/, 'branch phone remains callable');
-assert.match(home, /const newItems = \[[\s\S]*ITEMS\.filter\(i => i\.is_new \|\| \(i\.tags \|\| \[\]\)\.includes\('NOUVEAU'\)\)[\s\S]*ITEMS\.filter\(i => \(i\.tags \|\| \[\]\)\.includes\('TOP'\)\)[\s\S]*\.slice\(0, 4\)/, 'Nouveautés prioritizes is_new/NOUVEAU and keeps TOP fallback capped at four');
+assert.match(home, /const currentItems = window\.LC\.menu\.items \|\| \[\]/, 'home reads the current catalog instead of the legacy copy');
+assert.match(home, /const newItems = \[[\s\S]*currentItems\.filter\(i => i\.is_new \|\| \(i\.tags \|\| \[\]\)\.includes\('NOUVEAU'\)\)[\s\S]*currentItems\.filter\(i => \(i\.tags \|\| \[\]\)\.includes\('TOP'\)\)[\s\S]*\.slice\(0, 4\)/, 'Nouveautés prioritizes is_new/NOUVEAU and keeps TOP fallback capped at four');
 assert.match(menu, /mkItem\(503,\s*'tacos-xl'[\s\S]*?is_new:\s*true/, 'catalog marks Tacos XL as a new arrival');
+
+// Phase 24 — compact home copy and a centered, responsive logo/status stack.
+assert.match(home, /<p className="lc-home__lead">Prêt quand tu l'es\.<\/p>/, 'home lead is a short single phrase without a forced line break');
+assert.doesNotMatch(home, /Le goût du fait maison/, 'home no longer shows the old long greeting');
+assert.match(home, /<div className="lc-home__brand"[^>]*>\s*<Logo size=\{18\}\/>\s*<span className="lc-home__status"><i aria-hidden="true"\/> Ouvert maintenant<\/span>\s*<\/div>/, 'opening status follows the larger logo and keeps its decorative dot hidden from assistive technology');
+assert.match(home, /<button type="button"[^\n]*go\('profile'\)[^\n]*aria-label=\{safeName/, 'profile button keeps its accessible name and navigation');
+assert.match(home, /<IconBtn[^>]*ariaLabel="Notifications"[^>]*className="lc-home__notify"[^\n]*Notifications — bientôt disponibles/, 'notifications retain an accessible name and explicit unavailable state');
+
+const headerStyles = styles.match(/\.lc-home__header\s*\{([^}]+)\}/)?.[1] || '';
+const brandStyles = styles.match(/\.lc-home__brand\s*\{([^}]+)\}/)?.[1] || '';
+const statusStyles = styles.match(/\.lc-home__brand > \.lc-home__status\s*\{([^}]+)\}/)?.[1] || '';
+const leadStyles = styles.match(/\.lc-home__lead\s*\{([^}]+)\}/)?.[1] || '';
+assert.match(headerStyles, /grid-template-columns:\s*44px minmax\(0, 1fr\) 44px/, 'matching control columns keep the brand centered with room to shrink');
+assert.match(styles, /\.lc-home__avatar\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/, 'profile touch target matches the 44px notification control');
+assert.match(brandStyles, /flex-direction:\s*column/, 'opening status stays below the logo');
+assert.match(brandStyles, /width:\s*132px;[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;/, 'logo/status block is slightly larger and can shrink on narrow screens');
+assert.match(styles, /\.lc-home__brand img\s*\{[^}]*width:\s*132px !important;[^}]*max-width:\s*100%;/, 'logo grows from 116px without exceeding its column');
+assert.match(statusStyles, /justify-content:\s*center;[\s\S]*width:\s*100%;/, 'opening status uses the logo column width and stays centered between controls');
+assert.doesNotMatch(styles, /\.lc-home__brand > span\s*\{/, 'status typography does not leak into the logo fallback');
+assert.doesNotMatch(statusStyles + leadStyles, /white-space:\s*nowrap|overflow:\s*hidden|text-overflow:\s*ellipsis/, 'greeting and opening status remain readable when text is enlarged');
 
 // Decorative category copy must not regress to emoji placeholders.
 assert.doesNotMatch(home, /[🌶🥖🌮🥣🍔🍟🧒⚡]/, 'home decoration does not use food emoji');

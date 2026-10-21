@@ -31,6 +31,11 @@ const canonicalProductImages = {
   supreme: 'sandwich-supreme.png',
   mega: 'sandwich-mega.png',
   terminator: 'sandwich-terminator.png',
+  'cheese-burger': 'cheese-burger.png',
+  'double-cheese': 'double-cheese.png',
+  'fish-burger': 'fish-burger.png',
+  'big-burger': 'big-burger.png',
+  'grill-burger': 'grill-burger.png',
   'galette-normale': 'galette.png',
   'galette-cayenne': 'galette.png',
   'tacos-m': 'tacos-cayenne.png',
@@ -49,6 +54,11 @@ const canonicalPngFiles = [
   'sandwich-supreme.png',
   'sandwich-mega.png',
   'sandwich-terminator.png',
+  'cheese-burger.png',
+  'double-cheese.png',
+  'fish-burger.png',
+  'big-burger.png',
+  'grill-burger.png',
   'tacos-cayenne.png',
   'galette.png',
   'cat-sandwich-cayenne.png',
@@ -81,14 +91,9 @@ const canonicalDrinkBinaryFiles = [
   'capri-sun.png',
 ];
 
-const canonicalExternalDrinkAssets = [
-  {
-    file: 'fuze-tea.png',
-    source: path.resolve(root, '../../testttt-kiosk/frontend public/public/upload_files/09-2022/fe1b1ad469e24302aed19e29dbcb7f86.Fuze_Tea_Peche.png'),
-  },
-];
-
 const missingExactDrinkAssets = [
+  { slug: 'orangina', label: 'Orangina 33cl', image: 'item-default.svg' },
+  { slug: 'fuze-tea', label: 'Fuze Tea 33cl', image: 'item-default.svg' },
   { slug: 'hawai', label: 'Hawaï 33cl', image: 'item-default.svg' },
   { slug: 'perrier', label: 'Perrier 33cl', image: 'item-default.svg' },
   { slug: null, label: 'Schweppes Agrumes', image: null },
@@ -143,15 +148,6 @@ for (const file of canonicalDrinkBinaryFiles) {
   console.log(`SHA256 drink ${file}: source=${sourceSha} destination=${destinationSha}`);
   assert.equal(destinationSha, sourceSha, `canonical drink binary copied without alteration: ${file}`);
 }
-for (const { file, source } of canonicalExternalDrinkAssets) {
-  const destination = path.join(root, 'assets/menu', file);
-  assert.ok(fs.existsSync(source), `canonical kiosk source exists: ${file}`);
-  assert.ok(fs.existsSync(destination), `canonical kiosk destination exists: ${file}`);
-  const sourceSha = shaFile(source);
-  const destinationSha = shaFile(destination);
-  console.log(`SHA256 kiosk drink ${file}: source=${sourceSha} destination=${destinationSha}`);
-  assert.equal(destinationSha, sourceSha, `canonical kiosk binary copied without alteration: ${file}`);
-}
 for (const item of menu.items) {
   localAsset(item.image);
   localAsset(item.hero);
@@ -167,7 +163,7 @@ const expectedDrinks = {
   sprite: 'sprite.png', oasis: 'oasis.png', orangina: 'item-default.svg',
   'eau-plate': 'eau.png', 'capri-sun': 'capri-sun.png', 'coca-cherry': 'coca-cherry.png',
   tropico: 'tropico.png', 'ice-tea-peche': 'lipton-peche.png', 'fanta-citron': 'fanta-citron.png',
-  'fuze-tea': 'fuze-tea.png', hawai: 'item-default.svg', perrier: 'item-default.svg',
+  'fuze-tea': 'item-default.svg', hawai: 'item-default.svg', perrier: 'item-default.svg',
 };
 assert.equal(menu.items.filter(i => i.category_id === 10).length, 15);
 assert.equal(menu.formuleDrinks.length, 15);
@@ -201,25 +197,37 @@ for (const file of ['coca-cherry.png', 'lipton-peche.png', 'fanta-citron.png']) 
   `canonical binary copied without alteration: ${file}`);
 }
 for (const [slug, file] of Object.entries({
-  'chicken-burger': 'chicken_burger.png', 'fish-burger': 'fish_burger.png',
-  'double-cheese': 'double_cheese.png', 'big-burger': 'big_burger.png',
+  'chicken-burger': 'chicken_burger.png',
+  'cheese-burger': 'cheese-burger.png',
+  'double-cheese': 'double-cheese.png',
+  'fish-burger': 'fish-burger.png',
+  'big-burger': 'big-burger.png',
+  'grill-burger': 'grill-burger.png',
   'menu-enfant-burger': 'chicken_burger.png',
 })) assert.equal(menu.findItem(slug).image, 'assets/menu/' + file, `specific local photo: ${slug}`);
-for (const slug of ['cheese-burger', 'grill-burger']) assert.equal(menu.findItem(slug).image, neutral);
+for (const slug of ['cheese-burger', 'double-cheese', 'fish-burger', 'big-burger', 'grill-burger']) {
+  assert.notEqual(menu.findItem(slug).image, neutral, `burger never uses the neutral fallback: ${slug}`);
+}
 assert.equal(menu.findItem('tiramisu').image, 'assets/menu/tiramisu.png');
 
 const main = read('screens-main.jsx');
 const steps = read('screens-item-steps.jsx');
 const compact = main.slice(main.indexOf('function ScreenHome('), main.indexOf('function ScreenItem('));
-assert.doesNotMatch(compact, /<AllergenBadge\b/, 'no compact allergen badge');
+assert.doesNotMatch(compact, /<AllergenDisclosure\b/, 'no compact allergen disclosure');
 assert.doesNotMatch(main, /⚠️/, 'no warning emoji remains in product presentation');
+assert.doesNotMatch(main, /AllergenBadge/, 'badge compatibility name is removed from the product UI');
+assert.match(main, /function AllergenDisclosure\(\{ allergens, size = 'sm' \}\)/, 'text-only allergen disclosure exists');
+assert.match(main, /data-testid="allergen-disclosure"/, 'allergen disclosure has the stable test id');
+assert.match(main, /gluten:\s*\{ label: 'Gluten' \}/, 'French allergen label vocabulary is explicit');
+assert.match(main, /oeuf:\s*\{ label: 'Œuf' \}/, 'French egg allergen label is explicit');
 assert.match(compact, /CATS\.map\(c => \(/, 'all nine home categories rendered');
 assert.match(compact, /id=\{`home-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);
 assert.match(compact, /id=\{`menu-category-\$\{c.id\}`\}[^>]*src=\{c.image\}[^>]*fit="contain"/);
 assert.match(compact, /src=\{cat.image\}[^>]*fit="contain"/, 'menu section categories illustrated');
-assert.match(main, /<AllergenBadge allergens=\{item.allergens\} size="lg"/, 'legacy detail disclosure retained');
-assert.match(steps, /<window.AllergenBadge allergens=\{item.allergens\} size="lg"/, 'direct detail disclosure retained');
-assert.match(steps, /<window.AllergenBadge allergens=\{aggregatedAllergens\} size="lg"/, 'recap disclosure retained');
+assert.match(main, /<AllergenDisclosure allergens=\{item.allergens\} size="lg"/, 'main detail disclosure retained');
+assert.match(steps, /<window.AllergenDisclosure allergens=\{item.allergens\} size="lg"/, 'direct detail disclosure retained');
+assert.match(steps, /<window.AllergenDisclosure allergens=\{aggregatedAllergens\} size="lg"/, 'recap disclosure retained');
+assert.match(steps, /aggregatedAllergens[\s\S]*selections\.supplementIds[\s\S]*selections\.drinkId/, 'recap keeps item + supplements + drink aggregation');
 assert.equal(sha(steps.match(/function buildLineItem\([\s\S]*?\n\}/)[0]),
   '92fd480da9dc71da31397f6efcd17e4bdba7f06603b790da54777271020034d1', 'order line payload builder unchanged');
-console.log('PASS: 39 product visuals, 9 categories, 15 drinks + wizard parity, canonical copies, allergens and business invariants');
+console.log('PASS: burger SHA/mappings, 9 categories, 15 drinks + wizard parity, text allergens and payload invariants');

@@ -81,13 +81,11 @@
     'galette-cayenne': 'galette.png',
     // Burgers (cat 4)
     'chicken-burger': 'chicken_burger.png',
-    // Local cheeseburger.png shows a double; grill_burger.png shows sauce.
-    // Neither is a trustworthy product photo for these two references.
-    'cheese-burger':  'item-default.svg',
-    'double-cheese':  'double_cheese.png',
-    'fish-burger':    'fish_burger.png',
-    'big-burger':     'big_burger.png',
-    'grill-burger':   'item-default.svg',
+    'cheese-burger':  'cheese-burger.png',
+    'double-cheese':  'double-cheese.png',
+    'fish-burger':    'fish-burger.png',
+    'big-burger':     'big-burger.png',
+    'grill-burger':   'grill-burger.png',
     // Tacos (cat 5) — board deliberately shares one tacos photo
     'tacos-m': 'tacos-cayenne.png',
     'tacos-l': 'tacos-cayenne.png',
@@ -115,19 +113,17 @@
     // Phase 16 — drink asset parity: brand-specific assets only; no other
     // brand/flavour may be used as a substitute. Site assets are copied byte
     // for byte from public/images/menu and guarded by the catalog visual test.
-    // The Fuze Tea packshot is copied byte-for-byte from the canonical kiosk
-    // checkout source and has its own SHA-256 guard in the static catalog test.
     // Cherry, Tropico, Lipton Pêche, Fanta Citron/Orange, Oasis, Sprite, Eau,
-    // Capri-Sun, Fuze Tea and Coca variants are available in the canonical packs.
-    // Exact packshots are still missing for Hawaï and Perrier; the neutral asset
-    // is intentional until the owner supplies the matching SKU.
+    // Capri-Sun and Coca variants are available in the canonical packs.
+    // Exact packshots are still missing for Fuze Tea, Hawaï and Perrier; the
+    // neutral asset is intentional until the owner supplies the matching SKUs.
     // Schweppes Agrumes, Oasis Cassis and Coca bouteille have no canonical
     // mobile SKU/asset in this pack and must not be invented here.
     'coca-cherry':   'coca-cherry.png',
     'tropico':       'tropico.png',
     'ice-tea-peche': 'lipton-peche.png',
     'fanta-citron':  'fanta-citron.png',
-    'fuze-tea':      'fuze-tea.png',
+    'fuze-tea':      'item-default.svg',
     'hawai':         'item-default.svg',
     'perrier':       'item-default.svg',
     // Menu enfant (cat 11)

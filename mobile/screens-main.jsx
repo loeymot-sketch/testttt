@@ -161,14 +161,15 @@ function ScreenHome({ go, name = '' }) {
   const safeName = String(name || '').trim();
   const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
   const greeting = (new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour' : 'Bonsoir';
-  const featured = window.LC.menu.findItem('tacos-l') || window.LC.menu.items[0];
+  const currentItems = window.LC.menu.items || [];
+  const featured = currentItems.find(item => item.slug === 'tacos-l') || currentItems[0];
   const featuredLines = featured ? featured.name.toUpperCase().split(' ') : ['LE', 'CAYENNE'];
   const featuredTop = featuredLines.slice(0, 2).join(' ');
   const featuredBottom = featuredLines.slice(2).join(' ');
-  const featuredItems = ITEMS.filter(i => i.is_featured).slice(0, 4);
+  const featuredItems = currentItems.filter(i => i.is_featured).slice(0, 4);
   const newItems = [
-    ...ITEMS.filter(i => i.is_new || (i.tags || []).includes('NOUVEAU')),
-    ...ITEMS.filter(i => (i.tags || []).includes('TOP')),
+    ...currentItems.filter(i => i.is_new || (i.tags || []).includes('NOUVEAU')),
+    ...currentItems.filter(i => (i.tags || []).includes('TOP')),
   ]
     .filter((item, index, items) => items.findIndex(candidate => candidate.id === item.id) === index)
     .slice(0, 4);
@@ -178,8 +179,8 @@ function ScreenHome({ go, name = '' }) {
         <header className="lc-home__header">
           <button type="button" onClick={() => go('profile')} aria-label={safeName ? `Profil — ${safeName}` : 'Profil'} className="lc-home__avatar">{avatarInitial}</button>
           <div className="lc-home__brand" aria-label="Le Cayenne — restaurant ouvert">
-            <Logo size={16}/>
-            <span><i aria-hidden="true"/> Ouvert maintenant</span>
+            <Logo size={18}/>
+            <span className="lc-home__status"><i aria-hidden="true"/> Ouvert maintenant</span>
           </div>
           <IconBtn bg="var(--paper)" ariaLabel="Notifications" className="lc-home__notify" onClick={() => go('toast', { msg: 'Notifications — bientôt disponibles', kind: 'info' })}><I.Bell size={18}/></IconBtn>
         </header>
@@ -187,7 +188,7 @@ function ScreenHome({ go, name = '' }) {
         <section className="lc-home__intro" aria-labelledby="home-title">
           <p className="lc-eyebrow">Le Cayenne · Hénin-Beaumont</p>
           <h1 id="home-title" className="lc-display"><span>{greeting},</span><br/><em>{safeName || 'bienvenue'}</em> !</h1>
-          <p className="lc-home__lead">Le goût du fait maison, prêt quand tu l'es.</p>
+          <p className="lc-home__lead">Prêt quand tu l'es.</p>
         </section>
 
         <Marquee items={['Sauce Cayenne maison', 'Sandwichs faluche', 'Tacos M & L', 'Bols frites / riz', 'Burgers briochés', 'Prêt en 8 min']}/>
@@ -228,7 +229,7 @@ function ScreenHome({ go, name = '' }) {
           <div className="lc-home__rail">
             {featuredItems.map(it => (
               <button type="button" key={it.id} aria-label={`Voir ${it.name}`} className="lc-home__product lc-tap" onClick={() => go('item', it.id)}>
-                <div className="lc-home__product-art"><Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>{it.tags[0] && <Tag t={it.tags[0]}/>}</div>
+                <div className="lc-home__product-art"><Slot id={it.thumb} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>{it.tags[0] && <Tag t={it.tags[0]}/>}</div>
                 <div className="lc-home__product-meta"><strong>{it.name}</strong><span>{it.price.toFixed(2).replace('.', ',')} €</span></div>
               </button>
             ))}
@@ -240,7 +241,7 @@ function ScreenHome({ go, name = '' }) {
           <div className="lc-home__new-grid">
             {newItems.map(it => (
               <button type="button" key={it.id} aria-label={`Voir ${it.name}`} className="lc-home__new-card lc-tap" onClick={() => go('item', it.id)}>
-                <div className="lc-home__new-art"><Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/><Tag t="TOP"/></div>
+                <div className="lc-home__new-art"><Slot id={it.thumb} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/><Tag t="TOP"/></div>
                 <strong>{it.name}</strong><span>{it.price.toFixed(2).replace('.', ',')} €</span>
               </button>
             ))}

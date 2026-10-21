@@ -39,7 +39,7 @@
       branch_id: 1,
       branch_name: 'Le Cayenne',
       branch_city: 'Hénin-Beaumont',
-      total: 24.70,                   // 7.00 + 7.90 + 7.90 + 1.90 (canon menu.js)
+      total: 25.70,                   // 7.00 + 8.90 + 7.90 + 1.90 (canon menu.js)
       payment_status: 'pending',      // pending | paid
       payment_method: 'cash_at_counter', // cash_at_counter | card_at_counter | stripe
       pickup_code: 'C-1234',
@@ -47,11 +47,11 @@
       items_summary: 'Suprême · Tacos L · Bol Riz · Coca-Cola',
       items: [
         { id: 1, item_id: 102,  name: 'Suprême',                  qty: 1, line_total: 7.00,  extras_summary: 'Cordon bleu · Cheddar · Sauce algérienne' },
-        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 7.90,  extras_summary: '2 viandes · Sauce fromagère' },
+        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 8.90,  extras_summary: '2 viandes · Sauce fromagère' },
         { id: 3, item_id: 602,  name: 'Bol Riz',                  qty: 1, line_total: 7.90,  extras_summary: 'Viande au choix · Sauce fromagère' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.90,  extras_summary: '' },
       ],
-      points_earned_estimate: 247,    // Math.floor(24.70 × 10) — 10 pt/€ FLOOR (backend)
+      points_earned_estimate: 257,    // Math.floor(25.70 × 10) — 10 pt/€ FLOOR (backend)
     },
   ];
 
