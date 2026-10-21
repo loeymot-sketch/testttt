@@ -104,6 +104,23 @@ class PosDeliveryControllerTest extends TestCase
         $this->assertNotEmpty($q->json('waves'));
     }
 
+    /**
+     * [Supervision E2E 2026-10-21 · F-ADV-4] `throttle:N,M` nus : un seul compteur PAR UTILISATEUR pour toutes les routes
+     * de la caisse. 30 suggestions d'adresse suffisaient à faire répondre 429 à la bascule et à l'enregistrement d'adresse
+     * sans qu'ils aient été appelés. Un seau par route.
+     */
+    public function test_heavy_suggest_use_does_not_exhaust_the_toggle_bucket(): void
+    {
+        $this->fakeGeocode('Hénin-Beaumont', '62110', 50.4300, 2.9600);
+
+        for ($i = 0; $i < 35; $i++) {
+            $this->pos('GET', 'suggest?q=10 rue test')->assertOk();
+        }
+
+        $this->pos('POST', 'toggle', ['enabled' => false])->assertOk();
+        $this->pos('POST', 'toggle', ['enabled' => true])->assertOk();
+    }
+
     public function test_the_caisse_quote_and_suggest_require_the_pos_permission(): void
     {
         $nobody = User::factory()->create(['branch_id' => $this->branch->id]);

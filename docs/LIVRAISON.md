@@ -91,6 +91,22 @@ Une vraie livraison traverse les trois surfaces : commande web par l'API (comme 
   créneau rejoignait la tournée partie (injoignable). Une tournée partie est désormais fermée : plus de commande, plus de créneau
   proposé ni accepté.
 
+## 3quinquies. Trouvé par la supervision E2E adversariale (2026-10-21, `reports/test-e2e/livraison-geo-2026-10-21/`)
+
+- **P0 — titre-restaurant forgé sur une livraison** : `payment_method=5` était accepté par `OrderRequest` ; au départ du livreur, le flip
+  historique « non-espèces → PAYÉ » de `OrderService::deliveryBoyOrderChangeStatus` scellait la vente (numéro fiscal) **sans aucun
+  paiement** (reproduit : commandes 7934 et 7952). Le site n'envoie que 1 (espèces) ou 4 (carte en ligne) ; seule une requête forgée
+  l'atteignait. Désormais **refusé (422) à la prise de commande** (`OrderRequest::withValidator`, test `DeliveryFeeForgeWebTest`).
+  Le flip historique lui-même est inchangé : c'est un chantier à part (il ne doit jamais sceller PAYÉ sans paiement enregistré).
+- **P1 — compteurs de débit partagés** : des `throttle:N,M` nus signent la requête par (domaine|IP) — ou par utilisateur — **sans la
+  route** : toutes les routes invitées d'une même IP partagent UN compteur. 21 appels à `/status` faisaient répondre 429 au devis
+  (limite 20) ; côté caisse, 30 suggestions bloquaient la bascule et l'enregistrement d'adresse. Chaque route a maintenant son limiteur
+  nommé (`delivery-*`, `pos-delivery-*` dans `RouteServiceProvider`). Tests : `DeliveryPublicThrottleIsolationTest`, `PosDeliveryControllerTest`.
+  ⚠️ Toute NOUVELLE route de livraison doit recevoir son propre limiteur nommé, jamais un `throttle:N,M` nu.
+- **À vérifier en production avant d'ouvrir** : `Settings delivery.free_delivery_above` doit valoir **0** (le code retombe sur 30 € s'il
+  est absent ; la migration `2026_07_27_093000` le pose à 0) ; `users.branch_id` du livreur doit être > 0 (sinon la garde d'idempotence
+  répond 422 au départ/arrivée/remise).
+
 ## 4. Lancer la livraison (rien n'est publié tant que ce n'est pas fait)
 
 1. Déployer le **backend** (migrations `2026_10_20_100000` et `2026_10_20_100100` : additives) — voir la mémoire

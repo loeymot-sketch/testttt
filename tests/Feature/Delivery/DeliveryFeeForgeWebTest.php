@@ -134,6 +134,56 @@ class DeliveryFeeForgeWebTest extends TestCase
         $this->assertSame(10.0, (float) $order->total, 'Takeaway total must exclude any delivery charge.');
     }
 
+    /**
+     * [Supervision E2E 2026-10-21 · P0] Titre-restaurant (mode 5) forgé sur une LIVRAISON : le livreur ne peut pas
+     * l'encaisser, et au départ le flip historique non-espèces → PAYÉ scellait la vente (numéro fiscal) sans aucun
+     * paiement. Le mode est refusé à la prise de commande ; espèces (1) reste accepté (cf. test ci-dessus).
+     */
+    public function test_ticket_restaurant_is_refused_on_a_delivery_order(): void
+    {
+        $this->seedMinimalSettings();
+        config(['app.api_key' => 'test-api-key']);
+        Settings::group('order_setup')->set([
+            'order_setup_food_preparation_time' => 30,
+            'order_setup_delivery' => 5,
+            'order_setup_takeaway' => 5,
+        ]);
+
+        $branch = Branch::factory()->create(['latitude' => '48.8566', 'longitude' => '2.3522']);
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE]);
+        $address = Address::query()->create([
+            'user_id' => $customer->id, 'label' => 'Home', 'address' => '10 Rue de Test',
+            'latitude' => '48.8566', 'longitude' => '2.3522', 'geocode_status' => 'OK',
+        ]);
+        $item = $this->activeItem();
+
+        $response = $this
+            ->actingAs($customer, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/frontend/order', [
+                'branch_id' => $branch->id,
+                'subtotal' => 10,
+                'discount' => 0,
+                'delivery_charge' => 4.9,
+                'total' => 14.9,
+                'order_type' => (string) OrderType::DELIVERY,
+                'is_advance_order' => Ask::NO,
+                'address_id' => $address->id,
+                'delivery_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'source' => Source::WEB,
+                'payment_method' => PaymentGateway::TICKET_RESTAURANT,
+                'items' => json_encode([[
+                    'item_id' => $item->id,
+                    'quantity' => 1,
+                    'item_variations' => [],
+                    'item_extras' => [],
+                ]]),
+            ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('payment_method');
+        $this->assertSame(0, FrontendOrder::withoutGlobalScopes()->where('user_id', $customer->id)->count());
+    }
+
     private function activeItem(): Item
     {
         $tax = Tax::factory()->create([

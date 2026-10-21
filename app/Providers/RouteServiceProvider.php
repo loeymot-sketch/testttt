@@ -203,6 +203,25 @@ class RouteServiceProvider extends ServiceProvider
             )->by(sprintf('kioskq:%s|%s', $userKey, $request->ip()));
         });
 
+        // [LIVRAISON · supervision E2E 2026-10-21] Routes publiques de livraison : un seau PAR ROUTE et par IP.
+        // Avec `throttle:20,1` nu, Laravel signe la requête par (domaine|IP) SANS la route : tous les `throttle:N,M`
+        // invités d'une même IP partagent UN compteur. Constaté : 21 appels à /status (limite 60) faisaient répondre
+        // 429 au devis (limite 20) sans aucun devis demandé. Un limiteur nommé préfixe sa clé par son nom.
+        foreach (['status' => 60, 'suggest' => 40, 'quote' => 20, 'waves' => 60] as $route => $parMinute) {
+            RateLimiter::for('delivery-' . $route, function (Request $request) use ($parMinute) {
+                return Limit::perMinute($parMinute)->by((string) $request->ip());
+            });
+        }
+
+        // Même défaut côté caisse (F-ADV-4) : `throttle:30,1` nus partagent UN compteur par utilisateur. 30 suggestions
+        // d'adresse suffisaient à faire répondre 429 à « adresse » et « bascule » sans qu'elles aient été appelées.
+        // Un seau par route et par utilisateur (repli IP si la session est perdue), mêmes plafonds qu'avant.
+        foreach (['toggle' => 30, 'suggest' => 240, 'quote' => 120, 'address' => 30] as $route => $parMinute) {
+            RateLimiter::for('pos-delivery-' . $route, function (Request $request) use ($parMinute) {
+                return Limit::perMinute($parMinute)->by((string) ($request->user()?->id ?? $request->ip()));
+            });
+        }
+
         RateLimiter::for('kiosk-menu', function (Request $request) {
             return Limit::perMinute(60)->by($this->throttleKeyParAppareil($request));
         });
