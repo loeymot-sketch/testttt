@@ -4901,6 +4901,12 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-10-21 — Borne : Cayenne sans jambon · suppléments « Recommandé » par catégorie · étape pain/galette · pied du wizard remonté — LOCAL, commits `699f647b0` (LOCK) + le commit `feat(borne)` qui suit, NON déployé.**
+Cayenne : description (seeder + migration `2026_10_21_100000`) sans jambon, « mélange maison de fromage et crème fraîche » ; la migration retire aussi la ligne de recette de stock « jambon » du Cayenne. Suppléments recommandés : `config/menu_recommended_supplements.php`
+(produit d'abord, puis catégorie ; Cayenne = Cheddar+Boursin, Burgers = Raclette+Œuf+Légumes sautés, Tacos = Cheddar+Boursin+Champignons, Sandwichs/Galette = Cheddar+Œuf+Oignons frits — CHOIX PROVISOIRES à valider par le propriétaire),
+drapeau `is_recommended` posé par `KioskMenuService` / `ItemExtraResource`, badge + tête de liste sur la borne. Étape pain/galette : vignettes `pain-seul.svg` / `galette-seule.svg` (illustrations, aucune photo de pain seul n'existe) au lieu du sandwich complet, cartes agrandies.
+Zone gelée `KioskWizardComponent.vue` : CSS seul (réserve `--kiosk-nav-lift` 110 px en borne portrait, boutons 64/72 px) — `docs/locks/LOCK_KIOSK_WIZARD_PIED_REMONTE_2026-10-21.md`, baseline SHA-256 mise à jour. Preuves : Playwright 1080×1920 (pied à 122 px du bord, 2 badges, 0 erreur JS), Vitest borne 937+6, PHPUnit Kiosk 62 / Menu 371.
+Non fait : caisse (config `bases` partagée, wizard gelé — le pain y reste un sandwich), tunnel du site (suppléments recommandés ; pages SEO déjà au nouveau libellé mais NON commitées dans le dépôt du site).
 **2026-10-18 (nuit) — Cayenne Hygiène : lot « rapport Komia phase 3 » — LOCAL (commits `b12076fc1`…`5b14c04bd`), NON déployé ; Brother (`787e0aa3b`, `e8e330049`) DÉPLOYÉ `e8e33004`.**
 Source `~/Downloads/komia-phase3/` (analyse Komia par Claude Chrome). Chaque écart recoupé avec le code/la prod avant codage (détail et réfutations : `docs/HYGIENE_FEUILLE_DE_ROUTE_KOMIA.md` § « rapport Komia phase 3 »).
 Livré : alertes e-mail aux responsables (`hygiene:notify`, 2 tables BranchScope), relevés de température hors ligne (heure de la mesure), code personnel « Qui ? » (jeton signé 10 min, 1 table BranchScope), favoris DLC (colonne `is_favorite`),
