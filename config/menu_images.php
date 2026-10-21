@@ -441,13 +441,14 @@ return [
     | PREMIÈRES étapes du wizard sandwich et bol — donc la toute première chose
     | que voit le client — étaient des cases grises.
     |
-    | « Pain » prend la photo du sandwich classique et « Galette » celle de la
-    | galette : c'est exactement la distinction utile à cette étape, pain long
-    | contre galette roulée.
+    | [OWNER 2026-10-21] « Pain » et « Galette » montrent le PAIN et la GALETTE
+    | seuls (illustrations pain-seul.svg / galette-seule.svg), plus un sandwich
+    | complet garni : le client choisit un support, pas une recette. Valable
+    | borne et caisse (même attribut « Type de Pain »).
     */
     'bases' => [
-        'Pain'        => 'sandwich-classique.png',
-        'Galette'     => 'galette.png',
+        'Pain'        => 'pain-seul.svg',
+        'Galette'     => 'galette-seule.svg',
         'Frites'      => 'frites.png',
         'Riz basmati' => 'bol-riz.png',
         'Riz'         => 'bol-riz.png',
