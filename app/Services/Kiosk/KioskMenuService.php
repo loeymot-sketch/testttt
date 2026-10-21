@@ -14,6 +14,7 @@ use App\Models\UpsellRule;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Menu\MenuSnapshot;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\RecommendedSupplements;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -137,7 +138,7 @@ final class KioskMenuService
         return [
             'branch' => $this->projectBranch($branch),
             'categories' => $this->projectCategories($visibleCategories),
-            'items' => $this->projectItems($visibleItems, $availability, $branchId),
+            'items' => $this->projectItems($visibleItems, $availability, $branchId, $visibleCategories->pluck('name', 'id')->all()),
             'upsell_rules' => $this->projectUpsellRules($upsellRules),
             'promos' => $this->projectPromos($promos),
             'snapshot_version' => $this->snapshot()->current($branchId),
@@ -308,7 +309,7 @@ final class KioskMenuService
      * @param  Collection<int, Item>  $items
      * @param  Collection<int, ItemBranchAvailability>  $availability
      */
-    private function projectItems(Collection $items, Collection $availability, int $branchId): array
+    private function projectItems(Collection $items, Collection $availability, int $branchId, array $categoryNames = []): array
     {
         $composerProfiles = $this->publishedComposerProfiles($items, $branchId);
         $choiceAvailability = $this->choiceAvailabilityResolver()->snapshotForItems($items, $branchId, self::CHANNEL);
@@ -321,7 +322,7 @@ final class KioskMenuService
         return $items->sortBy(fn (Item $it) => (int) $it->id)
             ->sortBy(fn (Item $it) => (int) ($it->order ?? 0))
             ->values()
-            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId): array {
+            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId, $categoryNames): array {
             $avail = $availability->get($item->id);
             $isAvailable = $avail ? (bool) $avail->is_available : true;
             $itemChoiceAvailability = $choiceAvailability[(int) $item->id] ?? [
@@ -418,7 +419,7 @@ final class KioskMenuService
                     // auto-suffisante — un extra inactif ne peut jamais fuir sur les
                     // étapes Suppléments/Garnitures même si la relation évolue.
                     ->filter(fn ($e) => (int) $e->status === Status::ACTIVE && $e->isVisibleOn(self::CHANNEL))
-                    ->map(function ($e) use ($itemChoiceAvailability) {
+                    ->map(function ($e) use ($itemChoiceAvailability, $item, $categoryNames) {
                         $availability = $itemChoiceAvailability['extras'][(int) $e->id] ?? ['is_available' => true, 'unavailable_reason' => null];
 
                         return [
@@ -431,6 +432,9 @@ final class KioskMenuService
                             'status'      => (int) $e->status,
                             'group_label' => $e->group_label,
                             'visible_on'  => $e->visible_on,
+                            // [OWNER 2026-10-21] « Recommandé » : mise en avant du supplément (badge + tête de liste), jamais un prix.
+                            'is_recommended' => strtolower((string) $e->group_label) === 'supplement'
+                                && RecommendedSupplements::isRecommended((string) $item->name, $categoryNames[(int) $item->item_category_id] ?? null, (string) $e->name),
                             'is_available' => $availability['is_available'],
                             'unavailable_reason' => $availability['unavailable_reason'],
                         ];
