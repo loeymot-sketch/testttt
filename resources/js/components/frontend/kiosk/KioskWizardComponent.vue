@@ -3187,7 +3187,10 @@ export default {
   background: var(--kiosk-surface, #f7f7f7);
   box-shadow: var(--kiosk-shadow-sticky, 0 -8px 24px rgba(0,0,0,0.08));
   flex-shrink: 0;
-  padding: 10px 12px;
+  /* [OWNER 2026-10-21] Sur la borne (1920 px de haut) les boutons du bas étaient hors de portée de la main : les
+     clients baissaient la tête pour les chercher. Le pied du wizard est donc REMONTÉ (réserve --kiosk-nav-lift sous
+     les boutons, voir le media query plus bas) et les boutons agrandis. Aucun comportement n'est touché. */
+  padding: 12px 12px calc(12px + var(--kiosk-nav-lift, 0px));
 }
 
 .kiosk-nav-actions {
@@ -3211,7 +3214,7 @@ export default {
   color: var(--kiosk-primary, #c33345);
   letter-spacing: 0;
   border-radius: var(--kiosk-btn-radius, 12px);
-  min-height: 52px;
+  min-height: 64px;
   padding: 0 14px;
 }
 
@@ -3228,8 +3231,8 @@ export default {
 }
 
 .kiosk-btn-next--cart {
-  min-height: 58px;
-  font-size: 14px;
+  min-height: 72px;
+  font-size: 16px;
   letter-spacing: 0.02em;
   box-shadow: 0 18px 38px rgba(244,80,30,0.34);
 }
@@ -3255,7 +3258,7 @@ export default {
   align-items: center;
   justify-content: center;
   min-width: 160px;
-  min-height: 52px;
+  min-height: 64px;
   padding: 0 14px;
   white-space: nowrap;
   font-size: 15px;
@@ -3264,6 +3267,13 @@ export default {
   background: var(--kiosk-primary-soft, #f7e5e8);
   border-radius: var(--kiosk-btn-radius, 12px);
   border: 1px solid var(--kiosk-border, #efd2d7);
+}
+
+/* Borne portrait (1080×1920) : réserve de 110 px sous les boutons, zone confortable à hauteur de main. */
+@media (min-height: 1400px) {
+  .kiosk-wizard {
+    --kiosk-nav-lift: 110px;
+  }
 }
 
 :deep(.kiosk-step-title) {

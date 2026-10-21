@@ -2473,6 +2473,7 @@
             "supplements_empty": "No extras available for this item",
             "supplements_step_title": "Any extras?",
             "supplements_badge_paid": "Paid extras",
+            "supplement_recommended": "Recommended",
             "supplement_default_desc": "Extra",
             "supplement_qty_label": "Quantity for {name}",
             "supplement_increase": "Add one {name} extra",

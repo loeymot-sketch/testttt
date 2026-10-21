@@ -1456,6 +1456,7 @@
             "supplements_empty": "Aucun supplément disponible pour cet article",
             "supplements_step_title": "Quel supplément ?",
             "supplements_badge_paid": "Options payantes",
+            "supplement_recommended": "Recommandé",
             "supplement_default_desc": "Supplément",
             "instruction": {
                 "taille": "Taille : {label}",

@@ -89,7 +89,7 @@ export default {
           name: v.name,
           emoji: this.getEmojiForPain(v.name),
           attrId: painAttr.id,
-          displayThumb: kioskResolveImageSrc(v),
+          displayThumb: this.painThumb(v),
         }));
     },
   },
@@ -105,6 +105,17 @@ export default {
     onPainThumbError(pain) {
       const k = this.painThumbKey(pain);
       this.brokenPainThumbs = { ...this.brokenPainThumbs, [k]: true };
+    },
+    // [OWNER 2026-10-21] Le client choisit un PAIN ou une GALETTE : la vignette ne doit montrer que ça. L'image
+    // héritée de config/menu_images.php (« bases ») est un sandwich COMPLÈTE (poulet, salade, sauce) : on la remplace
+    // par l'illustration du pain / de la galette seuls. Une photo posée depuis l'admin (hors images/menu) est conservée.
+    painThumb(variation) {
+      const src = kioskResolveImageSrc(variation);
+      if (src && !src.includes('/images/menu/')) return src;
+      const lower = (variation?.name || '').toLowerCase();
+      if (lower.includes('galette')) return '/images/menu/galette-seule.svg';
+      if (lower.includes('pain')) return '/images/menu/pain-seul.svg';
+      return src;
     },
     getEmojiForPain(name) {
       const lower = (name || '').toLowerCase();
@@ -143,14 +154,14 @@ export default {
 .kiosk-pain-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px 18px;
-  max-width: 620px;
+  gap: 24px 24px;
+  max-width: 980px;
   margin: 0 auto;
 }
 
 .kiosk-option-card {
-  min-height: 206px;
-  border-radius: 20px;
+  min-height: 440px;
+  border-radius: 28px;
   border: 1px solid #efefef;
   background: #fff;
   display: flex;
@@ -187,12 +198,12 @@ export default {
 }
 
 .kiosk-pain-media {
-  width: 124px;
-  height: 124px;
+  width: 100%;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .kiosk-pain-thumb {
@@ -202,21 +213,21 @@ export default {
 }
 
 .kiosk-pain-emoji {
-  width: 124px;
-  height: 124px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   background: #f7f7f8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 60px;
+  font-size: 110px;
   transition: transform 0.2s;
 }
 
 .kiosk-option-card.selected .kiosk-pain-emoji { transform: scale(1.1); }
 
 .kiosk-pain-name {
-  font-size: 14px;
+  font-size: 30px;
   font-weight: 700;
   color: #444;
   text-align: center;
@@ -227,16 +238,16 @@ export default {
 
 .kiosk-pain-action {
   position: absolute;
-  top: 12px;
+  top: 16px;
   right: 20px;
-  width: 28px;
-  height: 28px;
+  width: 52px;
+  height: 52px;
   background: #d7263d;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 36px;
   color: white;
   line-height: 1;
   box-shadow: 0 3px 10px rgba(215,38,61,0.2);
@@ -244,14 +255,14 @@ export default {
 }
 
 .kiosk-pain-action.active {
-  font-size: 13px;
+  font-size: 26px;
   font-weight: 800;
 }
 
 .kiosk-validation-hint {
   text-align: center;
   margin-top: 20px;
-  font-size: 14px;
+  font-size: 18px;
   color: #F4501E;
   font-weight: 500;
   padding: 10px 20px;

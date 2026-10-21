@@ -142,7 +142,7 @@ class OwnerMenuUpdate20260623Seeder extends Seeder
         }
 
         // 5) SANDWICHS (cat 1) — pain au choix ; viande au choix sur Méga/Terminator.
-        $cayenne = $this->upsertItem(22, 'Cayenne', 7.40, 1, 'Poulet mariné, cheddar, jambon, oignons rouges, tomates, salade, sauce fromagère maison.');
+        $cayenne = $this->upsertItem(22, 'Cayenne', 7.40, 1, 'Poulet mariné, cheddar, oignons rouges, tomates, salade, mélange maison de fromage et crème fraîche.');
         $this->clearMeatChoice($cayenne);        // viande fixe (poulet mariné)
         $this->wirePain($cayenne);
         $this->wireSauces($cayenne);
