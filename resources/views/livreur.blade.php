@@ -27,6 +27,8 @@
         .btn.ok { background:var(--ok); }
         .btn:disabled,.btn.off { opacity:.45; pointer-events:none; }
         .err { color:var(--bad); font-weight:600; min-height:20px; text-align:center; }
+        /* [relecture adverse P-4] Le message (« commande(s) pas prête(s) ») était hors cadre quand on touche « Je pars » plus bas : il reste collé sous l'en-tête. */
+        #app-err:not(:empty) { position:sticky; top:68px; z-index:4; background:#FDECEC; border:1px solid var(--bad); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
         .wave { margin:16px 0 8px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
         .wave h3 { margin:0; font-size:20px; }
         .chip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:13px; font-weight:700; background:#EEE; color:var(--dark); }

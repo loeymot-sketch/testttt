@@ -30,7 +30,9 @@ class AddressGeocoder
         }
 
         try {
-            return $this->fetch($query, $limit, true);
+            // [V-03] La caisse et le site enregistrent le LIBELLÉ de la suggestion choisie : le numéro tapé doit déjà y figurer,
+            // sinon il est perdu avant même le devis (la BAN ne connaît pas toujours chaque numéro).
+            return array_map(fn (array $r) => $this->keepTypedHouseNumber($query, $r), $this->fetch($query, $limit, true));
         } catch (GeocodeUnavailableException) {
             return [];
         }

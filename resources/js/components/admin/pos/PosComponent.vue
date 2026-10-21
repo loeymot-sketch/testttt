@@ -7441,7 +7441,8 @@ export default {
                 // attend la fin du rendu : le champ « complément » apparaît sous le devis et allonge le contenu.
                 const e = el.getBoundingClientRect();
                 const h = head.getBoundingClientRect();
-                if (e.bottom > h.bottom) head.scrollTop += e.bottom - h.bottom + 6;
+                // 24 px = le voile collant du bas de l'en-tête (16 px, pos-v5.css) + une marge : sinon le texte du devis est estompé.
+                if (e.bottom > h.bottom - 24) head.scrollTop += e.bottom - (h.bottom - 24);
                 else if (e.top < h.top) head.scrollTop -= h.top - e.top + 6;
             };
             this.$nextTick(() => { reveal(); setTimeout(reveal, 150); });
@@ -7643,7 +7644,7 @@ export default {
                     this.checkoutProps.form.order_type = orderTypeEnum.TAKEAWAY;
                     this.resetDeliveryInline();
                 }
-                alertService.success(this.deliveryLive ? 'Livraison remise.' : 'Livraison suspendue.');
+                alertService.success(this.deliveryLive ? 'Livraison réactivée.' : 'Livraison suspendue.');
             } catch (e) {
                 alertService.error(e?.response?.data?.message || 'Impossible de changer l\'état de la livraison.');
             } finally {
@@ -7700,7 +7701,8 @@ export default {
                 const refused = this.deliveryInline.quote && this.deliveryInline.quote.allowed === false;
                 alertService.error(refused
                     ? livraison.describeQuote(this.deliveryInline.quote)
-                    : 'Choisissez l\'adresse de livraison dans la liste proposée.');
+                    // Aucune liste (texte illisible, commune seule, service indisponible) : on répète le message du formulaire.
+                    : (this.deliveryGeocodeError || 'Choisissez l\'adresse de livraison dans la liste proposée.'));
                 return false;
             }
             // [LIVRAISON 2026-10-20] Le téléphone est la clé du client (même numéro = même compte, adresse

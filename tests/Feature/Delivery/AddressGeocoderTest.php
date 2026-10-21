@@ -132,6 +132,19 @@ class AddressGeocoderTest extends TestCase
         $this->assertEqualsWithDelta(50.4677, $g['latitude'], 0.0001, 'le point reste celui de la rue');
     }
 
+    /** La caisse enregistre le libellé de la SUGGESTION choisie : le numéro tapé doit déjà y être (relecture adverse, tour 5). */
+    public function test_the_autocomplete_suggestions_keep_the_typed_house_number_too(): void
+    {
+        $f = $this->feature('Rue Jean Jaurès 62590 Oignies', '62590', 'Oignies', 2.9937, 50.4677, 0.97);
+        $f['properties'] = array_merge($f['properties'], ['type' => 'street', 'street' => 'Rue Jean Jaurès']);
+        unset($f['properties']['housenumber']);
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([$f]))]);
+
+        $s = app(AddressGeocoder::class)->search('1 rue Jean Jaurès Oignies');
+
+        $this->assertSame('1 Rue Jean Jaurès 62590 Oignies', $s[0]['label']);
+    }
+
     public function test_a_postcode_or_a_bare_street_is_never_mistaken_for_a_house_number(): void
     {
         $f = $this->feature('Rue Jean Jaurès 62590 Oignies', '62590', 'Oignies', 2.9937, 50.4677, 0.97);

@@ -372,7 +372,7 @@ test.describe('livraison — captures superviseur', () => {
         S.check('l\'option Livraison apparaît', await page.locator('label[for="delivery"]').isVisible());
         S.check('le bouton Tournées apparaît', await page.locator('[data-testid="pos-delivery-board-open"]').isVisible());
         S.check('le serveur confirme enabled=true', (await statusServeur()) === true);
-        S.check('toast de confirmation lisible', (S.analysis.toasts || []).some((x) => /Livraison remise/.test(x)), JSON.stringify(S.analysis.toasts), 'ux');
+        S.check('toast de confirmation lisible', (S.analysis.toasts || []).some((x) => /Livraison réactivée/.test(x)), JSON.stringify(S.analysis.toasts), 'ux');
       });
 
       // panier + mode livraison
@@ -630,6 +630,11 @@ test.describe('livraison — captures superviseur', () => {
       S.check('boutons Photo + Remis visibles', (await arret.locator('label:has-text("Arrivé + photo")').isVisible()) && (await arret.locator('button[data-deliver]').isVisible()));
       const dep = rec.all.find((n) => n.method === 'POST' && /\/depart$/.test(n.url));
       let notReady = []; try { notReady = JSON.parse(dep.body).not_ready || []; } catch (_) {}
+      if (notReady.length) {
+        // [relecture adverse] Présent dans le DOM ne suffit pas : le message doit être DANS LA FENÊTRE, sous l'en-tête collant.
+        const boite = await page.evaluate(() => { const e = document.getElementById('app-err'); const hd = document.querySelector('header'); if (!e || !hd) return null; const a = e.getBoundingClientRect(); return { top: Math.round(a.top), bottom: Math.round(a.bottom), headerBottom: Math.round(hd.getBoundingClientRect().bottom), vh: window.innerHeight, texte: e.textContent.length }; });
+        S.check('le message « pas prête » est VISIBLE dans la fenêtre (sous l\'en-tête, pas hors cadre)', boite && boite.texte > 0 && boite.top >= boite.headerBottom - 1 && boite.bottom <= boite.vh, JSON.stringify(boite), 'ux');
+      }
       if (notReady.length) S.check('le message « commande(s) pas encore prête(s) » reste lisible après le départ (la réponse contient not_ready)', /pas encore prête/.test(err), `not_ready=${JSON.stringify(notReady)} app-err="${err}"`, 'ux');
       else S.check('réponse depart sans not_ready (info)', true, JSON.stringify(dep && dep.body), 'info');
     });
