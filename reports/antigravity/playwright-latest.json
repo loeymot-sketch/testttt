@@ -1,11 +1,13 @@
 {
   "config": {
     "argv": [
-      "/usr/local/bin/node",
+      "/Users/1millnonstop/.nvm/versions/node/v22.23.2/bin/node",
       "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
       "test",
-      "tests/mobile-e2e/catalog-visual-critical.spec.js",
-      "--project=chromium"
+      "tests/Playwright/kds-tablette-2026-10-19.spec.js",
+      "--workers=1",
+      "-g",
+      "flèches"
     ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/playwright.config.js",
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
@@ -18,14 +20,18 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
         "retries": 1,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
@@ -61,26 +67,57 @@
     "updateSourceMethod": "patch",
     "version": "1.62.1",
     "workers": 1,
-    "webServer": {
-      "command": "php artisan serve --host=127.0.0.1 --port=8000",
-      "url": "http://127.0.0.1:8000",
-      "reuseExistingServer": true,
-      "timeout": 180000,
-      "stdout": "pipe",
-      "stderr": "pipe"
-    }
+    "webServer": null
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
-      "stack": "Error: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments."
+      "title": "Playwright/kds-tablette-2026-10-19.spec.js",
+      "file": "Playwright/kds-tablette-2026-10-19.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "tablette : flèches ‹ › — apparaissent seulement quand il reste des commandes, et font défiler",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12246,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T20:15:38.894Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f371df822c1721c8c98c-8b20b086bb97744669ef",
+          "file": "Playwright/kds-tablette-2026-10-19.spec.js",
+          "line": 251,
+          "column": 1
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2026-10-16T19:21:10.992Z",
-    "duration": 1736.159,
-    "expected": 0,
+    "startTime": "2026-10-20T20:15:38.417Z",
+    "duration": 12985.785,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

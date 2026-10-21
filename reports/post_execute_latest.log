@@ -1,13 +1,10 @@
-[phase22] EXECUTE_DELEGATION: multi_agent_v1-complex-implementer
-[phase22] POST_EXECUTE_SCOPE: mobile image parity only
-[phase22] POST_EXECUTE_NOTE: repository-wide php artisan test has one unrelated StripeCentsCastTest failure (€1.005 expected 101, got 100); mobile static/E2E validations are separate and pass.
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_212425
-[post-execute] timestamped log: reports/test_unknown_20261016_212425.log
+[post-execute] timestamp: 20261016_213344
+[post-execute] timestamped log: reports/test_unknown_20261016_213344.log
 [post-execute] running: php artisan test --stop-on-failure
 [post-execute] task: unknown
-[post-execute] timestamp: 20261016_212425
-[post-execute] timestamped log: reports/test_unknown_20261016_212425.log
+[post-execute] timestamp: 20261016_213344
+[post-execute] timestamped log: reports/test_unknown_20261016_213344.log
 [post-execute] running: php artisan test --stop-on-failure
 Warning: TTY mode requires /dev/tty to be read/writable.
 PHP Deprecated:  Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Implicitly marking parameter $code as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Loyalty/LoyaltyMergeDuplicatePhonesTest.php on line 34
@@ -16,17 +13,17 @@ Deprecated: Tests\Feature\Loyalty\LoyaltyMergeDuplicatePhonesTest::client(): Imp
 
 Deprecated: Tests\Feature\Refund\RefundMirrorSplitPaymentTest::makeParentWithSplit(): Implicitly marking parameter $totalOverride as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Refund/RefundMirrorSplitPaymentTest.php on line 68
 PHP Deprecated:  Tests\Feature\Refund\RefundMirrorSplitPaymentTest::makeParentWithSplit(): Implicitly marking parameter $totalOverride as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Refund/RefundMirrorSplitPaymentTest.php on line 68
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Printer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 61
 
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Printer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 61
-PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Printer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Printer.php on line 61
 
 Deprecated: Method ReflectionMethod::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/ConfigureIO.php on line 37
 PHP Deprecated:  Method ReflectionMethod::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1 in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/ConfigureIO.php on line 37
+PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
 
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
 
 Deprecated: NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
-PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::writeRecap(): Implicitly marking parameter $timer as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 119
 PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\Style::testLineFrom(): Implicitly marking parameter $warning as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/Style.php on line 252
 PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::__construct(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 82
 PHP Deprecated:  NunoMaduro\Collision\Adapters\Phpunit\TestResult::fromTestCase(): Implicitly marking parameter $throwable as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Phpunit/TestResult.php on line 104
@@ -407,7 +404,6 @@ PHP Deprecated:  Method ReflectionProperty::setAccessible() is deprecated since 
   [37;41;1m FAIL [39;49;22m[39m Tests\Unit\Payment\StripeCentsCastTest[39m
   [31;1m⨯[39;22m[39m [2mmath formula produces correct cents for x99 amounts[22m[39m
 PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
-PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
 
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $solutionsRepository as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 92
 
@@ -416,11 +412,12 @@ Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking param
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
 
 Deprecated: NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
+PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $output as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 93
 PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $argumentFormatter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 94
 PHP Deprecated:  NunoMaduro\Collision\Writer::__construct(): Implicitly marking parameter $highlighter as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Writer.php on line 95
+PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly marking parameter $color as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Highlighter.php on line 91
 
 Deprecated: NunoMaduro\Collision\Highlighter::__construct(): Implicitly marking parameter $color as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Highlighter.php on line 91
-PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly marking parameter $color as nullable is deprecated, the explicit nullable type must be used instead in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Highlighter.php on line 91
 
 [39;1m  €1.005 must convert to 101 cents (got 100)
   Failed asserting that 100 is identical to 101.[39;22m
@@ -438,10 +435,10 @@ PHP Deprecated:  NunoMaduro\Collision\Highlighter::__construct(): Implicitly mar
 
 
   [37;1mTests:  [39;22m[31;1m1 failed[39;22m[39m, [39m[32;1m314 passed[39;22m[39m, [2m6112 pending[22m[39m
-  [37;1mTime:   [39;22m[39m1.41s[39m
+  [37;1mTime:   [39;22m[39m1.37s[39m
 
 
-[post-execute] tests: FAILED — see reports/test_unknown_20261016_212425.log
+[post-execute] tests: FAILED — see reports/test_unknown_20261016_213344.log
 [post-execute] lint: SKIPPED — no lint script in package.json
 [post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
 [post-execute] done — invoke Composer validate phase next
