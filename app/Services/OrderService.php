@@ -2104,8 +2104,11 @@ class OrderService
                 // ne la reconnaissait JAMAIS → livrée et encaissée à la porte mais restée PENDING_COUNTER, sans numéro fiscal
                 // (vente hors chaîne NF525 — exactement ce que P1-3 voulait empêcher). Même ensemble que
                 // OnlineOrderController::changeStatus (l.149), qui produit ce PENDING_COUNTER.
+                // [VG-2026-10-21 M4-001] Une livraison prise à la CAISSE et payée à la porte porte 'phone' (commande téléphone,
+                // OrderService:1288) ou 'pos' (vente différée, pos.walkin_route_to_counter) : elle n'était jamais scellée
+                // (#8099/#8115 : livrées, PENDING_COUNTER, sans numéro fiscal, hors Z, toujours « À encaisser »).
                 $isWebDeliveryDeferred = (int) $locked->payment_status === (int) PaymentStatus::PENDING_COUNTER
-                    && in_array(strtolower((string) $locked->source_surface), ['web', 'delivery'], true)
+                    && in_array(strtolower((string) $locked->source_surface), ['web', 'delivery', 'phone', 'pos'], true)
                     && (int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY;
                 $wasUnpaidCash = (! $transaction)
                     && ((int) $locked->payment_status === (int) PaymentStatus::UNPAID || $isWebDeliveryDeferred);
