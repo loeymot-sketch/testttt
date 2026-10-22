@@ -30,6 +30,10 @@ class KitchenDisplaySystemOrderService
 {
     public object $order;
     private bool $lastListOverflow = false;
+    // [VG-2026-10-21 M7-labels-50] Requête de la dernière liste (avant le plafond de 50), pour qu'un appelant
+    // qui le DEMANDE (écran étiquettes) puisse dire combien de commandes il ne montre pas. Le KDS ne l'appelle pas.
+    private ?\Illuminate\Database\Eloquent\Builder $lastListQuery = null;
+    private int $lastListCount = 0;
     private DispatchKdsTicket $kdsTicketDispatcher;
 
     public function __construct(?DispatchKdsTicket $kdsTicketDispatcher = null)
@@ -246,9 +250,12 @@ class KitchenDisplaySystemOrderService
             // Garde de régression : tests/Feature/KDS/KdsBoardQueryPlanTest.php
             // (test_board_runs_under_branchscope_and_returns_expected_set).
 
+            // [VG-2026-10-21 M7-labels-50] Copie AVANT le plafond, comptée seulement si un appelant le demande.
+            $this->lastListQuery = (clone $query);
             $orders = $query->limit(51)->get();
 
             $this->lastListOverflow = $orders->count() > 50;
+            $this->lastListCount = min($orders->count(), 50);
 
             return $orders->take(50)->values();
         } catch (Exception $exception) {
@@ -260,6 +267,20 @@ class KitchenDisplaySystemOrderService
     public function lastListOverflow(): bool
     {
         return $this->lastListOverflow;
+    }
+
+    /**
+     * [VG-2026-10-21 M7-labels-50] Nombre TOTAL de commandes que la dernière liste aurait renvoyées sans le
+     * plafond de 50. Une requête COUNT de plus, seulement en cas de dépassement et seulement si on l'appelle
+     * (l'écran étiquettes) — le KDS ne l'appelle pas, son coût et son comportement sont inchangés.
+     */
+    public function lastListTotal(): int
+    {
+        if (! $this->lastListOverflow || $this->lastListQuery === null) {
+            return $this->lastListCount;
+        }
+
+        return (clone $this->lastListQuery)->reorder()->count();
     }
 
     /**

@@ -47,8 +47,9 @@
                 </div>
 
                 <p v-if="loadError" class="lbl-alert" data-testid="label-orders-error">{{ loadError }}</p>
-                <p v-if="overflow" class="lbl-alert" data-testid="label-orders-overflow">
-                    Plus de 50 commandes en cuisine : seules les 50 plus anciennes sont listées ici.
+                <!-- [VG-2026-10-21 M7-labels-50] Le serveur garde les 50 plus RÉCENTES et dit le total : la coupe est dite, chiffrée. -->
+                <p v-if="overflow" class="lbl-alert" data-testid="label-orders-overflow" role="status">
+                    {{ overflowTotal > 50 ? overflowTotal : "Plus de 50" }} commandes en cuisine : seules les 50 plus récentes sont listées ici{{ overflowTotal > 50 ? ` (${overflowTotal - 50} plus ancienne${overflowTotal - 50 > 1 ? "s" : ""} non affichée${overflowTotal - 50 > 1 ? "s" : ""})` : "" }}.
                 </p>
 
                 <p v-if="!loaded && !loadError" class="lbl-empty" data-testid="label-orders-loading" role="status">Chargement des commandes…</p>
@@ -227,6 +228,7 @@ export default {
             previewOverflow: false,
             serverOffsetMs: 0,
             overflow: false,
+            overflowTotal: 0, // [VG-2026-10-21 M7-labels-50] total de commandes cuisine quand la liste est coupée
             poller: null,
             autoRunning: false,
             wakeLockActive: false,
@@ -390,7 +392,9 @@ export default {
             try {
                 const { data } = await axios.get("admin/labels/orders");
                 if (this.unmounted) return;
-                this.overflow = Boolean(data.meta && data.meta.overflow);
+                // [VG-2026-10-21 M7-labels-50] `truncated` (nouveau nom) ou `overflow` (ancien) + total chiffré.
+                this.overflow = Boolean(data.meta && (data.meta.truncated || data.meta.overflow));
+                this.overflowTotal = Number(data.meta && data.meta.total) || 0;
                 this.orders = Array.isArray(data.data) ? data.data : [];
                 this.markNew(this.orders.map((o) => o.id));
                 this.states = (data.meta && data.meta.states) || {};

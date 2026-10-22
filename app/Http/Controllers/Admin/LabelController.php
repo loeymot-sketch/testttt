@@ -970,7 +970,13 @@ class LabelController extends AdminController
     public function orders(Request $request): JsonResponse
     {
         try {
-            $orders = $this->kitchen->list($request);
+            // [VG-2026-10-21 M7-labels-50] Les 50 plus RÉCENTES (le KDS, lui, garde les plus anciennes d'abord) :
+            // au-delà de 50 commandes en cuisine, celle qui vient d'arriver doit rester imprimable. Remise ensuite
+            // dans l'ordre de la cuisine (plus anciennes d'abord) — l'écran trie de toute façon lui-même.
+            $listRequest = $request->duplicate(['order_column' => 'id', 'order_by' => 'desc'] + $request->query());
+            $orders = $this->kitchen->list($listRequest)->reverse()->values();
+            $truncated = $this->kitchen->lastListOverflow();
+            $total = $this->kitchen->lastListTotal();
         } catch (\Throwable $e) {
             Log::warning('[Labels] liste des commandes indisponible', ['error' => $e->getMessage()]);
 
@@ -1002,7 +1008,8 @@ class LabelController extends AdminController
 
         return response()->json([
             'data' => KDSOrderDetailsResource::collection($orders)->resolve($request),
-            'meta' => ['states' => (object) $states, 'overflow' => $this->kitchen->lastListOverflow()] + $this->clock(),
+            // [VG-2026-10-21 M7-labels-50] `truncated` + `total` : la coupe est DITE, jamais silencieuse.
+            'meta' => ['states' => (object) $states, 'overflow' => $truncated, 'truncated' => $truncated, 'total' => $total] + $this->clock(),
         ]);
     }
 

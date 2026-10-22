@@ -436,6 +436,46 @@ class LabelControllerTest extends TestCase
         $this->assertEmpty((array) $json['meta']['states']);
     }
 
+    /**
+     * [VG-2026-10-21 M7-labels-50] Avec plus de 50 commandes en cuisine, l'écran étiquettes recevait les 50 plus
+     * ANCIENNES : une commande qui vient d'arriver n'apparaissait jamais, impossible d'imprimer ses étiquettes.
+     * L'écran garde les plus RÉCENTES et dit combien il en tait (truncated + total). Le KDS, lui, est inchangé.
+     */
+    public function test_au_dela_de_50_commandes_la_plus_recente_est_listee_et_la_coupe_est_dite(): void
+    {
+        $this->caisse();
+        $now = now(config('app.timezone'));
+        $orders = collect(range(1, 60))->map(fn (int $i) => $this->orderOnBoard([
+            'order_datetime' => $now->copy()->subMinutes(5 * (60 - $i)),
+        ]));
+        $oldest = $orders->first();
+        $newest = $orders->last();
+
+        $json = $this->getJson('/api/admin/labels/orders')->assertOk()->json();
+        $ids = collect($json['data'])->pluck('id')->all();
+
+        $this->assertCount(50, $ids);
+        $this->assertContains($newest->id, $ids, 'la commande la plus récente doit être imprimable');
+        $this->assertNotContains($oldest->id, $ids);
+        $this->assertTrue($json['meta']['truncated']);
+        $this->assertSame(60, $json['meta']['total']);
+        $this->assertTrue($json['meta']['overflow']);
+
+        // Le KDS (même service, requête par défaut) garde son ordre : les plus anciennes d'abord.
+        $kds = app(\App\Services\KitchenDisplaySystemOrderService::class)->list(new \Illuminate\Http\Request());
+        $this->assertSame($oldest->id, $kds->first()->id);
+        $this->assertNotContains($newest->id, $kds->pluck('id')->all());
+    }
+
+    public function test_sous_50_commandes_rien_n_est_coupe(): void
+    {
+        $this->caisse();
+        $this->orderOnBoard();
+        $json = $this->getJson('/api/admin/labels/orders')->assertOk()->json();
+        $this->assertFalse($json['meta']['truncated']);
+        $this->assertSame(1, $json['meta']['total']);
+    }
+
     public function test_l_etat_des_etiquettes_remonte_dans_la_liste(): void
     {
         $this->caisse();

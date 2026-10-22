@@ -323,3 +323,28 @@ describe('impression automatique — moteur', () => {
         w.unmount();
     });
 });
+
+describe('liste coupée à 50 — VG-2026-10-21 M7-labels-50', () => {
+    it('la coupe est DITE et chiffrée : 50 plus récentes listées, combien d’anciennes manquent', async () => {
+        setup({ settings: { autoPrint: false } });
+        h.axios.get.mockImplementation(async () => ({ data: { data: list, meta: { states, server_now: new Date().toISOString(), overflow: true, truncated: true, total: 63 } } }));
+        list = [order()];
+        const w = await mountScreen();
+        await polls(w, 1);
+        const msg = w.get('[data-testid="label-orders-overflow"]').text();
+        expect(msg).toContain('63 commandes en cuisine');
+        expect(msg).toContain('50 plus récentes');
+        expect(msg).toContain('13 plus anciennes non affichées');
+        expect(msg).not.toContain('plus anciennes sont listées');
+        w.unmount();
+    });
+
+    it('sans coupe, aucun message', async () => {
+        setup({ settings: { autoPrint: false } });
+        list = [order()];
+        const w = await mountScreen();
+        await polls(w, 1);
+        expect(w.find('[data-testid="label-orders-overflow"]').exists()).toBe(false);
+        w.unmount();
+    });
+});
