@@ -1564,6 +1564,12 @@
                                 role="status"
                             >
                                 {{ deliveryQuoteText }}
+                                <!-- [VG-2026-10-21 M4-002] Heure de départ réelle de la tournée, avec la date si ce n'est pas aujourd'hui. -->
+                                <span
+                                    v-if="deliveryDepartureText"
+                                    class="mt-1 block text-sm font-extrabold"
+                                    data-testid="pos-delivery-departure"
+                                >{{ deliveryDepartureText }}</span>
                             </div>
                             <div v-if="deliveryInline.quote && deliveryInline.quote.allowed" class="mt-2">
                                 <label for="pos-delivery-apartment" class="sr-only">Complément d'adresse</label>
@@ -3425,6 +3431,11 @@ export default {
         },
         deliveryQuoteText: function () {
             return livraison.describeQuote(this.deliveryInline.quote);
+        },
+        // [VG-2026-10-21 M4-002] « Tout de suite » peut partir des heures plus tard (tournées) : la caisse le dit
+        // AVANT de valider, avec la date si ce n'est pas aujourd'hui (première tournée non pleine du devis serveur).
+        deliveryDepartureText: function () {
+            return livraison.describeDeparture(this.deliveryInline.quote);
         },
         /**
          * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
@@ -7673,6 +7684,20 @@ export default {
             this.checkoutProps.form.address_id = a.id;
             this.checkoutProps.form.delivery_charge = Number(a.fee) || 0;
             this.checkoutProps.form.delivery_distance_km = a.distance_km;
+            this._rafraichirTourneesAdresse(a.address);
+        },
+
+        // [VG-2026-10-21 M4-002] Une adresse enregistrée ne porte pas les tournées : on les redemande au devis serveur
+        // pour afficher l'heure de départ. Seules les tournées sont reprises (prix et palier restent ceux de l'adresse
+        // enregistrée) ; réponse périmée (autre adresse choisie entre-temps) ou échec : rien n'est inventé.
+        async _rafraichirTourneesAdresse(texte) {
+            if (!texte || String(texte).trim().length < 5) return;
+            try {
+                const q = await livraison.quoteAddress(axios, texte);
+                const courant = this.deliveryInline.quote;
+                if (!courant || this.deliveryInline.address !== texte || !Array.isArray(q?.waves)) return;
+                this.deliveryInline.quote = { ...courant, waves: q.waves };
+            } catch (_) { /* départ inconnu : la ligne « Départ prévu » ne s'affiche pas */ }
         },
 
         // ─── [LIVRAISON 2026-10-20] Suspendre / remettre la livraison depuis la caisse ────────────────
