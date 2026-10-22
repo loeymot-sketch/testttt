@@ -139,14 +139,23 @@ class LivraisonLointaineNonImprimeeALaCreationTest extends TestCase
         $this->assertSame('not_released', app(KitchenTicketAutoPrinter::class)->printOnce($order->fresh(), 'order_created'));
     }
 
-    /** @test — non-régression : une livraison au plus tôt sur la tournée PROCHE s'imprime toujours à la création. */
-    public function une_livraison_au_plus_tot_sur_la_tournee_proche_s_imprime_a_la_creation(): void
+    /**
+     * @test — non-régression : une livraison au plus tôt sur la tournée PROCHE n'est pas retenue : son ticket sort dès son
+     * entrée en cuisine. [VG-2026-10-21 M1-103 · reste] Elle naît EN ATTENTE : ce moment est son acceptation par la caisse,
+     * plus sa création (une commande web en attente ne s'imprime plus — voir CommandeWebEnAttenteNonImprimeeTest).
+     */
+    public function une_livraison_au_plus_tot_sur_la_tournee_proche_s_imprime_a_son_acceptation(): void
     {
         $this->horloge('2026-10-20 19:02:00');
 
         $order = $this->commandeLivraisonAuPlusTot();
 
         $this->assertSame('19:30', DeliveryStop::query()->where('order_id', $order->id)->value('wave_at')?->format('H:i'));
-        $this->assertSame(1, $this->envois, 'Départ proche : le ticket cuisine sort tout de suite, comme avant.');
+        $this->assertSame(0, $this->envois, 'En attente d\'acceptation : pas encore en cuisine.');
+
+        \App\Models\Order::query()->withoutGlobalScopes()->whereKey($order->id)->update(['status' => \App\Enums\OrderStatus::ACCEPT]);
+        event(new \App\Events\OrderStatusChanged(\App\Models\Order::withoutGlobalScopes()->find($order->id), \App\Enums\OrderStatus::PENDING, \App\Enums\OrderStatus::ACCEPT));
+
+        $this->assertSame(1, $this->envois, 'Départ proche, acceptée : le ticket cuisine sort tout de suite.');
     }
 }
