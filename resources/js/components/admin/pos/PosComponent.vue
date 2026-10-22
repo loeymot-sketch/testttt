@@ -6625,7 +6625,12 @@ export default {
                 const host = this.$refs.posItemComponent;
                 if (host && typeof host.openEditFromCart === 'function') {
                     // index null ⇒ le wizard ajoutera une ligne au lieu de remplacer.
-                    host.openEditFromCart(line, duplicate ? null : index);
+                    // [VG-2026-10-21 C4] { newLine } : cette copie n'est pas fusionnée à l'original (sinon 1 ligne × 2, non ajustable).
+                    if (duplicate) {
+                        host.openEditFromCart(line, null, { newLine: true });
+                    } else {
+                        host.openEditFromCart(line, index);
+                    }
                     return true;
                 }
                 return false;

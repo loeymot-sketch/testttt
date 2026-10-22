@@ -451,6 +451,8 @@ export default {
             itemArrays: [],
             /** Index ligne panier en cours d’édition (null = ajout normal) */
             editingCartIndex: null,
+            // [VG-2026-10-21 C4] « Dupliquer » : l'ajout crée une SECONDE ligne, jamais fusionnée à l'original.
+            addAsNewCartLine: false,
             /** True juste après ouverture depuis le panier : garde convert_price enregistré (wizard) jusqu’à une modif */
             usePricedCartBase: false,
             settings: {
@@ -992,6 +994,8 @@ export default {
         },
         variationModalShow: function (selectedItem) {
             this.editingCartIndex = null;
+            this.addAsNewCartLine = false; // [VG-2026-10-21 C4] un ajout depuis la grille fusionne, comme avant
+
             this.usePricedCartBase = false;
             this.resetTempState();
 
@@ -1094,10 +1098,13 @@ export default {
          * Rouvre le modal article depuis une ligne panier (édition).
          * @param {object} cartLine — entrée `posCart/lists`
          * @param {number} index — index dans le panier
+         * @param {object} [options] — `{ newLine: true }` (« Dupliquer ») : l'ajout crée une seconde ligne
          */
-        openEditFromCart: function (cartLine, index) {
+        openEditFromCart: function (cartLine, index, options) {
             if (!cartLine || cartLine.item_id == null) return;
             this.editingCartIndex = typeof index === 'number' ? index : null;
+            // [VG-2026-10-21 C4] Copie « Dupliquer » : jamais fusionnée à l'original, elle est faite pour être ajustée.
+            this.addAsNewCartLine = this.editingCartIndex === null && !!(options && options.newLine);
             // [AUDIT 2026-04-17 R2] Keep the POS channel projection on edit too.
             this.$store.dispatch('item/details', this.posItemDetailsPayload(cartLine.item_id))
                 .then((res) => {
@@ -1202,12 +1209,14 @@ export default {
                 .catch(() => {
                     // [V7 FIX] Show error feedback — silent failure leaves cashier confused
                     this.editingCartIndex = null;
+                    this.addAsNewCartLine = false; // [VG-2026-10-21 C4]
                     this.usePricedCartBase = false;
                     alertService.error(this.$t('message.something_went_wrong') || 'Erreur lors du chargement du produit.');
                 });
         },
         variationModalHide: function () {
             this.editingCartIndex = null;
+            this.addAsNewCartLine = false; // [VG-2026-10-21 C4]
             this.usePricedCartBase = false;
             this.item = null;
             this.resetTempState();
@@ -1952,6 +1961,8 @@ export default {
             // BEFORE finishSuccess resets this.editingCartIndex to null, so the toast
             // below can branch on it.
             var wasEdit = editIdx !== null && editIdx >= 0;
+            // [VG-2026-10-21 C4] Lu AVANT finishSuccess (qui le remet à false), comme editIdx.
+            var asNewLine = !wasEdit && this.addAsNewCartLine === true;
             var finishSuccess = () => {
                 // Close the native container before reactive reset/unmount work.
                 // The wizard overlay closes itself on a short timer; doing this
@@ -1959,6 +1970,7 @@ export default {
                 // fallback modal after the line was already persisted.
                 appService.modalHide('#item-variation-modal');
                 this.editingCartIndex = null;
+                this.addAsNewCartLine = false; // [VG-2026-10-21 C4]
                 this.usePricedCartBase = false;
                 this.item = null;
                 this.resetTempState();
@@ -1980,11 +1992,25 @@ export default {
                 }
                 this.$refs.itemVariationModal?.removeAttribute?.('data-wizard-pos-line-addons');
                 this.itemArrays = [];
+                // [VG-2026-10-21 C4] Un ajout rejeté par le panier ne reste plus muet : le wizard s'est
+                // déjà fermé, sans cette alerte le caissier croit l'article en caisse.
+                alertService.error(this.$t('message.something_went_wrong') || 'Une erreur est survenue. Réessayez.');
             };
 
             if (editIdx !== null && editIdx >= 0) {
                 this.$store.dispatch('posCart/replaceCartLine', { index: editIdx, item: mainPayload })
                     .then(finishSuccess)
+                    .catch(finishError);
+                return;
+            }
+
+            // [VG-2026-10-21 C4] « Dupliquer » : seconde ligne, jamais fusionnée (pas de chemin optimiste/fusion).
+            if (asNewLine) {
+                this.$store.dispatch('posCart/addLine', mainPayload)
+                    .then(() => {
+                        finishSuccess();
+                        this.$emit('item:added');
+                    })
                     .catch(finishError);
                 return;
             }

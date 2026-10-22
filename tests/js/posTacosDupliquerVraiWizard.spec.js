@@ -14,8 +14,11 @@
  * samePosLineMergeSignature — comportement préexistant, identique pour un Cayenne) la FUSIONNE
  * dans la ligne d'origine : 1 ligne × 2. Avant le correctif M3-001 la copie portait une viande
  * fantôme de plus, donc une signature différente, donc une 2ᵉ ligne : c'est ce que le test
- * Playwright M3-07 attendait. Ce banc reste NEUTRE sur « fusion ou 2ᵉ ligne » (décision hors
- * de ce composant) : il exige 2 Tacos M au total, chacun avec la seule viande choisie.
+ * Playwright M3-07 attendait.
+ *
+ * [VG-2026-10-21 C4] Correctif : « Dupliquer » passe { newLine: true } (PosComponent.duplicateCartLine →
+ * openEditFromCart → addToCart → posCart/addLine). La copie est une SECONDE ligne (on duplique pour
+ * l'ajuster) ; l'ajout NORMAL du même article deux fois, lui, fusionne toujours.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
@@ -181,8 +184,9 @@ describe.each([
 
         expect(lignesPanier(store), 'ajout initial').toEqual([{ quantity: 1, viandes: ['Viande 1=Poulet mariné'] }]);
 
-        // 2) « Dupliquer » = openEditFromCart(ligne, null), puis « Ajouter au panier » sans rien changer.
-        wrapper.vm.openEditFromCart(JSON.parse(JSON.stringify(store.state.posCart.lists[0])), null);
+        // 2) « Dupliquer » = openEditFromCart(ligne, null, { newLine: true }) — l'appel exact de
+        // PosComponent.duplicateCartLine — puis « Ajouter au panier » sans rien changer.
+        wrapper.vm.openEditFromCart(JSON.parse(JSON.stringify(store.state.posCart.lists[0])), null, { newLine: true });
         await flushPromises();
         wiz = await ouvrirWizard(modal);
         expect(wiz.querySelector('.quota-badge').textContent.trim()).toMatch(/^1\/1/);
@@ -192,10 +196,76 @@ describe.each([
         const refus = document.querySelector('#pos-wizard-root .wizard-validation-error');
         expect(refus && refus.style.display !== 'none' ? refus.textContent : null, 'aucun refus du wizard').toBeNull();
         expect(alertes.error, 'aucune erreur caisse').toEqual([]);
-        const lignes = lignesPanier(store);
-        expect(lignes.reduce((n, l) => n + l.quantity, 0), 'deux Tacos M au panier').toBe(2);
-        lignes.forEach((l) => {
-            expect(l.viandes, "la viande d'origine, et elle seule").toEqual(['Viande 1=Poulet mariné']);
+        // [VG-2026-10-21 C4] La copie est une SECONDE ligne (on duplique pour l'ajuster), pas une fusion.
+        expect(lignesPanier(store), 'deux lignes, chacune avec la seule viande choisie').toEqual([
+            { quantity: 1, viandes: ['Viande 1=Poulet mariné'] },
+            { quantity: 1, viandes: ['Viande 1=Poulet mariné'] },
+        ]);
+        expect(store.state.posCart.subtotal, 'total = deux Tacos M').toBeCloseTo(13.8, 2);
+    });
+
+    it("[VG-2026-10-21 C4] l'ajout NORMAL du même Tacos M deux fois fusionne toujours (1 ligne × 2)", async () => {
+        window.foodkingConfig = { posWizardComposerAware: { enabled: composerAware } };
+        alertes.error.length = 0;
+        try { localStorage.clear(); } catch (e) { /* ignore */ }
+        const store = creerStore();
+        await store.dispatch('posCart/resetCart');
+        wrapper = mount(ItemComponent, {
+            attachTo: document.body,
+            props: { items: {} },
+            global: { mocks: { $t: (k) => k, $store: store }, stubs: { Swiper: true, SwiperSlide: true } },
         });
+        const modal = document.getElementById('item-variation-modal');
+        for (let i = 0; i < 2; i++) {
+            wrapper.vm.variationModalShow({ id: 26, name: 'Tacos M' });
+            await flushPromises();
+            const wiz = await ouvrirWizard(modal);
+            wiz.querySelector('button.viande-tile-add').click(); await tick();
+            const sauce = Array.from(wiz.querySelectorAll('button.sauce-chip')).find((b) => /Barbecue/.test(b.textContent));
+            sauce.click(); await tick();
+            wiz.querySelector('button.wizard-btn-cart').click();
+            await tick(450); await flushPromises();
+            await fermerWizard();
+        }
+        expect(alertes.error, 'aucune erreur caisse').toEqual([]);
+        expect(lignesPanier(store)).toEqual([{ quantity: 2, viandes: ['Viande 1=Poulet mariné'] }]);
+    });
+});
+
+describe('caisse — un ajout refusé par le panier ne reste pas muet', () => {
+    it("[VG-2026-10-21 C4] si le panier rejette l'ajout, le caissier voit une alerte", async () => {
+        alertes.error.length = 0;
+        try { localStorage.clear(); } catch (e) { /* ignore */ }
+        const store = createStore({
+            modules: {
+                posCart: {
+                    ...posCart,
+                    actions: {
+                        ...posCart.actions,
+                        lists: () => Promise.reject(new Error('panier indisponible')),
+                    },
+                },
+                item: {
+                    namespaced: true,
+                    actions: {
+                        details: () => Promise.resolve({ data: { data: JSON.parse(JSON.stringify(tacosM())) } }),
+                        invalidateDetails: () => {},
+                    },
+                },
+            },
+            getters: { 'frontendSetting/lists': () => ({}) },
+        });
+        await store.dispatch('posCart/resetCart');
+        wrapper = mount(ItemComponent, {
+            attachTo: document.body,
+            props: { items: {} },
+            global: { mocks: { $t: (k) => k, $store: store }, stubs: { Swiper: true, SwiperSlide: true } },
+        });
+        wrapper.vm.variationModalShow({ id: 26, name: 'Tacos M' });
+        await flushPromises();
+        wrapper.vm.addToCart(true);
+        await flushPromises(); await tick();
+        expect(store.state.posCart.lists, "la ligne optimiste est retirée").toEqual([]);
+        expect(alertes.error.length, 'une alerte visible').toBe(1);
     });
 });

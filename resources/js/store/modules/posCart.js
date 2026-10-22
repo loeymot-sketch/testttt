@@ -336,6 +336,11 @@ export const posCart = {
             context.commit('replaceCartLine', payload);
             context.commit('subtotal');
         },
+        // [VG-2026-10-21 C4] « Dupliquer » : la copie devient une SECONDE ligne, jamais fusionnée (elle est faite pour être ajustée).
+        addLine: function (context, payload) {
+            context.commit('addLine', payload);
+            context.commit('subtotal');
+        },
         setItemVariations: function (context, payload) {
             context.commit('setItemVariations', payload);
             context.commit('subtotal');
@@ -454,7 +459,11 @@ export const posCart = {
                         _.forEach(state.lists, (list, listKey) => {
                             migrateLegacySelections(state.lists[listKey]);
 
-                            if (samePosLineMergeSignature(state.lists[listKey], shapedPay)) {
+                            // [VG-2026-10-21 C4] Une seule ligne absorbe l'ajout : après « Dupliquer », deux lignes
+                            // identiques coexistent, et un ajout normal ne doit pas s'additionner aux deux.
+                            if (newChecker.includes(true)) {
+                                newChecker.push(false);
+                            } else if (samePosLineMergeSignature(state.lists[listKey], shapedPay)) {
                                 newChecker.push(true);
                                 state.lists[listKey].quantity += shapedPay.quantity;
                             } else {
@@ -478,6 +487,13 @@ export const posCart = {
             }
             saveCartToStorage(state);
             state.restoredFromStorage = false; // Reset flag après première modification
+        },
+        // [VG-2026-10-21 C4] Ajout sans fusion (copie « Dupliquer ») : même forme canonique que `lists`.
+        addLine: function (state, payload) {
+            if (!payload) return;
+            state.lists.push(shapePosListItem(payload));
+            saveCartToStorage(state);
+            state.restoredFromStorage = false;
         },
         replaceCartLine: function (state, payload) {
             var index = payload.index;
