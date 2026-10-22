@@ -36,7 +36,11 @@ class ReportController extends HygieneController
         [$from, $to] = $this->validated($request);
         // un dossier d'inspection doit sortir sur un serveur ordinaire : lignes plafonnées (les plus récentes, avec le nombre manquant), taux et incidents complets
         @ini_set('memory_limit', '768M');
-        @set_time_limit(120);
+        // [VG-2026-10-21] Hors tests seulement : sous PHPUnit tous les tests partagent UN processus, et cette limite y devenait
+        // globale — la suite complète mourait à 43 % (« Maximum execution time of 120 seconds exceeded »), loin de ce test.
+        if (! app()->runningUnitTests()) {
+            @set_time_limit(120);
+        }
         $report = ReportBuilder::between($from, $to)->capRows(ReportBuilder::PDF_ROW_CAP)->build(true);
         $company = app(\App\Services\CompanyService::class)->list();
         $generatedAt = now()->timezone(config('app.timezone'))->format('d/m/Y à H:i');
