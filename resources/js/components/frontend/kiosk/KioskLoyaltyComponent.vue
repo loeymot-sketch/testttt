@@ -186,7 +186,8 @@
         <div class="kiosk-loyalty-points-badge">
           <span class="kiosk-loyalty-points-value">{{ customer.loyalty_point }}</span>
           <span class="kiosk-loyalty-points-label">{{ $t('kiosk.loyalty_screen.points_label') }}</span>
-          <span v-if="discountValue > 0 && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
+          <!-- [VG-2026-10-21 M5-101] Sous le seuil serveur, aucune « réduction » annoncée (925 pts < 1000 promettait 7,40 €). -->
+          <span v-if="canRedeem && discountValue > 0 && kioskLoyaltyRedeemEnabled" class="kiosk-loyalty-points-equiv" data-testid="kiosk-loyalty-points-equiv">
             {{ $t('kiosk.loyalty_screen.points_equiv', { amount: formatPrice(Math.min(discountValue, total)) }) }}
           </span>
         </div>
@@ -246,7 +247,8 @@
           </button>
         </div>
 
-        <div v-else-if="!canRedeem" class="kiosk-loyalty-not-enough">
+        <!-- [VG-2026-10-21 M5-101] « il en faut au moins N » seulement si N vient du serveur. -->
+        <div v-else-if="!canRedeem && minRedeemPoints !== null" class="kiosk-loyalty-not-enough">
           <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
@@ -370,7 +372,9 @@ export default {
       // /loyalty/config mais jamais lu : il sert a exprimer la demande en POINTS, seule
       // unite que le payload borne a le droit de porter (aucun champ monetaire, SSOT/NF525).
       pointsFor1Euro: 100,
-      minRedeemPoints: 100,
+      // [VG-2026-10-21 M5-101] Seuil = celui du SERVEUR (/loyalty/config) ; null tant qu'il n'est
+      // pas lu. L'ancien repli « 100 » proposait un rachat que le serveur (seuil 1000) refusait.
+      minRedeemPoints: null,
       rewardTiers: [100, 250, 500, 1000, 2000],
       redeemChoice: null,
       appliedDiscount: 0,
@@ -409,7 +413,9 @@ export default {
     },
 
     canRedeem() {
-      return this.customer && this.customer.loyalty_point >= this.minRedeemPoints;
+      // [VG-2026-10-21 M5-101] Seuil inconnu = pas de rachat proposé (une seule source : le serveur).
+      if (!this.customer || this.minRedeemPoints === null) return false;
+      return this.customer.loyalty_point >= this.minRedeemPoints;
     },
     // [FIX P2 audit 2026-06-28] Même flag que le panier (window.foodkingConfig.
     // discountsEnabled = config pos.manual_discount_enabled, défaut false). Si OFF,
@@ -521,7 +527,8 @@ export default {
       try {
         const res = await axios.get('frontend/loyalty/config', { timeout: ms });
         const cfg = res.data?.data || res.data || {};
-        this.minRedeemPoints = cfg.min_redeem_points || 100;
+        // [VG-2026-10-21 M5-101] Plancher effectif publié par le serveur, sans repli inventé.
+        this.minRedeemPoints = Number(cfg.min_redeem_points) > 0 ? Number(cfg.min_redeem_points) : null;
         this.pointsFor1Euro = Number(cfg.points_for_1_euro_discount) > 0
           ? Number(cfg.points_for_1_euro_discount)
           : 100;
