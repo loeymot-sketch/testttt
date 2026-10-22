@@ -51,6 +51,11 @@ return [
     'min_lead_minutes'  => 20,
     // Horizon : combien de jours à l'avance un créneau de livraison peut être réservé.
     'horizon_days'      => 2,
+    // [VG-2026-10-21 M4-004] Avance maximale du départ livreur (« Je pars ») sur l'heure de sa tournée, minutes.
+    // Au-delà : refus 422 « Départ possible à partir de HH:MM ». Un départ ferme la tournée de 30 min à toute
+    // nouvelle commande : sans borne, la tournée du lendemain partait la veille (constat du 2026-10-22).
+    // 45 = valeur prudente PROPOSÉE, À CONFIRMER PAR LE PROPRIÉTAIRE.
+    'depart_max_advance_minutes' => 45,
 
     // Géocodage serveur : Base Adresse Nationale (service public, sans clé).
     'geocoder' => [

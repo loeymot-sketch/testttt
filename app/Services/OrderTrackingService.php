@@ -256,6 +256,11 @@ class OrderTrackingService
         if (($order->scheduled_at ?? null) !== null) {
             return null;
         }
+        // [VG-2026-10-21 M4-004] Le livreur est PARTI (en route / remise) : le départ théorique de la tournée
+        // n'est plus une heure à venir — l'annoncer après un départ anticipé serait faux.
+        if (in_array((int) $order->status, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true)) {
+            return null;
+        }
         $depart = $this->instant($order->delivery_slot_at ?? null);
 
         return ($depart !== null && $depart->greaterThan($now)) ? $depart : null;

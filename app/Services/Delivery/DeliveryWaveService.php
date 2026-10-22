@@ -291,6 +291,22 @@ class DeliveryWaveService
         return DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNotNull('left_at')->exists();
     }
 
+    /**
+     * [VG-2026-10-21 M4-004] Heure à partir de laquelle le livreur peut partir avec cette tournée :
+     * heure de la tournée − `delivery.depart_max_advance_minutes`. Un départ ferme la tournée (waveHasLeft) :
+     * sans borne, la tournée de demain 18:00 partait aujourd'hui à 17:10.
+     */
+    public function departureOpensAt(CarbonInterface $wave): Carbon
+    {
+        return Carbon::instance($wave)->copy()->subMinutes(max(0, (int) config('delivery.depart_max_advance_minutes', 45)));
+    }
+
+    /** [VG-2026-10-21 M4-004] Heure d'arrivée estimée d'un arrêt : depuis le départ RÉEL s'il a eu lieu, sinon depuis l'heure de la tournée. */
+    public function etaAt(DeliveryStop $stop): Carbon
+    {
+        return Carbon::instance($stop->left_at ?? $stop->wave_at)->copy()->addMinutes((int) $stop->eta_minutes);
+    }
+
     // ── grille et horaires ──────────────────────────────────────────────────────────────────
 
     private function ceilToGrid(Carbon $t): Carbon

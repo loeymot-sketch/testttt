@@ -64,6 +64,15 @@ class DeliveryRunController extends Controller
             ->whereNull('left_at')->whereNull('delivered_at')->with('order')->get();
         abort_if($stops->isEmpty(), 404, 'Aucune livraison à partir pour cette tournée.');
 
+        // [VG-2026-10-21 M4-004] Pas de départ plus de `delivery.depart_max_advance_minutes` avant la tournée : un départ
+        // la FERME à toute nouvelle commande (la tournée du lendemain 18:00 partait la veille à 17:10).
+        $opensAt = $this->waves->departureOpensAt(Carbon::parse($data['wave_at']));
+        if (Carbon::now()->lt($opensAt)) {
+            abort(422, $opensAt->isSameDay(Carbon::now())
+                ? 'Départ possible à partir de ' . $opensAt->format('H:i') . '.'
+                : 'Départ possible le ' . $opensAt->format('d/m') . ' à partir de ' . $opensAt->format('H:i') . '.');
+        }
+
         // Aucun départ à moitié : si UNE commande de la tournée n'est pas (ou plus) attribuée à ce livreur côté commande,
         // on refuse d'emblée, avant de déplacer la moindre commande (sinon un 403 au 2ᵉ arrêt laisserait le 1ᵉʳ parti).
         $foreign = Order::query()->withoutGlobalScope(BranchScope::class)->whereIn('id', $stops->pluck('order_id'))
@@ -190,7 +199,8 @@ class DeliveryRunController extends Controller
             },
             'amount_due'       => round($live['amount_due_cents'] / 100, 2),
             'amount_due_cents' => (int) $live['amount_due_cents'],
-            'eta_at'         => $s->wave_at->copy()->addMinutes((int) $s->eta_minutes)->toDateTimeString(),
+            // [VG-2026-10-21 M4-004] Depuis le départ réel s'il a eu lieu (« ETA 18:32 » pour un livreur parti la veille).
+            'eta_at'         => $this->waves->etaAt($s)->toDateTimeString(),
             'eta_minutes'    => (int) $s->eta_minutes,
             'left_at'        => $s->left_at?->toDateTimeString(),
             'arrived_at'     => $s->arrived_at?->toDateTimeString(),
