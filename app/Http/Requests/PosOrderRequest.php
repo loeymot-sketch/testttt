@@ -309,6 +309,18 @@ class PosOrderRequest extends FormRequest
             // was enforcing it server-side. An attacker posting order_type=15
             // (DINING_TABLE) would bypass the UI and create a dine-in order.
             $orderTypeInt = (int) request('order_type', 0);
+
+            // [VG-2026-10-21 M4-101] Commande téléphone + LIVRAISON refusée au serveur (l'écran la refuse depuis 55189537f) :
+            // elle partirait dans la file « À encaisser au comptoir » et `purge-phone-today` (client non venu) l'annulerait.
+            if ($orderTypeInt === OrderType::DELIVERY && $this->boolean('phone_order')) {
+                $validator->errors()->add(
+                    'phone_order',
+                    'Commande téléphone impossible en livraison : elle serait encaissée au comptoir et annulée comme « client non venu ». Pour une livraison, utilisez « Commande ».'
+                );
+
+                return;
+            }
+
             if ($orderTypeInt === OrderType::DINING_TABLE
                 && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
                 $validator->errors()->add('order_type', trans('all.message.sur_place_desactive'));
