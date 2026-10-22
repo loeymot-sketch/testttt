@@ -281,6 +281,16 @@ class OrderQuoteService
             $branchId,
         );
 
+        // [VG-2026-10-21 M1-101] Boisson / accompagnement de menu (texte de l'instruction) : même règle de rupture
+        // qu'un produit seul. Lu sur les lignes BRUTES (itemForVariationRule ne garde pas l'instruction).
+        \App\Support\Menu\MenuFormulaChoiceAvailability::validateCollectionKeyedByItemIndex(
+            $items,
+            function (int $index, string $message) use (&$errors): void {
+                $errors["items.{$index}.instruction"][] = $message;
+            },
+            $branchId,
+        );
+
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }

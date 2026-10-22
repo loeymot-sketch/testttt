@@ -35,6 +35,16 @@ trait ValidatesOrderItemVariations
             },
             $this->branchIdForVariationConstraints(),
         );
+
+        // [VG-2026-10-21 M1-101] Boisson / accompagnement de menu en rupture : refusé comme le produit seul
+        // (caisse, borne, site, table — toutes les créations de commande passent par ce crochet).
+        \App\Support\Menu\MenuFormulaChoiceAvailability::validateCollectionKeyedByItemIndex(
+            $items,
+            function (int $index, string $message) use ($validator): void {
+                $validator->errors()->add("items.{$index}.instruction", $message);
+            },
+            $this->branchIdForVariationConstraints(),
+        );
     }
 
     /**
