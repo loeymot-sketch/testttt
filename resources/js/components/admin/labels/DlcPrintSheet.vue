@@ -167,15 +167,22 @@ export default {
             return new Date(y, m - 1, d, 23, 59, 0);
         },
         originalExpired() { return Boolean(this.originalEnd && this.originalEnd < this.now); },
-        /** Lots encore bons, d'un AUTRE produit que celui-ci, un par lot (même produit + même échéance). */
+        /**
+         * Lots encore bons, un par lot (même produit + même échéance) : d'un AUTRE produit que celui-ci — sauf pour une CONGÉLATION,
+         * où les lots du produit lui-même viennent en tête.
+         */
         parentChoices() {
             const nowMs = this.now.getTime();
             const seen = new Set();
+            // [VG-2026-10-21 M7-101] recongeler le MÊME steak : son lot décongelé doit être proposé, sinon seule « produit neuf » restait
+            // et la garde serveur « jamais recongeler » (refreeze_forbidden) ne pouvait pas se déclencher depuis l'écran
+            const freezing = this.action === "frozen";
+            const own = (l) => l.dlc_product_id === this.product.id;
             return (this.lots || [])
                 .filter((l) => ["printed", "unconfirmed"].includes(l.status) && l.expires_at
                     && (!l.discarded_at || l.discard_reason === "used")
-                    && Date.parse(l.expires_at) > nowMs && l.dlc_product_id !== this.product.id)
-                .sort((a, b) => Date.parse(a.expires_at) - Date.parse(b.expires_at))
+                    && Date.parse(l.expires_at) > nowMs && (freezing || !own(l)))
+                .sort((a, b) => (freezing ? Number(own(b)) - Number(own(a)) : 0) || Date.parse(a.expires_at) - Date.parse(b.expires_at))
                 .filter((l) => { const k = `${l.product_name}|${l.expires_at}`; if (seen.has(k)) return false; seen.add(k); return true; })
                 .map((l) => ({
                     id: l.id, name: l.product_name, lot: l.lot, expiresAt: l.expires_at, used: Boolean(l.discarded_at),
