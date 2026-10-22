@@ -12,10 +12,12 @@
                 Aucune livraison prévue. Les commandes de livraison sont regroupées en départs toutes les 30 minutes.
             </p>
 
-            <section v-for="w in waves" :key="w.wave_at" class="mb-4 rounded-xl border border-[#E4E4E7] p-3" :data-testid="'pos-delivery-wave-' + w.time">
+            <!-- [VG-2026-10-21 M4-005] Le data-testid porte la date : deux « 23:30 » (hier, ce soir) ne se confondent plus. -->
+            <section v-for="w in waves" :key="w.wave_at" class="mb-4 rounded-xl border border-[#E4E4E7] p-3" :data-testid="'pos-delivery-wave-' + waveDate(w) + '-' + w.time">
                 <header class="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <div class="text-base font-extrabold text-heading">
-                        Départ {{ w.time }}
+                        <!-- [VG-2026-10-21 M4-005] Le jour dès que ce n'est pas aujourd'hui (« Départ demain 00:30 »). -->
+                        Départ {{ waveWhen(w) }}
                         <span class="ml-1 text-xs font-semibold" :class="w.left ? 'text-green-700' : 'text-[#9A3412]'">{{ w.left ? 'parti' : 'à venir' }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-sm">
@@ -24,7 +26,7 @@
                         <select
                             v-if="!w.left && couriers.length > 1"
                             class="h-9 rounded-lg border border-[#D9DBE9] px-2 text-sm"
-                            :aria-label="'Choisir le livreur du départ ' + w.time"
+                            :aria-label="'Choisir le livreur du départ ' + waveWhen(w)"
                             :value="w.courier_id || ''"
                             @change="onAssign(w, $event.target.value)"
                         >
@@ -96,6 +98,14 @@ export default {
         // (DeliveryStop::COLLECT_* + DeliveryWaveService::COLLECT_MEAL_VOUCHER). Mode inconnu : jamais « Espèces » inventé.
         collectLabel(method) {
             return { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant' }[method] || 'À encaisser';
+        },
+        // [VG-2026-10-21 M4-005] Jour de la tournée renvoyé par le serveur (DeliveryWaveService::waveDay) ;
+        // repli sur la date de wave_at (« Y-m-d H:i:s ») si le champ manque.
+        waveDate(w) {
+            return w.date || String(w.wave_at || '').slice(0, 10);
+        },
+        waveWhen(w) {
+            return w.is_today === false && w.day_label ? w.day_label + ' ' + w.time : w.time;
         },
         format(n) {
             return Number(n).toFixed(2).replace('.', ',') + ' €';
