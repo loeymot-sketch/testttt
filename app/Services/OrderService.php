@@ -2086,7 +2086,9 @@ class OrderService
             // atomically with the status mutation.
             $cashEscrowWritten = false;
             $cashEscrowMeta = null;
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
+            // [VG-2026-10-21 L2] Trace NF525 de la tranche titre-restaurant remise au livreur (écrite après le COMMIT).
+            $mealVoucherMeta = null;
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$mealVoucherMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -2171,8 +2173,8 @@ class OrderService
                     // gains exactly one row per cash delivery regardless
                     // of single-jump or 2-step path.
                     //
-                    // For non-COD methods (E_WALLET / PAYPAL / CARD /
-                    // TICKET_RESTAURANT) that somehow reached the driver
+                    // For non-COD methods (E_WALLET / PAYPAL / CARD —
+                    // TICKET_RESTAURANT: voir [VG-2026-10-21 L2] ci-dessous) that somehow reached the driver
                     // still UNPAID (an unusual but observed edge case —
                     // e.g. card auth captured late), the prior flip-at-
                     // OFD-or-DELIVERED behaviour is preserved verbatim.
@@ -2201,6 +2203,20 @@ class OrderService
                         // UNPAID. The flip + audit row will fire on the
                         // next call (OFD → DELIVERED), which re-enters
                         // this branch with $wasUnpaidCash still true.
+                    } elseif ((int) $pm === (int) \App\Enums\PaymentGateway::TICKET_RESTAURANT) {
+                        // [VG-2026-10-21 L2] Titre-restaurant remis au livreur à la PORTE (décision propriétaire 2026-10-22) :
+                        // comme les espèces, PAYÉ seulement à la REMISE — jamais au départ (le flip historique scellait la
+                        // vente avec un numéro fiscal et ZÉRO paiement : P0 de docs/LIVRAISON.md §3quinquies). La tranche
+                        // order_payments (mode titre-restaurant, montant total) est écrite dans CETTE transaction.
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+                            $mealVoucherMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount' => round((float) $locked->total, 2),
+                            ];
+                        }
                     } else {
                         // Non-COD methods preserve the legacy flip semantics
                         // (flip at OFD-or-DELIVERED, no escrow row).
@@ -2238,6 +2254,21 @@ class OrderService
 
                 $locked->save();
 
+                // [VG-2026-10-21 L2] La vente titre-restaurant scellée à la remise porte SON paiement (même forme que
+                // SplitPaymentService : mode PosPaymentMethod::TICKET_RESTAURANT, montant = total serveur).
+                if (is_array($mealVoucherMeta)) {
+                    $mealVoucherMeta['payment_id'] = (int) \App\Models\OrderPayment::query()->create([
+                        'order_id' => $mealVoucherMeta['order_id'],
+                        'branch_id' => $mealVoucherMeta['branch_id'],
+                        'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                        'amount' => $mealVoucherMeta['amount'],
+                        'tendered' => null,
+                        'change_amount' => 0,
+                        'reference' => 'livraison',
+                        'paid_at' => now(),
+                    ])->id;
+                }
+
                 OrderStateMachine::recordTransition(
                     Order::class,
                     (int) $locked->id,
@@ -2249,6 +2280,33 @@ class OrderService
 
                 $order = $locked;
             });
+
+            if (is_array($mealVoucherMeta)) {
+                // [VG-2026-10-21 L2] Trace d'audit chaînée de la tranche, après le COMMIT (même discipline que l'escrow
+                // espèces ci-dessous) ; une erreur d'audit ne défait jamais un encaissement réel.
+                try {
+                    app(AuditLogService::class)->write([
+                        'branch_id' => $mealVoucherMeta['branch_id'],
+                        'user_id' => $mealVoucherMeta['driver_id'],
+                        'action' => 'order.payment_tranche_persisted',
+                        'resource' => 'order_payment',
+                        'resource_id' => $mealVoucherMeta['payment_id'],
+                        'payload' => [
+                            'order_id' => $mealVoucherMeta['order_id'],
+                            'tranche_index' => 0,
+                            'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                            'amount' => $mealVoucherMeta['amount'],
+                            'tendered' => null,
+                            'change' => 0.0,
+                            'event' => 'doorstep_meal_voucher_collection',
+                        ],
+                    ]);
+                } catch (\Throwable $auditError) {
+                    Log::warning('[DeliveryBoy] meal-voucher tranche audit_log write failed: '.$auditError->getMessage(), [
+                        'order_id' => $mealVoucherMeta['order_id'],
+                    ]);
+                }
+            }
 
             if ($cashEscrowWritten && is_array($cashEscrowMeta)) {
                 // [P0-LIV-02] Append AFTER the transaction commits so the chain
