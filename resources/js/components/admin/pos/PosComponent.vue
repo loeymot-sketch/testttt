@@ -5908,11 +5908,31 @@ export default {
         formatKioskPrice(amount) {
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
         },
-        formatKioskTime(iso) {
-            if (!iso) return '';
-            try {
-                return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            } catch (_) { return ''; }
+        // [VG-2026-10-21 M3-005] Le serveur envoie `order_datetime` PRÉFORMATÉ (AppLibrary::datetime = TIME_FORMAT
+        // + ', ' + DATE_FORMAT : « 03:39 PM, 21-10-2026 » ici, « 17:10, 22-10-2026 » en H:i) que `new Date` ne lit
+        // pas → « Invalid Date » sur chaque carte « À encaisser ». On lit l'heure murale du serveur telle quelle ;
+        // l'ISO de created_at passe par Date ; jamais « Invalid Date » : repli sur la valeur brute lisible.
+        formatKioskTime(value) {
+            if (value == null || value === '') return '';
+            const raw = String(value).trim();
+            const pad = (n) => String(n).padStart(2, '0');
+            if (!/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+                const m = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?(?=[\s,]|$)/);
+                if (m) {
+                    let h = Number(m[1]);
+                    const min = Number(m[2]);
+                    if (m[3]) {
+                        const pm = m[3].toUpperCase() === 'PM';
+                        if (h === 12) h = pm ? 12 : 0;
+                        else if (pm) h += 12;
+                    }
+                    if (h < 24 && min < 60) return `${pad(h)}:${pad(min)}`;
+                }
+                return raw;
+            }
+            const d = new Date(raw);
+            if (Number.isNaN(d.getTime())) return raw;
+            return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         },
         /**
          * [ULTRA-AUDIT 2026-09-26 · P0-18/A2] `queue_number` ("N°A0043") est un compteur
