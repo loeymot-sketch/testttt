@@ -2011,6 +2011,7 @@
         "catalog_unavailable": "Product catalog unavailable — refresh the page.",
         "fiscal_unavailable": "Fiscal service unavailable — alert the manager.",
         "kds_connection_lost": "⚠️ Kitchen connection unavailable — display frozen. Retrying.",
+        "kds_server_error": "⚠️ Server error — the orders shown may be incomplete. Retrying; if this persists, notify the manager.",
         "order_cancel_rejected": "This order can no longer be cancelled (status advanced).",
         "order_cancel_unauthorized": "Cancel refused — insufficient permissions. Ask a manager.",
         "kiosk_rate_limited": "Too many orders submitted quickly. Please wait a few seconds."

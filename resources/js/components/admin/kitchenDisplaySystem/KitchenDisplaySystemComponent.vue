@@ -2835,7 +2835,11 @@ export default {
       // payload — but for 5xx / network drops, the standardized banner copy
       // is far clearer to a kitchen operator than a stack trace.
       let message;
-      if (!status || status >= 500 || status === 408 || status === 425 || status === 429) {
+      // [VG-2026-10-21 M6-001] Un 5xx n'est PAS une coupure réseau : le serveur a répondu, en
+      // erreur. « Connexion cuisine indisponible » faisait attendre le cuisinier en vain.
+      if (status >= 500 && status <= 599) {
+        message = this.$t('error.kds_server_error');
+      } else if (!status || status === 408 || status === 425 || status === 429) {
         message = fallback;
       } else {
         message = err?.response?.data?.message || fallback;

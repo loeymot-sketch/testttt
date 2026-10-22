@@ -1945,6 +1945,7 @@
         "catalog_unavailable": "Catalogue produits indisponible — actualisez la page.",
         "fiscal_unavailable": "Service fiscal indisponible — alertez le manager.",
         "kds_connection_lost": "⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.",
+        "kds_server_error": "⚠️ Erreur du serveur — les commandes affichées peuvent être incomplètes. Re-tentative en cours ; si cela dure, prévenez le responsable.",
         "order_cancel_rejected": "Cette commande ne peut plus être annulée (statut avancé).",
         "order_cancel_unauthorized": "Annulation refusée — droits insuffisants. Demande à un manager.",
         "kiosk_rate_limited": "Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes."
