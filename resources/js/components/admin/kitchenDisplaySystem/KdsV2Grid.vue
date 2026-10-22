@@ -99,8 +99,11 @@
       <!-- [KDS-UI-MULTI 2026-08-07] La pastille « +N en attente » vivait en absolu au-dessus
            de la grille et RECOUVRAIT une carte entière (mesuré : carte [D] masquée à 4
            colonnes). Elle est rapatriée ici, dans la barre de réglage, où elle ne cache rien. -->
-      <span v-if="overflowActiveCount > 0" class="kds-cols-picker__waiting" role="status">
-        +{{ overflowActiveCount }} en attente
+      <!-- [VG-2026-10-21 M6-005 / M1-001] Au-delà du plafond de rendu, « +22 en attente » laissait
+           croire que les 22 se trouvaient en défilant ; seules 20 avaient une carte. Le plafond
+           ne bouge pas (décision propriétaire) : la pastille DIT combien n'ont pas de carte. -->
+      <span v-if="overflowActiveCount > 0" class="kds-cols-picker__waiting" role="status" data-testid="kds-overflow-chip">
+        +{{ overflowActiveCount }} en attente<template v-if="hiddenActiveCount > 0"> · dont {{ hiddenActiveCount }} {{ hiddenActiveCount > 1 ? 'non affichées' : 'non affichée' }}</template>
       </span>
       <button
         v-for="n in choixCartes"
@@ -433,6 +436,12 @@ export default {
         },
         overflowActiveCount() {
             return Math.max(0, this.activeOrders.length - colonnesPour(this));
+        },
+        // [VG-2026-10-21 M6-005 / M1-001] Commandes actives SANS carte (au-delà de KDS_RENDER_MAX).
+        // Dérivé de visibleActiveOrders — la liste que rend le v-for — et non d'une seconde
+        // lecture du plafond : une seule définition de « affichée ».
+        hiddenActiveCount() {
+            return Math.max(0, this.activeOrders.length - this.visibleActiveOrders.length);
         },
     },
     watch: {
