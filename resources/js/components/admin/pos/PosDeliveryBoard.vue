@@ -40,8 +40,9 @@
                             <div class="truncate text-gray-600">{{ s.address }}</div>
                         </div>
                         <div class="text-right">
+                            <!-- [VG-2026-10-21 R2-cuisine-livraison-003] Le vrai mode : un titre-restaurant n'est plus annoncé « Espèces ». -->
                             <div class="font-bold" :class="s.amount_due > 0 ? 'text-[#9A3412]' : 'text-green-700'">
-                                {{ s.amount_due > 0 ? ((s.collect_method === 'card' ? 'Carte ' : 'Espèces ') + format(s.amount_due)) : 'Payé' }}
+                                {{ s.amount_due > 0 ? (collectLabel(s.collect_method) + ' ' + format(s.amount_due)) : 'Payé' }}
                             </div>
                             <div class="text-xs text-gray-500">{{ stateOf(s) }}</div>
                         </div>
@@ -90,6 +91,11 @@ export default {
             } catch (e) {
                 this.error = e?.response?.data?.message || 'Impossible de désigner ce livreur.';
             }
+        },
+        // [VG-2026-10-21 R2-cuisine-livraison-003] Ce que le livreur rapporte, selon le mode renvoyé par le serveur
+        // (DeliveryStop::COLLECT_* + DeliveryWaveService::COLLECT_MEAL_VOUCHER). Mode inconnu : jamais « Espèces » inventé.
+        collectLabel(method) {
+            return { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant' }[method] || 'À encaisser';
         },
         format(n) {
             return Number(n).toFixed(2).replace('.', ',') + ' €';
