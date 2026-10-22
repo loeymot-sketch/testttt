@@ -6776,6 +6776,13 @@ export default {
             if (this.panierSansProduit()) {
                 return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
             }
+            // [VG-2026-10-21 M4-101] En mode LIVRAISON, ce bouton réécrivait en silence la commande en « à emporter »,
+            // client de passage, sans adresse ni frais (#8136 : 1,00 € au lieu de 4,90 €, succès affiché, jamais livrée).
+            // Une livraison payée à la porte prise par téléphone n'est pas un parcours prévu (docs/LIVRAISON.md : file
+            // « À encaisser », purge « client non venu » et cuisine ne la connaissent pas) → refus AVANT tout envoi.
+            if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY) {
+                return alertService.error("Commande téléphone impossible en livraison : elle partirait « à emporter », sans adresse ni frais. Pour une livraison, utilisez « Commande » (paiement à la caisse).");
+            }
 
             this.phoneOrderSubmitting = true;
             this.loading.isActive = true;
