@@ -2617,6 +2617,19 @@ class OrderService
                         throw new Exception("Livraison non encaissée : la remise passe par l'écran du livreur, qui encaisse à la porte et enregistre la vente. La marquer « Livrée » ici la sortirait de la caisse sans paiement.", 422);
                     }
 
+                    // [VG-2026-10-21 M6-102] Jumeau comptoir : une commande à encaisser au comptoir (à emporter, borne, site au
+                    // retrait, sur place) n'est REMISE qu'une fois encaissée — sinon la marchandise sort avant paiement, sans
+                    // numéro fiscal. Payée (borne/site carte, caisse) : remise libre. Service à table (table renseignée) :
+                    // servi puis payé, exempté. Uber : prépayé hors chaîne, exempté.
+                    if ($toStatus === OrderStatus::DELIVERED
+                        && (int) $locked->order_type !== \App\Enums\OrderType::DELIVERY
+                        && in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)
+                        && $locked->fiscal_sequence_no === null
+                        && strtolower((string) $locked->source_surface) !== 'uber_eats'
+                        && ! ((int) $locked->order_type === \App\Enums\OrderType::DINING_TABLE && (int) ($locked->dining_table_id ?? 0) > 0)) {
+                        throw new Exception("Commande non encaissée : encaissez-la d'abord (file « À encaisser »), puis remettez-la au client. La remettre avant paiement ferait sortir la marchandise sans vente enregistrée.", 422);
+                    }
+
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([

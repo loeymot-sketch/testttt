@@ -28,8 +28,9 @@ use Tests\TestCase;
  *
  * Règle : une livraison non encaissée se remet par l'écran livreur (`deliveryBoyOrderChangeStatus`, qui encaisse et
  * scelle). La caisse refuse « Livrée » — sur TOUTES les routes jumelles (pos-order, online-order).
- * Une livraison déjà payée en caisse reste remettable d'un clic. Une commande téléphone À EMPORTER remise avant
- * paiement reste dans « À encaisser » et s'encaisse ensuite normalement (M6-102 : pas de vente perdue).
+ * Une livraison déjà payée en caisse reste remettable d'un clic.
+ * [VG-2026-10-21 M6-102 tour 2] Une commande à encaisser au comptoir (à emporter, borne, site au retrait, sur place sans
+ * service à table) n'est remise qu'une fois encaissée ; une commande déjà payée (borne carte, site carte) reste libre.
  */
 class DeliveredRequiresSettlementTest extends TestCase
 {
@@ -164,17 +165,110 @@ class DeliveredRequiresSettlementTest extends TestCase
     }
 
     /**
-     * M6-102 : le chemin réel des 65 commandes « remises » sans encaissement (banc M6 → pos-order/change-status).
-     * Une commande téléphone À EMPORTER remise avant paiement n'est pas perdue : elle reste « À encaisser » et
-     * l'encaissement la scelle ensuite (numéro fiscal). Ce test caractérise ce comportement (vert avant et après).
+     * [VG-2026-10-21 M6-102] Tour 2 : une commande À EMPORTER non payée restait « remettable » (200) — la marchandise
+     * sortait avant paiement (#8343 téléphone 8→13). Règle étendue : toute commande à encaisser au comptoir (à emporter,
+     * borne, site au retrait, sur place sans service à table) n'est « remise » qu'une fois encaissée. Après
+     * l'encaissement (scellé, numéro fiscal), la remise passe.
      */
-    public function test_phone_takeaway_handed_over_before_payment_stays_collectable_and_is_sealed_at_collection(): void
+    public function test_phone_takeaway_cannot_be_handed_over_before_payment_and_can_after_collection(): void
     {
-        $order = Order::factory()->create([
+        $order = $this->commandeComptoirNonPayee(OrderType::TAKEAWAY, Source::POS, 'phone');
+        $caissier = $this->caissier();
+
+        $res = $this->actingAs($caissier, 'sanctum')
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED]);
+        $res->assertStatus(422);
+        $this->assertStringContainsString('encaiss', mb_strtolower((string) $res->json('message')));
+        $this->assertSame(OrderStatus::PREPARED, (int) $order->fresh()->status, 'Pas de remise avant paiement.');
+        $this->assertTrue(
+            CounterCollectQueue::query($this->branch->id)->whereKey($order->id)->exists(),
+            'La commande reste « À encaisser ».'
+        );
+
+        $this->actingAs($caissier, 'sanctum')
+            ->postJson('/api/admin/pos/counter-collect/'.$order->id.'/confirm', ['mode' => Mode::CASH, 'received' => 2.00])
+            ->assertSuccessful();
+        $order->refresh();
+        $this->assertSame(PaymentStatus::PAID, (int) $order->payment_status);
+        $this->assertNotNull($order->fiscal_sequence_no, "L'encaissement scelle la vente (NF525).");
+
+        $this->actingAs($caissier, 'sanctum')
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+            ->assertSuccessful();
+        $this->assertSame(OrderStatus::DELIVERED, (int) $order->fresh()->status);
+    }
+
+    public function test_unpaid_kiosk_counter_order_cannot_be_handed_over(): void
+    {
+        $order = $this->commandeComptoirNonPayee(OrderType::KIOSK, Source::POS, 'kiosk');
+
+        $this->actingAs($this->caissier(), 'sanctum')
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+            ->assertStatus(422);
+
+        $this->assertSame(OrderStatus::PREPARED, (int) $order->fresh()->status);
+    }
+
+    public function test_unpaid_web_pickup_cannot_be_handed_over_on_the_online_route_twin(): void
+    {
+        $order = $this->commandeComptoirNonPayee(OrderType::TAKEAWAY, Source::WEB, 'web');
+
+        $this->actingAs($this->caissier(), 'sanctum')
+            ->postJson('/api/admin/online-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+            ->assertStatus(422);
+
+        $this->assertSame(OrderStatus::PREPARED, (int) $order->fresh()->status);
+    }
+
+    public function test_unpaid_dine_in_without_table_service_cannot_be_handed_over(): void
+    {
+        $order = $this->commandeComptoirNonPayee(OrderType::DINING_TABLE, Source::POS, 'phone');
+
+        $this->actingAs($this->caissier(), 'sanctum')
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+            ->assertStatus(422);
+    }
+
+    public function test_table_service_order_can_still_be_served_before_payment(): void
+    {
+        $order = $this->commandeComptoirNonPayee(OrderType::DINING_TABLE, Source::POS, 'pos');
+        $order->forceFill(['dining_table_id' => 3])->save();
+
+        $this->actingAs($this->caissier(), 'sanctum')
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+            ->assertSuccessful();
+    }
+
+    public function test_already_paid_kiosk_card_and_web_card_orders_can_still_be_handed_over(): void
+    {
+        foreach ([[OrderType::KIOSK, 'kiosk', PosPaymentMethod::CARD], [OrderType::TAKEAWAY, 'web', null]] as $i => [$type, $surface, $mode]) {
+            $order = Order::factory()->create([
+                'branch_id' => $this->branch->id,
+                'order_type' => $type,
+                'source' => $surface === 'web' ? Source::WEB : Source::POS,
+                'source_surface' => $surface,
+                'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+                'payment_status' => PaymentStatus::PAID,
+                'pos_payment_method' => $mode,
+                'status' => OrderStatus::PREPARED,
+                'fiscal_sequence_no' => 5000 + $i,
+                'total' => 8.50,
+            ]);
+
+            $this->actingAs($this->caissier(), 'sanctum')
+                ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
+                ->assertSuccessful();
+            $this->assertSame(OrderStatus::DELIVERED, (int) $order->fresh()->status, "Commande payée ({$surface}) : remise libre.");
+        }
+    }
+
+    private function commandeComptoirNonPayee(int $type, int $source, string $surface): Order
+    {
+        return Order::factory()->create([
             'branch_id' => $this->branch->id,
-            'order_type' => OrderType::TAKEAWAY,
-            'source' => Source::POS,
-            'source_surface' => 'phone',
+            'order_type' => $type,
+            'source' => $source,
+            'source_surface' => $surface,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
             'payment_status' => PaymentStatus::PENDING_COUNTER,
             'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
@@ -183,23 +277,5 @@ class DeliveredRequiresSettlementTest extends TestCase
             'total' => 1.90,
             'subtotal' => 1.90,
         ]);
-        $caissier = $this->caissier();
-
-        $this->actingAs($caissier, 'sanctum')
-            ->postJson('/api/admin/pos-order/change-status/'.$order->id, ['status' => OrderStatus::DELIVERED])
-            ->assertSuccessful();
-
-        $this->assertTrue(
-            CounterCollectQueue::query($this->branch->id)->whereKey($order->id)->exists(),
-            'Remise avant paiement : la commande doit rester « À encaisser ».'
-        );
-
-        $this->actingAs($caissier, 'sanctum')
-            ->postJson('/api/admin/pos/counter-collect/'.$order->id.'/confirm', ['mode' => Mode::CASH, 'received' => 2.00])
-            ->assertSuccessful();
-
-        $order->refresh();
-        $this->assertSame(PaymentStatus::PAID, (int) $order->payment_status);
-        $this->assertNotNull($order->fiscal_sequence_no, "L'encaissement après remise doit sceller la vente (NF525).");
     }
 }
