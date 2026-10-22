@@ -212,6 +212,18 @@ class PosController extends AdminController
                 'status' => false,
                 'message' => $exception->getMessage(),
             ], $exception->getStatusCode());
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException|\Illuminate\Database\QueryException|\PDOException $exception) {
+            // [VG-2026-10-21 R2-001] Une panne TECHNIQUE (SQL, interblocage, ligne introuvable) ne montre jamais
+            // son texte brut (« No query results for model… », « SQLSTATE… ») au caissier ni au client : journal + geste.
+            \Illuminate\Support\Facades\Log::warning('[VG-2026-10-21 R2-001] devis : panne technique', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Le devis n\'a pas pu être calculé (incident passager). Relance l\'encaissement.',
+            ], 422);
         } catch (Exception $exception) {
             return response()->json([
                 'status' => false,

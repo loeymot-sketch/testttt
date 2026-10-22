@@ -89,9 +89,13 @@ class OrderQuoteService
         $signature = hash_hmac('sha256', $canonicalJson, $this->hmacKey());
 
         $token = (string) $request->input('quote_token', '');
+        // [VG-2026-10-21 R2-001] Sans jeton = un NOUVEAU devis, toujours : réutiliser le devis ouvert de même
+        // intention donnait le même jeton à usage unique à deux paniers identiques (deux bornes sur le compte
+        // machine, deux caisses pos@) → 2e vente en 409, ou 422/interblocage sous MySQL. Le rejeu d'un devis
+        // passe par son jeton (resolveReplay), jamais par la ressemblance du panier.
         $quote = $token !== ''
             ? $this->resolveReplay($token, $branchId, $intentHash, $signature, $request)
-            : $this->findOpenQuote($surface, $branchId, (int) $actor->id, $intentHash);
+            : null;
 
         if (! $quote) {
             $quote = OrderQuote::create([
@@ -626,20 +630,6 @@ class OrderQuoteService
         }
 
         return $quote;
-    }
-
-    private function findOpenQuote(string $surface, int $branchId, int $actorId, string $intentHash): ?OrderQuote
-    {
-        return OrderQuote::query()
-            ->where('branch_id', $branchId)
-            ->where('surface', $surface)
-            ->where('actor_id', $actorId)
-            ->where('intent_hash', $intentHash)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', now())
-            ->lockForUpdate()
-            ->latest('id')
-            ->first();
     }
 
     private function consume(OrderQuote $quote, User $actor, ?int $orderId): void
