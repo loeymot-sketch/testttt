@@ -152,7 +152,9 @@
         $('waves').innerHTML = waves.map(function (w) {
             var pending = w.stops.filter(function (s) { return !s.left_at && !s.delivered_at; });
             var ready = pending.filter(function (s) { return s.ready; }).length;
-            var head = '<div class="wave"><h3>Départ ' + w.time + ' · ' + w.stops.length + ' livraison' + (w.stops.length > 1 ? 's' : '') + '</h3></div>';
+            // [VG-2026-10-21 M4-005] Le jour quand ce n'est pas aujourd'hui : « Départ 00:30 » se lisait comme ce soir.
+            var jour = w.is_today === false && w.day_label ? esc(w.day_label) + ' ' : '';
+            var head = '<div class="wave"><h3>Départ ' + jour + w.time + ' · ' + w.stops.length + ' livraison' + (w.stops.length > 1 ? 's' : '') + '</h3></div>';
             var go = pending.length
                 ? '<button class="btn" data-depart="' + w.wave_at + '"' + (ready ? '' : ' disabled') + '>Je pars (' + ready + '/' + pending.length + ' prête' + (ready > 1 ? 's' : '') + ')</button>' : '';
             return head + go + w.stops.map(stopHtml).join('');

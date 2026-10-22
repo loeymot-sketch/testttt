@@ -301,6 +301,30 @@ class DeliveryWaveService
         return Carbon::instance($wave)->copy()->subMinutes(max(0, (int) config('delivery.depart_max_advance_minutes', 45)));
     }
 
+    /**
+     * [VG-2026-10-21 M4-005] Le jour d'une tournée, pour les écrans (livreur, planche « Tournées » de la caisse) : « Départ
+     * 00:30 » sans date se lisait comme ce soir alors que la tournée partait 24 h plus tard. Date calendaire, jamais devinée.
+     *
+     * @return array{date: string, is_today: bool, day_label: string}
+     */
+    public function waveDay(CarbonInterface $wave): array
+    {
+        $wave = Carbon::instance($wave);
+        $today = Carbon::today();
+        $jours = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+        return [
+            'date'      => $wave->format('Y-m-d'),
+            'is_today'  => $wave->isSameDay($today),
+            'day_label' => match (true) {
+                $wave->isSameDay($today)              => "aujourd'hui",
+                $wave->isSameDay($today->copy()->addDay()) => 'demain',
+                $wave->isSameDay($today->copy()->subDay()) => 'hier',
+                default                                => $jours[$wave->dayOfWeek] . ' ' . $wave->format('d/m'),
+            },
+        ];
+    }
+
     /** [VG-2026-10-21 M4-004] Heure d'arrivée estimée d'un arrêt : depuis le départ RÉEL s'il a eu lieu, sinon depuis l'heure de la tournée. */
     public function etaAt(DeliveryStop $stop): Carbon
     {

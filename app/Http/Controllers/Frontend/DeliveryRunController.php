@@ -47,6 +47,8 @@ class DeliveryRunController extends Controller
             return [
                 'wave_at' => $waveAt,
                 'time'    => Carbon::parse($waveAt)->format('H:i'),
+                // [VG-2026-10-21 M4-005] Le jour : « Départ 00:30 » se lisait comme ce soir pour une tournée 24 h plus tard.
+                ...$this->waves->waveDay(Carbon::parse($waveAt)),
                 'left'    => $group->contains(fn ($s) => $s->left_at !== null),
                 'stops'   => $group->map(fn (DeliveryStop $s) => $this->present($s))->values()->all(),
             ];

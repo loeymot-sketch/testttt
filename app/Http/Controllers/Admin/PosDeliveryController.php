@@ -186,6 +186,8 @@ class PosDeliveryController extends Controller
         $waves = $stops->groupBy(fn ($s) => $s->wave_at->toDateTimeString())->map(fn ($g, $at) => [
             'wave_at' => $at,
             'time'    => Carbon::parse($at)->format('H:i'),
+            // [VG-2026-10-21 M4-005] Le jour de la tournée (date, is_today, day_label) : la planche n'affichait que l'heure.
+            ...$this->waves->waveDay(Carbon::parse($at)),
             'left'    => $g->contains(fn ($s) => $s->left_at !== null),
             'courier' => $g->first()->delivery_boy_id ? ($couriers[$g->first()->delivery_boy_id]->name ?? null) : null,
             'courier_id' => $g->first()->delivery_boy_id,
