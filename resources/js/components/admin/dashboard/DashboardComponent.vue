@@ -45,18 +45,20 @@
         </div>
     </nav>
 
-    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
+    <!-- [VG-2026-10-21 M9-104] Données commerciales (CA, canal, audit, ventes) : `pos` ou `sales-report`
+         exigés côté serveur ; le chef (dashboard seul) ne monte plus ces cartes. -->
+    <ErrorBoundary><OverviewComponent :show-sales="canSeeCommercial"/></ErrorBoundary>
 
-    <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
+    <ErrorBoundary v-if="canSeeCommercial"><RealtimeReportComponent/></ErrorBoundary>
     <div class="row">
         <ErrorBoundary><SlaAlertsComponent/></ErrorBoundary>
-        <ErrorBoundary><ChannelStatsComponent/></ErrorBoundary>
+        <ErrorBoundary v-if="canSeeCommercial"><ChannelStatsComponent/></ErrorBoundary>
     </div>
-    <ErrorBoundary><AuditTrailComponent/></ErrorBoundary>
+    <ErrorBoundary v-if="canSeeCommercial"><AuditTrailComponent/></ErrorBoundary>
 
     <ErrorBoundary><OrderStatisticsComponent/></ErrorBoundary>
     <div class="row">
-        <ErrorBoundary><SalesSummaryComponent/></ErrorBoundary>
+        <ErrorBoundary v-if="canSeeCommercial"><SalesSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><OrderSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><LastZReportWidget/></ErrorBoundary>
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
@@ -133,6 +135,11 @@ export default {
             }
             const entry = perms.find((p) => p && p.url === 'pos/manage-fiscal');
             return entry ? entry.access === true : false;
+        },
+        // [VG-2026-10-21 M9-104] Même porte que DashboardController (permission:pos|sales-report).
+        canSeeCommercial() {
+            const perms = this.normalizedPermissions();
+            return perms.some((p) => p && (p.url === 'pos' || p.url === 'sales-report') && p.access === true);
         },
         quickAccessLinks() {
             const perms = this.normalizedPermissions();

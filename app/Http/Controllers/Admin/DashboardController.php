@@ -94,6 +94,21 @@ class DashboardController extends AdminController
             'channelStatistics',
             'auditTrail'
         );
+        // [VG-2026-10-21 M9-104] Données COMMERCIALES (argent, clients nommés, journal d'audit,
+        // répartition par canal) : `dashboard` ne suffit plus. Le rôle Chef détient `dashboard`
+        // (écran d'accueil) mais docs/AUTHZ_MATRIX.md le limite au KDS et à l'OSS : il lisait le
+        // CA, les meilleurs clients et l'audit. Il faut en plus l'accès caisse (`pos`) ou les
+        // rapports de vente (`sales-report`) — Admin, Branch Manager, POS Operator inchangés.
+        $this->middleware(['permission:pos|sales-report'])->only(
+            'totalSales',
+            'salesSummary',
+            'realtimeReport',
+            'topCustomers',
+            'customerStates',
+            'totalCustomers',
+            'auditTrail',
+            'channelStatistics'
+        );
         // [V102-08 HEAL-3 2026-05-26] EOD PDF recap requires fiscal-grade
         // permission because the output aggregates daily revenue (CA + TVA +
         // payment-method breakdown) — the same data scope as Z-report close.
