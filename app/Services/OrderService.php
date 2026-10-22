@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Orders\QueueNumberAllocator;
 use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Enums\OrderStatus;
@@ -65,6 +66,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class OrderService
 {
     public object $order;
+
+    // [VG-2026-10-21 M6-002] « branche|jour » dont la transaction en cours tient déjà la ligne compteur de file.
+    private ?string $queueDayHeld = null;
 
     protected CouponService $couponService;
 
@@ -759,6 +763,17 @@ class OrderService
         try {
             $order = null;
             DB::transaction(function () use ($request, &$order, $idempotencyKey) {
+                // [VG-2026-10-21 M6-002] PREMIÈRE instruction : verrouiller la ligne compteur de file du jour. Une vente
+                // simultanée attend ici le COMMIT de la précédente AVANT toute lecture : son instantané REPEATABLE-READ
+                // la contient (numéro de file, et dernier maillon de la chaîne d'audit relu sans verrou par le service gelé).
+                $this->queueDayHeld = null;
+                $queueBranchId = (int) $request->branch_id; // allow: verrou de file, la propriété de la branche est vérifiée juste après
+                if ($queueBranchId > 0) {
+                    $queueDay = $this->resolveBusinessDate(null);
+                    app(QueueNumberAllocator::class)->reserveDay($queueBranchId, $queueDay);
+                    $this->queueDayHeld = $queueBranchId.'|'.$queueDay;
+                }
+
                 // [GAP-20-3] Unset client-supplied financial fields before Order::create().
                 // Mirrors the same pattern in myOrderStore() — server always recalculates
                 // total, subtotal, discount from DB prices below. This prevents any
@@ -3819,34 +3834,41 @@ class OrderService
     {
         $maxAttempts = 5;
 
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-            $businessDate = $this->resolveBusinessDate($this->order->order_datetime ?? null);
-            $this->order->business_date = $businessDate;
-            $this->order->queue_number = $this->allocateQueueNumber(
-                (int) $this->order->branch_id,
-                $businessDate,
-                $context
-            );
-            $applyFields();
-            $this->order->business_date = $businessDate;
+        // [VG-2026-10-21 M6-002] la réservation de la ligne compteur ne vaut que pour CETTE création.
+        try {
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                $businessDate = $this->resolveBusinessDate($this->order->order_datetime ?? null);
+                $this->order->business_date = $businessDate;
+                // [VG-2026-10-21 M6-002] si la vente tient déjà la ligne compteur (reprise, ou réservée en tête de
+                // transaction), pas de Cache::lock : attendre le mutex tenu par une vente qui attend NOTRE ligne = blocage croisé.
+                $holdsQueueDay = $attempt > 1
+                    || $this->queueDayHeld === (int) $this->order->branch_id.'|'.$businessDate;
+                $this->order->queue_number = $holdsQueueDay
+                    ? app(QueueNumberAllocator::class)->allocate((int) $this->order->branch_id, $businessDate)
+                    : $this->allocateQueueNumber((int) $this->order->branch_id, $businessDate, $context);
+                $applyFields();
+                $this->order->business_date = $businessDate;
 
-            try {
-                $this->order->save();
+                try {
+                    $this->order->save();
 
-                return;
-            } catch (QueryException $exception) {
-                if (! $this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
-                    throw $exception;
+                    return;
+                } catch (QueryException $exception) {
+                    if (! $this->isQueueNumberUniqueViolation($exception) || $attempt >= $maxAttempts) {
+                        throw $exception;
+                    }
+
+                    Log::warning(sprintf(
+                        '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
+                        (string) $this->order->queue_number,
+                        (string) $this->order->branch_id,
+                        (string) $this->order->business_date,
+                        $context
+                    ));
                 }
-
-                Log::warning(sprintf(
-                    '[Queue] Duplicate queue_number %s for branch %s on business_date %s during %s save; retrying allocation once.',
-                    (string) $this->order->queue_number,
-                    (string) $this->order->branch_id,
-                    (string) $this->order->business_date,
-                    $context
-                ));
             }
+        } finally {
+            $this->queueDayHeld = null;
         }
     }
 
@@ -3860,23 +3882,8 @@ class OrderService
             $lock->block(15);
             $acquired = true;
 
-            $queueNumbers = DB::table('orders')
-                ->where('branch_id', $branchId)
-                ->where('business_date', $businessDate)
-                ->whereNotNull('queue_number')
-                ->where('queue_number', 'like', 'A%')
-                ->pluck('queue_number');
-
-            $maxQueueNum = (int) $queueNumbers
-                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
-                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
-                ->max();
-
-            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
-            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
-            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
-
-            return 'A'.str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
+            // [VG-2026-10-21 M6-002] lecture COURANTE d'un compteur verrouillé jusqu'au COMMIT (plus l'instantané périmé des commandes)
+            return app(QueueNumberAllocator::class)->allocate($branchId, $businessDate);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',

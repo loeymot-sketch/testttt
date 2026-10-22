@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use App\Services\Orders\QueueNumberAllocator;
 use Carbon\Carbon;
 use Exception;
 use App\Models\Tax;
@@ -1490,11 +1491,11 @@ class FrontendOrderService
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             $businessDate = $this->resolveBusinessDate($this->frontendOrder->order_datetime ?? null);
             $this->frontendOrder->business_date = $businessDate;
-            $this->frontendOrder->queue_number = $this->allocateQueueNumber(
-                (int) $this->frontendOrder->branch_id,
-                $businessDate,
-                $context
-            );
+            // [VG-2026-10-21 M6-002] une reprise ne repasse pas par le Cache::lock : la vente tient déjà la ligne compteur
+            // (attendre le mutex tenu par une vente qui attend NOTRE ligne = blocage croisé de 15 s).
+            $this->frontendOrder->queue_number = $attempt === 1
+                ? $this->allocateQueueNumber((int) $this->frontendOrder->branch_id, $businessDate, $context)
+                : app(QueueNumberAllocator::class)->allocate((int) $this->frontendOrder->branch_id, $businessDate);
             $applyFields();
             $this->frontendOrder->business_date = $businessDate;
 
@@ -1527,23 +1528,8 @@ class FrontendOrderService
             $lock->block(15);
             $acquired = true;
 
-            $queueNumbers = DB::table('orders')
-                ->where('branch_id', $branchId)
-                ->where('business_date', $businessDate)
-                ->whereNotNull('queue_number')
-                ->where('queue_number', 'like', 'A%')
-                ->pluck('queue_number');
-
-            $maxQueueNum = (int) $queueNumbers
-                ->filter(static fn ($queueNumber): bool => preg_match('/^A\d+$/', (string) $queueNumber) === 1)
-                ->map(static fn ($queueNumber): int => (int) substr((string) $queueNumber, 1))
-                ->max();
-
-            // [owner 2026-07-07] Le compteur quotidien démarre à kiosk.queue_start_number
-            // (32 par défaut) : 1er ordre du jour = A0032, puis suit le max existant.
-            $startNumber = max(1, (int) config('kiosk.queue_start_number', 1));
-
-            return 'A' . str_pad(max($maxQueueNum + 1, $startNumber), 4, '0', STR_PAD_LEFT);
+            // [VG-2026-10-21 M6-002] lecture COURANTE d'un compteur verrouillé jusqu'au COMMIT (plus l'instantané périmé des commandes)
+            return app(QueueNumberAllocator::class)->allocate($branchId, $businessDate);
         } catch (LockTimeoutException $exception) {
             Log::warning(sprintf(
                 '[Queue] Lock timeout for branch %s on business_date %s during %s order creation; queue number fallback disabled by D-M13.',
