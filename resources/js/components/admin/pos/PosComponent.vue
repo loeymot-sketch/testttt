@@ -826,6 +826,15 @@
             >
               Aucune commande web en attente.
             </p>
+            <!-- [VG-2026-10-21 M9-103] Le serveur n'envoie que les 200 plus récentes : la file DIT ce qu'elle ne montre pas. -->
+            <p
+              v-if="webOrdersHidden > 0"
+              class="pos-shortcuts__empty"
+              role="status"
+              data-testid="pos-shortcuts-web-truncated"
+            >
+              ⚠️ {{ webOrdersHidden }} {{ webOrdersHidden > 1 ? 'commandes plus anciennes non affichées' : 'commande plus ancienne non affichée' }} — voir Commandes en ligne.
+            </p>
             <button
               v-if="webOrders.length > 4"
               type="button"
@@ -2780,6 +2789,8 @@ export default {
             // en temps réel (Echo + polling), avec lien vers la page Commandes en ligne pour les
             // traiter (accept via le flux existant — aucun changement de paiement/cuisine ici).
             webOrders: [],
+            // [VG-2026-10-21 M9-103] Commandes web NON renvoyées par le serveur (meta.total - meta.returned).
+            webOrdersHidden: 0,
             webOrdersLoading: false,
             // [GOAL REMARQUES 2026-10-03 · R-017] Minutes de préparation choisies par commande web (défaut 15).
             webPrepChoice: {},
@@ -5370,6 +5381,9 @@ export default {
                 const res = await axios.get('admin/pos/web-orders/pending');
                 const all = res?.data?.data || [];
                 this.webOrders = all.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [VG-2026-10-21 M9-103] meta {total, returned, limit, truncated} (a6dcc5074) : on retient ce qui manque.
+                const meta = res?.data?.meta;
+                this.webOrdersHidden = meta && meta.truncated ? Math.max(0, (Number(meta.total) || 0) - (Number(meta.returned) || all.length)) : 0;
                 this.lastWebRefresh = Date.now();
                 // [UX-NOTIF-01/SYNC-W3] Signal nouvelle commande INDÉPENDANT du transport (le beep
                 // Echo est mort si le worker/queue est down) — diff des IDs à chaque poll.
