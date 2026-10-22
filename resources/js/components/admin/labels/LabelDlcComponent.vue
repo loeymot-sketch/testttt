@@ -1282,14 +1282,28 @@ export default {
             try {
                 if (payload.id) await axios.put(`admin/labels/products/${payload.id}`, payload);
                 else await axios.post("admin/labels/products", payload);
-                this.closeEditor();
+                // [VG-2026-10-21 M7-001] relire la liste AVANT de fermer : fermé plus tôt, un nouvel appui sur « Modifier » rouvrait la copie périmée
                 await this.loadProducts();
+                this.closeEditor();
                 alertService.success(`« ${payload.name.trim()} » enregistré.`);
             } catch (e) {
-                this.formError = this.apiMessage(e, "Enregistrement impossible.");
+                if (payload.id && e && e.response && e.response.status === 409) await this.reloadStaleProduct(payload.id, e);
+                else this.formError = this.apiMessage(e, "Enregistrement impossible.");
             } finally {
                 this.saving = false;
             }
+        },
+        /**
+         * [VG-2026-10-21 M7-001] La fiche a changé sur un autre appareil : le serveur a refusé la copie périmée (rien n'est écrasé).
+         * On le DIT et on recharge l'éditeur sur la fiche à jour (liste relue ; à défaut, la fiche renvoyée avec le refus).
+         */
+        async reloadStaleProduct(id, e) {
+            const message = this.apiMessage(e, "Cette fiche a été modifiée sur un autre appareil — rechargée. Vérifiez-la puis enregistrez à nouveau.");
+            await this.loadProducts();
+            const sent = e.response.data && e.response.data.data;
+            const fresh = this.products.find((p) => p.id === id) || (sent ? this.normalizeProduct(sent) : null);
+            if (fresh) this.openEditor(fresh);
+            this.formError = message;
         },
         async deleteProduct(id) {
             try {
@@ -1303,10 +1317,13 @@ export default {
         async toggleActive(p) {
             try {
                 // masquer / réactiver ne touche que la visibilité (une fiche ancienne n'a rien à compléter pour être masquée)
-                await axios.put(`admin/labels/products/${p.id}`, { name: p.name, is_active: !p.is_active });
+                // [VG-2026-10-21 M7-001] le nom renvoyé vient de la liste : avec la version, une liste périmée ne ré-écrit pas un renommage fait ailleurs
+                await axios.put(`admin/labels/products/${p.id}`, { name: p.name, is_active: !p.is_active, expected_version: p.version || undefined });
                 await this.loadProducts();
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Modification impossible."));
+                // [VG-2026-10-21 M7-001] 409 : la fiche a changé ailleurs — la liste est relue, la personne voit l'état réel avant de recommencer
+                if (e && e.response && e.response.status === 409) await this.loadProducts();
             }
         },
     },

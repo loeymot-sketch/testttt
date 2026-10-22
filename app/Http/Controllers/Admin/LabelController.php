@@ -162,10 +162,42 @@ class LabelController extends AdminController
 
     public function updateProduct(Request $request, string $product): JsonResponse
     {
+        // [VG-2026-10-21 M7-001] Contrôle de version optimiste : l'éditeur renvoie la fiche ENTIÈRE telle qu'il l'a ouverte ; si elle a
+        // changé entre-temps (autre tablette), l'enregistrer effacerait en silence un allergène ou rallongerait une durée. La version
+        // attendue est OPTIONNELLE : masquer / réactiver et les autres appelants partiels ne l'envoient pas et restent permis.
+        $expected = $request->validate(['expected_version' => ['nullable', 'string', 'size:40']])['expected_version'] ?? null;
         $model = DlcLabelProduct::query()->findOrFail((int) $product);
-        $model->fill($this->validateProduct($request, $model->id))->save();
 
-        return response()->json(['data' => $this->presentProduct($model->refresh())]);
+        return DB::transaction(function () use ($request, $model, $expected): JsonResponse {
+            // la ligne est verrouillée le temps de comparer puis d'écrire : deux enregistrements simultanés ne passent pas tous les deux
+            $locked = DlcLabelProduct::query()->whereKey($model->id)->lockForUpdate()->firstOrFail();
+            if ($expected !== null && ! hash_equals($this->productVersion($locked), $expected)) {
+                return response()->json([
+                    'message' => 'Cette fiche a été modifiée sur un autre appareil — rechargée. Vérifiez-la puis enregistrez à nouveau.',
+                    'code' => 'stale_product',
+                    'data' => $this->presentProduct($locked),
+                ], 409);
+            }
+            $locked->fill($this->validateProduct($request, $locked->id))->save();
+
+            return response()->json(['data' => $this->presentProduct($locked->refresh())]);
+        });
+    }
+
+    /**
+     * [VG-2026-10-21 M7-001] Version d'une fiche = empreinte de ce qu'elle dit (pas `updated_at` : à la seconde près, deux
+     * enregistrements de la même seconde se confondraient ; et aucune migration). Le favori et l'ordre d'affichage n'en font pas
+     * partie : les changer ne rend pas périmée la copie d'un éditeur ouvert (l'éditeur ne les renvoie pas).
+     */
+    private function productVersion(DlcLabelProduct $p): string
+    {
+        return sha1((string) json_encode([
+            (string) $p->name, $p->category, $p->storage, $p->thawed_storage, $p->note,
+            $p->actionList(), array_values((array) ($p->allergens ?? [])), (bool) $p->no_allergens, (bool) $p->needs_parent,
+            $p->duration_source, $p->durations_checked_at?->toIso8601String(), $p->durations_checked_by === null ? null : (int) $p->durations_checked_by,
+            (bool) $p->ask_original_dlc, $p->print_operator === null ? null : (bool) $p->print_operator, (int) ($p->default_copies ?: 1),
+            (bool) $p->is_active,
+        ], JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -1277,6 +1309,8 @@ class LabelController extends AdminController
             'sort_order' => $p->sort_order,
             'is_active' => $p->is_active,
             'is_favorite' => (bool) $p->is_favorite,
+            // [VG-2026-10-21 M7-001] renvoyée par l'éditeur (`expected_version`) : une copie périmée est refusée (409), jamais écrite
+            'version' => $this->productVersion($p),
         ];
     }
 

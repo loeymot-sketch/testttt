@@ -448,6 +448,8 @@ export default {
                 ask_original_dlc: this.form.ask_original_dlc,
                 print_operator: this.form.print_operator,
                 default_copies: this.form.default_copies,
+                // [VG-2026-10-21 M7-001] la version lue à l'ouverture : le serveur refuse (409) une copie périmée au lieu de l'écrire
+                expected_version: this.form.id && this.product && this.product.version ? this.product.version : undefined,
             });
         },
     },
