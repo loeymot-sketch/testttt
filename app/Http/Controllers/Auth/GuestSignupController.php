@@ -91,8 +91,28 @@ class GuestSignupController extends Controller
 
             return response($payload);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Message générique au client, détail (fournisseur SMS/SMTP) au journal.
+            return $this->echecEnvoiCode($exception, 'sms');
         }
+    }
+
+    /**
+     * [VG-2026-10-21 M1-003] Un échec d'ENVOI de code n'est jamais une erreur métier : c'est le
+     * transport (SMTP, passerelle SMS) ou la base. Son message brut nommait l'hôte SMTP, et sur un
+     * échec d'authentification Symfony y écrit l'identifiant du compte d'envoi — renvoyé à tout
+     * anonyme. Le client lit une phrase générique ; le détail part au journal seulement.
+     */
+    private const MESSAGE_ENVOI_IMPOSSIBLE = "Le code n'a pas pu être envoyé. Réessaie dans un instant.";
+
+    private function echecEnvoiCode(\Throwable $exception, string $canal): \Illuminate\Http\Response
+    {
+        Log::warning('guest_signup.code_send_failed', [
+            'canal' => $canal,
+            'exception' => get_class($exception),
+            'error' => $exception->getMessage(),
+        ]);
+
+        return response(['status' => false, 'message' => self::MESSAGE_ENVOI_IMPOSSIBLE], 422);
     }
 
     /**
@@ -122,7 +142,8 @@ class GuestSignupController extends Controller
 
             return response($payload);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Jamais le message SMTP brut au client.
+            return $this->echecEnvoiCode($exception, 'email');
         }
     }
 
@@ -228,7 +249,8 @@ class GuestSignupController extends Controller
                 'error' => $exception->getMessage(),
             ]);
 
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Détail journalisé ci-dessus ; au client, une phrase générique.
+            return response(['status' => false, 'message' => self::MESSAGE_ENVOI_IMPOSSIBLE], 422);
         }
     }
 
@@ -455,7 +477,13 @@ class GuestSignupController extends Controller
                 );
             }
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Un échec de transport n'est jamais dit tel quel ; les messages
+            // MÉTIER (code invalide, expiré) passent, les types techniques sont masqués et journalisés.
+            if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportExceptionInterface) {
+                return $this->echecEnvoiCode($exception, 'verify');
+            }
+
+            return response(['status' => false, 'message' => \App\Libraries\QueryExceptionLibrary::message($exception)], 422);
         }
 
         return response()->json([
