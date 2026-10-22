@@ -824,20 +824,29 @@ class PaymentService
     private function recordCashBackMovement(Order $order, float $amount): void
     {
         try {
-            if (! Auth::check()) {
-                return;
-            }
-            $userId = (int) Auth::id();
+            // [VG-2026-10-21 M3-103] Plus de sortie silencieusement abandonnée faute d'utilisateur connecté : la
+            // session se retrouve par l'ENTRÉE de la vente.
+            $userId = Auth::check() ? (int) Auth::id() : null;
             $branchId = (int) ($order->branch_id ?? 0);
             if ($branchId <= 0) {
                 return;
             }
 
             $cashService = app(CashDrawerService::class);
-            $session = $cashService->findOpenSessionForUser($branchId, $userId);
+            // [VG-2026-10-21 M3-103] La sortie va sur le tiroir qui a reçu l'argent (session de l'entrée, puis caissier
+            // encaissant, puis celui qui rend), plus sur la session de celui qui annule.
+            $session = $cashService->findSessionForCashOut($branchId, (int) $order->id, $userId);
 
             if (! $session) {
-                Log::info('[F-003] No open cash drawer session — cashback without session linkage', [
+                // [VG-2026-10-21 M3-103] Refus plutôt que perte : sans tiroir ouvert, la sortie d'espèces n'aurait
+                // aucune trace et la clôture serait fausse. Simulation matérielle : même repli que l'encaissement
+                // (recordCashOrderMovement), non bloquant.
+                if (config('pos.simulation_hardware') !== true) {
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException(
+                        "Aucune caisse ouverte pour rendre les espèces de cette vente : ouvrez une session de caisse, puis recommencez l'annulation."
+                    );
+                }
+                Log::warning('[F-003] No open cash drawer session — cashback without session linkage (simulation)', [
                     'order_id' => $order->id,
                     'branch_id' => $branchId,
                     'user_id' => $userId,
@@ -852,7 +861,12 @@ class PaymentService
                 amount: round($amount, 2),
                 direction: \App\Models\CashMovement::DIRECTION_OUT,
                 orderId: (int) $order->id,
+                // [VG-2026-10-21 M3-103] Session close entre-temps : erreur (retour arrière), pas de sortie perdue.
+                strict: true,
             );
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // [VG-2026-10-21 M3-103] Le refus remonte : il annule toute la transaction d'annulation.
+            throw $e;
         } catch (\Throwable $e) {
             Log::warning('[F-003] recordCashBackMovement failed (non-blocking)', [
                 'order_id' => $order->id,
