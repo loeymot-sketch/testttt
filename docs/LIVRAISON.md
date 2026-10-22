@@ -96,8 +96,18 @@ Une vraie livraison traverse les trois surfaces : commande web par l'API (comme 
 - **P0 — titre-restaurant forgé sur une livraison** : `payment_method=5` était accepté par `OrderRequest` ; au départ du livreur, le flip
   historique « non-espèces → PAYÉ » de `OrderService::deliveryBoyOrderChangeStatus` scellait la vente (numéro fiscal) **sans aucun
   paiement** (reproduit : commandes 7934 et 7952). Le site n'envoie que 1 (espèces) ou 4 (carte en ligne) ; seule une requête forgée
-  l'atteignait. Désormais **refusé (422) à la prise de commande** (`OrderRequest::withValidator`, test `DeliveryFeeForgeWebTest`).
-  Le flip historique lui-même est inchangé : c'est un chantier à part (il ne doit jamais sceller PAYÉ sans paiement enregistré).
+  l'atteignait. Refusé (422) à la prise de commande le 2026-10-21 — **refus LEVÉ le 2026-10-22 (VG-2026-10-21 L2, décision du
+  propriétaire : titre-restaurant accepté partout, y compris en livraison)**, une fois la cause corrigée :
+  - `deliveryBoyOrderChangeStatus` traite le titre-restaurant **comme les espèces** : jamais PAYÉ au départ ; PAYÉ et scellé
+    (numéro fiscal) **à la remise**, avec une ligne `order_payments` (mode `PosPaymentMethod::TICKET_RESTAURANT`, montant = total
+    serveur) dans la même transaction et une trace d'audit `order.payment_tranche_persisted` (pas d'escrow espèces).
+  - L'écran livreur affiche **« Encaisser en titre-restaurant »** et le montant (mode d'arrêt `meal_voucher`), avant et après le départ.
+  - Une livraison prise en caisse et déjà payée en titre-restaurant au comptoir n'est pas touchée (aucune 2ᵉ tranche).
+  - Tests : `DeliveryMealVoucherDoorstepTest` (de bout en bout depuis l'API), `DeliveryFeeForgeWebTest` (accepté, prix serveur).
+  - ⚠️ Restes : le **site n'envoie jamais** le titre-restaurant (`funnel.jsx` : carte en ligne ou comptoir) — à ajouter côté site ;
+    la planche « Tournées » de la caisse (`PosDeliveryBoard.vue`) affiche « Espèces » pour un arrêt `meal_voucher` ; une livraison
+    caisse « à encaisser à la porte » est toujours notée espèces (`OrderService::posOrderStore` force `CASH_ON_DELIVERY`) ;
+    le flip historique des autres modes non-espèces (carte, portefeuille) au départ est inchangé.
 - **P1 — compteurs de débit partagés** : des `throttle:N,M` nus signent la requête par (domaine|IP) — ou par utilisateur — **sans la
   route** : toutes les routes invitées d'une même IP partagent UN compteur. 21 appels à `/status` faisaient répondre 429 au devis
   (limite 20) ; côté caisse, 30 suggestions bloquaient la bascule et l'enregistrement d'adresse. Chaque route a maintenant son limiteur

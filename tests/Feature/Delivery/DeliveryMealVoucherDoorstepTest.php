@@ -2,22 +2,30 @@
 
 namespace Tests\Feature\Delivery;
 
+use App\Enums\Ask;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
+use App\Enums\Source;
 use App\Enums\Status;
+use App\Enums\TaxType;
+use App\Models\Address;
 use App\Models\Branch;
 use App\Models\DeliveryStop;
+use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\OrderPayment;
+use App\Models\Tax;
 use App\Models\User;
 use App\Services\Delivery\DeliveryWaveService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Smartisan\Settings\Facades\Settings;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -125,6 +133,65 @@ class DeliveryMealVoucherDoorstepTest extends TestCase
         $this->assertSame(PosPaymentMethod::TICKET_RESTAURANT, (int) $audit->payload['mode']);
         $this->assertSame(0, \App\Models\AuditLog::query()->where('action', 'delivery.cash_collected_escrow')
             ->where('resource_id', $stop->order_id)->count(), 'Un titre-restaurant n\'est pas un encaissement d\'espèces.');
+    }
+
+    /**
+     * De bout en bout, comme le site : commande de LIVRAISON en titre-restaurant prise par l'API (acceptée, chiffrée
+     * par le serveur malgré des montants forgés), puis cuisine, départ (toujours NON payée), remise (payée, scellée,
+     * une tranche titre-restaurant du total serveur).
+     */
+    public function test_web_meal_voucher_delivery_end_to_end_accepted_priced_by_server_and_paid_only_at_handover(): void
+    {
+        Settings::group('order_setup')->set([
+            'order_setup_food_preparation_time' => 30, 'order_setup_delivery' => 5, 'order_setup_takeaway' => 5,
+        ]);
+        $customer = User::factory()->create(['branch_id' => $this->branch->id, 'status' => Status::ACTIVE, 'phone' => '0612345678']);
+        $address = Address::query()->create([
+            'user_id' => $customer->id, 'label' => 'Maison', 'address' => '10 Rue de Test',
+            'latitude' => '50.43', 'longitude' => '2.96', 'geocode_status' => 'OK',
+        ]);
+        $tax = Tax::factory()->create(['tax_rate' => 0, 'type' => TaxType::PERCENTAGE, 'status' => Status::ACTIVE]);
+        $item = Item::factory()->create([
+            'item_category_id' => ItemCategory::factory()->create(['status' => Status::ACTIVE])->id,
+            'tax_id' => $tax->id, 'price' => 10.00, 'status' => Status::ACTIVE,
+        ]);
+
+        $created = $this->actingAs($customer, 'sanctum')->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/frontend/order', [
+                'branch_id' => $this->branch->id, 'subtotal' => 10, 'discount' => 0,
+                'delivery_charge' => 0.01, 'total' => 0.01,
+                'order_type' => (string) OrderType::DELIVERY, 'is_advance_order' => Ask::NO,
+                'address_id' => $address->id, 'delivery_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'source' => Source::WEB, 'payment_method' => PaymentGateway::TICKET_RESTAURANT,
+                'items' => json_encode([['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]]),
+            ]);
+        $created->assertCreated();
+        $orderId = (int) $created->json('data.id');
+
+        $order = Order::query()->withoutGlobalScopes()->findOrFail($orderId);
+        $this->assertSame(14.9, (float) $order->total, 'Total serveur (10 € + 4,90 €), jamais les 0,01 € forgés.');
+        $this->assertNull($order->fiscal_sequence_no);
+
+        // Acceptation (bascule « à encaisser ») puis cuisine terminée — ce que font la caisse et l'écran cuisine.
+        $order->forceFill(['status' => OrderStatus::PREPARED, 'payment_status' => PaymentStatus::PENDING_COUNTER])->save();
+        $stop = DeliveryStop::query()->where('order_id', $orderId)->first() ?? app(DeliveryWaveService::class)->assign($order->fresh());
+        $this->assertSame((int) $this->courier->id, (int) $stop->delivery_boy_id, 'Seul livreur actif : rattaché automatiquement.');
+
+        $this->http()->postJson('/api/frontend/delivery-run/depart', ['wave_at' => $stop->wave_at->toDateTimeString()])
+            ->assertOk()->assertJsonPath('left.0', $orderId);
+        $atDeparture = Order::query()->withoutGlobalScopes()->find($orderId);
+        $this->assertNotSame(PaymentStatus::PAID, (int) $atDeparture->payment_status);
+        $this->assertNull($atDeparture->fiscal_sequence_no);
+        $this->assertSame(0, OrderPayment::query()->withoutGlobalScopes()->where('order_id', $orderId)->count());
+
+        $this->http()->postJson("/api/frontend/delivery-run/stops/{$stop->id}/deliver", ['collected_cents' => 1490])->assertOk();
+        $done = Order::query()->withoutGlobalScopes()->find($orderId);
+        $this->assertSame(OrderStatus::DELIVERED, (int) $done->status);
+        $this->assertSame(PaymentStatus::PAID, (int) $done->payment_status);
+        $this->assertNotNull($done->fiscal_sequence_no);
+        $payment = OrderPayment::query()->withoutGlobalScopes()->where('order_id', $orderId)->sole();
+        $this->assertSame(PosPaymentMethod::TICKET_RESTAURANT, (int) $payment->mode);
+        $this->assertEqualsWithDelta(14.9, (float) $payment->amount, 0.001);
     }
 
     /** Le livreur voit un vrai mode « titre-restaurant » et le montant à récupérer, avant comme après son départ. */

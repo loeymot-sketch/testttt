@@ -135,11 +135,12 @@ class DeliveryFeeForgeWebTest extends TestCase
     }
 
     /**
-     * [Supervision E2E 2026-10-21 · P0] Titre-restaurant (mode 5) forgé sur une LIVRAISON : le livreur ne peut pas
-     * l'encaisser, et au départ le flip historique non-espèces → PAYÉ scellait la vente (numéro fiscal) sans aucun
-     * paiement. Le mode est refusé à la prise de commande ; espèces (1) reste accepté (cf. test ci-dessus).
+     * [VG-2026-10-21 L2 · décision du propriétaire 2026-10-22] Titre-restaurant (mode 5) ACCEPTÉ sur une livraison.
+     * Il était refusé (422) depuis la supervision du 2026-10-21 parce qu'au départ du livreur le flip historique
+     * « non-espèces → PAYÉ » scellait la vente sans paiement ; ce flip ne s'applique plus au titre-restaurant, payé et
+     * scellé à la REMISE avec sa tranche order_payments (DeliveryMealVoucherDoorstepTest). Prix toujours serveur.
      */
-    public function test_ticket_restaurant_is_refused_on_a_delivery_order(): void
+    public function test_ticket_restaurant_is_accepted_on_a_delivery_order_and_priced_by_the_server(): void
     {
         $this->seedMinimalSettings();
         config(['app.api_key' => 'test-api-key']);
@@ -164,8 +165,8 @@ class DeliveryFeeForgeWebTest extends TestCase
                 'branch_id' => $branch->id,
                 'subtotal' => 10,
                 'discount' => 0,
-                'delivery_charge' => 4.9,
-                'total' => 14.9,
+                'delivery_charge' => 0.01,
+                'total' => 0.01,
                 'order_type' => (string) OrderType::DELIVERY,
                 'is_advance_order' => Ask::NO,
                 'address_id' => $address->id,
@@ -180,8 +181,14 @@ class DeliveryFeeForgeWebTest extends TestCase
                 ]]),
             ]);
 
-        $response->assertStatus(422)->assertJsonValidationErrors('payment_method');
-        $this->assertSame(0, FrontendOrder::withoutGlobalScopes()->where('user_id', $customer->id)->count());
+        $response->assertCreated();
+        $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
+        $this->assertSame(PaymentGateway::TICKET_RESTAURANT, (int) $order->payment_method);
+        // Montants forgés (0,01 €) ignorés : frais et total recalculés par le serveur.
+        $this->assertSame(4.9, (float) $order->delivery_charge);
+        $this->assertSame(14.9, (float) $order->total);
+        $this->assertNotSame(\App\Enums\PaymentStatus::PAID, (int) $order->payment_status, 'Rien n\'est encaissé à la prise de commande.');
+        $this->assertNull($order->fiscal_sequence_no, 'Aucun numéro fiscal avant la remise.');
     }
 
     private function activeItem(): Item

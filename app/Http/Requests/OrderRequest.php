@@ -313,14 +313,10 @@ class OrderRequest extends FormRequest
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
                 $this->validateDeliveryMinimumOrder($validator);
 
-                // [LIVRAISON · supervision E2E 2026-10-21 · P0] Le titre-restaurant se règle au comptoir : le livreur n'a
-                // aucun moyen de l'encaisser à la porte. Accepté ici, la commande partait avec « non espèces » ; au départ
-                // du livreur, OrderService::deliveryBoyOrderChangeStatus bascule tout mode non-espèces en PAYÉ (flip
-                // historique) — vente livrée, numéro fiscal alloué, AUCUN paiement enregistré. Le site n'envoie jamais ce
-                // mode en livraison (espèces = 1, carte en ligne = 4) : seule une requête forgée l'atteint.
-                if ((int) $this->input('payment_method', 0) === (int) \App\Enums\PaymentGateway::TICKET_RESTAURANT) {
-                    $validator->errors()->add('payment_method', 'Le titre-restaurant ne peut pas être encaissé à la livraison.');
-                }
+                // [VG-2026-10-21 L2 · décision propriétaire 2026-10-22] Titre-restaurant ACCEPTÉ en livraison. Le refus
+                // posé le 2026-10-21 (P0 : flip « non-espèces → PAYÉ » au départ du livreur, vente scellée sans paiement)
+                // est levé parce que la cause est corrigée : OrderService::deliveryBoyOrderChangeStatus ne passe un
+                // titre-restaurant en PAYÉ qu'à la REMISE, avec sa tranche order_payments (DeliveryMealVoucherDoorstepTest).
             }
 
             $this->validateOrderItemVariationsAfter($validator);
