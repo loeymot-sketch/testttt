@@ -658,6 +658,12 @@
                   class="pos-shortcuts__heure"
                   :data-testid="`pos-shortcut-heure-${o.id}`"
                 >{{ formatKioskTime(o.order_datetime || o.created_at) }}</span>
+                <!-- [VG-2026-10-21 M4-002] Livraison : heure de départ RÉELLE de la tournée (date si pas aujourd'hui). -->
+                <span
+                  v-if="departLivraison(o)"
+                  class="pos-shortcuts__heure"
+                  :data-testid="`pos-shortcut-depart-${o.id}`"
+                >🛵 {{ departLivraison(o) }}</span>
                 <span
                   v-if="apercuCommande(o).texte"
                   class="pos-shortcuts__apercu"
@@ -773,6 +779,12 @@
                 <!-- [ULTRA-AUDIT 2026-09-26 · P0-18/A2] N° seul est ambigu entre jours (compteur
                      quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
+                <!-- [VG-2026-10-21 M4-002] Livraison web : heure de départ réelle de la tournée. -->
+                <span
+                  v-if="departLivraison(o)"
+                  class="pos-shortcuts__heure"
+                  :data-testid="`pos-shortcut-web-depart-${o.id}`"
+                >🛵 {{ departLivraison(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
                 <!-- [C1 2026-07-18] Accept INLINE (chemin principal) + Détails (gestion complète). -->
                 <span class="pos-shortcuts__actions">
@@ -2309,6 +2321,12 @@
               </div>
               <div class="kiosk-cash-order-foot">
                 <span class="kiosk-cash-order-time">{{ formatKioskTime(order.created_at) }}</span>
+                <!-- [VG-2026-10-21 M4-002] Livraison : heure de départ réelle de la tournée. -->
+                <span
+                  v-if="departLivraison(order)"
+                  class="kiosk-cash-order-time"
+                  :data-testid="`kiosk-cash-depart-${order.id}`"
+                >🛵 {{ departLivraison(order) }}</span>
                 <!--
                   [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la
                   commande (lignes, statut, ticket fiscal) — accessible sans quitter
@@ -5922,6 +5940,10 @@ export default {
                 this.cancelKioskCashDialog.error = msg;
                 try { alertService.error(msg); } catch (_) { /* defensive */ }
             }
+        },
+        // [VG-2026-10-21 M4-002] Départ réel d'une livraison (delivery_slot_at du serveur), même texte que le devis.
+        departLivraison(o) {
+            return livraison.describeOrderDeparture(o);
         },
         formatKioskPrice(amount) {
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);

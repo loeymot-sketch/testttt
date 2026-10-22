@@ -84,12 +84,22 @@ function quandDepart(h, now) {
 export function describeDeparture(q, now = new Date()) {
     if (!q || q.enabled === false || !q.allowed || !Array.isArray(q.waves) || q.waves.length === 0) return '';
     const libre = q.waves.find((w) => w && !w.full);
-    if (libre) {
-        const h = lireHeureMurale(libre.wave_at);
-        return h ? `Départ prévu ${quandDepart(h, now).texte}` : '';
-    }
+    if (libre) return describeDepartAt(libre.wave_at, now);
     const h = lireHeureMurale(q.waves[q.waves.length - 1]?.wave_at);
     return h ? `Tournées complètes jusqu'à ${quandDepart(h, now).court} : départ plus tard` : '';
+}
+
+/** « Départ prévu aujourd'hui à 23:30 » / « … demain (ven. 23/10) à 00:30 » pour une heure de tournée. */
+export function describeDepartAt(waveAt, now = new Date()) {
+    const h = lireHeureMurale(waveAt);
+    return h ? `Départ prévu ${quandDepart(h, now).texte}` : '';
+}
+
+// [VG-2026-10-21 M4-002] Départ RÉEL d'une livraison déjà créée, pour les files de la caisse : `delivery_slot_at`
+// (ISO 8601, heure murale du restaurant) porté par OrderDetailsResource depuis 3211854f5, null hors livraison.
+// Même texte que le devis (describeDepartAt) : la caisse dit la même chose avant et après la validation.
+export function describeOrderDeparture(order, now = new Date()) {
+    return order && order.delivery_slot_at ? describeDepartAt(order.delivery_slot_at, now) : '';
 }
 
 /** Texte lisible du résultat d'un devis, pour l'écran. */
