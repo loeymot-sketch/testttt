@@ -127,7 +127,9 @@ class KitchenTicketQueueController extends Controller
             })
             ->whereIn('source_surface', $destination === 'kitchen' ? self::SURFACES_CUISINE : self::SURFACES_COMPTOIR)
             ->whereIn('status', KitchenReleaseRule::visibleStatuses())
-            ->where('created_at', '>=', now()->subMinutes($fenetreMinutes))
+            // [VG-2026-10-21 M1-103] Fenêtre sur l'ENTRÉE EN CUISINE, pas sur la création : une
+            // commande retenue (programmée, livraison différée) sort à sa libération, pas jamais.
+            ->tap(fn ($q) => KitchenReleaseRule::applyKitchenEntrySince($q, now()->subMinutes($fenetreMinutes)))
             ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
             ->orderBy('created_at');
 

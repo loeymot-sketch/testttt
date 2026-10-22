@@ -60,7 +60,11 @@ class KDSOrderDetailsResource extends JsonResource
                 ? $this->scheduled_at->copy()
                     ->subMinutes(\App\Domain\Kds\KitchenReleaseRule::scheduledLeadMinutes())
                     ->toIso8601String()
-                : null,
+                // [VG-2026-10-21 M2-101] Livraison retenue jusqu'à départ − marge : même ancrage à
+                // la libération (sinon « en retard » de 20 h à son entrée). ASAP → null, inchangé.
+                : ($this->resource instanceof \App\Models\Order && $this->delivery_slot_at
+                    ? \App\Domain\Kds\KitchenReleaseRule::kitchenReleaseAt($this->resource)?->toIso8601String()
+                    : null),
             'preparation_time'                    => $this->preparation_time,
             // [KITCHEN-TIMING 2026-07-03] horodatages RÉELS du parcours cuisine (vs l'estimé
             // preparation_time) + temps de préparation réel mesuré en secondes (accepted→prepared).

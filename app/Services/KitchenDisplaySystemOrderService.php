@@ -193,6 +193,9 @@ class KitchenDisplaySystemOrderService
                 // ; statut/release/branch gates inchangés. NULL = ASAP → strictement
                 // identique. Sentinel : KdsScheduledOrderGateTest (10h→20h + J-1).
                 ->orWhereNotNull('scheduled_at');
+                // [VG-2026-10-21 M2-101] Livraison créée bien avant son départ (delivery_slot_at) :
+                // même échappement que les programmées, borné à grace h après le départ.
+                \App\Domain\Kds\KitchenReleaseRule::orWhereDeliverySlotActive($query, now(config('app.timezone')));
             })->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -291,7 +294,8 @@ class KitchenDisplaySystemOrderService
             $appTz = config('app.timezone');
 
             $query = Order::query()
-                ->select(['id', 'order_serial_no', 'queue_number', 'scheduled_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
+                // [VG-2026-10-21 M2-101] + delivery_slot_at : une livraison retenue est annoncée au bandeau.
+                ->select(['id', 'order_serial_no', 'queue_number', 'scheduled_at', 'delivery_slot_at', 'order_type', 'pos_customer_name', 'user_id', 'branch_id'])
                 ->with('user')
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses());
 
@@ -304,7 +308,8 @@ class KitchenDisplaySystemOrderService
                 $query->where('branch_id', $userBranchId);
             }
 
-            return $query->orderBy('scheduled_at', 'asc')
+            // [VG-2026-10-21 M2-101] Tri sur l'heure cible cuisine (programmée, sinon départ de tournée).
+            return $query->orderByRaw('COALESCE(scheduled_at, delivery_slot_at) asc')
                 ->limit(20)
                 ->get()
                 ->map(static function (Order $order): array {
@@ -314,10 +319,12 @@ class KitchenDisplaySystemOrderService
                         // [E2E stores · B2-R2-08 · 2026-10-01] Le numéro APPELÉ (« N°A0055 »), celui
                         // que la caisse, l'écran client et l'application affichent.
                         'queue_number'    => $order->queue_number,
-                        'scheduled_at'    => $order->scheduled_at?->toIso8601String(),
+                        // [VG-2026-10-21 M2-101] Livraison sans heure programmée : son heure cible est le
+                        // départ de la tournée (delivery_slot_at) — jamais une ligne sans heure au bandeau.
+                        'scheduled_at'    => ($order->scheduled_at ?? $order->delivery_slot_at)?->toIso8601String(),
                         // [FIX SCHEDULED-STALE P3] Y-m-d Paris-local (cast datetime,
                         // app TZ) — désambiguïsation multi-jours côté bandeau.
-                        'scheduled_date'  => $order->scheduled_at?->format('Y-m-d'),
+                        'scheduled_date'  => ($order->scheduled_at ?? $order->delivery_slot_at)?->format('Y-m-d'),
                         'order_type'      => $order->order_type === null ? null : (int) $order->order_type,
                         // [NOM-COMMANDE-BORNE 2026-10-19] La borne n'emprunte jamais le compte porteur.
                         'customer_name'   => $order->pos_customer_name
@@ -1021,6 +1028,9 @@ class KitchenDisplaySystemOrderService
                 // (admission temporelle = applyScheduledBoardFilter ci-dessus).
                 // NULL = ASAP strictement inchangé. Sentinel : KdsScheduledOrderGateTest.
                 ->orWhereNotNull('scheduled_at');
+                // [VG-2026-10-21 M2-101] Livraison créée bien avant son départ (delivery_slot_at) :
+                // même échappement que les programmées, borné à grace h après le départ.
+                \App\Domain\Kds\KitchenReleaseRule::orWhereDeliverySlotActive($query, now(config('app.timezone')));
             })->get();
 
             $allItems = $orders->pluck('orderItems')->flatten();
