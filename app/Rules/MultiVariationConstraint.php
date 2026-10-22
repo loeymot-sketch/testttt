@@ -3,10 +3,12 @@
 namespace App\Rules;
 
 use App\Enums\Status;
+use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\ItemVariation;
 use App\Models\ItemWizardProfile;
 use App\Models\Scopes\WizardProfileBranchScope;
+use App\Support\Menu\IncludedMeatCount;
 use Closure;
 use Illuminate\Support\Collection;
 
@@ -59,8 +61,10 @@ class MultiVariationConstraint
         // visibility contract when it exists; otherwise preserve the legacy
         // V1 required-attribute behavior.
         $requiredByItem = self::requiredAttributesByOrderedItem($orderItems, $branchId);
+        // [VG-2026-10-21 R2-005] Viandes INCLUSES imposées par la règle du propriétaire (Méga/Terminator 2, Tacos M/L/XL 1/2/3).
+        $includedMeatByItem = self::includedMeatByOrderedItem($orderItems);
 
-        if ($allVarIds === [] && $requiredByItem === []) {
+        if ($allVarIds === [] && $requiredByItem === [] && $includedMeatByItem === []) {
             return;
         }
 
@@ -91,6 +95,24 @@ class MultiVariationConstraint
             }
 
             $itemId = (int) ($item['item_id'] ?? 0);
+
+            // [VG-2026-10-21 R2-005] Une composition doit porter EXACTEMENT les viandes incluses de l'article : la 2e viande
+            // d'un Méga n'est pas facultative (décision du propriétaire), et une viande en trop passe par l'extra payant.
+            if (isset($includedMeatByItem[$itemId])) {
+                ['name' => $itemName, 'count' => $expected] = $includedMeatByItem[$itemId];
+                $selected = self::selectedMeatCount($vars, $variationModels, $attributeModels, $itemId);
+                if ($selected !== $expected) {
+                    $failItem((int) $index, sprintf(
+                        '« %s » comprend %d %s : choisis-en exactement %d (reçu %d). Une viande en plus se commande en supplément.',
+                        $itemName,
+                        $expected,
+                        $expected > 1 ? 'viandes' : 'viande',
+                        $expected,
+                        $selected,
+                    ));
+                }
+            }
+
             $required = $requiredByItem[$itemId] ?? [];
             if ($required === []) {
                 continue;
@@ -209,6 +231,81 @@ class MultiVariationConstraint
         }
 
         return $out;
+    }
+
+    /**
+     * [VG-2026-10-21 R2-005] Pour chaque article commandé PORTANT une règle du propriétaire (config/menu_meat_rules.php),
+     * le nombre de viandes incluses à choisir — même calcul que la borne et le site (`viande_count`,
+     * IncludedMeatCount::resolve sur les attributs « Viande N » portant une variation active). Un article sans règle
+     * (bols, burgers, galettes) n'est pas concerné : son emplacement unique est déjà tenu par min_select.
+     *
+     * @param  array<int, mixed>  $orderItems
+     * @return array<int, array{name: string, count: int}>  [item_id => [name, count]]
+     */
+    private static function includedMeatByOrderedItem(array $orderItems): array
+    {
+        $itemIds = [];
+        foreach ($orderItems as $item) {
+            if (is_array($item) && (int) ($item['item_id'] ?? 0) > 0) {
+                $itemIds[(int) $item['item_id']] = true;
+            }
+        }
+        if ($itemIds === []) {
+            return [];
+        }
+
+        $items = Item::query()->with('category:id,name')->whereIn('id', array_keys($itemIds))->get(['id', 'name', 'item_category_id']);
+        $ruled = $items->filter(fn (Item $item): bool => IncludedMeatCount::rule((string) $item->name, $item->category?->name) !== null);
+        if ($ruled->isEmpty()) {
+            return [];
+        }
+
+        $attributeNamesByItem = ItemVariation::query()
+            ->join('item_attributes', 'item_attributes.id', '=', 'item_variations.item_attribute_id')
+            ->whereIn('item_variations.item_id', $ruled->pluck('id')->all())
+            ->where('item_variations.status', Status::ACTIVE)
+            ->get(['item_variations.item_id', 'item_attributes.name as attribute_name'])
+            ->groupBy('item_id');
+
+        $out = [];
+        foreach ($ruled as $item) {
+            $count = IncludedMeatCount::resolve(
+                (string) $item->name,
+                $item->category?->name,
+                collect($attributeNamesByItem->get($item->id, []))->pluck('attribute_name')
+            );
+            if ($count > 0) {
+                $out[(int) $item->id] = ['name' => (string) $item->name, 'count' => $count];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * [VG-2026-10-21 R2-005] Viandes choisies sur une ligne : variations de l'article dont l'attribut est un emplacement
+     * viande (« Viande N »). L'extra « Viande supplémentaire » (payant) n'est pas une viande incluse.
+     *
+     * @param  array<int, mixed>  $vars
+     */
+    private static function selectedMeatCount(array $vars, Collection $variationModels, Collection $attributeModels, int $itemId): int
+    {
+        $count = 0;
+        foreach ($vars as $v) {
+            if (! is_array($v)) {
+                continue;
+            }
+            $model = $variationModels->get((int) ($v['id'] ?? 0));
+            if (! $model instanceof ItemVariation || (int) $model->item_id !== $itemId) {
+                continue;
+            }
+            $attribute = $attributeModels->get((int) $model->item_attribute_id);
+            if ($attribute instanceof ItemAttribute && IncludedMeatCount::isMeatSlot((string) $attribute->name)) {
+                $count += max(1, (int) ($v['quantity'] ?? 1));
+            }
+        }
+
+        return $count;
     }
 
     /**
