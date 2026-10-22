@@ -186,12 +186,14 @@ class EventServiceProvider extends ServiceProvider
             DecrementItemAvailabilityOnOrder::class,
             DecrementStockOnOrderCreated::class,
             SendFcmOnOrderCreated::class,
+            // [LIVRAISON 2026-10-20] Rattache la commande de livraison à sa tournée de 30 minutes (best-effort).
+            // [VG-2026-10-21 M1-103] AVANT les impressions : printOnce relit delivery_slot_at en base ; posé après, une
+            // livraison « au plus tôt » sur une tournée lointaine passait pour libérée et s'imprimait à la création.
+            AssignDeliveryWaveOnOrderCreated::class,
             // [PRINT-SAGA 2026-06-24] Kiosk/borne order → print a COPY on the caisse printer.
             PrintKioskOrderToCounter::class,
             // [BORNE-KITCHEN 2026-06-28] + ticket CUISINE sur la station 'kitchen' (best-effort).
             PrintKioskKitchenTicketOnOrderCreated::class,
-            // [LIVRAISON 2026-10-20] Rattache la commande de livraison à sa tournée de 30 minutes (best-effort).
-            AssignDeliveryWaveOnOrderCreated::class,
             // [ARCH_STOCK_INTELLIGENT_BOM P2a — B3 2026-07-23] Consommation matière
             // THÉORIQUE (ShouldQueue, hors-ligne). Placé EN DERNIER + isolé en
             // try/catch : il ne peut ni ralentir ni casser le cascade ci-dessus
