@@ -281,6 +281,40 @@ class TemperatureControllerTest extends TestCase
         $this->assertSame(1, HygieneTemperatureReading::query()->count());
     }
 
+    /**
+     * [VG-2026-10-21 M8-104] Deux rejeux SIMULTANÉS du même relevé (deux onglets qui vident la même file) : celui qui perd la course d'insertion
+     * recevait 404 « Commande introuvable » alors que le relevé était enregistré. Sous MySQL (REPEATABLE READ), la relecture faite DANS la
+     * transaction lit l'instantané pris avant l'insertion concurrente : elle ne voit pas la ligne. SQLite n'a pas cet instantané ; on l'émule :
+     * dans la transaction, la ligne insérée « par l'autre requête » est invisible — exactement ce que voit InnoDB.
+     */
+    public function test_un_rejeu_concurrent_du_meme_releve_repond_succes_avec_la_ligne_existante(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 1])->assertCreated();
+        $id = HygieneEquipment::query()->value('id');
+        $base = \Illuminate\Support\Facades\DB::transactionLevel(); // RefreshDatabase ouvre déjà une transaction
+        $otherId = null;
+        $active = true;
+        HygieneTemperatureReading::addGlobalScope('vg_m8_104_snapshot', function ($q) use (&$otherId, &$active, $base): void {
+            if ($active && $otherId !== null && \Illuminate\Support\Facades\DB::transactionLevel() > $base) $q->whereKeyNot($otherId);
+        });
+        // l'autre requête insère la même référence juste avant nous (entre notre lecture « déjà enregistré ? » et notre insertion)
+        HygieneTemperatureReading::creating(function (HygieneTemperatureReading $row) use (&$otherId, &$active): void {
+            if (! $active || $otherId !== null) return;
+            $other = $row->replicate();
+            $other->saveQuietly();
+            $otherId = $other->id;
+        });
+        try {
+            $r = $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $id, 'value' => 3, 'client_ref' => 'race-1']]]);
+            $r->assertCreated(); // succès, comme tout rejeu idempotent (jamais un 404 sur un relevé enregistré)
+            $this->assertSame($otherId, $r->json('data.0.id'), 'la réponse rend la ligne déjà enregistrée');
+            $this->assertSame(1, HygieneTemperatureReading::query()->withoutGlobalScope('vg_m8_104_snapshot')->where('client_ref', 'race-1')->count());
+        } finally {
+            $active = false; // la portée globale est statique : la rendre inerte pour les tests suivants
+        }
+    }
+
     public function test_renommer_ou_changer_un_seuil_ne_reecrit_pas_l_historique(): void
     {
         $this->staff();

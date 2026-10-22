@@ -337,12 +337,25 @@ class HygieneTemperatureController extends HygieneController
                 try {
                     $row->save();
                 } catch (QueryException $e) {
-                    if (! $this->isUniqueViolation($e)) throw $e;
-                    $row = HygieneTemperatureReading::query()->where('client_ref', $p['client_ref'])->firstOrFail(); // rejoué en parallèle
+                    if ($p['client_ref'] === null || ! $this->isUniqueViolation($e)) throw $e;
+                    // [VG-2026-10-21 M8-104] rejoué en parallèle : relu APRÈS la transaction. Dedans, MySQL (REPEATABLE READ) relit l'instantané
+                    // pris avant l'insertion concurrente : la ligne enregistrée y est invisible → 404 « Commande introuvable » sur un relevé gardé.
+                    $saved[] = $p['client_ref'];
+                    continue;
                 }
                 $saved[] = $row;
             }
         });
+
+        // [VG-2026-10-21 M8-104] lecture fraîche hors transaction : la ligne de l'autre requête (validée, sinon l'insertion n'aurait pas buté) est visible
+        foreach ($saved as $i => $r) {
+            if (! is_string($r)) continue;
+            $found = HygieneTemperatureReading::query()->where('client_ref', $r)->first();
+            if ($found === null) {
+                return response()->json(['message' => 'Envoi en cours sur un autre écran : réessayez dans un instant.'], 503); // rejouable, rien de perdu
+            }
+            $saved[$i] = $found;
+        }
 
         $rows = collect($saved)->map(fn ($r) => $this->presentReading($r))->values();
 
