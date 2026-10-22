@@ -26,10 +26,10 @@ function setup(rows = []) {
     h.axios.post.mockReset();
     h.axios.get.mockImplementation(async (url, cfg) => {
         if (url === 'admin/hygiene/trace/today') return { data: { data: rows, meta: META } };
-        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5 } } };
-        if (url === 'admin/hygiene/trace/history') return { data: { data: [], meta: {} } };
-        if (url === 'admin/hygiene/trace/recall') return { data: { data: { ...recallData, lot: cfg.params.lot } } };
-        return { data: { data: [] } };
+        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5, server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/trace/history') return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/trace/recall') return { data: { data: { ...recallData, lot: cfg.params.lot }, meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
     });
     h.axios.post.mockImplementation(async (url, body) => { posts.push([url, body]); return { data: { data: { id: 1 } } }; });
     window.localStorage.clear();
@@ -150,5 +150,29 @@ describe('traçabilité — rappel de lot', () => {
         await w.get('[data-testid="trc-recall-go"]').trigger('click');
         await flushPromises();
         expect(w.get('[data-testid="trc-recall-none"]').text()).toContain('Aucune trace');
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] réponse 200 sans la forme d'une réponse du serveur (portail captif, proxy)
+describe('traçabilité — réponse 200 sans la forme attendue', () => {
+    const HTML = { status: 200, data: '<!doctype html><title>Portail wifi</title>' };
+    it('tracer : jamais « Produit tracé. », la saisie reste et le message dit « Envoi non confirmé »', async () => {
+        const w = await mountScreen();
+        const alertService = (await import('../../resources/js/services/alertService')).default;
+        alertService.success.mockClear();
+        await w.get('[data-testid="trc-new"]').trigger('click');
+        await w.get('[data-testid="trc-product"]').setValue('Steak');
+        await w.get('[data-testid="trc-lot"]').setValue('S1');
+        h.axios.post.mockImplementationOnce(async () => HTML);
+        await submit(w).trigger('click');
+        await flushPromises();
+        expect(alertService.success).not.toHaveBeenCalled();
+        expect(w.get('[data-testid="trc-form-error"]').text()).toContain('Envoi non confirmé');
+        expect(w.get('[data-testid="trc-lot"]').element.value).toBe('S1');
+    });
+    it('premier chargement : une erreur, jamais une journée vide', async () => {
+        h.axios.get.mockImplementation(async () => HTML);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="trc-error"]').text()).toContain('Traçabilité indisponible');
     });
 });

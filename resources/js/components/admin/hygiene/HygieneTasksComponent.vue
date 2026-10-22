@@ -201,7 +201,7 @@ import axios from "axios";
 import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygienePhotoField from "./HygienePhotoField";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 
 const historySeq = latest();
@@ -219,6 +219,7 @@ export default {
             meta: { summary: { total: 0, done: 0, partial: 0, todo: 0, overdue: 0 }, recommended: { total: 0, missing: 0, never_configured: false }, server_now: null, timezone: "Europe/Paris" },
             loaded: false,
             loadError: "",
+            lastOkAt: null, // [VG-2026-10-21 M8-103] dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais une liste vide
             tab: "todo",
             forms: {},
             operatorId: null, operatorToken: null,
@@ -269,24 +270,26 @@ export default {
         },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/tasks/today");
+                const data = loadedBody(await axios.get("admin/hygiene/tasks/today")); // [VG-2026-10-21 M8-103]
                 this.items = data.data || [];
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
                 this.loaded = true;
+                this.lastOkAt = Date.now();
                 // premier lancement : le plan de départ s'installe seul (jamais après une suppression volontaire)
                 if (this.meta.recommended.never_configured && !this.autoTried) {
                     this.autoTried = true;
                     await this.installRecommended(true);
                 }
             } catch (e) {
-                this.loadError = "Fiches indisponibles. Vérifiez la connexion puis rechargez la page.";
+                // [VG-2026-10-21 M8-103] premier chargement : erreur ; ensuite : les données affichées restent, dites périmées
+                this.loadError = loadFailedText("Fiches indisponibles. Vérifiez la connexion puis rechargez la page.", this.lastOkAt, this.meta.timezone || "Europe/Paris");
             }
         },
         async installRecommended(auto) {
             this.saving = true;
             try {
-                const { data } = await axios.post("admin/hygiene/tasks/templates/install-recommended", auto ? { only_if_empty: true } : {});
+                const data = savedBody(await axios.post("admin/hygiene/tasks/templates/install-recommended", auto ? { only_if_empty: true } : {})); // [VG-2026-10-21 M8-101]
                 const added = data.data && data.data.added;
                 await this.load();
                 if (this.tab === "plan") await this.loadPlan();
@@ -321,7 +324,7 @@ export default {
             f.error = "";
             const all = this.missing(t) === 0;
             try {
-                await axios.post("admin/hygiene/tasks/completions", {
+                savedBody(await axios.post("admin/hygiene/tasks/completions", { // [VG-2026-10-21 M8-101]
                     template_id: t.id,
                     ...(all ? { all: true } : { done: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), note: f.note.trim() }),
                     attachment_id: f.photo || undefined,
@@ -329,7 +332,7 @@ export default {
                     operator_user_id: this.operatorId || undefined,
                     operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { all, d: t.checklist.filter((i) => f.checked[i.key]).map((i) => i.key), n: f.note.trim(), p: f.photo, o: this.operatorId }),
-                });
+                }));
                 this.closeCard(t);
                 await this.load();
                 // récompense honnête : ce qu'il reste (chiffre du serveur) ou la fin de la journée ; une fiche « avec réserve » n'est jamais fêtée
@@ -347,7 +350,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/tasks/completions/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
+                savedBody(await axios.post(`admin/hygiene/tasks/completions/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined })); // [VG-2026-10-21 M8-101]
                 this.voidTarget = null;
                 await this.load();
                 alertService.success("Validation annulée (elle reste au journal).");
@@ -362,7 +365,7 @@ export default {
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const { data } = await axios.get("admin/hygiene/tasks/history", { params: { incomplete_only: this.incompleteOnly ? 1 : 0, limit: 200 } });
+                const data = loadedBody(await axios.get("admin/hygiene/tasks/history", { params: { incomplete_only: this.incompleteOnly ? 1 : 0, limit: 200 } })); // [VG-2026-10-21 M8-103]
                 if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
@@ -372,7 +375,7 @@ export default {
         // ── plan de nettoyage ───────────────────────────────────────────────
         async loadPlan() {
             try {
-                const { data } = await axios.get("admin/hygiene/tasks/templates");
+                const data = loadedBody(await axios.get("admin/hygiene/tasks/templates")); // [VG-2026-10-21 M8-103]
                 this.plan = data.data || [];
                 this.meta = { ...this.meta, recommended: (data.meta && data.meta.recommended) || this.meta.recommended };
             } catch (e) {
@@ -397,8 +400,8 @@ export default {
             this.saving = true;
             e.error = "";
             try {
-                if (e.id) await axios.put(`admin/hygiene/tasks/templates/${e.id}`, body);
-                else await axios.post("admin/hygiene/tasks/templates", body);
+                if (e.id) savedBody(await axios.put(`admin/hygiene/tasks/templates/${e.id}`, body)); // [VG-2026-10-21 M8-101]
+                else savedBody(await axios.post("admin/hygiene/tasks/templates", body)); // [VG-2026-10-21 M8-101]
                 this.edit = null;
                 await Promise.all([this.loadPlan(), this.load()]);
                 alertService.success("Fiche enregistrée.");
@@ -413,7 +416,7 @@ export default {
             if (!e || !e.id || this.saving) return;
             this.saving = true;
             try {
-                await axios.delete(`admin/hygiene/tasks/templates/${e.id}`);
+                savedBody(await axios.delete(`admin/hygiene/tasks/templates/${e.id}`)); // [VG-2026-10-21 M8-101]
                 this.edit = null;
                 await Promise.all([this.loadPlan(), this.load()]);
                 alertService.success("Fiche supprimée (son historique reste au journal).");

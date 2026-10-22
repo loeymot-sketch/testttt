@@ -76,7 +76,7 @@ function setup(items, opts = {}) {
             const summary = { total: today.length, todo: today.filter((e) => e.state === 'todo').length, ok: today.filter((e) => e.state === 'ok').length, alert: today.filter((e) => e.state === 'alert').length };
             return { data: { data: today, meta: { period: 'morning', periods: { morning: 'Matin', evening: 'Soir', other: 'Autre' }, summary, kinds: [{ key: 'fridge', label: 'Réfrigérateur' }, { key: 'freezer', label: 'Congélateur' }], corrective_actions: ACTIONS, server_now: '2026-10-17T08:00:00+02:00', timezone: 'Europe/Paris' } } };
         }
-        return { data: { data: [] } };
+        return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
     });
     h.axios.post.mockImplementation(async (url, body) => {
         posts.push([url, body]);
@@ -88,10 +88,10 @@ function setup(items, opts = {}) {
                 const bad = (e.max_c !== null && r.value > e.max_c) || (e.min_c !== null && r.value < e.min_c);
                 return { ...e, state: bad ? 'alert' : 'ok', done_this_period: true, last_today: { id: 100 + e.id, equipment_id: e.id, value_c: r.value, status: bad ? 'alert' : 'ok', alert_reason: bad ? 'too_warm' : null, period: 'morning', recorded_at: '2026-10-17T08:01:00+02:00', operator_name: 'Karim', corrective_label: r.corrective_action ? 'Produits contrôlés (température à cœur)' : null } };
             });
-            return { data: { data: body.readings.map((r) => ({ id: 1, equipment_id: r.equipment_id })), meta: { alerts: today.filter((e) => e.state === 'alert').length } } };
+            return { data: { data: body.readings.map((r) => ({ id: 1, equipment_id: r.equipment_id, client_ref: r.client_ref })), meta: { alerts: today.filter((e) => e.state === 'alert').length } } };
         }
         if (url === 'admin/hygiene/temperature/equipment/quick-setup') { today = SIX(); return { data: { data: { added: 6 } } }; }
-        return { data: { data: {} } };
+        return { data: { data: { id: 1 } } };
     });
 }
 
@@ -355,7 +355,7 @@ describe('écran températures — bain-marie et courbe', () => {
                 return { data: { data: [
                     { id: 3, equipment_id: cfg.params.equipment_id, value_c: 71, status: 'ok', recorded_at: '2026-10-16T12:00:00+02:00', voided: false },
                     { id: 4, equipment_id: cfg.params.equipment_id, value_c: 60, status: 'alert', recorded_at: '2026-10-17T12:00:00+02:00', voided: false },
-                ] } };
+                ], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
             }
             return base(url, cfg);
         });
@@ -419,8 +419,8 @@ describe('relecture adverse (2026-10-17) — courbe', () => {
             if (url === 'admin/hygiene/temperature/history') {
                 calls += 1;
                 const rows = calls >= 3 ? [] : [{ id: 40, equipment_id: 7, value_c: 60, status: 'alert', recorded_at: '2026-10-17T08:01:00+02:00', voided: false }];
-                if (calls === 1) return new Promise((resolve) => { release = () => resolve({ data: { data: rows } }); });
-                return Promise.resolve({ data: { data: rows } });
+                if (calls === 1) return new Promise((resolve) => { release = () => resolve({ data: { data: rows, meta: { server_now: '2026-10-20T10:00:00+02:00' } } }); });
+                return Promise.resolve({ data: { data: rows, meta: { server_now: '2026-10-20T10:00:00+02:00' } } });
             }
             return base(url, cfg);
         });
@@ -534,5 +534,83 @@ describe('saisie partagée (réception, huile) : même règle du moins tapé', (
         const plain = mount(HygieneMeasureInput, { props: { modelValue: { raw: '', neg: false }, label: 'Litres', testid: 'l', signed: false, unit: 'L' } });
         await plain.get('[data-testid="l-input"]').setValue('-3');
         expect(plain.emitted('update:modelValue').at(-1)[0]).toEqual({ raw: '-3', neg: false });
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] Une réponse 200 qui n'a pas la forme d'une réponse du serveur (portail captif du wifi, proxy, corps vide) :
+// un relevé sanitaire était PERDU avec « 0 relevé enregistré ✓ … merci ! », la file hors ligne se vidait (« 1 envoi … a été enregistré »)
+// sans rien en base, et l'écran disait « Aucun équipement » au chargement.
+describe('températures — réponse 200 sans la forme attendue (portail captif, proxy)', () => {
+    const HTML = { status: 200, data: '<!doctype html><title>Portail wifi</title><p>Acceptez les conditions</p>' };
+    const queued = () => JSON.parse(window.localStorage.getItem('hygiene_offline_queue') || '[]');
+    const successTexts = () => alertService.success.mock.calls.map((c) => String(c[0]));
+
+    it('envoi direct : jamais « enregistré », le relevé est gardé en file avec sa valeur, le message dit « Envoi non confirmé »', async () => {
+        setup(SIX());
+        window.localStorage.clear();
+        const w = await mountScreen();
+        alertService.success.mockClear(); alertService.error.mockClear(); alertService.info.mockClear();
+        await type(w, 1, '2');
+        h.axios.post.mockImplementationOnce(async (url, body) => { posts.push([url, body]); return HTML; });
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(successTexts().some((t) => /enregistr/.test(t))).toBe(false);
+        expect(alertService.error).toHaveBeenLastCalledWith(expect.stringContaining('Envoi non confirmé'));
+        const q = queued();
+        expect(q).toHaveLength(1);
+        expect(q[0].state).toBe('pending');
+        expect(q[0].body.readings.map((r) => [r.equipment_id, r.value])).toEqual([[1, 2]]);
+        expect(q[0].body.readings[0].client_ref).toBe(posts[0][1].readings[0].client_ref); // même référence : le rejeu ne double rien
+        expect(w.find('[data-testid="tmp-queued-1"]').exists()).toBe(true); // la carte dit que la mesure est gardée
+    });
+
+    it('rejeu de la file : une réponse 200 HTML ne vide PAS la file et ne dit pas « a été enregistré »', async () => {
+        setup(SIX());
+        window.localStorage.clear();
+        const w = await mountScreen();
+        await type(w, 1, '1');
+        h.axios.post.mockImplementationOnce(async () => { throw new Error('Network Error'); });
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(queued()).toHaveLength(1);
+        alertService.success.mockClear();
+        h.axios.post.mockImplementation(async () => HTML);
+        await w.get('[data-testid="tmp-offline-retry"]').trigger('click');
+        await flushPromises();
+        expect(successTexts().some((t) => /enregistr/.test(t))).toBe(false);
+        expect(queued()).toHaveLength(1);
+        expect(queued()[0].state).toBe('pending');
+        expect(queued()[0].body.readings[0].value).toBe(1);
+    });
+
+    it('une réponse JSON qui ne rend pas la référence d’envoi n’est pas une preuve non plus', async () => {
+        setup(SIX());
+        window.localStorage.clear();
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        await type(w, 1, '3');
+        h.axios.post.mockImplementationOnce(async () => ({ data: { data: [{ id: 9, client_ref: 'autre-chose' }], meta: { alerts: 0 } } }));
+        await w.get('[data-testid="tmp-submit"]').trigger('click');
+        await flushPromises();
+        expect(successTexts().some((t) => /enregistr/.test(t))).toBe(false);
+        expect(queued()).toHaveLength(1);
+    });
+
+    it('premier chargement : une erreur, jamais « Aucun équipement » ni « Créer mes équipements »', async () => {
+        setup(SIX());
+        h.axios.get.mockImplementation(async () => HTML);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="tmp-error"]').text()).toContain('Relevés indisponibles');
+        expect(w.find('[data-testid="tmp-setup"]').exists()).toBe(false);
+    });
+
+    it('rafraîchissement raté : les cartes restent, dites périmées avec leur heure', async () => {
+        setup(SIX());
+        const w = await mountScreen();
+        h.axios.get.mockImplementation(async () => HTML);
+        await w.vm.loadToday();
+        await flushPromises();
+        expect(w.find('[data-testid="tmp-card-1"]').exists()).toBe(true);
+        expect(w.get('[data-testid="tmp-error"]').text()).toMatch(/Réseau indisponible : ces chiffres datent de \d\d:\d\d/);
     });
 });

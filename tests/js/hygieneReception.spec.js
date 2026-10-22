@@ -28,9 +28,9 @@ function setup(initialRows = []) {
     h.axios.post.mockReset();
     h.axios.get.mockImplementation(async (url) => {
         if (url === 'admin/hygiene/receptions/today') return { data: { data: rows, meta: META } };
-        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5 } } };
-        if (url === 'admin/hygiene/receptions/history') return { data: { data: [], meta: {} } };
-        return { data: { data: [] } };
+        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5, server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/receptions/history') return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
     });
     h.axios.post.mockImplementation(async (url, body) => { posts.push([url, body]); return { data: { data: { id: 1 } } }; });
     window.localStorage.clear();
@@ -178,5 +178,30 @@ describe('réception — liste du jour', () => {
     it('aucune livraison : message clair', async () => {
         const w = await mountScreen();
         expect(w.get('[data-testid="rcp-empty"]').text()).toContain('Aucune livraison');
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] réponse 200 sans la forme d'une réponse du serveur (portail captif, proxy)
+describe('réception — réponse 200 sans la forme attendue', () => {
+    const HTML = { status: 200, data: '<!doctype html><title>Portail wifi</title>' };
+    it('enregistrer : jamais « Réception enregistrée. », la saisie reste et le message dit « Envoi non confirmé »', async () => {
+        const w = await mountScreen();
+        const alertService = (await import('../../resources/js/services/alertService')).default;
+        alertService.success.mockClear();
+        await w.get('[data-testid="rcp-new"]').trigger('click');
+        await w.get('[data-testid="rcp-supplier-3"]').trigger('click');
+        await type(w, 'chilled', '2');
+        await w.get('[data-testid="rcp-all-ok"]').trigger('click');
+        h.axios.post.mockImplementationOnce(async () => HTML);
+        await w.get('[data-testid="rcp-submit"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).not.toHaveBeenCalled();
+        expect(w.get('[data-testid="rcp-form-error"]').text()).toContain('Envoi non confirmé');
+        expect(w.get('[data-testid="rcp-t-chilled-input"]').element.value).toBe('2');
+    });
+    it('premier chargement : une erreur, jamais une journée vide', async () => {
+        h.axios.get.mockImplementation(async () => HTML);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="rcp-error"]').text()).toContain('Réceptions indisponibles');
     });
 });

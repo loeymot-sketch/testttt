@@ -186,7 +186,7 @@ import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygieneMeasureInput from "./HygieneMeasureInput";
 import HygienePhotoField from "./HygienePhotoField";
 import HygienePhotoView from "./HygienePhotoView";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import { parseTemperature, formatTemperature, limitText } from "../../../helpers/hygieneTemperature";
 
@@ -202,6 +202,7 @@ export default {
             meta: { summary: { count: 0, alerts: 0, refused: 0 }, categories: [], checks: [], decisions: [], suppliers: [], server_now: null, timezone: "Europe/Paris" },
             loaded: false,
             loadError: "",
+            lastOkAt: null, // [VG-2026-10-21 M8-103] dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais une liste vide
             tab: "today",
             operatorId: null, operatorToken: null,
             form: null,
@@ -257,20 +258,22 @@ export default {
         rowClass(r) { return r.voided ? "" : (r.status === "alert" ? (r.decision === "refused" ? "is-alert" : "is-partial") : "is-done"); },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/receptions/today");
+                const data = loadedBody(await axios.get("admin/hygiene/receptions/today")); // [VG-2026-10-21 M8-103]
                 this.rows = data.data || [];
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
                 this.loaded = true;
+                this.lastOkAt = Date.now();
             } catch (e) {
-                this.loadError = "Réceptions indisponibles. Vérifiez la connexion puis rechargez la page.";
+                // [VG-2026-10-21 M8-103] premier chargement : erreur ; ensuite : les données affichées restent, dites périmées
+                this.loadError = loadFailedText("Réceptions indisponibles. Vérifiez la connexion puis rechargez la page.", this.lastOkAt, this.meta.timezone || "Europe/Paris");
             }
         },
         setTab(k) { this.tab = k; if (k === "journal") this.loadHistory(); },
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const { data } = await axios.get("admin/hygiene/receptions/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
+                const data = loadedBody(await axios.get("admin/hygiene/receptions/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } })); // [VG-2026-10-21 M8-103]
                 if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
@@ -314,7 +317,7 @@ export default {
             const temperatures = {};
             this.categories.forEach((c) => { const v = this.tempValue(c); if (v !== null) temperatures[c.key] = v; });
             try {
-                await axios.post("admin/hygiene/receptions", {
+                savedBody(await axios.post("admin/hygiene/receptions", { // [VG-2026-10-21 M8-101]
                     ...(f.newSupplier ? { supplier_name: f.supplierName.trim() } : { supplier_id: f.supplierId }),
                     delivery_note_no: f.bl.trim() || undefined, delivered_by: f.driver.trim() || undefined,
                     temperatures, checks: { ...f.checks },
@@ -323,7 +326,7 @@ export default {
                     operator_user_id: this.operatorId || undefined,
                     operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { s: f.newSupplier ? f.supplierName.trim() : f.supplierId, bl: f.bl, dr: f.driver, t: temperatures, c: f.checks, d: this.hasDeviation ? f.decision : "", n: f.note, p: f.photo, o: this.operatorId }),
-                });
+                }));
                 this.form = null;
                 await this.load();
                 alertService.success("Réception enregistrée.");
@@ -338,7 +341,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/receptions/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
+                savedBody(await axios.post(`admin/hygiene/receptions/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined })); // [VG-2026-10-21 M8-101]
                 this.voidTarget = null;
                 await this.load();
                 alertService.success("Réception annulée (elle reste au journal).");

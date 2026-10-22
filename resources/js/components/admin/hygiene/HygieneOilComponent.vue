@@ -167,7 +167,7 @@ import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygieneMeasureInput from "./HygieneMeasureInput";
 import HygienePhotoField from "./HygienePhotoField";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import { parseTemperature, formatTemperature } from "../../../helpers/hygieneTemperature";
 
@@ -181,7 +181,9 @@ export default {
         return {
             items: [], fryers: [], history: [],
             meta: { summary: { total: 0, todo: 0, ok: 0, warn: 0, alert: 0 }, types: [], corrective_actions: [], limits: { polar_limit: 25, polar_warn: 20, bath_max_c: 180 }, server_now: null, timezone: "Europe/Paris" },
-            loaded: false, loadError: "", tab: "today", operatorId: null, operatorToken: null, forms: {}, saving: false, setupCount: 2, newFryer: "",
+            loaded: false, loadError: "",
+            lastOkAt: null, // [VG-2026-10-21 M8-103] dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais une liste vide
+            tab: "today", operatorId: null, operatorToken: null, forms: {}, saving: false, setupCount: 2, newFryer: "",
             alertsOnly: false, voidTarget: null, voidReason: "", manageHasRows: false,
         };
     },
@@ -214,20 +216,22 @@ export default {
         },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/oil/today");
+                const data = loadedBody(await axios.get("admin/hygiene/oil/today")); // [VG-2026-10-21 M8-103]
                 this.items = data.data || [];
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 if (!this.items.length) {
                     // des friteuses existent peut-être, toutes masquées : pas de « démarrage » dans ce cas
-                    const all = await axios.get("admin/hygiene/oil/fryers");
-                    this.manageHasRows = (all.data.data || []).length > 0;
+                    const all = loadedBody(await axios.get("admin/hygiene/oil/fryers")); // [VG-2026-10-21 M8-103]
+                    this.manageHasRows = (all.data || []).length > 0;
                 }
                 const ids = new Set(this.items.map((i) => i.id));
                 this.forms = Object.fromEntries(Object.entries(this.forms).filter(([id]) => ids.has(Number(id))));
                 this.loadError = "";
                 this.loaded = true;
+                this.lastOkAt = Date.now();
             } catch (e) {
-                this.loadError = "Huile indisponible. Vérifiez la connexion puis rechargez la page.";
+                // [VG-2026-10-21 M8-103] premier chargement : erreur ; ensuite : les données affichées restent, dites périmées
+                this.loadError = loadFailedText("Huile indisponible. Vérifiez la connexion puis rechargez la page.", this.lastOkAt, this.meta.timezone || "Europe/Paris");
             }
         },
         setTab(k) { this.tab = k; if (k === "journal") this.loadHistory(); if (k === "fryers") this.loadFryers(); },
@@ -235,7 +239,7 @@ export default {
             if (this.saving) return;
             this.saving = true;
             try {
-                await axios.post("admin/hygiene/oil/fryers/quick-setup", { count: this.setupCount });
+                savedBody(await axios.post("admin/hygiene/oil/fryers/quick-setup", { count: this.setupCount })); // [VG-2026-10-21 M8-101]
                 await this.load();
             } catch (e) {
                 this.loadError = apiMessage(e, "Création impossible. Vérifiez la connexion puis réessayez.");
@@ -307,7 +311,7 @@ export default {
             }
             body.client_ref = refFor(x.ref, body); // même saisie = même référence (rejeu sûr) ; saisie corrigée = nouvelle référence
             try {
-                await axios.post("admin/hygiene/oil/controls", body);
+                savedBody(await axios.post("admin/hygiene/oil/controls", body)); // [VG-2026-10-21 M8-101]
                 this.closeForm(f);
                 await this.load();
                 alertService.success(x.type === "test" ? "Test enregistré." : (x.type === "change" ? "Vidange enregistrée." : "Filtrage enregistré."));
@@ -321,7 +325,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/oil/controls/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
+                savedBody(await axios.post(`admin/hygiene/oil/controls/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined })); // [VG-2026-10-21 M8-101]
                 this.voidTarget = null;
                 await this.load();
                 alertService.success("Ligne annulée (elle reste au journal).");
@@ -336,7 +340,7 @@ export default {
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const { data } = await axios.get("admin/hygiene/oil/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
+                const data = loadedBody(await axios.get("admin/hygiene/oil/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } })); // [VG-2026-10-21 M8-103]
                 if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
@@ -344,7 +348,7 @@ export default {
         },
         async loadFryers() {
             try {
-                const { data } = await axios.get("admin/hygiene/oil/fryers");
+                const data = loadedBody(await axios.get("admin/hygiene/oil/fryers")); // [VG-2026-10-21 M8-103]
                 this.fryers = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Friteuses indisponibles."));
@@ -352,7 +356,7 @@ export default {
         },
         async saveFryer(q) {
             try {
-                await axios.put(`admin/hygiene/oil/fryers/${q.id}`, { name: q.name });
+                savedBody(await axios.put(`admin/hygiene/oil/fryers/${q.id}`, { name: q.name })); // [VG-2026-10-21 M8-101]
                 await Promise.all([this.loadFryers(), this.load()]);
                 alertService.success(`« ${q.name.trim()} » enregistrée.`);
             } catch (e) {
@@ -361,7 +365,7 @@ export default {
         },
         async toggleFryer(q) {
             try {
-                await axios.put(`admin/hygiene/oil/fryers/${q.id}`, { is_active: !q.is_active });
+                savedBody(await axios.put(`admin/hygiene/oil/fryers/${q.id}`, { is_active: !q.is_active })); // [VG-2026-10-21 M8-101]
                 await Promise.all([this.loadFryers(), this.load()]);
             } catch (e) {
                 alertService.error(apiMessage(e, "Modification impossible."));
@@ -371,7 +375,7 @@ export default {
             if (this.saving) return;
             this.saving = true;
             try {
-                await axios.post("admin/hygiene/oil/fryers", { name: this.newFryer.trim() });
+                savedBody(await axios.post("admin/hygiene/oil/fryers", { name: this.newFryer.trim() })); // [VG-2026-10-21 M8-101]
                 this.newFryer = "";
                 await Promise.all([this.loadFryers(), this.load()]);
             } catch (e) {

@@ -187,7 +187,7 @@ import alertService from "../../../services/alertService";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
 import HygienePhotoField from "./HygienePhotoField";
 import HygienePhotoView from "./HygienePhotoView";
-import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatHm, formatDayHm, formatDay, newClientRef, refFor, latest, loadedBody, savedBody, loadFailedText } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 
 const historySeq = latest();
@@ -199,7 +199,9 @@ export default {
     data() {
         return {
             rows: [], meta: { summary: { count: 0, alerts: 0 }, products: [], suppliers: [], receptions: [], server_now: null, timezone: "Europe/Paris" },
-            loaded: false, loadError: "", tab: "today", operatorId: null, operatorToken: null, form: null, saving: false,
+            loaded: false, loadError: "",
+            lastOkAt: null, // [VG-2026-10-21 M8-103] dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais une liste vide
+            tab: "today", operatorId: null, operatorToken: null, form: null, saving: false,
             voidTarget: null, voidReason: "", history: [], q: "", timer: null, recallLot: "", recall: null, recallError: "",
         };
     },
@@ -237,20 +239,22 @@ export default {
         discardText(r) { return ({ discarded: "jetée", used: "utilisée", cancelled: "annulée" })[r] || "sortie"; },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/trace/today");
+                const data = loadedBody(await axios.get("admin/hygiene/trace/today")); // [VG-2026-10-21 M8-103]
                 this.rows = data.data || [];
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
                 this.loaded = true;
+                this.lastOkAt = Date.now();
             } catch (e) {
-                this.loadError = "Traçabilité indisponible. Vérifiez la connexion puis rechargez la page.";
+                // [VG-2026-10-21 M8-103] premier chargement : erreur ; ensuite : les données affichées restent, dites périmées
+                this.loadError = loadFailedText("Traçabilité indisponible. Vérifiez la connexion puis rechargez la page.", this.lastOkAt, this.meta.timezone || "Europe/Paris");
             }
         },
         setTab(k) { this.tab = k; if (k === "journal") this.loadHistory(); },
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const { data } = await axios.get("admin/hygiene/trace/history", { params: { q: this.q.trim() || undefined, limit: 200 } });
+                const data = loadedBody(await axios.get("admin/hygiene/trace/history", { params: { q: this.q.trim() || undefined, limit: 200 } })); // [VG-2026-10-21 M8-103]
                 if (historySeq.isCurrent(id)) this.history = data.data || [];
             } catch (e) {
                 alertService.error(apiMessage(e, "Journal indisponible."));
@@ -267,13 +271,13 @@ export default {
             this.saving = true;
             f.error = "";
             try {
-                await axios.post("admin/hygiene/trace", {
+                savedBody(await axios.post("admin/hygiene/trace", { // [VG-2026-10-21 M8-101]
                     ...(f.productId ? { dlc_product_id: f.productId } : { product_name: f.product.trim() }),
                     ...(f.supplierId ? { supplier_id: f.supplierId } : { supplier_name: f.supplierName.trim() || undefined }),
                     reception_id: f.receptionId || undefined, lot: f.lot.trim() || undefined, dlc_date: f.dlc || undefined, dlc_kind: f.kind,
                     note: f.note.trim() || undefined, attachment_id: f.photo || undefined, operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
                     client_ref: refFor(f.ref, { p: f.productId || f.product.trim(), s: f.supplierId || f.supplierName.trim(), r: f.receptionId, l: f.lot.trim(), d: f.dlc, k: f.kind, n: f.note.trim(), ph: f.photo, o: this.operatorId }),
-                });
+                }));
                 this.form = null;
                 await this.load();
                 alertService.success("Produit tracé.");
@@ -287,7 +291,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/trace/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
+                savedBody(await axios.post(`admin/hygiene/trace/${this.voidTarget}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined })); // [VG-2026-10-21 M8-101]
                 this.voidTarget = null;
                 await this.load();
                 alertService.success("Ligne annulée (elle reste au journal).");
@@ -302,7 +306,7 @@ export default {
             this.saving = true;
             this.recallError = "";
             try {
-                const { data } = await axios.get("admin/hygiene/trace/recall", { params: { lot: this.recallLot.trim() } });
+                const data = loadedBody(await axios.get("admin/hygiene/trace/recall", { params: { lot: this.recallLot.trim() } })); // [VG-2026-10-21 M8-103]
                 this.recall = data.data;
             } catch (e) {
                 this.recall = null;

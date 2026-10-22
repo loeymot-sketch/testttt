@@ -90,7 +90,7 @@
 import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
-import { apiMessage, formatDayHm, todayIso, addDaysIso, downloadFile, latest } from "../../../helpers/hygieneCommon";
+import { apiMessage, formatDayHm, todayIso, addDaysIso, downloadFile, latest, loadedBody } from "../../../helpers/hygieneCommon";
 
 const loadSeq = latest();
 
@@ -156,7 +156,7 @@ export default {
             this.loading = true;
             this.error = "";
             try {
-                const { data } = await axios.get("admin/hygiene/report/summary", { params: initial ? {} : { from: this.from, to: this.to } });
+                const data = loadedBody(await axios.get("admin/hygiene/report/summary", { params: initial ? {} : { from: this.from, to: this.to } })); // [VG-2026-10-21 M8-103]
                 if (!loadSeq.isCurrent(id)) return; // une réponse plus lente d'une ancienne période n'écrase jamais la dernière demandée
                 if (initial) {
                     this.from = data.data.period.from;

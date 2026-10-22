@@ -225,8 +225,8 @@ describe('dossier de contrôle — réponses dans le désordre', () => {
         h.axios.get.mockReset();
         h.axios.get.mockImplementation((url, cfg) => {
             if (!cfg.params.from) return Promise.resolve({ data: { data: mk(1), meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } });
-            if (cfg.params.from === cfg.params.to) return Promise.resolve({ data: { data: mk(2), meta: {} } });
-            return new Promise((resolve) => { release = () => resolve({ data: { data: mk(99), meta: {} } }); });
+            if (cfg.params.from === cfg.params.to) return Promise.resolve({ data: { data: mk(2), meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } });
+            return new Promise((resolve) => { release = () => resolve({ data: { data: mk(99), meta: { server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } }); });
         });
         const w = mount(HygieneReportComponent);
         await flushPromises();

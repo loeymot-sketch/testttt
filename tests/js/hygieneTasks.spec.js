@@ -35,10 +35,10 @@ function setup(items, rec = {}) {
     h.axios.post.mockReset();
     h.axios.get.mockImplementation(async (url) => {
         if (url === 'admin/hygiene/tasks/today') return { data: { data: today.items, meta: meta(today.items, today.rec) } };
-        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }, { id: 6, name: 'Sarah Lopez', short: 'Sarah L.', is_me: false }], meta: { me: 5 } } };
-        if (url === 'admin/hygiene/tasks/history') return { data: { data: [], meta: {} } };
-        if (url === 'admin/hygiene/tasks/templates') return { data: { data: today.items, meta: { recommended: meta(today.items, today.rec).recommended } } };
-        return { data: { data: [] } };
+        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }, { id: 6, name: 'Sarah Lopez', short: 'Sarah L.', is_me: false }], meta: { me: 5, server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/tasks/history') return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/tasks/templates') return { data: { data: today.items, meta: { server_now: '2026-10-20T10:00:00+02:00', recommended: meta(today.items, today.rec).recommended } } };
+        return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
     });
     h.axios.post.mockImplementation(async (url, body) => {
         posts.push([url, body]);
@@ -277,5 +277,70 @@ describe('relecture adverse (2026-10-18) — « faite » veut dire la même chos
         expect(w.get('[data-testid="tsk-progress"]').text()).toBe('1/1 faites');
         expect(w.get('[data-testid="tsk-all-done"]').text()).toContain('Bravo');
         expect(w.find('[data-testid="tsk-partial-left"]').exists()).toBe(false);
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] Une réponse 200 qui n'a pas la forme d'une réponse du serveur (portail captif, proxy, corps vide) n'est ni
+// « aucune fiche prévue » (le hub disait 1 en retard), ni « validée ✓ » (rien en base).
+describe('nettoyage — réponse 200 sans la forme attendue', () => {
+    const HTML = { status: 200, data: '<!doctype html><title>Portail wifi</title><p>Connectez-vous</p>' };
+    const fill = async (w) => {
+        await w.get('[data-testid="tsk-open-1"]').trigger('click');
+        await w.get('[data-testid="tsk-all-1"]').trigger('click');
+        await w.get('[data-testid="tsk-attest-1"]').trigger('click');
+    };
+
+    it('premier chargement : une erreur, jamais « Aucune fiche n’est prévue » ni « 0/0 faites »', async () => {
+        setup([T({ id: 1, overdue: true })]);
+        h.axios.get.mockImplementation(async () => HTML);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="tsk-error"]').text()).toContain('Fiches indisponibles');
+        expect(w.text()).not.toContain('Aucune fiche');
+        expect(w.find('[data-testid="tsk-progress"]').exists()).toBe(false);
+    });
+
+    it('un corps vide ({}) non plus n’est pas « rien à faire »', async () => {
+        setup([T({ id: 1 })]);
+        h.axios.get.mockImplementation(async () => ({ status: 200, data: {} }));
+        const w = await mountScreen();
+        expect(w.find('[data-testid="tsk-error"]').exists()).toBe(true);
+        expect(w.text()).not.toContain('Aucune fiche');
+    });
+
+    it('rafraîchissement raté : les fiches affichées restent, dites périmées avec leur heure', async () => {
+        setup([T({ id: 1 })]);
+        const w = await mountScreen();
+        h.axios.get.mockImplementation(async () => HTML);
+        await w.vm.load();
+        await flushPromises();
+        expect(w.find('[data-testid="tsk-card-1"]').exists()).toBe(true);
+        expect(w.get('[data-testid="tsk-error"]').text()).toMatch(/Réseau indisponible : ces chiffres datent de \d\d:\d\d/);
+    });
+
+    it('validation : jamais « validée ✓ » sur une réponse qui ne prouve rien — la saisie reste, le message le dit', async () => {
+        setup([T({ id: 1 })]);
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        await fill(w);
+        h.axios.post.mockImplementationOnce(async () => HTML);
+        await w.get('[data-testid="tsk-submit-1"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).not.toHaveBeenCalled();
+        expect(w.get('[data-testid="tsk-form-error-1"]').text()).toContain('Envoi non confirmé');
+        expect(w.get('[data-testid="tsk-item-1-k1"]').attributes('aria-pressed')).toBe('true'); // la saisie est gardée
+    });
+
+    it('annulation d’une validation : jamais « annulée » sur une réponse qui ne prouve rien', async () => {
+        setup([T({ id: 3, state: 'done', completion: { id: 30, complete: true, items_done: 3, items_total: 3, completed_at: '2026-10-20T09:00:00+02:00', operator_name: 'K', late: false, items: [], note: null } })]);
+        const w = await mountScreen();
+        alertService.success.mockClear();
+        await w.get('[data-testid="tsk-tab-done"]').trigger('click');
+        await w.get('[data-testid="tsk-void-3"]').trigger('click');
+        await w.get('[data-testid="tsk-void-reason-3"]').setValue('erreur de fiche');
+        h.axios.post.mockImplementationOnce(async () => HTML);
+        await w.get('[data-testid="tsk-void-confirm-3"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).not.toHaveBeenCalled();
+        expect(alertService.error).toHaveBeenLastCalledWith(expect.stringContaining('Envoi non confirmé'));
     });
 });

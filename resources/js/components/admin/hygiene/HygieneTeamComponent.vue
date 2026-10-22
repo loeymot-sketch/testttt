@@ -70,6 +70,7 @@
  */
 import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
+import { loadedBody, savedBody, apiMessage } from "../../../helpers/hygieneCommon";
 import alertService from "../../../services/alertService";
 
 export default {
@@ -89,7 +90,7 @@ export default {
         },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/team");
+                const data = loadedBody(await axios.get("admin/hygiene/team")); // [VG-2026-10-21 M8-103] jamais « personne » sur une réponse sans la forme attendue
                 this.people = data.data || [];
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";
@@ -104,17 +105,13 @@ export default {
             this.$nextTick(() => { const el = this.$refs.pinInput; const input = Array.isArray(el) ? el[0] : el; if (input) input.focus(); });
         },
         cancel() { this.editing = null; this.pin = ""; this.pin2 = ""; },
-        errorText(e, fallback) {
-            const d = e && e.response && e.response.data;
-            if (d && d.errors) { const first = Object.values(d.errors)[0]; if (Array.isArray(first) && first[0]) return first[0]; }
-            return (d && d.message) || fallback;
-        },
+        errorText(e, fallback) { return apiMessage(e, fallback); }, // [VG-2026-10-21 M8-101] une seule définition (dit aussi « envoi non confirmé »)
         async save(u) {
             if (this.busy || !this.validPin || this.pin !== this.pin2) return;
             this.busy = true;
             this.message = "";
             try {
-                await axios.put(`admin/hygiene/team/${u.id}/pin`, { pin: this.pin });
+                savedBody(await axios.put(`admin/hygiene/team/${u.id}/pin`, { pin: this.pin })); // [VG-2026-10-21 M8-101]
                 this.editing = null; this.pin = ""; this.pin2 = "";
                 this.messageOk = true;
                 this.message = `Code de ${u.name} enregistré. Communiquez-le à la personne : il ne s'affichera plus jamais.`;
@@ -131,7 +128,7 @@ export default {
             this.busy = true;
             this.message = "";
             try {
-                await axios.post(`admin/hygiene/team/${u.id}/unlock`);
+                savedBody(await axios.post(`admin/hygiene/team/${u.id}/unlock`)); // [VG-2026-10-21 M8-101]
                 this.messageOk = true;
                 this.message = `${u.name} est débloqué(e) : son code reste le même.`;
                 await this.load();
@@ -145,7 +142,7 @@ export default {
             this.busy = true;
             this.message = "";
             try {
-                await axios.delete(`admin/hygiene/team/${u.id}/pin`);
+                savedBody(await axios.delete(`admin/hygiene/team/${u.id}/pin`)); // [VG-2026-10-21 M8-101]
                 this.removing = null;
                 this.messageOk = true;
                 this.message = `Code de ${u.name} retiré : tout le monde peut de nouveau signer à son nom.`;

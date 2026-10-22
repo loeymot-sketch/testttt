@@ -118,7 +118,7 @@
  * (la tuile rouge « 0/5 effectués » de Komia, pour tous les domaines). Les compteurs viennent du serveur ; l'écran se rafraîchit seul.
  */
 import axios from "axios";
-import { formatDay, scrollShellToTop } from "../../../helpers/hygieneCommon";
+import { formatDay, scrollShellToTop, loadedBody } from "../../../helpers/hygieneCommon";
 import { hasPermissionAccess } from "../../../shared/permission-match";
 import HygieneQueueBanner from "./HygieneQueueBanner";
 
@@ -247,10 +247,11 @@ export default {
             if (this.inFlight) return;
             this.inFlight = true;
             try {
-                const { data } = await axios.get("admin/hygiene/overview");
                 // Une réponse 200 qui n'a pas la forme attendue (portail captif, proxy, page de connexion, {}) n'est pas « tout est en ordre » :
                 // sans tuile ni rappel, la bannière aurait dit « Tout est en ordre ✓ » sur AUCUNE donnée. Un vrai serveur envoie toujours l'horloge.
-                if (!data || !Array.isArray(data.data) || !data.meta || typeof data.meta !== "object" || !data.meta.server_now) throw new Error("réponse inattendue");
+                // [VG-2026-10-21 M8-103] la garde vit dans hygieneCommon (loadedBody) : la même pour TOUS les écrans du module
+                const data = loadedBody(await axios.get("admin/hygiene/overview"));
+                if (!Array.isArray(data.data)) throw new Error("réponse inattendue");
                 this.tiles = data.data;
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.loadError = "";

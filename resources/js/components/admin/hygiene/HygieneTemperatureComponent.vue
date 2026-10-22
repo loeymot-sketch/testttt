@@ -258,7 +258,7 @@ import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
 import alertService from "../../../services/alertService";
 import { parseTemperature, previewVerdict, formatTemperature, limitText, hasTypedMinus, stripTypedMinus } from "../../../helpers/hygieneTemperature";
-import { refFor, latest } from "../../../helpers/hygieneCommon";
+import { refFor, latest, loadedBody, savedBody, loadFailedText, isUnexpectedResponse, apiMessage as commonApiMessage } from "../../../helpers/hygieneCommon";
 import hygieneRefresh from "../../../helpers/hygieneRefresh";
 import HygieneTempChart from "./HygieneTempChart";
 import HygieneOperatorPicker from "./HygieneOperatorPicker";
@@ -298,6 +298,7 @@ export default {
             voidTarget: null,
             voidReason: "",
             manageHasRows: false,
+            lastOkAt: null, // [VG-2026-10-21 M8-103] heure du dernier chargement réussi : un échec ensuite dit « chiffres périmés », jamais « aucun équipement »
             serverOffsetMs: 0,
             nowMs: Date.now(),
             tick: null,
@@ -414,7 +415,7 @@ export default {
         },
         async loadChart(e) {
             try {
-                const { data } = await axios.get("admin/hygiene/temperature/history", { params: { equipment_id: e.id, from: this.todayYmd(13), limit: 500 } });
+                const data = loadedBody(await axios.get("admin/hygiene/temperature/history", { params: { equipment_id: e.id, from: this.todayYmd(13), limit: 500 } })); // [VG-2026-10-21 M8-103]
                 // l'état d'ouverture est celui d'AUJOURD'HUI (fermée pendant le chargement : elle reste fermée), pas celui du départ
                 const cur = this.charts[e.id];
                 this.charts = { ...this.charts, [e.id]: { open: cur ? cur.open : true, loading: false, readings: data.data || [] } };
@@ -435,14 +436,8 @@ export default {
         reloadCharts() {
             return Promise.all(this.items.filter((e) => this.charts[e.id] && this.charts[e.id].open).map((e) => this.loadChart(e)));
         },
-        apiMessage(e, fallback) {
-            const data = e && e.response && e.response.data;
-            if (data && data.errors) {
-                const first = Object.values(data.errors)[0];
-                if (Array.isArray(first) && first[0]) return first[0];
-            }
-            return (data && data.message) || fallback;
-        },
+        // [VG-2026-10-21 M8-101] une seule définition (hygieneCommon) : elle dit aussi « envoi non confirmé »
+        apiMessage(e, fallback) { return commonApiMessage(e, fallback); },
 
         cardClass(e) {
             const entry = this.entries[e.id];
@@ -512,8 +507,9 @@ export default {
         // ── chargement ────────────────────────────────────────────────────────
         async loadToday() {
             try {
-                const { data } = await axios.get("admin/hygiene/temperature/today");
-                this.items = data.data || [];
+                // [VG-2026-10-21 M8-103] une réponse sans la forme attendue (portail captif, proxy) n'est pas « aucun équipement »
+                const data = loadedBody(await axios.get("admin/hygiene/temperature/today"));
+                this.items = data.data;
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 const server = Date.parse(this.meta.server_now);
                 if (Number.isFinite(server)) this.serverOffsetMs = server - Date.now();
@@ -522,20 +518,22 @@ export default {
                 this.entries = Object.fromEntries(Object.entries(this.entries).filter(([id]) => ids.has(Number(id))));
                 if (!this.items.length) {
                     // des équipements existent peut-être, tous masqués : pas de « démarrage » dans ce cas
-                    const all = await axios.get("admin/hygiene/temperature/equipment");
-                    this.manageHasRows = (all.data.data || []).length > 0;
+                    const all = loadedBody(await axios.get("admin/hygiene/temperature/equipment"));
+                    this.manageHasRows = all.data.length > 0;
                 }
                 this.loadError = "";
                 this.loaded = true;
+                this.lastOkAt = Date.now();
             } catch (e) {
-                this.loadError = "Relevés indisponibles. Vérifiez la connexion puis rechargez la page.";
+                // [VG-2026-10-21 M8-103] premier chargement : erreur ; ensuite : les relevés affichés restent, dits périmés
+                this.loadError = loadFailedText("Relevés indisponibles. Vérifiez la connexion puis rechargez la page.", this.lastOkAt, this.meta.timezone || "Europe/Paris");
             }
         },
         async loadHistory() {
             const id = historySeq.next();
             try {
-                const { data } = await axios.get("admin/hygiene/temperature/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } });
-                if (historySeq.isCurrent(id)) this.history = data.data || [];
+                const data = loadedBody(await axios.get("admin/hygiene/temperature/history", { params: { alerts_only: this.alertsOnly ? 1 : 0, limit: 200 } })); // [VG-2026-10-21 M8-103]
+                if (historySeq.isCurrent(id)) this.history = data.data;
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Journal indisponible."));
             }
@@ -546,8 +544,8 @@ export default {
         },
         async loadEquipment() {
             try {
-                const { data } = await axios.get("admin/hygiene/temperature/equipment");
-                this.equipment = (data.data || []).map((q) => ({ ...q, min_c: q.min_c === null ? "" : String(q.min_c).replace(".", ","), max_c: q.max_c === null ? "" : String(q.max_c).replace(".", ",") }));
+                const data = loadedBody(await axios.get("admin/hygiene/temperature/equipment")); // [VG-2026-10-21 M8-103]
+                this.equipment = data.data.map((q) => ({ ...q, min_c: q.min_c === null ? "" : String(q.min_c).replace(".", ","), max_c: q.max_c === null ? "" : String(q.max_c).replace(".", ",") }));
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Équipements indisponibles."));
             }
@@ -587,7 +585,9 @@ export default {
             };
             try {
                 // en ligne, l'heure de la mesure n'est PAS envoyée : l'horloge d'une tablette peut être fausse, c'est le serveur qui date
-                const { data } = await axios.post("admin/hygiene/temperature/readings", { ...who, readings });
+                // [VG-2026-10-21 M8-101] « enregistré » SEULEMENT si la réponse rend chaque relevé (identifiant + référence d'envoi) ; sinon
+                // c'est un échec rejouable : les relevés partent en file (jamais un « 0 relevé enregistré ✓ … merci ! » sur rien)
+                const data = savedBody(await axios.post("admin/hygiene/temperature/readings", { ...who, readings }), readings);
                 clearEntries();
                 await this.loadToday();
                 await this.reloadCharts();
@@ -612,7 +612,9 @@ export default {
                     if (kept) {
                         clearEntries();
                         this.refreshQueue();
-                        alertService.info(`${this.offlineCause(e)} ${n} relevé${n > 1 ? "s" : ""} gardé${n > 1 ? "s" : ""} sur la tablette : ${n > 1 ? "ils partiront" : "il partira"} dès que ça revient.`);
+                        // [VG-2026-10-21 M8-101] réponse sans preuve d'enregistrement : on ne dit ni « enregistré » ni « pas de réseau »
+                        if (isUnexpectedResponse(e)) alertService.error(`Envoi non confirmé — ${n > 1 ? `vos ${n} relevés sont gardés sur la tablette et seront renvoyés` : "votre relevé est gardé sur la tablette et sera renvoyé"}.`);
+                        else alertService.info(`${this.offlineCause(e)} ${n} relevé${n > 1 ? "s" : ""} gardé${n > 1 ? "s" : ""} sur la tablette : ${n > 1 ? "ils partiront" : "il partira"} dès que ça revient.`);
                         return;
                     }
                     this.formError = "Pas de réseau, et la tablette ne peut pas garder ces relevés (mémoire pleine ou navigation privée). Ne fermez pas cet écran : revalidez dès que la connexion revient.";
@@ -653,9 +655,9 @@ export default {
             this.saving = true;
             this.closeError = "";
             try {
-                await axios.post(`admin/hygiene/temperature/readings/${e.followup.reading_id}/followup-close`, {
+                savedBody(await axios.post(`admin/hygiene/temperature/readings/${e.followup.reading_id}/followup-close`, { // [VG-2026-10-21 M8-101]
                     reason: this.closeReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined,
-                });
+                }));
                 this.cancelClose();
                 await this.loadToday();
                 if (this.showHistory) await this.loadHistory();
@@ -674,7 +676,7 @@ export default {
             if (!this.voidTarget || this.saving) return;
             this.saving = true;
             try {
-                await axios.post(`admin/hygiene/temperature/readings/${this.voidTarget.id}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined });
+                savedBody(await axios.post(`admin/hygiene/temperature/readings/${this.voidTarget.id}/void`, { reason: this.voidReason.trim(), operator_user_id: this.operatorId || undefined, operator_token: this.operatorToken || undefined })); // [VG-2026-10-21 M8-101]
                 this.voidTarget = null;
                 await this.loadToday();
                 await this.reloadCharts();
@@ -690,7 +692,7 @@ export default {
             if (this.saving || !this.setupTotal) return;
             this.saving = true;
             try {
-                await axios.post("admin/hygiene/temperature/equipment/quick-setup", { ...this.setup });
+                savedBody(await axios.post("admin/hygiene/temperature/equipment/quick-setup", { ...this.setup })); // [VG-2026-10-21 M8-101]
                 await this.loadToday();
             } catch (e) {
                 this.loadError = this.apiMessage(e, "Création impossible. Vérifiez la connexion puis réessayez.");
@@ -714,9 +716,9 @@ export default {
                 return;
             }
             try {
-                await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, {
+                savedBody(await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, { // [VG-2026-10-21 M8-101]
                     name: q.name, min_c: min, max_c: max,
-                });
+                }));
                 await Promise.all([this.loadEquipment(), this.loadToday()]);
                 alertService.success(`« ${q.name.trim()} » enregistré.`);
             } catch (e) {
@@ -725,7 +727,7 @@ export default {
         },
         async toggleEquipment(q) {
             try {
-                await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, { is_active: !q.is_active });
+                savedBody(await axios.put(`admin/hygiene/temperature/equipment/${q.id}`, { is_active: !q.is_active })); // [VG-2026-10-21 M8-101]
                 await Promise.all([this.loadEquipment(), this.loadToday()]);
             } catch (e) {
                 alertService.error(this.apiMessage(e, "Modification impossible."));
@@ -735,7 +737,7 @@ export default {
             if (this.saving) return;
             this.saving = true;
             try {
-                await axios.post("admin/hygiene/temperature/equipment", { name: this.newEq.name.trim(), kind: this.newEq.kind });
+                savedBody(await axios.post("admin/hygiene/temperature/equipment", { name: this.newEq.name.trim(), kind: this.newEq.kind })); // [VG-2026-10-21 M8-101]
                 this.newEq = { name: "", kind: this.newEq.kind };
                 await Promise.all([this.loadEquipment(), this.loadToday()]);
             } catch (e) {

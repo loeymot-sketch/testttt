@@ -7,6 +7,8 @@ import { createHygieneQueue, isRetriable, refusalReason, MAX_AGE_MS, QUEUE_KEY }
 
 const mem = () => { const m = {}; return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = v; }, m }; };
 const err = (status, data) => { const e = new Error(String(status)); if (status) e.response = { status, data }; return e; };
+// la réponse d'un vrai serveur : une ligne (identifiant + référence d'envoi) par relevé — c'est elle qui prouve l'enregistrement
+const saved = (url, body) => ({ data: { data: body.readings.map((r, i) => ({ id: i + 1, equipment_id: r.equipment_id, client_ref: r.client_ref })), meta: { alerts: 0, server_now: '2026-10-20T10:13:00+02:00' } } });
 const entry = (n = 1) => ({ url: 'admin/hygiene/temperature/readings', body: { readings: [{ equipment_id: n, value: 3, measured_at: '2026-10-20T10:12:00+02:00', client_ref: `r${n}` }] }, label: `${n} relevé` });
 
 describe('quelles erreurs se rejouent', () => {
@@ -42,7 +44,7 @@ describe('file hors ligne des relevés', () => {
 
     it('rejoue dans l’ordre et vide la file quand tout passe', async () => {
         const storage = mem();
-        const post = vi.fn(async () => ({}));
+        const post = vi.fn(async (url, body) => saved(url, body));
         const q = createHygieneQueue({ post, storage });
         q.enqueue(entry(1)); q.enqueue(entry(2));
         const r = await q.flush();
@@ -64,7 +66,7 @@ describe('file hors ligne des relevés', () => {
     it('un refus définitif n’est PAS jeté : l’entrée passe « refusée » avec sa raison, et les suivantes partent', async () => {
         const post = vi.fn(async (url, body) => {
             if (body.readings[0].equipment_id === 1) throw err(422, { errors: { 'readings.0.value': ['99 °C n’est pas plausible.'] } });
-            return {};
+            return saved(url, body);
         });
         const q = createHygieneQueue({ post, storage: mem() });
         q.enqueue(entry(1)); q.enqueue(entry(2));
@@ -81,7 +83,7 @@ describe('file hors ligne des relevés', () => {
         const post = vi.fn(async (url, body) => {
             if (body.readings.length > 1) throw err(422, { errors: { 'readings.1.value': ['Lot refusé'] } }); // « tout ou rien »
             if (body.readings[0].equipment_id === 2) throw err(422, { errors: { 'readings.0.value': ['« Frigo 2 » : 99 °C n’est pas plausible.'] } });
-            return {};
+            return saved(url, body);
         });
         const q = createHygieneQueue({ post, storage: mem() });
         q.enqueue({ url: 'u', body: { readings: [1, 2, 3].map((n) => ({ equipment_id: n, value: 3, measured_at: '2026-10-20T10:12:00+02:00', client_ref: `r${n}` })) }, label: '3 relevés' });
@@ -104,7 +106,7 @@ describe('file hors ligne des relevés', () => {
 
     it('plus de 72 h hors ligne : refusé sans appel au serveur', async () => {
         let t = 1_700_000_000_000;
-        const post = vi.fn(async () => ({}));
+        const post = vi.fn(async (url, body) => saved(url, body));
         const q = createHygieneQueue({ post, storage: mem(), now: () => t });
         q.enqueue(entry());
         t += MAX_AGE_MS + 1;
@@ -121,7 +123,7 @@ describe('file hors ligne des relevés', () => {
     it('une entrée ajoutée PENDANT l’envoi n’est pas écrasée', async () => {
         const storage = mem();
         let q;
-        const post = vi.fn(async () => { q.enqueue(entry(9)); return {}; }); // une saisie arrive pendant le rejeu
+        const post = vi.fn(async (url, body) => { q.enqueue(entry(9)); return saved(url, body); }); // une saisie arrive pendant le rejeu
         q = createHygieneQueue({ post, storage });
         q.enqueue(entry(1));
         const r = await q.flush();
@@ -130,7 +132,7 @@ describe('file hors ligne des relevés', () => {
     });
 
     it('deux rejeux simultanés n’envoient qu’une fois', async () => {
-        const post = vi.fn(async () => ({}));
+        const post = vi.fn(async (url, body) => saved(url, body));
         const q = createHygieneQueue({ post, storage: mem() });
         q.enqueue(entry());
         await Promise.all([q.flush(), q.flush()]);
@@ -145,5 +147,61 @@ describe('file hors ligne des relevés', () => {
         expect((await q.flush()).sent).toBe(0);
         storage.setItem(QUEUE_KEY, JSON.stringify([{ nonsense: true }, null, 5]));
         expect(q.items()).toEqual([]);
+    });
+});
+
+// [VG-2026-10-21 M8-101] Une réponse 200 qui ne PROUVE pas l'enregistrement (portail captif, proxy, corps vide, référence absente) n'est pas
+// « envoyé » : l'entrée reste en file, rejouée plus tard. Avant : la file se vidait, « 1 envoi … a été enregistré », rien en base.
+describe('file hors ligne — réponse sans preuve d’enregistrement', () => {
+    it('200 en HTML : l’entrée reste en file, rien n’est compté « envoyé »', async () => {
+        const post = vi.fn(async () => ({ status: 200, data: '<!doctype html><title>Portail wifi</title>' }));
+        const q = createHygieneQueue({ post, storage: mem() });
+        q.enqueue(entry(1));
+        const r = await q.flush();
+        expect(r).toEqual({ sent: 0, pending: 1, rejected: 0 });
+        expect(q.pending()[0].body.readings[0].client_ref).toBe('r1');
+    });
+    it('corps vide, liste vide, ou référence d’envoi absente : pas une preuve non plus', async () => {
+        for (const body of [undefined, {}, { data: [] }, { data: [{ id: 1, client_ref: 'autre' }] }, { data: [{ client_ref: 'r1' }] }]) {
+            const q = createHygieneQueue({ post: vi.fn(async () => ({ status: 200, data: body })), storage: mem() });
+            q.enqueue(entry(1));
+            expect((await q.flush()).sent, JSON.stringify(body)).toBe(0);
+            expect(q.pending()).toHaveLength(1);
+        }
+    });
+    it('la vraie réponse du serveur (identifiant + référence rendue) vide la file', async () => {
+        const q = createHygieneQueue({ post: vi.fn(async (url, body) => saved(url, body)), storage: mem() });
+        q.enqueue(entry(1));
+        expect(await q.flush()).toEqual({ sent: 1, pending: 0, rejected: 0 });
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] La définition unique de « c'est bien le serveur qui a répondu » (hygieneCommon), pour tout le module.
+describe('hygieneCommon — réponse du serveur : une seule définition', async () => {
+    const { savedBody, loadedBody, apiMessage, UNCONFIRMED_SAVE } = await import('../../resources/js/helpers/hygieneCommon.js');
+    const res = (data) => ({ status: 200, data });
+    const NOW = { server_now: '2026-10-20T10:00:00+02:00' };
+
+    it('écriture d’une fiche : seule une réponse avec un identifiant (ou « ok » / « added ») prouve l’enregistrement', () => {
+        expect(savedBody(res({ data: { id: 12, status: 'ok' } })).data.id).toBe(12);
+        expect(savedBody(res({ status: 'ok' })).status).toBe('ok');           // suppression
+        expect(savedBody(res({ data: { added: 0 } })).data.added).toBe(0);  // création groupée (rien à ajouter)
+        for (const body of ['<html>Portail</html>', '', null, undefined, {}, { data: {} }, { data: { id: 0 } }, { data: { name: 'x' } }, { data: [] }, { status: 'error' }]) {
+            let err = null;
+            try { savedBody(res(body)); } catch (e) { err = e; }
+            expect(err, JSON.stringify(body)).not.toBeNull();
+            expect(apiMessage(err, 'repli')).toBe(UNCONFIRMED_SAVE); // le message dit « non confirmé », la saisie est gardée
+        }
+    });
+
+    it('chargement : liste ou objet ET horloge du serveur ; sinon erreur (jamais une liste vide inventée)', () => {
+        expect(loadedBody(res({ data: [], meta: NOW })).data).toEqual([]);
+        expect(loadedBody(res({ data: { x: 1 }, meta: NOW })).data).toEqual({ x: 1 });
+        for (const body of ['<html>Portail</html>', {}, { data: [] }, { data: [], meta: {} }, { data: 'x', meta: NOW }, null]) {
+            let err = null;
+            try { loadedBody(res(body)); } catch (e) { err = e; }
+            expect(err, JSON.stringify(body)).not.toBeNull();
+            expect(apiMessage(err, 'Journal indisponible.')).toBe('Journal indisponible.'); // un chargement raté dit SON message, pas « envoi »
+        }
     });
 });

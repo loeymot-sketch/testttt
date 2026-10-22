@@ -40,6 +40,7 @@
  * personnel. Émet `update:modelValue` : l'identifiant choisi, ou null pour « moi » (le serveur prend alors l'utilisateur connecté).
  */
 import axios from "axios";
+import { loadedBody } from "../../../helpers/hygieneCommon";
 
 const STORE_KEY = "hygiene.operator";
 /** Combien de temps la tablette se souvient de la personne choisie (hors code : un nom protégé n'est jamais mémorisé). */
@@ -67,7 +68,7 @@ export default {
         /** Charge la liste ; rappelée à l'ouverture du menu tant qu'elle a échoué (le message promet « rouvrez ce menu »). */
         async loadPeople() {
             try {
-                const { data } = await axios.get("admin/hygiene/operators");
+                const data = loadedBody(await axios.get("admin/hygiene/operators")); // [VG-2026-10-21 M8-103] une réponse sans la forme attendue = liste en échec, pas « personne »
                 this.people = data.data || [];
                 this.me = data.meta ? data.meta.me : null;
                 this.loadFailed = false;

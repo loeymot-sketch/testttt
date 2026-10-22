@@ -315,6 +315,24 @@ class TemperatureControllerTest extends TestCase
         }
     }
 
+    /** [VG-2026-10-21 M8-101] la tablette ne dit « enregistré » que si SA référence d'envoi revient : la réponse la rend, ligne par ligne. */
+    public function test_la_reponse_d_un_envoi_rend_la_reference_de_chaque_releve(): void
+    {
+        $this->staff();
+        $this->postJson(self::BASE.'/equipment/quick-setup', ['fridge' => 2])->assertCreated();
+        $ids = HygieneEquipment::query()->orderBy('sort_order')->pluck('id')->all();
+        $r = $this->postJson(self::BASE.'/readings', ['readings' => [
+            ['equipment_id' => $ids[0], 'value' => 3, 'client_ref' => 'ref-a'],
+            ['equipment_id' => $ids[1], 'value' => 2, 'client_ref' => 'ref-b'],
+        ]])->assertCreated();
+        $this->assertSame(['ref-a', 'ref-b'], array_column($r->json('data'), 'client_ref'));
+        $this->assertNotEmpty($r->json('meta.server_now'));
+        // le rejeu rend la MÊME ligne avec la même référence
+        $again = $this->postJson(self::BASE.'/readings', ['readings' => [['equipment_id' => $ids[0], 'value' => 3, 'client_ref' => 'ref-a']]])->assertCreated();
+        $this->assertSame('ref-a', $again->json('data.0.client_ref'));
+        $this->assertSame($r->json('data.0.id'), $again->json('data.0.id'));
+    }
+
     public function test_renommer_ou_changer_un_seuil_ne_reecrit_pas_l_historique(): void
     {
         $this->staff();

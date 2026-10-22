@@ -29,10 +29,10 @@ function setup(list, hasAny = list.length > 0) {
             return { data: { data: items, meta: { summary: { total, todo: items.filter((i) => i.state === 'todo').length, ok: 0, warn: items.filter((i) => i.state === 'warn').length, alert: items.filter((i) => i.state === 'alert').length },
                 types: [], corrective_actions: ACTIONS, limits: { polar_limit: 25, polar_warn: 20, bath_max_c: 180 }, server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } };
         }
-        if (url === 'admin/hygiene/oil/fryers') return { data: { data: hasFryers ? [F({})] : [] } };
-        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5 } } };
-        if (url === 'admin/hygiene/oil/history') return { data: { data: [], meta: {} } };
-        return { data: { data: [] } };
+        if (url === 'admin/hygiene/oil/fryers') return { data: { data: hasFryers ? [F({})] : [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/operators') return { data: { data: [{ id: 5, name: 'Karim Benali', short: 'Karim B.', is_me: true }], meta: { me: 5, server_now: '2026-10-20T10:00:00+02:00' } } };
+        if (url === 'admin/hygiene/oil/history') return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
+        return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
     });
     h.axios.post.mockImplementation(async (url, body) => { posts.push([url, body]); return { data: { data: { id: 1 } } }; });
     window.localStorage.clear();
@@ -207,5 +207,29 @@ describe('un « − » tapé sur un champ SANS signe possible est illisible, jam
         expect(w.text()).toContain('Valeur illisible');
         await w.get('[data-testid="oil-bath-1-input"]').setValue('170');
         expect(w.text()).not.toContain('Valeur illisible');
+    });
+});
+
+// [VG-2026-10-21 M8-101 M8-103] réponse 200 sans la forme d'une réponse du serveur (portail captif, proxy)
+describe('huile — réponse 200 sans la forme attendue', () => {
+    const HTML = { status: 200, data: '<!doctype html><title>Portail wifi</title>' };
+    it('enregistrer un test : jamais « Test enregistré. », la saisie reste et le message dit « Envoi non confirmé »', async () => {
+        const w = await mountScreen();
+        const alertService = (await import('../../resources/js/services/alertService')).default;
+        alertService.success.mockClear();
+        await w.get('[data-testid="oil-open-test-1"]').trigger('click');
+        await polar(w, '12');
+        h.axios.post.mockImplementationOnce(async () => HTML);
+        await w.get('[data-testid="oil-submit-1"]').trigger('click');
+        await flushPromises();
+        expect(alertService.success).not.toHaveBeenCalled();
+        expect(w.get('[data-testid="oil-form-error-1"]').text()).toContain('Envoi non confirmé');
+        expect(w.get('[data-testid="oil-polar-1-input"]').element.value).toBe('12');
+    });
+    it('premier chargement : une erreur, jamais le démarrage « combien de friteuses ? »', async () => {
+        h.axios.get.mockImplementation(async () => HTML);
+        const w = await mountScreen();
+        expect(w.get('[data-testid="oil-error"]').text()).toContain('Huile indisponible');
+        expect(w.find('[data-testid="oil-setup"]').exists()).toBe(false);
     });
 });

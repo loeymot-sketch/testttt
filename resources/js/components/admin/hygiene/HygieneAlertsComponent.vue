@@ -134,6 +134,7 @@
  */
 import HygieneHubBar from "./HygieneHubBar";
 import axios from "axios";
+import { loadedBody } from "../../../helpers/hygieneCommon";
 import alertService from "../../../services/alertService";
 
 const DEFAULT_FORM = () => ({ enabled: false, recipients: [], domains: [], send_from: "09:00", send_until: "23:30", repeat_minutes: 60, max_sends: 3 });
@@ -190,7 +191,7 @@ export default {
         },
         async load() {
             try {
-                const { data } = await axios.get("admin/hygiene/alerts");
+                const data = loadedBody(await axios.get("admin/hygiene/alerts")); // [VG-2026-10-21 M8-103]
                 this.meta = { ...this.meta, ...(data.meta || {}) };
                 this.staff = (data.data.staff || []).map((p) => ({ ...p, email: String(p.email) }));
                 this.recent = data.data.recent || [];

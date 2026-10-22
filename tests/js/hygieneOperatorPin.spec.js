@@ -23,8 +23,8 @@ const err = (status, data) => { const e = new Error(String(status)); e.response 
 
 function setupOps({ people = PEOPLE, verify } = {}) {
     h.axios.get.mockReset(); h.axios.post.mockReset();
-    h.axios.get.mockImplementation(async (url) => (url === 'admin/hygiene/operators' ? { data: { data: people, meta: { me: 1 } } } : { data: { data: [] } }));
-    h.axios.post.mockImplementation(async (url, body) => (url === 'admin/hygiene/operators/verify' ? verify(body) : { data: { data: [], meta: { alerts: 0 } } }));
+    h.axios.get.mockImplementation(async (url) => (url === 'admin/hygiene/operators' ? { data: { data: people, meta: { me: 1, server_now: '2026-10-20T10:00:00+02:00' } } } : { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } }));
+    h.axios.post.mockImplementation(async (url, body) => (url === 'admin/hygiene/operators/verify' ? verify(body) : { data: { data: (body && Array.isArray(body.readings) ? body.readings.map((r, i) => ({ id: i + 1, equipment_id: r.equipment_id, client_ref: r.client_ref })) : { id: 1 }), meta: { alerts: 0 } } }));
     window.localStorage.clear();
 }
 async function mountPicker(props = {}) {
@@ -192,10 +192,10 @@ describe('sélecteur « Qui ? » avec code', () => {
         let calls = 0;
         h.axios.get.mockReset(); h.axios.post.mockReset(); window.localStorage.clear();
         h.axios.get.mockImplementation(async (url) => {
-            if (url !== 'admin/hygiene/operators') return { data: { data: [] } };
+            if (url !== 'admin/hygiene/operators') return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
             calls += 1;
             if (calls === 1) throw new Error('Network Error');
-            return { data: { data: PEOPLE, meta: { me: 1 } } };
+            return { data: { data: PEOPLE, meta: { me: 1, server_now: '2026-10-20T10:00:00+02:00' } } };
         });
         const w = mount(HygieneOperatorPicker, { global: { mocks: { $t: (k) => k } } });
         await flushPromises();
@@ -225,7 +225,7 @@ describe('sélecteur « Qui ? » avec code', () => {
 
         function setupOps2() {
             h.axios.get.mockImplementation(async (url) => (url === 'admin/hygiene/operators'
-                ? { data: { data: [...PEOPLE, { id: 9, name: 'Lina Roy', short: 'Lina R.', is_me: false, has_pin: true }], meta: { me: 1 } } } : { data: { data: [] } }));
+                ? { data: { data: [...PEOPLE, { id: 9, name: 'Lina Roy', short: 'Lina R.', is_me: false, has_pin: true }], meta: { me: 1, server_now: '2026-10-20T10:00:00+02:00' } } } : { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } }));
         }
     });
 
@@ -257,7 +257,7 @@ describe('écran du responsable : codes de l’équipe', () => {
     async function mountTeam(get) {
         h.axios.get.mockReset(); h.axios.put.mockReset(); h.axios.delete.mockReset();
         team = TEAM.map((u) => ({ ...u }));
-        h.axios.get.mockImplementation(get || (async () => ({ data: { data: team, meta: { without_pin: team.filter((u) => !u.has_pin).length, timezone: 'Europe/Paris' } } })));
+        h.axios.get.mockImplementation(get || (async () => ({ data: { data: team, meta: { server_now: '2026-10-20T10:00:00+02:00', without_pin: team.filter((u) => !u.has_pin).length, timezone: 'Europe/Paris' } } })));
         const w = mount(HygieneTeamComponent, { global: { mocks: { $t: (k) => k } } });
         await flushPromises();
         return w;
@@ -324,7 +324,7 @@ describe('écran du responsable : codes de l’équipe', () => {
     });
 
     it('la durée de validité annoncée est celle du serveur', async () => {
-        const w = await mountTeam(async () => ({ data: { data: TEAM, meta: { without_pin: 1, token_minutes: 15, timezone: 'Europe/Paris' } } }));
+        const w = await mountTeam(async () => ({ data: { data: TEAM, meta: { server_now: '2026-10-20T10:00:00+02:00', without_pin: 1, token_minutes: 15, timezone: 'Europe/Paris' } } }));
         expect(w.text()).toContain('15 minutes');
     });
 
@@ -348,14 +348,14 @@ describe('le jeton accompagne l’écriture', () => {
         const eq = { id: 1, name: 'Frigo 1', kind: 'fridge', kind_label: 'Réfrigérateur', negative: false, location: null, min_c: 0, max_c: 4, is_active: true, state: 'todo', last_today: null, previous: null, done_periods: [], done_this_period: false };
         const posts = [];
         h.axios.get.mockImplementation(async (url) => {
-            if (url === 'admin/hygiene/operators') return { data: { data: PEOPLE, meta: { me: 1 } } };
+            if (url === 'admin/hygiene/operators') return { data: { data: PEOPLE, meta: { me: 1, server_now: '2026-10-20T10:00:00+02:00' } } };
             if (url === 'admin/hygiene/temperature/today') return { data: { data: [eq], meta: { period: 'morning', periods: { morning: 'Matin' }, summary: { total: 1, todo: 1, ok: 0, alert: 0 }, kinds: [{ key: 'fridge', label: 'Réfrigérateur' }], corrective_actions: [], server_now: '2026-10-20T10:00:00+02:00', timezone: 'Europe/Paris' } } };
-            return { data: { data: [] } };
+            return { data: { data: [], meta: { server_now: '2026-10-20T10:00:00+02:00' } } };
         });
         h.axios.post.mockImplementation(async (url, body) => {
             posts.push([url, body]);
             if (url === 'admin/hygiene/operators/verify') return { data: { data: { token: 'JETON-SARAH', expires_at: new Date(Date.now() + 600000).toISOString() } } };
-            return { data: { data: [{ id: 1 }], meta: { alerts: 0 } } };
+            return { data: { data: (body && Array.isArray(body.readings) ? body.readings.map((r, i) => ({ id: i + 1, equipment_id: r.equipment_id, client_ref: r.client_ref })) : { id: 1 }), meta: { alerts: 0 } } };
         });
         const w = mount(HygieneTemperatureComponent, { global: { mocks: { $t: (k) => k } } });
         await flushPromises();

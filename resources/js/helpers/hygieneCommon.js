@@ -7,8 +7,74 @@ export function newClientRef(prefix = "h") {
     return `${prefix}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// [VG-2026-10-21 M8-101 M8-103] « C'est bien le serveur qui a répondu » : UNE définition pour tout le module. Une réponse 200 qui n'a pas
+// la forme attendue (portail captif, proxy, page HTML, corps vide) n'est NI « enregistré » (un relevé perdu avec un « merci ! »), NI « rien
+// à faire » (« Aucun équipement », « Aucune fiche prévue » sur AUCUNE donnée). Le tour 1 n'avait gardé que l'accueil.
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** Ce qu'on dit quand un envoi a reçu une réponse qui ne prouve pas l'enregistrement : la saisie n'est pas perdue. */
+export const UNCONFIRMED_SAVE = "Envoi non confirmé — votre saisie est gardée : revalidez dès que la connexion est rétablie (rien ne sera doublé).";
+
+const isObj = (x) => Boolean(x) && typeof x === "object" && !Array.isArray(x);
+const hasId = (x) => isObj(x) && Number.isInteger(Number(x.id)) && Number(x.id) > 0;
+
+/**
+ * Erreur « réponse inattendue » : sans `response`, elle est traitée comme une absence de réseau (rejouable, jamais « réussi »).
+ * `message` : ce que l'écran dit (un envoi non confirmé) ; absent pour un chargement, l'écran dit alors son propre « indisponible ».
+ */
+export function unexpectedResponse(message = "") {
+    const e = new Error(message || "Réponse inattendue du réseau");
+    e.hyUnexpected = true;
+    e.hyMessage = message;
+    return e;
+}
+export function isUnexpectedResponse(e) { return Boolean(e && e.hyUnexpected); }
+
+/**
+ * Chargement : `{ data: [...] | {...}, meta: { server_now } }` — un vrai serveur du module envoie toujours son horloge. Sinon : erreur.
+ * Usage : `const data = loadedBody(await axios.get(url))`.
+ */
+export function loadedBody(response) {
+    const data = response && response.data;
+    if (!isObj(data) || !(Array.isArray(data.data) || isObj(data.data)) || !isObj(data.meta) || !data.meta.server_now) throw unexpectedResponse();
+    return data;
+}
+
+/**
+ * Écriture : réussie SEULEMENT si le corps prouve l'enregistrement. Sinon : erreur (la saisie reste, rien n'est dit « enregistré »).
+ *  - lot de relevés (`readings`) : une ligne par relevé envoyé, chacune avec son identifiant, et chaque référence d'envoi rendue ;
+ *  - une fiche : `{ data: { id } }` ; une suppression : `{ status: "ok" }` ; une création groupée : `{ data: { added } }`.
+ * Usage : `const data = savedBody(await axios.post(url, body))` — ou `savedBody(res, body.readings)` pour un lot.
+ */
+export function savedBody(response, readings) {
+    const data = response && response.data;
+    const fail = () => unexpectedResponse(UNCONFIRMED_SAVE);
+    if (!isObj(data)) throw fail();
+    if (Array.isArray(readings)) {
+        const rows = Array.isArray(data.data) ? data.data : null;
+        if (!rows || rows.length !== readings.length || !rows.every(hasId)) throw fail();
+        const back = new Set(rows.map((r) => r.client_ref));
+        if (readings.some((r) => r && r.client_ref && !back.has(r.client_ref))) throw fail();
+        return data;
+    }
+    if (data.status === "ok" || hasId(data.data) || (isObj(data.data) && Number.isInteger(data.data.added))) return data;
+    throw fail();
+}
+
+/**
+ * Message d'un chargement raté : au premier chargement, l'écran n'a rien (« indisponible ») ; ensuite les données affichées sont GARDÉES et
+ * dites périmées, avec leur heure — jamais remplacées par une liste vide inventée.
+ */
+export function loadFailedText(firstText, lastOkAt, tz = "Europe/Paris") {
+    if (!lastOkAt) return firstText;
+    const at = formatHm(new Date(lastOkAt).toISOString(), tz) || "tout à l'heure";
+    return `Réseau indisponible : ces chiffres datent de ${at}. Ils ne sont peut-être plus à jour.`;
+}
+
 /** Premier message d'erreur lisible d'une réponse du serveur (champ invalide d'abord, puis message général). */
 export function apiMessage(e, fallback) {
+    if (isUnexpectedResponse(e) && e.hyMessage) return e.hyMessage; // [VG-2026-10-21 M8-101] un envoi non confirmé le dit, la saisie est gardée
     const data = e && e.response && e.response.data;
     if (data && data.errors) {
         const first = Object.values(data.errors)[0];
@@ -72,8 +138,8 @@ export async function uploadPhoto(file, kind = "other") {
     const form = new FormData();
     form.append("file", body, "photo.jpg");
     form.append("kind", kind);
-    const { data } = await axios.post("admin/hygiene/attachments", form, { headers: { "Content-Type": "multipart/form-data" } });
-    return data.data;
+    // [VG-2026-10-21 M8-101] une photo « envoyée » sans identifiant rendu n'est pas jointe : erreur, pas une pièce jointe vide
+    return savedBody(await axios.post("admin/hygiene/attachments", form, { headers: { "Content-Type": "multipart/form-data" } })).data;
 }
 
 /** Les pièces jointes sont derrière authentification : un <img src> ne porte pas le jeton, on charge donc l'image puis on l'expose en blob. */

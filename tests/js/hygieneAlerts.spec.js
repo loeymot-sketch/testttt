@@ -14,7 +14,7 @@ import HygieneAlertsComponent from '../../resources/js/components/admin/hygiene/
 const DOMAINS = [['temperature', 'Relevés de température'], ['tasks', 'Nettoyage'], ['oil', 'Huile de friture'], ['dlc', 'DLC dépassées']].map(([key, label]) => ({ key, label }));
 const BASE = { enabled: false, recipients: [], domains: ['temperature', 'tasks', 'oil', 'dlc'], send_from: '09:00', send_until: '23:30', repeat_minutes: 60, max_sends: 3 };
 const STAFF = [{ id: 7, name: 'Sarah Lopez', email: 'Sarah@Example.test' }];
-const payload = (settings = {}, meta = {}, recent = []) => ({ data: { data: { settings: { ...BASE, ...settings }, staff: STAFF, recent }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris', ...meta } } });
+const payload = (settings = {}, meta = {}, recent = []) => ({ data: { data: { settings: { ...BASE, ...settings }, staff: STAFF, recent }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris', server_now: '2026-10-20T10:00:00+02:00', ...meta } } });
 
 async function mountWith(get) {
     h.axios.get.mockReset(); h.axios.put.mockReset(); h.axios.post.mockReset();
@@ -85,7 +85,7 @@ describe('alertes e-mail — écran', () => {
     it('une adresse déjà présente est dite (pas ignorée en silence) ; la limite de dix vaut aussi pour les employés cochés', async () => {
         const staff = Array.from({ length: 12 }, (_, i) => ({ id: 100 + i, name: `Employé ${i}`, email: `e${i}@example.test` }));
         h.axios.get.mockReset(); h.axios.put.mockReset(); h.axios.post.mockReset();
-        h.axios.get.mockImplementation(async () => ({ data: { data: { settings: { ...BASE, recipients: ['chef@example.test'] }, staff, recent: [] }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris' } } }));
+        h.axios.get.mockImplementation(async () => ({ data: { data: { settings: { ...BASE, recipients: ['chef@example.test'] }, staff, recent: [] }, meta: { mail_ready: true, domains: DOMAINS, timezone: 'Europe/Paris', server_now: '2026-10-20T10:00:00+02:00' } } }));
         const w = mount(HygieneAlertsComponent, { global: { mocks: { $t: (k) => k } } });
         await flushPromises();
         await q(w, 'al-new-email').setValue('CHEF@example.test');

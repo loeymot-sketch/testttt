@@ -14,6 +14,8 @@
  *   · le jeton de signature d'une personne protégée reste dans l'entrée (le code, jamais) : il ne vaut que pour des mesures prises dans sa fenêtre de 10 min.
  * Aucune fonction ne lève d'exception.
  */
+import { savedBody } from './hygieneCommon';
+
 export const QUEUE_KEY = 'hygiene_offline_queue';
 export const MAX_AGE_MS = 72 * 60 * 60 * 1000;
 const MAX_ITEMS = 200;
@@ -60,9 +62,16 @@ let seq = 0;
 const newId = (now) => { seq += 1; return `${now().toString(36)}-${seq}-${Math.random().toString(36).slice(2, 8)}`; };
 
 /**
- * @param {{post:(url:string, body:object)=>Promise<any>, storage?:Storage, now?:()=>number}} deps
+ * [VG-2026-10-21 M8-101] Un rejeu n'est « envoyé » que si la réponse PROUVE l'enregistrement (une ligne avec son identifiant pour chaque
+ * relevé, chaque référence d'envoi rendue). Une réponse 200 en HTML (portail captif, proxy) vidait la file — « 1 envoi … a été enregistré »
+ * — sans rien en base. `accept` lève sinon : l'entrée reste en file, rejouée plus tard.
+ * @param {{post:(url:string, body:object)=>Promise<any>, storage?:Storage, now?:()=>number, accept?:(res:any, item:object)=>void}} deps
  */
-export function createHygieneQueue({ post, storage, now = Date.now }) {
+export function acceptSaved(res, item) {
+    savedBody(res, item && item.body && Array.isArray(item.body.readings) ? item.body.readings : undefined);
+}
+
+export function createHygieneQueue({ post, storage, now = Date.now, accept = acceptSaved }) {
     let flushing = null;
 
     return {
@@ -89,8 +98,8 @@ export function createHygieneQueue({ post, storage, now = Date.now }) {
                         continue;
                     }
                     try {
-                        await post(item.url, item.body);
-                        sent += 1; // envoyé : l'entrée sort de la file
+                        accept(await post(item.url, item.body), item); // [VG-2026-10-21 M8-101] sans preuve d'enregistrement : rejouable, reste en file
+                        sent += 1; // envoyé ET confirmé : l'entrée sort de la file
                     } catch (err) {
                         if (isRetriable(err)) {
                             out.push({ ...item, tries: item.tries + 1 });

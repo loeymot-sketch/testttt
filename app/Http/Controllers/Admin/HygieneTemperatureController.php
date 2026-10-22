@@ -543,6 +543,7 @@ class HygieneTemperatureController extends HygieneController
             'voided' => $r->voided_at !== null,
             'voided_at' => $r->voided_at?->toIso8601String(),
             'void_reason' => $r->void_reason,
+            'client_ref' => $r->client_ref, // [VG-2026-10-21 M8-101] la tablette ne dit « enregistré » que si SA référence d'envoi revient
         ];
     }
 
