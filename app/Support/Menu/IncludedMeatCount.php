@@ -22,11 +22,9 @@ final class IncludedMeatCount
             return 0;
         }
 
-        $byItem = self::index((array) config('menu_meat_rules.by_item', []));
-        $byCategory = self::index((array) config('menu_meat_rules.by_category', []));
-        $rule = $byItem[self::key($itemName)] ?? $byCategory[self::key($categoryName)] ?? null;
+        $rule = self::rule($itemName, $categoryName);
 
-        if ($rule === null || $rule < 1) {
+        if ($rule === null) {
             return $slots;
         }
 
@@ -34,14 +32,34 @@ final class IncludedMeatCount
         return min($rule, $slots);
     }
 
+    /**
+     * [VG-2026-10-21 C3] Règle du propriétaire pour cet article (produit, puis catégorie), ou null s'il n'y en a pas.
+     * Lue aussi par WizardPageMaterializer : une publication de wizard ne rallume jamais un emplacement gratuit au-delà.
+     */
+    public static function rule(?string $itemName, ?string $categoryName): ?int
+    {
+        $byItem = self::index((array) config('menu_meat_rules.by_item', []));
+        $byCategory = self::index((array) config('menu_meat_rules.by_category', []));
+        $rule = $byItem[self::key($itemName)] ?? $byCategory[self::key($categoryName)] ?? null;
+
+        return ($rule === null || $rule < 1) ? null : $rule;
+    }
+
+    /** [VG-2026-10-21 C3] Un attribut est-il un emplacement viande (« Viande N » ou « meat ») ? */
+    public static function isMeatSlot(?string $attributeName): bool
+    {
+        $n = mb_strtolower((string) $attributeName);
+
+        return $n !== '' && (str_contains($n, 'viande') || str_contains($n, 'meat'));
+    }
+
     /** Emplacements viande = attributs « Viande N » (ou « meat ») distincts. */
     private static function meatSlots(iterable $attributeNames): int
     {
         $distinct = [];
         foreach ($attributeNames as $name) {
-            $n = mb_strtolower((string) $name);
-            if ($n !== '' && (str_contains($n, 'viande') || str_contains($n, 'meat'))) {
-                $distinct[$n] = true;
+            if (self::isMeatSlot($name)) {
+                $distinct[mb_strtolower((string) $name)] = true;
             }
         }
 
