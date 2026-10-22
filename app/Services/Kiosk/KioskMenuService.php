@@ -14,6 +14,7 @@ use App\Models\UpsellRule;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Menu\MenuSnapshot;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\IncludedMeatCount;
 use App\Support\Menu\RecommendedSupplements;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -331,19 +332,19 @@ final class KioskMenuService
                 'addons' => [],
             ];
 
-            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
-            // = nombre d'attributs « Viande N » ayant des variations actives. La
+            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir. La
             // borne (KioskWizardComponent.detectViandeCount, frozen) lit ce champ
             // EN PRIORITÉ (avant l'heuristique nom buggée : « Méga »→4, « Terminator »
-            // / « Bol »→null = pas d'étape viande). Méga/Terminator=2, Tacos M/Bols=1,
-            // Tacos L=2, burgers/desserts=0 (la borne retombe alors sur le nom = 0).
+            // / « Bol »→null = pas d'étape viande) et exige EXACTEMENT ce nombre.
             $projectedItemAttributes = $this->projectItemAttributes($item, self::CHANNEL);
-            $viandeCount = collect($projectedItemAttributes)
-                ->filter(function ($a): bool {
-                    $n = mb_strtolower((string) ($a['name'] ?? ''));
-                    return str_contains($n, 'viande') || str_contains($n, 'meat');
-                })
-                ->count();
+            // [VG-2026-10-21 M5-001b M3-101 M5-001] Viandes INCLUSES selon la règle du propriétaire (Tacos M=1/L=2/XL=3,
+            // Méga/Terminator=2, sandwich=1), plus le nombre brut d'attributs « Viande N » (Tacos M=3 vendu 6,90 €).
+            // Même calcul que NormalItemResource (site, fiche produit).
+            $viandeCount = IncludedMeatCount::resolve(
+                (string) $item->name,
+                $categoryNames[(int) $item->item_category_id] ?? null,
+                collect($projectedItemAttributes)->pluck('name')
+            );
 
             return [
                 'viande_count'       => $viandeCount,
