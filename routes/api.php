@@ -1319,14 +1319,31 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                     $q->where('payment_method', '!=', \App\Enums\PaymentGateway::CARD)
                         ->orWhere('payment_status', '!=', \App\Enums\PaymentStatus::UNPAID);
                 })
-                ->orderBy('created_at');
+                // [VG-2026-10-21 M9-103] Les plus RÉCENTES d'abord : les « payer au comptoir »
+                // non venues ne sont purgées par aucune tâche (décision propriétaire) ; en tri
+                // croissant, au-delà de 200 la NOUVELLE commande sortait de la file sans un mot.
+                // L'écran re-trie lui-même par ancienneté (PosComponent::loadWebOrders).
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
 
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);
             }
 
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+            // [VG-2026-10-21 M9-103] La réponse DIT qu'elle est tronquée (meta.total / truncated).
+            $limit = 200;
+            $total = (clone $query)->count();
+            $orders = $query->limit($limit)->get();
+            // [VG-2026-10-21 M9-103] Empreinte d'audit lue en lot (était 1 requête par commande).
+            \App\Http\Resources\OrderDetailsResource::preloadAuditFingerprints($orders);
+
+            return \App\Http\Resources\OrderDetailsResource::collection($orders)->additional(['meta' => [
+                'total' => $total,
+                'returned' => $orders->count(),
+                'limit' => $limit,
+                'truncated' => $total > $orders->count(),
+            ]]);
         })->middleware('throttle:pos-order-update')->name('web-orders.pending');
 
         // [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] File des commandes WEB **DÉJÀ PAYÉES**, parties

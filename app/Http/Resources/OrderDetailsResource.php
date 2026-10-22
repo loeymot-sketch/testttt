@@ -213,10 +213,53 @@ class OrderDetailsResource extends JsonResource
      * 12-char hex derived from the latest audit chain hash for this order.
      * Never exposes the full HMAC / chain value or any secret.
      */
+    /**
+     * [VG-2026-10-21 M9-103] Précharge, en DEUX requêtes pour toute une liste, le dernier
+     * maillon d'audit de chaque commande (au lieu d'une requête `audit_logs` par commande).
+     * Le maillon (ou null) est posé comme relation non persistée : la ressource construit
+     * son tableau champ par champ, la relation n'est donc jamais sérialisée.
+     */
+    public const AUDIT_FINGERPRINT_RELATION = 'latestOrderAuditLogForFingerprint';
+
+    public static function preloadAuditFingerprints(iterable $orders): void
+    {
+        $orders = collect($orders);
+        $ids = $orders->pluck('id')->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return;
+        }
+        try {
+            $lastIds = \App\Models\AuditLog::query()
+                ->where('resource', 'order')
+                ->whereIn('resource_id', $ids)
+                ->groupBy('resource_id')
+                ->selectRaw('MAX(id) as id')
+                ->pluck('id');
+            $logs = $lastIds->isEmpty()
+                ? collect()
+                : \App\Models\AuditLog::query()->whereIn('id', $lastIds)->get()->keyBy('resource_id');
+        } catch (\Throwable $e) {
+            return; // repli : lecture unitaire inchangée dans buildAuditFingerprint()
+        }
+        foreach ($orders as $order) {
+            $order->setRelation(self::AUDIT_FINGERPRINT_RELATION, $logs->get($order->id));
+        }
+    }
+
     private function buildAuditFingerprint(): ?string
     {
         try {
             $orderId = $this->resource->id ?? $this->id;
+            // [VG-2026-10-21 M9-103] Maillon préchargé en lot si la liste l'a fourni.
+            if ($this->resource instanceof \Illuminate\Database\Eloquent\Model
+                && $this->resource->relationLoaded(self::AUDIT_FINGERPRINT_RELATION)) {
+                $log = $this->resource->getRelation(self::AUDIT_FINGERPRINT_RELATION);
+                if (! $log || ! $log->current_hash) {
+                    return null;
+                }
+
+                return substr(hash('sha256', (string) $log->current_hash.'|'.$log->id), 0, 12);
+            }
             $log = \App\Models\AuditLog::query()
                 ->where('resource', 'order')
                 ->where('resource_id', $orderId)
