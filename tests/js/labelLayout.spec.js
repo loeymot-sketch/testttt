@@ -340,19 +340,20 @@ describe('DLC à surveiller (intelligence du journal)', () => {
         const { items } = watchList(rows, now);
         expect(items.map((x) => [x.name, x.anomaly, x.message])).toEqual([['Sauce', true, '⚠ À vérifier']]);
         expect(watchList([h({ id: 9, expires_at: '2026-10-30T12:00:00Z' })], now).items).toEqual([]);
-        // deux lignes du même lot, la seconde « à vérifier » : tout le lot est signalé
+        // [VG-2026-10-21 M7-003] même produit, même échéance, la seconde « à vérifier » : elle est signalée À PART (son lot à elle),
+        // l'étiquette saine ne l'est pas — avant, tout le lot l'était et le widget comptait ses copies saines « à vérifier »
         const merged = watchList([h({ id: 1, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 2, expires_at: '2026-10-16T18:00:00Z', anomaly: true, message: '⚠ x' })], now).items;
-        expect(merged).toHaveLength(1);
-        expect(merged[0].anomaly).toBe(true);
+        expect(merged.map((x) => [x.ids, x.anomaly])).toEqual([[[1], false], [[2], true]]);
         // une étiquette hors ligne pas encore journalisée ne se fond jamais dans un lot du journal
         const kept = watchList([h({ id: 1, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 'q-1', expires_at: '2026-10-16T18:00:00Z', pending: true })], now).items;
         expect(kept.map((x) => [x.ids, x.pending])).toEqual([[[1], false], [['q-1'], true]]);
         // réservée sans verdict depuis > 10 min (le serveur la renvoie « claimed ») : surveillée, « non confirmée »
         const claimed = watchList([h({ id: 3, status: 'claimed', expires_at: '2026-10-16T18:00:00Z' })], now).items;
         expect(claimed.map((x) => [x.id, x.unconfirmed])).toEqual([[3, true]]);
-        // deux appuis rapides : la ligne « imprimée » arrive d'abord, la réservée sans verdict ensuite — le lot reste « non confirmé »
+        // deux appuis rapides : la ligne « imprimée » arrive d'abord, la réservée sans verdict ensuite — la réservée reste « non confirmée »
+        // quel que soit l'ordre ; [VG-2026-10-21 M7-003] l'imprimée n'est plus dite « non confirmée » pour autant (lots distincts)
         const both = watchList([h({ id: 5, expires_at: '2026-10-16T18:00:00Z' }), h({ id: 6, status: 'claimed', expires_at: '2026-10-16T18:00:00Z' })], now).items;
-        expect(both.map((x) => [x.ids, x.unconfirmed])).toEqual([[[5, 6], true]]);
+        expect(both.map((x) => [x.ids, x.unconfirmed])).toEqual([[[5], false], [[6], true]]);
         // « à vérifier » sans message : la raison générique s'affiche quand même
         expect(watchList([h({ id: 4, anomaly: true, message: null })], now).items[0].message).toBe('⚠ À vérifier.');
     });

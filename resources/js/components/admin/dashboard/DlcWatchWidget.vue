@@ -55,7 +55,7 @@
  * widget ne s'affiche pas (jamais un appel promis au 403).
  */
 import axios from 'axios';
-import { watchList } from '../../../helpers/dlcLabelBuilder';
+import { watchList, watchCounts } from '../../../helpers/dlcLabelBuilder';
 
 export default {
     name: 'DlcWatchWidget',
@@ -72,16 +72,9 @@ export default {
         all() { return watchList(this.rows, this.nowMs + this.serverOffsetMs, 300).items; },
         items() { return this.all; },
         // UNITÉ = l'étiquette physique (comme l'accueil Hygiène, le rappel et le dossier) : un lot de 3 copies compte 3, pas 1 (tour 9 : « 11 » à l'accueil, « 2 » ici)
-        counts() {
-            const n = (arr) => arr.reduce((sum, w) => sum + (Number(w.copies) || 1), 0);
-            return {
-                expired: n(this.all.filter((w) => w.level === 'expired')),
-                today: n(this.all.filter((w) => w.level === 'today')),
-                soon: n(this.all.filter((w) => w.level === 'soon')),
-                anomaly: n(this.all.filter((w) => w.anomaly)),
-                unconfirmed: n(this.all.filter((w) => w.unconfirmed)),
-            };
-        },
+        // [VG-2026-10-21 M7-003] UNE définition, partagée (dlcLabelBuilder.watchCounts = accueil Hygiène) : la somme des copies d'un LOT
+        // entier pour un drapeau porté par une seule ligne disait « 2 non confirmées » quand l'accueil en disait 1
+        counts() { return watchCounts(this.all, this.nowMs + this.serverOffsetMs); },
     },
     mounted() {
         if (!this.allowed) return;

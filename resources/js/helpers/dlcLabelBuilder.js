@@ -293,24 +293,27 @@ export function watchList(rows, nowMs, limit = 30) {
         // une étiquette « à vérifier » (hors ligne) est signalée tout de suite, quelle que soit sa DLC imprimée
         if (exp > nowMs + 72 * 3600 * 1000 && !h.anomaly) return;
         // une étiquette hors ligne pas encore journalisée ne se fond jamais dans un lot du journal (« Jeté » viserait un id local)
-        const key = `${h.product_name}|${Math.round(exp / 60000)}${h.pending ? '|q' : ''}`;
+        // [VG-2026-10-21 M7-003] un lot ne réunit que des étiquettes du MÊME événement et du MÊME état (confirmée ou non, à vérifier
+        // ou non) : sinon une confirmée était dite « non confirmée », un décongelé passait pour une ouverture, et les compteurs
+        // additionnaient les copies du lot entier pour un drapeau porté par une seule ligne.
+        const unconfirmed = h.status === 'claimed' || h.status === 'unconfirmed';
+        const key = `${h.product_name}|${Math.round(exp / 60000)}|${h.action || ''}|${unconfirmed ? 'u' : ''}|${h.anomaly ? 'a' : ''}${h.pending ? '|q' : ''}`;
         if (seen.has(key)) {
-            // même produit, même échéance : un seul lot — on additionne et on garde tous les identifiants (pour « Jeté »)
+            // même produit, même échéance, même événement, même état : un seul lot — on additionne et on garde tous les identifiants (pour « Jeté »)
             const lot = out.find((o) => o.key === key);
             lot.copies += Number(h.copies) || 1;
             lot.ids.push(h.id);
-            // une seule ligne du lot « à vérifier » suffit à signaler tout le lot
-            if (h.anomaly && !lot.anomaly) { lot.anomaly = true; lot.message = String(h.message || '⚠ À vérifier.'); }
-            if (h.status === 'claimed' || h.status === 'unconfirmed') lot.unconfirmed = true; // quel que soit l'ordre des lignes
+            // [VG-2026-10-21 M7-003] aucun N° masqué : le lot affiche tous ceux qu'il regroupe
+            if (h.lot && !lot.lots.includes(h.lot)) { lot.lots.push(h.lot); lot.lot = lot.lots.join(', '); }
             return;
         }
         seen.add(key);
         out.push({
-            key, id: h.id, ids: [h.id], name: h.product_name, productId: h.dlc_product_id || null, lot: h.lot || '',
+            key, id: h.id, ids: [h.id], name: h.product_name, productId: h.dlc_product_id || null, lot: h.lot || '', lots: h.lot ? [h.lot] : [],
             action: h.action || '', expiresMs: exp, copies: Number(h.copies) || 1,
             // étiquette imprimée hors ligne que le serveur signale « à vérifier » (fiche modifiée, heure incohérente…)
             anomaly: Boolean(h.anomaly), message: h.anomaly ? String(h.message || '⚠ À vérifier.') : '',
-            unconfirmed: h.status === 'claimed' || h.status === 'unconfirmed',
+            unconfirmed,
             // imprimée hors ligne, pas encore inscrite au journal (file locale)
             pending: Boolean(h.pending),
             ...expiryStatus(exp, nowMs),
@@ -318,4 +321,25 @@ export function watchList(rows, nowMs, limit = 30) {
     });
     const sorted = out.sort((a, b) => a.expiresMs - b.expiresMs);
     return { items: sorted.slice(0, limit), more: Math.max(0, sorted.length - limit) };
+}
+
+/**
+ * [VG-2026-10-21 M7-003] Les compteurs des DLC à surveiller, en ÉTIQUETTES (copies), avec la définition de l'accueil Hygiène
+ * (`App\Services\Hygiene\Overview::dlc`) : « non confirmées » et « à vérifier » = copies des seules lignes concernées ENCORE EN
+ * COURS (une échue est comptée « dépassée », l'action qu'elle appelle). Les lots de `watchList` sont homogènes (même état),
+ * donc compter les copies d'un lot signalé = compter les copies des lignes signalées.
+ * Une non confirmée au-delà de 72 h n'est pas annoncée (l'écran ne la liste pas), comme à l'accueil ; seule une anomalie l'est.
+ * @param {Array<object>} items  `watchList(...).items`
+ * @param {number} [nowMs]       maintenant, à l'heure du serveur (ms)
+ */
+export function watchCounts(items, nowMs) {
+    const copies = (arr) => arr.reduce((sum, w) => sum + (Number(w.copies) || 1), 0);
+    const live = (items || []).filter((w) => w.level !== 'expired');
+    return {
+        expired: copies((items || []).filter((w) => w.level === 'expired')),
+        today: copies(live.filter((w) => w.level === 'today')),
+        soon: copies(live.filter((w) => w.level === 'soon')),
+        anomaly: copies(live.filter((w) => w.anomaly)),
+        unconfirmed: copies(live.filter((w) => w.unconfirmed && (!Number.isFinite(nowMs) || w.expiresMs <= nowMs + 72 * 3600 * 1000))),
+    };
 }
