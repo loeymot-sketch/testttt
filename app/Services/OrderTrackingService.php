@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
@@ -261,7 +262,14 @@ class OrderTrackingService
         if (in_array((int) $order->status, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true)) {
             return null;
         }
-        $depart = $this->instant($order->delivery_slot_at ?? null);
+        $slot = $order->delivery_slot_at ?? null;
+        // [VG-2026-10-21 R2-001-cl] Relu en BASE : à la création, la tournée est écrite par l'écouteur
+        // (AssignDeliveryWaveOnOrderCreated) sur une AUTRE instance ; la réponse de création lisait NULL et
+        // annonçait « 10–15 min » quand le suivi, lui, donnait le départ. Une seule définition pour les deux.
+        if (($order->exists ?? false) && (int) ($order->order_type ?? 0) === OrderType::DELIVERY) {
+            $slot = Order::withoutGlobalScope(BranchScope::class)->whereKey($order->id)->value('delivery_slot_at');
+        }
+        $depart = $this->instant($slot);
 
         return ($depart !== null && $depart->greaterThan($now)) ? $depart : null;
     }
