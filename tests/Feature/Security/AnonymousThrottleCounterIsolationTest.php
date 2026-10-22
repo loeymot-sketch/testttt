@@ -145,4 +145,85 @@ class AnonymousThrottleCounterIsolationTest extends TestCase
             "Ces routes portent un throttle:N,M sans compteur propre (seau partagé par IP/compte) :\n"
             .implode("\n", $nus));
     }
+
+    /**
+     * [VG-2026-10-21 M1-002 · reste vague 1] Hors /api : les webhooks de paiement (Stripe, Senangpay) et la roue
+     * (`routes/web.php`) portaient des `throttle:N,M` nus. Même IP → même seau : 60 appels Senangpay (ou un
+     * rejeu de signatures invalides) faisaient répondre 429 au webhook Stripe — un paiement confirmé perdu.
+     */
+    private function webhookRoutesLoaded(): void
+    {
+        if (! \Illuminate\Support\Facades\Route::has('payment.stripe.webhook')
+            || ! \Illuminate\Support\Facades\Route::has('payment.senangpay.webhook')) {
+            // Routes chargées seulement si storage/installed existe (RouteServiceProvider::mapWebRoutes) ;
+            // la sentinelle textuelle ci-dessous couvre ce cas.
+            $this->markTestSkipped('Routes des passerelles de paiement non chargées (storage/installed absent).');
+        }
+    }
+
+    public function test_le_webhook_stripe_ne_partage_pas_le_compteur_du_webhook_senangpay(): void
+    {
+        $this->webhookRoutesLoaded();
+
+        for ($i = 1; $i <= 60; $i++) {
+            $this->post('/payment/senangpay-webhook', []);
+        }
+
+        $r = $this->post('/payment/stripe-webhook', [], ['Stripe-Signature' => 't=1,v1=x']);
+        $this->assertNotSame(429, $r->status(),
+            'Le webhook Stripe ne doit pas hériter du compteur du webhook Senangpay (même IP).');
+    }
+
+    public function test_le_webhook_stripe_garde_son_plafond_de_soixante_par_minute(): void
+    {
+        $this->webhookRoutesLoaded();
+
+        for ($i = 1; $i <= 60; $i++) {
+            $r = $this->post('/payment/stripe-webhook', [], ['Stripe-Signature' => 't=1,v1=x']);
+            $this->assertNotSame(429, $r->status(), "Appel Stripe #{$i} ne doit pas encore être limité.");
+        }
+
+        $this->post('/payment/stripe-webhook', [], ['Stripe-Signature' => 't=1,v1=x'])->assertStatus(429);
+    }
+
+    /** Sentinelle : aucune route, /api ou non, ne porte un throttle:N,M nu. */
+    public function test_aucune_route_hors_api_ne_porte_un_throttle_numerique_sans_compteur_propre(): void
+    {
+        $nus = [];
+        foreach (app('router')->getRoutes() as $route) {
+            foreach ($route->gatherMiddleware() as $mw) {
+                if (is_string($mw) && preg_match('/^throttle:\d+,\d+$/', $mw)) {
+                    $nus[] = implode('|', $route->methods()).' '.$route->uri().' → '.$mw;
+                }
+            }
+        }
+
+        $this->assertSame([], $nus,
+            "Ces routes portent un throttle:N,M sans compteur propre (seau partagé par IP/compte) :\n"
+            .implode("\n", $nus));
+    }
+
+    /**
+     * Sentinelle TEXTUELLE des fichiers de routes : les passerelles de paiement ne sont chargées que si
+     * `storage/installed` existe ; la lecture du code ne dépend pas de l'environnement.
+     */
+    public function test_aucun_fichier_de_routes_ne_declare_un_throttle_numerique_nu(): void
+    {
+        $files = array_merge(
+            glob(base_path('routes/*.php')) ?: [],
+            glob(app_path('Http/PaymentGateways/Routes/*.php')) ?: [],
+        );
+        $this->assertNotEmpty($files);
+
+        $nus = [];
+        foreach ($files as $file) {
+            foreach (file($file) as $n => $line) {
+                if (preg_match('/[\'"]throttle:\d+,\d+[\'"]/', $line)) {
+                    $nus[] = str_replace(base_path().'/', '', $file).':'.($n + 1).' '.trim($line);
+                }
+            }
+        }
+
+        $this->assertSame([], $nus, "throttle:N,M nu (sans 3e argument) dans :\n".implode("\n", $nus));
+    }
 }

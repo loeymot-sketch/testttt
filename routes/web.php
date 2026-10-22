@@ -193,7 +193,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.counter');
     Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
-        ->middleware(['throttle:60,1'])
+        ->middleware(['throttle:60,1,wheel-counter-issue']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.counter.issue');
 
     /*
@@ -214,7 +214,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
     Route::get('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'show'])
         ->name('admin.wheel.settings');
     Route::post('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'save'])
-        ->middleware(['throttle:60,1'])->name('admin.wheel.settings.save');
+        ->middleware(['throttle:60,1,wheel-settings-save'])->name('admin.wheel.settings.save'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
 
     Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
         
@@ -224,7 +224,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.prize');
     Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
-        ->middleware(['throttle:120,1'])
+        ->middleware(['throttle:120,1,wheel-prize-deliver']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.prize.deliver');
 
     /*
