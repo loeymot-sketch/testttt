@@ -141,6 +141,9 @@ class OrderTrackingService
             // Sans elle, une commande passée à 3 h pour 18 h 20 affichait « prête dans ~10-15
             // min » sur sa page de suivi — et le rappel de l'application sonnait dans 10 min.
             'prevue_pour' => $this->heureProgrammee($order, $now),
+            // [VG-2026-10-21 M2-102] Jour de cette heure (Y-m-d, fuseau du restaurant) : une livraison
+            // de DEMAIN 20:30 ne doit pas se lire « 20:30 » tout court. null si aucune heure à venir.
+            'prevue_le' => $this->heureCible($order, $now)?->copy()->timezone(config('app.timezone'))->format('Y-m-d'),
             'server_time' => $now->toIso8601String(),
         ];
     }
@@ -158,6 +161,16 @@ class OrderTrackingService
      */
     private function estimateFor(Order|FrontendOrder $order, int $status, \Illuminate\Support\Carbon $now): array
     {
+        // [VG-2026-10-21 M2-102] Livraison : l'heure réelle est le départ de sa tournée
+        // (`delivery_slot_at`). Elle ne peut pas arriver avant : ni la fourchette générique
+        // « 10–15 min », ni le temps de préparation du caissier ne la concernent.
+        $depart = $this->departLivraison($order, $now);
+        if ($depart !== null) {
+            $minutes = (int) ceil(($depart->getTimestamp() - $now->getTimestamp()) / 60);
+
+            return ['wait_low' => $minutes, 'wait_high' => $minutes];
+        }
+
         $inCashierReviewedFlow = in_array($status, [OrderStatus::ACCEPT, OrderStatus::PREPARING], true);
         $preparationTime = (int) ($order->preparation_time ?? 0);
 
@@ -187,8 +200,9 @@ class OrderTrackingService
         // [GOAL STORES 2026-10-01] Commande programmée à venir : le temps restant va jusqu'à
         // l'heure choisie — jamais la fourchette générique « dès que prêt », qui ne la concerne
         // pas. (Le rappel natif de l'application lit ces minutes : il sonne donc à l'heure.)
-        if ($this->heureProgrammee($order, $now) !== null) {
-            $minutes = (int) ceil(($order->scheduled_at->getTimestamp() - $now->getTimestamp()) / 60);
+        // [VG-2026-10-21 M2-102] Même heure cible que `prevue_pour` (jamais `scheduled_at` nu : null pour une livraison).
+        if (($cible = $this->heureCible($order, $now)) !== null) {
+            $minutes = (int) ceil(($cible->getTimestamp() - $now->getTimestamp()) / 60);
 
             return ['wait_low' => $minutes, 'wait_high' => $minutes];
         }
@@ -218,12 +232,33 @@ class OrderTrackingService
 
     private function heureProgrammee(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
     {
+        // [VG-2026-10-21 M2-102] Programmée, sinon départ de tournée d'une livraison.
+        return $this->heureCible($order, $now)?->copy()->timezone(config('app.timezone'))->format('H:i');
+    }
+
+    /**
+     * [VG-2026-10-21 M2-102] Heure cible STRICTEMENT à venir : `scheduled_at` (retrait programmé),
+     * à défaut le départ de la tournée d'une livraison (`delivery_slot_at`). null sinon.
+     */
+    private function heureCible(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?\Carbon\CarbonInterface
+    {
         $prevue = $order->scheduled_at ?? null;
-        if (! $prevue instanceof \Carbon\CarbonInterface) {
-            return null;
+        if ($prevue instanceof \Carbon\CarbonInterface) {
+            return $prevue->greaterThan($now) ? $prevue : null;
         }
 
-        return $prevue->greaterThan($now) ? $prevue->copy()->timezone(config('app.timezone'))->format('H:i') : null;
+        return $this->departLivraison($order, $now);
+    }
+
+    /** [VG-2026-10-21 M2-102] Départ de tournée à venir d'une livraison sans heure programmée, sinon null. */
+    private function departLivraison(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?\Carbon\CarbonInterface
+    {
+        if (($order->scheduled_at ?? null) !== null) {
+            return null;
+        }
+        $depart = $this->instant($order->delivery_slot_at ?? null);
+
+        return ($depart !== null && $depart->greaterThan($now)) ? $depart : null;
     }
 
     /**
