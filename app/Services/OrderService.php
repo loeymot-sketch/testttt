@@ -2185,6 +2185,12 @@ class OrderService
                     if ($isCod) {
                         if ($atDelivered) {
                             $locked->payment_status = PaymentStatus::PAID;
+                            // [VG-2026-10-21 Z-livraison] Le Z range par `pos_payment_method ?: payment_method` : une livraison
+                            // de la caisse gardait 6 (différé) et tombait en « différé ». À la remise, le vrai mode encaissé.
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::CASH;
+                            }
 
                             // [P0-LIV-02] Record the cash-collection event
                             // for NF525. The escrow row is the audit-trail
@@ -2210,6 +2216,11 @@ class OrderService
                         // order_payments (mode titre-restaurant, montant total) est écrite dans CETTE transaction.
                         if ($atDelivered) {
                             $locked->payment_status = PaymentStatus::PAID;
+                            // [VG-2026-10-21 Z-livraison] Même règle qu'en espèces : rangée en « Titre-restaurant » au Z.
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::TICKET_RESTAURANT;
+                            }
                             $mealVoucherMeta = [
                                 'branch_id' => (int) $locked->branch_id,
                                 'order_id' => (int) $locked->id,
