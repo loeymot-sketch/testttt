@@ -41,6 +41,9 @@
         .muted { color:var(--muted); font-size:14px; }
         .collect { border-radius:12px; padding:10px 12px; font-weight:800; font-size:18px; }
         .collect.pay { background:#FFF1D6; border:2px solid var(--accent); } .collect.paid { background:#EAF7EE; color:#126B33; }
+        /* [VG-2026-10-21 M4-102] Commande annulée en caisse pendant la tournée : impossible à rater, rien à remettre. */
+        .chip.bad { background:var(--bad); color:#fff; } .collect.cancel { background:#FDECEC; border:2px solid var(--bad); color:#9B1C12; }
+        .stop.cancelled { border:2px solid var(--bad); }
         .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
         a.tel { color:var(--dark); font-weight:700; }
         .empty { text-align:center; color:var(--muted); padding:48px 16px; }
@@ -106,6 +109,15 @@
 
     function stopHtml(s) {
         var done = !!s.delivered_at;
+        // [VG-2026-10-21 M4-102] Annulée en caisse alors que le livreur est en route : la carte restait « En route · Déjà payé »
+        // avec « Remis au client ». Bandeau rouge, aucune action de remise ni d'encaissement (le serveur refuse aussi : 422).
+        if (s.cancelled && !done) {
+            return '<div class="stop cancelled" data-cancelled="1">'
+                + '<div class="row"><div class="seq">' + s.sequence + '</div><div style="flex:1"><div class="addr">' + esc(s.address || 'Adresse inconnue') + '</div>'
+                + '<div class="muted">' + esc(s.postal_code || '') + ' ' + esc(s.city || '') + '</div></div><span class="chip bad">ANNULÉE</span></div>'
+                + '<div class="row"><span>#' + esc(s.order_number || s.order_id) + ' · ' + esc(s.customer_name || 'Client') + '</span></div>'
+                + '<div class="collect cancel" role="alert">ANNULÉE — ne pas remettre. Rapportez la commande au restaurant, n\'encaissez rien.</div></div>';
+        }
         var state = done ? '<span class="chip done">Remise ' + hm(s.delivered_at) + '</span>'
                   : s.arrived_at ? '<span class="chip go">Arrivé ' + hm(s.arrived_at) + '</span>'
                   : s.left_at ? '<span class="chip go">En route · ETA ' + hm(s.eta_at) + '</span>'

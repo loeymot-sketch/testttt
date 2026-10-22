@@ -131,6 +131,8 @@ class DeliveryRunController extends Controller
         abort_if($stop->delivered_at !== null, 409, 'Cette commande est déjà remise.');
 
         $order = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($stop->order_id);
+        // [VG-2026-10-21 M4-102] Annulée en caisse pendant la tournée : ni remise ni encaissement (500 « transition invalide » avant).
+        abort_if($this->isCancelled($order), 422, 'Commande annulée : ne la remettez pas, rapportez-la au restaurant.');
         $due = $this->waves->collectionFor($order); // ce qui restait RÉELLEMENT à encaisser avant la remise
         $this->orders->deliveryBoyOrderChangeStatus($order, Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]));
         $stop->forceFill(['collect_method' => $due['collect_method'], 'amount_due_cents' => $due['amount_due_cents']]);
@@ -159,6 +161,12 @@ class DeliveryRunController extends Controller
         abort_unless((int) $stop->delivery_boy_id === (int) Auth::id(), 403, 'Cette livraison ne vous est pas attribuée.');
     }
 
+    /** [VG-2026-10-21 M4-102] Commande annulée ou refusée (en caisse) : plus rien à remettre ni à encaisser. */
+    private function isCancelled(Order $order): bool
+    {
+        return in_array((int) $order->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true);
+    }
+
     private function present(DeliveryStop $s): array
     {
         $order = $s->order;
@@ -172,6 +180,12 @@ class DeliveryRunController extends Controller
         $live = ($order && ! $s->delivered_at)
             ? $this->waves->collectionFor($order)
             : ['collect_method' => $s->collect_method, 'amount_due_cents' => (int) $s->amount_due_cents];
+        // [VG-2026-10-21 M4-102] Annulée / refusée pendant la tournée : la carte disait « En route · Déjà payé » + « Remis au
+        // client » (ou « Encaisser en espèces ») ; le livreur remettait un repas remboursé. Rien à encaisser, à rapporter.
+        $cancelled = $order !== null && ! $s->delivered_at && $this->isCancelled($order);
+        if ($cancelled) {
+            $live = ['collect_method' => 'cancelled', 'amount_due_cents' => 0];
+        }
 
         return [
             'id'             => (int) $s->id,
@@ -180,6 +194,7 @@ class DeliveryRunController extends Controller
             'sequence'       => (int) $s->sequence,
             'ready'          => $order && (int) $order->status === OrderStatus::PREPARED,
             'order_status'   => $order ? (int) $order->status : null,
+            'cancelled'      => $cancelled, // [VG-2026-10-21 M4-102]
             'customer_name'  => $order?->user?->name,
             'customer_phone' => $order?->user?->phone,
             'address'        => $addr?->address,
@@ -190,7 +205,7 @@ class DeliveryRunController extends Controller
             'waze_url'       => $hasPoint ? sprintf('https://waze.com/ul?ll=%s,%s&navigate=yes&zoom=17', $lat, $lng) : null,
             'maps_url'       => $hasPoint ? sprintf('https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=driving', $lat, $lng) : null,
             'collect_method' => $live['collect_method'],
-            'collect_label'  => match ($live['collect_method']) {
+            'collect_label'  => $cancelled ? 'ANNULÉE — ne pas remettre' : match ($live['collect_method']) {
                 DeliveryStop::COLLECT_CASH => 'Encaisser en espèces',
                 DeliveryStop::COLLECT_CARD => 'Encaisser par carte',
                 // [VG-2026-10-21 L2] Le livreur récupère le titre-restaurant à la porte : un vrai libellé, pas « carte ».
