@@ -879,10 +879,37 @@ export default {
         decrementExtra: function (extra) {
             this.setExtraQuantity(extra, this.getExtraQuantity(extra.id) - 1);
         },
+        // [VG-2026-10-21 M3-001] Même prédicat que le wizard gelé (pos-wizard.js : attributs
+        // « viande »/« meat »/« proteine ») : ce sont EXACTEMENT les <select> de pont qu'il remplit.
+        isViandeAttribute: function (attribute) {
+            const n = String((attribute && attribute.name) || '')
+                .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+            return n.includes('viande') || n.includes('meat') || n.includes('proteine');
+        },
+        // [VG-2026-10-21 M3-001] L'entrée occupe-t-elle un emplacement viande À CHOIX UNIQUE — ceux
+        // que le wizard gelé réécrit par ses <select> de pont ? Résolue par l'attribut de la variation
+        // au catalogue (repli : l'attribut porté par l'entrée). Les attributs viande multi-quantité
+        // (allow_repeat) ne passent pas par ce pont : ils restent restaurés tels quels.
+        isBridgedViandeEntry: function (entry) {
+            const attributes = (this.item && Array.isArray(this.item.itemAttributes)) ? this.item.itemAttributes : [];
+            const variation = this.findVariationById(entry && entry.id);
+            const attributeId = normalizeId(variation ? variation.item_attribute_id : (entry && entry.item_attribute_id));
+            const attribute = attributes.find((a) => normalizeId(a && a.id) === attributeId);
+            return attribute ? (this.isViandeAttribute(attribute) && !this.getAttributeConfig(attribute).isMulti) : false;
+        },
         initializeDefaultSelections: function () {
             if (!this.item || !Array.isArray(this.item.itemAttributes)) return;
 
             _.forEach(this.item.itemAttributes, (attribute) => {
+                // [VG-2026-10-21 M3-001] JAMAIS de viande par défaut. Le wizard caisse (gelé) n'écrit
+                // que les viandes CHOISIES, dans l'ordre, et n'efface jamais un emplacement : tout
+                // défaut posé ici partait donc tel quel en cuisine et dans composition_snapshot.
+                // Repro base locale (commandes 8023/8056) : « Viande 3 » passée à min_select=1 le
+                // 29/09 → chaque Tacos M/L/XL scellait un « Cordon Bleu » jamais commandé. La
+                // viande obligatoire reste exigée par le serveur (profil publié, MultiVariationConstraint)
+                // et par le formulaire de repli (hasSelectionErrors) : un oubli est refusé, jamais comblé.
+                if (this.isViandeAttribute(attribute)) return;
+
                 const config = this.getAttributeConfig(attribute);
                 const variations = this.getAttributeVariations(attribute);
 
@@ -1090,7 +1117,12 @@ export default {
                     this.temp.convert_price = parseFloat(cartLine.convert_price) || 0;
                     this.temp.currency_price = cartLine.currency_price;
                     this.temp.instruction = cartLine.instruction || '';
-                    this.temp.item_variations = normalizeVariationEntries(cartLine.item_variations);
+                    // [VG-2026-10-21 M3-001] Les viandes de la ligne NE SONT PAS rechargées dans `temp` :
+                    // le wizard les reçoit par buildWizardRestorePayload (lu sur cartLine) et les réécrit
+                    // toutes à la validation. Rechargées ici, une viande retirée dans le wizard restait
+                    // dans son emplacement (le wizard n'efface jamais un <select>) et repartait en cuisine.
+                    this.temp.item_variations = normalizeVariationEntries(cartLine.item_variations)
+                        .filter((entry) => !this.isBridgedViandeEntry(entry));
                     // [GOAL REMARQUES 2026-10-03 · revue de convergence 3 · P1-1 · R-002] L'extra GÉNÉRIQUE
                     // « Sauce supplémentaire » n'est pas rechargé : il porte la somme des sauces en plus (produit +
                     // frites) et le wizard le reconstruit depuis les sauces NOMMÉES de l'instruction (même règle que

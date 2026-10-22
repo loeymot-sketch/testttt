@@ -113,10 +113,12 @@ describe('ItemComponent — un créneau optionnel (min_select=0) ne reçoit jama
         vm.initializeDefaultSelections();
 
         const attrIds = vm.temp.item_variations.map((entry) => entry.item_attribute_id).sort();
-        expect(attrIds, 'seuls Viande 1 (requis) et Sauce (requis) doivent recevoir un défaut').toEqual([1, 5]);
+        // [VG-2026-10-21 M3-001] Plus aucune viande par défaut, même requise (Viande 1) : le wizard
+        // gelé n'écrit que les viandes choisies et n'efface jamais un emplacement pré-rempli.
+        expect(attrIds, 'seule la Sauce (requise, hors viande) reçoit un défaut').toEqual([5]);
     });
 
-    it('initializeDefaultSelections pré-remplit toujours les attributs réellement requis (comportement inchangé)', () => {
+    it('initializeDefaultSelections pré-remplit les attributs requis HORS viande ; la viande reste au caissier', () => {
         const vm = createVm();
         vm.item = clone(itemWithOptionalSlot);
         vm.temp.item_variations = [];
@@ -125,7 +127,8 @@ describe('ItemComponent — un créneau optionnel (min_select=0) ne reçoit jama
 
         const viande1Entry = vm.temp.item_variations.find((e) => e.item_attribute_id === 1);
         const sauceEntry = vm.temp.item_variations.find((e) => e.item_attribute_id === 5);
-        expect(viande1Entry?.id).toBe(43);
+        // [VG-2026-10-21 M3-001] Viande 1 n'est plus choisie à la place du caissier.
+        expect(viande1Entry).toBeUndefined();
         expect(sauceEntry?.id).toBe(317);
     });
 
