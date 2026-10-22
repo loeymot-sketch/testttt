@@ -327,6 +327,12 @@ class DeliveryWaveService
 
     // ── encaissement et géométrie ───────────────────────────────────────────────────────────
 
+    /**
+     * [VG-2026-10-21 L2] Mode d'encaissement « titre-restaurant » d'un arrêt (s'ajoute à DeliveryStop::COLLECT_CASH /
+     * COLLECT_CARD / COLLECT_PAID_ONLINE ; colonne delivery_stops.collect_method = 16 caractères).
+     */
+    public const COLLECT_MEAL_VOUCHER = 'meal_voucher';
+
     /** @return array{collect_method: string, amount_due_cents: int} */
     public function collectionFor(Order $order): array
     {
@@ -334,9 +340,12 @@ class DeliveryWaveService
             return ['collect_method' => DeliveryStop::COLLECT_PAID_ONLINE, 'amount_due_cents' => 0];
         }
 
-        $method = (int) $order->payment_method === PaymentGateway::CASH_ON_DELIVERY
-            ? DeliveryStop::COLLECT_CASH
-            : DeliveryStop::COLLECT_CARD;
+        // [VG-2026-10-21 L2] Titre-restaurant récupéré à la porte (décision propriétaire 2026-10-22) : un vrai mode, pas « carte ».
+        $method = match ((int) $order->payment_method) {
+            PaymentGateway::CASH_ON_DELIVERY  => DeliveryStop::COLLECT_CASH,
+            PaymentGateway::TICKET_RESTAURANT => self::COLLECT_MEAL_VOUCHER,
+            default                           => DeliveryStop::COLLECT_CARD,
+        };
 
         return ['collect_method' => $method, 'amount_due_cents' => (int) round(((float) $order->total) * 100)];
     }

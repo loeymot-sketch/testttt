@@ -127,6 +127,28 @@ class DeliveryMealVoucherDoorstepTest extends TestCase
             ->where('resource_id', $stop->order_id)->count(), 'Un titre-restaurant n\'est pas un encaissement d\'espèces.');
     }
 
+    /** Le livreur voit un vrai mode « titre-restaurant » et le montant à récupérer, avant comme après son départ. */
+    public function test_courier_is_told_to_collect_a_meal_voucher_and_the_amount_until_handover(): void
+    {
+        $stop = $this->readyDelivery();
+        $this->assertSame('meal_voucher', $stop->collect_method, 'Mode noté à l\'affectation de la tournée.');
+        $this->assertSame(2380, (int) $stop->amount_due_cents);
+
+        $s = $this->http()->getJson('/api/frontend/delivery-run')->assertOk()->json('data.0.stops.0');
+        $this->assertSame('meal_voucher', $s['collect_method']);
+        $this->assertSame('Encaisser en titre-restaurant', $s['collect_label']);
+        $this->assertSame(2380, $s['amount_due_cents']);
+
+        $this->http()->postJson('/api/frontend/delivery-run/depart', ['wave_at' => '2026-10-20 19:30:00'])->assertOk();
+        $s = $this->http()->getJson('/api/frontend/delivery-run')->assertOk()->json('data.0.stops.0');
+        $this->assertSame('Encaisser en titre-restaurant', $s['collect_label'], 'Après le départ, le titre reste À ENCAISSER (plus jamais « Déjà payé »).');
+        $this->assertSame(2380, $s['amount_due_cents']);
+
+        $this->http()->postJson("/api/frontend/delivery-run/stops/{$stop->id}/deliver", ['collected_cents' => 2380])
+            ->assertOk()->assertJsonPath('data.collect_method', 'meal_voucher')->assertJsonPath('data.amount_due_cents', 2380);
+        $this->assertSame(2380, (int) $stop->fresh()->amount_collected_cents);
+    }
+
     /**
      * La caisse accepte déjà un titre-restaurant sur une livraison : vente PAYÉE et scellée AU COMPTOIR, sa tranche
      * déjà enregistrée. Le parcours livreur ne doit rien y changer (aucune 2ᵉ tranche, numéro fiscal intact).

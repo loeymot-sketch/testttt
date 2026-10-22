@@ -184,6 +184,8 @@ class DeliveryRunController extends Controller
             'collect_label'  => match ($live['collect_method']) {
                 DeliveryStop::COLLECT_CASH => 'Encaisser en espèces',
                 DeliveryStop::COLLECT_CARD => 'Encaisser par carte',
+                // [VG-2026-10-21 L2] Le livreur récupère le titre-restaurant à la porte : un vrai libellé, pas « carte ».
+                \App\Services\Delivery\DeliveryWaveService::COLLECT_MEAL_VOUCHER => 'Encaisser en titre-restaurant',
                 default                    => 'Déjà payé',
             },
             'amount_due'       => round($live['amount_due_cents'] / 100, 2),
