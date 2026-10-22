@@ -39,7 +39,9 @@ function setup(list, { printMode: pm = 'ok' } = {}) {
     h.axios.get.mockImplementation(async (url) => {
         if (url === 'admin/labels/products') return { data: { data: products, meta: { server_now: new Date().toISOString(), timezone: 'Europe/Paris' } } };
         if (url === 'admin/labels/watch') return { data: { data: [], meta: { server_now: new Date().toISOString() } } };
-        if (url === 'admin/hygiene/operators') return { data: { data: PEOPLE, meta: { me: 1 } } };
+        // [VG-2026-10-21 M8-103] Le sélecteur « Qui ? » exige désormais l'horloge du serveur (loadedBody) ; le vrai
+        // `admin/hygiene/operators` la rend (meta.server_now + timezone) : la simulation l'imite.
+        if (url === 'admin/hygiene/operators') return { data: { data: PEOPLE, meta: { me: 1, server_now: new Date().toISOString(), timezone: 'Europe/Paris' } } };
         return { data: { data: [] } };
     });
     h.axios.post.mockImplementation(async (url, body) => {

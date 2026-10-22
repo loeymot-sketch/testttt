@@ -72,11 +72,14 @@ describe('lots à surveiller (VG-2026-10-21 M7-003)', () => {
     });
 
     it('widget = accueil Hygiène : 3 copies confirmées + 1 non confirmée → « non confirmées : 1 » ; 4 saines + 1 à vérifier → « à vérifier : 1 »', async () => {
+        // [VG-2026-10-21 M7-003] Le widget lit la VRAIE horloge (server_now) : une échéance fixe (IN_2H = 14:00 le 22/10)
+        // rendait ce test faux dès 14:00 (étiquette « dépassée », comme le produit doit le dire). Échéance relative à maintenant.
+        const soon = new Date(Date.now() + 2 * 3600000).toISOString();
         h.axios.get.mockResolvedValue({ data: { data: [
-            row({ id: 1, copies: 3, lot: 'L1', status: 'printed' }),
-            row({ id: 2, copies: 1, lot: 'L2', status: 'unconfirmed' }),
-            row({ id: 3, product_name: 'Sauce', copies: 4, lot: 'L3' }),
-            row({ id: 4, product_name: 'Sauce', copies: 1, lot: 'L4', anomaly: true }),
+            row({ id: 1, copies: 3, lot: 'L1', status: 'printed', expires_at: soon }),
+            row({ id: 2, copies: 1, lot: 'L2', status: 'unconfirmed', expires_at: soon }),
+            row({ id: 3, product_name: 'Sauce', copies: 4, lot: 'L3', expires_at: soon }),
+            row({ id: 4, product_name: 'Sauce', copies: 1, lot: 'L4', anomaly: true, expires_at: soon }),
         ], meta: { server_now: new Date().toISOString() } } });
         const w = mountWidget();
         await flushPromises();
