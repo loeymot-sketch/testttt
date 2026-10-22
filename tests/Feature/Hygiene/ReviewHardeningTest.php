@@ -278,6 +278,45 @@ class ReviewHardeningTest extends TestCase
         $this->assertSame('2026-10-18 10:00:00', $g->fresh()->updated_at->toDateTimeString());
     }
 
+    // [VG-2026-10-21 M8-102] supprimer un élément DÉJÀ masqué ne repousse pas sa fin : le masquage reste la date de fin dans le dossier
+    public function test_supprimer_une_fiche_masquee_ne_cree_pas_de_non_faites_fantomes(): void
+    {
+        $this->staff(); // un caissier peut supprimer la fiche (« Modifier » puis « Supprimer la fiche ») : chemin réel du constat
+        $t = new HygieneTaskTemplate(['name' => 'Salle', 'checklist' => [['key' => 'k1', 'label' => 'Sols']], 'frequency' => 'daily', 'sort_order' => 10, 'is_active' => true]);
+        $t->branch_id = 1;
+        $t->created_at = Carbon::parse('2026-10-01 08:00:00', config('app.timezone'));
+        $t->save();
+        // masquée le 05/10 sans aucune validation : 02, 03, 04/10 non faites (le 01 = création, le 05 = retrait, jamais « manqués »)
+        Carbon::setTestNow(Carbon::parse('2026-10-05 12:00:00', config('app.timezone')));
+        $this->patchJson(self::BASE.'/tasks/templates/'.$t->id, ['is_active' => false])->assertOk();
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:00:00', config('app.timezone')));
+        $url = self::BASE.'/report/summary?from=2026-10-01&to=2026-10-21';
+        $before = $this->getJson($url)->json('data.tasks');
+        $this->assertSame(3, $before['missed']);
+        // supprimée dix-sept jours plus tard
+        $this->deleteJson(self::BASE.'/tasks/templates/'.$t->id)->assertOk();
+        $this->assertNotNull(HygieneTaskTemplate::withTrashed()->find($t->id)->deleted_at);
+        $after = $this->getJson($url)->json('data.tasks');
+        $this->assertSame(3, $after['missed'], 'la suppression d\'une fiche masquée n\'invente aucun jour « non fait » après le masquage');
+        $this->assertSame(['2026-10-02', '2026-10-03', '2026-10-04'], array_column($after['missed_list'], 'date'));
+    }
+
+    // [VG-2026-10-21 M8-102] même règle pour un équipement (frigo) masqué puis supprimé
+    public function test_supprimer_un_equipement_masque_ne_cree_pas_de_jours_attendus_fantomes(): void
+    {
+        $this->staff();
+        $f = $this->fridge();
+        $f->forceFill(['created_at' => Carbon::parse('2026-10-01 08:00:00', config('app.timezone'))])->save();
+        Carbon::setTestNow(Carbon::parse('2026-10-05 12:00:00', config('app.timezone')));
+        $this->putJson(self::TEMP."/equipment/{$f->id}", ['is_active' => false])->assertOk();
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:00:00', config('app.timezone')));
+        $url = self::BASE.'/report/summary?from=2026-10-01&to=2026-10-21';
+        $before = $this->getJson($url)->json('data.temperature.expected');
+        $this->assertSame(3, $before);
+        $this->deleteJson(self::TEMP."/equipment/{$f->id}")->assertOk();
+        $this->assertSame($before, $this->getJson($url)->json('data.temperature.expected'), 'aucun jour attendu inventé après le masquage');
+    }
+
     public function test_hiding_an_equipment_does_not_erase_its_past_gaps_from_the_report(): void
     {
         $this->staff();

@@ -100,9 +100,13 @@ final class ReportBuilder
     /** Dernier jour où l'élément était attendu : sa suppression, ou le moment où il a été masqué (approximé par sa dernière modification). null = toujours actif. */
     private function endDate($model): ?string
     {
-        if ($model->deleted_at) return $this->localDate($model->deleted_at);
+        // [VG-2026-10-21 M8-102] masqué PUIS supprimé : la fin est le masquage (le plus ancien des deux), jamais la suppression qui suit —
+        // sinon chaque jour entre les deux devenait « non fait » dans le dossier. `KeepsHideMoment` garde `updated_at` à la suppression.
+        $hidden = (! $model->is_active && $model->updated_at) ? $this->localDate($model->updated_at) : null;
+        $deleted = $model->deleted_at ? $this->localDate($model->deleted_at) : null;
+        if ($hidden !== null && $deleted !== null) return min($hidden, $deleted);
 
-        return $model->is_active ? null : ($model->updated_at ? $this->localDate($model->updated_at) : null);
+        return $deleted ?? $hidden;
     }
 
     /** Un élément masqué/supprimé avant le début de la période n'a rien attendu pendant celle-ci. */

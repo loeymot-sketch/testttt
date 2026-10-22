@@ -20,5 +20,16 @@ trait KeepsHideMoment
         static::updated(function ($model): void {
             $model->timestamps = true; // l'instance reste utilisable pour d'autres écritures horodatées
         });
+        // [VG-2026-10-21 M8-102] La suppression douce écrit aussi `updated_at` (SoftDeletes::runSoftDelete) : supprimer un élément DÉJÀ masqué
+        // effaçait le moment du masquage et repoussait sa fin au jour de la suppression (3 → 20 jours « non faits » dans le dossier d'inspection).
+        // L'élément masqué garde donc son `updated_at` ; le dossier prend la plus ancienne des deux dates (ReportBuilder::endDate).
+        static::deleting(function ($model): void {
+            if (! $model->is_active) {
+                $model->timestamps = false;
+            }
+        });
+        static::deleted(function ($model): void {
+            $model->timestamps = true;
+        });
     }
 }
