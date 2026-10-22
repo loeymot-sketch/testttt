@@ -573,7 +573,15 @@
                      quotidien) — lève l'ambiguïté dès qu'une commande n'est pas du jour. -->
                 <span v-if="shortcutDateBadge(o)" class="pos-shortcuts__date-badge" :data-testid="`pos-shortcut-date-${o.id}`">{{ shortcutDateBadge(o) }}</span>
                 <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <!-- [VG-2026-10-21 M4-106] Livraison non encaissée : « Livré » la sortirait du Z — remise par le livreur. -->
+                <span
+                  v-if="livraisonNonEncaissee(o)"
+                  class="pos-shortcuts__date-badge"
+                  :data-testid="`pos-shortcut-door-${o.id}`"
+                  title="Livraison à encaisser à la porte : la remise se fait depuis l'écran du livreur."
+                >Livreur · à encaisser</span>
                 <button
+                  v-else
                   type="button"
                   class="pos-shortcuts__cta pos-shortcuts__cta--ready"
                   :disabled="o._delivering"
@@ -5784,8 +5792,19 @@ export default {
                 this.readyOrdersLoading = false;
             }
         },
+        // [VG-2026-10-21 M4-106] Livraison non encaissée (paiement à la porte) : la caisse ne la remet pas — le serveur
+        // le refuse aussi. Même prédicat que la garde de OrderService::changeStatus.
+        livraisonNonEncaissee(order) {
+            if (!order || parseInt(order.order_type, 10) !== orderTypeEnum.DELIVERY) return false;
+            const paiement = parseInt(order.payment_status ?? 0, 10);
+            return paiement === paymentStatusEnum.UNPAID || paiement === paymentStatusEnum.PENDING_COUNTER;
+        },
         async markDelivered(order) {
             if (!order || order._delivering) return;
+            // [VG-2026-10-21 M4-106] Aussi depuis le tiroir de contrôle (@livrer) : refus avant tout envoi.
+            if (this.livraisonNonEncaissee(order)) {
+                return alertService.error("Livraison non encaissée : la remise se fait depuis l'écran du livreur, qui encaisse à la porte et enregistre la vente.");
+            }
             order._delivering = true;
             try {
                 // Reuse the canonical posOrder/changeStatus action — it

@@ -2532,6 +2532,18 @@ class OrderService
                     // and the lock could otherwise persist a terminal→active edge.
                     $this->assertNotResurrectingTerminalOrder((int) $locked->status, $toStatus);
 
+                    // [VG-2026-10-21 M4-106] « Livrée » depuis la caisse ne scelle rien : sur une LIVRAISON non encaissée
+                    // (paiement à la porte), elle la sortait définitivement du Z (DELIVERED + PENDING_COUNTER, sans numéro
+                    // fiscal, hors « À encaisser », inscellable ensuite). Une telle livraison se remet par l'écran livreur
+                    // (deliveryBoyOrderChangeStatus encaisse et scelle). Toutes les routes jumelles passent ici.
+                    if ($toStatus === OrderStatus::DELIVERED
+                        && (int) $locked->order_type === \App\Enums\OrderType::DELIVERY
+                        && in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)
+                        && $locked->fiscal_sequence_no === null
+                        && strtolower((string) $locked->source_surface) !== 'uber_eats') {
+                        throw new Exception("Livraison non encaissée : la remise passe par l'écran du livreur, qui encaisse à la porte et enregistre la vente. La marquer « Livrée » ici la sortirait de la caisse sans paiement.", 422);
+                    }
+
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([
