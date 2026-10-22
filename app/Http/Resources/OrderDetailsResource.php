@@ -80,6 +80,11 @@ class OrderDetailsResource extends JsonResource
             // (NULL = ASAP). ISO 8601 comme created_at — le client web/app affiche
             // « prévue pour HH:MM » sur le suivi de commande. Projection pure.
             'scheduled_at' => optional($this->scheduled_at)->toIso8601String(),
+            // [VG-2026-10-21 M4-002] Départ de tournée d'une LIVRAISON (ISO 8601) et son jour : la
+            // caisse ne pouvait pas afficher l'heure de départ (« tout de suite » pris à 17:10 part à
+            // 23:00). null hors livraison.
+            'delivery_slot_at' => $this->resolveDeliverySlotAt(),
+            'prevue_le' => $this->resolvePrevueLe(),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
@@ -207,6 +212,41 @@ class OrderDetailsResource extends JsonResource
         // [E2E stores · F-B2 · 2026-10-01] Une heure programmée fait foi ; sans elle, règle
         // historique inchangée (lendemain si commande anticipée, jour même si créneau saisi).
         return \App\Support\CreneauRetrait::date($this);
+    }
+
+    /** [VG-2026-10-21 M4-002] Une livraison seulement. */
+    private function estLivraison(): bool
+    {
+        return (int) ($this->resource->order_type ?? 0) === \App\Enums\OrderType::DELIVERY;
+    }
+
+    /** [VG-2026-10-21 M4-002] Départ de tournée (ISO 8601), null hors livraison ou sans tournée. */
+    private function resolveDeliverySlotAt(): ?string
+    {
+        if (! $this->estLivraison()) {
+            return null;
+        }
+        $slot = $this->resource->delivery_slot_at ?? null;
+
+        return $slot instanceof \Carbon\CarbonInterface ? $slot->toIso8601String() : null;
+    }
+
+    /**
+     * [VG-2026-10-21 M4-002] Jour (Y-m-d) de l'heure annoncée — MÊME définition que le suivi client :
+     * on relit `prevue_le` de OrderTrackingService::forOrder (une seule source, jamais un second
+     * calcul). Appelé pour les livraisons portant une heure seulement (sinon null, sans requête).
+     */
+    private function resolvePrevueLe(): ?string
+    {
+        if (! $this->estLivraison()
+            || (($this->resource->delivery_slot_at ?? null) === null && ($this->resource->scheduled_at ?? null) === null)) {
+            return null;
+        }
+        try {
+            return app(\App\Services\OrderTrackingService::class)->forOrder($this->resource)['prevue_le'] ?? null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
