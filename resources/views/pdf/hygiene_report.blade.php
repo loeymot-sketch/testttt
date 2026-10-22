@@ -27,6 +27,8 @@
         .empty { font-style: italic; color: #94a3b8; }
         .legal { font-size: 8px; color: #94a3b8; margin-top: 12px; }
         .footer { position: fixed; bottom: -9mm; left: 0; right: 0; text-align: center; font-size: 8px; color: #94a3b8; }
+        {{-- [VG-2026-10-21 M8] une valeur signée ne se coupe jamais : « - » à la ligne puis « 19 » se lisait +19 °C pour un congélateur --}}
+        .nb { white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -35,6 +37,21 @@
     $d = fn ($iso) => $iso ? \Carbon\Carbon::parse($iso)->format('d/m/Y') : '';
     $n = fn ($v) => $v === null ? '—' : str_replace('.', ',', (string) $v);
     $pct = fn ($v) => $v === null ? '—' : str_replace('.', ',', (string) $v).' %';
+    // [VG-2026-10-21 M8] Valeurs signées INSÉCABLES. dompdf coupe une ligne après tout trait d'union (Text::$_wordbreak_pattern) :
+    // « -19 » devenait « - » / « 19 ». Vrai signe moins (U+2212, jamais un point de coupure), espaces insécables, élément nowrap.
+    $nbsp = "\u{00A0}";
+    $minus = fn (string $s) => str_replace('-', '−', $s);
+    $tv = fn ($v, bool $unit = false) => $v === null ? '—' : '<span class="nb">'.e($minus($n($v))).($unit ? $nbsp.'°C' : '').'</span>';
+    // seuils écrits comme à l'écran (helpers/hygieneTemperature.js `limitText`) : « 0 à +4 °C », « ≤ −18 °C », « ≥ +63 °C »
+    $sig = fn ($v) => ((float) $v > 0 ? '+' : '').$minus(preg_replace('/,0$/', '', number_format((float) $v, 1, ',', '')));
+    $lim = function ($min, $max) use ($sig, $nbsp) {
+        if ($min !== null && $max !== null) return '<span class="nb">'.e($sig($min)).'</span> à <span class="nb">'.e($sig($max)).$nbsp.'°C</span>';
+        if ($max !== null) return '<span class="nb">≤'.$nbsp.e($sig($max)).$nbsp.'°C</span>';
+        if ($min !== null) return '<span class="nb">≥'.$nbsp.e($sig($min)).$nbsp.'°C</span>';
+        return 'sans seuil';
+    };
+    // texte libre du serveur qui contient une température (« Congélateur : -12 °C (trop chaud) ») : signe et unité collés au nombre
+    $glue = fn ($s) => str_replace(' °C', $nbsp.'°C', preg_replace('/(^|[\s(:])-(?=\d)/u', '$1−', e((string) $s)));
     // « aucun jour écoulé » vient du serveur (period.past_days), jamais de expected === 0 (un élément créé hier n'a aucun jour attendu)
     $pastDays = $report['period']['past_days'] ?? null;
     $headOf = fn ($expected) => $pastDays === 0 ? 'Aucun jour écoulé : pas de taux. ' : ($expected === 0 ? 'Aucun jour attendu : pas de taux. ' : '');
@@ -73,7 +90,7 @@
 @else
     <table class="data"><tr><th style="width:15%">Date</th><th style="width:11%">Domaine</th><th>Incident</th><th>Action / commentaire</th><th style="width:12%">Opérateur</th></tr>
     @foreach ($report['incidents'] as $i)
-        <tr class="bad"><td>{{ $dt($i['at']) }}</td><td>{{ $mod[$i['module']] ?? $i['module'] }}</td><td>{{ $i['text'] }}</td><td>{{ $i['action'] }}</td><td>{{ $i['operator'] }}</td></tr>
+        <tr class="bad"><td>{{ $dt($i['at']) }}</td><td>{{ $mod[$i['module']] ?? $i['module'] }}</td><td>{!! $glue($i['text']) !!}{{-- [VG-2026-10-21 M8] --}}</td><td>{{ $i['action'] }}</td><td>{{ $i['operator'] }}</td></tr>
     @endforeach
     </table>
 @endif
@@ -83,8 +100,9 @@
     {!! $cut($t) !!}
     <table class="data"><tr><th>Date</th><th>Équipement</th><th>°C</th><th>Seuils</th><th>Verdict</th><th>Moment</th><th>Opérateur</th><th>Action corrective</th></tr>
     @foreach ($t['rows'] as $x)
-        <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['equipment'] }}</td><td>{{ $n($x['value_c']) }}</td>
-            <td>{{ $x['min_c'] !== null ? $n($x['min_c']).' à ' : '≤ ' }}{{ $n($x['max_c']) }}</td><td>{!! $st($x['status']) !!}@if($x['voided']) — annulé : {{ $x['void_reason'] }}@endif</td>
+        <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['equipment'] }}</td><td>{!! $tv($x['value_c']) !!}</td>
+            {{-- [VG-2026-10-21 M8] valeur insécable ; seuils comme à l'écran (« ≥ +63 °C », jamais « 63 à — ») --}}
+            <td>{!! $lim($x['min_c'], $x['max_c']) !!}</td><td>{!! $st($x['status']) !!}@if($x['voided']) — annulé : {{ $x['void_reason'] }}@endif</td>
             <td>{{ config("hygiene.periods.{$x['period']}") }}</td><td>{{ $x['operator'] }}@if(!empty($x['offline'])) — saisi hors ligne, envoyé le {{ $dt($x['synced_at']) }}@endif</td><td>{{ $x['action'] }}@if($x['note']) — {{ $x['note'] }}@endif @if(!empty($x['followup_closed'])) — suivi clos : {{ $x['followup_closed'] }}@endif</td></tr>
     @endforeach
     </table>
@@ -111,7 +129,7 @@
     <table class="data"><tr><th>Date</th><th>Fournisseur</th><th>BL</th><th>Températures</th><th>Contrôles non conformes</th><th>Décision</th><th>Commentaire</th><th>Opérateur</th></tr>
     @foreach ($r['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['supplier'] }}</td><td>{{ $x['delivery_note'] }}</td>
-            <td>@foreach ($x['temperatures'] as $tp){{ $tp['label'] }} {{ $n($tp['value_c']) }} °C{{ $loop->last ? '' : ' · ' }}@endforeach</td><td>{{ implode(', ', $x['checks_ko']) }}</td>
+            <td>@foreach ($x['temperatures'] as $tp){{ $tp['label'] }} {!! $tv($tp['value_c'], true) !!}{{ $loop->last ? '' : ' · ' }}{{-- [VG-2026-10-21 M8] --}}@endforeach</td><td>{{ implode(', ', $x['checks_ko']) }}</td>
             <td>{{ $x['decision'] }}</td><td>{{ $x['note'] }} @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td></tr>
     @endforeach
     </table>
@@ -134,7 +152,7 @@
     <table class="data"><tr><th>Date</th><th>Friteuse</th><th>Opération</th><th>Polaires</th><th>Bain °C</th><th>Verdict</th><th>Action corrective</th><th>Opérateur</th></tr>
     @foreach ($o['rows'] as $x)
         <tr class="{{ $x['voided'] ? 'void' : ($x['status'] === 'alert' ? 'bad' : '') }}"><td>{{ $dt($x['at']) }}</td><td>{{ $x['fryer'] }}</td><td>{{ $x['type'] }}@if($x['oil_litres']) · {{ $n($x['oil_litres']) }} L @endif</td>
-            <td>{{ $x['polar_pct'] !== null ? $pct($x['polar_pct']) : '' }}</td><td>{{ $n($x['bath_temp_c']) }}</td><td>{!! $x['type'] === 'Test de l’huile' ? $st($x['status']) : '' !!}</td>
+            <td>{{ $x['polar_pct'] !== null ? $pct($x['polar_pct']) : '' }}</td><td>{!! $tv($x['bath_temp_c']) !!}{{-- [VG-2026-10-21 M8] --}}</td><td>{!! $x['type'] === 'Test de l’huile' ? $st($x['status']) : '' !!}</td>
             <td>{{ $x['action'] }} {{ $x['note'] }} @if($x['voided']) annulé : {{ $x['void_reason'] }}@endif</td><td>{{ $x['operator'] }}</td></tr>
     @endforeach
     </table>
