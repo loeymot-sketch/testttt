@@ -302,7 +302,8 @@ class OrderTrackingTest extends TestCase
 
         $route = app('router')->getRoutes()->getByName('frontend.order.track');
         $this->assertNotNull($route, 'Route nommée frontend.order.track absente.');
-        $this->assertContains('throttle:30,1', $route->gatherMiddleware(),
+        // [VG-2026-10-21 M1-002] même seuil 30/min, compteur propre (3e argument = préfixe de clé).
+        $this->assertContains('throttle:30,1,order-track', $route->gatherMiddleware(),
             'Endpoint public order/track DOIT être throttled.');
     }
 

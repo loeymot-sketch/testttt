@@ -165,7 +165,7 @@ Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 
 // HMAC-SHA256 vérifiée dans le controller). URL à enregistrer sur le dashboard Uber :
 //   https://<domaine>/api/webhooks/uber
 Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookController::class, 'handle'])
-    ->middleware(['installed', 'throttle:60,1'])
+    ->middleware(['installed', 'throttle:60,1,webhook-uber']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('webhooks.uber');
 
 // [W5 Mollie 2026-07-20] Webhook Mollie — PUBLIC (Mollie n'a pas notre apiKey ; modèle de
@@ -174,7 +174,7 @@ Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookControll
 // FAIL-CLOSED : 503 tant que payment.mollie (flag+clé) absent. URL à enregistrer côté Mollie :
 //   https://<domaine>/api/webhook/mollie
 Route::post('/webhook/mollie', [\App\Http\PaymentGateways\Gateways\Mollie::class, 'handleWebhook'])
-    ->middleware(['installed', 'throttle:60,1'])
+    ->middleware(['installed', 'throttle:60,1,webhook-mollie']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('webhooks.mollie');
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
@@ -195,9 +195,9 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             // [AUDIT SÉCURITÉ 2026-09-29] limiteur nommé : par adresse + global (voir RouteServiceProvider).
             ->middleware('throttle:forgot-password');
         Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,pwreset-verify-code'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,pwreset-reset'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('signup')->name('signup.')->group(function () {
@@ -206,9 +206,9 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
         // [GAP-20-2] OTP verify: 3 per 5 minutes — anti brute-force.
         Route::post('/verify', [SignupController::class, 'verify'])
-            ->middleware('throttle:3,5');
+            ->middleware('throttle:3,5,signup-verify'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/register', [SignupController::class, 'register'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,signup-register'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('guest-signup')->name('guest-signup.')->group(function () {
@@ -229,7 +229,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
         Route::post('/verify', [GuestSignupController::class, 'verify'])
-            ->middleware('throttle:3,5');
+            ->middleware('throttle:3,5,otp-verify'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     /**
@@ -246,7 +246,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('social')->name('social.')->group(function () {
         Route::post('/{provider}', [\App\Http\Controllers\Auth\SocialAuthController::class, 'login'])
             ->whereIn('provider', ['apple', 'google'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,social-login'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -283,7 +283,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
              * accepter qu'un jour un déplacement de route l'emporte en silence.
              */
             Route::post('/social/phone', [\App\Http\Controllers\Auth\SocialAuthController::class, 'attacherTelephone'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,social-phone'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
 
             Route::get('/devices', [DeviceSessionController::class, 'index']);
             Route::patch('/devices/{token}', [DeviceSessionController::class, 'update'])
@@ -548,7 +548,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/dlc/print', [\App\Http\Controllers\Admin\LabelController::class, 'dlcPrint'])->name('dlc.print');
         Route::post('/dlc/offline', [\App\Http\Controllers\Admin\LabelController::class, 'dlcOffline'])->name('dlc.offline');
         // [2026-10-19 · owner] Dictée vocale : la phrase devient une sélection de produits (ne fait que comprendre : rien d'imprimé ni d'écrit).
-        Route::post('/dlc/voice', [\App\Http\Controllers\Admin\LabelVoiceController::class, 'interpret'])->middleware('throttle:20,1')->name('dlc.voice');
+        Route::post('/dlc/voice', [\App\Http\Controllers\Admin\LabelVoiceController::class, 'interpret'])->middleware('throttle:20,1,dlc-voice')->name('dlc.voice'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::get('/watch', [\App\Http\Controllers\Admin\LabelController::class, 'watch'])->name('watch');
         Route::get('/lots', [\App\Http\Controllers\Admin\LabelController::class, 'lots'])->name('lots');
         Route::post('/prints/discard', [\App\Http\Controllers\Admin\LabelController::class, 'discard'])->name('prints.discard');
@@ -1165,7 +1165,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     | et la branche vient du COMPTE, jamais de la requête (sinon on valide chez le voisin).
     */
     Route::post('/wheel/unlock-token', [\App\Http\Controllers\Admin\Wheel\WheelUnlockController::class, 'issue'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:60,1,wheel-unlock-token') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('wheel.unlockToken');
 
     /*
@@ -1181,7 +1181,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     | laissez-passer, on n'en distribue pas en rafale.
     */
     Route::post('/wheel/screen-pass', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'screenPass'])
-        ->middleware('throttle:20,1')
+        ->middleware('throttle:20,1,wheel-screen-pass') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('wheel.screenPass');
 
     Route::prefix('pos')->name('pos.')->group(function () {
@@ -1725,14 +1725,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // seule ; les actions passent par les routes existantes (change-status, refund…), qui
         // gardent toutes leurs permissions. `throttle` aligné sur les lectures du tableau.
         Route::get('/stale', [PosOrderController::class, 'stale'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,pos-order-stale') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('stale');
         // [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée aux états des quatre files
         // du tiroir de contrôle. Remplace `?paginate=1&per_page=100` sur ce chemin : la page de
         // cent, triée `id desc`, jetait les commandes les PLUS ANCIENNES — celles qui traînent —
         // sans rien signaler. Lecture seule ; `throttle` aligné sur les lectures du tableau.
         Route::get('/service-day', [PosOrderController::class, 'serviceDay'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,pos-order-service-day') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
@@ -2072,7 +2072,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // branch (admin sees all), sorted updated_at desc, capped 50. Revert
         // (PREPARED → PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK).
         Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,kds-history-today') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('history-today');
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] Chef
         // "Annuler bump" within 60s. Compensating action — orders.status is
@@ -2119,7 +2119,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/interrupteurs', [InterrupteurController::class, 'index'])->name('interrupteurs.index');
         Route::put('/interrupteurs/{nom}', [InterrupteurController::class, 'update'])->name('interrupteurs.update');
         Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,client-metrics') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('client-metrics');
 
         // [CV1-OBSERVABILITY-OUTBOX-001] Outbox pipeline dashboard. Admin/Tenant
@@ -2128,10 +2128,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // controller via `role:Admin|Tenant Admin` middleware (see __construct).
         Route::get('/outbox', [SyncOverviewController::class, 'outboxOverview'])->name('outbox.index');
         Route::post('/outbox/retry-failed', [SyncOverviewController::class, 'outboxRetryFailed'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:10,1,outbox-retry') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('outbox.retry');
         Route::post('/outbox/drain-failed', [SyncOverviewController::class, 'outboxDrainFailed'])
-            ->middleware('throttle:5,1')
+            ->middleware('throttle:5,1,outbox-drain') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('outbox.drain');
     });
     Route::prefix('oss-order')->name('ossOrder.')->group(function () {
@@ -2151,9 +2151,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::prefix('z-report')->name('zReport.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
             Route::post('/open', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,z-report-open'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             Route::post('/close', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,z-report-close'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             Route::get('/{zReport}', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'show']);
             Route::get('/{zReport}/pdf', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'pdf']);
         });
@@ -2176,7 +2176,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
         // [SEC-26-2] Rate limit subscriber spam: 5 subscriptions/min per IP
         Route::post('/', [FrontendSubscriberController::class, 'store'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,subscriber'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     // [LIVRAISON 2026-10-20] Livraison propre du Cayenne — endpoints PUBLICS en lecture (site + application).
@@ -2244,7 +2244,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // (endpoint public = vecteur d'abus, §0.5.3 discipline). Déclarée AVANT le
     // groupe auth `order` pour ne pas hériter de son middleware.
     Route::get('order/wait-estimate', [FrontendOrderController::class, 'waitEstimate'])
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,wait-estimate') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.wait-estimate');
 
     // [STORES T-3.3.2 · 2026-10-01] Version minimale de l'application des stores — PUBLIC
@@ -2252,7 +2252,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // 60/min : des clients derrière une même adresse d'opérateur mobile la lisent chacun
     // à l'ouverture ; un 429 n'y bloque rien (l'application ne bloque que sur une réponse lue).
     Route::get('app/config', [\App\Http\Controllers\Frontend\AppConfigController::class, 'show'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:60,1,app-config') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('app.config');
 
     // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
@@ -2266,7 +2266,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // cette app, pas spécifique à ce endpoint.
     Route::get('order/track/{trackingToken}', [FrontendOrderController::class, 'track'])
         ->where('trackingToken', '[A-Za-z0-9]{48}')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,order-track') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.track');
 
     // [T-C SUIVI-CLIENT 2026-08-16] QR borne → page de suivi. Throttle 30/min
@@ -2289,7 +2289,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::get('order/track-qr/{trackingToken}', [FrontendOrderController::class, 'trackQr'])
         ->where('trackingToken', '[A-Za-z0-9]{48}')
         ->withoutMiddleware('apiKey')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,order-track-qr') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.track-qr');
 
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
@@ -2340,17 +2340,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // et ne touche à aucune commande — d'où l'absence d'idempotence ; elle est en revanche
         // limitée en débit (une feuille par tentative) et n'accepte qu'une URL *.apple.com.
         Route::post('/applepay-session', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'applePaySession'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:10,1,applepay-session') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('applepay-session');
         Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
-            ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1'])
+            ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1,mollie-checkout']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('mollie-checkout');
     });
 
     // [AUDIT-F-008] Payment confirm reconciliation queue — frontend persists TPE-approved
     // transactions whose backend confirmation failed (network blip / app crash post-TPE)
     // and replays them in batch on boot. Idempotent per UNIQUE(transaction_id).
-    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1'])->group(function () {
+    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1,payment-reconcile'])->group(function () { // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/reconcile-pending', [\App\Http\Controllers\Frontend\PaymentReconcileController::class, 'reconcile']);
     });
 
@@ -2392,7 +2392,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendCouponController::class, 'index']);
         // [SEC-26-1] Rate limit coupon brute-force: 10 attempts/min per IP
         Route::post('/coupon-checking', [FrontendCouponController::class, 'couponChecking'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,coupon-checking'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     /*
@@ -2406,17 +2406,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     */
     Route::prefix('wheel')->name('wheel.')->group(function () {
         Route::get('/config', [\App\Http\Controllers\Frontend\WheelController::class, 'config'])
-            ->middleware('throttle:60,1');
+            ->middleware('throttle:60,1,wheel-config'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // Le SERVEUR horodate l'ouverture d'un lien : c'est la seule garde « il a pris le temps »
         // qui ne se contourne pas depuis le navigateur.
         Route::post('/step', [\App\Http\Controllers\Frontend\WheelController::class, 'step'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle:30,1,wheel-step'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/spin', [\App\Http\Controllers\Frontend\WheelController::class, 'spin'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,wheel-spin'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // La RÉCLAMATION est l'endpoint qui donne réellement quelque chose : c'est lui qui crée la
         // participation, émet le code et crée le compte. Débit limité aussi serré que le tour.
         Route::post('/claim', [\App\Http\Controllers\Frontend\WheelController::class, 'claim'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,wheel-claim'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('slider')->name('slider.')->group(function () {
@@ -2464,8 +2464,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         // [AUDIT-P0-D] Add throttle to loyalty endpoints to prevent enumeration and mass registration.
-        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1']);
-        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1');
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1,loyalty-check']); // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
+        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1,loyalty-register'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
@@ -2493,14 +2493,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // client-side. Throttle:30/min/user matches the natural 12 mints/hour
         // (one every 5 min) with healthy retry headroom.
         Route::post('/qr', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'generateQr'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,loyalty-qr') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('qr.generate');
     });
 
     // [C6] Kiosk observability — structured event logging for operators
     // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1,kiosk-event']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('kiosk.event');
 
     /* ================================================================
@@ -2518,35 +2518,35 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
     Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
-        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:60,1,pricing-preview', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.pricing.preview');
 
     // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
     Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
-        ->middleware(['auth:sanctum', 'throttle:30,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:30,1,promo-validate', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.promo.validate');
 
     // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
     Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
-        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:60,1,upsell', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.upsell.suggest');
 
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
     Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
-        ->middleware(['throttle:5,1'])
+        ->middleware(['throttle:5,1,loyalty-opt-in']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.loyalty.opt-in');
 
     // Phase 8.3 — POST /api/frontend/loyalty/scan : résolution QR/NFC kiosk.
     // Auth Sanctum + kiosk:order ability — Scan invoqué depuis le parcours
     // client. Toujours HTTP 200 pour ne pas bloquer le parcours (invariant §12).
     Route::post('/loyalty/scan', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'scan'])
-        ->middleware(['auth:sanctum', 'throttle:20,1'])
+        ->middleware(['auth:sanctum', 'throttle:20,1,loyalty-scan']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.loyalty.scan');
 
     // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
     // [K-6.1] Same ability enforcement as /kiosk-event — both aliases must fail-closed. [T08b]
     Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1,kiosk-event']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.kiosk.event');
 
     // [C2 / K-9 ADR-5] POST /api/frontend/csp-report : endpoint anonyme pour
@@ -2567,7 +2567,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 // `localization`. Path et name historiques préservés pour les tests existants
 // (CspReportEndpointTest, CorrelationIdEndToEndTest, ContentSecurityPolicyHeaderTest).
 Route::post('/frontend/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
-    ->middleware(['installed', 'throttle:1000,1'])
+    ->middleware(['installed', 'throttle:1000,1,csp-report']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('frontend.csp.report');
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
@@ -2585,6 +2585,6 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
     Route::prefix('dining-order')->name('dining-order.')->group(function () {
         Route::get('/show/{frontendOrder}', [TableOrderController::class, 'show']);
         // [AUDIT-P1] Dedicated throttle: table ordering is unauthenticated (QR code), 20 orders/min per IP.
-        Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1');
+        Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1,table-order'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 });
