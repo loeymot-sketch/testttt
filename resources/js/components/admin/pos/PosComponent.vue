@@ -3626,7 +3626,14 @@ export default {
             // (reading 'id')`. Filter to non-null entries with a valid `id`.
             const list = this.$store.getters['user/lists'];
             if (!Array.isArray(list)) return [];
-            return list.filter((u) => u && u.id != null);
+            const clients = list.filter((u) => u && u.id != null);
+            // [VG-2026-10-21 M4-104] La livraison pose customer_id sur le client retrouvé ou CRÉÉ par téléphone,
+            // absent de la liste chargée au démarrage : vue-select cherchait l'option (undefined) puis plantait en
+            // la comparant (« reading 'id' » à l'ouverture du paiement). Le client choisi est toujours une option.
+            const choisi = this.checkoutProps?.form?.customer_id;
+            if (clients.length === 0 || choisi == null || choisi === '' || clients.some((u) => u.id === choisi)) return clients;
+            const nom = this.deliveryInline?.customerName || this.deliveryInline?.name || `Client n° ${choisi}`;
+            return clients.concat([{ id: choisi, name: String(nom) }]);
         },
         carts: function () {
             return this.$store.getters['posCart/lists'];
