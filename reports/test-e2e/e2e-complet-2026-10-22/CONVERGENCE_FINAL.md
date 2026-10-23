@@ -14,9 +14,9 @@ Code final : `e6d25ede0`. Rien n'a été poussé ni déployé.
 Règle d'égalité d'ensemble (CONVERGENCE_RULES) : **respectée sur l'ensemble bloquant** (vide aux deux tours). L'ensemble complet des constats ouverts a RÉTRÉCI entre les tours 2 et 3 parce que nous avons corrigé ADV2-001/002/003/004/014 (fermetures, pas des intermittences) ; aucun constat nouveau n'est apparu au tour 3.
 
 ## Résultats du tour 3 (code `e6d25ede0`)
-- **PHPUnit complet** : 7 118 tests en 19 tranches (SQLite mémoire). **3 échecs, tous antérieurs et hors périmètre**, identiques au tour 1 :
+- **PHPUnit complet** : 7 129 tests en 19 tranches (SQLite mémoire). **3 échecs, tous antérieurs et hors périmètre**, identiques au tour 1 :
   `WithoutGlobalScopesAuditSentinelTest` ×2 (`ReviewAccountCommand`, commit `5a466a5a3`, autre session) et `UberOrderMapperNoteTest` (note Uber Eats).
-- **Vitest complet** : 5 808 tests, 5 805 verts après correction de la sonde sans `expect` (sentinelle anti-preuve-vacante) ; 3 ignorés.
+- **Vitest complet** : 5 808 tests : 5 804 verts + 1 échec (sentinelle anti-preuve-vacante : une sonde sans `expect`). Après correction, seule cette sentinelle (452 tests) a été rejouée, verte ; le Vitest complet n'a PAS été relancé en entier ; 3 ignorés.
 - **Playwright** : A-etats 6/6 · A-base-M2 7/7 · A-r2-ferme-422 6/6 · B-fermetures 5/5 · planche-tournees 3/3 · B-livraison 2/2 · B-caisse-tiroir-ventes 5/5 · C-r2-c101 3/3 · C-contrat-api 4/4 · C-natif 7/7.
   **Rouge assumé** : `C-captures-r2` (vraies assertions) échoue sur **C-007** (zones tactiles < 44 px, P2 ouvert, dans le site) — un test qui mesure un défaut connu, pas un faux rouge.
 - **NF525** : `fiscal:verify-chain --all` CHAIN OK sur 7 branches avant, pendant et après. Zones gelées : diff vide ; `public/js/pos-wizard.js` identique à HEAD (voir incident).
