@@ -2826,6 +2826,8 @@ export default {
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
             deliveryOrderSubmitting: false,
+            // [E2E 2026-10-23 C2-001] Options du sélecteur client posées AVANT le choix du client de livraison.
+            deliveryCustomerOptions: [],
             manualSupplement: {
                 open: false,
                 label: '',
@@ -3685,7 +3687,12 @@ export default {
             // (reading 'id')`. Filter to non-null entries with a valid `id`.
             const list = this.$store.getters['user/lists'];
             if (!Array.isArray(list)) return [];
-            const clients = list.filter((u) => u && u.id != null);
+            // [E2E 2026-10-23 C2-001] + les clients de livraison mémorisés AVANT d'être choisis (selectDeliveryCustomer) : seule
+            // une option présente un cycle AVANT la valeur évite le plantage de vue-next-select ; l'ajout ci-dessous, dans le
+            // même cycle que la valeur, ne suffisait pas (prouvé : tests/js/posSelecteurClientLivraison.spec.js).
+            const base = list.filter((u) => u && u.id != null);
+            const extra = Array.isArray(this.deliveryCustomerOptions) ? this.deliveryCustomerOptions : [];
+            const clients = base.concat(extra.filter((e) => !base.some((u) => u.id === e.id)));
             // [VG-2026-10-21 M4-104] La livraison pose customer_id sur le client retrouvé ou CRÉÉ par téléphone,
             // absent de la liste chargée au démarrage : vue-select cherchait l'option (undefined) puis plantait en
             // la comparant (« reading 'id' » à l'ouverture du paiement). Le client choisi est toujours une option.
@@ -7118,7 +7125,7 @@ export default {
                 // Le client ne survit pas à sa commande (miroir de resetPaymentForm + resetDeliveryInline).
                 this.resetPaymentForm();
                 this.resetDeliveryInline();
-                this.checkoutProps.form.customer_id = this._walkInCustomerId || null;
+                this.checkoutProps.form.customer_id = this.safeWalkInCustomerId();
                 this.checkoutProps.form.order_type = orderTypeEnum.TAKEAWAY;
                 await this.loadKioskCashOrders();
             } catch (err) {
@@ -7802,7 +7809,7 @@ export default {
                 this.deliveryInline.emailVerified = c.email_verified;
                 this.deliveryInline.savedAddresses = c.addresses || [];
                 if (!this.deliveryInline.name) this.deliveryInline.name = c.name;
-                this.checkoutProps.form.customer_id = c.id;
+                await this.selectDeliveryCustomer(c.id, c.name);
             } catch (e) {
                 this.clearDeliveryKnownCustomer();
             }
@@ -7820,7 +7827,7 @@ export default {
             const hadCustomer = !!this.deliveryInline.customerId;
             if (hadCustomer) {
                 // Le numéro a changé : le client précédent, son adresse et son prix ne valent plus.
-                this.checkoutProps.form.customer_id = this._walkInCustomerId || null;
+                this.checkoutProps.form.customer_id = this.safeWalkInCustomerId();
                 this.checkoutProps.form.address_id = null;
                 this.checkoutProps.form.delivery_charge = 0;
                 this.checkoutProps.form.delivery_distance_km = null;
@@ -7850,6 +7857,7 @@ export default {
                 return;
             }
             this.deliveryInline.confirmed = true;
+            this.rememberCustomerOption(this.deliveryInline.customerId, this.deliveryInline.customerName);
             this.checkoutProps.form.customer_id = this.deliveryInline.customerId;
             this.checkoutProps.form.address_id = a.id;
             this.checkoutProps.form.delivery_charge = Number(a.fee) || 0;
@@ -7922,6 +7930,31 @@ export default {
             }
         },
 
+        /**
+         * [E2E 2026-10-23 C2-001] Choisir le client de livraison SANS faire planter le sélecteur client : vue-next-select
+         * lève « Cannot read properties of undefined (reading 'id') » si la valeur arrive avant son option. On mémorise
+         * l'option, on laisse un cycle de rendu, puis on pose la valeur.
+         */
+        async selectDeliveryCustomer(id, name) {
+            if (id == null || id === '') {
+                this.checkoutProps.form.customer_id = null;
+                return;
+            }
+            this.rememberCustomerOption(id, name);
+            await this.$nextTick();
+            this.checkoutProps.form.customer_id = id;
+        },
+        rememberCustomerOption(id, name) {
+            if (id == null || id === '') return;
+            if (!this.deliveryCustomerOptions.some((o) => o.id === id)) {
+                this.deliveryCustomerOptions.push({ id, name: String(name || `Client n° ${id}`) });
+            }
+        },
+        /** Client comptoir seulement s'il est déjà une option du sélecteur ; sinon aucun (orderSubmit le reposera). */
+        safeWalkInCustomerId() {
+            const id = this._walkInCustomerId;
+            return id && this.customers.some((u) => u.id === id) ? id : null;
+        },
         resetDeliveryInline() {
             this.deliveryInline.name = '';
             this.deliveryInline.phone = '';
@@ -7971,7 +8004,7 @@ export default {
                 if (!customerId) {
                     const c = await livraison.ensureCustomer(axios, { phone, name: this.deliveryInline.name });
                     customerId = c.id;
-                    this.checkoutProps.form.customer_id = customerId;
+                    await this.selectDeliveryCustomer(customerId, c.name || this.deliveryInline.name);
                 }
                 const saved = await livraison.saveAddress(axios, {
                     customerId,
