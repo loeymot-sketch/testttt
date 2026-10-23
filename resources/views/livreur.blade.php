@@ -31,6 +31,9 @@
         #app-err:not(:empty) { position:sticky; top:68px; z-index:4; background:#FDECEC; border:1px solid var(--bad); border-radius:10px; padding:8px 12px; margin-bottom:8px; }
         .wave { margin:16px 0 8px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
         .wave h3 { margin:0; font-size:20px; }
+        /* [2026-10-23] Durée réelle de la tournée ALLER-RETOUR (retour au restaurant compris). */
+        .tour { margin:0 0 8px; padding:8px 12px; border-radius:12px; background:#FFF1D6; color:#5C3B00; font-size:15px; font-weight:600; }
+        .tour small { display:block; font-weight:500; color:#8A5A00; margin-top:2px; }
         .chip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:13px; font-weight:700; background:#EEE; color:var(--dark); }
         .chip.go { background:#FFF1D6; color:#8A5A00; } .chip.done { background:#DDF5E5; color:#126B33; } .chip.wait { background:#FDE4E1; color:#9B1C12; }
         .stop { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin:10px 0; display:flex; flex-direction:column; gap:10px; }
@@ -79,6 +82,14 @@
     function uuid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
     function eur(n) { return Number(n).toFixed(2).replace('.', ',') + ' €'; }
     function hm(s) { return s ? s.slice(11, 16) : ''; }
+    // [2026-10-23] 47 → « 47 min », 65 → « 1 h 05 ».
+    function dureeLabel(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + ' h ' + ('0' + (m % 60)).slice(-2) : m + ' min'; }
+    // La tournée ALLER-RETOUR (restaurant → arrêts → restaurant) : ce que le livreur met vraiment. Jamais affichée sans point GPS.
+    function tourHtml(t) {
+        if (!t) return '';
+        return '<div class="tour" data-testid="livreur-tour">⏱ Tournée aller-retour ≈ ' + dureeLabel(t.tour_minutes) + ' · retour au restaurant vers ' + hm(t.back_at)
+            + '<small>' + (t.source === 'road' ? 'Itinéraire routier réel' : 'Estimation (itinéraire indisponible)') + ' · dont ' + dureeLabel(t.return_minutes) + ' de retour</small></div>';
+    }
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
 
     function api(method, path, body, isForm) {
@@ -157,7 +168,7 @@
             var head = '<div class="wave"><h3>Départ ' + jour + w.time + ' · ' + w.stops.length + ' livraison' + (w.stops.length > 1 ? 's' : '') + '</h3></div>';
             var go = pending.length
                 ? '<button class="btn" data-depart="' + w.wave_at + '"' + (ready ? '' : ' disabled') + '>Je pars (' + ready + '/' + pending.length + ' prête' + (ready > 1 ? 's' : '') + ')</button>' : '';
-            return head + go + w.stops.map(stopHtml).join('');
+            return head + tourHtml(w.tour) + go + w.stops.map(stopHtml).join('');
         }).join('');
     }
 

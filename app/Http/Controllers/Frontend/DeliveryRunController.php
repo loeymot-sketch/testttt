@@ -50,6 +50,8 @@ class DeliveryRunController extends Controller
                 // [VG-2026-10-21 M4-005] Le jour : « Départ 00:30 » se lisait comme ce soir pour une tournée 24 h plus tard.
                 ...$this->waves->waveDay(Carbon::parse($waveAt)),
                 'left'    => $group->contains(fn ($s) => $s->left_at !== null),
+                // [2026-10-23] Combien de temps la tournée prend VRAIMENT, retour au restaurant compris (itinéraire routier).
+                'tour'    => $group->every(fn ($s) => $s->delivered_at !== null) ? null : $this->waves->tourSummary((int) $group->first()->branch_id, $group),
                 'stops'   => $group->map(fn (DeliveryStop $s) => $this->present($s))->values()->all(),
             ];
         })->values()->all();

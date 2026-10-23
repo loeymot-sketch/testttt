@@ -39,6 +39,12 @@
                             <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
+                    <!-- [2026-10-23 · décision propriétaire] Durée RÉELLE de la tournée ALLER-RETOUR (retour au restaurant compris), pour gérer
+                         les livreurs. Ce n'est pas le temps vu par le client (aller simple) et ça ne change jamais le prix. -->
+                    <p v-if="w.tour" class="basis-full text-xs text-gray-700" :data-testid="'pos-delivery-wave-tour-' + waveDate(w) + '-' + w.time">
+                        ⏱ Tournée aller-retour ≈ <strong>{{ dureeLabel(w.tour.tour_minutes) }}</strong> · retour au restaurant vers <strong>{{ String(w.tour.back_at || '').slice(11, 16) }}</strong>
+                        <span class="text-gray-500">({{ w.tour.source === 'road' ? 'itinéraire routier réel' : 'estimation, itinéraire indisponible' }} · dont {{ dureeLabel(w.tour.return_minutes) }} de retour)</span>
+                    </p>
                 </header>
                 <ul class="divide-y divide-[#F0F0F2]">
                     <li v-for="s in w.stops" :key="s.id" class="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
@@ -191,6 +197,11 @@ export default {
         },
         format(n) {
             return Number(n).toFixed(2).replace('.', ',') + ' €';
+        },
+        // 47 → « 47 min », 65 → « 1 h 05 ».
+        dureeLabel(m) {
+            const n = Math.round(Number(m) || 0);
+            return n >= 60 ? Math.floor(n / 60) + ' h ' + String(n % 60).padStart(2, '0') : n + ' min';
         },
         stateOf(s) {
             if (s.delivered_at) return 'Remise ' + s.delivered_at.slice(11, 16) + (s.has_photo ? ' · 📷' : '');

@@ -27,7 +27,7 @@ use Illuminate\Validation\ValidationException;
  */
 class DeliveryWaveService
 {
-    public function __construct(private readonly DeliveryQuoteService $quotes)
+    public function __construct(private readonly DeliveryQuoteService $quotes, private readonly RoadRouteService $routes)
     {
     }
 
@@ -145,8 +145,6 @@ class DeliveryWaveService
         $cursor = [(float) $branch?->latitude, (float) $branch?->longitude];
         $remaining = $stops->all();
         $ordered = [];
-        $elapsed = 0;
-        $handover = (int) config('delivery.handover_minutes', 4);
 
         while ($remaining) {
             $bestIdx = null;
@@ -161,17 +159,107 @@ class DeliveryWaveService
             }
             $stop = $remaining[$bestIdx];
             unset($remaining[$bestIdx]);
+            $ordered[] = $stop;
             $p = $this->coords($stop);
-            $elapsed += $this->quotes->travelMinutes($bestDist === 9999.0 ? 0.0 : $bestDist) + ($ordered ? $handover : 0);
-            $ordered[] = [$stop, $elapsed];
             if ($p) {
                 $cursor = $p;
             }
         }
 
-        foreach ($ordered as $idx => [$stop, $eta]) {
-            $stop->forceFill(['sequence' => $idx + 1, 'eta_minutes' => $eta])->save();
+        // [2026-10-23] ETA d'ARRIVÉE (aller simple, ce que voit le client) sur itinéraire routier réel quand il est disponible.
+        // Chemin de CRÉATION de commande (appelé dans la transaction d'assign(), verrous tenus) : AUCUN appel réseau ici —
+        // itinéraire déjà en mémoire s'il existe, sinon estimation. Le réseau n'est sollicité qu'à la lecture (tourSummary).
+        $plan = $this->plan($branch, $ordered, false);
+        foreach ($ordered as $idx => $stop) {
+            $stop->forceFill(['sequence' => $idx + 1, 'eta_minutes' => $plan['arrivals'][$idx]])->save();
         }
+    }
+
+    /**
+     * [2026-10-23 · décision propriétaire] Durée RÉELLE d'une tournée ALLER-RETOUR pour la gestion des livreurs :
+     * restaurant → arrêts (dans l'ordre de passage) → restaurant, remises comprises. Ce n'est PAS ce que voit le client
+     * (aller simple jusqu'à SON adresse) et le prix n'en dépend jamais.
+     *
+     * @param  iterable<DeliveryStop>  $stops  avec `order.address` chargés
+     * @return array{tour_minutes: int, out_minutes: int, return_minutes: int, stops: int, distance_km: float, back_at: string, source: string}|null
+     *         null si aucun arrêt n'a de point GPS exploitable (on n'invente pas une durée).
+     */
+    public function tourSummary(int $branchId, iterable $stops, ?CarbonInterface $start = null): ?array
+    {
+        $list = collect($stops)->sortBy(fn (DeliveryStop $s) => $s->sequence ?? PHP_INT_MAX)->values()->all();
+        $withPoint = array_values(array_filter($list, fn (DeliveryStop $s) => $this->coords($s) !== null));
+        $branch = Branch::query()->find($branchId);
+        if (! $withPoint || ! $branch || ! is_numeric($branch->latitude) || ! is_numeric($branch->longitude)) {
+            return null;
+        }
+
+        $plan = $this->plan($branch, $list);
+        $handover = (int) config('delivery.handover_minutes', 4);
+        $out = (int) end($plan['arrivals']) + $handover; // arrivée au dernier arrêt + sa remise
+        $tour = $out + $plan['return_minutes'];
+        // Départ réel s'il a eu lieu (le premier arrêt parti) ; sinon l'heure prévue, JAMAIS dans le passé : une tournée en retard
+        // (heure dépassée, pas encore partie) partira au plus tôt maintenant, donc le retour ne peut pas s'afficher avant.
+        $lefts = collect($list)->pluck('left_at')->filter()->sort()->values();
+        $origin = $start
+            ? Carbon::instance($start)
+            : ($lefts->isNotEmpty() ? Carbon::instance($lefts->first()) : Carbon::instance($list[0]->wave_at)->max(Carbon::now()));
+
+        return [
+            'tour_minutes'   => $tour,
+            'out_minutes'    => $out,
+            'return_minutes' => $plan['return_minutes'],
+            'stops'          => count($list),
+            'distance_km'    => round($plan['km'], 1),
+            'back_at'        => $origin->copy()->addMinutes($tour)->toDateTimeString(),
+            'source'         => $plan['source'],
+        ];
+    }
+
+    /**
+     * Trajets du parcours restaurant → arrêts (ordre donné) → restaurant.
+     * Minutes d'une étape aller = conduite × facteur de circulation (itinéraire réel seulement) + marge de stationnement,
+     * arrondie à la minute par étape (identique à l'ancienne estimation quand le routage est coupé).
+     *
+     * @param  list<DeliveryStop>  $ordered
+     * @param  bool  $network  false = jamais d'appel réseau (création de commande)
+     * @return array{arrivals: list<int>, return_minutes: int, km: float, source: string}
+     */
+    private function plan(?Branch $branch, array $ordered, bool $network = true): array
+    {
+        $handover = (int) config('delivery.handover_minutes', 4);
+        $buffer = (float) config('delivery.travel_buffer_minutes', 3);
+        $home = [(float) $branch?->latitude, (float) $branch?->longitude];
+
+        $points = [$home];
+        $pointIndex = [];
+        foreach ($ordered as $idx => $stop) {
+            if ($p = $this->coords($stop)) {
+                $points[] = $p;
+                $pointIndex[$idx] = count($points) - 1; // l'étape qui ARRIVE à cet arrêt = legs[index - 1]
+            }
+        }
+        $points[] = $home;
+
+        $route = $this->routes->legs($points, $network);
+        $factor = $route['source'] === RoadRouteService::SOURCE_ROAD ? max(1.0, (float) config('delivery.routing.traffic_factor', 1.15)) : 1.0;
+        $legs = $route['legs'];
+
+        $arrivals = [];
+        $elapsed = 0;
+        foreach ($ordered as $idx => $stop) {
+            $leg = isset($pointIndex[$idx]) ? ($legs[$pointIndex[$idx] - 1] ?? null) : null;
+            $elapsed += (int) ceil(($leg ? $leg['seconds'] / 60 * $factor : 0.0) + $buffer) + ($arrivals ? $handover : 0);
+            $arrivals[] = $elapsed;
+        }
+
+        $returnLeg = $legs ? end($legs) : null;
+
+        return [
+            'arrivals'       => $arrivals,
+            'return_minutes' => $returnLeg ? (int) ceil($returnLeg['seconds'] / 60 * $factor) : 0,
+            'km'             => array_sum(array_column($legs, 'km')),
+            'source'         => $route['source'],
+        ];
     }
 
     /**

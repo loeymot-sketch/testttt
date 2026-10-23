@@ -57,6 +57,22 @@ return [
     // 45 = valeur prudente PROPOSÉE, À CONFIRMER PAR LE PROPRIÉTAIRE.
     'depart_max_advance_minutes' => 45,
 
+    /*
+     * [2026-10-23 · décision propriétaire] Durées de trajet ROUTIÈRES réelles (OSRM, service public sans clé).
+     *  · client / site / prix : aller SIMPLE (restaurant → adresse) ;
+     *  · gestion livreur (caisse, écran livreur) : tournée ALLER-RETOUR (restaurant → arrêts → restaurant).
+     * Panne ou délai dépassé : repli sur l'estimation à vol d'oiseau × 1,3, et l'écran le dit (source = estimate).
+     * `traffic_factor` : OSRM donne une durée « route dégagée » ; ×1,15 = circulation urbaine moyenne
+     * (VALEUR PROPOSÉE, À CONFIRMER PAR LE PROPRIÉTAIRE après quelques vraies tournées). Le PRIX n'en dépend jamais.
+     */
+    'routing' => [
+        'enabled'         => (bool) env('DELIVERY_ROUTING_ENABLED', true),
+        'base_url'        => env('DELIVERY_ROUTING_URL', 'https://router.project-osrm.org'),
+        'timeout_seconds' => (int) env('DELIVERY_ROUTING_TIMEOUT', 3),
+        'cache_minutes'   => 360,
+        'traffic_factor'  => (float) env('DELIVERY_ROUTING_TRAFFIC_FACTOR', 1.15),
+    ],
+
     // Géocodage serveur : Base Adresse Nationale (service public, sans clé).
     'geocoder' => [
         // Ne jamais couper en production : sans géocodage serveur, les coordonnées du navigateur seraient crues.

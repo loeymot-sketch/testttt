@@ -67,6 +67,7 @@
         <env name="BROADCAST_DRIVER" value="log"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DELIVERY_SERVER_GEOCODING" value="false"/>
+        <env name="DELIVERY_ROUTING_ENABLED" value="false"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="APP_KEY" value="base64:xStyFkYpE7z2419nS+F0eDk1xQ89H9xY4S/r+F+Z4eY="/>
         <env name="MAIL_MAILER" value="array"/>

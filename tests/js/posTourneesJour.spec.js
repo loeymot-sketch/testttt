@@ -62,4 +62,26 @@ describe('caisse — planche « Tournées » : le jour de chaque départ (M4-005
         expect(etat('pos-delivery-wave-state-2026-10-21-23:30')).toBe('parti');
         w.unmount();
     });
+    // [2026-10-23 · décision propriétaire] Durée RÉELLE de la tournée ALLER-RETOUR affichée pour gérer les livreurs.
+    it('affiche la durée aller-retour réelle, l\'heure de retour et sa source ; rien sans durée', async () => {
+        const w = mount(PosDeliveryBoard);
+        await flushPromises();
+        await w.setData({ waves: [
+            { ...BOARD.data[1], tour: { tour_minutes: 65, out_minutes: 50, return_minutes: 15, back_at: '2026-10-22 00:35:00', source: 'road' } },
+            { ...BOARD.data[2], tour: { tour_minutes: 32, out_minutes: 19, return_minutes: 13, back_at: '2026-10-23 01:02:00', source: 'estimate' } },
+            { ...BOARD.data[3], tour: null },
+        ] });
+        const t1 = w.find('[data-testid="pos-delivery-wave-tour-2026-10-22-23:30"]').text().replace(/\s+/g, ' ');
+        expect(t1).toContain('aller-retour');
+        expect(t1).toContain('1 h 05');
+        expect(t1).toContain('00:35');
+        expect(t1).toContain('itinéraire routier réel');
+        expect(t1).toContain('15 min de retour');
+        const t2 = w.find('[data-testid="pos-delivery-wave-tour-2026-10-23-00:30"]').text().replace(/\s+/g, ' ');
+        expect(t2).toContain('32 min');
+        expect(t2, 'une estimation ne se présente jamais comme un itinéraire réel').toContain('estimation, itinéraire indisponible');
+        expect(t2).not.toContain('itinéraire routier réel');
+        expect(w.find('[data-testid="pos-delivery-wave-tour-2026-10-24-19:30"]').exists()).toBe(false);
+        w.unmount();
+    });
 });

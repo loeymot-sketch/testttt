@@ -194,6 +194,10 @@ class PosDeliveryController extends Controller
             'left'    => $g->contains(fn ($s) => $s->left_at !== null),
             // [ÉTAT DES LIEUX 2026-10-23 P3] Heure de départ dépassée sans que la tournée soit partie : la planche l'étiquetait « à venir ».
             'overdue' => ! $g->contains(fn ($s) => $s->left_at !== null) && Carbon::parse($at)->isPast(),
+            // [2026-10-23] Durée RÉELLE de la tournée ALLER-RETOUR (restaurant → arrêts → restaurant) pour gérer les livreurs.
+            // Pas pour une tournée entièrement remise. N'a aucun lien avec le prix ni avec l'ETA vu par le client (aller simple).
+            // Les arrêts confiés à Uber ne comptent pas : ce n'est pas du temps de NOS livreurs.
+            'tour'    => $this->ownTour($g),
             'courier' => $g->first()->delivery_boy_id ? ($couriers[$g->first()->delivery_boy_id]->name ?? null) : null,
             'courier_id' => $g->first()->delivery_boy_id,
             'stops'   => $g->map(fn ($s) => [
@@ -227,6 +231,17 @@ class PosDeliveryController extends Controller
     }
 
     /** [UBER-DIRECT 2026-10-22] Qui livre cet arrêt (nos livreurs ou Uber), l'état de la course, et pourquoi Uber est impossible le cas échéant. */
+    /** Tournée aller-retour de NOS livreurs : sans les arrêts confiés à Uber, et null si tout est remis. */
+    private function ownTour(\Illuminate\Support\Collection $stops): ?array
+    {
+        $own = $stops->reject(fn ($s) => $this->uber->activeCourse((int) $s->order_id) !== null);
+        if ($own->isEmpty() || $own->every(fn ($s) => $s->delivered_at !== null)) {
+            return null;
+        }
+
+        return $this->waves->tourSummary((int) $own->first()->branch_id, $own);
+    }
+
     private function uberView(DeliveryStop $s): array
     {
         $course = $this->uber->activeCourse((int) $s->order_id);

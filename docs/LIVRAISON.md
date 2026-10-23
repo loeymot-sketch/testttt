@@ -30,8 +30,9 @@
   tournée est pleine (`max_stops_per_wave`), ou si un client a **choisi lui-même** son créneau.
   ⚠️ Conséquence assumée : l'heure estimée de la 1ʳᵉ commande peut reculer de 30 min. C'est la règle demandée.
 - Un client peut **choisir son créneau** (`delivery_slot_at`), validé **avant paiement** (grille, horaires, horizon, tournée non pleine).
-- L'ordre de passage est le plus proche voisin depuis le restaurant ; l'ETA par arrêt est une **estimation** (vitesse
-  `average_speed_kmh` × 1,3 de détour + marge). **Le temps réel est celui de Waze**, ouvert depuis l'écran livreur.
+- L'ordre de passage est le plus proche voisin depuis le restaurant. L'ETA d'**arrivée** par arrêt (ce que voit le client) est
+  un **aller simple**, calculé à la création de la commande SANS appel réseau : itinéraire routier déjà en mémoire (§7) s'il existe, sinon l'estimation historique
+  (vitesse `average_speed_kmh` × 1,3 de détour + marge). **Le temps réel en conduite est celui de Waze**, ouvert depuis l'écran livreur.
 - Tout vit dans `delivery_stops` (jamais dans `OrderStateMachine`, gelée). Écouteur : `AssignDeliveryWaveOnOrderCreated`.
   Filet : `php artisan delivery:assign-pending` (toutes les 5 min).
 
@@ -40,6 +41,15 @@
 - **Caisse** (`/admin/pos`) : bouton **« Livraison active — suspendre / remettre »** (deux appuis), bouton **Tournées**
   (tournées du jour, choix du livreur s'il y en a plusieurs), téléphone → client retrouvé + ses adresses enregistrées,
   adresse choisie dans la liste serveur → devis. Routes `GET/POST /api/admin/pos-delivery/*`, permission `pos`.
+  **« Commande livraison »** (2026-10-23) : en mode livraison, ce bouton remplace « Commande téléphone ». Il enregistre la livraison
+  (adresse + téléphone obligatoire) et l'envoie en cuisine **sans encaisser** : le livreur encaisse à la porte, et la remise scelle
+  la vente (numéro fiscal à ce moment-là, `deliveryBoyOrderChangeStatus`). Marqueur serveur **`delivery_door_payment`** (livraison
+  seulement) → commande différée (COUNTER_DEFERRED + PENDING_COUNTER, pas de numéro fiscal à la création) tagguée
+  `source_surface = 'delivery'`. ⛔ Jamais `phone_order` en livraison : `source_surface='phone'` tombe dans la file « À encaisser au
+  comptoir » et la purge « client non venu » l'annulerait (refusé 422, `PhoneOrderDeliveryRefusedTest`). Le mode d'encaissement
+  à la porte reste noté **espèces** (limite connue plus bas). Une telle commande ne s'encaisse **qu'à la remise par le livreur** : elle n'entre pas
+  dans la file « À encaisser au comptoir » (`CounterCollectQueue`, `assertCounterDeferredOrder`) et n'est pas confiable à Uber (« à encaisser »).
+  La purge d'abandon (6 h, `CleanupStalePendingKioskOrders`) attend le **départ prévu** de la tournée, pas l'heure de saisie. Tests : `DeliveryDoorPaymentOrderTest`, `posCommandeLivraison.spec.js`.
 - **Site / application** : `GET /api/frontend/delivery/status|suggest|waves`, `POST /api/frontend/delivery/quote`.
   La livraison n'apparaît que si le **serveur** dit « active ». Adresse enregistrée **une seule fois** par client.
 - **Livreur** : page `/livreur` (téléphone), API `/api/frontend/delivery-run`. Départ → arrivée (**photo**, position) →
@@ -200,3 +210,32 @@ courses actives à chaque ouverture de la planche (≤ 1 fois / 15 s). Tests : `
 5. Poser les identifiants dans le `.env` **du serveur** (jamais commité) ; **régénérer le secret client**, il a transité dans une conversation.
 6. Non fait : bascule de **toute une tournée** d'un appui (aujourd'hui : arrêt par arrêt) ; annulation côté Uber d'une course dont le coursier est déjà en route (frais éventuels : conditions du compte).
 
+## 7. Aller simple ou aller-retour — qui voit quoi (2026-10-23, décision propriétaire)
+
+Deux calculs distincts, à ne jamais confondre :
+
+| | Trajet | Où | Dépend du prix ? |
+|---|---|---|---|
+| **Client / site / application** | **Aller simple** : restaurant → l'adresse du client | devis (`distance_km`, `travel_minutes`), ETA d'arrivée de chaque arrêt | Le **prix** vient du barème (§1) ; ni le retour ni le routage n'y changent rien |
+| **Gestion des livreurs** | **Aller-retour réel** : restaurant → arrêts → **restaurant**, remises comprises | planche « Tournées » de la caisse et page Livraisons (`tour`), écran livreur (`tour`) | Non |
+
+- Le seuil de **7 km** (nos livreurs / devis Uber) se mesure toujours en **aller simple** : 7 km pour aller, le retour n'est jamais compté.
+  ⚠️ Ce seuil n'est pas encore construit (étape 2 de `reports/test-e2e/etat-des-lieux-2026-10-23/SYNTHESE.md`) ; le barème actuel reste en
+  **vol d'oiseau** (§1), inchangé.
+- `RoadRouteService` lit les durées d'**itinéraire routier** (OSRM, service public sans clé ; `config/delivery.php` → `routing`).
+  Panne, délai (3 s) ou réponse inexploitable → estimation à vol d'oiseau × 1,3, et la réponse le **dit** (`source = estimate`) : l'écran
+  écrit « estimation, itinéraire indisponible », jamais « itinéraire routier réel ». Une panne est mémorisée 60 s ; un itinéraire réussi 6 h.
+  `DELIVERY_ROUTING_ENABLED=false` coupe tout appel réseau (positionné dans `phpunit.xml`).
+- `tour` = `{ tour_minutes, out_minutes, return_minutes, stops, distance_km, back_at, source }` (null si tout est remis ou si aucun arrêt
+  n'a de point GPS : on n'invente pas une durée). Durée = Σ (conduite × `traffic_factor` + marge de stationnement + remise par arrêt) + trajet de retour.
+  `traffic_factor` 1,15 et la marge de 3 min sont des **valeurs proposées, à confirmer par le propriétaire** après quelques vraies tournées.
+- **Appel réseau jamais dans la création d'une commande** : `resequence()` (dans la transaction d'`assign()`, verrous tenus) n'utilise que
+  l'itinéraire déjà en mémoire, sinon l'estimation. Le réseau n'est sollicité qu'à la LECTURE (planche, écran livreur). Une panne du
+  fournisseur est mémorisée 60 s pour TOUS les itinéraires (coupe-circuit global) : au pire un délai de 3 s par minute.
+- Les arrêts confiés à **Uber** ne comptent pas dans la tournée de nos livreurs ; `back_at` ne peut pas être dans le passé (tournée en
+  retard : au plus tôt maintenant ; tournée partie : depuis le départ réel).
+- ⚠️ **Données personnelles** : le calcul envoie des **coordonnées GPS** (domiciles de clients, sans nom ni téléphone) au service public
+  `router.project-osrm.org`, une instance de démonstration. À trancher par le propriétaire avant de s'y fier en production : héberger
+  son propre OSRM, ou `DELIVERY_ROUTING_ENABLED=false` (retour à l'estimation à vol d'oiseau).
+- Tests : `TourneeAllerRetourTest` (itinéraire, panne, retour compté, client en aller simple), `posTourneesJour.spec.js`, `livreurTourneeAllerRetour.spec.js`.
+- Non fait : la caisse du livreur (espèces/TPE) par tournée, le GPS continu, les détours (suite de l'étape 5 de la synthèse).
