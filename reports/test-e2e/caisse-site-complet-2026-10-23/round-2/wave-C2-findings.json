@@ -1,0 +1,343 @@
+{
+  "wave": "C2",
+  "round": 2,
+  "reviewer": "superviseur adverse C2, round 2 (lecture seule)",
+  "states_reviewed": 13,
+  "inputs_reviewed": [
+    "captures-C2/01..13 : PNG vus en entier, puis .dom.html, .console.json, .network.json ; comparés à round-1-captures/C2",
+    "captures-C2/C2-mesures.json (commande 8869, arrêt 312, NF525 3191)",
+    "tests/Playwright/caisse-site-complet-2026-10-23/C2-caisse-livraison.spec.js (modifié à 20:25, avant les captures de 20:25:46)",
+    "commits e0728f09b, b17abf381, c66055af1 ; tests/js/posSelecteurClientLivraison.spec.js",
+    "resources/js/components/admin/pos/PosDeliveryBoard.vue, PosComponent.vue, resources/views/livreur.blade.php, app/Services/Delivery/DeliveryWaveService.php:136-205 et :419-425, app/Http/Controllers/Frontend/DeliveryRunController.php:130-150",
+    "base foodking_e2e (tinker, lecture seule) : delivery_stops 306/311/312, orders 8867-8869, numéros fiscaux"
+  ],
+  "findings": [
+    {
+      "id": "C2-001",
+      "state_artifact": "captures-C2/05-toast-commande-livraison.console.json",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "FERMÉ. Console de 05 : [] (au round 1, « TypeError … reading 'id' »). Aucune erreur applicative sur les 13 états ; seul le pont :9100/:9101 apparaît, en 01 et 13. Les bundles servis sont bien les nouveaux : app.js?id=485c33cb… au lieu de a34b01f0…, et « Commande livraison · paiement à la porte » est présent dans le DOM. Second moyen, indépendant : tests/js/posSelecteurClientLivraison.spec.js monte le VRAI vue-next-select dans la caisse, avec une liste chargée puis une liste vide. Un troisième cas prouve que l'instrument mord : l'ancienne garde « même cycle » reproduit « reading 'id' ». Après la commande, le client passage est reposé (05 : « Client passage »).",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-002",
+      "state_artifact": "captures-C2/13-planche-arret-remis.png ; 08",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "FERMÉ. En 13 et 08, les arrêts remis affichent « Encaissé 6,80 € (espèces) » en vert. L'état de tournée vaut « terminée », en vert, pour les tournées 15:00, 15:30, 16:00 et 16:30. Les arrêts encore dus restent « Espèces 6,80 € » en orange (07, 08 tournée 15:00). Aucun arrêt non remis n'est pris pour encaissé : la condition est s.delivered_at (PosDeliveryBoard.vue:76-80), et l'arrêt 8869 avant remise (08) affiche bien « Espèces 6,80 € ». Réserve : le montant « Encaissé » vient de amount_due et non de amount_collected. Voir C2-018.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-003",
+      "state_artifact": "captures-C2/01, 02, 03, 04",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "PARTIEL. Corrigé : au refus sans téléphone (02), le champ « Téléphone » est amené à l'écran avec l'anneau de focus, et le toast reste visible. Inchangé : en 01, mode Livraison à 1280×720, nom, téléphone et adresse sont hors de l'écran (on voit Programmer et deux boutons coupés vers y≈215-235). En 04, nom et téléphone sont coupés en haut et « Étage, interphone, code… » est à moitié visible. En 03, l'encadré « Au-delà de 10 km » est coupé en bas. Le panier n'affiche plus qu'environ 1,3 ligne. Le spec n'affirme pas le focus après le refus : seul le Vitest posCommandeLivraison.spec.js:143 le prouve, et la capture 02 le confirme.",
+      "fix_hint": "Hauteur de l'en-tête défilant du ticket en mode livraison à 720/768 px de haut (voir aussi C1-001) ; dans le spec, affirmer document.activeElement.id === 'pos-delivery-phone' après le refus.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-004",
+      "state_artifact": "captures-C2/01-05 ; captures-C1/10",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "FERMÉ. Le libellé « Commande livraison · paiement à la porte » est visible à 720 px de haut (01-05) alors que le sous-titre y est masqué. Il est complet à 1080 (C1/10), avec le sous-titre jaune #FFB800 sur fond #1A1A1A (contraste 10,0:1) et un texte blanc. Aucun débordement : deux lignes à 1280 (emoji, puis libellé), une ligne à 1920. Le bouton est nettement distinct de « Commande · 6,80 € » en orange. Résidu : « Commande téléphone » reste indigo, voir C1-014.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-005",
+      "state_artifact": "captures-C2/09-livreur-tournee-390.png ; 10",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "FERMÉ. En 09, vers 20:26, une tournée 15:00 en retard et non partie affiche « Prête · ETA 20:31 », et non plus une heure passée. etaAt part de max(wave_at, maintenant) quand left_at est nul (DeliveryWaveService.php:422). En 10, une fois parti, « En route · ETA 20:31 » est cohérent avec « retour vers 20:38 ». Base : arrêt 312, eta_minutes 5, left_at 20:26:09. Effet de bord : voir C2-023.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-006",
+      "state_artifact": "captures-C2/09, 10, 11 ; spec:309-317",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "FERMÉ pour l'exécution du round 2. Le spec appelle maintenant resequence(1, $slot) après le recul. Base : arrêt 312, sequence 1, eta 5. L'écran livreur montre la pastille « 1 » dans « 1 livraison » et une ETA antérieure au retour. Le changement de spec ne masque pas C2-005 : sans le correctif, l'ETA serait 15:00 + 5 = 15:05, et l'écran montre 20:31. Restes : l'orphelin du round 1 (arrêt 306, commande 8853, tournée 17:30) garde la pastille « 3 » dans une tournée d'une livraison (09, 12). Les mesures rapportent aussi une ETA périmée. Voir C2-008 et C2-024.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-007",
+      "state_artifact": "C2-mesures.json → 5-file-comptoir ; spec:250-253",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "OUVERT, spec inchangé. La preuve « absente de la file (écran) » cherche toujours le numéro de série '2310268869', alors que la file n'affiche que des jetons « N°A0032 », « N°A0101 », « N°A0106 » (extrait_file). Cette assertion ne peut pas échouer. La preuve par l'API (spec:247-249) reste la seule valable. Le correctif C1-003 rend d'ailleurs cette preuve encore plus nécessaire, puisque l'exclusion repose maintenant sur source_surface.",
+      "fix_hint": "Viser data-order-id ou le jeton N°A… réellement affiché, et prouver que l'assertion échoue sur une commande présente.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-008",
+      "state_artifact": "captures-C2/06, 07, 13 ; base delivery_stops / orders du 2026-10-23",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "OUVERT, aggravé. Le round 2 a laissé un nouvel orphelin : la commande 8867 (20:24:19), PENDING_COUNTER, PREPARING, dans la tournée de 22:00. Elle n'a jamais été remise, donc une exécution a été interrompue. Les commandes 8868 (tournée 15:30) et 8869 (tournée 15:00) correspondent à deux exécutions complètes. La tournée de 22:00 contient maintenant 4 arrêts (8837, 8851, 8867, 8869 avant le recul), dont deux à l'adresse du restaurant : la mesure « 34 min · retour 22:34 » (6a) reste fictive. La recherche d'un créneau passé libre a dû remonter jusqu'à 15:00, parce que les créneaux de 15:30 à 19:30 sont occupés par des arrêts de test : chaque nouvelle exécution recule encore. L'orphelin 8853 (arrêt 306, séquence 3) est toujours visible chez le livreur (09, 12).",
+      "fix_hint": "Purger ou annuler les arrêts E2E-C2 du jour avant chaque exécution ; déclarer chaque exécution, y compris les rouges.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-009",
+      "state_artifact": "captures-C2/05, 06, 07",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "OUVERT, laissé ouvert par l'orchestrateur. La justification tient : c'est une fonction à construire, pas une régression. Le toast de 05 dit toujours « à encaisser à la porte par le livreur » alors que 07 affiche « Aucun livreur ». Le bouton « Tournées » n'a toujours pas de badge.",
+      "fix_hint": "Badge « N sans livreur » sur Tournées ; le signaler dans le toast.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-010",
+      "state_artifact": "captures-C2/09, 12",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "FERMÉ. En 09, les tournées à faire passent d'abord (15:00 et 17:30), suivies des tournées terminées (15:30, 16:00, 16:30, 17:00). En 12, après la remise, la tournée 17:30 encore à faire est en tête et la 15:00 terminée vient après (render(), livreur.blade.php). Les tournées terminées ne sont pas repliées, mais l'ordre suffit à lever le défaut.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-011",
+      "state_artifact": "captures-C2/12-livreur-remise.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "FERMÉ. L'opacité est retirée : la carte remise utilise un fond #F4F6F5 et une bordure en tirets. Contrastes recalculés : « ✓ Remise terminée » #126B33 sur #EAF7EE = 5,99:1 ; puce « Remise 20:26 » #126B33 sur #DDF5E5 = 5,75:1. Le texte principal est sombre. Réserve mineure : .muted (#6B7280) sur #F4F6F5 donne 4,45:1, juste sous 4,5. Il n'apparaît dans une carte remise que si la ville est absente du libellé d'adresse.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-012",
+      "state_artifact": "captures-C2/09 (« Quitter » ≈ 88 px à DPR 2)",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "FERMÉ. « Quitter » mesure 44 px (.ghost min-height:44px ; ≈88 px dans la capture à DPR 2). Une confirmation est demandée quand un arrêt est parti et non remis (enTournee, livreur.blade.php). Vérifié par la lecture du code : le spec n'exerce pas « Quitter ».",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-013",
+      "state_artifact": "captures-C2/10-livreur-en-route.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "FERMÉ. DOM 10 : `<label class=\"btn sec file-cta\">📷 Arrivé + photo<input type=\"file\" … aria-label=\"Arrivé : prendre la photo de preuve\" data-arrive=\"312\">`. La classe .hidden (display:none) est retirée et l'input, réduit à 1 px avec opacity 0, reste focalisable. Le contour apparaît au focus-within. La photo a bien été enregistrée (« Photo prise » en 11 ; base : photo:true).",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-014",
+      "state_artifact": "captures-C2/13, 08 (« 📷 » non cliquable)",
+      "category": "ux_flow",
+      "severity": "P2",
+      "evidence": "OUVERT, laissé ouvert par l'orchestrateur. La justification tient : c'est une fonction à construire. La photo de preuve n'est toujours consultable par personne en caisse.",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-015",
+      "state_artifact": "captures-C2/07, 08, 13",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "OUVERT. En 07, au-dessus de l'en-tête collant « 🛵 Tournées de livraison », on voit le haut d'une tournée défilée : « Départ 22:00 à venir · Aucun livreur » et le sélecteur « Choisir… » coupé, un contrôle actif à moitié visible. En 08, « À partir » est coupé. En 13, les boutons « Nos livreurs / Confier à Uber » apparaissent au-dessus de l'en-tête.",
+      "fix_hint": "PosDeliveryBoard.vue:8 : en mode page, coller sous le vrai haut du conteneur défilant, avec un fond qui couvre le rembourrage.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-016",
+      "state_artifact": "captures-C2/08 ; C2-mesures 6a/6b",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "FERMÉ. « retour au restaurant vers 20:38 (itinéraire routier réel · dont 3 min de retour) » : l'espace est présent (PosDeliveryBoard.vue:45, {{ ' ' }}).",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-017",
+      "state_artifact": "captures-C2/05",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "OUVERT. Le toast « Livraison enregistrée · 6,80 € à encaisser à la porte par le livreur » ne donne toujours ni l'heure de départ ni l'heure d'arrivée prévue.",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-018",
+      "state_artifact": "C2-mesures.json → 7b ; PosDeliveryBoard.vue:76-80 ; DeliveryRunController.php:133 et :147",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "OUVERT, et rendu plus visible par C2-002. Le serveur accepte toujours n'importe quel collected_cents ≥ 0 sans le comparer au dû. La planche affiche maintenant « Encaissé 6,80 € » à partir de amount_due, jamais de amount_collected_cents. Si le livreur déclare un autre montant, la surface de rapprochement affichera quand même le dû comme encaissé. Le cas « déclaré ≠ dû » n'est toujours pas exercé : le rejeu avec collected_cents:1 bute d'abord sur le 409.",
+      "fix_hint": "Refuser ou journaliser un collected ≠ dû ; afficher amount_collected sur la planche (et un écart en rouge).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-019",
+      "state_artifact": "captures-C2/*.network.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "OUVERT. duration_ms vaut toujours null, et la planche (06) a un network.json vide. Le temps de chargement de /pos-delivery/board et de /delivery-run (OSRM synchrone) n'est toujours pas mesuré.",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-020",
+      "state_artifact": "captures-C2/06, 07",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "OUVERT. Sur un arrêt « à partir », « Espèces 6,80 € » est rejeté à gauche sous la rangée Uber et « À partir » est décalé. Sur un arrêt parti ou remis, le montant est aligné à droite (08, 13).",
+      "fix_hint": "PosDeliveryBoard.vue:75 : ancrer le bloc montant à droite.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-021",
+      "state_artifact": "captures-C2/10-livreur-en-route.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "FERMÉ. La ligne grise « 62110 Hénin-Beaumont » n'est plus répétée (villeSiAbsente). Il reste 5 lignes d'adresse à côté de la puce « En route · ETA 20:31 » : c'est un effet de largeur, plus une répétition.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-022",
+      "state_artifact": "captures-C2/07, 08, 13",
+      "category": "element_overlap",
+      "severity": "P3",
+      "evidence": "OUVERT. La pastille « ● Connecté » recouvre toujours « CAISSE ET COMMANDES » dans la barre latérale.",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C2-023",
+      "state_artifact": "captures-C2/09, 10, 11, 12 ; 09-livreur-tournee-390.dom.html",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "NOUVEAU. Le même livreur a deux tournées en retard, non parties : 15:00 (8869) et 17:30 (8853). L'écran annonce pour les deux « Tournée aller-retour ≈ 12 min · retour au restaurant vers 20:38 » (DOM 09). Elles se font l'une après l'autre : il ne peut pas être revenu de la seconde à 20:38. Cause : back_at (DeliveryWaveService.php:205) et, depuis le correctif C2-005, l'ETA par arrêt (:422) ancrent CHAQUE tournée non partie sur max(wave_at, maintenant), indépendamment des autres tournées du même livreur. La règle est sûre pour une tournée isolée, fausse quand des retards s'empilent. Les données sont en partie de test (8853 est un orphelin), mais la situation existe un vrai soir de retard.",
+      "fix_hint": "Pour un même livreur, ancrer la tournée N+1 non partie sur max(wave_at, maintenant, back_at de la tournée N), ou n'afficher qu'« après la tournée précédente ».",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C2-024",
+      "state_artifact": "C2-mesures.json → 6c-heure-depassee.eta_aller_simple_arret = 27 ; spec:338-339 et :343",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "NOUVEAU, sur l'instrument modifié au round 2. Après resequence(), la mesure 6c enregistre `eta_aller_simple_arret: cmd.stop.eta_minutes`, soit 27, la valeur relevée AVANT le recul. La base dit 5 (arrêt 312), et l'écran montre 20:26 + 5 = 20:31. Le commentaire du spec (:338-339, « le recul en base ne le recalcule pas ») est devenu faux. Le rapport de mesures contredit donc l'écran qu'il documente. Le spec n'affirme pas non plus l'ETA ≥ maintenant sur l'écran livreur : la vérification de C2-005 n'est que visuelle.",
+      "fix_hint": "Relire eta_minutes en base après resequence, corriger le commentaire, et affirmer ETA ≥ maintenant sur la puce de l'arrêt.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "spec_changes_reviewed": {
+    "créneau passé cherché sur 24 h": "Ne masque rien. La recherche prend le premier créneau libre (15:00) ; elle révèle au contraire la pollution du banc (C2-008).",
+    "resequence() après le recul": "Ne masque pas C2-005 : sans le correctif, l'ETA affichée serait 15:05. Rend l'état produit réaliste (pastille 1).",
+    "assertion finale « terminée » + « Encaissé … (espèces) » + absence de « Espèces 6,80 € »": "Juste. La négation sur l'arrêt remis vérifie bien que l'ancien libellé a disparu. Limite : tournée d'un seul arrêt, donc le cas « tournée partiellement remise » (doit rester « parti ») n'est pas exercé."
+  },
+  "regression_check": {
+    "client comptoir perdu après livraison": "NON — « Client passage » reposé (05).",
+    "arrêt non remis pris pour « encaissé »": "NON — condition delivered_at ; 8869 non remis = « Espèces 6,80 € » orange (08).",
+    "focus téléphone qui fait sauter la page": "NON — seul l'en-tête défilant du ticket bouge (02).",
+    "libellé trop long": "NON — 2 lignes à 1280, 1 ligne à 1920 ; non mesuré à 1024."
+  },
+  "verified_team_claims": {
+    "6,80 € partout": "PROUVÉ — devis 2,90 + 3,90, toast, base total 6.80, dû 680, planche, livreur, confirmation « Confirmez-vous avoir encaissé 6,80 € ? », collected 680.",
+    "NF525 : numéro à la remise, unique": "PROUVÉ — 8869 fiscal null à la création, 3191 à la remise, compte = 1 ; chaîne de la branche 1 : 3180→3195 sans trou ni doublon.",
+    "rejeu de remise refusé": "PROUVÉ — 409 « Cette commande est déjà remise. »",
+    "console propre": "PROUVÉ — aucune erreur applicative sur 13 états (pont :9100/:9101 seul, environnement)."
+  },
+  "summary": {
+    "P0": 0, "P1": 1, "P2": 15, "P3": 8,
+    "open_P0": 0, "open_P1": 0, "open_P2": 7, "open_P3": 6
+  },
+  "round_to_round_closures": {
+    "C2-001": "PASS",
+    "C2-002": "PASS",
+    "C2-003": "PARTIAL_PASS",
+    "C2-004": "PASS",
+    "C2-005": "PASS",
+    "C2-006": "PASS",
+    "C2-007": "FAIL",
+    "C2-008": "FAIL",
+    "C2-009": "FAIL",
+    "C2-010": "PASS",
+    "C2-011": "PASS",
+    "C2-012": "PASS",
+    "C2-013": "PASS",
+    "C2-014": "FAIL",
+    "C2-015": "FAIL",
+    "C2-016": "PASS",
+    "C2-017": "FAIL",
+    "C2-018": "FAIL",
+    "C2-019": "FAIL",
+    "C2-020": "FAIL",
+    "C2-021": "PASS",
+    "C2-022": "FAIL"
+  },
+  "verdict": "GREEN",
+  "notes": [
+    "Vert au sens du protocole (0 P0 et 0 P1 ouverts), PAS « parfait ». Restent ouverts : 7 P2 (C2-003 partiel, 007, 008, 009, 014, 015, 019) et 6 P3 (017, 018, 020, 022, 023, 024).",
+    "Fermés ce round : 001, 002, 004, 005, 006, 010, 011, 012, 013, 016, 021 (11 sur 22).",
+    "Le banc pollué (C2-008) reste la principale réserve sur la valeur des mesures de tournée (départ 22:00, 34 min). Ces mesures ne valent pas comme mesures produit.",
+    "Décisions propriétaire en attente (D3, D5, D6, D7, D8) : non comptées."
+  ]
+}
