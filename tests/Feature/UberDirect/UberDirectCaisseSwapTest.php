@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -440,6 +441,75 @@ class UberDirectCaisseSwapTest extends TestCase
         $this->webhook(['delivery_id' => 'del_1', 'status' => 'pickup'])->assertOk();
 
         $this->assertSame('pickup_complete', UberDirectDelivery::query()->where('order_id', $stop->order_id)->value('status'));
+    }
+
+    // ── revue adverse tour 2 (ADV2-001 · 002 · 003 · 004 · 014) ────────────────────────────────────────
+
+    public function test_an_unknown_uber_status_never_overwrites_a_known_bag_taken_status(): void
+    {
+        $stop = $this->dispatched();
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'pickup_complete'])->assertOk();
+
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'statut_invente_par_uber'])->assertOk();
+
+        $this->assertSame('pickup_complete', UberDirectDelivery::query()->where('order_id', $stop->order_id)->value('status'));
+        $this->pos('release', ['stop_id' => $stop->id])->assertStatus(422); // le sac est pris : jamais de reprise à tort
+    }
+
+    public function test_an_unknown_status_is_not_lost_it_stays_readable_in_the_payload(): void
+    {
+        $stop = $this->dispatched();
+
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'shopping_completed'])->assertOk();
+
+        $row = UberDirectDelivery::query()->where('order_id', $stop->order_id)->first();
+        $this->assertSame('pending', $row->status, 'Le statut connu n\'est pas écrasé.');
+        $this->assertSame('shopping_completed', $row->delivery_payload['unknown_status'], 'Mais l\'information d\'Uber n\'est jamais perdue.');
+    }
+
+    public function test_cancelling_an_ordinary_order_never_depends_on_the_uber_table(): void
+    {
+        $this->fakeUber();
+        $stop = $this->stop(); // arrêt ordinaire : jamais confié à Uber
+        Schema::drop('uber_direct_deliveries');
+
+        $this->closeOrder($stop);
+
+        $this->assertNull(DeliveryStop::query()->find($stop->id), 'L\'annulation ordinaire libère l\'arrêt même si la trace Uber est illisible.');
+    }
+
+    public function test_a_cancel_refused_because_uber_already_canceled_the_course_still_releases_the_stop(): void
+    {
+        $stop = $this->dispatched(['*/deliveries/del_1/cancel' => Http::response(['code' => 'already_canceled'], 400), '*/deliveries/del_1' => Http::response(['id' => 'del_1', 'status' => 'canceled'])]);
+
+        $this->closeOrder($stop);
+
+        $this->assertNull(DeliveryStop::query()->find($stop->id));
+    }
+
+    public function test_release_keeps_the_stop_with_uber_when_the_cancel_is_refused_and_the_course_is_still_alive(): void
+    {
+        $stop = $this->dispatched(['*/deliveries/del_1/cancel' => Http::response('boom', 500), '*/deliveries/del_1' => Http::response(['id' => 'del_1', 'status' => 'pickup'])]);
+
+        $this->pos('release', ['stop_id' => $stop->id])->assertStatus(422);
+
+        $this->assertSame(UberDirectDispatchService::MODE_UBER, app(UberDirectDispatchService::class)->mode($stop->fresh()));
+    }
+
+    public function test_the_per_order_lock_blocks_a_concurrent_dispatch_and_a_concurrent_release(): void
+    {
+        $this->fakeUber();
+        $stop = $this->stop();
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $lock = Cache::lock('uber_dispatch_'.$stop->order_id, 30);
+        $this->assertTrue($lock->get());
+
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertStatus(422)->assertJsonPath('message', 'Une demande Uber est déjà en cours pour cette commande.');
+        $this->pos('release', ['stop_id' => $stop->id])->assertStatus(422);
+        $this->assertSame(0, $this->sent('/deliveries'), 'Une demande en cours bloque la 2ᵉ : jamais deux courses.');
+
+        $lock->release();
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
     }
 
     public function test_the_caisse_routes_require_the_pos_permission(): void

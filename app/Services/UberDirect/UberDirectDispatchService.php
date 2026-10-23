@@ -256,11 +256,19 @@ class UberDirectDispatchService
         }
     }
 
-    /** Rend l'arrêt à nos livreurs : annule la course Uber tant que le coursier n'a pas le sac. */
+    /**
+     * Rend l'arrêt à nos livreurs : annule la course Uber tant que le coursier n'a pas le sac.
+     * [E2E 2026-10-22 · ADV2-003] Même verrou par commande que `dispatch` ; l'appel réseau n'est plus dans la transaction.
+     */
     public function release(DeliveryStop $stop, ?int $userId = null): array
     {
-        return DB::transaction(function () use ($stop, $userId) {
-            $locked = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($stop->id)->lockForUpdate()->first();
+        $lock = Cache::lock('uber_dispatch_'.(int) $stop->order_id, 30);
+        if (! $lock->get()) {
+            return ['ok' => false, 'message' => 'Une demande Uber est déjà en cours pour cette commande.'];
+        }
+
+        try {
+            $locked = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($stop->id)->first();
             $row = $locked ? $this->activeCourse((int) $locked->order_id) : null;
             if (! $row) {
                 return ['ok' => true, 'already' => true];
@@ -268,17 +276,36 @@ class UberDirectDispatchService
             if (in_array((string) $row->status, self::BAG_TAKEN, true)) {
                 return ['ok' => false, 'message' => 'Le coursier Uber a déjà la commande : impossible de la reprendre.'];
             }
-            if ($this->client->cancelDelivery((string) $row->delivery_id) === null) {
+            if (! $this->cancelAtUber($row)) {
                 return ['ok' => false, 'message' => 'Uber n\'a pas confirmé l\'annulation. Réessayez : la commande reste chez Uber en attendant.'];
             }
 
-            $row->forceFill(['status' => UberDirectDelivery::STATUS_CANCELED, 'status_updated_at' => now()])->save();
-            $this->giveBackToOwnCouriers($locked);
-            $order = Order::query()->withoutGlobalScope(BranchScope::class)->find($locked->order_id);
-            $this->audit('delivery.uber_released', $order, $userId, ['delivery_id' => $row->delivery_id]);
+            DB::transaction(function () use ($row, $locked, $userId) {
+                $row->forceFill(['status' => UberDirectDelivery::STATUS_CANCELED, 'status_updated_at' => now(), 'failure_code' => null, 'failure_message' => null])->save();
+                $this->giveBackToOwnCouriers($locked);
+                $order = Order::query()->withoutGlobalScope(BranchScope::class)->find($locked->order_id);
+                $this->audit('delivery.uber_released', $order, $userId, ['delivery_id' => $row->delivery_id]);
+            });
 
             return ['ok' => true];
-        });
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Annule la course chez Uber. Une annulation refusée parce que la course est DÉJÀ annulée (ou revenue) chez Uber
+     * compte comme réussie : on relit son état avant de conclure à un échec [E2E ADV2-004], sinon l'arrêt resterait
+     * indéfiniment et le cron le retenterait à chaque passage.
+     */
+    private function cancelAtUber(UberDirectDelivery $row): bool
+    {
+        if ($this->client->cancelDelivery((string) $row->delivery_id) !== null) {
+            return true;
+        }
+        $etat = $this->client->getDelivery((string) $row->delivery_id);
+
+        return is_array($etat) && in_array((string) ($etat['status'] ?? ''), [UberDirectDelivery::STATUS_CANCELED, UberDirectDelivery::STATUS_RETURNED], true);
     }
 
     /**
@@ -289,7 +316,15 @@ class UberDirectDispatchService
      */
     public function cancelCourseForClosedOrder(int $orderId): bool
     {
-        $row = $this->activeCourse($orderId);
+        try {
+            $row = $this->activeCourse($orderId);
+        } catch (\Throwable $e) {
+            // [ADV2-002] Table absente / base indisponible : aucune trace Uber n'est lisible. L'annulation d'une commande
+            // ORDINAIRE (la quasi-totalité) ne doit jamais en dépendre : on le journalise et on laisse l'arrêt se libérer.
+            Log::warning('uber_direct.course_lookup_failed', ['order_id' => $orderId, 'error' => $e->getMessage()]);
+
+            return true;
+        }
         if (! $row) {
             return true;
         }
@@ -298,7 +333,7 @@ class UberDirectDispatchService
 
             return false;
         }
-        if ($this->client->cancelDelivery((string) $row->delivery_id) === null) {
+        if (! $this->cancelAtUber($row)) {
             $row->forceFill(['failure_code' => 'order_closed_cancel_failed', 'failure_message' => 'Commande annulée mais Uber n\'a pas confirmé l\'annulation de la course : à annuler dans l\'application Uber Direct.'])->save();
 
             return false;
@@ -335,12 +370,24 @@ class UberDirectDispatchService
             return;
         }
 
+        // [ADV2-001] Un statut INCONNU (ajouté demain par Uber) est enregistré dans la charge utile et journalisé, mais
+        // n'écrase jamais un statut connu : « sac pris » ne redevient pas « inconnu » (la reprise serait alors permise à tort).
+        $inconnuSurConnu = $nouveau === null && $actuel !== null
+            && ! in_array($status, [UberDirectDelivery::STATUS_CANCELED, UberDirectDelivery::STATUS_RETURNED], true);
+        if ($inconnuSurConnu) {
+            Log::warning('uber_direct.unknown_status', ['order_id' => $row->order_id, 'status' => $status]);
+        }
+
         $row->forceFill(array_filter([
-            'status' => $status,
+            'status' => $inconnuSurConnu ? null : $status,
             'status_updated_at' => now(),
             'tracking_url' => $payload['tracking_url'] ?? null,
-            'delivery_payload' => $payload,
+            // Le statut inconnu n'est pas perdu : il reste lu dans la charge utile (« unknown_status »).
+            'delivery_payload' => $inconnuSurConnu ? array_merge((array) $row->delivery_payload, (array) $payload, ['unknown_status' => $status]) : $payload,
         ], fn ($v) => $v !== null))->save();
+        if ($inconnuSurConnu) {
+            return;
+        }
 
         $stop = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->where('order_id', $row->order_id)->first();
         $order = Order::query()->withoutGlobalScope(BranchScope::class)->find($row->order_id);
