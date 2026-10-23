@@ -111,11 +111,13 @@ describe('Caisse — « Commande livraison » (paiement à la porte)', () => {
             order_type: orderTypeEnum.DELIVERY, address_id: 9, customer_id: 77, delivery_door_payment: true,
             pos_customer_phone: '06 12 34 56 78', pos_customer_name: 'Sophie Martin', quote_token: 'qt', quote_signature: 'sig',
         });
+        expect(envois[0]).toHaveProperty('scheduled_at', null);
         expect(envois[0].phone_order, 'jamais phone_order : la purge « client non venu » l\'annulerait').toBeUndefined();
         expect(envois[0]).not.toHaveProperty('total');
         expect(envois[0]).not.toHaveProperty('delivery_charge');
         expect(alertService.error).not.toHaveBeenCalled();
         expect(String(alertService.success.mock.calls[0][0])).toContain('4,90');
+        expect(String(alertService.success.mock.calls[0][0])).toContain('par le livreur');
         expect(w.vm.deliveryOrderSubmitting).toBe(false);
         // Le client ne survit pas à sa commande.
         expect(w.vm.checkoutProps.form.address_id).toBe(null);
@@ -165,5 +167,17 @@ describe('Caisse — « Commande livraison » (paiement à la porte)', () => {
         expect(store.dispatch.mock.calls.map((c) => c[0])).not.toContain('posCart/resetCart');
         expect(w.vm.checkoutProps.form.address_id).toBe(9);
         expect(w.vm.deliveryOrderSubmitting).toBe(false);
+    });
+    it('une livraison programmée porte son heure (« Programmer » n\'est pas ignoré en silence)', async () => {
+        const store = storeAvec(PANIER);
+        const w = monter(store);
+        enLivraison(w, { scheduled_at: '2026-10-24 19:30:00' });
+        store.dispatch.mockClear();
+
+        await w.vm.deliveryOrderSubmit();
+
+        const envois = store.dispatch.mock.calls.filter((c) => c[0] === 'posOrder/save').map((c) => c[1]);
+        expect(envois[0].scheduled_at).toBe('2026-10-24 19:30:00');
+        expect(w.vm.checkoutProps.form.scheduled_at, 'la programmation ne fuit pas vers la commande suivante').toBe(null);
     });
 });

@@ -7101,6 +7101,9 @@ export default {
                     pos_customer_phone: phone,
                     loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
                     loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points || null,
+                    // « ⏰ Programmer » reste visible en livraison : il ne doit pas être ignoré en silence (même champ que
+                    // phoneOrderSubmit ; validé par le serveur, effacé par resetPaymentForm après la commande).
+                    scheduled_at: this.checkoutProps.form.scheduled_at || null,
                     quote_token: quote.quote_token,
                     quote_signature: quote.signature,
                     idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
@@ -7110,7 +7113,7 @@ export default {
 
                 const total = Number(quote.total_ttc);
                 alertService.success('Livraison enregistrée'
-                    + (Number.isFinite(total) ? ' · ' + total.toFixed(2).replace('.', ',') + ' € à encaisser à la porte' : ' · à encaisser à la porte'));
+                    + (Number.isFinite(total) ? ' · ' + total.toFixed(2).replace('.', ',') + ' € à encaisser à la porte par le livreur' : ' · à encaisser à la porte par le livreur'));
                 try { await this.$store.dispatch('posCart/resetCart'); } catch (_e) { /* defensive */ }
                 // Le client ne survit pas à sa commande (miroir de resetPaymentForm + resetDeliveryInline).
                 this.resetPaymentForm();
