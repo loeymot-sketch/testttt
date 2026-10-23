@@ -195,6 +195,21 @@ class TourneeAllerRetourTest extends TestCase
         $this->assertSame(Carbon::now()->addMinutes($t['tour_minutes'])->toDateTimeString(), $t['back_at'], 'Au plus tôt : maintenant + durée.');
     }
 
+    /** [E2E 2026-10-23 C2-005] L'écran livreur affichait « ETA 16:20 » à 19:44 pour une tournée en retard. */
+    public function test_the_arrival_time_of_a_late_unleft_stop_is_never_in_the_past(): void
+    {
+        $stop = $this->stopAt(50.43, 2.96); // départ 19:30
+        Carbon::setTestNow(Carbon::parse('2026-10-20 19:41:00'));
+
+        $eta = app(DeliveryWaveService::class)->etaAt($stop->fresh());
+
+        $this->assertTrue($eta->greaterThanOrEqualTo(Carbon::now()), 'Arrivée annoncée au plus tôt maintenant + trajet.');
+        $this->assertSame(Carbon::now()->addMinutes((int) $stop->fresh()->eta_minutes)->toDateTimeString(), $eta->toDateTimeString());
+
+        $stop->forceFill(['left_at' => Carbon::parse('2026-10-20 19:35:00')])->save();
+        $this->assertSame(Carbon::parse('2026-10-20 19:35:00')->addMinutes((int) $stop->eta_minutes)->toDateTimeString(), app(DeliveryWaveService::class)->etaAt($stop->fresh())->toDateTimeString(), 'Parti : depuis le départ réel.');
+    }
+
     public function test_the_return_time_counts_from_the_real_departure_once_the_courier_has_left(): void
     {
         $stop = $this->stopAt(50.43, 2.96);

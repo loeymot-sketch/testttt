@@ -17,7 +17,7 @@
         .hidden { display:none !important; }
         header { position:sticky; top:0; z-index:5; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:14px 16px; box-shadow:0 2px 6px rgba(0,0,0,.15); }
         header h1 { margin:0; font-size:18px; font-weight:800; }
-        .ghost { min-height:40px; padding:8px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.55); background:transparent; color:#fff; font-size:14px; font-weight:600; }
+        .ghost { min-height:44px; padding:8px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.55); background:transparent; color:#fff; font-size:14px; font-weight:600; }
         main { padding:12px 12px 48px; max-width:640px; margin:0 auto; }
         #login { min-height:100dvh; display:flex; flex-direction:column; justify-content:center; padding:24px; gap:14px; max-width:420px; margin:0 auto; }
         #login h2 { color:var(--brand); margin:0 0 6px; font-size:24px; text-align:center; }
@@ -37,7 +37,12 @@
         .chip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:13px; font-weight:700; background:#EEE; color:var(--dark); }
         .chip.go { background:#FFF1D6; color:#8A5A00; } .chip.done { background:#DDF5E5; color:#126B33; } .chip.wait { background:#FDE4E1; color:#9B1C12; }
         .stop { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin:10px 0; display:flex; flex-direction:column; gap:10px; }
-        .stop.delivered { opacity:.6; }
+        /* [E2E 2026-10-23 C2-011] Plus d'opacité sur une carte remise : le texte tombait à ≈ 2,7:1. Fond atténué à la place. */
+        .stop.delivered { background:#F4F6F5; border-style:dashed; }
+        /* [E2E 2026-10-23 C2-013] Le champ photo reste focalisable au clavier (visuellement masqué, pas display:none). */
+        .file-cta { position:relative; }
+        .file-cta input[type=file] { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; }
+        .file-cta:focus-within { outline:3px solid var(--accent); outline-offset:2px; }
         .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .seq { width:34px; height:34px; border-radius:50%; background:var(--dark); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; flex:0 0 auto; }
         .addr { font-size:18px; font-weight:700; }
@@ -82,6 +87,12 @@
     function uuid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
     function eur(n) { return Number(n).toFixed(2).replace('.', ',') + ' €'; }
     function hm(s) { return s ? s.slice(11, 16) : ''; }
+    // [E2E 2026-10-23 C2-021] Code postal + ville seulement si le libellé d'adresse ne les contient pas déjà (libellé BAN).
+    function villeSiAbsente(s) {
+        var cp = String(s.postal_code || ''), ville = String(s.city || ''), adr = String(s.address || '');
+        if ((!cp || adr.indexOf(cp) !== -1) && (!ville || adr.toLowerCase().indexOf(ville.toLowerCase()) !== -1)) return '';
+        return '<div class="muted">' + esc(cp) + ' ' + esc(ville) + '</div>';
+    }
     // [2026-10-23] 47 → « 47 min », 65 → « 1 h 05 ».
     function dureeLabel(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + ' h ' + ('0' + (m % 60)).slice(-2) : m + ' min'; }
     // La tournée ALLER-RETOUR (restaurant → arrêts → restaurant) : ce que le livreur met vraiment. Jamais affichée sans point GPS.
@@ -116,7 +127,11 @@
             show(true); load();
         }).catch(function (e) { $('login-err').textContent = e.message; });
     });
-    $('logout').addEventListener('click', logout);
+    // [E2E 2026-10-23 C2-012] Un appui raté en pleine tournée ne déconnecte plus sans prévenir.
+    $('logout').addEventListener('click', function () {
+        if (enTournee && !window.confirm('Une tournée est en cours. Se déconnecter quand même ?')) return;
+        logout();
+    });
 
     function stopHtml(s) {
         var done = !!s.delivered_at;
@@ -144,21 +159,26 @@
         var actions = '';
         if (!done && s.left_at) {
             actions = '<div class="grid2">'
-                + '<label class="btn sec" style="cursor:pointer">📷 ' + (s.has_photo ? 'Photo prise' : 'Arrivé + photo')
-                + '<input type="file" accept="image/*" capture="environment" class="hidden" data-arrive="' + s.id + '"></label>'
+                + '<label class="btn sec file-cta" style="cursor:pointer">📷 ' + (s.has_photo ? 'Photo prise' : 'Arrivé + photo')
+                + '<input type="file" accept="image/*" capture="environment" aria-label="Arrivé : prendre la photo de preuve" data-arrive="' + s.id + '"></label>'
                 + '<button class="btn ok" data-deliver="' + s.id + '" data-due="' + s.amount_due_cents + '">Remis au client</button></div>';
         }
         var nav = s.waze_url ? '<div class="grid2"><a class="btn" href="' + esc(s.waze_url) + '" target="_blank" rel="noopener">Waze</a>'
                               + '<a class="btn sec" href="' + esc(s.maps_url) + '" target="_blank" rel="noopener">Plans</a></div>' : '';
         return '<div class="stop' + (done ? ' delivered' : '') + '">'
             + '<div class="row"><div class="seq">' + s.sequence + '</div><div style="flex:1"><div class="addr">' + esc(s.address || 'Adresse inconnue') + (s.apartment ? ' · ' + esc(s.apartment) : '') + '</div>'
-            + '<div class="muted">' + esc(s.postal_code || '') + ' ' + esc(s.city || '') + '</div></div>' + state + '</div>'
+            + villeSiAbsente(s) + '</div>' + state + '</div>'
             + '<div class="row"><span>#' + esc(s.order_number || s.order_id) + ' · ' + esc(s.customer_name || 'Client') + '</span>'
             + (s.customer_phone ? '<a class="tel" href="tel:' + esc(s.customer_phone) + '">📞 ' + esc(s.customer_phone) + '</a>' : '') + '</div>'
             + collect + (done ? '' : nav) + actions + '</div>';
     }
 
+    var enTournee = false;
     function render(waves) {
+        // [E2E 2026-10-23 C2-010] Tournées encore à faire d'abord ; celles entièrement remises après.
+        var fini = function (w) { return w.stops.length > 0 && w.stops.every(function (s) { return !!s.delivered_at; }); };
+        waves = waves.filter(function (w) { return !fini(w); }).concat(waves.filter(fini));
+        enTournee = waves.some(function (w) { return w.stops.some(function (s) { return s.left_at && !s.delivered_at; }); });
         $('empty').classList.toggle('hidden', waves.length > 0);
         $('waves').innerHTML = waves.map(function (w) {
             var pending = w.stops.filter(function (s) { return !s.left_at && !s.delivered_at; });

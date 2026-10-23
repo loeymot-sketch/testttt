@@ -2018,7 +2018,9 @@
                     @click.prevent="deliveryOrderSubmit"
                 >
                     <span aria-hidden="true">🛵</span>
-                    <span class="pos-phone-order-cta__label">{{ deliveryOrderSubmitting ? '…' : 'Commande livraison' }}</span>
+                    <!-- [E2E 2026-10-23 C2-004] « paiement à la porte » DANS le libellé : le sous-titre est masqué sous 820 px de haut,
+                         or c'est lui qui distingue ce bouton de « Commande » (qui encaisse maintenant). -->
+                    <span class="pos-phone-order-cta__label">{{ deliveryOrderSubmitting ? '…' : 'Commande livraison · paiement à la porte' }}</span>
                     <span class="pos-phone-order-cta__hint">Envoyée en cuisine · le livreur encaisse à la porte</span>
                 </button>
                 <!-- [ÉTAT DES LIEUX 2026-10-23 C-002] Pas proposé en LIVRAISON : phoneOrderSubmit() le refuse toujours
@@ -7044,6 +7046,8 @@ export default {
             // Le livreur appellera le client à la porte : sans téléphone, pas de commande (le serveur le refuse aussi).
             const phone = String(this.deliveryInline.phone || this.checkoutProps.form.pos_customer_phone || '').trim();
             if (phone.replace(/\D/g, '').length < 9) {
+                // [E2E 2026-10-23 C2-003] Le champ est souvent hors de vue (en-tête du ticket qui défile) : on y amène le caissier.
+                this.focusDeliveryPhoneField();
                 return alertService.error('Le téléphone du client est nécessaire : le livreur doit pouvoir l\'appeler à la porte.');
             }
 
@@ -7699,6 +7703,13 @@ export default {
             this.focusDeliveryAddressField();
         },
 
+        // [E2E 2026-10-23 C2-003] Le focus fait défiler l'en-tête du ticket jusqu'au champ téléphone et l'y place.
+        focusDeliveryPhoneField() {
+            this.$nextTick(() => {
+                const input = this.$el && this.$el.querySelector ? this.$el.querySelector('#pos-delivery-phone') : null;
+                if (input && typeof input.focus === 'function') input.focus();
+            });
+        },
         focusDeliveryAddressField() {
             this.$nextTick(() => {
                 const input = this.$refs.deliveryAddressInput;
@@ -8519,6 +8530,11 @@ export default {
 .pos-phone-order-cta:hover:not(:disabled) { background: #e0e7ff; transform: translateY(-1px); }
 .pos-phone-order-cta:active:not(:disabled) { transform: translateY(0); }
 .pos-phone-order-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+/* [E2E 2026-10-23 C2-004] « Commande livraison » aux couleurs de la charte Cayenne (sombre #1A1A1A, accent jaune #FFB800),
+   distinct du bouton orange « Commande » qui, lui, encaisse maintenant. */
+.pos-delivery-order-cta { background: #1A1A1A; border-color: #1A1A1A; color: #fff; }
+.pos-delivery-order-cta:hover:not(:disabled) { background: #2b2b2b; }
+.pos-delivery-order-cta .pos-phone-order-cta__hint { color: #FFB800; opacity: 1; }
 .pos-phone-order-cta__label { font-size: 14px; font-weight: 800; }
 .pos-phone-order-cta__hint { font-size: 10px; font-weight: 600; opacity: 0.8; line-height: 1.2; text-align: center; }
 /* [GOAL-8AXES V6 2026-08-05] Écrans peu hauts (1366×768 constaté en repro V2) :

@@ -23,7 +23,7 @@
                     <div class="text-base font-extrabold text-heading">
                         <!-- [VG-2026-10-21 M4-005] Le jour dès que ce n'est pas aujourd'hui (« Départ demain 00:30 »). -->
                         Départ {{ waveWhen(w) }}
-                        <span class="ml-1 text-xs font-semibold" :class="w.left ? 'text-green-700' : w.overdue ? 'text-red-700' : 'text-[#9A3412]'" :data-testid="'pos-delivery-wave-state-' + waveDate(w) + '-' + w.time">{{ w.left ? 'parti' : w.overdue ? 'heure dépassée, pas encore partie' : 'à venir' }}</span>
+                        <span class="ml-1 text-xs font-semibold" :class="w.left ? 'text-green-700' : w.overdue ? 'text-red-700' : 'text-[#9A3412]'" :data-testid="'pos-delivery-wave-state-' + waveDate(w) + '-' + w.time">{{ waveDone(w) ? 'terminée' : w.left ? 'parti' : w.overdue ? 'heure dépassée, pas encore partie' : 'à venir' }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-sm">
                         <span v-if="w.courier" class="font-semibold">Livreur : {{ w.courier }}</span>
@@ -42,8 +42,7 @@
                     <!-- [2026-10-23 · décision propriétaire] Durée RÉELLE de la tournée ALLER-RETOUR (retour au restaurant compris), pour gérer
                          les livreurs. Ce n'est pas le temps vu par le client (aller simple) et ça ne change jamais le prix. -->
                     <p v-if="w.tour" class="basis-full text-xs text-gray-700" :data-testid="'pos-delivery-wave-tour-' + waveDate(w) + '-' + w.time">
-                        ⏱ Tournée aller-retour ≈ <strong>{{ dureeLabel(w.tour.tour_minutes) }}</strong> · retour au restaurant vers <strong>{{ String(w.tour.back_at || '').slice(11, 16) }}</strong>
-                        <span class="text-gray-500">({{ w.tour.source === 'road' ? 'itinéraire routier réel' : 'estimation, itinéraire indisponible' }} · dont {{ dureeLabel(w.tour.return_minutes) }} de retour)</span>
+                        ⏱ Tournée aller-retour ≈ <strong>{{ dureeLabel(w.tour.tour_minutes) }}</strong> · retour au restaurant vers <strong>{{ String(w.tour.back_at || '').slice(11, 16) }}</strong>{{ ' ' }}<span class="text-gray-500">({{ w.tour.source === 'road' ? 'itinéraire routier réel' : 'estimation, itinéraire indisponible' }} · dont {{ dureeLabel(w.tour.return_minutes) }} de retour)</span>
                     </p>
                 </header>
                 <ul class="divide-y divide-[#F0F0F2]">
@@ -74,8 +73,11 @@
                         </div>
                         <div class="text-right">
                             <!-- [VG-2026-10-21 R2-cuisine-livraison-003] Le vrai mode : un titre-restaurant n'est plus annoncé « Espèces ». -->
-                            <div class="font-bold" :class="s.amount_due > 0 ? 'text-[#9A3412]' : 'text-green-700'">
-                                {{ s.amount_due > 0 ? (collectLabel(s.collect_method) + ' ' + format(s.amount_due)) : 'Payé' }}
+                            <!-- [E2E 2026-10-23 C2-002] Un arrêt REMIS a été encaissé : jamais « Espèces 6,80 € » en orange comme un dû. -->
+                            <div class="font-bold" :class="s.delivered_at || !(s.amount_due > 0) ? 'text-green-700' : 'text-[#9A3412]'">
+                                {{ s.delivered_at
+                                    ? (s.amount_due > 0 ? 'Encaissé ' + format(s.amount_due) + ' (' + collectLabel(s.collect_method).toLowerCase() + ')' : 'Payé')
+                                    : (s.amount_due > 0 ? (collectLabel(s.collect_method) + ' ' + format(s.amount_due)) : 'Payé') }}
                             </div>
                             <div class="text-xs text-gray-500">{{ stateOf(s) }}</div>
                         </div>
@@ -197,6 +199,10 @@ export default {
         },
         format(n) {
             return Number(n).toFixed(2).replace('.', ',') + ' €';
+        },
+        // [E2E 2026-10-23 C2-002] Tournée dont tous les arrêts sont remis.
+        waveDone(w) {
+            return Array.isArray(w.stops) && w.stops.length > 0 && w.stops.every((s) => !!s.delivered_at);
         },
         // 47 → « 47 min », 65 → « 1 h 05 ».
         dureeLabel(m) {

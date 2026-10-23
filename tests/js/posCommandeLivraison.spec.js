@@ -45,7 +45,7 @@ function storeAvec(lignes) {
     };
 }
 
-function monter(store) {
+function monter(store, options = {}) {
     const Test = {
         ...PosComponent,
         mounted() {},
@@ -61,6 +61,7 @@ function monter(store) {
         },
     };
     return shallowMount(Test, {
+        ...options,
         global: { stubs: { transition: false }, mocks: { $store: store, $t: (k) => k, $route: { query: {}, params: {} }, $router: { push: vi.fn(), replace: vi.fn() } } },
     });
 }
@@ -92,6 +93,7 @@ describe('Caisse — « Commande livraison » (paiement à la porte)', () => {
         await w.vm.$nextTick();
         expect(w.find('[data-testid="pos-delivery-order"]').exists()).toBe(true);
         expect(w.find('[data-testid="pos-delivery-order"]').text()).toContain('Commande livraison');
+        expect(w.find('[data-testid="pos-delivery-order"]').text(), 'l\'indice reste visible même quand le sous-titre est masqué').toContain('paiement à la porte');
         expect(w.find('[data-testid="pos-phone-order"]').exists()).toBe(false);
     });
 
@@ -127,7 +129,7 @@ describe('Caisse — « Commande livraison » (paiement à la porte)', () => {
 
     it('sans téléphone : refusé avant tout envoi, avec le motif', async () => {
         const store = storeAvec(PANIER);
-        const w = monter(store);
+        const w = monter(store, { attachTo: document.body });
         enLivraison(w);
         Object.assign(w.vm.deliveryInline, { phone: '' });
         store.dispatch.mockClear();
@@ -137,6 +139,9 @@ describe('Caisse — « Commande livraison » (paiement à la porte)', () => {
         expect(store.dispatch.mock.calls.filter((c) => c[0] === 'posOrder/save')).toEqual([]);
         expect(axios.post.mock.calls).toEqual([]);
         expect(String(alertService.error.mock.calls[0][0])).toMatch(/téléphone/i);
+        await new Promise((r) => setTimeout(r, 0));
+        expect(document.activeElement && document.activeElement.id, 'le caissier est amené au champ téléphone').toBe('pos-delivery-phone');
+        w.unmount();
     });
 
     it('sans adresse choisie : refusé, rien n\'est envoyé', async () => {

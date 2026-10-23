@@ -84,4 +84,24 @@ describe('caisse — planche « Tournées » : le jour de chaque départ (M4-005
         expect(w.find('[data-testid="pos-delivery-wave-tour-2026-10-24-19:30"]').exists()).toBe(false);
         w.unmount();
     });
+    // [E2E 2026-10-23 C2-002/C2-016] Un arrêt remis n'est pas « à encaisser » ; une tournée toute remise est « terminée » ; espace avant « ( ».
+    it('arrêt remis : « Encaissé … (espèces) » en vert, tournée « terminée », espace avant la parenthèse', async () => {
+        const w = mount(PosDeliveryBoard);
+        await flushPromises();
+        const remis = { ...stop(8859), collect_method: 'cash', amount_due: 6.8, left_at: '2026-10-22 23:31:00', delivered_at: '2026-10-22 23:44:00' };
+        const aFaire = { ...stop(8860), collect_method: 'cash', amount_due: 4.9 };
+        await w.setData({ waves: [
+            { ...BOARD.data[1], left: true, stops: [remis], tour: { tour_minutes: 27, return_minutes: 3, back_at: '2026-10-22 23:58:00', source: 'road' } },
+            { ...BOARD.data[2], stops: [aFaire] },
+        ] });
+        const sections = w.findAll('section');
+        const t1 = sections[0].text().replace(/\s+/g, ' ');
+        expect(t1).toContain('Encaissé 6,80 € (espèces)');
+        expect(t1).not.toContain('Espèces 6,80 €');
+        expect(sections[0].find('[data-testid="pos-delivery-wave-state-2026-10-22-23:30"]').text()).toBe('terminée');
+        expect(sections[0].find('[data-testid="pos-delivery-wave-tour-2026-10-22-23:30"]').text()).toMatch(/23:58 \(/);
+        const t2 = sections[1].text().replace(/\s+/g, ' ');
+        expect(t2, 'un arrêt pas encore remis reste à encaisser').toContain('Espèces 4,90 €');
+        w.unmount();
+    });
 });

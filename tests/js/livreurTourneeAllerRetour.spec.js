@@ -17,8 +17,9 @@ function extraire(nom) {
     return SRC.slice(debut, i + 1);
 }
 
-const { dureeLabel, tourHtml } = new Function(
-    extraire('hm') + extraire('dureeLabel') + extraire('tourHtml') + '; return { dureeLabel, tourHtml };'
+const { dureeLabel, tourHtml, villeSiAbsente } = new Function(
+    'function esc(s) { return String(s == null ? \'\' : s); }' + extraire('hm') + extraire('dureeLabel') + extraire('tourHtml') + extraire('villeSiAbsente')
+    + '; return { dureeLabel, tourHtml, villeSiAbsente };'
 )();
 
 describe('écran livreur — tournée aller-retour', () => {
@@ -45,5 +46,19 @@ describe('écran livreur — tournée aller-retour', () => {
 
     it('la tournée est bien posée entre l\'en-tête et le bouton « Je pars »', () => {
         expect(SRC).toContain('return head + tourHtml(w.tour) + go +');
+    });
+    // [E2E 2026-10-23 C2-021] Le libellé BAN contient déjà « 62110 Hénin-Beaumont » : on ne le répète pas.
+    it('ne répète pas code postal et ville déjà présents dans l\'adresse', () => {
+        expect(villeSiAbsente({ address: '10 Rue de la Gare 62110 Hénin-Beaumont', postal_code: '62110', city: 'Hénin-Beaumont' })).toBe('');
+        expect(villeSiAbsente({ address: '10 Rue de la Gare', postal_code: '62110', city: 'Hénin-Beaumont' })).toContain('62110 Hénin-Beaumont');
+    });
+
+    // [E2E 2026-10-23 C2-010/C2-012/C2-013] Ordre des tournées, déconnexion confirmée, photo atteignable au clavier.
+    it('tournées à faire d\'abord, « Quitter » confirmé en tournée, champ photo focalisable', () => {
+        expect(SRC).toContain('waves.filter(function (w) { return !fini(w); }).concat(waves.filter(fini))');
+        expect(SRC).toMatch(/enTournee && !window\.confirm\(/);
+        expect(SRC).toMatch(/\.ghost \{ min-height:44px/);
+        expect(SRC).not.toMatch(/type="file"[^>]*class="hidden"/);
+        expect(SRC).toContain('aria-label="Arrivé : prendre la photo de preuve"');
     });
 });

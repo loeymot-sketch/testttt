@@ -418,7 +418,10 @@ class DeliveryWaveService
     /** [VG-2026-10-21 M4-004] Heure d'arrivée estimée d'un arrêt : depuis le départ RÉEL s'il a eu lieu, sinon depuis l'heure de la tournée. */
     public function etaAt(DeliveryStop $stop): Carbon
     {
-        return Carbon::instance($stop->left_at ?? $stop->wave_at)->copy()->addMinutes((int) $stop->eta_minutes);
+        // [E2E 2026-10-23 C2-005] Pas encore parti : au plus tôt MAINTENANT (même règle que back_at), jamais une arrivée dans le passé.
+        $origin = $stop->left_at ? Carbon::instance($stop->left_at) : Carbon::instance($stop->wave_at)->max(Carbon::now());
+
+        return $origin->copy()->addMinutes((int) $stop->eta_minutes);
     }
 
     // ── grille et horaires ──────────────────────────────────────────────────────────────────
