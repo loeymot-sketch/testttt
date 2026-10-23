@@ -3,7 +3,7 @@
  * Les items 1 « Menu (Frites + Boisson) », 2 « Frites Seules », 3 « Boisson Seule » sont dans la catégorie 27 « Technique (interne — upsell) » (inactive).
  * On relève l'initiateur réseau (pile JS) par CDP. Lecture seule, aucune vente.
  */
-const { test } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const { loginAsPosOperator } = require('../../e2e/helpers/login');
@@ -32,6 +32,8 @@ test('sonde item/details 404 : initiateur', async ({ page, context }) => {
   await page.locator('[data-testid="pos-category-tile"]', { hasText: 'Boissons' }).first().click();
   await page.waitForTimeout(1200);
   const tuiles = await page.evaluate(() => [...document.querySelectorAll('[data-pos-item-id]')].map((e) => e.getAttribute('data-pos-item-id')));
+  // Instrument (CLAUDE.md §3ter) : la sonde ne vaut que si elle a réellement vu la grille des boissons.
+  expect(tuiles.length, 'la grille Boissons doit contenir des articles : sinon la sonde ne mesure rien').toBeGreaterThan(0);
   const avantClic = [...statuts];
   await page.locator('button.pos-item-tile[aria-label^="Ajouter Sprite"]').first().click();
   await page.waitForTimeout(2500);
