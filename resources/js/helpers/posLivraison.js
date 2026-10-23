@@ -62,6 +62,49 @@ export async function assignCourier(http, waveAt, deliveryBoyId) {
     return res.data;
 }
 
+// [UBER-DIRECT 2026-10-22] Bascule d'un arrêt entre nos livreurs et un coursier Uber. Le serveur répond toujours
+// avec un message lisible (`message`) : on le remonte tel quel, jamais un « Erreur 422 » muet.
+export async function uberQuote(http, stopId) {
+    try {
+        return (await http.post('/admin/pos-delivery/uber/quote', { stop_id: stopId })).data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Uber ne répond pas. La commande reste à nos livreurs.'));
+    }
+}
+
+/** Renvoie `{ ok:true }`, ou `{ ok:false, changed:true, quote }` si le prix a changé (à reconfirmer). */
+export async function uberDispatch(http, stopId, quoteId) {
+    try {
+        const res = await http.post('/admin/pos-delivery/uber/dispatch', { stop_id: stopId, quote_id: quoteId });
+        return { ok: true, ...res.data };
+    } catch (e) {
+        const d = e?.response?.data;
+        if (d?.code === 'quote_changed' && d.quote) return { ok: false, changed: true, quote: d.quote, message: d.message };
+        throw new Error(errMsg(e, 'Uber n\'a pas confirmé la course.'));
+    }
+}
+
+export async function uberRelease(http, stopId) {
+    try {
+        return (await http.post('/admin/pos-delivery/uber/release', { stop_id: stopId })).data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Impossible de reprendre la commande.'));
+    }
+}
+
+// Libellé d'un statut de course Uber (statuts officiels ; un statut inconnu s'affiche tel quel, jamais caché).
+export function uberStatusLabel(status) {
+    return {
+        pending: 'Coursier en recherche',
+        pickup: 'Coursier en route vers le restaurant',
+        pickup_complete: 'Coursier a la commande',
+        dropoff: 'En route chez le client',
+        delivered: 'Livrée par Uber',
+        canceled: 'Annulée',
+        returned: 'Revenue au restaurant',
+    }[status] || (status ? 'Uber : ' + status : 'Uber');
+}
+
 // [VG-2026-10-21 M4-002] Une livraison « tout de suite » part à la PREMIÈRE tournée non pleine
 // (DeliveryWaveService::pickAsapWave, mêmes règles que `availableWaves` qui alimente `q.waves` du devis) — parfois
 // des heures plus tard ou le lendemain. La caisse le dit, avec la date dès que ce n'est pas aujourd'hui.

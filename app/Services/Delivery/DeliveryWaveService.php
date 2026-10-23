@@ -198,8 +198,10 @@ class DeliveryWaveService
     /** Désigne le livreur d'une tournée (tous ses arrêts non encore partis). */
     public function assignCourier(int $branchId, CarbonInterface $wave, int $courierId): int
     {
-        $stopIds = DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNull('left_at')->pluck('order_id');
-        DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNull('left_at')->update(['delivery_boy_id' => $courierId]);
+        // [UBER-DIRECT 2026-10-22] Un arrêt confié à Uber n'a plus de livreur à nous : désigner un livreur ne le lui reprend pas.
+        $uberOrders = \App\Models\UberDirectDelivery::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->activeCourse()->pluck('order_id');
+        $stopIds = DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNull('left_at')->whereNotIn('order_id', $uberOrders)->pluck('order_id');
+        DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNull('left_at')->whereNotIn('order_id', $uberOrders)->update(['delivery_boy_id' => $courierId]);
         Order::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereIn('id', $stopIds)->update(['delivery_boy_id' => $courierId]);
 
         // Désignation volontaire par la caisse : on prévient le livreur, comme le fait la voie historique

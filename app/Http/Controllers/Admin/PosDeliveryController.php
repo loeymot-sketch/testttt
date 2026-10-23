@@ -38,6 +38,7 @@ class PosDeliveryController extends Controller
         private readonly DeliveryQuoteService $quotes,
         private readonly DeliveryTariff $tariff,
         private readonly DeliveryWaveService $waves,
+        private readonly \App\Services\UberDirect\UberDirectDispatchService $uber,
     ) {
     }
 
@@ -174,6 +175,8 @@ class PosDeliveryController extends Controller
     /** Tableau des tournées d'aujourd'hui pour la caisse : qui part quand, avec quoi, quel livreur. */
     public function board(Request $request): JsonResponse
     {
+        // [UBER-DIRECT 2026-10-22] Filet quand le webhook n'est pas branché : les courses Uber actives sont relues (≤ 1 fois / 15 s).
+        $this->uber->syncActive();
         $stops = DeliveryStop::query()
             // Tournées à venir ou en cours, et celles remises depuis ce matin — pas celles d'hier soir.
             ->where('wave_at', '>=', Carbon::now()->subDay())
@@ -197,10 +200,11 @@ class PosDeliveryController extends Controller
                 'collect_method' => $s->collect_method, 'amount_due' => round($s->amount_due_cents / 100, 2),
                 'left_at' => $s->left_at?->toDateTimeString(), 'arrived_at' => $s->arrived_at?->toDateTimeString(),
                 'delivered_at' => $s->delivered_at?->toDateTimeString(), 'has_photo' => (bool) $s->proof_photo_path,
+                ...$this->uberView($s),
             ])->values()->all(),
         ])->values()->all();
 
-        return response()->json(['status' => true, 'enabled' => $this->availability->isEnabled(), 'couriers' => $couriers->values(), 'data' => $waves]);
+        return response()->json(['status' => true, 'enabled' => $this->availability->isEnabled(), 'uber_enabled' => $this->uber->isAvailable(), 'couriers' => $couriers->values(), 'data' => $waves]);
     }
 
     /** Désigne le livreur d'une tournée (quand il y en a plusieurs). */
@@ -218,6 +222,60 @@ class PosDeliveryController extends Controller
         $n = $this->waves->assignCourier($branchId, Carbon::parse($data['wave_at']), (int) $data['delivery_boy_id']);
 
         return response()->json(['status' => true, 'assigned' => $n]);
+    }
+
+    /** [UBER-DIRECT 2026-10-22] Qui livre cet arrêt (nos livreurs ou Uber), l'état de la course, et pourquoi Uber est impossible le cas échéant. */
+    private function uberView(DeliveryStop $s): array
+    {
+        $course = $this->uber->activeCourse((int) $s->order_id);
+        // [E2E 2026-10-22 · B-001/B-002] Une course qui a mal fini (renvoyée après la prise du sac, annulation non confirmée,
+        // réponse perdue) reste dite à la caisse tant que l'arrêt n'est pas remis : jamais une course facturée sans trace.
+        $trace = \App\Models\UberDirectDelivery::query()->withoutGlobalScope(BranchScope::class)->where('order_id', $s->order_id)->first();
+
+        return [
+            'uber_attention' => $trace && $trace->failure_code && ! $s->delivered_at ? $trace->failure_message : null,
+            'dispatch' => $course ? 'uber' : 'own',
+            'uber' => $course ? [
+                'status' => $course->status, 'tracking_url' => $course->tracking_url,
+                'fee' => $course->quote_fee_cents !== null ? round($course->quote_fee_cents / 100, 2) : null,
+                'courier_name' => data_get($course->delivery_payload, 'courier.name'),
+                'courier_phone' => data_get($course->delivery_payload, 'courier.phone_number'),
+                'bag_taken' => in_array((string) $course->status, ['pickup_complete', 'dropoff', 'delivered'], true),
+            ] : null,
+            'uber_blocked' => $course || $s->delivered_at ? null : $this->uber->blockedReason($s),
+        ];
+    }
+
+    private function stopOf(Request $request): DeliveryStop
+    {
+        $data = Validator::make($request->all(), ['stop_id' => ['required', 'integer']])->validate();
+
+        return DeliveryStop::query()->findOrFail((int) $data['stop_id']);
+    }
+
+    /** Prix et délai d'Uber pour cet arrêt (gratuit, sans engagement) : le caissier le voit avant de confirmer. */
+    public function uberQuote(Request $request): JsonResponse
+    {
+        $r = $this->uber->quote($this->stopOf($request));
+
+        return response()->json(['status' => $r['ok']] + $r, $r['ok'] ? 200 : 422);
+    }
+
+    /** Confie l'arrêt à Uber au prix du devis vu. */
+    public function uberDispatch(Request $request): JsonResponse
+    {
+        $data = Validator::make($request->all(), ['quote_id' => ['required', 'string', 'max:191']])->validate();
+        $r = $this->uber->dispatch($this->stopOf($request), $data['quote_id'], (int) $request->user()?->id);
+
+        return response()->json(['status' => $r['ok']] + $r, $r['ok'] ? 200 : ((($r['code'] ?? '') === 'quote_changed') ? 409 : 422));
+    }
+
+    /** Rend l'arrêt à nos livreurs. */
+    public function uberRelease(Request $request): JsonResponse
+    {
+        $r = $this->uber->release($this->stopOf($request), (int) $request->user()?->id);
+
+        return response()->json(['status' => $r['ok']] + $r, $r['ok'] ? 200 : 422);
     }
 
     private function presentCustomer(int $userId): array

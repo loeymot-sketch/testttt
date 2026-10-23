@@ -216,11 +216,14 @@ class RouteServiceProvider extends ServiceProvider
         // Même défaut côté caisse (F-ADV-4) : `throttle:30,1` nus partagent UN compteur par utilisateur. 30 suggestions
         // d'adresse suffisaient à faire répondre 429 à « adresse » et « bascule » sans qu'elles aient été appelées.
         // Un seau par route et par utilisateur (repli IP si la session est perdue), mêmes plafonds qu'avant.
-        foreach (['toggle' => 30, 'suggest' => 240, 'quote' => 120, 'address' => 30] as $route => $parMinute) {
+        foreach (['toggle' => 30, 'suggest' => 240, 'quote' => 120, 'address' => 30, 'uber-quote' => 60, 'uber-act' => 30] as $route => $parMinute) {
             RateLimiter::for('pos-delivery-' . $route, function (Request $request) use ($parMinute) {
                 return Limit::perMinute($parMinute)->by((string) ($request->user()?->id ?? $request->ip()));
             });
         }
+
+        // [UBER-DIRECT 2026-10-22] Webhook public : un seau à lui, par IP (Uber appelle depuis quelques adresses).
+        RateLimiter::for('uber-direct-webhook', fn (Request $request) => Limit::perMinute(120)->by('uber-direct-webhook|'.$request->ip()));
 
         RateLimiter::for('kiosk-menu', function (Request $request) {
             return Limit::perMinute(60)->by($this->throttleKeyParAppareil($request));

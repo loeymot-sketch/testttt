@@ -25,8 +25,17 @@ class ReleaseDeliveryStopOnOrderClosed
         }
 
         try {
+            // [E2E 2026-10-22 · B-001] Un coursier Uber a-t-il été demandé ? On annule sa course AVANT de supprimer l'arrêt
+            // (même si le coursier a déjà le sac : l'alerte est alors posée sur la course). Si elle ne peut pas l'être,
+            // l'arrêt reste visible à la caisse, jamais une course facturée sans trace.
+            $courseClear = app(\App\Services\UberDirect\UberDirectDispatchService::class)->cancelCourseForClosedOrder((int) $event->order->id);
             $stop = DeliveryStop::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('order_id', $event->order->id)->whereNull('left_at')->first();
             if (! $stop) {
+                return;
+            }
+            if (! $courseClear) {
+                Log::error('delivery.stop.uber_course_still_active', ['order_id' => $stop->order_id]);
+
                 return;
             }
             $branchId = (int) $stop->branch_id;

@@ -24,9 +24,17 @@ class AssignPendingDeliveries extends Command
     public function handle(DeliveryWaveService $waves): int
     {
         // Auto-nettoyage : une commande annulée / refusée ne garde pas sa place (si l'événement a été manqué).
-        $released = DeliveryStop::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereNull('left_at')
+        // [E2E 2026-10-22 · B-001] Un arrêt dont un coursier Uber est demandé n'est supprimé qu'une fois sa course annulée.
+        $uber = app(\App\Services\UberDirect\UberDirectDispatchService::class);
+        $released = 0;
+        DeliveryStop::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->whereNull('left_at')
             ->whereIn('order_id', Order::query()->withoutGlobalScope(BranchScope::class)->whereIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED])->select('id'))
-            ->delete();
+            ->get()->each(function (DeliveryStop $stop) use ($uber, &$released) {
+                if ($uber->cancelCourseForClosedOrder((int) $stop->order_id)) {
+                    $stop->delete();
+                    $released++;
+                }
+            });
 
         $orders = Order::query()->withoutGlobalScope(BranchScope::class)
             ->where('order_type', OrderType::DELIVERY)

@@ -160,3 +160,43 @@ npx vitest run tests/js/deliveryCharge.spec.js tests/js/posLivraison.spec.js tes
 `php artisan test` n'exécute que le **premier** chemin donné : utiliser `phpunit --filter` pour en enchaîner plusieurs.
 `phpunit.xml` pose `DELIVERY_SERVER_GEOCODING=false` pour les tests historiques ; la configuration livrée est **active**
 (sentinelle : `AddressServerGeocodingTest::test_server_geocoding_is_on_by_default_in_the_shipped_configuration`).
+
+## 6. Uber Direct — bascule d'un arrêt entre nos livreurs et un coursier Uber (2026-10-22, décision propriétaire)
+
+**Usage (caisse → Tournées)** : chaque arrêt affiche « 🛵 Nos livreurs » ou « 🚗 Uber ». « **Confier à Uber** » demande d'abord le
+**prix et le délai d'Uber** (devis gratuit, sans engagement) ; le caissier voit le montant, puis « **Confirmer Uber** » commande la
+course. « **Nos livreurs** » annule la course Uber et rend l'arrêt à notre livreur — possible **tant que le coursier Uber n'a pas le sac**.
+La suspension / remise de la **livraison entière** reste le bouton « Livraison active » de la caisse (§3).
+
+**Règles qui ne se discutent pas**
+- **Uber ne peut pas encaisser à la porte.** Un arrêt « à encaisser » (espèces, carte, titre-restaurant) n'est jamais confié à Uber : le
+  bouton est grisé avec la raison. Il faut l'avoir fait payer avant (paiement en ligne ou au comptoir).
+- Le coût d'Uber est **à la charge du restaurant** : le client paie notre barème (§1), inchangé. Le prix d'Uber n'est qu'affiché à la caisse.
+- Un devis expiré ou changé n'est **jamais** dépêché : le nouveau prix est à reconfirmer (409 `quote_changed`).
+- Un double appui ne crée **qu'une course** (verrou de ligne + `idempotency_key` = `lecayenne-order-{id}` + contrainte UNIQUE `order_id`).
+- Une panne d'Uber ne casse rien : message clair, la commande **reste à nos livreurs**.
+- Un arrêt Uber n'a **plus de livreur à nous** (disparaît de son écran) ; désigner un livreur pour la tournée ne le lui reprend pas.
+- La commande suit Uber : sac pris → EN ROUTE, livré → LIVRÉE, par `OrderStateMachine::apply` (voie du code neuf ; zone gelée intacte).
+  Uber annule ou renvoie la course **avant** la prise du sac → l'arrêt revient à nos livreurs. **Après** la prise du sac, la commande est
+  EN ROUTE et nos livreurs ne peuvent plus la reprendre : la caisse affiche une **alerte rouge** (« la commande n'est pas livrée »), jamais un retour silencieux.
+- **Commande annulée alors qu'un coursier Uber est demandé** : la course Uber est annulée AVANT que l'arrêt disparaisse. Si Uber ne confirme pas
+  (ou si le coursier a déjà le sac), l'arrêt **reste visible** avec la raison : jamais une course facturée sans trace.
+- **Réponse d'Uber perdue** à la demande de course : l'appel n'est pas dans une transaction ; le message dit que la course **a peut-être été créée**
+  (vérifier dans l'application Uber Direct avant de réessayer) ; la même clé d'idempotence évite une 2ᵉ course. Un événement Uber plus ancien que l'état connu ne la fait pas reculer.
+
+**Code** : `App\Services\UberDirect\UberDirectDispatchService` (règles), `UberDirectClient` (transport), routes
+`POST /api/admin/pos-delivery/uber/{quote,dispatch,release}` (permission `pos`, limiteurs nommés `pos-delivery-uber-*`),
+webhook `POST /api/webhooks/uber-direct` (HMAC-SHA256 du corps brut, `X-Uber-Signature`, fail-closed), relevé de secours des
+courses actives à chaque ouverture de la planche (≤ 1 fois / 15 s). Tests : `UberDirectCaisseSwapTest`, `posTourneesUberDirect.spec.js`.
+
+**Mise en service — ce qui reste à faire (dit franchement)**
+1. ⛔ **L'application Uber fournie n'a PAS le droit `eats.deliveries`** (constaté le 2026-10-22 : le jeton n'est accordé qu'avec
+   `direct.organizations` ; les devis et courses répondent 401 « requires … eats.deliveries »). À activer côté Uber (tableau de bord
+   Direct → Developer, ou support Uber Direct) ; probablement aussi la validation du compte.
+2. Les **corps de requête** (devis, création, annulation) suivent la documentation publique, **pas encore confrontés au compte réel** :
+   le premier devis réel est la vérification. Ne passer `UBER_DIRECT_ENABLED=true` en production qu'après un devis réussi.
+3. Vérifier qu'Uber Direct **couvre Hénin-Beaumont** (couverture ≠ marketplace) — le devis le dira.
+4. Créer le webhook dans le tableau de bord (URL ci-dessus) et poser `UBER_DIRECT_WEBHOOK_SECRET`. Sans lui, la planche relève les statuts elle-même.
+5. Poser les identifiants dans le `.env` **du serveur** (jamais commité) ; **régénérer le secret client**, il a transité dans une conversation.
+6. Non fait : bascule de **toute une tournée** d'un appui (aujourd'hui : arrêt par arrêt) ; annulation côté Uber d'une course dont le coursier est déjà en route (frais éventuels : conditions du compte).
+

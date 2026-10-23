@@ -104,6 +104,16 @@ class UberDirectDelivery extends Model
     }
 
     /**
+     * [UBER-DIRECT 2026-10-22] Course réellement confiée à Uber et encore à notre charge : dépêchée (identifiant Uber
+     * reçu) et ni annulée ni revenue. « Livrée » en fait partie : l'arrêt reste Uber, il ne redevient pas à nous.
+     */
+    public function scopeActiveCourse($query)
+    {
+        return $query->whereNotNull('delivery_id')->where('delivery_id', '!=', '')
+            ->where(fn ($q) => $q->whereNull('status')->orWhereNotIn('status', [self::STATUS_CANCELED, self::STATUS_RETURNED]));
+    }
+
+    /**
      * Le devis tient-il encore assez longtemps pour lancer un paiement ?
      *
      * On refuse d'utiliser un devis qui expire pendant que le client saisit sa carte : il

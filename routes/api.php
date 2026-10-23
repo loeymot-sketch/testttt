@@ -164,6 +164,11 @@ Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 
 // [UBER-EATS 2026-07-01] Webhook Uber Eats — PUBLIC (Uber n'a pas notre apiKey ; l'auth = signature
 // HMAC-SHA256 vérifiée dans le controller). URL à enregistrer sur le dashboard Uber :
 //   https://<domaine>/api/webhooks/uber
+// [UBER-DIRECT 2026-10-22] Webhook Uber DIRECT (livraison, pas la marketplace) — signature HMAC-SHA256 du corps brut, fail-closed.
+//   https://<domaine>/api/webhooks/uber-direct
+Route::post('/webhooks/uber-direct', [\App\Http\Controllers\Webhook\UberDirectWebhookController::class, 'handle'])
+    ->middleware(['installed', 'throttle:uber-direct-webhook'])
+    ->name('webhooks.uber-direct');
 Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookController::class, 'handle'])
     ->middleware(['installed', 'throttle:60,1,webhook-uber']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('webhooks.uber');
@@ -2059,6 +2064,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/address', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'address'])->middleware('throttle:pos-delivery-address');
         Route::get('/board', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'board']);
         Route::post('/waves/assign', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'assignCourier']);
+        // [UBER-DIRECT 2026-10-22] Bascule d'un arrêt entre nos livreurs et un coursier Uber : devis (gratuit) → confirmation → retour.
+        Route::post('/uber/quote', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberQuote'])->middleware('throttle:pos-delivery-uber-quote');
+        Route::post('/uber/dispatch', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberDispatch'])->middleware('throttle:pos-delivery-uber-act');
+        Route::post('/uber/release', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberRelease'])->middleware('throttle:pos-delivery-uber-act');
     });
 
     Route::prefix('pos-category')->name('pos-category.')->group(function () {
