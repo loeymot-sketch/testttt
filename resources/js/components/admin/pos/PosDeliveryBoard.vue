@@ -1,12 +1,15 @@
 <template>
     <div class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Tournées de livraison" data-testid="pos-delivery-board" @click.self="$emit('close')">
-        <div class="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-4 shadow-xl">
-            <div class="sticky top-0 z-10 -mx-4 -mt-4 mb-3 flex items-center justify-between gap-3 bg-white px-4 py-3 border-b border-[#F0F0F2]">
-                <h2 class="text-lg font-bold text-heading">🛵 Tournées de livraison</h2>
-                <button type="button" class="h-9 px-3 rounded-lg border border-[#D9DBE9] text-sm font-semibold" @click="$emit('close')">Fermer</button>
+        <div class="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-4 shadow-xl" style="scroll-padding-top: 7rem">
+            <!-- [E2E 2026-10-22 B-009/R2-01/R2-02] En-tête ET bandeau d'erreur restent collés en haut quand la modale défile : un refus d'Uber
+                 n'est jamais caché hors de vue. `top:-1rem` = collé au bord réel (le conteneur a 1 rem de marge), sans bande visible au-dessus. -->
+            <div class="sticky z-10 -mx-4 -mt-4 mb-3 bg-white px-4 pt-3 pb-2 border-b border-[#F0F0F2]" style="top: -1rem" data-testid="pos-delivery-board-head">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-lg font-bold text-heading">🛵 Tournées de livraison</h2>
+                    <button type="button" class="h-9 px-3 rounded-lg border border-[#D9DBE9] text-sm font-semibold" @click="$emit('close')">Fermer</button>
+                </div>
+                <p v-if="error" class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" role="alert">{{ error }}</p>
             </div>
-
-            <p v-if="error" class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" role="alert">{{ error }}</p>
             <p v-if="loading && !waves.length" class="py-8 text-center text-sm text-gray-500">Chargement…</p>
             <p v-else-if="!waves.length" class="py-8 text-center text-sm text-gray-500" data-testid="pos-delivery-board-empty">
                 Aucune livraison prévue. Les commandes de livraison sont regroupées en départs toutes les 30 minutes.
