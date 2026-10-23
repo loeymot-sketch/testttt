@@ -570,6 +570,8 @@
         "pos_orders_tracker": "Suivi commandes",
         "cash_overview": "Unified cash view",
         "delivery_cash_sessions": "Delivery driver cash",
+        "livraisons": "Deliveries",
+        "livreur_screen": "Driver screen",
         "transactions": "Transactions",
         "notification_alert": "Notification Alert",
         "order_details": "Détails commande",

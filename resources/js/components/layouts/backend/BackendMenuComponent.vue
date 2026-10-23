@@ -25,7 +25,7 @@
                          route inexistante et rendrait un lien mort. On ouvre dans un nouvel onglet
                          pour ne pas faire perdre au gérant l'écran d'où il vient. -->
                     <a v-if="isPosV4Shell || menu.external"
-                       :href="'/admin/' + menu.url + (menu.query || '')"
+                       :href="menu.href || ('/admin/' + menu.url + (menu.query || ''))"
                        :target="menu.external ? '_blank' : null"
                        :rel="menu.external ? 'noopener' : null"
                        class="db-sidebar-nav-menu">
@@ -159,6 +159,15 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection surfaces.
     Object.freeze({ url: 'historique', language: 'historique', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'encaissement', language: 'encaissement', icon: 'lab lab-pos-orders' }),
+    // [LIVRAISONS-PAGE 2026-10-23 · propriétaire : « facilite l'accès depuis la barre latérale »] Deux entrées, comme la roue,
+    // sans permission neuve (une permission que personne ne porte rendrait l'écran inaccessible) :
+    //   · « Livraisons » : la planche des départs — commandes à livrer, qui livre (nos livreurs ⇄ Uber), état de chaque arrêt.
+    //     Avant : une fenêtre cachée derrière le bouton « Tournées » de la caisse, introuvable depuis le reste de l'admin.
+    //     Même porte que l'API de la planche (`pos`, voir routes/api.php : pos-delivery).
+    //   · « Écran livreur » : `/livreur` est une page autonome pour téléphone, hors du routeur Vue → ancre `external` avec son
+    //     propre `href` (le gabarit ajoutait toujours le préfixe /admin/).
+    Object.freeze({ url: 'livraisons', language: 'livraisons', icon: 'fa-solid fa-motorcycle', activePrefixes: Object.freeze(['/admin/livraisons']) }),
+    Object.freeze({ url: 'livreur', language: 'livreur_screen', icon: 'fa-solid fa-mobile-screen-button', external: true, href: '/livreur' }),
     Object.freeze({ url: 'cash-overview', language: 'cash_overview', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'delivery-boy-cash-sessions', language: 'delivery_cash_sessions', icon: 'lab lab-pos-orders' }),
     // [FLYER PROMO 2026-08-07] Ticket promo nominatif pour les commandes des
@@ -209,6 +218,10 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // pos-orders permission (admin + branch managers already hold it).
     historique: 'pos-orders',
     encaissement: 'pos-orders',
+    // [LIVRAISONS-PAGE 2026-10-23] Même porte que l'API `pos-delivery/*` (middleware `permission:pos`) : afficher un lien dont la
+    // page répondrait 403 est un piège.
+    livraisons: 'pos',
+    livreur: 'pos',
     // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
     'promo-flyer': 'pos-orders',
     // [ROUE 2026-08-13] Même gate que la caisse — voir l'entrée de menu.

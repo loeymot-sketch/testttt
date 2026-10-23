@@ -122,7 +122,11 @@ describe('V1 admin sidebar cleanup', () => {
         expect(hubLinks).toHaveLength(2);
         expect(hubLinks[0].props('to')).toBe('/admin/hygiene/home');
         expect(hubLinks[1].props('to')).toBe('/admin/labels/orders');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(21);
+        // [LIVRAISONS-PAGE 2026-10-23] +2 : « Livraisons » (la planche des départs, bascule nos livreurs ⇄ Uber) et « Écran livreur »
+        // (`/livreur`, page autonome, ancre externe) → 23 lignes. Compteur remonté DANS la session qui livre les entrées.
+        expect(text).toContain('menu.livraisons');
+        expect(text).toContain('menu.livreur_screen');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(23);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.
@@ -132,5 +136,14 @@ describe('V1 admin sidebar cleanup', () => {
             + 'un router-link vers /admin/roue serait un lien mort').toBeTruthy();
         expect(roue.attributes('target')).toBe('_blank');
         expect(roue.attributes('rel')).toBe('noopener');
+
+        // L'écran livreur est hors de /admin : l'ancre doit porter SON href (`/livreur`), pas `/admin/livreur` (404) — nouvel onglet.
+        const livreur = wrapper.findAll('a.db-sidebar-nav-menu').find((a) => a.attributes('href') === '/livreur');
+        expect(livreur, "l'entrée « Écran livreur » ne pointe pas /livreur").toBeTruthy();
+        expect(livreur.attributes('target')).toBe('_blank');
+        expect(livreur.attributes('rel')).toBe('noopener');
+        expect(wrapper.findAll('a.db-sidebar-nav-menu').some((a) => a.attributes('href') === '/admin/livreur')).toBe(false);
+        // « Livraisons » est une vraie route Vue, vers la page de la planche.
+        expect(wrapper.findAllComponents(RouterLink).some((c) => c.props('to') === '/admin/livraisons')).toBe(true);
     });
 });

@@ -314,6 +314,8 @@
         "pos_orders": "طلبات نقطة البيع",
         "cash_overview": "عرض الكاش الموحد",
         "delivery_cash_sessions": "كاش السائق",
+        "livraisons": "التوصيل",
+        "livreur_screen": "شاشة السائق",
         "transactions": "المعاملات",
         "notification_alert": "تنبيه الإشعار",
         "order_details": "تفاصيل الطلب",

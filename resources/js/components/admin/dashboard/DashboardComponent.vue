@@ -31,7 +31,7 @@
         <h3 class="font-semibold text-[18px] leading-7 mb-3 text-heading">{{ $t('label.quick_access') }}</h3>
         <div class="flex flex-wrap gap-2">
             <template v-for="link in quickAccessLinks" :key="link.to">
-                <a v-if="link.external" :href="link.to"
+                <a v-if="link.external" :href="link.to" :target="link.newTab ? '_blank' : null" :rel="link.newTab ? 'noopener' : null"
                     class="inline-flex items-center gap-2 rounded-xl border border-[#EFF0F6] bg-white px-4 py-2.5 text-sm font-medium text-heading shadow-xs transition hover:border-primary/40 hover:bg-primary/5">
                     <i :class="link.icon" class="text-primary" aria-hidden="true"></i>
                     <span>{{ link.label }}</span>
@@ -159,11 +159,11 @@ export default {
                 return entry.access === true;
             };
             const links = [];
-            const push = (to, label, icon, permUrl, external = false) => {
+            const push = (to, label, icon, permUrl, external = false, newTab = false) => {
                 if (!has(permUrl)) {
                     return;
                 }
-                links.push({ to, label, icon, external });
+                links.push({ to, label, icon, external, newTab });
             };
             push('/admin/pos', this.$t('menu.pos'), 'lab lab-pos-bold', 'pos', false);
             // [Wave V — POS-V4 menu cleanup 2026-05-21] Owner question :
@@ -184,6 +184,10 @@ export default {
             // (/admin/historique) so everything is reachable from the dashboard.
             push('/admin/encaissement', this.$t('menu.encaissement'), 'lab lab-pos-bold', 'pos-orders', false);
             push('/admin/historique', this.$t('menu.historique'), 'lab lab-pos-orders', 'pos-orders', false);
+            // [LIVRAISONS-PAGE 2026-10-23] Les commandes à livrer + la bascule nos livreurs ⇄ Uber, et l'écran du livreur (page autonome
+            // pour téléphone, nouvel onglet). Même porte que l'API de la planche (`pos`).
+            push('/admin/livraisons', this.$t('menu.livraisons'), 'fa-solid fa-motorcycle', 'pos', false);
+            push('/livreur', this.$t('menu.livreur_screen'), 'fa-solid fa-mobile-screen-button', 'pos', true, true);
             push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);
             // [ETIQUETTES 2026-10-16 · owner « je ne trouve pas les fonctionnalités … en tableau de bord »] Imprimante
             // d'étiquettes Brother : même porte que la barre latérale (`pos-orders`).

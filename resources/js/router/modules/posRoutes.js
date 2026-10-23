@@ -8,6 +8,9 @@
 // FloorplanComponent shares the same chunk because it is a sibling POS surface
 // (admin → POS → table layout) reached only after the POS shell is already loaded.
 const PosComponent       = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/PosComponent");
+// [LIVRAISONS-PAGE 2026-10-23] Page « Livraisons » de la barre latérale : la planche des tournées (commandes à livrer, bascule
+// nos livreurs ⇄ Uber) posée en page plutôt qu'en fenêtre au-dessus de la caisse.
+const PosDeliveryPage    = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/PosDeliveryPage");
 const FloorplanComponent = () => import(/* webpackChunkName: "pos-shell" */ "../../components/admin/pos/FloorplanComponent");
 
 export default [
@@ -31,6 +34,17 @@ export default [
             permissionUrl: "pos",
             voiceAssistant: true,
             breadcrumb: "Assistant téléphone",
+        },
+    },
+    {
+        path: "/admin/livraisons",
+        component: PosDeliveryPage,
+        name: "admin.livraisons",
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: "pos",
+            breadcrumb: "livraisons",
         },
     },
     {
