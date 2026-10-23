@@ -113,4 +113,16 @@ describe('Caisse — « Commande téléphone » en mode livraison (M4-101)', () 
         expect(envois[0].order_type).toBe(orderTypeEnum.TAKEAWAY);
         expect(envois[0].phone_order).toBe(true);
     });
+    // [ÉTAT DES LIEUX 2026-10-23 C-002] Le bouton n'est plus PROPOSÉ en livraison (il refusait à chaque appui).
+    it('le bouton « Commande téléphone » est absent en livraison, présent à emporter', async () => {
+        const w = monter(storeAvec(PANIER));
+        Object.assign(w.vm.checkoutProps.form, { order_type: orderTypeEnum.TAKEAWAY });
+        await w.vm.$nextTick();
+        expect(w.find('[data-testid="pos-phone-order"]').exists()).toBe(true);
+
+        Object.assign(w.vm.checkoutProps.form, { order_type: orderTypeEnum.DELIVERY });
+        await w.vm.$nextTick();
+        expect(w.find('[data-testid="pos-phone-order"]').exists()).toBe(false);
+        expect(w.find('[data-testid="pos-v5-pay"]').exists(), 'le bouton « Commande » reste le chemin de la livraison').toBe(true);
+    });
 });

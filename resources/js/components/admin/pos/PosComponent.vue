@@ -2006,7 +2006,10 @@
                 <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Commande prise par téléphone : enregistrée +
                      envoyée en cuisine à l'avance, PAS encaissée maintenant (paiement différé au
                      comptoir à l'arrivée du client). Passe par le chemin counter-collect existant. -->
+                <!-- [ÉTAT DES LIEUX 2026-10-23 C-002] Pas proposé en LIVRAISON : phoneOrderSubmit() le refuse toujours
+                     (M4-101) — un bouton qui refuse à chaque fois est une impasse. Le refus reste en défense en profondeur. -->
                 <button
+                    v-if="checkoutProps.form.order_type !== orderTypeEnums.delivery"
                     type="button"
                     class="pos-phone-order-cta"
                     :disabled="phoneOrderSubmitting"
