@@ -2265,6 +2265,11 @@ export default {
         isCashPending(o) {
             if (!o) return false;
             if (o.is_cash_pending === true || o.is_cash_pending === 1) return true;
+            // [Relecture adverse 2026-10-23, suite de C1-003] Le repli ci-dessous recomptait une « Commande livraison »
+            // (PENDING_COUNTER + COUNTER_DEFERRED, origine `delivery`) que le serveur avait pourtant exclue : badge « à
+            // encaisser » et bouton « Encaisser » voué au 422 (PaymentService::assertCounterDeferredOrder). Même règle que
+            // SimpleOrderResource : l'origine `delivery` s'encaisse à la porte, jamais au comptoir.
+            if (String(o.source_surface || '').toLowerCase() === 'delivery') return false;
             const ps = parseInt(o.payment_status, 10);
             const ppm = parseInt(o.pos_payment_method, 10);
             return ps === 15 && ppm === 6;
