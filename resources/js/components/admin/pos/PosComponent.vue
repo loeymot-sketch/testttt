@@ -2006,6 +2006,21 @@
                 <!-- [C4-CAISSE-TELEPHONE 2026-07-07] Commande prise par téléphone : enregistrée +
                      envoyée en cuisine à l'avance, PAS encaissée maintenant (paiement différé au
                      comptoir à l'arrivée du client). Passe par le chemin counter-collect existant. -->
+                <!-- [CAISSE 2026-10-23 · demande propriétaire] « Commande livraison » : la livraison (adresse + téléphone du client)
+                     est enregistrée et envoyée en cuisine SANS encaisser maintenant — le livreur encaisse à la porte. Remplace
+                     « Commande téléphone » en mode livraison. Marqueur serveur dédié `delivery_door_payment` (≠ phone_order). -->
+                <button
+                    v-if="checkoutProps.form.order_type === orderTypeEnums.delivery"
+                    type="button"
+                    class="pos-phone-order-cta pos-delivery-order-cta"
+                    :disabled="deliveryOrderSubmitting"
+                    data-testid="pos-delivery-order"
+                    @click.prevent="deliveryOrderSubmit"
+                >
+                    <span aria-hidden="true">🛵</span>
+                    <span class="pos-phone-order-cta__label">{{ deliveryOrderSubmitting ? '…' : 'Commande livraison' }}</span>
+                    <span class="pos-phone-order-cta__hint">Envoyée en cuisine · le livreur encaisse à la porte</span>
+                </button>
                 <!-- [ÉTAT DES LIEUX 2026-10-23 C-002] Pas proposé en LIVRAISON : phoneOrderSubmit() le refuse toujours
                      (M4-101) — un bouton qui refuse à chaque fois est une impasse. Le refus reste en défense en profondeur. -->
                 <button
@@ -2810,6 +2825,7 @@ export default {
             webAccepting: {},
             // [C4-CAISSE-TELEPHONE 2026-07-07] Anti double-submit du bouton « Commande téléphone ».
             phoneOrderSubmitting: false,
+            deliveryOrderSubmitting: false,
             manualSupplement: {
                 open: false,
                 label: '',
@@ -6882,7 +6898,7 @@ export default {
             // Une livraison payée à la porte prise par téléphone n'est pas un parcours prévu (docs/LIVRAISON.md : file
             // « À encaisser », purge « client non venu » et cuisine ne la connaissent pas) → refus AVANT tout envoi.
             if (this.checkoutProps.form.order_type === orderTypeEnum.DELIVERY) {
-                return alertService.error("Commande téléphone impossible en livraison : elle partirait « à emporter », sans adresse ni frais. Pour une livraison, utilisez « Commande » (paiement à la caisse).");
+                return alertService.error("Commande téléphone impossible en livraison : elle partirait « à emporter », sans adresse ni frais. Pour une livraison, utilisez « Commande livraison » (payée à la porte) ou « Commande » (payée à la caisse).");
             }
 
             this.phoneOrderSubmitting = true;
@@ -6996,6 +7012,118 @@ export default {
                 alertService.error(msg);
             } finally {
                 this.phoneOrderSubmitting = false;
+                this.loading.isActive = false;
+            }
+        },
+        /**
+         * [CAISSE 2026-10-23 · demande propriétaire] « Commande livraison » : le caissier a pris une livraison par téléphone.
+         * Elle est ENREGISTRÉE (adresse + téléphone du client) et envoyée en cuisine, mais PAS encaissée ici : le livreur
+         * encaisse à la porte et la remise scelle la vente (OrderService::deliveryBoyOrderChangeStatus, numéro fiscal à ce
+         * moment-là). Contrairement à phoneOrderSubmit, la commande RESTE une livraison (adresse, frais) ; le prix, lui,
+         * reste calculé par le serveur (devis scellé). Marqueur serveur `delivery_door_payment` — jamais `phone_order`, que
+         * la purge « client non venu » annulerait.
+         */
+        deliveryOrderSubmit: async function () {
+            if (this.deliveryOrderSubmitting) return;
+            if (!this.carts || this.carts.length === 0) {
+                return alertService.error(this.$t("message.cart_is_empty") || "Le panier est vide.");
+            }
+            if (this.panierSansProduit()) {
+                return alertService.error(MESSAGE_SUPPLEMENT_SANS_PRODUIT);
+            }
+            if (this.checkoutProps.form.order_type !== orderTypeEnum.DELIVERY) {
+                return alertService.error('Choisissez d\'abord « Livraison ».');
+            }
+            // Le livreur appellera le client à la porte : sans téléphone, pas de commande (le serveur le refuse aussi).
+            const phone = String(this.deliveryInline.phone || this.checkoutProps.form.pos_customer_phone || '').trim();
+            if (phone.replace(/\D/g, '').length < 9) {
+                return alertService.error('Le téléphone du client est nécessaire : le livreur doit pouvoir l\'appeler à la porte.');
+            }
+
+            this.deliveryOrderSubmitting = true;
+            this.loading.isActive = true;
+            try {
+                // Client + adresse enregistrés (ou créés depuis le formulaire) ; message clair sinon.
+                const addressReady = await this.ensureDeliveryCustomerAndAddress();
+                if (!addressReady) {
+                    return;
+                }
+
+                const _branchId = this.checkoutProps.form.branch_id;
+                if (_branchId == null || _branchId === '' || _branchId === 0) {
+                    return alertService.error(this.$t("message.branch_required") || "Branche requise pour valider la commande.");
+                }
+
+                const firstName = String(this.deliveryInline.name || '').trim().split(' ')[0];
+                const token = this.checkoutProps.form.token || firstName || this.nextDailySequenceToken();
+                const itemsJson = this.buildFormItemsJson();
+                const discount = Number(this.posDiscount) || 0;
+                const couponId = this.checkoutProps.form.coupon_id || null;
+                const customerName = String(this.deliveryInline.name || this.checkoutProps.form.pos_customer_name || '').trim() || null;
+
+                // Devis scellé : mêmes champs que la commande (le serveur reste seul maître du prix et des frais).
+                const quoteRes = await axios.post('admin/pos/quote', {
+                    branch_id: _branchId,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    address_id: this.checkoutProps.form.address_id,
+                    coupon_id: couponId,
+                    discount,
+                    order_type: orderTypeEnum.DELIVERY,
+                    source: sourceEnum.POS,
+                    pos_payment_method: posPaymentMethodEnum.COUNTER_DEFERRED,
+                    delivery_door_payment: true,
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
+                    loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points || null,
+                    items: itemsJson,
+                });
+                const quote = quoteRes?.data?.data;
+                if (!quote || !quote.quote_token || !quote.signature) {
+                    return alertService.error('Impossible de calculer le tarif de la commande. Réessayez.');
+                }
+
+                const payload = {
+                    token,
+                    customer_id: this.checkoutProps.form.customer_id,
+                    address_id: this.checkoutProps.form.address_id,
+                    branch_id: _branchId,
+                    discount,
+                    discount_reason: this.checkoutProps.form.discount_reason || null,
+                    order_type: orderTypeEnum.DELIVERY,
+                    is_advance_order: isAdvanceOrderEnum.NO,
+                    source: sourceEnum.POS,
+                    coupon_id: couponId,
+                    items: itemsJson,
+                    // Différé : aucune saisie de paiement ; le livreur encaisse à la porte.
+                    pos_payment_method: posPaymentMethodEnum.COUNTER_DEFERRED,
+                    pos_received_amount: null,
+                    delivery_door_payment: true,
+                    pos_customer_name: customerName,
+                    pos_customer_phone: phone,
+                    loyalty_customer_code: this.checkoutProps.form.loyalty_customer_code || null,
+                    loyalty_redeem_points: this.checkoutProps.form.loyalty_redeem_points || null,
+                    quote_token: quote.quote_token,
+                    quote_signature: quote.signature,
+                    idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
+                };
+
+                await this.$store.dispatch('posOrder/save', payload);
+
+                const total = Number(quote.total_ttc);
+                alertService.success('Livraison enregistrée'
+                    + (Number.isFinite(total) ? ' · ' + total.toFixed(2).replace('.', ',') + ' € à encaisser à la porte' : ' · à encaisser à la porte'));
+                try { await this.$store.dispatch('posCart/resetCart'); } catch (_e) { /* defensive */ }
+                // Le client ne survit pas à sa commande (miroir de resetPaymentForm + resetDeliveryInline).
+                this.resetPaymentForm();
+                this.resetDeliveryInline();
+                this.checkoutProps.form.customer_id = this._walkInCustomerId || null;
+                this.checkoutProps.form.order_type = orderTypeEnum.TAKEAWAY;
+                await this.loadKioskCashOrders();
+            } catch (err) {
+                const errors = err?.response?.data?.errors;
+                const first = errors && typeof errors === 'object' ? [].concat(...Object.values(errors))[0] : null;
+                alertService.error(first || err?.response?.data?.message || err?.message || 'Erreur lors de l\'enregistrement de la livraison.');
+            } finally {
+                this.deliveryOrderSubmitting = false;
                 this.loading.isActive = false;
             }
         },

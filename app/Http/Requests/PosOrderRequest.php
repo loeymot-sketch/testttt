@@ -66,6 +66,12 @@ class PosOrderRequest extends FormRequest
                 // en attendant aucun montant client ne survit.
                 $this->merge(['delivery_charge' => 0, 'delivery_distance_km' => 0]);
             }
+            // [CAISSE 2026-10-23 · « Commande livraison »] Paiement À LA PORTE : la commande est créée différée (mêmes
+            // marqueurs que le différé au comptoir : COUNTER_DEFERRED + PENDING_COUNTER, numéro fiscal alloué à
+            // l'encaissement) ; le livreur encaisse et la remise la scelle (deliveryBoyOrderChangeStatus).
+            if ($this->boolean('delivery_door_payment')) {
+                $this->merge(['defer_to_counter' => true]);
+            }
         } else {
             $this->merge(['delivery_charge' => 0, 'delivery_slot_at' => null, 'delivery_tier' => null]);
         }
@@ -133,6 +139,9 @@ class PosOrderRequest extends FormRequest
             // enregistrée + envoyée en cuisine mais PAS encaissée (paiement différé au comptoir).
             // Implique le routage counter-collect (COUNTER_DEFERRED + PENDING_COUNTER) côté service.
             'phone_order' => ['nullable', 'boolean'],
+            // [CAISSE 2026-10-23] « Commande livraison » : livraison enregistrée sans encaissement, payée à la porte.
+            // Réservé à la LIVRAISON (vérifié dans withValidator) ; distinct de `phone_order` (file « À encaisser au comptoir »).
+            'delivery_door_payment' => ['nullable', 'boolean'],
             'dining_table_id' => ($orderTypeInt === OrderType::DINING_TABLE && $dineInEnabled) ? [
                 'required',
                 'numeric',
@@ -315,10 +324,25 @@ class PosOrderRequest extends FormRequest
             if ($orderTypeInt === OrderType::DELIVERY && $this->boolean('phone_order')) {
                 $validator->errors()->add(
                     'phone_order',
-                    'Commande téléphone impossible en livraison : elle serait encaissée au comptoir et annulée comme « client non venu ». Pour une livraison, utilisez « Commande ».'
+                    'Commande téléphone impossible en livraison : elle serait encaissée au comptoir et annulée comme « client non venu ». Pour une livraison payée à la porte, utilisez « Commande livraison ».'
                 );
 
                 return;
+            }
+
+            // [CAISSE 2026-10-23] Paiement à la porte : uniquement une livraison, et avec un téléphone — le livreur doit
+            // pouvoir appeler le client à la porte (l'encaissement se fait là, personne ne viendra au comptoir).
+            if ($this->boolean('delivery_door_payment')) {
+                if ($orderTypeInt !== OrderType::DELIVERY) {
+                    $validator->errors()->add('delivery_door_payment', 'Le paiement à la porte n\'existe que pour une livraison.');
+
+                    return;
+                }
+                if (blank(trim((string) $this->input('pos_customer_phone', '')))) {
+                    $validator->errors()->add('pos_customer_phone', 'Le téléphone du client est obligatoire pour une livraison payée à la porte : le livreur doit pouvoir l\'appeler.');
+
+                    return;
+                }
             }
 
             if ($orderTypeInt === OrderType::DINING_TABLE

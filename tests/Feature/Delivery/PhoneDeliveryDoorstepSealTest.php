@@ -84,6 +84,8 @@ class PhoneDeliveryDoorstepSealTest extends TestCase
         return [
             'commande téléphone' => ['phone'],
             'vente caisse différée' => ['pos'],
+            // [CAISSE 2026-10-23] « Commande livraison » : la caisse crée la livraison avec source_surface='delivery'.
+            'commande livraison (caisse)' => ['delivery'],
         ];
     }
 

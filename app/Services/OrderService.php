@@ -1300,7 +1300,11 @@ class OrderService
                     // ('phone') du walk-in caisse standard ('pos') pour la file d'encaissement, le
                     // KDS (badge « Tél ») et l'historique. Les deux passent par le sceau
                     // counter-collect (assertCounterDeferredOrder accepte 'phone' aussi).
-                    $this->order->source_surface = $request->boolean('phone_order') ? 'phone' : 'pos';
+                    // [CAISSE 2026-10-23] Livraison payée à la porte : 'delivery' (comme une livraison du site payée à la porte) — jamais
+                    // 'phone' (purge « client non venu ») ni 'pos' ; deliveryBoyOrderChangeStatus la reconnaît et la scelle à la remise.
+                    $this->order->source_surface = $request->boolean('phone_order')
+                        ? 'phone'
+                        : ($request->boolean('delivery_door_payment') && (int) $request->order_type === \App\Enums\OrderType::DELIVERY ? 'delivery' : 'pos');
 
                     $currentTime = Carbon::now();
                     $endTime = $currentTime->copy()->addMinutes(Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration'));
