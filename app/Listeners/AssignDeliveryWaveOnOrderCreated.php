@@ -29,6 +29,11 @@ class AssignDeliveryWaveOnOrderCreated
             if (! $order || (int) $order->order_type !== OrderType::DELIVERY) {
                 return;
             }
+            // [E2E 2026-10-23] Une commande Uber Eats est livrée par les coursiers d'Uber Eats, jamais par une de nos tournées
+            // (et elle n'a pas d'adresse chez nous) : la tenter journalisait une ERROR à chaque commande en production.
+            if (strtolower((string) $order->source_surface) === 'uber_eats') {
+                return;
+            }
 
             // Un `delivery_slot_at` déjà posé AVANT l'attribution = créneau choisi par le client.
             $chosen = $order->delivery_slot_at;

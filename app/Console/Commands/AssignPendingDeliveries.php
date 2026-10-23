@@ -38,6 +38,8 @@ class AssignPendingDeliveries extends Command
 
         $orders = Order::query()->withoutGlobalScope(BranchScope::class)
             ->where('order_type', OrderType::DELIVERY)
+            // [E2E 2026-10-23] Livrées par Uber Eats, jamais par nos tournées.
+            ->where(fn ($q) => $q->whereNull('source_surface')->orWhere('source_surface', '!=', 'uber_eats'))
             ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::DELIVERED, OrderStatus::RETURNED])
             ->where('created_at', '>=', now()->subDay())
             // Une commande carte EN LIGNE non encore payée n'entre en tournée qu'à son paiement (c'est l'événement
