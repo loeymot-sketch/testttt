@@ -47,6 +47,16 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-10-24 — HEAD `252276aa5` (branche `pos/category-first-caisse-2026-06-23`) ; PRODUCTION caisse = `c7b6bc907`
+> (livraison ACTIVE en prod, `delivery/status → enabled:true`) ; poussé = `b17ce2765` ; NON poussés : `4a7c7d9f8`, `252276aa5`.**
+> Audit `/brain` du 23 au soir (3 relecteurs adverses + porte de tests) : lot caisse à déployer = 7 fichiers / 109 lignes, 0 migration,
+> 0 ligne gelée, chaîne NF525 OK (7 branches), PHPUnit ciblé 720 (1 échec antérieur `UberOrderMapperNoteTest`), Vitest 457 verts.
+> **Site lecayenne.fr** : le site EN LIGNE (17/10, `vercel --prod` depuis une copie non commitée) n'a PAS la livraison ; la copie de
+> travail `~/Downloads/lecayenne-web-deploy/Site lecayenne` (HEAD git `681577d` + 125 fichiers non commités) la porte, corrigée et
+> testée contre le backend local ET contre le catalogue réel de production (fixtures) — `reports/test-e2e/site-livraison-2026-10-23/BILAN.md`.
+> Déploiements à faire par le propriétaire (`!`) : caisse `tools/deploy-lecayenne.sh <SHA poussé>` ; site `vercel --prod` depuis son
+> dossier. `app/www` (application des stores) périmé après le site.
+
 > **2026-10-20 — GOAL « livraison fonctionnelle » : barème par commune, tournées de 30 min, caisse + livreur + site.**
 > **Rien n'est déployé ni poussé. La livraison reste SUSPENDUE** (`order_setup_delivery = DISABLE`) : on la remet depuis la
 > caisse. Contrat complet, lancement et limites : **`docs/LIVRAISON.md`**.
@@ -4901,6 +4911,9 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**2026-10-23/24 — Livraison : « Commande livraison » en caisse, tournées aller-retour, livraison sur le site — LOCAL, commits `50e690845`…`252276aa5` (prod = `c7b6bc907`).**
+Caisse : bouton « Commande livraison · paiement à la porte » (adresse + téléphone, sans encaissement ; `delivery_door_payment` → `source_surface=delivery`, scellée à la remise), durée réelle de tournée ALLER-RETOUR (OSRM, repli estimation, coupe-circuit 60 s) côté livreur, aller simple côté client/prix ; plus d'erreur « reading 'id' » (option `vue-next-select` posée un cycle avant la valeur) ; tiroir ET tableau de suivi n'annoncent plus « à encaisser » une livraison porte ; Uber Eats hors tournées. Audit E2E caisse+site (`reports/test-e2e/caisse-site-complet-2026-10-23/BILAN.md`, C2 vert au round 2). Site : tunnel de livraison corrigé (S-001…S-103, retour bancaire d'une livraison, bascule retrait→livraison), catalogue de production figé en fixtures (`tests/Playwright/site-livraison-2026-10-23/`). Non fait : D1/D3/D4/D5/D6/D7 (choix emporter/livraison à l'accueil, 7 km + devis Uber, annonce, vouvoiement global, paiement après confirmation, QR d'avis) ; `DELIVERY_ROUTING_ENABLED` absent du `.env` prod (coordonnées → OSRM public) ; C1-001 (en-tête panier), C1-002 (zone gelée `pos-wizard.css`) ; `legal/cgv.html` dit « pas de livraison en propre ».
+
 **2026-10-21 — Borne : Cayenne sans jambon · suppléments « Recommandé » par catégorie · étape pain/galette · pied du wizard remonté — LOCAL, commits `699f647b0` (LOCK) + le commit `feat(borne)` qui suit, NON déployé.**
 Cayenne : description (seeder + migration `2026_10_21_100000`) sans jambon, « mélange maison de fromage et crème fraîche » ; la migration retire aussi la ligne de recette de stock « jambon » du Cayenne. Suppléments recommandés : `config/menu_recommended_supplements.php`
 (produit d'abord, puis catégorie ; Cayenne = Cheddar+Boursin, Burgers = Raclette+Œuf+Légumes sautés, Tacos = Cheddar+Boursin+Champignons, Sandwichs/Galette = Cheddar+Œuf+Oignons frits — CHOIX PROVISOIRES à valider par le propriétaire),
@@ -6375,6 +6388,14 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 ---
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
+
+### 2026-10-24 — après l'audit livraison
+1. Propriétaire : pousser puis déployer la caisse (`252276aa5`) ; déployer le site (`vercel --prod`) ; régler dans l'admin le
+   catalogue de prod (Suprême sans attribut viande, profils composés vides des sandwichs) ; décider `DELIVERY_ROUTING_ENABLED` (RGPD).
+2. Site, P2 restants : pastille « PRÊTE » au statut 8 en livraison (`OrderTrackingService.php:286`) ; « Mes commandes » pour une
+   livraison en route (`orders.jsx:14,181,200`) ; D1/D4/D5 (accueil, annonce, vouvoiement) ; `legal/cgv.html` ; `app/www` à rebâtir.
+3. Caisse, P2/P3 : purge d'une livraison PREPARED jamais partie (`CleanupStalePendingKioskOrders.php:177`) ; `aria-label` des boutons
+   icône ; libellé de tournée « dont N min de remise » ; C1-001 en-tête panier ; C1-002 via LOCK.
 
 ### 🎯 GOAL ÉCRIT, NON LANCÉ — `plans/GOAL_CONSOLIDATION_V1_PRODUCTION_2026-08-25.md`
 Rédigé le **2026-08-25** (HEAD `43b120c7d`, branche `pos/category-first-caisse-2026-06-23`),

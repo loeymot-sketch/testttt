@@ -35,6 +35,34 @@ commande) : 19 lignes construites, toutes dans les min/max du profil réel ; le 
 - Production lue en lecture seule (catalogue public, 70 produits) : les 3 écarts S-101 sont bien fermés ; 7 écarts de `menu.js` restent
   (6 burgers `viandes:1` vs 0, Suprême 2 vs 0) — sans effet commande après le correctif ci-dessus.
 
+## Audit « tout est validé ? » (2026-10-23, soir) — trois relecteurs adverses indépendants + porte de tests
+
+Porte : PHPUnit ciblé 720 tests (1 échec antérieur, `UberOrderMapperNoteTest`, mapper inchangé depuis le 15/08) ; Vitest 65 fichiers /
+457 verts ; zone gelée : 0 ligne ; chaîne NF525 : OK sur 7 branches ; lot caisse à déployer = 7 fichiers, 109 lignes, 0 migration.
+
+Trouvé puis corrigé (chacun verrouillé par un test qui devient rouge si le correctif est retiré) :
+- **Caisse, P1** — le tableau « Suivi commandes » recomptait une livraison payée à la porte comme « à encaisser » (repli local sur
+  les marqueurs bruts, bouton « Encaisser » voué au 422) ; seul le tiroir avait été corrigé. `PosOrdersTrackerComponent.vue`,
+  commit `252276aa5` ; capture `captures-brain/tracker-carte-porte.png` (3 livraisons porte du jour : sans badge ni bouton).
+- **Site, P1** — livraison payée par carte avec passage chez la banque (3-D Secure, portefeuille) : au retour `?order=`, la
+  confirmation relisait `lc.mollie.pending` sans le mode et affichait un ticket de RETRAIT avec QR. Le pending emporte désormais le
+  mode, l'adresse, les frais, le règlement et le départ ; le fil d'étapes suit. `funnel.jsx`, `racine.jsx` ;
+  banc `site-retour-carte-livraison.spec.js` (témoin : un pending ancien retombe sur le retrait).
+- **Site, P2** — « Choisir une heure » laissé vide en retrait bloquait le bouton après passage en livraison (consigne sur une section
+  cachée) ; le refus « Saisissez votre adresse complète » restait affiché pendant la frappe. Corrigés, même banc.
+
+Vérifié et écarté : double appel `email-login` (deux étapes distinctes ; le 422 = absence de SMTP en local) ; « trois durées » de
+tournée (5 min aller + 4 min de remise + 3 min retour = 12 min, cohérent ; seul le libellé omet la remise) ; seuil de livraison
+offerte en production = 0 (lu en lecture seule) ; montants identiques sur toutes les séquences (caisse 6,80 / 9,30 / 1,90 ; site
+9,90 / 11,80 dont 3,90).
+
+Restes P2/P3 non corrigés (à décider) : suivi livraison au statut 8 affiche la pastille « PRÊTE » au-dessus de « En préparation »
+(`OrderTrackingService.php:286`) ; « Mes commandes » classe une livraison en route (statut 10) comme terminée et promet des points
+« après retrait » (`orders.jsx:14,181,200`) ; boutons icône de la caisse sans `aria-label` (antérieur) ; purge d'abandon : une
+livraison porte/site restée PREPARED sans départ n'est jamais purgée (antérieur, `CleanupStalePendingKioskOrders.php:177`) ;
+registre tu/vous mêlé hors du bloc livraison (D5) ; libellés staff « paiement à la porte » / « Encaisser en espèces » à
+harmoniser ; contrastes limites des boutons désactivés.
+
 ## Ouvert / décisions
 
 1. **Suprême, burgers : le catalogue de PRODUCTION n'a pas d'attribut viande** (Suprême : seulement pain + sauce). Sur le site comme
