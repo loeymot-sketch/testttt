@@ -59,6 +59,9 @@ describe('caisse — heure de départ d\'une livraison « tout de suite » (M4-0
             deliveryInline: { quote: null, address: '', addressText: '', suggestions: [], confirmed: false, customerId: 5 },
             checkoutProps: { form: { customer_id: 5, address_id: null, delivery_charge: 0, delivery_distance_km: null } },
             clearDeliveryGeocodeError: vi.fn(),
+            // [E2E 2026-10-23 C2-001] L'option du client est mémorisée avant d'être choisie (sélecteur client).
+            deliveryCustomerOptions: [],
+            rememberCustomerOption: PosComponent.methods.rememberCustomerOption,
         };
         ctx._rafraichirTourneesAdresse = PosComponent.methods._rafraichirTourneesAdresse.bind(ctx);
         PosComponent.methods.pickSavedDeliveryAddress.call(ctx, {

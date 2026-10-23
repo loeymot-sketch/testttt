@@ -14,6 +14,15 @@ const ensure = PosComponent.methods.ensureDeliveryCustomerAndAddress;
 function ctx(over = {}) {
     return {
         deliveryCustomerId: PosComponent.methods.deliveryCustomerId,
+        // [E2E 2026-10-23 C2-001] Le client est désormais posé via selectDeliveryCustomer (option AVANT valeur) ; le client
+        // comptoir (5) est une option du sélecteur, comme dans la vraie caisse.
+        selectDeliveryCustomer: PosComponent.methods.selectDeliveryCustomer,
+        rememberCustomerOption: PosComponent.methods.rememberCustomerOption,
+        safeWalkInCustomerId: PosComponent.methods.safeWalkInCustomerId,
+        clearDeliveryKnownCustomer: PosComponent.methods.clearDeliveryKnownCustomer,
+        deliveryCustomerOptions: [],
+        customers: [{ id: 5, name: 'Client comptoir' }],
+        $nextTick: () => Promise.resolve(),
         _walkInCustomerId: 5,
         loading: { isActive: false },
         checkoutProps: { form: { customer_id: null, address_id: null, delivery_charge: 0, delivery_distance_km: null } },
