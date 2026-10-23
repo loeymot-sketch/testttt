@@ -141,6 +141,28 @@ class PosControlDrawerJourneeCompleteTest extends TestCase
         $this->assertSame(self::LIVREES, $parStatut(OrderStatus::DELIVERED), 'File ✅ « livrées » incomplète.');
     }
 
+    /**
+     * [E2E 2026-10-23 C1-003] Une livraison payée À LA PORTE (« Commande livraison », ou différée du site) s'encaisse par le
+     * livreur à la remise ; le comptoir la refuse (PaymentService::assertCounterDeferredOrder, 422). Le tiroir l'annonçait
+     * « à encaisser » avec un bouton voué à l'échec, et comptait 18 commandes pour 16 dans la file.
+     */
+    public function test_une_livraison_payee_a_la_porte_nest_pas_a_encaisser_au_comptoir(): void
+    {
+        $porte = $this->commande([
+            'order_type' => OrderType::DELIVERY, 'status' => OrderStatus::PREPARING, 'source_surface' => 'delivery',
+            'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+        ]);
+        $comptoir = $this->commande([
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+        ]);
+
+        $lignes = collect($this->journee()->assertOk()->json('data'))->keyBy('id');
+
+        $this->assertFalse($lignes[$porte->id]['is_cash_pending'], 'Livraison : encaissée à la porte par le livreur, jamais au comptoir.');
+        $this->assertTrue($lignes[$comptoir->id]['is_cash_pending'], 'Une commande comptoir différée reste à encaisser.');
+    }
+
     /** §2bis — Les statuts terminaux non-livrés ne polluent PAS la charge : aucune file ne les montre. */
     public function test_une_commande_annulee_nentre_dans_aucune_file(): void
     {
