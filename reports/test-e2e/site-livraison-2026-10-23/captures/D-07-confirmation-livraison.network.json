@@ -1,0 +1,37 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/delivery/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792789551123
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/auth/guest-signup/email-login",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792789552645
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/auth/guest-signup/email-login",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1792789552830
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/address",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1792789553739
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/frontend/order",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1792789553932
+  }
+]
