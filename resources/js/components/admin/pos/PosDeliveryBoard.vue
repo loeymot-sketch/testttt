@@ -23,7 +23,7 @@
                     <div class="text-base font-extrabold text-heading">
                         <!-- [VG-2026-10-21 M4-005] Le jour dès que ce n'est pas aujourd'hui (« Départ demain 00:30 »). -->
                         Départ {{ waveWhen(w) }}
-                        <span class="ml-1 text-xs font-semibold" :class="w.left ? 'text-green-700' : 'text-[#9A3412]'">{{ w.left ? 'parti' : 'à venir' }}</span>
+                        <span class="ml-1 text-xs font-semibold" :class="w.left ? 'text-green-700' : w.overdue ? 'text-red-700' : 'text-[#9A3412]'" :data-testid="'pos-delivery-wave-state-' + waveDate(w) + '-' + w.time">{{ w.left ? 'parti' : w.overdue ? 'heure dépassée, pas encore partie' : 'à venir' }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-sm">
                         <span v-if="w.courier" class="font-semibold">Livreur : {{ w.courier }}</span>

@@ -46,4 +46,20 @@ describe('caisse — planche « Tournées » : le jour de chaque départ (M4-005
         expect(new Set(ids).size).toBe(ids.length);
         w.unmount();
     });
+    // [ÉTAT DES LIEUX 2026-10-23 P3] Un départ passé jamais parti était étiqueté « à venir » (vert « parti » / orange « à venir » seuls).
+    it('une tournée dont l\'heure est passée sans être partie n\'est pas « à venir »', async () => {
+        const w = mount(PosDeliveryBoard);
+        await flushPromises();
+        await w.setData({ waves: [
+            { ...BOARD.data[1], overdue: true },
+            { ...BOARD.data[2], overdue: false },
+            { ...BOARD.data[0], left: true, overdue: false },
+        ] });
+        const etat = (t) => w.find('[data-testid="' + t + '"]').text();
+        expect(etat('pos-delivery-wave-state-2026-10-22-23:30')).toContain('dépassée');
+        expect(etat('pos-delivery-wave-state-2026-10-22-23:30')).not.toContain('à venir');
+        expect(etat('pos-delivery-wave-state-2026-10-23-00:30')).toBe('à venir');
+        expect(etat('pos-delivery-wave-state-2026-10-21-23:30')).toBe('parti');
+        w.unmount();
+    });
 });

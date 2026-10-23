@@ -119,6 +119,22 @@ class DeliveryBoardAndCatchUpTest extends TestCase
         $this->assertCount(1, $r->json('data.0.stops'));
     }
 
+    /** [ÉTAT DES LIEUX 2026-10-23 P3] Un départ dont l'heure est passée sans être parti n'est plus « à venir » : `overdue`. */
+    public function test_a_wave_past_its_hour_and_not_left_is_flagged_overdue(): void
+    {
+        $this->courier('Kiki');
+        $stop = app(DeliveryWaveService::class)->assign($this->order()); // départ 19:30, « maintenant » = 19:02
+
+        $this->assertFalse($this->pos()->getJson('/api/admin/pos-delivery/board')->assertOk()->json('data.0.overdue'));
+
+        Carbon::setTestNow(Carbon::parse('2026-10-20 19:41:00'));
+        $this->assertTrue($this->pos()->getJson('/api/admin/pos-delivery/board')->json('data.0.overdue'), 'Parti à 19:30 ? non : en retard.');
+
+        $stop->forceFill(['left_at' => Carbon::now()])->save();
+        $this->assertFalse($this->pos()->getJson('/api/admin/pos-delivery/board')->json('data.0.overdue'), 'Une tournée partie n\'est jamais en retard.');
+        $this->assertTrue($this->pos()->getJson('/api/admin/pos-delivery/board')->json('data.0.left'));
+    }
+
     public function test_catch_up_command_attaches_orphan_delivery_orders_only(): void
     {
         $orphan = $this->order();

@@ -192,6 +192,8 @@ class PosDeliveryController extends Controller
             // [VG-2026-10-21 M4-005] Le jour de la tournée (date, is_today, day_label) : la planche n'affichait que l'heure.
             ...$this->waves->waveDay(Carbon::parse($at)),
             'left'    => $g->contains(fn ($s) => $s->left_at !== null),
+            // [ÉTAT DES LIEUX 2026-10-23 P3] Heure de départ dépassée sans que la tournée soit partie : la planche l'étiquetait « à venir ».
+            'overdue' => ! $g->contains(fn ($s) => $s->left_at !== null) && Carbon::parse($at)->isPast(),
             'courier' => $g->first()->delivery_boy_id ? ($couriers[$g->first()->delivery_boy_id]->name ?? null) : null,
             'courier_id' => $g->first()->delivery_boy_id,
             'stops'   => $g->map(fn ($s) => [
