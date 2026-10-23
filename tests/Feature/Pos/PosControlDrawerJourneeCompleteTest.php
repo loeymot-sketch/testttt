@@ -157,9 +157,18 @@ class PosControlDrawerJourneeCompleteTest extends TestCase
             'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
         ]);
 
+        // Parité avec la file du comptoir : une livraison d'origine `phone` (ancien chemin) y figure et reste encaissable.
+        $telephone = $this->commande([
+            'order_type' => OrderType::DELIVERY, 'status' => OrderStatus::PREPARING, 'source_surface' => 'phone',
+            'payment_status' => PaymentStatus::PENDING_COUNTER, 'pos_payment_method' => PosPaymentMethod::COUNTER_DEFERRED,
+        ]);
+
         $lignes = collect($this->journee()->assertOk()->json('data'))->keyBy('id');
+        $file = \App\Services\Pos\CounterCollectQueue::query($this->branche->id)->pluck('id')->all();
 
         $this->assertFalse($lignes[$porte->id]['is_cash_pending'], 'Livraison : encaissée à la porte par le livreur, jamais au comptoir.');
+        $this->assertNotContains($porte->id, $file);
+        $this->assertSame(in_array($telephone->id, $file, true), $lignes[$telephone->id]['is_cash_pending'], 'Tiroir et file du comptoir disent la même chose.');
         $this->assertTrue($lignes[$comptoir->id]['is_cash_pending'], 'Une commande comptoir différée reste à encaisser.');
     }
 
