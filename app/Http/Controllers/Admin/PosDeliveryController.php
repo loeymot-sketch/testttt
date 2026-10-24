@@ -265,6 +265,11 @@ class PosDeliveryController extends Controller
                 'courier_name' => data_get($course->delivery_payload, 'courier.name'),
                 'courier_phone' => data_get($course->delivery_payload, 'courier.phone_number'),
                 'bag_taken' => in_array((string) $course->status, ['pickup_complete', 'dropoff', 'delivered'], true),
+                // [E2E UBER 2026-10-24 · U1-014] Arrivée estimée par Uber (heure locale), lue dans sa réponse ; null si absente.
+                'eta' => ($eta = data_get($course->delivery_payload, 'dropoff_eta') ?? data_get($course->quote_payload, 'dropoff_eta'))
+                    ? \Carbon\Carbon::parse($eta)->setTimezone(config('app.timezone'))->format('H:i') : null,
+                // [U1-004] Uber a le sac mais la cuisine n'a pas marqué la commande prête : la commande attend le KDS.
+                'kitchen_pending' => $this->uber->kitchenPending($course, $s->order),
             ] : null,
             'uber_blocked' => $course || $s->delivered_at ? null : $this->uber->blockedReason($s),
         ];

@@ -145,6 +145,9 @@ class OrderTrackingService
             // [VG-2026-10-21 M2-102] Jour de cette heure (Y-m-d, fuseau du restaurant) : une livraison
             // de DEMAIN 20:30 ne doit pas se lire « 20:30 » tout court. null si aucune heure à venir.
             'prevue_le' => $this->heureCible($order, $now)?->copy()->timezone(config('app.timezone'))->format('Y-m-d'),
+            // [E2E UBER 2026-10-24 · U1-001] Un coursier Uber livre : l'heure d'ARRIVÉE qu'Uber estime (HH:MM), à la place du départ
+            // de notre tournée, qui ne concerne plus cette commande. null quand ce sont nos livreurs.
+            'arrivee_estimee' => $this->arriveeUber($order),
             'server_time' => $now->toIso8601String(),
         ];
     }
@@ -231,6 +234,32 @@ class OrderTrackingService
         }
     }
 
+    private function courseUber(Order|FrontendOrder $order): ?\App\Models\UberDirectDelivery
+    {
+        if (! $order instanceof Order || (int) $order->order_type !== \App\Enums\OrderType::DELIVERY) {
+            return null;
+        }
+        try {
+            return app(\App\Services\UberDirect\UberDirectDispatchService::class)->activeCourse((int) $order->id);
+        } catch (\Throwable $e) {
+            return null; // table absente / base indisponible : le suivi ordinaire ne doit jamais en dépendre
+        }
+    }
+
+    private function arriveeUber(Order|FrontendOrder $order): ?string
+    {
+        $course = $this->courseUber($order);
+        $eta = $course ? (data_get($course->delivery_payload, 'dropoff_eta') ?? data_get($course->quote_payload, 'dropoff_eta')) : null;
+        if (! $eta || (string) $course->status === \App\Models\UberDirectDelivery::STATUS_DELIVERED) {
+            return null;
+        }
+        try {
+            return \Carbon\Carbon::parse($eta)->setTimezone(config('app.timezone'))->format('H:i');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     private function heureProgrammee(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
     {
         // [VG-2026-10-21 M2-102] Programmée, sinon départ de tournée d'une livraison.
@@ -255,6 +284,10 @@ class OrderTrackingService
     private function departLivraison(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?\Carbon\CarbonInterface
     {
         if (($order->scheduled_at ?? null) !== null) {
+            return null;
+        }
+        // [E2E UBER 2026-10-24 · U1-001] Confiée à un coursier Uber : le départ de NOTRE tournée n'a plus de sens pour cette commande.
+        if ($this->courseUber($order) !== null) {
             return null;
         }
         // [VG-2026-10-21 M4-004] Le livreur est PARTI (en route / remise) : le départ théorique de la tournée

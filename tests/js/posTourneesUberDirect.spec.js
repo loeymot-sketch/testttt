@@ -113,10 +113,15 @@ describe('caisse — tournées : bascule Uber / nos livreurs', () => {
     });
 
     it('le coursier Uber a le sac : on ne peut plus reprendre la commande', async () => {
-        board = mk([stop({ dispatch: 'uber', uber: { status: 'dropoff', tracking_url: null, fee: 7.42, courier_name: null, bag_taken: true } })]);
+        board = mk([stop({ dispatch: 'uber', uber: { status: 'dropoff', tracking_url: null, fee: 7.42, courier_name: null, bag_taken: true, eta: '16:47', kitchen_pending: true } })]);
         const w = await open();
 
         expect(w.find('[data-testid="pos-delivery-use-own"]').attributes('disabled')).toBeDefined();
+        // [E2E UBER 2026-10-24 · U1-007/U1-014/U1-004] La raison est VISIBLE (pas seulement en `title`), l'arrivée estimée d'Uber
+        // est dite, et la cuisine est appelée quand Uber a le sac d'une commande qu'elle n'a pas marquée prête.
+        expect(w.find('[data-testid="pos-delivery-uber-bag-taken"]').text()).toContain('a déjà la commande');
+        expect(w.find('[data-testid="pos-delivery-uber-badge"]').text()).toContain('arrivée ~16:47');
+        expect(w.find('[data-testid="pos-delivery-uber-kitchen-pending"]').text()).toContain('marquez la commande prête');
         w.unmount();
     });
 

@@ -17,7 +17,8 @@
 // Pilotage par le test (endpoints de contrôle, jamais exposés par Uber) :
 //   GET  /__control/log                      → toutes les requêtes reçues (méthode, chemin, corps) + webhooks poussés (code HTTP)
 //   POST /__control/reset                    → vide journal, devis, courses, modes
-//   POST /__control/mode  {quote:'ok'|'fail'|'uncovered', create:'ok'|'fail'|'timeout', cancel:'ok'|'refuse'}
+//   POST /__control/mode  {quote:'ok'|'fail'|'uncovered', create:'ok'|'fail'|'timeout'|'lost', cancel:'ok'|'refuse'}
+//        'lost' = la course EST créée chez Uber mais la réponse se perd (504) : un réessai avec la même clé doit la retrouver.
 //   POST /__control/status {delivery_id, status, push:true}  → change le statut de la course et pousse le webhook signé
 //   POST /__control/webhook {delivery_id, status, secret?}    → pousse un webhook (secret différent = signature invalide)
 //   GET  /__control/deliveries               → état des courses
@@ -100,6 +101,8 @@ const server = http.createServer(async (req, res) => {
     if (state.mode.create === 'fail') return json(res, 500, { code: 'internal_server_error' });
     const idem = body.idempotency_key || body.external_id;
     if (idem && state.byIdem[idem]) return json(res, 200, state.byIdem[idem]);
+    const perdue = state.mode.create === 'lost'; // la course sera créée ci-dessous, mais la réponse ne reviendra pas (une seule fois)
+    if (perdue) state.mode.create = 'ok';
     const q = state.quotes[body.quote_id];
     if (!q) return json(res, 400, { code: 'invalid_params', message: 'quote_id unknown or expired' });
     if (new Date(q.expires).getTime() < Date.now()) return json(res, 400, { code: 'invalid_params', message: 'quote expired' });
@@ -107,6 +110,7 @@ const server = http.createServer(async (req, res) => {
     const d = { kind: 'delivery', id: 'del_' + (++state.seq), quote_id: q.id, status: 'pending', complete: false, fee: q.fee, currency: 'EUR', tracking_url: 'https://stub.uber.local/track/' + state.seq, external_id: body.external_id || null, created: iso(Date.now()), updated: iso(Date.now()), dropoff_eta: q.dropoff_eta, courier: null, manifest: { reference: body.manifest_reference || null, items: body.manifest_items }, customer_id: customerId };
     state.deliveries[d.id] = d;
     if (idem) state.byIdem[idem] = d;
+    if (perdue) { await new Promise((r) => setTimeout(r, 9000)); return json(res, 504, { code: 'timeout' }); }
     return json(res, 200, d);
   }
   if (kind === 'deliveries' && id && action === 'cancel' && req.method === 'POST') {

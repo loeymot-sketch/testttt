@@ -80,6 +80,11 @@ class UberDirectDispatchService
         if (! $this->isAvailable()) {
             return 'Uber Direct n\'est pas activé.';
         }
+        // [E2E UBER 2026-10-24 · U1-005] Course Uber annulée ou revenue APRÈS la prise du sac : la raison n'est pas « notre livreur est parti ».
+        $trace = UberDirectDelivery::query()->withoutGlobalScope(BranchScope::class)->where('order_id', $stop->order_id)->first();
+        if ($trace && $trace->failure_code && str_ends_with((string) $trace->failure_code, '_after_pickup')) {
+            return 'Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n\'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande.';
+        }
         if ($stop->left_at !== null || $stop->delivered_at !== null) {
             return 'Le livreur est déjà parti avec cette commande.';
         }
@@ -122,7 +127,8 @@ class UberDirectDispatchService
 
         $branch = Branch::query()->find($order->branch_id);
         $raw = $this->client->createQuote($this->quoteBody($branch, $order));
-        if ($raw === null || ($raw['id'] ?? '') === '') {
+        // [E2E UBER 2026-10-24 · U1-010] Un devis sans `fee` numérique n'est pas un prix : il affichait « 0,00 € » et se confirmait.
+        if ($raw === null || ($raw['id'] ?? '') === '' || ! isset($raw['fee']) || ! is_numeric($raw['fee'])) {
             return ['ok' => false, 'message' => 'Uber n\'a pas donné de prix (indisponible ou adresse non couverte). La commande reste à nos livreurs.'];
         }
 
@@ -283,14 +289,25 @@ class UberDirectDispatchService
                 return ['ok' => false, 'message' => 'Uber n\'a pas confirmé l\'annulation. Réessayez : la commande reste chez Uber en attendant.'];
             }
 
-            DB::transaction(function () use ($row, $locked, $userId) {
+            $closed = false;
+            DB::transaction(function () use ($row, $locked, $userId, &$closed) {
                 $row->forceFill(['status' => UberDirectDelivery::STATUS_CANCELED, 'status_updated_at' => now(), 'failure_code' => null, 'failure_message' => null])->save();
-                $this->giveBackToOwnCouriers($locked);
                 $order = Order::query()->withoutGlobalScope(BranchScope::class)->find($locked->order_id);
-                $this->audit('delivery.uber_released', $order, $userId, ['delivery_id' => $row->delivery_id]);
+                // [E2E UBER 2026-10-24 · U1-006] La commande est ANNULÉE / REFUSÉE (l'arrêt n'était resté que parce qu'Uber n'avait pas
+                // confirmé l'annulation) : une fois la course annulée, l'arrêt disparaît — on ne rend pas à nos livreurs une commande annulée.
+                $closed = $order && in_array((int) $order->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true);
+                if ($closed) {
+                    $branchId = (int) $locked->branch_id;
+                    $wave = $locked->wave_at;
+                    $locked->delete();
+                    $this->waves->resequence($branchId, $wave);
+                } else {
+                    $this->giveBackToOwnCouriers($locked);
+                }
+                $this->audit('delivery.uber_released', $order, $userId, ['delivery_id' => $row->delivery_id, 'order_closed' => $closed]);
             });
 
-            return ['ok' => true];
+            return $closed ? ['ok' => true, 'closed' => true, 'message' => 'Course Uber annulée ; la commande étant annulée, l\'arrêt est retiré de la tournée.'] : ['ok' => true];
         } finally {
             $lock->release();
         }
@@ -417,22 +434,19 @@ class UberDirectDispatchService
         if (! $this->isAvailable()) {
             return;
         }
-        $lock = Cache::lock('uber_direct_sync', 15);
-        if (! $lock->get()) {
+        // [E2E UBER 2026-10-24 · U1-003] Un verrou libéré en `finally` laissait relever à CHAQUE rafraîchissement (11 GET en 14 s) :
+        // la fenêtre de 15 s est un jeton posé, jamais rendu.
+        if (! Cache::add('uber_direct_sync', 1, 15)) {
             return;
         }
-        try {
-            UberDirectDelivery::query()->withoutGlobalScope(BranchScope::class)->activeCourse()
-                ->whereNotIn('status', UberDirectDelivery::TERMINAL_STATUSES)->orderBy('status_updated_at')->limit(8)->get()
-                ->each(function (UberDirectDelivery $row) {
-                    $raw = $this->client->getDelivery((string) $row->delivery_id);
-                    if (is_array($raw) && isset($raw['status'])) {
-                        $this->applyStatus($row, (string) $raw['status'], $raw);
-                    }
-                });
-        } finally {
-            $lock->release();
-        }
+        UberDirectDelivery::query()->withoutGlobalScope(BranchScope::class)->activeCourse()
+            ->whereNotIn('status', UberDirectDelivery::TERMINAL_STATUSES)->orderBy('status_updated_at')->limit(8)->get()
+            ->each(function (UberDirectDelivery $row) {
+                $raw = $this->client->getDelivery((string) $row->delivery_id);
+                if (is_array($raw) && isset($raw['status'])) {
+                    $this->applyStatus($row, (string) $raw['status'], $raw);
+                }
+            });
     }
 
     // ── effets d'un statut ──────────────────────────────────────────────────────────────────
@@ -481,17 +495,11 @@ class UberDirectDispatchService
         if ($from === $target || $from >= OrderStatus::DELIVERED) {
             return;
         }
-        // [E2E UBER 2026-10-24 · U-3] Une commande de la caisse est encore EN PRÉPARATION (7) quand le coursier Uber prend le sac :
-        // la machine refuse 7 → 10 et la commande restait « en préparation » pour toujours (site et tableau de suivi jamais « en
-        // route » ni « livrée »). Le sac pris signifie que la cuisine a fini : on passe par PRÊTE (8) puis EN ROUTE (10), chaque
-        // étape par la machine officielle et avec son événement — jamais en la contournant. Même règle que notre propre livreur,
-        // qui ne part qu'une commande PRÊTE (DeliveryRunController::depart).
-        if ($from === OrderStatus::PREPARING && $target === OrderStatus::OUT_FOR_DELIVERY && OrderStateMachine::allows($from, OrderStatus::PREPARED)) {
-            OrderStateMachine::apply($order, OrderStatus::PREPARED);
-            OrderStatusChanged::dispatch($order, $from, OrderStatus::PREPARED);
-            $order->refresh();
-            $from = (int) $order->status;
-        }
+        // [E2E UBER 2026-10-24 · U-3 / relecture U1-004] Une commande de la caisse encore EN PRÉPARATION (7) quand le coursier
+        // Uber prend le sac : la machine refuse 7 → 10 et on NE force PAS la cuisine (consigne propriétaire, en-tête du modèle :
+        // « le webhook Uber concerne la LIVRAISON, le KDS continue de gérer la PRÉPARATION »). Le statut Uber est enregistré ;
+        // dès que la cuisine marque la commande PRÊTE, `catchUpAfterKitchenReady` applique l'état Uber (en route / livrée).
+        // En attendant, la planche le dit (`kitchen_pending`).
         if (! OrderStateMachine::allows($from, $target)) {
             Log::warning('uber_direct.order_transition_refused', ['order_id' => $order->id, 'from' => $from, 'to' => $target]);
 
@@ -499,6 +507,36 @@ class UberDirectDispatchService
         }
         OrderStateMachine::apply($order, $target);
         OrderStatusChanged::dispatch($order, $from, $target);
+    }
+
+    /**
+     * [E2E UBER 2026-10-24 · U-3] La cuisine vient de marquer PRÊTE une commande dont le coursier Uber a déjà le sac (ou l'a déjà
+     * remise) : on applique maintenant l'état de la LIVRAISON à la commande — EN ROUTE ou LIVRÉE — par la machine officielle.
+     * Les deux cycles (cuisine, livraison) restent séparés ; celui-ci rattrape l'autre, il ne le devance jamais.
+     */
+    public function catchUpAfterKitchenReady(Order $order): void
+    {
+        $course = UberDirectDelivery::query()->withoutGlobalScope(BranchScope::class)->where('order_id', $order->id)
+            ->whereNotNull('delivery_id')->first();
+        if (! $course) {
+            return;
+        }
+        $target = match ((string) $course->status) {
+            UberDirectDelivery::STATUS_DELIVERED => OrderStatus::DELIVERED,
+            UberDirectDelivery::STATUS_PICKUP_COMPLETE, UberDirectDelivery::STATUS_DROPOFF => OrderStatus::OUT_FOR_DELIVERY,
+            default => null,
+        };
+        if ($target === null) {
+            return;
+        }
+        $this->moveOrder($order->fresh(), $target);
+    }
+
+    /** La commande attend encore la cuisine alors qu'Uber a le sac (ou l'a remise) : à dire à la caisse. */
+    public function kitchenPending(UberDirectDelivery $course, ?Order $order): bool
+    {
+        return $order !== null && (int) $order->status < OrderStatus::PREPARED
+            && in_array((string) $course->status, [UberDirectDelivery::STATUS_PICKUP_COMPLETE, UberDirectDelivery::STATUS_DROPOFF, UberDirectDelivery::STATUS_DELIVERED], true);
     }
 
     private function giveBackToOwnCouriers(DeliveryStop $stop): void
@@ -553,12 +591,20 @@ class UberDirectDispatchService
             'dropoff_notes' => trim(implode(' — ', array_filter([$a->apartment, 'Commande #'.$ref]))),
             'manifest_reference' => 'order-'.$order->id,
             'manifest_items' => [['name' => 'Commande Le Cayenne #'.$ref, 'quantity' => 1, 'size' => 'medium']],
-            // Même clé pour le même DEVIS : un réessai après délai dépassé ne fabrique pas une 2ᵉ course. [E2E UBER 2026-10-24 · P2]
-            // La clé porte le devis et plus seulement la commande : après une course annulée côté Uber, re-confier la commande
-            // (nouveau devis) ne renvoyait que la course ANNULÉE sous la même clé — « ok » à l'écran, aucun coursier en route.
-            'idempotency_key' => 'lecayenne-order-'.$order->id.'-'.$row->quote_id,
+            // [E2E UBER 2026-10-24 · U1-002] Même clé tant que la fin de la course précédente n'est pas CONNUE : une réponse perdue
+            // puis un réessai (même après un nouveau devis) renvoient la course déjà créée, jamais une 2ᵉ facturée. La clé ne
+            // change qu'après une course annulée / revenue côté Uber : re-confier crée alors bien une NOUVELLE course.
+            'idempotency_key' => $this->idempotencyKey($order, $row),
             'external_id' => 'order-'.$order->id,
         ], fn ($v) => $v !== null && $v !== '');
+    }
+
+    private function idempotencyKey(Order $order, UberDirectDelivery $row): string
+    {
+        $key = 'lecayenne-order-'.$order->id;
+        $previousEnded = $row->delivery_id && in_array((string) $row->status, [UberDirectDelivery::STATUS_CANCELED, UberDirectDelivery::STATUS_RETURNED], true);
+
+        return $previousEnded ? $key.'-after-'.$row->delivery_id : $key;
     }
 
     private function addressJson(?string $street, ?string $zip, ?string $city): string
@@ -577,7 +623,7 @@ class UberDirectDispatchService
     {
         $minutes = (int) $order->status === OrderStatus::PREPARED ? 0 : min(60, max(0, (int) $order->preparation_time));
 
-        return now()->addMinutes($minutes)->toIso8601String();
+        return now()->addMinutes($minutes)->utc()->format('Y-m-d\TH:i:s\Z'); // [U1-017] Uber attend l'UTC « Z », pas « +02:00 »
     }
 
     /** Numéro au format international exigé par Uber (E.164) ; null si on ne peut pas le garantir. */

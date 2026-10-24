@@ -183,10 +183,14 @@ La suspension / remise de la **livraison entière** reste le bouton « Livraison
   bouton est grisé avec la raison. Il faut l'avoir fait payer avant (paiement en ligne ou au comptoir).
 - Le coût d'Uber est **à la charge du restaurant** : le client paie notre barème (§1), inchangé. Le prix d'Uber n'est qu'affiché à la caisse.
 - Un devis expiré ou changé n'est **jamais** dépêché : le nouveau prix est à reconfirmer (409 `quote_changed`).
-- Un double appui ne crée **qu'une course** (verrou de ligne + `idempotency_key` = `lecayenne-order-{id}-{quote_id}` + contrainte UNIQUE `order_id`) ;
-  la clé porte le devis : après une course annulée côté Uber, re-confier la commande (nouveau devis) crée bien une NOUVELLE course (E2E 2026-10-24).
-- Le coursier Uber prend le sac d'une commande encore **en préparation** (statut natif des commandes de la caisse) : elle passe PRÊTE puis
-  EN ROUTE par la machine officielle (le sac pris signifie que la cuisine a fini) — sinon elle restait « en préparation » pour toujours (E2E 2026-10-24).
+- Un double appui ne crée **qu'une course** (verrou de ligne + `idempotency_key` + contrainte UNIQUE `order_id`). La clé est
+  `lecayenne-order-{id}` tant que la fin de la course précédente n'est pas connue (réponse perdue + réessai, même après un nouveau devis →
+  Uber renvoie la course déjà créée, jamais une 2ᵉ) ; après une course **annulée / revenue côté Uber**, elle devient
+  `lecayenne-order-{id}-after-{delivery_id}` : re-confier crée bien une NOUVELLE course (E2E 2026-10-24).
+- Le coursier Uber prend le sac d'une commande encore **en préparation** : le webhook **ne touche pas à la cuisine** (deux cycles séparés,
+  consigne propriétaire) ; la planche affiche « Uber a le sac : marquez la commande prête en cuisine », et dès que la cuisine marque PRÊTE,
+  l'écouteur `SyncUberCourseAfterKitchenReady` passe la commande EN ROUTE (ou LIVRÉE) par la machine officielle (E2E 2026-10-24).
+- Le suivi client d'une commande confiée à Uber annonce l'**arrivée estimée** par Uber (`arrivee_estimee`), plus le départ de notre tournée.
 - Une panne d'Uber ne casse rien : message clair, la commande **reste à nos livreurs**.
 - Un arrêt Uber n'a **plus de livreur à nous** (disparaît de son écran) ; désigner un livreur pour la tournée ne le lui reprend pas.
   Le départ du coursier Uber (« sac pris ») ne fait **pas partir la tournée de nos livreurs** : elle reste « à venir », son livreur

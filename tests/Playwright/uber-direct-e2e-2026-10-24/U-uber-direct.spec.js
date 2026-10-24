@@ -432,7 +432,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     expect(create, 'POST /v1/customers/{customer}/deliveries reçu').toBeTruthy();
     expect(create.body.quote_id).toBe(q.body.quote_id);
     // Clé liée au DEVIS (commande + quote_id) : un réessai garde la même clé, une nouvelle course après annulation en a une autre.
-    expect(create.body.idempotency_key).toBe('lecayenne-order-' + O.A.id + '-' + create.body.quote_id);
+    expect(create.body.idempotency_key).toBe('lecayenne-order-' + O.A.id); // 1re course : clé de la commande (change seulement après une fin connue)
     expect(create.body.external_id).toBe('order-' + O.A.id);
     expect(create.body.manifest_reference).toBe('order-' + O.A.id);
     expect(Array.isArray(create.body.manifest_items) && create.body.manifest_items.length).toBe(1);

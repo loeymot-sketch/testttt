@@ -347,23 +347,92 @@ class UberDirectCaisseSwapTest extends TestCase
      * `waveHasLeft` la fermait aux nouvelles commandes — alors que notre livreur n'avait pas bougé et que cinq arrêts lui restaient.
      */
     /**
-     * [E2E UBER 2026-10-24 · U-3] Une commande de la caisse est encore EN PRÉPARATION quand le coursier Uber prend le sac : la
-     * machine refuse 7 → 10 et la commande restait « en préparation » pour toujours (journal `order_transition_refused`), donc
-     * jamais « en route » ni « livrée » pour le client. Le sac pris = cuisine finie : PRÊTE puis EN ROUTE, par la machine.
+     * [E2E UBER 2026-10-24 · U-3 / U1-004] Le coursier Uber prend le sac d'une commande encore EN PRÉPARATION : le webhook ne
+     * touche PAS à la cuisine (consigne propriétaire : deux machines séparées) — la commande reste 7, la planche le dit
+     * (`kitchen_pending`). Dès que la cuisine marque PRÊTE, l'état de la livraison est rattrapé : EN ROUTE, puis LIVRÉE.
      */
-    public function test_bag_taken_on_an_order_still_preparing_goes_prepared_then_out_for_delivery(): void
+    public function test_bag_taken_on_an_order_still_preparing_waits_for_the_kitchen_then_catches_up(): void
     {
         $this->fakeUber();
         $stop = $this->stop(['status' => OrderStatus::PREPARING]);
         $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
         $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
-        $this->assertSame(OrderStatus::PREPARING, (int) Order::find($stop->order_id)->status, 'la demande de coursier ne change pas la cuisine');
 
         $this->webhook(['delivery_id' => 'del_1', 'status' => 'pickup_complete'])->assertOk();
+        $order = Order::find($stop->order_id);
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->status, 'le webhook Uber ne pilote pas la cuisine');
+        $stops = collect($this->actingAs($this->cashier, 'sanctum')->withHeader('x-api-key', 'test-api-key')
+            ->getJson('/api/admin/pos-delivery/board')->assertOk()->json('data'))->pluck('stops')->flatten(1)->keyBy('id');
+        $this->assertTrue((bool) $stops[$stop->id]['uber']['kitchen_pending'], 'la planche dit que la commande attend la cuisine');
+
+        // La cuisine marque PRÊTE (voie officielle) → rattrapage EN ROUTE.
+        \App\Domain\Order\OrderStateMachine::apply($order, OrderStatus::PREPARED);
+        OrderStatusChanged::dispatch($order, OrderStatus::PREPARING, OrderStatus::PREPARED);
         $this->assertSame(OrderStatus::OUT_FOR_DELIVERY, (int) Order::find($stop->order_id)->status);
 
         $this->webhook(['delivery_id' => 'del_1', 'status' => 'delivered'])->assertOk();
         $this->assertSame(OrderStatus::DELIVERED, (int) Order::find($stop->order_id)->status);
+    }
+
+    public function test_a_delivered_course_on_an_order_still_preparing_is_closed_when_the_kitchen_marks_it_ready(): void
+    {
+        $this->fakeUber();
+        $stop = $this->stop(['status' => OrderStatus::PREPARING]);
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'delivered'])->assertOk();
+        $this->assertSame(OrderStatus::PREPARING, (int) Order::find($stop->order_id)->status);
+
+        $order = Order::find($stop->order_id);
+        \App\Domain\Order\OrderStateMachine::apply($order, OrderStatus::PREPARED);
+        OrderStatusChanged::dispatch($order, OrderStatus::PREPARING, OrderStatus::PREPARED);
+        $this->assertSame(OrderStatus::DELIVERED, (int) Order::find($stop->order_id)->status);
+    }
+
+    /** [U1-010] Un devis sans prix numérique n'est pas un prix : rien à confirmer, la commande reste à nos livreurs. */
+    public function test_a_quote_without_a_numeric_fee_is_not_a_price(): void
+    {
+        $this->fakeUber(['*/delivery_quotes' => Http::response(['id' => 'dqt_x', 'currency' => 'eur', 'duration' => 25])]);
+        $stop = $this->stop();
+        $r = $this->pos('quote', ['stop_id' => $stop->id]);
+        $this->assertFalse((bool) $r->json('ok'));
+        $this->assertStringContainsString('pas donné de prix', (string) $r->json('message'));
+        $this->assertSame(0, UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->whereNotNull('quote_id')->count());
+    }
+
+    /** [U1-006] « Nos livreurs » sur l'arrêt d'une commande ANNULÉE (resté parce qu'Uber n'avait pas confirmé) : l'arrêt disparaît, il n'est pas rendu. */
+    public function test_releasing_the_stop_of_a_canceled_order_removes_it_instead_of_giving_it_back(): void
+    {
+        $stop = $this->dispatched();
+        Order::query()->whereKey($stop->order_id)->update(['status' => OrderStatus::CANCELED]);
+        $r = $this->pos('release', ['stop_id' => $stop->id]);
+        $r->assertOk();
+        $this->assertTrue((bool) $r->json('closed'));
+        $this->assertNull(DeliveryStop::withoutGlobalScopes()->find($stop->id), 'l\'arrêt d\'une commande annulée n\'est pas rendu à nos livreurs');
+        $this->assertSame('canceled', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('status'));
+    }
+
+    /** [U1-002] Réponse perdue puis réessai APRÈS expiration du devis (nouveau devis) : MÊME clé → Uber renvoie la course déjà créée, pas une 2ᵉ. */
+    public function test_a_retry_after_a_lost_answer_keeps_the_same_idempotency_key_even_with_a_new_quote(): void
+    {
+        $this->fakeUber([
+            '*/delivery_quotes' => Http::sequence()
+                ->push(['id' => 'dqt_1', 'fee' => 742, 'currency' => 'eur', 'duration' => 25, 'expires' => now()->addMinutes(15)->toIso8601String()])
+                ->push(['id' => 'dqt_2', 'fee' => 742, 'currency' => 'eur', 'duration' => 25, 'expires' => now()->addMinutes(15)->toIso8601String()]),
+            '*/deliveries' => Http::sequence()->push([], 504)->push(['id' => 'del_1', 'status' => 'pending']),
+        ]);
+        $stop = $this->stop();
+        $q1 = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $q1]); // réponse perdue
+        UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->update(['quote_expires_at' => now()->subMinute()]);
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $q1])->assertJson(['code' => 'quote_changed']);
+        $q2 = UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('quote_id');
+        $this->assertSame('dqt_2', $q2);
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $q2])->assertOk();
+
+        $keys = collect(Http::recorded(fn ($r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/deliveries') && $r->method() === 'POST'))
+            ->map(fn ($pair) => $pair[0]->data()['idempotency_key'] ?? null)->values()->all();
+        $this->assertSame(['lecayenne-order-'.$stop->order_id, 'lecayenne-order-'.$stop->order_id], $keys, 'même clé : la course éventuellement créée est renvoyée, jamais doublée');
     }
 
     /**
@@ -391,7 +460,7 @@ class UberDirectCaisseSwapTest extends TestCase
 
         $keys = collect(Http::recorded(fn ($r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/deliveries') && $r->method() === 'POST'))
             ->map(fn ($pair) => $pair[0]->data()['idempotency_key'] ?? null)->values()->all();
-        $this->assertSame(['lecayenne-order-'.$stop->order_id.'-dqt_1', 'lecayenne-order-'.$stop->order_id.'-dqt_2'], $keys, 'la nouvelle course porte la clé du nouveau devis, différente de la première');
+        $this->assertSame(['lecayenne-order-'.$stop->order_id, 'lecayenne-order-'.$stop->order_id.'-after-del_1'], $keys, 'après une course annulée côté Uber, la clé change : une NOUVELLE course est créée');
         $this->assertSame('del_2', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('delivery_id'));
     }
 

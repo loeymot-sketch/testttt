@@ -55,10 +55,14 @@
                         <!-- [UBER-DIRECT 2026-10-22] Qui livre : nos livreurs ou un coursier Uber. Deux boutons, un seul actif à la fois. -->
                         <div v-if="!s.delivered_at" class="basis-full flex flex-wrap items-center gap-2" :data-testid="'pos-delivery-dispatch-' + s.id">
                             <template v-if="s.dispatch === 'uber'">
-                                <span class="rounded-full bg-black px-2 py-1 text-xs font-bold text-white" data-testid="pos-delivery-uber-badge">🚗 Uber · {{ uberLabel(s.uber && s.uber.status) }}</span>
+                                <span class="rounded-full bg-black px-2 py-1 text-xs font-bold text-white" data-testid="pos-delivery-uber-badge">🚗 Uber · {{ uberLabel(s.uber && s.uber.status) }}<template v-if="s.uber && s.uber.eta"> · arrivée ~{{ s.uber.eta }}</template></span>
                                 <span v-if="s.uber && s.uber.courier_name" class="text-xs text-gray-600">{{ s.uber.courier_name }}</span>
                                 <a v-if="s.uber && s.uber.tracking_url" :href="s.uber.tracking_url" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold underline">Suivi</a>
                                 <button type="button" class="h-8 px-3 rounded-lg border border-[#D9DBE9] text-xs font-semibold disabled:opacity-40" :disabled="busy === s.id || (s.uber && s.uber.bag_taken)" :title="s.uber && s.uber.bag_taken ? 'Le coursier Uber a déjà la commande' : ''" data-testid="pos-delivery-use-own" @click="onRelease(s)">🛵 Nos livreurs</button>
+                                <!-- [E2E UBER 2026-10-24 · U1-007] La raison d'un bouton désactivé n'existe pas au tactile si elle n'est qu'en `title`. -->
+                                <span v-if="s.uber && s.uber.bag_taken" class="text-xs text-gray-500" data-testid="pos-delivery-uber-bag-taken">Le coursier Uber a déjà la commande</span>
+                                <!-- [U1-004] Uber a le sac, la cuisine n'a pas marqué la commande prête : la commande attend le KDS (deux cycles séparés). -->
+                                <span v-if="s.uber && s.uber.kitchen_pending" class="basis-full text-xs font-semibold text-[#9A3412]" role="status" data-testid="pos-delivery-uber-kitchen-pending">⚠ Le coursier Uber a le sac : marquez la commande prête en cuisine pour qu'elle passe « en route ».</span>
                             </template>
                             <template v-else-if="proposal && proposal.stopId === s.id">
                                 <span class="text-xs font-bold" data-testid="pos-delivery-uber-price">Uber : {{ format(proposal.fee) }}<span v-if="proposal.eta"> · ~{{ proposal.eta }} min</span></span>
