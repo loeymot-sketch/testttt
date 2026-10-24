@@ -186,20 +186,27 @@ class PosDeliveryController extends Controller
         $couriers = User::query()->withoutGlobalScope(BranchScope::class)->role('Delivery Boy', 'sanctum')
             ->where('status', \App\Enums\Status::ACTIVE)->get(['id', 'name'])->keyBy('id');
 
+        // [E2E UBER 2026-10-24 · U-3] Seul le départ de NOTRE livreur fait partir la tournée. L'arrêt d'un coursier Uber qui a pris
+        // le sac porte un `left_at` posé par le webhook : constaté sur la planche, la tournée entière passait « parti », le sélecteur
+        // de livreur disparaissait et l'en-tête disait « Aucun livreur » (le 1er arrêt était celui d'Uber, sans livreur à nous)
+        // alors que cinq arrêts restaient à livrer par nous.
+        $uberBag = DeliveryWaveService::uberBagTakenOrderIds()->pluck('order_id')->map(fn ($id) => (int) $id);
+        $ownLeft = fn ($s) => $s->left_at !== null && ! $uberBag->contains((int) $s->order_id);
         $waves = $stops->groupBy(fn ($s) => $s->wave_at->toDateTimeString())->map(fn ($g, $at) => [
             'wave_at' => $at,
             'time'    => Carbon::parse($at)->format('H:i'),
             // [VG-2026-10-21 M4-005] Le jour de la tournée (date, is_today, day_label) : la planche n'affichait que l'heure.
             ...$this->waves->waveDay(Carbon::parse($at)),
-            'left'    => $g->contains(fn ($s) => $s->left_at !== null),
+            'left'    => $g->contains($ownLeft),
             // [ÉTAT DES LIEUX 2026-10-23 P3] Heure de départ dépassée sans que la tournée soit partie : la planche l'étiquetait « à venir ».
-            'overdue' => ! $g->contains(fn ($s) => $s->left_at !== null) && Carbon::parse($at)->isPast(),
+            'overdue' => ! $g->contains($ownLeft) && Carbon::parse($at)->isPast(),
             // [2026-10-23] Durée RÉELLE de la tournée ALLER-RETOUR (restaurant → arrêts → restaurant) pour gérer les livreurs.
             // Pas pour une tournée entièrement remise. N'a aucun lien avec le prix ni avec l'ETA vu par le client (aller simple).
             // Les arrêts confiés à Uber ne comptent pas : ce n'est pas du temps de NOS livreurs.
             'tour'    => $this->ownTour($g),
-            'courier' => $g->first()->delivery_boy_id ? ($couriers[$g->first()->delivery_boy_id]->name ?? null) : null,
-            'courier_id' => $g->first()->delivery_boy_id,
+            // Le livreur de la tournée = celui du premier arrêt qui en a un (pas celui d'Uber, qui n'en a plus).
+            'courier' => ($lead = $g->first(fn ($s) => $s->delivery_boy_id !== null)) ? ($couriers[$lead->delivery_boy_id]->name ?? null) : null,
+            'courier_id' => $lead?->delivery_boy_id,
             'stops'   => $g->map(fn ($s) => [
                 'id' => $s->id, 'order_id' => $s->order_id, 'order_number' => $s->order?->order_serial_no,
                 'customer' => $s->order?->user?->name, 'address' => $s->order?->address?->address,

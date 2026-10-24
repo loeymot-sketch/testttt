@@ -378,7 +378,24 @@ class DeliveryWaveService
      */
     public function waveHasLeft(int $branchId, CarbonInterface $wave): bool
     {
-        return DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)->whereNotNull('left_at')->exists();
+        // [E2E UBER 2026-10-24 · U-3] Un arrêt confié à Uber dont le coursier a pris le sac porte un `left_at` (posé par le
+        // webhook), mais NOTRE livreur n'est pas parti : la tournée reste ouverte aux nouvelles commandes et à la désignation.
+        return DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $wave)
+            ->whereNotNull('left_at')->whereNotIn('order_id', self::uberBagTakenOrderIds())->exists();
+    }
+
+    /**
+     * Commandes dont un coursier UBER a pris le sac : c'est lui, pas notre livreur, qui a posé `left_at` sur l'arrêt
+     * (sac pris / en route / livrée par Uber, ou course annulée / revenue APRÈS la prise du sac). Sous-requête réutilisable.
+     */
+    public static function uberBagTakenOrderIds(): \Illuminate\Database\Eloquent\Builder
+    {
+        return \App\Models\UberDirectDelivery::query()->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->whereNotNull('delivery_id')
+            ->where(fn ($q) => $q->whereIn('status', ['pickup_complete', 'dropoff', 'delivered'])
+                ->orWhere('failure_code', 'like', 'uber\_%\_after\_pickup')
+                ->orWhere('failure_code', 'order_closed_bag_taken'))
+            ->select('order_id');
     }
 
     /**

@@ -183,9 +183,16 @@ La suspension / remise de la **livraison entière** reste le bouton « Livraison
   bouton est grisé avec la raison. Il faut l'avoir fait payer avant (paiement en ligne ou au comptoir).
 - Le coût d'Uber est **à la charge du restaurant** : le client paie notre barème (§1), inchangé. Le prix d'Uber n'est qu'affiché à la caisse.
 - Un devis expiré ou changé n'est **jamais** dépêché : le nouveau prix est à reconfirmer (409 `quote_changed`).
-- Un double appui ne crée **qu'une course** (verrou de ligne + `idempotency_key` = `lecayenne-order-{id}` + contrainte UNIQUE `order_id`).
+- Un double appui ne crée **qu'une course** (verrou de ligne + `idempotency_key` = `lecayenne-order-{id}-{quote_id}` + contrainte UNIQUE `order_id`) ;
+  la clé porte le devis : après une course annulée côté Uber, re-confier la commande (nouveau devis) crée bien une NOUVELLE course (E2E 2026-10-24).
+- Le coursier Uber prend le sac d'une commande encore **en préparation** (statut natif des commandes de la caisse) : elle passe PRÊTE puis
+  EN ROUTE par la machine officielle (le sac pris signifie que la cuisine a fini) — sinon elle restait « en préparation » pour toujours (E2E 2026-10-24).
 - Une panne d'Uber ne casse rien : message clair, la commande **reste à nos livreurs**.
 - Un arrêt Uber n'a **plus de livreur à nous** (disparaît de son écran) ; désigner un livreur pour la tournée ne le lui reprend pas.
+  Le départ du coursier Uber (« sac pris ») ne fait **pas partir la tournée de nos livreurs** : elle reste « à venir », son livreur
+  reste affiché et désignable, et elle reste ouverte aux nouvelles commandes (`waveHasLeft` ne compte que nos départs — E2E 2026-10-24).
+- Les dates d'Uber sont en **UTC** (`expires` « …Z ») : elles sont ramenées au fuseau de l'application avant enregistrement, sinon un
+  devis paraît périmé 2 h trop tôt et chaque « Confirmer Uber » répond 409 (défaut trouvé par le banc E2E 2026-10-24, corrigé).
 - La commande suit Uber : sac pris → EN ROUTE, livré → LIVRÉE, par `OrderStateMachine::apply` (voie du code neuf ; zone gelée intacte).
   Uber annule ou renvoie la course **avant** la prise du sac → l'arrêt revient à nos livreurs. **Après** la prise du sac, la commande est
   EN ROUTE et nos livreurs ne peuvent plus la reprendre : la caisse affiche une **alerte rouge** (« la commande n'est pas livrée »), jamais un retour silencieux.

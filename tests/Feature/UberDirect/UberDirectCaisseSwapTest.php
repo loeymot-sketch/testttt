@@ -181,6 +181,27 @@ class UberDirectCaisseSwapTest extends TestCase
         $this->assertSame(0, $this->sent('/deliveries'), 'Jamais une course à un prix que le caissier n\'a pas confirmé.');
     }
 
+    /**
+     * [E2E UBER 2026-10-24 · U-2] Uber date ses devis en UTC (« 2026-10-24T14:06:57Z »). Constaté contre le faux Uber fidèle :
+     * l'expiration était enregistrée telle quelle (« 14:06:57 ») puis relue en Europe/Paris — 2 h trop tôt — et CHAQUE
+     * « Confirmer Uber » répondait 409 « le prix a changé », sans fin. Le test historique datait le devis dans le fuseau de
+     * l'application (+02:00) et ne pouvait pas le voir.
+     */
+    public function test_a_quote_dated_in_utc_by_uber_is_still_valid_in_our_timezone(): void
+    {
+        $this->fakeUber(['*/delivery_quotes' => Http::response(['id' => 'dqt_utc', 'fee' => 742, 'currency' => 'eur', 'duration' => 25,
+            'expires' => now()->addMinutes(15)->utc()->format('Y-m-d\TH:i:s.v\Z')])]);
+        $stop = $this->stop();
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+
+        $row = UberDirectDelivery::query()->where('order_id', $stop->order_id)->first();
+        $this->assertEqualsWithDelta(15 * 60, $row->quote_expires_at->getTimestamp() - now()->getTimestamp(), 5, 'Le devis expire dans 15 min, pas il y a 1 h 45.');
+        $this->assertTrue($row->quoteStillUsable());
+
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk()->assertJsonPath('tracking_url', 'https://uber.test/track/1');
+        $this->assertSame(1, $this->sent('/deliveries'));
+    }
+
     public function test_a_quote_id_the_cashier_never_saw_is_refused(): void
     {
         $this->fakeUber();
@@ -318,6 +339,77 @@ class UberDirectCaisseSwapTest extends TestCase
 
         $this->assertSame(OrderStatus::OUT_FOR_DELIVERY, (int) Order::find($stop->order_id)->status);
         $this->assertNotNull($stop->fresh()->left_at);
+    }
+
+    /**
+     * [E2E UBER 2026-10-24 · U-3] Constaté sur la planche : dès qu'Uber prenait le sac d'UN arrêt, la tournée entière passait
+     * « parti » (sélecteur de livreur disparu, en-tête « Aucun livreur » parce que le 1er arrêt était celui d'Uber) et
+     * `waveHasLeft` la fermait aux nouvelles commandes — alors que notre livreur n'avait pas bougé et que cinq arrêts lui restaient.
+     */
+    /**
+     * [E2E UBER 2026-10-24 · U-3] Une commande de la caisse est encore EN PRÉPARATION quand le coursier Uber prend le sac : la
+     * machine refuse 7 → 10 et la commande restait « en préparation » pour toujours (journal `order_transition_refused`), donc
+     * jamais « en route » ni « livrée » pour le client. Le sac pris = cuisine finie : PRÊTE puis EN ROUTE, par la machine.
+     */
+    public function test_bag_taken_on_an_order_still_preparing_goes_prepared_then_out_for_delivery(): void
+    {
+        $this->fakeUber();
+        $stop = $this->stop(['status' => OrderStatus::PREPARING]);
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
+        $this->assertSame(OrderStatus::PREPARING, (int) Order::find($stop->order_id)->status, 'la demande de coursier ne change pas la cuisine');
+
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'pickup_complete'])->assertOk();
+        $this->assertSame(OrderStatus::OUT_FOR_DELIVERY, (int) Order::find($stop->order_id)->status);
+
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'delivered'])->assertOk();
+        $this->assertSame(OrderStatus::DELIVERED, (int) Order::find($stop->order_id)->status);
+    }
+
+    /**
+     * [E2E UBER 2026-10-24 · P2] Après une course annulée CÔTÉ UBER, re-confier la commande demande un nouveau devis ; la clé
+     * d'idempotence doit changer, sinon Uber renvoie la course annulée et rien ne part (« ok » à l'écran, aucun coursier).
+     * Un simple réessai (même devis) garde la même clé.
+     */
+    public function test_a_new_course_after_an_uber_side_cancellation_carries_a_new_idempotency_key(): void
+    {
+        // Un seul `Http::fake` (le premier enregistré gagne) : Uber répond dqt_1/del_1 puis dqt_2/del_2.
+        $stop = $this->dispatched([
+            '*/delivery_quotes' => Http::sequence()
+                ->push(['id' => 'dqt_1', 'fee' => 742, 'currency' => 'eur', 'duration' => 25, 'expires' => now()->addMinutes(15)->toIso8601String()])
+                ->push(['id' => 'dqt_2', 'fee' => 800, 'currency' => 'eur', 'duration' => 20, 'expires' => now()->addMinutes(15)->toIso8601String()]),
+            '*/deliveries' => Http::sequence()
+                ->push(['id' => 'del_1', 'status' => 'pending', 'tracking_url' => 'https://uber.test/track/1'])
+                ->push(['id' => 'del_2', 'status' => 'pending']),
+        ]);
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'canceled'])->assertOk();
+        $this->assertSame('canceled', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('status'));
+
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $this->assertSame('dqt_2', $quote);
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
+
+        $keys = collect(Http::recorded(fn ($r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/deliveries') && $r->method() === 'POST'))
+            ->map(fn ($pair) => $pair[0]->data()['idempotency_key'] ?? null)->values()->all();
+        $this->assertSame(['lecayenne-order-'.$stop->order_id.'-dqt_1', 'lecayenne-order-'.$stop->order_id.'-dqt_2'], $keys, 'la nouvelle course porte la clé du nouveau devis, différente de la première');
+        $this->assertSame('del_2', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('delivery_id'));
+    }
+
+    public function test_a_bag_taken_by_an_uber_courier_does_not_close_our_own_wave(): void
+    {
+        $uber = $this->dispatched();
+        $own = $this->stop(); // même tournée, à nos livreurs (Kiki)
+        $this->assertEquals($uber->wave_at, $own->wave_at);
+
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'pickup_complete'])->assertOk();
+
+        $this->assertNotNull($uber->fresh()->left_at);
+        $this->assertFalse(app(DeliveryWaveService::class)->waveHasLeft((int) $this->branch->id, $uber->wave_at), 'Le départ du coursier Uber ne ferme pas la tournée de nos livreurs.');
+        $wave = collect($this->actingAs($this->cashier, 'sanctum')->withHeader('x-api-key', 'test-api-key')
+            ->getJson('/api/admin/pos-delivery/board')->assertOk()->json('data'))->firstWhere('wave_at', $uber->wave_at->toDateTimeString());
+        $this->assertFalse($wave['left'], 'La tournée de nos livreurs n\'est pas « partie ».');
+        $this->assertSame('Kiki', $wave['courier'], 'Le livreur de la tournée reste affiché (pas « Aucun livreur »).');
+        $this->assertSame($this->kiki->id, (int) $wave['courier_id']);
     }
 
     public function test_a_course_canceled_by_uber_comes_back_to_our_courier(): void

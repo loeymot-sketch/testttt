@@ -134,7 +134,10 @@ class UberDirectDispatchService
             'quote_fee_cents' => $fee,
             'customer_fee_cents' => 0, // le frais payé par le client est déjà celui de NOTRE barème ; Uber est un coût du restaurant
             'currency' => strtoupper((string) ($raw['currency'] ?? 'EUR')),
-            'quote_expires_at' => isset($raw['expires']) ? \Carbon\Carbon::parse($raw['expires']) : now()->addMinutes(10),
+            // [E2E UBER 2026-10-24 · U-2] Uber date en UTC (« …Z »). Eloquent enregistre une Carbon dans SON fuseau, sans
+            // conversion : « 14:06Z » était écrit « 14:06 » puis relu en Europe/Paris, soit 2 h trop tôt — tout devis paraissait
+            // périmé et chaque « Confirmer Uber » répondait 409 « le prix a changé », sans fin. On ramène l'heure au fuseau de l'application.
+            'quote_expires_at' => isset($raw['expires']) ? \Carbon\Carbon::parse($raw['expires'])->setTimezone(config('app.timezone')) : now()->addMinutes(10),
             'eta_minutes' => isset($raw['duration']) ? (int) $raw['duration'] : null,
             'pricing_rule' => 'caisse_swap',
             'failure_code' => null,
@@ -478,6 +481,17 @@ class UberDirectDispatchService
         if ($from === $target || $from >= OrderStatus::DELIVERED) {
             return;
         }
+        // [E2E UBER 2026-10-24 · U-3] Une commande de la caisse est encore EN PRÉPARATION (7) quand le coursier Uber prend le sac :
+        // la machine refuse 7 → 10 et la commande restait « en préparation » pour toujours (site et tableau de suivi jamais « en
+        // route » ni « livrée »). Le sac pris signifie que la cuisine a fini : on passe par PRÊTE (8) puis EN ROUTE (10), chaque
+        // étape par la machine officielle et avec son événement — jamais en la contournant. Même règle que notre propre livreur,
+        // qui ne part qu'une commande PRÊTE (DeliveryRunController::depart).
+        if ($from === OrderStatus::PREPARING && $target === OrderStatus::OUT_FOR_DELIVERY && OrderStateMachine::allows($from, OrderStatus::PREPARED)) {
+            OrderStateMachine::apply($order, OrderStatus::PREPARED);
+            OrderStatusChanged::dispatch($order, $from, OrderStatus::PREPARED);
+            $order->refresh();
+            $from = (int) $order->status;
+        }
         if (! OrderStateMachine::allows($from, $target)) {
             Log::warning('uber_direct.order_transition_refused', ['order_id' => $order->id, 'from' => $from, 'to' => $target]);
 
@@ -539,8 +553,10 @@ class UberDirectDispatchService
             'dropoff_notes' => trim(implode(' — ', array_filter([$a->apartment, 'Commande #'.$ref]))),
             'manifest_reference' => 'order-'.$order->id,
             'manifest_items' => [['name' => 'Commande Le Cayenne #'.$ref, 'quantity' => 1, 'size' => 'medium']],
-            // Même clé pour la même commande : un réessai après délai dépassé ne fabrique pas une 2ᵉ course.
-            'idempotency_key' => 'lecayenne-order-'.$order->id,
+            // Même clé pour le même DEVIS : un réessai après délai dépassé ne fabrique pas une 2ᵉ course. [E2E UBER 2026-10-24 · P2]
+            // La clé porte le devis et plus seulement la commande : après une course annulée côté Uber, re-confier la commande
+            // (nouveau devis) ne renvoyait que la course ANNULÉE sous la même clé — « ok » à l'écran, aucun coursier en route.
+            'idempotency_key' => 'lecayenne-order-'.$order->id.'-'.$row->quote_id,
             'external_id' => 'order-'.$order->id,
         ], fn ($v) => $v !== null && $v !== '');
     }

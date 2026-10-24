@@ -1,0 +1,30 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/api/admin/pos-delivery/uber/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792851801401
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/admin/pos-delivery/uber/dispatch",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792851802045
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/admin/pos-delivery/uber/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792851803233
+  },
+  {
+    "url": "http://127.0.0.1:8766/api/admin/pos-delivery/uber/dispatch",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1792851803887
+  }
+]

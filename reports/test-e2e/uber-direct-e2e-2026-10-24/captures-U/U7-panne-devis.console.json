@@ -1,0 +1,14 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://127.0.0.1:8766/api/admin/pos-delivery/uber/quote",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792851792316
+  }
+]
