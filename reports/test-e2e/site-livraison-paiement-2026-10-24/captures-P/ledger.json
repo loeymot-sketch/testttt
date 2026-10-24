@@ -1,0 +1,1589 @@
+{
+  "tag": "E2E-PAY-007760",
+  "startedAt": "2026-10-24T16:23:27.773Z",
+  "states": [
+    {
+      "id": "D-P1-annonce-accueil",
+      "url": "/",
+      "annonce": "NOUVEAU 🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €. Commander ×",
+      "geo": {
+        "aTop": 0,
+        "aBottom": 52,
+        "aH": 52,
+        "navTop": 52,
+        "scrollW": 1440,
+        "vw": 1440
+      },
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P1-annonce-accueil",
+      "url": "/",
+      "annonce": "NOUVEAU🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €.Commander ×",
+      "geo": {
+        "aTop": 0,
+        "aBottom": 98,
+        "aH": 98,
+        "navTop": 98,
+        "scrollW": 390,
+        "vw": 390
+      },
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P2-paiement-emporter",
+      "url": "/#payment",
+      "noms": [
+        "Payer sur place",
+        "Carte bancaire (en ligne)"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P2-paiement-emporter",
+      "url": "/#payment",
+      "noms": [
+        "Payer sur place",
+        "Carte bancaire (en ligne)"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P3-paiement-livraison-henin",
+      "url": "/#payment",
+      "regs": [
+        {
+          "nom": "Carte bancaire (en ligne)",
+          "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+          "on": false
+        },
+        {
+          "nom": "Carte à la livraison",
+          "meta": "Vous payez par carte bancaire au livreur, à la remise",
+          "on": false
+        },
+        {
+          "nom": "Espèces à la livraison",
+          "meta": "Vous payez en espèces au livreur, à la remise",
+          "on": true
+        }
+      ],
+      "apiSlots": [
+        "19:00",
+        "19:30",
+        "20:00",
+        "20:30",
+        "21:00",
+        "21:30",
+        "22:00",
+        "22:30"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P3-lille-refus",
+      "url": "/#payment",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P4-confirmation-cash",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P4-suivi-cash",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P5-confirmation-card",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P5-suivi-card",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P3-paiement-livraison-henin",
+      "url": "/#payment",
+      "regs": [
+        {
+          "nom": "Carte bancaire (en ligne)",
+          "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+          "on": false
+        },
+        {
+          "nom": "Carte à la livraison",
+          "meta": "Vous payez par carte bancaire au livreur, à la remise",
+          "on": false
+        },
+        {
+          "nom": "Espèces à la livraison",
+          "meta": "Vous payez en espèces au livreur, à la remise",
+          "on": true
+        }
+      ],
+      "apiSlots": [
+        "19:00",
+        "19:30",
+        "20:00",
+        "20:30",
+        "21:00",
+        "21:30",
+        "22:00",
+        "22:30"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P3-lille-refus",
+      "url": "/#payment",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P4-confirmation-cash",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P4-suivi-cash",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P5-confirmation-card",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-P5-suivi-card",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "P6-planche-tournees-carte",
+      "url": "http://127.0.0.1:8766/admin/livraisons",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "P6-livreur-encaisser-par-carte",
+      "url": "http://127.0.0.1:8766/livreur",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-P7-en-ligne",
+      "url": "/#payment",
+      "champs": {
+        "inputs": 0,
+        "iframes": 0,
+        "mount": 12
+      },
+      "formTxt": "Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livraison. Paiement sur cette page. Vous ne quittez pas Le Cayenne : les champs carte sont chiffrés par ",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-android-P7-en-ligne",
+      "url": "/#payment",
+      "champs": {
+        "inputs": 0,
+        "iframes": 0,
+        "mount": 12
+      },
+      "formTxt": "Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livraison. Paiement sur cette page. Vous ne quittez pas Le Cayenne : les champs carte sont chiffrés par ",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "P8-retour-emporter",
+      "url": "/#payment",
+      "actifE": [
+        "Payer sur place"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    }
+  ],
+  "checks": [
+    {
+      "id": "NF525 : fiscal:verify-chain --all OK AVANT",
+      "ok": true,
+      "detail": "  + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+    },
+    {
+      "id": "D P-1 texte exact + serveur enabled (2 moyens)",
+      "ok": true,
+      "detail": {
+        "txt": "NOUVEAU 🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €. Commander ×",
+        "api": {
+          "status": true,
+          "enabled": true,
+          "grid": {
+            "home_city": "Hénin-Beaumont",
+            "home_fee": 3.9,
+            "tiers": [
+              {
+                "max_km": 5,
+                "fee": 4.9
+              },
+              {
+                "max_km": 8,
+                "fee": 5.9
+              },
+              {
+                "max_km": 10,
+                "fee": 6.9
+              }
+            ],
+            "max_km": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "D P-1 annonce tout en haut (top=0) au-dessus de la nav, pas de défilement horizontal",
+      "ok": true,
+      "detail": {
+        "aTop": 0,
+        "aBottom": 52,
+        "aH": 52,
+        "navTop": 52,
+        "scrollW": 1440,
+        "vw": 1440
+      }
+    },
+    {
+      "id": "D P-1 annonce « petite » : hauteur 52 px ≤ 60",
+      "ok": true,
+      "detail": 52
+    },
+    {
+      "id": "D P-1 croix ≥ 44×44 px",
+      "ok": true,
+      "detail": {
+        "croix": {
+          "x": 1274,
+          "y": 4,
+          "width": 44,
+          "height": 44
+        },
+        "commander": {
+          "w": 116,
+          "h": 36
+        }
+      }
+    },
+    {
+      "id": "D P-1 « Commander » → page menu (hash + grille)",
+      "ok": true,
+      "detail": "#menu"
+    },
+    {
+      "id": "D P-1 annonce sur avis/réseaux/fidélité/commandes",
+      "ok": true,
+      "detail": [
+        {
+          "h": "#avis",
+          "visible": true
+        },
+        {
+          "h": "#reseaux",
+          "visible": true
+        },
+        {
+          "h": "#loyalty",
+          "visible": true
+        },
+        {
+          "h": "#orders",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "D P-1 fermée → reste fermée au rechargement (écran + localStorage='1')",
+      "ok": true,
+      "detail": {
+        "apresReload": 0,
+        "mem": "1"
+      }
+    },
+    {
+      "id": "D P-1 suspendue (delivery/status enabled:false) → annonce ABSENTE",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "id": "D P-1 ABSENTE sur la page de paiement (présente à l'accueil du même contexte)",
+      "ok": true,
+      "detail": {
+        "avantPaiement": 1,
+        "surPaiement": 0
+      }
+    },
+    {
+      "id": "M P-1 texte exact + serveur enabled (2 moyens)",
+      "ok": true,
+      "detail": {
+        "txt": "NOUVEAU🛵 La livraison est lancée ! À Hénin-Beaumont et jusqu'à 10 km, dès 3,90 €.Commander ×",
+        "api": {
+          "status": true,
+          "enabled": true,
+          "grid": {
+            "home_city": "Hénin-Beaumont",
+            "home_fee": 3.9,
+            "tiers": [
+              {
+                "max_km": 5,
+                "fee": 4.9
+              },
+              {
+                "max_km": 8,
+                "fee": 5.9
+              },
+              {
+                "max_km": 10,
+                "fee": 6.9
+              }
+            ],
+            "max_km": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "M P-1 annonce tout en haut (top=0) au-dessus de la nav, pas de défilement horizontal",
+      "ok": true,
+      "detail": {
+        "aTop": 0,
+        "aBottom": 98,
+        "aH": 98,
+        "navTop": 98,
+        "scrollW": 390,
+        "vw": 390
+      }
+    },
+    {
+      "id": "M P-1 annonce « petite » : hauteur 98 px ≤ 100",
+      "ok": true,
+      "detail": 98
+    },
+    {
+      "id": "M P-1 croix ≥ 44×44 px",
+      "ok": true,
+      "detail": {
+        "croix": {
+          "x": 344,
+          "y": 27.21875,
+          "width": 44,
+          "height": 44
+        },
+        "commander": {
+          "w": 112,
+          "h": 36
+        }
+      }
+    },
+    {
+      "id": "M P-1 « Commander » → page menu (hash + grille)",
+      "ok": true,
+      "detail": "#menu"
+    },
+    {
+      "id": "M P-1 annonce sur avis/réseaux/fidélité/commandes",
+      "ok": true,
+      "detail": [
+        {
+          "h": "#avis",
+          "visible": true
+        },
+        {
+          "h": "#reseaux",
+          "visible": true
+        },
+        {
+          "h": "#loyalty",
+          "visible": true
+        },
+        {
+          "h": "#orders",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "M P-1 fermée → reste fermée au rechargement (écran + localStorage='1')",
+      "ok": true,
+      "detail": {
+        "apresReload": 0,
+        "mem": "1"
+      }
+    },
+    {
+      "id": "M P-1 suspendue (delivery/status enabled:false) → annonce ABSENTE",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "id": "M P-1 ABSENTE sur la page de paiement (présente à l'accueil du même contexte)",
+      "ok": true,
+      "detail": {
+        "avantPaiement": 1,
+        "surPaiement": 0
+      }
+    },
+    {
+      "id": "D P-2 règlements à emporter = « Payer sur place » + carte en ligne ; rien de livraison",
+      "ok": true,
+      "detail": {
+        "noms": [
+          "Payer sur place",
+          "Carte bancaire (en ligne)"
+        ],
+        "nTiming": 0,
+        "nAdresse": 0
+      }
+    },
+    {
+      "id": "D P-2 commande à emporter : 201, base order_type=10, door_payment_mode NULL, corps sans door_payment",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9121",
+          "order_type": "10",
+          "payment_method": "1",
+          "door_payment_mode": "NULL",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "0.000000",
+          "total": "6.000000",
+          "delivery_boy_id": "NULL"
+        },
+        "cta": "Confirmer ma commande 6,00 €",
+        "corps": [
+          "branch_id",
+          "order_type",
+          "source",
+          "is_advance_order",
+          "payment_method",
+          "items",
+          "expected_total"
+        ]
+      }
+    },
+    {
+      "id": "M P-2 règlements à emporter = « Payer sur place » + carte en ligne ; rien de livraison",
+      "ok": true,
+      "detail": {
+        "noms": [
+          "Payer sur place",
+          "Carte bancaire (en ligne)"
+        ],
+        "nTiming": 0,
+        "nAdresse": 0
+      }
+    },
+    {
+      "id": "M P-2 commande à emporter : 201, base order_type=10, door_payment_mode NULL, corps sans door_payment",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9122",
+          "order_type": "10",
+          "payment_method": "1",
+          "door_payment_mode": "NULL",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "0.000000",
+          "total": "6.000000",
+          "delivery_boy_id": "NULL"
+        },
+        "cta": "Confirmer ma commande 6,00 €",
+        "corps": [
+          "branch_id",
+          "order_type",
+          "source",
+          "is_advance_order",
+          "payment_method",
+          "items",
+          "expected_total"
+        ]
+      }
+    },
+    {
+      "id": "D P-3 frais : écran (section+récap) == devis API == 3,90 € ; total récap/bouton == sous-total + frais",
+      "ok": true,
+      "detail": {
+        "feeUI": 3.9,
+        "feeApi": 3.9,
+        "secTxt": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livrai",
+        "recapTxt": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande",
+        "cta": "Confirmer ma commande 9,90 €",
+        "sousTotal": 6
+      }
+    },
+    {
+      "id": "D P-3 « Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min) » (== prep_minutes_* de l'API) ; aucun « 30 à 45 »",
+      "ok": true,
+      "detail": {
+        "tTxt": "⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min).",
+        "attendu": "Préparation : 15 à 20 min",
+        "timingAvant": 0,
+        "api": {
+          "low": 15,
+          "high": 20,
+          "travel": 5
+        }
+      }
+    },
+    {
+      "id": "D P-3 créneaux : « Au plus tôt » + 8 départs == API",
+      "ok": true,
+      "detail": {
+        "slots": [
+          "Au plus tôt vers 19:00",
+          "19:00 départ",
+          "19:30 départ",
+          "20:00 départ",
+          "20:30 départ",
+          "21:00 départ",
+          "21:30 départ",
+          "22:00 départ",
+          "22:30 départ"
+        ],
+        "apiSlots": [
+          "19:00",
+          "19:30",
+          "20:00",
+          "20:30",
+          "21:00",
+          "21:30",
+          "22:00",
+          "22:30"
+        ]
+      }
+    },
+    {
+      "id": "D P-3 règlements en livraison = [Carte bancaire (en ligne), Carte à la livraison, Espèces à la livraison]",
+      "ok": true,
+      "detail": [
+        {
+          "nom": "Carte bancaire (en ligne)",
+          "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+          "on": false
+        },
+        {
+          "nom": "Carte à la livraison",
+          "meta": "Vous payez par carte bancaire au livreur, à la remise",
+          "on": false
+        },
+        {
+          "nom": "Espèces à la livraison",
+          "meta": "Vous payez en espèces au livreur, à la remise",
+          "on": true
+        }
+      ]
+    },
+    {
+      "id": "D P-3 Lille : refus + Uber Eats + bouton bloqué sans montant + plus de message de préparation",
+      "ok": true,
+      "detail": {
+        "secL": "ADRESSE DE LIVRAISON CALCULER 📍 « 10 Rue des Stations 59000 Lille » est trop loin pour notre livraison (plus de 10 km). Ce n'est pas la bonne adresse ? Précisez la rue, le code postal et la ville, pu",
+        "uber": 1,
+        "dis": true,
+        "timingL": 0
+      }
+    },
+    {
+      "id": "D P-4 base : order_type=5, payment_method=1, door_payment_mode=NULL, non payé, frais 3,90, total == bouton == API",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9123",
+          "order_type": "5",
+          "payment_method": "1",
+          "door_payment_mode": "NULL",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "3.900000",
+          "total": "9.900000",
+          "delivery_boy_id": "NULL"
+        },
+        "totalAvant": 9.9,
+        "api": 9.9
+      }
+    },
+    {
+      "id": "D P-4 confirmation : « Espèces à la remise » + phrase + adresse ; aucun texte de retrait/QR/comptoir",
+      "ok": true,
+      "detail": {
+        "confTxt": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269123 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269123 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'",
+        "retrait": null
+      }
+    },
+    {
+      "id": "D P-4 arrêt de tournée : collect_method=cash, dû == total",
+      "ok": true,
+      "detail": {
+        "collect": "cash",
+        "due": 990,
+        "id": 524,
+        "wave_at": "2026-10-24 19:00:00"
+      }
+    },
+    {
+      "id": "D P-4 suivi : « Règlement : … à la remise » (écran) == door_payment_mode de l'API (null)",
+      "ok": true,
+      "detail": {
+        "svTxt": "Suivi de votre commande COMMANDE REÇUE #2410269123 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269123 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +99 pts en attente Ils ",
+        "api": null
+      }
+    },
+    {
+      "id": "D P-5 base : order_type=5, payment_method=1, door_payment_mode=card, non payé, frais 3,90, total == bouton == API",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9124",
+          "order_type": "5",
+          "payment_method": "1",
+          "door_payment_mode": "card",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "3.900000",
+          "total": "9.900000",
+          "delivery_boy_id": "NULL"
+        },
+        "totalAvant": 9.9,
+        "api": 9.9
+      }
+    },
+    {
+      "id": "D P-5 confirmation : « Carte bancaire à la remise » + phrase + adresse ; aucun texte de retrait/QR/comptoir",
+      "ok": true,
+      "detail": {
+        "confTxt": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269124 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez par carte bancaire au livreur, à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269124 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Carte bancaire à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Sui",
+        "retrait": null
+      }
+    },
+    {
+      "id": "D P-5 arrêt de tournée : collect_method=card, dû == total",
+      "ok": true,
+      "detail": {
+        "collect": "card",
+        "due": 990,
+        "id": 525,
+        "wave_at": "2026-10-24 19:00:00"
+      }
+    },
+    {
+      "id": "D P-5 suivi : « Règlement : … à la remise » (écran) == door_payment_mode de l'API (card)",
+      "ok": true,
+      "detail": {
+        "svTxt": "Suivi de votre commande COMMANDE REÇUE #2410269124 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269124 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Carte bancaire à la remise 🎁 +99 pts en atten",
+        "api": "card"
+      }
+    },
+    {
+      "id": "M P-3 frais : écran (section+récap) == devis API == 3,90 € ; total récap/bouton == sous-total + frais",
+      "ok": true,
+      "detail": {
+        "feeUI": 3.9,
+        "feeApi": 3.9,
+        "secTxt": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livrai",
+        "recapTxt": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande",
+        "cta": "Confirmer ma commande 9,90 €",
+        "sousTotal": 6
+      }
+    },
+    {
+      "id": "M P-3 « Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min) » (== prep_minutes_* de l'API) ; aucun « 30 à 45 »",
+      "ok": true,
+      "detail": {
+        "tTxt": "⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min).",
+        "attendu": "Préparation : 15 à 20 min",
+        "timingAvant": 0,
+        "api": {
+          "low": 15,
+          "high": 20,
+          "travel": 5
+        }
+      }
+    },
+    {
+      "id": "M P-3 créneaux : « Au plus tôt » + 8 départs == API",
+      "ok": true,
+      "detail": {
+        "slots": [
+          "Au plus tôt vers 19:00",
+          "19:00 départ",
+          "19:30 départ",
+          "20:00 départ",
+          "20:30 départ",
+          "21:00 départ",
+          "21:30 départ",
+          "22:00 départ",
+          "22:30 départ"
+        ],
+        "apiSlots": [
+          "19:00",
+          "19:30",
+          "20:00",
+          "20:30",
+          "21:00",
+          "21:30",
+          "22:00",
+          "22:30"
+        ]
+      }
+    },
+    {
+      "id": "M P-3 règlements en livraison = [Carte bancaire (en ligne), Carte à la livraison, Espèces à la livraison]",
+      "ok": true,
+      "detail": [
+        {
+          "nom": "Carte bancaire (en ligne)",
+          "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+          "on": false
+        },
+        {
+          "nom": "Carte à la livraison",
+          "meta": "Vous payez par carte bancaire au livreur, à la remise",
+          "on": false
+        },
+        {
+          "nom": "Espèces à la livraison",
+          "meta": "Vous payez en espèces au livreur, à la remise",
+          "on": true
+        }
+      ]
+    },
+    {
+      "id": "M P-3 Lille : refus + Uber Eats + bouton bloqué sans montant + plus de message de préparation",
+      "ok": true,
+      "detail": {
+        "secL": "ADRESSE DE LIVRAISON CALCULER 📍 « 10 Rue des Stations 59000 Lille » est trop loin pour notre livraison (plus de 10 km). Ce n'est pas la bonne adresse ? Précisez la rue, le code postal et la ville, pu",
+        "uber": 1,
+        "dis": true,
+        "timingL": 0
+      }
+    },
+    {
+      "id": "M P-4 base : order_type=5, payment_method=1, door_payment_mode=NULL, non payé, frais 3,90, total == bouton == API",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9125",
+          "order_type": "5",
+          "payment_method": "1",
+          "door_payment_mode": "NULL",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "3.900000",
+          "total": "9.900000",
+          "delivery_boy_id": "NULL"
+        },
+        "totalAvant": 9.9,
+        "api": 9.9
+      }
+    },
+    {
+      "id": "M P-4 confirmation : « Espèces à la remise » + phrase + adresse ; aucun texte de retrait/QR/comptoir",
+      "ok": true,
+      "detail": {
+        "confTxt": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269125 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269125 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'",
+        "retrait": null
+      }
+    },
+    {
+      "id": "M P-4 arrêt de tournée : collect_method=cash, dû == total",
+      "ok": true,
+      "detail": {
+        "collect": "cash",
+        "due": 990,
+        "id": 526,
+        "wave_at": "2026-10-24 19:00:00"
+      }
+    },
+    {
+      "id": "M P-4 suivi : « Règlement : … à la remise » (écran) == door_payment_mode de l'API (null)",
+      "ok": true,
+      "detail": {
+        "svTxt": "Suivi de votre commande COMMANDE REÇUE #2410269125 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269125 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +99 pts en attente Ils ",
+        "api": null
+      }
+    },
+    {
+      "id": "M P-5 base : order_type=5, payment_method=1, door_payment_mode=card, non payé, frais 3,90, total == bouton == API",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "9126",
+          "order_type": "5",
+          "payment_method": "1",
+          "door_payment_mode": "card",
+          "payment_status": "10",
+          "status": "1",
+          "pos_payment_method": "NULL",
+          "fiscal_sequence_no": "NULL",
+          "subtotal": "6.000000",
+          "delivery_charge": "3.900000",
+          "total": "9.900000",
+          "delivery_boy_id": "NULL"
+        },
+        "totalAvant": 9.9,
+        "api": 9.9
+      }
+    },
+    {
+      "id": "M P-5 confirmation : « Carte bancaire à la remise » + phrase + adresse ; aucun texte de retrait/QR/comptoir",
+      "ok": true,
+      "detail": {
+        "confTxt": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269126 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez par carte bancaire au livreur, à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269126 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Carte bancaire à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Sui",
+        "retrait": null
+      }
+    },
+    {
+      "id": "M P-5 arrêt de tournée : collect_method=card, dû == total",
+      "ok": true,
+      "detail": {
+        "collect": "card",
+        "due": 990,
+        "id": 527,
+        "wave_at": "2026-10-24 19:00:00"
+      }
+    },
+    {
+      "id": "M P-5 suivi : « Règlement : … à la remise » (écran) == door_payment_mode de l'API (card)",
+      "ok": true,
+      "detail": {
+        "svTxt": "Suivi de votre commande COMMANDE REÇUE #2410269126 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269126 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Carte bancaire à la remise 🎁 +99 pts en atten",
+        "api": "card"
+      }
+    },
+    {
+      "id": "P-6 AVANT départ : carte PRÊTE (8), non payée, sans numéro fiscal, 0 ligne order_payments",
+      "ok": true,
+      "detail": {
+        "id": "9124",
+        "order_type": "5",
+        "payment_method": "1",
+        "door_payment_mode": "card",
+        "payment_status": "15",
+        "status": "8",
+        "pos_payment_method": "NULL",
+        "fiscal_sequence_no": "NULL",
+        "subtotal": "6.000000",
+        "delivery_charge": "3.900000",
+        "total": "9.900000",
+        "delivery_boy_id": "10",
+        "nPay": 0,
+        "pay": "",
+        "nEscrow": 0,
+        "nAuditCarte": 0,
+        "nAuditEscrow": 0,
+        "nFiscal": 0
+      }
+    },
+    {
+      "id": "P-6 planche « Tournées » : « Carte X € » (écran) == collect_method API",
+      "ok": true,
+      "detail": {
+        "collect": "card",
+        "due": 9.9
+      }
+    },
+    {
+      "id": "P-6 /livreur : « Encaisser par carte » (écran) == collect_method=card + montant (API delivery-run)",
+      "ok": true,
+      "detail": {
+        "m": "card",
+        "label": "Encaisser par carte",
+        "due": 990
+      }
+    },
+    {
+      "id": "P-6 APRÈS « Je pars » (carte) : en route (10) mais JAMAIS payée, sans numéro fiscal, 0 paiement, 0 escrow",
+      "ok": true,
+      "detail": {
+        "id": "9124",
+        "order_type": "5",
+        "payment_method": "1",
+        "door_payment_mode": "card",
+        "payment_status": "15",
+        "status": "10",
+        "pos_payment_method": "NULL",
+        "fiscal_sequence_no": "NULL",
+        "subtotal": "6.000000",
+        "delivery_charge": "3.900000",
+        "total": "9.900000",
+        "delivery_boy_id": "10",
+        "nPay": 0,
+        "pay": "",
+        "nEscrow": 0,
+        "nAuditCarte": 0,
+        "nAuditEscrow": 0,
+        "nFiscal": 0
+      }
+    },
+    {
+      "id": "P-6 APRÈS remise (carte) : payée (5), livrée (13), numéro fiscal posé UNE fois, pos_payment_method=2, UNE ligne order_payments mode 2 = total, audit doorstep_card_collection, 0 escrow espèces",
+      "ok": true,
+      "detail": {
+        "id": "9124",
+        "order_type": "5",
+        "payment_method": "1",
+        "door_payment_mode": "card",
+        "payment_status": "5",
+        "status": "13",
+        "pos_payment_method": "2",
+        "fiscal_sequence_no": "3342",
+        "subtotal": "6.000000",
+        "delivery_charge": "3.900000",
+        "total": "9.900000",
+        "delivery_boy_id": "10",
+        "nPay": 1,
+        "pay": "2:9.90:livraison",
+        "nEscrow": 0,
+        "nAuditCarte": 1,
+        "nAuditEscrow": 0,
+        "nFiscal": 1
+      }
+    },
+    {
+      "id": "P-6 ESPÈCES (régression) : payée, livrée, numéro fiscal UNE fois, pos_payment_method=1, escrow espèces écrit (audit ou mouvement), PAS d'audit carte",
+      "ok": true,
+      "detail": {
+        "id": "9123",
+        "order_type": "5",
+        "payment_method": "1",
+        "door_payment_mode": "NULL",
+        "payment_status": "5",
+        "status": "13",
+        "pos_payment_method": "1",
+        "fiscal_sequence_no": "3343",
+        "subtotal": "6.000000",
+        "delivery_charge": "3.900000",
+        "total": "9.900000",
+        "delivery_boy_id": "10",
+        "nPay": 0,
+        "pay": "",
+        "nEscrow": 0,
+        "nAuditCarte": 0,
+        "nAuditEscrow": 1,
+        "nFiscal": 1
+      }
+    },
+    {
+      "id": "NF525 : fiscal:verify-chain --all OK APRÈS les remises",
+      "ok": true,
+      "detail": "  + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+    },
+    {
+      "id": "D P-7 « Carte bancaire (en ligne) » : champs de carte affichés (form visible), bouton « Payer par carte »",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "cta": "Payer par carte 9,90 €",
+        "champs": {
+          "inputs": 0,
+          "iframes": 0,
+          "mount": 12
+        },
+        "formTxt": "Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livr"
+      }
+    },
+    {
+      "id": "P-7 Android Chrome : « Google Pay » proposé en livraison + carte en ligne + 2 règlements à la livraison",
+      "ok": true,
+      "detail": [
+        {
+          "nom": "Google Pay",
+          "meta": "Payé en ligne — votre carte enregistrée, rien à régler à la remise",
+          "on": false
+        },
+        {
+          "nom": "Carte bancaire (en ligne)",
+          "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+          "on": false
+        },
+        {
+          "nom": "Carte à la livraison",
+          "meta": "Vous payez par carte bancaire au livreur, à la remise",
+          "on": false
+        },
+        {
+          "nom": "Espèces à la livraison",
+          "meta": "Vous payez en espèces au livreur, à la remise",
+          "on": true
+        }
+      ]
+    },
+    {
+      "id": "M-android P-7 « Carte bancaire (en ligne) » : champs de carte affichés (form visible), bouton « Payer par carte »",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "cta": "Payer par carte 9,90 €",
+        "champs": {
+          "inputs": 0,
+          "iframes": 0,
+          "mount": 12
+        },
+        "formTxt": "Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livr"
+      }
+    },
+    {
+      "id": "P-8 retour à emporter : « Payer sur place » sélectionné, aucun règlement de livraison, plus d'adresse ni de message de préparation, total = sous-total",
+      "ok": true,
+      "detail": {
+        "nomsE": [
+          "Payer sur place",
+          "Carte bancaire (en ligne)"
+        ],
+        "actifE": [
+          "Payer sur place"
+        ],
+        "ctaE": "Confirmer ma commande 6,00 €",
+        "timingE": 0,
+        "adrE": 0,
+        "sousTotal": 6
+      }
+    },
+    {
+      "id": "P-8 re-livraison : état cohérent (devis conservé → total = sous-total + 3,90 ; sinon bouton bloqué sans montant) ; un seul règlement actif",
+      "ok": true,
+      "detail": {
+        "dq": 1,
+        "dis": false,
+        "ctaLtxt": "Confirmer ma commande 9,90 €",
+        "regsL": [
+          {
+            "n": "Carte bancaire (en ligne)",
+            "on": false
+          },
+          {
+            "n": "Carte à la livraison",
+            "on": false
+          },
+          {
+            "n": "Espèces à la livraison",
+            "on": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "P-8 témoin (l'instrument mord) : la clé de A rejouée avec le corps « carte à la livraison » → 409 du serveur",
+      "ok": true,
+      "detail": {
+        "status": 409
+      }
+    },
+    {
+      "id": "P-8 la bascule produit une clé d'idempotence DISTINCTE de celle de A ; 201 (pas 409) ; 2 commandes différentes (A espèces / B carte)",
+      "ok": true,
+      "detail": {
+        "cleA": "webmvmm4bp169wo0phc5x",
+        "cleB": "webmvmm4dgpg6fvbcey1z",
+        "status": 201,
+        "idA": 9127,
+        "idB": 9128
+      }
+    },
+    {
+      "id": "P-8 forgeries door_payment refusées 422 (clé door_payment), 0 commande créée",
+      "ok": true,
+      "detail": {
+        "resForge": [
+          {
+            "nom": "door_payment sur un order_type à emporter (10)",
+            "http": 422,
+            "door": true
+          },
+          {
+            "nom": "door_payment avec payment_method=4 (en ligne)",
+            "http": 422,
+            "door": true
+          },
+          {
+            "nom": "door_payment=\"cash\"",
+            "http": 422,
+            "door": true
+          }
+        ],
+        "nAvant": 4893,
+        "nApres": 4893
+      }
+    },
+    {
+      "id": "P-9 page de paiement livraison (D et M) : aucune clé brute, aucun « undefined/null/NaN »",
+      "ok": true,
+      "detail": [
+        null,
+        null
+      ]
+    },
+    {
+      "id": "P-9 aucun « Payer à la livraison » orphelin",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "P-9 vouvoiement sur TOUTE la page de paiement en livraison (4 relevés, bloc carte en ligne déplié compris)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "P-9 vouvoiement dans le bloc livraison + règlements",
+      "ok": true,
+      "detail": {
+        "tut": [
+          null,
+          null
+        ],
+        "residuPageEntiere": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "id": "P-9 vouvoiement dans la confirmation et le suivi d'une livraison (8 relevés)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "P-9 confirmation et suivi (8 relevés) : aucun retrait/QR/comptoir, aucune clé brute",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "P-9 « 30 à 45 » absent de tous les textes relevés",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "RÉSEAU : 0 requête vers production / Uber (les tentatives de la page vers js.mollie.com sont avortées côté navigateur : 2)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "console propre sur tous les états capturés",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "prodBloquees": [],
+  "orders": [
+    {
+      "id": 9121,
+      "label": "D à emporter espèces",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 9122,
+      "label": "M à emporter espèces",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 9123,
+      "label": "D livraison cash",
+      "livree": true
+    },
+    {
+      "id": 9124,
+      "label": "D livraison card",
+      "livree": true
+    },
+    {
+      "id": 9125,
+      "label": "M livraison cash",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 9126,
+      "label": "M livraison card",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 9127,
+      "label": "P-8 A espèces (réponse perdue)",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 9128,
+      "label": "P-8 B carte à la livraison",
+      "annulation": 200,
+      "statutApres": "16"
+    }
+  ],
+  "notes": [
+    "POST /api/frontend/order (D à emporter espèces) -> HTTP 201 id=9121 total=6 ",
+    "POST /api/frontend/order (M à emporter espèces) -> HTTP 201 id=9122 total=6 ",
+    "POST /api/frontend/order (D livraison cash) -> HTTP 201 id=9123 total=9.9 ",
+    "POST /api/frontend/order (D livraison card) -> HTTP 201 id=9124 total=9.9 ",
+    "POST /api/frontend/order (M livraison cash) -> HTTP 201 id=9125 total=9.9 ",
+    "POST /api/frontend/order (M livraison card) -> HTTP 201 id=9126 total=9.9 ",
+    "Apple Pay : la détection exige https + www.lecayenne.fr (isApplePaySecureCheckout, funnel.jsx:828) : NON MESURÉ ici (aucune requête production permise) ; Google Pay mesuré en P-7b (UA Android Chrome émulé)",
+    "annulation commande de test 9121 (D à emporter espèces) -> HTTP 200, status=16 ",
+    "annulation commande de test 9122 (M à emporter espèces) -> HTTP 200, status=16 ",
+    "annulation commande de test 9125 (M livraison cash) -> HTTP 200, status=16 ",
+    "annulation commande de test 9126 (M livraison card) -> HTTP 200, status=16 ",
+    "annulation commande de test 9127 (P-8 A espèces (réponse perdue)) -> HTTP 200, status=16 ",
+    "annulation commande de test 9128 (P-8 B carte à la livraison) -> HTTP 200, status=16 "
+  ],
+  "textes": {
+    "D-paiement-livraison": "1 Livraison & paiement → 2 Confirmé COMMANDER OÙ LIVRER VOTRE COMMANDE ? MODE 🛍️ À emporter Vous venez chercher 🛵 Livraison Dès 3,90 € · selon votre commune ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. CODE PROMO APPLIQUER NOTE POUR LA CUISINE (OPTIONNEL) 0 / 190 PAIEMENT VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise Commande transmise au restaurant · Données protégées (RGPD) PAIEMENT À LA LIVRAISON Retour Confirmer ma commande 9,90 € RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande",
+    "D-bloc-livraison": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. || VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise",
+    "D-confirmation-cash": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269123 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269123 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil",
+    "D-suivi-cash": "Suivi de votre commande COMMANDE REÇUE #2410269123 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269123 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +99 pts en attente Ils seront crédités après la livraison de votre commande. SUIVI EN DIRECT 📞 Une question ? 03 65 67 82 91 · réponse immédiate RETOUR À L'ACCUEIL",
+    "D-confirmation-card": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269124 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez par carte bancaire au livreur, à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269124 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Carte bancaire à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil",
+    "D-suivi-card": "Suivi de votre commande COMMANDE REÇUE #2410269124 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269124 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Carte bancaire à la remise 🎁 +99 pts en attente Ils seront crédités après la livraison de votre commande. SUIVI EN DIRECT 📞 Une question ? 03 65 67 82 91 · réponse immédiate RETOUR À L'ACCUEIL",
+    "M-paiement-livraison": "1 Livraison & paiement → 2 Confirmé COMMANDER OÙ LIVRER VOTRE COMMANDE ? MODE 🛍️ À emporter Vous venez chercher 🛵 Livraison Dès 3,90 € · selon votre commune ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. CODE PROMO APPLIQUER NOTE POUR LA CUISINE (OPTIONNEL) 0 / 190 PAIEMENT VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise Commande transmise au restaurant · Données protégées (RGPD) PAIEMENT À LA LIVRAISON Retour Confirmer ma commande 9,90 € RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande",
+    "M-bloc-livraison": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. || VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise",
+    "M-confirmation-cash": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269125 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269125 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil",
+    "M-suivi-cash": "Suivi de votre commande COMMANDE REÇUE #2410269125 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269125 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +99 pts en attente Ils seront crédités après la livraison de votre commande. SUIVI EN DIRECT 📞 Une question ? 03 65 67 82 91 · réponse immédiate RETOUR À L'ACCUEIL",
+    "M-confirmation-card": "Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2410269126 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez par carte bancaire au livreur, à la remise. LIVRAISON HÉNIN-BEAUMONT 2410269126 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 19:00 RÈGLEMENT Carte bancaire à la remise DONT LIVRAISON 3,90 € TOTAL 9,90 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil",
+    "M-suivi-card": "Suivi de votre commande COMMANDE REÇUE #2410269126 Départ de la livraison prévu à 19:00 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2410269126 TOTAL 9,90 € VOTRE COMMANDE 1× Cheese Burger LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Carte bancaire à la remise 🎁 +99 pts en attente Ils seront crédités après la livraison de votre commande. SUIVI EN DIRECT 📞 Une question ? 03 65 67 82 91 · réponse immédiate RETOUR À L'ACCUEIL",
+    "D-paiement-livraison-en-ligne": "1 Livraison & paiement → 2 Confirmé COMMANDER OÙ LIVRER VOTRE COMMANDE ? MODE 🛍️ À emporter Vous venez chercher 🛵 Livraison Dès 3,90 € · selon votre commune ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. CODE PROMO APPLIQUER NOTE POUR LA CUISINE (OPTIONNEL) 0 / 190 PAIEMENT VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livraison. Paiement sur cette page. Vous ne quittez pas Le Cayenne : les champs carte sont chiffrés par notre prestataire Mollie (PCI-DSS). Si votre banque demande une vérification, elle s'ouvre automatiquement et vous revenez ici juste après. Paiement sécurisé en ligne via Mollie · Données protégées (RGPD) PAIEMENT EN LIGNE Retour Payer par carte 9,90 € RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande",
+    "M-android-paiement-livraison-en-ligne": "1 Livraison & paiement → 2 Confirmé COMMANDER OÙ LIVRER VOTRE COMMANDE ? MODE 🛍️ À emporter Vous venez chercher 🛵 Livraison Dès 3,90 € · selon votre commune ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤5 km), 5,90 € (≤8 km), 6,90 € (≤10 km). ⏱ Préparation : 15 à 20 min, puis livraison selon le trajet (environ 5 min). Heure de livraison Au plus tôt vers 19:00 19:00 départ 19:30 départ 20:00 départ 20:30 départ 21:00 départ 21:30 départ 22:00 départ 22:30 départ Choisissez l'heure de départ de votre livraison — les départs ont lieu toutes les 30 minutes. CODE PROMO APPLIQUER NOTE POUR LA CUISINE (OPTIONNEL) 0 / 190 PAIEMENT Google Pay Payé en ligne — votre carte enregistrée, rien à régler à la remise VISA Carte bancaire (en ligne) Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site 💳 Carte à la livraison Vous payez par carte bancaire au livreur, à la remise 💵 Espèces à la livraison Vous payez en espèces au livreur, à la remise Titulaire de la carte Comme sur la carte Numéro de carte 16 chiffres Expiration MM/AA Cryptogramme 3 chiffres au dos Le paiement par carte est momentanément indisponible — vous pouvez régler à la livraison. Paiement sur cette page. Vous ne quittez pas Le Cayenne : les champs carte sont chiffrés par notre prestataire Mollie (PCI-DSS). Si votre banque demande une vérification, elle s'ouvre automatiquement et vous revenez ici juste après. Paiement sécurisé en ligne via Mollie · Données protégées (RGPD) PAIEMENT EN LIGNE Retour Payer par carte 9,90 € RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Vous gagnez +99 pts sur cette commande"
+  },
+  "defauts": [
+    {
+      "id": "P1-commander-36px",
+      "severite": "P3",
+      "detail": "bouton « Commander » de l'annonce : 116×36 px (< 44 px de cible tactile conseillée)",
+      "ou": "styles-v8-vitrine.css:733 (.lc-annonce-cta min-height:36px)"
+    },
+    {
+      "id": "P1-commander-36px",
+      "severite": "P3",
+      "detail": "bouton « Commander » de l'annonce : 112×36 px (< 44 px de cible tactile conseillée)",
+      "ou": "styles-v8-vitrine.css:733 (.lc-annonce-cta min-height:36px)"
+    },
+    {
+      "id": "P6-confirmation-livreur-sans-mode",
+      "severite": "P3",
+      "detail": "la confirmation « Confirmez-vous avoir encaissé 9,90 € ? » ne dit pas par quel moyen (carte) le livreur confirme avoir encaissé",
+      "ou": "resources/views/livreur.blade.php:220"
+    }
+  ],
+  "instrument": {
+    "shaServi": "846e31c54fae49c0",
+    "shaCopie": "846e31c54fae49c0",
+    "shaRacineServi": "93031768ed00bcef",
+    "shaRacineCopie": "93031768ed00bcef",
+    "balise": "compiled/funnel.js?v=20261024pay2",
+    "mutant": false,
+    "statutServeur": {
+      "status": true,
+      "enabled": true,
+      "grid": {
+        "home_city": "Hénin-Beaumont",
+        "home_fee": 3.9,
+        "tiers": [
+          {
+            "max_km": 5,
+            "fee": 4.9
+          },
+          {
+            "max_km": 8,
+            "fee": 5.9
+          },
+          {
+            "max_km": 10,
+            "fee": 6.9
+          }
+        ],
+        "max_km": 10
+      }
+    }
+  },
+  "chaineFiscaleAvant": {
+    "ok": true,
+    "fin": "  + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+  },
+  "reglementsLivraison": [
+    {
+      "nom": "Carte bancaire (en ligne)",
+      "meta": "Payée maintenant, en ligne — débit sécurisé, vous ne quittez pas le site",
+      "on": false
+    },
+    {
+      "nom": "Carte à la livraison",
+      "meta": "Vous payez par carte bancaire au livreur, à la remise",
+      "on": false
+    },
+    {
+      "nom": "Espèces à la livraison",
+      "meta": "Vous payez en espèces au livreur, à la remise",
+      "on": true
+    }
+  ],
+  "slotsLivreur": {
+    "card": "2026-10-24 12:30:00",
+    "cash": "2026-10-24 12:00:00"
+  },
+  "runLivreur": "{\"status\":true,\"data\":[{\"wave_at\":\"2026-10-24 12:00:00\",\"time\":\"12:00\",\"date\":\"2026-10-24\",\"is_today\":true,\"day_label\":\"aujourd'hui\",\"left\":false,\"tour\":{\"tour_minutes\":12,\"out_minutes\":10,\"return_minutes\":2,\"stops\":1,\"distance_km\":1.1,\"back_at\":\"2026-10-24 18:38:51\",\"source\":\"road\"},\"stops\":[{\"id\":524,\"order_id\":9123,\"order_number\":\"2410269123\",\"sequence\":1,\"ready\":true,\"order_status\":8,\"cancelled\":false,\"customer_name\":\"E2E-PAY-007760 Client\",\"customer_phone\":\"0697007760\",\"address\":\"12 Rue Elie Gruyelle 62110 Hénin-Beaumont\",\"apartment\":null,\"city\":\"Hénin-Beaumont\",\"postal_code\":\"62110\",\"waze_url\":\"https://waze.com/ul?ll=50.420426,2.949234&navigate=yes&zoom=17\",\"maps_url\":\"https://www.google.com/maps/dir/?api=1&destination=50.420426,2.949234&travelmode=driving\",\"collect_method\":\"cash\",\"collect_label\":\"Encaisser en espèces\",\"amount_due\":9.9,\"amount_due_cents\":990,\"eta_at\":\"2026-10-24 18:32:51\",\"eta_minutes\":6,\"left_at\":null,\"arrived_at\":null,\"delivered_at\":null,\"has_photo\":false,\"photo_url\":null}]},{\"wave_at\":\"2026-10-24 12:30:00\",\"time\":\"12:30\",\"date\":\"2026-10-24\",\"is_today\":true,\"day_label\":\"aujourd'hui\",\"left\":false,\"tour\":{\"tour_minutes\":12,\"out_minutes\":10,\"return_minutes\":2,\"stops\":1,\"distance_km\":1.1,\"back_at\":\"2026-10-24 18:38:51\",\"source\":\"road\"},\"stops\":[{\"id\":525,\"order_id\":9124,\"order_number\":\"2410269124\",\"sequence\":1,\"ready\":true,\"order_status\":8,\"cancelled\":false,\"customer_name\":\"E2E-PAY-007760 Client\",\"customer_phone\":\"0697007760\",\"address\":\"12 Rue Elie Gruyel",
+  "dialoguesLivreur": [
+    "Confirmez-vous avoir encaissé 9,90 € ?"
+  ],
+  "chaineFiscaleApres": {
+    "ok": true,
+    "fin": "  + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+  },
+  "p6": {
+    "avantCarte": {
+      "id": "9124",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "card",
+      "payment_status": "15",
+      "status": "8",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 0,
+      "pay": "",
+      "nEscrow": 0,
+      "nAuditCarte": 0,
+      "nAuditEscrow": 0,
+      "nFiscal": 0
+    },
+    "apresDepart": {
+      "id": "9124",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "card",
+      "payment_status": "15",
+      "status": "10",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 0,
+      "pay": "",
+      "nEscrow": 0,
+      "nAuditCarte": 0,
+      "nAuditEscrow": 0,
+      "nFiscal": 0
+    },
+    "apresArrivee": {
+      "id": "9124",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "card",
+      "payment_status": "15",
+      "status": "10",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 0,
+      "pay": "",
+      "nEscrow": 0,
+      "nAuditCarte": 0,
+      "nAuditEscrow": 0,
+      "nFiscal": 0
+    },
+    "apres": {
+      "id": "9124",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "card",
+      "payment_status": "5",
+      "status": "13",
+      "pos_payment_method": "2",
+      "fiscal_sequence_no": "3342",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 1,
+      "pay": "2:9.90:livraison",
+      "nEscrow": 0,
+      "nAuditCarte": 1,
+      "nAuditEscrow": 0,
+      "nFiscal": 1
+    },
+    "aprDepE": {
+      "id": "9123",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "NULL",
+      "payment_status": "15",
+      "status": "10",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 0,
+      "pay": "",
+      "nEscrow": 0,
+      "nAuditCarte": 0,
+      "nAuditEscrow": 0,
+      "nFiscal": 0
+    },
+    "aprE": {
+      "id": "9123",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "NULL",
+      "payment_status": "5",
+      "status": "13",
+      "pos_payment_method": "1",
+      "fiscal_sequence_no": "3343",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "10",
+      "nPay": 0,
+      "pay": "",
+      "nEscrow": 0,
+      "nAuditCarte": 0,
+      "nAuditEscrow": 1,
+      "nFiscal": 1
+    }
+  },
+  "mollieTentativesAvortees": 2,
+  "p8": {
+    "devisConserve": true,
+    "regsApresRetour": [
+      {
+        "n": "Carte bancaire (en ligne)",
+        "on": false
+      },
+      {
+        "n": "Carte à la livraison",
+        "on": false
+      },
+      {
+        "n": "Espèces à la livraison",
+        "on": true
+      }
+    ],
+    "vus": [
+      {
+        "mode": "perdue",
+        "cle": "webmvmm4bp169wo0phc5x",
+        "door": null
+      },
+      {
+        "mode": "temoin",
+        "cle": "webmvmm4dgpg6fvbcey1z",
+        "door": "card"
+      },
+      {
+        "mode": "reel",
+        "cle": "webmvmm4dgpg6fvbcey1z",
+        "door": "card"
+      }
+    ],
+    "baseA": {
+      "id": "9127",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "NULL",
+      "payment_status": "10",
+      "status": "1",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "NULL"
+    },
+    "baseB": {
+      "id": "9128",
+      "order_type": "5",
+      "payment_method": "1",
+      "door_payment_mode": "card",
+      "payment_status": "10",
+      "status": "1",
+      "pos_payment_method": "NULL",
+      "fiscal_sequence_no": "NULL",
+      "subtotal": "6.000000",
+      "delivery_charge": "3.900000",
+      "total": "9.900000",
+      "delivery_boy_id": "NULL"
+    }
+  },
+  "tutoiementResiduPage": [
+    null,
+    null
+  ],
+  "http4xxParEtat": [],
+  "finishedAt": "2026-10-24T16:27:56.563Z",
+  "pngUtilises": 12
+}

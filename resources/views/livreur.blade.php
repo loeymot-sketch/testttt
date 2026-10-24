@@ -161,7 +161,7 @@
             actions = '<div class="grid2">'
                 + '<label class="btn sec file-cta" style="cursor:pointer">📷 ' + (s.has_photo ? 'Photo prise' : 'Arrivé + photo')
                 + '<input type="file" accept="image/*" capture="environment" aria-label="Arrivé : prendre la photo de preuve" data-arrive="' + s.id + '"></label>'
-                + '<button class="btn ok" data-deliver="' + s.id + '" data-due="' + s.amount_due_cents + '">Remis au client</button></div>';
+                + '<button class="btn ok" data-deliver="' + s.id + '" data-due="' + s.amount_due_cents + '" data-mode="' + esc(s.collect_label || '') + '">Remis au client</button></div>';
         }
         var nav = s.waze_url ? '<div class="grid2"><a class="btn" href="' + esc(s.waze_url) + '" target="_blank" rel="noopener">Waze</a>'
                               + '<a class="btn sec" href="' + esc(s.maps_url) + '" target="_blank" rel="noopener">Plans</a></div>' : '';
@@ -217,7 +217,9 @@
             }).catch(function (er) { $('app-err').textContent = er.message; });
         } else if (t.dataset.deliver) {
             var due = Number(t.dataset.due || 0);
-            if (due > 0 && !window.confirm('Confirmez-vous avoir encaissé ' + eur(due / 100) + ' ?')) return;
+            // [E2E PAIEMENT 2026-10-24] La confirmation dit le MODE encaissé (carte au terminal, espèces, titre-restaurant), pas seulement le montant.
+            var mode = (t.dataset.mode || '').toLowerCase();
+            if (due > 0 && !window.confirm('Confirmez-vous avoir encaissé ' + eur(due / 100) + (mode ? ' (' + mode + ')' : '') + ' ?')) return;
             api('POST', '/api/frontend/delivery-run/stops/' + t.dataset.deliver + '/deliver', due > 0 ? { collected_cents: due } : {})
                 .then(function () { return load(); }).catch(function (er) { $('app-err').textContent = er.message; });
         }
