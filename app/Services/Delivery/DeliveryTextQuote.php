@@ -47,6 +47,9 @@ class DeliveryTextQuote
             'suggest_uber_eats' => $tariff['suggest_uber_eats'],
             'address'           => ['label' => $geo['label'], 'street' => $geo['street'], 'city' => $geo['city'], 'postal_code' => $geo['postal_code']],
             'distance_km'       => round($distance, 2),
+            // [2026-10-24] Préparation annoncée (config/delivery.php 'prep_minutes') : « Préparation : 15 à 20 min ».
+            'prep_minutes_low'  => (int) config('delivery.prep_minutes.low', 15),
+            'prep_minutes_high' => (int) config('delivery.prep_minutes.high', 20),
             'travel_minutes'    => $tariff['allowed'] ? $this->quotes->travelMinutes($distance) : null,
             'waves'             => $tariff['allowed'] ? $this->waves->availableWaves((int) $branch->id, null, 10) : [],
         ];

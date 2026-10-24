@@ -49,6 +49,11 @@ return [
     'travel_buffer_minutes' => 3,
     // Délai minimal entre « maintenant » et le premier départ proposé = préparation + chargement.
     'min_lead_minutes'  => 20,
+    // [2026-10-24] Préparation ANNONCÉE au client par le devis public (`prep_minutes_low` / `prep_minutes_high`) : le site
+    // affiche « Préparation : 15 à 20 min, puis livraison selon le trajet ». C'est une promesse d'affichage, pas un
+    // réglage de cuisine. Invariant (test DeliveryCardAtDoorTest) : high <= min_lead_minutes — le premier départ proposé
+    // ne peut pas tomber avant la fin de la préparation annoncée. À CONFIRMER PAR LE PROPRIÉTAIRE après quelques services.
+    'prep_minutes'      => ['low' => 15, 'high' => 20],
     // Horizon : combien de jours à l'avance un créneau de livraison peut être réservé.
     'horizon_days'      => 2,
     // [VG-2026-10-21 M4-004] Avance maximale du départ livreur (« Je pars ») sur l'heure de sa tournée, minutes.

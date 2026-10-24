@@ -43,6 +43,8 @@ class Order extends Model implements BroadcastableOrder
         'address',
         'payment_method',
         'payment_status',
+        // [CARTE À LA LIVRAISON 2026-10-24] 'card' = le livreur encaisse au terminal à la remise (jamais posé par caisse/borne).
+        'door_payment_mode',
         'status',
         'dining_table_id',
         'source',

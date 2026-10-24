@@ -86,6 +86,9 @@ class OrderDetailsResource extends JsonResource
             'delivery_slot_at' => $this->resolveDeliverySlotAt(),
             'prevue_le' => $this->resolvePrevueLe(),
             'payment_method' => $this->payment_method,
+            // [CARTE À LA LIVRAISON 2026-10-24] 'card' = payer par carte au livreur (terminal), null sinon (espèces, en ligne…).
+            // Lu par le site (api.getOrder) pour annoncer le mode de paiement à la confirmation et au suivi.
+            'door_payment_mode' => $this->door_payment_mode,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
             // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a counter-collect

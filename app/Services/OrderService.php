@@ -2091,8 +2091,10 @@ class OrderService
             $cashEscrowWritten = false;
             $cashEscrowMeta = null;
             // [VG-2026-10-21 L2] Trace NF525 de la tranche titre-restaurant remise au livreur (écrite après le COMMIT).
-            $mealVoucherMeta = null;
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$mealVoucherMeta) {
+            // [CARTE À LA LIVRAISON 2026-10-24] Même structure pour la tranche CARTE encaissée au terminal du livreur
+            // (clés `mode` + `event` : une tranche d'audit, deux modes, jamais d'escrow espèces).
+            $doorTrancheMeta = null;
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$doorTrancheMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -2186,7 +2188,31 @@ class OrderService
                     $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
                     $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
 
-                    if ($isCod) {
+                    // [CARTE À LA LIVRAISON 2026-10-24] Livraison du site « à payer à la livraison » mais PAR CARTE
+                    // (orders.door_payment_mode='card', posé à la prise de commande — OrderRequest le restreint à
+                    // livraison + payment_method=1). Comme le titre-restaurant : jamais PAYÉ au départ ; PAYÉ, scellé
+                    // (numéro fiscal) et tranche CARTE à la REMISE. Le livreur encaisse au terminal de paiement qu'il porte
+                    // (hors de notre système) ; nous enregistrons le mode et le montant. AUCUN escrow espèces ni mouvement
+                    // de tiroir : ce n'est pas de l'argent liquide.
+                    $isCardAtDoor = $isCod && (string) $locked->door_payment_mode === 'card';
+
+                    if ($isCardAtDoor) {
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+                            if ($locked->pos_payment_method === null
+                                || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
+                                $locked->pos_payment_method = \App\Enums\PosPaymentMethod::CARD;
+                            }
+                            $doorTrancheMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id' => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount' => round((float) $locked->total, 2),
+                                'mode' => \App\Enums\PosPaymentMethod::CARD,
+                                'event' => 'doorstep_card_collection',
+                            ];
+                        }
+                    } elseif ($isCod) {
                         if ($atDelivered) {
                             $locked->payment_status = PaymentStatus::PAID;
                             // [VG-2026-10-21 Z-livraison] Le Z range par `pos_payment_method ?: payment_method` : une livraison
@@ -2225,11 +2251,13 @@ class OrderService
                                 || (int) $locked->pos_payment_method === \App\Enums\PosPaymentMethod::COUNTER_DEFERRED) {
                                 $locked->pos_payment_method = \App\Enums\PosPaymentMethod::TICKET_RESTAURANT;
                             }
-                            $mealVoucherMeta = [
+                            $doorTrancheMeta = [
                                 'branch_id' => (int) $locked->branch_id,
                                 'order_id' => (int) $locked->id,
                                 'driver_id' => Auth::check() ? (int) Auth::id() : null,
                                 'amount' => round((float) $locked->total, 2),
+                                'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                                'event' => 'doorstep_meal_voucher_collection',
                             ];
                         }
                     } else {
@@ -2271,12 +2299,13 @@ class OrderService
 
                 // [VG-2026-10-21 L2] La vente titre-restaurant scellée à la remise porte SON paiement (même forme que
                 // SplitPaymentService : mode PosPaymentMethod::TICKET_RESTAURANT, montant = total serveur).
-                if (is_array($mealVoucherMeta)) {
-                    $mealVoucherMeta['payment_id'] = (int) \App\Models\OrderPayment::query()->create([
-                        'order_id' => $mealVoucherMeta['order_id'],
-                        'branch_id' => $mealVoucherMeta['branch_id'],
-                        'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
-                        'amount' => $mealVoucherMeta['amount'],
+                // [CARTE À LA LIVRAISON 2026-10-24] Idem pour la carte encaissée au terminal du livreur (mode CARD).
+                if (is_array($doorTrancheMeta)) {
+                    $doorTrancheMeta['payment_id'] = (int) \App\Models\OrderPayment::query()->create([
+                        'order_id' => $doorTrancheMeta['order_id'],
+                        'branch_id' => $doorTrancheMeta['branch_id'],
+                        'mode' => $doorTrancheMeta['mode'],
+                        'amount' => $doorTrancheMeta['amount'],
                         'tendered' => null,
                         'change_amount' => 0,
                         'reference' => 'livraison',
@@ -2296,29 +2325,29 @@ class OrderService
                 $order = $locked;
             });
 
-            if (is_array($mealVoucherMeta)) {
+            if (is_array($doorTrancheMeta)) {
                 // [VG-2026-10-21 L2] Trace d'audit chaînée de la tranche, après le COMMIT (même discipline que l'escrow
                 // espèces ci-dessous) ; une erreur d'audit ne défait jamais un encaissement réel.
                 try {
                     app(AuditLogService::class)->write([
-                        'branch_id' => $mealVoucherMeta['branch_id'],
-                        'user_id' => $mealVoucherMeta['driver_id'],
+                        'branch_id' => $doorTrancheMeta['branch_id'],
+                        'user_id' => $doorTrancheMeta['driver_id'],
                         'action' => 'order.payment_tranche_persisted',
                         'resource' => 'order_payment',
-                        'resource_id' => $mealVoucherMeta['payment_id'],
+                        'resource_id' => $doorTrancheMeta['payment_id'],
                         'payload' => [
-                            'order_id' => $mealVoucherMeta['order_id'],
+                            'order_id' => $doorTrancheMeta['order_id'],
                             'tranche_index' => 0,
-                            'mode' => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
-                            'amount' => $mealVoucherMeta['amount'],
+                            'mode' => $doorTrancheMeta['mode'],
+                            'amount' => $doorTrancheMeta['amount'],
                             'tendered' => null,
                             'change' => 0.0,
-                            'event' => 'doorstep_meal_voucher_collection',
+                            'event' => $doorTrancheMeta['event'],
                         ],
                     ]);
                 } catch (\Throwable $auditError) {
-                    Log::warning('[DeliveryBoy] meal-voucher tranche audit_log write failed: '.$auditError->getMessage(), [
-                        'order_id' => $mealVoucherMeta['order_id'],
+                    Log::warning('[DeliveryBoy] door tranche (' . ($doorTrancheMeta['event'] ?? '?') . ') audit_log write failed: '.$auditError->getMessage(), [
+                        'order_id' => $doorTrancheMeta['order_id'],
                     ]);
                 }
             }

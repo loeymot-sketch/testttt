@@ -203,6 +203,10 @@ class OrderRequest extends FormRequest
             // COUNTER_DEFERRED = orpheline INENCAISSABLE dont le ticket cuisine s'imprimait (M16-P1). Le
             // nullable reste (le backend traite l'absence) ; toute valeur EXPLICITE hors {1,4,5} → 422.
             'payment_method' => ['nullable', 'numeric', 'in:1,4,5'],
+            // [CARTE À LA LIVRAISON 2026-10-24 · décision propriétaire] « Payer par carte à la livraison » : le livreur
+            // encaisse au terminal de paiement qu'il porte. Seule valeur autorisée : `card`. L'absence du champ = espèces
+            // à la porte (inchangé). Les contraintes croisées (livraison + payment_method=1) vivent dans withValidator.
+            'door_payment' => ['nullable', 'string', 'in:card'],
             'token' => ['nullable', 'string'],
             // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom donné par le client à la borne, avant de
             // confirmer : « j'ai la commande au nom de X » — la caisse retrouve la commande sans
@@ -222,12 +226,20 @@ class OrderRequest extends FormRequest
     {
         return [
             'scheduled_at.date_format' => 'Le créneau doit être au format AAAA-MM-JJ HH:MM:SS (ex. 2026-07-21 19:30:00).',
+            'door_payment.in' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
+            'door_payment.string' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            // [CARTE À LA LIVRAISON 2026-10-24] Anti-forgeage : `door_payment` n'a de sens que pour une LIVRAISON payée
+            // « à la livraison » (payment_method=1). Posé ailleurs (à emporter, carte en ligne, titre-restaurant, borne), il
+            // fabriquerait une commande dont le marqueur contredit le mode réel — même famille que le titre-restaurant forgé
+            // du 2026-10-21 (P0). Placé AVANT les retours anticipés borne pour couvrir toutes les surfaces.
+            $this->validateDoorPaymentAfter($validator);
+
             // [E4 SCHEDULED-INTAKE 2026-07-20] Gardes métier du créneau programmé —
             // placées AVANT les early-returns kiosk pour couvrir toutes les surfaces
             // (web/app/borne). Champ absent = ASAP, no-op strict.
@@ -325,6 +337,27 @@ class OrderRequest extends FormRequest
             // ratio injection on non-menu_component addons.
             $this->validateAddonRolesAfter($validator);
         });
+    }
+
+    /**
+     * [CARTE À LA LIVRAISON 2026-10-24] `door_payment=card` exige une livraison (order_type=5) ET payment_method=1.
+     * Une valeur autre que `card` est déjà refusée par la règle `in:card` (message sur la même clé).
+     */
+    private function validateDoorPaymentAfter($validator): void
+    {
+        if (! $this->filled('door_payment') || $validator->errors()->has('door_payment')) {
+            return;
+        }
+
+        if ((int) $this->input('order_type', 0) !== OrderType::DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'existe que pour une livraison.');
+
+            return;
+        }
+
+        if ((int) $this->input('payment_method', 0) !== \App\Enums\PaymentGateway::CASH_ON_DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'est possible que pour une commande à payer à la livraison.');
+        }
     }
 
     /**

@@ -71,6 +71,8 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'address',
         'payment_method',
         'payment_status',
+        // [CARTE À LA LIVRAISON 2026-10-24] Même table que Order ; posé par FrontendOrderService depuis `door_payment=card`.
+        'door_payment_mode',
         'pos_payment_method',
         'pos_payment_note',
         'pos_received_amount',

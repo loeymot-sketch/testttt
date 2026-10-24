@@ -490,9 +490,14 @@ class DeliveryWaveService
             return ['collect_method' => DeliveryStop::COLLECT_PAID_ONLINE, 'amount_due_cents' => 0];
         }
 
+        // [CARTE À LA LIVRAISON 2026-10-24] À payer à la livraison MAIS par carte : le client l'a choisi sur le site
+        // (orders.door_payment_mode='card') ; le livreur encaisse au terminal qu'il porte. Seul payment_method=1 est concerné.
+        $cardAtDoor = (int) $order->payment_method === PaymentGateway::CASH_ON_DELIVERY
+            && (string) $order->door_payment_mode === 'card';
+
         // [VG-2026-10-21 L2] Titre-restaurant récupéré à la porte (décision propriétaire 2026-10-22) : un vrai mode, pas « carte ».
         $method = match ((int) $order->payment_method) {
-            PaymentGateway::CASH_ON_DELIVERY  => DeliveryStop::COLLECT_CASH,
+            PaymentGateway::CASH_ON_DELIVERY  => $cardAtDoor ? DeliveryStop::COLLECT_CARD : DeliveryStop::COLLECT_CASH,
             PaymentGateway::TICKET_RESTAURANT => self::COLLECT_MEAL_VOUCHER,
             default                           => DeliveryStop::COLLECT_CARD,
         };

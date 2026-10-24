@@ -360,6 +360,19 @@ class FrontendOrderService
                     $validatedRequest['delivery_charge'] = 0;
                 }
 
+                // [CARTE À LA LIVRAISON 2026-10-24] `door_payment=card` (validé par OrderRequest : livraison +
+                // payment_method=1) devient le marqueur persistant `orders.door_payment_mode='card'`. Le champ de la requête
+                // n'est jamais une colonne : retiré dans tous les cas. Re-vérifié ICI (défense en profondeur, indépendante
+                // de la FormRequest) : jamais posé hors livraison payée à la livraison, jamais par une machine borne.
+                $doorPayment = $validatedRequest['door_payment'] ?? null;
+                unset($validatedRequest['door_payment']);
+                if ($doorPayment === 'card'
+                    && ! $isKioskMachineOrder
+                    && (int) ($validatedRequest['order_type'] ?? 0) === OrderType::DELIVERY
+                    && (int) ($validatedRequest['payment_method'] ?? 0) === PaymentGateway::CASH_ON_DELIVERY) {
+                    $validatedRequest['door_payment_mode'] = 'card';
+                }
+
                 $this->frontendOrder = FrontendOrder::create(
                     $validatedRequest + [
                         'user_id'          => Auth::user()->id,

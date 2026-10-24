@@ -118,6 +118,11 @@ Une vraie livraison traverse les trois surfaces : commande web par l'API (comme 
     la planche « Tournées » de la caisse (`PosDeliveryBoard.vue`) affiche « Espèces » pour un arrêt `meal_voucher` ; une livraison
     caisse « à encaisser à la porte » est toujours notée espèces (`OrderService::posOrderStore` force `CASH_ON_DELIVERY`) ;
     le flip historique des autres modes non-espèces (carte, portefeuille) au départ est inchangé.
+    **Mis à jour le 2026-10-24 :** le titre-restaurant reste à ajouter côté site ; la **carte à la livraison** est faite (voir
+    « 3sexies. Carte à la livraison » ci-dessous). Le flip historique d'une commande `payment_method=4` (carte EN LIGNE) restée
+    NON payée, basculée PAYÉE au départ du livreur sans aucun paiement, **reste ouvert** : le site ne l'atteint pas (une carte en ligne
+    n'est livrée qu'après paiement Mollie), seule une commande carte jamais payée ou une requête forgée y arrive — à traiter
+    avant d'exposer un autre canal « carte non payée » (`OrderService::deliveryBoyOrderChangeStatus`, branche `else` « Non-COD »).
 - **P1 — compteurs de débit partagés** : des `throttle:N,M` nus signent la requête par (domaine|IP) — ou par utilisateur — **sans la
   route** : toutes les routes invitées d'une même IP partagent UN compteur. 21 appels à `/status` faisaient répondre 429 au devis
   (limite 20) ; côté caisse, 30 suggestions bloquaient la bascule et l'enregistrement d'adresse. Chaque route a maintenant son limiteur
@@ -137,6 +142,39 @@ Une vraie livraison traverse les trois surfaces : commande web par l'API (comme 
 - **À vérifier en production avant d'ouvrir** : `Settings delivery.free_delivery_above` doit valoir **0** (le code retombe sur 30 € s'il
   est absent ; la migration `2026_07_27_093000` le pose à 0) ; `users.branch_id` du livreur doit être > 0 (sinon la garde d'idempotence
   répond 422 au départ/arrivée/remise).
+
+## 3sexies. Carte à la livraison (2026-10-24, décision propriétaire)
+
+Trois façons de payer une livraison commandée sur le site : **(1) en ligne** (Apple Pay / carte, `payment_method=4`, Mollie, inchangé),
+**(2) carte à la livraison** (nouveau), **(3) espèces à la livraison** (`payment_method=1`, inchangé).
+
+**Contrat (le site est codé contre lui).**
+- Requête `POST /api/frontend/order` : `payment_method=1` **+** `door_payment='card'`, `order_type=5`. L'absence du champ = espèces.
+- `OrderRequest` refuse (422, clé `door_payment`, message français) : `door_payment` avec un `order_type` autre que livraison, avec un
+  `payment_method` autre que 1, ou avec une valeur autre que `card` (anti-forgeage ; même famille que le titre-restaurant forgé du 2026-10-21).
+  `FrontendOrderService` re-vérifie avant d'écrire (jamais posé par la borne, la caisse ou un autre type).
+- Colonne `orders.door_payment_mode` (`string(12)` nullable, migration `2026_10_24_100000`) : `'card'` ou `NULL`. Exposée par
+  `GET /api/frontend/order/show/{id}` (`OrderDetailsResource`) sous la clé `door_payment_mode`.
+- Le devis public (`POST /api/frontend/delivery/quote`) renvoie aussi `prep_minutes_low` / `prep_minutes_high`
+  (`config/delivery.php` → `prep_minutes`, 15 et 20 : « Préparation 15 à 20 min, puis livraison selon le trajet »).
+  Invariant testé : `high <= min_lead_minutes` (le premier départ proposé ne peut pas promettre moins que la préparation annoncée).
+
+**Ce que fait le livreur.** L'arrêt porte le mode `card` et le montant total (« Encaisser par carte »), avant comme après le départ.
+À la porte il fait payer le client **sur son terminal de paiement**, puis touche « Remis » (`POST …/stops/{id}/deliver`).
+
+**Ce que fait le logiciel.** Comme pour les espèces et le titre-restaurant (`OrderService::deliveryBoyOrderChangeStatus`) : **jamais PAYÉ
+au départ** ; à la REMISE : `payment_status=PAID`, numéro fiscal NF525 (une seule fois), `pos_payment_method=CARD`, une ligne
+`order_payments` (mode CARD, montant = total serveur, `reference='livraison'`) et une trace d'audit `order.payment_tranche_persisted`
+(événement `doorstep_card_collection`). **Aucun** escrow espèces, aucun mouvement de tiroir ni de caisse livreur. Le Z du jour range la vente
+en **Carte** (clé `2`), jamais en espèces (`ZLivraisonCarteALaPorteTest`).
+
+**La limite honnête.** L'encaissement physique se fait sur le terminal de paiement du livreur, **hors de notre système** ; nous enregistrons
+le mode et le montant à la remise, comme pour les espèces — **aucun TPE n'est piloté par le logiciel**. Le logiciel ne peut donc pas
+prouver que la carte a réellement été débitée : c'est la confirmation du livreur (« Remis ») qui scelle la vente. Le rapprochement avec le
+relevé du terminal reste manuel.
+
+Tests : `tests/Feature/Delivery/DeliveryCardAtDoorTest.php` (forgeages, chemin complet par l'API publique, régression espèces, carte en ligne
+inchangée, exposition au site, devis), `tests/Feature/Fiscal/ZLivraisonCarteALaPorteTest.php` (ventilation du Z).
 
 ## 4. Lancer la livraison (rien n'est publié tant que ce n'est pas fait)
 
