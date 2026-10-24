@@ -14,7 +14,7 @@
 const { test, expect } = require('@playwright/test');
 const { loginAsPosOperator } = require('./helpers/login');
 
-const BASE = 'http://localhost:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 test.describe('CV1-POS-AVAILABILITY-LIVE-001 — fix validation', () => {
 

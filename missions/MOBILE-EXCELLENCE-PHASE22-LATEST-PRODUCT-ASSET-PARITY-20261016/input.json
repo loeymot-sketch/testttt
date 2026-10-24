@@ -1,0 +1,26 @@
+{
+  "task_id": "MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016",
+  "objective": "Align mobile sandwich, galette and tacos product/category/hero images with the latest PNG assets used by the site and kiosk.",
+  "plan_file": "plans/PLAN_MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016_2026-10-16.md",
+  "task_file": "tasks/MOBILE-EXCELLENCE-PHASE22-LATEST-PRODUCT-ASSET-PARITY-20261016.md",
+  "scope": [
+    "mobile/data/menu.js",
+    "mobile/assets/menu/cat-sandwich-cayenne.png",
+    "mobile/assets/menu/cat-galette.png",
+    "mobile/assets/menu/cat-tacos.png",
+    "mobile/assets/menu/sandwich-cayenne.png",
+    "mobile/assets/menu/sandwich-supreme.png",
+    "mobile/assets/menu/sandwich-mega.png",
+    "mobile/assets/menu/sandwich-terminator.png",
+    "mobile/assets/menu/galette.png",
+    "mobile/assets/menu/tacos-cayenne.png",
+    "mobile/tests/mobile-catalog-visual.spec.js",
+    "tests/mobile-e2e/catalog-visual-critical.spec.js"
+  ],
+  "invariants": [
+    "backend pricing is the only price authority",
+    "no OrderStatus, branch_id, dispatch or order-service changes",
+    "no generated or cross-brand image substitution"
+  ],
+  "execution_delegation": "codex-extension with foodking-complex-implementer fallback"
+}

@@ -7,7 +7,7 @@
 // visibles sans défiler, débordements. Une capture jolie ne prouve rien ; un chiffre si.
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'http://127.0.0.1:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const SHOTS = 'reports/kds-ui-multi-2026-08-07';
 
 async function login(page) {

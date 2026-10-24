@@ -56,8 +56,28 @@ class ValidJsonOrder implements Rule
 
         // [PLAN_03 D-004] Étape 3 : Vérifier chaque item
         foreach ($decoded as $index => $item) {
+            $lineType = (string) ($item['line_type'] ?? 'catalog');
+            if ($lineType === \App\Models\OrderItem::LINE_TYPE_MANUAL_SUPPLEMENT) {
+                if (!isset($item['manual_amount']) || !is_numeric($item['manual_amount'])) {
+                    $this->message = "Le supplément libre à l'index {$index} n'a pas de montant valide.";
+                    return false;
+                }
+                if ((float) $item['manual_amount'] <= 0) {
+                    $this->message = "Le supplément libre à l'index {$index} doit être supérieur à zéro.";
+                    return false;
+                }
+                if (isset($item['manual_label']) && (!is_string($item['manual_label']) || mb_strlen($item['manual_label']) > 80)) {
+                    $this->message = "Le libellé du supplément libre à l'index {$index} dépasse 80 caractères.";
+                    return false;
+                }
+            } elseif ($lineType !== \App\Models\OrderItem::LINE_TYPE_CATALOG) {
+                $this->message = "Le type de ligne à l'index {$index} est invalide.";
+                return false;
+            }
+
             // item_id obligatoire et numérique > 0
-            if (!isset($item['item_id']) || !is_numeric($item['item_id']) || (int)$item['item_id'] <= 0) {
+            if ($lineType === \App\Models\OrderItem::LINE_TYPE_CATALOG
+                && (!isset($item['item_id']) || !is_numeric($item['item_id']) || (int)$item['item_id'] <= 0)) {
                 $this->message = "L'article à l'index {$index} n'a pas d'item_id valide.";
                 return false;
             }

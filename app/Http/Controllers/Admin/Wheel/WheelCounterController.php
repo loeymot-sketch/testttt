@@ -54,7 +54,9 @@ class WheelCounterController extends Controller
             // mais l'animation ne doit jamais le désigner gagnant : avec un arrêt au hasard uniforme,
             // la tablette s'arrêtait dessus 1 fois sur 7, toutes les dix secondes, en salle.
             'spinnable' => app(\App\Services\Wheel\WheelService::class)->spinnableKeys($branchId),
-            'minOrder' => (float) config('wheel.min_order_amount', 0),
+            // [ONB-05 2026-08-28] Même porte que l'application : sinon l'écran de
+            // contrôle annonce un minimum que la roue n'applique pas.
+            'minOrder' => app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(),
             // [2026-08-13] Ce qui REMPLACE l'acte qui réimprimait la liste des lots déjà portée par
             // la roue. Une information neuve — « ça vient de donner » — ou rien du tout : si
             // personne n'a joué depuis deux jours, l'acte est sauté plutôt que d'afficher un cadre

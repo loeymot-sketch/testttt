@@ -31,8 +31,10 @@ class AddressRequest extends FormRequest
     {
         return [
             'label'     => ['required', 'string', 'max:190', Rule::unique("addresses", "label")->ignore(optional($this->route('address'))->id)->where('user_id', auth()->id())],
-            'latitude'  => ['required', 'max:190'],
-            'longitude' => ['required', 'max:190'],
+            // [LIVRAISON 2026-10-20] Le serveur géocode l'adresse : les coordonnées du navigateur ne
+            // sont plus exigées (et sont remplacées quand le géocodage serveur est actif).
+            'latitude'  => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
+            'longitude' => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
             'address'   => ['required', 'string', 'max:500'],
             'apartment' => ['nullable', 'string', 'max:200'],
         ];

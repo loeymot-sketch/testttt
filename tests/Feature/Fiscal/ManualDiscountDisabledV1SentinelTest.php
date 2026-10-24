@@ -96,9 +96,17 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         $payload = $this->payload(['discount' => 1.00, 'discount_reason' => 'remise client fidèle']);
-        $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload))
-            ->assertStatus(422);
+
+        // [AUDIT CAISSE 2026-09-29] Le refus tombe désormais AU DEVIS, pas au commit :
+        // avant, le devis acceptait la remise, la modale de paiement s'ouvrait sur le
+        // total remisé, et la commande — envoyée SANS `discount` (PaymentComponent le
+        // retire) — répondait « intent mismatch » 401 qui DÉCONNECTAIT le caissier
+        // (reproduit par l'écran). L'invariant de ce sentinel est intact et plus fort :
+        // refusé, avec le message prévu, avant qu'un centime ne change de main.
+        $devis = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos/quote', $payload);
+        $devis->assertStatus(422);
+        $this->assertStringContainsString('remises manuelles sont désactivées', (string) $devis->json('errors.discount.0'));
     }
 
     public function test_zero_discount_order_still_succeeds_when_disabled(): void

@@ -81,6 +81,10 @@ test.describe('Kiosk — écran login borne', () => {
   // ≥1 assertion business (URL /kiosk/categories OU panier indicator).
   // -------------------------------------------------------------------
   test('kiosk navigation flow — categories and items browsable adversarial', async ({ page }) => {
+    // La borne offre un mode utilisateur « réduction des animations ». Le
+    // navigateur E2E l'active afin qu'une animation décorative infinie ne rende
+    // pas une vraie cible tactile instable pour Playwright.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1080, height: 1920 });
 
     const jsErrors = [];

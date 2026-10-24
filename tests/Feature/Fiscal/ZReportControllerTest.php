@@ -94,20 +94,65 @@ class ZReportControllerTest extends TestCase
         $this->assertNotNull($close->json('data.signature'));
     }
 
-    public function test_pdf_route_returns_signed_bundle(): void
+    /**
+     * [AUDIT-COMPTA 2026-08-29] La route `/pdf` doit livrer un PDF.
+     *
+     * Ce banc s'appelait « pdf route returns signed bundle » et vérifiait `data.verified`
+     * dans du JSON. Il prouvait donc que la route renvoyait un paquet signé — **jamais
+     * qu'elle renvoyait un PDF**. Il est resté vert pendant que le bouton « PDF » de
+     * l'écran des rapports Z téléchargeait un fichier `rapport-z-27.pdf` de 793 octets
+     * commençant par `{"data":{"z_repo`, qu'aucun lecteur n'ouvrait.
+     *
+     * C'est le cas d'école du banc au mauvais périmètre : rigoureux sur ce qu'il mesurait,
+     * muet sur ce qui comptait. On mesure désormais la chose que l'utilisateur reçoit —
+     * les premiers octets du corps de la réponse — tout en gardant l'intention d'origine :
+     * l'édition vérifie bien la signature du rapport.
+     */
+    public function test_pdf_route_returns_a_real_pdf(): void
     {
         $this->actingAs($this->manager, 'sanctum');
 
-        $open   = $this->withHeaders($this->apiHeaders())->postJson('/api/admin/fiscal/z-report/open');
+        $this->withHeaders($this->apiHeaders())->postJson('/api/admin/fiscal/z-report/open');
         $closed = $this->withHeaders($this->apiHeaders())->postJson('/api/admin/fiscal/z-report/close');
         $id     = $closed->json('data.id');
 
-        $pdf = $this->withHeaders($this->apiHeaders())
-            ->getJson('/api/admin/fiscal/z-report/' . $id . '/pdf');
+        $reponse = $this->withHeaders($this->apiHeaders())
+            ->get('/api/admin/fiscal/z-report/' . $id . '/pdf');
 
-        $pdf->assertStatus(200);
-        $pdf->assertJsonPath('data.verified', true);
-        $this->assertNotNull($pdf->json('data.z_report.signature'));
+        $reponse->assertStatus(200);
+        $reponse->assertHeader('content-type', 'application/pdf');
+
+        $corps = $reponse->streamedContent();
+
+        $this->assertStringStartsWith(
+            '%PDF-',
+            $corps,
+            'La route /pdf doit livrer un PDF. Reçu : ' . substr($corps, 0, 40),
+        );
+        // Un PDF de rapport Z porte au minimum l'en-tête, la structure et les polices :
+        // quelques centaines d'octets signaleraient un corps d'erreur déguisé.
+        $this->assertGreaterThan(1000, strlen($corps));
+    }
+
+    /**
+     * L'intention du banc d'origine, conservée : l'édition contrôle le scellement.
+     * On la vérifie là où elle est observable — sur le service — plutôt qu'en imposant
+     * une forme de réponse à une route dont le métier est de rendre un document.
+     */
+    public function test_pdf_edition_verifies_the_fiscal_seal(): void
+    {
+        $this->actingAs($this->manager, 'sanctum');
+
+        $this->withHeaders($this->apiHeaders())->postJson('/api/admin/fiscal/z-report/open');
+        $closed = $this->withHeaders($this->apiHeaders())->postJson('/api/admin/fiscal/z-report/close');
+
+        $zReport = \App\Models\ZReport::find($closed->json('data.id'));
+
+        $this->assertNotNull($zReport->signature, 'Un rapport clos doit porter une empreinte.');
+        $this->assertTrue(
+            app(\App\Services\Fiscal\ZReportService::class)->verifySignature($zReport),
+            'La signature du rapport tout juste clos doit être conforme.',
+        );
     }
 
     public function test_cross_branch_show_is_forbidden(): void

@@ -62,7 +62,10 @@ describe('KDS colonnes réglables + flux horizontal + pastille overflow (FK-KDS-
         expect(gridSource).not.toMatch(/\.kds-v2__grid\[data-count="2"\]\s*\{[^}]*grid-auto-columns/);
         // La largeur est pilotée par le RÉGLAGE (variable CSS), pas par la file.
         expect(gridSource).toMatch(/grid-auto-columns:\s*calc\([^;]*var\(--kds-cols/);
-        expect(gridSource).toMatch(/'--kds-cols':\s*cartesParEcran/);
+        // [KDS-TABLETTE 2026-10-19] La variable passe par `colonnesAffichees`, qui vaut le RÉGLAGE du poste
+        // (`cartesParEcran`) partout sauf sur le poste tablette (largeur de l'écran) : jamais la file.
+        expect(gridSource).toMatch(/'--kds-cols':\s*colonnesAffichees/);
+        expect(gridSource).toMatch(/ctx\.tablette\s*\?\s*fichesParEcranTablette\(ctx\.largeurFenetre\)\s*:\s*ctx\.cartesParEcran/);
     });
 
     it('flux horizontal défilable, une rangée pleine hauteur, barre visible', () => {

@@ -189,6 +189,12 @@ export function buildKioskOrderPayload(state, { orderType, paymentMethod, quote,
     });
     payload.payment_method = PAYMENT_METHOD_MAP[resolvedPaymentMethod] ?? PAYMENT_METHOD_MAP.cash;
 
+    // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Le nom pris à la borne voyage avec la commande. Le devis
+    // le reçoit aussi (même constructeur de payload) et l'ignore : il n'a aucun effet sur un prix ni sur
+    // la signature. Absent ou vide = aucun champ envoyé.
+    const nom = String(state.customerName || '').trim();
+    if (nom) payload.pos_customer_name = nom.slice(0, 60);
+
     if (quote?.quote_token && quote?.signature) {
         payload.quote_token = quote.quote_token;
         payload.quote_signature = quote.signature;
@@ -228,6 +234,9 @@ export const kioskCart = {
         kioskToken: null,
         kioskMachineId: null,
         paymentMethod: null,
+        // [NOM-COMMANDE-BORNE 2026-10-19] Nom donné par le client à la borne. Volontairement HORS de
+        // la persistance du store : une donnée personnelle ne survit pas à la session du client.
+        customerName: '',
         // [K-02] Sur place (25=KIOSK) ou à emporter (10=TAKEAWAY) must be explicit.
         orderType: null,
         orderQuote: null,
@@ -418,7 +427,7 @@ export const kioskCart = {
             state.kioskToken = token || null;
             // [GAP-34-2] Re-inject kiosk token into Echo auth headers after kiosk login.
             if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
-                window._refreshEchoAuth();
+                window._refreshEchoAuth(state.kioskToken);
             }
             state.kioskMachineId = machineId || null;
         },
@@ -428,6 +437,9 @@ export const kioskCart = {
         },
         SET_PAYMENT_METHOD(state, method) {
             state.paymentMethod = method || null;
+        },
+        SET_CUSTOMER_NAME(state, name) {
+            state.customerName = String(name || '').slice(0, 60);
         },
         // [GAP-22-1] Set order type: 25=KIOSK (sur place), 10=TAKEAWAY (à emporter)
         SET_ORDER_TYPE(state, orderType) {
@@ -451,6 +463,7 @@ export const kioskCart = {
             state.loyaltyRedeemPoints = 0;
             state.idempotencyKey = null;
             state.paymentMethod = null;
+            state.customerName = '';
             state.orderType = null;
             state.orderQuote = null;
             // Kiosk Phase 9.1.6 — promo reset au retour idle (comme loyalty).
@@ -510,6 +523,32 @@ export const kioskCart = {
                 }
             })();
             return _inFlightKioskLogin;
+        },
+        /**
+         * Keep the physical kiosk token alive before Sanctum's 8-hour expiry.
+         * Unlike a re-login, this preserves the device identity and abilities
+         * server-side; it never needs machine credentials in the browser.
+         */
+        async refreshKioskToken({ commit, state }) {
+            const current = state.kioskToken;
+            if (!current) return false;
+
+            try {
+                const res = await axios.post('refresh-token', { token: current });
+                const fresh = res?.data?.token;
+                if (fresh && state.kioskToken === current) {
+                    commit('SET_KIOSK_TOKEN', {
+                        token: fresh,
+                        machineId: state.kioskMachineId,
+                    });
+                    return true;
+                }
+            } catch (_) {
+                // An expired token is handled by the 401 recovery path; never
+                // clear a usable persisted token because a transient refresh failed.
+            }
+
+            return false;
         },
         async kioskLogout({ commit, state }) {
             try {

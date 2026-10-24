@@ -138,6 +138,40 @@ php artisan config:clear >/dev/null \
 php artisan queue:restart >/dev/null && echo "== queue OK"
 echo -n "== NF525 chain : "; php artisan fiscal:verify-chain --all 2>&1 | tail -1 || true
 
+# [QUEUE-COVERAGE-GUARD 2026-09-23] Incident réel : le worker supervisé n'écoutait
+# QUE high,default — la queue `notifications` (SendFcmNotificationJob, push
+# commande créée/prête) s'est silencieusement accumulée à 654 jobs jamais
+# envoyés, sans qu'aucun deploy ne le signale. Corrigé une fois (config
+# supervisor + purge du backlog stale) ; ce garde empêche la RÉGRESSION —
+# toute queue Redis non vide doit apparaître dans le `--queue=` du worker
+# supervisé, sinon alerte bruyante (jamais de rollback : une queue non écoutée
+# n'indique pas que CE déploiement casse l'app, mais ne doit jamais passer
+# inaperçue). Best-effort : ne bloque jamais le déploiement si redis-cli/le
+# fichier supervisor sont indisponibles pour une raison quelconque.
+QUEUE_COVERAGE_WARN=0
+WORKER_CONF="/etc/supervisor/conf.d/lecayenne-worker.conf"
+if command -v redis-cli >/dev/null 2>&1 && [ -f "$WORKER_CONF" ]; then
+  LISTENED="$(grep -oE '\-\-queue=[A-Za-z0-9_,]+' "$WORKER_CONF" | head -1 | cut -d= -f2)"
+  echo "== queues supervisées : ${LISTENED:-<aucune trouvée>}"
+  while IFS= read -r key; do
+    [ -z "$key" ] && continue
+    case "$key" in *:notify) continue;; esac  # miroir blocking-pop Laravel, pas une vraie file
+    LEN="$(redis-cli llen "$key" 2>/dev/null || echo 0)"
+    [ "${LEN:-0}" -gt 0 ] || continue
+    QNAME="${key##*:}"
+    case ",$LISTENED," in
+      *",$QNAME,"*) ;;
+      *)
+        QUEUE_COVERAGE_WARN=1
+        echo "!! QUEUE NON ÉCOUTÉE : '$QNAME' contient $LEN job(s) mais absente de --queue=$LISTENED — accumulation silencieuse en cours."
+        ;;
+    esac
+  done < <(redis-cli --scan --pattern '*_database_queues:*' 2>/dev/null)
+  [ "$QUEUE_COVERAGE_WARN" -eq 1 ] || echo "== couverture queues OK — chaque file non vide a un worker qui l'écoute"
+else
+  echo "!! garde de couverture des queues sauté (redis-cli ou $WORKER_CONF indisponible)"
+fi
+
 # ── 5. VÉRIF bundles : jeu COMPLET (leçon écran-blanc 2026-06-29) ─────────────
 # [2026-07-17] mtime ≥ DEPLOY_START retiré comme critère d'échec : webpack 5
 # (`output.compareBeforeEmit`, défaut) NE réécrit PAS un fichier au contenu
@@ -242,10 +276,14 @@ fi
 # La bannière finale DOIT dire la vérité : un CORS web cassé ne rollback PAS (borne/caisse
 # saines) mais NE DOIT PAS s'afficher « ✅ OK » (un opérateur qui survole les logs livrerait
 # un checkout en ligne mort). Verdict honnête, sans rollback ni faux échec du deploy backend.
-if [ "${WEB_CORS_WARN:-0}" -eq 1 ]; then
+if [ "${WEB_CORS_WARN:-0}" -eq 1 ] && [ "${QUEUE_COVERAGE_WARN:-0}" -eq 1 ]; then
+  echo "== ⚠️  Déploiement backend OK — MAIS CORS WEB CASSÉ ET QUEUE(S) NON ÉCOUTÉE(S) (HEAD $(git rev-parse --short HEAD)). Voir les lignes !! ci-dessus."
+elif [ "${WEB_CORS_WARN:-0}" -eq 1 ]; then
   echo "== ⚠️  Déploiement backend OK — MAIS CORS WEB CASSÉ (HEAD $(git rev-parse --short HEAD)) : borne/caisse saines, checkout EN LIGNE probablement BLOQUÉ. Corrige FRONTEND_WEB_DOMAIN + php artisan config:clear (PAS config:cache), puis re-teste le préflight avant d'annoncer le site en ligne."
+elif [ "${QUEUE_COVERAGE_WARN:-0}" -eq 1 ]; then
+  echo "== ⚠️  Déploiement backend OK — MAIS UNE QUEUE NON VIDE N'EST ÉCOUTÉE PAR AUCUN WORKER (HEAD $(git rev-parse --short HEAD)) : accumulation silencieuse en cours, voir la ligne !! QUEUE NON ÉCOUTÉE ci-dessus. Corrige $WORKER_CONF puis 'supervisorctl reread && supervisorctl update'."
 else
-  echo "== ✅ Déploiement OK — HEAD $(git rev-parse --short HEAD) · triggers vérifiés · healthz vert · contenu frais · CORS web OK."
+  echo "== ✅ Déploiement OK — HEAD $(git rev-parse --short HEAD) · triggers vérifiés · healthz vert · contenu frais · CORS web OK · couverture queues OK."
 fi
 REMOTE
 rc=$?

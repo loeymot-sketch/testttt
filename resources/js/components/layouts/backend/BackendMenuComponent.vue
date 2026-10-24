@@ -25,14 +25,16 @@
                          route inexistante et rendrait un lien mort. On ouvre dans un nouvel onglet
                          pour ne pas faire perdre au gérant l'écran d'où il vient. -->
                     <a v-if="isPosV4Shell || menu.external"
-                       :href="'/admin/' + menu.url + (menu.query || '')"
+                       :href="menu.href || ('/admin/' + menu.url + (menu.query || ''))"
                        :target="menu.external ? '_blank' : null"
                        :rel="menu.external ? 'noopener' : null"
                        class="db-sidebar-nav-menu">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </a>
-                    <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu">
+                    <router-link v-else :to="'/admin/' + menu.url + (menu.query || '')" class="db-sidebar-nav-menu"
+                                 :class="{ 'router-link-active': isPrefixActive(menu) }"
+                                 v-bind="prefixAriaAttrs(menu)">
                         <i class="text-sm" :class="menu.icon"></i>
                         <span class="text-base flex-auto">{{ $t('menu.' + menu.language) }}</span>
                     </router-link>
@@ -101,6 +103,28 @@ const VIRTUAL_CHILDREN_BY_URL = Object.freeze({
 });
 
 const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
+    // [CAYENNE HYGIÈNE 2026-10-18 · owner : « une seule colonne, on rentre dedans »] UNE seule entrée pour tout le module :
+    // PLACÉE EN TÊTE de la bande V1 (juste sous POS) : à la fin de la liste elle était hors écran sans défilement de la barre. L'accueil Hygiène est le hub (températures, nettoyage, huile, réception, traçabilité, étiquettes DLC et de commande, imprimante,
+    // dossier de contrôle, alertes, équipe). Avant : deux groupes (Étiquettes + Hygiène) = 12 lignes dans la barre. Les routes ne
+    // changent pas ; `activePrefixes` garde la ligne allumée sur chacun de ces écrans. Même gate que la caisse (`pos-orders`) : une
+    // permission neuve ne serait portée par aucun rôle (même raison que l'entrée Uber).
+    Object.freeze({
+        url: 'hygiene/home',
+        language: 'hygiene_hub',
+        icon: 'fa-solid fa-clipboard-check',
+        // [ÉTIQUETTES-COMMANDE 2026-10-19] L'étiquette de COMMANDE n'est plus dans le hub : elle a sa propre ligne
+        // juste dessous. Le hub ne s'allume donc plus sur /admin/labels/orders (sinon deux lignes allumées).
+        activePrefixes: Object.freeze(['/admin/hygiene', '/admin/labels/dlc', '/admin/labels/printer']),
+    }),
+    // [ÉTIQUETTES-COMMANDE 2026-10-19 · owner : « l'étiquette de commande, je veux l'avoir comme fonctionnalité séparée, en
+    // barre latérale »] Une étiquette par produit commandé, imprimée à l'arrivée des commandes : un outil de service, pas de
+    // l'hygiène. Même gate que la caisse (`pos-orders`) — voir MENU_URL_TO_PERMISSION_URL.
+    Object.freeze({
+        url: 'labels/orders',
+        language: 'labels_orders',
+        icon: 'fa-solid fa-tags',
+        activePrefixes: Object.freeze(['/admin/labels/orders']),
+    }),
     // [CATALOG-HUB 2026-07-21] Single unified entry → tab wrapper (Catalogue +
     // Stock). Label kept as `stock_rupture` ("Produits & Stock"). The
     // admin.stock.rupture route stays alive for deep-links.
@@ -135,6 +159,15 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection surfaces.
     Object.freeze({ url: 'historique', language: 'historique', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'encaissement', language: 'encaissement', icon: 'lab lab-pos-orders' }),
+    // [LIVRAISONS-PAGE 2026-10-23 · propriétaire : « facilite l'accès depuis la barre latérale »] Deux entrées, comme la roue,
+    // sans permission neuve (une permission que personne ne porte rendrait l'écran inaccessible) :
+    //   · « Livraisons » : la planche des départs — commandes à livrer, qui livre (nos livreurs ⇄ Uber), état de chaque arrêt.
+    //     Avant : une fenêtre cachée derrière le bouton « Tournées » de la caisse, introuvable depuis le reste de l'admin.
+    //     Même porte que l'API de la planche (`pos`, voir routes/api.php : pos-delivery).
+    //   · « Écran livreur » : `/livreur` est une page autonome pour téléphone, hors du routeur Vue → ancre `external` avec son
+    //     propre `href` (le gabarit ajoutait toujours le préfixe /admin/).
+    Object.freeze({ url: 'livraisons', language: 'livraisons', icon: 'fa-solid fa-motorcycle', activePrefixes: Object.freeze(['/admin/livraisons']) }),
+    Object.freeze({ url: 'livreur', language: 'livreur_screen', icon: 'fa-solid fa-mobile-screen-button', external: true, href: '/livreur' }),
     Object.freeze({ url: 'cash-overview', language: 'cash_overview', icon: 'lab lab-pos-orders' }),
     Object.freeze({ url: 'delivery-boy-cash-sessions', language: 'delivery_cash_sessions', icon: 'lab lab-pos-orders' }),
     // [FLYER PROMO 2026-08-07] Ticket promo nominatif pour les commandes des
@@ -185,6 +218,10 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     // pos-orders permission (admin + branch managers already hold it).
     historique: 'pos-orders',
     encaissement: 'pos-orders',
+    // [LIVRAISONS-PAGE 2026-10-23] Même porte que l'API `pos-delivery/*` (middleware `permission:pos`) : afficher un lien dont la
+    // page répondrait 403 est un piège.
+    livraisons: 'pos',
+    livreur: 'pos',
     // [FLYER PROMO 2026-08-07] Même gate que la caisse — voir l'entrée de menu.
     'promo-flyer': 'pos-orders',
     // [ROUE 2026-08-13] Même gate que la caisse — voir l'entrée de menu.
@@ -192,6 +229,20 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     'promo-flyer/settings': 'pos-orders',
     // [UBER-PHOTO 2026-08-10] Même gate que la caisse — voir l'entrée de menu.
     'uber-photo': 'pos-orders',
+    // [ETIQUETTES 2026-10-16] Même gate que la caisse — voir l'entrée de menu.
+    labels: 'pos-orders',
+    'labels/orders': 'pos-orders',
+    'labels/dlc': 'pos-orders',
+    'labels/printer': 'pos-orders',
+    // [CAYENNE HYGIÈNE 2026-10-17] Même gate que les étiquettes — voir l'entrée de menu.
+    hygiene: 'pos-orders',
+    'hygiene/temperature': 'pos-orders',
+    'hygiene/home': 'pos-orders',
+    'hygiene/report': 'pos-orders',
+    'hygiene/oil': 'pos-orders',
+    'hygiene/trace': 'pos-orders',
+    'hygiene/reception': 'pos-orders',
+    'hygiene/tasks': 'pos-orders',
     // [P1 LIENS MORTS 2026-08-08] Ces deux entrées n'étaient PAS mappées : faute de
     // correspondance, la barre latérale retombait sur le nom de l'url lui-même, pour lequel il
     // n'existe aucune permission — donc défaut permissif, donc lien AFFICHÉ. Mais la route, elle,
@@ -418,7 +469,17 @@ export default {
 
             return out;
         },
+        /**
+         * Téléphone / tablette portrait (< lg) : `.db-sidebar.active` = tiroir OUVERT. Il restait ouvert après un appui sur un lien : la page
+         * se chargeait DERRIÈRE le tiroir et l'appui semblait ne rien faire (le hub unique n'a que cette porte sur téléphone). Au-delà de lg,
+         * `active` veut dire « replié » : on n'y touche pas.
+         */
+        closeDrawerOnSmallScreens() {
+            if (typeof window === 'undefined' || !window.matchMedia || !window.matchMedia('(max-width: 1023px)').matches) return;
+            if (document.querySelector('.db-sidebar')?.classList?.contains('active')) this.handleSidebar();
+        },
         sidebarActive: function (e) {
+            if (e?.currentTarget?.querySelector?.('a')) this.closeDrawerOnSmallScreens();
             const activeMenu = document.querySelector('.db-sidebar-nav-item.active');
             if (activeMenu) {
                 activeMenu.classList.remove('active');
@@ -431,6 +492,24 @@ export default {
             } else {
                 document?.querySelector('.router-link-exact-active')?.parentElement?.classList?.add('active');
             }
+        },
+        /** Entrée « module » (hub) : allumée sur TOUS les écrans du module, pas seulement sur sa page d'accueil. */
+        isPrefixActive(menu) {
+            const prefixes = menu && menu.activePrefixes;
+            if (!prefixes || !prefixes.length) return false;
+            // le routeur ne distingue pas les majuscules (/admin/LABELS/printer ouvre la même page) : la ligne non plus
+            const path = ((this.$route && this.$route.path) || '').toLowerCase();
+            return prefixes.some((p) => path === p || path.startsWith(p + '/'));
+        },
+        /**
+         * `aria-current` d'une entrée « module » allumée sur un sous-écran. Le routeur le pose LUI-MÊME (« page ») sur le lien exact ; un attribut
+         * passé au router-link, même `null`, ÉCRASE le sien (tour 2 : toutes les autres lignes de la barre perdaient leur aria-current). On ne lie
+         * donc rien (objet vide) sauf quand la ligne est allumée par le PRÉFIXE seulement (« true » : l'entrée contient la page courante).
+         */
+        prefixAriaAttrs(menu) {
+            if (!this.isPrefixActive(menu)) return {};
+            const here = ((this.$route && this.$route.path) || '').toLowerCase().replace(/\/+$/, '');
+            return here === ('/admin/' + menu.url).toLowerCase() ? {} : { 'aria-current': 'true' };
         },
         showSidebarParentNavRow(menu) {
             if (!menu || menu.url === '#') return false;

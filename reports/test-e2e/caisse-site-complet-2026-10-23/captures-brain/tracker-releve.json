@@ -1,0 +1,47 @@
+{
+  "porteServeur": [
+    {
+      "serial": "2310268851",
+      "status": 7,
+      "is_cash_pending": false
+    },
+    {
+      "serial": "2310268853",
+      "status": 7,
+      "is_cash_pending": false
+    },
+    {
+      "serial": "2310268867",
+      "status": 7,
+      "is_cash_pending": false
+    }
+  ],
+  "releve": [
+    {
+      "serial": "2310268851",
+      "boutonEncaisser": false,
+      "prefixeACaisser": false,
+      "badgeCash": false,
+      "colonne": "N°A0039",
+      "texte": "N°A0288 🛵 🚗 Livraison 4h02 E2E-C2 Client 57575 0677157575 1× Eau Plate 50cl 1× Sprite 33cl 6,80 € Annuler"
+    },
+    {
+      "serial": "2310268853",
+      "boutonEncaisser": false,
+      "prefixeACaisser": false,
+      "badgeCash": false,
+      "colonne": "N°A0039",
+      "texte": "N°A0290 🛵 🚗 Livraison 4h01 E2E-C2 Client 15770 0677215770 1× Eau Plate 50cl 1× Sprite 33cl 6,80 € Annuler"
+    },
+    {
+      "serial": "2310268867",
+      "boutonEncaisser": false,
+      "prefixeACaisser": false,
+      "badgeCash": false,
+      "colonne": "N°A0039",
+      "texte": "N°A0304 🛵 🚗 Livraison 3h18 E2E-C2 Client 43579 0679843579 1× Eau Plate 50cl 1× Sprite 33cl 6,80 € Annuler"
+    }
+  ],
+  "bundle": [],
+  "consoleErrors": []
+}

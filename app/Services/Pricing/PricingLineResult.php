@@ -8,7 +8,7 @@ namespace App\Services\Pricing;
 final class PricingLineResult
 {
     public function __construct(
-        public readonly int $itemId,
+        public readonly ?int $itemId,
         public readonly int $quantity,
         public readonly float $unitItemPrice,
         public readonly float $variationTotal,

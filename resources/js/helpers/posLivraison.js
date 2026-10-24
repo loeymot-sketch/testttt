@@ -1,0 +1,159 @@
+// [LIVRAISON 2026-10-20] Appels serveur de la livraison depuis la caisse. Module séparé pour rester
+// testable sans monter PosComponent (8 800 lignes). `http` = instance axios de l'application
+// (baseURL /api, en-tête x-api-key déjà posé). Aucune règle de prix ici : le serveur décide.
+
+const errMsg = (e, fallback) => e?.response?.data?.message || e?.message || fallback;
+
+/** Suggestions d'adresse (Base Adresse Nationale via le serveur, route authentifiée de la caisse). */
+export async function suggestAddresses(http, q) {
+    const res = await http.get('/admin/pos-delivery/suggest', { params: { q } });
+    return (res.data?.data || []).map((s) => ({ place_id: s.label, description: s.label, city: s.city, postal_code: s.postal_code }));
+}
+
+/** Prix, palier, estimation et créneaux pour une adresse saisie. */
+export async function quoteAddress(http, q) {
+    const res = await http.post('/admin/pos-delivery/quote', { q });
+    return res.data;
+}
+
+/** Recherche d'un client par téléphone, sans rien créer. */
+export async function lookupCustomer(http, phone) {
+    const res = await http.get('/admin/pos-delivery/lookup', { params: { phone } });
+    return res.data?.found ? res.data.data : null;
+}
+
+/** Retrouve ou crée le client (téléphone = clé). */
+export async function ensureCustomer(http, { phone, name, email }) {
+    try {
+        const res = await http.post('/admin/pos-delivery/customer', { phone, name: name || null, email: email || null });
+        return res.data.data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Impossible de créer le client.'));
+    }
+}
+
+/** Enregistre l'adresse (une seule fois, géocodée par le serveur) et renvoie son prix. */
+export async function saveAddress(http, { customerId, address, apartment }) {
+    try {
+        const res = await http.post('/admin/pos-delivery/address', { customer_id: customerId, address, apartment: apartment || null });
+        return res.data.data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Adresse introuvable : vérifiez la rue, le code postal et la ville.'));
+    }
+}
+
+export async function fetchDeliveryStatus(http) {
+    const res = await http.get('/admin/pos-delivery/status');
+    return Boolean(res.data?.enabled);
+}
+
+export async function setDeliveryEnabled(http, enabled) {
+    const res = await http.post('/admin/pos-delivery/toggle', { enabled });
+    return Boolean(res.data?.enabled);
+}
+
+export async function fetchBoard(http) {
+    const res = await http.get('/admin/pos-delivery/board');
+    return res.data;
+}
+
+export async function assignCourier(http, waveAt, deliveryBoyId) {
+    const res = await http.post('/admin/pos-delivery/waves/assign', { wave_at: waveAt, delivery_boy_id: deliveryBoyId });
+    return res.data;
+}
+
+// [UBER-DIRECT 2026-10-22] Bascule d'un arrêt entre nos livreurs et un coursier Uber. Le serveur répond toujours
+// avec un message lisible (`message`) : on le remonte tel quel, jamais un « Erreur 422 » muet.
+export async function uberQuote(http, stopId) {
+    try {
+        return (await http.post('/admin/pos-delivery/uber/quote', { stop_id: stopId })).data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Uber ne répond pas. La commande reste à nos livreurs.'));
+    }
+}
+
+/** Renvoie `{ ok:true }`, ou `{ ok:false, changed:true, quote }` si le prix a changé (à reconfirmer). */
+export async function uberDispatch(http, stopId, quoteId) {
+    try {
+        const res = await http.post('/admin/pos-delivery/uber/dispatch', { stop_id: stopId, quote_id: quoteId });
+        return { ok: true, ...res.data };
+    } catch (e) {
+        const d = e?.response?.data;
+        if (d?.code === 'quote_changed' && d.quote) return { ok: false, changed: true, quote: d.quote, message: d.message };
+        throw new Error(errMsg(e, 'Uber n\'a pas confirmé la course.'));
+    }
+}
+
+export async function uberRelease(http, stopId) {
+    try {
+        return (await http.post('/admin/pos-delivery/uber/release', { stop_id: stopId })).data;
+    } catch (e) {
+        throw new Error(errMsg(e, 'Impossible de reprendre la commande.'));
+    }
+}
+
+// Libellé d'un statut de course Uber (statuts officiels ; un statut inconnu s'affiche tel quel, jamais caché).
+export function uberStatusLabel(status) {
+    return {
+        pending: 'Coursier en recherche',
+        pickup: 'Coursier en route vers le restaurant',
+        pickup_complete: 'Coursier a la commande',
+        dropoff: 'En route chez le client',
+        delivered: 'Livrée par Uber',
+        canceled: 'Annulée',
+        returned: 'Revenue au restaurant',
+    }[status] || (status ? 'Uber : ' + status : 'Uber');
+}
+
+// [VG-2026-10-21 M4-002] Une livraison « tout de suite » part à la PREMIÈRE tournée non pleine
+// (DeliveryWaveService::pickAsapWave, mêmes règles que `availableWaves` qui alimente `q.waves` du devis) — parfois
+// des heures plus tard ou le lendemain. La caisse le dit, avec la date dès que ce n'est pas aujourd'hui.
+// `wave_at` = heure murale du restaurant « Y-m-d H:i:s » : lue telle quelle, sans conversion de fuseau.
+function lireHeureMurale(waveAt) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(waveAt || ''));
+    return m ? { y: +m[1], mo: +m[2], d: +m[3], hhmm: `${m[4]}:${m[5]}`, jj: m[3], mm: m[2] } : null;
+}
+
+function quandDepart(h, now) {
+    const jour = new Date(h.y, h.mo - 1, h.d);
+    const ecart = Math.round((jour - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    const date = `${jour.toLocaleDateString('fr-FR', { weekday: 'short' })} ${h.jj}/${h.mm}`;
+    if (ecart === 0) return { texte: `aujourd'hui à ${h.hhmm}`, court: `aujourd'hui ${h.hhmm}` };
+    if (ecart === 1) return { texte: `demain (${date}) à ${h.hhmm}`, court: `demain (${date}) ${h.hhmm}` };
+    return { texte: `${date} à ${h.hhmm}`, court: `${date} ${h.hhmm}` };
+}
+
+/** Heure de départ prévue d'une livraison « tout de suite », d'après les tournées du devis serveur. */
+export function describeDeparture(q, now = new Date()) {
+    if (!q || q.enabled === false || !q.allowed || !Array.isArray(q.waves) || q.waves.length === 0) return '';
+    const libre = q.waves.find((w) => w && !w.full);
+    if (libre) return describeDepartAt(libre.wave_at, now);
+    const h = lireHeureMurale(q.waves[q.waves.length - 1]?.wave_at);
+    return h ? `Tournées complètes jusqu'à ${quandDepart(h, now).court} : départ plus tard` : '';
+}
+
+/** « Départ prévu aujourd'hui à 23:30 » / « … demain (ven. 23/10) à 00:30 » pour une heure de tournée. */
+export function describeDepartAt(waveAt, now = new Date()) {
+    const h = lireHeureMurale(waveAt);
+    return h ? `Départ prévu ${quandDepart(h, now).texte}` : '';
+}
+
+// [VG-2026-10-21 M4-002] Départ RÉEL d'une livraison déjà créée, pour les files de la caisse : `delivery_slot_at`
+// (ISO 8601, heure murale du restaurant) porté par OrderDetailsResource depuis 3211854f5, null hors livraison.
+// Même texte que le devis (describeDepartAt) : la caisse dit la même chose avant et après la validation.
+export function describeOrderDeparture(order, now = new Date()) {
+    return order && order.delivery_slot_at ? describeDepartAt(order.delivery_slot_at, now) : '';
+}
+
+/** Texte lisible du résultat d'un devis, pour l'écran. */
+export function describeQuote(q) {
+    if (!q) return '';
+    if (q.enabled === false) return 'La livraison est suspendue.';
+    if (!q.allowed) {
+        return q.suggest_uber_eats ? 'Au-delà de 10 km : livraison impossible. Proposez Uber Eats au client.' : 'Adresse non livrable.';
+    }
+    const fee = Number(q.fee).toFixed(2).replace('.', ',');
+    const km = q.distance_km != null ? ` · ${String(q.distance_km).replace('.', ',')} km` : '';
+    const min = q.travel_minutes ? ` · ~${q.travel_minutes} min` : '';
+    return `${q.address?.city || ''} · ${fee} €${km}${min}`.replace(/^ · /, '');
+}

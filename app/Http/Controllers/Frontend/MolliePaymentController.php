@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Frontend;
 
+use App\Enums\Activity;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentGateway;
 use App\Enums\PaymentStatus;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
+use Smartisan\Settings\Facades\Settings;
 use Throwable;
 
 /**
@@ -46,6 +48,27 @@ class MolliePaymentController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Mollie non configuré.',
+            ], 503);
+        }
+
+        /*
+         * [ULTRA-AUDIT 2026-09-26 · A13] `isMollieConfigured()` ne vérifie que des
+         * réglages TECHNIQUES (clé API + flag d'infra `payment.mollie.enabled`) —
+         * jamais le réglage MÉTIER `site_online_payment_gateway` (Réglages > Site >
+         * "Passerelle de paiement en ligne"), que le propriétaire bascule lui-même.
+         * Repro confirmée en base locale : ce réglage vaut DISABLE alors que Mollie
+         * reste techniquement configuré — un client pouvait donc toujours obtenir
+         * une VRAIE session Mollie malgré la désactivation explicite du propriétaire.
+         * Défaut ABSENT (jamais seedé en tests) traité comme ENABLE : aucune régression
+         * sur les tests Mollie existants, qui ne posent jamais cette clé — seule une
+         * désactivation EXPLICITE ferme désormais le chemin, symétrique du choix déjà
+         * fait pour la Livraison (order_setup_delivery, PosComponent.vue).
+         */
+        $onlinePaymentEnabled = (int) Settings::group('site')->get('site_online_payment_gateway', Activity::ENABLE);
+        if ($onlinePaymentEnabled !== Activity::ENABLE) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Paiement en ligne désactivé.',
             ], 503);
         }
 

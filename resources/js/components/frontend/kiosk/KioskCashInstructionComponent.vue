@@ -20,6 +20,11 @@
               #{{ displayOrderNumber || '—' }}
             </strong>
           </div>
+          <div v-if="customerName" class="kiosk-cash__divider" aria-hidden="true" />
+          <div v-if="customerName" class="kiosk-cash__row" data-testid="kiosk-cash-customer-name-row">
+            <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.name_label') }}</span>
+            <strong class="kiosk-cash__name" data-testid="kiosk-cash-customer-name">{{ customerName }}</strong>
+          </div>
           <div class="kiosk-cash__divider" aria-hidden="true" />
           <div class="kiosk-cash__row">
             <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.amount_label') }}</span>
@@ -53,15 +58,8 @@
       >
         🖨️ Réimprimer le ticket
       </KsButton>
-      <KsButton
-        variant="primary"
-        size="lg"
-        full-width
-        data-testid="kiosk-cash-cta-understood"
-        @click="acknowledge('user')"
-      >
-        {{ $t('kiosk.cash_instruction.cta_understood') }}
-      </KsButton>
+      <!-- [CAISSE-SANS-BOUTON 2026-10-19 · owner] Plus de bouton « J'ai compris » : le client sait
+           qu'il doit passer à la caisse ; l'écran revient seul à l'accueil après 5 secondes. -->
     </footer>
   </section>
 </template>
@@ -81,7 +79,7 @@ import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, is
  * Props :
  *  - orderNumber : string | number — affichage central
  *  - orderTotal  : number (EUR)    — affichage via KsPriceLine (format FR)
- *  - autoRedirectSeconds : number  — défaut 45 s, redirige /kiosk/idle
+ *  - autoRedirectSeconds : number  — défaut 5 s, redirige /kiosk/idle
  *
  * Events :
  *  - "acknowledged" (reason: 'user'|'timeout')
@@ -89,12 +87,18 @@ import { printReceipt as escPosPrint, buildReceiptData, reportPrinterFailure, is
  * Observabilité : POST /api/frontend/kiosk/event (type=cash_instruction_shown
  * puis cash_instruction_ack) — conforme KIOSK_ANALYTICS_EVENTS.md Phase 1.9.
  */
+// [REVUE ADVERSE 2026-10-19] Un numéro sans lettre ni chiffre (« — » d'une commande hors ligne) n'est pas
+// un numéro. Fonction de module (et non computed) : les bancs d'essai appellent les méthodes sur un `this`
+// fabriqué à la main.
+const numeroValide = (n) => (/[\p{L}\p{N}]/u.test(String(n ?? '')) ? n : '');
+
 export default {
     name: 'KioskCashInstructionComponent',
     props: {
         orderNumber: { type: [String, Number], default: '' },
         orderTotal: { type: Number, default: null },
-        autoRedirectSeconds: { type: Number, default: 45 },
+        // [CAISSE-SANS-BOUTON 2026-10-19 · owner] 5 s : « ça va passer cinq secondes et revenir à l'accueil ».
+        autoRedirectSeconds: { type: Number, default: 5 },
         // [TICKET-BORNE-SERVEUR 2026-07-06] id backend de la commande (query orderId,
         // posé par KioskPaymentComponent). Présent → impression via le RENDERER SERVEUR
         // (design caisse, « A REGLER EN CAISSE ») ; absent → fallback builder legacy.
@@ -112,17 +116,41 @@ export default {
             // n'a encore été attribué. Sans ceci le client lisait "#—" : rien à dire au
             // comptoir pour se faire identifier.
             localFallbackRef: '',
+            printing: false, // impression du ticket en cours (retarde le retour accueil)
+            attente: 0,
         };
     },
     computed: {
+        // [NOM-COMMANDE-BORNE 2026-10-19] Le nom donné par le client, relu dans le store (la commande
+        // vient d'être créée ; le store n'est vidé qu'au retour à l'accueil).
+        customerName() {
+            try {
+                return String(this.$store?.state?.kioskCart?.customerName || '').trim();
+            } catch (_) {
+                return '';
+            }
+        },
+        // [REVUE ADVERSE 2026-10-19] Une commande hors ligne arrive avec le numéro « — » : valeur truthy
+        // qui neutralisait le repli local « T12345 » ET la garde d'impression (une seule commande
+        // hors ligne par jour imprimait son ticket). Un numéro sans lettre ni chiffre n'est pas un numéro.
+        numeroReel() {
+            return numeroValide(this.orderNumber);
+        },
         displayOrderNumber() {
-            if (this.orderNumber) return this.orderNumber;
+            if (numeroValide(this.orderNumber)) return this.orderNumber;
             if (this.orderId) return String(this.orderId).slice(-4).padStart(4, '0');
             return this.localFallbackRef;
         },
     },
+    watch: {
+        // [REVUE ADVERSE 2026-10-19] Le pont d'impression est injoignable : le client doit avoir le temps
+        // de toucher « Réimprimer ». Le retour automatique passe alors de 5 s à 20 s.
+        printFailed(echec) {
+            if (echec && this.countdown > 0) this.countdown = Math.max(this.countdown, 20);
+        },
+    },
     mounted() {
-        if (!this.orderNumber && !this.orderId) {
+        if (!numeroValide(this.orderNumber) && !this.orderId) {
             // [T-6.2] Code court dérivé de l'horloge (millisecondes + aléa) — stable pour
             // toute la durée de vie de l'écran, jamais confondu avec un vrai numéro de
             // file (préfixe "T" = temporaire, lisible à voix haute au comptoir).
@@ -157,6 +185,11 @@ export default {
             if (this.autoRedirectSeconds <= 0) return;
             this.countdown = this.autoRedirectSeconds;
             this.timer = setInterval(() => {
+                // Une impression en cours n'est jamais coupée par le retour accueil (15 s au plus).
+                if (this.printing && this.countdown <= 1 && this.attente < 15) {
+                    this.attente += 1;
+                    return;
+                }
                 this.countdown -= 1;
                 if (this.countdown <= 0) {
                     this.stopCountdown();
@@ -208,11 +241,12 @@ export default {
         // numéros (A0001 réinitialisé/jour) si la borne tourne après minuit.
         printGuardKey() {
             const day = new Date().toISOString().slice(0, 10);
-            return `${this.orderNumber || ''}|${day}`;
+            return `${this.displayOrderNumber || this.orderNumber || ''}|${day}`;
         },
         autoPrintCounterTicket() {
             // [G3] Garde persistée (survit au F5) + datée. 1 ticket max/commande.
             if (!markPrintedOnce(this.printGuardKey())) return;
+            this.printing = true;
             // [TICKET-BORNE-SERVEUR 2026-07-06] PRIMAIRE = renderer SERVEUR (même design
             // que la caisse : accents/€ réels, width-safe, « ** A REGLER EN CAISSE ** »
             // rendu serveur pour COUNTER_DEFERRED) quand l'orderId est présent ; le
@@ -226,13 +260,17 @@ export default {
                         this.printFailed = false;
                     }
                 })
-                .catch((e) => { reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'); this.printFailed = true; });
+                .catch((e) => { reportPrinterFailure(this.orderNumber, e?.message || 'cash-print'); this.printFailed = true; })
+                .finally(() => { this.printing = false; });
         },
         // [G2] Réimpression manuelle (filet écran) : ré-attaque le pont sans la garde.
         reprintTicket() {
+            this.printing = true;
+            this.countdown = Math.max(this.countdown, 15);
             return this._printCounterTicket()
                 .then((printed) => { this.printFailed = !printed; })
-                .catch(() => { this.printFailed = true; });
+                .catch(() => { this.printFailed = true; })
+                .finally(() => { this.printing = false; });
         },
         /**
          * Pipeline d'impression du ticket « à régler en caisse ».
@@ -351,6 +389,20 @@ export default {
     letter-spacing: var(--kiosk-letter-spacing-tight);
     line-height: 1;
     font-variant-numeric: tabular-nums;
+}
+
+/* [REVUE ADVERSE 2026-10-19] Le prénom ne réutilise plus le gabarit 96 px du numéro : un prénom de 11 lettres
+   ou plus débordait de la carte (« Abdelrahmane » : +87 px) ou sortait de l'écran. Taille bornée, coupure de
+   mot autorisée, alignée à droite comme le numéro. */
+.kiosk-cash__name {
+    font-size: clamp(36px, 6.5vw, 64px);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--kiosk-primary, #F4501E);
+    text-align: right;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .kiosk-cash__divider {

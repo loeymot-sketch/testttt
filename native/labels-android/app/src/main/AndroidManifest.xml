@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Bluetooth classique (RFCOMM / profil série) vers la Brother : Android ≤ 11 -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <!-- Android 12+ : permission d'exécution « appareils à proximité » -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- [DICTÉE 2026-10-19 · owner « l'app demande l'autorisation et elle n'existe pas »] Micro : dictée des étiquettes DLC.
+         Sans cette déclaration Android ne PROPOSE même pas l'autorisation (elle est absente de Réglages › Applications). -->
+    <!-- [MISE À JOUR DANS L'APPLICATION 2026-10-19] Installer la nouvelle version téléchargée depuis le serveur (Android demande
+         une confirmation à l'utilisateur à chaque installation, et une seule fois « Autoriser cette source »). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <application
+        android:label="Le Cayenne Étiquettes"
+        android:icon="@drawable/ic_launcher"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="${usesCleartext}"
+        android:enableOnBackInvokedCallback="false"
+        android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|density|fontScale"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

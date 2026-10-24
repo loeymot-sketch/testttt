@@ -191,12 +191,100 @@ final class KitchenReleaseRule
         ) : now();
         $horizon = $base->copy()->addMinutes(self::scheduledLeadMinutes());
         $floor = $base->copy()->subHours(self::scheduledGraceHours());
+        $deliveryHorizon = $base->copy()->addMinutes(self::deliveryLeadMinutes());
 
-        return $query->where(function ($q) use ($horizon, $floor) {
-            $q->whereNull('scheduled_at')
+        return $query->where(function ($q) use ($horizon, $floor, $deliveryHorizon) {
+            // [VG-2026-10-21 M2-101] Sans heure programmée, une LIVRAISON a son heure réelle dans
+            // `delivery_slot_at` (départ de la tournée) : retenue tant que ce départ est au-delà de
+            // now + deliveryLeadMinutes(). Pas de plancher ici : l'existant (ASAP) reste intact.
+            $q->where(function ($asap) use ($deliveryHorizon) {
+                $asap->whereNull('scheduled_at')
+                    ->where(function ($d) use ($deliveryHorizon) {
+                        $d->whereNull('delivery_slot_at')
+                            ->orWhere('delivery_slot_at', '<=', $deliveryHorizon);
+                    });
+            })
                 ->orWhere(function ($qq) use ($horizon, $floor) {
                     $qq->where('scheduled_at', '<=', $horizon)
                         ->where('scheduled_at', '>=', $floor);
+                });
+        });
+    }
+
+    /*
+     * ─── [VG-2026-10-21 M2-101 / M1-103] Livraisons : l'heure réelle est `delivery_slot_at` ───
+     * Le site envoie toujours `delivery_time = 'ASAP'` et `scheduled_at = NULL`, même pour une
+     * livraison du lendemain ; la caisse aussi (« tout de suite » qui part 2 h à 28 h plus tard).
+     * La seule heure vraie est le DÉPART de la tournée (`delivery_slot_at`, DeliveryWaveService,
+     * docs/LIVRAISON.md §2). Sans elle, la cuisine recevait, imprimait et comptait dans l'attente
+     * une livraison de demain dès son acceptation (commande 8100). Une heure programmée explicite
+     * (`scheduled_at`) garde la priorité.
+     */
+
+    /**
+     * Marge de libération cuisine d'une livraison : délai de préparation + UNE tournée.
+     * La tournée de plus vient de la règle du « regroupement tardif » (docs/LIVRAISON.md §2) :
+     * le départ d'une commande DÉJÀ libérée peut reculer d'un cran (30 min). Avec cette marge,
+     * elle ne disparaît jamais du board après y être entrée ; et une livraison « au plus tôt »
+     * (départ ≤ now + 20 min arrondi au cran suivant) entre en cuisine tout de suite, comme avant.
+     */
+    public static function deliveryLeadMinutes(): int
+    {
+        return self::scheduledLeadMinutes() + max(5, (int) config('delivery.wave_minutes', 30));
+    }
+
+    /**
+     * Instant d'entrée en cuisine d'une commande RETENUE (programmée ou livraison différée),
+     * ou null si elle est entrée en cuisine dès sa création (ASAP).
+     */
+    public static function kitchenReleaseAt(Order $order): ?\Illuminate\Support\Carbon
+    {
+        if ($order->scheduled_at !== null) {
+            return \Illuminate\Support\Carbon::instance($order->scheduled_at)->subMinutes(self::scheduledLeadMinutes());
+        }
+        if ($order->delivery_slot_at === null) {
+            return null;
+        }
+        $release = \Illuminate\Support\Carbon::instance($order->delivery_slot_at)->subMinutes(self::deliveryLeadMinutes());
+
+        return ($order->created_at === null || $release->greaterThan($order->created_at)) ? $release : null;
+    }
+
+    /**
+     * Échappement de la fenêtre glissante legacy (`order_datetime >= now − 8 h`, chemins jumeaux
+     * KDS list / orderItems / sync, OSS list / listForBranch) pour une livraison créée bien avant
+     * son départ : sans lui, libérée à départ − marge, elle aurait un `order_datetime` trop vieux
+     * et serait éjectée du board au moment même où elle doit y entrer (jamais cuisinée).
+     * Borné à `scheduledGraceHours()` après le départ (pas de zombie éternel). À appeler DANS
+     * le groupe OR de la fenêtre legacy, à côté de `orWhereNotNull('scheduled_at')`.
+     */
+    public static function orWhereDeliverySlotActive($query, $now = null)
+    {
+        $base = $now ? \Illuminate\Support\Carbon::instance(
+            $now instanceof \Illuminate\Support\Carbon ? $now : \Illuminate\Support\Carbon::parse($now)
+        ) : now();
+
+        return $query->orWhere('delivery_slot_at', '>=', $base->copy()->subHours(self::scheduledGraceHours()));
+    }
+
+    /**
+     * File du pont d'impression : « entrée en cuisine depuis `since` ». L'instant d'entrée est
+     * max(created_at, heure cible − marge) : une commande retenue, libérée des heures après sa
+     * création, doit sortir sur papier À SA LIBÉRATION — la seule fenêtre `created_at` la
+     * condamnait à ne jamais sortir. La réclamation (`kitchen_ticket_claims`) empêche le doublon.
+     */
+    public static function applyKitchenEntrySince($query, $since)
+    {
+        $since = \Illuminate\Support\Carbon::instance(
+            $since instanceof \Illuminate\Support\Carbon ? $since : \Illuminate\Support\Carbon::parse($since)
+        );
+
+        return $query->where(function ($q) use ($since) {
+            $q->where('created_at', '>=', $since)
+                ->orWhere('scheduled_at', '>=', $since->copy()->addMinutes(self::scheduledLeadMinutes()))
+                ->orWhere(function ($d) use ($since) {
+                    $d->whereNull('scheduled_at')
+                        ->where('delivery_slot_at', '>=', $since->copy()->addMinutes(self::deliveryLeadMinutes()));
                 });
         });
     }
@@ -208,12 +296,23 @@ final class KitchenReleaseRule
      */
     public static function applyScheduledUpcomingFilter($query, $now = null)
     {
-        $horizon = ($now ? \Illuminate\Support\Carbon::instance(
+        $base = $now ? \Illuminate\Support\Carbon::instance(
             $now instanceof \Illuminate\Support\Carbon ? $now : \Illuminate\Support\Carbon::parse($now)
-        ) : now())->copy()->addMinutes(self::scheduledLeadMinutes());
+        ) : now();
+        $horizon = $base->copy()->addMinutes(self::scheduledLeadMinutes());
+        $deliveryHorizon = $base->copy()->addMinutes(self::deliveryLeadMinutes());
 
-        return $query->whereNotNull('scheduled_at')
-            ->where('scheduled_at', '>', $horizon);
+        // [VG-2026-10-21 M2-101] Complément exact du board filter : une livraison retenue
+        // (départ > now + marge livraison) est annoncée au bandeau au lieu de disparaître.
+        return $query->where(function ($q) use ($horizon, $deliveryHorizon) {
+            $q->where(function ($s) use ($horizon) {
+                $s->whereNotNull('scheduled_at')
+                    ->where('scheduled_at', '>', $horizon);
+            })->orWhere(function ($d) use ($deliveryHorizon) {
+                $d->whereNull('scheduled_at')
+                    ->where('delivery_slot_at', '>', $deliveryHorizon);
+            });
+        });
     }
 
     /**
@@ -222,13 +321,21 @@ final class KitchenReleaseRule
      */
     public static function orderIsWithinScheduledWindow(Order $order, $now = null): bool
     {
+        $base = $now ? \Illuminate\Support\Carbon::instance(
+            $now instanceof \Illuminate\Support\Carbon ? $now : \Illuminate\Support\Carbon::parse($now)
+        ) : now();
+
         if ($order->scheduled_at === null) {
+            // [VG-2026-10-21 M2-101] Jumeau du board filter : une livraison retenue (départ au-delà
+            // de now + marge livraison) n'est pas bumpable, miroir de son invisibilité.
+            if ($order->delivery_slot_at !== null) {
+                return $order->delivery_slot_at->lessThanOrEqualTo($base->copy()->addMinutes(self::deliveryLeadMinutes()));
+            }
+
             return true; // ASAP — comportement historique intact
         }
 
-        $horizon = ($now ? \Illuminate\Support\Carbon::instance(
-            $now instanceof \Illuminate\Support\Carbon ? $now : \Illuminate\Support\Carbon::parse($now)
-        ) : now())->copy()->addMinutes(self::scheduledLeadMinutes());
+        $horizon = $base->copy()->addMinutes(self::scheduledLeadMinutes());
 
         return $order->scheduled_at->lessThanOrEqualTo($horizon);
     }

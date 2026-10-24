@@ -55,6 +55,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [LIVRAISON 2026-10-20] Filet : une commande de livraison sans tournée y est rattachée.
+        $schedule->command('delivery:assign-pending')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // [DEEP-R2 2026-07-15 / P1] Rattrapage des libérations stock/quota perdues
         // (crash entre le commit d'un cancel/destroy et ses listeners synchrones).
         $schedule->command('foodking:reconcile-releases')
@@ -216,6 +222,15 @@ class Kernel extends ConsoleKernel
             ->name('foodking-storage-cleanup')
             ->description('Purge debugbar + old laravel logs + framework caches (NF525-safe)')
             ->withoutOverlapping()
+            ->onOneServer();
+
+        // [CAYENNE HYGIÈNE 2026-10-18] Alertes d'hygiène par e-mail (relevé en retard, nettoyage, huile, DLC, traçabilité). Ne fait RIEN
+        // tant que le responsable n'a pas activé les alertes (Hygiène › Alertes) ; chaque envoi est journalisé.
+        $schedule->command('hygiene:notify')
+            ->everyFiveMinutes()
+            ->name('hygiene-notify')
+            ->description('Prévient par e-mail les responsables des rappels d\'hygiène à traiter maintenant')
+            ->withoutOverlapping(10)
             ->onOneServer();
 
         // [RED-team P0 / Outbox unbounded growth — 2026-05-17]

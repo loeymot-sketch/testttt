@@ -15,6 +15,33 @@
                             <ExcelComponent :method="xls" />
                         </div>
                     </div>
+                    <!--
+                        [ONB-06 2026-08-28] L'ECRAN DES ROLES N'AVAIT AUCUNE PORTE.
+
+                        `v1-hidden-modules.js` masque `settings.role`, ce qui condamne
+                        son unique entree externe dans le menu Reglages. Un balayage
+                        par CHEMIN (`grep "settings/role"`) rend zero resultat : la
+                        route, l'ecran et la permission existent, et il fallait
+                        connaitre l'URL pour les atteindre.
+
+                        Le commercant qui recrute ne pouvait donc ni lire ni ajuster
+                        ce qu'un « Caissier » a le droit de faire — alors qu'il vient
+                        d'attribuer ce role a quelqu'un, sur cet ecran meme.
+
+                        Meme remede que la page TVA le matin meme : l'acces est pose
+                        la ou le commercant y pense, avec la MEME permission que la
+                        route. Le de-masquage du menu Reglages reste a ONB-05.
+                    -->
+                    <!-- `settings` et non `role` : c'est la permission que porte la
+                         ROUTE (`settingRoutes.js:467`). Un lien garde par une autre
+                         permission produit soit un lien mort, soit un ecran invisible
+                         a qui y a pourtant droit. -->
+                    <router-link v-if="permissionChecker('settings')" :to="{ name: 'admin.settings.role' }"
+                        class="db-btn py-2 text-white bg-slate-500"
+                        data-testid="employees-roles">
+                        <i class="lab lab-role-permissions"></i>
+                        <span>{{ $t("menu.role_permissions") }}</span>
+                    </router-link>
                     <EmployeeCreateComponent :props="props" v-if="permissionChecker('employees_create')" />
                 </div>
             </div>

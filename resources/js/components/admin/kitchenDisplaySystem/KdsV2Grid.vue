@@ -17,7 +17,7 @@
   for instant rollback.
 -->
 <template>
-  <div class="kds-v2" :dir="dir">
+  <div class="kds-v2" :class="{ 'kds-v2--tablette': tablette }" :dir="dir">
     <!-- Single banner zone -->
     <KdsStatusBanner
       :offline-since="offlineSince"
@@ -90,7 +90,7 @@
          la projection elle-même est ce qui plante. -->
     <Teleport to="#kds-toolbar-slot" :disabled="!barreUniquePresente">
     <div
-      v-if="activeOrders.length > 0"
+      v-if="activeOrders.length > 0 && !tablette"
       class="kds-cols-picker"
       :class="{ 'kds-cols-picker--dans-barre': barreUniquePresente }"
       role="group"
@@ -99,8 +99,11 @@
       <!-- [KDS-UI-MULTI 2026-08-07] La pastille « +N en attente » vivait en absolu au-dessus
            de la grille et RECOUVRAIT une carte entière (mesuré : carte [D] masquée à 4
            colonnes). Elle est rapatriée ici, dans la barre de réglage, où elle ne cache rien. -->
-      <span v-if="overflowActiveCount > 0" class="kds-cols-picker__waiting" role="status">
-        +{{ overflowActiveCount }} en attente
+      <!-- [VG-2026-10-21 M6-005 / M1-001] Au-delà du plafond de rendu, « +22 en attente » laissait
+           croire que les 22 se trouvaient en défilant ; seules 20 avaient une carte. Le plafond
+           ne bouge pas (décision propriétaire) : la pastille DIT combien n'ont pas de carte. -->
+      <span v-if="overflowActiveCount > 0" class="kds-cols-picker__waiting" role="status" data-testid="kds-overflow-chip">
+        +{{ overflowActiveCount }} en attente<template v-if="hiddenActiveCount > 0"> · dont {{ hiddenActiveCount }} {{ hiddenActiveCount > 1 ? 'non affichées' : 'non affichée' }}</template>
       </span>
       <button
         v-for="n in choixCartes"
@@ -119,17 +122,19 @@
       v-if="activeOrders.length > 0"
       ref="gridEl"
       class="kds-v2__grid"
-      :class="{ 'has-overflow': overflowActiveCount > 0 }"
+      :class="{ 'has-overflow': overflowActiveCount > 0 && !tablette }"
       :data-count="visibleActiveOrders.length"
-      :data-cols="cartesParEcran"
-      :style="{ '--kds-cols': cartesParEcran }"
+      :data-cols="colonnesAffichees"
+      :style="{ '--kds-cols': colonnesAffichees }"
+      @scroll.passive="majFleches"
     >
       <KdsOrderCard
         v-for="(o, idx) in visibleActiveOrders"
         :key="o.id"
         :order="o"
         :now="now"
-        :shortcut="SHORTCUTS[idx]"
+        :shortcut="tablette ? null : SHORTCUTS[idx]"
+        :tablette="tablette"
         :recall-active="isRecallActive(o)"
         @ready="onCtaTap(o.id, o.queue_number)"
         @reprint="$emit('reprint', o)"
@@ -137,7 +142,7 @@
     </div>
     <!-- [KDS-6CARDS] Boutons de défilement — visibles seulement si la file déborde. -->
     <button
-      v-if="overflowActiveCount > 0"
+      v-if="overflowActiveCount > 0 && !tablette"
       type="button"
       class="kds-scroll-btn kds-scroll-btn--left"
       aria-label="Faire défiler vers la gauche"
@@ -145,7 +150,7 @@
       @click="scrollGrid(-1)"
     >◀</button>
     <button
-      v-if="overflowActiveCount > 0"
+      v-if="overflowActiveCount > 0 && !tablette"
       type="button"
       class="kds-scroll-btn kds-scroll-btn--right"
       aria-label="Faire défiler vers la droite"
@@ -153,10 +158,31 @@
       @click="scrollGrid(1)"
     >▶</button>
 
+    <!-- [KDS-TABLETTE 2026-10-20 · owner « petites flèches à droite et à gauche pour défiler les tickets »]
+         Poste tablette : une flèche de chaque côté, visible SEULEMENT quand il reste des commandes
+         dans ce sens (pas de flèche gauche au début, pas de flèche droite à la fin). Un appui fait
+         défiler d'un écran de fiches. Le glissement au doigt reste possible. -->
+    <button
+      v-if="tablette && peutGauche"
+      type="button"
+      class="kds-fleche-tablette kds-fleche-tablette--gauche"
+      aria-label="Commandes précédentes"
+      data-testid="kds-tablette-fleche-gauche"
+      @click="defilerTablette(-1)"
+    >‹</button>
+    <button
+      v-if="tablette && peutDroite"
+      type="button"
+      class="kds-fleche-tablette kds-fleche-tablette--droite"
+      aria-label="Commandes suivantes"
+      data-testid="kds-tablette-fleche-droite"
+      @click="defilerTablette(1)"
+    >›</button>
+
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
          Renders the 4 most recently PREPARED orders with elapsed-since-served.
          Small footprint (60px row) so it never steals space from the active grid. -->
-    <div v-if="recentlyServed.length > 0" class="kds-v2__served" role="region" :aria-label="$t('label.kds_recently_served')">
+    <div v-if="recentlyServed.length > 0 && !tablette" class="kds-v2__served" role="region" :aria-label="$t('label.kds_recently_served')">
       <div class="kds-v2__served-label">{{ $t('label.kds_recently_served') }}</div>
       <div class="kds-v2__served-list">
         <div
@@ -218,6 +244,11 @@ import {
 import {
     ORDER_STATUS,
 } from '../../../helpers/kdsState.js';
+import { fichesParEcranTablette } from '../../../helpers/kdsTablette.js';
+
+// [KDS-TABLETTE 2026-10-20] Écart (px) en deçà duquel la grille est considérée au bord : bien moins
+// qu'une fiche (≥ 380 px), donc jamais une commande réellement cachée.
+const MARGE_FLECHES = 12;
 
 const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -237,6 +268,14 @@ export const KDS_VISIBLE_CARDS = KDS_CARTES_PAR_ECRAN_DEFAUT;
 // attente » couvre le surplus. En service réel la file dépasse rarement 10.
 export const KDS_RENDER_MAX = 24;
 
+/**
+ * Nombre de fiches côte à côte. Fonction de MODULE (et non lecture de `this.colonnesAffichees`) pour
+ * rester appelable sur un contexte minimal : tablette → selon la largeur ; sinon le réglage du poste.
+ */
+export function colonnesPour(ctx) {
+    return ctx.tablette ? fichesParEcranTablette(ctx.largeurFenetre) : ctx.cartesParEcran;
+}
+
 export default {
     name: 'KdsV2Grid',
     components: { KdsOrderCard, KdsStatusBanner },
@@ -252,6 +291,9 @@ export default {
         // (no business logic here) — orchestrator feeds its legacy computeds.
         syncUncertain: { type: Boolean, default: false },
         errorMessage: { type: String, default: '' },
+        // [KDS-TABLETTE 2026-10-19] Poste tablette : commandes seules (pas de sélecteur, de boutons
+        // de défilement, de bande « servies », de raccourcis clavier) ; colonnes selon la largeur.
+        tablette: { type: Boolean, default: false },
         // [Wave Q-2 2026-05-20] Default OFF. Owner override of the RESEARCH §4.3
         // single-chef auto-promote heuristic: cashier needs a consistent
         // CONFIRMÉE → EN PRÉPARATION → PRÊT flow across all tickets so the POS
@@ -277,6 +319,10 @@ export default {
             // Teleport se neutralise et le sélecteur reste à sa place d'origine. Une cible
             // absente ne doit JAMAIS faire disparaître le réglage — le chef s'en sert.
             barreUniquePresente: false,
+            largeurFenetre: typeof window !== 'undefined' ? window.innerWidth : 1280,
+            // [KDS-TABLETTE 2026-10-20] Reste-t-il des commandes hors de vue à gauche / à droite ?
+            peutGauche: false,
+            peutDroite: false,
             cartesParEcran: KDS_CARTES_PAR_ECRAN_DEFAUT,
             choixCartes: KDS_CHOIX_CARTES,
             now: Date.now(),
@@ -381,13 +427,28 @@ export default {
         // Raccourcis clavier bornés aux cartes garanties à l'écran SANS scroll
         // (régression P2-k : jamais bumper une commande hors de vue).
         shortcutOrders() {
-            return this.activeOrders.slice(0, this.cartesParEcran);
+            return this.activeOrders.slice(0, colonnesPour(this));
+        },
+        // [KDS-TABLETTE 2026-10-19] Poste tablette : le nombre de fiches côte à côte découle de la
+        // largeur réelle (jamais sous la largeur lisible) ; le grand écran garde son réglage.
+        colonnesAffichees() {
+            return colonnesPour(this);
         },
         overflowActiveCount() {
-            return Math.max(0, this.activeOrders.length - this.cartesParEcran);
+            return Math.max(0, this.activeOrders.length - colonnesPour(this));
+        },
+        // [VG-2026-10-21 M6-005 / M1-001] Commandes actives SANS carte (au-delà de KDS_RENDER_MAX).
+        // Dérivé de visibleActiveOrders — la liste que rend le v-for — et non d'une seconde
+        // lecture du plafond : une seule définition de « affichée ».
+        hiddenActiveCount() {
+            return Math.max(0, this.activeOrders.length - this.visibleActiveOrders.length);
         },
     },
     watch: {
+        // [KDS-TABLETTE 2026-10-20] La file change (commande qui arrive / part) ou la largeur
+        // change : on recalcule quelles flèches afficher une fois le DOM à jour.
+        'activeOrders.length'() { this.$nextTick(this.majFleches); },
+        largeurFenetre() { this.$nextTick(this.majFleches); },
         // Auto-transition watcher: when the queue updates AND no order is in
         // PREPARING AND there's a NEW order at the head, promote it.
         // [Wave U 2026-05-21] Switched from visibleOrders → activeOrders so the
@@ -428,7 +489,13 @@ export default {
         this.tickerId = window.setInterval(() => {
             this.now = Date.now();
         }, 1000);
-        window.addEventListener('keydown', this.onKey);
+        // Pas de raccourcis clavier [A]–[H] sur le poste tablette : aucun clavier, et aucune
+        // validation n'y est possible (elle se fait sur le grand écran).
+        if (!this.tablette) {
+            window.addEventListener('keydown', this.onKey);
+        }
+        window.addEventListener('resize', this.surLaTailleDeFenetre);
+        this.$nextTick(this.majFleches);
     },
     beforeUnmount() {
         if (this.tickerId) {
@@ -438,8 +505,36 @@ export default {
         // [Wave V 2026-05-21] No pendingTimeoutId to clean — onCtaTap fires
         // synchronously, no in-flight setTimeout owned by this component.
         window.removeEventListener('keydown', this.onKey);
+        window.removeEventListener('resize', this.surLaTailleDeFenetre);
     },
     methods: {
+        surLaTailleDeFenetre() {
+            this.largeurFenetre = window.innerWidth;
+        },
+        /**
+         * [KDS-TABLETTE 2026-10-20] Recalcule les flèches : à gauche s'il y a de la place avant la
+         * position actuelle, à droite s'il en reste après. La marge absorbe le décalage de calage
+         * (marge intérieure de la grille) : mesuré, une grille « au début » a scrollLeft = 4 — sans marge
+         * la flèche gauche restait affichée devant la toute première commande.
+         */
+        majFleches() {
+            const el = this.$refs.gridEl;
+            if (!this.tablette || !el) {
+                this.peutGauche = false;
+                this.peutDroite = false;
+                return;
+            }
+            this.peutGauche = el.scrollLeft > MARGE_FLECHES;
+            this.peutDroite = el.scrollLeft + el.clientWidth < el.scrollWidth - MARGE_FLECHES;
+        },
+        /** Un appui = un écran de fiches (autant que de colonnes affichées), jamais moins d'une. */
+        defilerTablette(sens) {
+            const el = this.$refs.gridEl;
+            if (!el) return;
+            const premiere = el.firstElementChild;
+            const pas = premiere ? premiere.getBoundingClientRect().width + 6 : el.clientWidth;
+            el.scrollBy({ left: sens * pas * Math.max(1, this.colonnesAffichees), behavior: 'smooth' });
+        },
         /**
          * [KDS-COLONNES 2026-08-07 owner] Change le nombre de commandes visibles à la fois.
          * Le choix est mémorisé sur le poste ; un stockage indisponible (mode privé, quota)
@@ -880,6 +975,67 @@ export default {
     margin-top: 8px;
     font-size: 16px;
     color: #9CA3AF;
+}
+
+/* [KDS-TABLETTE 2026-10-19 · owner] Poste tablette : la grille prend TOUTE la largeur et toute la
+   hauteur. Marges et espaces réduits au minimum, barre de défilement fine (le glissement au doigt
+   fait le travail ; la barre indique seulement qu'il y a une suite). Le nombre de colonnes vient de
+   --kds-cols, calculé sur la largeur réelle. */
+.kds-v2--tablette {
+    background: #E5E7EB;
+}
+.kds-v2--tablette .kds-v2__grid {
+    padding: 4px;
+    gap: 6px;
+    grid-auto-columns: calc((100% - 8px - (var(--kds-cols, 2) - 1) * 6px) / var(--kds-cols, 2));
+    scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+}
+.kds-v2--tablette .kds-v2__grid > * {
+    scroll-snap-align: start;
+}
+.kds-v2--tablette .kds-v2__grid::-webkit-scrollbar {
+    height: 6px;
+}
+.kds-v2--tablette .kds-v2__grid::-webkit-scrollbar-thumb {
+    border-width: 1px;
+}
+/* [KDS-TABLETTE 2026-10-20 · owner] Petites flèches ‹ › de chaque côté pour passer d'une commande à
+   l'autre. Étroites et translucides pour cacher le moins possible de la fiche, mais cible tactile
+   de 48 px de large (WCAG 2.5.8). Elles n'existent que s'il reste des commandes dans ce sens. */
+.kds-fleche-tablette {
+    position: absolute;
+    /* En bas des fiches et non au milieu : la colonne des quantités (« 1× ») est collée au bord
+       gauche, une flèche à mi-hauteur en cachait la moitié (constaté sur capture). Le bas d'une fiche
+       est vide tant que la commande tient à l'écran. Au-dessus du point de connexion (coin droit). */
+    bottom: 40px;
+    z-index: 90;
+    width: 48px;
+    height: 64px;
+    padding: 0 0 4px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(26, 26, 26, 0.62);
+    color: #fff;
+    font-size: 40px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.kds-fleche-tablette:active { background: #F4501E; }
+.kds-fleche-tablette--gauche { left: 4px; }
+.kds-fleche-tablette--droite { right: 4px; }
+.kds-v2--tablette .kds-v2__empty {
+    padding: 12px;
+}
+.kds-v2--tablette .kds-v2__empty-illustration {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 8px;
+}
+.kds-v2--tablette .kds-v2__empty-title {
+    font-size: 24px;
 }
 
 .sr-only {

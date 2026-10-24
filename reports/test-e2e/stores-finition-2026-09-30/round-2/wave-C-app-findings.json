@@ -1,0 +1,211 @@
+{
+  "wave": "C",
+  "scope": "APP modes only: A (iPhone 13 390x664), SE1 (320x568), SE3 (375x667), AND (448x921) + app-mode probes S-*",
+  "round": 2,
+  "artifacts_dir": "/Users/1millnonstop/.claude/jobs/48fdb176/tmp/e2e-stores/C-r2",
+  "states_reviewed": 217,
+  "states_reviewed_detail": "Visually opened: SE1 39/39, AND 39/39, SE3 39/39, A 96/96 (contact sheets, plus full-size reads of the payment, confirmation, tracking, account, 404 and legal states), and 4 app-mode probes (S-A-onglets-categorie-apres-defilement, S-ferme-aide-choisir-une-heure, S-suivi-7-estimation-en-panne-503, plus the S-cgv skip link checked through A-68/A-83). checks/console/network were parsed for all 221 app-mode entries in resume.json. The 'Mise à jour nécessaire' screen could not be reviewed because it was never captured (see C-013).",
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "C-r2/A-30-assistant-etape-05-choix-de-la-boisson.png (also SE1-12, SE3-12, AND-12) vs C-r2/A-19-menu-cat-boissons-15.png (also SE1-05, SE3-05, AND-05)",
+      "category": "other:business_rule (sold-out product sellable)",
+      "severity": "P1",
+      "evidence": "The menu marks the drink as sold out: A-19 DOM has aria-label=\"Coca-Cola 33cl — épuisé\", and the card reads 'ÉPUISÉ / Épuisé pour le moment' with no + button. The formula step of the same app session still offers it as an enabled choice: A-30 DOM '<button class=\"lc-wiz-choice\" aria-pressed=\"false\" ...><img src=\"assets/menu/coca.webp\"', and resume.json sondes S2-formule-boissons-A/SE1/SE3/AND = {\"texte\":\"Coca-Cola 33cl\",\"disabled\":false,\"signaleEpuise\":false}. The order is accepted with it: A-commande-emise.json item 97 instruction 'Boisson menu: Coca-Cola 33cl · Sauce frites : Mayonnaise'. Root cause (files opened): wizard-v2.jsx:341 builds the step from 'M.formuleDrinks.map(...)' with no availability filter. data/menu.js:305-322 FORMULE_DRINKS is a static list. api.js:1037-1039 sends the drink only as free text ('Boisson menu: ' + dn), so the backend cannot refuse it. The kitchen receives an order it cannot serve. The upsell (A-86) correctly leaves Coca-Cola out, so only the formula path is affected.",
+      "fix_hint": "Filter formuleDrinks against the same unavailability map the menu grid uses (screens.jsx unavail[...]), or render the option disabled with 'épuisé'. Keep the server unable to accept a free-text drink it knows is out of stock (V2: send the drink as a real variation)."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "C-r2/S-suivi-7-estimation-en-panne-503.png (app mode, 390x664)",
+      "category": "numeric_integrity (two contradictory wait times on one screen)",
+      "severity": "P1",
+      "evidence": "When the general estimate fails and the order is in preparation, the tracking screen shows TWO different ETAs at once. DOM text: 'EN PRÉPARATION | #0110269555 | Prête dans ~8 min | Prête dans ~15 min | · confirmé par le restaurant'. resume.json sondes S3-suivi-statut-7-estimation-en-panne = [\"Prête dans ~8 min\",\"Prête dans ~15 min · confirmé par le restaurant\"], versus [\"Prête dans ~8 min\"] when the estimate works. The 503 itself is the intended probe. The double pill is the defect. Code, from the current lot3 source and present in compiled/funnel.js: the first pill uses the order's own countdown (funnel.jsx:2838-2841, aDecompteReel from trk.wait_low). The fallback pill only checks the general estimate: funnel.jsx:2869 'if (est && est.wait_low != null) return null;'. Since est stays null until a successful fetch (funnel.jsx:2717-2725, which also stays null on a 200 without numbers), the fallback renders as well. Any throttle, 5xx or network blip on /wait-estimate during preparation reproduces it. Severity: protocol P0 for numeric integrity, downgraded to P1 because no money is involved.",
+      "fix_hint": "In the fallback IIFE also return null when the primary block already rendered a countdown (Number.isFinite(trk.wait_low) && trk.wait_low > 0), or compute one ETA source and render one pill."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "C-r2/S-A-onglets-categorie-apres-defilement.png (+ A-06..A-21, SE1-04/05, SE3-04/05, AND-04/05)",
+      "category": "element_overlap (clickable)",
+      "severity": "P1",
+      "evidence": "After scrolling the menu, the sticky category chips (Tout / Sandwichs / Burgers…) slide UNDER the two-row app header and cannot be tapped. resume.json sondes S1-onglets-sous-navx-A = {\"catSticky\":{\"top\":60,\"bottom\":116},\"navx\":{\"top\":72,\"bottom\":128},\"header\":{\"top\":0,\"bottom\":129},\"elementVisibleAuPoint\":\"<button class=\\\"lc-navx-item\\\"> « Réseaux »\",\"ongletAccessible\":false}. Visually, every category capture after selection shows only the filter row, or nothing, under the header; faint chip outlines show through the translucent nav in S-A-onglets. Root cause: styles-mobile.css:343-346 '.lc-cat-sticky { position: sticky; top: var(--nav-h-sm); z-index: 30; }' (60px). styles-v8-vitrine.css:42 '.lc-nav { height: auto; }' added the 56px navx row (--navx-h), so the header is about 129px tall and the chips stick behind it (z 30 < nav 50). To change category, the customer must scroll back to the top of a 39-product list.",
+      "fix_hint": "top: calc(var(--nav-h-sm) + var(--navx-h)) (plus the safe-area-top padding .lc-nav adds in styles-mobile.css:510), or measure the nav height."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "C-r2/A-52-mes-commandes.png, A-53-mes-commandes-detail.png",
+      "category": "numeric_integrity (wrong aggregate shown to customer)",
+      "severity": "P1",
+      "evidence": "The header reads '3 commandes au total · 41,50 € dépensés.' (A-53 DOM). The three listed orders are 15,80 € (Prête, not yet paid: pay at counter), 16,80 € (Livrée) and 8,90 € ('Annulée' / 'Aucun point sur une commande annulée'). 15,80 + 16,80 + 8,90 = 41,50, so the cancelled order, and the still-unpaid one, are counted as money spent. Code: orders.jsx:100 'const totalSpent = list.reduce((s, o) => s + o.total, 0);' with no status filter, rendered at orders.jsx:124. The list data in C-r2 is mocked, but the defect is in the reduce, and the page itself ships an 'Annulées' tab, so real histories contain cancelled rows. Severity: protocol P0, downgraded to P1 because it is a display total with no fiscal effect.",
+      "fix_hint": "Sum only completed/paid rows (exclude status 'cancelled' and, ideally, unpaid in-progress orders), or relabel the figure."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "C-r2/SE1-06-fiche-simple-ajoutee.png, SE1-15-hors-ligne-menu.png, SE1-01-accueil.png, SE3-06-fiche-simple-ajoutee.png, SE3-15-hors-ligne-menu.png, SE1-17-paiement-connecte.png",
+      "category": "other:visual (brand logo distorted / icon squeezed on small screens)",
+      "severity": "P2",
+      "evidence": "At 320px the header logo is squashed horizontally. The mascot's width/height ratio was measured on the PNGs: about 0.70-0.73 in A, SE3 and AND, 0.58 in SE1-01 (logged out), and 0.44 in SE1-06 and SE1-15 (logged out with cart badge). The 'LE CAYENNE' wordmark shrinks from about 52 to about 33 CSS px wide at the same height (side-by-side crop SE1-01 vs SE1-06). The cart button's bag SVG collapses to a dot ('◦ Panier 1') in SE3-06, SE3-15 and SE1-17. CSS: styles.css:163 '.lc-nav-logo { height: 32px; width: auto; display: block; }' and styles-v6-brand.css:476 '.lc-nav-logo { height: 24px; }' (≤400px). Neither has flex-shrink:0, so the img and svg shrink as flex items.",
+      "fix_hint": "flex-shrink:0 on .lc-nav-logo and on the cart svg (or object-fit:contain on the img), and let the text controls ('Se connecter') yield first."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "C-r2/SE1-10-assistant-etape-03-supplements-gourmands.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "At 320px the supplement name 'Champignons' is cut to 'Champig'. The '+0,90 €' price pill is drawn over the end of the word, with no ellipsis and no title (zoom crop). DOM: '<div class=\"lc-wiz-choice-name\">Champignons</div>' next to '<div class=\"lc-wiz-choice-price\">+0,90 €</div>'. 'Oignons frits' wraps to two lines in the same state. The automated texte_coupe check for SE1-10 lists only the background menu cards and missed this. Not present at 375 (SE3-10) or 390 (A-28).",
+      "fix_hint": "Allow the name to wrap (no fixed width), or give .lc-wiz-choice-price flex-shrink:0 and the body min-width:0 with overflow-wrap."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "C-r2/SE1-15-hors-ligne-menu.png, SE1-20-hors-ligne-paiement.png, A-33, A-43, SE3-15, SE3-20, AND-15, AND-20",
+      "category": "element_overlap (non-clickable banner over primary CTA)",
+      "severity": "P2",
+      "evidence": "The offline banner 'Pas de connexion — la carte reste consultable, la commande reprendra au retour du réseau.' is placed over the bottom bars instead of above them. resume.json sondes S7-hors-ligne-paiement-SE1 = {\"bandeau\":{\"top\":481,\"bottom\":556},\"barre\":\".lcf-cta-bar\",\"barreRect\":{\"top\":462,\"bottom\":568},\"recouvre\":true,\"hauteurRecouverte\":75,\"pointerEvents\":\"none\",\"toucherAtteint\":\"button.lcf-cta-bar-next\"}. Visually, 'Confirmer ma commande' and 'Retour' are hidden. Only orange edges show behind the red banner. In S7-hors-ligne-menu-SE1 the cart bar is covered and a tap at the banner reaches 'div.lc-menu-grid', not the bar. Because the banner has pointer-events:none, a tap on the red banner fires the hidden 'Confirmer ma commande' in every mode. Code: app-native.js:157 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)'.",
+      "fix_hint": "Offset the banner above the active bottom bar (measure .lcf-cta-bar / .lc-menu-cartbar), or render it at the top under the header."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "C-r2/S-ferme-aide-choisir-une-heure.png (app, closed restaurant) + A-90 / SE1-33 / SE3-33 / AND-33",
+      "category": "other:false_text (guidance points to an option that does not exist)",
+      "severity": "P2",
+      "evidence": "In closed mode, choosing 'Choisir une heure' without a time greys out the CTA and shows (role=alert): 'Indique l'heure à laquelle tu passeras la chercher (plus haut, sous « Quand ? »), ou choisis « Dès que prêt ».' (resume.json sondes S9-ferme-aide-heure). The tiles actually offered are only [\"À l'ouverture 18:20\",\"Choisir une heure —\"] (same probe). funnel.jsx:355-358 removes 'Dès que prêt' when ferme. The message is unconditional at funnel.jsx:2223-2227 and present in compiled/funnel.js (lot3). The customer is told to pick a tile that is not on screen. The message also refers to 'Quand ?' while the section title reads 'HEURE DE RETRAIT — AUJOURD'HUI'.",
+      "fix_hint": "When ferme, say « ou choisis « À l'ouverture » » and use the real section label."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "C-r2/A-25-fiche-options-tacos-l.png, SE1-07-fiche-options-tacos-l.png, SE3-07-fiche-options-tacos-l.png, A-23-fiche-simple-tiramisu.png",
+      "category": "other:ux (primary CTA below the fold)",
+      "severity": "P2",
+      "evidence": "The product sheet has no sticky action bar. On 390x664, 375x667 and 320x568 the 'Personnaliser →' CTA of Tacos L is not on screen. The captures end at 'Voir les infos allergènes' (A-25, SE3-07) or at 'Gluten' (SE1-07). On Tiramisu (A-23) 'Ajouter au panier' and the price '3,50 €' are cut in half by the bottom edge (crop). Only AND (448x921, AND-07) shows the CTA. The order path's first action needs a scroll that small-phone users and reviewers may not discover.",
+      "fix_hint": "Make the price + CTA row sticky at the bottom of the sheet (with the safe-area padding already used for .lcf-cta-bar)."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "C-r2/A-68-legal-cgv.png, A-83-app-legal-depuis-pied.png (S-cgv-lien-evitement)",
+      "category": "other:visual (raw skip link visible)",
+      "severity": "P2",
+      "evidence": "On the CGV page reached from the app footer, the plain text 'Aller au contenu' is permanently visible above the header (A-68, A-83). The probe gives S4-cgv-lien-evitement {\"position\":\"static\",\"top\":0,\"hauteur\":20,\"visible\":true,\"focus\":false}. Cause: legal/cgv.html:37 '<a href=\"#contenu\" class=\"lc-skip-link\">Aller au contenu</a>', but .lc-skip-link is only styled inline in index.html:159-166. No stylesheet linked by cgv.html (styles*.css, legal/legal.css) defines it. The other legal pages have no skip link at all (S4-privacy-lien-evitement false).",
+      "fix_hint": "Move the .lc-skip-link rules into legal/legal.css (or styles.css), and add the link consistently to all legal pages."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "C-r2/A-44-confirmation.png, SE1-21, AND-21 (and the other states listed in evidence)",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Automated contrast (checks.json contraste_faible) confirmed visually. On the confirmation hero, 'PARTI !' is orange #FF5A1F on yellow #FFD93D at 2.26:1 (38px, threshold 3:1): A-44/45/92, SE1-21/35, SE3-21/22/35, AND-21/22/35/36. White on #FF5A1F at 3.12:1 (13px) appears on 'Ajouter au panier' + '12,30 €' (2.73:1, 11px) in the wizard recap (A-32, SE1-14, SE3-14, AND-14) and on the 'Ajouté ✓' toast. '🔔 Tu recevras une notification quand ta commande…' is #6F6A60 on yellow at 3.9:1 (13px). The '✓ Envoyée en cuisine' chip is 3.16:1 (11px). On tracking, 'Réf. 0110269401' is #5C584F on #191919 at 2.49:1 (11.5px). The tracking total '15,80 €' is #C2410C on #191919 at 3.41:1 (22px).",
+      "fix_hint": "Use --orange-text or ink on yellow for 'PARTI !', dark text (#0A0A0A) on the #FF5A1F CTA (as the update screen already does), and lighten the Réf./total on the dark tracking card."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "C-r2/A-34-panier-tiroir.png, SE1-16, SE3-16, AND-16",
+      "category": "aria_keyboard (touch target size)",
+      "severity": "P2",
+      "evidence": "In the cart drawer, the quantity steppers are 28x28 CSS px in all 4 app sizes (checks.json cibles_moins_44: 'button « Diminuer la quantité de Tiramisu » 28×28', 'Augmenter… 28×28', same for Tacos L). Apple HIG minimum is 44x44 pt and Material is 48dp. Also reported: the menu search input is 40px tall (26 states), and the 'Statut de commande' toggle is 44x24.",
+      "fix_hint": "Use an invisible 44px hit area (padding or ::before) on the steppers."
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "C-r2/ (absence): no 'Mise à jour nécessaire' state in A, SE1, SE3 or AND",
+      "category": "other:audit_integrity (coverage gap on a new screen)",
+      "severity": "P2",
+      "evidence": "Round 2 shipped a new blocking screen in lot 20261001lot1 (app-native.js:186-231, afficherMiseAJour: role=alertdialog, title 'Mise à jour nécessaire', '#FF5A1F' button or 'Ouvre l'App Store et mets à jour « Le Cayenne »'). It also handles the 422 APP_UPDATE_REQUIRED path (app-native.js:439). C-r2 has no capture of it in any app size ('ls C-r2 | grep -i maj|mise|update' returns nothing). The bench never mocks /api/frontend/app/config, which falls through to helpers-mock-backend.js:39 '{data: []}', so the screen cannot appear. Its 320px layout, safe-area padding and the no-URL fallback have never been visually reviewed. It is covered only by tests-e2e/version-minimale-2026-10-01.spec.js.",
+      "fix_hint": "Add states: app/config min_version above api.version (with ios_url, without URL) and a 422 APP_UPDATE_REQUIRED on order POST, in SE1/A/AND."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "C-r2/*.network.json (app modes)",
+      "category": "other:audit_integrity (silent-error detection structurally blind)",
+      "severity": "P2",
+      "evidence": "Every backend call is answered by the bench. helpers-mock-backend.js:16 routes '**://vps-418872ac.vps.ovh.net/**', and any path not explicitly mocked gets 'route.fulfill({ status: 200, ... JSON.stringify({ data: [] }) })' (line 39). In app modes no 4xx/5xx can surface except the two deliberate probes, so the result '0 silent errors / 0 unexpected 4xx-5xx' proves nothing about the real backend. network.json also logs mocked calls under the production host without marking them, e.g. A-44-confirmation.network.json '{\"url\":\"https://vps-418872ac.vps.ovh.net/api/frontend/order\",\"method\":\"POST\",\"status\":200}'. These look like production writes but were fulfilled locally (no production call; verified in helpers-mock-backend.js:16-39). The mocked order-history rows also omit queue_number (spec historique()), so the 'Mes commandes → Suivre' path (A-95, S-suivi-*) displays '#0110269556'. That path's O-B6 behaviour is therefore unproven in C-r2 rather than broken.",
+      "fix_hint": "Make the fallback fail loudly (e.g. 599 plus an instrument entry) for unmocked paths, tag mocked responses in network.json, and add queue_number to the mocked history rows."
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "C-r2/A-52-mes-commandes.png, A-53-mes-commandes-detail.png",
+      "category": "other:consistency (same order, two numbers)",
+      "severity": "P3",
+      "evidence": "The 'Mes commandes' card shows '#0110269401' (orders.jsx:176 '#{o.id}', where id = order_serial_no at orders.jsx:17). The ticket, tracking and notifications for the same order show the called number 'N°A0042' (A-45, A-48). orders.jsx:24 maps queue but never renders it. Not O-B6, whose scope was ticket, tracking and notifications.",
+      "fix_hint": "Show 'N°' + o.queue on the card when present, with the serial as a secondary reference."
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "C-r2/SE1-01..SE1-15, SE1-30-connexion-modale.png, SE1-14-assistant-recap.png, A-24, A-33..A-38",
+      "category": "text_truncation (small-screen text collisions)",
+      "severity": "P3",
+      "evidence": "'Se connecter' wraps to two lines in the header (probe S5-bouton-se-connecter {\"lignes\":2}; always at 320, and at 390 once the cart badge appears). In the login modal eyebrow at 320, 'Étape 1 sur 2 · Je me connecte' (DOM .lc-acc-eyebrow) runs under the close ×, so 'CONNE' is legible and 'CTE' faded (zoom crop). In the wizard recap CTA at 320, the price pill breaks as '12,30' / '€' on two lines. At 320 the payment CTA 'Confirmer ma commande 15,80 €' reaches x≈319 of 320 (no right margin) while 'Retour' keeps 16px (pixel scan of SE1-17).",
+      "fix_hint": "white-space:nowrap on price pills, padding-right on the eyebrow equal to the close button width, and min-width:0 or flex-basis on the CTA bar."
+    },
+    {
+      "id": "C-017",
+      "state_artifact": "C-r2/A-36-paiement-deconnecte-milieu.png, A-38-paiement-deconnecte-clic-confirmer.png",
+      "category": "other:copy_in_app (implies paying in the app)",
+      "severity": "P3",
+      "evidence": "In the app, where only 'Payer sur place' exists, the contact block says '…tu le valides ici, puis tu paies en bas de page.' (funnel.jsx:1909-1910). The error shown on 'Confirmer ma commande' says '…reçois le code par email et valide-le, puis paie ici.' (funnel.jsx:1617, visible in A-38). The CTA itself correctly reads 'Confirmer ma commande', so the copy contradicts the app's pay-at-counter rule.",
+      "fix_hint": "In app/pay-on-site mode use 'puis tu confirmes en bas de page' / 'puis confirme ici'."
+    },
+    {
+      "id": "C-018",
+      "state_artifact": "C-r2/A-65..A-75 (legal), A-83, A-76-page-404.png",
+      "category": "other:web_wrapper_tells (store review 4.2 risk, low)",
+      "severity": "P3",
+      "evidence": "Legal pages opened from the app show a 'Retour au site' button and an 'LC' header instead of the app shell (A-65, A-68, A-70, A-72, A-74). The 404 page (A-76) shows a different website chrome (top links 'Commander · La carte · Tacos · Burgers', address bar) and a sticky bottom bar whose translucent 'Appeler' button lets the page text ('existe pas, ou… voici par où') show through. checks.json also flags 'a « Accueil » 47×32' and 'a.sx-nav-brand 111×40' there. Each is minor, but together they read as 'website in a frame' to a reviewer.",
+      "fix_hint": "In app mode, relabel 'Retour au site' to 'Retour' and give 404.html an app-aware minimal shell."
+    },
+    {
+      "id": "C-019",
+      "state_artifact": "C-r2/A-54-mes-commandes-bas.png == A-51-suivi-statut-8-bas.png",
+      "category": "other:audit_integrity (duplicate image, always-true guard)",
+      "severity": "P3",
+      "evidence": "Verdict on the coverage warning: 'Mes commandes' WAS captured (A-52 top of list and A-53 expanded detail; A-53 DOM lists the 3 orders). A-54 'bas' is pixel-identical to A-51 because both show only the shared site footer. Its guard cannot fail: spec e2e-stores-vague-C-2026-10-01.spec.js:801 \"await S('mes-commandes-bas', true, 'bas de Mes commandes')\". As a result the 'Livrée' and 'Annulée' cards (where the C-004 total matters) were never imaged, and 'Mes commandes' is not captured at all in SE1, SE3 or AND.",
+      "fix_hint": "Scroll to the last order card (not the page bottom), guard on its presence, and add Mes commandes to the reduced SE1/AND journey."
+    },
+    {
+      "id": "C-020",
+      "state_artifact": "C-r2/A-44-confirmation.png, SE1-21, AND-21 (DOM script tags)",
+      "category": "other:audit_integrity (captures older than the code under review)",
+      "severity": "P3",
+      "evidence": "The captures loaded 'compiled/funnel.js?v=20261001lot1' (A-44 DOM), while the site worktree index.html now serves 'compiled/funnel.js?v=20261001lot3' (funnel.jsx modified at 10:34, after the capture at 08:21). lot3 contains B2-R2-01 (funnel.jsx:2385-2387, numeroAffiche), which changes the confirmation sentence from 'Ta commande #0110269401 est envoyée' (as captured) to 'N°A0042'. That sentence is therefore NOT reported as a defect, but the confirmation states need a re-capture. Every code-based finding above (C-002, C-008) was re-checked against the current lot3 source and compiled bundle.",
+      "fix_hint": "Re-run the C bench on lot3 before closing round 2."
+    },
+    {
+      "id": "C-021",
+      "state_artifact": "C-r2/*.checks.json (texte_coupe, safe area)",
+      "category": "other:audit_integrity (instrument false positives and blind spots)",
+      "severity": "P3",
+      "evidence": "(a) texte_coupe 'h1 « Suivi de ta commande » (344>1)' on 22 tracking states (A, SE1, SE3 and AND, 5 each, plus 2 probes) is a false positive. The h1 is visually hidden by design (DOM: style=\"position: absolute; width: 1px; height: 1px; ... clip: rect(0px, 0px, 0px, 0px)\"). (b) The same check scans the menu page behind modal sheets and misses the visible truncation inside them (C-006). (c) Playwright reports env(safe-area-inset-*) = 0. 'Buttons under the status bar or home indicator' therefore cannot be judged from C-r2, although the CSS handles insets (styles-mobile.css:489, 510, 615, 644 and app-native.js:157, 201). That needs the device run (tools/verify-app-device.py) or a simulator.",
+      "fix_hint": "Skip elements whose clip or size is 1px, scope checks to the topmost dialog when one is open, and add a device or simulator pass for the safe areas."
+    }
+  ],
+  "not_reported_as_open": [
+    "Payment inside the app: only 'Payer sur place' is offered in every app state (A-41, SE1-18, SE3-18, AND-18). No 'bientôt' (annonces_bientot = 0 in all 221 app entries) and no 'Avis' tab (app navx = Accueil/Menu/Réseaux/Itinéraire): owner rules respected.",
+    "Closed-restaurant flow ('À l'ouverture 18:20', 'Prévue pour 18 h 20', 'Préparée à l'ouverture') is expected behaviour.",
+    "No precise minutes away from the end of the queue: '~15–20 min' while in queue, '~8 min' only at position_ahead=1. No count of orders ahead is shown anywhere.",
+    "Account deletion (guideline 5.1.1): 'SUPPRIMER MON COMPTE' is reachable in Mon compte at all 4 sizes (A-61, SE1-29, SE3-29, AND-29), and the post-deletion message is shown (A-96, SE1-39, SE3-39, AND-39). The privacy policy (legal/privacy.html:133-135, 273-275) covers Apple/Google sign-in and deletion.",
+    "Expected console/network errors: A-76 404 and S-suivi-7-estimation-en-panne-503. No other console error or warning in any app state.",
+    "No horizontal overflow (debordement_horizontal null everywhere) and no raw i18n keys (libelles_bruts empty).",
+    "Fixed items not re-reported: O-B5, O-B6, F-B2, A-001, A-002, A-006, A-008, O-2, O-3, O-4. The '#serial' sentence on the confirmation is covered by B2-R2-01 in lot3 (see C-020).",
+    "'Tout 39' showing 29 cards is by design: 24 dishes plus a 5-drink preview with 'Voir toutes →' (screens.jsx:1529-1543); 4+2+6+3+2+2+3+2 = 24."
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 4,
+    "P2": 10,
+    "P3": 7,
+    "open_P0": 0,
+    "open_P1": 4,
+    "open_P2": 10,
+    "open_P3": 7
+  },
+  "round_to_round_closures": {
+    "A-009": "FAIL",
+    "A-011": "FAIL",
+    "A-012": "FAIL",
+    "A-013": "FAIL"
+  },
+  "closure_evidence": {
+    "A-009": "Content still visible through the translucent sticky header, e.g. faint 'TICKET RETRAIT HÉNIN-BEAUMONT' under the nav in SE1-22 and chip outlines in S-A-onglets.",
+    "A-011": "'★ Conseillé' still sits on the only payment option in the app (A-41 DOM '<span class=\"lcf-recommended\">★ Conseillé</span>' … 'Payer sur place'; SE1-18, AND-18).",
+    "A-012": "'CARTES ENREGISTRÉES / Aucune carte enregistrée' still shown in the app profile (A-60, SE1-28, SE3-28).",
+    "A-013": "Hours still differ across surfaces: home 'Ouvert 7j/7 · 18h – minuit' (AND-01), footer 'Ouvert 18h — 00h', 404 'Ouvert 7j/7 de 18h à minuit' (A-76), while the backend window is 18:00–00:30."
+  },
+  "verdict": "RED"
+}

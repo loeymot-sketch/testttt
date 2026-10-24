@@ -236,6 +236,48 @@ class MollieStructureTest extends TestCase
         $this->assertSame(PaymentStatus::UNPAID, (int) $order->fresh()->payment_status);
     }
 
+    /**
+     * [ULTRA-AUDIT 2026-09-26 · A13] `isMollieConfigured()` ne teste que des réglages
+     * TECHNIQUES (clé API + flag d'infra) — jamais le réglage MÉTIER
+     * `site_online_payment_gateway` que le propriétaire bascule lui-même (Réglages >
+     * Site > "Passerelle de paiement en ligne"). Avant ce correctif, Mollie restait
+     * réellement joignable via cet endpoint même désactivé côté admin.
+     */
+    public function test_checkout_fails_closed_503_when_online_payment_disabled_by_owner(): void
+    {
+        Http::fake();
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder();
+
+        \Smartisan\Settings\Facades\Settings::group('site')->set('site_online_payment_gateway', \App\Enums\Activity::DISABLE);
+
+        $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout")
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Paiement en ligne désactivé.');
+
+        Http::assertNothingSent();
+        $this->assertSame(PaymentStatus::UNPAID, (int) $order->fresh()->payment_status);
+    }
+
+    /**
+     * Symétrique : le réglage ABSENT (jamais posé, comme dans tous les autres tests
+     * de cette suite) doit rester traité comme ENABLE — aucune régression silencieuse
+     * du parcours nominal existant.
+     */
+    public function test_checkout_still_succeeds_when_online_payment_setting_absent(): void
+    {
+        $this->configureMollie();
+        [$customer, $order] = $this->webCardOrder(['total' => 9.50]);
+        $payload = $this->molliePaymentPayload('tr_absent_setting', $order->id, 'open', '9.50');
+        Http::fake(['https://api.mollie.com/v2/payments' => Http::response($payload, 201)]);
+
+        $this->actingAs($customer, 'sanctum')
+            ->postJson("/api/frontend/order/{$order->id}/mollie-checkout")
+            ->assertOk()
+            ->assertJsonPath('payment_id', 'tr_absent_setting');
+    }
+
     public function test_checkout_refuses_foreign_order_and_non_card_order(): void
     {
         $this->configureMollie();

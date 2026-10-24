@@ -108,7 +108,25 @@ describe('V1 admin sidebar cleanup', () => {
         // la même autorisation `catalog.compose` que le composeur → 19 rows. Compteur remonté
         // DANS la session qui livre l'entrée, pas découvert plus tard.
         expect(text).toContain('menu.wizard_pages');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(19);
+        // [CAYENNE HYGIÈNE 2026-10-18 · owner : « une seule colonne »] Étiquettes (4 lignes) + Hygiène (8 lignes) = 12 lignes ont laissé
+        // la place à UNE entrée : le hub « Hygiène & étiquettes ». Tout le reste s'ouvre depuis l'accueil du module. Aucune des anciennes
+        // sous-entrées ne doit revenir dans la barre : c'est l'objet du test (31 - 12 + 1 = 20 lignes).
+        expect(text).toContain('menu.hygiene_hub');
+        // [ÉTIQUETTES-COMMANDE 2026-10-19 · owner] … SAUF les étiquettes de COMMANDE, redevenues une fonction séparée :
+        // une ligne propre, juste sous le hub (20 + 1 = 21 lignes).
+        expect(text).toContain('menu.labels_orders');
+        for (const gone of ['menu.labels_dlc', 'menu.labels_printer', 'menu.hygiene_temperature', 'menu.hygiene_tasks', 'menu.hygiene_reception', 'menu.hygiene_trace', 'menu.hygiene_oil', 'menu.hygiene_home', 'menu.hygiene_report']) {
+            expect(text, `${gone} est revenu dans la barre latérale`).not.toContain(gone);
+        }
+        const hubLinks = wrapper.findAllComponents(RouterLink).filter((c) => /hygiene|labels/.test(String(c.props('to'))));
+        expect(hubLinks).toHaveLength(2);
+        expect(hubLinks[0].props('to')).toBe('/admin/hygiene/home');
+        expect(hubLinks[1].props('to')).toBe('/admin/labels/orders');
+        // [LIVRAISONS-PAGE 2026-10-23] +2 : « Livraisons » (la planche des départs, bascule nos livreurs ⇄ Uber) et « Écran livreur »
+        // (`/livreur`, page autonome, ancre externe) → 23 lignes. Compteur remonté DANS la session qui livre les entrées.
+        expect(text).toContain('menu.livraisons');
+        expect(text).toContain('menu.livreur_screen');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(23);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.
@@ -118,5 +136,14 @@ describe('V1 admin sidebar cleanup', () => {
             + 'un router-link vers /admin/roue serait un lien mort').toBeTruthy();
         expect(roue.attributes('target')).toBe('_blank');
         expect(roue.attributes('rel')).toBe('noopener');
+
+        // L'écran livreur est hors de /admin : l'ancre doit porter SON href (`/livreur`), pas `/admin/livreur` (404) — nouvel onglet.
+        const livreur = wrapper.findAll('a.db-sidebar-nav-menu').find((a) => a.attributes('href') === '/livreur');
+        expect(livreur, "l'entrée « Écran livreur » ne pointe pas /livreur").toBeTruthy();
+        expect(livreur.attributes('target')).toBe('_blank');
+        expect(livreur.attributes('rel')).toBe('noopener');
+        expect(wrapper.findAll('a.db-sidebar-nav-menu').some((a) => a.attributes('href') === '/admin/livreur')).toBe(false);
+        // « Livraisons » est une vraie route Vue, vers la page de la planche.
+        expect(wrapper.findAllComponents(RouterLink).some((c) => c.props('to') === '/admin/livraisons')).toBe(true);
     });
 });

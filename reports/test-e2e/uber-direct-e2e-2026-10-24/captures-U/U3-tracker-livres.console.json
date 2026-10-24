@@ -1,0 +1,38 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:9100/health",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792854783403
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:9100/health",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792854783403
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:9101/health",
+      "line": 0,
+      "column": 0,
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1792854783406
+  }
+]

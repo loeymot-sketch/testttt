@@ -46,12 +46,24 @@ class DeactivateController extends Controller
                 $premierRole = $user->roles->first();
                 $estClient = $premierRole && $premierRole->name === 'Customer';
 
+                // [GOAL STORES T-3.1.3 · 2026-09-30] Ce que le client aurait pu annuler lui-même
+                // (jamais commencé par la cuisine, jamais payé) est annulé par le chemin
+                // d'annulation client existant — puis seulement on regarde s'il reste une
+                // commande qui bloque. Sans ça, un examinateur Apple/Google qui commande « sur
+                // place » sans jamais retirer ne pouvait plus supprimer son compte (5.1.1(v)).
+                // Tout se passe dans la transaction englobante : un refus plus bas annule aussi
+                // ces annulations — on ne supprime jamais « à moitié ».
+                app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
+                    (int) $user->id,
+                    'Suppression du compte par le client'
+                );
+
                 $checkOrder = Order::where('user_id', $user->id)->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED])->first();
 
                 if (! $estClient) {
                     throw new Exception(trans('all.message.only_customer_delete'), 422);
                 } else if ($checkOrder) {
-                    throw new Exception(trans('all.message.account_not_delete'), 422);
+                    throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
                 }
 
                 $user->addresses()->delete();

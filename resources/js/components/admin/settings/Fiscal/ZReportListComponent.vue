@@ -9,7 +9,7 @@
                      sans clôturer) — l'API existait sans aucune UI. -->
                 <button type="button" class="db-btn py-2 text-white bg-primary" @click="openXReport"
                         data-testid="fiscal-x-report-btn">
-                    <i class="lab lab-eye"></i>
+                    <i class="lab lab-view"></i>
                     <span>{{ $t("label.x_report") }}</span>
                 </button>
             </div>
@@ -42,7 +42,7 @@
                                     :data-testid="`z-report-pdf-${report.id}`"
                                     :disabled="downloadingId === report.id"
                                     @click="downloadPdf(report)">
-                                <i class="lab lab-download"></i>
+                                <i class="lab lab-file-export"></i>
                                 PDF
                             </button>
                         </td>

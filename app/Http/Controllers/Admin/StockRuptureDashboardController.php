@@ -44,7 +44,59 @@ class StockRuptureDashboardController extends AdminController
         parent::__construct();
 
         $this->middleware(['permission:items_show'])->only('lastSummary', 'lowAlerts', 'catalogOverview');
-        $this->middleware(['permission:items_create'])->only('run');
+        $this->middleware(['permission:items_create'])->only('run', 'definirLeSeuil');
+    }
+
+    /**
+     * [ONB-08 2026-08-28] Enregistre le seuil d'alerte d'une ligne de stock.
+     *
+     * ═══ POURQUOI CETTE METHODE N'EXISTAIT PAS, ET CE QUE CA COUTAIT ═══
+     *
+     * `threshold_low` etait LU a deux endroits — `lowAlerts()` ci-dessous, qui
+     * filtre `whereNotNull('threshold_low')`, et `NotifyStockLowOnStockLevelChanged`,
+     * qui declenche la notification de stock bas. Mais **rien ne l'ecrivait** :
+     * aucune route, aucun ecran, aucune commande. 55 lignes en base, 0 seuil.
+     *
+     * La section « alertes stock bas » du tableau de bord ne pouvait donc
+     * STRUCTURELLEMENT rien afficher, et l'alerte etait muette — non pas parce que
+     * tout allait bien, mais parce que personne ne pouvait dire a partir de quand
+     * ca n'allait plus.
+     *
+     * C'est le jumeau exact du seuil des matieres premieres. Le motif — une chaine
+     * complete sauf l'ecran ou un humain saisit la verite — en est a son sixieme
+     * exemplaire cette semaine.
+     *
+     * `null` est accepte et signifie « pas de surveillance » : un seuil qu'on ne
+     * peut pas retirer serait un piege, et c'est aussi la valeur de depart.
+     */
+    public function definirLeSeuil(
+        \App\Http\Requests\Admin\SeuilDeStockRequest $request,
+        StockLevel $stockLevel
+    ): JsonResponse {
+        // Le scope de branche s'applique deja au modele, mais un identifiant
+        // devine ne doit pas franchir la frontiere d'un etablissement.
+        $this->authorizeBranchScope($request, (int) $stockLevel->branch_id);
+
+        $seuil = $request->validated('threshold_low');
+
+        $stockLevel->threshold_low = $seuil === null || $seuil === '' ? null : (int) $seuil;
+        $stockLevel->save();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'id' => (int) $stockLevel->id,
+                'branch_id' => (int) $stockLevel->branch_id,
+                'on_hand' => (int) $stockLevel->on_hand,
+                'threshold_low' => $stockLevel->threshold_low === null
+                    ? null
+                    : (int) $stockLevel->threshold_low,
+                // Ce que le commercant veut vraiment savoir en enregistrant :
+                // est-ce que ce produit est DEJA sous son seuil ?
+                'en_alerte' => $stockLevel->threshold_low !== null
+                    && (int) $stockLevel->on_hand <= (int) $stockLevel->threshold_low,
+            ],
+        ]);
     }
 
     public function lastSummary(Request $request): JsonResponse
@@ -135,12 +187,98 @@ class StockRuptureDashboardController extends AdminController
             ->whereNotNull('threshold_low')
             ->count();
 
+        // [QA 2026-09-28 · P0-15 / P0-14 · triage A11] Les matières premières étaient
+        // STRUCTURELLEMENT invisibles à ce panneau : il n'interrogeait que `stock_levels`
+        // (stockables Item/ItemVariation/ItemExtra) et `RawMaterial` n'apparaissait nulle
+        // part dans ce contrôleur. Le gérant pouvait donc lire « aucune alerte » pendant
+        // que « Conso & Stock » annonçait 20 ruptures avec des stocks théoriques négatifs
+        // (Poulet mariné, Cheddar, Portion frites, Pain…) — les deux écrans ne lisaient
+        // simplement pas la même table.
+        //
+        // On applique ici la MÊME règle que l'écran de référence
+        // (UnifiedStockViewService::status) : `on_hand <= 0` est une rupture sans exiger de
+        // seuil ; sinon `on_hand <= threshold_low`. Couche de LECTURE strictement additive,
+        // aucune écriture, hors chaîne fiscale.
+        //
+        // La sémantique des lignes d'ARTICLES est laissée INTACTE : un stock article à 0
+        // sans seuil reste non alertant (décision explicite et testée du dépôt, compensée
+        // depuis 2026-09-02 par les compteurs + le bandeau « ce panneau ne surveille rien »).
+        // La changer serait renverser une décision propriétaire.
+        $alerts = $alerts
+            ->concat($this->rawMaterialLowAlerts($branches, $branchNames))
+            ->values();
+
         return response()->json([
             'alerts' => $alerts,
             'tracked_rows' => $lignesSuivies,
             'thresholds_configured' => $seuilsConfigures,
             'fetched_at' => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * [QA 2026-09-28 · P0-15] Alertes MATIÈRES PREMIÈRES, au format exact des
+     * alertes d'articles pour que le widget les rende sans modification (il clé
+     * sur branch_id + stockable_type + stockable_id et lit `label`).
+     *
+     * @param  \Illuminate\Support\Collection<int, Branch>  $branches
+     * @param  \Illuminate\Support\Collection<int, string>  $branchNames
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function rawMaterialLowAlerts($branches, $branchNames)
+    {
+        $branchIds = $branches->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        if ($branchIds === []) {
+            return collect();
+        }
+
+        $materials = \App\Models\RawMaterial::query()
+            ->whereIn('branch_id', $branchIds)
+            ->where('is_active', true)
+            ->orderBy('branch_id')
+            ->orderBy('name')
+            ->limit(200)
+            ->get();
+
+        if ($materials->isEmpty()) {
+            return collect();
+        }
+
+        // Une matière SANS ligne de stock vaut 0 — donc en rupture, comme le fait
+        // déjà UnifiedStockViewService (`$onHand[$id] ?? 0`).
+        $onHand = \App\Models\RawMaterialStock::query()
+            ->whereIn('branch_id', $branchIds)
+            ->pluck('on_hand', 'raw_material_id');
+
+        return $materials
+            ->map(function ($material) use ($onHand, $branchNames): ?array {
+                $stock = round((float) ($onHand[(int) $material->id] ?? 0), 3);
+                $threshold = $material->threshold_low !== null ? (float) $material->threshold_low : null;
+
+                $enRupture = $stock <= 0.0;
+                $sousLeSeuil = $threshold !== null && $threshold > 0.0 && $stock <= $threshold;
+
+                if (! $enRupture && ! $sousLeSeuil) {
+                    return null;
+                }
+
+                return [
+                    'branch_id' => (int) $material->branch_id,
+                    'branch_name' => (string) ($branchNames->get((int) $material->branch_id) ?? ('#' . $material->branch_id)),
+                    'stockable_type' => \App\Models\RawMaterial::class,
+                    'stockable_id' => (int) $material->id,
+                    'stockable_name' => (string) $material->name,
+                    'label' => (string) $material->name,
+                    // Quantité NON castée en entier : une matière se compte en g/kg/pièces
+                    // et un cast entier mentirait sur les fractions.
+                    'on_hand' => $stock,
+                    'threshold_low' => $threshold,
+                    'unit' => (string) ($material->unit ?? ''),
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     /**

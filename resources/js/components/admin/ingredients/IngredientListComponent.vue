@@ -64,8 +64,14 @@
                 {{ $t('label.ingredient.loading') }}
             </div>
 
+            <!--
+                [ONB 2026-08-28] L'onglet par defaut est « Tous », et
+                `fetchIngredients()` n'envoie alors AUCUN parametre. Afficher
+                « trouve pour ce filtre » envoyait le commercant chercher un
+                filtre qui n'existe pas. On distingue les deux cas.
+            -->
             <div v-else-if="ingredients.length === 0" class="p-6 text-center text-sm text-slate-500" data-testid="ingredient-empty">
-                {{ $t('label.ingredient.empty') }}
+                {{ activeTab === 'all' ? $t('label.ingredient.empty_all') : $t('label.ingredient.empty_filtered') }}
             </div>
 
             <div v-else class="overflow-x-auto">

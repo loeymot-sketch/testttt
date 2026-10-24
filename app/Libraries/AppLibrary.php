@@ -464,7 +464,24 @@ class AppLibrary
     {
         // [MONEY-FIX 2026-06-25] `?? 2` : voir flatAmountFormat — évite l'arrondi
         // entier des totaux de rapport sous config:cache.
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?: 2), '.', ',');
+        //
+        // [ONB-07 2026-08-28] Les séparateurs étaient `'.', ','` — le format
+        // anglo-saxon. Un commerçant français lisait « 1,234.56 » au bas de son PDF
+        // de ventes, là où son écran affiche « 1 234,56 € » (`currencyAmountFormat`
+        // passe par `NumberFormatter('fr_FR')`). Deux formats pour la même somme,
+        // dans le même produit, sur des documents qu'il compare.
+        //
+        // Pire qu'inélégant : « 1,234.56 » se lit « 1,23 » pour un œil français —
+        // un facteur mille sur un document remis au comptable.
+        //
+        // Espace insécable fine (U+202F) comme séparateur de milliers, virgule
+        // décimale : la convention française, et celle que l'écran applique déjà.
+        return number_format(
+            $amount,
+            (int) (env('CURRENCY_DECIMAL_POINT') ?: 2),
+            ',',
+            "\u{202F}"
+        );
     }
 
     public static function textShortener($text, $number = 30)
@@ -477,38 +494,52 @@ class AppLibrary
 
     public static function deliveryTimeCheck($dateTime, $pattern = null): string
     {
-        if ($dateTime) {
-            [$startTime, $endTime] = explode(' - ', $dateTime);
-            $currentTime = new DateTime();
-
-            $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
-            $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
-
-            if ($startTimeObj && $endTimeObj) {
-                $slotDuration = Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration') ?? 30;
-                $thirtyMinutesBefore = (clone $startTimeObj)->sub(new DateInterval('PT' . $slotDuration . 'M'));
-
-                if ($currentTime >= $thirtyMinutesBefore && $currentTime <= $endTimeObj) {
-                    return "Now";
-                } else {
-                    if (!$pattern) {
-                        // [KDS-FR-TIME HEAL 2026-06-27] Align with sibling methods time():40 /
-                        // deliveryTime():68 — `env('TIME_FORMAT') ?: 'H:i'` (24h FR). The old
-                        // `env('TIME_FORMAT', 'h:i A')` leaked a 12h en-US default ("08:30 PM")
-                        // into the KDS delivery slot after `config:cache` (env() returns its 2nd
-                        // arg when the cached config strips the var) — the documented env-null /
-                        // flatAmountFormat trap, an ADR-007 FR violation in prod.
-                        $pattern = env('TIME_FORMAT') ?: 'H:i';
-                    }
-                    $explode = explode('-', $dateTime);
-                    if (count($explode) == 2) {
-                        return Carbon::parse(trim($explode[0]))->format($pattern) . ' - ' . Carbon::parse(trim($explode[1]))->format($pattern);
-                    }
-                    return '';
-                }
-            }
+        // [VG-2026-10-21 M6-001] Ne jamais lever d'exception : cette valeur alimente
+        // `KDSOrderDetailsResource` et une seule commande illisible faisait tomber TOUT
+        // l'écran cuisine en 500 (`[$a, $b] = explode(' - ', 'ASAP')` → clé 1 absente).
+        // « ASAP » (livraison dès que possible, envoyé par le site) = à préparer maintenant.
+        $value = trim((string) $dateTime);
+        if ($value === '') {
             return '';
         }
-        return '';
+        if (strcasecmp($value, 'ASAP') === 0) {
+            return "Now";
+        }
+        if (!preg_match('/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/', $value, $m)) {
+            return '';
+        }
+        $start = DateTime::createFromFormat('H:i', $m[1]);
+        $end   = DateTime::createFromFormat('H:i', $m[2]);
+        if (!$start || !$end) {
+            return '';
+        }
+
+        // [VG-2026-10-21 M6-001] Fenêtre en minutes du jour, CIRCULAIRE : un créneau qui
+        // traverse minuit (« 23:47 - 00:17 ») n'était jamais « Now » (fin du jour < début).
+        // Horloge via Carbon::now() (figeable en test) au lieu de `new DateTime()`.
+        $slotDuration = (int) (Settings::group('order_setup')->get('order_setup_schedule_order_slot_duration') ?? 30);
+        $startMin = (int) $start->format('G') * 60 + (int) $start->format('i');
+        $endMin   = (int) $end->format('G') * 60 + (int) $end->format('i');
+        $now      = Carbon::now();
+        $nowMin   = (int) $now->format('G') * 60 + (int) $now->format('i');
+        $openMin  = (($startMin - $slotDuration) % 1440 + 1440) % 1440;
+
+        $inWindow = $openMin <= $endMin
+            ? ($nowMin >= $openMin && $nowMin <= $endMin)
+            : ($nowMin >= $openMin || $nowMin <= $endMin);
+        if ($inWindow) {
+            return "Now";
+        }
+
+        if (!$pattern) {
+            // [KDS-FR-TIME HEAL 2026-06-27] Align with sibling methods time():40 /
+            // deliveryTime():68 — `env('TIME_FORMAT') ?: 'H:i'` (24h FR). The old
+            // `env('TIME_FORMAT', 'h:i A')` leaked a 12h en-US default ("08:30 PM")
+            // into the KDS delivery slot after `config:cache` (env() returns its 2nd
+            // arg when the cached config strips the var) — the documented env-null /
+            // flatAmountFormat trap, an ADR-007 FR violation in prod.
+            $pattern = env('TIME_FORMAT') ?: 'H:i';
+        }
+        return Carbon::parse($m[1])->format($pattern) . ' - ' . Carbon::parse($m[2])->format($pattern);
     }
 }

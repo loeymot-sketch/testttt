@@ -112,6 +112,47 @@ class CounterCollectSplitPaymentTest extends TestCase
         $this->assertEqualsWithDelta(8.01, (float) $payments->firstWhere('mode', PosPaymentMethod::CASH)->amount, 0.0001);
     }
 
+    /**
+     * [GOAL CAISSE/CUISINE #2 2026-10-02] « CB avec un montant inférieur au total : le RESTE doit
+     * pouvoir se régler avec un autre moyen (CB, espèces, titre-resto…). » Le backend acceptait déjà
+     * tous les moyens en tranche ; ce test le verrouille pour la combinaison que l'écran propose
+     * maintenant (carte bleue + titres-resto, ou deux cartes).
+     */
+    public function test_split_card_plus_titre_resto_collects_at_the_exact_cent(): void
+    {
+        $order = $this->makePendingOrder(20.01);
+
+        $this->confirm($order, [
+            'mode' => PosPaymentMethod::CARD,
+            'payment_breakdown' => [
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 12.00, 'terminal_id' => $this->terminal->id],
+                ['mode' => PosPaymentMethod::TICKET_RESTAURANT, 'amount' => 8.01],
+            ],
+        ])->assertOk();
+
+        $order->refresh();
+        $this->assertSame(PaymentStatus::PAID, (int) $order->payment_status);
+        $payments = OrderPayment::withoutGlobalScopes()->where('order_id', $order->id)->get();
+        $this->assertCount(2, $payments);
+        $this->assertEqualsWithDelta(8.01, (float) $payments->firstWhere('mode', PosPaymentMethod::TICKET_RESTAURANT)->amount, 0.0001);
+        $this->assertEqualsWithDelta(20.01, (float) $payments->sum('amount'), 0.0001);
+    }
+
+    public function test_split_two_cards_is_accepted(): void
+    {
+        $order = $this->makePendingOrder(20.01);
+
+        $this->confirm($order, [
+            'mode' => PosPaymentMethod::CARD,
+            'payment_breakdown' => [
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 12.00, 'terminal_id' => $this->terminal->id],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 8.01, 'terminal_id' => $this->terminal->id],
+            ],
+        ])->assertOk();
+
+        $this->assertSame(PaymentStatus::PAID, (int) $order->fresh()->payment_status);
+    }
+
     public function test_split_that_does_not_sum_to_total_is_rejected_and_order_stays_pending(): void
     {
         $order = $this->makePendingOrder(20.00);

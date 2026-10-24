@@ -90,9 +90,22 @@ class WebOrderServerPrintParityTest extends TestCase
     /** S4 : la web imprime sa copie COMPTOIR serveur (parité borne). */
     public function test_web_order_prints_counter_copy(): void
     {
+        // [CAISSE-SANS-PAPIER-AUTO 2026-10-19] Éteinte par défaut ; la parité web↔borne se prouve
+        // interrupteur allumé, l'extinction par défaut dans le test suivant.
+        config(['kds.counter_auto_print' => true]);
         $this->makeReceiptPrinter();
         (new PrintKioskOrderToCounter)->handle(new OrderCreated($this->makeOrder('web')));
         $this->assertCount(1, $this->spy->sends, 'web : copie comptoir imprimée côté serveur.');
+    }
+
+    /** [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Défaut : AUCUNE copie comptoir ne sort seule, borne comme web. */
+    public function test_counter_copy_is_silent_by_default(): void
+    {
+        $this->assertFalse((bool) config('kds.counter_auto_print'));
+        $this->makeReceiptPrinter();
+        (new PrintKioskOrderToCounter)->handle(new OrderCreated($this->makeOrder('web')));
+        (new PrintKioskOrderToCounter)->handle(new OrderCreated($this->makeOrder('kiosk')));
+        $this->assertCount(0, $this->spy->sends, 'plus de papier automatique à la caisse.');
     }
 
     /** Effet de bord ZÉRO quand aucune imprimante n'est configurée (le cas V1). */

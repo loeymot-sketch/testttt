@@ -811,15 +811,11 @@ test.describe('Wave E — kiosk cart + checkout + payment (round-1 capture)', ()
       );
       await snap('12-e-cash-instruction-amount-display');
 
-      // ---- Acknowledge → goes to /kiosk/idle (per acknowledge() router.push). ----
-      // The global `.kiosk-cart-bar` button overlaps the cash-cta in the
-      // bottom-sheet. Even Playwright's force:true clicks at the locator center
-      // and the cart-bar gets the event. Dispatch the click via JS directly on
-      // the cash-cta element to bypass the overlap entirely.
-      await page.evaluate(() => {
-        const el = document.querySelector('[data-testid="kiosk-cash-cta-understood"]');
-        if (el) el.click();
-      });
+      // ---- Retour accueil → /kiosk/idle. ----
+      // [CAISSE-SANS-BOUTON 2026-10-19 · owner] Le bouton « J'ai compris » n'existe plus : l'écran
+      // « rendez-vous en caisse » revient SEUL à l'accueil après 5 s (acknowledge('timeout')). On
+      // attend donc ce délai au lieu de cliquer un sélecteur supprimé.
+      await page.waitForURL(/\/kiosk\/idle/, { timeout: 12_000 }).catch(() => {});
       await page.waitForTimeout(1500);
 
       // Check current URL — we expect either /kiosk/idle (per acknowledge) or

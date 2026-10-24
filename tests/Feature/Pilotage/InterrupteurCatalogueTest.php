@@ -79,14 +79,14 @@ class InterrupteurCatalogueTest extends TestCase
         $this->assertFalse((bool) Config::get($cle), "{$cle} doit refléter actif=false après bascule");
     }
 
-    public function test_l_ecran_liste_desormais_6_bascules_toutes_documentees(): void
+    public function test_l_ecran_liste_desormais_7_bascules_toutes_documentees(): void
     {
         $r = $this->actingAs($this->admin(), 'sanctum')
             ->getJson('/api/admin/observability/interrupteurs')->assertOk()->json('data');
 
-        $this->assertCount(6, $r, '2 historiques + 4 nouvelles');
+        $this->assertCount(7, $r, '2 historiques + 4 nouvelles + impression caisse auto (2026-10-19)');
         $noms = array_column($r, 'nom');
-        foreach (['split_payment', 'wheel', 'remise_manuelle', 'fidelite', 'kiosk_promo', 'impression_ticket_client_auto'] as $attendu) {
+        foreach (['split_payment', 'wheel', 'remise_manuelle', 'fidelite', 'kiosk_promo', 'impression_ticket_client_auto', 'impression_caisse_auto'] as $attendu) {
             $this->assertContains($attendu, $noms);
         }
     }

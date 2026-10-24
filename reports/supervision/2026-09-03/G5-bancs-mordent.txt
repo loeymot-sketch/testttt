@@ -1,0 +1,1661 @@
+==============================================================
+ G5 · T5.1 — PREUVE QUE LES BANCS MORDENT
+ Sortie ROUGE capturée AVANT tout correctif de composant.
+ Date : 2026-09-03 02:28:26  ·  HEAD : 34519880d
+ Commande : npx vitest run tests/js/dashboard --reporter=verbose
+==============================================================
+
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > la découverte automatique couvre bien tout le dépôt
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > le bouton Effacer du filtre POS ne soumet pas le formulaire
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > succès : affiche le ticket moyen renvoyé par le serveur
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > journée sans vente : le serveur répond, le ticket moyen est vide — et ce n'est pas une panne
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 403 : l'écran distingue « pas de donnée » de « je n'ai pas pu lire »
+   → le drapeau `failed` était levé sans que rien ne change à l'écran: expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > délai dépassé (ECONNABORTED) : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un rafraîchissement réussi efface l'erreur : le suivi en direct doit pouvoir se rétablir
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > pose un minuteur de rafraîchissement au montage et le RETIRE au démontage
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un échec ne tue pas le minuteur : le suivi doit repartir seul quand le serveur revient
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > le Ticket Moyen porte `text-white` sur le libellé ET sur la valeur (WCAG 2.1 AA)
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > succès : rend une barre par canal, avec son nom et son pourcentage
+   → expected [] to have a length of 3 but got +0
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > liste vide (vraie journée sans commande) : le dit, et ne crie pas à la panne
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 403 : l'erreur ne se déguise PAS en journée sans vente
+   → une panne doit être ANNONCÉE, jamais rendue comme une journée à zéro commande: expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 500 : même exigence — état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > délai dépassé (ECONNABORTED) : état d'erreur, pas un écran vide
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > un échec ne laisse aucun rejet de promesse non traité
+   → le composant doit traiter son échec, pas le laisser filer: expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "actual": "undefined",
+        "expected": "undefined",
+        "response": Object {
+          "status": 500,
+        },
+      },
+      Promise {},
+    ]
+
+
+Number of calls: 1
+
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > chaque barre est une vraie barre de progression pour un lecteur d'écran
+   → Cannot call attributes on an empty DOMWrapper.
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > la clé de boucle est le canal, pas sa position : un réordonnancement déplace les nœuds
+   → Cannot call element on an empty DOMWrapper.
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > ne pose aucun minuteur : il n'y a rien à fuir au démontage
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > succès : les dix compteurs portent leur valeur
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > journée réelle sans commande : affiche « 0 », pas du blanc
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 403 : l'échec est nommé, les compteurs ne se lisent pas comme un zéro
+   → dix tuiles blanches sans un mot d'explication, c'est un mensonge par omission: expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un échec après changement de période est signalé lui aussi
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un rechargement réussi efface l'état d'erreur précédent
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > les pictogrammes des tuiles sont décoratifs et masqués aux lecteurs d'écran
+   → une icône purement décorative lue à voix haute pollue le parcours au lecteur d'écran: expected [ …(10) ] to deeply equal []
+ ✓ tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > ne pose aucun minuteur : rien à nettoyer au démontage
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > succès : total, moyenne et courbe alimentée avec ses dates en abscisse
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > période réelle sans vente : affiche « 0,00 € », pas du blanc
+   → Cannot call text on an empty DOMWrapper.
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 403 : l'échec est nommé — le chiffre d'affaires non lu n'est pas un chiffre d'affaires nul
+   → une carte de chiffre d'affaires muette se lit comme une mauvaise journée: expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un échec après changement de période est signalé, et ne laisse pas croire à la période demandée
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un rechargement réussi efface l'état d'erreur précédent
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > les pictogrammes de la carte sont décoratifs et masqués aux lecteurs d'écran
+   → expected [ …(3) ] to deeply equal []
+ ✓ tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > ne pose aucun minuteur : rien à nettoyer au démontage
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > succès : rend un article par produit, avec son nom
+   → expected [] to have a length of 2 but got +0
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > liste vide : le dit explicitement, sans prétendre à une panne
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 403 : l'erreur ne se déguise PAS en « aucun produit mis en avant »
+   → un refus de droits doit être annoncé, pas rendu comme une liste vide: expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > part d'un tableau, pas d'un objet : `.length` doit être lisible avant toute réponse
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+   → Cannot call element on an empty DOMWrapper.
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > une réponse qui arrive APRÈS le démontage ne fait rien exploser
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > succès : rend une ligne par produit, avec catégorie et prix
+   → expected [] to have a length of 2 but got +0
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > liste vide : le dit explicitement
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 403 : l'erreur ne se déguise PAS en « aucun produit populaire »
+   → un classement qu'on n'a pas pu lire n'est pas un classement vide: expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > part d'un tableau, pas d'un objet
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+   → Cannot call element on an empty DOMWrapper.
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > une réponse qui arrive APRÈS le démontage ne fait rien exploser
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > n'envoie plus le jour calculé par le navigateur
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > enregistre le fichier sous le nom que le serveur a donné
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > retombe sur un nom lisible si l'en-tête manque
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > un objet Date devient AAAA-MM-JJ en heure locale
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > minuit ne recule pas d’un jour (piège toISOString sur Paris)
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > le passage à l’heure d’été ne décale pas la date
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > les valeurs non-Date sont inchangées
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > aucune date n’est envoyée quand le champ est vide
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 45 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > succès : rend une barre par canal, avec son nom et son pourcentage
+AssertionError: expected [] to have a length of 3 but got +0
+
+- Expected
++ Received
+
+- 3
++ 0
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:49:24
+     47| 
+     48|         const barres = w.findAll('[data-testid^="channel-stats-bar-"]'…
+     49|         expect(barres).toHaveLength(3);
+       |                        ^
+     50|         expect(w.text()).toContain('Web');
+     51|         expect(w.text()).toContain('45%');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > liste vide (vraie journée sans commande) : le dit, et ne crie pas à la panne
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:60:72
+     58|         await flushPromises();
+     59| 
+     60|         expect(w.find('[data-testid="channel-stats-empty"]').exists())…
+       |                                                                        ^
+     61|         expect(w.find('[data-testid="channel-stats-error"]').exists())…
+     62|         expect(w.findAll('[data-testid^="channel-stats-bar-"]')).toHav…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 403 : l'erreur ne se déguise PAS en journée sans vente
+AssertionError: une panne doit être ANNONCÉE, jamais rendue comme une journée à zéro commande: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:75:11
+     73|             w.find('[data-testid="channel-stats-error"]').exists(),
+     74|             'une panne doit être ANNONCÉE, jamais rendue comme une jou…
+     75|         ).toBe(true);
+       |           ^
+     76|         expect(
+     77|             w.find('[data-testid="channel-stats-empty"]').exists(),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 500 : même exigence — état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="channel-stats-error"]').exists())…
+       |                                                                        ^
+     87|         expect(w.find('[data-testid="channel-stats-empty"]').exists())…
+     88|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > délai dépassé (ECONNABORTED) : état d'erreur, pas un écran vide
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:94:72
+     92|         await flushPromises();
+     93| 
+     94|         expect(w.find('[data-testid="channel-stats-error"]').exists())…
+       |                                                                        ^
+     95|         expect(w.find('[data-testid="channel-stats-empty"]').exists())…
+     96|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > un échec ne laisse aucun rejet de promesse non traité
+AssertionError: le composant doit traiter son échec, pas le laisser filer: expected "spy" to not be called at all, but actually been called 1 times
+
+Received: 
+
+  1st spy call:
+
+    Array [
+      Object {
+        "actual": "undefined",
+        "expected": "undefined",
+        "response": Object {
+          "status": 500,
+        },
+      },
+      Promise {},
+    ]
+
+
+Number of calls: 1
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:107:91
+    105|         process.off('unhandledRejection', naufrage);
+    106| 
+    107|         expect(naufrage, 'le composant doit traiter son échec, pas le …
+       |                                                                                           ^
+    108|         w.unmount();
+    109|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > chaque barre est une vraie barre de progression pour un lecteur d'écran
+Error: Cannot call attributes on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:118:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/45]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > la clé de boucle est le canal, pas sa position : un réordonnancement déplace les nœuds
+Error: Cannot call element on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:136:70
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > succès : rend un article par produit, avec son nom
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:47:62
+     45|         await flushPromises();
+     46| 
+     47|         expect(w.findAll('[data-testid^="featured-item-"]')).toHaveLen…
+       |                                                              ^
+     48|         expect(w.text()).toContain('Tacos Poulet');
+     49|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > liste vide : le dit explicitement, sans prétendre à une panne
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:57:73
+     55|         await flushPromises();
+     56| 
+     57|         expect(w.find('[data-testid="featured-items-empty"]').exists()…
+       |                                                                         ^
+     58|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+     59|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 403 : l'erreur ne se déguise PAS en « aucun produit mis en avant »
+AssertionError: un refus de droits doit être annoncé, pas rendu comme une liste vide: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:69:11
+     67|             w.find('[data-testid="featured-items-error"]').exists(),
+     68|             'un refus de droits doit être annoncé, pas rendu comme une…
+     69|         ).toBe(true);
+       |           ^
+     70|         expect(w.find('[data-testid="featured-items-empty"]').exists()…
+     71|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:77:73
+     75|         await flushPromises();
+     76| 
+     77|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+       |                                                                         ^
+     78|         expect(w.find('[data-testid="featured-items-empty"]').exists()…
+     79|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:85:73
+     83|         await flushPromises();
+     84| 
+     85|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+       |                                                                         ^
+     86|         expect(w.vm.loading.isActive, 'un écran bloqué en chargement e…
+     87|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > part d'un tableau, pas d'un objet : `.length` doit être lisible avant toute réponse
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:95:55
+     93|     it('part d\'un tableau, pas d\'un objet : `.length` doit être lisi…
+     94|         const initial = FeaturedItemsComponent.data();
+     95|         expect(Array.isArray(initial.featured_items)).toBe(true);
+       |                                                       ^
+     96|         expect(initial.featured_items.length).toBe(0);
+     97|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/45]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+Error: Cannot call element on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:105:65
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > succès : rend une ligne par produit, avec catégorie et prix
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:47:61
+     45|         await flushPromises();
+     46| 
+     47|         expect(w.findAll('[data-testid^="popular-item-"]')).toHaveLeng…
+       |                                                             ^
+     48|         expect(w.text()).toContain('Tacos Mixte');
+     49|         expect(w.text()).toContain('9,50 €');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > liste vide : le dit explicitement
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:58:72
+     56|         await flushPromises();
+     57| 
+     58|         expect(w.find('[data-testid="popular-items-empty"]').exists())…
+       |                                                                        ^
+     59|         expect(w.find('[data-testid="popular-items-error"]').exists())…
+     60|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 403 : l'erreur ne se déguise PAS en « aucun produit populaire »
+AssertionError: un classement qu'on n'a pas pu lire n'est pas un classement vide: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:70:11
+     68|             w.find('[data-testid="popular-items-error"]').exists(),
+     69|             'un classement qu\'on n\'a pas pu lire n\'est pas un class…
+     70|         ).toBe(true);
+       |           ^
+     71|         expect(w.find('[data-testid="popular-items-empty"]').exists())…
+     72|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:78:72
+     76|         await flushPromises();
+     77| 
+     78|         expect(w.find('[data-testid="popular-items-error"]').exists())…
+       |                                                                        ^
+     79|         expect(w.find('[data-testid="popular-items-empty"]').exists())…
+     80|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="popular-items-error"]').exists())…
+       |                                                                        ^
+     87|         expect(w.vm.loading.isActive).toBe(false);
+     88|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > part d'un tableau, pas d'un objet
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:92:54
+     90|     it('part d\'un tableau, pas d\'un objet', () => {
+     91|         const initial = MostPopularItemsComponent.data();
+     92|         expect(Array.isArray(initial.popular_items)).toBe(true);
+       |                                                      ^
+     93|         expect(initial.popular_items.length).toBe(0);
+     94|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/45]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+Error: Cannot call element on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:102:63
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > succès : les dix compteurs portent leur valeur
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:57:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > journée réelle sans commande : affiche « 0 », pas du blanc
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:70:64
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 403 : l'échec est nommé, les compteurs ne se lisent pas comme un zéro
+AssertionError: dix tuiles blanches sans un mot d'explication, c'est un mensonge par omission: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:83:11
+     81|             w.find('[data-testid="order-statistics-error"]').exists(),
+     82|             'dix tuiles blanches sans un mot d\'explication, c\'est un…
+     83|         ).toBe(true);
+       |           ^
+     84|         expect(
+     85|             w.find('[data-testid="order-stat-total_order"]').text(),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:94:75
+     92|         await flushPromises();
+     93| 
+     94|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+     95|     });
+     96| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:101:75
+     99|         await flushPromises();
+    100| 
+    101|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    102|         expect(w.vm.loading.isActive).toBe(false);
+    103|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un échec après changement de période est signalé lui aussi
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:121:75
+    119|         await flushPromises();
+    120| 
+    121|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    122|     });
+    123| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un rechargement réussi efface l'état d'erreur précédent
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:131:75
+    129|         const w = monter(dispatch);
+    130|         await flushPromises();
+    131|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    132| 
+    133|         w.vm.orderStatistic();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/45]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > les pictogrammes des tuiles sont décoratifs et masqués aux lecteurs d'écran
+AssertionError: une icône purement décorative lue à voix haute pollue le parcours au lecteur d'écran: expected [ …(10) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "lab lab-total-orders lab-font-size-24 text-primary",
++   "lab lab-pending lab-font-size-24 lab-color-yellow",
++   "lab lab-delivered lab-font-size-24 lab-color-green",
++   "lab lab-processing lab-font-size-24 text-[#567DFF]",
++   "lab lab-prepared lab-font-size-24 text-[#A953FF]",
++   "lab lab-out-for-delivery lab-font-size-24 lab-color-blue",
++   "lab lab-delivered lab-font-size-24 lab-color-delivered",
++   "lab lab-cancel-n-reject lab-font-size-24 lab-color-red",
++   "lab lab-returned lab-font-size-24 lab-color-blue-2",
++   "lab lab-cancel-n-reject lab-font-size-24 lab-color-red",
++ ]
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:150:11
+    148|             exposees.map((i) => i.attributes('class')),
+    149|             'une icône purement décorative lue à voix haute pollue le …
+    150|         ).toEqual([]);
+       |           ^
+    151|     });
+    152| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > succès : affiche le ticket moyen renvoyé par le serveur
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:45:57
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > journée sans vente : le serveur répond, le ticket moyen est vide — et ce n'est pas une panne
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:54:57
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 403 : l'écran distingue « pas de donnée » de « je n'ai pas pu lire »
+AssertionError: le drapeau `failed` était levé sans que rien ne change à l'écran: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:71:11
+     69|             enPanne.find('[data-testid="realtime-report-error"]').exis…
+     70|             'le drapeau `failed` était levé sans que rien ne change à …
+     71|         ).toBe(true);
+       |           ^
+     72|         expect(vide.find('[data-testid="realtime-report-error"]').exis…
+     73| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:84:74
+     82|         await flushPromises();
+     83| 
+     84|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+     85|     });
+     86| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > délai dépassé (ECONNABORTED) : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:91:74
+     89|         await flushPromises();
+     90| 
+     91|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+     92|     });
+     93| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un rafraîchissement réussi efface l'erreur : le suivi en direct doit pouvoir se rétablir
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:101:74
+     99|         const w = monter(dispatch);
+    100|         await flushPromises();
+    101|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+    102| 
+    103|         w.vm.fetchData();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/45]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > le Ticket Moyen porte `text-white` sur le libellé ET sur la valeur (WCAG 2.1 AA)
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:160:32
+    158| 
+    159|         const carte = w.find('[data-testid="realtime-ticket-card"]');
+    160|         expect(carte.exists()).toBe(true);
+       |                                ^
+    161|         expect(carte.classes()).toContain('bg-[#1A1A1A]');
+    162| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > succès : total, moyenne et courbe alimentée avec ses dates en abscisse
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:56:61
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > période réelle sans vente : affiche « 0,00 € », pas du blanc
+Error: Cannot call text on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1479:27
+    1477|                     return () => false;
+    1478|                 default:
+    1479|                     throw new Error(`Cannot call ${String(prop)} on an…
+       |                           ^
+    1480|             }
+    1481|         }
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:66:61
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 403 : l'échec est nommé — le chiffre d'affaires non lu n'est pas un chiffre d'affaires nul
+AssertionError: une carte de chiffre d'affaires muette se lit comme une mauvaise journée: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:78:11
+     76|             w.find('[data-testid="sales-summary-error"]').exists(),
+     77|             'une carte de chiffre d\'affaires muette se lit comme une …
+     78|         ).toBe(true);
+       |           ^
+     79|         expect(w.find('[data-testid="sales-summary-total"]').text()).n…
+     80|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+     87|     });
+     88| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:93:72
+     91|         await flushPromises();
+     92| 
+     93|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+     94|         expect(w.vm.loading.isActive).toBe(false);
+     95|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un échec après changement de période est signalé, et ne laisse pas croire à la période demandée
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:114:72
+    112|         await flushPromises();
+    113| 
+    114|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+    115|     });
+    116| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un rechargement réussi efface l'état d'erreur précédent
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:124:72
+    122|         const w = monter(dispatch);
+    123|         await flushPromises();
+    124|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+    125| 
+    126|         w.vm.salesSummary();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/45]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > les pictogrammes de la carte sont décoratifs et masqués aux lecteurs d'écran
+AssertionError: expected [ …(3) ] to deeply equal []
+
+- Expected
++ Received
+
+- Array []
++ Array [
++   "lab lab-calendar lab-font-size-24 lab-color-pink",
++   "lab lab-sale-summary lab-font-size-20 lab-font-color-2",
++   "lab lab-sale-summary lab-font-size-20 lab-font-color-2",
++ ]
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:140:60
+    138|         expect(icones.length).toBeGreaterThan(0);
+    139|         const exposees = icones.filter((i) => i.attributes('aria-hidde…
+    140|         expect(exposees.map((i) => i.attributes('class'))).toEqual([]);
+       |                                                            ^
+    141|     });
+    142| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/45]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 4 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+{
+  response: { status: 403 },
+  expected: 'undefined',
+  actual: 'undefined',
+  VITEST_TEST_NAME: "403 : l'erreur ne se déguise PAS en journée sans vente",
+  VITEST_TEST_PATH: 'tests/js/dashboard/channelStatsComponent.spec.js',
+  VITEST_AFTER_ENV_TEARDOWN: undefined,
+  type: 'Unhandled Rejection',
+  stacks: []
+}
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { response: { status: 403 } }
+This error originated in "tests/js/dashboard/channelStatsComponent.spec.js" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "403 : l'erreur ne se déguise PAS en journée sans vente". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+{
+  response: { status: 500 },
+  expected: 'undefined',
+  actual: 'undefined',
+  VITEST_TEST_NAME: "500 : même exigence — état d'erreur explicite",
+  VITEST_TEST_PATH: 'tests/js/dashboard/channelStatsComponent.spec.js',
+  VITEST_AFTER_ENV_TEARDOWN: undefined,
+  type: 'Unhandled Rejection',
+  stacks: []
+}
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { response: { status: 500 } }
+This error originated in "tests/js/dashboard/channelStatsComponent.spec.js" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "500 : même exigence — état d'erreur explicite". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Unknown Error: timeout of 30000ms exceeded
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'ECONNABORTED' }
+This error originated in "tests/js/dashboard/channelStatsComponent.spec.js" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "délai dépassé (ECONNABORTED) : état d'erreur, pas un écran vide". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+{
+  response: { status: 500 },
+  expected: 'undefined',
+  actual: 'undefined',
+  VITEST_TEST_NAME: 'un échec ne laisse aucun rejet de promesse non traité',
+  VITEST_TEST_PATH: 'tests/js/dashboard/channelStatsComponent.spec.js',
+  VITEST_AFTER_ENV_TEARDOWN: undefined,
+  type: 'Unhandled Rejection',
+  stacks: []
+}
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { response: { status: 500 } }
+This error originated in "tests/js/dashboard/channelStatsComponent.spec.js" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "un échec ne laisse aucun rejet de promesse non traité". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  6 failed | 3 passed (9)
+      Tests  45 failed | 55 passed (100)
+     Errors  4 errors
+   Start at  02:28:27
+   Duration  5.25s (transform 618ms, setup 38ms, collect 2.48s, tests 431ms, environment 1.22s, prepare 367ms)
+
+
+
+==============================================================
+ CONTRE-ÉPREUVE — le banc mord-il sur le DÉFAUT, ou seulement
+ sur l'absence de crochets data-testid ?
+
+ Les six composants sont ici dans leur état CORRIGÉ (crochets
+ data-testid, aria-hidden, clés stables, tableaux au lieu d'objets),
+ SAUF une chose : la conservation de l'échec est neutralisée
+ (`fetchError = true` -> `false`, `failed = true` -> `false`).
+
+ Tout ce qui rougit ci-dessous rougit donc POUR LE DÉFAUT LUI-MÊME :
+ l'erreur redevient indiscernable de l'état vide.
+ Date : 2026-09-03 02:33:34
+==============================================================
+
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > CustomerStatsComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderStatisticsComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OrderSummaryComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesSummaryComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > ItemsReportListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > OnlineOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > HistoriqueListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > PosOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SalesReportListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > SubscriberListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TableOrderListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue utilise une action native nommée
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue route CHAQUE préréglage par le slot accessible
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > TransactionListComponent.vue n'expose aucun préréglage en double ni libellé de démo
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > la découverte automatique couvre bien tout le dépôt
+ ✓ tests/js/dashboardDatePresetAccessibility.spec.js > Préréglages de dates — accessibilité clavier > le bouton Effacer du filtre POS ne soumet pas le formulaire
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > succès : affiche le ticket moyen renvoyé par le serveur
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > journée sans vente : le serveur répond, le ticket moyen est vide — et ce n'est pas une panne
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 403 : l'écran distingue « pas de donnée » de « je n'ai pas pu lire »
+   → le drapeau `failed` était levé sans que rien ne change à l'écran: expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > délai dépassé (ECONNABORTED) : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un rafraîchissement réussi efface l'erreur : le suivi en direct doit pouvoir se rétablir
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > pose un minuteur de rafraîchissement au montage et le RETIRE au démontage
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un échec ne tue pas le minuteur : le suivi doit repartir seul quand le serveur revient
+ ✓ tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > le Ticket Moyen porte `text-white` sur le libellé ET sur la valeur (WCAG 2.1 AA)
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > succès : rend une barre par canal, avec son nom et son pourcentage
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > liste vide (vraie journée sans commande) : le dit, et ne crie pas à la panne
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 403 : l'erreur ne se déguise PAS en journée sans vente
+   → une panne doit être ANNONCÉE, jamais rendue comme une journée à zéro commande: expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 500 : même exigence — état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > délai dépassé (ECONNABORTED) : état d'erreur, pas un écran vide
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > un échec ne laisse aucun rejet de promesse non traité
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > chaque barre est une vraie barre de progression pour un lecteur d'écran
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > la clé de boucle est le canal, pas sa position : un réordonnancement déplace les nœuds
+ ✓ tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > ne pose aucun minuteur : il n'y a rien à fuir au démontage
+ ✓ tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > succès : les dix compteurs portent leur valeur
+ ✓ tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > journée réelle sans commande : affiche « 0 », pas du blanc
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 403 : l'échec est nommé, les compteurs ne se lisent pas comme un zéro
+   → dix tuiles blanches sans un mot d'explication, c'est un mensonge par omission: expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un échec après changement de période est signalé lui aussi
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un rechargement réussi efface l'état d'erreur précédent
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > les pictogrammes des tuiles sont décoratifs et masqués aux lecteurs d'écran
+ ✓ tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > succès : total, moyenne et courbe alimentée avec ses dates en abscisse
+ ✓ tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > période réelle sans vente : affiche « 0,00 € », pas du blanc
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 403 : l'échec est nommé — le chiffre d'affaires non lu n'est pas un chiffre d'affaires nul
+   → une carte de chiffre d'affaires muette se lit comme une mauvaise journée: expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un échec après changement de période est signalé, et ne laisse pas croire à la période demandée
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un rechargement réussi efface l'état d'erreur précédent
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > les pictogrammes de la carte sont décoratifs et masqués aux lecteurs d'écran
+ ✓ tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > succès : rend un article par produit, avec son nom
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > liste vide : le dit explicitement, sans prétendre à une panne
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 403 : l'erreur ne se déguise PAS en « aucun produit mis en avant »
+   → un refus de droits doit être annoncé, pas rendu comme une liste vide: expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > part d'un tableau, pas d'un objet : `.length` doit être lisible avant toute réponse
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > une réponse qui arrive APRÈS le démontage ne fait rien exploser
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > succès : rend une ligne par produit, avec catégorie et prix
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > liste vide : le dit explicitement
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 403 : l'erreur ne se déguise PAS en « aucun produit populaire »
+   → un classement qu'on n'a pas pu lire n'est pas un classement vide: expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 500 : état d'erreur explicite
+   → expected false to be true // Object.is equality
+ × tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+   → expected false to be true // Object.is equality
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > part d'un tableau, pas d'un objet
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > la clé de boucle est l'identifiant du produit, pas l'objet lui-même
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > ne pose aucun minuteur : rien à nettoyer au démontage
+ ✓ tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > une réponse qui arrive APRÈS le démontage ne fait rien exploser
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > n'envoie plus le jour calculé par le navigateur
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > enregistre le fichier sous le nom que le serveur a donné
+ ✓ tests/js/dashboardEodPdfJourServeur.spec.js > PDF de clôture — le jour est choisi par le serveur > retombe sur un nom lisible si l'en-tête manque
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > un objet Date devient AAAA-MM-JJ en heure locale
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > minuit ne recule pas d’un jour (piège toISOString sur Paris)
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > le passage à l’heure d’été ne décale pas la date
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > les valeurs non-Date sont inchangées
+ ✓ tests/js/dashboardDateEnvoyeeEnJourCivil.spec.js > les dates envoyées par le tableau de bord sont des jours civils > aucune date n’est envoyée quand le champ est vide
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 23 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 403 : l'erreur ne se déguise PAS en journée sans vente
+AssertionError: une panne doit être ANNONCÉE, jamais rendue comme une journée à zéro commande: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:75:11
+     73|             w.find('[data-testid="channel-stats-error"]').exists(),
+     74|             'une panne doit être ANNONCÉE, jamais rendue comme une jou…
+     75|         ).toBe(true);
+       |           ^
+     76|         expect(
+     77|             w.find('[data-testid="channel-stats-empty"]').exists(),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/23]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > 500 : même exigence — état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="channel-stats-error"]').exists())…
+       |                                                                        ^
+     87|         expect(w.find('[data-testid="channel-stats-empty"]').exists())…
+     88|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/23]⎯
+
+ FAIL  tests/js/dashboard/channelStatsComponent.spec.js > ChannelStatsComponent — répartition par canal > délai dépassé (ECONNABORTED) : état d'erreur, pas un écran vide
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/channelStatsComponent.spec.js:94:72
+     92|         await flushPromises();
+     93| 
+     94|         expect(w.find('[data-testid="channel-stats-error"]').exists())…
+       |                                                                        ^
+     95|         expect(w.find('[data-testid="channel-stats-empty"]').exists())…
+     96|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/23]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 403 : l'erreur ne se déguise PAS en « aucun produit mis en avant »
+AssertionError: un refus de droits doit être annoncé, pas rendu comme une liste vide: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:69:11
+     67|             w.find('[data-testid="featured-items-error"]').exists(),
+     68|             'un refus de droits doit être annoncé, pas rendu comme une…
+     69|         ).toBe(true);
+       |           ^
+     70|         expect(w.find('[data-testid="featured-items-empty"]').exists()…
+     71|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/23]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:77:73
+     75|         await flushPromises();
+     76| 
+     77|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+       |                                                                         ^
+     78|         expect(w.find('[data-testid="featured-items-empty"]').exists()…
+     79|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/23]⎯
+
+ FAIL  tests/js/dashboard/featuredItemsComponent.spec.js > FeaturedItemsComponent — produits mis en avant > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/featuredItemsComponent.spec.js:85:73
+     83|         await flushPromises();
+     84| 
+     85|         expect(w.find('[data-testid="featured-items-error"]').exists()…
+       |                                                                         ^
+     86|         expect(w.vm.loading.isActive, 'un écran bloqué en chargement e…
+     87|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/23]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 403 : l'erreur ne se déguise PAS en « aucun produit populaire »
+AssertionError: un classement qu'on n'a pas pu lire n'est pas un classement vide: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:70:11
+     68|             w.find('[data-testid="popular-items-error"]').exists(),
+     69|             'un classement qu\'on n\'a pas pu lire n\'est pas un class…
+     70|         ).toBe(true);
+       |           ^
+     71|         expect(w.find('[data-testid="popular-items-empty"]').exists())…
+     72|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/23]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:78:72
+     76|         await flushPromises();
+     77| 
+     78|         expect(w.find('[data-testid="popular-items-error"]').exists())…
+       |                                                                        ^
+     79|         expect(w.find('[data-testid="popular-items-empty"]').exists())…
+     80|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/23]⎯
+
+ FAIL  tests/js/dashboard/mostPopularItemsComponent.spec.js > MostPopularItemsComponent — classement des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/mostPopularItemsComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="popular-items-error"]').exists())…
+       |                                                                        ^
+     87|         expect(w.vm.loading.isActive).toBe(false);
+     88|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/23]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 403 : l'échec est nommé, les compteurs ne se lisent pas comme un zéro
+AssertionError: dix tuiles blanches sans un mot d'explication, c'est un mensonge par omission: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:83:11
+     81|             w.find('[data-testid="order-statistics-error"]').exists(),
+     82|             'dix tuiles blanches sans un mot d\'explication, c\'est un…
+     83|         ).toBe(true);
+       |           ^
+     84|         expect(
+     85|             w.find('[data-testid="order-stat-total_order"]').text(),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/23]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:94:75
+     92|         await flushPromises();
+     93| 
+     94|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+     95|     });
+     96| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/23]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:101:75
+     99|         await flushPromises();
+    100| 
+    101|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    102|         expect(w.vm.loading.isActive).toBe(false);
+    103|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/23]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un échec après changement de période est signalé lui aussi
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:121:75
+    119|         await flushPromises();
+    120| 
+    121|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    122|     });
+    123| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/23]⎯
+
+ FAIL  tests/js/dashboard/orderStatisticsComponent.spec.js > OrderStatisticsComponent — les dix compteurs de commandes > un rechargement réussi efface l'état d'erreur précédent
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/orderStatisticsComponent.spec.js:131:75
+    129|         const w = monter(dispatch);
+    130|         await flushPromises();
+    131|         expect(w.find('[data-testid="order-statistics-error"]').exists…
+       |                                                                           ^
+    132| 
+    133|         w.vm.orderStatistic();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/23]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 403 : l'écran distingue « pas de donnée » de « je n'ai pas pu lire »
+AssertionError: le drapeau `failed` était levé sans que rien ne change à l'écran: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:71:11
+     69|             enPanne.find('[data-testid="realtime-report-error"]').exis…
+     70|             'le drapeau `failed` était levé sans que rien ne change à …
+     71|         ).toBe(true);
+       |           ^
+     72|         expect(vide.find('[data-testid="realtime-report-error"]').exis…
+     73| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/23]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:84:74
+     82|         await flushPromises();
+     83| 
+     84|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+     85|     });
+     86| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/23]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > délai dépassé (ECONNABORTED) : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:91:74
+     89|         await flushPromises();
+     90| 
+     91|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+     92|     });
+     93| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/23]⎯
+
+ FAIL  tests/js/dashboard/realtimeReportComponent.spec.js > RealtimeReportComponent — suivi en direct > un rafraîchissement réussi efface l'erreur : le suivi en direct doit pouvoir se rétablir
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/realtimeReportComponent.spec.js:101:74
+     99|         const w = monter(dispatch);
+    100|         await flushPromises();
+    101|         expect(w.find('[data-testid="realtime-report-error"]').exists(…
+       |                                                                          ^
+    102| 
+    103|         w.vm.fetchData();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/23]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 403 : l'échec est nommé — le chiffre d'affaires non lu n'est pas un chiffre d'affaires nul
+AssertionError: une carte de chiffre d'affaires muette se lit comme une mauvaise journée: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:78:11
+     76|             w.find('[data-testid="sales-summary-error"]').exists(),
+     77|             'une carte de chiffre d\'affaires muette se lit comme une …
+     78|         ).toBe(true);
+       |           ^
+     79|         expect(w.find('[data-testid="sales-summary-total"]').text()).n…
+     80|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/23]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > 500 : état d'erreur explicite
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:86:72
+     84|         await flushPromises();
+     85| 
+     86|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+     87|     });
+     88| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/23]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > délai dépassé (ECONNABORTED) : état d'erreur, et le voile de chargement retombe
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:93:72
+     91|         await flushPromises();
+     92| 
+     93|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+     94|         expect(w.vm.loading.isActive).toBe(false);
+     95|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/23]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un échec après changement de période est signalé, et ne laisse pas croire à la période demandée
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:114:72
+    112|         await flushPromises();
+    113| 
+    114|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+    115|     });
+    116| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/23]⎯
+
+ FAIL  tests/js/dashboard/salesSummaryComponent.spec.js > SalesSummaryComponent — résumé des ventes > un rechargement réussi efface l'état d'erreur précédent
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/dashboard/salesSummaryComponent.spec.js:124:72
+    122|         const w = monter(dispatch);
+    123|         await flushPromises();
+    124|         expect(w.find('[data-testid="sales-summary-error"]').exists())…
+       |                                                                        ^
+    125| 
+    126|         w.vm.salesSummary();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/23]⎯
+
+ Test Files  6 failed | 3 passed (9)
+      Tests  23 failed | 77 passed (100)
+   Start at  02:33:34
+   Duration  5.20s (transform 536ms, setup 20ms, collect 2.25s, tests 416ms, environment 1.29s, prepare 380ms)
+

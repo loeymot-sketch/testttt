@@ -23,10 +23,8 @@ class SimpleDeliveryBoyOrderResource extends JsonResource
             'order_datetime'                 => AppLibrary::datetime($this->order_datetime),
             'order_date'                     => AppLibrary::date($this->order_datetime),
             'order_time'                     => AppLibrary::time($this->order_datetime),
-            'delivery_date'                  => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate(
-                $this->order_datetime,
-                1
-            ) : AppLibrary::date($this->order_datetime),
+            // [E2E stores · F-B2 · 2026-10-01] Heure programmée prioritaire (App\Support\CreneauRetrait).
+            'delivery_date'                  => \App\Support\CreneauRetrait::date($this) ?? AppLibrary::date($this->order_datetime),
             'delivery_time'    => AppLibrary::deliveryTime($this->delivery_time),
             'payment_method'   => $this->payment_method,
             'payment_status'   => $this->payment_status,

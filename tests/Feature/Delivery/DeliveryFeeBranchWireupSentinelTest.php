@@ -24,67 +24,31 @@ use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
 /**
- * [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR — Sub 5.1 sentinel]
+ * [LIVRAISON 2026-10-20 — réécrit pour le barème propriétaire]
  *
- * Branch-aware delivery fee wire-up across the 3 entry points (DEL-5 closure).
+ * Historique : ce sentinelle gardait le câblage de la formule par colonnes de branche
+ * (DEL-5, 2026-05-18). Le propriétaire a remplacé cette formule par le barème « commune + rayon »
+ * (config/delivery.php, DeliveryTariff). L'invariant à garder est resté le même : les TROIS points
+ * d'entrée (service, commande web, devis/commit caisse) doivent produire le MÊME prix, calculé par
+ * le SERVEUR depuis l'adresse enregistrée, jamais une valeur client.
  *
- * Root cause (pre-heal): Sprint H3 DEL-5 added the per-branch fee columns
- * (delivery_fee_base / delivery_fee_per_km / delivery_fee_minimum, migration
- * 2026_05_18_100000) AND extended DeliveryFeeService::fromDistanceKm to accept
- * an optional `?Branch $branch`. However the three production call sites
- * dropped the Branch argument :
- *   - DeliveryQuoteService::quoteForAddress:63 — customer saved-address path
- *   - OrderRequest:117 — customer legacy fallback path
- *   - PosOrderRequest:28 — POS walk-in path
- * Every customer + POS DELIVERY quote returned the legacy `max(5, ceil(d/5)*5)`
- * regardless of branch config. Only the direct unit-test signature exercised
- * the branch-aware code.
- *
- * Heal commits (this sentinel attests the wire-up is live and not regression-
- * prone) :
- *   - DeliveryQuoteService.php:62-72 — branch flows to fromDistanceKm
- *   - OrderRequest.php:115-124 — legacy elseif resolves branch and passes it
- *   - PosOrderRequest.php:26-37 — POS prepareForValidation resolves branch
- *
- * Each test exercises ONE entry point with a branch that has all three
- * configurable columns set and asserts the customer-visible delivery_charge
- * matches the configured formula `max(minimum, base + per_km * distance)` —
- * NOT the legacy `max(5, ceil(d/5)*5)` fallback.
- *
- * CLAUDE.md §9 SaaS multi-tenant invariant.
+ * Géométrie des tests : 1° de latitude ≈ 111,19 km ; +0,054° ≈ 6,0 km (palier « ≤ 8 km » = 5,90 €).
  */
 class DeliveryFeeBranchWireupSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Direct service signature regression — confirms the existing all-or-
-     * nothing fallback still applies. Mirrors DeliveryFeeConfigurableTest
-     * but is bundled here as a fast smoke for the wire-up commit.
-     */
-    public function test_service_signature_respects_branch_when_configured(): void
+    public function test_service_signature_prices_by_city_and_radius_and_refuses_beyond(): void
     {
         $service = new DeliveryFeeService();
 
-        $configured = Branch::factory()->create([
-            'delivery_fee_base'    => 3.00,
-            'delivery_fee_per_km'  => 1.50,
-            'delivery_fee_minimum' => 5.00,
-        ]);
-        $legacy = Branch::factory()->create([
-            'delivery_fee_base'    => null,
-            'delivery_fee_per_km'  => null,
-            'delivery_fee_minimum' => null,
-        ]);
+        $this->assertSame(3.9, $service->fromDistanceKm(4, null, 'Hénin-Beaumont', '62110'));
+        $this->assertSame(4.9, $service->fromDistanceKm(4, null, 'Oignies', '62590'));
+        $this->assertSame(5.9, $service->fromDistanceKm(6, null, 'Oignies', '62590'));
+        $this->assertSame(6.9, $service->fromDistanceKm(9.5, null, 'Lens', '62300'));
 
-        // Configured: 3 + 1.5*4 = 9, no clamp
-        $this->assertSame(9.0, $service->fromDistanceKm(4, $configured));
-        // Configured: 3 + 1.5*0 = 3, clamped to 5
-        $this->assertSame(5.0, $service->fromDistanceKm(0, $configured));
-        // Legacy fallback path: distance=4 → max(5, 5) = 5
-        $this->assertSame(5.0, $service->fromDistanceKm(4, $legacy));
-        // Null branch: legacy fallback
-        $this->assertSame(5.0, $service->fromDistanceKm(4, null));
+        $this->expectException(\App\Exceptions\Delivery\OutsideDeliveryZoneException::class);
+        $service->fromDistanceKm(10.5, null, 'Lens', '62300');
     }
 
     /**
@@ -101,14 +65,9 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
             'order_setup_takeaway' => 5,
         ]);
 
-        // Branch with deterministic geo + configured fee :
-        // base=2, per_km=2, minimum=3. Distance 0 (same coords) → max(3, 2+0) = 3.
         $branch = Branch::factory()->create([
             'latitude' => '48.8566',
             'longitude' => '2.3522',
-            'delivery_fee_base'    => 2.00,
-            'delivery_fee_per_km'  => 2.00,
-            'delivery_fee_minimum' => 3.00,
         ]);
         $customer = User::factory()->create([
             'branch_id' => $branch->id,
@@ -118,8 +77,11 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
             'user_id' => $customer->id,
             'label' => 'Home',
             'address' => '10 Rue de Test',
-            'latitude' => '48.8566',
+            'latitude' => '48.9106',   // ≈ 6,0 km du restaurant
             'longitude' => '2.3522',
+            'city' => 'Oignies',
+            'postal_code' => '62590',
+            'geocode_status' => 'OK',
         ]);
         $item = $this->activeItem();
 
@@ -150,27 +112,34 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
         $this->assertContains($response->status(), [200, 201], $response->getContent());
 
         $order = FrontendOrder::withoutGlobalScopes()->findOrFail((int) $response->json('data.id'));
-        // Per-branch formula: distance=0 → max(3, 2 + 2*0) = 3.
-        // If wire-up regressed the legacy formula would return 5.
-        $this->assertSame(3.0, (float) $order->delivery_charge,
-            'Customer saved-address path MUST honour branch-configured fee, NOT the legacy max(5, ceil(d/5)*5) fallback.');
+        // Barème propriétaire : autre commune à ≈ 6 km → palier « ≤ 8 km » = 5,90 €, jamais le 999 forgé.
+        $this->assertSame(5.9, (float) $order->delivery_charge,
+            'La commande web DOIT être facturée par le barème serveur (commune + rayon), pas par le client.');
     }
 
     /**
      * POS walk-in path — PosOrderRequest::prepareForValidation is the gateway.
      */
-    public function test_pos_quote_uses_branch_configured_fee_for_walkin(): void
+    public function test_pos_quote_prices_from_the_customers_saved_address(): void
     {
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
-        // Branch with base=1, per_km=1, minimum=2. Distance=5 → max(2, 1+5) = 6.
+        // Client de la caisse avec adresse enregistrée à ≈ 6 km, commune hors Hénin-Beaumont.
         $branch = Branch::factory()->create([
             'latitude' => '48.8566',
             'longitude' => '2.3522',
-            'delivery_fee_base'    => 1.00,
-            'delivery_fee_per_km'  => 1.00,
-            'delivery_fee_minimum' => 2.00,
+        ]);
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE]);
+        $address = Address::query()->create([
+            'user_id' => $customer->id,
+            'label' => 'Domicile',
+            'address' => '10 Rue de Test',
+            'latitude' => '48.9106',
+            'longitude' => '2.3522',
+            'city' => 'Oignies',
+            'postal_code' => '62590',
+            'geocode_status' => 'OK',
         ]);
         $operator = User::factory()->create(['branch_id' => $branch->id]);
         $operator->assignRole('POS Operator');
@@ -194,7 +163,9 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
                 'branch_id' => $branch->id,
                 'discount' => 0,
                 'delivery_charge' => 999, // forged
-                'delivery_distance_km' => 5,
+                'delivery_distance_km' => 0.1, // forgé : ignoré
+                'customer_id' => $customer->id,
+                'address_id' => $address->id,
                 'order_type' => OrderType::DELIVERY,
                 'source' => 1,
                 'pos_payment_method' => PosPaymentMethod::CASH,
@@ -207,23 +178,18 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
             ]);
 
         $response->assertOk();
-        // Per-branch formula: max(2, 1 + 1*5) = 6.
-        // Legacy fallback would have returned: max(5, ceil(5/5)*5) = 5.
-        $this->assertSame(6.0, (float) $response->json('data.delivery_charge'),
-            'POS walk-in DELIVERY MUST honour branch-configured fee, NOT the legacy fallback.');
+        // Barème serveur : ≈ 6 km hors commune = 5,90 €, malgré 999 € et 0,1 km envoyés par le client.
+        $this->assertSame(5.9, (float) $response->json('data.delivery_charge'),
+            'La caisse DOIT facturer par le barème serveur depuis l\'adresse du client.');
 
         $quote = OrderQuote::firstOrFail();
-        $this->assertSame(6.0, (float) $quote->canonical_payload['fees']['delivery_charge']);
+        $this->assertSame(5.9, (float) $quote->canonical_payload['fees']['delivery_charge']);
     }
 
-    /**
-     * Null-safety guard — unknown branch_id must NOT crash; fall back legacy.
-     */
-    public function test_unknown_branch_id_falls_back_to_legacy_safely(): void
+    /** Sans commune connue, on tarife hors commune (jamais le forfait Hénin-Beaumont par défaut). */
+    public function test_unknown_city_never_gets_the_home_flat_fee(): void
     {
-        $service = new DeliveryFeeService();
-        // null branch → legacy formula
-        $this->assertSame(10.0, $service->fromDistanceKm(7, null));
+        $this->assertSame(4.9, (new DeliveryFeeService())->fromDistanceKm(3, null));
     }
 
     /**

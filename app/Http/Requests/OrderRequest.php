@@ -22,6 +22,7 @@ class OrderRequest extends FormRequest
 {
     use NormalizesAdvanceOrder;
     use ValidatesAddonRoles;
+    use \App\Http\Requests\Concerns\ValidatesDeliverySlot;
     use ValidatesOrderItemVariations;
 
     /**
@@ -96,15 +97,13 @@ class OrderRequest extends FormRequest
 
         $isDelivery = (int) $this->input('order_type', 0) === OrderType::DELIVERY;
 
-        if ($isDelivery && $this->filled('delivery_distance_km') && $this->filled('address_id') && $this->user() && ! $this->filled('branch_id')) {
-            throw new GeocodeUnavailableException();
-        }
-
-        if ($isDelivery
-            && $this->filled('delivery_distance_km')
-            && $this->filled('branch_id')
-            && $this->filled('address_id')
-            && $this->user()) {
+        // [LIVRAISON 2026-10-20] Le prix d'une livraison est TOUJOURS dérivé de l'adresse
+        // enregistrée du client (coordonnées + commune posées par le géocodeur serveur) : plus
+        // aucune distance ni aucun montant venus du navigateur ne sont crus.
+        if ($isDelivery && $this->filled('address_id')) {
+            if (! $this->user() || ! $this->filled('branch_id')) {
+                throw new GeocodeUnavailableException();
+            }
             $quote = app(DeliveryQuoteService::class)->quoteForSavedAddress(
                 (int) $this->input('branch_id'),
                 (int) $this->input('address_id'),
@@ -113,19 +112,15 @@ class OrderRequest extends FormRequest
             $this->merge([
                 'delivery_distance_km' => $quote['distance_km'],
                 'delivery_charge' => $quote['delivery_charge'],
+                'delivery_tier' => $quote['delivery_tier'],
             ]);
-        } elseif ($isDelivery && $this->filled('delivery_distance_km')) {
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-02 P0] DEL-5 wire-up.
-            // Legacy-fallback branch (no saved address) must also honour the
-            // per-branch fee config when branch_id is supplied. Branch::find
-            // is null-safe: an unknown branch_id falls back to the legacy
-            // `max(5, ceil(d/5)*5)` formula (DeliveryFeeService:33).
-            $branchId = (int) $this->input('branch_id', 0);
-            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
-            $this->merge([
-                'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
-            ]);
+        } elseif ($isDelivery) {
+            // Pas d'adresse : la validation `address_id` requis refusera. En attendant on neutralise
+            // tout montant client pour qu'il ne survive nulle part.
+            $this->merge(['delivery_charge' => 0, 'delivery_distance_km' => 0]);
+        } else {
+            // Hors livraison : aucun créneau de tournée ne doit survivre.
+            $this->merge(['delivery_slot_at' => null, 'delivery_tier' => null]);
         }
     }
 
@@ -154,9 +149,10 @@ class OrderRequest extends FormRequest
                 'numeric',
                 'min:0',
             ] : ['nullable', 'numeric', 'min:0'],
-            'delivery_distance_km' => $isDelivery
-                ? ['required', 'numeric', 'min:0']
-                : ['nullable', 'numeric', 'min:0'],
+            'delivery_distance_km' => ['nullable', 'numeric', 'min:0'],
+            // [LIVRAISON 2026-10-20] Créneau de départ choisi par le client (grille 30 min) ; vérifié dans withValidator.
+            'delivery_slot_at' => ['nullable', 'date_format:Y-m-d H:i:s'],
+            'delivery_tier' => ['nullable', 'string', 'max:24'],
             // [P9.5.8] Frontend kiosk payload no longer sends client totals; server recomputes via PricingService SSOT.
             // [P5] If a client still sends total, reject negatives (align PosOrderRequest / audit P50-4).
             'total' => ['nullable', 'numeric', 'min:0'],
@@ -207,7 +203,15 @@ class OrderRequest extends FormRequest
             // COUNTER_DEFERRED = orpheline INENCAISSABLE dont le ticket cuisine s'imprimait (M16-P1). Le
             // nullable reste (le backend traite l'absence) ; toute valeur EXPLICITE hors {1,4,5} → 422.
             'payment_method' => ['nullable', 'numeric', 'in:1,4,5'],
+            // [CARTE À LA LIVRAISON 2026-10-24 · décision propriétaire] « Payer par carte à la livraison » : le livreur
+            // encaisse au terminal de paiement qu'il porte. Seule valeur autorisée : `card`. L'absence du champ = espèces
+            // à la porte (inchangé). Les contraintes croisées (livraison + payment_method=1) vivent dans withValidator.
+            'door_payment' => ['nullable', 'string', 'in:card'],
             'token' => ['nullable', 'string'],
+            // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom donné par le client à la borne, avant de
+            // confirmer : « j'ai la commande au nom de X » — la caisse retrouve la commande sans
+            // parcourir la liste. Texte libre court, nettoyé côté service ; jamais monétaire.
+            'pos_customer_name' => ['nullable', 'string', 'max:60'],
             'items' => ['required', 'json', new ValidJsonOrder]
         ];
     }
@@ -222,16 +226,25 @@ class OrderRequest extends FormRequest
     {
         return [
             'scheduled_at.date_format' => 'Le créneau doit être au format AAAA-MM-JJ HH:MM:SS (ex. 2026-07-21 19:30:00).',
+            'door_payment.in' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
+            'door_payment.string' => 'Le paiement à la porte n\'accepte que la carte (« card »).',
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
+            // [CARTE À LA LIVRAISON 2026-10-24] Anti-forgeage : `door_payment` n'a de sens que pour une LIVRAISON payée
+            // « à la livraison » (payment_method=1). Posé ailleurs (à emporter, carte en ligne, titre-restaurant, borne), il
+            // fabriquerait une commande dont le marqueur contredit le mode réel — même famille que le titre-restaurant forgé
+            // du 2026-10-21 (P0). Placé AVANT les retours anticipés borne pour couvrir toutes les surfaces.
+            $this->validateDoorPaymentAfter($validator);
+
             // [E4 SCHEDULED-INTAKE 2026-07-20] Gardes métier du créneau programmé —
             // placées AVANT les early-returns kiosk pour couvrir toutes les surfaces
             // (web/app/borne). Champ absent = ASAP, no-op strict.
             $this->validateScheduledAtAfter($validator);
+            $this->validateDeliverySlotAfter($validator);
 
             $orderType = request('order_type');
             $orderTypeInt = (int) $orderType;
@@ -293,11 +306,11 @@ class OrderRequest extends FormRequest
             }
 
             if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             } else if (blank($orderType)) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', trans('all.message.type_de_commande_desactive'));
             }
 
             // [Sprint 2B / DEL-4] DELIVERY orders require a reachable phone on
@@ -311,6 +324,11 @@ class OrderRequest extends FormRequest
             if ($orderTypeInt === OrderType::DELIVERY) {
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
                 $this->validateDeliveryMinimumOrder($validator);
+
+                // [VG-2026-10-21 L2 · décision propriétaire 2026-10-22] Titre-restaurant ACCEPTÉ en livraison. Le refus
+                // posé le 2026-10-21 (P0 : flip « non-espèces → PAYÉ » au départ du livreur, vente scellée sans paiement)
+                // est levé parce que la cause est corrigée : OrderService::deliveryBoyOrderChangeStatus ne passe un
+                // titre-restaurant en PAYÉ qu'à la REMISE, avec sa tranche order_payments (DeliveryMealVoucherDoorstepTest).
             }
 
             $this->validateOrderItemVariationsAfter($validator);
@@ -319,6 +337,27 @@ class OrderRequest extends FormRequest
             // ratio injection on non-menu_component addons.
             $this->validateAddonRolesAfter($validator);
         });
+    }
+
+    /**
+     * [CARTE À LA LIVRAISON 2026-10-24] `door_payment=card` exige une livraison (order_type=5) ET payment_method=1.
+     * Une valeur autre que `card` est déjà refusée par la règle `in:card` (message sur la même clé).
+     */
+    private function validateDoorPaymentAfter($validator): void
+    {
+        if (! $this->filled('door_payment') || $validator->errors()->has('door_payment')) {
+            return;
+        }
+
+        if ((int) $this->input('order_type', 0) !== OrderType::DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'existe que pour une livraison.');
+
+            return;
+        }
+
+        if ((int) $this->input('payment_method', 0) !== \App\Enums\PaymentGateway::CASH_ON_DELIVERY) {
+            $validator->errors()->add('door_payment', 'Le paiement par carte à la livraison n\'est possible que pour une commande à payer à la livraison.');
+        }
     }
 
     /**

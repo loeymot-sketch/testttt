@@ -1,0 +1,162 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 13,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-waveB/05b-panneau-panier-plein.png",
+      "category": "element_overlap",
+      "severity": "P0",
+      "evidence": "CONFIRMÉ À L'OEIL, PAS SUR LEURS CHIFFRES — j'ai ouvert l'image avant de lire une seule de leurs mesures. Je vois ces mots l'un PAR-DESSUS l'autre : (1) « SÉLECTIONNER LE TYPE DE COMMANDE » (capitales orange) traverse « Cayenne » et « 7,40 € » ; (2) « Poulet mariné · STD · » passe sous la boîte du bouton « À emporter » ; (3) « Galette Normale » et « 6,50 € » sont imprimés sur « R LE TICKET CUISINE) » (fin tronquée de « NOM DU CLIENT (IMPRIMÉ SUR LE TICKET CUISINE) ») ; (4) les champs « Nom du client (optionnel) » et « Téléphone (optionne » recouvrent la 2e ligne de vente (« Pain… STD ») ; (5) la puce orange « REMISE » et la ligne « Programmer / mm/dd/yyyy, --:-- -- » sont imprimées sur « Sous-total 13,90 € ». AGGRAVANT NON DIT PAR L'ÉQUIPE DE CAPTURE : la boîte du bouton « À emporter » se pose exactement sur le compteur de quantité « − 1 + » et sur la corbeille cerclée de rouge de la ligne Cayenne. Le seul test au pixel qu'ils ont lancé le prouve dans l'autre sens : 05-panier-compose.mesures.json donne champ_nom.element_touche = \"footer\" — l'élément visible n'est PAS celui qui reçoit le clic. Sur une caisse, un doigt qui vise « À emporter » peut donc atteindre « supprimer la ligne » ou « +1 » d'une commande fiscale. Arithmétique du débordement refaite et VALIDE : en-tête boîte 187 px écran, contenu 438 px CSS = 394 px écran, débordement 207 px écran ; corps y=246→384 donc 138 px recouverts à 100 % ; pied 384→453 donc 69 px recouverts.",
+      "fix_hint": "resources/css/pos-v5.css, bloc @media (min-height: 760px) (~l.858-878) : le `overflow: visible` posé sur `.pos-v5-cart__head` repose sur une prémisse ÉCRITE ET FAUSSE dans le fichier lui-même — « Sans plafond, rien ne déborde : aucun axe n'a besoin de défiler. » Faux dès 2 lignes de panier. Remplacer par `overflow-y: auto; overflow-x: hidden;` en gardant `max-height: none` : l'en-tête redevient une fenêtre qui défile au lieu de peindre dehors. Piège à ne pas rejouer : les deux @media SE CHEVAUCHENT à 768 px (max-height:800px ET min-height:760px s'appliquent), donc `.pos-v5-cart__body{min-height:20vh}` du 1er bloc reste actif pendant que le head perd son plafond au 2e — c'est la cause exacte. Toute correction doit être remesurée à panier PLEIN (pied = 306 px) et pas à panier vide (pied = 122 px).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-waveB/05-panier-compose-1366x768.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "Le champ « Nom du client » est inatteignable dans DEUX situations distinctes, et je le vois dans les deux. (a) 1366×768 + 2 articles : 05-panier-compose.mesures.json → champ_nom = {boîte haut 374 bas 410, dans_fenetre true, test_au_pixel FALSE, element_touche \"footer\"} — le champ est peint mais le pied capte le clic. (b) 1024×600 panier vide : sur 02-pos-chargement-1024x600.png je ne vois que le LISERÉ SUPÉRIEUR de deux boîtes de saisie sous « NOM DU CLIENT (IMPRIMÉ SUR LE TICKET CUISINE) », coupées net par le bas du hublot ; mesures : champ_nom.boîte haut 159 bas 195 contre entete_panier.bas 167 → 28 px sur 36 hors zone, test_au_pixel FALSE, element_touche \"div\", et defilement_entete = 154 SANS aucun geste. Ce champ imprime le nom sur le ticket cuisine : sans lui le caissier écrit au stylo. Le commentaire de resources/css/pos-v5.css le dit lui-même : « Deux correctifs justes, à quinze jours d'écart, dont le second annulait discrètement le premier. » C'est le troisième tour.",
+      "fix_hint": "Même cause que B-001. Champ : resources/js/components/admin/pos/PosComponent.vue:1066 (data-testid=\"pos-customer-name\"). Sortir le champ du `.pos-v5-cart__head` compressible et le poser dans une bande non compressible du panneau, OU appliquer le correctif overflow de B-001 puis re-vérifier `champ_nom.test_au_pixel === true` aux 2 gabarits ET à panier plein — le spec rend déjà cette valeur, s'en servir comme critère d'acceptation.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-waveB/03-grille-categories-1366x768.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "VÉRIFIÉ VISUELLEMENT AUX DEUX GABARITS : sur 03-grille-categories-1366x768.png comme sur 03-grille-categories-1024x600.png je ne vois AUCUNE tuile produit, pas même un fragment. La fenêtre est entièrement occupée par l'en-tête, la carte « Commande rapide » et les 4 panneaux de suivi ; le bas de l'image est coupé sur « COMMANDES WEB · 77 » / « WEB PAYÉES · 0 ». Mesures cohérentes : premiere_tuile.haut = 792 pour une fenêtre de 768 (1366×768) et 910 pour 600 (1024×600), tuiles = 10 dans le DOM. La claim de l'équipe tient. NUANCE QUE JE DOIS CORRIGER : la catégorie ci-dessus est la moins mauvaise disponible dans le protocole — ce n'est pas un recouvrement mais un DÉPLACEMENT sous la ligne de flottaison, causé par les panneaux de suivi qui occupent la fenêtre. C'est réversible par défilement, donc P1 et non P0.",
+      "fix_hint": "resources/js/components/admin/pos/PosComponent.vue:404 (`div.pos-shortcuts`) est rendu AVANT la grille des catégories dans le flux. Le placer sous la grille, ou le replier en une barre de synthèse cliquable (« 2 à encaisser · 77 web ») qui ouvre les panneaux à la demande. Critère d'acceptation déjà rendu par le spec : grille_categories.px_disponibles_sous_le_haut > 0 aux 2 gabarits, panneaux PEUPLÉS (c'est l'heure de pointe qui pousse la grille : 792 px peuplés contre 576 px vides).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-waveB/06-pos-v4-1366x768.png",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "VÉRIFIÉ ET RECOMPTÉ MOI-MÊME dans 06-pos-v4-1366x768.console.json : 8 entrées niveau `pageerror` + 1 entrée niveau `error`, message identique et exact : `No match for\\n {\"name\":\"frontend.menu\",\"query\":{\"s\":\"\"},\"params\":{}}` — soit 9 erreurs non rattrapées, exactement le chiffre annoncé. S'y ajoutent 12 avertissements : 6× `[Vue warn]: Unhandled error during execution of setup function at <RouterLink to= {name: frontend.menu, query: Object}`, 5× `[Vue warn]: Unhandled error during execution of component update at <FrontendNavbarComponent> at <DefaultComponent> at <App>`, 1× `[Vue Router warn]: uncaught error during route navigation`. CONTRE-VÉRIFICATION DU ZÉRO : j'ai dépouillé les 10 autres .console.json — /admin/pos n'a AUCUN pageerror sur aucun état. Confirmé. PIÈGE D'ALLOWLIST ÉCARTÉ : la trame `createRouterError (…/js/vendor.js…)` pourrait faire passer ça pour du bruit tiers allowlisté ; l'ORIGINE est applicative (FrontendNavbarComponent vise une route absente du routeur), vendor.js n'est que le vue-router empaqueté. Non allowlisté, le constat tient.",
+      "fix_hint": "Le composant fautif est `FrontendNavbarComponent`, monté par la page Blade autonome `admin-pos-v4.blade.php` — ZONE GELÉE : toute écriture dans ce fichier exige une PORTE PROPRIÉTAIRE EXPLICITE. Correctif possible HORS zone gelée : dans le composant Vue lui-même, garder le `<RouterLink :to=\"{name:'frontend.menu'}\">` derrière un `router.hasRoute('frontend.menu')`, ou enregistrer la route manquante dans le routeur. À défaut, ne pas monter une navbar frontend sur une surface de caisse.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-waveB/05a-assistant-produit-ouvert.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "DÉFAUT QUE L'ÉQUIPE DE CAPTURE A ENTIÈREMENT MANQUÉ (elle déclare `libelles_bruts: []` et ne signale rien sur cet état). Sur 05a-assistant-produit-ouvert.png, LE MÊME PRIX est écrit de deux façons sur UNE SEULE image : l'assistant affiche « €7.40 » (symbole devant, point décimal) en en-tête et « Total €7.40 » en pied, pendant que la fiche produit visible DERRIÈRE, à gauche, affiche « 7,40 € » pour le même Cayenne. Idem « 1 viande incluse — au-delà : +€2.50 / viande ». Source confirmée par lecture du code : public/js/pos-wizard.js:221 `return '€' + num.toFixed(2);`, l.739 `currencyPrice: '€' + unitPrice.toFixed(2)`, l.2347 `'+€' + formulePrice.toFixed(2)`. AGGRAVANT : leur PROPRE artefact le contient et personne ne l'a lu — 05-panier-compose.json enregistre `\"total_assistant\": \"€7.40\"` à trois reprises (diagnostic.avant, apres_viande, apres_sauce). Le défaut a été capturé, sérialisé sur disque, et n'a pas été vu. Le MONTANT est juste (7.40 = 7,40), donc ce n'est pas une faute fiscale : je classe P1, pas P0. Mais c'est une convention anglo-saxonne affichée au caissier sur une V1 FR-only (ADR-007 immuable), et les deux conventions coexistent au même instant à l'écran.",
+      "fix_hint": "public/js/pos-wizard.js:221 (+ 739, 2347) — FICHIER GELÉ (CLAUDE.md §7). Je ne propose PAS d'y écrire : une PORTE PROPRIÉTAIRE EXPLICITE est requise. Le correctif tiendrait en ~3 lignes (`num.toFixed(2).replace('.', ',') + '\\u00A0€'`) sur un fichier écrit à la main de ~296 Ko. Alternative sans toucher la zone gelée : aucune — le rendu est produit dans ce fichier.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-waveB/01-pos-chargement-1366x768.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Calculé, pas estimé à l'oeil. `--pos-v5-ink-muted: #8A8278` (resources/css/foundations/pos-v5-tokens.css:63) donne un contraste de 3,79:1 sur blanc et 3,66:1 sur le panneau crème — sous le seuil WCAG AA de 4,5:1 pour du texte de taille normale. Il est appliqué à 6 endroits de resources/css/pos-v5.css, dont l.207 `.pos-v5-search__input::placeholder` : c'est le « Rechercher un article du menu » que je lis, très pâle, sur 04b et 05. DÉTAIL ACCABLANT : le bloc de tokens est intitulé « === TEXTE (contraste AA renforcé sur surfaces warm) === » et annote le ratio de chaque token — `--pos-v5-ink` « 15.8:1 », `--pos-v5-ink-soft` « 7.4:1 » (recalculé : 6,90:1, annonce optimiste mais conforme) — et n'annote PAS `--pos-v5-ink-muted`. Le seul token dont le ratio n'est pas écrit est le seul qui échoue.",
+      "fix_hint": "resources/css/foundations/pos-v5-tokens.css:63 — remonter `--pos-v5-ink-muted` de #8A8278 à une valeur ≥ 4,5:1 sur #FFFFFF et sur le fond crème (p.ex. #6E675E ≈ 4,9:1 sur blanc), puis annoter le ratio comme les deux tokens voisins. Le thème sombre (l.189, #5A5A5A) est déjà conforme et n'est pas concerné.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-waveB/04-panneaux-suivi-1366x768.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Les 4 panneaux de suivi se rafraîchissent en continu (compteurs « Prêt à livrer (0) » / « À encaisser — comptoir (2) » / « Commandes web · 77 », horodatage « Mis à jour à l'instant », lignes qui apparaissent et disparaissent) et AUCUN n'est une région live. Vérifié dans 01-pos-chargement-1366x768.dom.html : le conteneur est `<div class=\"pos-shortcuts\" data-testid=\"pos-shortcuts\">` sans `aria-live` ni `role=\"status\"` ; chaque `<section data-testid=\"pos-shortcuts-cash\" aria-label=\"À encaisser — comptoir (2)\">` porte un aria-label STATIQUE figé au montage, et sa `<ul class=\"pos-shortcuts__list\" role=\"list\">` n'a aucun attribut live. Une commande à encaisser qui arrive n'est donc jamais annoncée. À comparer avec le reste de l'écran, qui le fait correctement : le bandeau rupture est `<div role=\"alert\" aria-live=\"polite\" data-testid=\"pos-availability-banner\">` et il existe un `data-testid=\"pos-availability-live\"` en `aria-live=\"polite\" aria-atomic=\"true\"`. Le motif est connu de l'équipe ; il n'a pas été appliqué ici.",
+      "fix_hint": "resources/js/components/admin/pos/PosComponent.vue:404 — poser `role=\"status\" aria-live=\"polite\" aria-atomic=\"false\"` sur `div.pos-shortcuts`, ou une région live dédiée par panneau annonçant « N commandes à encaisser ». Aligner sur le motif déjà en place à `data-testid=\"pos-availability-live\"`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-waveB/05a-assistant-produit-ouvert.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "DÉFAUT NON RELEVÉ PAR L'ÉQUIPE DE CAPTURE. Assistant produit ouvert : le voile modal ne couvre PAS la colonne panier. Ce que je vois : à gauche de la modale, les lignes « N°A0081 / N°A0082 / N°A0083 » et « Voir les 77 commandes web » sont bien GRISÉES par le voile ; à droite de la modale (au-delà de x≈1178) le bouton « + » orange, la pastille orange « 0 » de « En attente », « Livraison », « Téléphone (optionne », « 0,00 € » et le « 0,00 € » orange du Total sont à pleine saturation, non assombris. Conséquence : pendant que l'assistant compose un article, les commandes du panneau panier restent visuellement actives et au-dessus du voile — un caissier peut mettre la commande en attente, changer le type de commande ou vider le panier alors qu'une modale bloquante est censée être ouverte.",
+      "fix_hint": "Conflit d'empilement entre le panneau `.pos-v5-cart` (tokens resources/css/foundations/pos-v5-tokens.css:181-183 : z-overlay 1000 / z-modal 2000 / z-toast 3000) et l'assistant gelé, dont le z-index maximal est 10 (public/js/pos-wizard.js:4948 ; public/css/pos-wizard.css l.1340 et l.1905) : l'assistant vit sous les tokens du POS. CORRECTIF À FAIRE HORS ZONE GELÉE : dans resources/css/pos-v5.css, neutraliser le contexte d'empilement de `.pos-v5-cart` quand le corps porte l'état « assistant ouvert », plutôt que de remonter le z-index dans pos-wizard.css / pos-wizard.js — ces deux fichiers sont GELÉS et exigeraient une porte propriétaire explicite.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "test-e2e-waveB/01-pos-chargement-1366x768.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "PIÈGE DÉSAMORCÉ — à lire avant d'ouvrir un ticket. Chaque capture de caisse affiche un champ date au format AMÉRICAIN « mm/dd/yyyy, --:-- -- » à côté de « Programmer », sur une V1 FR-only (ADR-007). Ce N'EST PAS un défaut applicatif : playwright.config.js ne définit AUCUNE `locale` dans son bloc `use:` et le projet chromium utilise `devices['Desktop Chrome']` nu — le navigateur du banc tourne donc en en-US par défaut, et `<input type=\"datetime-local\">` rend le format de la locale navigateur. Sur un poste français il afficherait jj/mm/aaaa. MAIS C'EST UN TROU DE COUVERTURE RÉEL : la vague B affirme la conformité FR (`libelles_bruts: []` partout) depuis un navigateur qui n'est pas en français. Aucune assertion de locale FR de cette vague n'est étayée, et les régressions de mise en page dues aux libellés français (plus longs que l'anglais) ne sont pas testées.",
+      "fix_hint": "playwright.config.js, bloc `use:` (~l.66-72) — ajouter `locale: 'fr-FR', timezoneId: 'Europe/Paris'`. Toute vague suivante doit être rejouée avec ce réglage avant qu'une affirmation de conformité FR soit acceptée.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "test-e2e-waveB/05-panier-compose-1366x768.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "CONTRE-VÉRIFICATION DES MESURES — résultat globalement en faveur de l'équipe, avec deux réserves. CE QUI TIENT : le facteur de zoom est appliqué de façon COHÉRENTE, et surtout le « plancher de 154 px » est bien comparé dans la MÊME unité que ce à quoi on le compare — corps_panier.hauteur_visible (clientHeight, px CSS : 199 / 279 / 154) contre plancher_css_brut (valeur calculée, px CSS : 153.6px / 120px). Aucun mélange. Leur auto-correction (§0.2) est honnête et l'arithmétique de l'état 5 se refait à l'identique (438 CSS × 0,9 = 394 écran ; 394 − 187 = 207 ; 246+207 couvre 246→384 = 138 = 100 % du corps ; 69 px sur le pied). RÉSERVE 1 — UNITÉS MÉLANGÉES DANS UNE COLONNE : au §1.1 la colonne « Pixels non visibles » contient « 247 px CSS masqués » (ligne 1024×600) et « 207 px écran qui DÉBORDENT » (ligne 2 articles) : deux unités ET deux phénomènes différents (masqué vs débordé) sous un seul en-tête de colonne. Confusion aggravée par une coïncidence : 207 est AUSSI la valeur de entete_panier.hauteur_visible en px CSS à l'état 5. RÉSERVE 2 — CHIFFRE VEDETTE NON CONFORME À SON PROPRE ARTEFACT : le rapport annonce « −24 px » pour la grille à 1366×768 (§1.2 et défaut B-3) alors que 01-…mesures.json et 03-…mesures.json rendent `px_disponibles_sous_le_haut: -23`. Sans conséquence sur la conclusion, mais un chiffre publié doit correspondre à sa mesure.",
+      "fix_hint": "reports/test-e2e/supervisor-caisse-2026-08-24/round-1/wave-B-capture.md §1.1 : scinder la colonne en « px CSS masqués (rognés) » et « px écran débordés (peints dehors) ». §1.2 et §4/B-3 : remplacer −24 par −23, ou expliciter l'arrondi. Aucune conclusion à revoir.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "test-e2e-waveB/01-pos-chargement-1366x768.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Sur TOUTES les captures 1366×768 (01, 03, 04, 04b, 05, 06) je lis « Téléphone (optionne » — le placeholder est coupé net, sans point de suspension et sans infobulle. Le champ voisin « Nom du client (optionnel) » tient en entier ; c'est le second des deux qui déborde de sa boîte. Le libellé de section au-dessus subit le même sort à l'état 5, où l'on ne lit plus que « R LE TICKET CUISINE) » de « NOM DU CLIENT (IMPRIMÉ SUR LE TICKET CUISINE) ».",
+      "fix_hint": "resources/js/components/admin/pos/PosComponent.vue:1066 et la ligne du champ téléphone qui le suit — raccourcir le placeholder en « Téléphone » (l'étiquette de section porte déjà le contexte), ou donner aux deux champs une grille à colonnes égales avec `min-width: 0` sur chaque cellule pour que le texte se replie au lieu d'être rogné.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-012",
+      "state_artifact": "test-e2e-waveB/06-pos-v4-1366x768.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "DEUX CAPTURES SUR TREIZE SONT CONTAMINÉES, dont celle qui sert de référence. Sur 04b-panneaux-suivi-etats-vides.png et 06-pos-v4-1366x768.png, un bandeau rouge pleine largeur « Trop de requêtes — patientez 16s / 6s avant de réessayer. » recouvre le coin haut-droit, y compris l'intitulé « TICKET CAISSE » du panneau panier. Source : 429 sur POST /api/admin/pos/customer-display dans les deux .network.json. JE NE LE RETIENS PAS COMME DÉFAUT APPLICATIF, et j'ai essayé : .env:99 fixe API_THROTTLE_PER_MINUTE=1000 en local (contre 120 en production), et resources/js/shared/inflight-dedupe.js:15-21 documente que ce plafond local « MASQUE le défaut au développement ». Franchir 1000/min en local est bien une cadence de banc — l'attribution de l'équipe est correcte. CE QUE JE RETIENS : (a) l'état 06 est précisément celui sur lequel l'équipe affirme un rendu « identique au pixel » à /admin/pos, alors qu'il porte une alarme modale absente de l'état de référence ; (b) le total « 21 entrées de console » annoncé pour pos-v4 mélange dans un même chiffre 9 erreurs Vue applicatives, 12 avertissements, et un 429 de banc. Le défaut B-004 tient parfaitement sans ce 429.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveB.spec.js — espacer les navigations ou réinitialiser le compteur de limitation entre états, puis reprendre 04b et 06 sans bandeau. Ne PAS masquer le message : bootstrap.js:246 et le commentaire de inflight-dedupe.js rappellent qu'il a été ajouté après un P0 « la caisse avalait 7+ HTTP 429 en silence ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-013",
+      "state_artifact": "test-e2e-waveB/07-floorplan-1366x768.png",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "Confirmé à l'oeil sur l'image, trois anomalies dans une carte de 200×220 px : « 1 tables » (pluriel non accordé au singulier), « 0 seats » (anglais brut sur une V1 FR-only, ADR-007) et la seule table du plan nommée « ABUSE-T1 » — résidu d'un spec d'abus exposé sur un écran de service. Je note en plus, non signalé par l'équipe : l'état de la table est écrit DEUX FOIS dans la même carte, en pastille « LIBRE » et en texte « Libre » juste en dessous. Et je confirme leur constat de navigation : aucune barre CaisseSecondaryNav ici, seulement « Rechercher » et « ← Retour » — depuis le plan de salle le caissier n'atteint ni Encaissement, ni Suivi commandes, ni Historique, ni Écran client, ni La roue, alors que ces 6 liens existent et fonctionnent sur /admin/encaissement (vérifié sur 08-caisse-secondary-nav-1366x768.png).",
+      "fix_hint": "Composant du plan de salle (resources/js/components/admin/pos/ — chercher le gabarit rendant `{{ tables.length }} tables` et `seats`) : passer par la pluralisation i18n (`trans_choice`) et traduire « seats » en « couverts ». Donnée « ABUSE-T1 » : purge en base à demander au propriétaire (écriture de données = porte humaine). Monter CaisseSecondaryNav sur la surface plan de salle, comme sur EncaissementComponent.vue et HistoriqueListComponent.vue.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 5,
+    "P2": 6,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 5,
+    "open_P2": 6,
+    "open_P3": 1
+  },
+  "verdict": "RED",
+  "notes": "CE QUE J'AI TENTÉ DE CASSER SANS Y ARRIVER — six attaques, six échecs, dans l'ordre où je les ai menées.\n\n1) J'AI ESSAYÉ DE NE PAS VOIR LE CHEVAUCHEMENT. C'était ma première hypothèse : une équipe qui écrit une plaidoirie de 23 Ko sur un débordement de 207 px a intérêt à l'exagérer. J'ai ouvert 05b-panneau-panier-plein.png AVANT de lire une seule de leurs mesures. Le défaut est là, indiscutable, et je peux citer les mots superposés (voir B-001). Constat en leur faveur.\n\n2) J'AI ESSAYÉ DE PRENDRE LEUR AUTO-CORRECTION EN DÉFAUT D'UNITÉ. C'était la piste la plus prometteuse : un rapport qui admet avoir mélangé pixels écran et pixels CSS admet souvent la moitié de sa faute. J'ai ouvert les 8 .mesures.json. Le facteur 0,90 est appliqué de façon cohérente, et surtout le « plancher de 154 px » est comparé à corps_panier.hauteur_visible (clientHeight, px CSS) et non à corps_panier.hauteur (rect, px écran) — même unité des deux côtés. J'ai refait leur arithmétique de l'état 5 de bout en bout : elle tombe juste au pixel. Je n'ai trouvé qu'une colonne mal titrée et un −24 publié pour un −23 mesuré (B-010, P3). Leur §0.2 est honnête.\n\n3) J'AI ESSAYÉ DE FAIRE TOMBER B-004 PAR L'ALLOWLIST. Le protocole allowliste explicitement « vendor.js console errors ». La trame de l'erreur pos-v4 est bien `createRouterError (…/js/vendor.js…)` — à un caractère près, le défaut phare de leur état 6 sautait. Il ne saute pas : les 8 `pageerror` sont des erreurs applicatives non rattrapées dont l'origine est FrontendNavbarComponent visant une route absente ; vendor.js n'est que le vue-router empaqueté. J'ai aussi vérifié le « zéro » côté /admin/pos en dépouillant les 10 autres .console.json : aucun pageerror. Leur 9 est exact.\n\n4) J'AI ESSAYÉ DE TROUVER UN LIBELLÉ BRUT QU'ILS AURAIENT MANQUÉ. Balayage indépendant des 11 .dom.html, texte visible uniquement (script/style/svg retirés), sur le motif ^[a-z][a-z0-9_]*(\\.[a-z0-9_]+){1,4}$ : ZÉRO occurrence. Leur `libelles_bruts: []` est honnête sur les 9 états.\n\n5) J'AI ESSAYÉ DE TRANSFORMER LES 429 EN DÉFAUT APPLICATIF. Tentant : le dépôt contient un module entier (resources/js/shared/inflight-dedupe.js) écrit pour ce symptôme exact, et un P0 historique « la caisse avalait 7+ HTTP 429 en silence ». Mais .env:99 met le plafond local à 1000/min quand la production est à 120, et le commentaire du module dit lui-même que ce plafond local masque le défaut. Dépasser 1000/min en local, c'est le banc, pas l'application. Leur attribution tient ; je n'ai gardé que la contamination de deux captures (B-012).\n\n6) J'AI CHERCHÉ UNE FAUTE D'ARITHMÉTIQUE SUR L'ARGENT. Rien. 7,40 + 6,50 = 13,90, et 13,90 se retrouve identique sur le sous-total, sur le Total, et sur le libellé du bouton « Commande · 13,90 € » (05b). Recoupement inter-surfaces : « N°A0010 11,10 € » et « N°A0011 8,30 € » des panneaux de suivi (01, 04) sont repris à l'identique sur /admin/encaissement (08). Aucune divergence de valeur.\n\n---\n\nCE QUE J'AI TROUVÉ ET QU'ILS N'ONT PAS VU — quatre défauts absents de leur rapport : B-005 (l'assistant produit gelé écrit « €7.40 » quand le reste de l'écran écrit « 7,40 € », les deux conventions visibles sur UNE image), B-006 (--pos-v5-ink-muted à 3,79:1, sous le seuil AA, et c'est le seul token du bloc dont le ratio n'est pas annoté), B-007 (les 4 panneaux qui se rafraîchissent en continu ne sont pas des régions live, alors que le bandeau rupture voisin l'est correctement), B-008 (le voile de l'assistant ne couvre pas la colonne panier : ses commandes restent actives et à pleine saturation pendant qu'une modale bloquante est ouverte).\n\n---\n\nUNE CLAIM À CORRIGER, ET ELLE NE VIENT PAS DE L'ÉQUIPE DE CAPTURE. La mission qui m'a été confiée résume leur défaut B-1 en « recouvre 100 % de la ZONE DE VENTE dès 2 articles ». Les artefacts disent autre chose — et leur rapport aussi : ils écrivent « 100 % du CORPS », c'est-à-dire le corps du PANNEAU PANIER, les deux lignes de la vente en cours. Sur 05-panier-compose-1366x768.png la grille produits est intacte et complète : Sandwichs, Galette, Burgers, Tacos, Bols, Frites, Desserts, Boissons rendent proprement de x=18 à x=886, et 05-panier-compose.mesures.json donne grille_categories.px_disponibles_sous_le_haut = 504. Le débordement reste confiné à la colonne panier (x 996→1354). Le défaut est bien P0 — le caissier ne peut plus lire CE QU'IL VEND, et pire, il risque d'atteindre la corbeille en visant « À emporter » — mais il ne recouvre pas la zone de vente. La formulation de leur rapport est exacte ; c'est sa reprise amplifiée qui ne l'est pas.\n\n---\n\nPÉRIMÈTRE. 13 images relues une par une avec ma vision (l'équipe compte « 9 états » : 9 tests produisant 13 .png), 11 .dom.html, 11 .console.json, 11 .network.json, 8 .mesures.json. Zones gelées (pos-wizard.js, pos-wizard.css, admin-pos-v4.blade.php) LUES pour étayer B-004, B-005 et B-008 : aucune écriture proposée sans porte propriétaire explicite, les fix_hint concernés le disent en toutes lettres. Bruit connu non signalé : websocket dev refusé, /storage/1/english.png, Debugbar. Je note au passage que leur décompte de ce 404 est de 13 alors que j'en compte 15 sur les 11 .network.json — sans importance, c'est du bruit allowlisté.\n\nVERDICT RED : un P0 confirmé visuellement (B-001) et cinq P1 ouverts. Le P0 et deux des P1 (B-002, B-003) partagent une cause unique, et resources/css/pos-v5.css porte déjà trois correctifs successifs qui se sont mutuellement annulés. Un quatrième correctif calibré sur un seul état rejouera le cycle : tout correctif doit être remesuré à panier PLEIN (pied 306 px) autant qu'à panier vide (pied 122 px), aux deux gabarits, avec champ_nom.test_au_pixel === true comme critère d'acceptation."
+}

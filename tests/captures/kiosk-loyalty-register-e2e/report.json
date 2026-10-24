@@ -1,0 +1,10 @@
+{
+  "customer_name": "E2E Loyalty 1977299",
+  "balance": "0",
+  "url": "http://127.0.0.1:8766/kiosk/loyalty",
+  "blank_page": false,
+  "page_errors": [],
+  "console_errors": [
+    "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.6.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+  ]
+}

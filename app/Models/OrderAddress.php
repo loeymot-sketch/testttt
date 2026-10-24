@@ -17,7 +17,9 @@ class OrderAddress extends Model
         'address',
         'apartment',
         'latitude',
-        'longitude'
+        'longitude',
+        'city',
+        'postal_code',
     ];
 
     protected $casts = [

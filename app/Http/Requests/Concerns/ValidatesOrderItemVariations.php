@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Concerns;
 
+use App\Models\KioskMachine;
 use App\Rules\MultiVariationConstraint;
 use Illuminate\Validation\Validator;
 
@@ -31,7 +32,45 @@ trait ValidatesOrderItemVariations
             $items,
             function (int $index, string $message) use ($validator): void {
                 $validator->errors()->add("items.{$index}.item_variations", $message);
-            }
+            },
+            $this->branchIdForVariationConstraints(),
         );
+
+        // [VG-2026-10-21 M1-101] Boisson / accompagnement de menu en rupture : refusé comme le produit seul
+        // (caisse, borne, site, table — toutes les créations de commande passent par ce crochet).
+        \App\Support\Menu\MenuFormulaChoiceAvailability::validateCollectionKeyedByItemIndex(
+            $items,
+            function (int $index, string $message) use ($validator): void {
+                $validator->errors()->add("items.{$index}.instruction", $message);
+            },
+            $this->branchIdForVariationConstraints(),
+        );
+    }
+
+    /**
+     * The physical-kiosk pricing-preview endpoint deliberately rejects a
+     * client-supplied branch_id. Resolve its branch from the authenticated
+     * machine so a branch-specific published composer profile remains the
+     * validation contract. Other surfaces retain their validated branch_id.
+     */
+    private function branchIdForVariationConstraints(): ?int
+    {
+        $branchId = (int) $this->input('branch_id', 0);
+        if ($branchId > 0) {
+            return $branchId;
+        }
+
+        $user = $this->user();
+        if (! $user || ! $user->tokenCan('kiosk:order')) {
+            return null;
+        }
+
+        $machineBranchId = KioskMachine::query()
+            ->where('user_id', (int) $user->id)
+            ->value('branch_id');
+
+        return $machineBranchId !== null && (int) $machineBranchId > 0
+            ? (int) $machineBranchId
+            : null;
     }
 }

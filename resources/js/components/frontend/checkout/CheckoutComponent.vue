@@ -154,9 +154,15 @@
                                         type="radio">
                                     <label
                                         class="py-1.5 px-3.5 rounded-2xl text-xs font-medium capitalize transition cursor-pointer"
-                                        for="checkout-takeaway">{{ $t('label.takeaway') }}</label>
+                                        for="checkout-takeaway">{{ $t('message.order_takeaway') }}</label>
                                 </div>
                             </div>
+                            <p
+                                v-if="setting.order_setup_delivery !== activityEnum.ENABLE"
+                                class="mb-4 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800"
+                                role="status"
+                                data-testid="checkout-delivery-coming-soon"
+                            >{{ $t('message.delivery_coming_soon') }}</p>
                             <div class="pl-3">
                                 <div v-for="cart in carts"
                                     class="mb-3 pb-3 border-b last:mb-0 last:pb-0 last:border-b-0 border-gray-2">
@@ -277,7 +283,7 @@
                             <button type="button"
                                 class="w-full rounded-3xl capitalize font-medium leading-6 py-3 text-white bg-primary"
                                 @click="orderSubmit">
-                                {{ $t('button.place_order') }}
+                                {{ checkoutActionLabel }}
                             </button>
                         </div>
                     </div>
@@ -597,6 +603,11 @@ export default {
         timeSlot: function () {
             return this.$store.getters['frontendCart/timeSlot'];
         },
+        checkoutActionLabel: function () {
+            return this.checkoutProps.form.order_type === orderTypeEnum.TAKEAWAY
+                ? this.$t('message.confirm_takeaway')
+                : this.$t('button.place_order');
+        },
     },
     mounted() {
         this.loading.isActive = true;
@@ -866,11 +877,36 @@ export default {
                     });
                 }
 
-                if (Object.keys(item.item_variations.names).length > 0) {
+                // [Root cause 2026-09-17, propriétaire : mauvais libellés viande/sauce sur un
+                // Tacos multi-attributs commandé sur le site web] Cette boucle zippait
+                // `item_variations` (construit ci-dessus, indexé par ID d'attribut — JS trie
+                // ces clés numériquement) avec `.names` (indexé par NOM d'attribut — JS garde
+                // l'ordre d'INSERTION, donc l'ordre de clic du client) PAR POSITION. Les deux
+                // ordres ne coïncident que si le client clique ses attributs dans l'ordre
+                // croissant de leurs identifiants — sur un Tacos XL (Viande 1/2/3 = attributs
+                // 1/2/3, Sauce = attribut 5), cliquer la sauce avant la 3ᵉ viande décale déjà
+                // tout : chaque ligne affichait le nom d'un AUTRE attribut / une AUTRE viande
+                // que celle réellement choisie à cette ligne. `labelsByAttributeId` (ajouté à
+                // ItemComponent.vue::changeVariation) est indexé par le MÊME id que
+                // `item_variations` ci-dessus : on l'utilise en priorité, avec repli sur
+                // l'ancien zip positionnel pour les paniers déjà en cours (localStorage) ou les
+                // addons qui n'ont pas encore cette structure.
+                const labelsByAttributeId = item.item_variations.labelsByAttributeId || {};
+                if (Object.keys(labelsByAttributeId).length > 0) {
+                    item_variations.forEach((entry) => {
+                        const label = labelsByAttributeId[entry.item_attribute_id];
+                        if (label) {
+                            entry.variation_name = label.attribute_name;
+                            entry.name = label.variation_name;
+                        }
+                    });
+                } else if (Object.keys(item.item_variations.names).length > 0) {
                     let i = 0;
                     _.forEach(item.item_variations.names, (value, index) => {
-                        item_variations[i].variation_name = index;
-                        item_variations[i].name = value;
+                        if (item_variations[i]) {
+                            item_variations[i].variation_name = index;
+                            item_variations[i].name = value;
+                        }
                         i++;
                     });
                 }

@@ -10,7 +10,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const BASE = 'http://127.0.0.1:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const SHOTS = 'tests/captures/uber-photo-2026-08-10';
 const MODELE = path.resolve(__dirname, '../fixtures/uber/ticket-exemple.json');
 

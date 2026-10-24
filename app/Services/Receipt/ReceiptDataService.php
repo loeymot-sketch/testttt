@@ -4,6 +4,7 @@ namespace App\Services\Receipt;
 
 use App\Contracts\BroadcastableOrder;
 use App\Models\Order;
+use App\Models\User;
 
 /**
  * NF525 receipt data SSOT.
@@ -15,7 +16,7 @@ use App\Models\Order;
  *   - pos_siret           (établissement)
  *   - pos_vat_intra       (TVA intracommunautaire)
  *   - pos_legal_footer    (mentions légales)
- *   - operator_name       (caissier ayant clôturé)
+ *   - operator_name       (caissier ayant ouvert la commande : creator_id, jamais le client)
  *
  * Consumed by {@see \App\Http\Resources\OrderDetailsResource} which
  * delegates the six keys above so the HTTP API + the JS-side receipt
@@ -67,8 +68,25 @@ final class ReceiptDataService
             'pos_siret' => optional($order->branch)->siret,
             'pos_vat_intra' => optional($order->branch)->vat_intra,
             'pos_legal_footer' => optional($order->branch)->legal_footer,
-            'operator_name' => optional($order->user)->name,
+            'operator_name' => $this->operatorName($order),
             'created_at' => $order->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Le caissier = l'opérateur qui a ouvert la commande (`creator_id`), JAMAIS le client.
+     * `orders.user_id` porte le CLIENT (« Walking Customer » en caisse, le compte du client en
+     * livraison / borne) : le lire ici imprimait « Caissier : <nom du client> » sur le ticket.
+     * Sans `creator_id` (commande de borne ou du site, ou ancienne commande), il n'y a pas de
+     * caissier : on renvoie null et le ticket n'imprime aucune ligne plutôt qu'un nom faux.
+     */
+    private function operatorName(BroadcastableOrder $order): ?string
+    {
+        $creatorId = $order->creator_id ?? null;
+        if (! $creatorId) {
+            return null;
+        }
+
+        return User::withTrashed()->whereKey($creatorId)->value('name');
     }
 }

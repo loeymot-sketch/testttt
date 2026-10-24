@@ -33,6 +33,8 @@ import messageRoutes from "./modules/messageRoutes";
 import profileRoutes from "./modules/profileRoutes";
 import promoFlyerRoutes from "./modules/promoFlyerRoutes";
 import uberPhotoRoutes from "./modules/uberPhotoRoutes";
+import labelRoutes from "./modules/labelRoutes";
+import hygieneRoutes from "./modules/hygieneRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import historiqueRoutes from "./modules/historiqueRoutes";
 import encaissementRoutes from "./modules/encaissementRoutes";
@@ -118,6 +120,32 @@ const handlePermissionDenied = (to, next) => {
     ) {
         return next({ name: 'admin.item.show', params: { id: to.params.id } });
     }
+
+    /*
+     * [ONB-06 2026-08-28] NE PAS REDIRIGER VERS UNE ROUTE QU'IL NE PEUT PAS OUVRIR.
+     *
+     * Ce repli était toujours `admin.dashboard`. Or cette route porte
+     * `meta.permissionUrl = 'dashboard'` : un utilisateur qui ne l'a pas voyait la
+     * garde se redéclencher sur sa PROPRE CIBLE, rappeler cette fonction, et repartir
+     * vers le tableau de bord. Boucle infinie, avec un toast d'erreur à chaque tour.
+     *
+     * Ce n'est pas théorique : `RolePermissionTableSeeder` ne donne AUCUNE permission
+     * au rôle Livreur, et `LeCayenneRoleLandingUrlSeeder:31` le fait atterrir sur
+     * `delivery-boys`, qui exige la permission du même nom. Un livreur qui se
+     * connectait tournait en rond.
+     *
+     * `route.exception` est dans la liste exemptée de garde et ne porte aucune
+     * `permissionUrl` : c'est une destination TERMINALE. On y va quand le tableau de
+     * bord est hors de portée.
+     *
+     * Correctif GÉNÉRAL, et c'est voulu : donner des droits au Livreur traiterait le
+     * symptôme, mais la boucle reviendrait le jour où quelqu'un crée un rôle vide
+     * depuis l'écran des rôles.
+     */
+    if (! userHasPermission('dashboard')) {
+        return next({ name: 'route.exception' });
+    }
+
     return next({ name: 'admin.dashboard' });
 };
 
@@ -135,6 +163,13 @@ const baseRoutes = [
     {
         path: "/kds",
         redirect: { name: "admin.kitchen-display-system" },
+    },
+    {
+        // [KDS-TABLETTE 2026-10-19] Adresse courte du poste « tablette » (pain / sauces / crudités) :
+        // même écran cuisine, réduit aux seules commandes. Le `?tablette=1` active ET mémorise le
+        // mode sur l'appareil (helpers/kdsTablette.js) — l'adresse ne se saisit qu'une fois.
+        path: "/kds-tablette",
+        redirect: { name: "admin.kitchen-display-system", query: { tablette: "1" } },
     },
     {
         // Wave Y C-002 — /admin root URL was rendering Vue SPA 404 even when
@@ -203,6 +238,8 @@ export const routes = baseRoutes.concat(
     profileRoutes,
     promoFlyerRoutes,
     uberPhotoRoutes,
+    labelRoutes,
+    hygieneRoutes,
     posRoutes,
     posOrderRoutes,
     historiqueRoutes,

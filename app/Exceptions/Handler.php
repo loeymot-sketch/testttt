@@ -41,6 +41,9 @@ class Handler extends ExceptionHandler
         'current_password',
         'password',
         'password_confirmation',
+        'pin', // code personnel d'un employé (hygiène) : jamais rejoué en session ni journalisé
+        'operator_pin',
+        'operator_token',
     ];
 
     /**

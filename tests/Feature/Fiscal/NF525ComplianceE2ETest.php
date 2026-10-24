@@ -549,16 +549,35 @@ class NF525ComplianceE2ETest extends TestCase
         $close->assertStatus(200);
         $zId = (int) $close->json('data.id');
 
+        // [AUDIT-COMPTA 2026-08-29] Ce scénario vérifiait `data.verified` dans du JSON, avec
+        // le commentaire « for downstream PDF rendering » : l'auteur savait qu'un PDF devait
+        // exister en aval, et ne testait que le paquet. Le PDF, lui, n'a jamais été écrit —
+        // le bouton téléchargeait 793 octets de JSON nommés `.pdf`. On mesure désormais le
+        // document que le comptable reçoit, sans rien perdre de l'intention NF525.
         $pdf = $this->withHeaders($this->apiHeaders())
-            ->getJson("/api/admin/fiscal/z-report/{$zId}/pdf");
+            ->get("/api/admin/fiscal/z-report/{$zId}/pdf");
 
         $pdf->assertStatus(200);
-        $pdf->assertJsonPath('data.verified', true);
-        $this->assertNotEmpty($pdf->json('data.z_report.signature'),
-            'PDF bundle must expose the persisted Z signature for downstream PDF rendering.');
-        $this->assertSame($zId, (int) $pdf->json('data.z_report.id'));
-        $this->assertNotEmpty($pdf->json('data.generated_at'),
-            'PDF bundle must carry a generation timestamp.');
+        $pdf->assertHeader('content-type', 'application/pdf');
+
+        $corps = $pdf->streamedContent();
+        $this->assertStringStartsWith('%PDF-', $corps,
+            'La pièce fiscale remise au comptable doit être un PDF. Reçu : ' . substr($corps, 0, 40));
+
+        // L'intention d'origine, conservée et vérifiée à la source : le rapport porte bien
+        // son empreinte, elle est conforme, et c'est celle de CE rapport.
+        $zReport = \App\Models\ZReport::find($zId);
+        $this->assertNotEmpty($zReport->signature,
+            'Un rapport Z clos doit porter son empreinte de scellement.');
+        $this->assertTrue(
+            app(\App\Services\Fiscal\ZReportService::class)->verifySignature($zReport),
+            'La signature du rapport doit être conforme au moment de l\'édition.',
+        );
+        $this->assertStringContainsString(
+            'rapport-z-' . $zReport->sequence_no,
+            $pdf->headers->get('content-disposition') ?? '',
+            'Le fichier doit être nommé d\'après le numéro de rapport, pour être classable.',
+        );
 
         Carbon::setTestNow();
     }

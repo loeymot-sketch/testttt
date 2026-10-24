@@ -57,8 +57,21 @@ class SubscriberController extends AdminController
     public function sendEmail(SubscriberEmailRequest $request): \Illuminate\Http\Response | SubscriberResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            $this->subscriberService->sendEmail($request);
-            return response(['status' => true, 'message' => trans('all.message.email_send')], 200);
+            // [ONB-09 2026-08-28] Répondait « Email envoyé avec succès » sans condition,
+            // y compris quand aucun abonné n'existait — le service sortait alors sans
+            // rien faire. Mesuré : 0 abonné en base, donc 100 % des envois depuis cet
+            // écran étaient des faux succès. On dit désormais à combien de personnes le
+            // message est parti, et on le dit franchement quand il n'est parti à
+            // personne. Zéro n'est pas une erreur, c'est une information.
+            $destinataires = $this->subscriberService->sendEmail($request);
+
+            return response([
+                'status'  => true,
+                'message' => $destinataires === 0
+                    ? trans('all.message.email_no_subscriber')
+                    : trans('all.message.email_send_count', ['count' => $destinataires]),
+                'count'   => $destinataires,
+            ], 200);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

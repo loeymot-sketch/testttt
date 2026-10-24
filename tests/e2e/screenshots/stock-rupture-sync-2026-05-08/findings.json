@@ -4,23 +4,64 @@
     "slug": "env",
     "state": "spa-up",
     "severity": "OK",
-    "note": "spaUp=true token=true branches=[1,7] itemId=null extraId=1 variationId=5",
-    "ts": "2026-07-30T04:09:02.312Z"
+    "note": "spaUp=true token=true branches=[1,2] itemId=22 extraId=1 variationId=5",
+    "ts": "2026-10-15T03:05:42.483Z"
+  },
+  {
+    "step": "S6-01",
+    "slug": "pos-86-badge",
+    "state": "visible",
+    "severity": "OK",
+    "note": "POS branch A rupture badge after 2000ms wait",
+    "ts": "2026-10-15T03:05:49.425Z",
+    "screenshot": "tests/e2e/screenshots/stock-rupture-sync-2026-05-08/step-01-pos-after-rupture-A-badge-visible.png"
+  },
+  {
+    "step": "S6-01",
+    "slug": "item-rupture-A",
+    "state": "backend-propagated",
+    "severity": "OK",
+    "note": "Toggle 382ms; DB persisted; event row id=15737",
+    "ts": "2026-10-15T03:05:49.789Z"
   },
   {
     "step": "S6-02",
     "slug": "extra-rupture-A",
     "state": "backend-propagated",
     "severity": "OK",
-    "note": "toggleExtra 413ms; isolation verified at AvailabilityService level",
-    "ts": "2026-07-30T04:09:04.983Z"
+    "note": "toggleExtra 382ms; isolation verified at AvailabilityService level",
+    "ts": "2026-10-15T03:05:51.916Z"
   },
   {
     "step": "S6-03",
     "slug": "variation-rupture-A",
     "state": "backend-propagated",
     "severity": "OK",
-    "note": "toggleVariation 407ms; isolation verified at AvailabilityService level",
-    "ts": "2026-07-30T04:09:07.013Z"
+    "note": "toggleVariation 360ms; isolation verified at AvailabilityService level",
+    "ts": "2026-10-15T03:05:53.551Z"
+  },
+  {
+    "step": "S6-04",
+    "slug": "re-enable",
+    "state": "backend-propagated",
+    "severity": "OK",
+    "note": "Re-enable toggled in 359ms; row.is_available=true confirmed.",
+    "ts": "2026-10-15T03:05:55.148Z"
+  },
+  {
+    "step": "S6-05",
+    "slug": "auto-86-quota",
+    "state": "backend-propagated",
+    "severity": "OK",
+    "note": "Auto-86 via max_daily_qty=0 confirmed; null restored availability.",
+    "ts": "2026-10-15T03:05:56.358Z"
+  },
+  {
+    "step": "S6-06",
+    "slug": "order-rejected-mid-flight",
+    "state": "backend-defensive-OK",
+    "severity": "OK",
+    "note": "assertItemsOrderableForBranch threw as expected (defensive AC7).",
+    "ts": "2026-10-15T03:05:58.150Z"
   }
 ]

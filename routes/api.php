@@ -75,6 +75,8 @@ use App\Http\Controllers\Admin\PosOrderController;
 use App\Http\Controllers\Admin\PrinterController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\Assistant\MenuExtractionController;
+use App\Http\Controllers\Admin\Assistant\MissionLocaleController;
 use App\Http\Controllers\Admin\SalesReportController;
 use App\Http\Controllers\Admin\SimpleUserController;
 use App\Http\Controllers\Admin\SiteController;
@@ -83,6 +85,7 @@ use App\Http\Controllers\Admin\SmsGatewayController;
 use App\Http\Controllers\Admin\SocialMediaController;
 use App\Http\Controllers\Admin\PurchasingScanController;
 use App\Http\Controllers\Admin\RawMaterialAdjustController;
+use App\Http\Controllers\Admin\RawMaterialController;
 use App\Http\Controllers\Admin\StockRuptureDashboardController;
 use App\Http\Controllers\Admin\UnifiedStockViewController;
 use App\Http\Controllers\Admin\SubscriberController;
@@ -161,8 +164,13 @@ Route::match(['get', 'post'], '/refresh-token', [RefreshTokenController::class, 
 // [UBER-EATS 2026-07-01] Webhook Uber Eats — PUBLIC (Uber n'a pas notre apiKey ; l'auth = signature
 // HMAC-SHA256 vérifiée dans le controller). URL à enregistrer sur le dashboard Uber :
 //   https://<domaine>/api/webhooks/uber
+// [UBER-DIRECT 2026-10-22] Webhook Uber DIRECT (livraison, pas la marketplace) — signature HMAC-SHA256 du corps brut, fail-closed.
+//   https://<domaine>/api/webhooks/uber-direct
+Route::post('/webhooks/uber-direct', [\App\Http\Controllers\Webhook\UberDirectWebhookController::class, 'handle'])
+    ->middleware(['installed', 'throttle:uber-direct-webhook'])
+    ->name('webhooks.uber-direct');
 Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookController::class, 'handle'])
-    ->middleware(['installed', 'throttle:60,1'])
+    ->middleware(['installed', 'throttle:60,1,webhook-uber']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('webhooks.uber');
 
 // [W5 Mollie 2026-07-20] Webhook Mollie — PUBLIC (Mollie n'a pas notre apiKey ; modèle de
@@ -171,7 +179,7 @@ Route::post('/webhooks/uber', [\App\Http\Controllers\Webhook\UberWebhookControll
 // FAIL-CLOSED : 503 tant que payment.mollie (flag+clé) absent. URL à enregistrer côté Mollie :
 //   https://<domaine>/api/webhook/mollie
 Route::post('/webhook/mollie', [\App\Http\PaymentGateways\Gateways\Mollie::class, 'handleWebhook'])
-    ->middleware(['installed', 'throttle:60,1'])
+    ->middleware(['installed', 'throttle:60,1,webhook-mollie']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('webhooks.mollie');
 
 Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name('auth.')->namespace('Auth')->group(function () {
@@ -189,11 +197,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
         Route::post('/', [ForgotPasswordController::class, 'forgotPassword'])
-            ->middleware('throttle:3,60');
+            // [AUDIT SÉCURITÉ 2026-09-29] limiteur nommé : par adresse + global (voir RouteServiceProvider).
+            ->middleware('throttle:forgot-password');
         Route::post('/verify-code', [ForgotPasswordController::class, 'verifyCode'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,pwreset-verify-code'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,pwreset-reset'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('signup')->name('signup.')->group(function () {
@@ -202,9 +211,9 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
             ->middleware('throttle:otp-send'); // [SEC MISSION-31] par-identifiant + plafond global (anti XFF-spoof)
         // [GAP-20-2] OTP verify: 3 per 5 minutes — anti brute-force.
         Route::post('/verify', [SignupController::class, 'verify'])
-            ->middleware('throttle:3,5');
+            ->middleware('throttle:3,5,signup-verify'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/register', [SignupController::class, 'register'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,signup-register'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('guest-signup')->name('guest-signup.')->group(function () {
@@ -225,7 +234,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
         // A 4-digit OTP has 10,000 combinations; at 3 attempts/5min the attacker needs
         // ~2,778 hours to exhaust all codes, well beyond the 5-minute expiry window.
         Route::post('/verify', [GuestSignupController::class, 'verify'])
-            ->middleware('throttle:3,5');
+            ->middleware('throttle:3,5,otp-verify'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     /**
@@ -242,7 +251,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::prefix('social')->name('social.')->group(function () {
         Route::post('/{provider}', [\App\Http\Controllers\Auth\SocialAuthController::class, 'login'])
             ->whereIn('provider', ['apple', 'google'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,social-login'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -279,7 +288,7 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
              * accepter qu'un jour un déplacement de route l'emporte en silence.
              */
             Route::post('/social/phone', [\App\Http\Controllers\Auth\SocialAuthController::class, 'attacherTelephone'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,social-phone'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
 
             Route::get('/devices', [DeviceSessionController::class, 'index']);
             Route::patch('/devices/{token}', [DeviceSessionController::class, 'update'])
@@ -429,6 +438,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
+    // [ONB-08 2026-08-28] Le seuil d'alerte de stock devient saisissable.
+    // Il etait LU par `lowAlerts` et par NotifyStockLowOnStockLevelChanged, et
+    // ECRIT par personne : 55 lignes en base, 0 seuil. La section « alertes stock
+    // bas » ne pouvait donc structurellement rien afficher.
+    Route::put('/stock/levels/{stockLevel}/seuil', [StockRuptureDashboardController::class, 'definirLeSeuil'])
+        ->whereNumber('stockLevel')
+        ->name('stock.levels.seuil');
     // [PHASE 3d — VUE CONSO & STOCK UNIFIÉE 2026-07-24] Lecture seule : matières
     // premières + boissons dans un seul tableau + section « à acheter ». Gate
     // items_show (écran de lecture, comme catalog-overview). ADDITIF, HORS NF525.
@@ -456,6 +472,32 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // `adjust` = écriture (gate items_create, même famille que /purchasing/scan).
     // `idempotency` : protection double-submit HTTP (opt-in via X-Idempotency-Key ;
     // no-op si l'en-tête est absent ou si `idempotency.enabled` est false).
+    /*
+     | [ONB-08 2026-08-28] LE CRUD DES MATIERES PREMIERES.
+     |
+     | Ce domaine n'exposait que `movements` (lecture) et `adjust` (correction de
+     | quantite). Les seules sources de creation etaient un seeder et une commande
+     | console : **un nouveau commercant ne pouvait declarer aucun ingredient.**
+     | C'est le blocage le plus lourd de la mission « depuis zero », et il
+     | n'apparaissait dans aucun constat de reconnaissance.
+     |
+     | Il ferme aussi le trou de `threshold_low`, qui n'avait aucun chemin
+     | d'ecriture : 55/55 et 20/20 lignes a NULL, alors que le tableau de rupture et
+     | le listener d'alerte filtrent `whereNotNull('threshold_low')` — donc 100 % des
+     | lignes exclues, et l'alerte de stock bas structurellement muette.
+     |
+     | Les gardes sont portees par le constructeur du controleur, en miroir de
+     | l'ajustement : `items_show` en lecture, `items_create` en ecriture.
+     */
+    Route::get('/raw-materials', [RawMaterialController::class, 'index'])
+        ->name('raw-materials.index');
+    Route::post('/raw-materials', [RawMaterialController::class, 'store'])
+        ->name('raw-materials.store');
+    Route::match(['put', 'patch'], '/raw-materials/{rawMaterial}', [RawMaterialController::class, 'update'])
+        ->name('raw-materials.update');
+    Route::delete('/raw-materials/{rawMaterial}', [RawMaterialController::class, 'destroy'])
+        ->name('raw-materials.destroy');
+
     Route::get('/raw-materials/{rawMaterial}/movements', [RawMaterialAdjustController::class, 'history'])
         ->name('raw-materials.movements');
     Route::post('/raw-materials/{rawMaterial}/adjust', [RawMaterialAdjustController::class, 'adjust'])
@@ -486,6 +528,142 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // le papier se perd, et rephotographier créerait une SECONDE commande donc un second plat.
     Route::post('/uber/photo/{capture}/reprint', [\App\Http\Controllers\Admin\UberPhotoCaptureController::class, 'reprint'])
         ->whereNumber('capture')->name('uber.photo.reprint');
+
+    // [ETIQUETTES 2026-10-16 · owner] Imprimante d'étiquettes Brother QL-820NWB (Bluetooth, sur la tablette) :
+    // étiquettes d'hygiène (DLC) et une étiquette par produit de commande. Le serveur ne parle JAMAIS à
+    // l'imprimante (cloud ≠ Bluetooth local) : il tient le catalogue DLC, l'horloge, le journal d'hygiène et le
+    // verrou d'impression automatique. Porte : permission:pos-orders|pos|kitchen-display-system (voir le
+    // contrôleur). Domaine NEUF, ADDITIF, HORS NF525.
+    Route::prefix('labels')->name('labels.')->group(function () {
+        Route::get('/products', [\App\Http\Controllers\Admin\LabelController::class, 'products'])->name('products');
+        Route::post('/products', [\App\Http\Controllers\Admin\LabelController::class, 'storeProduct'])->name('products.store');
+        Route::post('/products/install-recommended', [\App\Http\Controllers\Admin\LabelController::class, 'installRecommended'])->name('products.install');
+        // Contrôle du catalogue (2026-10-17) : valider les durées / ranger les fiches sans famille, en lot, sans jamais modifier une durée.
+        Route::post('/products/validate-durations', [\App\Http\Controllers\Admin\LabelController::class, 'validateDurations'])->name('products.validate');
+        Route::post('/products/classify', [\App\Http\Controllers\Admin\LabelController::class, 'classify'])->name('products.classify');
+        // Import CSV (2026-10-17) : fichier-modèle, aperçu sans écriture, puis création des seules lignes valides et nouvelles.
+        Route::get('/products/import-template', [\App\Http\Controllers\Admin\LabelController::class, 'importTemplate'])->name('products.import.template');
+        Route::post('/products/import', [\App\Http\Controllers\Admin\LabelController::class, 'importProducts'])->name('products.import');
+        Route::match(['put', 'patch'], '/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'updateProduct'])
+            ->where('product', '[0-9]{1,18}')->name('products.update');
+        Route::put('/products/{product}/favorite', [\App\Http\Controllers\Admin\LabelController::class, 'setFavorite'])
+            ->where('product', '[0-9]{1,18}')->name('products.favorite');
+        Route::delete('/products/{product}', [\App\Http\Controllers\Admin\LabelController::class, 'destroyProduct'])
+            ->where('product', '[0-9]{1,18}')->name('products.destroy');
+        Route::post('/dlc/print', [\App\Http\Controllers\Admin\LabelController::class, 'dlcPrint'])->name('dlc.print');
+        Route::post('/dlc/offline', [\App\Http\Controllers\Admin\LabelController::class, 'dlcOffline'])->name('dlc.offline');
+        // [2026-10-19 · owner] Dictée vocale : la phrase devient une sélection de produits (ne fait que comprendre : rien d'imprimé ni d'écrit).
+        Route::post('/dlc/voice', [\App\Http\Controllers\Admin\LabelVoiceController::class, 'interpret'])->middleware('throttle:20,1,dlc-voice')->name('dlc.voice'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+        Route::get('/watch', [\App\Http\Controllers\Admin\LabelController::class, 'watch'])->name('watch');
+        Route::get('/lots', [\App\Http\Controllers\Admin\LabelController::class, 'lots'])->name('lots');
+        Route::post('/prints/discard', [\App\Http\Controllers\Admin\LabelController::class, 'discard'])->name('prints.discard');
+        Route::post('/prints/{log}/result', [\App\Http\Controllers\Admin\LabelController::class, 'printResult'])
+            ->where('log', '[0-9]{1,18}')->name('prints.result');
+        Route::get('/history', [\App\Http\Controllers\Admin\LabelController::class, 'history'])->name('history');
+        Route::get('/orders', [\App\Http\Controllers\Admin\LabelController::class, 'orders'])->name('orders');
+        Route::post('/orders/{order}/claim', [\App\Http\Controllers\Admin\LabelController::class, 'claim'])
+            ->where('order', '[0-9]{1,18}')->name('orders.claim');
+    });
+
+    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Relevés de température (frigos positifs, congélateurs négatifs) : équipements,
+    // saisie du jour en un geste, journal. Même porte que les étiquettes (le personnel qui tient la tablette). Domaine NEUF,
+    // ADDITIF, HORS NF525 ; contrat du module : config/hygiene.php.
+    Route::prefix('hygiene/temperature')->name('hygiene.temperature.')->group(function () {
+        $c = \App\Http\Controllers\Admin\HygieneTemperatureController::class;
+        Route::get('/equipment', [$c, 'equipment'])->name('equipment');
+        Route::post('/equipment', [$c, 'storeEquipment'])->name('equipment.store');
+        Route::post('/equipment/quick-setup', [$c, 'quickSetup'])->name('equipment.quick');
+        Route::match(['put', 'patch'], '/equipment/{equipment}', [$c, 'updateEquipment'])->where('equipment', '[0-9]{1,18}')->name('equipment.update');
+        Route::delete('/equipment/{equipment}', [$c, 'destroyEquipment'])->where('equipment', '[0-9]{1,18}')->name('equipment.destroy');
+        Route::get('/today', [$c, 'today'])->name('today');
+        Route::post('/readings', [$c, 'storeReadings'])->name('readings.store');
+        Route::post('/readings/{reading}/void', [$c, 'voidReading'])->where('reading', '[0-9]{1,18}')->name('readings.void');
+        Route::post('/readings/{reading}/followup-close', [$c, 'closeFollowUp'])->where('reading', '[0-9]{1,18}')->name('readings.followup.close');
+        Route::get('/history', [$c, 'history'])->name('history');
+    });
+
+    // [CAYENNE HYGIÈNE 2026-10-17 · owner] Socle commun du module : « qui est-ce ? » et pièces jointes photo.
+    Route::prefix('hygiene')->name('hygiene.')->group(function () {
+        Route::get('/operators', [\App\Http\Controllers\Admin\Hygiene\OperatorController::class, 'index'])->name('operators');
+        Route::post('/operators/verify', [\App\Http\Controllers\Admin\Hygiene\OperatorController::class, 'verify'])->name('operators.verify');
+        // Codes personnels des employés (réservé au responsable : permission `settings` en plus de la porte du module).
+        Route::prefix('team')->name('team.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TeamController::class;
+            Route::get('/', [$c, 'index'])->name('index');
+            Route::put('/{user}/pin', [$c, 'setPin'])->where('user', '[0-9]{1,18}')->name('pin.set');
+            Route::delete('/{user}/pin', [$c, 'removePin'])->where('user', '[0-9]{1,18}')->name('pin.remove');
+            Route::post('/{user}/unlock', [$c, 'unlock'])->where('user', '[0-9]{1,18}')->name('pin.unlock');
+        });
+        Route::post('/attachments', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'store'])->name('attachments.store');
+        Route::get('/attachments/{attachment}', [\App\Http\Controllers\Admin\Hygiene\AttachmentController::class, 'show'])
+            ->where('attachment', '[0-9]{1,18}')->name('attachments.show');
+
+        // Réception des marchandises : températures par famille, contrôles visuels, décision, fournisseurs.
+        Route::prefix('receptions')->name('receptions.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\ReceptionController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/{reception}/void', [$c, 'void'])->where('reception', '[0-9]{1,18}')->name('void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/suppliers', [$c, 'suppliers'])->name('suppliers');
+            Route::post('/suppliers', [$c, 'storeSupplier'])->name('suppliers.store');
+        });
+
+        // Traçabilité amont : lot, DLC fournisseur, BL, photo d'étiquette ; fiche de rappel d'un lot.
+        Route::prefix('trace')->name('trace.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TraceabilityController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/', [$c, 'store'])->name('store');
+            Route::post('/{entry}/void', [$c, 'void'])->where('entry', '[0-9]{1,18}')->name('void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/recall', [$c, 'recall'])->name('recall');
+        });
+
+        // Huile de friture : tests (composés polaires), filtrage, vidange, par friteuse.
+        Route::prefix('oil')->name('oil.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\OilController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/controls', [$c, 'store'])->name('controls.store');
+            Route::post('/controls/{control}/void', [$c, 'void'])->where('control', '[0-9]{1,18}')->name('controls.void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/fryers', [$c, 'fryerList'])->name('fryers');
+            Route::post('/fryers', [$c, 'storeFryer'])->name('fryers.store');
+            Route::post('/fryers/quick-setup', [$c, 'quickSetup'])->name('fryers.quick');
+            Route::match(['put', 'patch'], '/fryers/{fryer}', [$c, 'updateFryer'])->where('fryer', '[0-9]{1,18}')->name('fryers.update');
+            Route::delete('/fryers/{fryer}', [$c, 'destroyFryer'])->where('fryer', '[0-9]{1,18}')->name('fryers.destroy');
+        });
+
+        // Accueil du module (tuiles à compteurs) et dossier de contrôle sanitaire (résumé, PDF, CSV). Lecture seule.
+        Route::get('/overview', [\App\Http\Controllers\Admin\Hygiene\OverviewController::class, 'index'])->name('overview');
+        Route::prefix('report')->name('report.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\ReportController::class;
+            Route::get('/summary', [$c, 'summary'])->name('summary');
+            Route::get('/pdf', [$c, 'pdf'])->name('pdf');
+            Route::get('/csv', [$c, 'csv'])->name('csv');
+        });
+
+        // Alertes sortantes (e-mail) vers les responsables : réglage (permission `settings`), essai, journal des envois.
+        Route::prefix('alerts')->name('alerts.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\AlertController::class;
+            Route::get('/', [$c, 'show'])->name('show');
+            Route::put('/', [$c, 'update'])->name('update');
+            Route::post('/test', [$c, 'test'])->name('test');
+        });
+
+        // Plan de nettoyage : fiches du jour, validation, journal, gestion des fiches.
+        Route::prefix('tasks')->name('tasks.')->group(function () {
+            $c = \App\Http\Controllers\Admin\Hygiene\TaskController::class;
+            Route::get('/today', [$c, 'today'])->name('today');
+            Route::post('/completions', [$c, 'complete'])->name('completions.store');
+            Route::post('/completions/{completion}/void', [$c, 'void'])->where('completion', '[0-9]{1,18}')->name('completions.void');
+            Route::get('/history', [$c, 'history'])->name('history');
+            Route::get('/templates', [$c, 'templates'])->name('templates');
+            Route::post('/templates', [$c, 'storeTemplate'])->name('templates.store');
+            Route::post('/templates/install-recommended', [$c, 'installRecommended'])->name('templates.install');
+            Route::match(['put', 'patch'], '/templates/{template}', [$c, 'updateTemplate'])->where('template', '[0-9]{1,18}')->name('templates.update');
+            Route::delete('/templates/{template}', [$c, 'destroyTemplate'])->where('template', '[0-9]{1,18}')->name('templates.destroy');
+        });
+    });
 
     Route::prefix('setting')->name('setting.')->group(function () {
         Route::prefix('company')->name('company.')->group(function () {
@@ -894,6 +1072,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/import/file', [ItemController::class, 'import']);
         Route::get('/details/{item}', [ItemController::class, 'itemDetails']);
 
+        /*
+         * [ONB 2026-08-28] Le referentiel des 14 allergenes de l'Annexe II du
+         * Reglement UE 1169/2011, pour que le formulaire produit puisse enfin les
+         * proposer. Aucune route ne les exposait : il n'y avait meme pas de quoi
+         * peupler une liste de choix.
+         *
+         * Lecture seule, et ouverte a qui peut deja voir ou modifier un produit —
+         * c'est un referentiel legal, pas une donnee du commercant.
+         */
+        Route::get('/allergens', [ItemController::class, 'allergens'])
+            ->middleware('permission:items|items_create|items_edit')
+            ->name('allergens');
+
         Route::get('/variation/{item}', [ItemVariationController::class, 'index']);
         Route::get('/variation/group-by-attribute/{item}', [ItemVariationController::class, 'listGroupByAttribute']);
         Route::post('/variation/{item}', [ItemVariationController::class, 'store']);
@@ -979,7 +1170,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     | et la branche vient du COMPTE, jamais de la requête (sinon on valide chez le voisin).
     */
     Route::post('/wheel/unlock-token', [\App\Http\Controllers\Admin\Wheel\WheelUnlockController::class, 'issue'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:60,1,wheel-unlock-token') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('wheel.unlockToken');
 
     /*
@@ -995,7 +1186,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     | laissez-passer, on n'en distribue pas en rafale.
     */
     Route::post('/wheel/screen-pass', [\App\Http\Controllers\Admin\Wheel\WheelAccessController::class, 'screenPass'])
-        ->middleware('throttle:20,1')
+        ->middleware('throttle:20,1,wheel-screen-pass') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('wheel.screenPass');
 
     Route::prefix('pos')->name('pos.')->group(function () {
@@ -1020,65 +1211,90 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // [PERF N+1 2026-07-31] Eager-load des relations lues par OrderDetailsResource
             // (user/address/branch/deliveryBoy/coupon/transaction/diningTable/payments) — sinon
             // ~9 requetes lazy PAR commande a chaque tick de polling (cap 200 → jusqu'a ~1800).
-            $query = \App\Models\Order::with(['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments'])
-                ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
-                // [ENCAISSEMENT-ROBUSTE 2026-07-01] Une commande ANNULÉE ne doit jamais rester
-                // dans la file d'encaissement (sinon « fantôme » qui 422 à l'encaissement).
-                // [SELF-AUDIT R3 P2 2026-07-05 — fantôme incaissable] La file d'encaissement excluait
-                // seulement CANCELED, mais confirmCounterPayment REFUSE aussi REJECTED/RETURNED
-                // (PaymentService:325). Un remboursement pré-Z (RETURNED) d'une commande Plan-B non
-                // encaissée laissait payment_status=PENDING_COUNTER → la commande restait à VIE dans la
-                // file /admin/encaissement, non encaissable. On aligne sur le set terminal du sceau.
-                ->whereNotIn('status', [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
-                ->where(function ($q) {
-                    $q->where(function ($k) {
-                        $k->where('source_surface', 'kiosk')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    })->orWhere(function ($p) {
-                        $p->where('source_surface', 'pos')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($tel) {
-                        // [C4-CAISSE-TELEPHONE 2026-07-07] Commande téléphone caisse (paiement différé)
-                        // → source_surface='phone' + COUNTER_DEFERRED. Sans cette clause, la commande
-                        // téléphone serait INVISIBLE en caisse donc INENCAISSABLE (même famille de bug
-                        // que le filet anti-NULL ci-dessous). Miroir de la garde assertCounterDeferredOrder.
-                        $tel->where('source_surface', 'phone')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($web) {
-                        // [P1-3 2026-07-18] Commande WEB à emporter acceptée sans paiement en ligne
-                        // (carte web OFF, mandat owner) : SYNC-WEB-KDS-01 la bascule en PENDING_COUNTER
-                        // pour la visibilité cuisine et OnlineOrderController complète le marqueur
-                        // COUNTER_DEFERRED (takeaway COD) → 4e origine LÉGITIME de counter-collect. Sans
-                        // cette clause, la commande web PENDING_COUNTER reste INVISIBLE en caisse donc
-                        // INENCAISSABLE (vente perdue). Miroir strict des clauses pos/phone + de la garde
-                        // assertCounterDeferredOrder (qui autorise 'web'). La LIVRAISON web n'a PAS le
-                        // marqueur COUNTER_DEFERRED (encaissée au doorstep) → naturellement exclue ici.
-                        $web->where('source_surface', 'web')
-                            ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
-                    })->orWhere(function ($n) {
-                        // [ENCAISSEMENT-ROBUSTE 2026-07-01] Filet anti-NULL : une commande borne
-                        // PENDING_COUNTER dont le tag source_surface manque (donnée héritée) resterait
-                        // INVISIBLE en caisse donc INENCAISSABLE. On la rattrape par le type kiosk/emporter.
-                        $n->whereNull('source_surface')
-                            ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
-                    });
-                })
-                ->orderBy('created_at');
-
+            // [GOAL CAISSE/CUISINE #3 2026-10-02] La définition de la file vit désormais dans
+            // CounterCollectQueue (source unique, partagée avec la purge). Par DÉFAUT : la journée de
+            // service courante seulement (nouveau jour = liste vide) ; ?scope=previous = jours
+            // précédents ; ?scope=all = tout (diagnostic). Le plafond de 200 et le tri FIFO sont
+            // inchangés — mais ne s'appliquent plus à un arriéré d'anciennes commandes.
+            $scope = \App\Services\Pos\CounterCollectQueue::normalizeScope(request()->query('scope'));
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
-            if ($branchId > 0) {
-                $query->where('branch_id', $branchId);
-            }
 
-            // [abuse-e2e P3 heal 2026-05-30] Cap raised 50→200. Oldest-first
-            // (created_at ASC) is the correct FIFO collection order — collect the
-            // longest-waiting customer first. The old 50-cap silently hid orders
-            // beyond 50 (a real V1 single-box gap once a backlog builds: a
-            // waiting-to-pay customer became invisible to the cashier). 200 is far
-            // beyond any realistic single-restaurant uncollected backlog while
-            // staying bounded.
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+            $query = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId, ['orderItems.orderItem', 'user', 'address', 'branch', 'deliveryBoy', 'coupon', 'transaction', 'diningTable', 'payments']),
+                $scope
+            );
+
+            // Badge du filtre « jours précédents » : compté à part (requête légère, sans relations).
+            $previousCount = \App\Services\Pos\CounterCollectQueue::applyScope(
+                \App\Services\Pos\CounterCollectQueue::query($branchId),
+                \App\Services\Pos\CounterCollectQueue::SCOPE_PREVIOUS
+            )->count();
+
+            // [abuse-e2e P3 heal 2026-05-30] Cap 200, FIFO (created_at ASC) : le client qui attend
+            // depuis le plus longtemps est encaissé en premier.
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get())
+                ->additional(['meta' => ['scope' => $scope, 'previous_count' => $previousCount]]);
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
+        // [GOAL CAISSE/CUISINE #3 2026-10-02] Purge des anciennes commandes JAMAIS payées (une par
+        // une via `ids`, ou toutes via `all`). Confirmation explicite + motif obligatoires. Aucune
+        // commande payée/fiscalisée n'est touchable (garde sous verrou dans le service) ; audit écrit.
+        Route::post('/counter-collect/purge-previous', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['required', 'string', 'min:3', 'max:255'],
+                'all' => ['sometimes', 'boolean'],
+                'ids' => ['required_without:all', 'array', 'max:500'],
+                'ids.*' => ['integer'],
+            ]);
+
+            $all = (bool) ($validated['all'] ?? false);
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                $all ? null : ($validated['ids'] ?? []),
+                $validated['reason'],
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-previous');
+        // [GOAL REMARQUES 2026-10-03 · R-060] « Dans l'attente je veux tout supprimer » : les commandes
+        // TÉLÉPHONE du jour jamais encaissées, en un geste confirmé, sans motif à taper (motif par défaut
+        // « Client non venu »). Borne et site JAMAIS touchés ; même service, mêmes gardes NF525, audit écrit.
+        Route::post('/counter-collect/purge-phone-today', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'confirm' => ['required', 'accepted'],
+                'reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+                // [Revue adverse vague 2 · P2-1] Les commandes MONTRÉES au caissier ; le service n'en
+                // garde que celles qui sont encore éligibles (intersection sous verrou).
+                'ids' => ['sometimes', 'array', 'max:500'],
+                'ids.*' => ['integer'],
+            ]);
+            $reason = trim((string) ($validated['reason'] ?? ''));
+
+            $result = app(\App\Services\Pos\StaleCounterOrderPurger::class)->purge(
+                array_key_exists('ids', $validated) ? $validated['ids'] : null,
+                mb_strlen($reason) >= 3 ? $reason : 'Client non venu',
+                auth()->user(),
+                (int) (auth()->user()?->branch_id ?? 0),
+                \App\Services\Pos\StaleCounterOrderPurger::PERIMETRE_TELEPHONE_DU_JOUR
+            );
+
+            return response()->json(['status' => true] + $result);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.purge-phone-today');
+        // [GOAL REMARQUES 2026-10-03 · R-059] « Commandes ratées » : téléphone annulées depuis < 24 h.
+        // Lecture seule (aucune écriture, aucun effet fiscal).
+        Route::get('/counter-collect/missed', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            return response()->json([
+                'data' => app(\App\Services\Pos\CommandesRatees::class)->liste((int) (auth()->user()?->branch_id ?? 0)),
+                'meta' => ['fenetre_heures' => \App\Services\Pos\CommandesRatees::FENETRE_HEURES],
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.missed');
         // [WEB-CAISSE-SYNC 2026-07-13] File des commandes WEB en attente (à traiter en caisse).
         // Le paiement carte en ligne étant OFF (mandat owner), toute commande web = règlement au
         // comptoir → créée PENDING/UNPAID + source_surface='web'. Contrairement à la borne (client
@@ -1108,14 +1324,31 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                     $q->where('payment_method', '!=', \App\Enums\PaymentGateway::CARD)
                         ->orWhere('payment_status', '!=', \App\Enums\PaymentStatus::UNPAID);
                 })
-                ->orderBy('created_at');
+                // [VG-2026-10-21 M9-103] Les plus RÉCENTES d'abord : les « payer au comptoir »
+                // non venues ne sont purgées par aucune tâche (décision propriétaire) ; en tri
+                // croissant, au-delà de 200 la NOUVELLE commande sortait de la file sans un mot.
+                // L'écran re-trie lui-même par ancienneté (PosComponent::loadWebOrders).
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
 
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);
             }
 
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
+            // [VG-2026-10-21 M9-103] La réponse DIT qu'elle est tronquée (meta.total / truncated).
+            $limit = 200;
+            $total = (clone $query)->count();
+            $orders = $query->limit($limit)->get();
+            // [VG-2026-10-21 M9-103] Empreinte d'audit lue en lot (était 1 requête par commande).
+            \App\Http\Resources\OrderDetailsResource::preloadAuditFingerprints($orders);
+
+            return \App\Http\Resources\OrderDetailsResource::collection($orders)->additional(['meta' => [
+                'total' => $total,
+                'returned' => $orders->count(),
+                'limit' => $limit,
+                'truncated' => $total > $orders->count(),
+            ]]);
         })->middleware('throttle:pos-order-update')->name('web-orders.pending');
 
         // [WEB-PAYEE-MUETTE 2026-08-10 · P0 owner] File des commandes WEB **DÉJÀ PAYÉES**, parties
@@ -1152,7 +1385,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 // force source_surface='delivery' dès que order_type=DELIVERY.
                 ->whereIn('source_surface', ['web', 'delivery'])
                 ->where('payment_status', \App\Enums\PaymentStatus::PAID)
-                ->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                // [GOAL REMARQUES 2026-10-03 · R-016] Propriétaire : « lors de retrait de commande par site
+                // Web […] séparés et je pourrais les valider […] il y aura ces points ». Une commande À
+                // EMPORTER prête RESTE ici, où le caissier valide le retrait (→ livrée ; ses points sont
+                // crédités dès « prête » par AwardLoyaltyPointsOnDelivery). Une LIVRAISON prête suit le
+                // circuit livreur et sort du panneau, comme avant.
+                ->where(function ($q) {
+                    $q->whereIn('status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING])
+                        ->orWhere(function ($pret) {
+                            $pret->where('status', \App\Enums\OrderStatus::PREPARED)
+                                ->where('order_type', '!=', \App\Enums\OrderType::DELIVERY);
+                        });
+                })
                 // Borne basse identique au board cuisine : sans elle, un vieux payé jamais bumpé
                 // (il en existe — #333 du 2026-08-03) squatterait le panneau à vie et le bip
                 // deviendrait du bruit que l'équipe apprendrait à ignorer.
@@ -1279,6 +1523,102 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
+        /**
+         * [CAISSE 2026-09-29 · demande propriétaire] Vider la file d'encaissement des
+         * journées PASSÉES.
+         *
+         * Le besoin, dans ses mots : « il y a une grande liste de commandes en attente
+         * parce que ça fait plusieurs jours, des clients qui sont pas venus ; je veux
+         * commencer une nouvelle journée, je veux tout supprimer, je veux pas cliquer
+         * sur chacune et mettre un justificatif ».
+         *
+         * DEUX GARDES QUI NE SONT PAS NÉGOCIABLES
+         * ---------------------------------------
+         * 1. `whereNull('fiscal_sequence_no')` — une commande qui a reçu un numéro
+         *    fiscal est entrée dans la chaîne signée. On n'y touche jamais. En
+         *    pratique une commande de cette file n'en a jamais (le numéro est alloué
+         *    À L'ENCAISSEMENT, PaymentService::confirmCounterPayment), mais la garde
+         *    reste écrite : c'est elle qui rend l'opération sûre, pas la coïncidence.
+         * 2. Plancher de la journée de service EN COURS — on ne touche QUE l'avant.
+         *    Un « tout vider » qui emporterait un client en train d'arriver au
+         *    comptoir serait une vente perdue et une commande déjà en cuisine.
+         *    Plancher identique à celui du panneau « En souffrance »
+         *    (PosOrderController:494-503) et du helper front posServiceDay.js :
+         *    5 h du matin, et recul d'un jour avant cette heure — sinon la nuit de
+         *    service en cours serait considérée comme « hier ».
+         *
+         * POURQUOI ANNULER ET NON SUPPRIMER
+         * ---------------------------------
+         * `OrderService::destroy` supprime EN DUR les lignes, l'adresse et le coupon
+         * avant le soft-delete, et `Order::restoring()` (app/Models/Order.php:157-165)
+         * interdit tout `restore()`. Une suppression groupée serait donc
+         * IRRATTRAPABLE. `cancelCounterPayment` garde la commande, la trace
+         * (`order.counter_payment_canceled` dans la chaîne HMAC), rend les points de
+         * fidélité et reprend les points acquis — ligne par ligne, ce qu'un UPDATE de
+         * masse ne saurait pas faire.
+         *
+         * `dry_run` renvoie le compte SANS rien changer : l'interface s'en sert pour
+         * annoncer un chiffre exact avant de demander confirmation.
+         */
+        /**
+         * Comptage SEUL des commandes des journées passées. Route GET distincte, et
+         * c'est délibéré : le comptage ne mute rien, il n'a donc rien à faire derrière
+         * l'intergiciel d'idempotence — lequel EXIGE une clé sur les routes déclarées
+         * (`config/idempotency.php`) et renverrait 422 à un simple comptage. Une
+         * lecture est un GET ; la confondre avec l'écriture obligeait l'écran à forger
+         * une clé pour savoir combien de lignes il allait proposer d'annuler.
+         */
+        Route::get('/counter-collect/stale-count', function () {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query((int) (auth()->user()?->branch_id ?? 0));
+
+            return response([
+                'status' => true,
+                'count' => $requete->count(),
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware('throttle:pos-order-update')->name('counter-collect.stale-count');
+        Route::post('/counter-collect/cancel-stale', function (\Illuminate\Http\Request $request) {
+            abort_unless(auth()->user()?->can('pos'), 403);
+
+            $validated = $request->validate([
+                'reason' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            // Même définition que le comptage (GET stale-count) — une seule source,
+            // sinon l'écran annonce un nombre et en annule un autre.
+            [$requete, $plancher] = \App\Support\CounterCollectStale::query(
+                (int) (auth()->user()?->branch_id ?? 0)
+            );
+
+            $motif = $validated['reason'] ?? 'Client non venu — vidage de la file (journées passées)';
+            $service = app(\App\Services\PaymentService::class);
+
+            $annulees = 0;
+            $echecs = [];
+            foreach ($requete->get() as $commande) {
+                try {
+                    $service->cancelCounterPayment($commande, $motif);
+                    $annulees++;
+                } catch (\Throwable $e) {
+                    // Une ligne récalcitrante ne doit pas interrompre le vidage : on
+                    // la nomme et on continue. Un échec silencieux laisserait le
+                    // caissier croire la file vide alors qu'elle ne l'est pas.
+                    $echecs[] = [
+                        'order_id' => $commande->id,
+                        'message' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            return response([
+                'status' => true,
+                'canceled' => $annulees,
+                'failed' => $echecs,
+                'floor' => $plancher->toIso8601String(),
+            ]);
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel-stale');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -1301,7 +1641,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // au pont local caisse pour une impression SILENCIEUSE (le cloud Linux ne joint pas l'USB). Lecture seule.
         Route::get('/orders/{order}/escpos', [\App\Http\Controllers\Admin\Pos\PosTicketBytesController::class, 'show'])->name('orders.escpos-bytes');
         // [CUSTOMER-DISPLAY 2026-06-28] Refresh the SAGA pole display (total / welcome). Best-effort, no fiscal.
-        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])->name('customer-display.update');
+        // [AUDIT-SUPERVISEUR 2026-08-25] Seau dedie : poussee a cadence fixe, non fiscale et
+        // sans ecriture en base — elle n'a rien a faire dans le seau des mutations de la caisse,
+        // ou elle se disputait le plafond avec l'encaissement. Voir RouteServiceProvider.
+        Route::post('/customer-display', [\App\Http\Controllers\Admin\Pos\PosCustomerDisplayController::class, 'update'])
+            ->middleware('throttle:customer-display')
+            // Sans ce retrait, les deux seaux s'EMPILENT et le plus strict gagne : la route
+            // resterait plafonnee a 120/min et le seau dedie ne servirait a rien. Verifie sur
+            // `route:list -v` : un seul limiteur doit apparaitre.
+            ->withoutMiddleware('throttle:admin-mutation')
+            ->name('customer-display.update');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
@@ -1398,10 +1747,26 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // seule ; les actions passent par les routes existantes (change-status, refund…), qui
         // gardent toutes leurs permissions. `throttle` aligné sur les lectures du tableau.
         Route::get('/stale', [PosOrderController::class, 'stale'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,pos-order-stale') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('stale');
+        // [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée aux états des quatre files
+        // du tiroir de contrôle. Remplace `?paginate=1&per_page=100` sur ce chemin : la page de
+        // cent, triée `id desc`, jetait les commandes les PLUS ANCIENNES — celles qui traînent —
+        // sans rien signaler. Lecture seule ; `throttle` aligné sur les lectures du tableau.
+        Route::get('/service-day', [PosOrderController::class, 'serviceDay'])
+            ->middleware('throttle:60,1,pos-order-service-day') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+            ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
-        Route::delete('/{order}', [PosOrderController::class, 'destroy']);
+        // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
+        // aucun middleware, alors que TOUTES ses voisines mutantes du même groupe
+        // portent ['throttle:pos-order-update','idempotency'] — et que le client
+        // ENVOIE déjà l'en-tête (store/modules/posOrder.js, buildIdempotencyHeaders).
+        // La protection anti-rejeu était donc INERTE, et un commentaire du client
+        // affirmait une protection inexistante. IdempotencyKeyMiddleware traite bien
+        // DELETE (voir sa liste de méthodes), le câblage est donc réel.
+        Route::delete('/{order}', [PosOrderController::class, 'destroy'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('destroy');
         Route::get('/export', [PosOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
         // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.
@@ -1528,6 +1893,48 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);
     });
 
+    /*
+     | [ONB-04 2026-08-28] Assistant du commerçant — lecture de carte photographiée.
+     |
+     | Deux gestes seulement, et la frontière entre eux est le sujet :
+     |   · `lecture`     lit une photo et PROPOSE. N'écrit rien en base.
+     |   · `application` reçoit ce que le commerçant a RELU et corrigé, puis crée
+     |                   le catalogue par les services existants — donc avec leurs
+     |                   règles, dont la taxe obligatoire posée par ONB-02.
+     |
+     | Les deux exigent `items_create` : lire une carte prépare une écriture au
+     | catalogue, ce n'est pas une consultation.
+     */
+    Route::prefix('assistant/menu')->name('assistant.menu.')->group(function () {
+        Route::post('/lecture', [MenuExtractionController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MenuExtractionController::class, 'appliquer'])->name('application');
+    });
+
+    /*
+     | [ONB-04 2026-08-28] L'ASSISTANT DE MISSIONS LOCALES
+     |
+     | Le mandat le demande en toutes lettres : « chatbot de missions locales », avec
+     | pour exemple « ajoute une sauce à tous les tacos ». Il n'existait pas.
+     |
+     | Même découpe en deux temps que l'extraction de carte, et pour la même raison :
+     |   · `lecture`     comprend la phrase et rend un PLAN. N'écrit RIEN.
+     |   · `application` REFAIT le plan depuis la phrase, puis l'exécute — jamais un
+     |                   diff reçu du navigateur, qui pourrait avoir été trafiqué en
+     |                   route sous couvert d'une confirmation humaine.
+     |
+     | L'interpréteur est DÉTERMINISTE : grammaire déclarée, aucun appel sortant,
+     | refus explicite quand il ne comprend pas. Il ne dépend donc pas du gate G-IA
+     | — et le jour où un modèle prendra le relais, il ne remplacera QUE l'étape
+     | « comprendre la phrase ».
+     |
+     | La garde `items_edit` est portée par le constructeur du contrôleur : une
+     | mission locale MODIFIE le catalogue, et `lecture` prépare cette écriture.
+     */
+    Route::prefix('assistant/mission')->name('assistant.mission.')->group(function () {
+        Route::post('/lecture', [MissionLocaleController::class, 'lire'])->name('lecture');
+        Route::post('/application', [MissionLocaleController::class, 'appliquer'])->name('application');
+    });
+
     Route::prefix('sales-report')->name('sales-report.')->group(function () {
         Route::get('/', [SalesReportController::class, 'index']);
         Route::get('/export', [SalesReportController::class, 'export']);
@@ -1640,6 +2047,29 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             ->name('deduct-manual');
     });
 
+    // [LIVRAISON 2026-10-20] Pilotage de la livraison DEPUIS LA CAISSE : suspendre / remettre, client par
+    // téléphone, adresse enregistrée une fois (géocodée serveur) avec son prix. Porte : permission:pos.
+    // Pas d'`idempotency` ici : chaque écriture est NATURELLEMENT rejouable (état posé, client retrouvé par téléphone,
+    // adresse dédupliquée, livreur désigné) — rejouer ne produit jamais de doublon.
+    Route::prefix('pos-delivery')->name('posDelivery.')->middleware('permission:pos')->group(function () {
+        Route::get('/status', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'status']);
+        Route::post('/toggle', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'toggle'])->middleware('throttle:pos-delivery-toggle');
+        // Suggestions et devis de la CAISSE : routes authentifiées, limitées PAR UTILISATEUR. La caisse ne doit pas
+        // dépendre des routes publiques du site, dont le quota est partagé par toute l'adresse IP du restaurant
+        // (constaté en navigateur : « Too Many Attempts » en plein service).
+        Route::get('/suggest', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'suggest'])->middleware('throttle:pos-delivery-suggest');
+        Route::post('/quote', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'quote'])->middleware('throttle:pos-delivery-quote');
+        Route::get('/lookup', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'lookup'])->middleware('throttle:pos-loyalty-lookup');
+        Route::post('/customer', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'customer'])->middleware('throttle:pos-loyalty-lookup');
+        Route::post('/address', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'address'])->middleware('throttle:pos-delivery-address');
+        Route::get('/board', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'board']);
+        Route::post('/waves/assign', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'assignCourier']);
+        // [UBER-DIRECT 2026-10-22] Bascule d'un arrêt entre nos livreurs et un coursier Uber : devis (gratuit) → confirmation → retour.
+        Route::post('/uber/quote', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberQuote'])->middleware('throttle:pos-delivery-uber-quote');
+        Route::post('/uber/dispatch', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberDispatch'])->middleware('throttle:pos-delivery-uber-act');
+        Route::post('/uber/release', [\App\Http\Controllers\Admin\PosDeliveryController::class, 'uberRelease'])->middleware('throttle:pos-delivery-uber-act');
+    });
+
     Route::prefix('pos-category')->name('pos-category.')->group(function () {
         Route::get('/', [PosCategoryController::class, 'index']);
     });
@@ -1668,7 +2098,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // branch (admin sees all), sorted updated_at desc, capped 50. Revert
         // (PREPARED → PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK).
         Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,kds-history-today') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('history-today');
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] Chef
         // "Annuler bump" within 60s. Compensating action — orders.status is
@@ -1687,6 +2117,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/reopen/{order}', [KitchenDisplaySystemController::class, 'reopen'])
             ->middleware(['idempotency', 'throttle:kds-bump'])
             ->name('reopen');
+        // [KDS-ITEM-READY-SYNC 2026-09-23] Pastille "prêt" PAR ARTICLE — SSOT
+        // serveur (audit finding #4 : c'était localStorage-only, invisible d'un
+        // second écran/appareil). Distinct de `change-status` (agrégat commande)
+        // et de `recall`/`reopen` (statut commande) : ne touche jamais OrderStatus.
+        Route::post('/items/{orderItem}/bump', [KitchenDisplaySystemController::class, 'itemBump'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-bump');
+        Route::post('/items/{orderItem}/recall', [KitchenDisplaySystemController::class, 'itemRecall'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('item-recall');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
@@ -1705,7 +2145,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/interrupteurs', [InterrupteurController::class, 'index'])->name('interrupteurs.index');
         Route::put('/interrupteurs/{nom}', [InterrupteurController::class, 'update'])->name('interrupteurs.update');
         Route::post('/client-metrics', [SyncOverviewController::class, 'clientMetrics'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,client-metrics') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('client-metrics');
 
         // [CV1-OBSERVABILITY-OUTBOX-001] Outbox pipeline dashboard. Admin/Tenant
@@ -1714,10 +2154,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // controller via `role:Admin|Tenant Admin` middleware (see __construct).
         Route::get('/outbox', [SyncOverviewController::class, 'outboxOverview'])->name('outbox.index');
         Route::post('/outbox/retry-failed', [SyncOverviewController::class, 'outboxRetryFailed'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:10,1,outbox-retry') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('outbox.retry');
         Route::post('/outbox/drain-failed', [SyncOverviewController::class, 'outboxDrainFailed'])
-            ->middleware('throttle:5,1')
+            ->middleware('throttle:5,1,outbox-drain') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('outbox.drain');
     });
     Route::prefix('oss-order')->name('ossOrder.')->group(function () {
@@ -1737,9 +2177,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::prefix('z-report')->name('zReport.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'index']);
             Route::post('/open', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'open'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,z-report-open'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             Route::post('/close', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'close'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:10,1,z-report-close'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             Route::get('/{zReport}', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'show']);
             Route::get('/{zReport}/pdf', [\App\Http\Controllers\Admin\Fiscal\ZReportController::class, 'pdf']);
         });
@@ -1762,7 +2202,16 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::prefix('subscriber')->name('subscriber.')->group(function () {
         // [SEC-26-2] Rate limit subscriber spam: 5 subscriptions/min per IP
         Route::post('/', [FrontendSubscriberController::class, 'store'])
-            ->middleware('throttle:5,1');
+            ->middleware('throttle:5,1,subscriber'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+    });
+
+    // [LIVRAISON 2026-10-20] Livraison propre du Cayenne — endpoints PUBLICS en lecture (site + application).
+    // Throttle serré : suggest/quote appellent un fournisseur de géocodage externe.
+    Route::prefix('delivery')->name('delivery.')->group(function () {
+        Route::get('status', [\App\Http\Controllers\Frontend\DeliveryController::class, 'status'])->middleware('throttle:delivery-status');
+        Route::get('suggest', [\App\Http\Controllers\Frontend\DeliveryController::class, 'suggest'])->middleware('throttle:delivery-suggest');
+        Route::post('quote', [\App\Http\Controllers\Frontend\DeliveryController::class, 'quote'])->middleware('throttle:delivery-quote');
+        Route::get('waves', [\App\Http\Controllers\Frontend\DeliveryController::class, 'waves'])->middleware('throttle:delivery-waves');
     });
 
     Route::prefix('address')->name('address.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
@@ -1821,8 +2270,16 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // (endpoint public = vecteur d'abus, §0.5.3 discipline). Déclarée AVANT le
     // groupe auth `order` pour ne pas hériter de son middleware.
     Route::get('order/wait-estimate', [FrontendOrderController::class, 'waitEstimate'])
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,wait-estimate') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.wait-estimate');
+
+    // [STORES T-3.3.2 · 2026-10-01] Version minimale de l'application des stores — PUBLIC
+    // (lue au lancement, avant toute connexion), lecture seule, aucune donnée client.
+    // 60/min : des clients derrière une même adresse d'opérateur mobile la lisent chacun
+    // à l'ouverture ; un 429 n'y bloque rien (l'application ne bloque que sur une réponse lue).
+    Route::get('app/config', [\App\Http\Controllers\Frontend\AppConfigController::class, 'show'])
+        ->middleware('throttle:60,1,app-config') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+        ->name('app.config');
 
     // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
     // tracking_token opaque — PUBLIC (lien envoyé/affiché au client, pas de
@@ -1835,7 +2292,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // cette app, pas spécifique à ce endpoint.
     Route::get('order/track/{trackingToken}', [FrontendOrderController::class, 'track'])
         ->where('trackingToken', '[A-Za-z0-9]{48}')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,order-track') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.track');
 
     // [T-C SUIVI-CLIENT 2026-08-16] QR borne → page de suivi. Throttle 30/min
@@ -1858,7 +2315,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::get('order/track-qr/{trackingToken}', [FrontendOrderController::class, 'trackQr'])
         ->where('trackingToken', '[A-Za-z0-9]{48}')
         ->withoutMiddleware('apiKey')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,order-track-qr') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('order.track-qr');
 
     Route::prefix('order')->name('order.')->middleware(['auth:sanctum'])->group(function () {
@@ -1877,7 +2334,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // réclame déjà, mais un écran se contourne en fermant l'app — le refus vit donc
         // ici. Sans effet sur la BORNE (jeton `kiosk-token`) ni sur les clients venus par
         // le parcours téléphone, dont le compte est créé À PARTIR de leur numéro.
-        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'require_customer_phone', 'idempotency']);
+        // [STORES T-3.3.2 · 2026-10-01] `app_version` en tête : une application périmée reçoit
+        // « mets à jour » avant toute autre exigence, et sans toucher à la clé d'idempotence.
+        Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'app_version', 'require_customer_phone', 'idempotency']);
         // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
         // [P0 2026-08-07] Jumelles de mollie-checkout : elles portent aussi une commande, donc
         // même garde de branche dérivée du serveur. Ces deux méthodes ne lisent PAS `branch_id`
@@ -1907,17 +2366,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // et ne touche à aucune commande — d'où l'absence d'idempotence ; elle est en revanche
         // limitée en débit (une feuille par tentative) et n'accepte qu'une URL *.apple.com.
         Route::post('/applepay-session', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'applePaySession'])
-            ->middleware('throttle:10,1')
+            ->middleware('throttle:10,1,applepay-session') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('applepay-session');
         Route::post('/{frontendOrder}/mollie-checkout', [\App\Http\Controllers\Frontend\MolliePaymentController::class, 'checkout'])
-            ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1'])
+            ->middleware(['idempotency.branch', 'idempotency', 'throttle:10,1,mollie-checkout']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('mollie-checkout');
     });
 
     // [AUDIT-F-008] Payment confirm reconciliation queue — frontend persists TPE-approved
     // transactions whose backend confirmation failed (network blip / app crash post-TPE)
     // and replays them in batch on boot. Idempotent per UNIQUE(transaction_id).
-    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1'])->group(function () {
+    Route::prefix('payment')->name('payment.')->middleware(['auth:sanctum', 'throttle:5,1,payment-reconcile'])->group(function () { // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/reconcile-pending', [\App\Http\Controllers\Frontend\PaymentReconcileController::class, 'reconcile']);
     });
 
@@ -1959,7 +2418,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendCouponController::class, 'index']);
         // [SEC-26-1] Rate limit coupon brute-force: 10 attempts/min per IP
         Route::post('/coupon-checking', [FrontendCouponController::class, 'couponChecking'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,coupon-checking'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     /*
@@ -1973,17 +2432,17 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     */
     Route::prefix('wheel')->name('wheel.')->group(function () {
         Route::get('/config', [\App\Http\Controllers\Frontend\WheelController::class, 'config'])
-            ->middleware('throttle:60,1');
+            ->middleware('throttle:60,1,wheel-config'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // Le SERVEUR horodate l'ouverture d'un lien : c'est la seule garde « il a pris le temps »
         // qui ne se contourne pas depuis le navigateur.
         Route::post('/step', [\App\Http\Controllers\Frontend\WheelController::class, 'step'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle:30,1,wheel-step'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         Route::post('/spin', [\App\Http\Controllers\Frontend\WheelController::class, 'spin'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,wheel-spin'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // La RÉCLAMATION est l'endpoint qui donne réellement quelque chose : c'est lui qui crée la
         // participation, émet le code et crée le compte. Débit limité aussi serré que le tour.
         Route::post('/claim', [\App\Http\Controllers\Frontend\WheelController::class, 'claim'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:10,1,wheel-claim'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 
     Route::prefix('slider')->name('slider.')->group(function () {
@@ -2006,6 +2465,16 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/kiosk', [TokenStoreController::class, 'kioskDeviceToken']);
     });
 
+    // [LIVRAISON 2026-10-20] Tournées du livreur (départs de 30 min, itinéraire Waze, encaissement, photo d'arrivée).
+    // La remise réutilise OrderService::deliveryBoyOrderChangeStatus (fiscal + audit inchangés).
+    Route::prefix('delivery-run')->name('delivery-run.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'index']);
+        Route::post('/depart', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'depart'])->middleware('idempotency');
+        Route::post('/stops/{stop}/arrive', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'arrive'])->middleware('idempotency');
+        Route::post('/stops/{stop}/deliver', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'deliver'])->middleware('idempotency');
+        Route::get('/stops/{stop}/photo', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'photo']);
+    });
+
     Route::prefix('delivery-boy-order')->name('delivery-boy-order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendDeliveryBoyOrderController::class, 'index']);
         Route::get('/show/{order}', [FrontendDeliveryBoyOrderController::class, 'show']);
@@ -2021,8 +2490,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // All other endpoints require a valid user session
     Route::prefix('loyalty')->name('loyalty.')->group(function () {
         // [AUDIT-P0-D] Add throttle to loyalty endpoints to prevent enumeration and mass registration.
-        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1']);
-        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1');
+        Route::post('/check', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'check'])->middleware(['auth:sanctum', 'throttle:10,1,loyalty-check']); // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
+        Route::post('/register', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'register'])->middleware('throttle:5,1,loyalty-register'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         // [SPLASH] Kiosk reads conversion rates before showing loyalty UI
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
@@ -2050,14 +2519,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // client-side. Throttle:30/min/user matches the natural 12 mints/hour
         // (one every 5 min) with healthy retry headroom.
         Route::post('/qr', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'generateQr'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,loyalty-qr') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('qr.generate');
     });
 
     // [C6] Kiosk observability — structured event logging for operators
     // Auth: kiosk:order ability; throttle: 30 events/min per token (prevents log spam)
     Route::post('/kiosk-event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1,kiosk-event']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('kiosk.event');
 
     /* ================================================================
@@ -2075,35 +2544,35 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // 1.5 — POST /api/frontend/pricing/preview : recalcul SSOT sans persistance.
     Route::post('/pricing/preview', [\App\Http\Controllers\Frontend\PricingPreviewController::class, 'preview'])
-        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:60,1,pricing-preview', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.pricing.preview');
 
     // 1.6 — POST /api/frontend/promo/validate : kiosk_promo prio + fallback coupons globaux.
     Route::post('/promo/validate', [\App\Http\Controllers\Frontend\PromoController::class, 'check'])
-        ->middleware(['auth:sanctum', 'throttle:30,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:30,1,promo-validate', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.promo.validate');
 
     // 1.7 — GET /api/frontend/upsell : suggestions via upsell_rules + fallback legacy.
     Route::get('/upsell', [\App\Http\Controllers\Frontend\UpsellController::class, 'suggest'])
-        ->middleware(['auth:sanctum', 'throttle:60,1', 'kiosk.locale'])
+        ->middleware(['auth:sanctum', 'throttle:60,1,upsell', 'kiosk.locale']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.upsell.suggest');
 
     // 1.8 — POST /api/frontend/loyalty/opt-in : adhésion RGPD-compliant (consentement explicite).
     Route::post('/loyalty/opt-in', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optIn'])
-        ->middleware(['throttle:5,1'])
+        ->middleware(['throttle:5,1,loyalty-opt-in']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.loyalty.opt-in');
 
     // Phase 8.3 — POST /api/frontend/loyalty/scan : résolution QR/NFC kiosk.
     // Auth Sanctum + kiosk:order ability — Scan invoqué depuis le parcours
     // client. Toujours HTTP 200 pour ne pas bloquer le parcours (invariant §12).
     Route::post('/loyalty/scan', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'scan'])
-        ->middleware(['auth:sanctum', 'throttle:20,1'])
+        ->middleware(['auth:sanctum', 'throttle:20,1,loyalty-scan']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.loyalty.scan');
 
     // 1.9 — POST /api/frontend/kiosk/event : alias slash (master prompt §1.6). Tiret historique conservé.
     // [K-6.1] Same ability enforcement as /kiosk-event — both aliases must fail-closed. [T08b]
     Route::post('/kiosk/event', [\App\Http\Controllers\Frontend\KioskEventController::class, 'store'])
-        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1'])
+        ->middleware(['auth:sanctum', 'abilities:kiosk:order', 'throttle:30,1,kiosk-event']) // [VG-2026-10-21 M5-005] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('frontend.kiosk.event');
 
     // [C2 / K-9 ADR-5] POST /api/frontend/csp-report : endpoint anonyme pour
@@ -2124,7 +2593,7 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 // `localization`. Path et name historiques préservés pour les tests existants
 // (CspReportEndpointTest, CorrelationIdEndToEndTest, ContentSecurityPolicyHeaderTest).
 Route::post('/frontend/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
-    ->middleware(['installed', 'throttle:1000,1'])
+    ->middleware(['installed', 'throttle:1000,1,csp-report']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     ->name('frontend.csp.report');
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
@@ -2142,6 +2611,6 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
     Route::prefix('dining-order')->name('dining-order.')->group(function () {
         Route::get('/show/{frontendOrder}', [TableOrderController::class, 'show']);
         // [AUDIT-P1] Dedicated throttle: table ordering is unauthenticated (QR code), 20 orders/min per IP.
-        Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1');
+        Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:20,1,table-order'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 });
