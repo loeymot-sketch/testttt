@@ -688,7 +688,7 @@ test.describe('Site — livraison : présente et correcte (copie corrigée servi
   }
 
   // ------------------------------------------------------------------------
-  test('5. D (e)(S-101)(S-102) commande À EMPORTER : Cayenne, Classique, Tacos XL, Tacos L (Mexicanos puis Mixte), Suprême, Méga, Terminator → 201 ; bols limités aux viandes du serveur', async ({ browser }) => {
+  test('5. D (e)(S-101)(S-102) commande À EMPORTER : Cayenne, Classique, Tacos XL, Tacos L (Mexicanos puis Mixte), Méga, Terminator → 201 ; bols limités aux viandes du serveur', async ({ browser }) => {
     const ctx = await newCtx(browser, { mobile: false });
     const page = await ctx.newPage();
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -714,7 +714,8 @@ test.describe('Site — livraison : présente et correcte (copie corrigée servi
       { nom: 'Tacos XL', opts: { viandes: ['Mexicanos', 'Cordon Bleu', 'Viande Hachée'] } },
       { nom: 'Tacos L', opts: { viandes: ['Mexicanos', 'Mixte'] } },
       // Suprême, Méga, Terminator, Sandwich Classique : le site envoyait une variation « Pain » que le profil publié ne propose pas (refus 422).
-      { nom: 'Suprême', opts: {} },
+      // [2026-10-24] Suprême retiré de CE banc local : sa base de test lui donne 2 emplacements viande, la PRODUCTION aucun (viande_count 0) ; le site suit la
+      //   production (aucune étape viande). Il est prouvé contre le catalogue de production dans `site-viandes-defaut.spec.js` (C)(D).
       { nom: 'Méga', opts: {} },
       { nom: 'Terminator', opts: {} },
     ];
@@ -726,13 +727,13 @@ test.describe('Site — livraison : présente et correcte (copie corrigée servi
       await page.waitForTimeout(600);
     }
     L.pickupJournaux = journaux;
-    check('D (S-101) l’assistant ne propose « Pain ou galette ? » que là où le serveur le propose (Cayenne oui ; Classique, Suprême, Méga, Terminator non)',
-      journaux.Cayenne.some((t) => /pain/i.test(t)) && ['Sandwich Classique', 'Suprême', 'Méga', 'Terminator'].every((n) => !journaux[n].some((t) => /pain/i.test(t))), journaux);
+    check('D (S-101) l’assistant ne propose « Pain ou galette ? » que là où le serveur le propose (Cayenne oui ; Classique, Méga, Terminator non)',
+      journaux.Cayenne.some((t) => /pain/i.test(t)) && ['Sandwich Classique', 'Méga', 'Terminator'].every((n) => !journaux[n].some((t) => /pain/i.test(t))), journaux);
     expect(journaux.Cayenne.some((t) => /pain/i.test(t)), 'le Cayenne propose le choix du pain (profil publié)').toBe(true);
-    for (const n of ['Sandwich Classique', 'Suprême', 'Méga', 'Terminator']) expect(journaux[n].some((t) => /pain/i.test(t)), `${n} : pas de choix de pain (le profil publié n'en a pas)`).toBe(false);
+    for (const n of ['Sandwich Classique', 'Méga', 'Terminator']) expect(journaux[n].some((t) => /pain/i.test(t)), `${n} : pas de choix de pain (le profil publié n'en a pas)`).toBe(false);
     const drawerTxt = await panierVersCommande(page);
     const sousTotal = lastEuro(drawerTxt);
-    check('D (e) panier : 7 lignes', ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Suprême', 'Méga', 'Terminator'].every((n) => drawerTxt.includes(n)), drawerTxt.slice(0, 400));
+    check('D (e) panier : 6 lignes', ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Méga', 'Terminator'].every((n) => drawerTxt.includes(n)), drawerTxt.slice(0, 400));
     const payBloc = page.locator('[role="radiogroup"][aria-label="Mode de paiement"]');
     await payBloc.scrollIntoViewIfNeeded();
     const surPlace = payBloc.getByRole('radio', { name: /Payer sur place/ });
@@ -741,20 +742,20 @@ test.describe('Site — livraison : présente et correcte (copie corrigée servi
     const ctaAvant = norm(await page.locator('.lcf-cta-bar-next').innerText());
     await sIdentifier(page, rq, 'e');
     await page.locator('.lcf-cta-bar-next').scrollIntoViewIfNeeded();
-    const o = await confirmer(page, 'D 7 produits à emporter');
-    expect(o.http, `commande à emporter (7 produits à viande) : ${o.corps || ''}`).toBe(201);
+    const o = await confirmer(page, 'D 6 produits à emporter');
+    expect(o.http, `commande à emporter (6 produits à viande) : ${o.corps || ''}`).toBe(201);
     expect(o.envoye.order_type, 'à emporter = 10').toBe(10);
     await expect(page.locator('.lcf-confirm')).toBeVisible({ timeout: 45_000 });
     const conf = await state(page, rec, 'D-09-confirmation-emporter', {}, false);
     const confTxt = norm(conf.text);
     const base = ligneBase(o.id);
     const lignesBase = mysql(`SELECT i.name, oi.quantity FROM order_items oi JOIN items i ON i.id=oi.item_id WHERE oi.order_id=${Number(o.id)} ORDER BY oi.id`).split('\n');
-    check('D (e) base : les 7 produits sont commandés, order_type=10, sans frais de livraison, total == bouton', Number(base.order_type) === 10 && Number(base.delivery_charge) === 0
-      && Math.abs(Number(base.total) - lastEuro(ctaAvant)) < 0.005 && ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Suprême', 'Méga', 'Terminator'].every((n) => lignesBase.some((l) => l.startsWith(n + '\t'))), { base, lignesBase, ctaAvant, sousTotal });
+    check('D (e) base : les 6 produits sont commandés, order_type=10, sans frais de livraison, total == bouton', Number(base.order_type) === 10 && Number(base.delivery_charge) === 0
+      && Math.abs(Number(base.total) - lastEuro(ctaAvant)) < 0.005 && ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Méga', 'Terminator'].every((n) => lignesBase.some((l) => l.startsWith(n + '\t'))), { base, lignesBase, ctaAvant, sousTotal });
     expect(Number(base.order_type)).toBe(10);
     expect(Number(base.delivery_charge)).toBe(0);
     expect(Math.abs(Number(base.total) - lastEuro(ctaAvant))).toBeLessThan(0.005);
-    for (const n of ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Suprême', 'Méga', 'Terminator']) expect(lignesBase.some((l) => l.startsWith(n + '\t')), `ligne ${n} en base`).toBe(true);
+    for (const n of ['Cayenne', 'Sandwich Classique', 'Tacos XL', 'Tacos L', 'Méga', 'Terminator']) expect(lignesBase.some((l) => l.startsWith(n + '\t')), `ligne ${n} en base`).toBe(true);
     // à emporter : le texte de retrait reste, lui, correct
     expect(confTxt).toMatch(/Présente ce QR à la caisse/);
     expect(conf.entry.consoleErrors).toEqual([]);

@@ -115,4 +115,71 @@ test.describe('Une seule viande obligatoire, poulet mariné par défaut, le rest
     expect(lignes.length).toBe(12);
     expect(problemes, problemes.join('\n')).toEqual([]);
   });
+  // (C)(D) Compositions FIXES en production (viande_count 0) : 6 burgers et Suprême. Le site leur demandait « Choisis 1 viande » / « Choisis 2 viandes » : un choix
+  // abandonné en silence (aucune viande à choisir côté serveur). Désormais : AUCUNE étape viande ; « viande en plus » reste un supplément à 2,50 €.
+  for (const nom of ['Cheese Burger', 'Chicken Burger', 'Suprême']) {
+    test(`(C) ${nom} : aucune étape « Choisis N viande(s) » (composition fixe)`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'fr-FR' });
+      await ctx.route((u) => PROD_RX.test(u.href), (r) => r.abort());
+      const page = await ctx.newPage();
+      try {
+        await page.goto(`${SITE}/#menu`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await expect(page.locator('.lc-menu-grid').first()).toBeVisible({ timeout: 30000 }); await page.waitForTimeout(800);
+        await page.locator(`[aria-label="Voir ${nom}"]`).first().click();
+        await page.locator('.lc-detail').getByRole('button', { name: /Personnaliser|Ajouter/ }).first().click();
+        await expect(page.locator('.lc-wiz')).toBeVisible({ timeout: 15000 }); await page.waitForTimeout(1500);
+        const titres = [];
+        for (let i = 0; i < 8; i++) {
+          titres.push((await page.locator('.lc-wiz-title').first().innerText().catch(() => '')).replace(/\s+/g, ' '));
+          const next = page.locator('.lc-wiz-foot-next');
+          if (!(await next.isEnabled().catch(() => false))) break;
+          if (/RÉCAP/i.test(titres[titres.length - 1])) break;
+          await next.click(); await page.waitForTimeout(400);
+        }
+        expect(titres.join(' | '), `étapes de ${nom}`).not.toMatch(/CHOISIS\s+\d+\s+VIANDE/i);
+      } finally { await ctx.close(); }
+    });
+  }
+
+  test('(D) burgers et Suprême : sans viande à choisir, et « viande en plus » (supplément) donne une ligne valide pour la PRODUCTION', async ({ page }) => {
+    await page.route('**/*', async (route) => {
+      const u = route.request().url();
+      if (/vps-418872ac|lecayenne\.fr\/api/.test(u)) return route.abort();
+      const m = u.match(/\/api\/frontend\/item\/details\/(\d+)/);
+      if (m) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: detail(m[1]) }) });
+      if (/\/api\/frontend\/item(\?|$)/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: items });
+      return route.continue();
+    });
+    await page.goto(SITE + '/', { waitUntil: 'load' });
+    await page.waitForFunction(() => window.LC && window.LC.api && window.LC.menu && window.LC.menu.meats, null, { timeout: 20000 });
+    const lignes = await page.evaluate(async () => {
+      const M = window.LC.menu; const out = []; const meat = (nm) => M.meats.find((x) => x.name === nm).id;
+      for (const slug of ['chicken-burger', 'cheese-burger', 'double-cheese', 'fish-burger', 'big-burger', 'grill-burger', 'supreme']) {
+        const it = M.items.find((i) => i.slug === slug);
+        for (const extra of [[], ['Viande Hachée']]) {
+          try {
+            const r = await window.LC.api.resolveLine({ slug: it.slug, name: it.name, qty: 1, viande_count: it.viandes, viandes: it.viandes, state: { viandes: [], viande_extra: extra.map(meat) } });
+            out.push({ slug, viandes_site: it.viandes, extra: extra.length, ok: true, item_id: r.item_id, vars: (r.item_variations || []).map((v) => v.id), extras: (r.item_extras || []).map((e) => ({ id: e.id, q: e.quantity })) });
+          } catch (e) { out.push({ slug, extra: extra.length, ok: false, err: (e && e.message) || String(e) }); }
+        }
+      }
+      return out;
+    });
+    const problemes = [];
+    for (const l of lignes) {
+      if (l.viandes_site !== 0) problemes.push(`${l.slug} : le site compte ${l.viandes_site} viande(s) à choisir (production : 0)`);
+      if (!l.ok) { problemes.push(`${l.slug} (+${l.extra}) : refusé par le site — ${l.err}`); continue; }
+      const d = detail(l.item_id); const exById = {}; (d.extras || []).forEach((e) => { exById[e.id] = e; });
+      const supp = l.extras.filter((e) => exById[e.id] && /viande/i.test(exById[e.id].name || ''));
+      const n = supp.reduce((s, e) => s + e.q, 0);
+      if (n !== l.extra) problemes.push(`${l.slug} : ${n} supplément(s) viande envoyé(s) (attendu ${l.extra})`);
+      supp.forEach((e) => { if (Math.abs(Number(exById[e.id].convert_price || 0) - 2.5) > 0.001) problemes.push(`${l.slug} : supplément à ${exById[e.id].convert_price} € (attendu 2,50 €)`); });
+      const attrOf = {}; const meta = {};
+      Object.keys(d.variations || {}).forEach((a) => { const arr = Array.isArray(d.variations[a]) ? d.variations[a] : [d.variations[a]]; arr.forEach((x) => { attrOf[x.id] = a; }); const ia = (arr[0] && arr[0].item_attribute) || {}; meta[a] = { min: ia.min_select || 0, max: ia.max_select || 0, nom: ia.name }; });
+      const cnt = {}; l.vars.forEach((id) => { if (attrOf[id] == null) problemes.push(`${l.slug} : variation ${id} inconnue`); else cnt[attrOf[id]] = (cnt[attrOf[id]] || 0) + 1; });
+      Object.keys(meta).forEach((a) => { const c = cnt[a] || 0; if (c < meta[a].min) problemes.push(`${l.slug} : « ${meta[a].nom} » manque`); if (meta[a].max && c > meta[a].max) problemes.push(`${l.slug} : « ${meta[a].nom} » en trop`); });
+    }
+    expect(lignes.length).toBe(14);
+    expect(problemes, problemes.join('\n')).toEqual([]);
+  });
 });
