@@ -131,8 +131,11 @@ export default {
         // Pourquoi le bouton Uber est grisé : la vraie raison renvoyée par le serveur, jamais un bouton muet.
         uberReason(s) {
             if (!this.uberEnabled) return 'Uber Direct n\'est pas activé.';
+            // [E2E UBER 2026-10-24 round 2 · U1-005] La raison du SERVEUR d'abord : après un retour Uber post-sac, `left_at` est posé par
+            // le coursier Uber, pas par notre livreur — l'écran disait « Le livreur est déjà parti » quand le serveur disait la vérité.
+            if (s.uber_blocked) return s.uber_blocked;
             if (s.left_at) return 'Le livreur est déjà parti.';
-            return s.uber_blocked || '';
+            return '';
         },
         // 1) prix d'Uber (gratuit, sans engagement) ; 2) le caissier confirme ; 3) la course est demandée.
         async onQuote(s) {

@@ -86,6 +86,27 @@ describe('caisse — tournées : bascule Uber / nos livreurs', () => {
         w.unmount();
     });
 
+    it('[round 2 · U1-005] course Uber revenue après le sac (left_at posé par le coursier Uber) : la raison affichée est celle du serveur, pas « Le livreur est déjà parti »', async () => {
+        const raison = 'Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n\'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande.';
+        board = mk([stop({ left_at: '2026-10-24 16:20:00', dispatch: 'own', uber_attention: 'Uber a ramené la commande au restaurant alors que le coursier avait le sac : la commande n\'est pas livrée. À traiter avec le client.', uber_blocked: raison })]);
+        const w = await open();
+
+        expect(w.find('[data-testid="pos-delivery-use-uber"]').attributes('disabled')).toBeDefined();
+        expect(w.find('[data-testid="pos-delivery-uber-reason"]').text()).toBe(raison);
+        expect(w.find('[data-testid="pos-delivery-uber-reason"]').text()).not.toContain('déjà parti');
+        expect(w.find('[data-testid="pos-delivery-use-uber"]').attributes('title')).toBe(raison);
+        w.unmount();
+    });
+
+    it('notre livreur est parti (sans raison serveur) : « Le livreur est déjà parti » reste dit', async () => {
+        board = mk([stop({ left_at: '2026-10-24 16:20:00', uber_blocked: null })]);
+        const w = await open();
+
+        expect(w.find('[data-testid="pos-delivery-use-uber"]').attributes('disabled')).toBeDefined();
+        expect(w.find('[data-testid="pos-delivery-uber-reason"]').text()).toBe('Le livreur est déjà parti.');
+        w.unmount();
+    });
+
     it('Uber non activé : bouton grisé, raison dite, aucun appel', async () => {
         board = mk([stop({})], false);
         const w = await open();

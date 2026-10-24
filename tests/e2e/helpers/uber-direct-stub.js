@@ -17,8 +17,9 @@
 // Pilotage par le test (endpoints de contrôle, jamais exposés par Uber) :
 //   GET  /__control/log                      → toutes les requêtes reçues (méthode, chemin, corps) + webhooks poussés (code HTTP)
 //   POST /__control/reset                    → vide journal, devis, courses, modes
-//   POST /__control/mode  {quote:'ok'|'fail'|'uncovered', create:'ok'|'fail'|'timeout'|'lost', cancel:'ok'|'refuse'}
-//        'lost' = la course EST créée chez Uber mais la réponse se perd (504) : un réessai avec la même clé doit la retrouver.
+//   POST /__control/mode  {quote:'ok'|'fail'|'uncovered'|'nofee', create:'ok'|'fail'|'timeout'|'lost', cancel:'ok'|'refuse'}
+//        'lost'  = la course EST créée chez Uber mais la réponse se perd (504) : un réessai avec la même clé doit la retrouver.
+//        'nofee' = devis 200 SANS champ `fee` (réponse dégradée) : le backend ne doit pas en faire un prix à 0,00 €.
 //   POST /__control/status {delivery_id, status, push:true}  → change le statut de la course et pousse le webhook signé
 //   POST /__control/webhook {delivery_id, status, secret?}    → pousse un webhook (secret différent = signature invalide)
 //   GET  /__control/deliveries               → état des courses
@@ -31,7 +32,11 @@ const SECRET = process.env.UBER_STUB_WEBHOOK_SECRET || 'e2e-uber-direct-secret';
 const FEE = Number(process.env.UBER_STUB_FEE_CENTS || 742);
 const ETA = Number(process.env.UBER_STUB_ETA_MIN || 25);
 
+// [round 2] Identifiants uniques d'un lancement à l'autre, comme ceux d'Uber (UUID) : un redémarrage du faux Uber réémettait
+// `del_7` déjà présent en base (contrainte UNIQUE `delivery_id`) — faux échec d'enregistrement, étranger au produit.
+const RUN = Date.now().toString(36);
 const state = { log: [], webhooks: [], quotes: {}, deliveries: {}, byIdem: {}, mode: { quote: 'ok', create: 'ok', cancel: 'ok' }, seq: 0, token: null };
+const nextId = (prefix) => `${prefix}_${RUN}_${++state.seq}`;
 const iso = (d) => new Date(d).toISOString();
 const json = (res, code, body) => { const s = JSON.stringify(body); res.writeHead(code, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(s) }); res.end(s); };
 const readBody = (req) => new Promise((resolve) => { const c = []; req.on('data', (d) => c.push(d)); req.on('end', () => resolve(Buffer.concat(c).toString('utf8'))); });
@@ -92,8 +97,9 @@ const server = http.createServer(async (req, res) => {
     if (state.mode.quote === 'fail') return json(res, 500, { code: 'internal_server_error' });
     if (state.mode.quote === 'uncovered') return json(res, 400, { code: 'address_undeliverable', message: 'The specified location is not in a deliverable area.' });
     for (const f of ['pickup_address', 'dropoff_address']) if (!body[f]) return json(res, 400, { code: 'invalid_params', message: f + ' is required' });
-    const q = { kind: 'delivery_quote', id: 'dqt_' + (++state.seq), created: iso(Date.now()), expires: iso(Date.now() + 15 * 60000), fee: FEE, currency: 'EUR', currency_type: 'EUR', dropoff_eta: iso(Date.now() + ETA * 60000), duration: ETA, pickup_duration: 10, dropoff_deadline: iso(Date.now() + 90 * 60000), external_store_id: body.external_store_id || null };
+    const q = { kind: 'delivery_quote', id: nextId('dqt'), created: iso(Date.now()), expires: iso(Date.now() + 15 * 60000), fee: FEE, currency: 'EUR', currency_type: 'EUR', dropoff_eta: iso(Date.now() + ETA * 60000), duration: ETA, pickup_duration: 10, dropoff_deadline: iso(Date.now() + 90 * 60000), external_store_id: body.external_store_id || null };
     state.quotes[q.id] = q;
+    if (state.mode.quote === 'nofee') { const sans = { ...q }; delete sans.fee; return json(res, 200, sans); } // [round 2 · U1-010]
     return json(res, 200, q);
   }
   if (kind === 'deliveries' && !id && req.method === 'POST') {
@@ -107,7 +113,7 @@ const server = http.createServer(async (req, res) => {
     if (!q) return json(res, 400, { code: 'invalid_params', message: 'quote_id unknown or expired' });
     if (new Date(q.expires).getTime() < Date.now()) return json(res, 400, { code: 'invalid_params', message: 'quote expired' });
     for (const f of ['pickup_address', 'dropoff_address', 'pickup_phone_number', 'dropoff_phone_number', 'manifest_items']) if (!body[f]) return json(res, 400, { code: 'invalid_params', message: f + ' is required' });
-    const d = { kind: 'delivery', id: 'del_' + (++state.seq), quote_id: q.id, status: 'pending', complete: false, fee: q.fee, currency: 'EUR', tracking_url: 'https://stub.uber.local/track/' + state.seq, external_id: body.external_id || null, created: iso(Date.now()), updated: iso(Date.now()), dropoff_eta: q.dropoff_eta, courier: null, manifest: { reference: body.manifest_reference || null, items: body.manifest_items }, customer_id: customerId };
+    const d = { kind: 'delivery', id: nextId('del'), quote_id: q.id, status: 'pending', complete: false, fee: q.fee, currency: 'EUR', tracking_url: 'https://stub.uber.local/track/' + RUN + '-' + state.seq, external_id: body.external_id || null, created: iso(Date.now()), updated: iso(Date.now()), dropoff_eta: q.dropoff_eta, courier: null, manifest: { reference: body.manifest_reference || null, items: body.manifest_items }, customer_id: customerId };
     state.deliveries[d.id] = d;
     if (idem) state.byIdem[idem] = d;
     if (perdue) { await new Promise((r) => setTimeout(r, 9000)); return json(res, 504, { code: 'timeout' }); }

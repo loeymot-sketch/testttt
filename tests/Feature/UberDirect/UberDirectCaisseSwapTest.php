@@ -304,6 +304,27 @@ class UberDirectCaisseSwapTest extends TestCase
         return $stop->fresh();
     }
 
+    /**
+     * [E2E UBER 2026-10-24 round 2 · U1-001] Le site interroge `/api/frontend/order/show/{id}` toutes les 20 s : son bloc `tracking`
+     * est calculé sur un `FrontendOrder`. L'arrivée estimée Uber n'existait que sur la route publique par jeton (`Order`) : le client
+     * lisait encore « Départ de la livraison prévu à 18:30 ». La même projection doit sortir des deux modèles ET de la route du site.
+     */
+    public function test_the_client_tracking_served_to_the_site_carries_the_uber_eta_for_a_frontend_order_too(): void
+    {
+        $stop = $this->dispatched(['*/deliveries' => Http::response(['id' => 'del_1', 'status' => 'pending', 'tracking_url' => 'https://uber.test/track/1', 'dropoff_eta' => '2026-10-22T17:30:00Z'])]);
+        $svc = app(\App\Services\OrderTrackingService::class);
+        foreach ([Order::find($stop->order_id), \App\Models\FrontendOrder::withoutGlobalScopes()->find($stop->order_id)] as $model) {
+            $t = $svc->forOrder($model);
+            $this->assertSame('19:30', $t['arrivee_estimee'], get_class($model).' : arrivée estimée Uber, en heure de Paris');
+            $this->assertNull($t['prevue_pour'], get_class($model).' : plus de départ de tournée annoncé');
+        }
+        $client = User::find(Order::find($stop->order_id)->user_id);
+        $this->actingAs($client, 'sanctum')->withHeader('x-api-key', 'test-api-key')
+            ->getJson('/api/frontend/order/show/'.$stop->order_id)->assertOk()
+            ->assertJsonPath('tracking.arrivee_estimee', '19:30')
+            ->assertJsonPath('tracking.prevue_pour', null);
+    }
+
     public function test_the_webhook_refuses_a_bad_or_missing_signature_and_a_missing_secret(): void
     {
         $stop = $this->dispatched();

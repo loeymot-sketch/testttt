@@ -3,13 +3,13 @@
     "level": "info",
     "text": "[PosSyncService] fallback polling disabled.",
     "location": {
-      "url": "http://127.0.0.1:8766/js/pos-shell.17883ac6.js",
+      "url": "http://127.0.0.1:8766/js/pos-shell.d5020f76.js",
       "line": 1,
       "column": 502272,
       "lineNumber": 1,
       "columnNumber": 502272
     },
-    "ts": 1792851715052
+    "ts": 1792854756189
   },
   {
     "level": "error",
@@ -21,7 +21,7 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1792851719062
+    "ts": 1792854760198
   },
   {
     "level": "error",
@@ -33,7 +33,7 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1792851719062
+    "ts": 1792854760199
   },
   {
     "level": "error",
@@ -45,6 +45,6 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1792851719065
+    "ts": 1792854760202
   }
 ]

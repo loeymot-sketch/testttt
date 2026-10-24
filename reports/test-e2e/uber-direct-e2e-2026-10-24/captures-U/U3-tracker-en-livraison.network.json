@@ -4,13 +4,13 @@
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1792851738553
+    "ts": 1792854779484
   },
   {
     "url": "http://127.0.0.1:8766/api/auth/authcheck",
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1792851738597
+    "ts": 1792854779520
   }
 ]

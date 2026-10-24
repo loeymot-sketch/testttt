@@ -7,7 +7,13 @@
 // `delivery_stops` / `orders` / `audit_logs`, codes HTTP). Aucune assertion n'est avalée par un `.catch`.
 //
 // Données : commandes de LIVRAISON créées par l'API caisse (comme B-L2), client = compte invité du site (téléphone valide,
-// jeton pour le suivi), note « E2E-UBER-<scénario> ». Les commandes de test non livrées sont annulées en fin de passe (statut 16).
+// jeton pour le suivi), note « E2E-UBER-R2-<scénario> ». Les commandes de test non livrées sont annulées en fin de passe (statut 16).
+//
+// ROUND 2 (rejeu après les correctifs f785e1b38) : U-1 → U-9 d'origine inchangés dans leur verdict, plus les preuves des
+// correctifs — U-3bis (le webhook ne pilote plus la cuisine, rattrapage à PRÊTE), U-1bis (arrivée estimée Uber au suivi client
+// et sur la planche), U-7bis (réponse perdue : même clé d'idempotence, UNE course), U-4bis (clé « -after-{delivery_id} » après
+// une annulation Uber), U-5bis (raison visible au tactile), U-8bis (raison vraie après retour post-sac), U-9bis (arrêt d'une
+// commande annulée retiré, pas rendu), U1-003 (relevé ≤ 1 / 15 s), U1-010 (devis sans prix refusé), U1-017 (dates « Z »).
 //
 //   export PATH="$HOME/.nvm/versions/node/v22.23.2/bin:$PATH"
 //   PLAYWRIGHT_NO_WEB_SERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766 \
@@ -35,7 +41,7 @@ const ADMIN = { email: 'admin@lecayenne.fr', password: '123456' };
 const COURIER = { id: 10, email: 'livreur.e2e@lecayenne.test', password: 'Livreur123!', name: 'Livreur E2E' };
 const PROD_RX = /vps-418872ac|ovh\.net|lecayenne\.fr|auth\.uber\.com|api\.uber\.com/i;
 const NOW = Date.now();
-const TAG = 'E2E-UBER';
+const TAG = 'E2E-UBER-R2';
 const PNG_CAP = 15;
 let pngUsed = 0;
 
@@ -89,6 +95,24 @@ function summarize(b) {
   return o;
 }
 const deliveriesPosts = (calls) => calls.filter((c) => c.method === 'POST' && /\/deliveries$/.test(c.path));
+/** Courses que le faux Uber détient pour une commande (source hors écran : son propre état, pas notre base). */
+const stubCoursesOf = async (orderId) => Object.values((await stub('/__control/deliveries')).body || {}).filter((d) => d.external_id === 'order-' + orderId);
+/** HH:MM Europe/Paris d'une date ISO (UTC « Z ») — ce que le client et le caissier doivent lire. */
+const hhmmParis = (iso) => new Date(iso).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+/** Lignes du journal Laravel (source hors écran) qui citent une commande et un motif ; [] si le journal n'est pas lisible. */
+function laravelLog(orderId, motif) {
+  try {
+    const dir = path.join(ROOT, 'storage/logs');
+    const files = fs.readdirSync(dir).filter((f) => /^laravel.*\.log$/.test(f)).map((f) => path.join(dir, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs).slice(0, 2);
+    const out = [];
+    for (const f of files) {
+      const buf = fs.readFileSync(f, 'utf8');
+      const tail = buf.length > 2_000_000 ? buf.slice(-2_000_000) : buf;
+      for (const line of tail.split('\n')) if (line.includes(motif) && line.includes(`"order_id":${orderId}`)) out.push(line.slice(0, 300));
+    }
+    return out;
+  } catch (_e) { return []; }
+}
 const cancelPosts = (calls, deliveryId) => calls.filter((c) => c.method === 'POST' && c.path.endsWith(`/deliveries/${deliveryId}/cancel`));
 
 // ---------------------------------------------------------------- API caisse / admin
@@ -310,9 +334,12 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     L.bench.adresse = aj.data;
     note(`adresse ${addressId} (${aj.data.address}) frais ${fee} €`);
 
-    // 8 livraisons PAYÉES (espèces au comptoir) + 1 À ENCAISSER à la porte.
-    for (const k of ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I']) O[k] = await creer(k);
+    // 8 livraisons PAYÉES (espèces au comptoir) + 1 À ENCAISSER à la porte ; round 2 : J (U-3bis/U-1bis/U1-003), K (U-7bis),
+    // L (U1-010), M (U-9bis), elles aussi payées.
+    for (const k of ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']) O[k] = await creer(k);
     O.D = await creer('D', { defer_to_counter: 1, pos_payment_method: 6, pos_received_amount: undefined });
+    // Statut natif d'une livraison acceptée par la caisse : EN PRÉPARATION (7) — relu en base, pas supposé.
+    for (const k of ['J', 'K', 'L', 'M']) expect(Number(O[k].order.status), `commande ${k} créée par la caisse : statut natif 7`).toBe(7);
     // La cuisine a fini A et C (PRÊTE) avant que la caisse ne les confie à Uber ; G reste « Acceptée » à dessein (mesure).
     await bump(O.A.id, [4, 7, 8]); await bump(O.C.id, [4, 7, 8]);
     for (const k of Object.keys(O)) { O[k].order = orderRow(O[k].id); O[k].stop = stopOf(O[k].id); L.orders[k] = O[k]; }
@@ -369,7 +396,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     // 1920×1080 : la planche tient, rien de recouvert
     await page.setViewportSize({ width: 1920, height: 1080 }); await page.waitForTimeout(600);
     const m = await page.evaluate(() => { const de = document.documentElement; const c = document.querySelector('[data-testid="pos-delivery-board"] > div'); const r = c && c.getBoundingClientRect(); return { debordeX: de.scrollWidth - de.clientWidth, dansEcran: r ? r.right <= innerWidth + 1 && r.left >= -1 : null }; });
-    await rec.snap('U1-planche-1920');
+    await rec.snap('U1-planche-1920', false); // round 2 : budget PNG réservé aux nouveaux états ; mesure numérique conservée
     await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(400);
     step('U-1', 'layout_1920', m);
     expect(m.debordeX).toBeLessThanOrEqual(1);
@@ -415,6 +442,8 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     expect(quoteCall.body.pickup_phone_number).toBe('+33365678291');
     expect(quoteCall.body.dropoff_phone_number).toBe('+33' + AUTH.phone.slice(1));
     expect(quoteCall.body.pickup_ready_dt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    // [round 2 · U1-017] Uber attend l'UTC « Z », plus « +02:00 ».
+    expect(quoteCall.body.pickup_ready_dt, 'pickup_ready_dt du devis en UTC « Z »').toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     expect(quoteCall.body.external_store_id).toBe('branch-1');
     expect(quoteCall.body.manifest_total_value).toBe(Math.round(Number(O.A.order.total) * 100));
     const rowQ = uberRow(O.A.id);
@@ -443,6 +472,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     expect(String(create.body.dropoff_notes)).toContain('porte bleue');
     expect(create.body.pickup_phone_number).toBe('+33365678291');
     expect(create.body.dropoff_phone_number).toBe('+33' + AUTH.phone.slice(1));
+    expect(create.body.pickup_ready_dt, '[U1-017] pickup_ready_dt de la course en UTC « Z »').toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     // base
     const row = uberRow(O.A.id); const stop = stopOf(O.A.id); const ord = orderRow(O.A.id);
     step('U-2', 'base', { row, stop, ord, audits: audits(O.A.id) });
@@ -466,7 +496,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     step('U-2', 'livreur', { avant, apres });
     check('U-2', 'écran livreur : l’arrêt A n’est plus listé (écran + API delivery-run)', !apres.ecran && !apres.api.includes(O.A.id), apres);
     expect(apres.ecran).toBe(false); expect(apres.api.includes(O.A.id)).toBe(false);
-    await recL.snap('U2-livreur-sans-arret');
+    await recL.snap('U2-livreur-sans-arret', false);
   });
 
   // ------------------------------------------------------------------------
@@ -561,7 +591,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     step('U-3', 'tracker_livree', colLivre);
     expect(colLivre, 'colonne « Livrés »').toMatch(/livrés/i);
     await cardA.scrollIntoViewIfNeeded();
-    await recT.snap('U3-tracker-livres');
+    await recT.snap('U3-tracker-livres', false);
     await sp.bringToFront();
     await sp.waitForFunction(() => /Votre commande a été livrée/i.test(document.body.innerText), null, { timeout: 60_000 });
     const etapes3 = await sp.evaluate(() => Array.from(document.querySelectorAll('.lcf-track-step')).map((e) => ({ l: e.innerText.replace(/\s+/g, ' ').trim(), c: e.className })));
@@ -620,6 +650,13 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     const zC = zone(O.C.stop.id); await zC.scrollIntoViewIfNeeded();
     const own = zC.locator('[data-testid="pos-delivery-use-own"]');
     await expect(own).toBeDisabled();
+    // [round 2 · U-5bis / U1-007] La raison est VISIBLE (pas seulement en `title`) : un écran tactile n'a pas de survol.
+    const visible = zC.locator('[data-testid="pos-delivery-uber-bag-taken"]');
+    await expect(visible, 'raison visible à côté du bouton grisé').toBeVisible();
+    await expect(visible).toHaveText('Le coursier Uber a déjà la commande');
+    const boxes = await zC.evaluate((z) => { const b = z.querySelector('[data-testid="pos-delivery-use-own"]').getBoundingClientRect(); const s = z.querySelector('[data-testid="pos-delivery-uber-bag-taken"]').getBoundingClientRect(); return { bouton: { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) }, raison: { x: Math.round(s.x), y: Math.round(s.y), w: Math.round(s.width), h: Math.round(s.height) } }; });
+    step('U-5', 'raison_visible', boxes);
+    expect(boxes.raison.w, 'la raison occupe une largeur réelle à l’écran').toBeGreaterThan(80);
     const log0 = (await stubLog()).log.length;
     const net = []; const onReq = (r) => { if (/pos-delivery\/uber/.test(r.url())) net.push(r.url()); };
     page.on('request', onReq);
@@ -635,7 +672,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     expect(cancelPosts(calls, O.C.deliveryId).length, 'aucune annulation envoyée à Uber').toBe(0);
     expect(net.length, 'un bouton grisé ne déclenche aucun appel').toBe(0);
     expect(uberRow(O.C.id).status).toBe('pickup_complete');
-    await rec.snap('U5-refus-reprise', false);
+    await rec.snap('U5-refus-reprise'); // round 2 : PNG — le refus est enfin montré à l'écran (U1-007)
     // la course se termine : LIVRÉE
     expect((await pushStatus(O.C.deliveryId, 'delivered')).body.webhook.http).toBe(200);
     expect(Number(orderRow(O.C.id).status)).toBe(13);
@@ -741,7 +778,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     const zF = zone(O.F.stop.id); await zF.scrollIntoViewIfNeeded();
     await expect(zF.locator('[data-testid="pos-delivery-uber-price"]')).toContainText('7,42 €');
     await expect(zF.locator('[data-testid="pos-delivery-uber-confirm"]')).toBeVisible();
-    await rec.snap('U7-devis-perime');
+    await rec.snap('U7-devis-perime', false);
     calls = uberCalls(await stubLog(), log3);
     const rowF = uberRow(O.F.id);
     step('U-7', 'd_base', { calls, rowF });
@@ -793,9 +830,22 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     const r = await api.post('/api/admin/pos-delivery/waves/assign', { data: { wave_at: O.H.stop.wave_at, delivery_boy_id: COURIER.id } }); expect(r.status()).toBe(200);
     expect(Number(stopOf(O.H.id).delivery_boy_id)).toBe(COURIER.id);
     await rec.snap('U8-canceled-rendu', false);
-    // (c') mesure, sans verdict : re-confier H à Uber après SON annulation — même idempotency_key ⇒ Uber (fidèle) renvoie la course annulée
-    const q2 = await apiQuote(O.H.stop.id); const d2 = q2.http === 200 ? await apiDispatch(O.H.stop.id, q2.body.quote_id) : null;
-    step('U-8', 'c2_redispatch_apres_annulation_uber', { quote: q2, dispatch: d2, row: uberRow(O.H.id), board: boardStop(await boardJson(), O.H.id) });
+    // (c') [round 2 · U-4bis / U1-002] re-confier H à Uber après SON annulation : la clé tourne (« -after-{delivery_id} »),
+    // le faux Uber crée une 2ᵉ course (il ne renvoie plus la course annulée sous la même clé).
+    const logH = (await stubLog()).log.length;
+    const q2 = await apiQuote(O.H.stop.id); expect(q2.http, 'nouveau devis après annulation Uber').toBe(200);
+    const d2 = await apiDispatch(O.H.stop.id, q2.body.quote_id);
+    const createH2 = deliveriesPosts(uberCalls(await stubLog(), logH))[0];
+    const coursesH = await stubCoursesOf(O.H.id);
+    const rowH2 = uberRow(O.H.id);
+    step('U-8', 'c2_redispatch_apres_annulation_uber', { quote: q2, dispatch: d2, create: createH2, courses_chez_uber: coursesH.map((c) => ({ id: c.id, status: c.status, quote_id: c.quote_id })), row: rowH2, board: boardStop(await boardJson(), O.H.id) });
+    expect(d2.http, 'nouvelle course dépêchée').toBe(200);
+    expect(createH2, 'POST /deliveries reçu').toBeTruthy();
+    expect(createH2.body.idempotency_key, 'clé tournée après une fin CONNUE (annulation Uber)').toBe(`lecayenne-order-${O.H.id}-after-${O.H.deliveryId}`);
+    expect(coursesH.length, 'le faux Uber détient 2 courses pour H (l’annulée + la nouvelle)').toBe(2);
+    expect(rowH2.delivery_id).toMatch(/^del_/); expect(rowH2.delivery_id).not.toBe(O.H.deliveryId); expect(rowH2.status).toBe('pending');
+    expect(stopOf(O.H.id).delivery_boy_id, 'arrêt de nouveau sans livreur à nous').toBeNull();
+    O.H.deliveryId2 = rowH2.delivery_id;
     // (d) returned APRÈS la prise du sac (G) → alerte rouge, commande non livrée
     const wr = await pushStatus(O.G.deliveryId, 'returned'); expect(wr.body.webhook.http).toBe(200);
     const rowR = uberRow(O.G.id); const oR = orderRow(O.G.id);
@@ -808,8 +858,21 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     await expect(alerte).toContainText('Uber a ramené la commande au restaurant alors que le coursier avait le sac');
     await expect(alerte).toContainText('la commande n\'est pas livrée');
     const bG = boardStop(await boardJson(), O.G.id);
-    step('U-8', 'd_board', bG);
+    // [round 2 · U-8bis / U1-005] La raison du bouton grisé est celle du retour post-sac — serveur ET écran — plus « Le livreur est déjà parti ».
+    const zG = zone(O.G.stop.id); await zG.scrollIntoViewIfNeeded();
+    const raisonG = zG.locator('[data-testid="pos-delivery-uber-reason"]');
+    const raisonTexte = (await raisonG.innerText().catch(() => '')).trim();
+    const titreG = await zG.locator('[data-testid="pos-delivery-use-uber"]').getAttribute('title');
+    step('U-8', 'd_board', { ...bG, raison_ecran: raisonTexte, title_ecran: titreG });
     expect(bG.uber_attention).toMatch(/ramené la commande/);
+    expect(bG.dispatch).toBe('own');
+    expect(String(bG.uber_blocked), 'serveur : raison du retour post-sac').toMatch(/avait le sac/);
+    expect(String(bG.uber_blocked)).not.toMatch(/déjà parti/);
+    await expect(zG.locator('[data-testid="pos-delivery-use-uber"]')).toBeDisabled();
+    check('U-8', 'écran : la raison affichée est celle du retour post-sac', /avait le sac/.test(raisonTexte) && !/déjà parti/.test(raisonTexte), { raisonTexte, titreG });
+    expect(raisonTexte, 'écran : raison « avait le sac … n’est pas livrée »').toMatch(/avait le sac/);
+    expect(raisonTexte).toMatch(/n'est pas livrée/);
+    expect(raisonTexte, 'écran : plus « Le livreur est déjà parti »').not.toMatch(/déjà parti/);
     await rec.snap('U8-alerte-rouge');
   });
 
@@ -862,6 +925,246 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     expect(stopOf(O.E.id)).toBeNull();
     await planche();
     await expect(board.locator('li', { hasText: O.E.serial })).toHaveCount(0);
+  });
+
+  // ------------------------------------------------------------------------
+  test('U-3bis + U-1bis + U1-003 : commande EN PRÉPARATION confiée à Uber — arrivée estimée (site + planche), relevé ≤ 1/15 s, le webhook ne pilote pas la cuisine, rattrapage à PRÊTE', async () => {
+    const J = O.J;
+    expect(Number(orderRow(J.id).status), 'J est EN PRÉPARATION (7) avant le dispatch').toBe(7);
+    await planche();
+    const q = await confier(J.stop.id); expect(q.http).toBe(200);
+    const d = await confirmerUber(J.stop.id); expect(d.http).toBe(200);
+    const rowJ = uberRow(J.id); J.deliveryId = rowJ.delivery_id; expect(rowJ.status).toBe('pending');
+    const courseJ = (await stubCoursesOf(J.id))[0];
+    expect(courseJ && courseJ.id).toBe(J.deliveryId);
+    const etaAttendue = hhmmParis(courseJ.dropoff_eta);
+    step('U-1bis', 'course', { delivery_id: J.deliveryId, dropoff_eta_uber: courseJ.dropoff_eta, eta_attendue_paris: etaAttendue });
+
+    // U-1bis (a) planche : « arrivée ~HH:MM » dans le badge Uber
+    const zJ = zone(J.stop.id); await zJ.scrollIntoViewIfNeeded();
+    const badge = zJ.locator('[data-testid="pos-delivery-uber-badge"]');
+    await expect(badge).toContainText('Uber');
+    await expect(badge, 'planche : arrivée estimée Uber').toContainText('arrivée ~' + etaAttendue);
+    const bsJ = boardStop(await boardJson(), J.id);
+    step('U-1bis', 'board', bsJ.uber);
+    expect(bsJ.uber.eta, '/board : eta = dropoff_eta Uber en heure de Paris').toBe(etaAttendue);
+    expect(bsJ.uber.kitchen_pending).toBe(false);
+
+    // U1-003 : 5 rafraîchissements de la planche en ≤ 10 s → au plus UN relevé GET /deliveries/{J} sur la fenêtre
+    const logR0 = (await stubLog()).log.length; const tR0 = Date.now();
+    for (let i = 0; i < 5; i++) await planche();
+    const dureeMs = Date.now() - tR0;
+    const releves = uberCalls(await stubLog(), logR0).filter((c) => c.method === 'GET' && c.path.endsWith('/deliveries/' + J.deliveryId));
+    step('U1-003', 'releves', { duree_ms: dureeMs, rafraichissements: 5, releves_J: releves.map((r) => r.at), tous_les_get: uberCalls(await stubLog(), logR0).filter((c) => c.method === 'GET').map((c) => c.at + ' ' + c.path) });
+    expect(dureeMs, 'les 5 rafraîchissements tiennent dans la fenêtre mesurée').toBeLessThan(15_000);
+    expect(releves.length, `≤ 1 relevé Uber de la course J pendant ${dureeMs} ms (round 1 : 11 en 14 s)`).toBeLessThanOrEqual(1);
+    // L'instrument mesure quelque chose : une fois la fenêtre de 15 s écoulée, un rafraîchissement relève bien la course (le jeton
+    // expire, il n'est pas bloqué pour toujours — sinon le filet « webhook perdu » serait mort en silence).
+    await page.waitForTimeout(15_500);
+    const logR1 = (await stubLog()).log.length;
+    await planche();
+    const relevesApres = uberCalls(await stubLog(), logR1).filter((c) => c.method === 'GET' && c.path.endsWith('/deliveries/' + J.deliveryId));
+    step('U1-003', 'releve_apres_fenetre', relevesApres.map((r) => r.at));
+    expect(relevesApres.length, 'après 15 s, le rafraîchissement relève la course : exactement 1 GET').toBe(1);
+
+    // U-1bis (b) suivi client : « Arrivée estimée vers HH:MM », plus « Départ de la livraison prévu »
+    await sp.goto('about:blank'); await sp.goto(`${SITE}/#orders`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await expect(sp.locator('#root .lc-app')).toBeVisible({ timeout: 60_000 });
+    const carteJ = sp.locator('.lcx-order-card', { hasText: '#' + J.serial });
+    await expect(carteJ, 'la commande J est dans « Mes commandes »').toBeVisible({ timeout: 30_000 });
+    await carteJ.getByRole('button', { name: /Suivre ma commande/ }).click();
+    await expect(sp.locator('.lcf-track[data-mode="livraison"]')).toBeVisible({ timeout: 30_000 });
+    await settle(sp, 1500);
+    const tJ = await texteVisible(sp);
+    // source hors écran : la projection publique de suivi (même route que le site), par le jeton de suivi de la commande
+    const tokenJ = sql(`select tracking_token from orders where id=${J.id}`)[0]?.[0];
+    const trackJson = tokenJ ? await (await rq.get(`${BASE}/api/frontend/order/track/${tokenJ}`, { headers: pub })).json().catch(() => null) : null;
+    const trk = trackJson && (trackJson.data || trackJson);
+    step('U-1bis', 'site', { texte: tJ.slice(0, 400), api: trk && { arrivee_estimee: trk.arrivee_estimee, prevue_pour: trk.prevue_pour, status: trk.status } });
+    expect(trk && trk.arrivee_estimee, 'API de suivi : arrivee_estimee = ETA Uber (Paris)').toBe(etaAttendue);
+    expect(trk.prevue_pour, 'API de suivi : plus de départ de tournée annoncé').toBeNull();
+    check('U-1bis', 'site : « Arrivée estimée vers HH:MM » (= dropoff_eta Uber, Paris) et plus « Départ de la livraison prévu »', tJ.includes('Arrivée estimée vers ' + etaAttendue) && !/Départ de la livraison prévu/.test(tJ), { etaAttendue });
+    expect(tJ, 'suivi client : arrivée estimée Uber').toContain('Arrivée estimée vers ' + etaAttendue);
+    expect(tJ).not.toMatch(/Départ de la livraison prévu/);
+    expect(tJ).toMatch(/Votre commande est en préparation/);
+    await recS.snap('U1bis-site-arrivee-estimee');
+
+    // U-3bis : le coursier prend le sac alors que la cuisine n'a pas fini → la commande RESTE 7 ; la planche le dit
+    const wh0 = (await stubLog()).webhooks.filter((w) => w.delivery_id === J.deliveryId).length;
+    const w2 = await pushStatus(J.deliveryId, 'pickup_complete'); expect(w2.body.webhook.http).toBe(200);
+    const o7 = orderRow(J.id); const s7 = stopOf(J.id); const r7 = uberRow(J.id);
+    const refus = laravelLog(J.id, 'uber_direct.order_transition_refused');
+    step('U-3bis', 'sac_pris_cuisine_pas_finie', { ord: o7, stop: s7, row: r7, journal_refus_transition: refus.slice(-2) });
+    expect(r7.status).toBe('pickup_complete');
+    expect(Number(o7.status), 'le webhook ne pilote pas la cuisine : la commande reste EN PRÉPARATION (7)').toBe(7);
+    expect(s7.left_at, 'l’arrêt porte le départ du coursier (left_at)').not.toBeNull();
+    expect(refus.length, 'journal Laravel : transition 7→10 refusée et tracée (source hors écran)').toBeGreaterThanOrEqual(1);
+    await planche();
+    const zJ2 = zone(J.stop.id); await zJ2.scrollIntoViewIfNeeded();
+    const pending = zJ2.locator('[data-testid="pos-delivery-uber-kitchen-pending"]');
+    await expect(pending, 'planche : « le coursier Uber a le sac : marquez la commande prête en cuisine »').toBeVisible();
+    await expect(pending).toContainText('Le coursier Uber a le sac');
+    await expect(pending).toContainText('marquez la commande prête en cuisine');
+    await expect(zJ2.locator('[data-testid="pos-delivery-uber-bag-taken"]')).toBeVisible();
+    await expect(zJ2.locator('[data-testid="pos-delivery-use-own"]')).toBeDisabled();
+    const bsJ2 = boardStop(await boardJson(), J.id);
+    expect(bsJ2.uber.kitchen_pending, '/board : kitchen_pending').toBe(true); expect(bsJ2.uber.bag_taken).toBe(true);
+    const ligneJ = await ligneTexte(J.serial);
+    step('U-3bis', 'planche_sac_pris', { ligne: ligneJ, board: bsJ2.uber });
+    await rec.snap('U3bis-kitchen-pending');
+    // suivi client pendant cet entre-deux (mesure) : la cuisine n'a pas fini, le site ne dit pas « en route ». Pas de `reload` (il
+    // perd la route #… et retombe sur l'accueil) : la page de suivi reste ouverte et sonde le serveur toutes les 20 s.
+    await expect(sp.locator('.lcf-track[data-mode="livraison"]')).toBeVisible();
+    await sp.waitForTimeout(22_000);
+    const tEntre = await texteVisible(sp);
+    step('U-3bis', 'site_entre_deux', tEntre.slice(0, 300));
+    expect(tEntre).toMatch(/Votre commande est en préparation/);
+    expect(tEntre).toContain('Arrivée estimée vers ' + etaAttendue);
+    expect(tEntre).not.toMatch(/Votre commande est en route/);
+
+    // la cuisine marque PRÊTE par la voie officielle (route caisse de changement de statut) → l'écouteur passe EN ROUTE, sans autre webhook
+    await bump(J.id, [8]);
+    const o10 = orderRow(J.id);
+    const whApres = (await stubLog()).webhooks.filter((w) => w.delivery_id === J.deliveryId).length;
+    step('U-3bis', 'cuisine_prete', { ord: o10, webhooks_J_avant: wh0, webhooks_J_apres: whApres, audits: audits(J.id) });
+    expect(whApres - wh0, 'un seul webhook (pickup_complete) entre-temps : le passage EN ROUTE vient de l’écouteur').toBe(1);
+    expect(Number(o10.status), 'cuisine PRÊTE → rattrapage EN ROUTE (10) par SyncUberCourseAfterKitchenReady').toBe(10);
+    await planche();
+    const zJ3 = zone(J.stop.id); await zJ3.scrollIntoViewIfNeeded();
+    await expect(zJ3.locator('[data-testid="pos-delivery-uber-kitchen-pending"]')).toHaveCount(0);
+    expect(await ligneTexte(J.serial)).toMatch(/En route/);
+    await sp.bringToFront();
+    await sp.waitForFunction(() => /Votre commande est en route/i.test(document.body.innerText), null, { timeout: 60_000 });
+    const tRoute = await texteVisible(sp);
+    step('U-3bis', 'site_en_route', tRoute.slice(0, 300));
+    expect(tRoute, 'en route : l’arrivée estimée Uber reste affichée').toContain('Arrivée estimée vers ' + etaAttendue);
+
+    // delivered → LIVRÉE (13)
+    const w3 = await pushStatus(J.deliveryId, 'delivered'); expect(w3.body.webhook.http).toBe(200);
+    const o13 = orderRow(J.id); const s13 = stopOf(J.id);
+    step('U-3bis', 'livree', { ord: o13, stop: s13, row: uberRow(J.id) });
+    expect(Number(o13.status), 'LIVRÉE (13)').toBe(13);
+    expect(s13.delivered_at).not.toBeNull();
+    expect(o13.fiscal_sequence_no).not.toBeNull();
+  });
+
+  // ------------------------------------------------------------------------
+  test('U-7bis réponse perdue (course créée, 504) : « Uber n’a pas confirmé » ; devis périmé → 409 → confirmer : MÊME clé, UNE seule course', async () => {
+    const K = O.K;
+    const m = await stubMode({ create: 'lost' }); expect(m.body.create).toBe('lost');
+    await planche();
+    const q = await confier(K.stop.id); expect(q.http).toBe(200);
+    const log0 = (await stubLog()).log.length;
+    const t0 = Date.now();
+    const d1 = await confirmerUber(K.stop.id);
+    const attente = Date.now() - t0;
+    step('U-7bis', 'a_lost', { d1, attente_ms: attente });
+    expect(d1.http, 'réponse perdue → 422').toBe(422);
+    expect(d1.body.message).toMatch(/Uber n'a pas confirmé la course — elle a peut-être été créée/);
+    expect(attente, 'le backend a attendu son délai (8 s) avant de renoncer').toBeGreaterThan(7000);
+    await expect(bandeau()).toContainText('Uber n\'a pas confirmé la course');
+    const row1 = uberRow(K.id);
+    const courses1 = await stubCoursesOf(K.id);
+    step('U-7bis', 'a_base', { row: row1, courses_chez_uber: courses1.map((c) => ({ id: c.id, status: c.status, quote_id: c.quote_id })) });
+    expect(row1.failure_code).toBe('uber_unconfirmed'); expect(row1.delivery_id).toBeNull();
+    expect(courses1.length, 'le faux Uber a POURTANT créé la course (réponse perdue)').toBe(1);
+    const premiereCourse = courses1[0].id;
+    await rec.snap('U7bis-reponse-perdue', false);
+
+    // le devis se périme → « Confirmer » → 409 nouveau prix → « Confirmer » → Uber renvoie la course déjà créée
+    sql(`UPDATE uber_direct_deliveries SET quote_expires_at = NOW() - INTERVAL 1 MINUTE WHERE order_id=${K.id}`);
+    const d2 = await apiDispatch(K.stop.id, q.body.quote_id);
+    step('U-7bis', 'b_409', d2);
+    expect(d2.http, 'devis périmé → 409').toBe(409); expect(d2.body.code).toBe('quote_changed');
+    expect(d2.body.quote.quote_id).not.toBe(q.body.quote_id);
+    const d3 = await apiDispatch(K.stop.id, d2.body.quote.quote_id);
+    step('U-7bis', 'c_confirm', d3);
+    expect(d3.http, 'confirmation sur le nouveau devis → 200').toBe(200);
+    const posts = deliveriesPosts(uberCalls(await stubLog(), log0));
+    const courses2 = await stubCoursesOf(K.id);
+    const row3 = uberRow(K.id);
+    step('U-7bis', 'c_preuves', { posts: posts.map((p) => ({ at: p.at, idempotency_key: p.body.idempotency_key, quote_id: p.body.quote_id })), courses_chez_uber: courses2.map((c) => ({ id: c.id, status: c.status, quote_id: c.quote_id })), row: row3 });
+    expect(posts.length, 'deux POST /deliveries au journal').toBe(2);
+    expect(posts[0].body.idempotency_key).toBe('lecayenne-order-' + K.id);
+    expect(posts[1].body.idempotency_key, 'MÊME clé au réessai (la fin de la 1ʳᵉ course n’est pas connue)').toBe('lecayenne-order-' + K.id);
+    expect(posts[1].body.quote_id, 'devis différent, clé identique').not.toBe(posts[0].body.quote_id);
+    expect(courses2.length, 'le faux Uber n’a toujours qu’UNE course pour K').toBe(1);
+    expect(row3.delivery_id, 'notre ligne porte la PREMIÈRE course').toBe(premiereCourse);
+    expect(row3.status).toBe('pending'); expect(row3.failure_code).toBeNull();
+    K.deliveryId = row3.delivery_id;
+    await planche();
+    const zK = zone(K.stop.id); await zK.scrollIntoViewIfNeeded();
+    await expect(zK.locator('[data-testid="pos-delivery-uber-badge"]')).toContainText('Uber');
+    await expect(zK.locator('a', { hasText: 'Suivi' })).toHaveAttribute('href', courses1[0].tracking_url);
+    await expect(board.locator('li', { hasText: K.serial }).locator('[data-testid="pos-delivery-uber-attention"]')).toHaveCount(0);
+    await rec.snap('U7bis-premiere-course');
+  });
+
+  // ------------------------------------------------------------------------
+  test('U1-010 devis SANS prix (réponse Uber sans `fee`) : refusé, « pas donné de prix », aucune ligne de devis', async () => {
+    const Lc = O.L;
+    const m = await stubMode({ quote: 'nofee' }); expect(m.body.quote).toBe('nofee');
+    await planche();
+    const log0 = (await stubLog()).log.length;
+    const q = await confier(Lc.stop.id);
+    const calls = uberCalls(await stubLog(), log0);
+    step('U1-010', 'nofee', { q, calls, row: uberRow(Lc.id) });
+    expect(q.http, 'devis sans prix → 422').toBe(422);
+    expect(q.body.message).toMatch(/Uber n'a pas donné de prix/);
+    await expect(bandeau()).toContainText('Uber n\'a pas donné de prix');
+    expect(calls.some((c) => /delivery_quotes$/.test(c.path)), 'le devis a bien été demandé au faux Uber').toBe(true);
+    expect(uberRow(Lc.id), 'aucune ligne uber_direct_deliveries (pas de « 0,00 € » enregistré)').toBeNull();
+    const zL = zone(Lc.stop.id); await zL.scrollIntoViewIfNeeded();
+    await expect(zL.locator('[data-testid="pos-delivery-uber-price"]')).toHaveCount(0);
+    await expect(zL.locator('[data-testid="pos-delivery-uber-confirm"]')).toHaveCount(0);
+    await expect(zL.locator('[data-testid="pos-delivery-use-uber"]')).toBeEnabled();
+    await rec.snap('U1-010-devis-sans-prix', false);
+    await stubMode({ quote: 'ok' });
+  });
+
+  // ------------------------------------------------------------------------
+  test('U-9bis commande annulée, Uber refuse l’annulation : l’arrêt reste avec la raison ; Uber accepte → « Nos livreurs » retire l’arrêt (pas rendu)', async () => {
+    const M = O.M;
+    await stubMode({ cancel: 'refuse' });
+    await planche();
+    expect((await confier(M.stop.id)).http).toBe(200); expect((await confirmerUber(M.stop.id)).http).toBe(200);
+    M.deliveryId = uberRow(M.id).delivery_id;
+    const c = await cancelOrder(M.id, `${TAG}-U9bis annulation, Uber refuse`);
+    expect(c.http).toBeLessThan(300);
+    const rowM = uberRow(M.id); const sM = stopOf(M.id); const oM = orderRow(M.id);
+    step('U-9bis', 'a_refus', { row: rowM, stop: sM, ord: oM });
+    expect(Number(oM.status)).toBe(16);
+    expect(rowM.failure_code).toBe('order_closed_cancel_failed'); expect(rowM.status).toBe('pending');
+    expect(sM, 'l’arrêt reste (Uber n’a pas confirmé)').not.toBeNull();
+    await planche();
+    const liM = board.locator('li', { hasText: M.serial });
+    await liM.scrollIntoViewIfNeeded();
+    await expect(liM.locator('[data-testid="pos-delivery-uber-attention"]')).toContainText('Uber n\'a pas confirmé l\'annulation de la course');
+    const own = zone(M.stop.id).locator('[data-testid="pos-delivery-use-own"]');
+    await expect(own, '« Nos livreurs » = réessai de l’annulation Uber').toBeEnabled();
+    step('U-9bis', 'a_ecran', await ligneTexte(M.serial));
+    await rec.snap('U9bis-arret-reste', false);
+
+    // Uber accepte de nouveau : « Nos livreurs » annule la course et RETIRE l'arrêt (commande annulée ⇒ rien à rendre à un livreur)
+    await stubMode({ cancel: 'ok' });
+    const log0 = (await stubLog()).log.length;
+    const rel = await nosLivreurs(M.stop.id);
+    const calls = uberCalls(await stubLog(), log0);
+    const rowM2 = uberRow(M.id); const sM2 = stopOf(M.id); const oM2 = orderRow(M.id);
+    const audM = audits(M.id).filter((a) => a.action === 'delivery.uber_released');
+    step('U-9bis', 'b_retire', { rel, calls, row: rowM2, stop: sM2, ord: oM2, audits: audM });
+    expect(rel.http).toBe(200);
+    expect(rel.body.closed, 'réponse closed:true').toBe(true);
+    expect(cancelPosts(calls, M.deliveryId).length, 'le faux Uber a reçu cancel').toBe(1);
+    expect(rowM2.status).toBe('canceled'); expect(rowM2.failure_code).toBeNull();
+    expect(sM2, 'l’arrêt a DISPARU (pas rendu à nos livreurs)').toBeNull();
+    expect(oM2.delivery_boy_id, 'aucun livreur posé sur une commande annulée').toBeNull();
+    expect(audM.some((a) => /"order_closed":\s*true/.test(a.payload)), 'audit_logs uber_released order_closed=true (JSON normalisé par MySQL : espace après le deux-points)').toBe(true);
+    await expect(board.locator('li', { hasText: M.serial })).toHaveCount(0);
+    const liv = await livreurListe(M.serial);
+    step('U-9bis', 'livreur', liv);
+    expect(liv.ecran || liv.api.includes(M.id), 'écran livreur : la commande annulée n’apparaît pas').toBe(false);
+    await rec.snap('U9bis-arret-retire', false);
   });
 
   // ------------------------------------------------------------------------

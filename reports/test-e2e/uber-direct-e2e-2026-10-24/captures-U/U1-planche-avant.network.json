@@ -4,20 +4,20 @@
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1792851714872
+    "ts": 1792854756044
   },
   {
     "url": "http://127.0.0.1:8766/api/broadcasting/auth",
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1792851715117
+    "ts": 1792854756227
   },
   {
     "url": "http://127.0.0.1:8766/api/admin/pos/customer-display",
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1792851715504
+    "ts": 1792854756593
   }
 ]

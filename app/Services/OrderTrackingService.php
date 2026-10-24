@@ -236,7 +236,10 @@ class OrderTrackingService
 
     private function courseUber(Order|FrontendOrder $order): ?\App\Models\UberDirectDelivery
     {
-        if (! $order instanceof Order || (int) $order->order_type !== \App\Enums\OrderType::DELIVERY) {
+        // [E2E UBER 2026-10-24 round 2 · U1-001] `FrontendOrder` AUSSI : c'est lui que sert `/api/frontend/order/show/{id}`,
+        // la route que le site interroge toutes les 20 s. En n'acceptant que `Order`, l'arrivée estimée n'existait que sur la
+        // route publique par jeton — le client, lui, lisait encore « Départ de la livraison prévu à 18:30 » (mauvaise couche mesurée).
+        if ((int) $order->order_type !== \App\Enums\OrderType::DELIVERY || ! $order->id) {
             return null;
         }
         try {
