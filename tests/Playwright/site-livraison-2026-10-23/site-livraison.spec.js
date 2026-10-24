@@ -556,14 +556,15 @@ test.describe('Site — livraison : présente et correcte (copie corrigée servi
       const payBloc = page.locator('[role="radiogroup"][aria-label="Mode de paiement"]');
       await payBloc.scrollIntoViewIfNeeded();
       const modes = (await payBloc.locator('[role="radio"]').allInnerTexts()).map(norm);
-      const livraisonRadio = payBloc.getByRole('radio', { name: /Payer à la livraison/ });
-      expect(await livraisonRadio.count(), 'option « Payer à la livraison »').toBe(1);
+      // [2026-10-24] En livraison : trois règlements (en ligne / carte à la livraison / espèces à la livraison) ; l'ancien « Payer à la livraison » n'existe plus.
+      const livraisonRadio = payBloc.getByRole('radio', { name: /Espèces à la livraison/ });
+      expect(await livraisonRadio.count(), 'option « Espèces à la livraison »').toBe(1);
       if ((await livraisonRadio.getAttribute('aria-checked')) !== 'true') await livraisonRadio.click();
       const pagePay = norm(await page.locator('.lcf-page').innerText());
-      check(`${vp} (S-002) paiement livraison : libellés de livraison, aucun libellé de comptoir`, /Payer à la livraison/.test(pagePay) && /Espèces à la remise/.test(pagePay) && /Paiement à la livraison/i.test(pagePay)
+      check(`${vp} (S-002) paiement livraison : libellés de livraison, aucun libellé de comptoir`, /Espèces à la livraison/.test(pagePay) && /espèces au livreur, à la remise/.test(pagePay) && /Paiement à la livraison/i.test(pagePay)
         && !/Payer sur place|PAIEMENT AU COMPTOIR|envoyée en direct à la caisse|ton plat t'attend/i.test(pagePay), { modes, extrait: (pagePay.match(/.{0,50}(sur place|comptoir|en direct).{0,40}/i) || [null])[0] });
-      expect(pagePay).toMatch(/Payer à la livraison/);
-      expect(pagePay).toMatch(/Espèces à la remise/);
+      expect(pagePay).toMatch(/Espèces à la livraison/);
+      expect(pagePay).toMatch(/espèces au livreur, à la remise/);
       expect(pagePay).toMatch(/Paiement à la livraison/i);
       expect(pagePay).not.toMatch(/Payer sur place/i);
       expect(pagePay).not.toMatch(/Paiement au comptoir/i);
