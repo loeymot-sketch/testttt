@@ -32,6 +32,12 @@ class UberDirectClient
     /** Clé PROPRE à Uber Direct — ne doit jamais coïncider avec celle de la marketplace. */
     private const TOKEN_CACHE_KEY = 'uber_direct_access_token';
 
+    /**
+     * [E2E UBER 2026-10-24 · U2-006] Code HTTP du DERNIER appel (null = aucune réponse : délai dépassé, réseau coupé). Il distingue un
+     * refus DÉFINITIF d'Uber (4xx : rien n'a été créé) d'une réponse perdue (la course a peut-être été créée).
+     */
+    public ?int $lastStatus = null;
+
     /** L'intégration est-elle armée ? Faux ⇒ aucun appel réseau n'est jamais émis. */
     public function isConfigured(): bool
     {
@@ -143,6 +149,7 @@ class UberDirectClient
      */
     private function authed(string $method, string $url, array $body = [], bool $retried = false): ?array
     {
+        $this->lastStatus = null;
         $token = $this->accessToken();
         if ($token === null) {
             return null;
@@ -153,6 +160,8 @@ class UberDirectClient
             $res = $method === 'GET'
                 ? $req->get($url, $body)
                 : $req->send($method, $url, ['json' => $body]);
+
+            $this->lastStatus = $res->status();
 
             if ($res->status() === 401 && ! $retried) {
                 $this->forgetToken();

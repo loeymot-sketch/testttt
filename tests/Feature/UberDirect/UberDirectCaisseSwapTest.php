@@ -456,6 +456,73 @@ class UberDirectCaisseSwapTest extends TestCase
         $this->assertSame(['lecayenne-order-'.$stop->order_id, 'lecayenne-order-'.$stop->order_id], $keys, 'même clé : la course éventuellement créée est renvoyée, jamais doublée');
     }
 
+    /** [U2-006] Un 4xx d'Uber est un refus DÉFINITIF : rien n'a été créé — on ne dit pas « elle a peut-être été créée ». */
+    public function test_a_definitive_uber_refusal_is_not_reported_as_a_possibly_created_course(): void
+    {
+        $this->fakeUber(['*/deliveries' => Http::response(['code' => 'address_undeliverable'], 400)]);
+        $stop = $this->stop();
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $r = $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote]);
+        $this->assertFalse((bool) $r->json('ok'));
+        $this->assertStringContainsString('refusé', (string) $r->json('message'));
+        $this->assertStringNotContainsString('peut-être', (string) $r->json('message'));
+        $this->assertSame('uber_refused', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('failure_code'));
+        $this->assertNull(UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('delivery_id'));
+    }
+
+    /** [U2-004] La signature du webhook est lue sous l'un ou l'autre nom d'en-tête ; une fausse reste refusée. */
+    public function test_the_webhook_accepts_the_signature_under_the_postmates_header_name_too(): void
+    {
+        $stop = $this->dispatched();
+        $raw = json_encode(['delivery_id' => 'del_1', 'status' => 'pickup']);
+        $call = fn (string $sig) => $this->call('POST', '/api/webhooks/uber-direct', [], [], [], [
+            'CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json', 'HTTP_X_POSTMATES_SIGNATURE' => $sig,
+        ], $raw);
+        $call(hash_hmac('sha256', $raw, 'whsec-test'))->assertOk();
+        $this->assertSame('pickup', UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->value('status'));
+        $call(hash_hmac('sha256', $raw, 'mauvais-secret'))->assertStatus(401);
+    }
+
+    /** [contrat Uber] Le corps de création dit l'issue d'une livraison impossible, le nom commercial, et une heure de prêt en UTC « Z » tenant compte du temps déjà passé en cuisine. */
+    public function test_the_create_body_carries_the_contract_fields_and_a_kitchen_aware_ready_time(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-24 19:00:00', config('app.timezone')));
+        $this->fakeUber();
+        $stop = $this->stop(['status' => OrderStatus::PREPARING, 'preparation_time' => 15, 'accepted_at' => now()->subMinutes(12)]);
+        $quote = $this->pos('quote', ['stop_id' => $stop->id])->json('quote_id');
+        $this->pos('dispatch', ['stop_id' => $stop->id, 'quote_id' => $quote])->assertOk();
+
+        $body = Http::recorded(fn ($r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/deliveries') && $r->method() === 'POST')->first()[0]->data();
+        $this->assertSame('return', $body['undeliverable_action']);
+        $this->assertNotEmpty($body['pickup_business_name']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $body['pickup_ready_dt']);
+        $this->assertSame(Carbon::now()->addMinutes(3)->utc()->format('Y-m-d\TH:i:s\Z'), $body['pickup_ready_dt'], '12 min déjà passées sur 15 : prête dans 3 min, pas dans 15');
+        Carbon::setTestNow();
+    }
+
+    /** [U2-009] Course annulée par Uber alors que la COMMANDE est annulée : l'arrêt disparaît, il n'est pas rendu à un livreur. */
+    public function test_a_course_canceled_by_uber_on_a_canceled_order_removes_the_stop_instead_of_giving_it_back(): void
+    {
+        $stop = $this->dispatched();
+        Order::query()->whereKey($stop->order_id)->update(['status' => OrderStatus::CANCELED]);
+        $this->webhook(['delivery_id' => 'del_1', 'status' => 'canceled'])->assertOk();
+        $this->assertNull(DeliveryStop::withoutGlobalScopes()->find($stop->id));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'delivery.uber_course_ended', 'resource_id' => $stop->order_id]);
+    }
+
+    /** [U2-013] Une arrivée estimée DÉJÀ PASSÉE n'est pas affichée au client. */
+    public function test_a_past_uber_eta_is_not_shown_to_the_customer(): void
+    {
+        $stop = $this->dispatched();
+        UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->update(['delivery_payload' => ['dropoff_eta' => now()->subMinutes(5)->toIso8601String()]]);
+        $order = Order::find($stop->order_id);
+        $past = app(\App\Services\OrderTrackingService::class)->forOrder($order);
+        $this->assertArrayHasKey('arrivee_estimee', $past);
+        $this->assertNull($past['arrivee_estimee']);
+        UberDirectDelivery::withoutGlobalScopes()->where('order_id', $stop->order_id)->update(['delivery_payload' => ['dropoff_eta' => now()->addMinutes(9)->toIso8601String()]]);
+        $this->assertNotNull(app(\App\Services\OrderTrackingService::class)->forOrder(Order::find($stop->order_id))['arrivee_estimee']);
+    }
+
     /**
      * [E2E UBER 2026-10-24 · P2] Après une course annulée CÔTÉ UBER, re-confier la commande demande un nouveau devis ; la clé
      * d'idempotence doit changer, sinon Uber renvoie la course annulée et rien ne part (« ok » à l'écran, aucun coursier).

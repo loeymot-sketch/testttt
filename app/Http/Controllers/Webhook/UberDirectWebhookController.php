@@ -60,7 +60,10 @@ class UberDirectWebhookController extends Controller
     private function signatureValid(Request $request, string $raw): bool
     {
         $secret = trim((string) config('uber_direct.webhook_secret', ''));
-        $provided = (string) $request->header('X-Uber-Signature', '');
+        // [E2E UBER 2026-10-24 · U2-004] Le nom de l'en-tête n'a jamais été confronté à un vrai Uber (le faux Uber utilisé par les bancs
+        // reprenait notre propre hypothèse : preuve circulaire). Uber Direct signe historiquement sous `X-Postmates-Signature`,
+        // la marketplace sous `X-Uber-Signature` : on accepte les deux — le HMAC-SHA256 du corps brut reste, lui, strictement vérifié.
+        $provided = (string) ($request->header('X-Uber-Signature') ?: $request->header('X-Postmates-Signature', ''));
         if ($secret === '' || $provided === '') {
             return false;
         }

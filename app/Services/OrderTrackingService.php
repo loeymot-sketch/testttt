@@ -257,7 +257,9 @@ class OrderTrackingService
             return null;
         }
         try {
-            return \Carbon\Carbon::parse($eta)->setTimezone(config('app.timezone'))->format('H:i');
+            $at = \Carbon\Carbon::parse($eta);
+            // [E2E UBER 2026-10-24 · U2-013] Une arrivée estimée DÉJÀ PASSÉE n'est plus une information : on ne l'affiche pas.
+            return $at->greaterThan(now()) ? $at->setTimezone(config('app.timezone'))->format('H:i') : null;
         } catch (\Throwable $e) {
             return null;
         }

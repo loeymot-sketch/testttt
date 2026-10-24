@@ -159,8 +159,6 @@ class EventServiceProvider extends ServiceProvider
             PersistOrderStatusChangedToOutbox::class,
             // [LIVRAISON 2026-10-20] Commande refusée / annulée par changement de statut : libère son arrêt.
             ReleaseDeliveryStopOnOrderClosed::class,
-            // [E2E UBER 2026-10-24] La cuisine marque PRÊTE une commande dont le coursier Uber a déjà le sac : rattrapage EN ROUTE / LIVRÉE.
-            \App\Listeners\SyncUberCourseAfterKitchenReady::class,
             // [KITCHEN-AUTOPRINT 2026-08-07 owner] Le ticket cuisine sort SEUL dès l'entrée en
             // cuisine, quelle que soit la surface (la caisse était la grande oubliée : elle
             // exigeait un clic). Doublon impossible — garde atomique en base.
@@ -168,6 +166,9 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+            // [E2E UBER 2026-10-24 · U2-001] EN DERNIER : la cuisine marque PRÊTE une commande dont le coursier Uber a déjà le sac →
+            // rattrapage EN ROUTE / LIVRÉE. Placé après les notifications de « prête » pour qu'elles partent AVANT celles de « en route ».
+            \App\Listeners\SyncUberCourseAfterKitchenReady::class,
         ],
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
         // Chef "↶ Annuler bump" within 60s of bump. Append-only — orders.status

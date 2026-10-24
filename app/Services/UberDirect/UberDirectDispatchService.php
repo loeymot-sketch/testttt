@@ -222,6 +222,16 @@ class UberDirectDispatchService
             // 2) L'appel à Uber — HORS transaction.
             $branch = Branch::query()->find($order->branch_id);
             $raw = $this->client->createDelivery($this->deliveryBody($branch, $order, $row));
+            // [E2E UBER 2026-10-24 · U2-006] Un 4xx d'Uber (adresse non couverte, champ refusé, droit manquant) est un refus DÉFINITIF :
+            // rien n'a été créé, inutile d'envoyer le caissier vérifier chez Uber. Seule une réponse perdue (délai, 5xx) dit « peut-être créée ».
+            if ($raw === null && in_array($this->client->lastStatus, [400, 401, 403, 404, 422], true)) {
+                $row->forceFill([
+                    'failure_code' => 'uber_refused',
+                    'failure_message' => 'Uber a refusé la course (code '.$this->client->lastStatus.') : rien n\'a été créé.',
+                ])->save();
+
+                return ['ok' => false, 'message' => 'Uber a refusé la course (code '.$this->client->lastStatus.') : aucune course n\'a été créée, la commande reste à nos livreurs.'];
+            }
             if ($raw === null || ($raw['id'] ?? '') === '') {
                 $row->forceFill([
                     'failure_code' => 'uber_unconfirmed',
@@ -359,6 +369,7 @@ class UberDirectDispatchService
             return false;
         }
         $row->forceFill(['status' => UberDirectDelivery::STATUS_CANCELED, 'status_updated_at' => now(), 'failure_code' => null, 'failure_message' => null])->save();
+        $this->audit('delivery.uber_course_ended', Order::query()->withoutGlobalScope(BranchScope::class)->find($orderId), null, ['delivery_id' => $row->delivery_id, 'status' => 'canceled', 'reason' => 'order_closed']);
 
         return true;
     }
@@ -472,7 +483,15 @@ class UberDirectDispatchService
     private function onFailed(?DeliveryStop $stop, ?Order $order, string $status, UberDirectDelivery $row): void
     {
         if ($stop && $stop->left_at === null) {
-            $this->giveBackToOwnCouriers($stop);
+            // [E2E UBER 2026-10-24 · U2-009] Même règle que `release()` : une commande ANNULÉE / REFUSÉE n'est pas rendue à nos livreurs.
+            if ($order && in_array((int) $order->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true)) {
+                $branchId = (int) $stop->branch_id;
+                $wave = $stop->wave_at;
+                $stop->delete();
+                $this->waves->resequence($branchId, $wave);
+            } else {
+                $this->giveBackToOwnCouriers($stop);
+            }
         } else {
             // [E2E 2026-10-22 · B-002] Le coursier avait DÉJÀ le sac : la commande n'est pas livrée et ne peut plus être
             // reprise par nos livreurs (la commande est EN ROUTE). On ne la rend pas en silence : la caisse la voit en alerte.
@@ -482,6 +501,8 @@ class UberDirectDispatchService
                     .' alors que le coursier avait le sac : la commande n\'est pas livrée. À traiter avec le client.',
             ])->save();
         }
+        // [U2-005] Une course annulée / revenue laisse une trace d'audit chaînée (jamais une course facturée sans trace).
+        $this->audit('delivery.uber_course_ended', $order, null, ['delivery_id' => $row->delivery_id, 'status' => $status, 'after_pickup' => $stop?->left_at !== null]);
         Log::warning('uber_direct.course_failed', ['order_id' => $order?->id, 'status' => $status, 'after_pickup' => $stop?->left_at !== null]);
     }
 
@@ -587,6 +608,10 @@ class UberDirectDispatchService
         return $this->quoteBody($branch, $order) + array_filter([
             'quote_id' => $row->quote_id,
             'pickup_name' => (string) ($branch?->name ?: 'Le Cayenne'),
+            // [E2E UBER 2026-10-24 · contrat] Nom commercial du restaurant côté coursier ; et l'issue d'une livraison impossible DIT
+            // explicitement (`return`) : `onFailed` suppose « revenue au restaurant » — le défaut d'Uber est inconnu, on ne le devine pas.
+            'pickup_business_name' => (string) ($branch?->name ?: 'Le Cayenne'),
+            'undeliverable_action' => 'return',
             'dropoff_name' => (string) ($order->user?->name ?: 'Client'),
             'dropoff_notes' => trim(implode(' — ', array_filter([$a->apartment, 'Commande #'.$ref]))),
             'manifest_reference' => 'order-'.$order->id,
@@ -621,9 +646,23 @@ class UberDirectDispatchService
     /** Heure à laquelle le sac sera prêt : maintenant si la commande l'est déjà, sinon le temps de préparation restant. */
     private function readyAt(Order $order): string
     {
-        $minutes = (int) $order->status === OrderStatus::PREPARED ? 0 : min(60, max(0, (int) $order->preparation_time));
+        // [E2E UBER 2026-10-24 · U1-009] Prête = acceptation + temps de préparation fixé, jamais « maintenant + préparation » : une
+        // commande en cuisine depuis 12 min sur 15 est prête dans 3 min, pas dans 15 (le coursier arrivait 12 min trop tard).
+        $now = now();
+        if ((int) $order->status === OrderStatus::PREPARED) {
+            return $now->copy()->utc()->format('Y-m-d\TH:i:s\Z');
+        }
+        $minutes = min(60, max(0, (int) $order->preparation_time));
+        $start = $order->accepted_at ?: ($order->order_datetime ? \Carbon\Carbon::parse($order->order_datetime) : $now);
+        $ready = $start->copy()->addMinutes($minutes);
+        if ($ready->lessThan($now)) {
+            $ready = $now->copy();
+        }
+        if ($ready->greaterThan($now->copy()->addMinutes(60))) {
+            $ready = $now->copy()->addMinutes(60);
+        }
 
-        return now()->addMinutes($minutes)->utc()->format('Y-m-d\TH:i:s\Z'); // [U1-017] Uber attend l'UTC « Z », pas « +02:00 »
+        return $ready->utc()->format('Y-m-d\TH:i:s\Z');
     }
 
     /** Numéro au format international exigé par Uber (E.164) ; null si on ne peut pas le garantir. */
