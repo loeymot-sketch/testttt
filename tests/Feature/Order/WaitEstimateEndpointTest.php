@@ -281,8 +281,8 @@ class WaitEstimateEndpointTest extends TestCase
 
         $route = app('router')->getRoutes()->getByName('frontend.order.wait-estimate');
         $this->assertNotNull($route, 'Route nommée frontend.order.wait-estimate absente.');
-        // [VG-2026-10-21 M1-002] même seuil 30/min, compteur propre (3e argument = préfixe de clé).
-        $this->assertContains('throttle:30,1,wait-estimate', $route->gatherMiddleware(),
+        // [VG-2026-10-21 M1-002] compteur propre (3e argument = préfixe de clé). [2026-10-27] 300/min : plafond généreux, jamais de blocage client.
+        $this->assertContains('throttle:300,1,wait-estimate', $route->gatherMiddleware(),
             'Endpoint public wait-estimate DOIT être throttled (vecteur d\'abus).');
     }
 }

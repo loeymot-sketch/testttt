@@ -34,7 +34,12 @@ test('les lignes construites respectent min/max du profil réel de la production
   const lignes = await page.evaluate(async () => {
     const M = window.LC.menu;
     // Viandes que les produits à choix proposent réellement en production (Cayenne/Classique n'en offrent que 3).
-    const pool = M.meats.filter((x) => /^(Poulet mariné|Viande Hachée|Nuggets|Tenders|Fricadelle)$/i.test(x.name));
+    // [2026-10-27] « Viande Hachée » est RÉSERVÉE À LA CAISSE en viande incluse (`visible_on: ["pos"]`, variation 731) : la production
+    // refuse la commande en ligne (« Variation ID 731 indisponible sur kiosk »). Ce banc la plaçait en 1ʳᵉ viande (ordre du catalogue) et
+    // ne contrôlait que min/max, donc restait vert sur une commande que la production aurait refusée. Pool = viandes commandables.
+    const pool = M.meats.filter((x) => /^(Poulet mariné|Nuggets|Tenders|Fricadelle)$/i.test(x.name))
+      // Poulet mariné d'abord : c'est la seule viande que TOUS les produits à choix proposent en ligne (Cayenne/Classique : 3 viandes, dont 2 caisse seule).
+      .sort((a, b) => (/^Poulet mariné$/i.test(b.name) ? 1 : 0) - (/^Poulet mariné$/i.test(a.name) ? 1 : 0));
     const out = [];
     for (const it of M.items.filter((i) => (i.viandes || 0) > 0 || /burger|cheese|big|grill|fish|suprêm/i.test(i.name))) {
       const n = Number(it.viandes || 0);

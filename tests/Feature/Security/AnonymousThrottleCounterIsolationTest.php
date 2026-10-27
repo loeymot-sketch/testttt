@@ -62,9 +62,9 @@ class AnonymousThrottleCounterIsolationTest extends TestCase
             'Le 1er essai du code ne doit pas répondre 429 après 4 chargements de la page de suivi.');
     }
 
-    public function test_le_limiteur_du_code_mord_encore_au_quatrieme_essai(): void
+    public function test_le_limiteur_du_code_mord_encore_au_onzieme_essai(): void
     {
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= 10; $i++) {
             $this->assertNotSame(429, $this->verify()->status(), "Essai #{$i} ne doit pas encore être limité.");
         }
 
@@ -82,9 +82,9 @@ class AnonymousThrottleCounterIsolationTest extends TestCase
             'La connexion Apple ne doit pas hériter du compteur de wait-estimate.');
     }
 
-    public function test_la_connexion_apple_garde_son_plafond_de_dix_par_minute(): void
+    public function test_la_connexion_apple_garde_son_plafond_de_soixante_par_minute(): void
     {
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 60; $i++) {
             $r = $this->api()->postJson('/api/auth/social/apple', ['identity_token' => 'x']);
             $this->assertNotSame(429, $r->status(), "Appel Apple #{$i} ne doit pas encore être limité.");
         }
@@ -110,12 +110,12 @@ class AnonymousThrottleCounterIsolationTest extends TestCase
             'loyalty/check ne doit pas répondre 429 après la composition d\'une commande à la borne.');
     }
 
-    public function test_le_limiteur_fidelite_mord_encore_au_onzieme_appel(): void
+    public function test_le_limiteur_fidelite_mord_encore_au_soixante_et_unieme_appel(): void
     {
         $borne = User::factory()->create(['status' => 5]);
         Sanctum::actingAs($borne, ['kiosk:order']);
 
-        for ($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 60; $i++) {
             $r = $this->api()->postJson('/api/frontend/loyalty/check', ['code' => '0611002200']);
             $this->assertNotSame(429, $r->status(), "loyalty/check #{$i} ne doit pas encore être limité.");
         }

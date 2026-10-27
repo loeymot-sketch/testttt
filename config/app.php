@@ -90,7 +90,7 @@ return [
 
     // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
     // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
-    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
+    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)),
 
     // [GOAL-OPS-SWAP W3 2026-08-12] Plafond GLOBAL par compte, tous appareils
     // confondus. Depuis que le budget `throttle:api` est porté par le couple
@@ -100,7 +100,7 @@ return [
     // + cuisine + écran client + suivi + une marge, sans ouvrir la porte.
     'api_throttle_user_ceiling_per_minute' => max(
         1,
-        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)))
+        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)))
     ),
 
     // throttle:admin-mutation non-GET cap — env-configurable to absorb owner

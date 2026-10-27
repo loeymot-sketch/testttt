@@ -139,7 +139,7 @@ class RouteServiceProvider extends ServiceProvider
 
             $limits = [
                 Limit::perMinute(5)->by('otp-id:'.$id),
-                Limit::perMinute(20)->by('otp-send-global'),
+                Limit::perMinute(100)->by('otp-send-global'),
             ];
 
             // [P1-2 SÉCU 2026-08-04] Plafond DÉDIÉ PAR EMAIL. Le seau par-identifiant ci-dessus
@@ -207,7 +207,7 @@ class RouteServiceProvider extends ServiceProvider
         // Avec `throttle:20,1` nu, Laravel signe la requête par (domaine|IP) SANS la route : tous les `throttle:N,M`
         // invités d'une même IP partagent UN compteur. Constaté : 21 appels à /status (limite 60) faisaient répondre
         // 429 au devis (limite 20) sans aucun devis demandé. Un limiteur nommé préfixe sa clé par son nom.
-        foreach (['status' => 60, 'suggest' => 40, 'quote' => 20, 'waves' => 60] as $route => $parMinute) {
+        foreach (['status' => 300, 'suggest' => 240, 'quote' => 120, 'waves' => 300] as $route => $parMinute) {
             RateLimiter::for('delivery-' . $route, function (Request $request) use ($parMinute) {
                 return Limit::perMinute($parMinute)->by((string) $request->ip());
             });
@@ -226,7 +226,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('uber-direct-webhook', fn (Request $request) => Limit::perMinute(120)->by('uber-direct-webhook|'.$request->ip()));
 
         RateLimiter::for('kiosk-menu', function (Request $request) {
-            return Limit::perMinute(60)->by($this->throttleKeyParAppareil($request));
+            return Limit::perMinute(300)->by($this->throttleKeyParAppareil($request));
         });
 
         // Assistant téléphonique : le gateway HMAC a son propre seau anonyme,
@@ -527,7 +527,7 @@ class RouteServiceProvider extends ServiceProvider
         // Logging of >10 distinct branch_id values from the same IP within
         // 5 min is deferred to V1.0.2 (see plans/v1-0-2 backlog).
         RateLimiter::for('oss-public', function (Request $request) {
-            return Limit::perMinute(60)->by($request->ip())->response(function () {
+            return Limit::perMinute(300)->by($request->ip())->response(function () {
                 return response()->json([
                     'message' => 'OSS rate limit exceeded.',
                     'retry_after' => 60,
@@ -574,7 +574,7 @@ class RouteServiceProvider extends ServiceProvider
                 // restait que le global (30/min = 1 800 essais/h sur un compte NOMMÉ). Ce seau
                 // par identifiant SEUL survit à la rotation d'IP — même motif que `otp-id:`.
                 Limit::perMinutes($decayMinutes, $maxAttempts)->by('login-id:'.$identifier)->response($tooMany),
-                Limit::perMinute(30)->by('login-global')->response($tooMany),
+                Limit::perMinute(120)->by('login-global')->response($tooMany),
             ];
         });
     }

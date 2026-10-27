@@ -46,6 +46,9 @@ class MenuControllerRateLimitTest extends TestCase
 
     public function test_limit_exceeded_returns_429(): void
     {
+        // Plafond général aligné sur la production (l'environnement de test le fixe à 120, qui masquerait kiosk-menu).
+        config(['app.api_throttle_per_minute' => 600]);
+
         [$user] = $this->makeKioskUser();
         Sanctum::actingAs($user, ['kiosk:order']);
 
@@ -54,22 +57,22 @@ class MenuControllerRateLimitTest extends TestCase
             'Accept'    => 'application/json',
         ];
 
-        // 60 requêtes autorisées (limit inclusif par minute, par user_id).
+        // 300 requêtes autorisées (limit inclusif par minute, par user_id).
         // On ne vérifie pas les codes de succès (la route peut renvoyer 200
         // ou une erreur applicative selon les seeds MySQL-only) ; seul compte
         // le fait qu'elles ne soient PAS throttlées.
-        for ($i = 0; $i < 60; $i++) {
+        for ($i = 0; $i < 300; $i++) {
             $response = $this->withHeaders($headers)->getJson('/api/frontend/menu');
             $this->assertNotSame(
                 429,
                 $response->status(),
-                "Requête #" . ($i + 1) . " a été throttlée prématurément (limite 60/min)."
+                "Requête #" . ($i + 1) . " a été throttlée prématurément (limite 300/min)."
             );
         }
 
-        // 61e requête : doit être throttlée.
+        // 301e requête : doit être throttlée.
         $throttled = $this->withHeaders($headers)->getJson('/api/frontend/menu');
-        $this->assertSame(429, $throttled->status(), 'La 61e requête devrait déclencher le throttle:kiosk-menu.');
+        $this->assertSame(429, $throttled->status(), 'La 301e requête devrait déclencher le throttle:kiosk-menu.');
 
         // En-têtes standard Laravel pour les limites de taux.
         $this->assertNotNull(

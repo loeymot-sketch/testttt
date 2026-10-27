@@ -228,8 +228,8 @@ if ($requireForm) {
         'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
         // [RATE-FIX 2026-07-10] défaut 5→30/min : 5 était trop bas (un client qui enchaîne 2
         // commandes tombait sur un 429). Le quote a désormais son propre bucket (quote_rate_limit).
-        'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 30),
-        'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 120),
+        'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 120),
+        'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 300),
         // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
         'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
@@ -378,8 +378,8 @@ return [
     // [RATE-FIX 2026-07-10] défaut 5→30/min (5 était trop bas : 2 commandes d'affilée = 429).
     // Le quote (aperçu prix) a désormais son propre bucket (quote_rate_limit) et ne consomme plus
     // le budget des commandes. Ceci est le tableau réellement retourné (SSOT config kiosk).
-    'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 30),
-    'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 120),
+    'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 120),
+    'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 300),
     // [owner 2026-07-07] Numéro de file (queue_number "A00NN") de départ du jour.
     // L'owner veut que le compteur quotidien commence à 32 (au lieu de 1). Partagé
     // par toutes les surfaces (borne + caisse) via allocateQueueNumber (OrderService
