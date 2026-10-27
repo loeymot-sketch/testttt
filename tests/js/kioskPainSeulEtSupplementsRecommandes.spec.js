@@ -6,9 +6,9 @@ import KioskStepSupplements from '../../resources/js/components/frontend/kiosk/s
 import frMessages from '../../resources/js/languages/fr.json';
 
 /**
- * [OWNER 2026-10-21] BORNE.
- *  1. L'étape « pain / galette » montre le PAIN ou la GALETTE seuls — pas le sandwich complet que l'image héritée
- *     de config/menu_images.php (« bases ») affichait. Une photo posée depuis l'admin reste prioritaire.
+ * [OWNER 2026-10-21 → 2026-10-27] BORNE.
+ *  1. L'étape « pain / galette » montre le même pictogramme que le site (🥖 / 🌯 sur pastille teintée). Les illustrations
+ *     pain-seul.svg / galette-seule.svg posées le 21/10 ont été jugées « nulles » le 27/10 : on s'aligne sur le site.
  *  2. Les suppléments « Recommandés » (drapeau `is_recommended` posé par le serveur) passent en tête de liste avec un badge.
  */
 
@@ -33,16 +33,23 @@ const montePain = (item) => mount(KioskStepPain, {
 });
 
 describe('Borne — étape pain/galette', () => {
-  it('remplace le sandwich complet par le pain seul et la galette seule', () => {
+  it('montre le pictogramme du site (🥖 / 🌯), jamais le sandwich complet ni une illustration', () => {
     const w = montePain(itemAvecPain());
-    const srcs = w.findAll('.kiosk-pain-thumb').map((i) => i.attributes('src'));
-    expect(srcs).toEqual(['/images/menu/pain-seul.svg', '/images/menu/galette-seule.svg']);
+    expect(w.findAll('img')).toHaveLength(0);
+    expect(w.findAll('.kiosk-pain-emoji').map((n) => n.text())).toEqual(['🥖', '🌯']);
   });
 
-  it('garde une photo posée depuis l\'admin (hors images/menu)', () => {
+  it('ignore même une photo posée depuis l\'admin : l\'étape est un choix de support, comme sur le site', () => {
     const w = montePain(itemAvecPain('/storage/12/mon-pain.jpg', '/storage/13/ma-galette.jpg'));
-    const srcs = w.findAll('.kiosk-pain-thumb').map((i) => i.attributes('src'));
-    expect(srcs).toEqual(['/storage/12/mon-pain.jpg', '/storage/13/ma-galette.jpg']);
+    expect(w.findAll('img')).toHaveLength(0);
+    expect(w.findAll('.kiosk-pain-emoji')).toHaveLength(2);
+  });
+
+  it('teinte la pastille comme le site : jaune pour le pain, beige pour la galette', () => {
+    const w = montePain(itemAvecPain());
+    const pastilles = w.findAll('.kiosk-pain-emoji');
+    expect(pastilles[0].classes()).toContain('is-pain');
+    expect(pastilles[1].classes()).toContain('is-galette');
   });
 
   it('chaque carte porte le nom du choix, pas celui d\'un sandwich', () => {

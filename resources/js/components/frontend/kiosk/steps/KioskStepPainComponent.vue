@@ -21,15 +21,7 @@
         @keydown.space.prevent="selectPain(pain)"
       >
         <div class="kiosk-pain-media">
-          <img
-            v-if="pain.displayThumb && !brokenPainThumbs[painThumbKey(pain)]"
-            :src="pain.displayThumb"
-            :alt="pain.name"
-            class="kiosk-pain-thumb"
-            loading="lazy"
-            @error="onPainThumbError(pain)"
-          />
-          <span v-else class="kiosk-pain-emoji">{{ pain.emoji }}</span>
+          <span class="kiosk-pain-emoji" :class="pain.tone" aria-hidden="true">{{ pain.emoji }}</span>
         </div>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
         <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
@@ -43,7 +35,7 @@
 </template>
 
 <script>
-import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+import { kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
 
 export default {
   name: 'KioskStepPain',
@@ -56,7 +48,6 @@ export default {
   data() {
     return {
       localSelection: this.selections.pain || null,
-      brokenPainThumbs: {},
     };
   },
   computed: {
@@ -88,8 +79,8 @@ export default {
           id: v.id,
           name: v.name,
           emoji: this.getEmojiForPain(v.name),
+          tone: /galette/i.test(v.name || '') ? 'is-galette' : 'is-pain',
           attrId: painAttr.id,
-          displayThumb: this.painThumb(v),
         }));
     },
   },
@@ -99,27 +90,12 @@ export default {
     },
   },
   methods: {
-    painThumbKey(pain) {
-      return String(pain.id ?? pain.name ?? '');
-    },
-    onPainThumbError(pain) {
-      const k = this.painThumbKey(pain);
-      this.brokenPainThumbs = { ...this.brokenPainThumbs, [k]: true };
-    },
-    // [OWNER 2026-10-21] Le client choisit un PAIN ou une GALETTE : la vignette ne doit montrer que ça. L'image
-    // héritée de config/menu_images.php (« bases ») est un sandwich COMPLÈTE (poulet, salade, sauce) : on la remplace
-    // par l'illustration du pain / de la galette seuls. Une photo posée depuis l'admin (hors images/menu) est conservée.
-    painThumb(variation) {
-      const src = kioskResolveImageSrc(variation);
-      if (src && !src.includes('/images/menu/')) return src;
-      const lower = (variation?.name || '').toLowerCase();
-      if (lower.includes('galette')) return '/images/menu/galette-seule.svg';
-      if (lower.includes('pain')) return '/images/menu/pain-seul.svg';
-      return src;
-    },
+    // [OWNER 2026-10-27] Même présentation que le site (lecayenne.fr, étape « Pain ou galette ? ») : un grand pictogramme
+    // 🥖 / 🌯 sur une pastille teintée, jamais une photo ni une illustration. Les anciennes vignettes (config/menu_images.php
+    // « bases » → pain-seul.svg / galette-seule.svg) étaient jugées « nulles » à l'écran de la borne.
     getEmojiForPain(name) {
       const lower = (name || '').toLowerCase();
-      if (lower.includes('galette')) return '🥙';
+      if (lower.includes('galette')) return '🌯';
       if (lower.includes('pain')) return '🥖';
       return '🍞';
     },
@@ -206,23 +182,22 @@ export default {
   margin-bottom: 14px;
 }
 
-.kiosk-pain-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .kiosk-pain-emoji {
-  width: 220px;
-  height: 220px;
+  width: 240px;
+  height: 240px;
   border-radius: 50%;
   background: #f7f7f8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 110px;
+  font-size: 128px;
+  line-height: 1;
   transition: transform 0.2s;
 }
+
+/* Teintes du site : pastille jaune pour le pain, beige pour la galette. */
+.kiosk-pain-emoji.is-pain { background: #FFF1C9; }
+.kiosk-pain-emoji.is-galette { background: #F3EDE4; }
 
 .kiosk-option-card.selected .kiosk-pain-emoji { transform: scale(1.1); }
 

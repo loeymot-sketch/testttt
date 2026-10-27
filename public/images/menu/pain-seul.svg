@@ -1,23 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" role="img" aria-label="Pain">
-  <defs>
-    <linearGradient id="crust" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#F6C46B"/><stop offset=".45" stop-color="#E39A3B"/><stop offset="1" stop-color="#B8691F"/>
-    </linearGradient>
-    <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#D98A2E"/><stop offset="1" stop-color="#9C5518"/>
-    </linearGradient>
-    <radialGradient id="shine" cx=".35" cy=".2" r=".7">
-      <stop offset="0" stop-color="#FFF1C9" stop-opacity=".75"/><stop offset="1" stop-color="#FFF1C9" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <ellipse cx="200" cy="228" rx="170" ry="16" fill="#000" opacity=".14"/>
-  <path d="M30 150 C30 92 92 58 200 58 C308 58 370 92 370 150 C370 200 330 222 200 222 C70 222 30 200 30 150 Z" fill="url(#belly)"/>
-  <path d="M34 142 C40 88 100 54 200 54 C300 54 360 88 366 142 C366 178 320 196 200 196 C80 196 34 178 34 142 Z" fill="url(#crust)"/>
-  <path d="M34 142 C40 88 100 54 200 54 C300 54 360 88 366 142 C366 178 320 196 200 196 C80 196 34 178 34 142 Z" fill="url(#shine)"/>
-  <g fill="none" stroke="#9C5518" stroke-width="7" stroke-linecap="round" opacity=".75">
-    <path d="M104 92 L132 150"/><path d="M158 78 L184 144"/><path d="M214 76 L238 142"/><path d="M268 86 L290 148"/>
-  </g>
-  <g fill="none" stroke="#FFE3A6" stroke-width="3" stroke-linecap="round" opacity=".7">
-    <path d="M110 90 L136 146"/><path d="M164 76 L188 140"/><path d="M220 74 L242 138"/><path d="M274 84 L294 144"/>
-  </g>
+  <circle cx="200" cy="130" r="118" fill="#FFF1C9"/>
+  <text x="200" y="130" font-size="150" text-anchor="middle" dominant-baseline="central" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">🥖</text>
 </svg>
