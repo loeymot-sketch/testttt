@@ -11,7 +11,7 @@
         v-for="pain in painList"
         :key="pain.id ?? pain.name"
         class="kiosk-option-card"
-        :class="{ selected: localSelection === (pain.id ?? pain.name) }"
+        :class="{ selected: localSelection === (pain.id ?? pain.name), 'kiosk-option-card--photo': showPhoto(pain) }"
         role="radio"
         tabindex="0"
         :aria-checked="localSelection === (pain.id ?? pain.name)"
@@ -20,8 +20,15 @@
         @keydown.enter.prevent="selectPain(pain)"
         @keydown.space.prevent="selectPain(pain)"
       >
-        <div class="kiosk-pain-media">
-          <span class="kiosk-pain-emoji" :class="pain.tone" aria-hidden="true">{{ pain.emoji }}</span>
+        <div class="kiosk-pain-media" :class="{ 'has-photo': showPhoto(pain) }">
+          <img
+            v-if="showPhoto(pain)"
+            class="kiosk-pain-photo"
+            :src="pain.photo"
+            alt=""
+            @error="brokenPhotos[pain.id ?? pain.name] = true"
+          />
+          <span v-else class="kiosk-pain-emoji" :class="pain.tone" aria-hidden="true">{{ pain.emoji }}</span>
         </div>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
         <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
@@ -35,7 +42,7 @@
 </template>
 
 <script>
-import { kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+import { kioskVariationsForAttribute, kioskPhotoSrc, kioskGaletteTwin } from '../../../../helpers/kioskMedia';
 
 export default {
   name: 'KioskStepPain',
@@ -48,6 +55,8 @@ export default {
   data() {
     return {
       localSelection: this.selections.pain || null,
+      // Photos qui n'ont pas chargé : on retombe sur le pictogramme plutôt que sur une image cassée.
+      brokenPhotos: {},
     };
   },
   computed: {
@@ -79,6 +88,7 @@ export default {
           id: v.id,
           name: v.name,
           emoji: this.getEmojiForPain(v.name),
+          photo: this.photoForPain(v.name),
           tone: /galette/i.test(v.name || '') ? 'is-galette' : 'is-pain',
           attrId: painAttr.id,
         }));
@@ -93,6 +103,19 @@ export default {
     // [OWNER 2026-10-27] Même présentation que le site (lecayenne.fr, étape « Pain ou galette ? ») : un grand pictogramme
     // 🥖 / 🌯 sur une pastille teintée, jamais une photo ni une illustration. Les anciennes vignettes (config/menu_images.php
     // « bases » → pain-seul.svg / galette-seule.svg) étaient jugées « nulles » à l'écran de la borne.
+    // [OWNER 2026-10-28] Comme sur le site : la VRAIE photo du sandwich d'un côté, celle de la galette de l'autre — le client
+    // voit ce qu'il choisit. Sandwich = photo du produit en cours ; galette = son équivalent (Cayenne → Galette Cayenne,
+    // sinon Galette Classique). Pas de photo trouvée → pictogramme.
+    photoForPain(name) {
+      if (/galette/i.test(name || '')) {
+        const items = this.$store?.getters?.['kioskMenu/allItems'] || this.$store?.state?.kioskMenu?.items || [];
+        return kioskPhotoSrc(kioskGaletteTwin(this.item, items));
+      }
+      return kioskPhotoSrc(this.item);
+    },
+    showPhoto(pain) {
+      return !!pain.photo && !this.brokenPhotos[pain.id ?? pain.name];
+    },
     getEmojiForPain(name) {
       const lower = (name || '').toLowerCase();
       if (lower.includes('galette')) return '🌯';
@@ -137,6 +160,7 @@ export default {
 
 .kiosk-option-card {
   min-height: 440px;
+  overflow: hidden;
   border-radius: 28px;
   border: 1px solid #efefef;
   background: #fff;
@@ -149,6 +173,12 @@ export default {
   touch-action: manipulation;
   transition: all 0.18s ease;
   position: relative;
+}
+
+.kiosk-option-card--photo {
+  min-height: 0;
+  padding: 0 0 22px;
+  justify-content: flex-start;
 }
 
 .kiosk-option-card::after { display: none; }
@@ -182,6 +212,19 @@ export default {
   margin-bottom: 14px;
 }
 
+.kiosk-pain-media.has-photo {
+  height: auto;
+  margin-bottom: 0;
+}
+
+/* Photo pleine carte : bord à bord, en haut de la carte (la carte la rogne aux coins). */
+.kiosk-pain-photo {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  display: block;
+}
+
 .kiosk-pain-emoji {
   width: 240px;
   height: 240px;
@@ -200,6 +243,8 @@ export default {
 .kiosk-pain-emoji.is-galette { background: #F3EDE4; }
 
 .kiosk-option-card.selected .kiosk-pain-emoji { transform: scale(1.1); }
+
+.kiosk-pain-media.has-photo + .kiosk-pain-name { padding: 22px 12px 8px; }
 
 .kiosk-pain-name {
   font-size: 30px;

@@ -1747,14 +1747,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // seule ; les actions passent par les routes existantes (change-status, refund…), qui
         // gardent toutes leurs permissions. `throttle` aligné sur les lectures du tableau.
         Route::get('/stale', [PosOrderController::class, 'stale'])
-            ->middleware('throttle:60,1,pos-order-stale') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+            ->middleware('throttle:300,1,pos-order-stale') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('stale');
         // [GOAL G1 2026-09-03] La journée de service ENTIÈRE, bornée aux états des quatre files
         // du tiroir de contrôle. Remplace `?paginate=1&per_page=100` sur ce chemin : la page de
         // cent, triée `id desc`, jetait les commandes les PLUS ANCIENNES — celles qui traînent —
         // sans rien signaler. Lecture seule ; `throttle` aligné sur les lectures du tableau.
         Route::get('/service-day', [PosOrderController::class, 'serviceDay'])
-            ->middleware('throttle:60,1,pos-order-service-day') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+            ->middleware('throttle:300,1,pos-order-service-day') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('service-day');
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         // [QA 2026-09-28 · addendum triage C] Cette route DESTRUCTIVE était nue :
@@ -2098,7 +2098,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // branch (admin sees all), sorted updated_at desc, capped 50. Revert
         // (PREPARED → PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK).
         Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
-            ->middleware('throttle:60,1,kds-history-today') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
+            ->middleware('throttle:300,1,kds-history-today') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
             ->name('history-today');
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] Chef
         // "Annuler bump" within 60s. Compensating action — orders.status is

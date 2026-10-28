@@ -65,7 +65,7 @@ return [
      * Local dev raises to 1000/min in `.env` (owner manual-test bursts).
      * Production default 120/min — generous for any realistic kitchen pace.
      */
-    'rate_limit_bump' => max(1, (int) env('KDS_RATE_LIMIT_BUMP', 120)),
+    'rate_limit_bump' => max(1, 600, (int) env('KDS_RATE_LIMIT_BUMP', 600)),
 
     /*
      * [GOAL ULTRA-SYNC W4 2026-07-20] Commandes programmées (scheduled_at).

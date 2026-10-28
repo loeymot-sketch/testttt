@@ -90,7 +90,10 @@ return [
 
     // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
     // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
-    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)),
+    // [ANTI-429 2026-10-28] PLANCHER : un `.env` de production qui épingle une ancienne valeur basse (ex. 120)
+    //   ne peut plus rétablir un blocage « trop de requêtes » — la valeur lue est relevée au plancher. On peut
+    //   toujours MONTER via `.env` ; seul le bas est fermé. (Les tests posent le plafond avec config([...]), sans passer par ici.)
+    'api_throttle_per_minute' => max(1, 1200, (int) env('API_THROTTLE_PER_MINUTE', 1200)),
 
     // [GOAL-OPS-SWAP W3 2026-08-12] Plafond GLOBAL par compte, tous appareils
     // confondus. Depuis que le budget `throttle:api` est porté par le couple
@@ -100,7 +103,8 @@ return [
     // + cuisine + écran client + suivi + une marge, sans ouvrir la porte.
     'api_throttle_user_ceiling_per_minute' => max(
         1,
-        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)))
+        6000,
+        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 1200)))
     ),
 
     // throttle:admin-mutation non-GET cap — env-configurable to absorb owner
@@ -110,7 +114,7 @@ return [
     // POS_RATE_LIMIT_* knobs. NF525 fiscal chain UNAFFECTED — chain insert
     // happens inside controller transactions, not in the throttle bucket.
     // [Wave Y RATE-LIMIT 2026-05-21]
-    'admin_mutation_rate_limit' => max(1, (int) env('ADMIN_MUTATION_RATE_LIMIT', 60)),
+    'admin_mutation_rate_limit' => max(1, 600, (int) env('ADMIN_MUTATION_RATE_LIMIT', 600)),
 
     // [GOAL Phase F.1 2026-05-23] throttle:menu-availability dedicated bucket
     // for /admin/menu/availability/{toggle,extra/toggle,variation/toggle}
@@ -121,7 +125,7 @@ return [
     // dev raises via MENU_AVAILABILITY_RATE_LIMIT=1000 to absorb manager
     // bulk-toggle bursts. NF525 chain unaffected — toggle is not a fiscal
     // write.
-    'menu_availability_rate_limit' => max(1, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 60)),
+    'menu_availability_rate_limit' => max(1, 300, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 300)),
 
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),

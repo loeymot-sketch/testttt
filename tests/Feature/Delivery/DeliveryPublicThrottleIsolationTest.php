@@ -50,12 +50,12 @@ class DeliveryPublicThrottleIsolationTest extends TestCase
         $this->api()->postJson('/api/frontend/delivery/quote', ['q' => '10 rue test henin beaumont'])->assertOk();
     }
 
-    public function test_the_quote_route_keeps_its_own_ceiling_of_one_hundred_twenty_per_minute(): void
+    public function test_the_quote_route_keeps_its_own_ceiling_of_three_hundred_per_minute(): void
     {
         // Plafond général aligné sur la production (l'environnement de test le fixe à 120, qui masquerait le seau du devis).
-        config(['app.api_throttle_per_minute' => 600]);
+        config(['app.api_throttle_per_minute' => 2000]);
 
-        for ($i = 0; $i < 120; $i++) {
+        for ($i = 0; $i < 300; $i++) {
             $this->api()->postJson('/api/frontend/delivery/quote', ['q' => '10 rue test henin beaumont'])->assertOk();
         }
 

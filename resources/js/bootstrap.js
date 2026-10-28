@@ -11,6 +11,7 @@ import 'bootstrap';
 
 import axios from 'axios';
 import { useToast as _useToast } from 'vue-toastification';
+import { installRateLimitRetry } from './shared/rate-limit-retry';
 window.axios = axios;
 
 // [GOAL-F2-HEAL-01 2026-05-23] Global axios timeout 30s. Without this,
@@ -174,6 +175,10 @@ try {
         const url = String(error?.config?.url || '');
         return _TELEMETRY_ALLOWLIST_PATTERNS.some((p) => url.includes(p));
     }
+
+    // [ANTI-429 2026-10-28] Enregistré AVANT l'intercepteur d'alerte : un 429 passager est rejoué en silence,
+    // l'alerte ne s'affiche que si le plafond tient encore après les rejeux (jamais un blocage réel masqué).
+    installRateLimitRetry(window.axios);
 
     window.axios.interceptors.response.use(
         (response) => response,

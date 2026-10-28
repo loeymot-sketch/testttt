@@ -319,6 +319,7 @@ import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayTe
 // [PHASE-6.4] Analytics — event `menu_viewed` au mount, `category_selected` sur clic.
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
 import { extractAllergenCodes } from '../../../helpers/kioskFilters';
+import { kioskPhotoSrc } from '../../../helpers/kioskMedia';
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 import KsBadge from './ds/KsBadge.vue';
 import KsCartBottomSheet from './ds/KsCartBottomSheet.vue';
@@ -506,9 +507,7 @@ export default {
      * son « preview » est alors l'image générique du serveur, jamais à afficher.
      */
     productImageSrc(product) {
-      const preview = product?.preview;
-      if (typeof preview === 'string' && /\/storage\/.+\/conversions\//.test(preview)) return preview;
-      return product?.thumb || product?.image;
+      return kioskPhotoSrc(product) || undefined;
     },
     productSizeClass(product) {
       const name = String(product?.name || '').trim().toLowerCase();

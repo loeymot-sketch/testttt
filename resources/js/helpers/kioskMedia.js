@@ -43,3 +43,33 @@ export function kioskVariationsForAttribute(item, attrId) {
   if (raw == null) return null;
   return Array.isArray(raw) ? raw : [raw];
 }
+
+/**
+ * Photo à afficher pour un produit de la borne (carte du catalogue, étape pain/galette).
+ *
+ * Une photo téléversée (galettes…) a une conversion `preview` de 600 px, nette en plein cadre ; la vignette
+ * `thumb` n'en fait que 168. Pour un produit dont l'image vient de la configuration (`public/images/menu`),
+ * `preview` est l'image générique du serveur : on ne l'utilise jamais, on prend `thumb`.
+ *
+ * @param {object|null|undefined} product
+ * @returns {string|null}
+ */
+export function kioskPhotoSrc(product) {
+  const preview = product?.preview;
+  if (typeof preview === 'string' && /\/storage\/.+\/conversions\//.test(preview)) return preview;
+  return product?.thumb || product?.image || null;
+}
+
+/**
+ * La galette qui correspond à un produit : « Galette Cayenne » pour le Cayenne, « Galette Classique » sinon
+ * (même règle que le site). Retourne null si le catalogue n'a pas la galette.
+ *
+ * @param {object|null|undefined} item - produit en cours
+ * @param {Array} allItems - catalogue de la borne
+ * @returns {object|null}
+ */
+export function kioskGaletteTwin(item, allItems) {
+  const list = Array.isArray(allItems) ? allItems : [];
+  const wanted = /cayenne/i.test(item?.name || '') ? /galette\s+cayenne/i : /galette\s+classique/i;
+  return list.find((i) => i && wanted.test(i.name || '')) || list.find((i) => i && /^galette\b/i.test(i.name || '')) || null;
+}

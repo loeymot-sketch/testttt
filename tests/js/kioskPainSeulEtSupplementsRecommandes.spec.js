@@ -6,50 +6,75 @@ import KioskStepSupplements from '../../resources/js/components/frontend/kiosk/s
 import frMessages from '../../resources/js/languages/fr.json';
 
 /**
- * [OWNER 2026-10-21 → 2026-10-27] BORNE.
- *  1. L'étape « pain / galette » montre le même pictogramme que le site (🥖 / 🌯 sur pastille teintée). Les illustrations
- *     pain-seul.svg / galette-seule.svg posées le 21/10 ont été jugées « nulles » le 27/10 : on s'aligne sur le site.
+ * [OWNER 2026-10-21 → 2026-10-28] BORNE.
+ *  1. L'étape « pain / galette » montre la VRAIE photo du sandwich d'un côté et celle de la galette de l'autre (comme le site,
+ *     décision du 28/10 : « le client voit ce qu'il choisit »). Sans photo trouvée → pictogramme 🥖 / 🌯 sur pastille teintée.
  *  2. Les suppléments « Recommandés » (drapeau `is_recommended` posé par le serveur) passent en tête de liste avec un badge.
  */
 
 const i18n = createI18n({ legacy: false, locale: 'fr', fallbackLocale: 'fr', messages: { fr: frMessages } });
-const SANDWICH_COMPLET = '/images/menu/sandwich-classique.webp?v=1';
-const GALETTE_COMPLETE = '/images/menu/galette.webp?v=1';
 
-const itemAvecPain = (thumbPain = SANDWICH_COMPLET, thumbGalette = GALETTE_COMPLETE) => ({
-  id: 22, name: 'Cayenne',
+const itemAvecPain = (extra = {}) => ({
+  id: 22, name: 'Cayenne', thumb: '/images/menu/thumbs/sandwich-cayenne.webp',
   itemAttributes: [{ id: 6, name: 'Type de Pain' }],
   variations: {
     6: [
-      { id: 450, name: 'Pain', item_attribute_id: 6, status: 5, thumb: thumbPain },
-      { id: 451, name: 'Galette', item_attribute_id: 6, status: 5, thumb: thumbGalette },
+      { id: 450, name: 'Pain', item_attribute_id: 6, status: 5 },
+      { id: 451, name: 'Galette', item_attribute_id: 6, status: 5 },
     ],
+  },
+  ...extra,
+});
+
+const CATALOGUE = [
+  { id: 24, name: 'Galette Cayenne', thumb: '/storage/17/conversions/gc-thumb.png', preview: '/storage/17/conversions/gc-preview.png' },
+  { id: 164, name: 'Galette Classique', thumb: '/images/menu/thumbs/galette.webp', preview: '/images/item/cover.png' },
+];
+
+const montePain = (item, catalogue = CATALOGUE) => mount(KioskStepPain, {
+  props: { step: {}, item, selections: {} },
+  global: {
+    plugins: [i18n],
+    mocks: { $store: { getters: { 'kioskMenu/allItems': catalogue }, state: { kioskMenu: { items: catalogue } } } },
   },
 });
 
-const montePain = (item) => mount(KioskStepPain, {
-  props: { step: {}, item, selections: {} },
-  global: { plugins: [i18n] },
-});
-
 describe('Borne — étape pain/galette', () => {
-  it('montre le pictogramme du site (🥖 / 🌯), jamais le sandwich complet ni une illustration', () => {
+  it('montre la photo du sandwich du produit et celle de SA galette', () => {
     const w = montePain(itemAvecPain());
-    expect(w.findAll('img')).toHaveLength(0);
-    expect(w.findAll('.kiosk-pain-emoji').map((n) => n.text())).toEqual(['🥖', '🌯']);
+    const srcs = w.findAll('img.kiosk-pain-photo').map((n) => n.attributes('src'));
+    // Pain = photo du produit ; Galette = Galette Cayenne, en aperçu 600 px (photo téléversée, pas la vignette 168 px floue).
+    expect(srcs).toEqual(['/images/menu/thumbs/sandwich-cayenne.webp', '/storage/17/conversions/gc-preview.png']);
+    expect(w.findAll('.kiosk-pain-emoji')).toHaveLength(0);
   });
 
-  it('ignore même une photo posée depuis l\'admin : l\'étape est un choix de support, comme sur le site', () => {
-    const w = montePain(itemAvecPain('/storage/12/mon-pain.jpg', '/storage/13/ma-galette.jpg'));
-    expect(w.findAll('img')).toHaveLength(0);
-    expect(w.findAll('.kiosk-pain-emoji')).toHaveLength(2);
+  it('un autre sandwich que le Cayenne prend la Galette Classique ; son « preview » générique n\'est jamais utilisé', () => {
+    const w = montePain(itemAvecPain({ name: 'Sandwich Classique', thumb: '/images/menu/thumbs/sandwich-classique.webp' }));
+    const srcs = w.findAll('img.kiosk-pain-photo').map((n) => n.attributes('src'));
+    expect(srcs).toEqual(['/images/menu/thumbs/sandwich-classique.webp', '/images/menu/thumbs/galette.webp']);
   });
 
-  it('teinte la pastille comme le site : jaune pour le pain, beige pour la galette', () => {
-    const w = montePain(itemAvecPain());
+  it('sans galette au catalogue : pictogramme pour la galette, photo pour le pain', () => {
+    const w = montePain(itemAvecPain(), []);
+    expect(w.findAll('img.kiosk-pain-photo')).toHaveLength(1);
+    expect(w.findAll('.kiosk-pain-emoji').map((n) => n.text())).toEqual(['🌯']);
+    expect(w.find('.kiosk-pain-emoji').classes()).toContain('is-galette');
+  });
+
+  it('sans aucune photo : retombe sur les pictogrammes teintés du site', () => {
+    const w = montePain(itemAvecPain({ thumb: null }), []);
+    expect(w.findAll('img')).toHaveLength(0);
     const pastilles = w.findAll('.kiosk-pain-emoji');
+    expect(pastilles.map((n) => n.text())).toEqual(['🥖', '🌯']);
     expect(pastilles[0].classes()).toContain('is-pain');
     expect(pastilles[1].classes()).toContain('is-galette');
+  });
+
+  it('une photo qui ne charge pas est remplacée par le pictogramme (jamais une image cassée)', async () => {
+    const w = montePain(itemAvecPain());
+    await w.find('img.kiosk-pain-photo').trigger('error');
+    expect(w.findAll('img.kiosk-pain-photo')).toHaveLength(1);
+    expect(w.findAll('.kiosk-pain-emoji').map((n) => n.text())).toEqual(['🥖']);
   });
 
   it('chaque carte porte le nom du choix, pas celui d\'un sandwich', () => {

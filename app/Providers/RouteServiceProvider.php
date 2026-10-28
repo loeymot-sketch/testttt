@@ -207,7 +207,8 @@ class RouteServiceProvider extends ServiceProvider
         // Avec `throttle:20,1` nu, Laravel signe la requête par (domaine|IP) SANS la route : tous les `throttle:N,M`
         // invités d'une même IP partagent UN compteur. Constaté : 21 appels à /status (limite 60) faisaient répondre
         // 429 au devis (limite 20) sans aucun devis demandé. Un limiteur nommé préfixe sa clé par son nom.
-        foreach (['status' => 300, 'suggest' => 240, 'quote' => 120, 'waves' => 300] as $route => $parMinute) {
+        // [ANTI-429 2026-10-28] plafonds par IP relevés (IP partagée : Wi-Fi du restaurant, CGNAT 5G) — jamais un client bloqué.
+        foreach (['status' => 1200, 'suggest' => 600, 'quote' => 300, 'waves' => 1200] as $route => $parMinute) {
             RateLimiter::for('delivery-' . $route, function (Request $request) use ($parMinute) {
                 return Limit::perMinute($parMinute)->by((string) $request->ip());
             });
@@ -216,7 +217,7 @@ class RouteServiceProvider extends ServiceProvider
         // Même défaut côté caisse (F-ADV-4) : `throttle:30,1` nus partagent UN compteur par utilisateur. 30 suggestions
         // d'adresse suffisaient à faire répondre 429 à « adresse » et « bascule » sans qu'elles aient été appelées.
         // Un seau par route et par utilisateur (repli IP si la session est perdue), mêmes plafonds qu'avant.
-        foreach (['toggle' => 30, 'suggest' => 240, 'quote' => 120, 'address' => 30, 'uber-quote' => 60, 'uber-act' => 30] as $route => $parMinute) {
+        foreach (['toggle' => 30, 'suggest' => 600, 'quote' => 300, 'address' => 30, 'uber-quote' => 60, 'uber-act' => 30] as $route => $parMinute) {
             RateLimiter::for('pos-delivery-' . $route, function (Request $request) use ($parMinute) {
                 return Limit::perMinute($parMinute)->by((string) ($request->user()?->id ?? $request->ip()));
             });
@@ -226,7 +227,8 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('uber-direct-webhook', fn (Request $request) => Limit::perMinute(120)->by('uber-direct-webhook|'.$request->ip()));
 
         RateLimiter::for('kiosk-menu', function (Request $request) {
-            return Limit::perMinute(300)->by($this->throttleKeyParAppareil($request));
+            // [ANTI-429 2026-10-28] 300 → 1200/min par appareil : catalogue en lecture seule.
+            return Limit::perMinute(1200)->by($this->throttleKeyParAppareil($request));
         });
 
         // Assistant téléphonique : le gateway HMAC a son propre seau anonyme,
@@ -263,7 +265,9 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('admin-mutation', function (Request $request) {
             $adminMutationCap = max(1, (int) config('app.admin_mutation_rate_limit', 60));
             if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
-                return Limit::perMinute(300)->by($this->throttleKeyParAppareil($request));
+                // [ANTI-429 2026-10-28] lectures : 300 → 1200/min par appareil (un écran qui change de page enchaîne
+                //   plusieurs dizaines de lectures ; aucune n'écrit, rien à protéger à ce prix).
+                return Limit::perMinute(1200)->by($this->throttleKeyParAppareil($request));
             }
 
             // POS = high-frequency cashier ops (SSOT preview / encaissement / payment / split / tip).
@@ -527,7 +531,7 @@ class RouteServiceProvider extends ServiceProvider
         // Logging of >10 distinct branch_id values from the same IP within
         // 5 min is deferred to V1.0.2 (see plans/v1-0-2 backlog).
         RateLimiter::for('oss-public', function (Request $request) {
-            return Limit::perMinute(300)->by($request->ip())->response(function () {
+            return Limit::perMinute(1200)->by($request->ip())->response(function () {
                 return response()->json([
                     'message' => 'OSS rate limit exceeded.',
                     'retry_after' => 60,
