@@ -1,0 +1,2227 @@
+===================================================================
+G2 — PREUVE QUE LES BANCS MORDENT (sortie ROUGE avant correctif)
+Arbre : /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+HEAD  : 34519880d
+Date  : 2026-09-03 02:25:31 CEST
+===================================================================
+
+### T2.1 / V-02 — tests/js/outboxRelanceCompteVrai.spec.js (AVANT correctif)
+-------------------------------------------------------------------
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/outboxRelanceCompteVrai.spec.js  (4 tests | 3 failed) 60ms
+   ❯ tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > annonce le nombre RÉELLEMENT remis en file (clé `requeued` du serveur)
+     → le nombre remis en file doit être à l’écran: expected 'Relance demandée.' to contain '37'
+   ❯ tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > « zéro remis en file » se dit, au lieu de passer pour un succès muet
+     → expected 'Relance demandée.' to contain '0'
+   ❯ tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > un serveur qui échoue à auditer ou à ré-expédier le dit aussi
+     → expected 'Relance demandée.' to contain '4'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > annonce le nombre RÉELLEMENT remis en file (clé `requeued` du serveur)
+AssertionError: le nombre remis en file doit être à l’écran: expected 'Relance demandée.' to contain '37'
+
+- Expected
++ Received
+
+- 37
++ Relance demandée.
+
+ ❯ tests/js/outboxRelanceCompteVrai.spec.js:66:78
+     64| 
+     65|         const retour = w.get('[data-testid="outbox-retour-action"]');
+     66|         expect(retour.text(), 'le nombre remis en file doit être à l’é…
+       |                                                                              ^
+     67|         expect(retour.text()).not.toMatch(/^Relance demandée\.$/);
+     68|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > « zéro remis en file » se dit, au lieu de passer pour un succès muet
+AssertionError: expected 'Relance demandée.' to contain '0'
+
+- Expected
++ Received
+
+- 0
++ Relance demandée.
+
+ ❯ tests/js/outboxRelanceCompteVrai.spec.js:80:70
+     78|         await flushPromises();
+     79| 
+     80|         expect(w.get('[data-testid="outbox-retour-action"]').text()).t…
+       |                                                                      ^
+     81|     });
+     82| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/js/outboxRelanceCompteVrai.spec.js > Cockpit outbox — la relance rend compte de ce qu’elle a fait > un serveur qui échoue à auditer ou à ré-expédier le dit aussi
+AssertionError: expected 'Relance demandée.' to contain '4'
+
+- Expected
++ Received
+
+- 4
++ Relance demandée.
+
+ ❯ tests/js/outboxRelanceCompteVrai.spec.js:94:23
+     92| 
+     93|         const texte = w.get('[data-testid="outbox-retour-action"]').te…
+     94|         expect(texte).toContain('4');
+       |                       ^
+     95|         expect(texte, 'les échecs partiels ne doivent pas disparaître'…
+     96|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  02:25:32
+   Duration  1.31s (transform 404ms, setup 6ms, collect 783ms, tests 60ms, environment 176ms, prepare 66ms)
+
+
+### T2.2 / V-03 — tests/js/outboxEtatsClaimsVisibles.spec.js (AVANT correctif)
+-------------------------------------------------------------------
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js  (7 tests | 7 failed) 89ms
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre de claims EN VOL
+     → Unable to get [data-testid="outbox-in-flight-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre de claims ORPHELINS
+     → Unable to get [data-testid="outbox-stale-claimed-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre d’échecs TERMINAUX ailleurs que dans un attribut title
+     → Unable to get [data-testid="outbox-terminal-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > la liste des orphelins est consultable, ligne par ligne
+     → expected false to be true // Object.is equality
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > le seuil d’orphelinat affiché est celui que le serveur applique
+     → Unable to get [data-testid="outbox-claims"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > la zone des claims est annoncée quand elle change
+     → Unable to get [data-testid="outbox-claims"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+   ❯ tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > sans orphelin, la zone le dit au lieu de rester vide
+     → Unable to get [data-testid="outbox-stale-claimed-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre de claims EN VOL
+Error: Unable to get [data-testid="outbox-in-flight-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:89:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre de claims ORPHELINS
+Error: Unable to get [data-testid="outbox-stale-claimed-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:96:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > affiche le nombre d’échecs TERMINAUX ailleurs que dans un attribut title
+Error: Unable to get [data-testid="outbox-terminal-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:103:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > la liste des orphelins est consultable, ligne par ligne
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:112:75
+    110|         await flushPromises();
+    111| 
+    112|         expect(w.find('[data-testid="outbox-stale-row-90001"]').exists…
+       |                                                                           ^
+    113|         expect(w.get('[data-testid="outbox-stale-row-90002"]').text())…
+    114|         expect(w.get('[data-testid="outbox-stale-row-90002"]').text())…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > le seuil d’orphelinat affiché est celui que le serveur applique
+Error: Unable to get [data-testid="outbox-claims"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:123:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > la zone des claims est annoncée quand elle change
+Error: Unable to get [data-testid="outbox-claims"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:130:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  tests/js/outboxEtatsClaimsVisibles.spec.js > Cockpit outbox — les claims en vol et orphelins sont visibles > sans orphelin, la zone le dit au lieu de rester vide
+Error: Unable to get [data-testid="outbox-stale-claimed-count"] within: <!--
+        OutboxOverviewComponent — CV1-OBSERVABILITY-OUTBOX-001.
+
+        Ops dashboard that surfaces the domain_events outbox pipeline health
+        so a crashed laravel-websockets / queue:work worker stops being a
+        SILENT failure. Five sections, all data-driven by a single backend
+        endpoint:
+
+            GET /api/admin/observability/outbox
+
+        1. domain_events pending      (count + last 50 rows)
+        2. domain_events dispatched   (24h count + p50/p95/p99 latency)
+        3. jobs queue=high            (count + oldest job age)
+        4. failed_jobs                (count + last 20 with truncated error)
+        5. health probes              (queue:work / websockets:serve UP|DOWN)
+
+        Two admin-gated actions:
+            POST /api/admin/observability/outbox/retry-failed
+            POST /api/admin/observability/outbox/drain-failed
+
+        Audit  : reports/red-r5/SYNTHESIS_FINAL.md §3
+        Mission: missions/CV1-OBSERVABILITY-OUTBOX-001.md
+    -->
+<section class="space-y-4" data-testid="outbox-overview-dashboard" aria-busy="false" data-perime="false">
+  <!--
+            [2026-09-02 · Codex P1-L] Cet écran est celui qu'on ouvre PRÉCISÉMENT quand
+            quelque chose ne va pas. `loadAll()` n'avait aucun `catch` : une lecture en
+            échec laissait les dernières valeurs à l'écran — zéro en attente, sondes « en
+            service » — pendant que le tuyau était bouché. Un écran de supervision qui
+            garde son vert quand il ne mesure plus rien est pire qu'un écran éteint.
+        -->
+  <!--v-if-->
+  <!--v-if-->
+  <!--
+            Purger supprime des lignes DÉFINITIVEMENT. Une confirmation dans la page, pas
+            un `confirm()` natif : celui-ci bloque toute la fenêtre et, en automatisation,
+            fige la session sans rien dire.
+        -->
+  <!--v-if-->
+  <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">admin.observability_outbox.title</h2>
+      <p class="mt-1 text-sm text-slate-600">admin.observability_outbox.subtitle</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2"><span class="text-xs text-slate-500" data-testid="outbox-generated-at">admin.observability_outbox.generated_at 03/09/2026 10:00:00</span><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" data-testid="outbox-refresh"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.refresh</button>
+      <!--
+                    [2026-09-02] `.db-btn` n'a aucun style d'état désactivé : un bouton
+                    inerte avait exactement l'apparence d'un bouton actif. Sur l'écran
+                    qu'on ouvre quand quelque chose ne va pas, l'opérateur clique, rien ne
+                    se passe, et il en conclut que l'outil est cassé. Le titre dit
+                    POURQUOI, la mise en forme dit QUE.
+                --><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) à rejouer" data-testid="outbox-retry-failed"><i class="lab lab-reset" aria-hidden="true"></i> admin.observability_outbox.retry_failed</button><button type="button" class="db-btn db-btn-secondary text-sm !text-slate-800" title="5 échec(s) purgeables" data-testid="outbox-drain-failed"><i class="lab lab-trash" aria-hidden="true"></i> admin.observability_outbox.drain_failed</button>
+    </div>
+  </header><!-- Section 5: Health probes (rendered first so ops see status at a glance) -->
+  <article class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="outbox-health">
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-queue-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> queue:work </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+    <div class="rounded border p-4 border-rose-200 bg-rose-50" data-testid="outbox-health-ws-down">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-800"> websockets:serve </h3><span class="rounded px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800">admin.observability_outbox.down</span>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">admin.observability_outbox.no_signal</p>
+    </div>
+  </article><!-- Section 1: Pending events -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-pending">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.pending (7) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_pending</p>
+  </article><!-- Section 2: Dispatched events (24h) -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-dispatched">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.dispatched_24h</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800" data-testid="outbox-delivered-count">3</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p50</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">10 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p95</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">20 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">p99</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">30 ms</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.samples</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">3</dd>
+      </div>
+    </dl>
+  </article><!-- Section 3: Queue high lane -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-queue-high">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.queue_high</h3>
+    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.count</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">0</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.oldest_age</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">—</dd>
+      </div>
+      <div>
+        <dt class="text-xs text-slate-600">admin.observability_outbox.available</dt>
+        <dd class="mt-1 text-sm font-semibold text-slate-800">✓</dd>
+      </div>
+    </dl>
+  </article><!-- Section 4: Failed jobs -->
+  <article class="rounded border border-slate-200 bg-white p-4" data-testid="outbox-failed-jobs">
+    <h3 class="text-sm font-semibold text-slate-800">admin.observability_outbox.failed_jobs (0) </h3>
+    <p class="mt-3 text-sm text-slate-600">admin.observability_outbox.no_failed_jobs</p>
+  </article>
+</section>
+ ❯ VueWrapper.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:7324:15
+    7322|             return result;
+    7323|         }
+    7324|         throw new Error(`Unable to get ${selector} within: ${this.html…
+       |               ^
+    7325|     }
+    7326|     getComponent(selector) {
+ ❯ tests/js/outboxEtatsClaimsVisibles.spec.js:141:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+   Start at  02:25:34
+   Duration  2.19s (transform 787ms, setup 8ms, collect 1.63s, tests 89ms, environment 172ms, prepare 99ms)
+
+
+### T2.3 / V-04 — tests/js/outboxPurgeAnnonceLaBonneTable.spec.js (AVANT correctif)
+-------------------------------------------------------------------
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js  (5 tests | 5 failed) 54ms
+   ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > 5 échecs terminaux mais 0 job purgeable ⇒ le bouton Purger est inerte
+     → rien à purger ⇒ bouton désactivé: expected undefined not to be undefined
+   ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > la confirmation n’annonce JAMAIS le compteur des domain_events
+     → le nombre de jobs réellement purgeables: expected 'Purger les échecs de plus de 24 h ?5 …' to contain '3'
+   ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > 0 échec terminal mais 3 jobs purgeables ⇒ le bouton Purger reste offert
+     → il y a bien 3 jobs à purger: expected '' to be undefined
+   ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > la purge dit combien de JOBS ont été supprimés, pas « événements »
+     → ce sont des travaux en échec, pas des événements: expected '2 événement(s) supprimé(s) définitive…' to match /travaux|jobs/i
+   ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > le bouton Rejouer suit son propre compteur, pas celui de la purge
+     → une violation de contrat n’est pas rejouable : le bouton doit le refléter: expected undefined not to be undefined
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > 5 échecs terminaux mais 0 job purgeable ⇒ le bouton Purger est inerte
+AssertionError: rien à purger ⇒ bouton désactivé: expected undefined not to be undefined
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js:65:83
+     63| 
+     64|         const bouton = w.get('[data-testid="outbox-drain-failed"]');
+     65|         expect(bouton.attributes('disabled'), 'rien à purger ⇒ bouton …
+       |                                                                                   ^
+     66|         expect(bouton.attributes('title')).toMatch(/aucun/i);
+     67|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > la confirmation n’annonce JAMAIS le compteur des domain_events
+AssertionError: le nombre de jobs réellement purgeables: expected 'Purger les échecs de plus de 24 h ?5 …' to contain '3'
+
+- Expected
++ Received
+
+- 3
++ Purger les échecs de plus de 24 h ?5 événement(s) en échec seront supprimés définitivement. L'opération est consignée au journal d'audit. Confirmer la purgeAnnuler
+
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js:80:66
+     78| 
+     79|         const texte = w.get('[data-testid="outbox-drain-confirm"]').te…
+     80|         expect(texte, 'le nombre de jobs réellement purgeables').toCon…
+       |                                                                  ^
+     81|         expect(texte, 'le compteur domain_events (5) n’a rien à faire …
+     82|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > 0 échec terminal mais 3 jobs purgeables ⇒ le bouton Purger reste offert
+AssertionError: il y a bien 3 jobs à purger: expected '' to be undefined
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js:98:78
+     96| 
+     97|         const purger = w.get('[data-testid="outbox-drain-failed"]');
+     98|         expect(purger.attributes('disabled'), 'il y a bien 3 jobs à pu…
+       |                                                                              ^
+     99|         // …et l'autre action reste, elle, correctement inerte : deux …
+    100|         expect(w.get('[data-testid="outbox-retry-failed"]').attributes…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > la purge dit combien de JOBS ont été supprimés, pas « événements »
+AssertionError: ce sont des travaux en échec, pas des événements: expected '2 événement(s) supprimé(s) définitive…' to match /travaux|jobs/i
+
+- Expected: 
+/travaux|jobs/i
+
++ Received: 
+"2 événement(s) supprimé(s) définitivement."
+
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js:117:75
+    115|         const texte = w.get('[data-testid="outbox-retour-action"]').te…
+    116|         expect(texte).toContain('2');
+    117|         expect(texte, 'ce sont des travaux en échec, pas des événement…
+       |                                                                           ^
+    118|     });
+    119| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/js/outboxPurgeAnnonceLaBonneTable.spec.js > Cockpit outbox — la purge annonce la table qu’elle purge > le bouton Rejouer suit son propre compteur, pas celui de la purge
+AssertionError: une violation de contrat n’est pas rejouable : le bouton doit le refléter: expected undefined not to be undefined
+ ❯ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js:137:11
+    135|             w.get('[data-testid="outbox-retry-failed"]').attributes('d…
+    136|             'une violation de contrat n’est pas rejouable : le bouton …
+    137|         ).toBeDefined();
+       |           ^
+    138|         expect(w.get('[data-testid="outbox-drain-failed"]').attributes…
+    139|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+ Test Files  1 failed (1)
+      Tests  5 failed (5)
+   Start at  02:25:37
+   Duration  1.15s (transform 344ms, setup 7ms, collect 695ms, tests 54ms, environment 136ms, prepare 40ms)
+
+
+===================================================================
+### BANCS PHP — AVANT CORRECTIF (doivent rougir)
+HEAD : 39fffecad · 2026-09-03 02:31:06 CEST
+===================================================================
+
+### T2.4 / V-05 — OutboxDrainAuditApresSuppressionTest (AVANT correctif)
+-------------------------------------------------------------------
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest[39m
+  [31;1m⨯[39;22m[39m [2mune suppression partielle est auditee pour ce qu elle a reellement supprime[22m[39m
+  [31;1m⨯[39;22m[39m [2mune suppression qui echoue ne laisse aucune ligne affirmant la suppression[22m[39m
+  [31;1m⨯[39;22m[39m [2mune suppression qui n atteint aucune ligne ne pretend pas le contraire[22m[39m
+  [32;1m✓[39;22m[39m [2mle cas nominal audite le compte exact[22m[39m
+  [32;1m✓[39;22m[39m [2ml ecriture d audit reste un ajout jamais une correction[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest [39;22m> [31;1mune suppression partielle est auditee pour ce qu elle a reellement supprime[39;22m
+[39;1m  l'audit atteste 2 suppressions réelles, pas les 5 candidats sélectionnés
+  Failed asserting that 5 is identical to 2.[39;22m
+
+  at [32mtests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php[39m:[32m115[39m
+    111▕ 
+    112▕         $lignes = $this->lignesAudit();
+    113▕         $this->assertCount(1, $lignes, 'une purge = une ligne d\'audit');
+    114▕         $payload = json_decode((string) $lignes->first()->payload, true);
+  ➜ 115▕         $this->assertSame(
+    116▕             2,
+    117▕             (int) ($payload['deleted'] ?? -1),
+    118▕             'l\'audit atteste 2 suppressions réelles, pas les 5 candidats sélectionnés'
+    119▕         );
+
+  [31;1m• Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest [39;22m> [31;1mune suppression qui echoue ne laisse aucune ligne affirmant la suppression[39;22m
+[39;1m  aucune ligne immuable ne doit affirmer une suppression qui n'a pas eu lieu
+  Failed asserting that actual size 1 matches expected size 0.
+  
+  The following exception occurred during the last request:
+  
+  RuntimeException: disque plein in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php:126
+  Stack trace:
+  #0 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php(90): Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest->Tests\Feature\Observability\{closure}(Object(Illuminate\Database\SQLiteConnection))
+  #1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Database/Connection.php(709): Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest->Tests\Feature\Observability\{closure}('delete from "fa...', Array, Object(Illuminate\Database\SQLiteConnection))
+  #2 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Database/Connection.php(558): Illuminate\Database\Connection->run('delete from "fa...', Array, Object(Closure))
+  #3 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Database/Connection.php(522): Illuminate\Database\Connection->affectingStatement('delete from "fa...', Array)
+  #4 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(3550): Illuminate\Database\Connection->delete('delete from "fa...', Array)
+  #5 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/Observability/SyncOverviewController.php(566): Illuminate\Database\Query\Builder->delete()
+  #6 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Controller.php(54): App\Http\Controllers\Admin\Observability\SyncOverviewController->outboxDrainFailed(Object(Illuminate\Http\Request), Object(App\Services\Fiscal\AuditLogService))
+  #7 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/ControllerDispatcher.php(43): Illuminate\Routing\Controller->callAction('outboxDrainFail...', Array)
+  #8 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Route.php(259): Illuminate\Routing\ControllerDispatcher->dispatch(Object(Illuminate\Routing\Route), Object(App\Http\Controllers\Admin\Observability\SyncOverviewController), 'outboxDrainFail...')
+  #9 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Route.php(205): Illuminate\Routing\Route->runController()
+  #10 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Router.php(798): Illuminate\Routing\Route->run()
+  #11 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(141): Illuminate\Routing\Router->Illuminate\Routing\{closure}(Object(Illuminate\Http\Request))
+  #12 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php(27): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #13 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Spatie\Permission\Middlewares\RoleMiddleware->handle(Object(Illuminate\Http\Request), Object(Closure), 'Admin|Tenant Ad...')
+  #14 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php(33): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #15 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\localization->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #16 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/BlockKioskTokenFromAdminRoutes.php(72): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #17 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\BlockKioskTokenFromAdminRoutes->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #18 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/ApiKeyMiddleware.php(61): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #19 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\ApiKeyMiddleware->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #20 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/Installed.php(30): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #21 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\Installed->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #22 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/CorrelationIdMiddleware.php(23): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #23 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\CorrelationIdMiddleware->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #24 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/JsonMiddleware.php(20): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #25 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\JsonMiddleware->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #26 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/SubstituteBindings.php(50): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #27 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Routing\Middleware\SubstituteBindings->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #28 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(126): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #29 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(57): Illuminate\Routing\Middleware\ThrottleRequests->handleRequest(Object(Illuminate\Http\Request), Object(Closure), Array)
+  #30 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Routing\Middleware\ThrottleRequests->handle(Object(Illuminate\Http\Request), Object(Closure), '5', '1')
+  #31 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(126): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #32 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(92): Illuminate\Routing\Middleware\ThrottleRequests->handleRequest(Object(Illuminate\Http\Request), Object(Closure), Array)
+  #33 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(54): Illuminate\Routing\Middleware\ThrottleRequests->handleRequestUsingNamedLimiter(Object(Illuminate\Http\Request), Object(Closure), 'admin-mutation', Object(Closure))
+  #34 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Routing\Middleware\ThrottleRequests->handle(Object(Illuminate\Http\Request), Object(Closure), 'admin-mutation')
+  #35 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(126): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #36 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(92): Illuminate\Routing\Middleware\ThrottleRequests->handleRequest(Object(Illuminate\Http\Request), Object(Closure), Array)
+  #37 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php(54): Illuminate\Routing\Middleware\ThrottleRequests->handleRequestUsingNamedLimiter(Object(Illuminate\Http\Request), Object(Closure), 'api', Object(Closure))
+  #38 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Routing\Middleware\ThrottleRequests->handle(Object(Illuminate\Http\Request), Object(Closure), 'api')
+  #39 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/EnsureUserStatusActive.php(92): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #40 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): App\Http\Middleware\EnsureUserStatusActive->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #41 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Auth/Middleware/Authenticate.php(44): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #42 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Auth\Middleware\Authenticate->handle(Object(Illuminate\Http\Request), Object(Closure), 'sanctum')
+  #43 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(116): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #44 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Router.php(797): Illuminate\Pipeline\Pipeline->then(Object(Closure))
+  #45 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Router.php(776): Illuminate\Routing\Router->runRouteWithinStack(Object(Illuminate\Routing\Route), Object(Illuminate\Http\Request))
+  #46 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Router.php(740): Illuminate\Routing\Router->runRoute(Object(Illuminate\Http\Request), Object(Illuminate\Routing\Route))
+  #47 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Routing/Router.php(729): Illuminate\Routing\Router->dispatchToRoute(Object(Illuminate\Http\Request))
+  #48 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(190): Illuminate\Routing\Router->dispatch(Object(Illuminate\Http\Request))
+  #49 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(141): Illuminate\Foundation\Http\Kernel->Illuminate\Foundation\Http\{closure}(Object(Illuminate\Http\Request))
+  #50 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/beyondcode/laravel-query-detector/src/QueryDetectorMiddleware.php(33): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #51 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): BeyondCode\QueryDetector\QueryDetectorMiddleware->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #52 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/barryvdh/laravel-debugbar/src/Middleware/InjectDebugbar.php(59): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #53 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Barryvdh\Debugbar\Middleware\InjectDebugbar->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #54 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #55 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/ConvertEmptyStringsToNull.php(31): Illuminate\Foundation\Http\Middleware\TransformsRequest->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #56 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #57 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #58 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TrimStrings.php(40): Illuminate\Foundation\Http\Middleware\TransformsRequest->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #59 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Foundation\Http\Middleware\TrimStrings->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #60 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/ValidatePostSize.php(27): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #61 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Foundation\Http\Middleware\ValidatePostSize->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #62 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestsDuringMaintenance.php(86): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #63 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #64 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(62): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #65 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Http\Middleware\HandleCors->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #66 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(39): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #67 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Http\Middleware\TrustProxies->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #68 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustHosts.php(48): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #69 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\Http\Middleware\TrustHosts->handle(Object(Illuminate\Http\Request), Object(Closure))
+  #70 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(116): Illuminate\Pipeline\Pipeline->Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+  #71 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(165): Illuminate\Pipeline\Pipeline->then(Object(Closure))
+  #72 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(134): Illuminate\Foundation\Http\Kernel->sendRequestThroughRouter(Object(Illuminate\Http\Request))
+  #73 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/MakesHttpRequests.php(556): Illuminate\Foundation\Http\Kernel->handle(Object(Illuminate\Http\Request))
+  #74 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/MakesHttpRequests.php(522): Illuminate\Foundation\Testing\TestCase->call('POST', '/api/admin/obse...', Array, Array, Array, Array, '{"older_than_ho...')
+  #75 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/MakesHttpRequests.php(365): Illuminate\Foundation\Testing\TestCase->json('POST', '/api/admin/obse...', Array, Array)
+  #76 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php(130): Illuminate\Foundation\Testing\TestCase->postJson('/api/admin/obse...', Array)
+  #77 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1617): Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest->test_une_suppression_qui_echoue_ne_laisse_aucune_ligne_affirmant_la_suppression()
+  #78 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(1223): PHPUnit\Framework\TestCase->runTest()
+  #79 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestResult.php(729): PHPUnit\Framework\TestCase->runBare()
+  #80 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestCase.php(973): PHPUnit\Framework\TestResult->run(Object(Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest))
+  #81 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestCase->run(Object(PHPUnit\Framework\TestResult))
+  #82 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #83 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/Framework/TestSuite.php(685): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #84 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/TestRunner.php(651): PHPUnit\Framework\TestSuite->run(Object(PHPUnit\Framework\TestResult))
+  #85 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(146): PHPUnit\TextUI\TestRunner->run(Object(PHPUnit\Framework\TestSuite), Array, Array, true)
+  #86 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/src/TextUI/Command.php(99): PHPUnit\TextUI\Command->run(Array, true)
+  #87 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/phpunit/phpunit/phpunit(107): PHPUnit\TextUI\Command::main()
+  #88 {main}
+  
+  ----------------------------------------------------------------------------------
+  
+  disque plein[39;22m
+
+  at [32mtests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php[39m:[32m133[39m
+    129▕         $this->actingAs($this->admin(), 'sanctum')
+    130▕             ->postJson('/api/admin/observability/outbox/drain-failed', ['older_than_hours' => 24])
+    131▕             ->assertStatus(500);
+    132▕ 
+  ➜ 133▕         $this->assertCount(
+    134▕             0,
+    135▕             $this->lignesAudit(),
+    136▕             'aucune ligne immuable ne doit affirmer une suppression qui n\'a pas eu lieu'
+    137▕         );
+
+  [31;1m• Tests\Feature\Observability\OutboxDrainAuditApresSuppressionTest [39;22m> [31;1mune suppression qui n atteint aucune ligne ne pretend pas le contraire[39;22m
+[39;1m  zéro ligne supprimée doit s'auditer comme zéro
+  Failed asserting that 5 is identical to 0.[39;22m
+
+  at [32mtests/Feature/Observability/OutboxDrainAuditApresSuppressionTest.php[39m:[32m159[39m
+    155▕             ->assertJsonPath('deleted', 0);
+    156▕ 
+    157▕         foreach ($this->lignesAudit() as $ligne) {
+    158▕             $payload = json_decode((string) $ligne->payload, true);
+  ➜ 159▕             $this->assertSame(
+    160▕                 0,
+    161▕                 (int) ($payload['deleted'] ?? -1),
+    162▕                 'zéro ligne supprimée doit s\'auditer comme zéro'
+    163▕             );
+
+
+  [37;1mTests:  [39;22m[31;1m3 failed[39;22m[39m, [39m[32;1m2 passed[39;22m
+  [37;1mTime:   [39;22m[39m1.55s[39m
+
+
+
+### T2.5 / V-06 — SondeWorkerBorneeFileHighTest (AVANT correctif)
+-------------------------------------------------------------------
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Observability\SondeWorkerBorneeFileHighTest[39m
+  [31;1m⨯[39;22m[39m [2mun worker vivant sur une autre file ne rend pas le worker outbox vivant[22m[39m
+  [31;1m⨯[39;22m[39m [2mla file default non plus[22m[39m
+  [32;1m✓[39;22m[39m [2mun travail reserve sur la file outbox est bien un signal positif[22m[39m
+  [31;1m⨯[39;22m[39m [2ml age du dernier signal ignore les autres files[22m[39m
+  [31;1m⨯[39;22m[39m [2mla methode declaree nomme la file reellement sondee[22m[39m
+  [32;1m✓[39;22m[39m [2mle couloir de file expose est celui du job[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Observability\SondeWorkerBorneeFileHighTest [39;22m> [31;1mun worker vivant sur une autre file ne rend pas le worker outbox vivant[39;22m
+[39;1m  un travail réservé sur `notifications` ne prouve RIEN sur la file de diffusion
+  Failed asserting that two strings are identical.[39;22m
+
+  at [32mtests/Feature/Observability/SondeWorkerBorneeFileHighTest.php[39m:[32m83[39m
+     79▕         // Rien sur la file outbox, aucune diffusion récente, aucun battement websocket.
+     80▕ 
+     81▕         $r = $this->apercu();
+     82▕ 
+  ➜  83▕         $this->assertSame(
+     84▕             'down',
+     85▕             $r['health']['queue_work']['status'],
+     86▕             'un travail réservé sur `notifications` ne prouve RIEN sur la file de diffusion'
+     87▕         );
+  [31m--- Expected[39m
+  [32m+++ Actual[39m
+  @@ @@
+  [31m-'down'[39m
+  [32m+'up'[39m
+  [31;1m• Tests\Feature\Observability\SondeWorkerBorneeFileHighTest [39;22m> [31;1mla file default non plus[39;22m
+[39;1m  Failed asserting that two strings are identical.[39;22m
+
+  at [32mtests/Feature/Observability/SondeWorkerBorneeFileHighTest.php[39m:[32m96[39m
+     92▕         $this->travailReserve('default');
+     93▕ 
+     94▕         $r = $this->apercu();
+     95▕ 
+  ➜  96▕         $this->assertSame('down', $r['health']['queue_work']['status']);
+     97▕     }
+     98▕ 
+     99▕     public function test_un_travail_reserve_sur_la_file_outbox_est_bien_un_signal_positif(): void
+    100▕     {
+  [31m--- Expected[39m
+  [32m+++ Actual[39m
+  @@ @@
+  [31m-'down'[39m
+  [32m+'up'[39m
+  [31;1m• Tests\Feature\Observability\SondeWorkerBorneeFileHighTest [39;22m> [31;1ml age du dernier signal ignore les autres files[39;22m
+[39;1m  Failed asserting that two strings are identical.[39;22m
+
+  at [32mtests/Feature/Observability/SondeWorkerBorneeFileHighTest.php[39m:[32m117[39m
+    113▕         $this->travailReserve($this->fileOutbox(), 600);
+    114▕ 
+    115▕         $r = $this->apercu();
+    116▕ 
+  ➜ 117▕         $this->assertSame('down', $r['health']['queue_work']['status']);
+    118▕         $this->assertGreaterThanOrEqual(
+    119▕             600,
+    120▕             (int) $r['health']['queue_work']['last_signal_age_seconds'],
+    121▕             'l\'âge affiché est celui de la file outbox, pas celui du voisin bien portant'
+  [31m--- Expected[39m
+  [32m+++ Actual[39m
+  @@ @@
+  [31m-'down'[39m
+  [32m+'up'[39m
+  [31;1m• Tests\Feature\Observability\SondeWorkerBorneeFileHighTest [39;22m> [31;1mla methode declaree nomme la file reellement sondee[39;22m
+[39;1m  la sonde doit dire QUELLE file elle regarde — sinon on ne peut pas la contredire
+  Failed asserting that 'heuristic_jobs_reserved_or_event_delivered_within_90s' contains "high".[39;22m
+
+  at [32mtests/Feature/Observability/SondeWorkerBorneeFileHighTest.php[39m:[32m131[39m
+    127▕         $this->travailReserve($this->fileOutbox());
+    128▕ 
+    129▕         $r = $this->apercu();
+    130▕ 
+  ➜ 131▕         $this->assertStringContainsString(
+    132▕             $this->fileOutbox(),
+    133▕             (string) $r['health']['queue_work']['method'],
+    134▕             'la sonde doit dire QUELLE file elle regarde — sinon on ne peut pas la contredire'
+    135▕         );
+
+
+  [37;1mTests:  [39;22m[31;1m4 failed[39;22m[39m, [39m[32;1m2 passed[39;22m
+  [37;1mTime:   [39;22m[39m1.81s[39m
+
+
+
+### T2.6 / V-10 — TerminaliteExigeAttemptsEpuisesTest (AVANT correctif)
+-------------------------------------------------------------------
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest[39m
+  [31;1m⨯[39;22m[39m [2mun evenement au premier essai est en cours de reprise pas terminal[22m[39m
+  [31;1m⨯[39;22m[39m [2mun evenement a l avant derniere tentative n est pas terminal non plus[22m[39m
+  [32;1m✓[39;22m[39m [2mun evenement qui a epuise ses essais est terminal[22m[39m
+  [32;1m✓[39;22m[39m [2mune violation de contrat est terminale des le premier essai[22m[39m
+  [31;1m⨯[39;22m[39m [2mle bouton rejouer suit ce qui est reellement rejouable[22m[39m
+  [31;1m⨯[39;22m[39m [2mun echec hors fenetre d age n est plus rejouable[22m[39m
+  [31;1m⨯[39;22m[39m [2mun evenement sain n est ni terminal ni rejouable[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest [39;22m> [31;1mun evenement au premier essai est en cours de reprise pas terminal[39;22m
+[39;1m  attempts=1 sur 6 : la reprise n'a pas encore eu lieu
+  Failed asserting that 1 is identical to 0.[39;22m
+
+  at [32mtests/Feature/Observability/TerminaliteExigeAttemptsEpuisesTest.php[39m:[32m94[39m
+     90▕         $this->evenement(['aggregate_id' => 1, 'attempts' => 1, 'last_error' => 'broker unreachable']);
+     91▕ 
+     92▕         $r = $this->apercu();
+     93▕ 
+  ➜  94▕         $this->assertSame(0, $r['terminal_failures']['count'], 'attempts=1 sur 6 : la reprise n\'a pas encore eu lieu');
+     95▕         $this->assertSame(1, $r['pending']['count'], 'il reste bien visible comme « en attente »');
+     96▕     }
+     97▕ 
+     98▕     public function test_un_evenement_a_l_avant_derniere_tentative_n_est_pas_terminal_non_plus(): void
+
+  [31;1m• Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest [39;22m> [31;1mun evenement a l avant derniere tentative n est pas terminal non plus[39;22m
+[39;1m  Failed asserting that 1 is identical to 0.[39;22m
+
+  at [32mtests/Feature/Observability/TerminaliteExigeAttemptsEpuisesTest.php[39m:[32m104[39m
+    100▕         $this->evenement(['aggregate_id' => 2, 'attempts' => $this->essais() - 1, 'last_error' => 'broker unreachable']);
+    101▕ 
+    102▕         $r = $this->apercu();
+    103▕ 
+  ➜ 104▕         $this->assertSame(0, $r['terminal_failures']['count']);
+    105▕     }
+    106▕ 
+    107▕     public function test_un_evenement_qui_a_epuise_ses_essais_est_terminal(): void
+    108▕     {
+
+  [31;1m• Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest [39;22m> [31;1mle bouton rejouer suit ce qui est reellement rejouable[39;22m
+[39;1m  épuisé + violation de contrat
+  Failed asserting that 3 is identical to 2.[39;22m
+
+  at [32mtests/Feature/Observability/TerminaliteExigeAttemptsEpuisesTest.php[39m:[32m136[39m
+    132▕         $this->evenement(['aggregate_id' => 7, 'attempts' => 1, 'last_error' => 'contract_violation: nope']);  // terminal, NON rejouable
+    133▕ 
+    134▕         $r = $this->apercu();
+    135▕ 
+  ➜ 136▕         $this->assertSame(2, $r['terminal_failures']['count'], 'épuisé + violation de contrat');
+    137▕         $this->assertSame(1, $r['terminal_failures']['contract_violations']);
+    138▕         // `replayable_events` = exactement la sélection de `outboxRetryFailed` : pendant,
+    139▕         // avec `last_error`, hors violation de contrat, dans la fenêtre d'âge.
+    140▕         $this->assertSame(2, $r['replayable_events']['count'], 'la relance manuelle ne regarde pas `attempts`');
+
+  [31;1m• Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest [39;22m> [31;1mun echec hors fenetre d age n est plus rejouable[39;22m
+  [41;1m PHPUnit\Framework\ExceptionWrapper [49;22m
+
+[39;1m  Undefined array key "replayable_events"[39;22m
+
+  at [32mtests/Feature/Observability/TerminaliteExigeAttemptsEpuisesTest.php[39m:[32m156[39m
+    152▕ 
+    153▕         $r = $this->apercu();
+    154▕ 
+    155▕         $this->assertSame(1, $r['terminal_failures']['count'], 'il reste un échec terminal');
+  ➜ 156▕         $this->assertSame(0, $r['replayable_events']['count'], 'mais la relance manuelle ne le prendrait pas');
+    157▕     }
+    158▕ 
+    159▕     public function test_un_evenement_sain_n_est_ni_terminal_ni_rejouable(): void
+    160▕     {
+
+  [31;1m• Tests\Feature\Observability\TerminaliteExigeAttemptsEpuisesTest [39;22m> [31;1mun evenement sain n est ni terminal ni rejouable[39;22m
+  [41;1m PHPUnit\Framework\ExceptionWrapper [49;22m
+
+[39;1m  Undefined array key "replayable_events"[39;22m
+
+  at [32mtests/Feature/Observability/TerminaliteExigeAttemptsEpuisesTest.php[39m:[32m167[39m
+    163▕         $r = $this->apercu();
+    164▕ 
+    165▕         $this->assertSame(1, $r['pending']['count']);
+    166▕         $this->assertSame(0, $r['terminal_failures']['count']);
+  ➜ 167▕         $this->assertSame(0, $r['replayable_events']['count']);
+    168▕     }
+    169▕ }
+    170▕
+
+
+  [37;1mTests:  [39;22m[31;1m5 failed[39;22m[39m, [39m[32;1m2 passed[39;22m
+  [37;1mTime:   [39;22m[39m1.94s[39m
+
+
+
+### T2.7 / V-11 — PurgeNeSeLaissePasAffamerTest (AVANT correctif)
+-------------------------------------------------------------------
+Warning: TTY mode requires /dev/tty to be read/writable.
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Feature\Observability\PurgeNeSeLaissePasAffamerTest[39m
+  [31;1m⨯[39;22m[39m [2mle candidat outbox est atteint malgre 500 travaux etrangers plus anciens[22m[39m
+  [31;1m⨯[39;22m[39m [2mle compteur du bouton ne se laisse pas affamer non plus[22m[39m
+  [31;1m⨯[39;22m[39m [2mun travail outbox trop recent n est ni compte ni purge[22m[39m
+  [31;1m⨯[39;22m[39m [2mun travail etranger dont le texte evoque le job outbox n est pas purge[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Observability\PurgeNeSeLaissePasAffamerTest [39;22m> [31;1mle candidat outbox est atteint malgre 500 travaux etrangers plus anciens[39;22m
+[39;1m  Failed asserting that 0 is identical to 1.[39;22m
+
+  at [32mtests/Feature/Observability/PurgeNeSeLaissePasAffamerTest.php[39m:[32m92[39m
+     88▕ 
+     89▕         $this->actingAs($this->admin(), 'sanctum')
+     90▕             ->postJson('/api/admin/observability/outbox/drain-failed', ['older_than_hours' => 24])
+     91▕             ->assertOk()
+  ➜  92▕             ->assertJsonPath('deleted', 1);
+     93▕ 
+     94▕         $this->assertDatabaseMissing('failed_jobs', ['uuid' => 'aaaaaaaa-1111-1111-1111-111111111111']);
+     95▕         // Les 500 étrangers restent intacts : la purge n'élargit pas son périmètre pour
+     96▕         // se dégager de la famine.
+
+  [31;1m• Tests\Feature\Observability\PurgeNeSeLaissePasAffamerTest [39;22m> [31;1mle compteur du bouton ne se laisse pas affamer non plus[39;22m
+  [41;1m PHPUnit\Framework\ExceptionWrapper [49;22m
+
+[39;1m  Undefined array key "purgeable_failed_jobs"[39;22m
+
+  at [32mtests/Feature/Observability/PurgeNeSeLaissePasAffamerTest.php[39m:[32m112[39m
+    108▕             ->json();
+    109▕ 
+    110▕         $this->assertSame(
+    111▕             1,
+  ➜ 112▕             (int) $r['purgeable_failed_jobs']['count'],
+    113▕             'le bouton doit annoncer le travail outbox purgeable, pas zéro à cause des voisins'
+    114▕         );
+    115▕         $this->assertSame(24, (int) $r['purgeable_failed_jobs']['older_than_hours']);
+    116▕         // Le compteur d'ÉTAT `failed_jobs.count` reste, lui, le total de la table.
+
+  [31;1m• Tests\Feature\Observability\PurgeNeSeLaissePasAffamerTest [39;22m> [31;1mun travail outbox trop recent n est ni compte ni purge[39;22m
+  [41;1m PHPUnit\Framework\ExceptionWrapper [49;22m
+
+[39;1m  Undefined array key "purgeable_failed_jobs"[39;22m
+
+  at [32mtests/Feature/Observability/PurgeNeSeLaissePasAffamerTest.php[39m:[32m136[39m
+    132▕             ->getJson('/api/admin/observability/outbox')
+    133▕             ->assertOk()
+    134▕             ->json();
+    135▕ 
+  ➜ 136▕         $this->assertSame(0, (int) $r['purgeable_failed_jobs']['count']);
+    137▕ 
+    138▕         $this->actingAs($this->admin(), 'sanctum')
+    139▕             ->postJson('/api/admin/observability/outbox/drain-failed', ['older_than_hours' => 24])
+    140▕             ->assertOk()
+
+  [31;1m• Tests\Feature\Observability\PurgeNeSeLaissePasAffamerTest [39;22m> [31;1mun travail etranger dont le texte evoque le job outbox n est pas purge[39;22m
+  [41;1m PHPUnit\Framework\ExceptionWrapper [49;22m
+
+[39;1m  Undefined array key "purgeable_failed_jobs"[39;22m
+
+  at [32mtests/Feature/Observability/PurgeNeSeLaissePasAffamerTest.php[39m:[32m164[39m
+    160▕             ->getJson('/api/admin/observability/outbox')
+    161▕             ->assertOk()
+    162▕             ->json();
+    163▕ 
+  ➜ 164▕         $this->assertSame(0, (int) $r['purgeable_failed_jobs']['count']);
+    165▕ 
+    166▕         $this->actingAs($this->admin(), 'sanctum')
+    167▕             ->postJson('/api/admin/observability/outbox/drain-failed', ['older_than_hours' => 24])
+    168▕             ->assertOk()
+
+
+  [37;1mTests:  [39;22m[31;1m4 failed[39;22m
+  [37;1mTime:   [39;22m[39m1.17s[39m
+
+
+
+===================================================================
+### APRÈS CORRECTIF — les mêmes bancs, verts
+2026-09-03 02:37:53 CEST
+===================================================================
+
+--- Vitest : 3 bancs nouveaux + 2 non-régressions ---
+
+ RUN  v1.6.1 /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt
+
+ ✓ tests/js/outboxOverviewPanneReseau.spec.js  (12 tests) 80ms
+stderr | tests/js/datesLisiblesEnFrancais.spec.js > les dates affichées suivent la locale du produit, pas celle du navigateur > le widget de clôture Z date en français
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+  default: {
+    name: 'vue-element-loading',
+    props: {
+      active: [Function: Boolean],
+      spinner: [Object],
+      text: [Object],
+      textStyle: [Object],
+      color: [Object],
+      isFullScreen: [Object],
+      backgroundColor: [Object],
+      size: [Object],
+      duration: [Object],
+      delay: [Object]
+    },
+    data: [Function: data],
+    mounted: [Function: mounted],
+    methods: { delayActive: [Function: delayActive] },
+    watch: { active: [Function: active] },
+    components: {
+      Spinner: [Object],
+      Ring: [Object],
+      MiniSpinner: [Object],
+      LineWave: [Object],
+      LineScale: [Object],
+      LineDown: [Object],
+      BarFade: [Object],
+      BarFadeScale: [Object]
+    },
+    render: [Function (anonymous)],
+    __scopeId: 'data-v-2964abc9',
+    __file: 'src/index.vue'
+  }
+} 
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. 
+
+ ✓ tests/js/datesLisiblesEnFrancais.spec.js  (6 tests) 21ms
+stderr | tests/js/observabilityOutboxRoute.spec.js > [CV1-OBSERVABILITY-OUTBOX-001] Outbox dashboard SPA wiring > OutboxOverviewComponent compiles + mounts cleanly (build smoke)
+
+ ✓ tests/js/observabilityOutboxRoute.spec.js  (6 tests) 423ms
+ ✓ tests/js/outboxPurgeAnnonceLaBonneTable.spec.js  (5 tests) 40ms
+ ✓ tests/js/outboxEtatsClaimsVisibles.spec.js  (7 tests) 47ms
+ ✓ tests/js/gestionAccessibleSentinel.spec.js  (3 tests) 4ms
+ ✓ tests/js/outboxRelanceCompteVrai.spec.js  (4 tests) 36ms
+
+ Test Files  7 passed (7)
+      Tests  43 passed (43)
+   Start at  02:37:53
+   Duration  4.45s (transform 451ms, setup 19ms, collect 1.80s, tests 651ms, environment 1.02s, prepare 325ms)
+
+
+--- PHPUnit : tout tests/Feature/Observability (4 bancs nouveaux + 15 fichiers existants) ---
+
+  [37;1mTests:  [39;22m[32;1m134 passed[39;22m
+  [37;1mTime:   [39;22m[39m29.51s[39m
+
+

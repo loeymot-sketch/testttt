@@ -85,7 +85,12 @@ class MenuResetLeCayenneCommand extends Command
     ];
 
     /**
-     * [SUPERVISION 2026-08-22] LES 13 ARTICLES QUE `step9CreateNewItems()` ÉCRIT.
+     * [SUPERVISION 2026-08-22] LES ARTICLES QUE `step9CreateNewItems()` ÉCRIT (12 depuis le 2026-10-03).
+     *
+     * [GOAL REMARQUES 2026-10-03 · R-078] « Galette Normale » est RETIRÉE du spec — propriétaire : « galette
+     * normal galette Cayenne y a pas de normal ». Retirée de la vente le 2026-09-25 ; une réinitialisation
+     * FORCÉE l'aurait ressuscitée. Seules « Galette Cayenne » (ici) et « Galette Classique »
+     * (AddSandwichClassiqueCommand) existent.
      *
      * Recopiés ici pour que le pré-vol puisse COMPARER le spec au catalogue vivant avant
      * d'écrire quoi que ce soit. Le risque évident d'une recopie, c'est qu'elle se désynchronise
@@ -94,7 +99,6 @@ class MenuResetLeCayenneCommand extends Command
      */
     private const SPEC_ITEMS = [
         ['slug' => 'sandwich-cayenne-classique', 'name' => 'Sandwich Cayenne',   'price' => 7.00],
-        ['slug' => 'galette-normale',            'name' => 'Galette Normale',    'price' => 6.50],
         ['slug' => 'galette-cayenne',            'name' => 'Galette Cayenne',    'price' => 7.40],
         ['slug' => 'sandwich-classique-faluche', 'name' => 'Sandwich Classique', 'price' => 6.50],
         ['slug' => 'tacos-1-viande',             'name' => 'Tacos',              'price' => 8.50],
@@ -392,7 +396,7 @@ class MenuResetLeCayenneCommand extends Command
         $this->line('');
         $this->line('5. New items to create per category :');
         $this->line('   - Sandwich Cayenne   : 1 item (Sandwich Cayenne 7.00€, sauce locked)');
-        $this->line('   - Galette            : 2 items (Galette Normale 6.50€ sauce libre + Galette Cayenne 7.40€ sauce locked)');
+        $this->line('   - Galette            : 1 item (Galette Cayenne 7.40€ sauce locked — la Galette Classique vient de AddSandwichClassiqueCommand)');
         $this->line('   - Sandwich Classique : 1 item (Sandwich Classique pain faluche 6.50€)');
         $this->line('   - Tacos              : 2 items (Tacos 1 viande 8.50€ + Big Tacos 2 viandes 11.50€)');
         $this->line('   - Bols Gourmands     : 5 items (Curry/Tandoori/Mariné/Crousti 10.50€ + Gratiné 12.50€)');
@@ -645,22 +649,10 @@ class MenuResetLeCayenneCommand extends Command
             $this->seedMenuAddonsForItem($item, $menuAddonId, $fritesAddonId, $boissonAddonId);
         }
 
-        // ── 9b Galette (2 items)
+        // ── 9b Galette (1 item ; la Galette Classique vient de AddSandwichClassiqueCommand)
         if ($cat = $cats['galette'] ?? null) {
-            $g1 = $this->createOrRestoreItem([
-                'slug'             => 'galette-normale',
-                'name'             => 'Galette Normale',
-                'item_category_id' => $cat->id,
-                'price'            => 6.50,
-                'description'      => 'Galette traditionnelle. Sauce au choix parmi 13 sauces.',
-                'is_featured'      => 0,
-                'item_type'        => \App\Enums\ItemType::NON_VEG,
-            ]);
-            $this->seedViandesForItem($g1, 1);
-            $this->seedSaucesForItem($g1);
-            $this->seedCruditesAsExtras($g1);
-            $this->seedGenericSupplementsAsExtras($g1);
-            $this->seedMenuAddonsForItem($g1, $menuAddonId, $fritesAddonId, $boissonAddonId);
+            // [GOAL REMARQUES 2026-10-03 · R-078] Plus de « Galette Normale » : retirée de la vente.
+
 
             $g2 = $this->createOrRestoreItem([
                 'slug'             => 'galette-cayenne',

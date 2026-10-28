@@ -23,6 +23,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
@@ -90,8 +91,28 @@ class GuestSignupController extends Controller
 
             return response($payload);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Message générique au client, détail (fournisseur SMS/SMTP) au journal.
+            return $this->echecEnvoiCode($exception, 'sms');
         }
+    }
+
+    /**
+     * [VG-2026-10-21 M1-003] Un échec d'ENVOI de code n'est jamais une erreur métier : c'est le
+     * transport (SMTP, passerelle SMS) ou la base. Son message brut nommait l'hôte SMTP, et sur un
+     * échec d'authentification Symfony y écrit l'identifiant du compte d'envoi — renvoyé à tout
+     * anonyme. Le client lit une phrase générique ; le détail part au journal seulement.
+     */
+    private const MESSAGE_ENVOI_IMPOSSIBLE = "Le code n'a pas pu être envoyé. Réessaie dans un instant.";
+
+    private function echecEnvoiCode(\Throwable $exception, string $canal): \Illuminate\Http\Response
+    {
+        Log::warning('guest_signup.code_send_failed', [
+            'canal' => $canal,
+            'exception' => get_class($exception),
+            'error' => $exception->getMessage(),
+        ]);
+
+        return response(['status' => false, 'message' => self::MESSAGE_ENVOI_IMPOSSIBLE], 422);
     }
 
     /**
@@ -121,7 +142,8 @@ class GuestSignupController extends Controller
 
             return response($payload);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Jamais le message SMTP brut au client.
+            return $this->echecEnvoiCode($exception, 'email');
         }
     }
 
@@ -163,9 +185,17 @@ class GuestSignupController extends Controller
                 $this->otpManagerService->otp($request, dispatchSms: false);
 
                 $ttlMinutes = max(1, (int) Settings::group('otp')->get('otp_expire_time') ?: 5);
-                $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
-                if (! blank($token) && filled($compte->email)) {
-                    Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                $codeRevue = $this->codeDeRevuePour($email, $compte);
+                if ($codeRevue !== null) {
+                    // Revue App Store (décision propriétaire 2026-10-15) : code fixe, jamais envoyé.
+                    // La ligne otps garde son expiry ; chaque usage est journalisé.
+                    DB::table('otps')->where('phone', $cle)->update(['token' => $codeRevue]);
+                    Log::warning('app_review_login: code fixe de revue utilisé', ['email' => $email, 'ip' => $request->ip()]);
+                } else {
+                    $token = DB::table('otps')->where('phone', $cle)->latest('created_at')->value('token');
+                    if (! blank($token) && filled($compte->email)) {
+                        Mail::to($compte->email)->send(new SignupOtpMail((string) $token, $ttlMinutes));
+                    }
                 }
 
                 $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
@@ -190,12 +220,37 @@ class GuestSignupController extends Controller
             }
             $this->envoyerCodeParEmail($request);
 
-            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code')];
+            // [Root cause 2026-09-19] Cette branche (compte inconnu / première inscription
+            // par ce canal) est EXACTEMENT celle où envoyerCodeParEmail() peut avoir décidé,
+            // en silence et à raison (anti-usurpation), de n'envoyer le code NULLE PART — un
+            // numéro déjà rattaché à un compte AYANT DE LA VALEUR (points/commandes) sans
+            // e-mail au dossier. Le message reste volontairement IDENTIQUE dans les deux cas
+            // (anti-énumération inchangée : rien ne dit ICI si ce client est dans ce cas) mais
+            // donne désormais TOUJOURS un recours, plutôt que de promettre un code qui
+            // n'arrivera peut-être jamais sans qu'aucune suite ne soit possible.
+            $payload = ['status' => true, 'known' => false, 'sent' => true, 'message' => trans('all.message.check_your_email_for_code_with_fallback')];
             $this->ajouterCodeDev($payload, (string) $request->post('phone'));
 
             return response($payload);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [Root cause 2026-09-18, propriétaire : « parfois un client enregistré, je ne
+            // trouve pas son compte »] envoyerCodeParEmail() écrit la ligne `otps` AVANT de
+            // tenter l'envoi du code par e-mail. Si l'envoi échoue (SMTP injoignable, e-mail
+            // invalide, panne du fournisseur), on atterrit ici SANS AUCUNE trace journalisée
+            // nulle part : le client voit un échec générique, aucun compte n'est jamais créé
+            // (register() n'est appelé que depuis verify(), jamais atteint ici), et le
+            // propriétaire n'a rien pour retrouver le cas quand un client dit s'être inscrit.
+            // On journalise le strict nécessaire pour retrouver CE numéro précis a posteriori —
+            // jamais l'e-mail en clair (même discipline que PosCustomerLookupService : ne pas
+            // transformer ce journal en carnet d'adresses).
+            Log::warning('guest_signup.email_login_failed', [
+                'phone' => (string) $request->post('phone'),
+                'email_domain' => Str::after((string) $request->post('email'), '@') ?: null,
+                'error' => $exception->getMessage(),
+            ]);
+
+            // [VG-2026-10-21 M1-003] Détail journalisé ci-dessus ; au client, une phrase générique.
+            return response(['status' => false, 'message' => self::MESSAGE_ENVOI_IMPOSSIBLE], 422);
         }
     }
 
@@ -252,6 +307,36 @@ class GuestSignupController extends Controller
         return \App\Support\PhoneDisplay::safe($compte->phone) !== null
             ? (string) $compte->phone
             : self::cleSansNumero($email);
+    }
+
+    /**
+     * Code fixe du compte de revue App Store, ou null. Décision propriétaire (2026-10-15) : Apple
+     * examine CONTRE la production et ne peut pas lire nos e-mails. Garde-fous qui répondent à
+     * « une porte qu'on oublie de refermer » : (1) éteint par défaut ; (2) exige une DATE DE FIN
+     * (`APP_REVIEW_UNTIL`) — passée cette date, ou sans date, la porte se referme seule ;
+     * (3) un seul e-mail exact, et seulement un compte INVITÉ (jamais staff) ; (4) code à 4 chiffres comme l'écran, jamais envoyé ; (5) chaque usage
+     * est journalisé ; (6) le débit `otp-send` et le verrou du verify s'appliquent comme pour tous.
+     */
+    private function codeDeRevuePour(string $email, User $compte): ?string
+    {
+        $emailRevue = mb_strtolower(trim((string) config('auth.app_review.email', '')));
+        $code       = trim((string) config('auth.app_review.otp', ''));
+        $jusqua     = trim((string) config('auth.app_review.until', ''));
+        if ($emailRevue === '' || $emailRevue !== $email || ! preg_match('/^\d{4}$/', $code) || $jusqua === '') {
+            return null;
+        }
+        try {
+            if (now()->greaterThan(Carbon::parse($jusqua)->endOfDay())) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            return null; // date illisible = porte fermée
+        }
+        if ((int) $compte->is_guest !== Ask::YES) {
+            return null; // jamais un compte staff
+        }
+
+        return $code;
     }
 
     /**
@@ -392,7 +477,13 @@ class GuestSignupController extends Controller
                 );
             }
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [VG-2026-10-21 M1-003] Un échec de transport n'est jamais dit tel quel ; les messages
+            // MÉTIER (code invalide, expiré) passent, les types techniques sont masqués et journalisés.
+            if ($exception instanceof \Symfony\Component\Mailer\Exception\TransportExceptionInterface) {
+                return $this->echecEnvoiCode($exception, 'verify');
+            }
+
+            return response(['status' => false, 'message' => \App\Libraries\QueryExceptionLibrary::message($exception)], 422);
         }
 
         return response()->json([

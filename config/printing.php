@@ -106,7 +106,18 @@ return [
         // FALLBACK quand la branche n'a pas de téléphone renseigné (cas V1 Le Cayenne).
         // Utilisé par la CAISSE (OrderReceiptEscPosRenderer) et injecté à la BORNE
         // (master.blade → window.foodkingConfig.borneTicket.phone → bridge.js).
-        'phone' => env('RECEIPT_PHONE', '03 65 67 82 91'),
+        // [ONB-01 2026-08-28] Etait `env('RECEIPT_PHONE', '03 65 67 82 91')` — le
+        // VRAI numero de Le Cayenne. Tout etablissement installant le produit
+        // imprimait donc les coordonnees d'un tiers sur un document fiscal remis
+        // au client et conserve six ans.
+        //
+        // Vide par defaut : le rendu saute la ligne plutot que de mentir. Le
+        // telephone de l'etablissement (`branches.phone`) reste prioritaire, et
+        // c'est lui qu'il faut renseigner.
+        'phone' => env('RECEIPT_PHONE', ''),
+        // Repli du NOM, quand aucune branche n'est resolue. Meme raisonnement :
+        // mieux vaut un ticket sans en-tete qu'un ticket au nom d'un autre.
+        'name' => env('RECEIPT_NAME', ''),
         // [TICKET-ADRESSE 2026-07-03] Owner veut l'adresse en en-tête (design pro).
         // Source primaire = `branch->address` ; ce défaut config est le fallback.
         // ⚠️ À REMPLACER par la VRAIE adresse Le Cayenne (env RECEIPT_ADDRESS ou branche).
@@ -182,7 +193,12 @@ return [
         'port' => env('CUSTOMER_DISPLAY_PORT', 'COM3'),
         'baud' => (int) env('CUSTOMER_DISPLAY_BAUD', 9600),
         'code_page' => (int) env('CUSTOMER_DISPLAY_CODE_PAGE', 19), // 19 = CP858
-        'welcome_line1' => env('CUSTOMER_DISPLAY_WELCOME1', 'LE CAYENNE'),
+        // [ONB-01 2026-08-28] Etait `'LE CAYENNE'` en dur : le petit ecran tourne
+        // vers le client affichait, en veille, le nom d'un autre restaurant.
+        // Aucun ecran d'administration ne permet de le changer (seule voie : .env),
+        // ce qui est consigne comme manque — mais le defaut, lui, ne doit affirmer
+        // le nom de personne.
+        'welcome_line1' => env('CUSTOMER_DISPLAY_WELCOME1', ''),
         'welcome_line2' => env('CUSTOMER_DISPLAY_WELCOME2', 'Soyez le bienvenu !'),
         'total_label' => env('CUSTOMER_DISPLAY_TOTAL_LABEL', 'TOTAL'),
     ],

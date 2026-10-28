@@ -107,6 +107,46 @@ class SettingResource extends JsonResource
             'kiosk_welcome_subtitle'               => $this->info['kiosk_welcome_subtitle'] ?? 'Commandez en quelques touches',
             'kiosk_tap_hint'                       => $this->info['kiosk_tap_hint'] ?? 'Touchez l\'écran pour commander',
 
+            // [ONB-12 2026-08-28] Le tampon « 100 % Halal » de l'ecran d'accueil.
+            //
+            // Il etait ECRIT EN DUR dans le gabarit. C'est une affirmation sur la
+            // nourriture servie — verifiable, engageante, et propre a chaque
+            // etablissement. Un nouveau commercant la portait sans l'avoir declaree,
+            // et sans aucun moyen de la retirer.
+            //
+            // Defaut a 0 : on n'affirme rien tant que le commercant ne l'a pas dit.
+            // La migration 2026_08_28_120000 declare la valeur des installations
+            // existantes pour ne rien leur retirer en silence.
+            'kiosk_halal_stamp'                    => (int) (bool) ($this->info['kiosk_halal_stamp'] ?? 0),
+            // [ONB-12 2026-08-28] Logo DEDIE a l'ecran d'accueil de la borne.
+            // Le logo general des reglages est concu pour un fond clair ; l'attract
+            // est orange plein cadre. Sans reglage separe, l'un des deux ecrans est
+            // toujours moche. Vide par defaut : on retombe alors sur le logo general,
+            // puis sur le NOM du commercant en toutes lettres.
+            'kiosk_attract_logo'=> $this->info['kiosk_attract_logo'] ?? null,
+            /*
+             * [PROPRIETAIRE 2026-08-28] LA VITRINE DE L'ECRAN D'ACCUEIL, DECLAREE.
+             *
+             * Ce que le proprietaire a constate sur SA borne : « avant y avait les
+             * sandwiches, c'etait bien cadre ; la c'est trop grand et ca affiche
+             * d'autres produits que je voulais pas, ce ne sont pas nos meilleures
+             * ventes ».
+             *
+             * Il avait raison sur les deux points. ONB-12 a remplace une selection
+             * choisie a la main — huit produits avec des visuels DETOURES, cadres
+             * pour le hero de 900 px — par un appel a `featured-items`. Ce drapeau
+             * `is_featured` alimente AUSSI la section « mis en avant » du site
+             * public : il ne decrit pas la vitrine de la borne, et le corriger
+             * changerait le site en meme temps.
+             *
+             * La vitrine a donc sa PROPRE declaration. Vide par defaut : on retombe
+             * alors sur `featured-items`, et un nouveau commercant garde exactement
+             * le comportement qu'ONB-12 lui a donne. Rien n'est repris a personne.
+             *
+             * Forme : [{ "name": "Le Terminator", "img": "/images/…/terminator.webp" }]
+             */
+            'kiosk_attract_showcase' => $this->info['kiosk_attract_showcase'] ?? null,
+
             // [PHASE-37] Kiosk multi-language settings
             'kiosk_languages_enabled'              => $this->_parseLanguagesEnabled(),
             'kiosk_default_language'               => $this->info['kiosk_default_language'] ?? 'fr',

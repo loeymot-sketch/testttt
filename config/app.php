@@ -5,6 +5,20 @@ use Illuminate\Support\Facades\Facade;
 return [
 
     /*
+    | [ONB-05 2026-08-28] Symbole de devise, lu par la borne.
+    |
+    | `KioskMenuService.php:186` et `PricingPreviewService.php:220` appellent
+    | `config('app.currency_symbol', '€')` — une cle qu'AUCUN fichier ne
+    | definissait. La borne affichait donc toujours l'euro, en ignorant la devise
+    | choisie dans Reglages > Site (`site_default_currency_symbol`).
+    |
+    | Le defaut reste l'euro : rien ne change tant que la variable n'est pas posee.
+    | ⏳ Faire lire le REGLAGE de l'ecran plutot qu'une variable d'environnement
+    | reste a faire — c'est un chantier de propagation, pas une cle manquante.
+    */
+    'currency_symbol' => env('APP_CURRENCY_SYMBOL', '€'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Name
     |--------------------------------------------------------------------------
@@ -76,7 +90,7 @@ return [
 
     // throttle:api — global /api/* cap per user id or IP (RouteServiceProvider::api).
     // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
-    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
+    'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)),
 
     // [GOAL-OPS-SWAP W3 2026-08-12] Plafond GLOBAL par compte, tous appareils
     // confondus. Depuis que le budget `throttle:api` est porté par le couple
@@ -86,7 +100,7 @@ return [
     // + cuisine + écran client + suivi + une marge, sans ouvrir la porte.
     'api_throttle_user_ceiling_per_minute' => max(
         1,
-        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)))
+        (int) env('API_THROTTLE_USER_CEILING_PER_MINUTE', 5 * max(1, (int) env('API_THROTTLE_PER_MINUTE', 600)))
     ),
 
     // throttle:admin-mutation non-GET cap — env-configurable to absorb owner
@@ -287,6 +301,9 @@ return [
         App\Providers\RouteServiceProvider::class,
         // [ARCH_STOCK_INTELLIGENT_BOM_2026-07-23 / P3b] Binding lecteur factures IA (mock↔OpenAI).
         App\Providers\PurchasingServiceProvider::class,
+        // [ONB-04 2026-08-27] Extraction de carte par photo. Même motif que le
+        // fournisseur ci-dessus : bouchon par défaut, réel derrière deux verrous.
+        App\Providers\AssistantServiceProvider::class,
         // [UBER-PHOTO 2026-08-10] Lecteur de ticket Uber photographié (doublure locale par défaut).
         App\Providers\UberVisionServiceProvider::class,
     ],

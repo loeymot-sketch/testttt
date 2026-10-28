@@ -12,119 +12,132 @@
             </Datepicker>
         </div>
     </div>
+    <!--
+        [G5 · T5.1 2026-09-03] Les dix compteurs partent à `null`, que Vue rend comme une
+        chaîne VIDE. Le `.catch` ne faisait que retomber le voile de chargement sans rien
+        conserver de l'échec : sur 403 ou 500, l'écran montrait dix tuiles avec leur
+        libellé et, dessous, du blanc.
+        Ce n'est pas seulement indiscernable d'une journée sans commande — c'est pire. Une
+        vraie journée à zéro renvoie `0` et affiche « 0 ». Le blanc n'appartient à aucune
+        journée réelle : c'est un état que le produit ne savait pas nommer, et que
+        l'exploitant lisait comme un zéro.
+    -->
+    <p v-if="fetchError" class="text-sm text-red-600 mb-3" data-testid="order-statistics-error">
+        {{ $t('label.order_statistics_error') }}
+    </p>
     <div class="row mb-3">
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#FFE6F0]">
-                    <i class="lab lab-total-orders lab-font-size-24 text-primary"></i>
+                    <i class="lab lab-total-orders lab-font-size-24 text-primary" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">
                         {{ $t('label.total_orders') }}
                     </h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ total_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-total_order">{{ chiffre(total_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#FFF6E6]">
-                    <i class="lab lab-pending lab-font-size-24 lab-color-yellow"></i>
+                    <i class="lab lab-pending lab-font-size-24 lab-color-yellow" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.pending') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ pending_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-pending_order">{{ chiffre(pending_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#E7FFF0]">
-                    <i class="lab lab-delivered lab-font-size-24 lab-color-green"></i>
+                    <i class="lab lab-delivered lab-font-size-24 lab-color-green" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.accept') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ accept_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-accept_order">{{ chiffre(accept_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#e5ebff]">
-                    <i class="lab lab-processing lab-font-size-24 text-[#567DFF]"></i>
+                    <i class="lab lab-processing lab-font-size-24 text-[#567DFF]" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.preparing') }}
                     </h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ preparing_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-preparing_order">{{ chiffre(preparing_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#F5EAFF]">
-                    <i class="lab lab-prepared lab-font-size-24 text-[#A953FF]"></i>
+                    <i class="lab lab-prepared lab-font-size-24 text-[#A953FF]" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.prepared') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ prepared_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-prepared_order">{{ chiffre(prepared_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#E9F9FF]">
-                    <i class="lab lab-out-for-delivery lab-font-size-24 lab-color-blue"></i>
+                    <i class="lab lab-out-for-delivery lab-font-size-24 lab-color-blue" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">
                         {{ $t('label.out_for_delivery') }}
                     </h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ out_for_delivery_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-out_for_delivery_order">{{ chiffre(out_for_delivery_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#EBE7FF]">
-                    <i class="lab lab-delivered lab-font-size-24 lab-color-delivered"></i>
+                    <i class="lab lab-delivered lab-font-size-24 lab-color-delivered" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.delivered') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ delivered_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-delivered_order">{{ chiffre(delivered_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#FFEAEA]">
-                    <i class="lab lab-cancel-n-reject lab-font-size-24 lab-color-red"></i>
+                    <i class="lab lab-cancel-n-reject lab-font-size-24 lab-color-red" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.canceled') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ canceled_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-canceled_order">{{ chiffre(canceled_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#E9EEFF]">
-                    <i class="lab lab-returned lab-font-size-24 lab-color-blue-2"></i>
+                    <i class="lab lab-returned lab-font-size-24 lab-color-blue-2" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.returned') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ returned_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-returned_order">{{ chiffre(returned_order) }}</h4>
                 </div>
             </div>
         </div>
         <div class="col-12 sm:col-6 md:col-4 lg:col-6 xl:col-3">
             <div class="flex items-center gap-4 p-4 rounded-lg shadow-xs bg-white">
                 <div class="w-12 h-12 rounded-full flex items-center justify-center bg-[#FFEAEA]">
-                    <i class="lab lab-cancel-n-reject lab-font-size-24 lab-color-red"></i>
+                    <i class="lab lab-cancel-n-reject lab-font-size-24 lab-color-red" aria-hidden="true"></i>
                 </div>
                 <div>
                     <h3 class="font-normal text-sm leading-6 capitalize text-paragraph">{{ $t('label.rejected') }}</h3>
-                    <h4 class="font-bold text-lg leading-[34px]">{{ rejected_order }}</h4>
+                    <h4 class="font-bold text-lg leading-[34px]" data-testid="order-stat-rejected_order">{{ chiffre(rejected_order) }}</h4>
                 </div>
             </div>
         </div>
@@ -149,6 +162,8 @@ export default {
             date: null,
             first_date: null,
             last_date: null,
+            // [G5 · T5.1] Une panne doit être DISCERNABLE d'une journée sans commande.
+            fetchError: false,
             total_order: null,
             pending_order: null,
             accept_order: null,
@@ -183,6 +198,13 @@ export default {
         this.orderStatistic();
     },
     methods: {
+        /**
+         * [G5 · T5.1] Sur échec, le compteur affiche « — » : ni un chiffre faux, ni du
+         * blanc. Le blanc est le pire des trois, parce qu'il se lit « 0 ».
+         */
+        chiffre: function (valeur) {
+            return this.fetchError ? '—' : valeur;
+        },
         handleDate: function (e) {
             if (e) {
                 this.first_date = e[0];
@@ -203,8 +225,11 @@ export default {
                     this.canceled_order = res.data.data.canceled_order;
                     this.returned_order = res.data.data.returned_order;
                     this.rejected_order = res.data.data.rejected_order;
+                    this.fetchError = false;
                     this.loading.isActive = false;
-                }).catch((err) => {
+                }).catch(() => {
+                    // [G5 · T5.1] L'échec est conservé, pas seulement absorbé.
+                    this.fetchError = true;
                     this.loading.isActive = false;
                 });
             } else {
@@ -227,8 +252,11 @@ export default {
                 this.canceled_order = res.data.data.canceled_order;
                 this.returned_order = res.data.data.returned_order;
                 this.rejected_order = res.data.data.rejected_order;
+                this.fetchError = false;
                 this.loading.isActive = false;
-            }).catch((err) => {
+            }).catch(() => {
+                // [G5 · T5.1] L'échec est conservé, pas seulement absorbé.
+                this.fetchError = true;
                 this.loading.isActive = false;
             });
         }

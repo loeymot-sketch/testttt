@@ -12,7 +12,7 @@
 const { test, expect } = require('@playwright/test');
 const { loginAsPosOperator } = require('./helpers/login');
 
-const POS_BASE = 'http://localhost:8000';
+const POS_BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 test.describe.configure({ mode: 'serial' });
 

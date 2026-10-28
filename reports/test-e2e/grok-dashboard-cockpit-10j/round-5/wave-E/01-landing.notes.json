@@ -1,0 +1,206 @@
+{
+  "name": "01-landing",
+  "url": "http://127.0.0.1:8766/admin/pos",
+  "title": "Le Cayenne",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "sidebar": {
+    "present": true,
+    "visible": true,
+    "exactLabels": [
+      "CAISSE ET COMMANDES",
+      "Tableau de bord",
+      "POS",
+      "Commandes caisse",
+      "Historique",
+      "Encaissement",
+      "Ticket promo",
+      "Réglages ticket promo",
+      "Commande Uber (photo)",
+      "La roue",
+      "Écran cuisine",
+      "Suivi client"
+    ],
+    "labeled": [
+      {
+        "kind": "group",
+        "text": "CAISSE ET COMMANDES"
+      },
+      {
+        "kind": "item",
+        "text": "Tableau de bord"
+      },
+      {
+        "kind": "item",
+        "text": "POS"
+      },
+      {
+        "kind": "item",
+        "text": "Commandes caisse"
+      },
+      {
+        "kind": "item",
+        "text": "Historique"
+      },
+      {
+        "kind": "item",
+        "text": "Encaissement"
+      },
+      {
+        "kind": "item",
+        "text": "Ticket promo"
+      },
+      {
+        "kind": "item",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "kind": "item",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "kind": "item",
+        "text": "La roue"
+      },
+      {
+        "kind": "item",
+        "text": "Écran cuisine"
+      },
+      {
+        "kind": "item",
+        "text": "Suivi client"
+      }
+    ],
+    "hasEtatDuSysteme": false,
+    "hasEtatInRaw": false,
+    "hrefs": [
+      {
+        "tag": "A",
+        "href": "/home",
+        "text": ""
+      },
+      {
+        "tag": "A",
+        "href": "/admin/dashboard",
+        "text": "Tableau de bord"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos",
+        "text": "POS"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/pos-orders",
+        "text": "Commandes caisse"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/historique",
+        "text": "Historique"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/encaissement",
+        "text": "Encaissement"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer",
+        "text": "Ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/promo-flyer/settings",
+        "text": "Réglages ticket promo"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/uber-photo",
+        "text": "Commande Uber (photo)"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/roue",
+        "text": "La roue"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/kitchen-display-system",
+        "text": "Écran cuisine"
+      },
+      {
+        "tag": "A",
+        "href": "/admin/order-status-screen",
+        "text": "Suivi client"
+      }
+    ],
+    "rawText": "Tableau de bord POS Commandes caisse Historique Encaissement Ticket promo Réglages ticket promo Commande Uber (photo) La roue CAISSE ET COMMANDES Écran cuisine Suivi client"
+  },
+  "mix": {
+    "mixScripts": [
+      "http://127.0.0.1:8766/js/manifest.js?id=73713f1e701c87fcd478c5245c061dfe",
+      "http://127.0.0.1:8766/js/vendor.js?id=31f487d9b010b06497b5a89bd0fcbcf2",
+      "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4"
+    ],
+    "allScriptCount": 11,
+    "perf": [
+      {
+        "name": "http://127.0.0.1:8766/js/manifest.js?id=73713f1e701c87fcd478c5245c061dfe",
+        "transferSize": 13450,
+        "encodedBodySize": 13150,
+        "initiatorType": "script"
+      },
+      {
+        "name": "http://127.0.0.1:8766/js/vendor.js?id=31f487d9b010b06497b5a89bd0fcbcf2",
+        "transferSize": 4023567,
+        "encodedBodySize": 4023267,
+        "initiatorType": "script"
+      },
+      {
+        "name": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+        "transferSize": 7554995,
+        "encodedBodySize": 7554695,
+        "initiatorType": "script"
+      },
+      {
+        "name": "http://127.0.0.1:8766/js/pos-shell.6f467d6e.js",
+        "transferSize": 2616519,
+        "encodedBodySize": 2616219,
+        "initiatorType": "script"
+      }
+    ],
+    "appFromScript": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+    "appFromPerf": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+    "adminShellFromScript": null,
+    "adminShellFromPerf": null
+  },
+  "appJsUrl": "http://127.0.0.1:8766/js/app.js?id=7af395861f8184d98e5a7fad8cad66a4",
+  "appJsHash": "7af395861f8184d98e5a7fad8cad66a4",
+  "adminShellUrl": null,
+  "adminShellHash": null,
+  "vueSystemHealthExists": false,
+  "vueSystemHealthVisible": false,
+  "healthCockpitPresent": false,
+  "interrupteursPresent": false,
+  "h2EtatDuSysteme": false,
+  "redirectedToDashboard": false,
+  "stillOnObservability": false,
+  "stillOnPos": true,
+  "systemHealthErreurText": null,
+  "toastOrAlert": [
+    "Article indisponible : Coca-Cola 33cl\n×"
+  ],
+  "bodyHasVentesDuJour": false,
+  "bodyHasEtatDuSysteme": false,
+  "bodyHasImpossibleLire": false,
+  "bodySnippet": "Français\nAnglais\nFrançais\nBonjour\nCaissier Le Cayenne\nCaissier Le Cayenne\n\npos@lecayenne.fr\n\n+330600000002\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nAppareils Connectés\nDéconnexion\nTableau de bord\nPOS\nCommandes caisse\nHistorique\nEncaissement\nTicket promo\nRéglages ticket promo\nCommande Uber (photo)\nLa roue\nCAISSE ET COMMANDES\nÉcran cuisine\nSuivi client\nAller au panier\nArticle indisponible : Coca-Cola 33cl\n×\n👑\n\nCAISSE LE CAYENNE\n\nCommande rapide\nFiliale\n#1\nArticles\n0\nCOMMANDES\n🖥️\nÀ encaisser\n2\n💶\nEncaissement\n🎧\nAssistant\n📋\nSuivi commandes\n🗂️\nHistorique\n🖥️\nÉcran client\nCAISSE\n💵\nOuvrir tiroir\n🏦\nCaisse\n!\n🚫\nRupture\n🎁\nFidélité client\n🛎️\nPRÊT À LIVRER (0)\n\nAucune commande prête à livrer pour le moment.\n\nMis à jour à l'instant\n\n💰\nÀ ENCAISSER — COMPTOIR (2)\nN°A0010\n11,10 €\n🖨️ Cuisine\n🖨️ Client\n💳 Encaisser\nN°A0011\n8,30 €\n🖨️ Cuisine\n🖨️ Client\n💳 Encaisser\n\nMis à jour à l'instant\n\n🌐\nCOMMANDES WEB · 77\nN°A9002\n1,90 €\nAccepter\nDétails\nN°A0081\n7,40 €\nAccepter\nDétails\nN°A0082\n9,90 €\nAccepter\nDétails\nN°A0083\n9,50 €\nAccepter\nDétails\nVoir les 77 commandes web\n\nMis à jour à l'instant\n\n💳\nWEB PAYÉES · 0\n\nAucune commande web payée en cuisine.\n\nMis à jour à l'instant\n\n🔍\nSandwichs\nGalette\nBurgers\nTacos\nBols\nFrites\nDesserts\nBoissons\nMenu enfant\nE2E_PLAYWRIGHT_STUDIO_CATEGORY\n\nTICKET CAISSE\n\nCommande en cours\n+\n⏸\nMettre en attente\n📦\nEn attente\n0\nSÉLECTIONNER LE TYPE DE COMMANDE\n🥡\nÀ emporter\n🛵\nLivraison\n👤 NOM DU CLIENT (IMPRIMÉ SUR LE TICKET CUISINE)\nNom\nTéléphone\n⏰ Programmer\n+15 min\n+30 min\n+1 h\n🍽️\n\nAucun article. Sélectionnez un produit dans la grille.\n\nSous-total\n0,00 €\nTotal\n0,00 €\nConnexion réussie.\n×\nRequest\nTimeline\nQueries\n5\nModels\n4\nGate\n1\n25\n#1 login (20:17:58)\n#2 language?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (20:17:58)\n#3 item-category?paginate=0&order_column=sort&order_type=asc&status=5 (ajax) (20:17:58)\n#4 show/2 (ajax) (20:17:58)\n#5 login (ajax) (20:17:59)\n#6 default-access (ajax) (20:17:59)\n#7 company (ajax) (20:17:59)\n#8 payment-terminals?status=1&per_page=50 (ajax) (20:17:59)\n#9 item?paginate=0&order_column=id&order_type=asc&status=5&surface=pos&branch_id=1&page=1 (ajax) (20:17:59)\n#10 branch?paginate=0&order_column=id&order_type=asc&status=5 (ajax) (20:17:59)\n#11 pos-category?paginate=0&order_column=sort&order_type=asc&status=5&surface=pos (ajax) (20:17:59)\n#12 pending (ajax) (20:17:59)\n#13 paid (ajax) (20:18:00)\n#14 branch/1 (ajax) (20:18:00)\n#15 oss-order (ajax) (20:17:59)\n#16 pending (ajax) (20:17:59)\n#17 users?order_column=id&order_type=asc&status=5&role_id=2 (ajax) (20:18:00)\n#18 dining-table?order_column=id&order_type=desc&status=5 (ajax) (20:18:00)\n#19 walk-in-customer (ajax) (20:18:00)\n#20 show/1 (ajax) (20:18:00)\n#21 show/1 (ajax) (20:18:00)\n#22 current?branch_id=1 (ajax) (20:18:00)\n#23 FRA (ajax) (20:18:00)\n#24 customer-display (ajax) (20:18:00)\n#25 address/2 (ajax) (20:18:01)\n43ms\n3MB\n9.x\nGET api/admin/users/address/{customer}",
+  "loginHttp": 201,
+  "landingUrl": "http://127.0.0.1:8766/admin/pos",
+  "landedOnPos": true,
+  "didClickPos": false,
+  "didClickPaymentOrWizard": false,
+  "note": "Landing after cashier login. No payment/wizard clicks."
+}

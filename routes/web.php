@@ -81,6 +81,12 @@ Route::prefix('carnet')->name('daily-book.')->middleware(['installed'])->group(f
 // (inline vanilla JS) — PAS la SPA admin, PAS de Sanctum. Le toggle délègue au
 // SSOT AvailabilityService::toggle. Déclaré AVANT le catch-all. Fail-closed :
 // MOBILE_STOCK_PIN vide => accès entièrement refusé.
+// [LIVRAISON 2026-10-20] Écran du livreur (page autonome pour téléphone). L'authentification et les données
+// passent par l'API (/api/auth/login puis /api/frontend/delivery-run) ; la page elle-même est publique et vide.
+Route::get('/livreur', function () {
+    return view('livreur');
+})->middleware(['installed'])->name('livreur');
+
 Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
     Route::get('/', function () {
         return view('mobile-stock');
@@ -187,7 +193,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.counter');
     Route::post('/admin/roue-validation', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'issue'])
-        ->middleware(['throttle:60,1'])
+        ->middleware(['throttle:60,1,wheel-counter-issue']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.counter.issue');
 
     /*
@@ -208,7 +214,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
     Route::get('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'show'])
         ->name('admin.wheel.settings');
     Route::post('/admin/roue-reglages', [\App\Http\Controllers\Admin\Wheel\WheelSettingsController::class, 'save'])
-        ->middleware(['throttle:60,1'])->name('admin.wheel.settings.save');
+        ->middleware(['throttle:60,1,wheel-settings-save'])->name('admin.wheel.settings.save'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
 
     Route::get('/admin/roue-borne', [\App\Http\Controllers\Admin\Wheel\WheelCounterController::class, 'kiosk'])
         
@@ -218,7 +224,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
         
         ->name('admin.wheel.prize');
     Route::post('/admin/roue-lot/remettre', [\App\Http\Controllers\Admin\Wheel\WheelPrizeController::class, 'deliver'])
-        ->middleware(['throttle:120,1'])
+        ->middleware(['throttle:120,1,wheel-prize-deliver']) // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('admin.wheel.prize.deliver');
 
     /*

@@ -79,7 +79,22 @@ class SalesReportController extends AdminController
             $copyright   = Settings::group('site')->get('site_copyright');
             // [GOAL-OPS-SWAP W2 2026-08-12] Même exclusion que l'écran : un PDF de
             // rapport ne peut pas compter autrement que son propre résumé.
-            $orders = $this->orderService->list($request, true);
+            //
+            // [ONB-07 2026-08-28] Exclusion RETIRÉE ICI, et ici seulement. Deux
+            // correctifs justes s'annulaient : celui du 2026-08-12 (ci-dessus) a
+            // rendu INATTEIGNABLE la branche de nettage du gabarit, posée le
+            // 2026-06-01 sur mandat propriétaire « net, concorder avec le Z ». Le
+            // gabarit porte encore ce commentaire au-dessus de son calcul, mais plus
+            // aucune contre-écriture ne lui parvenait : le Total imprimé surestimait
+            // le chiffre d'affaires du montant remboursé, sur un document sorti pour
+            // le comptable.
+            //
+            // L'ÉCRAN garde sa règle du 2026-08-12 (`index()` ci-dessus, verrouillé
+            // par SalesReportListMirrorParitySentinelTest) : pas de miroir, compte
+            // aligné sur la tuile. Le DOCUMENT retrouve la sienne : il liste les
+            // mouvements et nette son total — une colonne qui s'additionne jusqu'au
+            // Total. Chaque décision reste valable dans son domaine.
+            $orders = $this->orderService->list($request, false);
 
             // [ULTRA-LOOP R2 P2 2026-07-07 — garde anti-OOM] Régression du fix R1 : paginate=0
             // sans filtre de date force le rendu de ~2850 commandes → dompdf épuise la mémoire

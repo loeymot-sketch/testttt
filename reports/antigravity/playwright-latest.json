@@ -1,7 +1,17 @@
 {
   "config": {
+    "argv": [
+      "/Users/1millnonstop/.nvm/versions/node/v22.23.2/bin/node",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
+      "test",
+      "tests/Playwright/kds-tablette-2026-10-19.spec.js",
+      "--workers=1",
+      "-g",
+      "flèches"
+    ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/playwright.config.js",
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Playwright/global-setup.js",
@@ -18,7 +28,7 @@
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
@@ -51,72 +61,62 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.62.1",
     "workers": 1,
     "webServer": null
   },
   "suites": [
     {
-      "title": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-      "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
+      "title": "Playwright/kds-tablette-2026-10-19.spec.js",
+      "file": "Playwright/kds-tablette-2026-10-19.spec.js",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "WAVE A — Admin dashboard capture",
-          "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-          "line": 176,
-          "column": 6,
-          "specs": [
+          "title": "tablette : flèches ‹ › — apparaissent seulement quand il reste des commandes, et font défiler",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "login → dashboard KPIs → Vue d’ensemble / Suivi en direct",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
                 {
-                  "timeout": 180000,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12246,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T20:15:38.894Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 9124,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-29T05:56:06.108Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
+                  "attachments": []
                 }
               ],
-              "id": "d8f5b1a3baea2f580500-581763192c5b9c5a272c",
-              "file": "e2e/_grok-dashboard-wave-A-2026-08-29.spec.js",
-              "line": 179,
-              "column": 3
+              "status": "expected"
             }
-          ]
+          ],
+          "id": "f371df822c1721c8c98c-8b20b086bb97744669ef",
+          "file": "Playwright/kds-tablette-2026-10-19.spec.js",
+          "line": 251,
+          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-29T05:56:05.263Z",
-    "duration": 10682.292,
+    "startTime": "2026-10-20T20:15:38.417Z",
+    "duration": 12985.785,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

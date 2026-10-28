@@ -277,6 +277,22 @@ class CleanupStalePendingKioskOrders
             // force à 'delivery' dès que `order_type === DELIVERY` — les deux valeurs
             // désignent la même chose, une commande passée depuis le site.
             ->whereIn('source_surface', ['web', 'delivery'])
+            // [CAISSE 2026-10-23 · relecture adverse P1-1] LIVRAISON : le signal d'abandon est le DÉPART prévu de la tournée (ou
+            // le créneau programmé), PAS l'heure de saisie. Une livraison saisie à 11:00 dont la tournée part à 18:00 (fenêtre de
+            // service 18:00 → 00:30) était annulée à 17:00, avant que le livreur parte. Abandon réel (départ prévu dépassé du TTL,
+            // jamais parti) : la purge reste active. Hors livraison : inchangé.
+            ->where(function ($query) use ($webStaleThreshold): void {
+                $query->where('order_type', '!=', \App\Enums\OrderType::DELIVERY)
+                    ->orWhere(function ($delivery) use ($webStaleThreshold): void {
+                        $delivery->where(fn ($slot) => $slot->whereNull('scheduled_at')->orWhere('scheduled_at', '<', $webStaleThreshold))
+                            ->whereNotExists(function ($stop) use ($webStaleThreshold): void {
+                                $stop->select(\Illuminate\Support\Facades\DB::raw(1))->from('delivery_stops')
+                                    ->whereColumn('delivery_stops.order_id', 'orders.id')
+                                    ->whereNull('delivery_stops.delivered_at')
+                                    ->where('delivery_stops.wave_at', '>=', $webStaleThreshold);
+                            });
+                    });
+            })
             ->where(function ($query) use ($webStaleThreshold): void {
                 $query->where('order_datetime', '<', $webStaleThreshold)
                     ->orWhere(function ($q) use ($webStaleThreshold): void {

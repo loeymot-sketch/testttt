@@ -107,15 +107,27 @@ class SubscriberService
      * @return Subscriber
      * @throws Exception
      */
-    public function sendEmail(SubscriberEmailRequest $request)
+    public function sendEmail(SubscriberEmailRequest $request): int
     {
         try {
             $subscribers = Subscriber::pluck('email');
 
-            if ($subscribers->isNotEmpty()) {
-                Mail::bcc($subscribers->toArray())
-                    ->send(new SubscriberMail($request->subject, $request->message));
+            // [ONB-09 2026-08-28] La méthode sortait ici SANS RIEN DIRE quand la liste
+            // était vide, et le contrôleur répondait « Email envoyé avec succès » sans
+            // condition. Mesuré sur la base de travail : 0 abonné — donc 100 % des
+            // envois depuis cet écran étaient des faux succès. Le commerçant rédige son
+            // message, l'envoie, voit une confirmation verte, et personne ne l'a reçu.
+            //
+            // On rend désormais le NOMBRE de destinataires, pour que l'appelant puisse
+            // dire la vérité. Zéro n'est pas une erreur — c'est une information.
+            if ($subscribers->isEmpty()) {
+                return 0;
             }
+
+            Mail::bcc($subscribers->toArray())
+                ->send(new SubscriberMail($request->subject, $request->message));
+
+            return $subscribers->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

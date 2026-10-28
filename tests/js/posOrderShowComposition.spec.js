@@ -112,4 +112,31 @@ describe('Fiche commande — composition et statuts', () => {
         expect(build({ order_type: 10 }).vm.isDeliveryOrder).toBe(false); // à emporter
         expect(build({ order_type: 25 }).vm.isDeliveryOrder).toBe(false); // borne
     });
+
+    // [GOAL-CAISSE-VISION 2026-08-24] Les suppléments de formule étaient FACTURÉS
+    // et IMPRIMÉS sur le ticket, mais absents de cette fiche — celle qu'on ouvre
+    // justement quand un client conteste un montant. `grep -c addon` y valait 0.
+    it('montre les suppléments de formule facturés, comme le ticket', () => {
+        const vm = build().vm;
+
+        // Forme réelle de l'instantané (CompositionSnapshotBuilder.php:166-177).
+        expect(vm.normalizedAddons({
+            item_addons: [
+                { addon_id: 2, addon_item_id: 44, addon_name: 'Frites', role: 'menu_frites', quantity: 1, unit_price: 1.2, line_total: 1.2, catalog_price: 3 },
+                { addon_id: 3, addon_name: 'Coca', role: 'menu_boisson', quantity: 2, line_total: 2.4 },
+            ],
+        })).toEqual([
+            { name: 'Frites', quantity: 1, line_total: 1.2 },
+            { name: 'Coca', quantity: 2, line_total: 2.4 },
+        ]);
+    });
+
+    it('n\'invente pas de suppléments quand il n\'y en a pas', () => {
+        const vm = build().vm;
+        expect(vm.normalizedAddons({ item_addons: [] })).toEqual([]);
+        expect(vm.normalizedAddons({})).toEqual([]);
+        expect(vm.normalizedAddons(null)).toEqual([]);
+        // Une entrée sans nom est écartée, jamais rendue en ligne muette.
+        expect(vm.normalizedAddons({ item_addons: [{ addon_id: 7, quantity: 1 }] })).toEqual([]);
+    });
 });

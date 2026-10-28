@@ -9,20 +9,23 @@ use App\Models\TimeSlot;
 use Carbon\Carbon;
 
 /**
- * [GOAL WEB COMMANDE Wave D 2026-07-28, formule owner révisée 2026-08-16]
- * Estimation d'attente retrait pour le site web, dérivée de la file RÉELLE
- * cuisine (caisse/KDS).
+ * [GOAL WEB COMMANDE Wave D 2026-07-28, formule owner révisée 2026-08-16,
+ * puis figée 2026-09-23] Estimation d'attente retrait pour le site web,
+ * affichée AVANT que la caisse ait accepté la commande.
  *
- * [T-C TEMPS-ATTENTE 2026-08-16 · GOAL owner] Nouvelle formule PAR PALIERS
- * (remplace l'ancienne formule linéaire +5min/tranche de 3, qui décalait tout
- * d'un cran vers le haut par rapport à ce que l'owner voulait — ex. 3
- * commandes donnait 20-25 au lieu de 15-20 attendu, et plafonnait à 30-35 au
- * lieu de 25-30). Règle owner (dictée, bornes ≤N choisies pour rendre les
- * paliers non chevauchants — "1 à 3", "3 à 5", "plus de 5" laissait un
- * chevauchement à l'exact valeur 3) :
- *   - file ≤ 3 commandes actives devant  → 15-20 min
- *   - file 4 à 5 commandes               → 20-25 min
- *   - file > 5 commandes                 → 25-30 min (plafond dur, jamais plus)
+ * [T-C TEMPS-ATTENTE 2026-09-23 · GOAL owner] La formule par paliers (§tag
+ * TIERS, en vigueur du 2026-08-16 au 2026-09-23) annonçait 20-30 min dès
+ * quelques commandes actives — l'owner a explicitement demandé de ne plus
+ * jamais faire ça : « je veux confirmer que le temps d'attente approximatif
+ * c'est 10 à 15 minutes » (constant, quelle que soit la file). Un retard
+ * cuisine réel sur UNE commande précise doit désormais se refléter via
+ * `Order::preparation_time`, fixé par le caissier à l'ACCEPT (voir
+ * OrderTrackingService::forOrder(), qui prend le relais de cette estimation
+ * générique une fois la commande acceptée) — jamais via cette formule
+ * générique elle-même.
+ *
+ * `queue_count` reste calculé (visibilité staff, contrat API existant/testé)
+ * mais n'entre plus dans le calcul de `wait_low`/`wait_high`.
  *
  * File « devant » = sémantique SSOT KitchenReleaseRule (le MÊME contrat que le
  * board KDS — leçon unreleased-order-bump : ne jamais re-définir la file) :
@@ -37,12 +40,8 @@ use Carbon\Carbon;
  */
 class WaitEstimateService
 {
-    /** [T-C] Paliers owner : [seuil_max_commandes => [low, high]], triés croissant. */
-    public const TIERS = [
-        3 => [15, 20],
-        5 => [20, 25],
-    ];
-    public const OVERFLOW_TIER = [25, 30];
+    /** [T-C 2026-09-23] Fourchette générique constante — voir doc de classe. */
+    public const DEFAULT_WAIT = [10, 15];
     public const QUEUE_WINDOW_MINUTES = 120;
     // [T-C PLANCHER-JAMAIS-ZERO] Owner : « on va jamais dire que y a aucune
     // commande, toujours y a deux commandes avant vous minimum ». Plancher
@@ -51,7 +50,7 @@ class WaitEstimateService
     public const MIN_DISPLAYED_QUEUE_COUNT = 2;
 
     /**
-     * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string}
+     * @return array{queue_count:int, wait_low:int, wait_high:int, closing_time:?string, server_time:string, service_ouvert:bool, ouverture:string}
      */
     public function estimate(int $branchId): array
     {
@@ -73,13 +72,7 @@ class WaitEstimateService
 
         $queueCount = $query->count();
 
-        [$low, $high] = self::OVERFLOW_TIER;
-        foreach (self::TIERS as $maxCount => $range) {
-            if ($queueCount <= $maxCount) {
-                [$low, $high] = $range;
-                break;
-            }
-        }
+        [$low, $high] = self::DEFAULT_WAIT;
 
         return [
             'queue_count' => $queueCount,
@@ -91,7 +84,30 @@ class WaitEstimateService
             'wait_high' => $high,
             'closing_time' => $this->todayClosingTime($now),
             'server_time' => $now->toIso8601String(),
+            // [GOAL STORES 2026-10-01] Le restaurant SERT-il en ce moment ? Mesuré en production
+            // à 02 h 35 : l'API répondait « 10-15 min », restaurant fermé, et le site affichait
+            // « prête dans ~10-15 min » devant une porte close. La fourchette constante reste
+            // (décision propriétaire 2026-09-23) ; on dit en plus si elle a un sens maintenant.
+            'service_ouvert' => self::serviceOuvert($now),
+            'ouverture' => (string) config('kds.scheduled_window_open', '18:00'),
         ];
+    }
+
+    /**
+     * Fenêtre de service = celle qui valide déjà les commandes PROGRAMMÉES
+     * (OrderRequest::validateScheduledAtAfter, `kds.scheduled_window_open/close`) : une seule
+     * définition de « le restaurant sert », jamais deux. Gère la fenêtre qui passe minuit
+     * (18:00 → 00:30).
+     */
+    public static function serviceOuvert(Carbon $maintenant): bool
+    {
+        $ouverture = (string) config('kds.scheduled_window_open', '18:00');
+        $fermeture = (string) config('kds.scheduled_window_close', '00:30');
+        $hm = $maintenant->format('H:i');
+
+        return $ouverture <= $fermeture
+            ? ($hm >= $ouverture && $hm <= $fermeture)
+            : ($hm >= $ouverture || $hm <= $fermeture);
     }
 
     /**

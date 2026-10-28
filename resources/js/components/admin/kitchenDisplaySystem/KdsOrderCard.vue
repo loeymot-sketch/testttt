@@ -179,7 +179,7 @@
          "MUST NOT bump" gate was UI-only — the server never blocked it; comment was inaccurate.)
          For paid orders the note is hidden and only the CTA shows (unchanged). -->
     <div
-      v-if="isCashPending"
+      v-if="isCashPending && !tablette"
       class="kds-card__cash-pending kds-card__cash-pending--note"
       role="status"
       :aria-label="$t('label.kds_card_cash_pending_aria')"
@@ -195,7 +195,9 @@
          [KDS-REPRINT 2026-07-13] Le bouton 🖨️ émet 'reprint' (réimpression MANUELLE)
          indépendamment du CTA : @click.stop empêche le bubbling vers le CTA / la carte,
          et l'action côté orchestrateur ignore le toggle auto + la dé-dup. -->
-    <div class="kds-card__footer">
+    <!-- [KDS-TABLETTE 2026-10-19 · owner] Poste tablette : ni « Prêt » ni réimpression — la
+         validation se fait sur le grand écran ; ici, chaque pixel va à la lecture de la commande. -->
+    <div v-if="!tablette" class="kds-card__footer">
       <button
         type="button"
         class="kds-card__cta"
@@ -292,6 +294,11 @@ export default {
         // True when this order is in the 60s RAPPELÉ window after a chef
         // recall. Drives the orange overlay badge at the top of the card.
         recallActive: {
+            type: Boolean,
+            default: false,
+        },
+        // [KDS-TABLETTE 2026-10-19] Fiche compacte, sans pied (pas de « Prêt », pas de réimpression).
+        tablette: {
             type: Boolean,
             default: false,
         },
@@ -431,7 +438,7 @@ export default {
             // vient désormais de la rangée 1fr pleine hauteur (KDS-3CARDS) ; le corps interne
             // est déjà flex (kds-card__body flex:1) donc le CTA reste collé en bas.
             return {
-                border: `3px solid ${this.borderColor}`,
+                border: `${this.tablette ? 2 : 3}px solid ${this.borderColor}`,
                 // [KDS-UI-MULTI 2026-08-07] `container-type` est posé EN LIGNE, pas en CSS :
                 // le minifieur de la chaîne de build le SUPPRIME silencieusement de la feuille
                 // (vérifié dans le bundle servi : `13cqw` présent, `container-type` absent).
@@ -449,6 +456,7 @@ export default {
                 // [K2-KDS 2026-07-05] Owner : fiche en JAUNE dès qu'il y a un supplément payant
                 // → le cuisinier repère immédiatement les commandes « à extra ».
                 'kds-card--has-supplements': this.hasSupplements,
+                'kds-card--tablette': this.tablette,
             };
         },
         /**
@@ -574,6 +582,8 @@ export default {
             setTimeout(() => { this._ctaInFlight = false; }, 1200);
         },
         onCardKeydownEnter() {
+            // Poste tablette : aucune validation ici (le bouton n'existe pas, la touche non plus).
+            if (this.tablette) return;
             this.onCta();
         },
     },
@@ -1098,16 +1108,94 @@ export default {
 }
 
 .kds-card--ready {
-    opacity: 0.7;
+    /* [GOAL #7 2026-10-02] `opacity: 0.7` délavait TOUT le texte de la fiche (17,7:1 → ~6,5:1) :
+       un état « prêt » ne doit pas être moins lisible. Repère conservé par un liseré gris. */
+    box-shadow: inset 0 0 0 2px #6B7280;
 }
 .kds-card--cancelled {
     background: rgba(254, 226, 226, 0.5);
 }
-/* [K2-KDS 2026-07-05] Owner : fiche JAUNE dès qu'il y a un supplément payant → repérable
-   immédiatement par le cuisinier. Liseré ambre + fond jaune clair (n'écrase pas le stripe/état). */
+/* [GOAL #7 2026-10-02] Fiche à supplément : le FOND JAUNE (#FEF9C3) est retiré — il rendait le
+   texte jaune illisible (2,7:1). Les suppléments se lisent désormais en blanc sur noir ; la fiche
+   garde un fond blanc et un liseré NOIR épais comme repère. */
 .kds-card--has-supplements {
-    background: #FEF9C3;
-    box-shadow: inset 0 0 0 3px #F59E0B;
+    background: #FFFFFF;
+    box-shadow: inset 0 0 0 3px #111827;
+}
+
+
+/* [KDS-TABLETTE 2026-10-19 · owner] FICHE COMPACTE — petite tablette (7-8") en paysage, second poste
+   (pain, sauces, crudités). On ne retire AUCUNE information de la commande (produits, suppléments,
+   sauces, crudités, notes, allergènes, gras et tailles inchangés) : on retire la mise en page autour.
+   Pied supprimé (le composant ne le rend plus), bandeau haut compacté, marges resserrées. */
+.kds-card--tablette {
+    border-radius: 8px;
+}
+.kds-card--tablette:hover {
+    transform: none;
+}
+.kds-card--tablette .kds-card__stripe {
+    height: 4px;
+}
+.kds-card--tablette .kds-card__meta {
+    height: 24px;
+    padding: 4px 8px 0;
+}
+.kds-card--tablette .kds-card__state-pill {
+    height: 20px;
+    padding: 0 7px;
+    font-size: 10px;
+}
+.kds-card--tablette .kds-card__source-chip {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 12px;
+}
+.kds-card--tablette .kds-card__allergen-pill {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 14px;
+}
+.kds-card--tablette .kds-card__cuisson {
+    margin: 2px 8px 2px;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+.kds-card--tablette .kds-card__cuisson-value {
+    font-size: 20px;
+    font-size: clamp(14px, 6.5cqw, 26px);
+}
+.kds-card--tablette .kds-card__main {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px 4px;
+}
+.kds-card--tablette .kds-card__queue {
+    font-size: 30px;
+    font-size: clamp(22px, 9.5cqw, 40px);
+}
+.kds-card--tablette .kds-card__queue-prefix {
+    font-size: clamp(11px, 3.6cqw, 18px);
+}
+/* L'attente sur UNE ligne (« ATTENTE 10:46 ») au lieu de deux : ~14 px rendus à la commande. */
+.kds-card--tablette .kds-card__elapsed-wrap {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+}
+.kds-card--tablette .kds-card__elapsed {
+    font-size: 20px;
+    font-size: clamp(15px, 5.8cqw, 28px);
+}
+.kds-card--tablette .kds-card__elapsed-label {
+    font-size: clamp(8px, 2.4cqw, 11px);
+}
+.kds-card--tablette .kds-card__body {
+    padding: 2px 10px 6px;
+}
+.kds-card--tablette .kds-card__body::-webkit-scrollbar {
+    width: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {

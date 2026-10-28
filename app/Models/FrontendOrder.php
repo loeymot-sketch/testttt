@@ -57,6 +57,9 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'subtotal',
         'discount',
         'delivery_charge',
+        'delivery_distance_km',
+        'delivery_tier',
+        'delivery_slot_at',
         'total',
         'total_tax',
         'order_type',
@@ -68,6 +71,8 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'address',
         'payment_method',
         'payment_status',
+        // [CARTE À LA LIVRAISON 2026-10-24] Même table que Order ; posé par FrontendOrderService depuis `door_payment=card`.
+        'door_payment_mode',
         'pos_payment_method',
         'pos_payment_note',
         'pos_received_amount',
@@ -79,6 +84,8 @@ class FrontendOrder extends Model implements BroadcastableOrder
         // [AUDIT-P50-BUG3] source_surface must be fillable for analytics/tracing (kiosk, web, mobile)
         'source_surface',
         'loyalty_customer_code',
+        // [NOM-COMMANDE-BORNE 2026-10-19 · owner] Nom pris à la borne — même colonne que la caisse.
+        'pos_customer_name',
         'transaction_id',
         'card_type',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] flag set when fiscal_seq
@@ -104,6 +111,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'preparation_time' => 'integer',
         'is_advance_order' => 'integer',
         'scheduled_at'     => 'datetime',
+        'delivery_slot_at' => 'datetime',
         'payment_method'   => 'integer',
         'payment_status'   => 'integer',
         'pos_payment_method' => 'integer',

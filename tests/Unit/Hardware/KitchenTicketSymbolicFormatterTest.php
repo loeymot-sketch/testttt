@@ -46,7 +46,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
             ],
         ];
         // [MEGA-BORNE 2026-07-22] Un tacos ne montre PAS la taille (le nombre de viandes porte l'info).
-        $this->assertSame('G | TAC | K | MAY', $this->f->mainLine('Tacos M', $snap));
+        $this->assertSame('Tacos | K | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     /**
@@ -78,7 +78,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
             ],
         ];
         // [MEGA-BORNE 2026-07-22] Plus de « L » : les 2 viandes (K P) portent l'info de taille.
-        $this->assertSame('G | TAC | K P | CURY', $this->f->mainLine('Tacos L', $snap));
+        $this->assertSame('Tacos | K P | CURY', $this->f->mainLine('Tacos L', $snap));
     }
 
     public function test_crudites_canonical_order(): void
@@ -99,7 +99,7 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
             ],
         ];
         // [MEGA-BORNE 2026-07-22] tacos → pas de taille ; la viande (P) survit malgré attribute_name null.
-        $this->assertSame('G | TAC | P | MAY', $this->f->mainLine('Tacos M', $snap));
+        $this->assertSame('Tacos | P | MAY', $this->f->mainLine('Tacos M', $snap));
     }
 
     public function test_drink_is_just_the_name(): void
@@ -173,13 +173,15 @@ class KitchenTicketSymbolicFormatterTest extends TestCase
         $sauces = [
             'Mayonnaise' => 'MAY', 'Ketchup' => 'KTP', 'Blanche' => 'BL', 'Hannibal' => 'HAN',
             'Samouraï' => 'SAM', 'Algérienne' => 'ALG', 'Andalouse' => 'AND', 'Curry' => 'CURY',
-            'Barbecue' => 'BBQ', 'Harissa' => 'HAR', 'Fromagère maison' => 'FRO', 'Spicy maison' => 'SPI',
+            'Barbecue' => 'BBQ', 'Harissa' => 'HH', 'Fromagère maison' => 'FRO', 'Spicy maison' => 'SPI',
         ];
         $seen = [];
         foreach ($sauces as $name => $sym) {
             $this->assertSame($sym, $this->f->sauceSymbol($name), "sauce $name");
             $seen[$sym] = ($seen[$sym] ?? 0) + 1;
         }
+        $this->assertSame('X', $this->f->sauceSymbol('Sans sauce'));
+        $this->assertSame('X', $this->f->sauceSymbol('Sans sauces'));
         // Les 12 sauces produisent 12 symboles DISTINCTS (pas de collision en cuisine).
         $this->assertCount(12, $seen, 'collision de symboles sauce');
         foreach (['Salade' => 'S', 'Tomate' => 'T', 'Oignon' => 'O'] as $name => $sym) {

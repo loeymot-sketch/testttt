@@ -228,8 +228,8 @@ if ($requireForm) {
         'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
         // [RATE-FIX 2026-07-10] défaut 5→30/min : 5 était trop bas (un client qui enchaîne 2
         // commandes tombait sur un 429). Le quote a désormais son propre bucket (quote_rate_limit).
-        'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 30),
-        'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 120),
+        'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 120),
+        'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 300),
         // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
         'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
@@ -316,6 +316,36 @@ $autoLoginTrustedIps = array_values(array_filter(array_map(
 )));
 
 return [
+
+    /*
+    |----------------------------------------------------------------------
+    | [ONB-05 2026-08-28] Trois cles appelees et jamais definies
+    |----------------------------------------------------------------------
+    |
+    | Les trois etaient lues par du code de production avec un repli SILENCIEUX.
+    | La plus visible : `rush_windows` retombait sur un tableau VIDE, donc
+    | `KioskMenuService::isRush()` rendait TOUJOURS faux et le bandeau « coup de
+    | feu » de `KioskWaitingComponent.vue:27` ne pouvait jamais s'afficher — une
+    | fonction livree et injoignable.
+    |
+    | Les valeurs ci-dessous reproduisent EXACTEMENT les replis d'alors : rien ne
+    | change de comportement, la molette devient simplement atteignable.
+    |
+    */
+
+    // Creneaux d'affluence, 'HH:MM-HH:MM' separes par des virgules.
+    // Exemple : KIOSK_RUSH_WINDOWS="11:45-14:00,18:30-21:30"
+    // Vide par defaut = aucun creneau, identique a aujourd'hui.
+    'rush_windows' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('KIOSK_RUSH_WINDOWS', ''))
+    ))),
+
+    // Commande borne payee et jamais retiree : delai avant nettoyage (6 h).
+    'stale_web_collect_ttl_minutes' => (int) env('KIOSK_STALE_COLLECT_TTL_MINUTES', 360),
+
+    // Mise en cache de la carte servie a la borne, en secondes.
+    'menu_cache_ttl' => (int) env('KIOSK_MENU_CACHE_TTL', 60),
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
     'auto_login_trusted_ips' => $autoLoginTrustedIps,
@@ -323,6 +353,10 @@ return [
     // (l'IP/box change — fibre à venir). ?machine_key=<secret> == ce secret ⇒
     // auto-login. Vide = chemin secret désactivé. Voir App\Support\KioskAutoLoginGate.
     'auto_login_secret' => (string) env('KIOSK_AUTO_LOGIN_SECRET', ''),
+    // Une borne ouverte avec son lien machine reçoit un cookie HttpOnly chiffré,
+    // limité à l'appareil, afin qu'un rechargement / déploiement ne fasse pas
+    // perdre l'auto-login quand Vue retire `machine_key` de l'URL.
+    'auto_login_grant_minutes' => (int) env('KIOSK_AUTO_LOGIN_GRANT_MINUTES', 60 * 24 * 14),
     'auto_login_local_bypass' => env('APP_ENV') === 'local',
     'default_locale' => $defaultLocale,
     // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI côté
@@ -344,8 +378,8 @@ return [
     // [RATE-FIX 2026-07-10] défaut 5→30/min (5 était trop bas : 2 commandes d'affilée = 429).
     // Le quote (aperçu prix) a désormais son propre bucket (quote_rate_limit) et ne consomme plus
     // le budget des commandes. Ceci est le tableau réellement retourné (SSOT config kiosk).
-    'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 30),
-    'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 120),
+    'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 120),
+    'quote_rate_limit' => (int) env('KIOSK_QUOTE_RATE_LIMIT', 300),
     // [owner 2026-07-07] Numéro de file (queue_number "A00NN") de départ du jour.
     // L'owner veut que le compteur quotidien commence à 32 (au lieu de 1). Partagé
     // par toutes les surfaces (borne + caisse) via allocateQueueNumber (OrderService

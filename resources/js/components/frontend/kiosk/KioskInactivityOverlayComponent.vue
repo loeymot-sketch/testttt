@@ -31,22 +31,38 @@
           </strong>
         </p>
 
+        <!--
+          [PROPRIÉTAIRE 2026-08-28] LES DEUX BOUTONS ÉTAIENT LITTÉRALEMENT VIDES.
+          Constat du propriétaire sur sa borne : « il y a deux boutons, une blanche
+          une orange, il y a rien qui est écrit dessus ».
+
+          Il avait raison, et la cause n'est pas une couleur : `KsButton` affiche son
+          texte par son SLOT PAR DÉFAUT — il n'a pas de prop `label` (ses props sont
+          variant, size, disabled, loading, fullWidth, icon, type). Le `:label`
+          passé ici retombait donc en simple attribut HTML sur la balise racine,
+          invisible, et le slot rendait LE VIDE.
+
+          Le repli `|| 'Je suis là'` ne pouvait pas sauver la situation non plus :
+          `$t()` renvoie la CLÉ quand la traduction manque, jamais une valeur fausse.
+          Il n'a d'ailleurs jamais servi — les deux clés existent et sont justes.
+
+          Le client voyait donc deux rectangles muets sur un écran qui lui demande
+          s'il est toujours là, avec sa commande qui s'efface en compte à rebours.
+        -->
         <div class="kiosk-inactivity-actions">
           <KsButton
             variant="primary"
             size="lg"
-            :label="$t('kiosk.inactivity.stay') || 'Je suis là'"
             data-testid="kiosk-inactivity-stay"
             @click="onStay"
             ref="stayBtn"
-          />
+          >{{ $t('kiosk.inactivity.stay') }}</KsButton>
           <KsButton
             variant="secondary"
             size="lg"
-            :label="$t('kiosk.inactivity.leave') || 'Abandonner'"
             data-testid="kiosk-inactivity-leave"
             @click="onLeave"
-          />
+          >{{ $t('kiosk.inactivity.leave') }}</KsButton>
         </div>
       </div>
     </div>

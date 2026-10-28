@@ -1,3 +1,5 @@
+import { extraDisplayName } from './kdsSymbolic.js';
+
 /**
  * Pure helpers for POS receipt HTML (and future ESC/POS bridging).
  */
@@ -195,7 +197,7 @@ export function normalizeReceiptVariations(rawVariations) {
  * with both shapes (legacy `{name}` and snapshot `{extra_id, name, quantity,
  * unit_price}`). Empty / null inputs return [].
  */
-export function normalizeReceiptExtras(rawExtras) {
+export function normalizeReceiptExtras(rawExtras, instruction = null) {
     if (rawExtras === null || rawExtras === undefined) {
         return [];
     }
@@ -216,9 +218,13 @@ export function normalizeReceiptExtras(rawExtras) {
                 lineTotal = Number.isFinite(unit) ? unit * (qty || 1) : 0;
             }
             return {
-                name: String(e.name || e.extra_name || ''),
+                // [GOAL #4 2026-10-02] Nomme la « Sauce supplémentaire » générique quand l'appelant
+                // fournit l'instruction de la ligne (fiche commande, file d'encaissement).
+                name: extraDisplayName(String(e.name || e.extra_name || ''), instruction),
                 quantity: qty || 1,
                 line_total: Math.max(0, lineTotal),
+                // [GOAL #5 2026-10-02] Extra OFFERT : reste visible sur le reçu avec la mention « OFFERT ».
+                ...(e.offered === true ? { offered: true } : {}),
             };
         })
         .filter((line) => line.name !== '');

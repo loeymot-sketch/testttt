@@ -1,0 +1,98 @@
+[
+  {
+    "id": "A-001",
+    "severity": "P1",
+    "kind": "defect",
+    "title": "app/www embarque l'ancien app-native.js : le pont natif est mort (aucun appel natif, liens externes Uber Eats / Maps / Facebook annulés puis rien)",
+    "evidence": "app/www/app-native.js:38-40 passe par Capacitor.registerPlugin (absent de la forme réelle du pont) ; :92-93 interceptorLiens fait ev.preventDefault() puis sansCasse('Browser','open') qui ne fait rien. Mesure A-INS-1 (pont réel native-bridge.js injecté tel quel) : témoin origin/main = 9 appels natifs au démarrage (StatusBar, Network, App, SplashScreen) ; app/www = 0 appel. R1.lienUberEatsNatif : témoin Browser.open=1 ; app/www Browser.open=0 avec defaultPrevented=true sur le lien « Livraison -> Uber Eats » du tunnel ET sur le lien Maps de l'accueil. Même défaut que la mémoire pont-capacitor-sans-registerplugin ; correctif cac473a présent seulement sur origin/main (git merge-base --is-ancestor cac473a HEAD = non). Les dossiers natifs app/android/app/src/main/assets/public et app/ios/App/App/public contiennent la même copie périmée (diff -rq = seulement cordova.js).",
+    "repro": "1) python3 -m http.server 8013 dans une copie de app/www (api-base-url réécrit vers 127.0.0.1:8766). 2) Playwright, UA Android WebView 390x844, addInitScript = native-bridge.js réel + window.__pont (voir tests/Playwright/e2e-complet-2026-10-22/C-lib-r2.js). 3) Ouvrir /index.html : window.__pont.appels = [] (0). 4) Cliquer un lien https externe : defaultPrevented=true, aucun Browser.open. Rejouer sur le paquet origin/main : 9 appels, Browser.open=1. Spec : tests/Playwright/etat-des-lieux-2026-10-23/A-app-livraison.spec.js tests A-INS-1 et A-R1. Reste à confirmer sur appareil."
+  },
+  {
+    "id": "A-002",
+    "severity": "P1",
+    "kind": "defect",
+    "title": "app/www est périmé et ne reflète aucune des deux lignes de commits : sans livraison (R1-R3, R6) et sans pont natif corrigé ; build:www refusé (screens.jsx non recompilé)",
+    "evidence": "app/www est ignoré par git (.gitignore:17) ; construit le 17/10 19:44 (index.html), assets natifs le 17/10 19:51. sha256 fichier par fichier (246 fichiers) : 9 fichiers divergent de l'arbre de travail (api.js, carte.html, compiled/funnel.js, compiled/wizard-v2.js, data/menu.js, index.html, plat/cayenne.html, plat/supreme.html, sandwichs-galettes.html) ; 90 de HEAD 681577d ; 99 de origin/main ae8d0ea ; 88 du merge-base b9e1f64. compiled/funnel.js == b9e1f64:compiled/funnel.js (jeton ?v=20260929audit1), app-native.js == b9e1f64 ; api.js:77 deliveryEnabled = metaContent('feature-delivery','0'), aucune meta feature-delivery dans index.html => livraison coupée (mesuré : api.config.deliveryEnabled=false). Le dépôt du site a 3 commits HEAD seul (livraison afe30f7, 2dff956, 681577d) et 25 origin/main seul (pont cac473a, lots du 01/10, CI). `cd app && node ../tools/build-app-www.mjs --check` (lecture seule) : « SOURCES NON RECOMPILÉES : screens.jsx » exit 1. L'APK du scratchpad (app-natif-main.apk) = origin/main : api.js sans deliveryStatus (grep -c = 0).",
+    "repro": "git -C \"/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne\" rev-list --left-right --count HEAD...origin/main (3 25) ; sha256sum app/www/{api.js,app-native.js,compiled/funnel.js,index.html} contre l'arbre, HEAD et origin/main ; node ../tools/build-app-www.mjs --check depuis app/. Spec A-INS-2 écrit le détail dans reports/test-e2e/etat-des-lieux-2026-10-23/A-app-evidence/constats.json (clé INS-2.ecartWww)."
+  },
+  {
+    "id": "A-003",
+    "severity": "P1",
+    "kind": "defect",
+    "title": "Le Cayenne (1er produit) ne peut pas être commandé depuis app/www : la fiche exige 2 viandes (data/menu.js non commité, viandes:2), le serveur n'en accepte qu'1 => 422",
+    "evidence": "app/www/data/menu.js:497-502 (identique dans l'arbre de travail data/menu.js:497-502) : mkItem(101,'cayenne',...) avec { viandes: 2, ...} alors que HEAD et origin/main ont viandes: 0 (git show HEAD:data/menu.js) et que le commentaire de la ligne 499 dit « Cayenne WEB = mono-viande ». Le wizard affiche « 2 minimum · 5 maximum » (étape viande) ; le panier montre « Cayenne + Mexicanos, Cordon Bleu ». POST /api/frontend/order => 422 « Sélectionnez au maximum 1 Viande 1 (actuel : 2). (et 1 autre erreur) » / « « Cayenne » comprend 1 viande : choisis-en exactement 1 (reçu 2) ». API locale : GET /api/frontend/item/details/22 => viande_count 1, attribut Viande min 1 max 1. La fiche n'offre que « Personnaliser » (pas d'ajout direct). Le paquet origin/main (témoin) n'a pas d'étape viande. Dépend de la base locale foodking_e2e : à confirmer sur la base de production.",
+    "repro": "App/www servi, UA Android 390x844, client E2E-APP- connecté : Menu > Cayenne > Personnaliser > choisir 2 viandes (le bouton reste désactivé avec 1) > Voir récap > Ajouter au panier > Passer commande > Confirmer ma commande : 422, alerte visible en haut. Spec A-CAYENNE ; capture reports/test-e2e/etat-des-lieux-2026-10-23/A-app-evidence/R7-APP-cayenne-422.png."
+  },
+  {
+    "id": "A-004",
+    "severity": "P1",
+    "kind": "gap",
+    "title": "R6 : le moyen de paiement est choisi AVANT « Confirmer ma commande », un seul moyen existe (« Payer sur place — ... au comptoir »), même pour une livraison",
+    "evidence": "compiled/funnel.js (arbre de travail) :3022 et funnel.jsx:1829 : { id:'counter', name:'Payer sur place', meta:'Espèces ou carte au comptoir — ton plat t\\'attend' } ; bandeau « PAIEMENT AU COMPTOIR ». Mesure en livraison (Carvin, 13,30 €) : un seul radio de paiement, payment_method=1, order_type=5, delivery_charge=5.9 dans le corps de POST /api/frontend/order (R6.paiement dans constats.json). Aucune occurrence de titre-restaurant / à la porte hors commentaire dans compiled/funnel.js de app/www comme de l'arbre de travail. Capture R6-WT-livraison-paiement-comptoir.png. Dans app/www la livraison n'existe pas : le défaut est celui de l'arbre de travail que l'app deviendrait après resynchronisation.",
+    "repro": "Site servi depuis l'arbre de travail (8011) dans la coque : Menu > produit > panier > Passer commande > Livraison > adresse « Place Jean Jaurès 62220 Carvin » > Calculer > section Paiement. Spec A-R6."
+  },
+  {
+    "id": "A-005",
+    "severity": "P1",
+    "kind": "gap",
+    "title": "R3 : la distance est « à vol d'oiseau », le barème va jusqu'à 10 km avec nos livreurs, aucun devis Uber Direct ni mention « à partir de 7 km » ; au-delà de 10 km seulement un lien Uber Eats (mort dans la coque, cf. A-001)",
+    "evidence": "app/Services/Delivery/DeliveryQuoteService.php:122 « Distance à vol d'oiseau restaurant -> point » ; DeliveryFeeService.php:15 idem. Tranches mesurées dans le tunnel : Hénin 3,90 € ; Carvin 7,99 km -> 5,90 € (livreurs maison, pas de devis Uber) ; Lens 8,89 km -> 6,90 € ; Douai 10,87 km -> « trop loin (plus de 10 km) » + « Commander sur Uber Eats -> » ; texte UI « 4,90 (<=5 km), 5,90 (<=8 km), 6,90 (<=10 km) » (funnel.jsx:574). Regex /7 km|tarif calculé par Uber|à partir de 7/ : aucune occurrence dans l'UI. Dans app/www : aucune livraison propre (A-002).",
+    "repro": "Spec A-R3 (arbre de travail dans la coque) ; ou curl -X POST /api/frontend/delivery/quote -d {\"q\":\"place jean jaures 62220 carvin\"} => distance_km 7.99, tier radius_2, fee 5.9, suggest_uber_eats false."
+  },
+  {
+    "id": "A-006",
+    "severity": "P1",
+    "kind": "defect",
+    "title": "R5 : tutoiement partout (écrans rendus et chaînes embarquées)",
+    "evidence": "Mesure sur app/www dans la coque : 46 segments tutoyés sur 6 écrans (accueil 32, compte 10, tunnel 5), 188 chaînes littérales tutoyées dans app/www (funnel.js 68, screens.js 36, account-v2.js 29, api.js 26, wizard-v2.js 11, screens-v3.js 7...). Exemples : « TA COMMANDE ? », « Tu viens chercher », « Espèces ou carte au comptoir — ton plat t'attend », « Tu gagnes +74 pts sur cette commande », « Tu composes exactement comme au comptoir », message serveur « choisis-en exactement 1 » ; compiled/funnel.js:841 et :3552 (« Indique l'heure à laquelle tu passeras la chercher »). La regex est validée en test (instrument : détecte « Tu viens chercher », épargne « Vous venez chercher »). Détail dans constats.json clé R5.vouvoiement.",
+    "repro": "Spec A-R5 ; ou grep -n \"Tu viens chercher\\|TA COMMANDE\\|ton plat\" app/www/compiled/funnel.js ; capture R5-APP-tunnel-tutoiement.png."
+  },
+  {
+    "id": "A-007",
+    "severity": "P2",
+    "kind": "gap",
+    "title": "R4 : aucune annonce « Nouveau : la livraison ! » sur l'accueil ; l'accueil dit « À emporter, retrait au comptoir »",
+    "evidence": "Texte rendu de l'accueil (app/www ET arbre de travail) : 0 occurrence de livraison/livrer ; 0 bandeau d'annonce ; détecteur validé (le même scan voit « Nouveautés » dans le Menu). Capture R4-APP-accueil.png (SERVICE FERMÉ, COMMANDER, Click & collect).",
+    "repro": "Spec A-R4."
+  },
+  {
+    "id": "A-008",
+    "severity": "P2",
+    "kind": "gap",
+    "title": "R1 : le choix « À emporter / Livraison » n'apparaît qu'à l'étape paiement, jamais au début de la commande ; dans app/www « Livraison » est un simple lien Uber Eats",
+    "evidence": "app/www : radio unique « À emporter » + <a role=link href=ubereats.com ...> « Livraison — Sur Uber Eats -> » (compiled/funnel.js:869-890 ; deliveryEnabled=false, api.js:77). Arbre de travail : deux radios (À emporter / Livraison « Dès 3,90 € · selon ta commune ») mais seulement après Passer commande (ni le Menu ni le tiroir panier ne mentionnent le mode : menuMentionneMode=false). Captures R1-APP-tunnel-mode.png, R1-WT-tunnel-mode.png.",
+    "repro": "Spec A-R1."
+  },
+  {
+    "id": "A-009",
+    "severity": "P2",
+    "kind": "unverified",
+    "title": "R2 : les suggestions d'adresse sont une <datalist> native ; leur rendu dans Android System WebView / iOS WKWebView n'est pas prouvé (non vérifiable ici)",
+    "evidence": "funnel.jsx:554-560 : <input list=\"lcf-delivery-suggest\" autoComplete=\"street-address\"> + <datalist> alimentée par GET /api/frontend/delivery/suggest (21 requêtes pour 24 caractères, toutes 200 ; options reçues : « 12 Place Jean Jaurès 62110 Hénin-Beaumont », « 12 Rue Jean Jaurès 59360 Saint-Benin »). Aucun role=listbox/option dans le DOM. Chromium de bureau affiche la flèche de datalist (R2-WT-clavier-544.png) ; le popup natif n'est pas capturé par Playwright. Il faut presser « Calculer » après le choix. Aucune géolocalisation ni NSLocation (cohérent : le code n'appelle pas navigator.geolocation).",
+    "repro": "SUR APPAREIL (Android WebView + iPhone) : ouvrir le tunnel livraison dans l'app construite depuis l'arbre de travail, taper « 12 rue jean jaures » dans « Adresse de livraison » et vérifier qu'une liste cliquable s'affiche ; sinon passer à une liste ARIA propre au site."
+  },
+  {
+    "id": "A-010",
+    "severity": "P2",
+    "kind": "defect",
+    "title": "Le récapitulatif affiche « Livraison : Offerte » quand l'adresse est hors zone ou pas encore calculée (arbre de travail)",
+    "evidence": "funnel.jsx:289 : deliveryFee === 0 ? <b>Offerte</b> : ...  ; compiled/funnel.js:441. Capture R3-WT-douai-hors-zone.png : Douai (hors zone, bouton Confirmer désactivé) avec « Livraison Offerte » et total 7,40 €. Le bouton reste désactivé donc pas de commande faussée, mais le libellé annonce une gratuité inexistante.",
+    "repro": "Site arbre de travail dans la coque : panier > Passer commande > Livraison > « Place d'Armes 59500 Douai » > Calculer : lire la ligne Livraison du récap. Spec A-R3."
+  },
+  {
+    "id": "A-011",
+    "severity": "P2",
+    "kind": "gap",
+    "title": "R7 : aucun QR ni lien d'avis dans l'app ; la page « Avis clients » est un texte d'attente ; le QR de la confirmation est le ticket de retrait",
+    "evidence": "app/www/compiled/screens.js:2955 « Cette page rassemblera bientôt les avis de nos clients » ; aucun fichier *avis* dans app/www. Confirmation d'une commande de retrait réelle (#8846, E2E-APP-, 201) : QR « TICKET RETRAIT » 2310268846 + « Suivre ma commande », 0 invitation à laisser un avis, liens externes = Maps, Uber Eats, Facebook, mangerbouger. Capture R7-APP-confirmation.png. Le QR sur le ticket papier/caisse n'est pas du ressort de l'app.",
+    "repro": "Spec A-R7."
+  },
+  {
+    "id": "A-012",
+    "severity": "P3",
+    "kind": "defect",
+    "title": "Le champ « Adresse de livraison » rogne le texte (« PLACE JEAN JAUI ») : une adresse complète n'est pas relisible avant « Calculer »",
+    "evidence": "Captures R2-WT-adresse-apres-calcul.png et R3-WT-carvin-8km.png : champ d'environ 200 px à 390 px de large, majuscules monospace, glyphe coupé. La bannière « Adresse comprise : ... » compense en relisant l'adresse après calcul.",
+    "repro": "Taper une adresse de plus de 14 caractères dans le tunnel livraison à 390x844."
+  }
+]

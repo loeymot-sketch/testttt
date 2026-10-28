@@ -8,7 +8,7 @@ const { test, expect } = require('@playwright/test');
 const { waitForLoyaltyReady, gotoLoyaltyScreen } = require('./utils/waitForLoyaltyReady');
 
 test('A5 — Annuler en confirmation ⇒ retour sélection, zéro POST, zéro débit', async ({ page }) => {
-  await waitForLoyaltyReady(page, { seedAccount: { balance: 347 }, seedHistory: [] });
+  await waitForLoyaltyReady(page, { seedAccount: { balance: 1347 }, seedHistory: [] });
   await gotoLoyaltyScreen(page);
 
   await page.click('[data-testid="loyalty-tab-rewards"]');
@@ -28,7 +28,7 @@ test('A5 — Annuler en confirmation ⇒ retour sélection, zéro POST, zéro d�
 
   // Solde intact + aucune entrée historique
   const balance = await page.evaluate(() => window.LC.loyalty.account.balance);
-  expect(balance).toBe(347);
+  expect(balance).toBe(1347);
   const redeems = await page.evaluate(() => window.LC.loyalty.history.filter(h => h.type === 'redeem').length);
   expect(redeems).toBe(0);
 });

@@ -1,0 +1,1 @@
+Graphiti non chargé. Fallback mémoire locale : `PricingService` est la SSOT et les options restent des IDs catalogue ; `composition_snapshot` est fiscalement immuable. L'ancien second-extra sauce ne préserve parfois son identité que dans l'instruction texte : le correctif doit porter une donnée structurée sans accepter de prix client.

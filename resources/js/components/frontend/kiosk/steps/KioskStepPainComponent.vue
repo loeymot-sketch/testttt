@@ -21,15 +21,7 @@
         @keydown.space.prevent="selectPain(pain)"
       >
         <div class="kiosk-pain-media">
-          <img
-            v-if="pain.displayThumb && !brokenPainThumbs[painThumbKey(pain)]"
-            :src="pain.displayThumb"
-            :alt="pain.name"
-            class="kiosk-pain-thumb"
-            loading="lazy"
-            @error="onPainThumbError(pain)"
-          />
-          <span v-else class="kiosk-pain-emoji">{{ pain.emoji }}</span>
+          <span class="kiosk-pain-emoji" :class="pain.tone" aria-hidden="true">{{ pain.emoji }}</span>
         </div>
         <span class="kiosk-pain-name">{{ pain.name }}</span>
         <span v-if="localSelection === (pain.id ?? pain.name)" class="kiosk-pain-action active">✓</span>
@@ -43,7 +35,7 @@
 </template>
 
 <script>
-import { kioskResolveImageSrc, kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
+import { kioskVariationsForAttribute } from '../../../../helpers/kioskMedia';
 
 export default {
   name: 'KioskStepPain',
@@ -56,7 +48,6 @@ export default {
   data() {
     return {
       localSelection: this.selections.pain || null,
-      brokenPainThumbs: {},
     };
   },
   computed: {
@@ -88,8 +79,8 @@ export default {
           id: v.id,
           name: v.name,
           emoji: this.getEmojiForPain(v.name),
+          tone: /galette/i.test(v.name || '') ? 'is-galette' : 'is-pain',
           attrId: painAttr.id,
-          displayThumb: kioskResolveImageSrc(v),
         }));
     },
   },
@@ -99,16 +90,12 @@ export default {
     },
   },
   methods: {
-    painThumbKey(pain) {
-      return String(pain.id ?? pain.name ?? '');
-    },
-    onPainThumbError(pain) {
-      const k = this.painThumbKey(pain);
-      this.brokenPainThumbs = { ...this.brokenPainThumbs, [k]: true };
-    },
+    // [OWNER 2026-10-27] Même présentation que le site (lecayenne.fr, étape « Pain ou galette ? ») : un grand pictogramme
+    // 🥖 / 🌯 sur une pastille teintée, jamais une photo ni une illustration. Les anciennes vignettes (config/menu_images.php
+    // « bases » → pain-seul.svg / galette-seule.svg) étaient jugées « nulles » à l'écran de la borne.
     getEmojiForPain(name) {
       const lower = (name || '').toLowerCase();
-      if (lower.includes('galette')) return '🥙';
+      if (lower.includes('galette')) return '🌯';
       if (lower.includes('pain')) return '🥖';
       return '🍞';
     },
@@ -143,14 +130,14 @@ export default {
 .kiosk-pain-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px 18px;
-  max-width: 620px;
+  gap: 24px 24px;
+  max-width: 980px;
   margin: 0 auto;
 }
 
 .kiosk-option-card {
-  min-height: 206px;
-  border-radius: 20px;
+  min-height: 440px;
+  border-radius: 28px;
   border: 1px solid #efefef;
   background: #fff;
   display: flex;
@@ -187,36 +174,35 @@ export default {
 }
 
 .kiosk-pain-media {
-  width: 124px;
-  height: 124px;
+  width: 100%;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
-}
-
-.kiosk-pain-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  margin-bottom: 14px;
 }
 
 .kiosk-pain-emoji {
-  width: 124px;
-  height: 124px;
+  width: 240px;
+  height: 240px;
   border-radius: 50%;
   background: #f7f7f8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 60px;
+  font-size: 128px;
+  line-height: 1;
   transition: transform 0.2s;
 }
+
+/* Teintes du site : pastille jaune pour le pain, beige pour la galette. */
+.kiosk-pain-emoji.is-pain { background: #FFF1C9; }
+.kiosk-pain-emoji.is-galette { background: #F3EDE4; }
 
 .kiosk-option-card.selected .kiosk-pain-emoji { transform: scale(1.1); }
 
 .kiosk-pain-name {
-  font-size: 14px;
+  font-size: 30px;
   font-weight: 700;
   color: #444;
   text-align: center;
@@ -227,16 +213,16 @@ export default {
 
 .kiosk-pain-action {
   position: absolute;
-  top: 12px;
+  top: 16px;
   right: 20px;
-  width: 28px;
-  height: 28px;
+  width: 52px;
+  height: 52px;
   background: #d7263d;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 36px;
   color: white;
   line-height: 1;
   box-shadow: 0 3px 10px rgba(215,38,61,0.2);
@@ -244,14 +230,14 @@ export default {
 }
 
 .kiosk-pain-action.active {
-  font-size: 13px;
+  font-size: 26px;
   font-weight: 800;
 }
 
 .kiosk-validation-hint {
   text-align: center;
   margin-top: 20px;
-  font-size: 14px;
+  font-size: 18px;
   color: #F4501E;
   font-weight: 500;
   padding: 10px 20px;

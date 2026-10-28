@@ -1,0 +1,222 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-waveA/04-voir-tout-ouvert.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA, INCHANGE. J'ai relu le collecteur avant les artefacts : `tests/e2e/helpers/mega-audit-snap.js` retient encore une reponse UNIQUEMENT si `status >= 400 || (duration !== null && duration > 2000) || isMutation` avec `MUTATION_METHODS = new Set(['POST','PUT','PATCH','DELETE'])`. Un GET 200 rapide n'est toujours JAMAIS ecrit. Aucun 5e fichier `.requests.json` n'a ete ajoute (`ls tests/e2e/__screenshots__/test-e2e-waveA/ | grep -i request` = 0 resultat). Consequence identique au round 1 : `04-voir-tout-ouvert.network.json` vaut `[]` et cet `[]` reste l'etat PAR DEFAUT du collecteur, pas une preuve d'absence d'appel. La Debugbar visible en bas des captures montre toujours le compteur XHR bouger d'un etat a l'autre (`#13 pending (ajax)` sur 01, `#14 FRA (ajax)` sur 03, `#15 pos-order?paginate=1` sur 06/07, `#16` sur 09) : des GET ont bien eu lieu et aucun n'apparait dans les `.network.json`. Le seul contenu non vide est celui de 01 (404 `/storage/1/english.png`, POST `/api/auth/login` 201) et celui de 03 (POST csp-report 204) — c'est-a-dire exactement ce que le filtre laisse passer, rien de plus.",
+      "fix_hint": "tests/e2e/helpers/mega-audit-snap.js (bloc `onResponse`) — soit elargir le sink a tous les XHR/fetch pour que 'zero appel' devienne verifiable sur artefact, soit serialiser le compteur `page.on('request')` de la spec dans un 5e fichier `.requests.json`. En attendant, ne pas ecrire dans le rapport qu'un `network.json` vide prouve l'absence d'appel.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-waveA/06-carte-telephone.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "FERME POUR MOITIE, ET J'AI VERIFIE LES DEUX MOITIES PLUTOT QUE DE LES CROIRE. (1) NOM ACCESSIBLE : ferme. Le DOM de 06 porte desormais `<span class=\"pos-tracker-card-source pos-tracker-card-source--phone\" title=\"Telephone\"><span aria-hidden=\"true\">telephone-emoji</span><span class=\"pos-tracker-sr-only\">Telephone</span></span>`, et `.pos-tracker-sr-only` est bien une vraie classe de masquage visuel (`position:absolute; width:1px; height:1px; clip:rect(0,0,0,0)`) definie dans le style scoped du composant. Meme motif pour Caisse, Plateforme, Borne — 5 occurrences dans 06. L'emoji est passe `aria-hidden`. (2) COULEURS DISTINCTES : partiellement. Il existe maintenant 6 variantes en CSS scopee, et j'ai mesure les pixels au lieu de lire le code : pastille telephone = #E7F6EC (231,246,236), plateforme = #FFF3E0 (255,243,224), caisse = #EDEFF2 (237,239,242) — trois teintes reellement differentes, la revendication tient pour ces trois-la. CE QUI RESTE : (a) le glyphe est toujours un emoji et rien d'autre — sur 06 je vois encore le meme 'scooter' servir a la fois de pastille canal sur #AUDA-UBER (y~271) et d'icone du couloir EN LIVRAISON (y~199), exactement l'ambiguite que je citais au round 1 ; le fix_hint proposait une puce texte courte (TEL, UBER), elle n'a pas ete faite ; (b) la couleur de texte declaree par canal n'est peinte NULLE PART — voir A-015, ou je le mesure.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:263 — remplacer la pastille emoji par une puce texte courte (TEL / UBER / CAISSE / BORNE) ou, a defaut, cesser d'utiliser le meme glyphe pour un canal et pour un couloir. Le nom accessible, lui, est acquis : ne pas le defaire.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "FERME, VERIFIE SUR L'ARTEFACT. Le bouton est desormais `<button type=\"button\" class=\"pos-tracker-card-btn\" data-testid=\"tracker-stale-refresh\" aria-label=\"Rafraichir la liste des commandes en souffrance\" title=\"Rafraichir la liste des commandes en souffrance\"><i class=\"fa-solid fa-arrows-rotate\" aria-hidden=\"true\"></i></button>` dans `09-panneau-souffrance.dom.html`. J'ai reconduit mon balayage complet des `<button>` du document : il ne reste AUCUN bouton de l'ecran de suivi sans nom du tout. Les 22 boutons sans texte ni `aria-label` que je compte encore portent tous un `title` (tracker-reprint-*, tracker-cancel-*) — sauf ceux de la Debugbar et du menu admin, hors perimetre. RESERVE HONNETE, qui ne rouvre pas le constat : le fix_hint demandait aussi de PROPAGER `aria-label` aux boutons a icone seule des cartes et des rangs ; ca n'a pas ete fait, ils restent `title`-seul, donc inatteignables au doigt sur tactile. Le defaut que j'avais depose — un bouton sans nom du tout — est bien corrige.",
+      "fix_hint": "Reste a faire (hors perimetre de ce constat) : propager le motif `aria-label` + `title` aux `tracker-reprint-*`, `tracker-cancel-*`, au lien oeil et aux `tracker-stale-cancel-*`, comme c'est deja fait sur `tracker-voir-tout-*`.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-waveA/01-tableau-1366x768.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA, MOT POUR MOT. Le conteneur kanban est encore `<div data-v-551500c8=\"\" class=\"pos-tracker-grid\" aria-busy=\"false\">` — ni `aria-live`, ni `role`. J'ai recompte les regions live sur les DIX DOM de la vague : `aria-live=` apparait exactement 1 fois par document, et c'est toujours la seule pastille de sante systeme (`<div class=\"pos-health-pill pos-health-pill--warn\" role=\"status\" aria-live=\"polite\">`). Aucun annonceur `sr-only` de transition n'a ete ajoute : les 5 occurrences de `pos-tracker-sr-only` que je trouve sont les 5 noms de canal de A-002, pas des regions live. Le cas reste demontrable sur les artefacts : de 01 a 08 les cinq couloirs se recomposent entierement (`4 actives / 1 prete` -> `1 active`, LIVRES passe de 1 a 0, PRETS A SERVIR de 1 a 0) sans qu'une seule annonce soit emise.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:184 — `role=\"region\"` + `aria-label` sur `.pos-tracker-grid`, et publier les transitions dans un `<span class=\"pos-tracker-sr-only\" role=\"status\" aria-live=\"polite\">` dedie. La classe de masquage necessaire existe deja depuis le correctif A-002.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA. `toggleStalePanel` est inchange — je l'ai relu en entier a `PosOrdersTrackerComponent.vue:1949-1954` : `this.staleOpen = !this.staleOpen; if (this.staleOpen && this.staleOrders.length === 0 && !this.staleError) { await this.fetchStaleOrders(); }`. Pas de `$nextTick`, pas de `scrollIntoView`, pas de deplacement de focus. Le panneau est toujours rendu APRES la grille : dans `09-panneau-souffrance.dom.html` (738 673 octets) `class=\"pos-tracker-grid\"` est a l'offset 442 568 et `id=\"pos-tracker-stale-panel\"` a l'offset 513 096. Et l'image le confirme : sur 09 je vois encore les restes des couloirs AU-DESSUS du panneau (le pied de la carte #AUDA-COMPO avec « Voir tout » et « 19,40 EUR » a y~87-131, puis la carte #AUDA-TEL entiere a y~160-295) ; le panneau ne commence qu'a y~310. La spec a de nouveau du defiler par programme pour le photographier.",
+      "fix_hint": "Inchange depuis le round 1 : dans `toggleStalePanel`, apres `staleOpen = true`, faire `$nextTick()` puis `scrollIntoView({block:'nearest'})` sur `#pos-tracker-stale-panel` et deplacer le focus sur son `<h2>` (`tabindex=\"-1\"`). Ou rendre le panneau en superposition, comme `tracker-contenu-overlay` qui est deja correctement `role=\"dialog\" aria-modal=\"true\"`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-waveA/03-carte-composition-riche.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "FERME, VU A L'OEIL AVANT DE LIRE LE CODE. Sur `03-carte-composition-riche.png`, la composition de « 2x Cayenne » se lit maintenant sur DEUX rangs et EN ENTIER : « Galette . Algerienne . Bien cuit . » puis « +2 Cheddar . +Salade » (y~551 et y~566). Plus aucune ellipse. Les deux extras PAYANTS que je signalais comme invisibles sont a l'ecran. La CSS confirme la cause de la reparation : `.pos-tracker-card-compo` est passe de `white-space: nowrap` + `text-overflow: ellipsis` a `flex: 1 0 100%; white-space: normal; overflow-wrap: anywhere;` — et le commentaire note honnetement qu'il a fallu REINITIALISER `white-space` parce qu'il etait herite du `li` parent, pas seulement s'abstenir de le declarer. Le `title=` complet est conserve en complement. Verification croisee : les 5 `.pos-tracker-card-compo` du DOM de 01/03 portent tous leur texte complet en contenu.",
+      "fix_hint": "Rien a faire sur ce constat. Voir A-016 pour la partie du correctif qui n'est demontree par aucun artefact.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-waveA/02-tableau-1024x600.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA, IDENTIQUE. J'ai rouvert `02-tableau-1024x600.png` et remesure a l'image : l'en-tete (titre, compteurs « 4 actives / 1 prete / 11 aujourd'hui / 585 en souffrance », bandeau sante, recherche, 6 onglets canal, boutons Sortie stock / Historique / Ecran client / Retour caisse sur DEUX rangees) court jusqu'a y~350 ; la banniere d'encaissement occupe y~385-422 ; les titres de couloirs sont a y~461 ; la PREMIERE ligne de carte (« #AUDA-COMPO », « #AUDA-UBER ») est a y~522 et se fait couper net par la Debugbar a y~535. Toujours aucun total, aucun bouton d'action, aucun « Voir tout » atteignable sans defiler. La grille a 5 couloirs se replie toujours en 3 + 2 : je ne vois que A ENCAISSER / EN PREPARATION / PRETS A SERVIR ; EN LIVRAISON et LIVRES sont hors champ. Aucune trace d'un repli d'en-tete sous 1100 px de large ou 700 px de haut. RESERVE MAINTENUE : rien dans les artefacts n'etablit que 1024x600 soit une resolution reellement deployee au comptoir — si elle l'est, ce point merite P1.",
+      "fix_hint": "Inchange : replier l'en-tete sous ~1100 px de large ou ~700 px de haut (compteurs secondaires dans la pastille sante, boutons d'outillage dans un menu, `.pos-tracker-bar` collant-compact). Critere mesurable : au moins une carte ENTIERE (total + actions) visible a 1024x600.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA, ET LE NOMBRE A MONTE. Le panneau annonce maintenant `<span class=\"pos-tracker-stale-truncated\">50 affichees sur 585</span>` (581 au round 1). Balayage du `<section id=\"pos-tracker-stale-panel\">` : « Suivant » 0, « Precedent » 0, « Charger » 0, « pagination » 0 — aucun moyen d'atteindre les 535 restantes. Le tri est toujours le PIRE possible pour l'usage : `PosOrderController.php:367` fait `->orderByDesc('order_datetime')` puis `->limit($perPage)` — du plus RECENT au plus ancien, donc la troncature supprime exactement les commandes les plus anciennes, c'est-a-dire les plus urgentes a solder. Les 50 rangs de l'image le montrent : 25-08, 25-08, 25-08, 25-08, 21-08, 19-08, 19-08, 19-08, 17-08... Le seul changement est cosmetique : le bouton de rafraichissement voisin a gagne un nom (A-003).",
+      "fix_hint": "Inchange : (1) inverser le tri par defaut en plus-ancien-d'abord dans `app/Http/Controllers/Admin/PosOrderController.php:367`, ou offrir une bascule ; (2) ajouter une pagination ou un « Charger 50 de plus » ; (3) a defaut, faire pointer « 50 affichees sur 585 » vers /admin/historique prefiltre sur les non-terminees.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA. Le libelle du second compteur a change entre les deux rounds (« 41 service en cours » -> « 11 aujourd'hui ») mais AUCUN correctif ne porte sur ce constat — `grep 'FIX-6' PosOrdersTrackerComponent.vue` ne remonte que A-002, A-003, A-006, A-011, A-014 — et le defaut est intact. DOM de 08 (filtre Telephone actif) : `<span><strong>1</strong> active</span>` puis, dans le meme `.pos-tracker-status-row`, `<span>11 aujourd'hui</span>`. DOM de 01 (aucun filtre) : `<span><strong>4</strong> actives</span>` puis `<span>11 aujourd'hui</span>`. Le premier nombre SUIT le filtre (4 -> 1), le second NE LE SUIT PAS (11 -> 11), et « 585 en souffrance » non plus. Sur l'image de 08 ils sont colles sur la meme ligne, meme typographie, et « 11 aujourd'hui » ne porte toujours aucun `title` explicatif contrairement a ses voisins. Comme au round 1 je ne classe PAS P0 : chaque nombre est individuellement defendable, le defaut est de presentation.",
+      "fix_hint": "Inchange : soit appliquer le filtre courant a `stats.todayCount`, soit le desambiguer visiblement quand `filters.source !== 'all'` (ex. « 11 aujourd'hui, tous canaux » + `title`), et attenuer tous les compteurs non filtres tant qu'un onglet canal est actif.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-waveA/04-voir-tout-ouvert.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "TOUJOURS LA, ET LES DEUX PORTEES SONT VISIBLES SUR LA MEME IMAGE. Sur `04-voir-tout-ouvert.png` le panneau rend l'instruction A L'INTERIEUR du groupe « 2x Cayenne », juste apres « Extras : 2x Cheddar, Salade » et AVANT « 1x Tacos M » — DOM : `<p class=\"pos-tracker-contenu-instruction\" data-testid=\"tracker-contenu-instruction\">avertissement Sans oignons - allergie arachide</p>` fermant le `<li data-testid=\"tracker-contenu-ligne-0\">`. Les lignes 1 a 3 n'en portent aucune. Pendant ce temps, sur la carte visible DERRIERE la modale (et en plein sur 03), la meme phrase est un bandeau de niveau COMMANDE rendu AVANT la liste des produits : `<div class=\"pos-tracker-card-instruction\" data-testid=\"tracker-instruction-6770\" role=\"note\">`. L'identifiant le dit lui-meme : `-6770` est l'id de la COMMANDE, pas celui d'une ligne. Aucun prefixe produit n'a ete ajoute. Le sens de l'erreur reste le sens PRUDENT (la carte sur-avertit), d'ou P2. NON COUVERT, comme au round 1 : le cas ou DEUX lignes portent chacune une instruction differente.",
+      "fix_hint": "Inchange : prefixer la note du produit concerne (« Cayenne : Sans oignons - allergie arachide ») ou deplacer la note sous sa ligne dans `.pos-tracker-card-items`, comme le fait deja le panneau. Ajouter un cas de test a deux lignes instruites.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "FERME, ET BIEN FERME. Sur `08-filtre-telephone.png` (onglet Telephone actif) je lis desormais, dans les quatre couloirs vides : « Aucune commande Telephone dans « A encaisser » — filtre canal actif. », « ... dans « Prets a servir » ... », « ... dans « En livraison » ... », « ... dans « Livres » ... ». Plus aucun absolu, plus de « pour l'instant » temporel. DOM confirme : `<div class=\"pos-tracker-col-empty\"><span class=\"pos-tracker-col-empty-icon\" aria-hidden=\"true\">tiret</span><p>Aucune commande Telephone dans « Prets a servir » — filtre canal actif.</p><button type=\"button\" class=\"pos-tracker-col-empty-reset\" data-testid=\"tracker-empty-reset\">Voir tout, sans filtre</button></div>`. La CTA que ces etats vides n'avaient pas existe donc, et je la vois a l'ecran sur les quatre couloirs. Verification de non-regression : sur 01 (aucun filtre) les phrases redeviennent les absolus d'origine (« Aucune commande a encaisser. », « Aucune commande en livraison. ») SANS bouton de reinitialisation — c'est le comportement correct, la bascule est bien conditionnee. Reserve minuscule qui ne rouvre rien : l'icone d'etat vide reste un tiret cadratin sur trois couloirs contre un coche sur A encaisser.",
+      "fix_hint": "Rien a faire.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "test-e2e-waveA/06-carte-telephone.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "FERME, VERIFIE DES DEUX COTES. (1) A l'image : sur `06-carte-telephone.png` la carte #AUDA-TEL affiche « Karim Bensa... » puis, en orange gras a cote, « 0612345678 » precede d'un combine (y~255) ; on le retrouve identique sur 08 et 09. (2) Au DOM : `href=\"tel:0612345678\"` est present exactement 1 fois dans CHACUN des dix `.dom.html` de la vague — au round 1 la chaine `0612345678` apparaissait 0 fois et `href=\"tel:` 0 fois. La contradiction que je remontais (le commentaire proprietaire de la carte demandait le rappel, le docbloc de la ressource l'interdisait) a donc ete arbitree dans le sens du rappel. RESERVE D'HONNETETE : je n'ai PAS d'artefact prouvant que la porte serveur a ete elargie proprement plutot que contournee cote client — mais le numero ne peut pas apparaitre dans le DOM sans avoir traverse `SimpleOrderResource`, donc la ressource a bien change. Ce qui reste hors de ma portee : l'arbitrage minimisation-des-donnees lui-meme, qui est une decision proprietaire, pas un defaut.",
+      "fix_hint": "Rien a faire cote defaut. A verifier au prochain audit securite : que l'elargissement de `SimpleOrderResource` soit borne au canal `phone` et n'expose pas le numero sur les canaux ou la minimisation s'applique.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-013",
+      "state_artifact": "test-e2e-waveA/10-couloir-vide.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "TOUJOURS LA. J'ai refait les deux mesures moi-meme sur les NOUVEAUX artefacts. Empreintes MD5 des dix DOM : `01-tableau-1366x768` et `10-couloir-vide` partagent `9f0c816548e7ab6f6dadf4712e6ee23b` (698 114 octets tous les deux) ; `05-voir-tout-ligne-simple`, `06-carte-telephone` et `07-carte-plateforme` partagent `077aa8796e278ae6af6742c0c84d0e8e` (672 752 octets). Diff pixel a pixel : 01 vs 10 = 13 069 / 1 048 992 px, soit 1,246 %, bbox (77,167)-(1326,733) — l'ecart est reparti sur des anneaux de focus et la Debugbar, pas sur un contenu nouveau ; 06 vs 07 = 21 623 px, soit 2,061 %, bbox (542,155)-(824,536), confine a la carte plateforme et a son anneau de focus. Les deux couloirs vides « prouves » par 10 restent entierement lisibles sur 01 ; la carte plateforme « prouvee » par 07 reste entierement lisible sur 06. Aucun garde-fou n'a ete ajoute au harnais. La base d'evidence reelle de la vague A est de 8 etats distincts, pas 10.",
+      "fix_hint": "Inchange : fusionner l'ETAT 10 dans l'ETAT 01, faire de l'ETAT 07 un vrai etat distinct (ou le retirer), et ajouter au harnais un refus d'ecrire deux quartets dont le DOM a le meme MD5 sans defilement ni viewport differents.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-014",
+      "state_artifact": "test-e2e-waveA/08-filtre-telephone.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "FERME, LES DEUX ACCORDS. (1) Sur `08-filtre-telephone.png` l'en-tete affiche « 1 active » — DOM : `<span><strong>1</strong> active</span>` ; sur 01 il affiche toujours correctement « 4 actives ». (2) Sur 01/03/05/06/07 la carte #AUDA-COMPO affiche « + 1 autre » — DOM : `<li class=\"pos-tracker-card-more\"> + 1 autre</li>`. (3) Bonus non demande mais visible : la pastille verte est passee de « 1 prete(s) » a « 1 prete » (`<span class=\"pos-tracker-status-pill pos-tracker-status-pill--ready\">... 1 prete</span>` sur 01). Le commentaire du code explique pourquoi ce n'est pas fait avec `$tc` — l'application tourne en `legacy: false`, donc deux cles explicites — ce qui est defendable et testable. J'ai reconduit le balayage anti-fuite i18n sur les dix DOM (noeuds de texte ET attributs `title`/`placeholder`/`aria-label`/`alt`, motif `^[a-z]+(\\.[a-z_]+){1,4}$`) : toujours zero occurrence.",
+      "fix_hint": "Rien a faire.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-015",
+      "state_artifact": "test-e2e-waveA/06-carte-telephone.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "DEFAUT INTRODUIT PAR LE CORRECTIF A-002. Le commentaire pose dans la CSS affirme : « Une teinte + un lisere par canal, chacun distinct des quatre autres... Contraste verifie sur fond de carte blanc : chaque couleur de texte tient AA (>= 4,5:1). » Les deux moities de cette phrase sont fausses, et je les ai mesurees. (1) DEUX CANAUX PORTENT LA MEME COULEUR. Les regles livrees sont `--kiosk { background: #EEF2FF; }` (pre-existante, non touchee) et `--delivery { background: #E8F1FD; color:#14539A; box-shadow: inset 0 0 0 1px #A9C8EE; }` (nouvelle). #EEF2FF = (238,242,255) et #E8F1FD = (232,241,253) : ecart maximal de 6/255 sur un seul canal, ratio de contraste entre les deux = 1,02:1. Borne et Livraison sont indistinguables, et rien ne les separe par ailleurs puisque `--kiosk` est la SEULE des six variantes sans `color` et sans `box-shadow` — les quatre nouvelles en ont, elle non. `--pos` #EDEFF2 n'est lui-meme qu'a 13/255 de bleu de `--kiosk`. (2) LA COULEUR DE TEXTE N'EST PEINTE NULLE PART. Le seul enfant visible de la pastille est un emoji (`aria-hidden`) ; un glyphe emoji est rendu dans sa propre presentation et ignore `color`. Mesure du pixel le plus sombre a l'interieur de chaque pastille sur `06-carte-telephone.png` : telephone (47,46,47), plateforme (48,48,53), caisse (90,85,84), borne (44,44,43) — quatre quasi-noirs, aucun des #1B7A3E / #A85A00 / #414A55 declares. Le ratio AA annonce porte donc sur une couleur qui n'apparait pas a l'ecran. (3) Ce qui reste pour distinguer un canal est la teinte de fond seule, et elle est tres faible sur le fond de carte mesure #FFFBF5 : #E7F6EC sur #FFFBF5 = 1,08:1, et meme le lisere le plus fort (#A8DCBB) n'atteint que 1,50:1 — sous le 3:1 de WCAG 2.1 SC 1.4.11 pour un element non textuel porteur d'information.",
+      "fix_hint": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (bloc `.pos-tracker-card-source--*`, ~l.3217) — (a) donner a `--kiosk` sa propre teinte, un `color` et le meme `box-shadow` que les quatre autres, ET ecarter `--delivery` de `--kiosk` d'au moins un pas visible ; (b) puisque `color` ne peut rien peindre derriere un emoji, ne pas s'en servir comme preuve de contraste : soit remplacer l'emoji par un libelle texte court (ce que le fix_hint de A-002 proposait deja), soit renforcer teinte + lisere jusqu'a 3:1 sur le fond de carte ; (c) retirer du commentaire l'affirmation de conformite AA tant qu'aucune couleur de texte n'est rendue.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-016",
+      "state_artifact": "test-e2e-waveA/03-carte-composition-riche.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "LA TETE D'AFFICHE DU CORRECTIF A-006 N'EST DEMONTREE PAR AUCUN ARTEFACT. Le correctif annonce « un marqueur +N TAPABLE au lieu d'une ellipse CSS muette ». Le marqueur existe bien dans le gabarit (`<button class=\"pos-tracker-card-compo-more\" :data-testid=\"tracker-compo-more-${order.id}-${idx}\">`, v-if sur `compoAffichee(item).tronque`) et dans la CSS (`min-width:26px`, pastille bordee). Mais il n'est RENDU NULLE PART sur les dix etats : `compoAffichee` coupe sur `const BUDGET = 58` caracteres, et la plus longue composition semee — « Galette . Algerienne . Bien cuit . +2 Cheddar . +Salade » — fait 54 caracteres. Le commentaire du code le dit lui-meme sans en tirer la consequence : « le budget est volontairement genereux : l'exemple releve par la vague A passe desormais ENTIER ». Verification sur artefact : les 5 `<span class=\"pos-tracker-card-compo\">` du DOM de 01/03 se terminent tous par `<!--v-if-->`, c'est-a-dire la branche non rendue. Consequence : rien dans cette vague n'etablit que le marqueur est visible, que sa cible tactile tient reellement 26 px sur une carte de couloir, que son libelle est comprehensible, ni que son clic ouvre bien « Voir tout ». Le chemin de code neuf a ete ecrit, jamais photographie. J'ai cherche un contre-exemple dans les dix DOM : aucun `tracker-compo-more-` n'existe.",
+      "fix_hint": "tests/e2e/audit-supervisor-waveA.spec.js — semer une ligne dont la composition depasse 58 caracteres (par ex. deux extras de plus sur le Cayenne) et ajouter un etat qui photographie le marqueur, le tape, et capture le panneau « Voir tout » qui doit s'ouvrir. Sinon, le budget de 58 rend le correctif inobservable et il faudra le redecouvrir en production.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-017",
+      "state_artifact": "test-e2e-waveA/09-panneau-souffrance.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "LA MEME COMMANDE PORTE DEUX HEURES SUR LA MEME IMAGE, ET LE PANNEAU QUE L'ETAT 09 EST CENSE PROUVER EST POLLUE. Sur `09-panneau-souffrance.png` je lis, dans le kanban en haut, `<span class=\"pos-tracker-card-time\" title=\"05:32\">a l'instant</span>` pour #AUDA-TEL — et vingt centimetres plus bas, dans le panneau, `#AUDA-TEL | 03:32, 25-08-2026`. Deux horloges a deux heures d'ecart pour un seul fait. Idem pour #AUDA-UBER, #AUDA-SIMPLE et #AUDA-COMPO. J'ai remonte la cause avant de deposer le constat, et elle DISCULPE l'application : la carte rend `formatTime(order.created_at)` qui fait `new Date(iso).toLocaleTimeString('fr-FR', ...)`, donc dans le fuseau du NAVIGATEUR (PosOrdersTrackerComponent.vue:2528-2531), tandis que le rang du panneau rend `{{ o.order_datetime }}`, une chaine deja formatee par le serveur (l.667). Et le banc seme `$o->order_datetime = now('UTC')` (`tests/e2e/audit-supervisor-waveA.spec.js:53`) alors que `config/app.php:159` fixe l'application a `Europe/Paris` : le semis fabrique lui-meme les deux heures d'ecart. CE QUI EN DECOULE ET QUI COMPTE POUR L'AUDIT : la requete de souffrance compare `order_datetime` au plancher de journee de service (`app/Http/Controllers/Admin/PosOrderController.php:358`, `->where('order_datetime','<',$floor)`), donc QUATRE des cinq commandes semees — creees a l'instant, affichees « a l'instant » dans les couloirs — tombent sous le plancher et remplissent les quatre premiers rangs du panneau. L'etat 09 ne peut donc PAS etre cite comme preuve que le panneau classe correctement : ses rangs de tete sont des artefacts de banc. Je ne depose aucun defaut applicatif ici — en production `order_datetime` est ecrit dans le fuseau de l'application — mais les deux formateurs suivent bel et bien deux horloges differentes (navigateur vs serveur), ce qui ne tient que parce que les deux sont a Paris sur une caisse reelle.",
+      "fix_hint": "(1) tests/e2e/audit-supervisor-waveA.spec.js:53 — remplacer `datetimeExpr = \"now('UTC')\"` par `now()` (fuseau applicatif) pour que le semis cesse de fabriquer un decalage de 2 h, et ne backdater QUE #AUDA-SOUFFRANCE. (2) playwright.config.js — poser `locale: 'fr-FR', timezoneId: 'Europe/Paris'` (meme correctif que B-009), sans quoi carte et panneau continueront de suivre deux horloges. (3) PosOrdersTrackerComponent.vue:667 — rendre le rang du panneau avec le meme `formatTime` que la carte plutot qu'avec la chaine pre-formatee serveur, pour que les deux surfaces ne puissent plus diverger.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 15,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 11,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "A-001": "FAIL",
+    "A-002": "PARTIAL_PASS",
+    "A-003": "PASS",
+    "A-004": "FAIL",
+    "A-005": "FAIL",
+    "A-006": "PASS",
+    "A-007": "FAIL",
+    "A-008": "FAIL",
+    "A-009": "FAIL",
+    "A-010": "FAIL",
+    "A-011": "PASS",
+    "A-012": "PASS",
+    "A-013": "FAIL",
+    "A-014": "PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "VERDICT AU SENS STRICT DU PROTOCOLE : GREEN (0 P0, 0 P1, rien ne bloque la boucle) — exactement comme au round 1, et pour la meme raison : cette vague n'a jamais eu de defaut bloquant. Ce n'est TOUJOURS PAS « bon pour la prod » : 11 P2 ouverts ou partiels sur 15, plus 1 P3.\n\nBILAN DE FERMETURE. 5 constats fermes et verifies un par un sur les nouveaux artefacts (A-003 nom du bouton, A-006 composition entiere sur deux rangs, A-011 etats vides qui nomment le filtre et offrent une sortie, A-012 numero de telephone avec lien tel:, A-014 accords francais), 1 partiel (A-002), 8 intacts. Les huit intacts ne sont pas des oublis : `grep 'FIX-6' PosOrdersTrackerComponent.vue` ne remonte que A-002/A-003/A-006/A-011/A-014 — l'equipe a traite ce qu'elle a annonce et rien de plus. A-001, A-004, A-005, A-007, A-008, A-009, A-010 et A-013 n'ont RECU AUCUNE LIGNE.\n\nCE QUE LES CORRECTIFS ONT LAISSE DERRIERE EUX — trois constats neufs, tous nes du correctif lui-meme : A-015 (deux des six couleurs de canal sont a 1,02:1 l'une de l'autre, et la couleur de texte annoncee AA n'est peinte nulle part parce que le glyphe est un emoji), A-016 (le marqueur +N, tete d'affiche du correctif A-006, n'est rendu sur aucun des dix etats : budget 58 contre une chaine semee de 54), A-017 (la meme commande porte 05:32 sur sa carte et 03:32 dans le panneau, et quatre commandes de l'instant remplissent le panneau « en souffrance »).\n\nCE QUE J'AI SINCEREMENT TENTE DE CASSER SANS Y ARRIVER.\n1) J'AI ESSAYE DE FAIRE TOMBER LE CORRECTIF A-002 EN ENTIER. Ma premiere hypothese etait qu'on avait repeint quatre pastilles sans toucher a l'accessibilite. Faux : le `sr-only` est reel, la classe de masquage est definie localement et correctement (`clip: rect(0,0,0,0)`), l'emoji est passe `aria-hidden`, et les cinq occurrences sont coherentes. J'ai ensuite mesure les pixels au lieu de lire le code : telephone #E7F6EC, plateforme #FFF3E0, caisse #EDEFF2 sont bel et bien trois teintes differentes. Le grief tient seulement sur la paire borne/livraison (A-015).\n2) J'AI ESSAYE DE PRENDRE LE CORRECTIF A-011 EN DEFAUT DE NON-REGRESSION. Une phrase qui nomme le filtre pourrait s'afficher AUSSI quand aucun filtre n'est actif — ce serait pire que le defaut d'origine. Verifie sur 01 : les couloirs vides y redeviennent « Aucune commande a encaisser. » / « Aucune commande en livraison. » SANS bouton de reinitialisation. La bascule est bien conditionnee. Constat en leur faveur.\n3) J'AI ESSAYE DE MONTRER QUE LA CARTE ETAIT DEVENUE TROP DENSE. La composition prend maintenant deux rangs au lieu d'un : le soupcon etait qu'aucune carte entiere ne tienne plus a 1366x768. Verifie a l'image sur 01 : la carte N°A0038 du couloir LIVRES est integralement visible, en-tete + client + ligne + total 2,50 EUR + les deux boutons d'action, tout au-dessus du pli. Le cout du correctif A-006 est de ~15 px sur une seule ligne. Je RETIRE ce grief.\n4) J'AI ESSAYE DE TROUVER UNE FAUTE D'ARITHMETIQUE SUR L'ARGENT. Rien, toujours. Panneau « Voir tout » : « 4 articles . 7 au total » = 2+1+1+3 = 7 ; total 19,40 EUR identique sur la carte (03) et dans le panneau (04) ; « 4 actives » = 3 En preparation + 1 Prets a servir d'apres les `aria-label` des compteurs de couloir de 01 ; « 50 affichees sur 585 » coherent avec la pastille. Aucun ecart.\n5) J'AI ESSAYE DE TROUVER UN LIBELLE BRUT QUE LE CORRECTIF i18n AURAIT INTRODUIT. Balayage independant des dix DOM, texte visible et attributs, motif `^[a-z]+(\\.[a-z_]+){1,4}$` : zero occurrence. Les deux cles explicites posees a la place de `$tc` sont resolues correctement dans les deux formes.\n6) J'AI CHERCHE UN CHEVAUCHEMENT D'ELEMENTS CLIQUABLES aux deux gabarits, y compris sur les deux rangees d'outils repliees de 1024x600 et sur la superposition « Voir tout » : aucun.\n7) BRUIT ALLOWLISTE, NON DEPOSE : les 404 sur `/storage/1/english.png`, les `ERR_CONNECTION_REFUSED` sur :9100/:9101, la violation CSP `connect-src` de niveau `info` sur `public/js/pos-wizard.js:203` (politique en report-only, zone gelee hors perimetre de la vague A), et la Debugbar.\n\nRESERVES DE COUVERTURE, A NE CREDITER A PERSONNE. (a) Le fichier `05-voir-tout-ligne-simple.png` continue d'affirmer par son nom un etat jamais atteint : son DOM est au MD5 pres celui de 06 et de 07 (A-013). (b) Le bouton « Ticket promo » n'est toujours pas rendu (permission `pos-flyer-print` absente du compte utilise) : ces captures ne disent rien de son etat. (c) Le chemin « composition tronquee » n'est jamais emprunte (A-016). (d) Le cas « deux lignes portant chacune une instruction differente » reste non couvert (A-010)."
+}

@@ -100,7 +100,7 @@ class UberPhotoCaptureFlowTest extends TestCase
 
         // L'aperçu est SYMBOLIQUE : c'est ce que le cuisinier lira, pas le texte brut du ticket.
         $lignes = $res->json('apercu.lignes');
-        $this->assertSame('G | TAC | P | ST | ALG', $lignes[0]['symbolique']);
+        $this->assertSame('Tacos | P | ST | ALG', $lignes[0]['symbolique']);
         $this->assertSame('MENU', $lignes[0]['menu']);
         // Le supplément payant reste EN TOUTES LETTRES (règle owner explicite).
         $this->assertSame(['+ Supplément Cheddar'], $lignes[0]['supplements']);

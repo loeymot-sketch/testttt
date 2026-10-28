@@ -88,7 +88,7 @@ class KioskQuoteIntegrityTest extends TestCase
                 'quote_signature' => $quote['signature'],
                 'total' => $quote['total_ttc'],
             ])
-            ->assertStatus(401);
+            ->assertStatus(409) /* [2026-09-29] refus MÉTIER du devis = 409, jamais 401 : un 401 déconnecte la surface (borne comme caisse) */;
 
         $this->assertNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));
     }

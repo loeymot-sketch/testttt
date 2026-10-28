@@ -125,13 +125,28 @@
                     data-testid="cash-overview-reconciliation"
                 >
                     <div class="border-l-4 border-amber-500 bg-amber-50 rounded p-3">
-                        <div class="text-sm font-semibold text-amber-900">
-                            {{ $t('label.cash_drawer_reconciliation') }}
+                        <div class="flex flex-wrap items-center gap-2 text-sm font-semibold text-amber-900">
+                            <span>{{ $t('label.cash_drawer_reconciliation') }}</span>
+                            <!--
+                                [FIX-3 2026-08-25] Age badge. The card used to
+                                render a bare `formatTime()` clock, which made a
+                                drawer left open for 50 days look like it had
+                                been opened this morning.
+                            -->
+                            <span
+                                v-if="drawerAgeLabel"
+                                class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-xs font-medium"
+                                data-testid="cash-overview-reconciliation-age"
+                            >{{ drawerAgeLabel }}</span>
                         </div>
                         <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                             <div>
                                 <span class="text-gray-600">{{ $t('label.drawer_opened_at') }}:</span>
-                                <strong class="ml-1">{{ formatTime(cashSession.opened_at) }}</strong>
+                                <!-- Dated, never a bare clock, unless it really is today. -->
+                                <strong
+                                    class="ml-1"
+                                    data-testid="cash-overview-reconciliation-opened-at"
+                                >{{ formatDateTime(cashSession.opened_at) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.opening_amount') }}:</span>
@@ -141,11 +156,48 @@
                                 >{{ formatMoneyEuro(cashSession.opening_amount) }}</strong>
                             </div>
                             <div>
-                                <span class="text-gray-600">{{ $t('label.cash_collected_today') }}:</span>
+                                <!--
+                                    [FIX-3] Le chiffre etait celui de TOUTE la session sous un
+                                    libelle « aujourd'hui » : la page parlait d'especes prises 45
+                                    jours plus tot. Restreint a la periode.
+
+                                    [AUDIT-SUPERVISEUR 2026-08-25 · D-001, P0] La contradiction
+                                    SUBSISTAIT, parce que restreindre le chiffre ne suffisait pas :
+                                    le libelle disait « Especes ENCAISSEES », donc des ventes, sur
+                                    un nombre qui est la somme signee des MOUVEMENTS DU TIROIR
+                                    (appoints, prelevements, saisies manuelles) du seul tiroir
+                                    ouvert. Deux grandeurs differentes sous deux libelles quasi
+                                    identiques, a 40 px l'une de l'autre : la banniere annoncait
+                                    7,50 € quand « Repartition par mode » montrait 5,00 € et que
+                                    la page ne contenait que deux lignes especes a 2,50 €. Les
+                                    2,50 € restants n'etaient NULLE PART.
+
+                                    On nomme donc chaque grandeur, et surtout on affiche leur
+                                    ECART — c'est lui le signal de piste d'especes que cette
+                                    banniere pretend surveiller, et il n'etait affiche nulle part.
+                                -->
+                                <span class="text-gray-600">{{ $t('label.cash_sales_in_period') }}:</span>
+                                <strong
+                                    class="ml-1"
+                                    data-testid="cash-overview-reconciliation-sales"
+                                >{{ formatMoneyEuro(ventesEspecesPeriode) }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">{{ $t('label.cash_collected_in_period') }}:</span>
                                 <strong
                                     class="ml-1"
                                     data-testid="cash-overview-reconciliation-collected"
-                                >{{ formatMoneyEuro(cashSession.cash_collected) }}</strong>
+                                >{{ formatMoneyEuro(cashSession.cash_collected_in_period) }}</strong>
+                            </div>
+                            <div :title="$t('label.cash_reconciliation_gap_help')">
+                                <span class="text-gray-600">{{ $t('label.cash_reconciliation_gap') }}:</span>
+                                <strong
+                                    class="ml-1"
+                                    :class="ecartEspeces === 0 ? 'text-emerald-800' : 'text-red-700'"
+                                    data-testid="cash-overview-reconciliation-gap"
+                                >{{ ecartEspeces === 0
+                                    ? $t('label.cash_reconciliation_gap_none')
+                                    : formatMoneyEuro(ecartEspeces) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.expected_in_drawer') }}:</span>
@@ -159,7 +211,52 @@
                             class="mt-2 text-xs text-amber-800"
                             data-testid="cash-overview-reconciliation-note"
                         >
-                            {{ $t('label.cash_drawer_count_pending_note') }}
+                            <!--
+                                `expected_cash` is a LIFETIME figure (fond +
+                                every movement since opening). Say so explicitly
+                                whenever the drawer predates the window, so the
+                                two amounts above can never be read as the same
+                                period.
+                            -->
+                            <span v-if="drawerAgeLabel" data-testid="cash-overview-reconciliation-lifetime-note">
+                                Tiroir ouvert le {{ formatDateTime(cashSession.opened_at) }} et jamais clôturé —
+                                « {{ $t('label.expected_in_drawer') }} » cumule
+                                {{ formatMoneyEuro(cashSession.cash_collected) }} de mouvements depuis l'ouverture,
+                                pas seulement la période affichée.
+                            </span>
+                            <span v-else>{{ $t('label.cash_drawer_count_pending_note') }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!--
+                    [FIX-3 2026-08-25] Drawers left `open` with no activity over
+                    the displayed period. Bounding the reconciliation card to the
+                    period is the honest fix, but on its own it would hide the
+                    abandoned drawers that still hold their fond de caisse — and
+                    it would leave « pourquoi aucun tiroir ? » unanswered. Owner
+                    mandate « détecter écarts (cash manquant) ». Read-only: this
+                    page never closes a session.
+                -->
+                <section
+                    v-if="!loading && staleOpenDrawers && staleOpenDrawers.count > 0"
+                    class="px-4 sm:px-5 mb-4"
+                    data-testid="cash-overview-stale-drawers"
+                >
+                    <div class="border-l-4 border-orange-400 bg-orange-50 rounded p-3">
+                        <div class="flex items-center text-sm font-semibold text-orange-800">
+                            <span class="mr-2">🗄️</span>
+                            <span>Tiroirs restés ouverts</span>
+                        </div>
+                        <div
+                            class="mt-1 text-sm text-orange-700"
+                            data-testid="cash-overview-stale-drawers-message"
+                        >
+                            {{ staleOpenDrawers.message }}
+                        </div>
+                        <div class="mt-2 text-xs text-orange-600">
+                            Sessions concernées : #{{ staleOpenDrawers.ids.join(', #') }} — leur fond de caisse
+                            n'est rattaché à aucune clôture. À clôturer depuis la caisse.
                         </div>
                     </div>
                 </section>
@@ -268,9 +365,17 @@
                         class="text-base text-gray-700 max-w-md mx-auto mb-4"
                         data-testid="cash-overview-empty-copy"
                     >
-                        {{ $t('label.cash_overview_empty_copy') }}
+                        {{ unFiltreEstActif ? $t('label.cash_overview_empty_copy') : $t('label.cash_overview_empty_vierge') }}
                     </p>
+                    <!--
+                        [ONB 2026-08-28] Ce bouton n'etait qu'a moitie honnete :
+                        `clearFilters()` remet `from = to = aujourd'hui,
+                        source = '', mode = ''`, c'est-a-dire l'etat PAR DEFAUT.
+                        Sans filtre actif il ne faisait donc RIEN, tout en
+                        affirmant qu'il y avait quelque chose a reinitialiser.
+                    -->
                     <button
+                        v-if="unFiltreEstActif"
                         type="button"
                         class="db-btn py-2 px-4 text-white bg-primary"
                         data-testid="cash-overview-empty-reset"
@@ -352,6 +457,11 @@ export default {
             // discrepancy here, where the écart actually manifests, instead of
             // only via the ephemeral collect-time toast.
             unrecordedCash: null,
+            // [FIX-3 2026-08-25] Drawers left `open` with no activity over the
+            // displayed period (11 of them existed in dev). Surfaced instead of
+            // silently letting the most-recently-opened one impersonate today's
+            // drawer.
+            staleOpenDrawers: null,
             meta: { capped: false, row_count: 0 },
             filters: {
                 from: today,
@@ -362,12 +472,76 @@ export default {
         };
     },
     computed: {
+
+        /**
+         * [ONB 2026-08-28] Un filtre est-il REELLEMENT pose ?
+         *
+         * L'etat par defaut est « aujourd'hui, toutes sources, tous modes ».
+         * Un journal vide dans cet etat ne veut pas dire « votre filtre est
+         * trop etroit », il veut dire « aucune vente n'a encore ete
+         * encaissee » — la situation NORMALE d'un commercant qui vient de
+         * terminer son installation.
+         */
+        unFiltreEstActif() {
+            const aujourdHui = new Date().toISOString().slice(0, 10);
+        
+            return Boolean(this.filters.source)
+                || Boolean(this.filters.mode)
+                || Boolean(this.filters.from && this.filters.from !== aujourdHui)
+                || Boolean(this.filters.to && this.filters.to !== aujourdHui);
+        },
         // Render fixed source order : caisse / borne / livreur, populating
         // zero-count buckets so the dashboard layout stays stable.
+        /**
+         * [AUDIT-SUPERVISEUR 2026-08-25 · D-001] Les ventes encaissees en especes sur la
+         * periode — LA MEME SOURCE que le bloc « Repartition par mode » affiche juste en
+         * dessous. C'est tout l'objet du correctif : les deux chiffres de la banniere
+         * doivent etre comparables a ce que la page montre par ailleurs, sinon la banniere
+         * contredit la page.
+         */
+        ventesEspecesPeriode() {
+            const modes = (this.summary && this.summary.by_mode) || {};
+            const espece = modes.cash || modes.espece || modes['Espèce'] || null;
+
+            return espece ? Number(espece.total || 0) : 0;
+        },
+
+        /**
+         * L'ECART, arrondi au centime. C'est le signal que cette banniere existe pour
+         * donner et qu'elle ne donnait pas : un tiroir dont les mouvements ne collent pas
+         * aux ventes demande une explication (appoint, prelevement, saisie oubliee).
+         */
+        ecartEspeces() {
+            const brut = this.ventesEspecesPeriode
+                - Number((this.cashSession && this.cashSession.cash_collected_in_period) || 0);
+
+            return Math.round(brut * 100) / 100;
+        },
+
         displayedSources() {
+            /*
+             * [AUDIT-SUPERVISEUR 2026-08-25 · D-002] UN TOTAL DONT LA DECOMPOSITION NE BOUCLE PAS.
+             *
+             * Mesure : « GRAND TOTAL 247,70 € / 27 tx » contre « BORNE 222,70 € / 17 tx », caisse
+             * et livreur a zero. 25,00 € et 10 transactions — 10 % du chiffre de la periode —
+             * n'apparaissaient dans AUCUNE carte, sans le moindre avertissement.
+             *
+             * Cause : cette liste etait FIGEE sur trois cles. Le grand total, lui, vient de
+             * `summary.total`, qui contient tout. Toute autre cle de `by_source` — en pratique
+             * `unknown`, le seau des paiements dont la commande n'existe plus — etait jetee en
+             * silence. J'avais expose ces orphelins cote serveur plus tot dans cette mission ;
+             * l'ecran les rejetait toujours. Un correctif a moitie fait ment aussi bien qu'une
+             * absence de correctif.
+             *
+             * On garde les trois cles connues pour que la mise en page reste stable meme a zero,
+             * et on ajoute TOUTE cle reellement presente. Un total qui ne boucle pas devient
+             * impossible a afficher sans le dire.
+             */
             const known = ['caisse', 'borne', 'livreur'];
             const stats = (this.summary && this.summary.by_source) || {};
-            return known.map((key) => ({
+            const autres = Object.keys(stats).filter((k) => !known.includes(k));
+
+            return known.concat(autres).map((key) => ({
                 key,
                 label: this.sourceLabel(key),
                 stat: stats[key] || { count: 0, total: 0 },
@@ -380,6 +554,20 @@ export default {
         // count-input feature the page displays 3 honest values
         // (opening / collected_today / expected_in_drawer) without a
         // misleading diff.
+
+        /**
+         * [FIX-3 2026-08-25] Non-empty ONLY when the drawer was opened on an
+         * earlier day than today. Drives both the age badge and the
+         * "lifetime cumulative" disclaimer, so the card can never present an
+         * old drawer as if it had been opened this morning.
+         */
+        drawerAgeLabel() {
+            if (!this.cashSession) return '';
+            if (this.cashSession.opened_today) return '';
+            const days = Number(this.cashSession.age_days || 0);
+            if (!Number.isFinite(days) || days < 1) return '';
+            return days === 1 ? 'ouvert depuis hier' : `ouvert depuis ${days} jours`;
+        },
     },
     // [Wave Z Q8 2026-05-21] Hydrate filter state from `$route.query` BEFORE
     // mount so an inbound shareable link (e.g. ?source=borne&from=2026-05-01)
@@ -436,6 +624,7 @@ export default {
                 this.summary = payload.summary || null;
                 this.cashSession = payload.cash_session || null;
                 this.unrecordedCash = payload.unrecorded_cash || null;
+                this.staleOpenDrawers = payload.stale_open_drawers || null;
                 this.meta = payload.meta || { capped: false, row_count: 0 };
             } catch (e) {
                 // eslint-disable-next-line no-console
@@ -444,6 +633,7 @@ export default {
                 this.summary = null;
                 this.cashSession = null;
                 this.unrecordedCash = null;
+                this.staleOpenDrawers = null;
             } finally {
                 this.loading = false;
             }
@@ -531,6 +721,12 @@ export default {
                 case 'caisse':  return this.$t('label.source_caisse');
                 case 'borne':   return this.$t('label.source_borne');
                 case 'livreur': return this.$t('label.source_livreur');
+                // [AUDIT-SUPERVISEUR 2026-08-25 · D-003] Le `default` rendait la CLE BRUTE :
+                // une pastille portant littéralement le mot anglais « unknown » s'affichait
+                // dans la colonne Source, au milieu de pastilles traduites, sur un produit à
+                // locale immuable. Ce seau a un sens métier — un paiement dont la commande
+                // n'existe plus — il mérite son nom, en français.
+                case 'unknown': return this.$t('label.cash_source_unknown');
                 default:        return s || '—';
             }
         },
@@ -583,6 +779,31 @@ export default {
                 const d = new Date(iso);
                 const locale = (this.$i18n && this.$i18n.locale) || 'fr-FR';
                 return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return iso;
+            }
+        },
+        /**
+         * [FIX-3 2026-08-25] A bare clock is only honest for today. `formatTime`
+         * rendered « 20:56 » for a drawer opened 50 days earlier, which is what
+         * made the staleness invisible. Anything not from today is DATED.
+         */
+        formatDateTime(iso) {
+            if (!iso) return '—';
+            try {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return iso;
+                const locale = (this.$i18n && this.$i18n.locale) || 'fr-FR';
+                const time = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+                const now = new Date();
+                const sameDay = d.getFullYear() === now.getFullYear()
+                    && d.getMonth() === now.getMonth()
+                    && d.getDate() === now.getDate();
+                if (sameDay) return time;
+                const date = d.toLocaleDateString(locale, {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                });
+                return `${date} ${time}`;
             } catch (e) {
                 return iso;
             }

@@ -1,7 +1,22 @@
 {
   "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright",
+      "test",
+      "--config=tests/mobile-e2e/playwright.config.js",
+      "tests/mobile-e2e/auth-otp-local.spec.js",
+      "tests/mobile-e2e/catalog-visual-critical.spec.js",
+      "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
+      "tests/mobile-e2e/loyalty-03-qr-refresh.spec.js",
+      "tests/mobile-e2e/loyalty-04-redeem-wizard.spec.js",
+      "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+      "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "--workers=1"
+    ],
     "configFile": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/playwright.config.js",
     "rootDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -32,12 +47,12 @@
         ],
         "testMatch": [
           "tests/mobile-e2e/*.spec.js",
-          "tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js",
-          "tests/e2e/test-e2e-mobile-design-perfect-wave-*.spec.js",
-          "tests/e2e/test-e2e-mobile-realignment-*.spec.js",
-          "tests/e2e/test-real-e2e-pagebypage-*.spec.js",
-          "tests/e2e/test-real-e2e-round2-*.spec.js",
-          "tests/e2e/test-ultraudit-visual-*.spec.js"
+          "tests/e2e/test-e2e-mobile-design-full-wave-A.spec.js",
+          "tests/e2e/test-e2e-mobile-design-full-wave-B.spec.js",
+          "tests/e2e/test-e2e-mobile-design-full-wave-C.spec.js",
+          "tests/e2e/test-e2e-mobile-design-full-wave-D.spec.js",
+          "tests/e2e/test-e2e-mobile-design-perfect-wave-fluidity.spec.js",
+          "tests/e2e/test-e2e-mobile-design-perfect-wave-surfaces.spec.js"
         ],
         "timeout": 90000
       }
@@ -53,18 +68,21 @@
         {
           "outputFile": "../../reports/antigravity/mobile-loyalty-latest.json"
         }
+      ],
+      [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/mobile-e2e/reporters/antigravity-markdown.js",
+        null
       ]
     ],
     "reportSlowTests": {
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.62.1",
     "workers": 1,
     "webServer": {
       "command": "php -S 127.0.0.1:8087 -t mobile/",
@@ -75,6 +93,235 @@
     }
   },
   "suites": [
+    {
+      "title": "tests/mobile-e2e/auth-otp-local.spec.js",
+      "file": "tests/mobile-e2e/auth-otp-local.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "local OTP: cooldown blocks duplicates, expiry permits one resend, dev_code verifies",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 75000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 34120,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T16:40:14.596Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6a470d803fbf0ae0c158-4d3dcd7703b6e6132dfd",
+          "file": "tests/mobile-e2e/auth-otp-local.spec.js",
+          "line": 7,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+      "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 3 catalogue visuals",
+          "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+          "line": 248,
+          "column": 6,
+          "specs": [
+            {
+              "title": "mobile server serves the exact canonical PNG bytes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 255,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T16:40:48.871Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-5322000de0518cf98629",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 249,
+              "column": 3
+            },
+            {
+              "title": "home and menu expose real/neutral assets with compact allergen disclosure removed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3076,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T16:40:49.135Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-ac79eab2c24f6ba64f1b",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 259,
+              "column": 1
+            },
+            {
+              "title": "home Nouveautés prioritizes new arrivals and keeps every card navigable",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1475,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T16:40:52.218Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-29335789c5938ae4e0f0",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 289,
+              "column": 3
+            },
+            {
+              "title": "category → product personalization → cart keeps detail allergen disclosure and images",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2890,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T16:40:53.699Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-b31b0f4b275293bd1ec3",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 314,
+              "column": 3
+            },
+            {
+              "title": "home hero and category shortcuts open the contextual destination",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1456,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-18T16:40:56.598Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3972c6a8b8425e01665c-74a7d33d3228a595a407",
+              "file": "tests/mobile-e2e/catalog-visual-critical.spec.js",
+              "line": 384,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
     {
       "title": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
       "file": "tests/mobile-e2e/loyalty-01-earn-order-app.spec.js",
@@ -97,12 +344,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2910,
+                  "duration": 2691,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-08T17:14:25.377Z",
+                  "startTime": "2026-10-18T16:40:58.065Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -139,12 +386,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3877,
+                  "duration": 23934,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-08T17:14:28.799Z",
+                  "startTime": "2026-10-18T16:41:00.766Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -181,12 +428,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2797,
+                  "duration": 3357,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-08T17:14:32.687Z",
+                  "startTime": "2026-10-18T16:41:24.711Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -200,13 +447,97 @@
           "column": 1
         }
       ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+      "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S07 — Apple Wallet button opens V0 notice modal with onSeeQR CTA",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2866,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T16:41:28.077Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0b9211d8cebf66b33706-1184b9ca8f7460045e89",
+          "file": "tests/mobile-e2e/loyalty-07-apple-wallet.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "S11 — RGPD opt-out hides QR + shows reactivation panel",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5571,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-18T16:41:30.952Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "857252f1f41b5b0437ff-09f54ead3065c1056f96",
+          "file": "tests/mobile-e2e/loyalty-11-opt-out.spec.js",
+          "line": 6,
+          "column": 1
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-08T17:14:14.251Z",
-    "duration": 21299.402000000002,
-    "expected": 3,
+    "startTime": "2026-10-18T16:40:03.358Z",
+    "duration": 93290.689,
+    "expected": 11,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

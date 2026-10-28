@@ -87,15 +87,25 @@ describe('KioskCashInstructionComponent', () => {
         );
     });
 
-    it('emits acknowledged on CTA click', async () => {
-        const wrapper = mount(KioskCashInstructionComponent, {
-            ...mountOpts,
-            props: { orderNumber: 'X', orderTotal: 5, autoRedirectSeconds: 0 },
-        });
+    it('has NO « J\'ai compris » button and returns home on its own after 5 s (owner 2026-10-19)', async () => {
+        vi.useFakeTimers();
+        try {
+            const wrapper = mount(KioskCashInstructionComponent, {
+                ...mountOpts,
+                props: { orderNumber: 'X', orderTotal: 5 }, // défaut = 5 s
+            });
 
-        await wrapper.find('[data-testid="kiosk-cash-cta-understood"]').trigger('click');
-        expect(wrapper.emitted('acknowledged')).toBeTruthy();
-        expect(wrapper.emitted('acknowledged')[0]).toEqual(['user']);
+            expect(wrapper.find('[data-testid="kiosk-cash-cta-understood"]').exists()).toBe(false);
+            expect(wrapper.find('button').exists()).toBe(false); // aucun bouton hors filet réimpression
+
+            vi.advanceTimersByTime(4000);
+            expect(wrapper.emitted('acknowledged')).toBeFalsy();
+            vi.advanceTimersByTime(1000);
+            expect(wrapper.emitted('acknowledged')).toBeTruthy();
+            expect(wrapper.emitted('acknowledged')[0]).toEqual(['timeout']);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
 

@@ -115,8 +115,16 @@
              appeler quelqu'un, ce qui est précisément ce qu'on veut éviter. -->
         <div class="rounded-lg border border-slate-200 bg-white p-4" data-testid="system-interrupteurs">
             <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Interrupteurs</h3>
+            <!-- [G3 2026-09-03 · T3.4 · défaut V-15] Ce texte disait « journal serveur »,
+                 c'est-à-dire un fichier rotaté et purgeable. La bascule écrit en réalité
+                 dans `audit_logs` : chaîné HMAC, append-only, suppression refusée par
+                 déclencheur SQL. Sous-vendre une trace opposable en fait douter le jour
+                 où on en a besoin. Ne pas sur-vendre non plus : ce n'est pas une écriture
+                 fiscale au sens du ticket Z. -->
             <p class="mt-1 text-xs text-slate-500">
-                Prise en compte immédiate, sans mise en ligne. Consigne dans le journal serveur, pas le journal fiscal NF525.
+                Prise en compte immédiate, sans mise en ligne. Chaque bascule est consignée dans le
+                journal d'audit métier (audit_logs), signé en chaîne et non modifiable — ce n'est pas
+                une écriture fiscale NF525 au sens du ticket Z.
             </p>
             <ul class="mt-3 divide-y divide-slate-100">
                 <li
@@ -147,7 +155,18 @@
             </ul>
         </div>
 
-        <p v-if="erreur" class="text-sm text-red-700" data-testid="system-health-erreur">{{ erreur }}</p>
+        <!--
+            [G3 · complément superviseur 2026-09-03] `role="alert"` : ce message apparaît APRÈS
+            une action de l'exploitant. Sans annonce, un lecteur d'écran ne dit jamais que la
+            bascule a échoué — et l'écran refuse (à raison) d'inverser le bouton, donc il ne
+            reste RIEN pour signaler l'échec.
+        -->
+        <p
+            v-if="messageErreur"
+            class="text-sm text-red-700"
+            role="alert"
+            data-testid="system-health-erreur"
+        >{{ messageErreur }}</p>
     </section>
 </template>
 
@@ -165,9 +184,25 @@ const LIBELLES = {
 export default {
     name: 'SystemHealthComponent',
     data() {
-        return { etat: {}, interrupteurs: [], bascule: null, chargement: false, erreur: null };
+        // [G3 · complément superviseur 2026-09-03] DEUX chaînes, pas une.
+        //
+        // `erreur` porte les échecs de LECTURE : le sondage a le droit de l'effacer, puisqu'une
+        // lecture qui repasse rend l'ancien rouge périmé.
+        // `erreurAction` porte les échecs de BASCULE : le sondage n'a PAS le droit d'y toucher.
+        // Avec une chaîne unique, `charger()` remettait tout à `null` au tic suivant : l'échec
+        // s'affichait une seconde puis disparaissait, le bouton restait sur son ancien état, et
+        // l'exploitant concluait que son clic n'avait pas été pris.
+        return { etat: {}, interrupteurs: [], bascule: null, chargement: false, erreur: null, erreurAction: null };
     },
     computed: {
+        /**
+         * [G3 · complément superviseur 2026-09-03] L'échec d'une ACTION passe devant l'échec
+         * d'une lecture : c'est celui que l'exploitant vient de provoquer, et le seul qu'il
+         * peut corriger. Il ne s'efface qu'à la tentative suivante, jamais au tic du sondage.
+         */
+        messageErreur() {
+            return this.erreurAction || this.erreur;
+        },
         verdictOk() {
             return this.etat.verdict === 'ok';
         },
@@ -216,26 +251,44 @@ export default {
                 return `Restauration de vérification ÉCHOUÉE${raison}`;
             }
             if (r.status === 'stale') {
-                const jours = Math.round((r.age_hours || 0) / 24);
-                return `Restauration de vérification non rejouée depuis ${jours} jours`;
+                // [G4 2026-09-03 · T4.3] Le seuil est passé à 26 h : compter en jours en
+                // dessous de 48 h affichait « depuis 1 jours » pour un drill de 27 h.
+                const h = Number(r.age_hours || 0);
+                return h < 48
+                    ? `Restauration de vérification non rejouée depuis ${Math.round(h)} h`
+                    : `Restauration de vérification non rejouée depuis ${Math.round(h / 24)} jours`;
+            }
+            // [G4 2026-09-03 · T4.1 · défaut V-08] Le drill a réussi — sur un AUTRE fichier.
+            // L'écran ne doit plus dire « cette sauvegarde a été remontée » quand il ne le
+            // sait pas : il dit l'écart, que le serveur a déjà nommé.
+            if (r.status === 'autre_fichier') {
+                return `Restauration de vérification NON RAPPROCHÉE de cette sauvegarde${raison}`;
             }
             return "Restauration de vérification jamais mesurée — une sauvegarde non restaurée ne prouve rien";
         },
         // Le fichier ET sa restauration. Une sauvegarde de 2 h corrompue s'affichait
         // en vert : seule la date du fichier était lue.
+        //
+        // [G4 2026-09-03 · T4.4 · défaut N-01] La carte ne RECALCULE plus la fraîcheur.
+        // Elle lisait la valeur publiée, arrondie à l'heure : à 26 h 20 le serveur envoyait
+        // 26, la carte concluait « 26 <= 26 » donc VERT — au-dessus d'une bande d'alertes
+        // du même écran qui disait que la sauvegarde était en retard. Le serveur décide
+        // (`fraiche`), l'écran affiche. Et un verdict ABSENT n'est pas un verdict
+        // favorable : sans la clé, la carte reste rouge.
         sauvegardeOk() {
             const s = this.etat.sauvegarde;
-            const fichierFrais = !!s && s.age_heures !== null && s.age_heures !== undefined
-                && s.age_heures <= s.attendu_max_h;
-            return fichierFrais && this.restaurationOk;
+            return !!s && s.fraiche === true && this.restaurationOk;
         },
         sauvegardeTexte() {
             const s = this.etat.sauvegarde;
             if (this.erreur && !s) return 'mesure indisponible';
             if (!s || s.age_heures === null || s.age_heures === undefined) return 'aucune';
-            if (s.age_heures < 1) return "à l'instant";
-            if (s.age_heures < 48) return `il y a ${s.age_heures} h`;
-            return `il y a ${Math.round(s.age_heures / 24)} jours`;
+            // L'âge est publié en décimal (26.33) pour que le seuil soit vérifiable ;
+            // l'arrondi n'a plus lieu qu'ICI, à l'affichage, où il ne décide de rien.
+            const h = Number(s.age_heures);
+            if (h < 1) return "à l'instant";
+            if (h < 48) return `il y a ${Math.round(h)} h`;
+            return `il y a ${Math.round(h / 24)} jours`;
         },
         planificateurOk() {
             const p = this.etat.planificateur;
@@ -290,13 +343,14 @@ export default {
                 }
             }
             this.bascule = i.nom;
+            this.erreurAction = null;
             try {
                 const { data } = await axios.put(`/admin/observability/interrupteurs/${i.nom}`, { actif: !i.actif });
                 this.interrupteurs = data.data || this.interrupteurs;
             } catch (e) {
                 // Ne PAS inverser l'affichage sur un échec : montrer « Activé »
                 // alors que rien n'a changé est pire que de ne rien montrer.
-                this.erreur = "La bascule n'a pas pu être enregistrée.";
+                this.erreurAction = "La bascule n'a pas pu être enregistrée.";
             } finally {
                 this.bascule = null;
             }

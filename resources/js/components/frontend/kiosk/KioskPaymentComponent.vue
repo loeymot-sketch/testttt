@@ -5,6 +5,7 @@
     <div
       v-if="paymentRouteAllToCounter"
       class="kiosk-pay-counter-route"
+      :class="{ 'kiosk-pay-counter-route--vk': vkVisible }"
       role="status"
       aria-live="polite"
       data-testid="kiosk-payment-counter-route"
@@ -27,6 +28,31 @@
         <span>{{ $t('kiosk.pay_screen.total_prefix') }}</span>
         <strong>{{ formatPrice(cartTotal) }}</strong>
       </div>
+      <!-- [NOM-COMMANDE-BORNE 2026-10-19 · owner] Dernière étape avant de confirmer : le NOM de la
+           commande. « Quand un client vient, il me dit : j'ai la commande au nom de X » — la caisse
+           la retrouve sans parcourir la liste. Obligatoire (2 lettres minimum) ; clavier virtuel de
+           la borne (Windows kiosque sans clavier tactile natif). -->
+      <div v-if="!submitting && !submitted" class="kiosk-pay-name" data-testid="kiosk-payment-name-block">
+        <label class="kiosk-pay-name-label" for="kiosk-pay-name-input">{{ $t('kiosk.pay_screen.name_label') }}</label>
+        <input
+          id="kiosk-pay-name-input"
+          :value="customerName"
+          type="text"
+          class="kiosk-pay-name-input"
+          :class="{ 'kiosk-pay-name-input--active': nameKeyboardOpen, 'kiosk-pay-name-input--ok': nameValid }"
+          :placeholder="$t('kiosk.pay_screen.name_placeholder')"
+          maxlength="30"
+          readonly
+          autocomplete="off"
+          data-testid="kiosk-payment-name-input"
+          @click="nameKeyboardOpen = true"
+          @focus="nameKeyboardOpen = true"
+        />
+        <!-- Zone réservée : l'aide disparaissant à la 2e lettre ne fait plus sauter le bouton sous le doigt. -->
+        <div class="kiosk-pay-name-hintbox">
+          <p v-if="!nameValid" class="kiosk-pay-name-hint" data-testid="kiosk-payment-name-hint">{{ $t('kiosk.pay_screen.name_hint') }}</p>
+        </div>
+      </div>
       <div v-if="submitting" class="kiosk-pay-counter-spinner" aria-hidden="true"></div>
       <p v-if="submitting" class="kiosk-pay-counter-processing">
         {{ $t('kiosk.pay_screen.counter_route_processing') }}
@@ -41,6 +67,8 @@
         v-if="!submitting && !submitted"
         type="button"
         class="kiosk-btn-confirm"
+        :disabled="!nameValid"
+        :aria-disabled="!nameValid ? 'true' : 'false'"
         @click="confirmCounterRoute"
         data-testid="kiosk-payment-counter-confirm"
       >
@@ -254,7 +282,7 @@
       <div class="kiosk-pay-confirm-inner">
       <button type="button"
         class="kiosk-btn-confirm"
-        :disabled="!method || isElectronicMethodBlocked(method)"
+        :disabled="!method || quotePending || isElectronicMethodBlocked(method)"
         @click="confirmPayment"
         :aria-label="$t('kiosk.pay_screen.confirm', { amount: formatPrice(cartTotal) })"
         data-testid="kiosk-payment-confirm"
@@ -266,6 +294,19 @@
       </button>
       </div>
     </div>
+
+    <KsVirtualKeyboard
+      :model-value="customerName"
+      :visible="paymentRouteAllToCounter && nameKeyboardOpen && !submitting && !submitted"
+      layout="fr"
+      :max-length="30"
+      :accents="true"
+      :auto-capitalize="true"
+      :show-preview="false"
+      @update:model-value="onNameInput"
+      @submit="nameKeyboardOpen = false"
+      @close="nameKeyboardOpen = false"
+    />
 
   </div>
 </template>
@@ -287,9 +328,21 @@ import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 import { buildKioskOrderPayload } from '../../../store/modules/kioskCart';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+import KsVirtualKeyboard from './ds/KsVirtualKeyboard.vue';
+
+// [NOM-COMMANDE-BORNE 2026-10-19 · owner] Longueur minimale d'un nom de commande : un seul
+// caractère ne permet pas de retrouver quelqu'un parmi vingt commandes.
+const NOM_COMMANDE_MIN = 2;
+
+// [REVUE ADVERSE 2026-10-19] Abandon sur l'écran « paiement à la caisse » : KioskAppComponent exclut
+// `kiosk.payment` de sa remise à zéro sur inactivité (héritage du TPE physique, absent en mode « tout à
+// la caisse »). Sans ceci le prénom ET le panier d'un client parti restaient affichés au suivant, qui
+// pouvait confirmer la commande d'un autre. L'écran se remet donc à zéro seul après 2 minutes sans geste.
+const INACTIVITE_PAIEMENT_MS = 120000;
 
 export default {
   name: 'KioskPaymentComponent',
+  components: { KsVirtualKeyboard },
   mixins: [kioskPriceMixin],
 
   inject: {
@@ -307,6 +360,7 @@ export default {
       tpeCanCancel:  false,
       _lastOrder:    null,
       _lastQuote:    null,
+      quotePending:  false,
       networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
       // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
@@ -315,6 +369,10 @@ export default {
       // les 3 CTAs : retenter / payer au comptoir / annuler. Évite la boucle
       // "essaye, refusé, toast, essaye encore" frustrante et indéfinie.
       paymentFailureCount: 0,
+      // [NOM-COMMANDE-BORNE 2026-10-19] Nom saisi à la borne ; le clavier s'ouvre tout seul : le
+      // nom est la première chose à faire sur cet écran.
+      customerName: '',
+      nameKeyboardOpen: true,
     };
   },
 
@@ -324,7 +382,7 @@ export default {
   MAX_PAYMENT_FAILURES: 2,
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
-    ...mapGetters('kioskCart', ['total', 'subtotal', 'loyaltyDiscount', 'promoDiscount', 'branchId', 'orderType']),
+    ...mapGetters('kioskCart', ['total', 'subtotal', 'loyaltyDiscount', 'promoDiscount', 'branchId', 'orderType', 'orderQuote']),
     // [C39 heal 2026-07-06] Miroir du gate borne du panier : une remise fidélité/promo
     // n'est réellement facturée que si le flag kioskPromoEnabled est ON (sinon le payload
     // borne ne la transmet jamais — cf. KioskCartComponent.displayTotal / effectiveLoyaltyDiscount).
@@ -339,11 +397,24 @@ export default {
       const promo = this.kioskPromoEnabled ? (parseFloat(this.promoDiscount) || 0) : 0;
       return Math.max(0, (parseFloat(this.subtotal) || 0) - loyalty - promo);
     },
-    cartTotal() { return this._lastQuote?.total_ttc ?? this.displayFallbackTotal; },
+    cartTotal() { return this._lastQuote?.total_ttc ?? this.orderQuote?.total_ttc ?? this.displayFallbackTotal; },
     // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route all kiosk payments to counter.
     // Read from window.foodkingConfig.kiosk.paymentRouteAllToCounter (config/kiosk.php +
     // master.blade.php injection). When true, KioskPaymentComponent hides method
     // selection UI and auto-submits with payment_method=1 (CASH_ON_DELIVERY).
+    nameValid() {
+      // Hors « tout à la caisse » le nom reste facultatif : l'écran de choix du mode de paiement
+      // historique n'a pas de champ nom.
+      if (!this.paymentRouteAllToCounter) return true;
+      // [REVUE ADVERSE 2026-10-19] DEUX LETTRES, pas deux caractères : « 12 », « -- » ou deux espaces
+      // + point ne permettent pas de retrouver quelqu'un à la caisse.
+      const lettres = (String(this.customerName || '').match(/\p{L}/gu) || []).length;
+      return lettres >= NOM_COMMANDE_MIN;
+    },
+    // Le clavier est réellement affiché (sert à réserver la place sous le contenu).
+    vkVisible() {
+      return this.paymentRouteAllToCounter && this.nameKeyboardOpen && !this.submitting && !this.submitted;
+    },
     paymentRouteAllToCounter() {
       try {
         return !!(window?.foodkingConfig?.kiosk?.paymentRouteAllToCounter);
@@ -358,7 +429,21 @@ export default {
     try {
       this._kioskSpeech = useKioskSpeech({ store: this.$store });
     } catch (_) { this._kioskSpeech = null; }
+    // [REVUE ADVERSE 2026-10-19] Un retour arrière puis avant affichait un champ vide alors que le store
+    // gardait l'ancien nom : on repart d'un nom vide des deux côtés (jamais de nom fantôme au suivant).
+    try { this.$store.commit('kioskCart/SET_CUSTOMER_NAME', ''); } catch (_) { /* store absent en test */ }
+    this._armerInactivite();
     this.syncNetworkState();
+    // KioskCart obtains the signed quote before navigating here. Adopt it so
+    // the customer never sees local arithmetic first and a new total on confirm.
+    if (this.orderQuote?.total_ttc !== undefined) {
+      this._lastQuote = this.orderQuote;
+    } else {
+      this.quotePending = true;
+      this.refreshQuote()
+        .catch(() => { /* confirmPayment presents the actionable error on retry */ })
+        .finally(() => { this.quotePending = false; });
+    }
     window.addEventListener('online', this.syncNetworkState);
     window.addEventListener('offline', this.syncNetworkState);
     // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
@@ -377,6 +462,7 @@ export default {
   },
   beforeUnmount() {
     this._lastOrder = null;
+    this._desarmerInactivite();
     window.removeEventListener('online', this.syncNetworkState);
     window.removeEventListener('offline', this.syncNetworkState);
     // Kiosk Phase 9.1.8 — stoppe le TTS si on quitte l'écran pendant la lecture.
@@ -432,8 +518,45 @@ export default {
     // Force method='cash' (payment_method=CASH_ON_DELIVERY=1 backend mapping) and
     // reuse confirmPayment() pipeline. Order goes PENDING_COUNTER, cashier collects
     // at POS (espèces tiroir OR carte ticket+manual terminal). No TPE at kiosk.
+    _armerInactivite() {
+      if (!this.paymentRouteAllToCounter || typeof window === 'undefined') return;
+      this._ecouteurActivite = () => this._rearmerInactivite();
+      ['pointerdown', 'touchstart', 'keydown'].forEach((e) => window.addEventListener(e, this._ecouteurActivite, true));
+      this._rearmerInactivite();
+    },
+    _rearmerInactivite() {
+      if (this._inactivite) clearTimeout(this._inactivite);
+      this._inactivite = setTimeout(() => this._abandonInactivite(), INACTIVITE_PAIEMENT_MS);
+    },
+    _desarmerInactivite() {
+      if (this._inactivite) clearTimeout(this._inactivite);
+      this._inactivite = null;
+      if (this._ecouteurActivite && typeof window !== 'undefined') {
+        ['pointerdown', 'touchstart', 'keydown'].forEach((e) => window.removeEventListener(e, this._ecouteurActivite, true));
+      }
+      this._ecouteurActivite = null;
+    },
+    _abandonInactivite() {
+      // Une commande en cours d'envoi n'est jamais interrompue : on reprend la veille.
+      if (this.submitting || this.submitted) { this._rearmerInactivite(); return; }
+      this._desarmerInactivite();
+      try { this.$store.dispatch('kioskCart/reset'); } catch (_) { /* defensive */ }
+      try { this.$router.replace({ name: 'kiosk.idle' }); } catch (_) { /* defensive */ }
+    },
+    onNameInput(next) {
+      // Le serveur nettoie à nouveau (caractères de contrôle, espaces) : ici on borne seulement.
+      this.customerName = String(next || '').slice(0, 30);
+      this.$store.commit('kioskCart/SET_CUSTOMER_NAME', this.customerName);
+    },
+
     async confirmCounterRoute() {
       if (this.submitting) return;
+      // Défense en profondeur : le bouton est désactivé, mais un appui clavier ou un test ne doit
+      // jamais créer une commande sans nom en mode « tout à la caisse ».
+      if (!this.nameValid) {
+        this.nameKeyboardOpen = true;
+        return;
+      }
       this.method = 'cash';
       this.error = null;
       // Delegate to existing confirmPayment which already routes 'cash' to
@@ -451,7 +574,7 @@ export default {
      */
     buildPaymentNavTarget({ orderId, queueNum, total, isOfflineId }) {
       if (this.method === 'cash') {
-        const query = { number: queueNum, total, timeout: 45 };
+        const query = { number: queueNum, total, timeout: 5 };
         if (orderId && !isOfflineId) query.orderId = String(orderId);
         return { name: 'kiosk.cash-instruction', query };
       }
@@ -463,7 +586,7 @@ export default {
     },
 
     async confirmPayment() {
-      if (!this.method || this.submitting) return;
+      if (!this.method || this.submitting || this.quotePending) return;
       if (this.isElectronicMethodBlocked(this.method)) {
         const msg = this.offlinePaymentMessage();
         this.error = msg;
@@ -608,6 +731,7 @@ export default {
         throw new Error(this.$t('kiosk.pay_screen.invalid_order_response'));
       }
       this._lastQuote = quote;
+      this.$store.commit('kioskCart/SET_ORDER_QUOTE', quote);
       return quote;
     },
 
@@ -1068,6 +1192,47 @@ export default {
   font-weight: 900;
   line-height: 0.92;
 }
+/* [NOM-COMMANDE-BORNE 2026-10-19] Champ « nom de la commande » : grand, tactile, bordure orange. */
+.kiosk-pay-name {
+  width: min(640px, calc(100vw - 64px));
+  margin: 12px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kiosk-pay-name-label {
+  font-size: clamp(20px, 2.4vw, 28px);
+  font-weight: 800;
+  color: var(--kiosk-text, #0F0F0F);
+}
+.kiosk-pay-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 84px;
+  padding: 0 24px;
+  border-radius: 22px;
+  border: 3px solid var(--kiosk-border, #E5E5E5);
+  background: #FFFFFF;
+  color: var(--kiosk-text, #0F0F0F);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  text-align: center;
+}
+.kiosk-pay-name-input::placeholder { color: var(--kiosk-text-muted, #5A5A5A); font-weight: 600; font-size: clamp(20px, 2.6vw, 28px); }
+/* Clavier ouvert : on réserve sa place sous le contenu, qui se recentre dans la partie visible — le bouton
+   « Confirmer » n'est plus coupé en deux par le clavier sur les bornes de moins de 1750 px de haut. */
+.kiosk-pay-counter-route--vk { box-sizing: border-box; padding-bottom: calc(44vh + 16px); }
+.kiosk-pay-name-hintbox { min-height: 2.8em; display: flex; align-items: flex-start; justify-content: center; }
+.kiosk-pay-name-input--active { border-color: var(--kiosk-primary, #F4501E); box-shadow: 0 0 0 5px rgba(244, 80, 30, 0.18); }
+.kiosk-pay-name-input--ok { border-color: #15803D; }
+.kiosk-pay-name-hint {
+  margin: 0;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 700;
+  color: var(--kiosk-primary, #F4501E);
+  text-align: center;
+}
+.kiosk-btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
 .kiosk-pay-counter-spinner {
   width: 64px;
   height: 64px;

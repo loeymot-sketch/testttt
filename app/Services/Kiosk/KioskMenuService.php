@@ -14,6 +14,8 @@ use App\Models\UpsellRule;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Menu\MenuSnapshot;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\IncludedMeatCount;
+use App\Support\Menu\RecommendedSupplements;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -88,11 +90,25 @@ final class KioskMenuService
                     // [DBPERF-P1-01 heal 2026-05-29] Eager-load Item media
                     // (Spatie polymorphic). Wave D measured 89 queries on
                     // /api/frontend/menu cold path due to lazy
-                    // getFirstMediaUrl() on Item::thumb accessor. Only Item
-                    // implements HasMedia (verified app/Models/Item.php:15).
-                    // Variations/Extras do NOT have media — those N+1 hits
-                    // come from addonItem.thumb chain which loads Item media.
+                    // getFirstMediaUrl() on Item::thumb accessor.
+                    //
+                    // [ONB-07 2026-08-27] La suite du commentaire d'origine disait :
+                    // « Only Item implements HasMedia. Variations/Extras do NOT have
+                    // media ». C'est FAUX, et ca a coute cher : ItemVariation:15 et
+                    // ItemExtra:13 declarent tous deux `implements HasMedia`, et leurs
+                    // accesseurs appellent getFirstMediaUrl() (ItemVariation:184,
+                    // ItemExtra:124).
+                    //
+                    // Mesure de cette page, AVANT correctif : 788 requetes SQL en
+                    // 404 ms, dont 765 sur la table `media` — 433 pour ItemVariation,
+                    // 332 pour ItemExtra. Une requete par variante et par supplement.
+                    // Deux tentatives de correction precedentes ont chargé Item et
+                    // addonItem, en laissant ces deux-la de cote sur la foi du
+                    // commentaire. C'est l'ecran d'accueil de la borne, celui que le
+                    // client regarde en attendant.
                     'media',
+                    'variations.media',
+                    'extras.media',
                     'addons.addonItem.media',
                 ])
                 ->where('status', Status::ACTIVE)
@@ -123,7 +139,7 @@ final class KioskMenuService
         return [
             'branch' => $this->projectBranch($branch),
             'categories' => $this->projectCategories($visibleCategories),
-            'items' => $this->projectItems($visibleItems, $availability, $branchId),
+            'items' => $this->projectItems($visibleItems, $availability, $branchId, $visibleCategories->pluck('name', 'id')->all()),
             'upsell_rules' => $this->projectUpsellRules($upsellRules),
             'promos' => $this->projectPromos($promos),
             'snapshot_version' => $this->snapshot()->current($branchId),
@@ -294,7 +310,7 @@ final class KioskMenuService
      * @param  Collection<int, Item>  $items
      * @param  Collection<int, ItemBranchAvailability>  $availability
      */
-    private function projectItems(Collection $items, Collection $availability, int $branchId): array
+    private function projectItems(Collection $items, Collection $availability, int $branchId, array $categoryNames = []): array
     {
         $composerProfiles = $this->publishedComposerProfiles($items, $branchId);
         $choiceAvailability = $this->choiceAvailabilityResolver()->snapshotForItems($items, $branchId, self::CHANNEL);
@@ -307,7 +323,7 @@ final class KioskMenuService
         return $items->sortBy(fn (Item $it) => (int) $it->id)
             ->sortBy(fn (Item $it) => (int) ($it->order ?? 0))
             ->values()
-            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId): array {
+            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId, $categoryNames): array {
             $avail = $availability->get($item->id);
             $isAvailable = $avail ? (bool) $avail->is_available : true;
             $itemChoiceAvailability = $choiceAvailability[(int) $item->id] ?? [
@@ -316,19 +332,19 @@ final class KioskMenuService
                 'addons' => [],
             ];
 
-            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
-            // = nombre d'attributs « Viande N » ayant des variations actives. La
+            // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir. La
             // borne (KioskWizardComponent.detectViandeCount, frozen) lit ce champ
             // EN PRIORITÉ (avant l'heuristique nom buggée : « Méga »→4, « Terminator »
-            // / « Bol »→null = pas d'étape viande). Méga/Terminator=2, Tacos M/Bols=1,
-            // Tacos L=2, burgers/desserts=0 (la borne retombe alors sur le nom = 0).
+            // / « Bol »→null = pas d'étape viande) et exige EXACTEMENT ce nombre.
             $projectedItemAttributes = $this->projectItemAttributes($item, self::CHANNEL);
-            $viandeCount = collect($projectedItemAttributes)
-                ->filter(function ($a): bool {
-                    $n = mb_strtolower((string) ($a['name'] ?? ''));
-                    return str_contains($n, 'viande') || str_contains($n, 'meat');
-                })
-                ->count();
+            // [VG-2026-10-21 M5-001b M3-101 M5-001] Viandes INCLUSES selon la règle du propriétaire (Tacos M=1/L=2/XL=3,
+            // Méga/Terminator=2, sandwich=1), plus le nombre brut d'attributs « Viande N » (Tacos M=3 vendu 6,90 €).
+            // Même calcul que NormalItemResource (site, fiche produit).
+            $viandeCount = IncludedMeatCount::resolve(
+                (string) $item->name,
+                $categoryNames[(int) $item->item_category_id] ?? null,
+                collect($projectedItemAttributes)->pluck('name')
+            );
 
             return [
                 'viande_count'       => $viandeCount,
@@ -404,7 +420,7 @@ final class KioskMenuService
                     // auto-suffisante — un extra inactif ne peut jamais fuir sur les
                     // étapes Suppléments/Garnitures même si la relation évolue.
                     ->filter(fn ($e) => (int) $e->status === Status::ACTIVE && $e->isVisibleOn(self::CHANNEL))
-                    ->map(function ($e) use ($itemChoiceAvailability) {
+                    ->map(function ($e) use ($itemChoiceAvailability, $item, $categoryNames) {
                         $availability = $itemChoiceAvailability['extras'][(int) $e->id] ?? ['is_available' => true, 'unavailable_reason' => null];
 
                         return [
@@ -417,6 +433,9 @@ final class KioskMenuService
                             'status'      => (int) $e->status,
                             'group_label' => $e->group_label,
                             'visible_on'  => $e->visible_on,
+                            // [OWNER 2026-10-21] « Recommandé » : mise en avant du supplément (badge + tête de liste), jamais un prix.
+                            'is_recommended' => strtolower((string) $e->group_label) === 'supplement'
+                                && RecommendedSupplements::isRecommended((string) $item->name, $categoryNames[(int) $item->item_category_id] ?? null, (string) $e->name),
                             'is_available' => $availability['is_available'],
                             'unavailable_reason' => $availability['unavailable_reason'],
                         ];

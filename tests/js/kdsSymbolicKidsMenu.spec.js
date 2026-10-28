@@ -33,7 +33,10 @@ describe('KDS symbolique — menu enfant distinguable (F-01)', () => {
     it('préserve les codes compacts des produits qui ne prêtent pas à confusion', () => {
         expect(produit('Cayenne')).toBe('CAY');
         expect(produit('Bol Frites')).toBe('BOL FRI');
-        expect(produit('Tacos M')).toBe('TAC');
+        // La surface KDS affiche désormais le libellé explicite « Tacos ».
+        // Le code interne bas niveau reste « TAC » côté formatter PHP ; ici
+        // on teste bien le champ produit rendu par buildSymbolic().
+        expect(produit('Tacos M')).toBe('Tacos');
     });
 
     /**

@@ -1,0 +1,66 @@
+[
+  {
+    "id": "C-001",
+    "severity": "P1",
+    "kind": "defect",
+    "title": "Ticket fiscal : « Caissier » affiche le nom du client, pas celui du caissier",
+    "evidence": "app/Services/Receipt/ReceiptDataService.php:70 `'operator_name' => optional($order->user)->name` ; orders.user_id = client (OrderService.php:853-860, creator_id = caissier). Commande 8837 : user_id 944 'E2E-ETAT-C Client', creator_id 3 'Caissier Le Cayenne'. Octets ESC/POS décodés : 'Caissier : E2E-ETAT-C Client' ; aperçu HTML 'Opérateur: E2E-ETAT-C Client' (capture 07). Vente comptoir : 'Caissier : Client passage'.",
+    "repro": "Caisse /admin/pos > Livraison (ou client nommé) > 1 article > Commande > Espèces > Confirmer ; ou GET /api/admin/pos/orders/8837/escpos?ticket=client puis décoder : ligne 'Caissier :'."
+  },
+  {
+    "id": "C-002",
+    "severity": "P2",
+    "kind": "defect",
+    "title": "« Commande téléphone » proposé en mode Livraison mais toujours refusé",
+    "evidence": "PosComponent.vue:6879-6882 (garde) ; bouton visible en livraison (capture 09) ; test C4b : 0 POST /api/admin/pos. Seul chemin différé de la caisse, donc aucun moyen de noter « paiement à la porte ».",
+    "repro": "/admin/pos > Livraison > adresse choisie > 1 article > clic « Commande téléphone » : toast « Commande téléphone impossible en livraison… »."
+  },
+  {
+    "id": "C-003",
+    "severity": "P3",
+    "kind": "defect",
+    "title": "Planche Tournées : un départ passé jamais parti est étiqueté « à venir »",
+    "evidence": "resources/js/components/admin/pos/PosDeliveryBoard.vue:24 (`w.left ? 'parti' : 'à venir'`) ; capture 10 : « Départ hier 19:30 à venir ». GET /api/admin/pos-delivery/board renvoie les départs depuis -24 h.",
+    "repro": "Avoir un arrêt dont wave_at est passé et left_at NULL ; /admin/pos > Tournées."
+  },
+  {
+    "id": "C-004",
+    "severity": "P2",
+    "kind": "defect",
+    "title": "Phrases tutoyées adressées à des clients (exigence C8)",
+    "evidence": "lang/fr/all.php:317,340 ; app/Http/Requests/GuestEmailLoginRequest.php:45-46 ; app/Http/Controllers/Auth/GuestSignupController.php:213 ; Frontend/LoyaltyController.php:500 ; Providers/RouteServiceProvider.php:169 ; Frontend/WheelController.php:382 ; Services/Wheel/WheelService.php:431,497,698 ; Services/Wheel/WheelStepService.php:131,274,275 ; resources/views/admin/wheel/borne.blade.php:47,631,764-768,777 ; Services/Promo/PromoFlyerService.php:47,76 ; Services/Promo/PromoFlyerEscPosRenderer.php:116,143,158,180 ; Services/Composer/ComposerTemplateService.php:72-138 ; Console/Commands/WizardPagesBootstrapCommand.php:121-171 ; resources/js/components/frontend/kiosk/ds/KsA11ySettings.vue:146.",
+    "repro": "grep -rnE \"\\b(tu|ton|ta|tes|toi)\\b|Choisis|Scanne|Reviens|Patiente\" sur ces fichiers."
+  },
+  {
+    "id": "C-G1",
+    "severity": "GAP",
+    "kind": "gap",
+    "title": "C3 : distance à vol d'oiseau, aucun seuil 7 km, aucun devis Uber payé par le client",
+    "evidence": "DeliveryQuoteService.php:162-171 (haversine) ; config/delivery.php:23-26 (paliers 5/8/10 km) ; UberDirectDispatchService.php:135 `customer_fee_cents => 0` ('Uber est un coût du restaurant') ; DeliveryFeePolicy.php jamais appelée ; mesures C3 : Carvin 7,49 km 5,90 €, Lens 8,83 km 6,90 €, Douai 9,68 km 6,90 €, Lille 25,14 km refusé.",
+    "repro": "POST /api/admin/pos-delivery/quote {q:'10 rue pasteur 62220 carvin'}."
+  },
+  {
+    "id": "C-G2",
+    "severity": "GAP",
+    "kind": "gap",
+    "title": "C4 : le mode de paiement à la porte (carte / titre-resto / mixte) n'est pas enregistrable depuis la caisse",
+    "evidence": "OrderService.php:807 force CASH_ON_DELIVERY pour tout différé ; PosComponent.vue:6879-6882 ; modale de paiement identique au comptoir (capture 05).",
+    "repro": "Parcours C1-C2-C4 du spec."
+  },
+  {
+    "id": "C-G3",
+    "severity": "GAP",
+    "kind": "gap",
+    "title": "C5 : aucun QR ni page d'avis à usage unique ; ticket de livraison sans nom, téléphone, adresse, créneau",
+    "evidence": "OrderReceiptEscPosRenderer.php:46-285 (aucun qrCode()) ; EscPosCommandBuilder.php:269 (primitive disponible) ; octets ESC/POS 8837 : pas de 1D 28 6B ; lignes client/cuisine sans Client/Tel/adresse.",
+    "repro": "GET /api/admin/pos/orders/8837/escpos?ticket=client|kitchen, décoder."
+  },
+  {
+    "id": "C-G4",
+    "severity": "GAP",
+    "kind": "gap",
+    "title": "C7 : pas de scan QR, pas de code client à la remise, pas de TPE livreur, pas de suivi GPS continu ni de détection de détour",
+    "evidence": "DeliveryRunController.php:101-150 ; resources/views/livreur.blade.php:171-203 (un seul getCurrentPosition à l'arrivée) ; delivery_stops (aucune colonne de trace) ; docs/LIVRAISON.md §5.",
+    "repro": "Lecture du code ; aucun test à faire passer."
+  }
+]

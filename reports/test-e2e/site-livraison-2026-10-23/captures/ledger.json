@@ -1,0 +1,894 @@
+{
+  "tag": "E2E-SITE-LIV-418644",
+  "startedAt": "2026-10-23T21:03:38.655Z",
+  "states": [
+    {
+      "id": "D-01-livraison-active",
+      "url": "/#payment",
+      "radios": [
+        "🛍️ À emporter Tu viens chercher",
+        "🛵 Livraison Dès 3,90 € · selon votre commune"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-02-livraison-suspendue",
+      "url": "/#payment",
+      "radios": [
+        "🛍️ À emporter Tu viens chercher"
+      ],
+      "liens": [
+        {
+          "txt": "🛵 Livraison Sur Uber Eats →",
+          "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+        }
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-01-livraison-active",
+      "url": "/#payment",
+      "radios": [
+        "🛍️ À emporter Tu viens chercher",
+        "🛵 Livraison Dès 3,90 € · selon votre commune"
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-02-livraison-suspendue",
+      "url": "/#payment",
+      "radios": [
+        "🛍️ À emporter Tu viens chercher"
+      ],
+      "liens": [
+        {
+          "txt": "🛵 Livraison Sur Uber Eats →",
+          "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+        }
+      ],
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-04-devis-henin",
+      "url": "/#payment",
+      "fee": 3.9,
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-05-lille-refus",
+      "url": "/#payment",
+      "quote": {
+        "allowed": false,
+        "fee": 0
+      },
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-03-champ-adresse",
+      "url": "/#payment",
+      "champ": {
+        "scrollW": 373,
+        "clientW": 312,
+        "w": 314,
+        "casse": "none"
+      },
+      "largeurVue": 390,
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-04-devis-henin",
+      "url": "/#payment",
+      "fee": 3.9,
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-05-lille-refus",
+      "url": "/#payment",
+      "quote": {
+        "allowed": false,
+        "fee": 0
+      },
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-06-suggestions-429",
+      "url": "/#payment",
+      "msg429": "Trop de recherches, patientez quelques secondes puis réessayez.",
+      "http4xx": [
+        "GET /api/frontend/delivery/suggest?q=12%20rue%20de%20la%20Gare%2062300%20Lens -> 429"
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+      ],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-07-confirmation-livraison",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": [
+        "POST /api/auth/guest-signup/email-login -> 422"
+      ]
+    },
+    {
+      "id": "D-08-suivi-livraison",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-09-suivi-en-route",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-07-confirmation-livraison",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "M-08-suivi-livraison",
+      "url": "/#track",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-09-confirmation-emporter",
+      "url": "/#confirm",
+      "http4xx": [],
+      "consoleErrors": [],
+      "bruitEnvironnement": []
+    },
+    {
+      "id": "D-10-refus-visible",
+      "url": "/#payment",
+      "pos": {
+        "top": 442,
+        "bottom": 457,
+        "vh": 900,
+        "texte": "Sélectionnez au maximum 1 Viande 1 (actuel : 2).",
+        "focus": true,
+        "scrollY": 892
+      },
+      "http4xx": [
+        "POST /api/frontend/order -> 422"
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+      ],
+      "bruitEnvironnement": []
+    }
+  ],
+  "checks": [
+    {
+      "id": "D (a) active : 2 tuiles (À emporter + Livraison « Dès 3,90 € »)",
+      "ok": true,
+      "detail": [
+        "🛍️ À emporter Tu viens chercher",
+        "🛵 Livraison Dès 3,90 € · selon votre commune"
+      ]
+    },
+    {
+      "id": "D (a) active : console propre",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "D (a) suspendue : 1 seule tuile radio + lien Uber Eats, aucun champ adresse",
+      "ok": true,
+      "detail": {
+        "radios2": [
+          "🛍️ À emporter Tu viens chercher"
+        ],
+        "liens": [
+          {
+            "txt": "🛵 Livraison Sur Uber Eats →",
+            "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+          }
+        ],
+        "champ": 0
+      }
+    },
+    {
+      "id": "M (a) active : 2 tuiles (À emporter + Livraison « Dès 3,90 € »)",
+      "ok": true,
+      "detail": [
+        "🛍️ À emporter Tu viens chercher",
+        "🛵 Livraison Dès 3,90 € · selon votre commune"
+      ]
+    },
+    {
+      "id": "M (a) active : console propre",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "M (a) suspendue : 1 seule tuile radio + lien Uber Eats, aucun champ adresse",
+      "ok": true,
+      "detail": {
+        "radios2": [
+          "🛍️ À emporter Tu viens chercher"
+        ],
+        "liens": [
+          {
+            "txt": "🛵 Livraison Sur Uber Eats →",
+            "href": "https://www.ubereats.com/fr/store/le-cayenne/C1s3XHn2V2m_D8d6IOVJQg"
+          }
+        ],
+        "champ": 0
+      }
+    },
+    {
+      "id": "D (g) saisie rapide de 42 caractères : ≤ 3 requêtes de suggestion, 0 réponse 429",
+      "ok": true,
+      "detail": {
+        "nbSuggest": 1,
+        "nb429": 0
+      }
+    },
+    {
+      "id": "D (b) Hénin : frais serveur == 3,90 €",
+      "ok": true,
+      "detail": {
+        "quoteUI": 3.9,
+        "quoteApi": 3.9
+      }
+    },
+    {
+      "id": "D (b) Hénin : frais affichés (section, récap) == devis du serveur",
+      "ok": true,
+      "detail": {
+        "secTxt": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤",
+        "recapTxt": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Tu gagnes +99 pts sur cette commande"
+      }
+    },
+    {
+      "id": "D (b) Hénin : bouton Confirmer == sous-total + frais",
+      "ok": true,
+      "detail": {
+        "cta": "Confirmer ma commande 9,90 €",
+        "sousTotal": 6,
+        "feeHenin": 3.9
+      }
+    },
+    {
+      "id": "D (c) Lille : refus affiché + lien Uber Eats",
+      "ok": true,
+      "detail": {
+        "secL": "ADRESSE DE LIVRAISON CALCULER 📍 « 10 Rue des Stations 59000 Lille » est trop loin pour notre livraison (plus de 10 km). Ce n'est pas la bonne adresse ? Précisez la rue, le code postal et la ville, puis recalculez. Commander sur Uber Eats →",
+        "lienUber": 1
+      }
+    },
+    {
+      "id": "D (c) Lille : aucun « Offerte » nulle part",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "D (c) Lille : récap « Livraison à calculer » + total hors livraison ; bouton bloqué sans montant trompeur",
+      "ok": true,
+      "detail": {
+        "recapL": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison à calculer Total hors livraison 6,00 € 🎁 Tu gagnes +60 pts sur cette commande",
+        "ctaL": "Confirmer ma commande —",
+        "disabledL": true
+      }
+    },
+    {
+      "id": "M (g) saisie rapide de 42 caractères : ≤ 3 requêtes de suggestion, 0 réponse 429",
+      "ok": true,
+      "detail": {
+        "nbSuggest": 1,
+        "nb429": 0
+      }
+    },
+    {
+      "id": "M (S-006) champ adresse : saisie de 42 caractères visible en entier (largeur ≥ 300 px, casse normale)",
+      "ok": true,
+      "detail": {
+        "scrollW": 373,
+        "clientW": 312,
+        "w": 314,
+        "casse": "none"
+      }
+    },
+    {
+      "id": "M (S-006) « 1 rue Jean Jaures 62590 Oignies » tient en entier dans le champ (scrollWidth ≤ clientWidth)",
+      "ok": true,
+      "detail": {
+        "scrollW": 312,
+        "clientW": 312
+      }
+    },
+    {
+      "id": "M (b) Hénin : frais serveur == 3,90 €",
+      "ok": true,
+      "detail": {
+        "quoteUI": 3.9,
+        "quoteApi": 3.9
+      }
+    },
+    {
+      "id": "M (b) Hénin : frais affichés (section, récap) == devis du serveur",
+      "ok": true,
+      "detail": {
+        "secTxt": "ADRESSE DE LIVRAISON CALCULER Adresse comprise : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont — si ce n'est pas la bonne, précisez la rue, le code postal et la ville. 📍 Hénin-Beaumont · 0,42 km · Livraison 3,90 € Hénin-Beaumont 3,90 € · autres communes 4,90 € (≤",
+        "recapTxt": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison 3,90 € Total 9,90 € 🎁 Tu gagnes +99 pts sur cette commande"
+      }
+    },
+    {
+      "id": "M (b) Hénin : bouton Confirmer == sous-total + frais",
+      "ok": true,
+      "detail": {
+        "cta": "Confirmer ma commande 9,90 €",
+        "sousTotal": 6,
+        "feeHenin": 3.9
+      }
+    },
+    {
+      "id": "M (c) Lille : refus affiché + lien Uber Eats",
+      "ok": true,
+      "detail": {
+        "secL": "ADRESSE DE LIVRAISON CALCULER 📍 « 10 Rue des Stations 59000 Lille » est trop loin pour notre livraison (plus de 10 km). Ce n'est pas la bonne adresse ? Précisez la rue, le code postal et la ville, puis recalculez. Commander sur Uber Eats →",
+        "lienUber": 1
+      }
+    },
+    {
+      "id": "M (c) Lille : aucun « Offerte » nulle part",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "M (c) Lille : récap « Livraison à calculer » + total hors livraison ; bouton bloqué sans montant trompeur",
+      "ok": true,
+      "detail": {
+        "recapL": "RÉCAP 1 ARTICLE Cheese Burger + Mexicanos, Algérienne − 1 + 6,00 € Sous-total 6,00 € Livraison à calculer Total hors livraison 6,00 € 🎁 Tu gagnes +60 pts sur cette commande",
+        "ctaL": "Confirmer ma commande —",
+        "disabledL": true
+      }
+    },
+    {
+      "id": "D (S-004) 429 : message visible « Trop de recherches, patientez… » et liste vide ASSUMÉE",
+      "ok": true,
+      "detail": {
+        "msg429": "Trop de recherches, patientez quelques secondes puis réessayez.",
+        "opts429": 0
+      }
+    },
+    {
+      "id": "D (S-004) panne réseau : message visible",
+      "ok": true,
+      "detail": "Les suggestions d'adresse sont momentanément indisponibles. Saisissez l'adresse complète puis appuyez sur « Calculer »."
+    },
+    {
+      "id": "D (S-004) retour à la normale : plus de message, suggestions de retour",
+      "ok": true,
+      "detail": {
+        "msgFin": 0,
+        "optsFin": 1
+      }
+    },
+    {
+      "id": "D (S-002) paiement livraison : libellés de livraison, aucun libellé de comptoir",
+      "ok": true,
+      "detail": {
+        "modes": [
+          "★ CONSEILLÉ 💵 Payer à la livraison Espèces à la remise de la commande",
+          "VISA Carte bancaire (en ligne) Débit sécurisé (Mollie) — tu ne quittes pas le site"
+        ],
+        "extrait": null
+      }
+    },
+    {
+      "id": "D (d) confirmation : textes de livraison (adresse, règlement), aucun texte de retrait, aucun QR",
+      "ok": true,
+      "detail": {
+        "extrait": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2310268911 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2310268911 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 23:30 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 11,80 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accue",
+        "retrait": null,
+        "confDom": {
+          "qr": 0,
+          "qrAria": [],
+          "boutons": [
+            "Suivre ma commande",
+            "Retour à l'accueil"
+          ],
+          "mode": "livraison"
+        }
+      }
+    },
+    {
+      "id": "D (d) base : order_type=5, delivery_charge=frais du devis, payment_method=1, total = panier + frais == API == confirmation",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "8911",
+          "order_type": "5",
+          "payment_method": "1",
+          "payment_status": "10",
+          "status": "1",
+          "subtotal": "7.900000",
+          "discount": "0.000000",
+          "delivery_charge": "3.900000",
+          "total": "11.800000"
+        },
+        "sousTotal": 7.9,
+        "fee": 3.9,
+        "api": 11.8,
+        "confirmation": 11.8
+      }
+    },
+    {
+      "id": "D (d) suivi : étapes de livraison, adresse, règlement ; aucun texte de retrait, aucun délai en minutes",
+      "ok": true,
+      "detail": {
+        "etapes": [
+          "Reçue",
+          "En préparation",
+          "En route",
+          "Livrée"
+        ],
+        "extrait": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande COMMANDE REÇUE #2310268911 Départ de la livraison prévu à 23:30 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2310268911 TOTAL 11,80 € TA COMMANDE 1× Cayenne LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +118 pts en attente Ils seront crédit",
+        "delais": [],
+        "svDom": {
+          "cta": [],
+          "mode": "livraison"
+        }
+      }
+    },
+    {
+      "id": "D (S-001) suivi : bloc « Livraison » lisible (contraste ≥ 4,5)",
+      "ok": true,
+      "detail": {
+        "ratio": 18.53,
+        "txt": {
+          "r": 10,
+          "g": 10,
+          "b": 10,
+          "a": 1
+        },
+        "fond": {
+          "r": 250,
+          "g": 247,
+          "b": 242,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "D (d) suivi après départ (statut 10) : « Votre commande est en route », étape « En route » courante, rien de « prêt / retrait »",
+      "ok": true,
+      "detail": {
+        "t2": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande 🛵 VOTRE COMMANDE EST EN ROUTE ! Le livreur est en chemin vers votre adresse. EN LIVRAISON #2310268911 Le livreur est en route vers votre adresse. ✓ Confirmée 🍳 En préparation 🛵 En",
+        "etapes2": [
+          {
+            "l": "✓ Confirmée",
+            "c": "lcf-track-step is-done"
+          },
+          {
+            "l": "🍳 En préparation",
+            "c": "lcf-track-step is-done"
+          },
+          {
+            "l": "🛵 En route",
+            "c": "lcf-track-step is-current"
+          },
+          {
+            "l": "4 Livrée",
+            "c": "lcf-track-step"
+          }
+        ]
+      }
+    },
+    {
+      "id": "M (S-002) paiement livraison : libellés de livraison, aucun libellé de comptoir",
+      "ok": true,
+      "detail": {
+        "modes": [
+          "★ CONSEILLÉ 💵 Payer à la livraison Espèces à la remise de la commande",
+          "VISA Carte bancaire (en ligne) Débit sécurisé (Mollie) — tu ne quittes pas le site"
+        ],
+        "extrait": null
+      }
+    },
+    {
+      "id": "M (d) confirmation : textes de livraison (adresse, règlement), aucun texte de retrait, aucun QR",
+      "ok": true,
+      "detail": {
+        "extrait": "Aller au contenu Panier 👤 Accueil Menu Avis Réseaux Itinéraire Livraison & paiement → 2 Confirmé C'EST PARTI ! Votre commande #2310268912 est envoyée. Elle sera livrée à l'adresse indiquée. Vous la réglerez en espèces à la remise. LIVRAISON HÉNIN-BEAUMONT 2310268912 ADRESSE DE LIVRAISON 12 Rue Elie Gruyelle 62110 Hénin-Beaumont DÉPART DE LA LIVRAISON Prévu à 23:30 RÈGLEMENT Espèces à la remise DONT LIVRAISON 3,90 € TOTAL 11,80 € ✓ ENVOYÉE EN CUISINE Suivre ma commande Retour à l'accueil LE CAYENNE Sandwich Cayenne",
+        "retrait": null,
+        "confDom": {
+          "qr": 0,
+          "qrAria": [],
+          "boutons": [
+            "Suivre ma commande",
+            "Retour à l'accueil"
+          ],
+          "mode": "livraison"
+        }
+      }
+    },
+    {
+      "id": "M (d) base : order_type=5, delivery_charge=frais du devis, payment_method=1, total = panier + frais == API == confirmation",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "8912",
+          "order_type": "5",
+          "payment_method": "1",
+          "payment_status": "10",
+          "status": "1",
+          "subtotal": "7.900000",
+          "discount": "0.000000",
+          "delivery_charge": "3.900000",
+          "total": "11.800000"
+        },
+        "sousTotal": 7.9,
+        "fee": 3.9,
+        "api": 11.8,
+        "confirmation": 11.8
+      }
+    },
+    {
+      "id": "M (d) suivi : étapes de livraison, adresse, règlement ; aucun texte de retrait, aucun délai en minutes",
+      "ok": true,
+      "detail": {
+        "etapes": [
+          "Reçue",
+          "En préparation",
+          "En route",
+          "Livrée"
+        ],
+        "extrait": "Aller au contenu Panier 👤 Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande COMMANDE REÇUE #2310268912 Départ de la livraison prévu à 23:30 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Reçue 2 En préparation 3 En route 4 Livrée NUMÉRO 2310268912 TOTAL 11,80 € TA COMMANDE 1× Cayenne LIVRAISON Adresse : 12 Rue Elie Gruyelle 62110 Hénin-Beaumont Frais de livraison : 3,90 € Règlement : Espèces à la remise 🎁 +118 pts en attente Ils seront crédités après la livraison de votre",
+        "delais": [],
+        "svDom": {
+          "cta": [],
+          "mode": "livraison"
+        }
+      }
+    },
+    {
+      "id": "M (S-001) suivi : bloc « Livraison » lisible (contraste ≥ 4,5)",
+      "ok": true,
+      "detail": {
+        "ratio": 18.53,
+        "txt": {
+          "r": 10,
+          "g": 10,
+          "b": 10,
+          "a": 1
+        },
+        "fond": {
+          "r": 250,
+          "g": 247,
+          "b": 242,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "D (S-102) Bol Riz : exactement les 7 viandes du serveur (ni curry, ni tandoori, ni crispy, ni Mixte)",
+      "ok": true,
+      "detail": [
+        "Mexicanos",
+        "Cordon Bleu",
+        "Viande Hachée",
+        "Nuggets",
+        "Tenders",
+        "Fricadelle",
+        "Poulet mariné"
+      ]
+    },
+    {
+      "id": "D (S-101) l’assistant ne propose « Pain ou galette ? » que là où le serveur le propose (Cayenne oui ; Classique, Suprême, Méga, Terminator non)",
+      "ok": true,
+      "detail": {
+        "Cayenne": [
+          "PAIN OU GALETTE ?",
+          "CHOISIS 1 VIANDE",
+          "SAUCE",
+          "CRUDITÉS",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Sandwich Classique": [
+          "CHOISIS 1 VIANDE",
+          "SAUCE",
+          "CRUDITÉS",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Tacos XL": [
+          "CHOISIS 3 VIANDES",
+          "SAUCE",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Tacos L": [
+          "CHOISIS 2 VIANDES",
+          "SAUCE",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Suprême": [
+          "CHOISIS 2 VIANDES",
+          "SAUCE",
+          "CRUDITÉS",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Méga": [
+          "CHOISIS 2 VIANDES",
+          "SAUCE",
+          "CRUDITÉS",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ],
+        "Terminator": [
+          "CHOISIS 2 VIANDES",
+          "SAUCE",
+          "CRUDITÉS",
+          "SUPPLÉMENTS GOURMANDS",
+          "FAIRE UN MENU ?",
+          "RÉCAP"
+        ]
+      }
+    },
+    {
+      "id": "D (e) panier : 7 lignes",
+      "ok": true,
+      "detail": "PANIER · 7 articles Cayenne + Mexicanos, Algérienne − 1 + 7,90 € MODIFIER Sandwich Classique + Mexicanos, Algérienne − 1 + 7,40 € MODIFIER Tacos XL + Mexicanos, Cordon Bleu, Viande Hachée, Algérienne − 1 + 10,90 € MODIFIER Tacos L + Mexicanos, Mixte (hachée + poulet), Algérienne − 1 + 8,90 € MODIFIER Suprême + Mexicanos, Cordon Bleu, Algérienne − 1 + 7,00 € MODIFIER Méga + Mexicanos, Cordon Bleu, "
+    },
+    {
+      "id": "D (e) base : les 7 produits sont commandés, order_type=10, sans frais de livraison, total == bouton",
+      "ok": true,
+      "detail": {
+        "base": {
+          "id": "8913",
+          "order_type": "10",
+          "payment_method": "1",
+          "payment_status": "10",
+          "status": "1",
+          "subtotal": "59.100000",
+          "discount": "0.000000",
+          "delivery_charge": "0.000000",
+          "total": "59.100000"
+        },
+        "lignesBase": [
+          "Cayenne\t1",
+          "Sandwich Classique\t1",
+          "Tacos XL\t1",
+          "Tacos L\t1",
+          "Suprême\t1",
+          "Méga\t1",
+          "Terminator\t1"
+        ],
+        "ctaAvant": "Confirmer ma commande 59,10 €",
+        "sousTotal": 59.1
+      }
+    },
+    {
+      "id": "D (f) refus : HTTP 4xx du serveur (forcé)",
+      "ok": true,
+      "detail": 422
+    },
+    {
+      "id": "D (f) alerte DANS la fenêtre au moment où elle survient (aucun défilement du test)",
+      "ok": true,
+      "detail": {
+        "top": 442,
+        "bottom": 457,
+        "vh": 900,
+        "texte": "Sélectionnez au maximum 1 Viande 1 (actuel : 2).",
+        "focus": true,
+        "scrollY": 892
+      }
+    },
+    {
+      "id": "D (f) alerte : focus posé dessus",
+      "ok": true,
+      "detail": {
+        "top": 442,
+        "bottom": 457,
+        "vh": 900,
+        "texte": "Sélectionnez au maximum 1 Viande 1 (actuel : 2).",
+        "focus": true,
+        "scrollY": 892
+      }
+    },
+    {
+      "id": "D (f) texte : première erreur métier lisible, pas le compteur agrégé",
+      "ok": true,
+      "detail": "Sélectionnez au maximum 1 Viande 1 (actuel : 2)."
+    },
+    {
+      "id": "RÉSEAU : 0 requête vers l’hôte de production / API lecayenne.fr",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "(h) console propre sur tous les états capturés",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "prodBloquees": [],
+  "orders": [
+    {
+      "id": 8911,
+      "label": "D Cayenne livraison",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 8912,
+      "label": "M Cayenne livraison",
+      "annulation": 200,
+      "statutApres": "16"
+    },
+    {
+      "id": 8913,
+      "label": "D 7 produits à emporter",
+      "annulation": 200,
+      "statutApres": "16"
+    }
+  ],
+  "notes": [
+    "POST /api/frontend/order (D Cayenne livraison) -> HTTP 201 id=8911 total=11.8 ",
+    "progression des statuts (admin) : {\"4\":200,\"7\":200,\"8\":200,\"10\":200}",
+    "POST /api/frontend/order (M Cayenne livraison) -> HTTP 201 id=8912 total=11.8 ",
+    "POST /api/frontend/order (D 7 produits à emporter) -> HTTP 201 id=8913 total=59.1 ",
+    "POST /api/frontend/order (D refus forcé) -> HTTP 422 id=undefined total=NaN {\"message\":\"Sélectionnez au maximum 1 Viande 1 (actuel : 2). (et 1 autre erreur)\",\"errors\":{\"items.0.item_variations\":[\"Sélectionnez au maximum 1 Viande 1 (actuel : 2).\",\"« Cayenne » comprend 1 viande : choisis-en exactement 1 (reçu 2). Une viande en plus se commande en supplément.\"]}}",
+    "annulation commande de test 8911 -> HTTP 200, status=16 ",
+    "annulation commande de test 8912 -> HTTP 200, status=16 ",
+    "annulation commande de test 8913 -> HTTP 200, status=16 "
+  ],
+  "instrument": {
+    "shaServi": "6fb17e12d06f0725",
+    "shaCopie": "6fb17e12d06f0725",
+    "balise": "compiled/funnel.js?v=20261023liv2",
+    "mutant": false,
+    "statutServeur": {
+      "status": true,
+      "enabled": true,
+      "grid": {
+        "home_city": "Hénin-Beaumont",
+        "home_fee": 3.9,
+        "tiers": [
+          {
+            "max_km": 5,
+            "fee": 4.9
+          },
+          {
+            "max_km": 8,
+            "fee": 5.9
+          },
+          {
+            "max_km": 10,
+            "fee": 6.9
+          }
+        ],
+        "max_km": 10
+      }
+    }
+  },
+  "progressionStatuts": {
+    "4": 200,
+    "7": 200,
+    "8": 200,
+    "10": 200
+  },
+  "bolRiz": {
+    "title": "CHOISIS 1 VIANDE",
+    "viandes": [
+      "Mexicanos",
+      "Cordon Bleu",
+      "Viande Hachée",
+      "Nuggets",
+      "Tenders",
+      "Fricadelle",
+      "Poulet mariné"
+    ]
+  },
+  "pickupJournaux": {
+    "Cayenne": [
+      "PAIN OU GALETTE ?",
+      "CHOISIS 1 VIANDE",
+      "SAUCE",
+      "CRUDITÉS",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Sandwich Classique": [
+      "CHOISIS 1 VIANDE",
+      "SAUCE",
+      "CRUDITÉS",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Tacos XL": [
+      "CHOISIS 3 VIANDES",
+      "SAUCE",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Tacos L": [
+      "CHOISIS 2 VIANDES",
+      "SAUCE",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Suprême": [
+      "CHOISIS 2 VIANDES",
+      "SAUCE",
+      "CRUDITÉS",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Méga": [
+      "CHOISIS 2 VIANDES",
+      "SAUCE",
+      "CRUDITÉS",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ],
+    "Terminator": [
+      "CHOISIS 2 VIANDES",
+      "SAUCE",
+      "CRUDITÉS",
+      "SUPPLÉMENTS GOURMANDS",
+      "FAIRE UN MENU ?",
+      "RÉCAP"
+    ]
+  },
+  "refusForce": {
+    "http": 422,
+    "corps": "{\"message\":\"Sélectionnez au maximum 1 Viande 1 (actuel : 2). (et 1 autre erreur)\",\"errors\":{\"items.0.item_variations\":[\"Sélectionnez au maximum 1 Viande 1 (actuel : 2).\",\"« Cayenne » comprend 1 viande : choisis-en exactement 1 (reçu 2). Une viande en plus se commande en supplément.\"]}}",
+    "scrollAvant": 1478,
+    "pos": {
+      "top": 442,
+      "bottom": 457,
+      "vh": 900,
+      "texte": "Sélectionnez au maximum 1 Viande 1 (actuel : 2).",
+      "focus": true,
+      "scrollY": 892
+    }
+  },
+  "finishedAt": "2026-10-23T21:07:46.019Z",
+  "pngUtilises": 10
+}

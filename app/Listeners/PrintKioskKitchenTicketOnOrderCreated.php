@@ -52,6 +52,15 @@ class PrintKioskKitchenTicketOnOrderCreated
                 return;
             }
 
+            // [VG-2026-10-21 M1-103] La cuisine lit une commande à partir d'ACCEPTÉ (docs/ORDER_FLOW.md ; même définition
+            // que le board et le pont d'impression des PC, KitchenReleaseRule::visibleStatuses). Une commande web EN ATTENTE
+            // d'acceptation sortait son papier à la création (#8385, refusée ensuite) : elle s'imprimera à son acceptation
+            // (AutoPrintKitchenTicketOnKitchenEntry). Statut inconnu (commande non persistée) → on imprime, comme claim().
+            $statut = $order->status ?? null;
+            if ($statut !== null && ! \App\Domain\Kds\KitchenReleaseRule::isVisibleStatus((int) $statut)) {
+                return;
+            }
+
             // [FIX P1 audit 2026-06-28] PrinterRequest n'autorise que receipt/kitchen_hot/
             // kitchen_cold/bar — 'kitchen' seul n'est jamais créable en admin → on matche
             // les vraies stations cuisine (chaude d'abord). Sinon : no-op silencieux permanent.

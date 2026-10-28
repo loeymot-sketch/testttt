@@ -1,0 +1,98 @@
+/**
+ * [ETIQUETTES 2026-10-16 · owner « je ne trouve pas les fonctionnalités … dans la barre latérale et en tableau de bord »]
+ * Le tableau de bord mène aux étiquettes (accès rapide) et montre les DLC à surveiller — avec la même porte que l'écran.
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mount, flushPromises } from '@vue/test-utils';
+
+const h = vi.hoisted(() => ({ axios: { get: vi.fn() } }));
+vi.mock('axios', () => ({ default: h.axios }));
+
+import DlcWatchWidget from '../../resources/js/components/admin/dashboard/DlcWatchWidget.vue';
+import DashboardComponent from '../../resources/js/components/admin/dashboard/DashboardComponent.vue';
+
+const store = (perms) => ({ getters: { authPermission: perms } });
+const mountWidget = (perms) => mount(DlcWatchWidget, {
+    global: { mocks: { $t: (k) => k, $store: store(perms) }, stubs: { 'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' } } },
+});
+const lot = (over) => ({ id: 1, dlc_product_id: 1, status: 'printed', product_name: 'Olives', copies: 1, lot: 'L261016-0001', ...over });
+
+beforeEach(() => { h.axios.get.mockReset(); });
+
+describe('tableau de bord — DLC à surveiller', () => {
+    it('compte les lots expirés, du jour et sous 72 h, liste les plus pressés et mène à l’écran', async () => {
+        const now = Date.now();
+        h.axios.get.mockResolvedValue({ data: { data: [
+            lot({ id: 1, expires_at: new Date(now - 3 * 3600000).toISOString() }),
+            lot({ id: 2, product_name: 'Tomates', expires_at: new Date(now + 20 * 60000).toISOString() }),
+            lot({ id: 3, product_name: 'Sauce', expires_at: new Date(now + 50 * 3600000).toISOString() }),
+        ], meta: { server_now: new Date(now).toISOString() } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(h.axios.get).toHaveBeenCalledWith('admin/labels/watch');
+        expect(w.get('[data-testid="dlc-watch-widget-count-expired"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-count-today"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-count-soon"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-item-1"]').text()).toMatch(/Olives · N° L261016-0001.*EXPIRÉE depuis 3 h/);
+        expect(w.get('[data-testid="dlc-watch-widget-open"]').attributes('href')).toBe('/admin/labels/dlc');
+    });
+
+    it('UNITÉ = l’étiquette physique : un lot de 3 copies compte 3, comme l’accueil Hygiène (tour 9 : « 11 » à l’accueil, « 2 » ici)', async () => {
+        const now = Date.now();
+        h.axios.get.mockResolvedValue({ data: { data: [
+            lot({ id: 1, product_name: 'Poulet', copies: 3, expires_at: new Date(now - 2 * 3600000).toISOString() }),
+            lot({ id: 2, product_name: 'Sauce', copies: 2, lot: 'L2', expires_at: new Date(now - 1 * 3600000).toISOString() }),
+            lot({ id: 3, product_name: 'Riz', copies: 4, lot: 'L3', expires_at: new Date(now + 20 * 60000).toISOString() }),
+        ], meta: { server_now: new Date(now).toISOString() } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch-widget-count-expired"]').text()).toContain(': 5');
+        expect(w.get('[data-testid="dlc-watch-widget-count-today"]').text()).toContain(': 4');
+        expect(w.get('[data-testid="dlc-watch-widget-expired-badge"]').text()).toBe('5');
+        expect(w.get('[data-testid="dlc-watch-widget-unit"]').text()).toContain('en étiquettes');
+    });
+
+    it('les lignes échues plus anciennes non renvoyées par le serveur sont annoncées', async () => {
+        const now = Date.now();
+        h.axios.get.mockResolvedValue({ data: { data: [lot({ id: 1, expires_at: new Date(now - 3600000).toISOString() })], meta: { server_now: new Date(now).toISOString(), expired_hidden: 250 } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch-widget-hidden"]').text()).toContain('+ 250 lignes échues plus anciennes non affichées');
+    });
+
+    it('étiquette « à vérifier » comptée à part ; au-delà de 5 lots, le reste est annoncé avec un lien', async () => {
+        const now = Date.now();
+        const rows = Array.from({ length: 7 }, (_, i) => lot({ id: i + 1, product_name: `P${i}`, expires_at: new Date(now + (i + 1) * 3600000).toISOString() }));
+        rows.push(lot({ id: 99, product_name: 'Hors ligne', anomaly: true, message: '⚠ À vérifier', expires_at: new Date(now + 10 * 86400000).toISOString() }));
+        rows.push(lot({ id: 98, product_name: 'Sans verdict', status: 'claimed', expires_at: new Date(now + 2 * 3600000).toISOString() }));
+        h.axios.get.mockResolvedValue({ data: { data: rows, meta: { server_now: new Date(now).toISOString() } } });
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.get('[data-testid="dlc-watch-widget-count-anomaly"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-count-unconfirmed"]').text()).toContain(': 1');
+        expect(w.get('[data-testid="dlc-watch-widget-more"]').text()).toMatch(/\+ 4/);
+    });
+
+    it('sans la permission de l’écran : rien n’est affiché ni demandé (jamais un appel promis au 403)', async () => {
+        const w = mountWidget([{ url: 'pos-orders', access: false }]);
+        await flushPromises();
+        expect(w.find('[data-testid="dlc-watch-widget"]').exists()).toBe(false);
+        expect(h.axios.get).not.toHaveBeenCalled();
+    });
+
+    it('une panne se lit comme une panne, jamais comme « rien à surveiller »', async () => {
+        h.axios.get.mockRejectedValue(new Error('500'));
+        const w = mountWidget([{ url: 'pos-orders', access: true }]);
+        await flushPromises();
+        expect(w.find('[data-testid="dlc-watch-widget-error"]').exists()).toBe(true);
+        expect(w.find('[data-testid="dlc-watch-widget-none"]').exists()).toBe(false);
+    });
+
+    it('accès rapide : « Étiquettes commandes » et « Étiquettes DLC » pour qui a la porte de l’écran, et pour lui seul', () => {
+        const links = (perms) => DashboardComponent.computed.quickAccessLinks.call({ normalizedPermissions: () => perms, $t: (k) => k });
+        const to = links([{ url: 'pos-orders', access: true }]).map((l) => l.to);
+        expect(to).toContain('/admin/labels/orders');
+        expect(to).toContain('/admin/labels/dlc');
+        expect(links([{ url: 'pos', access: true }]).map((l) => l.to)).not.toContain('/admin/labels/dlc');
+    });
+});

@@ -34,8 +34,19 @@ test.describe('Pivot V1 — category wizard affects products', () => {
     await expect(page.getByTestId('catalog-studio-category-wizard-entry')).toBeVisible({ timeout: 20_000 });
     const productCards = page.locator('article.catalog-studio__product');
     const productCount = await productCards.count();
-    if (productCount > 0) {
+    // [ONB-03 2026-08-28] Le bouton composeur PAR PRODUIT n'apparait que si
+    // `wizard_per_item_demo` est leve — il vaut false par defaut, et le routeur
+    // redirige alors vers le catalogue. Exiger le bouton sans regarder le drapeau,
+    // c'etait exiger un bouton qui ne mene nulle part. On lit le drapeau REELLEMENT
+    // expose par le serveur au lieu de le supposer.
+    const wizardParProduit = await page.evaluate(
+      () => window.foodkingConfig?.features?.wizard_per_item_demo === true,
+    );
+    if (productCount > 0 && wizardParProduit) {
       await expect(page.locator('[data-testid^="catalog-studio-product-wizard-"]')).toHaveCount(productCount);
+    }
+    if (!wizardParProduit) {
+      await expect(page.locator('[data-testid^="catalog-studio-product-wizard-"]')).toHaveCount(0);
     }
 
     await page.getByTestId('catalog-studio-category-wizard-button').click();

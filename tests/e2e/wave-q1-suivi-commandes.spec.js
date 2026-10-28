@@ -171,13 +171,22 @@ test.describe('Wave Q-1 — Suivi commandes shows order items summary', () => {
         await expect(tacosItems).toHaveCount(1, { timeout: 10_000 });
 
         // The name + qty must surface exactly.
-        await expect(cayenneCard).toContainText('Sandwich Cayenne');
+        // [GOAL-CAISSE-VISION 2026-08-24] L'article #22 s'appelle « Cayenne » au
+        // catalogue, pas « Sandwich Cayenne » — vérifié en base le 2026-08-24
+        // (`Item::find(22)->name`). Le spec figeait un nom que le démêlage des deux
+        // « Sandwich Classique » (bd180a926) a laissé derrière lui : il échouait donc
+        // en permanence, et un spec faux masque les vraies régressions. L'assertion
+        // n'est pas AFFAIBLIE — elle vise le nom réellement servi.
+        await expect(cayenneCard).toContainText('Cayenne');
         await expect(cayenneCard.locator('.pos-tracker-card-qty')).toContainText('2×');
         await expect(tacosCard).toContainText('Tacos');
         await expect(tacosCard.locator('.pos-tracker-card-qty')).toContainText('1×');
 
         // 4-column layout intact.
-        await expect(page.locator('.pos-tracker-col')).toHaveCount(4);
+        // [GOAL-CAISSE-VISION 2026-08-24] CINQ couloirs depuis `131d79055`
+        // (2026-05-20, insertion de « EN LIVRAISON ») — même dérive périmée que
+        // wave-s4. Ce que le spec prouve reste identique : la mise en page tient.
+        await expect(page.locator('.pos-tracker-col')).toHaveCount(5);
 
         // Visual evidence.
         await page.screenshot({

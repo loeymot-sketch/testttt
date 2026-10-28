@@ -102,6 +102,16 @@ changement — price l'extra génériquement) ; `PaymentComponent.vue` ; wizard 
 Après APPROVED : patch appliqué, §6 vérifié (tous verts + live), statut APPLIED.
 Final sha du patch : (renseigné au commit — voir message citant ce LOCK).
 
+## §11. Addendum 2026-09-27 (QA follow-up — format d'annotation, pas de logique)
+
+`tools/lint/pos_pricing_guard.mjs` exige le littéral `date:` dans l'annotation
+`signed-off:` ; le bloc `@pricing-allowed-block` de ce LOCK portait déjà un
+sign-off réel (`signed-off: owner gate 2026-07-15 …`) mais sans ce littéral,
+donc rejeté par le lint comme non conforme. Reformatage seul :
+`signed-off: owner — date: 2026-07-15 (déblocage frozen compo)`. Aucune ligne
+de code exécutable modifiée. Ce LOCK reste APPROVED/APPLIED ; cet addendum ne
+rouvre pas le gate, il documente la citation utilisée pour le commit qui suit.
+
 ---
 
 **End of LOCK_COMPO_SAUCE_BORNE**

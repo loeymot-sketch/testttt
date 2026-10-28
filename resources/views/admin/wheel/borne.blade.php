@@ -492,6 +492,20 @@
     color:var(--creme); opacity:.92; text-align:center; max-width:20ch;
   }
 
+  /* [2026-08-25] Tuile dont la photo n'a pas pu être chargée.
+     On ne laisse PAS un carré blanc face au client : le médaillon reprend l'anneau chaud
+     des autres tuiles, avec un pictogramme de cadeau, et le NOM du lot passe en avant.
+     Même gabarit, même identité — seule la photo manque, pas la promesse. */
+  .defile-item--sans-photo::before{
+    content:'🎁';
+    width:min(13vmin,146px); height:min(13vmin,146px);
+    display:grid; place-items:center;
+    font-size:min(6vmin,64px); line-height:1;
+    border-radius:50%; background:var(--creme);
+    box-shadow:0 0 0 .35vmin rgba(255,211,77,.92), 0 1vmin 2.6vmin rgba(0,0,0,.55);
+  }
+  .defile-item--sans-photo figcaption{ opacity:1; }
+
   /* Un écran de comptoir tourne toute la journée : on respecte la préférence système. */
   @media (prefers-reduced-motion:reduce){
     .defile-bande{animation:none}
@@ -651,8 +665,25 @@
         <div class="defile-bande">
           @foreach(array_merge($segments, $segments) as $seg)
             @if(!empty($seg['photo']))
+            {{-- [2026-08-25] Le garde `!empty($seg['photo'])` ci-dessus protège d'une photo
+                 NON DÉCLARÉE. Il ne protégeait pas d'une photo déclarée dont le FICHIER a
+                 disparu du disque : le navigateur demande l'adresse, reçoit un 404, et
+                 dessine un carré blanc — face client, sur un écran qui promet des lots.
+
+                 HONNÊTETÉ SUR L'ORIGINE : l'audit avait classé ça « défaut face client, deux
+                 lots en 404 ». C'ÉTAIT FAUX, et la cause était mon environnement — un
+                 worktree sans lien `public/storage` et sans les fichiers médias, qui sont
+                 bien présents dans le dépôt réel. Vérifié après réparation : les 7 lots
+                 résolvent. Ce garde reste néanmoins, non pas pour un défaut constaté, mais
+                 parce qu'un média PEUT réellement disparaître en exploitation (photo
+                 supprimée dans l'admin, disque non synchronisé) et que le prix de la panne
+                 est payé par le client, pas par nous.
+
+                 `onerror` retire l'image cassée et bascule la tuile sur son NOM. Un lot
+                 nommé reste une promesse ; un carré blanc n'est rien. --}}
             <figure class="defile-item">
-              <img src="{{ $seg['photo'] }}" alt="" loading="lazy">
+              <img src="{{ $seg['photo'] }}" alt="" loading="lazy"
+                   onerror="this.closest('.defile-item').classList.add('defile-item--sans-photo'); this.remove();">
               <figcaption>{{ $seg['label'] ?? '' }}</figcaption>
             </figure>
             @endif

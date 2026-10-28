@@ -1,0 +1,49 @@
+{
+  "trouve": true,
+  "chaine": [
+    {
+      "niveau": 0,
+      "tag": "H3",
+      "classe": "pos-v5-tile__name text-sm font-bold capitalize leading-snug line-clamp-2",
+      "testid": null,
+      "clickable": false
+    },
+    {
+      "niveau": 1,
+      "tag": "DIV",
+      "classe": "pos-v5-tile__body",
+      "testid": null,
+      "clickable": false
+    },
+    {
+      "niveau": 2,
+      "tag": "BUTTON",
+      "classe": "pos-v5-tile pos-item-tile",
+      "testid": null,
+      "clickable": true
+    },
+    {
+      "niveau": 3,
+      "tag": "DIV",
+      "classe": "pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8 md:mb-0",
+      "testid": null,
+      "clickable": false
+    },
+    {
+      "niveau": 4,
+      "tag": "DIV",
+      "classe": "pos-menu-products-region",
+      "testid": null,
+      "clickable": false
+    },
+    {
+      "niveau": 5,
+      "tag": "DIV",
+      "classe": "pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]",
+      "testid": null,
+      "clickable": false
+    }
+  ],
+  "carte_classe": "pos-v5-tile pos-item-tile",
+  "boutons": []
+}

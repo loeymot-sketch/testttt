@@ -63,13 +63,32 @@ class OrderDetailsResource extends JsonResource
             'order_datetime' => AppLibrary::datetime($this->order_datetime),
             'order_date' => AppLibrary::date($this->order_datetime),
             'order_time' => AppLibrary::time($this->order_datetime),
-            'delivery_date' => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
-            'delivery_time' => AppLibrary::deliveryTime($this->delivery_time),
+            // [C-003 2026-08-25] `delivery_date` était calculé INCONDITIONNELLEMENT
+            // depuis `order_datetime` : les DEUX branches du ternaire rendaient une
+            // date non vide, donc le champ FABRIQUAIT un créneau de retrait à partir
+            // de la date de saisie — une donnée que personne n'a jamais posée. Le
+            // garde `v-if="order.delivery_date || order.delivery_time"` de la fiche
+            // (PosOrderShowComponent.vue:54) était par construction toujours vrai, et
+            // le commentaire du 2026-07-29 qui promettait « la ligne disparaît si
+            // aucun créneau n'est posé » était infaisable. Un champ ne doit jamais
+            // inventer sa valeur pour justifier son libellé.
+            'delivery_date' => $this->resolvePickupSlotDate(),
+            // [E2E stores · F-B2 · 2026-10-01] Heure programmée affichée (« 18:20 ») : la fiche ne
+            // montrait aucune heure pour une commande « À l'ouverture ». Voir App\Support\CreneauRetrait.
+            'delivery_time' => \App\Support\CreneauRetrait::heure($this),
             // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible d'une commande programmée
             // (NULL = ASAP). ISO 8601 comme created_at — le client web/app affiche
             // « prévue pour HH:MM » sur le suivi de commande. Projection pure.
             'scheduled_at' => optional($this->scheduled_at)->toIso8601String(),
+            // [VG-2026-10-21 M4-002] Départ de tournée d'une LIVRAISON (ISO 8601) et son jour : la
+            // caisse ne pouvait pas afficher l'heure de départ (« tout de suite » pris à 17:10 part à
+            // 23:00). null hors livraison.
+            'delivery_slot_at' => $this->resolveDeliverySlotAt(),
+            'prevue_le' => $this->resolvePrevueLe(),
             'payment_method' => $this->payment_method,
+            // [CARTE À LA LIVRAISON 2026-10-24] 'card' = payer par carte au livreur (terminal), null sinon (espèces, en ligne…).
+            // Lu par le site (api.getOrder) pour annoncer le mode de paiement à la confirmation et au suivi.
+            'door_payment_mode' => $this->door_payment_mode,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
             // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a counter-collect
@@ -175,13 +194,115 @@ class OrderDetailsResource extends JsonResource
     }
 
     /**
+     * [C-003 2026-08-25] Date du créneau de retrait/livraison — `null` s'il n'y
+     * a PAS de créneau.
+     *
+     * Deux marques, et deux seulement, attestent qu'un créneau a réellement été
+     * posé sur une commande :
+     *   1. `is_advance_order = YES` — commande prise pour le lendemain ;
+     *      la date du créneau est J+1 (comportement historique conservé).
+     *   2. `delivery_time` interprétable comme « HH:MM - HH:MM » — créneau
+     *      explicite sur la commande du jour ; la date du créneau est celle de
+     *      la commande. `AppLibrary::deliveryTime()` rend '' dès que la valeur
+     *      n'a pas cette forme : une heure illisible n'est pas un créneau.
+     *
+     * Hors de ces deux cas — commande borne, caisse, à emporter immédiate, soit
+     * la quasi-totalité du parc V1 LOCAL — aucun créneau n'existe, et le champ
+     * doit rester vide plutôt que de recopier la date de saisie.
+     */
+    private function resolvePickupSlotDate(): ?string
+    {
+        // [E2E stores · F-B2 · 2026-10-01] Une heure programmée fait foi ; sans elle, règle
+        // historique inchangée (lendemain si commande anticipée, jour même si créneau saisi).
+        return \App\Support\CreneauRetrait::date($this);
+    }
+
+    /** [VG-2026-10-21 M4-002] Une livraison seulement. */
+    private function estLivraison(): bool
+    {
+        return (int) ($this->resource->order_type ?? 0) === \App\Enums\OrderType::DELIVERY;
+    }
+
+    /** [VG-2026-10-21 M4-002] Départ de tournée (ISO 8601), null hors livraison ou sans tournée. */
+    private function resolveDeliverySlotAt(): ?string
+    {
+        if (! $this->estLivraison()) {
+            return null;
+        }
+        $slot = $this->resource->delivery_slot_at ?? null;
+
+        return $slot instanceof \Carbon\CarbonInterface ? $slot->toIso8601String() : null;
+    }
+
+    /**
+     * [VG-2026-10-21 M4-002] Jour (Y-m-d) de l'heure annoncée — MÊME définition que le suivi client :
+     * on relit `prevue_le` de OrderTrackingService::forOrder (une seule source, jamais un second
+     * calcul). Appelé pour les livraisons portant une heure seulement (sinon null, sans requête).
+     */
+    private function resolvePrevueLe(): ?string
+    {
+        if (! $this->estLivraison()
+            || (($this->resource->delivery_slot_at ?? null) === null && ($this->resource->scheduled_at ?? null) === null)) {
+            return null;
+        }
+        try {
+            return app(\App\Services\OrderTrackingService::class)->forOrder($this->resource)['prevue_le'] ?? null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * 12-char hex derived from the latest audit chain hash for this order.
      * Never exposes the full HMAC / chain value or any secret.
      */
+    /**
+     * [VG-2026-10-21 M9-103] Précharge, en DEUX requêtes pour toute une liste, le dernier
+     * maillon d'audit de chaque commande (au lieu d'une requête `audit_logs` par commande).
+     * Le maillon (ou null) est posé comme relation non persistée : la ressource construit
+     * son tableau champ par champ, la relation n'est donc jamais sérialisée.
+     */
+    public const AUDIT_FINGERPRINT_RELATION = 'latestOrderAuditLogForFingerprint';
+
+    public static function preloadAuditFingerprints(iterable $orders): void
+    {
+        $orders = collect($orders);
+        $ids = $orders->pluck('id')->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return;
+        }
+        try {
+            $lastIds = \App\Models\AuditLog::query()
+                ->where('resource', 'order')
+                ->whereIn('resource_id', $ids)
+                ->groupBy('resource_id')
+                ->selectRaw('MAX(id) as id')
+                ->pluck('id');
+            $logs = $lastIds->isEmpty()
+                ? collect()
+                : \App\Models\AuditLog::query()->whereIn('id', $lastIds)->get()->keyBy('resource_id');
+        } catch (\Throwable $e) {
+            return; // repli : lecture unitaire inchangée dans buildAuditFingerprint()
+        }
+        foreach ($orders as $order) {
+            $order->setRelation(self::AUDIT_FINGERPRINT_RELATION, $logs->get($order->id));
+        }
+    }
+
     private function buildAuditFingerprint(): ?string
     {
         try {
             $orderId = $this->resource->id ?? $this->id;
+            // [VG-2026-10-21 M9-103] Maillon préchargé en lot si la liste l'a fourni.
+            if ($this->resource instanceof \Illuminate\Database\Eloquent\Model
+                && $this->resource->relationLoaded(self::AUDIT_FINGERPRINT_RELATION)) {
+                $log = $this->resource->getRelation(self::AUDIT_FINGERPRINT_RELATION);
+                if (! $log || ! $log->current_hash) {
+                    return null;
+                }
+
+                return substr(hash('sha256', (string) $log->current_hash.'|'.$log->id), 0, 12);
+            }
             $log = \App\Models\AuditLog::query()
                 ->where('resource', 'order')
                 ->where('resource_id', $orderId)

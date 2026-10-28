@@ -131,6 +131,27 @@ return [
      * vaut un risque de doublon qu'un ticket perdu en cuisine. »
      */
     'bridge_claim_ttl_seconds' => max(10, (int) env('KDS_BRIDGE_CLAIM_TTL_SECONDS', 90)),
+
+    /*
+     * [CAISSE-SANS-PAPIER-AUTO 2026-10-19 · owner] Impression AUTOMATIQUE à la CAISSE.
+     *
+     * Constat : chaque commande borne / site / livraison / Uber sortait seule sur l'imprimante
+     * de la caisse (destination « counter » du pont, + copie comptoir serveur). Imprimante
+     * débranchée trois jours puis rebranchée : le pont retentait chaque ticket toutes les
+     * 5 secondes et le papier est sorti « sans arrêt ».
+     *
+     * Décision owner : plus AUCUN papier automatique à la caisse. Le ticket CUISINE
+     * (destination « kitchen », pont cuisine) et l'écran cuisine ne changent pas. La
+     * réimpression manuelle depuis un écran reste servie, quel que soit ce réglage : un
+     * humain qui la demande a décidé.
+     *
+     * Défaut FAUX. Basculable sans déploiement par le propriétaire (InterrupteurService,
+     * « impression_caisse_auto ») ; ou KDS_COUNTER_AUTO_PRINT=true dans .env.
+     */
+    'counter_auto_print' => filter_var(
+        env('KDS_COUNTER_AUTO_PRINT', false),
+        FILTER_VALIDATE_BOOLEAN
+    ),
     /*
      * [SIGNAL ANNULATION CUISINE 2026-08-19] Fenêtre d'affichage du bandeau « annulées ».
      *

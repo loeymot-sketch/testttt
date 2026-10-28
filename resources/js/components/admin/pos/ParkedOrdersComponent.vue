@@ -5,7 +5,10 @@
                 <div class="parked-orders-header">
                     <div>
                         <h3 class="parked-orders-title">{{ $t('pos.parked_orders') }}</h3>
-                        <p class="parked-orders-subtitle">{{ parkedOrders.length }}</p>
+                        <!-- [QA 2026-09-28 · P1-04] Un « 0 » affiché alors que le
+                             chargement a ÉCHOUÉ se lit « rien en attente ». On
+                             n'annonce un compte que si on en a réellement un. -->
+                        <p class="parked-orders-subtitle">{{ fetchError && parkedOrders.length === 0 ? '—' : parkedOrders.length }}</p>
                     </div>
                     <button type="button" class="parked-orders-close" @click="closeDrawer">
                         <i class="fa-solid fa-xmark"></i>
@@ -45,7 +48,29 @@
                         {{ $t('label.loading') || 'Loading...' }}
                     </div>
 
-                    <div v-else-if="parkedOrders.length === 0" class="parked-orders-empty">
+                    <!--
+                      [QA 2026-09-28 · P1-04] Ce panneau rendait SIMULTANÉMENT « 0 »,
+                      « Aucune commande parkée. » et le toast « Impossible de charger » :
+                      une panne réseau était indistinguable d'une file réellement vide,
+                      et le caissier concluait « rien en attente » sans avoir rien chargé.
+                      Le composant n'avait aucun champ d'erreur ; l'échec ne produisait
+                      qu'un toast éphémère.
+                      Patron repris VERBATIM de « T-4.1 FAUX-VIDE 2026-08-15 »
+                      (EncaissementComponent) : branche d'erreur AVANT l'état vide, les
+                      deux exclusives, et un poll transitoire qui échoue n'efface jamais
+                      une liste déjà affichée (d'où `parkedOrders.length === 0`).
+                    -->
+                    <div v-else-if="fetchError && parkedOrders.length === 0"
+                         class="parked-orders-empty"
+                         data-testid="parked-orders-fetch-error">
+                        <p>{{ $t('pos.park_fetch_error') }}</p>
+                        <button type="button" class="db-btn py-2 text-white bg-primary" @click.prevent="fetchList">
+                            {{ $t('button.refresh') }}
+                        </button>
+                    </div>
+
+                    <div v-else-if="parkedOrders.length === 0" class="parked-orders-empty"
+                         data-testid="parked-orders-empty-real">
                         {{ $t('pos.empty_parked_orders') }}
                     </div>
 
@@ -136,6 +161,10 @@ export default {
     data() {
         return {
             loading: false,
+            // [QA 2026-09-28 · P1-04] Distingue « rien en attente » de « je n'ai
+            // rien pu charger ». Sans ce champ, une panne se lisait comme une
+            // file vide (voir le gabarit et fetchList).
+            fetchError: false,
             busyId: null,
             // [POS-V4-CASHIER-OPS 2026-05-02] Client-side search over the already
             // fetched parked list. Empty string = no filter (all visible).
@@ -209,7 +238,11 @@ export default {
 
             try {
                 await this.$store.dispatch('posParked/fetchList');
+                // [QA 2026-09-28 · P1-04] Succès : on lève l'état d'erreur, sinon un
+                // rechargement réussi continuerait d'afficher le message de panne.
+                this.fetchError = false;
             } catch (error) {
+                this.fetchError = true;
                 alertService.error(this.$t('pos.park_fetch_error'));
             } finally {
                 this.loading = false;

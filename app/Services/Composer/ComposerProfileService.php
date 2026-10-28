@@ -344,6 +344,10 @@ class ComposerProfileService
         ]);
         $target->save();
 
+        // [VG-2026-10-21 C3] L'étape viande au-delà des viandes incluses du PRODUIT (config/menu_meat_rules.php) est
+        // recopiée ÉTEINTE : sinon le profil produit publié (lu par caisse et borne) rallumerait l'emplacement gratuit.
+        $excessMeat = $this->materializer()->excessFreeMeatStepIds($item, $source->steps);
+
         foreach ($source->steps as $step) {
             $this->stepService->create($target, [
                 'wizard_page_id' => $step->wizard_page_id,
@@ -358,7 +362,7 @@ class ComposerProfileService
                 'visible_on' => $step->visible_on,
                 'stockable_choices' => $step->stockable_choices,
                 'position' => $step->position,
-                'is_active' => $step->is_active,
+                'is_active' => $step->is_active && ! isset($excessMeat[(int) $step->id]), // [VG-2026-10-21 C3]
                 'addon_role' => $step->addon_role,
             ], false);
         }
@@ -572,7 +576,7 @@ class ComposerProfileService
 
         if (! $fresh) {
             throw ValidationException::withMessages([
-                'steps' => 'Composer profile not found.',
+                'steps' => trans('all.message.wizard_introuvable'),
             ]);
         }
 
@@ -582,7 +586,7 @@ class ComposerProfileService
 
         if ($activeSteps->isEmpty()) {
             throw ValidationException::withMessages([
-                'steps' => 'Composer profile cannot be published without active steps.',
+                'steps' => trans('all.message.wizard_sans_etape'),
             ]);
         }
 

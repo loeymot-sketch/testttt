@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use App\Http\Requests\KioskMachineRequest;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class KioskMachineService
 {
@@ -105,10 +106,39 @@ class KioskMachineService
     /**
      * @throws Exception
      */
+    /**
+     * [ONB-10 T-1.1.1 2026-08-27] Révoquer le jeton d'accès de CETTE borne, et
+     * d'elle seule.
+     *
+     * Le défaut trouvé : aucun des trois gestes du Dashboard — supprimer,
+     * désactiver, déconnecter — ne révoquait le jeton Sanctum. Ils envoyaient une
+     * notification Firebase « vous êtes déconnecté » et espéraient que la borne
+     * obéisse. Une borne volée, hors ligne, ou dont l'application a été modifiée
+     * continuait donc de commander pendant 8 heures (sanctum.expiration = 480).
+     * Le seul chemin qui révoquait vraiment est la déconnexion demandée PAR LA
+     * BORNE elle-même — c'est-à-dire précisément le cas où on n'en a pas besoin.
+     *
+     * La portée est l'appareil, pas le compte : les jetons de borne portent
+     * `device_id = 'kiosk-<id>'` (posé à la connexion). On ne supprime que ceux-là.
+     * Révoquer par `user_id` déconnecterait toutes les bornes partageant le compte —
+     * c'est exactement le défaut corrigé le 2026-08-07 pour les écrans multiples, et
+     * il ne faut pas le réintroduire ici.
+     */
+    private function revoquerJetonsDeLaBorne(KioskMachine $kioskMachine): int
+    {
+        return PersonalAccessToken::query()
+            ->where('device_id', 'kiosk-' . $kioskMachine->id)
+            ->delete();
+    }
+
     public function destroy(KioskMachine $kioskMachine): void
     {
         try {
             DB::transaction(function () use ($kioskMachine) {
+                // Le jeton part AVANT la suppression de la ligne : si la transaction
+                // échoue ensuite, on aura révoqué une borne encore listée — gênant
+                // mais sans danger. L'inverse laisserait un jeton vivant sans borne.
+                $this->revoquerJetonsDeLaBorne($kioskMachine);
                 $pushNotification = (object)[
                     'title'       => 'Kiosk Notification',
                     'description' => "Logged Out Successfully.",
@@ -150,6 +180,13 @@ class KioskMachineService
             DB::transaction(function () use ($kioskMachine, $request) {
                 if ($request->filled('status')) {
                     $kioskMachine->update(['status' => $request->input('status')]);
+
+                    // [ONB-10 T-1.1.1 2026-08-27] Désactiver une borne doit la couper
+                    // pour de bon. On ne révoque QUE sur passage à inactif : réactiver
+                    // ne doit rien détruire, la borne se reconnectera d'elle-même.
+                    if ((int) $kioskMachine->status !== Status::ACTIVE) {
+                        $this->revoquerJetonsDeLaBorne($kioskMachine);
+                    }
                 }
                 $pushNotification = (object)[
                     'title'       => 'Kiosk Notification',
@@ -187,6 +224,10 @@ class KioskMachineService
                 }
                 $firebase         = new FirebaseService();
                 $firebase->sendNotification($pushNotification, $fcmTokenArray, "kiosk-logout-notification");
+                // [ONB-10 T-1.1.1 2026-08-27] « Déconnecter » ne faisait que poser un
+                // drapeau `is_login = NO` : la borne restait parfaitement capable de
+                // commander. Le bouton disait une chose et faisait l'autre.
+                $this->revoquerJetonsDeLaBorne($kioskMachine);
                 $kioskMachine->update(['is_login' => Ask::NO]);
             });
         } catch (Exception $exception) {

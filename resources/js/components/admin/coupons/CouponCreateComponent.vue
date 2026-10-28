@@ -102,6 +102,14 @@
                         <small class="db-field-alert" v-if="errors.maximum_discount">{{
                             errors.maximum_discount[0]
                         }}</small>
+                        <!-- [ONB-09 2026-08-28] L'ECRAN SE TAISAIT SUR UN POINT COUTEUX.
+                             `CouponService:418` n'applique le plafond que s'il est
+                             STRICTEMENT positif : a zero, la remise est ILLIMITEE.
+                             Un code -20 % cree avec 0 ici rend 50 EUR sur une commande
+                             de groupe a 250 EUR, sans que rien ne l'ait annonce. -->
+                        <p class="text-xs text-gray-400 mt-1" data-testid="coupon-maximum-discount-hint">
+                            {{ $t("label.maximum_discount_hint") }}
+                        </p>
                     </div>
                     <div class="form-col-12 sm:form-col-6">
                         <label for="limit_per_user" class="db-field-title">{{ $t("label.limit_per_user") }}</label>
