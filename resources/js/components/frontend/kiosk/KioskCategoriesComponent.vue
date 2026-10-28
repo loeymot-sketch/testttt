@@ -168,7 +168,7 @@
                   <div class="kiosk-product-media">
                     <img
                       v-if="product.thumb || product.image"
-                      :src="product.thumb || product.image"
+                      :src="productImageSrc(product)"
                       :alt="''"
                       class="kiosk-product-image"
                       :class="productSizeClass(product)"
@@ -499,6 +499,17 @@ export default {
      * libellés flous (une « grande frite » n'est pas un XL), et les promouvoir
      * changerait des produits que personne n'a demandé de toucher.
      */
+    /**
+     * [OWNER 2026-10-28] Photo pleine carte : la vignette d'une photo téléversée depuis l'admin n'a que 168×180 px
+     * (recadrée au centre) — étirée sur 760 px elle est floue et rognée. Pour ces photos-là (conversion Spatie sous
+     * /storage/…/conversions/), on prend l'aperçu de 600 px. Un produit sans photo téléversée garde sa vignette :
+     * son « preview » est alors l'image générique du serveur, jamais à afficher.
+     */
+    productImageSrc(product) {
+      const preview = product?.preview;
+      if (typeof preview === 'string' && /\/storage\/.+\/conversions\//.test(preview)) return preview;
+      return product?.thumb || product?.image;
+    },
     productSizeClass(product) {
       const name = String(product?.name || '').trim().toLowerCase();
       const last = name.split(/\s+/).pop();
@@ -1350,10 +1361,14 @@ export default {
    les deux). Les valeurs restent SOUS 1 : l'image occupe déjà 94 % de sa boîte,
    et la carte est en `overflow: hidden` — au-delà, le tacos serait rogné.
    L'écart entre deux crans consécutifs est d'environ +15 %, visible à l'œil. */
-.kiosk-product-image--size-xxl { transform: scale(1.06); }
-.kiosk-product-image--size-xl  { transform: scale(0.98); }
-.kiosk-product-image--size-l   { transform: scale(0.85); }
-.kiosk-product-image--size-m   { transform: scale(0.72); }
+/* [OWNER 2026-10-28] PHOTO PLEINE CARTE ET TAILLES. Avant : le grand format restait à 98 %, le petit se réduisait à 72 % dans
+   un cadre gris — la taille se voyait en RÉDUISANT la photo. Maintenant la photo remplit toujours sa carte, et la taille se
+   voit en ZOOMANT le produit dans le cadre : M = plein cadre, L, XL, XXL de plus en plus gros (le bord du décor est rogné,
+   le produit reste au centre). Même écart visible entre tailles, plus aucun produit rapetissé. */
+.kiosk-product-image--size-xxl { transform: scale(1.38); }
+.kiosk-product-image--size-xl  { transform: scale(1.25); }
+.kiosk-product-image--size-l   { transform: scale(1.12); }
+.kiosk-product-image--size-m   { transform: scale(1); }
 
 .kiosk-product-card {
   position: relative;
@@ -1913,6 +1928,41 @@ export default {
   background: #3A3A3A;
   color: #8A8A8A;
 }
+
+
+/* [OWNER 2026-10-28] PHOTOS PLEINE CARTE.
+   « Mets-les au max, plein page, au lieu de les encadrer sur fond noir et en petit — en respectant la taille de
+   chaque produit. » Les visuels sont des photos sur le décor Le Cayenne : encadrées à 94 % dans une boîte grise, elles
+   flottaient en petit avec des marges. Maintenant la photo va BORD À BORD de la carte (aucune marge, aucun cadre) et
+   remplit sa zone en `cover` (jamais déformée). Les produits à TAILLES (Tacos M / L / XL…) gardent leurs crans — la taille
+   se voit en zoomant le produit dans le cadre — et les détourés (boissons) restent en `contain` pour ne pas être rognés,
+   mais sur toute la hauteur de leur ligne. */
+.kiosk-product-card { padding: 0 0 18px; }
+.kiosk-product-media {
+  width: 100%;
+  border-radius: 28px 28px 0 0;
+  overflow: hidden;
+  background: transparent;
+}
+.kiosk-product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 58%;
+  filter: none;
+}
+[class*='kiosk-product-image--size-'] { transform-origin: center 62%; }
+.kiosk-product-copy { margin-top: 16px; padding-inline: 18px; }
+.kiosk-product-grid--solo .kiosk-product-media,
+.kiosk-product-grid--duo .kiosk-product-media { height: 70%; }
+.kiosk-product-grid--dense .kiosk-product-card { padding: 0 96px 0 0; }
+.kiosk-product-grid--dense .kiosk-product-media {
+  height: 100%;
+  max-width: 54%;   /* 3:2 pleine hauteur ; au-delà le texte n'a plus de place, en deçà la photo est rognée sur les côtés */
+  border-radius: 28px 0 0 28px;
+}
+.kiosk-product-grid--dense .kiosk-product-copy { margin-top: 0; padding: 12px 0; }
+.kiosk-product-grid--minimal .kiosk-product-image { object-fit: contain; }
 
 /* Reduced motion guard */
 [data-kiosk-reduced-motion='true'] .kiosk-product-card,
