@@ -1,0 +1,127 @@
+{
+ "round": 2,
+ "reviewer": "adversarial",
+ "p0_p1_open": 6,
+ "findings": [
+  {
+   "id": "ADV-01",
+   "severity": "P1",
+   "category": "code/silent-error",
+   "where": "resources/js/shared/rate-limit-retry.js:62-63 + resources/js/shared/inflight-dedupe.js:137-147 (installed app.js:80, pos-app.js:56)",
+   "proof": "Dedupe shares ONE adapter promise (hence one error object, one error.config) between N identical concurrent GETs; each caller's interceptor increments the SAME cfg.__rlRetries. Simulation with real axios 1.20.0 + the two repo modules (scratchpad/adv/sim.mjs): one single 429 then 200 -> N=3: 0 rejected; N=5: 1 rejected; N=6: 2; N=8: 4 rejected (callers 5+ get the 429 error and the global 'Trop de requetes' toast although the limiter has only refused ONE call).",
+   "fix": "Count retries per caller, not on the shared cfg: clone cfg per retry ({...cfg, __rlRetries: attempt+1}) or key the counter on a per-call WeakMap; add a Vitest case with dedupe+retry and 8 concurrent GETs."
+  },
+  {
+   "id": "ADV-02",
+   "severity": "P1",
+   "category": "security-regression/evidence",
+   "where": "waveA/burst.json step 'login: 40 mauvais essais -> la protection mord toujours' ok=false; .env:80 LOGIN_LOCKOUT_MAX_ATTEMPTS=500 (config/auth.php:154 default 10)",
+   "proof": "burst.json: 40 bad logins -> {400:40}, step FALSE, never re-run (burst2.json and round-2 contain no login step). My curl x14 bad POST /api/auth/login (valid x-api-key, same random email) -> 14x 400, zero 429, because local .env raises the lockout to 500. Code (RouteServiceProvider.php:542-580) is untouched by the diff, but the owner's 'protections anti-piratage intactes' claim has NO green proof (login/otp/forgot/pin).",
+   "fix": "Re-run the brute-force probe with LOGIN_LOCKOUT_MAX_ATTEMPTS unset (second server) or run tests/Feature/Security/RateLimitTest.php + Auth/KioskThrottleKeysTest; add otp-send, forgot-password, pwreset-verify-code and operators/verify probes; record green in waveA."
+  },
+  {
+   "id": "ADV-03",
+   "severity": "P1",
+   "category": "visual/requirement",
+   "where": "/Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/racine.jsx:755 ; /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/flows.jsx:95 ; /Users/1millnonstop/Downloads/lecayenne-web-deploy/Site lecayenne/funnel.jsx:302 ; wizard-v2.jsx:633",
+   "proof": "heroImage (galette photo) exists only inside WizardFlow. On add, the cart line is `{ ...item, price, qty, subs, state }` (racine.jsx:755): image stays item.image = the SANDWICH photo. CartDrawer (flows.jsx:95) and the checkout 'Recap' (funnel.jsx:302) render it.image -> a customer who chose Galette sees 'Galette' in subs under a sandwich photo, i.e. the owner's original complaint, one screen later. D05 only captures the wizard recap.",
+   "fix": "Store the chosen photo on the line (e.g. image: heroImage) in the wizard onAdd payload; capture panier + funnel recap with Galette chosen."
+  },
+  {
+   "id": "ADV-04",
+   "severity": "P1",
+   "category": "evidence-gap/visual",
+   "where": "round-2/waveB/B01..B05 (all Pain), B03 note 'Pain : Pain.'; KioskCartComponent.vue:652 getItemSelectionSummary",
+   "proof": "The borne path with GALETTE chosen is never captured: B01 is the choice screen before any click, B02-B05 run with Pain. Neither the borne cart thumbnail, the wizard RECAP step thumbnail (B01 progress bar, frozen KioskWizardComponent) nor the cart line were checked for a galette. Requirement 'photo visible in apercu/recap after choice (borne + site)' is unproven on the borne.",
+   "fix": "Add B-wave run choosing Galette: capture wizard recap step, cart (B03) and KDS card; read the PNGs."
+  },
+  {
+   "id": "ADV-05",
+   "severity": "P1",
+   "category": "evidence-gap/silent-error",
+   "where": "/private/tmp/.../scratchpad/e2e/waveD-site.js:53-65 ; round-2/waveD/D03-apres-commande.png",
+   "proof": "Site 'validation de commande' is NOT driven through the UI: the test calls window.LC.api.placeOrder() directly with a fabricated cart {id:501}. D03 PNG is the home hero ('SERVICE FERME - OUVRE DANS 2 H 31'), not a checkout. All 429 are route.fulfill mocks (never reach Laravel) with Retry-After:1, and the mock itself injects Access-Control-Expose-Headers (line 58), so D cannot validate real CORS exposure nor the real 20/60 s waits x3 attempts. Only waveA A2b proves the header for origin localhost:8011, not www.lecayenne.fr.",
+   "fix": "Drive the real funnel (panier -> Valider) with a forced Retry-After of 5-47 s, screenshot the 'Validation...' state and the confirmation; verify the www.lecayenne.fr origin returns Expose-Headers."
+  },
+  {
+   "id": "ADV-06",
+   "severity": "P1",
+   "category": "3-overlap",
+   "where": "resources/js/components/frontend/kiosk/KioskCartComponent.vue:1106-1112 (trash abs top/right -8px, 36px) vs :1153-1163 (.kiosk-qty-btn 50px) ; round-2/waveB/B03-panier.png",
+   "proof": "B03: the round trash button sits on the top-right corner of the '+' button. From CSS: overlap 28x28=784 px2 = 60% of the trash bbox; centre of '+' is 3.9 px OUTSIDE the trash circle and the glyph's corner is under it, trash is z-above. A tap slightly up-right of '+' deletes the line (removeItemDirectly, :694) instead of adding one. Pre-existing code, newly visible in evidence.",
+   "fix": "Move the trash out of the stepper (own row / left of the line, >=12 px gap) or drop the absolute offset."
+  },
+  {
+   "id": "ADV-07",
+   "severity": "P2",
+   "category": "code",
+   "where": "resources/js/shared/rate-limit-retry.js:43,46-52",
+   "proof": "No bail-out on a long Retry-After: a 3600 s lock waits min(30 s)x4 = ~2 min of silent frozen UI before the toast, whereas site api.js bails out when ra>60 (api.js plafondAttente). Inconsistent; module header claims a real block is never hidden but it is delayed 2 min.",
+   "fix": "If Retry-After > MAX_WAIT_MS*2 (or body.retry_after>60) reject immediately."
+  },
+  {
+   "id": "ADV-08",
+   "severity": "P2",
+   "category": "code",
+   "where": "resources/js/shared/rate-limit-retry.js:33 ; routes/api.php:1172",
+   "proof": "AUTH_URL matches 'unlock': legit caisse route POST /admin/wheel/unlock-token (throttle 60/min, not an auth surface) is never replayed and still toasts on 429. Also matches ?search=pin / reset in query strings. No other legit literal axios URL found excluded (grep of resources/js).",
+   "fix": "Anchor on path segments (auth/ , forgot-password, kiosk-login...) and test pathname only."
+  },
+  {
+   "id": "ADV-09",
+   "severity": "P2",
+   "category": "security",
+   "where": "config/app.php:117 ; app/Providers/RouteServiceProvider.php:265-270 (comment :384-394)",
+   "proof": "admin-mutation non-GET floor 60 -> 600/min on ALL admin CRUD; the file's own comment (:394) says raising it 'aurait desserre la protection anti-force-brute de TOUT le CRUD'. Mitigated for PIN (OperatorPins.php:82-97 own lockout) and auth limiters untouched (diff clean). Floors also make it impossible to LOWER limits via .env in an incident.",
+   "fix": "Give the caisse hot paths their own buckets (already partly done) and keep admin-mutation near 120; document the floor-vs-incident trade-off."
+  },
+  {
+   "id": "ADV-10",
+   "severity": "P2",
+   "category": "process",
+   "where": "git: config/cors.php, resources/js/shared/rate-limit-retry.js (M), tests/Feature/Routes/CorsExposeRetryAfterTest.php (??)",
+   "proof": "HEAD 9d8d92fe9 still has MAX_WAIT_MS=8000 and no CORS exposure; round-2 ran on uncommitted code. Site: app/www/api.js (sha 95a3b3...) lacks plafondAttente and app/www/compiled/wizard-v2.js lacks heroImage -> store apps keep the old behaviour (need npm run check:www / build:www). Source sha of wizard-v2.jsx vs compiled and asset-versions tokens are consistent.",
+   "fix": "Commit by pathspec; rebuild app/www before any store build; deploy cors.php (config cache) with the site."
+  },
+  {
+   "id": "ADV-11",
+   "severity": "P2",
+   "category": "5-selection-text",
+   "where": "round-2/waveB/B03-panier.dom.html data-testid=kiosk-cart-item-options-0",
+   "proof": "Cart line reads 'Poulet marine, Ketchup, Type de Pain . Salade...': the attribute group name 'Type de Pain' is shown as if it were the choice (the choice only appears in the note 'Pain : Pain.'). With Galette the pain/galette choice would not be readable in the line summary.",
+   "fix": "Print the variation VALUE name in getItemSelectionSummary (KioskCartComponent.vue:652)."
+  },
+  {
+   "id": "ADV-12",
+   "severity": "P2",
+   "category": "4-contrast",
+   "where": "round-2/waveB/B01-pain-galette-borne.png (hint 'Selectionnez un type de pain')",
+   "proof": "#F4501E on ~#FDF0EA = 3.13:1 (<4.5:1 for normal-weight ~22 px text).",
+   "fix": "Darken text to #B93A12 or bold >=24 px."
+  },
+  {
+   "id": "ADV-13",
+   "severity": "P2",
+   "category": "10-unexpected-4xx",
+   "where": "round-2/waveB/B01 network.json (401 kiosk-event, 401 frontend/menu, 401 GET /api/login) ; all console.json 429 entries",
+   "proof": "Un-allowlisted 4xx at kiosk boot (pre-login race, no alert) and 429 console errors (injected, retried silently). Protocol letter = cat 6/10 P0; needs an explicit written allowlist (injected-429 + boot 401) or the gate stays red.",
+   "fix": "Add 'injected 429 retried silently (controls B06/C03 prove the instrument)' and the boot-401 to the protocol allowlist; or fix boot order."
+  },
+  {
+   "id": "ADV-14",
+   "severity": "P2",
+   "category": "code/unproven",
+   "where": "resources/js/helpers/idempotencyHeaders.js:30 ; KitchenDisplaySystemComponent.vue:2950-2985, :2819",
+   "proof": "KDS bump: each click builds a NEW UUID; during a 429 wait (up to 4x30 s) the overlay can be flipped off by a concurrent list() (loading.isActive=false, :2819) so a second click is possible: the replayed first request then hits expected_status guard -> 409 toast. Reasoned from code, NOT reproduced.",
+   "fix": "Per-order in-flight guard in orderStatus."
+  },
+  {
+   "id": "ADV-15",
+   "severity": "P3",
+   "category": "info",
+   "where": "B04 'Confirmer ma commande' text left-aligned in a full-width pill (.kiosk-btn-confirm, single span); B01 ~800 px blank under the options; D01 right-panel CTA clipped at 800 px height; B06 control URL '/api/api/frontend/item?ctl=1' (harness path typo); B02 rail shows fixture categories 'E2E CAT 1786616399744', 'E2ECATEGORY13511EDITED' with '+' placeholder (dev DB pollution, check prod); CORS now exposes X-RateLimit-Limit/Remaining cross-origin (harmless).",
+   "proof": "see PNG/DOM",
+   "fix": "cosmetic"
+  }
+ ]
+}

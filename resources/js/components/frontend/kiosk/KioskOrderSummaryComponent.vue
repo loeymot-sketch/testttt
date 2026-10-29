@@ -3,7 +3,7 @@
     <!-- Item principal -->
     <div class="kiosk-summary-item main" data-testid="kiosk-order-summary-main-item">
       <div class="kiosk-summary-img" aria-hidden="true">
-        <img loading="lazy" decoding="async" v-if="item.thumb" :src="item.thumb" :alt="sanitizeItemName(item.name)" />
+        <img loading="lazy" decoding="async" v-if="headerThumb" :src="headerThumb" :alt="sanitizeItemName(item.name)" />
         <span v-else class="kiosk-summary-emoji">🍽️</span>
       </div>
       <div class="kiosk-summary-details">
@@ -31,7 +31,7 @@
         </div>
         <div class="kiosk-summary-row">
           <span class="kiosk-summary-row-thumb" aria-hidden="true">
-            <img loading="lazy" decoding="async" v-if="getPainImage()" :src="getPainImage()" alt="" />
+            <img loading="lazy" decoding="async" v-if="painThumb" :src="painThumb" alt="" />
             <span v-else>🥖</span>
           </span>
           <span class="kiosk-summary-row-name">{{ getPainName() }}</span>
@@ -235,6 +235,7 @@
 <script>
 import { kioskPriceMixin } from '../../../helpers/kioskFormatPrice';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
+import { kioskLinePhoto } from '../../../helpers/kioskMedia';
 import {
   calculateKioskRunningTotal,
   getKioskExtraSauceUnitPrice,
@@ -333,6 +334,18 @@ export default {
     // parity with the cart stepper (KioskCartComponent maxItemQty). Without the
     // cap a customer could drive quantity past the cap and the line was then
     // silently clamped by the store with a mismatched total.
+    // [PAIN-PHOTO 2026-10-29 · test-e2e R8-02] Galette choisie → l'en-tête du récap et la ligne « Type de pain » montrent la
+    // photo de la GALETTE (la borne affichait un sandwich sous « Galette »). Sans catalogue / sans jumelle : photo d'origine.
+    galettePhoto() {
+      const all = (this.$store && this.$store.getters && this.$store.getters['kioskMenu/allItems']) || [];
+      return kioskLinePhoto(this.item, [this.selections && this.selections.pain], all, null);
+    },
+    headerThumb() {
+      return this.galettePhoto || this.item.thumb;
+    },
+    painThumb() {
+      return this.galettePhoto || this.getPainImage();
+    },
     maxItemQty() {
       return (typeof window !== 'undefined' && window.foodkingConfig && window.foodkingConfig.maxItemQty) || 20;
     }

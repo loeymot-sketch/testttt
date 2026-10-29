@@ -134,7 +134,7 @@
         >
           <!-- Image -->
           <div class="kiosk-cart-item-img" aria-hidden="true">
-            <img loading="lazy" decoding="async" v-if="item.image" :src="item.image" :alt="''" />
+            <img loading="lazy" decoding="async" v-if="cartLineImage(item)" :src="cartLineImage(item)" :alt="''" />
             <span v-else class="kiosk-cart-item-emoji">🍽️</span>
           </div>
 
@@ -389,6 +389,7 @@ import focusTrap from '../../../mixins/focusTrap';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
+import { kioskLinePhoto, kioskVariationPool } from '../../../helpers/kioskMedia';
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
@@ -631,6 +632,13 @@ export default {
       return sanitizeKioskCustomerFacingText(item.instruction);
     },
 
+    // [PAIN-PHOTO 2026-10-29 · test-e2e] Ligne « Galette » → la photo de la GALETTE, pas celle du sandwich (« Pain : Galette »
+    // sous une photo de sandwich = la plainte d'origine). Repli silencieux sur la photo de la ligne.
+    cartLineImage(line) {
+      const cat = this.cartLineCatalogItem(line);
+      return kioskLinePhoto(cat, (line.item_variations || []).map((v) => v && v.id), this.allItems, line?.image || null);
+    },
+
     cartLineCatalogItem(line) {
       if (!line?.item_id || !Array.isArray(this.allItems)) return null;
       return this.allItems.find((i) => String(i.id) === String(line.item_id)) || null;
@@ -648,6 +656,11 @@ export default {
       return { variations: vars, extras: ext };
     },
 
+    catalogVariationName(line, id) {
+      const hit = kioskVariationPool(this.cartLineCatalogItem(line)).find((v) => Number(v.id) === Number(id));
+      return (hit && hit.name) || '';
+    },
+
     // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
     getItemSelectionSummary(item) {
       const parts = [];
@@ -655,7 +668,9 @@ export default {
 
       if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
         const bits = item.item_variations
-          .map((v) => clean(v.name || v.variation_name || ''))
+          // [test-e2e ADV-11] `name` est vide pour le pain (l'assistant, gelé, ne le renseigne pas) : sans repli on affichait le
+          // NOM DE L'ATTRIBUT (« Type de Pain ») à la place du choix. On lit le nom réel au catalogue avant ce repli.
+          .map((v) => clean(v.name || this.catalogVariationName(item, v.id) || v.variation_name || ''))
           .filter(Boolean);
         if (bits.length) parts.push(bits.join(', '));
       } else if (item.item_variations?.names) {
@@ -1104,9 +1119,11 @@ export default {
 
 /* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */
 .kiosk-cart-item-trash {
-  position: absolute;
-  top: -8px;
-  right: -8px;
+  /* [test-e2e 2026-10-29 · ADV-06] Dans le flux, sous le stepper : en absolu (-8/-8) il recouvrait 60 % du « + » et un tap
+     un peu en haut à droite supprimait la ligne au lieu d'ajouter une unité. */
+  position: static;
+  align-self: flex-end;
+  margin-top: 4px;
   width: 36px;
   height: 36px;
   border: 1px solid var(--kiosk-border, #E5E5E5);

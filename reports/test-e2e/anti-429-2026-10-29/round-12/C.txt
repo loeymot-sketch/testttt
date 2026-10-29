@@ -1,0 +1,8 @@
+✅ liste cuisine : 3 refus 429 rejoués puis servie — [429,429,429,"real","real"]
+✅ des commandes sont affichées sur l'écran cuisine — {"cards":9}
+✅ bump : 2 refus 429 rejoués puis accepté — [{"a":429,"idem":"80c9a627-cc88-406e-975a-e73a293959de"},{"a":429,"idem":"80c9a627-cc88-406e-975a-e73a293959de"},{"a":"real","idem":"80c9a627-cc88-406e-975a-e73a293959de"}]
+✅ bump : même clé d'idempotence et même corps à chaque rejeu — {"n":3,"idem":"80c9a627-cc88-406e-975a-e73a293959de","body":"{\"id\":9209,\"status\":8,\"expected_status\":7}"}
+✅ une SEULE transition de statut enregistrée pour ce bump malgré 2 refus 429 (pas de double bump) — {"order":"9209","transitions":["7>8"]}
+✅ AUCUN « trop de requêtes » vu à l'écran cuisine — []
+✅ aucune bannière d'erreur cuisine — {"banner":0}
+✅ CONTRÔLE : sans rejeu, le banc VOIT le toast (instrument prouvé) — [{"t":1793287425587,"text":"Trop de requêtes — patientez 1s avant de réessayer.\n×"}]

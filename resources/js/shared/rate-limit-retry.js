@@ -22,8 +22,11 @@
  */
 
 export const MAX_RETRIES = 4;
-// Attente bornée par essai : assez pour laisser passer une fenêtre courte, jamais assez pour figer l'écran.
-export const MAX_WAIT_MS = 8000;
+// Attente bornée par essai : assez pour franchir une fenêtre de plafond (≤ 60 s en deux essais), jamais plus.
+// [test-e2e 2026-10-29] 8 s → 30 s : la mesure sur le vrai serveur a produit un 429 annonçant `Retry-After: 47` (fenêtre d'une
+// minute entamée tôt). Avec 4 essais de 8 s, l'écran abandonnait à 32 s et affichait « Trop de requêtes » AVANT la fin de la
+// fenêtre. À 30 s par essai, deux essais suffisent à franchir une fenêtre pleine (la valeur annoncée diminue à chaque essai).
+export const MAX_WAIT_MS = 30000;
 const MIN_WAIT_MS = 800;
 
 // Plafonds de sécurité (anti force brute) : jamais rejoués automatiquement.
@@ -31,10 +34,15 @@ const AUTH_URL = /(login|logout|otp|password|forgot|reset|\bpin\b|unlock|verify|
 // Télémétrie « tire et oublie » : perdre un événement est acceptable, inutile de la rejouer.
 const TELEMETRY_URL = /(frontend\/kiosk[/-]event|admin\/client-metrics)/i;
 
-export function retryDelayMs(error, attempt, rand = Math.random) {
+// Attente annoncée par le serveur (secondes) : en-tête `Retry-After`, sinon corps `retry_after`. NaN si absente.
+function announcedSeconds(error) {
     const headers = error?.response?.headers || {};
     const raw = headers['retry-after'] ?? headers['Retry-After'] ?? error?.response?.data?.retry_after;
-    const seconds = parseInt(raw, 10);
+    return parseInt(raw, 10);
+}
+
+export function retryDelayMs(error, attempt, rand = Math.random) {
+    const seconds = announcedSeconds(error);
     const wanted = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : MIN_WAIT_MS * (attempt + 1);
     // Gigue : sans elle, tous les appels bloqués ensemble repartent ensemble et re-saturent le plafond.
     return Math.min(MAX_WAIT_MS, Math.max(MIN_WAIT_MS, wanted)) + Math.floor(rand() * 400);
@@ -45,8 +53,13 @@ export function shouldRetry(error) {
     const cfg = error?.config;
     if (!cfg || cfg.__noRateLimitRetry) return false;
     if ((cfg.__rlRetries || 0) >= MAX_RETRIES) return false;
-    const url = String(cfg.url || '');
+    // Chemin seul : un `?search=pin` ou `?q=reset` ne doit ni exclure ni inclure une route à tort.
+    const url = String(cfg.url || '').split('?')[0];
     if (AUTH_URL.test(url) || TELEMETRY_URL.test(url)) return false;
+    // [test-e2e 2026-10-29 · ADV-07] Une attente annoncée au-delà de deux essais pleins (60 s) n'est pas une fenêtre de
+    // plafond mais un verrou : on ne fige pas l'écran 2 minutes, l'erreur honnête remonte tout de suite.
+    const announced = announcedSeconds(error);
+    if (Number.isFinite(announced) && announced * 1000 > MAX_WAIT_MS * 2) return false;
     return true;
 }
 
@@ -57,9 +70,12 @@ export function installRateLimitRetry(axiosInstance, { sleep = (ms) => new Promi
             if (!shouldRetry(error)) return Promise.reject(error);
             const cfg = error.config;
             const attempt = cfg.__rlRetries || 0;
-            cfg.__rlRetries = attempt + 1;
             await sleep(retryDelayMs(error, attempt));
-            return axiosInstance.request(cfg);
+            // [test-e2e 2026-10-29 · ADV-01] Le compteur vit sur une COPIE de la configuration, jamais sur l'objet reçu :
+            // le dédoublonnage des GET (inflight-dedupe.js) partage UNE erreur — donc UNE configuration — entre N appelants
+            // identiques ; incrémenter l'original faisait épuiser le budget de rejeux par le 5ᵉ appelant (toast à tort
+            // alors que le serveur n'avait refusé qu'UN appel).
+            return axiosInstance.request({ ...cfg, __rlRetries: attempt + 1 });
         }
     );
     return id;

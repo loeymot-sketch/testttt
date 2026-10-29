@@ -239,6 +239,7 @@
            d'ajout (owner refuse les notifications). -->
       <KsCartBottomSheet
         :items="cartItems"
+        :catalog="allItems || []"
         :format-price="formatPrice"
         @increment="incrementCartItem"
         @decrement="decrementCartItem"

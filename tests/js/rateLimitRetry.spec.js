@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import axios from 'axios';
+import { installInFlightGetDedupe } from '../../resources/js/shared/inflight-dedupe';
 import {
     installRateLimitRetry, shouldRetry, retryDelayMs, MAX_RETRIES, MAX_WAIT_MS,
 } from '../../resources/js/shared/rate-limit-retry';
@@ -88,6 +89,60 @@ describe('rejeu silencieux des 429', () => {
         expect(retryDelayMs({ response: { headers: {} } }, 1, rand)).toBeGreaterThan(retryDelayMs({ response: { headers: {} } }, 0, rand));
         // Gigue présente.
         expect(retryDelayMs({ response: { headers: { 'retry-after': '3' } } }, 0, () => 0.99)).toBeGreaterThan(3000);
+    });
+
+    it('une fenêtre pleine annoncée à 47 s (mesurée sur le vrai serveur) est franchie en 2 essais, sans erreur', async () => {
+        // Le serveur local a répondu `Retry-After: 47` après saturation ; la valeur diminue à chaque essai.
+        const waits = [];
+        const inst = axios.create();
+        const annonces = ['47', '17'];
+        let n = 0;
+        inst.defaults.adapter = (config) => {
+            n += 1;
+            if (n <= annonces.length) {
+                const err = new Error('429');
+                err.config = config;
+                err.response = { status: 429, headers: { 'retry-after': annonces[n - 1] }, data: {}, config };
+                return Promise.reject(err);
+            }
+            return Promise.resolve({ status: 200, data: { ok: true }, headers: {}, config });
+        };
+        installRateLimitRetry(inst, { sleep: async (ms) => { waits.push(ms); } });
+        const res = await inst.post('/api/admin/kds-order/change-status/1', { a: 1 });
+        expect(res.data.ok).toBe(true);
+        expect(waits).toHaveLength(2);
+        expect(waits[0]).toBeGreaterThanOrEqual(MAX_WAIT_MS);       // 47 s annoncées → plafonné à 30 s
+        expect(waits[1]).toBeGreaterThanOrEqual(17000);             // puis l'attente restante
+        expect(waits[0] + waits[1]).toBeGreaterThanOrEqual(47000);  // total ≥ fin de la fenêtre annoncée
+    });
+
+    it('8 GET identiques concurrents (dédoublonnés) : UN seul refus 429 ne fait échouer AUCUN appelant', async () => {
+        const inst = axios.create();
+        let n = 0;
+        inst.defaults.adapter = (config) => {
+            n += 1;
+            if (n === 1) {
+                const err = new Error('429');
+                err.config = config;
+                err.response = { status: 429, headers: { 'retry-after': '1' }, data: {}, config };
+                return Promise.reject(err);
+            }
+            return Promise.resolve({ status: 200, data: { ok: true }, headers: {}, config });
+        };
+        installInFlightGetDedupe(inst);
+        installRateLimitRetry(inst, { sleep: async () => {} });
+        const res = await Promise.allSettled(Array.from({ length: 8 }, () => inst.get('/api/admin/kds-order/items')));
+        expect(res.filter((r) => r.status === 'rejected')).toHaveLength(0);
+    });
+
+    it('un verrou annoncé à 3600 s n\'est PAS rejoué (pas de gel de 2 minutes)', () => {
+        expect(shouldRetry({ response: { status: 429, headers: { 'retry-after': '3600' } }, config: { url: '/api/admin/pos' } })).toBe(false);
+        expect(shouldRetry({ response: { status: 429, headers: { 'retry-after': '47' } }, config: { url: '/api/admin/pos' } })).toBe(true);
+    });
+
+    it('seul le chemin compte : ?search=pin ne bloque pas le rejeu, /unlock reste exclu', () => {
+        expect(shouldRetry({ response: { status: 429, headers: {} }, config: { url: '/api/admin/items?search=pin&q=reset' } })).toBe(true);
+        expect(shouldRetry({ response: { status: 429, headers: {} }, config: { url: '/api/admin/wheel/unlock?x=1' } })).toBe(false);
     });
 
     it('bootstrap.js enregistre le rejeu AVANT l\'intercepteur d\'alerte', async () => {

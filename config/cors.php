@@ -51,7 +51,13 @@ return [
         '#^ionic://localhost$#',
     ],
     'allowed_headers' => ['*'],
-    'exposed_headers' => [],
+    // [ANTI-429 2026-10-29] Sans cette liste, un navigateur qui appelle l'API depuis une AUTRE origine (le site
+    // www.lecayenne.fr, l'application des stores en https://localhost) ne peut PAS lire `Retry-After` : le rejeu
+    // silencieux d'un 429 du site (api.js) tombait toujours sur son calendrier de repli (≈ 9 s) au lieu d'attendre
+    // la vraie fin de fenêtre, et ne savait pas distinguer un plafond passager d'un verrou long (connexion, code).
+    // Les écrans de la caisse / cuisine / borne sont même origine : ils lisaient déjà l'en-tête. Valeurs publiques,
+    // sans donnée sensible.
+    'exposed_headers' => ['Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
     'max_age' => 86400,
     'supports_credentials' => true,
 ];
