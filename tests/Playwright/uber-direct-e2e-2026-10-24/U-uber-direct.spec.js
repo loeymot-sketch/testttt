@@ -513,7 +513,7 @@ test.describe('U · Uber Direct de bout en bout (faux Uber local)', () => {
     await settle(sp, 1500);
     const t0 = await texteVisible(sp);
     step('U-3', 'site_avant', { carte: carteTxt.slice(0, 200), texte: t0.slice(0, 300) });
-    expect(t0).toMatch(/Votre commande est en préparation/);
+    expect(t0, "commande A déjà PRÊTE en cuisine (8) : le suivi le dit (livraison : remise au livreur)").toMatch(/Votre commande est prête : elle va être remise au livreur/);
     expect(t0).not.toMatch(/Votre commande est en route|a été livrée/i);
 
     // pickup (signé)

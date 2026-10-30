@@ -207,6 +207,13 @@ class PosDeliveryController extends Controller
             // Le livreur de la tournée = celui du premier arrêt qui en a un (pas celui d'Uber, qui n'en a plus).
             'courier' => ($lead = $g->first(fn ($s) => $s->delivery_boy_id !== null)) ? ($couriers[$lead->delivery_boy_id]->name ?? null) : null,
             'courier_id' => $lead?->delivery_boy_id,
+            // [E2E 2026-10-30 · propriétaire : « le suivi de la caisse du livreur très bien fait »] Espèces de la tournée : déjà
+            // encaissées par le livreur (à lui réclamer au retour) et encore à encaisser. Avant, aucun écran ne disait « le
+            // livreur X doit reverser Y € ». Les arrêts d'Uber sont payés en ligne : jamais comptés ici.
+            'cash' => [
+                'collected' => round($g->filter(fn ($s) => $s->delivered_at !== null && $s->collect_method === 'cash')->sum('amount_collected_cents') / 100, 2),
+                'to_collect' => round($g->filter(fn ($s) => $s->delivered_at === null && $s->collect_method === 'cash')->sum('amount_due_cents') / 100, 2),
+            ],
             'stops'   => $g->map(fn ($s) => [
                 'id' => $s->id, 'order_id' => $s->order_id, 'order_number' => $s->order?->order_serial_no,
                 'customer' => $s->order?->user?->name, 'address' => $s->order?->address?->address,

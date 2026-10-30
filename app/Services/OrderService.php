@@ -2400,6 +2400,30 @@ class OrderService
                             (int) $cashEscrowMeta['branch_id'],
                             (int) $cashEscrowMeta['driver_id'],
                         );
+                        // [E2E 2026-10-30 · propriétaire : « que ce soit tracé à 1000 % »] Sans service ouvert, l'espèces encaissée à la
+                        // porte n'avait AUCUNE ligne de caisse livreur (relevé : 45 remises espèces sur 50 sans mouvement ; l'argent
+                        // n'existait que dans le journal d'audit). On ouvre donc le service du livreur à sa première remise
+                        // (fond 0 €), plutôt que de laisser l'argent sans trace. Idempotent : openSession garde l'unicité
+                        // (verrou + index unique), et une course entre deux remises retombe sur le service déjà ouvert.
+                        if (! $openSession) {
+                            try {
+                                $openSession = $svc->openSession(
+                                    (int) $cashEscrowMeta['branch_id'],
+                                    (int) $cashEscrowMeta['driver_id'],
+                                    0.0,
+                                    (int) $cashEscrowMeta['driver_id'],
+                                );
+                                $openSession->forceFill(['notes' => 'Ouvert automatiquement à la première remise en espèces (aucun service ouvert).'])->save();
+                            } catch (\Throwable $openError) {
+                                $openSession = $svc->findOpenSessionForDeliveryBoy(
+                                    (int) $cashEscrowMeta['branch_id'],
+                                    (int) $cashEscrowMeta['driver_id'],
+                                );
+                                if (! $openSession) {
+                                    throw $openError; // attrapé plus bas : erreur journalisée, la remise n'est pas bloquée
+                                }
+                            }
+                        }
                         if ($openSession) {
                             $svc->recordMovement(
                                 (int) $openSession->id,

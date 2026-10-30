@@ -28,6 +28,9 @@
                     <div class="flex items-center gap-2 text-sm">
                         <span v-if="w.courier" class="font-semibold">Livreur : {{ w.courier }}</span>
                         <span v-else class="font-semibold text-red-700">Aucun livreur</span>
+                        <!-- [E2E 2026-10-30] Espèces : ce que le livreur a déjà encaissé (à récupérer à son retour) et ce qui reste à encaisser. -->
+                        <span v-if="w.cash && w.cash.collected > 0" class="rounded-full bg-[#ECFDF3] px-2 py-1 text-xs font-bold text-green-800" :data-testid="'pos-delivery-wave-cash-' + waveDate(w) + '-' + w.time">Espèces encaissées : {{ format(w.cash.collected) }} · à récupérer auprès du livreur</span>
+                        <span v-if="w.cash && w.cash.to_collect > 0" class="rounded-full bg-[#FFF3E0] px-2 py-1 text-xs font-bold text-[#9A3412]">Reste à encaisser : {{ format(w.cash.to_collect) }}</span>
                         <select
                             v-if="!w.left && couriers.length > 1"
                             class="h-9 rounded-lg border border-[#D9DBE9] px-2 text-sm"

@@ -118,6 +118,35 @@ class DeliveryRunTest extends TestCase
         $this->assertSame(2750, (int) $stop->fresh()->amount_collected_cents);
     }
 
+    /**
+     * [E2E 2026-10-30] Espèces encaissées à la porte SANS service livreur ouvert : avant, aucune ligne de caisse livreur (relevé :
+     * 45 remises espèces sur 50 sans mouvement). Désormais le service s'ouvre à la première remise (fond 0 €) et le mouvement y est écrit.
+     */
+    public function test_door_cash_without_an_open_shift_opens_one_and_records_the_movement(): void
+    {
+        $stop = $this->readyDelivery(['payment_status' => PaymentStatus::UNPAID, 'payment_method' => PaymentGateway::CASH_ON_DELIVERY, 'total' => 27.5]);
+        $this->assertSame(0, \App\Models\DeliveryBoyCashSession::query()->withoutGlobalScopes()->where('delivery_boy_id', $this->courier->id)->count());
+
+        $this->http()->postJson('/api/frontend/delivery-run/depart', ['wave_at' => '2026-10-20 19:30:00'])->assertOk();
+        $this->http()->postJson("/api/frontend/delivery-run/stops/{$stop->id}/deliver", ['collected_cents' => 2750])->assertOk();
+
+        $session = \App\Models\DeliveryBoyCashSession::query()->withoutGlobalScopes()->where('delivery_boy_id', $this->courier->id)->first();
+        $this->assertNotNull($session, 'un service livreur est ouvert à la première remise espèces');
+        $this->assertSame(\App\Models\DeliveryBoyCashSession::STATUS_OPEN, $session->status);
+        $this->assertEquals(0.0, (float) $session->opening_amount);
+        $mv = \App\Models\DeliveryBoyCashMovement::query()->withoutGlobalScopes()->where('delivery_boy_cash_session_id', $session->id)->get();
+        $this->assertCount(1, $mv, 'une ligne de mouvement pour la remise');
+        $this->assertSame($stop->order_id, (int) $mv[0]->order_id);
+        $this->assertEquals(27.5, (float) $mv[0]->amount);
+
+        // La planche de la caisse dit ce que le livreur a encaissé (et rien « à encaisser » une fois remis).
+        $cashier = User::factory()->create(['branch_id' => $this->branch->id, 'status' => Status::ACTIVE]);
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos', 'guard_name' => 'sanctum']));
+        $board = $this->actingAs($cashier, 'sanctum')->withHeader('x-api-key', 'test-api-key')->getJson('/api/admin/pos-delivery/board')->assertOk();
+        $this->assertEquals(27.5, $board->json('data.0.cash.collected'));
+        $this->assertEquals(0.0, $board->json('data.0.cash.to_collect'));
+    }
+
     public function test_depart_leaves_orders_not_yet_prepared_behind_and_says_so(): void
     {
         $ready = $this->readyDelivery();
