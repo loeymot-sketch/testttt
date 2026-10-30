@@ -306,7 +306,7 @@ class SocialAuthController extends Controller
         // (`kiosk:order` seulement — un jeton client qui fuite ne doit rien pouvoir faire
         // sur l'administration), même durée de 30 jours, même purge par appareil.
         $token = $this->tokens
-            ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), 60 * 24 * 30)
+            ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), \App\Services\Auth\CustomerSessionPolicy::LIFETIME_MINUTES)
             ->plainTextToken;
 
         return response()->json([

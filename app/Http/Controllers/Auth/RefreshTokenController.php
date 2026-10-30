@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 
+use App\Services\Auth\CustomerSessionPolicy;
 use Exception;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TokenStoreRequest;
@@ -74,12 +75,21 @@ class RefreshTokenController extends Controller
             $deviceLabel = $token->device_label;
             $lastIp      = $token->last_ip;
 
+            // [SESSION DURABLE 2026-10-30 · T-S2.1.1] Une session CLIENT dure 30 jours
+            // (CustomerSessionPolicy). Sans cette branche, un renouvellement la RACCOURCIRAIT
+            // à 480 min. Glissant : 30 jours à compter d'AUJOURD'HUI. Évalué AVANT la
+            // suppression du jeton ; tout autre jeton (borne, caisse, admin, client qui est
+            // aussi du personnel) garde la durée globale.
+            $lifetimeMinutes = CustomerSessionPolicy::isCustomerToken($token)
+                ? CustomerSessionPolicy::LIFETIME_MINUTES
+                : (int) config('sanctum.expiration', 480);
+
             $token->delete();
 
             $newToken = $user->createToken(
                 $tokenName,
                 $abilities,
-                now()->addMinutes((int) config('sanctum.expiration', 480))
+                now()->addMinutes($lifetimeMinutes)
             );
 
             $newToken->accessToken->forceFill([

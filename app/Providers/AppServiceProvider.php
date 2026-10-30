@@ -96,6 +96,14 @@ class AppServiceProvider extends ServiceProvider
             // Ne jamais empecher le demarrage pour un reglage de confort.
         }
 
+        // [SESSION DURABLE 2026-10-30 · T-S2.1.1] Le Guard de Sanctum applique AUSSI un
+        // plafond global `created_at` (sanctum.expiration, 480 min) qui coupait la session
+        // client de 30 jours au bout de 8 h. Ce crochet ne rattrape que le jeton client
+        // longue durée (voir CustomerSessionPolicy) ; borne, caisse et admin sont inchangés.
+        \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(
+            [\App\Services\Auth\CustomerSessionPolicy::class, 'authenticate']
+        );
+
         Schema::defaultStringLength(191);
 
         $audit = SoftDeleteAuditObserver::class;
