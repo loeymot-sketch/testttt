@@ -13,6 +13,7 @@ use App\Services\Delivery\HandoverRefused;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -33,8 +34,35 @@ class DeliveryHandoverController extends Controller
     public const SESSION_TTL_MINUTES = 15;
     public const ROLE = 'Delivery Boy';
 
-    /** Hachage valide quelconque, comparé quand le compte n'existe pas : le temps de réponse ne dit pas « compte inconnu ». */
-    private const DUMMY_HASH = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+    /**
+     * Hachage factice comparé quand le compte n'existe pas : le temps de réponse ne dit pas « compte inconnu ». Il DOIT avoir le
+     * même coût que les vrais hachages (config/hashing.php) : un coût 10 contre 12 donnait 60 ms contre 239 ms (relecture adverse C).
+     * Fabriqué une fois par processus (et mémorisé en cache, clé par coût) : le recalculer à chaque requête coûterait ce qu'on cache.
+     */
+    private static ?string $dummyHash = null;
+
+    public static function dummyHash(): string
+    {
+        $cost = (int) config('hashing.bcrypt.rounds', 12);
+        if (self::$dummyHash !== null && (int) (Hash::info(self::$dummyHash)['options']['cost'] ?? 0) === $cost) {
+            return self::$dummyHash;
+        }
+        try {
+            $cached = Cache::get('delivery-handover.dummy-hash.'.$cost);
+        } catch (\Throwable $e) {
+            $cached = null;
+        }
+        if (! is_string($cached) || (int) (Hash::info($cached)['options']['cost'] ?? 0) !== $cost) {
+            $cached = Hash::make(Str::random(40));
+            try {
+                Cache::forever('delivery-handover.dummy-hash.'.$cost, $cached);
+            } catch (\Throwable $e) {
+                // sans cache : la valeur reste mémorisée pour le processus
+            }
+        }
+
+        return self::$dummyHash = $cached;
+    }
 
     public function login(Request $request): JsonResponse
     {
@@ -45,7 +73,7 @@ class DeliveryHandoverController extends Controller
         }
 
         $user = User::query()->withoutGlobalScope(BranchScope::class)->where('email', $email)->first();
-        $passwordOk = Hash::check($password, $user ? (string) $user->password : self::DUMMY_HASH);
+        $passwordOk = Hash::check($password, $user ? (string) $user->password : self::dummyHash());
         // Mauvais mot de passe, compte inconnu ou désactivé : UNE seule réponse (aucune énumération de comptes).
         if (! $user || ! $passwordOk || (int) $user->status !== Status::ACTIVE) {
             return $this->badCredentials();
@@ -144,7 +172,7 @@ class DeliveryHandoverController extends Controller
         } catch (\Throwable $e) {
             Log::error('delivery.handover.confirm_failed', ['user_id' => $user->id, 'error' => $e->getMessage(), 'class' => get_class($e)]);
 
-            return response()->json(['status' => false, 'code' => 'error', 'message' => 'La remise n\'a pas pu être enregistrée. Rien n\'a été modifié : réessayez.'], 500);
+            return response()->json(['status' => false, 'code' => 'error', 'message' => 'La remise n\'a pas pu être enregistrée complètement. Touchez de nouveau « Remis » : rien ne sera encaissé deux fois.'], 500);
         }
     }
 

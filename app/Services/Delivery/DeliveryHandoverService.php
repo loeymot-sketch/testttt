@@ -425,9 +425,16 @@ class DeliveryHandoverService
     // ── validation : « Remis » ───────────────────────────────────────────────────────────────
 
     /**
-     * Valide la remise, EN UNE TRANSACTION sous le verrou de la commande : contrôles en direct → mode et montant → brûlure du
-     * jeton → passage à LIVRÉE par la voie officielle (encaissement, séquence fiscale, escrow, audit existants) → arrêt mis à
-     * jour → trace `delivery.handover_validated`. Tout ou rien : si une étape échoue, le jeton n'est PAS brûlé.
+     * Valide la remise. ⚠️ AUCUNE transaction ne doit envelopper `OrderService::deliveryBoyOrderChangeStatus` : il écrit ses audits
+     * NF525 (escrow, tranche porte, caisse livreur) et envoie mail/SMS/push APRÈS son propre COMMIT ; sous une transaction externe ils
+     * partiraient verrous tenus (Lock wait timeout 1205 sur la chaîne d'audit, notification « livrée » avant un échec). Séquence :
+     *   1. contrôles en direct (attribution, annulée, Uber, livrée, périmée, parti) → mode et montant (sans écrire) ;
+     *   2. RÉSERVATION atomique du mode sur la ligne du jeton (`UPDATE … WHERE chosen_mode IS NULL AND used_at IS NULL`) : la 1re requête
+     *      fixe le mode, toute requête jumelle applique CELUI-LÀ ;
+     *   3. la remise officielle, SEULE (sa transaction, ses audits après commit) ; en cas d'échec la réservation est libérée, rien n'est brûlé ;
+     *   4. SEULEMENT après succès : petite transaction à part — verrou de l'arrêt, brûlure atomique du jeton, arrêt mis à jour, trace.
+     * Si l'étape 4 échoue, la commande est LIVRÉE (donc le jeton est déjà inutilisable : `inspect()` refuse une commande livrée) et un
+     * nouvel appui TERMINE la comptabilité de l'arrêt sans rien rejouer (ni encaissement, ni numéro fiscal).
      *
      * @param  array{declared_mode?: ?string, collected_cents?: ?int, lat?: ?float, lng?: ?float, accuracy?: ?float, device_id?: ?string, ip?: ?string, user_agent?: ?string}  $in
      * @return array{already: bool, data: array<string,mixed>}
@@ -435,41 +442,41 @@ class DeliveryHandoverService
      */
     public function confirm(User $user, string $token, array $in): array
     {
-        if (! self::looksLikeToken($token)) {
+        $row = $this->find($token);
+        if (! $row) {
             throw HandoverRefused::unavailable();
         }
-        $hash = self::hash($token);
+        $ids = [$row->id, $row->order_id, $row->delivery_stop_id];
 
-        return DB::transaction(function () use ($user, $hash, $in) {
-            $row = DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)->where('token_hash', $hash)->lockForUpdate()->first();
-            if (! $row) {
-                throw HandoverRefused::unavailable();
+        $v = $this->inspect($row, $user);
+        if (! $v['ok']) {
+            $stop = $v['stop'];
+            if (in_array($v['reason'], [self::REASON_USED, self::REASON_DELIVERED], true)
+                && $row->used_at !== null && (int) $row->used_by_user_id === (int) $user->id && $stop?->delivered_at !== null) {
+                // Double appui / réponse perdue : la remise de CE livreur est déjà faite. Rien n'est rejoué.
+                return ['already' => true, 'data' => $this->result($stop, $v['order'], $row)];
             }
-            $ids = [$row->id, $row->order_id, $row->delivery_stop_id];
-            // Verrou de la commande PUIS de l'arrêt (même ordre que la voie officielle) : deux validations se sérialisent ici.
-            $order = Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->order_id)->lockForUpdate()->firstOrFail();
-            $stop = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->delivery_stop_id)->lockForUpdate()->firstOrFail();
-
-            $v = $this->inspect($row, $user);
-            if (! $v['ok']) {
-                if (in_array($v['reason'], [self::REASON_USED, self::REASON_DELIVERED], true)
-                    && $row->used_at !== null && (int) $row->used_by_user_id === (int) $user->id && $stop->delivered_at !== null) {
-                    // Double appui / réponse perdue : la remise de CE livreur est déjà faite. Rien n'est rejoué.
-                    return ['already' => true, 'data' => $this->result($stop, $order, $row)];
-                }
-                $this->throwForReason($v['reason'], $row, $user);
+            if ($v['reason'] === self::REASON_DELIVERED && $row->used_at === null && $row->chosen_mode !== null && $stop !== null) {
+                // La remise officielle est passée mais la comptabilité de l'arrêt / du jeton est restée en plan (panne après coup) :
+                // on la TERMINE avec le mode réservé, sans rien rejouer.
+                return $this->finalize($user, $row, $in);
             }
+            $this->throwForReason($v['reason'], $row, $user);
+        }
+        $order = $v['order'];
 
-            $due = app(DeliveryWaveService::class)->collectionFor($order);
-            $dueCents = (int) $due['amount_due_cents'];
-            $chosen = (string) $due['collect_method'];
-            $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
+        $due = app(DeliveryWaveService::class)->collectionFor($order);
+        $dueCents = (int) $due['amount_due_cents'];
+        $chosen = (string) $due['collect_method'];
+        $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
 
-            $mismatch = $declared !== null && $declared !== $chosen;
-            if (! $this->burn($row, (int) $user->id, [
+        // 2. Réservation du mode : le premier gagne, les jumelles appliquent son mode (jamais le leur).
+        $claimed = DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)
+            ->whereKey($row->id)->whereNull('used_at')->whereNull('revoked_at')->whereNull('chosen_mode')
+            ->update([
                 'chosen_mode'            => $chosen,
                 'declared_mode'          => $declared,
-                'mode_mismatch'          => $mismatch,
+                'mode_mismatch'          => $declared !== null && $declared !== $chosen,
                 'amount_due_cents'       => $dueCents,
                 'amount_collected_cents' => $dueCents > 0 ? (int) $in['collected_cents'] : 0,
                 'device_id'              => isset($in['device_id']) ? substr((string) $in['device_id'], 0, 64) : null,
@@ -478,37 +485,92 @@ class DeliveryHandoverService
                 'lat'                    => $in['lat'] ?? null,
                 'lng'                    => $in['lng'] ?? null,
                 'accuracy_m'             => isset($in['accuracy']) ? (int) min(65535, max(0, round((float) $in['accuracy']))) : null,
-            ])) {
+                'updated_at'             => now(),
+            ]) === 1;
+        $row = $row->refresh();
+        if (! $claimed) {
+            if ($row->used_at !== null) {
+                $s = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->find($row->delivery_stop_id);
+                if ((int) $row->used_by_user_id === (int) $user->id && $s?->delivered_at !== null) {
+                    return ['already' => true, 'data' => $this->result($s, $order, $row)];
+                }
                 throw new HandoverRefused(409, 'already_used', 'Ce QR vient d\'être utilisé.', ...$ids);
             }
+            if ($row->chosen_mode === null) { // réservation libérée entre-temps : on laisse le livreur réessayer
+                throw new HandoverRefused(409, 'retry', 'Un autre appui est en cours. Réessayez dans un instant.', ...$ids);
+            }
+            $declared = $row->declared_mode; // le mode du 1er appui fait foi
+        }
 
-            // Voie officielle : encaissement à la porte, numéro fiscal NF525, escrow espèces, audit, notifications — inchangés.
+        // 3. Voie officielle, SEULE : encaissement à la porte, numéro fiscal NF525, escrow, audits et notifications APRÈS son commit.
+        try {
             app(OrderService::class)->deliveryBoyOrderChangeStatus(
                 $order,
                 Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]),
                 $declared
             );
-
-            $after = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($order->id);
-            $settled = (int) $after->status === OrderStatus::DELIVERED && ($dueCents === 0 || (int) $after->payment_status === PaymentStatus::PAID);
-            if (! $settled) {
-                // Annule TOUT (jeton compris) : la commande n'a pas pu être soldée, on ne laisse pas une remise à moitié.
-                throw new HandoverRefused(422, 'caisse_required', 'Cette commande ne peut pas être soldée à la porte. Renvoyez-la à la caisse.', ...$ids);
+        } catch (\Throwable $e) {
+            if ($claimed) {
+                $this->releaseClaim($row); // ni jeton brûlé, ni mode figé : le livreur peut corriger et réessayer
             }
+            throw $e;
+        }
 
+        $after = Order::query()->withoutGlobalScope(BranchScope::class)->find($order->id);
+        if (! ($after && (int) $after->status === OrderStatus::DELIVERED && ($dueCents === 0 || (int) $after->payment_status === PaymentStatus::PAID))) {
+            Log::critical('delivery.handover.not_settled', ['order_id' => $order->id, 'status' => $after?->status, 'payment_status' => $after?->payment_status]);
+        }
+
+        return $this->finalize($user, $row, $in);
+    }
+
+    /** Libère la réservation d'un mode si la commande n'a PAS été livrée (la remise officielle a échoué). */
+    private function releaseClaim(DeliveryHandoverToken $row): void
+    {
+        $delivered = Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->order_id)->value('status');
+        if ((int) $delivered === OrderStatus::DELIVERED) {
+            return;
+        }
+        DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->id)->whereNull('used_at')->update([
+            'chosen_mode' => null, 'declared_mode' => null, 'mode_mismatch' => false, 'amount_due_cents' => null, 'amount_collected_cents' => null,
+            'device_id' => null, 'ip' => null, 'user_agent' => null, 'lat' => null, 'lng' => null, 'accuracy_m' => null, 'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Étape 4 : PETITE transaction, APRÈS une remise officielle réussie. Verrou de l'arrêt (sérialise deux appuis), brûlure atomique du
+     * jeton, arrêt mis à jour avec ce qui a été RÉSERVÉ, trace d'audit. Un jumeau qui a déjà terminé → « déjà remis », rien n'est rejoué.
+     *
+     * @param  array<string,mixed>  $in
+     * @return array{already: bool, data: array<string,mixed>}
+     */
+    private function finalize(User $user, DeliveryHandoverToken $row, array $in): array
+    {
+        return DB::transaction(function () use ($user, $row, $in) {
+            $stop = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->delivery_stop_id)->lockForUpdate()->firstOrFail();
+            $order = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($row->order_id);
+            $row = $row->refresh();
+            if ($stop->delivered_at !== null || $row->used_at !== null) {
+                return ['already' => true, 'data' => $this->result($stop, $order, $row)];
+            }
+            if (! $this->burn($row, (int) $user->id)) {
+                return ['already' => true, 'data' => $this->result($stop->refresh(), $order, $row->refresh())];
+            }
+            $row = $row->refresh();
+            $due = (int) $row->amount_due_cents;
             $stop->forceFill([
-                'collect_method'         => $declared ?? $stop->collect_method,
-                'amount_due_cents'       => $dueCents,
-                'amount_collected_cents' => $dueCents > 0 ? (int) $in['collected_cents'] : 0,
+                'collect_method'         => $row->declared_mode ?? $stop->collect_method,
+                'amount_due_cents'       => $due,
+                'amount_collected_cents' => (int) $row->amount_collected_cents,
                 'arrived_at'             => $stop->arrived_at ?? now(),
                 'delivered_at'           => now(),
-                'arrival_lat'            => $stop->arrival_lat ?? ($in['lat'] ?? null),
-                'arrival_lng'            => $stop->arrival_lng ?? ($in['lng'] ?? null),
+                'arrival_lat'            => $stop->arrival_lat ?? $row->lat,
+                'arrival_lng'            => $stop->arrival_lng ?? $row->lng,
             ])->save();
 
-            $this->auditValidated($user, $row->refresh(), $stop, $in);
+            $this->auditValidated($user, $row, $stop, $in);
 
-            return ['already' => false, 'data' => $this->result($stop, $after, $row)];
+            return ['already' => false, 'data' => $this->result($stop, $order, $row)];
         });
     }
 
@@ -583,6 +645,10 @@ class DeliveryHandoverService
             'mismatch'       => (bool) $row->mode_mismatch,
             'amount_cents'   => (int) $row->amount_collected_cents,
             'handed_over_at' => $stop->delivered_at?->toIso8601String(),
+            // Le QR voyage avec le livreur : rien ne prouve qu'il est à la porte. On trace l'écart avec le départ (et si une position existe).
+            'left_at'        => $stop->left_at?->toIso8601String(),
+            'minutes_since_departure' => $stop->left_at ? (int) round($stop->left_at->diffInSeconds($stop->delivered_at) / 60) : null,
+            'position_given' => $row->lat !== null && $row->lng !== null,
             'device_id'      => $row->device_id,
             'lat'            => $row->lat,
             'lng'            => $row->lng,

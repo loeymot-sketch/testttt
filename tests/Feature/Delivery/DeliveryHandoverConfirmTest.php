@@ -411,7 +411,7 @@ class DeliveryHandoverConfirmTest extends TestCase
         $this->assertNull($stop->fresh()->delivered_at);
     }
 
-    public function test_the_whole_confirmation_is_one_transaction_a_failure_after_the_burn_gives_the_token_back(): void
+    public function test_a_failure_of_the_official_handover_burns_nothing_and_gives_the_token_back(): void
     {
         [$stop, $qr, $bearer] = $this->onTheRoad();
         $this->mock(OrderService::class, function ($m) {
