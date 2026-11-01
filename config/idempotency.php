@@ -48,6 +48,8 @@ return [
         'api/frontend/delivery-run/depart',
         'api/frontend/delivery-run/stops/*/arrive',
         'api/frontend/delivery-run/stops/*/deliver',
+        // [LIVRAISON QR 2026-11-01] Validation de la remise par QR : encaissement à la porte + numéro fiscal, comme /deliver.
+        'api/frontend/delivery-handover/confirm',
         // [GOAL REMARQUES 2026-10-03 · R-060] Même famille : suppression d'un geste des commandes
         // téléphone du jour. Un double appui ne doit pas relancer la purge (revue adverse vague 2).
         'api/admin/pos/counter-collect/purge-phone-today',

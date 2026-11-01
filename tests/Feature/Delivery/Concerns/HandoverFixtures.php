@@ -122,6 +122,8 @@ trait HandoverFixtures
     /** @return array<string,string> */
     protected function bearer(string $token, ?string $idem = null): array
     {
+        // Le garde Sanctum mémorise l'utilisateur résolu : sans ceci, un 2e jeton (autre livreur) serait ignoré dans le même test.
+        $this->app['auth']->forgetGuards();
         return ['Authorization' => 'Bearer '.$token, 'x-api-key' => 'test-api-key', 'Accept' => 'application/json',
             'X-Idempotency-Key' => $idem ?? (string) Str::uuid()];
     }

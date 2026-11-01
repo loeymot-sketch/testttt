@@ -2480,6 +2480,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // suivantes n'acceptent QUE ce jeton. Un limiteur nommé par route (docs/LIVRAISON.md §3quinquies).
     Route::prefix('delivery-handover')->name('delivery-handover.')->group(function () {
         Route::post('/login', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'login'])->middleware('throttle:delivery-handover-login');
+        Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireHandoverToken::class])->group(function () {
+            Route::post('/resolve', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'resolve'])->middleware('throttle:delivery-handover-resolve');
+            Route::post('/confirm', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'confirm'])->middleware(['throttle:delivery-handover-confirm', 'idempotency']);
+        });
     });
 
     Route::prefix('delivery-boy-order')->name('delivery-boy-order.')->middleware(['auth:sanctum'])->group(function () {

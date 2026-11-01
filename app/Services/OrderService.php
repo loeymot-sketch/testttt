@@ -2049,7 +2049,14 @@ class OrderService
     /**
      * @throws Exception
      */
-    public function deliveryBoyOrderChangeStatus(Order $order, Request $request): Order
+    /**
+     * @param  string|null  $declaredDoorMode  [LIVRAISON QR 2026-11-01] Mode RÉELLEMENT encaissé à la porte, déclaré par le livreur
+     *                                         à la remise par QR : 'cash' | 'card' | 'meal_voucher'. NULL (tous les autres appelants,
+     *                                         dont l'écran /livreur historique) = comportement inchangé, dérivé de la commande.
+     *                                         Lu et appliqué SOUS le `lockForUpdate` ci-dessous : le Z range vente par
+     *                                         `pos_payment_method ?: payment_method`, donc le mode déclaré doit être posé dans CE verrou.
+     */
+    public function deliveryBoyOrderChangeStatus(Order $order, Request $request, ?string $declaredDoorMode = null): Order
     {
         try {
             // [FIX-54-1] Ownership check — same as deliveryBoyOrderDetails()
@@ -2094,7 +2101,7 @@ class OrderService
             // [CARTE À LA LIVRAISON 2026-10-24] Même structure pour la tranche CARTE encaissée au terminal du livreur
             // (clés `mode` + `event` : une tranche d'audit, deux modes, jamais d'escrow espèces).
             $doorTrancheMeta = null;
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$doorTrancheMeta) {
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta, &$doorTrancheMeta, $declaredDoorMode) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -2135,6 +2142,33 @@ class OrderService
                     && (int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY;
                 $wasUnpaidCash = (! $transaction)
                     && ((int) $locked->payment_status === (int) PaymentStatus::UNPAID || $isWebDeliveryDeferred);
+
+                // [LIVRAISON QR 2026-11-01] Mode déclaré par le livreur : valable UNIQUEMENT à la remise d'une commande encore à
+                // encaisser. Une commande déjà payée (en ligne, au comptoir) ne change JAMAIS, quoi qu'on déclare.
+                $expectedPosMethod = null;
+                if ($declaredDoorMode !== null) {
+                    if (! in_array($declaredDoorMode, ['cash', 'card', 'meal_voucher'], true)
+                        || (int) $newStatus !== (int) OrderStatus::DELIVERED || ! $wasUnpaidCash) {
+                        abort(422, 'Mode d\'encaissement déclaré sur une commande qui n\'est pas à encaisser : renvoyez-la à la caisse.');
+                    }
+                    $expectedKind = $declaredDoorMode === 'meal_voucher'
+                        ? \App\Enums\PaymentGateway::TICKET_RESTAURANT
+                        : \App\Enums\PaymentGateway::CASH_ON_DELIVERY;
+                    if ((int) $locked->payment_method !== (int) $expectedKind) {
+                        abort(422, 'Ce mode d\'encaissement ne correspond pas à la commande : renvoyez-la à la caisse.');
+                    }
+                    $expectedPosMethod = match ($declaredDoorMode) {
+                        'card' => \App\Enums\PosPaymentMethod::CARD,
+                        'cash' => \App\Enums\PosPaymentMethod::CASH,
+                        default => \App\Enums\PosPaymentMethod::TICKET_RESTAURANT,
+                    };
+                    // Le Z range par pos_payment_method : une valeur déjà posée et différente du déclaré fausserait la ventilation.
+                    if ($locked->pos_payment_method !== null
+                        && (int) $locked->pos_payment_method !== \App\Enums\PosPaymentMethod::COUNTER_DEFERRED
+                        && (int) $locked->pos_payment_method !== (int) $expectedPosMethod) {
+                        abort(422, 'Le mode d\'encaissement déjà enregistré contredit celui déclaré : renvoyez la commande à la caisse.');
+                    }
+                }
 
                 if ($wasUnpaidCash) {
                     // [P0-LIV-03] Guard payment_method against silent double-charge.
@@ -2194,7 +2228,11 @@ class OrderService
                     // (numéro fiscal) et tranche CARTE à la REMISE. Le livreur encaisse au terminal de paiement qu'il porte
                     // (hors de notre système) ; nous enregistrons le mode et le montant. AUCUN escrow espèces ni mouvement
                     // de tiroir : ce n'est pas de l'argent liquide.
-                    $isCardAtDoor = $isCod && (string) $locked->door_payment_mode === 'card';
+                    // [LIVRAISON QR 2026-11-01] Le livreur a déclaré ce qu'il a réellement encaissé : cela prime sur le choix du client
+                    // (qui reste intact sur la commande, `door_payment_mode` n'est pas réécrit).
+                    $isCardAtDoor = $isCod && ($declaredDoorMode !== null
+                        ? $declaredDoorMode === 'card'
+                        : (string) $locked->door_payment_mode === 'card');
 
                     if ($isCardAtDoor) {
                         if ($atDelivered) {

@@ -9,8 +9,13 @@ use App\Models\DeliveryStop;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Models\UberDirectDelivery;
+use App\Enums\PaymentGateway;
+use App\Enums\PaymentStatus;
 use App\Models\User;
+use App\Services\Fiscal\AuditLogService;
+use App\Services\OrderService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -299,5 +304,309 @@ class DeliveryHandoverService
             ->update($extra + ['used_at' => now(), 'used_by_user_id' => $userId, 'updated_at' => now()]);
 
         return $affected === 1;
+    }
+
+    // ── lecture pour la page (après connexion) ───────────────────────────────────────────────
+
+    /**
+     * Ce que la page de remise affiche au livreur CONNECTÉ dont c'est l'arrêt. Tout autre cas : {@see HandoverRefused::unavailable()},
+     * identique pour un jeton inconnu, révoqué, périmé ou qui n'est pas le sien.
+     *
+     * @return array<string,mixed>
+     * @throws HandoverRefused
+     */
+    public function resolve(User $user, string $token): array
+    {
+        $row = $this->find($token);
+        if (! $row) {
+            throw HandoverRefused::unavailable();
+        }
+        $v = $this->inspect($row, $user);
+        $stop = $v['stop'];
+        $order = $v['order'];
+        $this->throwForReason($v['reason'], $row, $user, allowDelivered: true);
+
+        if ($v['reason'] !== null) { // livrée / brûlée : le livreur attribué revoit l'heure, rien à faire
+            return ['state' => 'delivered', 'order_number' => $order->order_serial_no, 'delivered_at' => $stop->delivered_at?->toDateTimeString()];
+        }
+
+        $due = app(DeliveryWaveService::class)->collectionFor($order);
+
+        return ['state' => 'ready'] + $this->present($stop, $order, $due);
+    }
+
+    /** @return array<string,mixed> */
+    private function present(DeliveryStop $stop, Order $order, array $due): array
+    {
+        $order->loadMissing(['address', 'user']);
+        $addr = $order->address;
+        $hasPoint = $addr && is_numeric($addr->latitude) && is_numeric($addr->longitude);
+        $chosen = $due['collect_method'];
+
+        return [
+            'order_number'     => $order->order_serial_no,
+            'customer_name'    => $order->user?->name,
+            'customer_phone'   => $order->user?->phone,
+            'address'          => $addr?->address,
+            'apartment'        => $addr?->apartment,
+            'city'             => $addr?->city,
+            'postal_code'      => $addr?->postal_code,
+            'waze_url'         => $hasPoint ? sprintf('https://waze.com/ul?ll=%s,%s&navigate=yes&zoom=17', $addr->latitude, $addr->longitude) : null,
+            'maps_url'         => $hasPoint ? sprintf('https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=driving', $addr->latitude, $addr->longitude) : null,
+            'chosen_mode'      => $chosen,
+            'collect_label'    => match ($chosen) {
+                DeliveryStop::COLLECT_CASH => 'Encaisser en espèces',
+                DeliveryStop::COLLECT_CARD => 'Encaisser par carte',
+                DeliveryWaveService::COLLECT_MEAL_VOUCHER => 'Encaisser en titre-restaurant',
+                default => 'Déjà payé',
+            },
+            'amount_due_cents' => (int) $due['amount_due_cents'],
+            'amount_due'       => round(((int) $due['amount_due_cents']) / 100, 2),
+            'allowed_modes'    => $this->allowedModes($order, $due),
+        ];
+    }
+
+    /**
+     * Modes que le livreur peut déclarer. Espèces ↔ carte seulement (décision propriétaire) ; titre-restaurant = titre-restaurant ;
+     * payée en ligne = aucun ; tout ce qui n'est pas encaissable à la porte (carte en ligne jamais payée…) = [] + {@see self::doorSettleable()} faux.
+     *
+     * @return list<string>
+     */
+    private function allowedModes(Order $order, array $due): array
+    {
+        if ((int) $due['amount_due_cents'] <= 0 || ! $this->doorSettleable($order)) {
+            return [];
+        }
+
+        return match ($due['collect_method']) {
+            DeliveryStop::COLLECT_CASH, DeliveryStop::COLLECT_CARD => ['cash', 'card'],
+            DeliveryWaveService::COLLECT_MEAL_VOUCHER => ['meal_voucher'],
+            default => [],
+        };
+    }
+
+    /** Une commande encore à payer n'est encaissable à la porte que si c'est de l'espèces/carte-à-la-livraison ou un titre-restaurant. */
+    private function doorSettleable(Order $order): bool
+    {
+        if ((int) $order->payment_status === PaymentStatus::PAID) {
+            return true; // rien à encaisser
+        }
+
+        return in_array((int) $order->payment_method, [PaymentGateway::CASH_ON_DELIVERY, PaymentGateway::TICKET_RESTAURANT], true);
+    }
+
+    /**
+     * Traduit la raison d'une inspection en refus HTTP. Les raisons qui ne concernent QUE le livreur attribué (annulée, pas
+     * encore parti…) ne sortent qu'après le contrôle d'attribution (inspect() le fait en premier).
+     */
+    private function throwForReason(?string $reason, DeliveryHandoverToken $row, User $user, bool $allowDelivered = false): void
+    {
+        $ids = [$row->id, $row->order_id, $row->delivery_stop_id];
+        switch ($reason) {
+            case null:
+                return;
+            case self::REASON_NOT_ASSIGNED:
+            case self::REASON_REVOKED:
+            case self::REASON_EXPIRED:
+                throw HandoverRefused::unavailable(...$ids);
+            case self::REASON_CANCELLED:
+                throw new HandoverRefused(409, 'cancelled', 'Commande annulée : ne la remettez pas, rapportez-la au restaurant.', ...$ids);
+            case self::REASON_NOT_DEPARTED:
+                throw new HandoverRefused(409, 'not_departed', 'Partez d\'abord avec la tournée (« Je pars » sur l\'écran Livreur), puis scannez à nouveau.', ...$ids);
+            case self::REASON_DELIVERED:
+            case self::REASON_USED:
+                if ($allowDelivered) {
+                    return;
+                }
+                throw new HandoverRefused(409, $reason === self::REASON_USED ? 'already_used' : 'already_delivered', 'Cette commande a déjà été remise.', ...$ids);
+        }
+    }
+
+    // ── validation : « Remis » ───────────────────────────────────────────────────────────────
+
+    /**
+     * Valide la remise, EN UNE TRANSACTION sous le verrou de la commande : contrôles en direct → mode et montant → brûlure du
+     * jeton → passage à LIVRÉE par la voie officielle (encaissement, séquence fiscale, escrow, audit existants) → arrêt mis à
+     * jour → trace `delivery.handover_validated`. Tout ou rien : si une étape échoue, le jeton n'est PAS brûlé.
+     *
+     * @param  array{declared_mode?: ?string, collected_cents?: ?int, lat?: ?float, lng?: ?float, accuracy?: ?float, device_id?: ?string, ip?: ?string, user_agent?: ?string}  $in
+     * @return array{already: bool, data: array<string,mixed>}
+     * @throws HandoverRefused
+     */
+    public function confirm(User $user, string $token, array $in): array
+    {
+        if (! self::looksLikeToken($token)) {
+            throw HandoverRefused::unavailable();
+        }
+        $hash = self::hash($token);
+
+        return DB::transaction(function () use ($user, $hash, $in) {
+            $row = DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)->where('token_hash', $hash)->lockForUpdate()->first();
+            if (! $row) {
+                throw HandoverRefused::unavailable();
+            }
+            $ids = [$row->id, $row->order_id, $row->delivery_stop_id];
+            // Verrou de la commande PUIS de l'arrêt (même ordre que la voie officielle) : deux validations se sérialisent ici.
+            $order = Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->order_id)->lockForUpdate()->firstOrFail();
+            $stop = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->delivery_stop_id)->lockForUpdate()->firstOrFail();
+
+            $v = $this->inspect($row, $user);
+            if (! $v['ok']) {
+                if (in_array($v['reason'], [self::REASON_USED, self::REASON_DELIVERED], true)
+                    && $row->used_at !== null && (int) $row->used_by_user_id === (int) $user->id && $stop->delivered_at !== null) {
+                    // Double appui / réponse perdue : la remise de CE livreur est déjà faite. Rien n'est rejoué.
+                    return ['already' => true, 'data' => $this->result($stop, $order, $row)];
+                }
+                $this->throwForReason($v['reason'], $row, $user);
+            }
+
+            $due = app(DeliveryWaveService::class)->collectionFor($order);
+            $dueCents = (int) $due['amount_due_cents'];
+            $chosen = (string) $due['collect_method'];
+            $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
+
+            $mismatch = $declared !== null && $declared !== $chosen;
+            if (! $this->burn($row, (int) $user->id, [
+                'chosen_mode'            => $chosen,
+                'declared_mode'          => $declared,
+                'mode_mismatch'          => $mismatch,
+                'amount_due_cents'       => $dueCents,
+                'amount_collected_cents' => $dueCents > 0 ? (int) $in['collected_cents'] : 0,
+                'device_id'              => isset($in['device_id']) ? substr((string) $in['device_id'], 0, 64) : null,
+                'ip'                     => isset($in['ip']) ? substr((string) $in['ip'], 0, 45) : null,
+                'user_agent'             => isset($in['user_agent']) ? substr((string) $in['user_agent'], 0, 255) : null,
+                'lat'                    => $in['lat'] ?? null,
+                'lng'                    => $in['lng'] ?? null,
+                'accuracy_m'             => isset($in['accuracy']) ? (int) min(65535, max(0, round((float) $in['accuracy']))) : null,
+            ])) {
+                throw new HandoverRefused(409, 'already_used', 'Ce QR vient d\'être utilisé.', ...$ids);
+            }
+
+            // Voie officielle : encaissement à la porte, numéro fiscal NF525, escrow espèces, audit, notifications — inchangés.
+            app(OrderService::class)->deliveryBoyOrderChangeStatus(
+                $order,
+                Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]),
+                $declared
+            );
+
+            $after = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($order->id);
+            $settled = (int) $after->status === OrderStatus::DELIVERED && ($dueCents === 0 || (int) $after->payment_status === PaymentStatus::PAID);
+            if (! $settled) {
+                // Annule TOUT (jeton compris) : la commande n'a pas pu être soldée, on ne laisse pas une remise à moitié.
+                throw new HandoverRefused(422, 'caisse_required', 'Cette commande ne peut pas être soldée à la porte. Renvoyez-la à la caisse.', ...$ids);
+            }
+
+            $stop->forceFill([
+                'collect_method'         => $declared ?? $stop->collect_method,
+                'amount_due_cents'       => $dueCents,
+                'amount_collected_cents' => $dueCents > 0 ? (int) $in['collected_cents'] : 0,
+                'arrived_at'             => $stop->arrived_at ?? now(),
+                'delivered_at'           => now(),
+                'arrival_lat'            => $stop->arrival_lat ?? ($in['lat'] ?? null),
+                'arrival_lng'            => $stop->arrival_lng ?? ($in['lng'] ?? null),
+            ])->save();
+
+            $this->auditValidated($user, $row->refresh(), $stop, $in);
+
+            return ['already' => false, 'data' => $this->result($stop, $after, $row)];
+        });
+    }
+
+    /**
+     * Matrice des modes (décisions propriétaire) — renvoie le mode déclaré à appliquer, ou null si rien n'est à encaisser.
+     *
+     * @param  array<int,int|null>  $ids
+     * @throws HandoverRefused
+     */
+    private function validatedMode(Order $order, array $due, mixed $declared, mixed $collected, array $ids): ?string
+    {
+        $dueCents = (int) $due['amount_due_cents'];
+        $refuse = static fn (string $code, string $msg): HandoverRefused => new HandoverRefused(422, $code, $msg, ...$ids);
+
+        if ($dueCents <= 0) { // payée : ni mode, ni montant
+            if ($declared !== null && $declared !== '') {
+                throw $refuse('mode_forbidden', 'Cette commande est déjà payée : il n\'y a rien à encaisser.');
+            }
+            if ($collected !== null && (int) $collected !== 0) {
+                throw $refuse('wrong_amount', 'Cette commande est déjà payée : il n\'y a rien à encaisser.');
+            }
+
+            return null;
+        }
+
+        if (! $this->doorSettleable($order)) {
+            throw $refuse('caisse_required', 'Cette commande n\'est pas encaissable à la porte. Renvoyez-la à la caisse.');
+        }
+        $allowed = $this->allowedModes($order, $due);
+        if (! is_string($declared) || ! in_array($declared, ['cash', 'card', 'meal_voucher'], true)) {
+            throw $refuse('mode_required', 'Indiquez comment le client a payé : espèces ou carte.');
+        }
+        if (! in_array($declared, $allowed, true)) {
+            if ($due['collect_method'] === DeliveryWaveService::COLLECT_MEAL_VOUCHER || $declared === 'meal_voucher') {
+                throw $refuse($due['collect_method'] === DeliveryWaveService::COLLECT_MEAL_VOUCHER ? 'caisse_required' : 'mode_forbidden',
+                    $due['collect_method'] === DeliveryWaveService::COLLECT_MEAL_VOUCHER
+                        ? 'Paiement en titre-restaurant : renvoyez cette commande à la caisse si le client règle autrement.'
+                        : 'Le titre-restaurant n\'était pas le mode choisi : renvoyez cette commande à la caisse.');
+            }
+            throw $refuse('mode_forbidden', 'Ce mode d\'encaissement n\'est pas possible pour cette commande.');
+        }
+        if ($collected === null || ! is_numeric($collected) || (int) $collected !== $dueCents) {
+            throw $refuse('wrong_amount', sprintf('Le montant encaissé doit être exactement %s €.', number_format($dueCents / 100, 2, ',', ' ')));
+        }
+
+        return $declared;
+    }
+
+    /** @return array<string,mixed> */
+    private function result(DeliveryStop $stop, Order $order, DeliveryHandoverToken $row): array
+    {
+        return [
+            'order_number'           => $order->order_serial_no,
+            'delivered_at'           => $stop->delivered_at?->toDateTimeString(),
+            'declared_mode'          => $row->declared_mode,
+            'chosen_mode'            => $row->chosen_mode,
+            'mode_mismatch'          => (bool) $row->mode_mismatch,
+            'amount_collected_cents' => (int) $stop->amount_collected_cents,
+        ];
+    }
+
+    /** @param array<string,mixed> $in */
+    private function auditValidated(User $user, DeliveryHandoverToken $row, DeliveryStop $stop, array $in): void
+    {
+        $this->audit('delivery.handover_validated', $user, [
+            'order_id'       => (int) $row->order_id,
+            'stop_id'        => (int) $row->delivery_stop_id,
+            'token_id'       => (int) $row->id,
+            'wave_at'        => $stop->wave_at?->toDateTimeString(),
+            'chosen_mode'    => $row->chosen_mode,
+            'declared_mode'  => $row->declared_mode,
+            'mismatch'       => (bool) $row->mode_mismatch,
+            'amount_cents'   => (int) $row->amount_collected_cents,
+            'handed_over_at' => $stop->delivered_at?->toIso8601String(),
+            'device_id'      => $row->device_id,
+            'lat'            => $row->lat,
+            'lng'            => $row->lng,
+            'accuracy_m'     => $row->accuracy_m,
+            'user_agent'     => $row->user_agent,
+        ], (int) $row->order_id, $in['ip'] ?? null, $in['user_agent'] ?? null);
+    }
+
+    /** Trace chaînée (NF525) ; une panne d'audit ne bloque jamais la remise. */
+    public function audit(string $action, User $user, array $payload, ?int $resourceId = null, ?string $ip = null, ?string $ua = null): void
+    {
+        try {
+            app(AuditLogService::class)->write([
+                'branch_id'   => (int) $user->branch_id,
+                'user_id'     => (int) $user->id,
+                'action'      => $action,
+                'resource'    => 'delivery_handover',
+                'resource_id' => $resourceId ?? (int) $user->id,
+                'payload'     => $payload + ['delivery_boy_id' => (int) $user->id, 'via' => 'qr'],
+                'ip'          => $ip,
+                'user_agent'  => $ua !== null ? substr($ua, 0, 512) : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('delivery.handover.audit_failed', ['action' => $action, 'error' => $e->getMessage()]);
+        }
     }
 }

@@ -8,12 +8,16 @@ use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use App\Services\Auth\DeviceTokenService;
 use App\Services\Auth\HandoverTokenPolicy;
+use App\Services\Delivery\DeliveryHandoverService;
+use App\Services\Delivery\HandoverRefused;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -80,6 +84,73 @@ class DeliveryHandoverController extends Controller
             'expires_in' => self::SESSION_TTL_MINUTES * 60,
             'user'       => ['name' => $user->name],
         ], 201);
+    }
+
+    /** Où la page renvoie le livreur après « Remis » : une constante, jamais une valeur venue de la requête. */
+    public const NEXT_URL = '/livreur';
+
+    /** Lit l'arrêt derrière le QR. Réponse IDENTIQUE pour un jeton inconnu, mort ou qui n'est pas celui de ce livreur. */
+    public function resolve(Request $request): JsonResponse
+    {
+        $token = $request->input('token');
+        try {
+            if (! is_string($token)) {
+                throw HandoverRefused::unavailable();
+            }
+
+            return response()->json(['status' => true, 'data' => app(DeliveryHandoverService::class)->resolve($request->user(), $token)]);
+        } catch (HandoverRefused $e) {
+            return $this->refusal($e);
+        }
+    }
+
+    /** « Remis » : une transaction, un jeton brûlé, la remise officielle, la trace. Rejouable sans effet pour le même livreur. */
+    public function confirm(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $v = Validator::make($request->all(), [
+            'token'           => ['required', 'string', 'max:64'],
+            'declared_mode'   => ['nullable', 'string', 'max:16'],
+            'collected_cents' => ['nullable', 'integer', 'min:0', 'max:100000000'],
+            'lat'             => ['nullable', 'numeric', 'between:-90,90'],
+            'lng'             => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy'        => ['nullable', 'numeric', 'min:0', 'max:100000'],
+        ]);
+        if ($v->fails()) {
+            return response()->json(['status' => false, 'code' => 'invalid', 'message' => 'Données invalides : vérifiez le mode, le montant et la position.'], 422);
+        }
+        $in = $v->validated();
+        $in['device_id'] = $user->currentAccessToken()?->device_id;
+        $in['ip'] = (string) $request->ip();
+        $in['user_agent'] = (string) $request->userAgent();
+        $service = app(DeliveryHandoverService::class);
+        $ids = ['order_id' => null, 'stop_id' => null, 'token_id' => null];
+
+        try {
+            $result = $service->confirm($user, (string) $in['token'], $in);
+
+            return response()->json(['status' => true, 'already' => $result['already'], 'data' => $result['data'], 'next_url' => self::NEXT_URL]);
+        } catch (HandoverRefused $e) {
+            $this->audit('delivery.handover_refused', $user, $request, [
+                'reason' => $e->errorCode, 'order_id' => $e->orderId, 'stop_id' => $e->stopId, 'token_id' => $e->tokenId,
+                'declared_mode' => $in['declared_mode'] ?? null,
+            ], $e->orderId);
+
+            return $this->refusal($e);
+        } catch (HttpException $e) { // refus de la voie officielle (OrderService::abort) : la transaction est annulée, le jeton intact
+            $this->audit('delivery.handover_refused', $user, $request, ['reason' => 'order_service', 'detail' => substr($e->getMessage(), 0, 160)]);
+
+            return response()->json(['status' => false, 'code' => 'caisse_required', 'message' => 'Cette commande ne peut pas être soldée à la porte : renvoyez-la à la caisse.'], $e->getStatusCode() >= 400 ? $e->getStatusCode() : 422);
+        } catch (\Throwable $e) {
+            Log::error('delivery.handover.confirm_failed', ['user_id' => $user->id, 'error' => $e->getMessage(), 'class' => get_class($e)]);
+
+            return response()->json(['status' => false, 'code' => 'error', 'message' => 'La remise n\'a pas pu être enregistrée. Rien n\'a été modifié : réessayez.'], 500);
+        }
+    }
+
+    private function refusal(HandoverRefused $e): JsonResponse
+    {
+        return response()->json(['status' => false, 'code' => $e->errorCode, 'message' => $e->getMessage()], $e->httpStatus);
     }
 
     private function badCredentials(): JsonResponse
