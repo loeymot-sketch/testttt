@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Hardware\OrderReceiptEscPosRenderer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Delivery\Concerns\HandoverFixtures;
 use Tests\TestCase;
 
 /**
@@ -18,6 +20,9 @@ use Tests\TestCase;
  */
 class TicketWidthSafeTest extends TestCase
 {
+    use RefreshDatabase;
+    use HandoverFixtures;
+
     /** @return array<int,array{text:string,width:int}> lignes avec leur largeur EFFECTIVE (×2 si double-largeur) */
     private function decodeLines(string $bytes): array
     {
@@ -38,6 +43,12 @@ class TicketWidthSafeTest extends TestCase
             // Le décodeur ne le connaissait pas et comptait le « B » comme un caractère imprimé.
             if ($c === "\x1D" && $i + 2 < $len && $bytes[$i + 1] === 'B') {
                 $i += 3;
+                continue;
+            }
+            // [LIVRAISON QR 2026-11-01] GS ( k pL pH <données> = symbole QR : (5 + pL + 256·pH) octets, ZÉRO colonne de texte.
+            // Le décodeur ne le connaissait pas et comptait l'URL du QR comme une ligne de 91 caractères.
+            if ($c === "\x1D" && $i + 4 < $len && $bytes[$i + 1] === '(' && $bytes[$i + 2] === 'k') {
+                $i += 5 + ord($bytes[$i + 3]) + 256 * ord($bytes[$i + 4]);
                 continue;
             }
             if ($c === "\x1D" && $i + 1 < $len && $bytes[$i + 1] === 'V') { // coupe
@@ -282,6 +293,32 @@ class TicketWidthSafeTest extends TestCase
         $bytesNoPhone = (new OrderReceiptEscPosRenderer)->renderClientTicket($orderNoPhone, ['width_chars' => 42]);
         $decodedNoPhone = iconv('CP858', 'UTF-8//IGNORE', preg_replace('/[\x00-\x09\x0B-\x1F]/', '', $bytesNoPhone));
         $this->assertStringNotContainsString('Tel :', $decodedNoPhone, 'pas de ligne Tel si téléphone vide');
+    }
+
+    /**
+     * [LIVRAISON QR 2026-11-01] Le ticket d'une LIVRAISON porte le QR de remise : le décodeur saute le symbole `GS ( k` (zéro colonne),
+     * et aucune ligne de TEXTE du ticket ne dépasse la largeur, à 32 comme à 48 colonnes.
+     */
+    public function test_delivery_ticket_with_handover_qr_never_exceeds_width(): void
+    {
+        $this->setUpHandover();
+        try {
+            $stop = $this->departed($this->delivery());
+            $this->assertNotNull($this->qrToken($stop));
+            $order = Order::query()->withoutGlobalScopes()->with(['branch', 'orderItems', 'user'])->findOrFail($stop->order_id);
+            foreach ([32, 48] as $w) {
+                $bytes = app(OrderReceiptEscPosRenderer::class)->renderClientTicket($order, ['width_chars' => $w]);
+                $this->assertStringContainsString("\x1D(k", $bytes, "QR présent à $w col");
+                $this->assertNoLineExceeds($bytes, $w, "livraison + QR à $w col");
+                $texts = array_column($this->decodeLines($bytes), 'text');
+                $this->assertContains('REMISE LIVREUR', $texts);
+                foreach ($texts as $t) {
+                    $this->assertStringNotContainsString('/livreur/remise', $t, 'l\'URL du QR n\'est jamais comptée comme une ligne de texte');
+                }
+            }
+        } finally {
+            $this->tearDownHandover();
+        }
     }
 
     public function test_price_stays_atomic_on_one_line(): void
