@@ -100,8 +100,10 @@ class AppServiceProvider extends ServiceProvider
         // plafond global `created_at` (sanctum.expiration, 480 min) qui coupait la session
         // client de 30 jours au bout de 8 h. Ce crochet ne rattrape que le jeton client
         // longue durée (voir CustomerSessionPolicy) ; borne, caisse et admin sont inchangés.
+        // [LIVRAISON QR 2026-11-01] HandoverTokenPolicy enveloppe CustomerSessionPolicy (un seul crochet existe) :
+        // le jeton court de la remise par QR n'est valable que sur api/frontend/delivery-handover/*.
         \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(
-            [\App\Services\Auth\CustomerSessionPolicy::class, 'authenticate']
+            [\App\Services\Auth\HandoverTokenPolicy::class, 'authenticate']
         );
 
         Schema::defaultStringLength(191);

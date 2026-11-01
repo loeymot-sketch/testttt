@@ -581,6 +581,37 @@ class RouteServiceProvider extends ServiceProvider
                 Limit::perMinute(120)->by('login-global')->response($tooMany),
             ];
         });
+
+        // [LIVRAISON QR 2026-11-01] Remise par QR : une connexion dédiée (e-mail + mot de passe) et deux routes à jeton court.
+        // Chacune a SON limiteur nommé (docs/LIVRAISON.md §3quinquies : jamais un `throttle:N,M` nu). La connexion est calquée sur
+        // `login-lockout` : seau par (compte|IP), seau par compte SEUL (survit à la rotation d'IP), plafond global.
+        RateLimiter::for('delivery-handover-login', function (Request $request) {
+            $email = $request->input('email');
+            $identifier = Str::lower(is_string($email) && $email !== '' ? $email : 'anon');
+            $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
+            $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
+            $tooMany = function () use ($decayMinutes) {
+                return response()->json([
+                    'message' => trans('auth.trop_de_tentatives', ['minutes' => $decayMinutes]),
+                    'retry_after' => $decayMinutes * 60,
+                ], 429);
+            };
+
+            return [
+                Limit::perMinutes($decayMinutes, $maxAttempts)->by('dhl:'.$identifier.'|'.$request->ip())->response($tooMany),
+                Limit::perMinutes($decayMinutes, $maxAttempts)->by('dhl-id:'.$identifier)->response($tooMany),
+                Limit::perMinute(120)->by('dhl-global')->response($tooMany),
+            ];
+        });
+        foreach (['delivery-handover-resolve' => 30, 'delivery-handover-confirm' => 20] as $name => $perMinute) {
+            RateLimiter::for($name, function (Request $request) use ($name, $perMinute) {
+                $who = $request->user()?->getAuthIdentifier();
+
+                return Limit::perMinute($perMinute)->by($name.':'.($who ?: 'ip:'.$request->ip()))->response(function () {
+                    return response()->json(['message' => 'Trop de tentatives. Patientez une minute.', 'retry_after' => 60], 429);
+                });
+            });
+        }
     }
 
     protected function mapWebRoutes()

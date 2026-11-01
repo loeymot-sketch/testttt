@@ -2475,6 +2475,13 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/stops/{stop}/photo', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'photo']);
     });
 
+    // [LIVRAISON QR 2026-11-01] Remise par QR (jeton à usage unique imprimé sur le ticket client d'une livraison). La connexion est
+    // dédiée (refuse tout compte qui n'est pas « Delivery Boy » avant d'émettre un jeton court `handover_token`) ; les routes
+    // suivantes n'acceptent QUE ce jeton. Un limiteur nommé par route (docs/LIVRAISON.md §3quinquies).
+    Route::prefix('delivery-handover')->name('delivery-handover.')->group(function () {
+        Route::post('/login', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'login'])->middleware('throttle:delivery-handover-login');
+    });
+
     Route::prefix('delivery-boy-order')->name('delivery-boy-order.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [FrontendDeliveryBoyOrderController::class, 'index']);
         Route::get('/show/{order}', [FrontendDeliveryBoyOrderController::class, 'show']);
