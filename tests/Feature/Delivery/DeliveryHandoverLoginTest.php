@@ -177,4 +177,49 @@ class DeliveryHandoverLoginTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame('role', $row->payload['reason']);
     }
+
+    /** [relecture adverse C · P2] Un e-mail inconnu coûte autant qu'un vrai : hachage factice au coût configuré, comparé quand même. */
+    public function test_an_unknown_email_is_checked_against_a_dummy_hash_of_the_configured_cost(): void
+    {
+        config(['hashing.bcrypt.rounds' => 12]);
+        $this->assertSame(12, (int) \Illuminate\Support\Facades\Hash::info(\App\Http\Controllers\Frontend\DeliveryHandoverController::dummyHash())['options']['cost'],
+            'le hachage factice a le coût configuré (et non un coût 10 figé)');
+        config(['hashing.bcrypt.rounds' => 4]);
+        Cache::flush();
+
+        $spy = new class($this->app) extends \Illuminate\Hashing\HashManager {
+            public static array $checked = [];
+
+            public function check($value, $hashedValue, array $options = [])
+            {
+                self::$checked[] = $hashedValue;
+
+                return parent::check($value, $hashedValue, $options);
+            }
+        };
+        $this->app->instance('hash', $spy);
+        \Illuminate\Support\Facades\Hash::clearResolvedInstance('hash');
+        $spy::$checked = [];
+
+        $this->login('personne.inconnue@test.fr')->assertStatus(422);
+
+        $this->assertCount(1, $spy::$checked, 'Hash::check est appelé aussi pour un compte inconnu');
+        $this->assertSame(4, (int) $spy->info($spy::$checked[0])['options']['cost'], 'au coût configuré');
+        // Même nombre d'appels que pour un vrai compte avec mauvais mot de passe.
+        $spy::$checked = [];
+        $this->login('livreur.a@test.fr', 'mauvais')->assertStatus(422);
+        $this->assertCount(1, $spy::$checked);
+    }
+
+    /** [relecture adverse C · P3] La base compare sans accent : « jeán@ » et « jean@ » partagent le même seau de tentatives. */
+    public function test_accent_and_case_variants_of_an_email_share_one_throttle_bucket(): void
+    {
+        config(['auth.login_lockout.max_attempts' => 5]);
+        foreach (['jean@test.fr', 'JEAN@test.fr', 'jeán@test.fr', ' jean@test.fr', 'Jeán@Test.fr'] as $variant) {
+            $this->login($variant, 'mauvais')->assertStatus(422);
+        }
+
+        $this->login('jéan@test.fr', 'mauvais')->assertStatus(429);
+        $this->login('jean@test.fr', 'mauvais')->assertStatus(429);
+    }
 }

@@ -315,16 +315,35 @@ qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant d
   (crochet Sanctum) le rend **inexistant partout sauf** `api/frontend/delivery-handover/*`.
 - `POST …/resolve` et `POST …/confirm` (jeton `handover_token` obligatoire ; un jeton de session ordinaire est refusé 403). Jeton inconnu, révoqué,
   périmé, ou qui n'est pas celui de ce livreur → **la même réponse 404** `QR_UNAVAILABLE`, sans adresse, nom, téléphone ni contenu.
-- `confirm` = **une transaction sous le verrou de la commande** : contrôles en direct (attribution livreur + branche, commande annulée/refusée, course Uber,
-  déjà livrée, périmé, parti) → mode et montant → **brûlure atomique** (`UPDATE … WHERE used_at IS NULL`) → `OrderService::deliveryBoyOrderChangeStatus`
-  (3ᵉ paramètre OPTIONNEL `$declaredDoorMode`, lu **sous le `lockForUpdate`** : le Z range par `pos_payment_method ?: payment_method`) → arrêt mis à jour
-  → `delivery.handover_validated`. Une étape qui échoue annule tout, jeton compris. Rejouable : le même livreur qui rejoue reçoit `already: true`, rien n'est
-  rejoué ; un autre reçoit 404. Les refus sont tracés `delivery.handover_refused`.
+- `confirm` — **aucune transaction ne doit envelopper `OrderService::deliveryBoyOrderChangeStatus`** (relecture adverse 2026-11-01 : ses audits NF525
+  — escrow, tranche porte, caisse livreur — et ses mail/SMS/push partent APRÈS son propre COMMIT ; sous une transaction externe ils
+  partaient verrous tenus : `1205 Lock wait timeout` sur la chaîne d'audit, lignes d'audit perdues, mail « livrée » avant un échec).
+  Séquence : (1) contrôles en direct (attribution livreur + branche, commande annulée/refusée, course Uber, déjà livrée, périmé, parti) puis mode
+  et montant, sans rien écrire ; (2) **réservation atomique du mode** sur la ligne du jeton (`UPDATE … WHERE chosen_mode IS NULL AND used_at IS NULL`) :
+  la 1re requête fixe le mode, toute jumelle applique CELUI-LÀ ; (3) la remise officielle, **seule** (sa transaction, ses audits après commit) ; si elle
+  échoue, la réservation est libérée, **rien n'est brûlé**, l'arrêt est inchangé, aucune notification n'est partie ; (4) seulement après succès, une
+  **petite transaction à part** : verrou de l'arrêt, brûlure atomique du jeton (`UPDATE … WHERE used_at IS NULL`), arrêt mis à jour, `delivery.handover_validated`.
+  Si l'étape 4 échoue, la commande est déjà LIVRÉE (donc le jeton est déjà inutilisable : `inspect()` refuse une commande livrée, un autre livreur reçoit 404) et
+  le prochain appui du livreur **termine** l'arrêt avec le mode réservé, sans rejouer ni encaissement ni numéro fiscal. Deux appuis simultanés : une seule
+  remise, un seul numéro fiscal, un seul jeton brûlé, le mode de la 1re requête. Rejouable : le même livreur qui rejoue après coup reçoit `already: true` ;
+  un autre reçoit 404. Les refus sont tracés `delivery.handover_refused`.
 - Matrice : espèces/carte choisis → déclaré espèces ou carte (écart tracé : `mode_mismatch`) ; titre-restaurant → titre-restaurant seulement ;
   payée en ligne → ni mode ni montant (sinon 422) ; carte en ligne jamais payée → « renvoyez à la caisse » (la défaillance historique du flip PAYÉ
   sans paiement n'est PAS atteignable par ce chemin). Aucun escrow espèces ni mouvement de tiroir pour une carte ; le choix du client
   (`orders.door_payment_mode`) n'est jamais réécrit.
 - `POST …/confirm` est dans `idempotency.required_routes` ; limiteurs nommés `delivery-handover-login|resolve|confirm` (jamais un `throttle:N,M` nu).
+
+**QR perdu, taché ou photographié — procédure honnête (aujourd'hui)**. `DeliveryHandoverService::revoke()` / `regenerate()` existent et sont testés mais n'ont
+**aucun appelant** (ni bouton caisse, ni commande artisan) : rien n'a été construit pour les déclencher. Ce qui protège réellement : (1) le QR seul ne sert à rien —
+il faut le **mot de passe du livreur attribué** à cet arrêt (autre livreur, client, caisse, admin : refusés ; réponse identique, rien révélé) ; (2) la commande doit être
+**non annulée, non livrée, non confiée à Uber, et partie** ; (3) il **expire** à départ de tournée + 6 h ; (4) usage unique. Ticket abîmé = il suffit de **réimprimer** (même QR).
+Si le papier a pu être vu par un tiers : annuler/relivrer par la caisse, ou laisser le livreur valider par l'écran `/livreur` (repli intact). **Reste ouvert** : pas de
+révocation à la demande depuis la caisse, et le livreur attribué lui-même peut valider avec un QR photographié.
+
+**Risque de conception connu (documenté, non corrigé)** : le QR voyage sur le ticket avec le livreur, qui peut donc toucher « Remis » **avant d'arriver à la porte** ;
+e-mail + mot de passe prouvent QUI valide, pas OÙ. Ce que la remise enregistre pour le détecter après coup : l'**heure** (`delivered_at`), la **position** si le téléphone
+l'accorde (jeton + arrêt ; facultative, jamais bloquante), et dans `delivery.handover_validated` : `left_at`, `minutes_since_departure`, `position_given`, `lat`/`lng`/`accuracy_m`,
+l'appareil et l'IP. Une remise sans position, ou quelques minutes après le départ, se lit dans le journal ; elle n'est pas refusée.
 
 **Ce qui n'est PAS fait / à vérifier** : le ticket HTML (`ReceiptComponent.vue`, `window.print`) n'a pas de QR ; le support `GS ( k` du modèle réel
 d'imprimante, la lecture du QR sur papier thermique et la conservation du `#` par l'appareil photo de chaque téléphone se vérifient **sur la machine**.

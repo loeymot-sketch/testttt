@@ -587,7 +587,8 @@ class RouteServiceProvider extends ServiceProvider
         // `login-lockout` : seau par (compte|IP), seau par compte SEUL (survit à la rotation d'IP), plafond global.
         RateLimiter::for('delivery-handover-login', function (Request $request) {
             $email = $request->input('email');
-            $identifier = Str::lower(is_string($email) && $email !== '' ? $email : 'anon');
+            // La base compare sans accent : 'jeán@' et 'jean@' = même compte = même seau.
+            $identifier = trim(Str::lower(Str::ascii(is_string($email) && $email !== '' ? $email : 'anon')));
             $maxAttempts = max(1, (int) config('auth.login_lockout.max_attempts', 10));
             $decayMinutes = max(1, (int) config('auth.login_lockout.decay_minutes', 10));
             $tooMany = function () use ($decayMinutes) {
