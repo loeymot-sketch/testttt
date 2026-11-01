@@ -969,6 +969,10 @@ final class OrderReceiptEscPosRenderer
     private function deliveryHandoverQrBlock(BroadcastableOrder $order, int $w): string
     {
         try {
+            // Interrupteur d'impression (config/delivery.php, défaut FAUX) : fermé = aucun octet de QR, AUCUN jeton créé.
+            if (! (bool) config('delivery.handover.qr_print_enabled', false)) {
+                return '';
+            }
             if ((int) ($order->order_type ?? 0) !== \App\Enums\OrderType::DELIVERY
                 || (int) ($order->id ?? 0) <= 0
                 || $this->isRefundReceipt($order)

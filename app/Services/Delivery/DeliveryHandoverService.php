@@ -532,11 +532,25 @@ class DeliveryHandoverService
             };
         }
         if ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
-            && ($knownDoorCollection || \App\Models\AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->where('resource_id', $order->id)->exists())) {
+            && ($knownDoorCollection || $this->hasCashEvidence($order))) {
             return 'cash';
         }
 
         return null;
+    }
+
+    /**
+     * Preuve que des ESPÈCES ont été encaissées à la porte : la trace d'audit d'escrow OU la ligne de caisse livreur de la commande. Les deux
+     * sont écrites « au mieux » après le commit d'OrderService ; il suffit que l'une survive pour ne pas noter 27,50 € d'espèces à 0 €.
+     */
+    private function hasCashEvidence(Order $order): bool
+    {
+        if (\App\Models\AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->where('resource_id', $order->id)->exists()) {
+            return true;
+        }
+
+        return \App\Models\DeliveryBoyCashMovement::query()->withoutGlobalScope(BranchScope::class)
+            ->where('order_id', $order->id)->where('type', \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT)->exists();
     }
 
     /** Choix initial du client, relu dans la commande (avant encaissement) : espèces / carte à la livraison / titre-restaurant / payée. */

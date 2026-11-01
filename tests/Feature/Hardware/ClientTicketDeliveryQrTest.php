@@ -30,6 +30,7 @@ class ClientTicketDeliveryQrTest extends TestCase
     {
         parent::setUp();
         $this->setUpHandover();
+        config(['delivery.handover.qr_print_enabled' => true]); // interrupteur d'impression : FAUX par défaut, activé explicitement ici
     }
 
     protected function tearDown(): void

@@ -84,6 +84,17 @@ class LivreurRemisePageTest extends TestCase
         $this->assertStringContainsString("r.body.code === 'in_progress'", $c, 'un appui jumeau en cours garde l\'écran (pas de « QR non valable »)');
     }
 
+    public function test_the_page_quotes_the_mode_this_courier_really_sent_and_handles_a_425_in_flight(): void
+    {
+        $c = $this->get('/livreur/remise')->getContent();
+
+        $this->assertStringContainsString('Vous avez envoyé ', $c, 'double appui à modes différents : on cite CE que le livreur a envoyé');
+        $this->assertStringContainsString("sent !== d.declared_mode", $c);
+        $this->assertStringContainsString("r.status === 425", $c);
+        $this->assertStringContainsString("'IDEMPOTENCY_IN_FLIGHT'", $c);
+        $this->assertSame(1, preg_match("/425[^\\n]*\\n?[^\\n]*Validation en cours, réessayez dans un instant/u", $c), 'le 425 affiche « Validation en cours », pas « pas pu être enregistrée »');
+    }
+
     public function test_the_page_calls_only_the_dedicated_handover_endpoints(): void
     {
         $c = $this->get('/livreur/remise')->getContent();

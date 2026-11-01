@@ -157,6 +157,33 @@ const dbQuery = (env, code) => php(env, ['artisan', 'tinker', '--execute', code]
       ok(!(await text(page)).match(/Rue Test|Karim/), 'D7 jeton inconnu : refus, rien révélé');
       await ctx.close();
     }
+    // ── F. Réponses du serveur simulées : 425 « en cours » puis double appui à modes différents (le gagnant n'est pas ce que le livreur a envoyé) ──
+    {
+      const ctx = await browser.newContext(phone);
+      const page = await ctx.newPage();
+      await page.goto(seed.hostile.qr_url);
+      await page.fill('#email', 'livreur.a@e2e.test'); await page.fill('#password', 'password'); await page.click('#go');
+      await page.waitForSelector('[data-testid=arret]');
+      await page.click('[data-mode=card]');
+      let n = 0;
+      await page.route('**/delivery-handover/confirm', (route) => {
+        n += 1;
+        if (n === 1) return route.fulfill({ status: 425, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'Idempotent request already in flight; retry shortly.', code: 'IDEMPOTENCY_IN_FLIGHT' }) });
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: true, already: true, next_url: '/livreur', data: { delivered_at: '2026-11-01 21:00:00', declared_mode: 'cash', chosen_mode: 'cash', mode_mismatch: false, amount_collected_cents: 2750 } }) });
+      });
+      await page.click('#remis');
+      await page.waitForSelector('#err:not(:empty)');
+      const t425 = await page.textContent('#err');
+      ok(/Validation en cours, réessayez dans un instant/.test(t425) && !/pas pu être enregistrée/.test(t425), 'F1 un 425 IDEMPOTENCY_IN_FLIGHT affiche « Validation en cours, réessayez dans un instant »');
+      ok(await page.locator('[data-testid=arret]').count() === 1 && !(await page.locator('#remis').isDisabled()), 'F2 l\'écran d\'arrêt reste, « Remis » réactivé');
+      await shot(page, 'F1-en-cours');
+      await page.click('#remis');
+      await page.waitForSelector('[data-testid=ecart-mode]');
+      const tf = await page.textContent('[data-testid=ecart-mode]');
+      ok(/Vous avez envoyé carte, mais c'est espèces qui est enregistré/.test(tf), 'F3 le message cite le mode que CE livreur a envoyé (carte) et le gagnant (espèces)');
+      await shot(page, 'F2-gagnant-different');
+      await ctx.close();
+    }
     // ── E. Encore un livreur valide ouvre l'arrêt gardé (le QR « guarded » est intact) puis on vérifie la base ────
     {
       const g = JSON.parse(dbQuery(env, `$o=\\App\\Models\\Order::withoutGlobalScopes()->find(${seed.guarded.order_id}); echo json_encode(['status'=>$o->status,'pay'=>$o->payment_status,'used'=>(bool)\\App\\Models\\DeliveryHandoverToken::withoutGlobalScopes()->where('order_id',${seed.guarded.order_id})->value('used_at')]);`));

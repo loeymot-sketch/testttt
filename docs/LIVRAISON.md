@@ -323,7 +323,7 @@ qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant d
   après 30 s ; un jumeau qui ne peut pas le prendre répond **409 `in_progress`** (« Validation en cours, réessayez dans un instant », la page reste sur l'écran, même clé
   d'idempotence) et **ne rappelle jamais OrderService** (pas de mail/SMS/push/événement en double). Sous le verrou : (a) l'état est **relu** ; (b) si la commande est déjà
   LIVRÉE (jumeau, ancien écran, crash après commit) OrderService n'est PAS rappelé : l'arrêt est terminé avec le **mode réellement appliqué, lu dans la commande**
-  (`order_payments` de référence « livraison », ou `pos_payment_method = CASH` + trace d'escrow), jamais dans la requête ; (c) sinon contrôles → mode et montant → remise officielle
+  (`order_payments` de référence « livraison », ou `pos_payment_method = CASH` + trace d'escrow **ou** ligne de caisse livreur de la commande : une seule des deux suffit), jamais dans la requête ; (c) sinon contrôles → mode et montant → remise officielle
   SEULE → petite transaction (verrou de l'arrêt, brûlure `UPDATE … WHERE used_at IS NULL`, arrêt, `delivery.handover_validated` avec le mode APPLIQUÉ et `mode_mismatch`
   = écart avec le choix du client). Échec de la remise officielle : rien n'est écrit, rien brûlé, verrou libéré, le livreur peut réessayer avec un autre mode. Échec de la
   petite transaction : la commande est LIVRÉE (le jeton est déjà inutilisable : `inspect()` refuse une commande livrée), le prochain appui termine l'arrêt. Le TTL de 30 s
@@ -336,6 +336,17 @@ qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant d
   sans paiement n'est PAS atteignable par ce chemin). Aucun escrow espèces ni mouvement de tiroir pour une carte ; le choix du client
   (`orders.door_payment_mode`) n'est jamais réécrit.
 - `POST …/confirm` est dans `idempotency.required_routes` ; limiteurs nommés `delivery-handover-login|resolve|confirm` (jamais un `throttle:N,M` nu).
+
+**⚠️ Interrupteur d'impression — le QR est ÉTEINT par défaut.** `config/delivery.php` → `handover.qr_print_enabled`, piloté par l'env `DELIVERY_HANDOVER_QR_PRINT`, **défaut `false`**
+(sentinelle : `DeliveryHandoverQrPrintFlagTest`). Éteint : le ticket ne contient **aucun octet de QR** et **aucun jeton n'est créé** ; les routes de remise restent actives
+(un jeton n'existe que s'il a été imprimé). Raison : la lisibilité sur l'imprimante réelle n'est pas testée (un modèle sans `GS ( k` imprimerait des caractères parasites sur
+TOUS les tickets de livraison). **Procédure propriétaire pour l'allumer** : (1) poser `DELIVERY_HANDOVER_QR_PRINT=true` dans le `.env` de production ; (2) `php artisan config:clear`
+(**JAMAIS `config:cache`**, cf. docs) ; (3) imprimer UNE livraison test ; (4) scanner le papier avec un **iPhone ET un Android** et vérifier que la page s'ouvre sans « QR non lisible »
+(le `#` doit être conservé par l'appareil photo) ; (5) si un des deux échoue, ou si des caractères parasites sortent : remettre `false` (+ `config:clear`). Rien d'autre à défaire.
+
+**Résidu connu (non corrigé, décision)** : le retour anticipé d'`OrderService::deliveryBoyOrderChangeStatus` (statut déjà atteint) ne retient pas les notifications qui le suivent. Si le
+verrou de remise expire pendant une remise officielle de plus de 30 s (ou si Redis est vidé en pleine remise), le jumeau peut renvoyer mail/SMS/push/`OrderStatusChanged`.
+**Aucun effet financier** (un seul numéro fiscal, une seule tranche, un seul escrow : verrous de ligne d'OrderService) ; seul le client peut recevoir deux messages « livrée ».
 
 **QR perdu, taché ou photographié — procédure honnête (aujourd'hui)**. `DeliveryHandoverService::revoke()` / `regenerate()` existent et sont testés mais n'ont
 **aucun appelant** (ni bouton caisse, ni commande artisan) : rien n'a été construit pour les déclencher. Ce qui protège réellement : (1) le QR seul ne sert à rien —

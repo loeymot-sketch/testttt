@@ -15,6 +15,7 @@ use App\Models\DeliveryStop;
 use App\Models\Order;
 use App\Models\OrderPayment;
 use App\Services\Delivery\DeliveryHandoverService;
+use App\Services\Fiscal\AuditLogService;
 use App\Services\Delivery\HandoverRefused;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -338,6 +339,32 @@ class DeliveryHandoverSequenceTest extends TestCase
         $this->assertSame($fiscal, (int) $this->order($stop)->fiscal_sequence_no);
         $this->assertSame(1, AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->count(), 'rien n\'est rejoué');
         $this->assertSame(0, $mails, 'OrderService n\'a pas été rappelé : aucune notification de plus');
+    }
+
+    public function test_cash_is_still_recognised_through_the_cash_movement_when_the_escrow_audit_was_lost(): void
+    {
+        [$stop, $qr, $bearer] = $this->road();
+        // L'audit d'escrow est écrit « au mieux » après le commit d'OrderService : ici il est PERDU (panne).
+        $this->app->instance(AuditLogService::class, new class extends AuditLogService {
+            public function write(array $data): AuditLog
+            {
+                if (($data['action'] ?? '') === 'delivery.cash_collected_escrow') {
+                    throw new \RuntimeException('audit perdu');
+                }
+
+                return parent::write($data);
+            }
+        });
+        $this->actingAs($this->courier, 'sanctum');
+        app(OrderService::class)->deliveryBoyOrderChangeStatus($this->order($stop), Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]));
+        $this->assertSame(0, AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->count(), 'pas de trace d\'audit');
+        $this->assertSame(1, DeliveryBoyCashMovement::query()->withoutGlobalScopes()->where('order_id', $stop->order_id)->count(), 'mais une ligne de caisse livreur');
+
+        $r = $this->confirm($bearer, $qr, ['declared_mode' => 'card'])->assertOk();
+
+        $this->assertSame('cash', $r->json('data.declared_mode'));
+        $this->assertSame('cash', $stop->fresh()->collect_method);
+        $this->assertSame(2750, (int) $stop->fresh()->amount_collected_cents, '27,50 € d\'espèces ne retombent pas à 0 €');
     }
 
     public function test_the_answer_flags_a_mismatch_between_the_client_choice_and_what_was_collected(): void

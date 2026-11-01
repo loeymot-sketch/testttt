@@ -94,6 +94,14 @@ return [
         'cache_minutes'   => 60 * 24,
     ],
 
+    // [LIVRAISON QR 2026-11-01] Remise par QR à usage unique. `qr_print_enabled` = INTERRUPTEUR D'IMPRESSION du QR sur le ticket client des
+    // livraisons. DÉFAUT FALSE : la lisibilité sur l'imprimante réelle n'est pas prouvée (un modèle sans `GS ( k` imprimerait des caractères
+    // parasites sur TOUS les tickets de livraison). Quand c'est faux, le ticket ne contient AUCUN octet de QR et AUCUN jeton n'est créé ;
+    // les routes de remise restent actives (un jeton n'existe que s'il a été imprimé). Procédure : docs/LIVRAISON.md §8.
+    'handover' => [
+        'qr_print_enabled' => (bool) env('DELIVERY_HANDOVER_QR_PRINT', false),
+    ],
+
     // Photo de preuve d'arrivée (disque local `public`, dossier relatif).
     'proof_photo' => [
         'directory' => 'delivery-proofs',

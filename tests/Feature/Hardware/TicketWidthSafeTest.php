@@ -302,6 +302,7 @@ class TicketWidthSafeTest extends TestCase
     public function test_delivery_ticket_with_handover_qr_never_exceeds_width(): void
     {
         $this->setUpHandover();
+        config(['delivery.handover.qr_print_enabled' => true]);
         try {
             $stop = $this->departed($this->delivery());
             $this->assertNotNull($this->qrToken($stop));

@@ -206,7 +206,9 @@
             return api('confirm', body, idem);
         }).then(function (r) {
             busy = false;
-            if (r.status === 200 && r.body.status) { return doneScreen(r.body.data && r.body.data.delivered_at, !!r.body.already, r.body.data); }
+            if (r.status === 200 && r.body.status) { return doneScreen(r.body.data && r.body.data.delivered_at, !!r.body.already, r.body.data, due > 0 ? mode : null); }
+            // 425 : le même appui est encore en cours côté serveur (idempotence) — pas un échec : on reste, même clé, on retouche dans un instant.
+            if (r.status === 425 || (r.body && r.body.code === 'IDEMPOTENCY_IN_FLIGHT')) return stopScreen('Validation en cours, réessayez dans un instant.');
             if (r.status === 401) { session = null; return loginScreen('Session expirée : reconnectez-vous, puis validez à nouveau.'); }
             // Un appui jumeau est en cours : on RESTE sur l'écran, même clé d'idempotence, le livreur retouche dans un instant.
             if (r.status === 409 && r.body.code === 'in_progress') return stopScreen(r.body.message || 'Validation en cours, réessayez dans un instant.');
@@ -220,12 +222,19 @@
         });
     }
 
-    function doneScreen(at, already, d) {
+    function doneScreen(at, already, d, sent) {
         // Écart entre ce que le client avait choisi et ce que le livreur a déclaré : dit clairement, c'est enregistré.
+        // Si la réponse porte un mode GAGNANT différent de celui que CE livreur vient d'envoyer (double appui à modes différents), on cite
+        // les deux : jamais « vous avez déclaré X » pour un mode qu'il n'a pas envoyé.
         var warn = '';
-        if (d && d.mode_mismatch && d.declared_mode && d.chosen_mode) {
-            warn = '<div class="notice" data-testid="ecart-mode" role="status">Vous avez déclaré ' + esc((LABELS[d.declared_mode] || d.declared_mode).toLowerCase())
-                + ' alors que le client avait choisi ' + esc((LABELS[d.chosen_mode] || d.chosen_mode).toLowerCase()) + ' : c\'est enregistré.</div>';
+        var lab = function (m) { return String(LABELS[m] || m || '').toLowerCase(); };
+        if (d && d.declared_mode && sent && sent !== d.declared_mode) {
+            warn = '<div class="notice" data-testid="ecart-mode" role="status">Vous avez envoyé ' + esc(lab(sent)) + ', mais c\'est ' + esc(lab(d.declared_mode))
+                + ' qui est enregistré (un autre appui est passé avant)' + (d.chosen_mode ? ' ; le client avait choisi ' + esc(lab(d.chosen_mode)) : '')
+                + '. Si ce n\'est pas juste, voyez la caisse.</div>';
+        } else if (d && d.mode_mismatch && d.declared_mode && d.chosen_mode) {
+            warn = '<div class="notice" data-testid="ecart-mode" role="status">Vous avez déclaré ' + esc(lab(d.declared_mode))
+                + ' alors que le client avait choisi ' + esc(lab(d.chosen_mode)) + ' : c\'est enregistré.</div>';
         }
         render('<div class="card big" data-testid="remise-ok"><div class="tick" aria-hidden="true">✓</div><h2>' + (already ? 'Déjà remis' : 'Remis') + (at ? ' à ' + esc(hm(at)) : '') + '</h2>'
             + warn + '<p class="muted">Ce QR ne peut plus servir.</p><a class="btn" id="back" href="' + NEXT + '">Mes livraisons</a></div>');
