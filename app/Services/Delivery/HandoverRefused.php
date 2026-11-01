@@ -24,6 +24,6 @@ class HandoverRefused extends RuntimeException
     /** UNE réponse pour tout QR inconnu, mort ou qui n'est pas celui de ce livreur : elle ne révèle rien. */
     public static function unavailable(?int $tokenId = null, ?int $orderId = null, ?int $stopId = null): self
     {
-        return new self(404, 'QR_UNAVAILABLE', 'Ce QR n\'est plus valable. Utilisez l\'écran Livreur ou voyez la caisse.', $tokenId, $orderId, $stopId);
+        return new self(404, 'QR_UNAVAILABLE', 'Ce QR n\'est plus valable.', $tokenId, $orderId, $stopId);
     }
 }

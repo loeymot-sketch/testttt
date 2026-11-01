@@ -25,6 +25,7 @@
         header h1 { margin:0; font-size:18px; font-weight:800; }
         main { padding:16px 14px 56px; max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
         h2 { margin:0; font-size:22px; }
+        h2:focus { outline:none; }
         p { margin:0; }
         label.f { display:flex; flex-direction:column; gap:6px; font-weight:700; font-size:15px; }
         input[type=email],input[type=password] { width:100%; min-height:56px; padding:12px 14px; font-size:18px; border:1px solid var(--line); border-radius:12px; background:#fff; }
@@ -46,7 +47,7 @@
         .due.paid { background:#EAF7EE; border-color:#BFE5CB; color:#126B33; }
         .alert { border-radius:12px; padding:12px 14px; font-weight:700; background:#FDECEC; border:2px solid var(--bad); color:#9B1C12; }
         .big { text-align:center; padding:28px 12px; }
-        .big .tick { font-size:56px; line-height:1; }
+        .big .tick { font-size:56px; line-height:1; color:var(--ok); }
         a.tel { color:var(--dark); font-weight:800; }
     </style>
 </head>
@@ -98,10 +99,11 @@
             + '<p class="muted">Utilisez l\'écran Livreur ou voyez la caisse.</p><a class="btn sec" href="' + NEXT + '">Mes livraisons</a></div>');
     }
 
+    var lastEmail = '';
     function loginScreen(message) {
         render('<form class="card" id="f" novalidate data-testid="connexion"><h2>Connexion livreur</h2>'
             + '<p class="muted">Pour valider cette remise, connectez-vous avec <b>votre</b> compte livreur.</p>'
-            + '<label class="f">Adresse e-mail<input id="email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" required></label>'
+            + '<label class="f">Adresse e-mail<input id="email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" value="' + esc(lastEmail) + '" required></label>'
             + '<label class="f">Mot de passe<input id="password" type="password" autocomplete="current-password" required></label>'
             + '<button class="btn" id="go" type="submit">Se connecter</button>'
             + '<div class="err" id="err" role="alert">' + esc(message || '') + '</div></form>');
@@ -109,13 +111,14 @@
             e.preventDefault();
             if (busy) return;
             var email = document.getElementById('email').value.trim(), pw = document.getElementById('password').value;
+            lastEmail = email; // gardé EN MÉMOIRE seulement pour ne pas le retaper après une erreur
             var err = document.getElementById('err');
             if (!email || !pw) { err.textContent = 'Saisissez votre e-mail et votre mot de passe.'; return; }
             busy = true; document.getElementById('go').classList.add('off'); err.textContent = '';
             session = null;
             api('login', { email: email, password: pw }).then(function (r) {
                 busy = false;
-                if (r.status === 201 && r.body.token) { session = r.body.token; document.getElementById('password') && (document.getElementById('password').value = ''); return load(); }
+                if (r.status === 201 && r.body.token) { session = r.body.token; return load(); }
                 loginScreen(r.body.message || 'Connexion impossible.');
             }).catch(function () { busy = false; loginScreen('Pas de réseau. Réessayez.'); });
         });
