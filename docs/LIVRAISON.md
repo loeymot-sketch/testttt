@@ -315,18 +315,22 @@ qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant d
   (crochet Sanctum) le rend **inexistant partout sauf** `api/frontend/delivery-handover/*`.
 - `POST …/resolve` et `POST …/confirm` (jeton `handover_token` obligatoire ; un jeton de session ordinaire est refusé 403). Jeton inconnu, révoqué,
   périmé, ou qui n'est pas celui de ce livreur → **la même réponse 404** `QR_UNAVAILABLE`, sans adresse, nom, téléphone ni contenu.
-- `confirm` — **aucune transaction ne doit envelopper `OrderService::deliveryBoyOrderChangeStatus`** (relecture adverse 2026-11-01 : ses audits NF525
-  — escrow, tranche porte, caisse livreur — et ses mail/SMS/push partent APRÈS son propre COMMIT ; sous une transaction externe ils
-  partaient verrous tenus : `1205 Lock wait timeout` sur la chaîne d'audit, lignes d'audit perdues, mail « livrée » avant un échec).
-  Séquence : (1) contrôles en direct (attribution livreur + branche, commande annulée/refusée, course Uber, déjà livrée, périmé, parti) puis mode
-  et montant, sans rien écrire ; (2) **réservation atomique du mode** sur la ligne du jeton (`UPDATE … WHERE chosen_mode IS NULL AND used_at IS NULL`) :
-  la 1re requête fixe le mode, toute jumelle applique CELUI-LÀ ; (3) la remise officielle, **seule** (sa transaction, ses audits après commit) ; si elle
-  échoue, la réservation est libérée, **rien n'est brûlé**, l'arrêt est inchangé, aucune notification n'est partie ; (4) seulement après succès, une
-  **petite transaction à part** : verrou de l'arrêt, brûlure atomique du jeton (`UPDATE … WHERE used_at IS NULL`), arrêt mis à jour, `delivery.handover_validated`.
-  Si l'étape 4 échoue, la commande est déjà LIVRÉE (donc le jeton est déjà inutilisable : `inspect()` refuse une commande livrée, un autre livreur reçoit 404) et
-  le prochain appui du livreur **termine** l'arrêt avec le mode réservé, sans rejouer ni encaissement ni numéro fiscal. Deux appuis simultanés : une seule
-  remise, un seul numéro fiscal, un seul jeton brûlé, le mode de la 1re requête. Rejouable : le même livreur qui rejoue après coup reçoit `already: true` ;
-  un autre reçoit 404. Les refus sont tracés `delivery.handover_refused`.
+- `confirm` — deux règles. (1) **Aucune transaction n'enveloppe `OrderService::deliveryBoyOrderChangeStatus`** (relecture adverse C : ses audits NF525 et
+  ses mail/SMS/push partent APRÈS son propre COMMIT ; sous une transaction externe : `1205 Lock wait timeout` sur la chaîne d'audit, audits perdus, mail avant un échec).
+  (2) **Aucun état « en cours » n'est persisté** (relecture adverse D : une réservation écrite sur la ligne du jeton survivait à un processus mort et faussait le
+  mode, ou bloquait le livreur). L'exclusion de deux appuis est un **verrou applicatif à expiration automatique** : `Cache::lock('delivery-handover:stop:<id>', 30)`,
+  pris par un propriétaire, **tenu pendant tout le corps** (jamais une transaction), libéré par lui seul dans un `finally`. Un processus mort ne bloque plus personne
+  après 30 s ; un jumeau qui ne peut pas le prendre répond **409 `in_progress`** (« Validation en cours, réessayez dans un instant », la page reste sur l'écran, même clé
+  d'idempotence) et **ne rappelle jamais OrderService** (pas de mail/SMS/push/événement en double). Sous le verrou : (a) l'état est **relu** ; (b) si la commande est déjà
+  LIVRÉE (jumeau, ancien écran, crash après commit) OrderService n'est PAS rappelé : l'arrêt est terminé avec le **mode réellement appliqué, lu dans la commande**
+  (`order_payments` de référence « livraison », ou `pos_payment_method = CASH` + trace d'escrow), jamais dans la requête ; (c) sinon contrôles → mode et montant → remise officielle
+  SEULE → petite transaction (verrou de l'arrêt, brûlure `UPDATE … WHERE used_at IS NULL`, arrêt, `delivery.handover_validated` avec le mode APPLIQUÉ et `mode_mismatch`
+  = écart avec le choix du client). Échec de la remise officielle : rien n'est écrit, rien brûlé, verrou libéré, le livreur peut réessayer avec un autre mode. Échec de la
+  petite transaction : la commande est LIVRÉE (le jeton est déjà inutilisable : `inspect()` refuse une commande livrée), le prochain appui termine l'arrêt. Le TTL de 30 s
+  suppose une remise officielle plus courte que 30 s (mail/SMS synchrones compris) ; au-delà, deux appuis pourraient se chevaucher (la commande LIVRÉE et le verrou de ligne
+  d'OrderService protègent l'encaissement et le numéro fiscal). La table n'a **pas** de colonne `chosen_mode` : le choix du client se déduit (espèces ↔ carte) du mode
+  appliqué et de `mode_mismatch`. La page annonce l'écart : « Vous avez déclaré carte alors que le client avait choisi espèces : c'est enregistré. »
+  Rejeu : le même livreur qui rejoue après coup reçoit `already: true` ; un autre reçoit 404. Les refus sont tracés `delivery.handover_refused` (pas les 409 `in_progress`).
 - Matrice : espèces/carte choisis → déclaré espèces ou carte (écart tracé : `mode_mismatch`) ; titre-restaurant → titre-restaurant seulement ;
   payée en ligne → ni mode ni montant (sinon 422) ; carte en ligne jamais payée → « renvoyez à la caisse » (la défaillance historique du flip PAYÉ
   sans paiement n'est PAS atteignable par ce chemin). Aucun escrow espèces ni mouvement de tiroir pour une carte ; le choix du client
