@@ -139,6 +139,46 @@ class DeliveryHandoverSequenceTest extends TestCase
         $this->assertSame(0, OrderPayment::query()->withoutGlobalScopes()->where('order_id', $o->id)->count());
     }
 
+    public function test_the_lock_taken_by_a_confirmation_expires_by_itself_after_thirty_seconds(): void
+    {
+        [$stop, $qr, $bearer] = $this->road();
+        $seen = [];
+        $key = $this->lockKey($stop);
+        // Pendant la remise officielle (verrou tenu) : il est bien tenu, puis il expire tout seul si le processus meurt.
+        Event::listen(SendOrderMail::class, function () use (&$seen, $key) {
+            if ($seen === []) {
+                $seen['held'] = ! Cache::lock($key, 30)->get();
+                Carbon::setTestNow(now()->addSeconds(31));
+                $free = Cache::lock($key, 30);
+                $seen['free_after_31s'] = $free->get();
+                $free->release();
+            }
+        });
+
+        $this->confirm($bearer, $qr, ['declared_mode' => 'cash'])->assertOk();
+
+        $this->assertTrue($seen['held'], 'verrou tenu pendant tout le corps');
+        $this->assertTrue($seen['free_after_31s'], 'TTL 30 s : un processus mort ne bloque personne');
+    }
+
+    public function test_the_recorded_mode_is_the_one_the_order_carries_even_if_another_path_delivered_it_just_before(): void
+    {
+        [$stop, $qr, $bearer] = $this->road();
+        $real = app(OrderService::class);
+        // L'ancien écran livre en ESPÈCES entre nos contrôles et notre appel : OrderService renvoie sans rien refaire (statut déjà atteint).
+        $this->mock(OrderService::class, fn ($m) => $m->shouldReceive('deliveryBoyOrderChangeStatus')->andReturnUsing(
+            fn ($order, $req, $declared) => $real->deliveryBoyOrderChangeStatus($order, $req, null)
+        ));
+        $this->actingAs($this->courier, 'sanctum');
+
+        $r = $this->confirm($bearer, $qr, ['declared_mode' => 'card'])->assertOk();
+
+        $this->assertSame('cash', $r->json('data.declared_mode'), 'le mode enregistré est celui de la commande, pas de la requête');
+        $this->assertSame('cash', $stop->fresh()->collect_method);
+        $this->assertSame(PosPaymentMethod::CASH, (int) $this->order($stop)->pos_payment_method);
+        $this->assertSame('cash', AuditLog::query()->where('action', 'delivery.handover_validated')->sole()->payload['declared_mode']);
+    }
+
     public function test_the_lock_is_released_after_success_and_after_failure(): void
     {
         [$stop, $qr, $bearer] = $this->road();
