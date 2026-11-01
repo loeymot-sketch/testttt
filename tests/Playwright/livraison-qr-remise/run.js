@@ -79,11 +79,13 @@ const dbQuery = (env, code) => php(env, ['artisan', 'tinker', '--execute', code]
       await page.click('#remis');
       await page.waitForSelector('[data-testid=remise-ok]');
       ok(/Remis à \d\d:\d\d/.test(await text(page)), 'A9 écran « Remis à HH:MM »');
+      const ecart = await page.textContent('[data-testid=ecart-mode]');
+      ok(/Vous avez déclaré carte alors que le client avait choisi espèces : c'est enregistré\./.test(ecart), 'A9b l\'écart « déclaré carte / choisi espèces » est annoncé au livreur');
       await shot(page, 'A4-remis');
       const conf = reqs.find((r) => r.url.endsWith('/delivery-handover/confirm'));
       ok(!!conf && JSON.parse(conf.body).lat === 50.4301, 'A10 la position est envoyée quand elle est accordée');
       ok(reqs.every((r) => !r.auth.includes('SESSION-LIVREUR-INTACTE')), 'A11 la session /livreur du navigateur n\'est jamais utilisée');
-      await page.waitForURL('**/livreur', { timeout: 6000 });
+      await page.waitForURL('**/livreur', { timeout: 15000 });
       ok(new URL(page.url()).pathname === '/livreur', 'A12 retour automatique à /livreur');
       ok((await page.evaluate(() => localStorage.getItem('lc_livreur_token'))) === 'SESSION-LIVREUR-INTACTE', 'A13 la session /livreur du livreur est conservée');
       ok(pageErrors.length === 0, 'A14 aucune erreur JavaScript');

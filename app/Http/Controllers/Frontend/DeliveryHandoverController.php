@@ -159,6 +159,9 @@ class DeliveryHandoverController extends Controller
 
             return response()->json(['status' => true, 'already' => $result['already'], 'data' => $result['data'], 'next_url' => self::NEXT_URL]);
         } catch (HandoverRefused $e) {
+            if ($e->errorCode === 'in_progress') {
+                return $this->refusal($e); // un appui jumeau en cours : pas un refus métier, rien à tracer
+            }
             $this->audit('delivery.handover_refused', $user, $request, [
                 'reason' => $e->errorCode, 'order_id' => $e->orderId, 'stop_id' => $e->stopId, 'token_id' => $e->tokenId,
                 'declared_mode' => $in['declared_mode'] ?? null,

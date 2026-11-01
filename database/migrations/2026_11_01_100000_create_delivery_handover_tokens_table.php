@@ -39,9 +39,10 @@ return new class extends Migration
             // Brûlure (usage unique) et traçabilité de la remise.
             $table->timestamp('used_at')->nullable();
             $table->unsignedBigInteger('used_by_user_id')->nullable();
-            $table->string('chosen_mode', 16)->nullable();      // choix du client (cash|card|meal_voucher|paid_online)
-            $table->string('declared_mode', 16)->nullable();    // ce que le livreur dit avoir encaissé
-            $table->boolean('mode_mismatch')->default(false);   // déclaré ≠ choisi
+            // Mode RÉELLEMENT appliqué à la commande (cash|card|meal_voucher ; NULL = déjà payée). Écrit UNE fois, à la brûlure : aucune
+            // réservation persistée (relecture adverse D) — l'exclusion entre deux appuis est un verrou applicatif à expiration.
+            $table->string('declared_mode', 16)->nullable();
+            $table->boolean('mode_mismatch')->default(false);   // appliqué ≠ choix du client (le choix se déduit : cash<->card)
             $table->unsignedInteger('amount_due_cents')->nullable();
             $table->unsignedInteger('amount_collected_cents')->nullable();
             $table->string('device_id', 64)->nullable();

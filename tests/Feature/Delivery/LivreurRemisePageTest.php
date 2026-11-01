@@ -74,6 +74,16 @@ class LivreurRemisePageTest extends TestCase
         $this->assertStringNotContainsString('+ qr +', $c);
     }
 
+    public function test_the_page_tells_the_courier_when_the_declared_mode_differs_from_the_client_choice(): void
+    {
+        $c = $this->get('/livreur/remise')->getContent();
+
+        $this->assertStringContainsString('Vous avez déclaré ', $c);
+        $this->assertStringContainsString('alors que le client avait choisi ', $c);
+        $this->assertStringContainsString("c\\'est enregistré.", $c);
+        $this->assertStringContainsString("r.body.code === 'in_progress'", $c, 'un appui jumeau en cours garde l\'écran (pas de « QR non valable »)');
+    }
+
     public function test_the_page_calls_only_the_dedicated_handover_endpoints(): void
     {
         $c = $this->get('/livreur/remise')->getContent();

@@ -46,6 +46,7 @@
         .due { border-radius:12px; padding:12px 14px; font-weight:800; font-size:20px; background:#FFF1D6; border:2px solid var(--accent); }
         .due.paid { background:#EAF7EE; border-color:#BFE5CB; color:#126B33; }
         .alert { border-radius:12px; padding:12px 14px; font-weight:700; background:#FDECEC; border:2px solid var(--bad); color:#9B1C12; }
+        .notice { border-radius:12px; padding:12px 14px; font-weight:700; background:#FFF1D6; border:2px solid var(--accent); color:#5C3B00; text-align:left; }
         .big { text-align:center; padding:28px 12px; }
         .big .tick { font-size:56px; line-height:1; color:var(--ok); }
         a.tel { color:var(--dark); font-weight:800; }
@@ -132,7 +133,7 @@
             if (r.status === 403) { session = null; return loginScreen(r.body.message || 'Connectez-vous avec votre compte livreur.'); }
             if (r.status !== 200 || !r.body.data) return refusalFor(r);
             stop = r.body.data;
-            if (stop.state === 'delivered') return doneScreen(stop.delivered_at, true);
+            if (stop.state === 'delivered') return doneScreen(stop.delivered_at, true, null);
             mode = (stop.allowed_modes || []).indexOf(stop.chosen_mode) !== -1 ? stop.chosen_mode : null;
             idem = uuid();
             stopScreen();
@@ -205,8 +206,10 @@
             return api('confirm', body, idem);
         }).then(function (r) {
             busy = false;
-            if (r.status === 200 && r.body.status) { return doneScreen(r.body.data && r.body.data.delivered_at, !!r.body.already); }
+            if (r.status === 200 && r.body.status) { return doneScreen(r.body.data && r.body.data.delivered_at, !!r.body.already, r.body.data); }
             if (r.status === 401) { session = null; return loginScreen('Session expirée : reconnectez-vous, puis validez à nouveau.'); }
+            // Un appui jumeau est en cours : on RESTE sur l'écran, même clé d'idempotence, le livreur retouche dans un instant.
+            if (r.status === 409 && r.body.code === 'in_progress') return stopScreen(r.body.message || 'Validation en cours, réessayez dans un instant.');
             if (r.status === 404 || r.status === 409) return refusal(r.body.message);
             if (r.status === 429) return stopScreen(r.body.message || 'Trop de tentatives. Patientez une minute.');
             idem = uuid(); // refus 422/500 : rien n'a été enregistré, la prochaine tentative est une nouvelle demande
@@ -217,10 +220,16 @@
         });
     }
 
-    function doneScreen(at, already) {
+    function doneScreen(at, already, d) {
+        // Écart entre ce que le client avait choisi et ce que le livreur a déclaré : dit clairement, c'est enregistré.
+        var warn = '';
+        if (d && d.mode_mismatch && d.declared_mode && d.chosen_mode) {
+            warn = '<div class="notice" data-testid="ecart-mode" role="status">Vous avez déclaré ' + esc((LABELS[d.declared_mode] || d.declared_mode).toLowerCase())
+                + ' alors que le client avait choisi ' + esc((LABELS[d.chosen_mode] || d.chosen_mode).toLowerCase()) + ' : c\'est enregistré.</div>';
+        }
         render('<div class="card big" data-testid="remise-ok"><div class="tick" aria-hidden="true">✓</div><h2>' + (already ? 'Déjà remis' : 'Remis') + (at ? ' à ' + esc(hm(at)) : '') + '</h2>'
-            + '<p class="muted">Ce QR ne peut plus servir.</p><a class="btn" id="back" href="' + NEXT + '">Mes livraisons</a></div>');
-        setTimeout(function () { location.replace(NEXT); }, 2500);
+            + warn + '<p class="muted">Ce QR ne peut plus servir.</p><a class="btn" id="back" href="' + NEXT + '">Mes livraisons</a></div>');
+        setTimeout(function () { location.replace(NEXT); }, warn ? 7000 : 2500);
     }
 
     // ── départ ──────────────────────────────────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -424,17 +425,25 @@ class DeliveryHandoverService
 
     // ── validation : « Remis » ───────────────────────────────────────────────────────────────
 
+    /** Durée de vie du verrou de remise : un processus mort ne bloque personne plus de 30 s. */
+    public const LOCK_SECONDS = 30;
+
+    public static function lockKey(int $stopId): string
+    {
+        return 'delivery-handover:stop:'.$stopId;
+    }
+
     /**
-     * Valide la remise. ⚠️ AUCUNE transaction ne doit envelopper `OrderService::deliveryBoyOrderChangeStatus` : il écrit ses audits
-     * NF525 (escrow, tranche porte, caisse livreur) et envoie mail/SMS/push APRÈS son propre COMMIT ; sous une transaction externe ils
-     * partiraient verrous tenus (Lock wait timeout 1205 sur la chaîne d'audit, notification « livrée » avant un échec). Séquence :
-     *   1. contrôles en direct (attribution, annulée, Uber, livrée, périmée, parti) → mode et montant (sans écrire) ;
-     *   2. RÉSERVATION atomique du mode sur la ligne du jeton (`UPDATE … WHERE chosen_mode IS NULL AND used_at IS NULL`) : la 1re requête
-     *      fixe le mode, toute requête jumelle applique CELUI-LÀ ;
-     *   3. la remise officielle, SEULE (sa transaction, ses audits après commit) ; en cas d'échec la réservation est libérée, rien n'est brûlé ;
-     *   4. SEULEMENT après succès : petite transaction à part — verrou de l'arrêt, brûlure atomique du jeton, arrêt mis à jour, trace.
-     * Si l'étape 4 échoue, la commande est LIVRÉE (donc le jeton est déjà inutilisable : `inspect()` refuse une commande livrée) et un
-     * nouvel appui TERMINE la comptabilité de l'arrêt sans rien rejouer (ni encaissement, ni numéro fiscal).
+     * Valide la remise. Deux règles qui ne se discutent pas :
+     *  - ⚠️ AUCUNE TRANSACTION n'enveloppe `OrderService::deliveryBoyOrderChangeStatus` : il écrit ses audits NF525 (escrow, tranche
+     *    porte, caisse livreur) et envoie mail/SMS/push APRÈS son propre COMMIT ; sous une transaction externe ils partaient verrous
+     *    tenus (1205 sur la chaîne d'audit) ou avant un échec (relecture adverse C) ;
+     *  - AUCUN ÉTAT PERSISTÉ d'« en cours » (relecture adverse D : une réservation sur la ligne du jeton survivait à un processus mort
+     *    et faussait le mode) : l'exclusion de deux appuis est un VERROU APPLICATIF à expiration automatique, `Cache::lock(…, 30)`,
+     *    tenu par un propriétaire pendant TOUT le corps puis libéré par lui seul (`finally`). Un processus mort ne bloque plus personne
+     *    après 30 s ; un jumeau qui ne peut pas le prendre répond 409 « réessayez » et ne rappelle JAMAIS OrderService.
+     * Sous le verrou : l'état est RELU ; si la commande est déjà LIVRÉE (jumeau, ancien écran, crash après commit), on ne rappelle pas
+     * OrderService : on termine l'arrêt avec le mode RÉELLEMENT appliqué, lu dans la commande, jamais dans la requête courante.
      *
      * @param  array{declared_mode?: ?string, collected_cents?: ?int, lat?: ?float, lng?: ?float, accuracy?: ?float, device_id?: ?string, ip?: ?string, user_agent?: ?string}  $in
      * @return array{already: bool, data: array<string,mixed>}
@@ -448,18 +457,37 @@ class DeliveryHandoverService
         }
         $ids = [$row->id, $row->order_id, $row->delivery_stop_id];
 
-        $v = $this->inspect($row, $user);
+        $lock = Cache::lock(self::lockKey((int) $row->delivery_stop_id), self::LOCK_SECONDS);
+        if (! $lock->get()) {
+            throw new HandoverRefused(409, 'in_progress', 'Validation en cours, réessayez dans un instant.', ...$ids);
+        }
+        try {
+            return $this->confirmLocked($user, $row->refresh(), $in, $ids);
+        } finally {
+            $lock->release(); // ne libère que si CE processus en est encore le propriétaire (le verrou a pu expirer)
+        }
+    }
+
+    /**
+     * @param  array<string,mixed>  $in
+     * @param  array<int,int|null>  $ids
+     * @return array{already: bool, data: array<string,mixed>}
+     */
+    private function confirmLocked(User $user, DeliveryHandoverToken $row, array $in, array $ids): array
+    {
+        $v = $this->inspect($row, $user); // état RELU sous le verrou
         if (! $v['ok']) {
             $stop = $v['stop'];
+            $order = $v['order'];
             if (in_array($v['reason'], [self::REASON_USED, self::REASON_DELIVERED], true)
                 && $row->used_at !== null && (int) $row->used_by_user_id === (int) $user->id && $stop?->delivered_at !== null) {
-                // Double appui / réponse perdue : la remise de CE livreur est déjà faite. Rien n'est rejoué.
-                return ['already' => true, 'data' => $this->result($stop, $v['order'], $row)];
+                return ['already' => true, 'data' => $this->result($stop, $order, $row)]; // double appui : déjà fait, rien n'est rejoué
             }
-            if ($v['reason'] === self::REASON_DELIVERED && $row->used_at === null && $row->chosen_mode !== null && $stop !== null) {
-                // La remise officielle est passée mais la comptabilité de l'arrêt / du jeton est restée en plan (panne après coup) :
-                // on la TERMINE avec le mode réservé, sans rien rejouer.
-                return $this->finalize($user, $row, $in);
+            if ($v['reason'] === self::REASON_DELIVERED && $row->used_at === null && $stop !== null && $stop->delivered_at === null
+                && (int) $order->status === OrderStatus::DELIVERED) {
+                // Commande LIVRÉE sans que l'arrêt le soit (jumeau, ancien écran, crash après commit) : OrderService n'est PAS rappelé ;
+                // on termine l'arrêt avec ce qui s'est RÉELLEMENT passé, lu dans la commande.
+                return $this->finalize($user, $row, $in, $this->appliedModeFromOrder($order, false), (int) round(((float) $order->total) * 100));
             }
             $this->throwForReason($v['reason'], $row, $user);
         }
@@ -467,101 +495,101 @@ class DeliveryHandoverService
 
         $due = app(DeliveryWaveService::class)->collectionFor($order);
         $dueCents = (int) $due['amount_due_cents'];
-        $chosen = (string) $due['collect_method'];
         $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
 
-        // 2. Réservation du mode : le premier gagne, les jumelles appliquent son mode (jamais le leur).
-        $claimed = DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)
-            ->whereKey($row->id)->whereNull('used_at')->whereNull('revoked_at')->whereNull('chosen_mode')
-            ->update([
-                'chosen_mode'            => $chosen,
-                'declared_mode'          => $declared,
-                'mode_mismatch'          => $declared !== null && $declared !== $chosen,
-                'amount_due_cents'       => $dueCents,
-                'amount_collected_cents' => $dueCents > 0 ? (int) $in['collected_cents'] : 0,
-                'device_id'              => isset($in['device_id']) ? substr((string) $in['device_id'], 0, 64) : null,
-                'ip'                     => isset($in['ip']) ? substr((string) $in['ip'], 0, 45) : null,
-                'user_agent'             => isset($in['user_agent']) ? substr((string) $in['user_agent'], 0, 255) : null,
-                'lat'                    => $in['lat'] ?? null,
-                'lng'                    => $in['lng'] ?? null,
-                'accuracy_m'             => isset($in['accuracy']) ? (int) min(65535, max(0, round((float) $in['accuracy']))) : null,
-                'updated_at'             => now(),
-            ]) === 1;
-        $row = $row->refresh();
-        if (! $claimed) {
-            if ($row->used_at !== null) {
-                $s = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->find($row->delivery_stop_id);
-                if ((int) $row->used_by_user_id === (int) $user->id && $s?->delivered_at !== null) {
-                    return ['already' => true, 'data' => $this->result($s, $order, $row)];
-                }
-                throw new HandoverRefused(409, 'already_used', 'Ce QR vient d\'être utilisé.', ...$ids);
-            }
-            if ($row->chosen_mode === null) { // réservation libérée entre-temps : on laisse le livreur réessayer
-                throw new HandoverRefused(409, 'retry', 'Un autre appui est en cours. Réessayez dans un instant.', ...$ids);
-            }
-            $declared = $row->declared_mode; // le mode du 1er appui fait foi
-        }
-
-        // 3. Voie officielle, SEULE : encaissement à la porte, numéro fiscal NF525, escrow, audits et notifications APRÈS son commit.
-        try {
-            app(OrderService::class)->deliveryBoyOrderChangeStatus(
-                $order,
-                Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]),
-                $declared
-            );
-        } catch (\Throwable $e) {
-            if ($claimed) {
-                $this->releaseClaim($row); // ni jeton brûlé, ni mode figé : le livreur peut corriger et réessayer
-            }
-            throw $e;
-        }
+        // Voie officielle, SEULE : encaissement à la porte, numéro fiscal NF525, escrow, audits et notifications APRÈS son commit.
+        // Un échec laisse tout intact (rien n'est écrit par nous avant) ; le verrou est libéré par le `finally` de l'appelant.
+        app(OrderService::class)->deliveryBoyOrderChangeStatus(
+            $order,
+            Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]),
+            $declared
+        );
 
         $after = Order::query()->withoutGlobalScope(BranchScope::class)->find($order->id);
         if (! ($after && (int) $after->status === OrderStatus::DELIVERED && ($dueCents === 0 || (int) $after->payment_status === PaymentStatus::PAID))) {
             Log::critical('delivery.handover.not_settled', ['order_id' => $order->id, 'status' => $after?->status, 'payment_status' => $after?->payment_status]);
         }
+        // Le mode ENREGISTRÉ est celui que la commande porte maintenant ; celui de la requête n'est qu'un repli.
+        $applied = $dueCents > 0 ? ($after ? $this->appliedModeFromOrder($after, true) : null) ?? $declared : null;
 
-        return $this->finalize($user, $row, $in);
-    }
-
-    /** Libère la réservation d'un mode si la commande n'a PAS été livrée (la remise officielle a échoué). */
-    private function releaseClaim(DeliveryHandoverToken $row): void
-    {
-        $delivered = Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->order_id)->value('status');
-        if ((int) $delivered === OrderStatus::DELIVERED) {
-            return;
-        }
-        DeliveryHandoverToken::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->id)->whereNull('used_at')->update([
-            'chosen_mode' => null, 'declared_mode' => null, 'mode_mismatch' => false, 'amount_due_cents' => null, 'amount_collected_cents' => null,
-            'device_id' => null, 'ip' => null, 'user_agent' => null, 'lat' => null, 'lng' => null, 'accuracy_m' => null, 'updated_at' => now(),
-        ]);
+        return $this->finalize($user, $row, $in, $applied, $dueCents);
     }
 
     /**
-     * Étape 4 : PETITE transaction, APRÈS une remise officielle réussie. Verrou de l'arrêt (sérialise deux appuis), brûlure atomique du
-     * jeton, arrêt mis à jour avec ce qui a été RÉSERVÉ, trace d'audit. Un jumeau qui a déjà terminé → « déjà remis », rien n'est rejoué.
+     * Mode réellement encaissé à la porte, LU dans la commande livrée (jamais dans la requête). Preuves : une tranche `order_payments`
+     * de référence « livraison » (carte, titre-restaurant) ; pour l'espèces, `pos_payment_method = CASH` + la trace d'escrow
+     * (ou `$knownDoorCollection` quand c'est NOTRE appel qui vient d'encaisser). Aucune preuve = payée avant la porte → null.
+     */
+    private function appliedModeFromOrder(Order $order, bool $knownDoorCollection): ?string
+    {
+        $pay = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
+            ->where('order_id', $order->id)->where('reference', 'livraison')->orderByDesc('id')->first();
+        if ($pay) {
+            return match ((int) $pay->mode) {
+                \App\Enums\PosPaymentMethod::CARD => 'card',
+                \App\Enums\PosPaymentMethod::TICKET_RESTAURANT => 'meal_voucher',
+                default => null,
+            };
+        }
+        if ((int) $order->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
+            && ($knownDoorCollection || \App\Models\AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->where('resource_id', $order->id)->exists())) {
+            return 'cash';
+        }
+
+        return null;
+    }
+
+    /** Choix initial du client, relu dans la commande (avant encaissement) : espèces / carte à la livraison / titre-restaurant / payée. */
+    private function chosenModeFromOrder(Order $order, ?string $applied): string
+    {
+        if ($applied === null) {
+            return DeliveryStop::COLLECT_PAID_ONLINE;
+        }
+        if ((int) $order->payment_method === PaymentGateway::TICKET_RESTAURANT) {
+            return 'meal_voucher';
+        }
+
+        return (string) $order->door_payment_mode === 'card' ? 'card' : 'cash';
+    }
+
+    /**
+     * Petite transaction, APRÈS une remise officielle faite (par nous ou par un autre chemin) : verrou de l'arrêt, brûlure atomique du
+     * jeton avec le mode APPLIQUÉ, arrêt mis à jour avec la commande telle qu'elle est, trace d'audit.
      *
      * @param  array<string,mixed>  $in
      * @return array{already: bool, data: array<string,mixed>}
      */
-    private function finalize(User $user, DeliveryHandoverToken $row, array $in): array
+    private function finalize(User $user, DeliveryHandoverToken $row, array $in, ?string $applied, int $totalCents): array
     {
-        return DB::transaction(function () use ($user, $row, $in) {
+        return DB::transaction(function () use ($user, $row, $in, $applied, $totalCents) {
             $stop = DeliveryStop::query()->withoutGlobalScope(BranchScope::class)->whereKey($row->delivery_stop_id)->lockForUpdate()->firstOrFail();
             $order = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($row->order_id);
             $row = $row->refresh();
             if ($stop->delivered_at !== null || $row->used_at !== null) {
                 return ['already' => true, 'data' => $this->result($stop, $order, $row)];
             }
-            if (! $this->burn($row, (int) $user->id)) {
+            $due = $applied === null ? 0 : $totalCents;
+            $chosen = $this->chosenModeFromOrder($order, $applied);
+            $mismatch = $applied !== null && $applied !== $chosen;
+            if (! $this->burn($row, (int) $user->id, [
+                'declared_mode'          => $applied,
+                'mode_mismatch'          => $mismatch,
+                'amount_due_cents'       => $due,
+                'amount_collected_cents' => $due,
+                'device_id'              => isset($in['device_id']) ? substr((string) $in['device_id'], 0, 64) : null,
+                'ip'                     => isset($in['ip']) ? substr((string) $in['ip'], 0, 45) : null,
+                'user_agent'             => isset($in['user_agent']) ? substr((string) $in['user_agent'], 0, 255) : null,
+                'lat'                    => $in['lat'] ?? null,
+                'lng'                    => $in['lng'] ?? null,
+                'accuracy_m'             => isset($in['accuracy']) ? (int) min(65535, max(0, round((float) $in['accuracy']))) : null,
+            ])) {
                 return ['already' => true, 'data' => $this->result($stop->refresh(), $order, $row->refresh())];
             }
             $row = $row->refresh();
-            $due = (int) $row->amount_due_cents;
             $stop->forceFill([
-                'collect_method'         => $row->declared_mode ?? $stop->collect_method,
+                'collect_method'         => $applied ?? $stop->collect_method,
                 'amount_due_cents'       => $due,
-                'amount_collected_cents' => (int) $row->amount_collected_cents,
+                'amount_collected_cents' => $due,
                 'arrived_at'             => $stop->arrived_at ?? now(),
                 'delivered_at'           => now(),
                 'arrival_lat'            => $stop->arrival_lat ?? $row->lat,

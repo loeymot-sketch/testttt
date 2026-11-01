@@ -19,7 +19,7 @@ class DeliveryHandoverToken extends Model
 
     protected $fillable = [
         'branch_id', 'order_id', 'delivery_stop_id', 'token_hash', 'generation', 'expires_at', 'wave_at', 'revoked_at',
-        'used_at', 'used_by_user_id', 'chosen_mode', 'declared_mode', 'mode_mismatch', 'amount_due_cents',
+        'used_at', 'used_by_user_id', 'declared_mode', 'mode_mismatch', 'amount_due_cents',
         'amount_collected_cents', 'device_id', 'ip', 'user_agent', 'lat', 'lng', 'accuracy_m',
     ];
 
@@ -46,6 +46,26 @@ class DeliveryHandoverToken extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new BranchScope);
+    }
+
+    /**
+     * Choix initial du client, DÉDUIT du mode appliqué et de l'écart (espèces ↔ carte seulement) : aucune colonne, aucune réservation.
+     * Null tant que la remise n'est pas faite.
+     */
+    public function getChosenModeAttribute(): ?string
+    {
+        if ($this->used_at === null) {
+            return null;
+        }
+        $applied = $this->declared_mode;
+        if ($applied === null) {
+            return 'paid_online';
+        }
+        if (! $this->mode_mismatch) {
+            return $applied;
+        }
+
+        return $applied === 'card' ? 'cash' : 'card';
     }
 
     public function stop(): BelongsTo
