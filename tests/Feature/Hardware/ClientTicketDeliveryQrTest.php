@@ -45,6 +45,13 @@ class ClientTicketDeliveryQrTest extends TestCase
         return app(OrderReceiptEscPosRenderer::class)->renderClientTicket($o, $opts);
     }
 
+    /** Aucun octet de symbole du tout (pas seulement « un QR que mon décodeur ne sait pas relire » : un QR corrompu doit aussi faire échouer). */
+    private function assertNoQr(string $bytes, string $why = ''): void
+    {
+        $this->assertStringNotContainsString("\x1D(k", $bytes, 'aucune commande GS ( k '.$why);
+        $this->assertStringNotContainsString('REMISE LIVREUR', $bytes, $why);
+    }
+
     /** Extrait l'URL stockée dans le QR (fonction 180) ou null s'il n'y a pas de QR. */
     private function qrPayload(string $bytes): ?string
     {
@@ -130,7 +137,7 @@ class ClientTicketDeliveryQrTest extends TestCase
         DeliveryStop::query()->withoutGlobalScopes()->whereKey($stop->id)->delete();
         $bytes = $this->ticket($stop->order_id);
 
-        $this->assertNull($this->qrPayload($bytes));
+        $this->assertNoQr($bytes, 'sans arrêt');
         $this->assertStringContainsString(iconv('UTF-8', 'CP858', 'MONTANT TOTAL'), $bytes);
     }
 
@@ -138,15 +145,15 @@ class ClientTicketDeliveryQrTest extends TestCase
     {
         $cancelled = $this->delivery();
         Order::query()->withoutGlobalScopes()->whereKey($cancelled->order_id)->update(['status' => OrderStatus::CANCELED]);
-        $this->assertNull($this->qrPayload($this->ticket($cancelled->order_id)));
+        $this->assertNoQr($this->ticket($cancelled->order_id), 'annulée');
 
         $delivered = $this->departed($this->delivery());
         DeliveryStop::query()->withoutGlobalScopes()->whereKey($delivered->id)->update(['delivered_at' => now()]);
-        $this->assertNull($this->qrPayload($this->ticket($delivered->order_id)));
+        $this->assertNoQr($this->ticket($delivered->order_id), 'livrée');
 
         $eats = $this->delivery();
         Order::query()->withoutGlobalScopes()->whereKey($eats->order_id)->update(['source_surface' => 'uber_eats']);
-        $this->assertNull($this->qrPayload($this->ticket($eats->order_id)));
+        $this->assertNoQr($this->ticket($eats->order_id), 'Uber Eats');
     }
 
     public function test_a_used_or_revoked_token_is_not_reprinted(): void
@@ -156,7 +163,7 @@ class ClientTicketDeliveryQrTest extends TestCase
         $this->assertNotNull($this->qrPayload($this->ticket($stop->order_id)));
         $svc->revoke($stop->fresh(), 'test');
 
-        $this->assertNull($this->qrPayload($this->ticket($stop->order_id)), 'un QR révoqué ne ressort pas sur une réimpression');
+        $this->assertNoQr($this->ticket($stop->order_id), 'un QR révoqué ne ressort pas sur une réimpression');
     }
 
     public function test_a_failing_token_service_never_blocks_the_ticket(): void
@@ -168,7 +175,7 @@ class ClientTicketDeliveryQrTest extends TestCase
 
         $bytes = $this->ticket($stop->order_id);
 
-        $this->assertNull($this->qrPayload($bytes));
+        $this->assertNoQr($bytes, 'service en panne');
         $this->assertStringContainsString(iconv('UTF-8', 'CP858', 'MONTANT TOTAL'), $bytes, 'le ticket sort quand même');
         $this->assertStringContainsString("\x1DV", $bytes);
     }
@@ -180,7 +187,7 @@ class ClientTicketDeliveryQrTest extends TestCase
         $bytes = $this->ticket($stop->order_id);
 
         $this->assertGreaterThan(124, strlen(app(DeliveryHandoverService::class)->urlFor(str_repeat('A', 43))));
-        $this->assertNull($this->qrPayload($bytes), 'pas de QR plutôt qu\'un QR dont la longueur serait faussée par CP858');
+        $this->assertNoQr($bytes, 'pas de QR plutôt qu\'un QR dont la longueur serait faussée par CP858');
         $this->assertStringContainsString("\x1DV", $bytes);
     }
 

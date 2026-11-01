@@ -288,3 +288,46 @@ Deux calculs distincts, à ne jamais confondre :
   son propre OSRM, ou `DELIVERY_ROUTING_ENABLED=false` (retour à l'estimation à vol d'oiseau).
 - Tests : `TourneeAllerRetourTest` (itinéraire, panne, retour compté, client en aller simple), `posTourneesJour.spec.js`, `livreurTourneeAllerRetour.spec.js`.
 - Non fait : la caisse du livreur (espèces/TPE) par tournée, le GPS continu, les détours (suite de l'étape 5 de la synthèse).
+
+## 8. QR de remise à usage unique sur le ticket client (2026-11-01)
+
+Un QR est imprimé sur le **ticket client thermique des LIVRAISONS de nos tournées** (jamais à emporter / borne / table, ni Uber Eats, ni
+course Uber Direct). Le livreur le scanne avec l'appareil photo de son téléphone, arrive sur **notre plateforme** (`APP_URL`, pas le site
+vitrine), se **connecte toujours** (e-mail + mot de passe), voit l'adresse (+ Waze), déclare **comment la commande a été payée à la porte**
+(rien à choisir si elle l'est déjà en ligne), et touche « Remis ». Le QR est alors mort pour toujours.
+
+**Valeurs par défaut posées en attendant la confirmation du propriétaire** : (1) le mode déclaré ne peut différer du choix du client
+qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant déclaré autrement → refusé, « renvoyez à la caisse » ;
+(2) durée de vie = départ de la tournée + **6 h** ; (3) après « Remis », retour à `/livreur` avec la session du livreur conservée ;
+(4) jeton dans le **fragment** `#` ; (5) position enregistrée si accordée, jamais bloquante ; montant encaissé = dû **exact**, sinon 422.
+
+**Contrat**
+- Jeton : 32 octets, base64url (43 car.), **dérivé** `HMAC-SHA256(clé dérivée d'APP_KEY, "v1|arrêt|commande|génération")`. Seul `sha256(jeton)`
+  est en base (`delivery_handover_tokens`, `BranchScope`). Une **réimpression redonne le même QR** ; `regenerate()` = génération + 1 (l'ancien
+  papier meurt) ; un jeton révoqué/brûlé n'est jamais ressuscité par une réimpression ; une rotation d'`APP_KEY` invalide les QR imprimés (repli : `/livreur`).
+- URL `APP_URL/livreur/remise#<jeton>`, **≤ 124 octets** (la commande `GS ( k` écrit la longueur sur 1 octet et le flux est transcodé CP858 :
+  au-delà, **aucun QR** n'est imprimé plutôt qu'un QR faux ; mesuré : 91 octets avec l'hôte actuel).
+- `GET /livreur/remise` : page statique identique pour tous (aucune donnée), `no-store`, `no-referrer`, `noindex`, `X-Frame-Options: DENY`. Le script lit
+  le fragment, l'**efface aussitôt** (`history.replaceState`), ne le garde qu'en mémoire, **ignore tout stockage** (dont `lc_livreur_token`).
+- `POST /api/frontend/delivery-handover/login` : refuse **avant tout jeton** un compte qui n'est pas **exactement** « Delivery Boy » (actif, branche > 0).
+  Mauvais mot de passe / compte inconnu / désactivé = **une seule** réponse (« Identifiants incorrects. »). Jeton court `handover_token`
+  (aptitude `delivery:handover`, 15 min, appareil unique) : il **ne chasse pas** la session `/livreur` (`auth_token`) et `HandoverTokenPolicy`
+  (crochet Sanctum) le rend **inexistant partout sauf** `api/frontend/delivery-handover/*`.
+- `POST …/resolve` et `POST …/confirm` (jeton `handover_token` obligatoire ; un jeton de session ordinaire est refusé 403). Jeton inconnu, révoqué,
+  périmé, ou qui n'est pas celui de ce livreur → **la même réponse 404** `QR_UNAVAILABLE`, sans adresse, nom, téléphone ni contenu.
+- `confirm` = **une transaction sous le verrou de la commande** : contrôles en direct (attribution livreur + branche, commande annulée/refusée, course Uber,
+  déjà livrée, périmé, parti) → mode et montant → **brûlure atomique** (`UPDATE … WHERE used_at IS NULL`) → `OrderService::deliveryBoyOrderChangeStatus`
+  (3ᵉ paramètre OPTIONNEL `$declaredDoorMode`, lu **sous le `lockForUpdate`** : le Z range par `pos_payment_method ?: payment_method`) → arrêt mis à jour
+  → `delivery.handover_validated`. Une étape qui échoue annule tout, jeton compris. Rejouable : le même livreur qui rejoue reçoit `already: true`, rien n'est
+  rejoué ; un autre reçoit 404. Les refus sont tracés `delivery.handover_refused`.
+- Matrice : espèces/carte choisis → déclaré espèces ou carte (écart tracé : `mode_mismatch`) ; titre-restaurant → titre-restaurant seulement ;
+  payée en ligne → ni mode ni montant (sinon 422) ; carte en ligne jamais payée → « renvoyez à la caisse » (la défaillance historique du flip PAYÉ
+  sans paiement n'est PAS atteignable par ce chemin). Aucun escrow espèces ni mouvement de tiroir pour une carte ; le choix du client
+  (`orders.door_payment_mode`) n'est jamais réécrit.
+- `POST …/confirm` est dans `idempotency.required_routes` ; limiteurs nommés `delivery-handover-login|resolve|confirm` (jamais un `throttle:N,M` nu).
+
+**Ce qui n'est PAS fait / à vérifier** : le ticket HTML (`ReceiptComponent.vue`, `window.print`) n'a pas de QR ; le support `GS ( k` du modèle réel
+d'imprimante, la lecture du QR sur papier thermique et la conservation du `#` par l'appareil photo de chaque téléphone se vérifient **sur la machine**.
+Défauts HISTORIQUES de `DeliveryRunController::deliver` (chemin `/livreur`, non modifié) : `collected_cents` vient du client et n'est jamais comparé au dû ;
+un 2ᵉ appel réécrit l'arrêt (`delivered_at`, `amount_collected_cents`). Tests : `DeliveryHandoverTokenTest`, `…LoginTest`, `…ConfirmTest`, `LivreurRemisePageTest`,
+`ZLivraisonQrDeclaredModeTest`, `ClientTicketDeliveryQrTest`, `TicketWidthSafeTest`, banc navigateur `tests/Playwright/livraison-qr-remise/run.js`.
