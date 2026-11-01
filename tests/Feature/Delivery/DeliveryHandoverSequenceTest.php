@@ -211,6 +211,21 @@ class DeliveryHandoverSequenceTest extends TestCase
         $this->assertTrue($first->json('status'));
     }
 
+    public function test_a_request_arriving_after_another_one_reserved_the_mode_applies_that_first_mode(): void
+    {
+        [$stop, $qr, $bearer] = $this->road();
+        // La 1re requête a déjà réservé « carte » (elle est en train d'appeler la remise officielle).
+        DeliveryHandoverToken::query()->withoutGlobalScopes()->whereKey($this->tok()->id)->update([
+            'chosen_mode' => 'cash', 'declared_mode' => 'card', 'mode_mismatch' => true, 'amount_due_cents' => 2750, 'amount_collected_cents' => 2750,
+        ]);
+
+        $this->confirm($bearer, $qr, ['declared_mode' => 'cash'])->assertOk();
+
+        $this->assertSame(PosPaymentMethod::CARD, (int) $this->order($stop)->pos_payment_method, 'le mode de la 1re requête fait foi');
+        $this->assertSame('card', $this->tok()->declared_mode);
+        $this->assertSame(0, AuditLog::query()->where('action', 'delivery.cash_collected_escrow')->count());
+    }
+
     // ── relecture C : P2 ─────────────────────────────────────────────────────────────────────────
 
     public function test_the_audit_traces_the_gap_with_departure_and_whether_a_position_was_given(): void
