@@ -159,8 +159,9 @@
             + '<div>' + esc(s.customer_name || 'Client') + (tel ? ' · <a class="tel" href="tel:' + esc(tel) + '">' + esc(s.customer_phone) + '</a>' : '') + '</div></div>';
 
         if (due > 0 && modes.length) {
-            html += '<div class="card"><div class="due" data-testid="du">' + esc(s.collect_label) + ' : ' + eur(due) + '</div>'
-                + '<p class="muted">Comment le client a-t-il payé à la porte ?</p>'
+            html += '<div class="card"><div class="due" data-testid="du">À encaisser : ' + eur(due) + '</div>'
+                + '<p class="muted">Choix du client : ' + esc(String(s.collect_label || '').replace(/^Encaisser (en |par )?/, '')) + '.</p>'
+                + '<p class="muted"><b>Comment le client a-t-il réellement payé à la porte ?</b></p>'
                 + '<div class="modes' + (modes.length === 1 ? ' one' : '') + '" role="group" aria-label="Mode de paiement encaissé">'
                 + modes.map(function (m) { return '<button type="button" class="mode" data-mode="' + esc(m) + '" aria-pressed="' + (mode === m ? 'true' : 'false') + '">' + esc(LABELS[m] || m) + '</button>'; }).join('')
                 + '</div></div>';
