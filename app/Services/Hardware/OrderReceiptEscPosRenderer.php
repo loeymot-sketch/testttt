@@ -800,7 +800,7 @@ final class OrderReceiptEscPosRenderer
             // Miroir de KitchenTicketSymbolicFormatter::menuLine() (role→MENU/FRITES/BOISSON).
             // Tout autre addon (role vide/non-menu) garde son nom brut. Le PRIX reste le
             // line_total SCELLÉ (jamais recalculé) — on ne corrige QUE le libellé.
-            $label = $this->menuClientLabel((string) ($a['role'] ?? '')) ?: $a['name'];
+            $label = \App\Support\Order\MenuFormulaLabel::forAddon((string) ($a['role'] ?? ''), (string) $a['name']);
             if (($a['amount'] ?? 0) > 0) {
                 $b .= EscPosCommandBuilder::lineItemKV('   + '.$label, $this->money((float) $a['amount']), $w);
             } else {
@@ -831,8 +831,8 @@ final class OrderReceiptEscPosRenderer
      * pas par addon_name (identique pour les 3). Le ticket CUISINE décode déjà ce rôle
      * ({@see KitchenTicketSymbolicFormatter::menuLine()} → MENU / FRITES / BOISSON) ; ce
      * miroir donne au ticket CLIENT le même libellé fidèle, en clair FR :
-     *   menu_frites                             → « Menu Frites »
-     *   menu_boisson                            → « Menu Boisson »
+     *   menu_frites                             → « Frites seules »
+     *   menu_boisson                            → « Boisson seule »
      *   menu_full / menu_formule / autre menu_* → « Menu Frites + Boisson »
      * Rôle vide ou non-menu → '' (l'appelant garde alors le nom d'addon brut, ex. un
      * addon « drink »/upsell hors formule). N'affecte QUE le LIBELLÉ : le prix imprimé
@@ -840,17 +840,9 @@ final class OrderReceiptEscPosRenderer
      */
     private function menuClientLabel(string $role): string
     {
-        $role = strtolower(trim($role));
-        if ($role === '' || ! str_starts_with($role, 'menu_')) {
-            return '';
-        }
-
-        return match ($role) {
-            'menu_frites' => 'Menu Frites',
-            'menu_boisson' => 'Menu Boisson',
-            // menu_full / menu_formule / futur menu_* = formule complète.
-            default => 'Menu Frites + Boisson',
-        };
+        // [LIBELLÉ-FORMULE 2026-11-02] Définition unique partagée avec l'écran de suivi et le ticket
+        // à l'écran : « Menu Frites + Boisson » / « Frites seules » / « Boisson seule ».
+        return \App\Support\Order\MenuFormulaLabel::forRole($role);
     }
 
     /** "0365678291" → "03 65 67 82 91" (French 10-digit); otherwise unchanged. */

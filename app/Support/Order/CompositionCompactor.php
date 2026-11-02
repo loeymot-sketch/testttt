@@ -73,7 +73,8 @@ final class CompositionCompactor
         // avec le composeur, il n'y a pas d'ancienne forme à rattraper.
         $addons = self::compactNamed(
             self::pick($snapshot, 'addons') ?? [],
-            ['addon_name', 'name', 'addon_item_name']
+            ['addon_name', 'name', 'addon_item_name'],
+            true
         );
 
         return array_filter([
@@ -146,9 +147,10 @@ final class CompositionCompactor
     /**
      * @param  list<mixed>  $raw
      * @param  list<string>  $nameKeys  clés candidates, par ordre de préférence
+     * @param  bool  $formulaRoleLabel  vrai pour les suppléments : un rôle menu_* remplace le nom par le choix réel
      * @return list<array{name:string,quantity?:int}>
      */
-    private static function compactNamed(array $raw, array $nameKeys): array
+    private static function compactNamed(array $raw, array $nameKeys, bool $formulaRoleLabel = false): array
     {
         $out = [];
 
@@ -164,6 +166,12 @@ final class CompositionCompactor
                     $name = $candidate;
                     break;
                 }
+            }
+
+            // [LIBELLÉ-FORMULE 2026-11-02] Un supplément de formule porte le même nom scellé pour
+            // « menu complet », « frites seules » et « boisson seule » : seul son `role` les distingue.
+            if ($formulaRoleLabel) {
+                $name = MenuFormulaLabel::forAddon(is_string($entry['role'] ?? null) ? $entry['role'] : '', $name);
             }
 
             if ($name === '') {
