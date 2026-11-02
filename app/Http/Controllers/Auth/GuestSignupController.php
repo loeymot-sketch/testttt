@@ -630,7 +630,7 @@ class GuestSignupController extends Controller
             // dès qu'il ouvrait le site sur un autre appareil. On garde la
             // purge anti-prolifération, scopée à l'appareil, plus le plafond.
             $this->token = app(\App\Services\Auth\DeviceTokenService::class)
-                ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), 60 * 24 * 30)
+                ->issueForDevice($user, 'auth_token', ['kiosk:order'], request(), \App\Services\Auth\CustomerSessionPolicy::LIFETIME_MINUTES)
                 ->plainTextToken;
 
             // [FIX] Guard against user with no roles (should not happen, but defensive)

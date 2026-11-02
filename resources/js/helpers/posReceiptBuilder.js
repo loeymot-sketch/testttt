@@ -1,4 +1,5 @@
 import { extraDisplayName } from './kdsSymbolic.js';
+import { menuFormulaAddonName } from './menuFormulaLabel.js';
 
 /**
  * Pure helpers for POS receipt HTML (and future ESC/POS bridging).
@@ -264,7 +265,9 @@ export function normalizeReceiptAddons(rawAddons) {
                 lineTotal = Number.isFinite(unit) ? unit * (qty || 1) : 0;
             }
             return {
-                name: String(a.addon_name || a.name || a.addon_item_name || ''),
+                // [LIBELLÉ-FORMULE 2026-11-02] Le nom scellé d'une formule est identique pour
+                // « menu complet », « frites seules » et « boisson seule » : le rôle dit le vrai choix.
+                name: menuFormulaAddonName(a.role, String(a.addon_name || a.name || a.addon_item_name || '')),
                 quantity: qty || 1,
                 line_total: Math.max(0, lineTotal),
             };

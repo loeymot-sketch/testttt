@@ -400,6 +400,11 @@
                                             :aria-label="$t('pos.tracker.compo_more_aria')"
                                             @click.stop="ouvrirContenu(order)"
                                         >+{{ compoAffichee(item).restants }}</button></span>
+                                    <span
+                                        v-if="formuleDe(item)"
+                                        class="pos-tracker-card-formule"
+                                        :data-testid="`tracker-formule-${order.id}-${idx}`"
+                                    >{{ formuleDe(item) }}</span>
                                 </li>
                                 <li v-if="extraItemsCount(order) > 0" class="pos-tracker-card-more">
                                     + {{ extraItemsCount(order) }} {{ moreItemsWord(extraItemsCount(order)) }}
@@ -837,7 +842,7 @@
                             </p>
 
                             <p v-if="(item.addons || []).length" class="pos-tracker-contenu-ligne-addons" data-testid="tracker-contenu-addons">
-                                <span class="pos-tracker-contenu-label">{{ $t('label.addons') }} :</span>
+                                <span class="pos-tracker-contenu-label">{{ titreAddons(item) }} :</span>
                                 <span>{{ listeNommee(item.addons) }}</span>
                             </p>
 
@@ -1028,7 +1033,7 @@ import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import orderTypeEnum from '../../../enums/modules/orderTypeEnum';
 import { onEvents } from '../../../services/eventContract';
 import alertService from '../../../services/alertService';
-import { resumeTechnique as resumeTechniqueCommande } from '../../../support/compositionCommande';
+import { resumeTechnique as resumeTechniqueCommande, formuleDeLigne as formuleDeLigneCommande } from '../../../support/compositionCommande';
 import { bornerTempsPreparation } from '../../../helpers/posTempsPreparation';
 // [OWNER 2026-08-19] Rythme de la sonnerie d'arrivée — partagé avec la caisse, l'écran
 // cuisine et l'écran de statut. Trois copies du rythme finiraient par diverger.
@@ -2589,7 +2594,17 @@ export default {
          */
         /** [R-009] Résumé en mots techniques — délègue au module partagé (une seule définition). */
         resumeTechnique(item) {
-            return resumeTechniqueCommande(item);
+            // La formule (menu / frites seules / boisson seule) est montrée À PART, en évidence.
+            return resumeTechniqueCommande(item, { sansFormule: true });
+        },
+        /** [LIBELLÉ-FORMULE 2026-11-02] Ce que le client a pris : « Frites seules », « Boisson seule », « Menu Frites + Boisson ». */
+        formuleDe(item) {
+            return formuleDeLigneCommande(item);
+        },
+        /** Titre du bloc d'addons de « Voir tout » : « Formule » quand ce ne sont que des formules. */
+        titreAddons(item) {
+            const liste = item && item.addons ? item.addons : [];
+            return liste.length && liste.every((a) => formuleDeLigneCommande({ addons: [a] })) ? 'Formule' : this.$t('label.addons');
         },
         resumeComposition(item) {
             if (!item) return '';
@@ -3647,6 +3662,20 @@ export default {
    SANS le dire, en renvoyant le texte complet dans un `title=` qu'aucun doigt ne peut
    déclencher. La ligne s'enroule désormais (deux rangs suffisent au cas semé) et la coupe
    éventuelle est décidée en JS (`compoAffichee`), donc VISIBLE via le marqueur « +N ». */
+.pos-tracker-card-formule {
+    /* [LIBELLÉ-FORMULE 2026-11-02] Le choix de formule en ÉVIDENCE : lisible d'un coup d'œil au comptoir. */
+    flex: 0 0 auto;
+    margin: 3px 0 0 22px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fff3e0;
+    border: 1px solid #f4501e;
+    color: #b83a10;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: normal;
+}
 .pos-tracker-card-compo {
     flex: 1 0 100%;
     min-width: 0;

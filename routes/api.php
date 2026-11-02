@@ -2473,6 +2473,20 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/stops/{stop}/arrive', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'arrive'])->middleware('idempotency');
         Route::post('/stops/{stop}/deliver', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'deliver'])->middleware('idempotency');
         Route::get('/stops/{stop}/photo', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'photo']);
+        // [LIVREUR CAISSE 2026-11-02] « Ma caisse » : récap du service du livreur connecté et clôture (espèces comptées). Un limiteur nommé par route.
+        Route::get('/cash', [\App\Http\Controllers\Frontend\DeliveryRunCashController::class, 'show'])->middleware('throttle:delivery-run-cash');
+        Route::post('/cash/close', [\App\Http\Controllers\Frontend\DeliveryRunCashController::class, 'close'])->middleware(['throttle:delivery-run-cash-close', 'idempotency']);
+    });
+
+    // [LIVRAISON QR 2026-11-01] Remise par QR (jeton à usage unique imprimé sur le ticket client d'une livraison). La connexion est
+    // dédiée (refuse tout compte qui n'est pas « Delivery Boy » avant d'émettre un jeton court `handover_token`) ; les routes
+    // suivantes n'acceptent QUE ce jeton. Un limiteur nommé par route (docs/LIVRAISON.md §3quinquies).
+    Route::prefix('delivery-handover')->name('delivery-handover.')->group(function () {
+        Route::post('/login', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'login'])->middleware('throttle:delivery-handover-login');
+        Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireHandoverToken::class])->group(function () {
+            Route::post('/resolve', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'resolve'])->middleware('throttle:delivery-handover-resolve');
+            Route::post('/confirm', [\App\Http\Controllers\Frontend\DeliveryHandoverController::class, 'confirm'])->middleware(['throttle:delivery-handover-confirm', 'idempotency']);
+        });
     });
 
     Route::prefix('delivery-boy-order')->name('delivery-boy-order.')->middleware(['auth:sanctum'])->group(function () {

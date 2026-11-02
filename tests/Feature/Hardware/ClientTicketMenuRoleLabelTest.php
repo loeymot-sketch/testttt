@@ -20,8 +20,8 @@ use Tests\TestCase;
  * MENU / FRITES / BOISSON) ; le ticket CLIENT, lui, imprimait le nom d'addon BRUT — donc
  * « Menu (Frites + Boisson) » même pour une frite seule, avec le prix menu collé dessus
  * (perçu « anormal » par l'owner). Ce test verrouille la PARITÉ côté ticket CLIENT :
- *   - menu_frites  → « Menu Frites »          (pas le nom brut)
- *   - menu_boisson → « Menu Boisson »
+ *   - menu_frites  → « Frites seules »        (pas le nom brut)
+ *   - menu_boisson → « Boisson seule »
  *   - menu_full    → « Menu Frites + Boisson »
  * Garde-fou : un produit STANDALONE (« Frites Seules », SANS addon menu_*) garde son nom
  * d'article intact. Le prix imprimé reste le line_total SCELLÉ — jamais recalculé ici.
@@ -109,8 +109,8 @@ class ClientTicketMenuRoleLabelTest extends TestCase
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeFormulaOrder('menu_frites', 1.80));
 
-        // Le choix « frites seules » s'affiche « Menu Frites » (fidèle au role).
-        $this->assertStringContainsString('Menu Frites', $bytes, 'Un choix « frites seules » doit s\'afficher « Menu Frites » sur le ticket client.');
+        // Le choix « frites seules » s'affiche « Frites seules » (fidèle au role, sans le mot « Menu »).
+        $this->assertStringContainsString('Frites seules', $bytes, 'Un choix « frites seules » doit s\'afficher « Frites seules » sur le ticket client.');
         // JAMAIS le nom d'addon brut (identique pour les 3 variantes → mensonger pour une frite seule).
         $this->assertStringNotContainsString('Menu (Frites', $bytes, 'Le nom brut « Menu (Frites + Boisson) » ne doit pas fuiter pour une frite seule.');
         // Prix SCELLÉ (line_total proratisé) imprimé tel quel — le libellé ne touche pas le prix.
@@ -122,7 +122,7 @@ class ClientTicketMenuRoleLabelTest extends TestCase
     {
         $bytes = (new OrderReceiptEscPosRenderer)->renderClientTicket($this->makeFormulaOrder('menu_boisson', 1.20));
 
-        $this->assertStringContainsString('Menu Boisson', $bytes, 'Un choix « boisson seule » doit s\'afficher « Menu Boisson ».');
+        $this->assertStringContainsString('Boisson seule', $bytes, 'Un choix « boisson seule » doit s\'afficher « Boisson seule ».');
         $this->assertStringNotContainsString('Menu (Frites', $bytes, 'Le nom brut ne doit pas fuiter pour une boisson seule.');
         $this->assertStringContainsString('1,20', $bytes, 'Le prix scellé doit rester imprimé.');
     }

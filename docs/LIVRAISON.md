@@ -288,3 +288,117 @@ Deux calculs distincts, à ne jamais confondre :
   son propre OSRM, ou `DELIVERY_ROUTING_ENABLED=false` (retour à l'estimation à vol d'oiseau).
 - Tests : `TourneeAllerRetourTest` (itinéraire, panne, retour compté, client en aller simple), `posTourneesJour.spec.js`, `livreurTourneeAllerRetour.spec.js`.
 - Non fait : la caisse du livreur (espèces/TPE) par tournée, le GPS continu, les détours (suite de l'étape 5 de la synthèse).
+
+## 8. QR de remise à usage unique sur le ticket client (2026-11-01)
+
+Un QR est imprimé sur le **ticket client thermique des LIVRAISONS de nos tournées** (jamais à emporter / borne / table, ni Uber Eats, ni
+course Uber Direct). Le livreur le scanne avec l'appareil photo de son téléphone, arrive sur **notre plateforme** (`APP_URL`, pas le site
+vitrine), se **connecte toujours** (e-mail + mot de passe), voit l'adresse (+ Waze), déclare **comment la commande a été payée à la porte**
+(rien à choisir si elle l'est déjà en ligne), et touche « Remis ». Le QR est alors mort pour toujours.
+
+**Valeurs par défaut posées en attendant la confirmation du propriétaire** : (1) le mode déclaré ne peut différer du choix du client
+qu'entre **espèces et carte**, toujours tracé et signalé ; titre-restaurant déclaré autrement → refusé, « renvoyez à la caisse » ;
+(2) durée de vie = départ de la tournée + **6 h** ; (3) après « Remis », retour à `/livreur` avec la session du livreur conservée ;
+(4) jeton dans le **fragment** `#` ; (5) position enregistrée si accordée, jamais bloquante ; montant encaissé = dû **exact**, sinon 422.
+
+**Contrat**
+- Jeton : 32 octets, base64url (43 car.), **dérivé** `HMAC-SHA256(clé dérivée d'APP_KEY, "v1|arrêt|commande|génération")`. Seul `sha256(jeton)`
+  est en base (`delivery_handover_tokens`, `BranchScope`). Une **réimpression redonne le même QR** ; `regenerate()` = génération + 1 (l'ancien
+  papier meurt) ; un jeton révoqué/brûlé n'est jamais ressuscité par une réimpression ; une rotation d'`APP_KEY` invalide les QR imprimés (repli : `/livreur`).
+- URL `APP_URL/livreur/remise#<jeton>`, **≤ 124 octets** (la commande `GS ( k` écrit la longueur sur 1 octet et le flux est transcodé CP858 :
+  au-delà, **aucun QR** n'est imprimé plutôt qu'un QR faux ; mesuré : 91 octets avec l'hôte actuel).
+- `GET /livreur/remise` : page statique identique pour tous (aucune donnée), `no-store`, `no-referrer`, `noindex`, `X-Frame-Options: DENY`. Le script lit
+  le fragment, l'**efface aussitôt** (`history.replaceState`), ne le garde qu'en mémoire, **ignore tout stockage** (dont `lc_livreur_token`).
+- `POST /api/frontend/delivery-handover/login` : refuse **avant tout jeton** un compte qui n'est pas **exactement** « Delivery Boy » (actif, branche > 0).
+  Mauvais mot de passe / compte inconnu / désactivé = **une seule** réponse (« Identifiants incorrects. »). Jeton court `handover_token`
+  (aptitude `delivery:handover`, 15 min, appareil unique) : il **ne chasse pas** la session `/livreur` (`auth_token`) et `HandoverTokenPolicy`
+  (crochet Sanctum) le rend **inexistant partout sauf** `api/frontend/delivery-handover/*`.
+- `POST …/resolve` et `POST …/confirm` (jeton `handover_token` obligatoire ; un jeton de session ordinaire est refusé 403). Jeton inconnu, révoqué,
+  périmé, ou qui n'est pas celui de ce livreur → **la même réponse 404** `QR_UNAVAILABLE`, sans adresse, nom, téléphone ni contenu.
+- `confirm` — deux règles. (1) **Aucune transaction n'enveloppe `OrderService::deliveryBoyOrderChangeStatus`** (relecture adverse C : ses audits NF525 et
+  ses mail/SMS/push partent APRÈS son propre COMMIT ; sous une transaction externe : `1205 Lock wait timeout` sur la chaîne d'audit, audits perdus, mail avant un échec).
+  (2) **Aucun état « en cours » n'est persisté** (relecture adverse D : une réservation écrite sur la ligne du jeton survivait à un processus mort et faussait le
+  mode, ou bloquait le livreur). L'exclusion de deux appuis est un **verrou applicatif à expiration automatique** : `Cache::lock('delivery-handover:stop:<id>', 30)`,
+  pris par un propriétaire, **tenu pendant tout le corps** (jamais une transaction), libéré par lui seul dans un `finally`. Un processus mort ne bloque plus personne
+  après 30 s ; un jumeau qui ne peut pas le prendre répond **409 `in_progress`** (« Validation en cours, réessayez dans un instant », la page reste sur l'écran, même clé
+  d'idempotence) et **ne rappelle jamais OrderService** (pas de mail/SMS/push/événement en double). Sous le verrou : (a) l'état est **relu** ; (b) si la commande est déjà
+  LIVRÉE (jumeau, ancien écran, crash après commit) OrderService n'est PAS rappelé : l'arrêt est terminé avec le **mode réellement appliqué, lu dans la commande**
+  (`order_payments` de référence « livraison », ou `pos_payment_method = CASH` + trace d'escrow **ou** ligne de caisse livreur de la commande : une seule des deux suffit), jamais dans la requête ; (c) sinon contrôles → mode et montant → remise officielle
+  SEULE → petite transaction (verrou de l'arrêt, brûlure `UPDATE … WHERE used_at IS NULL`, arrêt, `delivery.handover_validated` avec le mode APPLIQUÉ et `mode_mismatch`
+  = écart avec le choix du client). Échec de la remise officielle : rien n'est écrit, rien brûlé, verrou libéré, le livreur peut réessayer avec un autre mode. Échec de la
+  petite transaction : la commande est LIVRÉE (le jeton est déjà inutilisable : `inspect()` refuse une commande livrée), le prochain appui termine l'arrêt. Le TTL de 30 s
+  suppose une remise officielle plus courte que 30 s (mail/SMS synchrones compris) ; au-delà, deux appuis pourraient se chevaucher (la commande LIVRÉE et le verrou de ligne
+  d'OrderService protègent l'encaissement et le numéro fiscal). La table n'a **pas** de colonne `chosen_mode` : le choix du client se déduit (espèces ↔ carte) du mode
+  appliqué et de `mode_mismatch`. La page annonce l'écart : « Vous avez déclaré carte alors que le client avait choisi espèces : c'est enregistré. »
+  Rejeu : le même livreur qui rejoue après coup reçoit `already: true` ; un autre reçoit 404. Les refus sont tracés `delivery.handover_refused` (pas les 409 `in_progress`).
+- Matrice : espèces/carte choisis → déclaré espèces ou carte (écart tracé : `mode_mismatch`) ; titre-restaurant → titre-restaurant seulement ;
+  payée en ligne → ni mode ni montant (sinon 422) ; carte en ligne jamais payée → « renvoyez à la caisse » (la défaillance historique du flip PAYÉ
+  sans paiement n'est PAS atteignable par ce chemin). Aucun escrow espèces ni mouvement de tiroir pour une carte ; le choix du client
+  (`orders.door_payment_mode`) n'est jamais réécrit.
+- `POST …/confirm` est dans `idempotency.required_routes` ; limiteurs nommés `delivery-handover-login|resolve|confirm` (jamais un `throttle:N,M` nu).
+
+**⚠️ Interrupteur d'impression — le QR est ÉTEINT par défaut.** `config/delivery.php` → `handover.qr_print_enabled`, piloté par l'env `DELIVERY_HANDOVER_QR_PRINT`, **défaut `false`**
+(sentinelle : `DeliveryHandoverQrPrintFlagTest`). Éteint : le ticket ne contient **aucun octet de QR** et **aucun jeton n'est créé** ; les routes de remise restent actives
+(un jeton n'existe que s'il a été imprimé). Raison : la lisibilité sur l'imprimante réelle n'est pas testée (un modèle sans `GS ( k` imprimerait des caractères parasites sur
+TOUS les tickets de livraison). **Procédure propriétaire pour l'allumer** : (1) poser `DELIVERY_HANDOVER_QR_PRINT=true` dans le `.env` de production ; (2) `php artisan config:clear`
+(**JAMAIS `config:cache`**, cf. docs) ; (3) imprimer UNE livraison test ; (4) scanner le papier avec un **iPhone ET un Android** et vérifier que la page s'ouvre sans « QR non lisible »
+(le `#` doit être conservé par l'appareil photo) ; (5) si un des deux échoue, ou si des caractères parasites sortent : remettre `false` (+ `config:clear`). Rien d'autre à défaire.
+
+**Résidu connu (non corrigé, décision)** : le retour anticipé d'`OrderService::deliveryBoyOrderChangeStatus` (statut déjà atteint) ne retient pas les notifications qui le suivent. Si le
+verrou de remise expire pendant une remise officielle de plus de 30 s (ou si Redis est vidé en pleine remise), le jumeau peut renvoyer mail/SMS/push/`OrderStatusChanged`.
+**Aucun effet financier** (un seul numéro fiscal, une seule tranche, un seul escrow : verrous de ligne d'OrderService) ; seul le client peut recevoir deux messages « livrée ».
+
+**QR perdu, taché ou photographié — procédure honnête (aujourd'hui)**. `DeliveryHandoverService::revoke()` / `regenerate()` existent et sont testés mais n'ont
+**aucun appelant** (ni bouton caisse, ni commande artisan) : rien n'a été construit pour les déclencher. Ce qui protège réellement : (1) le QR seul ne sert à rien —
+il faut le **mot de passe du livreur attribué** à cet arrêt (autre livreur, client, caisse, admin : refusés ; réponse identique, rien révélé) ; (2) la commande doit être
+**non annulée, non livrée, non confiée à Uber, et partie** ; (3) il **expire** à départ de tournée + 6 h ; (4) usage unique. Ticket abîmé = il suffit de **réimprimer** (même QR).
+Si le papier a pu être vu par un tiers : annuler/relivrer par la caisse, ou laisser le livreur valider par l'écran `/livreur` (repli intact). **Reste ouvert** : pas de
+révocation à la demande depuis la caisse, et le livreur attribué lui-même peut valider avec un QR photographié.
+
+**Risque de conception connu (documenté, non corrigé)** : le QR voyage sur le ticket avec le livreur, qui peut donc toucher « Remis » **avant d'arriver à la porte** ;
+e-mail + mot de passe prouvent QUI valide, pas OÙ. Ce que la remise enregistre pour le détecter après coup : l'**heure** (`delivered_at`), la **position** si le téléphone
+l'accorde (jeton + arrêt ; facultative, jamais bloquante), et dans `delivery.handover_validated` : `left_at`, `minutes_since_departure`, `position_given`, `lat`/`lng`/`accuracy_m`,
+l'appareil et l'IP. Une remise sans position, ou quelques minutes après le départ, se lit dans le journal ; elle n'est pas refusée.
+
+**Ce qui n'est PAS fait / à vérifier** : le ticket HTML (`ReceiptComponent.vue`, `window.print`) n'a pas de QR ; le support `GS ( k` du modèle réel
+d'imprimante, la lecture du QR sur papier thermique et la conservation du `#` par l'appareil photo de chaque téléphone se vérifient **sur la machine**.
+Défauts HISTORIQUES de `DeliveryRunController::deliver` (chemin `/livreur`, non modifié) : `collected_cents` vient du client et n'est jamais comparé au dû ;
+un 2ᵉ appel réécrit l'arrêt (`delivered_at`, `amount_collected_cents`). Tests : `DeliveryHandoverTokenTest`, `…LoginTest`, `…ConfirmTest`, `LivreurRemisePageTest`,
+`ZLivraisonQrDeclaredModeTest`, `ClientTicketDeliveryQrTest`, `TicketWidthSafeTest`, banc navigateur `tests/Playwright/livraison-qr-remise/run.js`.
+
+## 9. Règlement à la porte en plusieurs moyens, « Ma caisse » du livreur et clôture (2026-11-02)
+
+**Règlement en plusieurs moyens.** `POST /api/frontend/delivery-run/stops/{id}/deliver` et `POST /api/frontend/delivery-handover/confirm` acceptent un
+paramètre FACULTATIF `payments = [{mode: cash|card|meal_voucher, amount: euros}]` (1 à 4 tranches). Sans `payments`, le chemin historique (un seul moyen, celui
+du client) est strictement inchangé. Avec `payments`, le serveur impose (`DoorPaymentSplit::normalize`, sous le verrou de la commande, total relu en base, jamais
+un montant client) : somme = total **au centime**, chaque montant ≥ 0,01 € à deux décimales, un seul tranche par moyen, commande encore à encaisser à la porte
+(espèces ou titre-restaurant au départ ; pas déjà payée en ligne ni au comptoir). Tout refus = **422 en français, rien d'écrit**.
+- Écrit dans la MÊME transaction que le PAYÉ et le numéro fiscal (allocation inchangée) : une ligne `order_payments` par tranche (`reference='livraison'`, ordre
+  espèces, carte, titre), `pos_payment_method` = moyen **dominant** (convention du paiement multi-moyens du comptoir ; le Z range la commande entière sous ce moyen,
+  la ventilation exacte vit dans `order_payments`, dont `ZReportCashEnrichmentService` fait déjà la somme par moyen). `ZReportService` n'est pas touché.
+- Après COMMIT : tranche ESPÈCES → audit `delivery.cash_collected_escrow` (montant espèces seul) + **un seul** `DeliveryBoyCashMovement` ENTRÉE du montant espèces ;
+  tranches CARTE / TITRE → un audit `order.payment_tranche_persisted` chacune (`tranche_index` = position dans les lignes `order_payments`). Les payloads portent
+  `declared_differs` (le livreur a encaissé autrement que le choix du client, ou en plusieurs fois : accepté, **tracé**), `chosen_mode`, `tranches`.
+- Rejeu : la remise est déjà LIVRÉE, l'appel retourne tôt ; aucun paiement, mouvement, audit ni numéro fiscal en double. Sur le QR, `declared_mode='split'` est posé
+  sur le jeton (`mode_mismatch=true`) et `delivery.handover_validated` cite `payments` ; `chosen_mode` se relit dans la commande (`chosenModeFromOrder`), plus dans l'accesseur du jeton.
+- **Nouveau** : carte et titre-restaurant encaissés à la porte ouvrent AUSSI le service du livreur (fond 0 €, `ensureOpenDeliveryShift`), comme les espèces depuis le 2026-10-30,
+  sinon « Ma caisse » ne verrait pas ces encaissements.
+
+**Écran `/livreur`.** « Remis au client » (inchangé) règle avec le moyen choisi par le client. Le bouton « Autre moyen · en plusieurs fois » ouvre la feuille de règlement :
+Espèces / Carte / Titre-restaurant / En plusieurs fois ; le total (non modifiable) vient de la commande ; en plusieurs fois, « Reste à encaisser : X € » se met à jour et
+« Valider la remise » reste grisé tant que la somme ≠ total. Même saisie sur la page QR de remise. Réseau coupé : message « Pas de réseau… », la feuille reste ouverte, la
+**même clé d'idempotence** est rejouée (aucun doublon).
+
+**« Ma caisse ».** Onglet de `/livreur`. `GET /api/frontend/delivery-run/cash` : service OUVERT du livreur connecté (jamais celui d'un autre : `delivery_boy_id` = lui, sa branche ;
+rôle « Delivery Boy » exigé, sinon 403) ; sans service ouvert : `{open:false, message:'Aucun service ouvert', last}` (200, jamais une erreur). Contenu (`DeliveryCashRecapService`, sans
+nouvelle colonne) : fond de début (`opening_amount`, fixé par l'ouverture en administration ; 0,00 € si le service s'est ouvert tout seul), espèces / carte / titres (depuis
+`order_payments` « livraison » des arrêts remis pendant le service ; espèces historiques sans ligne = mouvement de caisse), total, livraisons réglées, **espèces attendues = fond +
+Σ mouvements signés** (formule de `reconcileSession`), liste des commandes avec leur répartition, `ledger_gap` (espèces des commandes − livre de caisse : exposé, jamais caché).
+`POST …/cash/close {counted_cash, session_id?}` (idempotent, limiteurs nommés `delivery-run-cash*`) : refuse (422) s'il reste une livraison en route à encaisser, sinon
+`closeSession` ; réponse = récap final avec **écart = comptées − attendues**. Un second appel renvoie `already:true` sans rien changer. Le service clôturé reste `closed` ;
+la réconciliation (`reconcileSession`) reste faite par l'administration. Fiche administration : `DeliveryBoyCashSessionResource.recap` + `DeliveryBoyCashSessionShowComponent.vue`.
+
+**Limites honnêtes.** La carte et le titre-restaurant sont encaissés hors de notre système (terminal du livreur) : le logiciel enregistre ce que le livreur déclare, il ne le prouve pas.
+Le mouvement de caisse livreur est écrit « au mieux » après le COMMIT (comme avant) : s'il échoue, `ledger_gap` le montre. Une clôture simultanée à une remise peut laisser un
+encaissement sans mouvement (service fermé entre les deux) : même signal. L'écran d'administration (Vue) n'a pas été vérifié dans un navigateur (assets non compilés dans cet arbre) :
+test de composant Vitest seulement. Tests : `DeliveryDoorSplitTest`, `DeliveryRunCashTest`, `tests/js/deliveryBoyCashSessionRecap.spec.js`, banc `tests/Playwright/livreur-caisse-split/run.js`.

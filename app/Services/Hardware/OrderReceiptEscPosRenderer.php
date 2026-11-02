@@ -251,6 +251,9 @@ final class OrderReceiptEscPosRenderer
         }
         $b .= EscPosCommandBuilder::textWrap('Prix nets en euros TTC', $w);
 
+        // [LIVRAISON QR 2026-11-01] QR de remise à usage unique (livraisons seulement, jamais bloquant).
+        $b .= $this->deliveryHandoverQrBlock($order, $w);
+
         // ── Bloc opération (gauche, infos techniques discrètes) ─────────────
         $b .= EscPosCommandBuilder::separator('-', $w);
         $b .= EscPosCommandBuilder::alignLeft();
@@ -797,7 +800,7 @@ final class OrderReceiptEscPosRenderer
             // Miroir de KitchenTicketSymbolicFormatter::menuLine() (role→MENU/FRITES/BOISSON).
             // Tout autre addon (role vide/non-menu) garde son nom brut. Le PRIX reste le
             // line_total SCELLÉ (jamais recalculé) — on ne corrige QUE le libellé.
-            $label = $this->menuClientLabel((string) ($a['role'] ?? '')) ?: $a['name'];
+            $label = \App\Support\Order\MenuFormulaLabel::forAddon((string) ($a['role'] ?? ''), (string) $a['name']);
             if (($a['amount'] ?? 0) > 0) {
                 $b .= EscPosCommandBuilder::lineItemKV('   + '.$label, $this->money((float) $a['amount']), $w);
             } else {
@@ -828,8 +831,8 @@ final class OrderReceiptEscPosRenderer
      * pas par addon_name (identique pour les 3). Le ticket CUISINE décode déjà ce rôle
      * ({@see KitchenTicketSymbolicFormatter::menuLine()} → MENU / FRITES / BOISSON) ; ce
      * miroir donne au ticket CLIENT le même libellé fidèle, en clair FR :
-     *   menu_frites                             → « Menu Frites »
-     *   menu_boisson                            → « Menu Boisson »
+     *   menu_frites                             → « Frites seules »
+     *   menu_boisson                            → « Boisson seule »
      *   menu_full / menu_formule / autre menu_* → « Menu Frites + Boisson »
      * Rôle vide ou non-menu → '' (l'appelant garde alors le nom d'addon brut, ex. un
      * addon « drink »/upsell hors formule). N'affecte QUE le LIBELLÉ : le prix imprimé
@@ -837,17 +840,9 @@ final class OrderReceiptEscPosRenderer
      */
     private function menuClientLabel(string $role): string
     {
-        $role = strtolower(trim($role));
-        if ($role === '' || ! str_starts_with($role, 'menu_')) {
-            return '';
-        }
-
-        return match ($role) {
-            'menu_frites' => 'Menu Frites',
-            'menu_boisson' => 'Menu Boisson',
-            // menu_full / menu_formule / futur menu_* = formule complète.
-            default => 'Menu Frites + Boisson',
-        };
+        // [LIBELLÉ-FORMULE 2026-11-02] Définition unique partagée avec l'écran de suivi et le ticket
+        // à l'écran : « Menu Frites + Boisson » / « Frites seules » / « Boisson seule ».
+        return \App\Support\Order\MenuFormulaLabel::forRole($role);
     }
 
     /** "0365678291" → "03 65 67 82 91" (French 10-digit); otherwise unchanged. */
@@ -948,6 +943,61 @@ final class OrderReceiptEscPosRenderer
      * ReceiptRemboursementMarker.vue (qui clé sur parent_order_id) : un miroir de contre-passation
      * NF525 est status=RETURNED avec un parent_order_id.
      */
+    /**
+     * Longueur maximale (octets) de l'URL encodée dans le QR. La commande `GS ( k` écrit la longueur sur un octet
+     * (`EscPosCommandBuilder::qrCode`, `chr($len % 256)`) et le flux entier est ensuite transcodé en CP858 (`iconv //IGNORE`) :
+     * un octet >= 0x80 serait supprimé et décalerait tout le symbole. 124 + 3 octets d'en-tête = 127 = 0x7F, la dernière
+     * valeur sûre. Au-delà, on N'IMPRIME PAS de QR (plutôt qu'un QR faux).
+     */
+    public const QR_MAX_URL_BYTES = 124;
+
+    /**
+     * [LIVRAISON QR 2026-11-01] Bloc « REMISE LIVREUR » : le QR à usage unique que le livreur scanne à la porte.
+     * Seulement pour une LIVRAISON de nos tournées dont un jeton peut être émis ; sinon chaîne vide. Ne lève JAMAIS :
+     * imprimer le ticket ne doit pas dépendre du QR (panne de base, URL trop longue, imprimante sans `GS ( k` → le ticket sort).
+     * Le QR est émis en octets BRUTS (jamais par `textLine`, qui retire 0x00-0x1F) puis suivi d'un saut de ligne qui le déclenche.
+     * Le jeton n'est PAS imprimé en clair à côté : le papier ne porte que le QR.
+     */
+    private function deliveryHandoverQrBlock(BroadcastableOrder $order, int $w): string
+    {
+        try {
+            // Interrupteur d'impression (config/delivery.php, défaut FAUX) : fermé = aucun octet de QR, AUCUN jeton créé.
+            if (! (bool) config('delivery.handover.qr_print_enabled', false)) {
+                return '';
+            }
+            if ((int) ($order->order_type ?? 0) !== \App\Enums\OrderType::DELIVERY
+                || (int) ($order->id ?? 0) <= 0
+                || $this->isRefundReceipt($order)
+                || $this->isUberOrder($order)) {
+                return '';
+            }
+            $url = app(\App\Services\Delivery\DeliveryHandoverService::class)->qrUrlForOrder((int) $order->id);
+            if ($url === null) {
+                return '';
+            }
+            if (strlen($url) > self::QR_MAX_URL_BYTES || preg_match('/[^\x20-\x7E]/', $url) === 1) {
+                \Illuminate\Support\Facades\Log::warning('delivery.handover.qr_url_unprintable', ['order_id' => (int) $order->id, 'bytes' => strlen($url)]);
+
+                return '';
+            }
+
+            $b = EscPosCommandBuilder::separator('-', $w);
+            $b .= EscPosCommandBuilder::alignCenter();
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('REMISE LIVREUR', $w).EscPosCommandBuilder::bold(false);
+            $b .= EscPosCommandBuilder::textWrap('Livreur : scannez ce QR pour valider la remise.', $w);
+            $b .= EscPosCommandBuilder::feed(1);
+            $b .= EscPosCommandBuilder::qrCode($url, 6, 'M'); // octets bruts, jamais via textLine
+            $b .= EscPosCommandBuilder::textLine('');          // déclenche l'impression du symbole stocké
+            $b .= EscPosCommandBuilder::textWrap('QR a usage unique.', $w);
+
+            return $b;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('delivery.handover.qr_block_failed', ['error' => $e->getMessage()]);
+
+            return '';
+        }
+    }
+
     private function isRefundReceipt(BroadcastableOrder $order): bool
     {
         return (int) ($order->status ?? 0) === \App\Enums\OrderStatus::RETURNED

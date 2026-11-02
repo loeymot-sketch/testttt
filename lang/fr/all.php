@@ -220,6 +220,22 @@ return [
         'delivery_cash_mvt_drawer_open' => 'Ouverture caisse',
         'delivery_cash_mvt_drawer_close' => 'Clôture caisse',
         'delivery_cash_mvt_adjustment' => 'Ajustement',
+        'delivery_cash_opening_float' => 'Fond de début',
+        'delivery_cash_by_mode' => 'Répartition des encaissements à la porte',
+        'delivery_cash_mode_cash' => 'Espèces',
+        'delivery_cash_mode_card' => 'Carte',
+        'delivery_cash_mode_meal_voucher' => 'Titres-restaurant',
+        'delivery_cash_total_collected' => 'Total encaissé',
+        'delivery_cash_deliveries_settled' => 'Livraisons réglées',
+        'delivery_cash_expected_cash' => 'Espèces attendues (fond + espèces)',
+        'delivery_cash_counted_cash' => 'Espèces comptées',
+        'delivery_cash_variance_line' => 'Écart à la clôture',
+        'delivery_cash_variance_short' => 'Il manque de l\'argent dans la sacoche',
+        'delivery_cash_variance_over' => 'Il y a de l\'argent en trop dans la sacoche',
+        'delivery_cash_variance_ok' => 'Le compte est bon',
+        'delivery_cash_orders' => 'Commandes encaissées',
+        'delivery_cash_paid_online' => 'Payée en ligne',
+        'delivery_cash_ledger_gap' => 'Écart entre les espèces des commandes et le livre de caisse',
         // [I18N-DASH-P1-01 heal 2026-05-30] Full audit 2026-05-29 i18n agent
         // caught dashboard AuditTrailComponent rendering audit_logs.action raw.
         // Translations for displayed NF525 audit event types.

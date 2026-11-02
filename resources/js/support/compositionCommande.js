@@ -25,6 +25,21 @@
 
 // [GOAL REMARQUES 2026-10-03 · R-009] Les symboles de la CUISINE (module pur, sans Vue ni réseau).
 import { cruditeSymbol, meatSymbol, sauceSymbol, supportSymbol } from '../helpers/kdsSymbolic.js';
+// [LIBELLÉ-FORMULE 2026-11-02] Les trois libellés de formule (menu complet / frites seules / boisson seule).
+import { MENU_FULL, MENU_FRITES, MENU_BOISSON } from '../helpers/menuFormulaLabel.js';
+
+const LIBELLES_FORMULE = [MENU_FULL, MENU_FRITES, MENU_BOISSON];
+
+/** Vrai si ce supplément est une formule (le serveur a déjà posé le libellé du vrai choix). */
+export function estFormule(addon) {
+    return !!addon && LIBELLES_FORMULE.includes(String((addon && addon.name) || '').trim());
+}
+
+/** La formule prise par le client sur cette ligne (« Frites seules »…), ou '' — pour la mettre EN ÉVIDENCE. */
+export function formuleDeLigne(ligne) {
+    const a = ((ligne && ligne.addons) || []).find(estFormule);
+    return a ? String(a.name).trim() : '';
+}
 
 /**
  * Budget de la composition affichée sur une carte, en caractères.
@@ -96,7 +111,7 @@ export function resumeComposition(ligne) {
  * (« Bien cuit ») reste écrite telle quelle — jamais effacée. Le détail intégral, en toutes lettres,
  * reste `resumeComposition` (« Voir tout », info-bulle).
  */
-export function resumeTechnique(ligne) {
+export function resumeTechnique(ligne, { sansFormule = false } = {}) {
     if (!ligne) return '';
     const support = [];
     const viandes = [];
@@ -135,6 +150,7 @@ export function resumeTechnique(ligne) {
     (ligne.addons || []).forEach((a) => {
         const nom = String((a && a.name) || '').trim();
         if (!nom) return;
+        if (sansFormule && estFormule(a)) return; // affichée à part, en évidence
         morceaux.push(a.quantity > 1 ? `+${a.quantity} ${nom}` : `+${nom}`);
     });
 

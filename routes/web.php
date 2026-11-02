@@ -87,6 +87,20 @@ Route::get('/livreur', function () {
     return view('livreur');
 })->middleware(['installed'])->name('livreur');
 
+// [LIVRAISON QR 2026-11-01] Page de REMISE par QR (adresse, mode encaissé, « Remis »). Le jeton est dans le FRAGMENT (`#…`) : le
+// serveur ne le voit jamais. Page STATIQUE et IDENTIQUE pour tout le monde (jeton valide, périmé ou absurde : même réponse 200,
+// aucune donnée) ; elle redemande TOUJOURS e-mail + mot de passe et ignore la session /livreur. Déclarée AVANT le catch-all.
+Route::get('/livreur/remise', function () {
+    return response()->view('livreur-remise')->withHeaders([
+        'Cache-Control'   => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma'          => 'no-cache',
+        'Referrer-Policy' => 'no-referrer',
+        'X-Robots-Tag'    => 'noindex, nofollow, noarchive',
+        'X-Frame-Options' => 'DENY',
+        'Content-Security-Policy' => "frame-ancestors 'none'",
+    ]);
+})->middleware(['installed'])->name('livreur.remise');
+
 Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
     Route::get('/', function () {
         return view('mobile-stock');
