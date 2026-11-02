@@ -364,6 +364,8 @@ class DeliveryHandoverService
             'amount_due_cents' => (int) $due['amount_due_cents'],
             'amount_due'       => round(((int) $due['amount_due_cents']) / 100, 2),
             'allowed_modes'    => $this->allowedModes($order, $due),
+            // [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens possible : à encaisser et encaissable à la porte.
+            'split_allowed'    => (int) $due['amount_due_cents'] > 0 && $this->doorSettleable($order),
         ];
     }
 
@@ -495,14 +497,27 @@ class DeliveryHandoverService
 
         $due = app(DeliveryWaveService::class)->collectionFor($order);
         $dueCents = (int) $due['amount_due_cents'];
-        $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
+        // [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens (facultatif, exclusif avec `declared_mode`). Absent = chemin inchangé.
+        $payments = $in['payments'] ?? null;
+        $tranches = null;
+        if ($payments !== null) {
+            if (isset($in['declared_mode']) && $in['declared_mode'] !== '') {
+                throw new HandoverRefused(422, 'mode_conflict', 'Choisissez un seul mode de règlement : un moyen unique OU plusieurs moyens.', ...$ids);
+            }
+            $tranches = $this->validatedSplit($order, $due, $payments, $ids);
+            $declared = null;
+            $in['payments_applied'] = array_map(static fn (array $t) => ['mode' => $t['mode'], 'amount_cents' => $t['cents']], $tranches);
+        } else {
+            $declared = $this->validatedMode($order, $due, $in['declared_mode'] ?? null, $in['collected_cents'] ?? null, $ids);
+        }
 
         // Voie officielle, SEULE : encaissement à la porte, numéro fiscal NF525, escrow, audits et notifications APRÈS son commit.
         // Un échec laisse tout intact (rien n'est écrit par nous avant) ; le verrou est libéré par le `finally` de l'appelant.
         app(OrderService::class)->deliveryBoyOrderChangeStatus(
             $order,
             Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]),
-            $declared
+            $declared,
+            $tranches === null ? null : $payments
         );
 
         $after = Order::query()->withoutGlobalScope(BranchScope::class)->find($order->id);
@@ -510,7 +525,8 @@ class DeliveryHandoverService
             Log::critical('delivery.handover.not_settled', ['order_id' => $order->id, 'status' => $after?->status, 'payment_status' => $after?->payment_status]);
         }
         // Le mode ENREGISTRÉ est celui que la commande porte maintenant ; celui de la requête n'est qu'un repli.
-        $applied = $dueCents > 0 ? ($after ? $this->appliedModeFromOrder($after, true) : null) ?? $declared : null;
+        $fallback = $tranches === null ? $declared : (count($tranches) > 1 ? 'split' : $tranches[0]['mode']);
+        $applied = $dueCents > 0 ? ($after ? $this->appliedModeFromOrder($after, true) : null) ?? $fallback : null;
 
         return $this->finalize($user, $row, $in, $applied, $dueCents);
     }
@@ -522,12 +538,17 @@ class DeliveryHandoverService
      */
     private function appliedModeFromOrder(Order $order, bool $knownDoorCollection): ?string
     {
-        $pay = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
-            ->where('order_id', $order->id)->where('reference', 'livraison')->orderByDesc('id')->first();
+        $pays = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
+            ->where('order_id', $order->id)->where('reference', 'livraison')->orderByDesc('id')->get();
+        if ($pays->count() >= 2) {
+            return 'split'; // [LIVREUR CAISSE 2026-11-02] plusieurs moyens encaissés à la porte
+        }
+        $pay = $pays->first();
         if ($pay) {
             return match ((int) $pay->mode) {
                 \App\Enums\PosPaymentMethod::CARD => 'card',
                 \App\Enums\PosPaymentMethod::TICKET_RESTAURANT => 'meal_voucher',
+                \App\Enums\PosPaymentMethod::CASH => 'cash', // espèces notées comme tranche unique (règlement en « payments »)
                 default => null,
             };
         }
@@ -661,6 +682,30 @@ class DeliveryHandoverService
         return $declared;
     }
 
+    /**
+     * [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens : la commande doit être encore à encaisser à la porte, et la répartition
+     * doit valoir EXACTEMENT le dû relu côté serveur. Refus 422 français, avant toute écriture.
+     *
+     * @param  array<int,int|null>  $ids
+     * @return list<array{mode: string, cents: int}>
+     * @throws HandoverRefused
+     */
+    private function validatedSplit(Order $order, array $due, mixed $payments, array $ids): array
+    {
+        $dueCents = (int) $due['amount_due_cents'];
+        if ($dueCents <= 0) {
+            throw new HandoverRefused(422, 'mode_forbidden', 'Cette commande est déjà payée : il n\'y a rien à encaisser.', ...$ids);
+        }
+        if (! $this->doorSettleable($order)) {
+            throw new HandoverRefused(422, 'caisse_required', 'Cette commande n\'est pas encaissable à la porte. Renvoyez-la à la caisse.', ...$ids);
+        }
+        try {
+            return DoorPaymentSplit::normalize($payments, $dueCents);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw new HandoverRefused(422, 'wrong_split', $e->getMessage(), ...$ids);
+        }
+    }
+
     /** @return array<string,mixed> */
     private function result(DeliveryStop $stop, Order $order, DeliveryHandoverToken $row): array
     {
@@ -668,7 +713,7 @@ class DeliveryHandoverService
             'order_number'           => $order->order_serial_no,
             'delivered_at'           => $stop->delivered_at?->toDateTimeString(),
             'declared_mode'          => $row->declared_mode,
-            'chosen_mode'            => $row->chosen_mode,
+            'chosen_mode'            => $row->used_at !== null ? $this->chosenModeFromOrder($order, $row->declared_mode) : null,
             'mode_mismatch'          => (bool) $row->mode_mismatch,
             'amount_collected_cents' => (int) $stop->amount_collected_cents,
         ];
@@ -682,8 +727,10 @@ class DeliveryHandoverService
             'stop_id'        => (int) $row->delivery_stop_id,
             'token_id'       => (int) $row->id,
             'wave_at'        => $stop->wave_at?->toDateTimeString(),
-            'chosen_mode'    => $row->chosen_mode,
+            'chosen_mode'    => $this->chosenModeFromOrder(Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($row->order_id), $row->declared_mode),
             'declared_mode'  => $row->declared_mode,
+            'declared_differs' => (bool) $row->mode_mismatch,
+            'payments'       => $in['payments_applied'] ?? null,
             'mismatch'       => (bool) $row->mode_mismatch,
             'amount_cents'   => (int) $row->amount_collected_cents,
             'handed_over_at' => $stop->delivered_at?->toIso8601String(),

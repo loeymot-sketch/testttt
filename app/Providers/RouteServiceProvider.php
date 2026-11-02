@@ -604,6 +604,16 @@ class RouteServiceProvider extends ServiceProvider
                 Limit::perMinute(120)->by('dhl-global')->response($tooMany),
             ];
         });
+        // [LIVREUR CAISSE 2026-11-02] « Ma caisse » : un limiteur nommé par route, par livreur (jamais un `throttle:N,M` nu).
+        foreach (['delivery-run-cash' => 120, 'delivery-run-cash-close' => 20] as $name => $perMinute) {
+            RateLimiter::for($name, function (Request $request) use ($name, $perMinute) {
+                $who = $request->user()?->getAuthIdentifier();
+
+                return Limit::perMinute($perMinute)->by($name.':'.($who ?: 'ip:'.$request->ip()))->response(function () {
+                    return response()->json(['message' => 'Trop de tentatives. Patientez une minute.', 'retry_after' => 60], 429);
+                });
+            });
+        }
         foreach (['delivery-handover-resolve' => 30, 'delivery-handover-confirm' => 20] as $name => $perMinute) {
             RateLimiter::for($name, function (Request $request) use ($name, $perMinute) {
                 $who = $request->user()?->getAuthIdentifier();

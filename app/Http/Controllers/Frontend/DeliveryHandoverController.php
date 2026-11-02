@@ -140,6 +140,11 @@ class DeliveryHandoverController extends Controller
             'token'           => ['required', 'string', 'max:64'],
             'declared_mode'   => ['nullable', 'string', 'max:16'],
             'collected_cents' => ['nullable', 'integer', 'min:0', 'max:100000000'],
+            // [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens : [{mode, amount}] (la somme est vérifiée par le service).
+            'payments'        => ['nullable', 'array', 'max:4'],
+            'payments.*'      => ['array'],
+            'payments.*.mode' => ['required', 'string', 'max:16'],
+            'payments.*.amount' => ['required', 'numeric'],
             'lat'             => ['nullable', 'numeric', 'between:-90,90'],
             'lng'             => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy'        => ['nullable', 'numeric', 'min:0', 'max:100000'],

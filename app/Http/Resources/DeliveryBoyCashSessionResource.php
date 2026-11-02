@@ -37,6 +37,13 @@ class DeliveryBoyCashSessionResource extends JsonResource
             'variance_reason'         => $this->variance_reason,
             'notes'                   => $this->notes,
             'status'                  => $this->status,
+            // [LIVREUR CAISSE 2026-11-02] Fond de début + répartition des encaissements par moyen (espèces / carte / titres-restaurant),
+            // espèces attendues et écart : calculés à la volée depuis les mouvements et les paiements de livraison (aucune colonne ajoutée).
+            // Présent avec le détail (mouvements chargés), absent de la liste.
+            'recap'                   => $this->when(
+                $this->resource->relationLoaded('movements'),
+                fn () => app(\App\Services\Delivery\DeliveryCashRecapService::class)->recap($this->resource)
+            ),
             'movements'               => $this->whenLoaded('movements', function () {
                 return $this->movements->map(fn (DeliveryBoyCashMovement $m) => [
                     'id'         => $m->id,

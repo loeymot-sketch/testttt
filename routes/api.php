@@ -2473,6 +2473,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/stops/{stop}/arrive', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'arrive'])->middleware('idempotency');
         Route::post('/stops/{stop}/deliver', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'deliver'])->middleware('idempotency');
         Route::get('/stops/{stop}/photo', [\App\Http\Controllers\Frontend\DeliveryRunController::class, 'photo']);
+        // [LIVREUR CAISSE 2026-11-02] « Ma caisse » : récap du service du livreur connecté et clôture (espèces comptées). Un limiteur nommé par route.
+        Route::get('/cash', [\App\Http\Controllers\Frontend\DeliveryRunCashController::class, 'show'])->middleware('throttle:delivery-run-cash');
+        Route::post('/cash/close', [\App\Http\Controllers\Frontend\DeliveryRunCashController::class, 'close'])->middleware(['throttle:delivery-run-cash-close', 'idempotency']);
     });
 
     // [LIVRAISON QR 2026-11-01] Remise par QR (jeton à usage unique imprimé sur le ticket client d'une livraison). La connexion est

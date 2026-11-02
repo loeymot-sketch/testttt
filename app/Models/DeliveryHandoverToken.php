@@ -64,6 +64,9 @@ class DeliveryHandoverToken extends Model
         if (! $this->mode_mismatch) {
             return $applied;
         }
+        if ($applied === 'split') {
+            return null; // [LIVREUR CAISSE 2026-11-02] plusieurs moyens : le choix du client ne se déduit pas (le service le relit dans la commande)
+        }
 
         return $applied === 'card' ? 'cash' : 'card';
     }

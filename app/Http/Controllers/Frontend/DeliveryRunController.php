@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DeliveryStop;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
+use App\Services\Delivery\DoorPaymentSplit;
 use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -133,19 +134,36 @@ class DeliveryRunController extends Controller
         $data = $request->validate(['collected_cents' => ['nullable', 'integer', 'min:0']]);
         abort_if($stop->left_at === null, 409, 'Partez d\'abord avec la tournée.');
         abort_if($stop->delivered_at !== null, 409, 'Cette commande est déjà remise.');
+        // [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens (facultatif) : `payments = [{mode: cash|card|meal_voucher, amount}]`.
+        // Absent = chemin historique STRICTEMENT inchangé (le mode est celui que le client a choisi).
+        $payments = $request->input('payments');
+        abort_if($payments !== null && ! is_array($payments), 422, 'Moyens de paiement illisibles : recommencez la saisie.');
 
         $order = Order::query()->withoutGlobalScope(BranchScope::class)->findOrFail($stop->order_id);
         // [VG-2026-10-21 M4-102] Annulée en caisse pendant la tournée : ni remise ni encaissement (500 « transition invalide » avant).
         abort_if($this->isCancelled($order), 422, 'Commande annulée : ne la remettez pas, rapportez-la au restaurant.');
         $due = $this->waves->collectionFor($order); // ce qui restait RÉELLEMENT à encaisser avant la remise
-        $this->orders->deliveryBoyOrderChangeStatus($order, Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]));
+        $tranches = null;
+        if ($payments !== null) {
+            // Contrôle d'emblée (rien n'est écrit) ; OrderService le refait sous verrou avec le total relu en base.
+            abort_if((int) $due['amount_due_cents'] <= 0, 422, 'Cette commande est déjà payée : il n\'y a rien à encaisser.');
+            $tranches = DoorPaymentSplit::normalize($payments, (int) $due['amount_due_cents']);
+        }
+        $this->orders->deliveryBoyOrderChangeStatus($order, Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]), null, $payments);
         $stop->forceFill(['collect_method' => $due['collect_method'], 'amount_due_cents' => $due['amount_due_cents']]);
 
         $stop->forceFill([
             'arrived_at'             => $stop->arrived_at ?? now(),
             'delivered_at'           => now(),
             'amount_collected_cents' => $stop->amount_due_cents > 0 ? ($data['collected_cents'] ?? $stop->amount_due_cents) : 0,
-        ])->save();
+        ]);
+        if ($tranches !== null) { // le montant encaissé est la somme VÉRIFIÉE des tranches (jamais le champ client)
+            $stop->forceFill([
+                'collect_method'         => count($tranches) > 1 ? 'split' : $tranches[0]['mode'],
+                'amount_collected_cents' => array_sum(array_column($tranches, 'cents')),
+            ]);
+        }
+        $stop->save();
 
         return response()->json(['status' => true, 'data' => $this->present($stop->fresh(['order.address', 'order.user']))]);
     }
@@ -169,6 +187,25 @@ class DeliveryRunController extends Controller
     private function isCancelled(Order $order): bool
     {
         return in_array((int) $order->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true);
+    }
+
+    /** @return list<array{mode: string, label: string, amount: float}> */
+    private function doorPayments(DeliveryStop $s): array
+    {
+        $rows = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
+            ->where('order_id', $s->order_id)->where('reference', 'livraison')->orderBy('id')->get();
+        if ($rows->isEmpty()) {
+            // Espèces historiques : pas de ligne `order_payments`, la preuve est le montant encaissé de l'arrêt.
+            return ($s->collect_method === DeliveryStop::COLLECT_CASH && (int) $s->amount_collected_cents > 0)
+                ? [['mode' => DoorPaymentSplit::CASH, 'label' => DoorPaymentSplit::LABELS[DoorPaymentSplit::CASH], 'amount' => round($s->amount_collected_cents / 100, 2)]]
+                : [];
+        }
+
+        return $rows->map(function ($p) {
+            $mode = DoorPaymentSplit::modeOfPosMethod((int) $p->mode);
+
+            return ['mode' => $mode ?? 'other', 'label' => $mode ? DoorPaymentSplit::LABELS[$mode] : 'Autre', 'amount' => round((float) $p->amount, 2)];
+        })->values()->all();
     }
 
     private function present(DeliveryStop $s): array
@@ -214,10 +251,16 @@ class DeliveryRunController extends Controller
                 DeliveryStop::COLLECT_CARD => 'Encaisser par carte',
                 // [VG-2026-10-21 L2] Le livreur récupère le titre-restaurant à la porte : un vrai libellé, pas « carte ».
                 \App\Services\Delivery\DeliveryWaveService::COLLECT_MEAL_VOUCHER => 'Encaisser en titre-restaurant',
+                'split'                    => 'Réglé en plusieurs moyens',
                 default                    => 'Déjà payé',
             },
             'amount_due'       => round($live['amount_due_cents'] / 100, 2),
             'amount_due_cents' => (int) $live['amount_due_cents'],
+            // [LIVREUR CAISSE 2026-11-02] Peut-on régler cet arrêt à la porte en choisissant / combinant les moyens ?
+            'door_settleable'  => $order !== null && ! $s->delivered_at && ! $cancelled && (int) $live['amount_due_cents'] > 0
+                && in_array((int) $order->payment_method, [\App\Enums\PaymentGateway::CASH_ON_DELIVERY, \App\Enums\PaymentGateway::TICKET_RESTAURANT], true),
+            // Ce qui a réellement été encaissé à la porte, moyen par moyen (arrêt remis seulement).
+            'door_payments'    => $s->delivered_at ? $this->doorPayments($s) : [],
             // [VG-2026-10-21 M4-004] Depuis le départ réel s'il a eu lieu (« ETA 18:32 » pour un livreur parti la veille).
             'eta_at'         => $this->waves->etaAt($s)->toDateTimeString(),
             'eta_minutes'    => (int) $s->eta_minutes,
