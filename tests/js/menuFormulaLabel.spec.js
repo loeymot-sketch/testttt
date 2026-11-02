@@ -38,3 +38,26 @@ describe('supplément portant déjà le nom de la boisson', () => {
         expect(out[0].name).toBe('Coca-Cola');
     });
 });
+
+import { estFormule, formuleDeLigne, resumeTechnique } from '../../resources/js/support/compositionCommande.js';
+
+describe('suivi de caisse — la formule est mise en évidence', () => {
+    const ligne = (nom) => ({ item_name: 'Tacos', options: [{ label: 'Viande 1', value: 'Mexicanos' }], extras: [{ name: 'Cheddar' }], addons: [{ name: nom }] });
+    it('reconnaît les trois formules et rien d\'autre', () => {
+        expect(estFormule({ name: 'Frites seules' })).toBe(true);
+        expect(estFormule({ name: 'Boisson seule' })).toBe(true);
+        expect(estFormule({ name: 'Menu Frites + Boisson' })).toBe(true);
+        expect(estFormule({ name: 'Coca-Cola' })).toBe(false);
+        expect(estFormule(null)).toBe(false);
+    });
+    it('formuleDeLigne rend le vrai choix', () => {
+        expect(formuleDeLigne(ligne('Boisson seule'))).toBe('Boisson seule');
+        expect(formuleDeLigne(ligne('Coca-Cola'))).toBe('');
+    });
+    it('le résumé de la carte ne répète pas la formule quand elle est affichée à part', () => {
+        expect(resumeTechnique(ligne('Frites seules'), { sansFormule: true })).not.toContain('Frites seules');
+        expect(resumeTechnique(ligne('Frites seules'))).toContain('+Frites seules');
+        // une boisson nommée reste dans le texte
+        expect(resumeTechnique(ligne('Coca-Cola'), { sansFormule: true })).toContain('+Coca-Cola');
+    });
+});
