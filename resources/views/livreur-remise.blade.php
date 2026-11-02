@@ -50,6 +50,13 @@
         .big { text-align:center; padding:28px 12px; }
         .big .tick { font-size:56px; line-height:1; color:var(--ok); }
         a.tel { color:var(--dark); font-weight:800; }
+        /* [LIVREUR CAISSE 2026-11-02] Règlement en plusieurs moyens */
+        .amt-row { display:grid; grid-template-columns:1fr 128px 64px; gap:8px; align-items:center; margin-top:8px; }
+        .amt-row label { font-weight:700; font-size:16px; }
+        .amt-row input { width:100%; min-height:52px; padding:8px 12px; font-size:18px; text-align:right; border:2px solid var(--line); border-radius:12px; background:#fff; }
+        .amt-row .fill { min-height:52px; border-radius:12px; border:2px solid var(--line); background:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+        .rest { border-radius:12px; padding:10px 12px; font-weight:800; font-size:19px; background:#F4F4F5; margin-top:8px; }
+        .rest.ok { background:#EAF7EE; color:#126B33; } .rest.bad { background:#FDECEC; color:#9B1C12; }
     </style>
 </head>
 <body>
@@ -146,7 +153,27 @@
         return refusal(r.body.message);
     }
 
-    var LABELS = { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant' };
+    var LABELS = { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant', split: 'En plusieurs fois' };
+    var amts = { cash: '', card: '', meal_voucher: '' }; // saisie « en plusieurs fois », en mémoire seulement
+    var lastSplit = null;                                  // ce que CE livreur vient d'envoyer (pour le message final)
+    // « 12,5 » / « 12.50 » → 1250 ; vide → 0 ; illisible → NaN
+    function parseCents(v) {
+        v = String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.');
+        if (v === '') return 0;
+        if (!/^\d+(\.\d{1,2})?$/.test(v)) return NaN;
+        return Math.round(parseFloat(v) * 100);
+    }
+    function splitState(due) {
+        var sum = 0, bad = false;
+        Object.keys(amts).forEach(function (k) { var c = parseCents(amts[k]); if (isNaN(c)) bad = true; else sum += c; });
+        return { sum: sum, bad: bad, rest: due - sum, ok: !bad && sum === due && due > 0 };
+    }
+    function restLine(st) {
+        if (st.bad) return ['Un montant est illisible : saisissez par exemple 12,50.', 'rest bad'];
+        if (st.rest > 0) return ['Reste à encaisser : ' + eur(st.rest), 'rest'];
+        if (st.rest < 0) return ['Trop perçu : ' + eur(-st.rest) + ' — corrigez les montants', 'rest bad'];
+        return ['Reste à encaisser : ' + eur(0) + ' — c\'est le compte', 'rest ok'];
+    }
 
     function stopScreen(msg) {
         var s = stop, modes = s.allowed_modes || [], due = Number(s.amount_due_cents || 0);
@@ -159,19 +186,31 @@
                 + (maps ? '<a class="btn sec" href="' + esc(maps) + '" target="_blank" rel="noopener noreferrer">Plans</a>' : '<span></span>') + '</div>' : '')
             + '<div>' + esc(s.customer_name || 'Client') + (tel ? ' · <a class="tel" href="tel:' + esc(tel) + '">' + esc(s.customer_phone) + '</a>' : '') + '</div></div>';
 
-        if (due > 0 && modes.length) {
+        // [LIVREUR CAISSE 2026-11-02] « En plusieurs fois » : espèces / carte / titre-restaurant, la somme doit être le total de la commande.
+        var btns = modes.slice();
+        if (s.split_allowed && due > 0) btns.push('split');
+        if (due > 0 && btns.length) {
             html += '<div class="card"><div class="due" data-testid="du">À encaisser : ' + eur(due) + '</div>'
                 + '<p class="muted">Choix du client : ' + esc(String(s.collect_label || '').replace(/^Encaisser (en |par )?/, '')) + '.</p>'
                 + '<p class="muted"><b>Comment le client a-t-il réellement payé à la porte ?</b></p>'
-                + '<div class="modes' + (modes.length === 1 ? ' one' : '') + '" role="group" aria-label="Mode de paiement encaissé">'
-                + modes.map(function (m) { return '<button type="button" class="mode" data-mode="' + esc(m) + '" aria-pressed="' + (mode === m ? 'true' : 'false') + '">' + esc(LABELS[m] || m) + '</button>'; }).join('')
-                + '</div></div>';
+                + '<div class="modes' + (btns.length === 1 ? ' one' : '') + '" role="group" aria-label="Mode de paiement encaissé">'
+                + btns.map(function (m) { return '<button type="button" class="mode" data-mode="' + esc(m) + '" aria-pressed="' + (mode === m ? 'true' : 'false') + '">' + esc(LABELS[m] || m) + '</button>'; }).join('')
+                + '</div>'
+                + (mode === 'split'
+                    ? '<div id="split" data-testid="split">'
+                      + [['cash', 'Espèces'], ['card', 'Carte'], ['meal_voucher', 'Titre-restaurant']].map(function (r) {
+                          return '<div class="amt-row"><label for="amt-' + r[0] + '">' + r[1] + '</label><input id="amt-' + r[0] + '" data-amt="' + r[0] + '" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + esc(amts[r[0]]) + '">'
+                              + '<button type="button" class="fill" data-fill="' + r[0] + '" aria-label="Mettre tout le reste : ' + r[1] + '">Reste</button></div>';
+                      }).join('')
+                      + '<div class="rest" id="rest" data-testid="rest" role="status" aria-live="polite"></div></div>'
+                    : '')
+                + '</div>';
         } else if (due > 0) {
             html += '<div class="alert" role="alert">Cette commande ne peut pas être encaissée à la porte. Renvoyez-la à la caisse.</div>';
         } else {
             html += '<div class="due paid" data-testid="du">✓ Déjà payé : rien à encaisser</div>';
         }
-        var canGo = (due === 0) || (due > 0 && modes.length && mode);
+        var canGo = (due === 0) || (due > 0 && btns.length && mode && (mode !== 'split' || splitState(due).ok));
         html += '<button class="btn ok" id="remis"' + (canGo ? '' : ' disabled') + '>Remis au client</button>'
             + '<div class="err" id="err" role="alert">' + esc(msg || '') + '</div>';
         render(html);
@@ -180,6 +219,25 @@
         });
         var go = document.getElementById('remis');
         if (go) go.addEventListener('click', validate);
+        if (mode === 'split') { // la saisie ne redessine PAS l'écran (le clavier resterait ouvert) : elle met à jour le reste et le bouton
+            var refresh = function () {
+                var st = splitState(due), r = restLine(st), el = document.getElementById('rest');
+                if (el) { el.textContent = r[0]; el.className = r[1]; }
+                if (go) go.disabled = !st.ok;
+            };
+            Array.prototype.forEach.call(main.querySelectorAll('[data-amt]'), function (inp) {
+                inp.addEventListener('input', function () { amts[inp.getAttribute('data-amt')] = inp.value; refresh(); });
+            });
+            Array.prototype.forEach.call(main.querySelectorAll('[data-fill]'), function (b) {
+                b.addEventListener('click', function () {
+                    var k = b.getAttribute('data-fill'), others = 0;
+                    Object.keys(amts).forEach(function (x) { var c = parseCents(amts[x]); if (x !== k && !isNaN(c)) others += c; });
+                    amts[k] = (Math.max(0, due - others) / 100).toFixed(2).replace('.', ',');
+                    document.getElementById('amt-' + k).value = amts[k]; refresh();
+                });
+            });
+            refresh();
+        }
     }
 
     function position() {
@@ -201,7 +259,12 @@
         var go = document.getElementById('remis'); if (go) go.classList.add('off');
         position().then(function (pos) {
             var body = { token: qr };
-            if (due > 0) { body.declared_mode = mode; body.collected_cents = due; }
+            lastSplit = null;
+            if (due > 0 && mode === 'split') {
+                body.payments = [];
+                Object.keys(amts).forEach(function (k) { var c = parseCents(amts[k]); if (c > 0) body.payments.push({ mode: k, amount: c / 100 }); });
+                lastSplit = body.payments.map(function (p) { return p; });
+            } else if (due > 0) { body.declared_mode = mode; body.collected_cents = due; }
             if (pos.lat != null) { body.lat = pos.lat; body.lng = pos.lng; body.accuracy = pos.accuracy; }
             return api('confirm', body, idem);
         }).then(function (r) {
@@ -228,7 +291,12 @@
         // les deux : jamais « vous avez déclaré X » pour un mode qu'il n'a pas envoyé.
         var warn = '';
         var lab = function (m) { return String(LABELS[m] || m || '').toLowerCase(); };
-        if (d && d.declared_mode && sent && sent !== d.declared_mode) {
+        if (d && d.declared_mode === 'split') {
+            // Plusieurs moyens : ce qui a été enregistré (jamais le mot technique « split »).
+            warn = '<div class="notice" data-testid="ecart-mode" role="status">Réglé en plusieurs fois'
+                + (lastSplit && lastSplit.length ? ' : ' + lastSplit.map(function (p) { return esc(lab(p.mode)) + ' ' + eur(Math.round(p.amount * 100)); }).join(', ') : '')
+                + '. C\'est enregistré.</div>';
+        } else if (d && d.declared_mode && sent && sent !== d.declared_mode) {
             warn = '<div class="notice" data-testid="ecart-mode" role="status">Vous avez envoyé ' + esc(lab(sent)) + ', mais c\'est ' + esc(lab(d.declared_mode))
                 + ' qui est enregistré (un autre appui est passé avant)' + (d.chosen_mode ? ' ; le client avait choisi ' + esc(lab(d.chosen_mode)) : '')
                 + '. Si ce n\'est pas juste, voyez la caisse.</div>';

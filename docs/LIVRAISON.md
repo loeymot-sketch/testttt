@@ -365,3 +365,40 @@ d'imprimante, la lecture du QR sur papier thermique et la conservation du `#` pa
 Défauts HISTORIQUES de `DeliveryRunController::deliver` (chemin `/livreur`, non modifié) : `collected_cents` vient du client et n'est jamais comparé au dû ;
 un 2ᵉ appel réécrit l'arrêt (`delivered_at`, `amount_collected_cents`). Tests : `DeliveryHandoverTokenTest`, `…LoginTest`, `…ConfirmTest`, `LivreurRemisePageTest`,
 `ZLivraisonQrDeclaredModeTest`, `ClientTicketDeliveryQrTest`, `TicketWidthSafeTest`, banc navigateur `tests/Playwright/livraison-qr-remise/run.js`.
+
+## 9. Règlement à la porte en plusieurs moyens, « Ma caisse » du livreur et clôture (2026-11-02)
+
+**Règlement en plusieurs moyens.** `POST /api/frontend/delivery-run/stops/{id}/deliver` et `POST /api/frontend/delivery-handover/confirm` acceptent un
+paramètre FACULTATIF `payments = [{mode: cash|card|meal_voucher, amount: euros}]` (1 à 4 tranches). Sans `payments`, le chemin historique (un seul moyen, celui
+du client) est strictement inchangé. Avec `payments`, le serveur impose (`DoorPaymentSplit::normalize`, sous le verrou de la commande, total relu en base, jamais
+un montant client) : somme = total **au centime**, chaque montant ≥ 0,01 € à deux décimales, un seul tranche par moyen, commande encore à encaisser à la porte
+(espèces ou titre-restaurant au départ ; pas déjà payée en ligne ni au comptoir). Tout refus = **422 en français, rien d'écrit**.
+- Écrit dans la MÊME transaction que le PAYÉ et le numéro fiscal (allocation inchangée) : une ligne `order_payments` par tranche (`reference='livraison'`, ordre
+  espèces, carte, titre), `pos_payment_method` = moyen **dominant** (convention du paiement multi-moyens du comptoir ; le Z range la commande entière sous ce moyen,
+  la ventilation exacte vit dans `order_payments`, dont `ZReportCashEnrichmentService` fait déjà la somme par moyen). `ZReportService` n'est pas touché.
+- Après COMMIT : tranche ESPÈCES → audit `delivery.cash_collected_escrow` (montant espèces seul) + **un seul** `DeliveryBoyCashMovement` ENTRÉE du montant espèces ;
+  tranches CARTE / TITRE → un audit `order.payment_tranche_persisted` chacune (`tranche_index` = position dans les lignes `order_payments`). Les payloads portent
+  `declared_differs` (le livreur a encaissé autrement que le choix du client, ou en plusieurs fois : accepté, **tracé**), `chosen_mode`, `tranches`.
+- Rejeu : la remise est déjà LIVRÉE, l'appel retourne tôt ; aucun paiement, mouvement, audit ni numéro fiscal en double. Sur le QR, `declared_mode='split'` est posé
+  sur le jeton (`mode_mismatch=true`) et `delivery.handover_validated` cite `payments` ; `chosen_mode` se relit dans la commande (`chosenModeFromOrder`), plus dans l'accesseur du jeton.
+- **Nouveau** : carte et titre-restaurant encaissés à la porte ouvrent AUSSI le service du livreur (fond 0 €, `ensureOpenDeliveryShift`), comme les espèces depuis le 2026-10-30,
+  sinon « Ma caisse » ne verrait pas ces encaissements.
+
+**Écran `/livreur`.** « Remis au client » (inchangé) règle avec le moyen choisi par le client. Le bouton « Autre moyen · en plusieurs fois » ouvre la feuille de règlement :
+Espèces / Carte / Titre-restaurant / En plusieurs fois ; le total (non modifiable) vient de la commande ; en plusieurs fois, « Reste à encaisser : X € » se met à jour et
+« Valider la remise » reste grisé tant que la somme ≠ total. Même saisie sur la page QR de remise. Réseau coupé : message « Pas de réseau… », la feuille reste ouverte, la
+**même clé d'idempotence** est rejouée (aucun doublon).
+
+**« Ma caisse ».** Onglet de `/livreur`. `GET /api/frontend/delivery-run/cash` : service OUVERT du livreur connecté (jamais celui d'un autre : `delivery_boy_id` = lui, sa branche ;
+rôle « Delivery Boy » exigé, sinon 403) ; sans service ouvert : `{open:false, message:'Aucun service ouvert', last}` (200, jamais une erreur). Contenu (`DeliveryCashRecapService`, sans
+nouvelle colonne) : fond de début (`opening_amount`, fixé par l'ouverture en administration ; 0,00 € si le service s'est ouvert tout seul), espèces / carte / titres (depuis
+`order_payments` « livraison » des arrêts remis pendant le service ; espèces historiques sans ligne = mouvement de caisse), total, livraisons réglées, **espèces attendues = fond +
+Σ mouvements signés** (formule de `reconcileSession`), liste des commandes avec leur répartition, `ledger_gap` (espèces des commandes − livre de caisse : exposé, jamais caché).
+`POST …/cash/close {counted_cash, session_id?}` (idempotent, limiteurs nommés `delivery-run-cash*`) : refuse (422) s'il reste une livraison en route à encaisser, sinon
+`closeSession` ; réponse = récap final avec **écart = comptées − attendues**. Un second appel renvoie `already:true` sans rien changer. Le service clôturé reste `closed` ;
+la réconciliation (`reconcileSession`) reste faite par l'administration. Fiche administration : `DeliveryBoyCashSessionResource.recap` + `DeliveryBoyCashSessionShowComponent.vue`.
+
+**Limites honnêtes.** La carte et le titre-restaurant sont encaissés hors de notre système (terminal du livreur) : le logiciel enregistre ce que le livreur déclare, il ne le prouve pas.
+Le mouvement de caisse livreur est écrit « au mieux » après le COMMIT (comme avant) : s'il échoue, `ledger_gap` le montre. Une clôture simultanée à une remise peut laisser un
+encaissement sans mouvement (service fermé entre les deux) : même signal. L'écran d'administration (Vue) n'a pas été vérifié dans un navigateur (assets non compilés dans cet arbre) :
+test de composant Vitest seulement. Tests : `DeliveryDoorSplitTest`, `DeliveryRunCashTest`, `tests/js/deliveryBoyCashSessionRecap.spec.js`, banc `tests/Playwright/livreur-caisse-split/run.js`.
