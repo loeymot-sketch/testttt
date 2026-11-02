@@ -144,12 +144,28 @@ class DeliveryRunController extends Controller
         abort_if($this->isCancelled($order), 422, 'Commande annulée : ne la remettez pas, rapportez-la au restaurant.');
         $due = $this->waves->collectionFor($order); // ce qui restait RÉELLEMENT à encaisser avant la remise
         $tranches = null;
+        $deja = null; // tranches DÉJÀ enregistrées à la porte (reprise après un échec survenu après le COMMIT)
         if ($payments !== null) {
-            // Contrôle d'emblée (rien n'est écrit) ; OrderService le refait sous verrou avec le total relu en base.
-            abort_if((int) $due['amount_due_cents'] <= 0, 422, 'Cette commande est déjà payée : il n\'y a rien à encaisser.');
-            $tranches = DoorPaymentSplit::normalize($payments, (int) $due['amount_due_cents']);
+            if ((int) $due['amount_due_cents'] <= 0) {
+                // [RED-TEAM P2-2] Réglée et remise au serveur, mais l'arrêt n'a pas été fermé (échec après le COMMIT) :
+                // un rejeu doit TERMINER l'arrêt avec ce qui a réellement été encaissé, pas rester coincé en 422.
+                $deja = $this->tranchesDejaEnregistrees($order);
+                abort_if($deja === null, 422, 'Cette commande est déjà payée : il n\'y a rien à encaisser.');
+            } else {
+                // Contrôle d'emblée (rien n'est écrit) ; OrderService le refait sous verrou avec le total relu en base.
+                $tranches = DoorPaymentSplit::normalize($payments, (int) $due['amount_due_cents']);
+            }
         }
-        $this->orders->deliveryBoyOrderChangeStatus($order, Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]), null, $payments);
+        if ($deja === null) {
+            $this->orders->deliveryBoyOrderChangeStatus($order, Request::create('', 'POST', ['status' => OrderStatus::DELIVERED]), null, $payments);
+            // [RED-TEAM P2-1] Un jumeau (QR / ancien écran) a pu livrer la commande entre le contrôle et le verrou : le service
+            // rend alors la main sans rien écrire. On n'écrit « réglé en plusieurs moyens » QUE si les lignes existent vraiment.
+            if ($tranches !== null && $this->tranchesDejaEnregistrees($order) === null) {
+                $tranches = null;
+            }
+        } else {
+            $tranches = $deja;
+        }
         $stop->forceFill(['collect_method' => $due['collect_method'], 'amount_due_cents' => $due['amount_due_cents']]);
 
         $stop->forceFill([
@@ -187,6 +203,28 @@ class DeliveryRunController extends Controller
     private function isCancelled(Order $order): bool
     {
         return in_array((int) $order->status, [OrderStatus::CANCELED, OrderStatus::REJECTED], true);
+    }
+
+    /**
+     * Tranches réellement écrites à la porte pour cette commande (lignes `order_payments` de référence « livraison »),
+     * ou null s'il n'y en a aucune. Ne se fie jamais à ce que l'écran a envoyé.
+     *
+     * @return list<array{mode: string, cents: int}>|null
+     */
+    private function tranchesDejaEnregistrees(Order $order): ?array
+    {
+        $rows = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
+            ->where('order_id', $order->id)->where('reference', 'livraison')->orderBy('id')->get();
+        // Statut relu EN BASE : l'objet reçu a été chargé avant l'appel au service et peut être périmé.
+        $statut = (int) Order::query()->withoutGlobalScope(BranchScope::class)->whereKey($order->id)->value('status');
+        if ($rows->isEmpty() || $statut !== OrderStatus::DELIVERED) {
+            return null;
+        }
+
+        return $rows->map(fn ($p) => [
+            'mode'  => DoorPaymentSplit::modeOfPosMethod((int) $p->mode) ?? 'other',
+            'cents' => (int) round((float) $p->amount * 100),
+        ])->values()->all();
     }
 
     /** @return list<array{mode: string, label: string, amount: float}> */
