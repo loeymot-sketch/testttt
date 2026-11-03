@@ -728,6 +728,33 @@
     }
 }
 
+/* [FINITION 2026-11-04] Même défaut que R-005, mais en LARGEUR. `.fk-pos-v4.pos-v5-shell` est plafonné à
+   `max-width: 100vw` (PosComponent.vue) : sous le zoom 0.9, 100vw ne fait que 90 % de l'écran. La colonne
+   produits (`calc(100% - 376px)` de ce conteneur rétréci) s'arrêtait donc 94 à 158 px AVANT le ticket
+   (mesuré à 1280/1366/1440/1536/1920) : une bande vide, et une colonne de tuiles en moins.
+   Correctif : le conteneur et la colonne se calent sur la largeur RÉELLE de l'écran (÷ --caisse-zoom),
+   moins le ticket `fixed` (340/360/400 px + 12 px de marge droite), un espace de 14 px et l'entrée gauche
+   (20 px). Écart mesuré après : 12 px à toutes les largeurs, sans défilement horizontal.
+   Banc : tests/Playwright/finition-caisse-largeur-2026-11-04.spec.js. */
+@media (min-width: 768px) {
+    body[data-caisse-zoom] .fk-pos-v4.pos-v5-shell {
+        max-width: calc(100vw / var(--caisse-zoom, 1));
+    }
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 386px);
+    }
+}
+@media (min-width: 1024px) {
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 406px);
+    }
+}
+@media (min-width: 1280px) {
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 446px);
+    }
+}
+
 .pos-v5-cart__head {
     flex-shrink: 0;
     padding: var(--pos-v5-space-4) var(--pos-v5-space-4) var(--pos-v5-space-3);

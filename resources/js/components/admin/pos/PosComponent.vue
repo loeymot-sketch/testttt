@@ -8307,6 +8307,10 @@ export default {
 .pos-shortcuts {
   display: flex;
   flex-wrap: wrap;
+  /* [FINITION 2026-11-04] Un panneau VIDE ne s'étire plus à la hauteur du plus rempli (grand cadre
+     blanc qui repoussait la grille produits) et prend une base plus étroite : les 4 panneaux tiennent
+     sur une rangée dès 1440 px, la grille remonte de 100 à 270 px selon l'écran. Rien n'est masqué. */
+  align-items: flex-start;
   gap: 8px;
   padding: 8px 10px 0 10px;
   margin: 0;
@@ -8646,6 +8650,8 @@ export default {
 }
 .pos-shortcuts__panel--empty {
   border-left-color: var(--pos-v5-border, #eadfd2);
+  flex: 1 1 190px;
+  min-width: 180px;
 }
 
 @media (max-width: 640px) {

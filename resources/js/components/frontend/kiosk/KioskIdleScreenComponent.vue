@@ -986,7 +986,9 @@ export default {
 .cay-line-enter-from { opacity: 0; transform: translateY(20px); filter: blur(12px); }
 .cay-line-leave-to { opacity: 0; transform: translateY(-20px); filter: blur(12px); }
 .cay-underline {
-  width: 140px; height: 7px; margin: 18px 0 14px; border-radius: 999px;
+  /* [FINITION 2026-11-04] Marges 18/14 → 12/8 et badges 1612 → 1622 px : mesuré à 1080×1920, le
+     sous-titre (bas à 1620 px) touchait les badges (haut à 1612 px), le « q » de « quelques » était coupé. */
+  width: 140px; height: 7px; margin: 12px 0 8px; border-radius: 999px;
   background: linear-gradient(90deg, rgba(255,184,0,0), #FFB800, rgba(255,184,0,0));
   animation: cay-underline 3.4s ease-in-out infinite;
 }
@@ -998,7 +1000,7 @@ export default {
 
 /* ---------- badges ---------- */
 .cay-badges {
-  position: absolute; top: 1612px; left: 0; right: 0; z-index: 6;
+  position: absolute; top: 1622px; left: 0; right: 0; z-index: 6;
   display: flex; align-items: center; justify-content: center; gap: 18px;
 }
 .cay-badge {
@@ -1069,14 +1071,16 @@ export default {
 
 /* ---------- tap hint ---------- */
 .kiosk-idle-tap-hint {
-  position: absolute; top: 1858px; left: 0; right: 0; z-index: 6; margin: 0; text-align: center;
+  /* [FINITION 2026-11-04] 1858 → 1848 px et points du pied 26 → 12 px : la phrase (bas à ~1889 px)
+     passait SOUS les points animés (1885-1894 px). */
+  position: absolute; top: 1848px; left: 0; right: 0; z-index: 6; margin: 0; text-align: center;
   font-weight: 700; font-size: 24px; letter-spacing: .04em; color: rgba(255,255,255,.85);
   animation: cay-arrow 1.8s ease-in-out infinite;
 }
 @keyframes cay-arrow { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
 
 /* ---------- footer dots (conservé) ---------- */
-.kiosk-idle-footer { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 10px; }
+.kiosk-idle-footer { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 10px; }
 .kiosk-idle-footer-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.3); transition: width .24s ease, background-color .24s ease, border-radius .24s ease; }
 .kiosk-idle-footer-dot.active { width: 34px; border-radius: 4px; background: #FFB800; }
 
