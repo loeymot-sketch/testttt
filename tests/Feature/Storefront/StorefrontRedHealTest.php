@@ -118,6 +118,24 @@ class StorefrontRedHealTest extends TestCase
         $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'noel']))->assertCreated();
     }
 
+    /** [W6 cycle F · F1] L'offre de DEMAIN se prépare la veille : un code qui commence plus tard est accepté à la saisie, servi seulement à partir de son début. */
+    public function test_un_code_qui_commence_demain_se_prepare_la_veille(): void
+    {
+        config(['pos.coupon_codes_enabled' => true]);
+        $this->owner();
+        Coupon::query()->forceCreate(['discount' => 5, 'discount_type' => 10, 'minimum_order' => 0, 'maximum_discount' => 0, 'limit_per_user' => 1,
+            'name' => 'Demain', 'code' => 'DEMAIN', 'status' => 5, 'start_date' => '2026-12-02 00:00:00', 'end_date' => '2026-12-31 23:59:59']);
+        $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null])->assertOk();
+        $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'demain']))->assertCreated();
+        $h = $this->api('GET')->json('data.draft_hash');
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h])->assertOk();
+        $lire = fn () => $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/storefront');
+        $r = $lire()->assertJsonPath('banners.0.coupon_code', null);           // 1er décembre : pas encore
+        $this->assertSame('2026-12-02T00:00', substr((string) $r->json('next_change_at'), 0, 16), 'relire au début du code');
+        Carbon::setTestNow(Carbon::parse('2026-12-02 09:00:00', 'Europe/Paris'));
+        $lire()->assertJsonPath('banners.0.coupon_code', 'DEMAIN');
+    }
+
     /**
      * [W6 cycle C · C2] Un coupon coupé APRÈS la publication (ou arrivé à sa fin) n'est plus promis par la vitrine publique :
      * le bandeau reste, sans code ; la fin du coupon entre dans next_change_at.

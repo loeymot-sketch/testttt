@@ -151,11 +151,12 @@ class StorefrontAdminController extends AdminController
                     return;
                 }
                 // [RED-W2a P3 2026-11-03] Un code coupé ou hors de ses dates ne doit pas être promis dans l'application.
+                // [W6 cycle F · F1] Un code qui COMMENCE plus tard est accepté : l'offre de demain se prépare la veille, et la
+                // vitrine publique ne sert le code qu'à partir de son début (StorefrontService::withUsableCoupons).
                 $now = Carbon::now();
                 if ((int) $coupon->status !== \App\Enums\Status::ACTIVE
-                    || ($coupon->start_date && Carbon::parse($coupon->start_date)->greaterThan($now))
                     || ($coupon->end_date && Carbon::parse($coupon->end_date)->lessThan($now))) {
-                    $fail('Ce code promo n\'est pas utilisable aujourd\'hui (désactivé ou hors de ses dates dans « Coupons »).');
+                    $fail('Ce code promo n\'est pas utilisable (désactivé ou déjà terminé dans « Coupons »).');
 
                     return;
                 }
