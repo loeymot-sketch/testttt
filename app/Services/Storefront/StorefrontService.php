@@ -3,7 +3,9 @@
 namespace App\Services\Storefront;
 
 use App\Exceptions\Storefront\StorefrontConflictException;
+use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\Coupon;
 use App\Models\Scopes\BranchScope;
 use App\Models\StorefrontBanner;
 use App\Models\StorefrontSetting;
@@ -136,6 +138,7 @@ class StorefrontService
                 $live[] = $b;
             }
             usort($live, fn ($a, $b) => [$b['priority'], $a['id']] <=> [$a['priority'], $b['id']]);
+            $live = $this->withUsableCoupons($live, $now, $nextChange);
         }
 
         $custom = $enabled ? ($deliveryOn ? ($snapshot['delivery_on_message'] ?? null) : ($snapshot['delivery_off_message'] ?? null)) : null;
@@ -165,6 +168,47 @@ class StorefrontService
             ],
             'next_change_at' => $this->iso($nextChange),
         ];
+    }
+
+    /**
+     * [W6 cycle C · C2 2026-11-03] Le code promo d'un bandeau n'est servi que si le coupon est utilisable MAINTENANT (même
+     * règle que la saisie admin : actif, dans ses dates). Avant, la validité n'était vérifiée qu'à l'enregistrement : un coupon
+     * coupé ou expiré ensuite restait promis « pré-rempli au paiement » par l'application. Le bandeau reste, sans le code.
+     * Les bornes du coupon entrent dans `next_change_at` pour que l'application relise au bon moment.
+     */
+    private function withUsableCoupons(array $live, CarbonInterface $now, ?CarbonInterface &$nextChange): array
+    {
+        $codes = array_values(array_unique(array_filter(array_map(
+            fn ($b) => ! empty($b['coupon_code']) ? mb_strtoupper(trim((string) $b['coupon_code'])) : null,
+            $live
+        ))));
+        if (! $codes) {
+            return $live;
+        }
+        $usable = [];
+        foreach (Coupon::query()->whereIn(DB::raw('UPPER(code)'), $codes)->get(['code', 'status', 'start_date', 'end_date']) as $c) {
+            $start = $c->start_date ? Carbon::parse($c->start_date) : null;
+            $end = $c->end_date ? Carbon::parse($c->end_date) : null;
+            if ((int) $c->status !== Status::ACTIVE || ($end && $end->lessThan($now))) {
+                continue;
+            }
+            if ($start && $start->greaterThan($now)) {
+                $nextChange = $this->earliest($nextChange, $start);
+                continue;
+            }
+            if ($end) {
+                $nextChange = $this->earliest($nextChange, $end);
+            }
+            $usable[mb_strtoupper((string) $c->code)] = true;
+        }
+
+        return array_map(function ($b) use ($usable) {
+            if (! empty($b['coupon_code']) && ! isset($usable[mb_strtoupper(trim((string) $b['coupon_code']))])) {
+                $b['coupon_code'] = null;
+            }
+
+            return $b;
+        }, $live);
     }
 
     /**

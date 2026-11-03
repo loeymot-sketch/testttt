@@ -118,6 +118,32 @@ class StorefrontRedHealTest extends TestCase
         $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'noel']))->assertCreated();
     }
 
+    /**
+     * [W6 cycle C · C2] Un coupon coupé APRÈS la publication (ou arrivé à sa fin) n'est plus promis par la vitrine publique :
+     * le bandeau reste, sans code ; la fin du coupon entre dans next_change_at.
+     */
+    public function test_la_vitrine_ne_sert_plus_un_code_coupe_ou_expire_apres_publication(): void
+    {
+        $this->owner();
+        $base = ['discount' => 5, 'discount_type' => 10, 'minimum_order' => 0, 'maximum_discount' => 0, 'limit_per_user' => 1];
+        $noel = Coupon::query()->forceCreate($base + ['name' => 'Noël', 'code' => 'NOEL', 'status' => 5, 'start_date' => '2026-11-01 00:00:00', 'end_date' => '2026-12-10 23:59:59']);
+        $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null])->assertOk();
+        $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'noel']))->assertCreated();
+        $h = $this->api('GET')->json('data.draft_hash');
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h])->assertOk();
+        $lire = fn () => $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/storefront');
+
+        $r = $lire()->assertJsonPath('banners.0.coupon_code', 'NOEL');
+        $this->assertLessThanOrEqual(Carbon::parse('2026-12-10 23:59:59')->getTimestamp(), Carbon::parse($r->json('next_change_at'))->getTimestamp(), 'la fin du coupon déclenche une relecture');
+
+        $noel->forceFill(['status' => 10])->save();          // coupé dans « Coupons », vitrine NON republiée
+        $lire()->assertJsonPath('banners.0.title', 'Bandeau')->assertJsonPath('banners.0.coupon_code', null);
+
+        $noel->forceFill(['status' => 5])->save();
+        Carbon::setTestNow(Carbon::parse('2026-12-11 10:00:00', 'Europe/Paris'));   // coupon arrivé à sa fin, bandeau encore en cours
+        $lire()->assertJsonPath('banners.0.title', 'Bandeau')->assertJsonPath('banners.0.coupon_code', null);
+    }
+
     /** [RED cycle 3 · P2-4] L'application n'affiche le message de livraison que s'il a été SAISI en admin (sinon son texte d'origine). */
     public function test_le_message_de_livraison_dit_s_il_est_personnalise(): void
     {
