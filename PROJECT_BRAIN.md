@@ -47,6 +47,11 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-03 (suite) — GOAL APP HYBRIDE : W0 ✓, W1 ✓ (2 cycles RED soignés), W2a ✓ (+ RED soigné `829e6e752`), W2b ✓, W3 ✓.**
+> Site/app : branche `app/hybride-images-2026-11-03` (worktree `lecayenne-web-deploy/app-hybride-images-2026-11-03`, tête `cabe81b`)
+> = W1 + W3 + W2b ; bancs : comportement 53, fidélité hors ligne 24, suivi 10, photos 39/39, vitrine 16 (vrai backend), portes 9/9.
+> Backend : `feat/app-hybride-2026-11-03` tête `829e6e752` (Storefront 39/39, gel 0, NF525 OK). Rapports `reports/test-e2e/app-hybride-2026-11/`.
+> Reste : W4 paiement (conception `W4/conception.md` ; ⚠️ clé Mollie `live_` dans le .env de DEV), W5, W6 test-e2e intégré, W7 (« deploy »).
 > **2026-11-03 — GOAL `plans/GOAL_APP_HYBRIDE_FINITION_2026-11-03.md` LANCÉ (app des stores hybride + vitrine distante + paiement
 > dans l'app).** Production backend = `327ac761` (ancêtre de `merge/livreur-caisse-split-2026-11-02` = `e92288317`, base de la
 > branche `feat/app-hybride-2026-11-03`, worktree sparse `../wt-app-hybride`). **W0 fermée** : PHPUnit App/Payment/Loyalty/Coupon/
