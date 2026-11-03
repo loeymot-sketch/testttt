@@ -1063,11 +1063,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         $c = \App\Http\Controllers\Admin\StorefrontAdminController::class;
         Route::get('/', [$c, 'show'])->name('show');
         Route::put('/settings', [$c, 'updateSettings'])->name('settings');
-        Route::post('/banners', [$c, 'storeBanner'])->name('banners.store');
+        // [RED-W2a P3 2026-11-03] Double envoi (double clic, réseau lent) avec la même clé : rejoué, pas recréé.
+        Route::post('/banners', [$c, 'storeBanner'])->middleware('idempotency')->name('banners.store');
         Route::put('/banners/{banner}', [$c, 'updateBanner'])->where('banner', '[0-9]{1,18}')->name('banners.update');
         Route::delete('/banners/{banner}', [$c, 'destroyBanner'])->where('banner', '[0-9]{1,18}')->name('banners.destroy');
-        Route::post('/publish', [$c, 'publish'])->name('publish');
-        Route::post('/rollback', [$c, 'rollback'])->name('rollback');
+        Route::post('/publish', [$c, 'publish'])->middleware('idempotency')->name('publish');
+        Route::post('/rollback', [$c, 'rollback'])->middleware('idempotency')->name('rollback');
     });
 
     Route::prefix('item')->name('item.')->group(function () {

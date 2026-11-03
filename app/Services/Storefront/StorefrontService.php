@@ -184,6 +184,15 @@ class StorefrontService
         return $this->comparable($this->draftSnapshot($branch)) !== $this->comparable($published);
     }
 
+    /**
+     * [RED-W2a P2-2 2026-11-03] Empreinte du brouillon (même forme normalisée que `hasUnpublishedChanges`, insensible à
+     * l'ordre des clés JSON de MySQL). L'écran la reçoit avec l'état et la renvoie à « Publier ».
+     */
+    public function draftHash(int $branch): string
+    {
+        return sha1((string) json_encode($this->comparable($this->draftSnapshot($branch))));
+    }
+
     // ------------------------------------------------------------------ thème
 
     /** @return array<string,string> erreurs en français, clé `theme` ou `theme.<jeton>` */
@@ -243,11 +252,13 @@ class StorefrontService
     /**
      * Publie le brouillon : version +1, instantané gardé, trace d'audit.
      * `$baseVersion` = la version que l'écran avait sous les yeux ; si elle a changé entre-temps (double clic,
-     * deuxième administrateur), rien n'est écrit (409).
+     * deuxième publication), rien n'est écrit (409). `$draftHash` (exigé par l'écran admin) = l'empreinte du BROUILLON
+     * affiché : si un autre administrateur l'a modifié depuis, rien n'est écrit non plus (409) — on ne publie jamais
+     * à l'aveugle ce qu'on n'a pas vu.
      */
-    public function publish(int $branch, ?int $userId, int $baseVersion): StorefrontVersion
+    public function publish(int $branch, ?int $userId, int $baseVersion, ?string $draftHash = null): StorefrontVersion
     {
-        return $this->writeVersion($branch, $userId, $baseVersion, 'publish', null);
+        return $this->writeVersion($branch, $userId, $baseVersion, 'publish', null, $draftHash);
     }
 
     /** Republie l'instantané `$target` (par défaut : la version juste avant la courante) sous un NOUVEAU numéro, et remet le brouillon dessus. */
@@ -265,16 +276,19 @@ class StorefrontService
         return $this->writeVersion($branch, $userId, $baseVersion, 'rollback', $source);
     }
 
-    private function writeVersion(int $branch, ?int $userId, int $baseVersion, string $action, ?StorefrontVersion $source): StorefrontVersion
+    private function writeVersion(int $branch, ?int $userId, int $baseVersion, string $action, ?StorefrontVersion $source, ?string $draftHash = null): StorefrontVersion
     {
         $before = $this->published($branch)?->snapshot;
 
-        $version = DB::transaction(function () use ($branch, $userId, $baseVersion, $action, $source) {
+        $version = DB::transaction(function () use ($branch, $userId, $baseVersion, $action, $source, $draftHash) {
             $settings = StorefrontSetting::query()->where('branch_id', $branch)->lockForUpdate()->first()
                 ?? StorefrontSetting::query()->create(['branch_id' => $branch]);
             $current = (int) $settings->version;
             if ($current !== $baseVersion) {
                 throw new StorefrontConflictException($current);
+            }
+            if ($draftHash !== null && ! hash_equals($this->draftHash($branch), $draftHash)) {
+                throw new StorefrontConflictException($current, true);
             }
 
             if ($source) {

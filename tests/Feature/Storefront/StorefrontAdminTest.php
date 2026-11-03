@@ -57,6 +57,14 @@ class StorefrontAdminTest extends TestCase
         return $u;
     }
 
+    /** [RED-W2a P2-2] Publie comme l'écran : avec l'empreinte du brouillon que l'état vient de renvoyer. */
+    private function publier(int $base)
+    {
+        $hash = $this->api('GET')->json('data.draft_hash');
+
+        return $this->api('POST', '/publish', ['base_version' => $base, 'draft_hash' => $hash]);
+    }
+
     private function api(string $method, string $uri = '', array $data = [])
     {
         return $this->withHeader('x-api-key', '123456')->json($method, self::BASE.$uri, $data);
@@ -87,7 +95,7 @@ class StorefrontAdminTest extends TestCase
         $this->api('GET')->assertForbidden();
         $this->api('POST', '/banners', $this->bannerPayload())->assertForbidden();
         $this->api('PUT', '/settings', ['enabled' => true])->assertForbidden();
-        $this->api('POST', '/publish', ['base_version' => 0])->assertForbidden();
+        $this->publier(0)->assertForbidden();
         $this->api('POST', '/rollback', ['base_version' => 0])->assertForbidden();
         $this->assertSame(0, StorefrontBanner::withoutGlobalScopes()->count());
         $this->assertSame(0, StorefrontVersion::withoutGlobalScopes()->count());
@@ -172,7 +180,7 @@ class StorefrontAdminTest extends TestCase
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => config('storefront.default_theme')])->assertOk();
         $this->api('POST', '/banners', $this->bannerPayload(['starts_at' => null]))->assertCreated();
 
-        $r = $this->api('POST', '/publish', ['base_version' => 0])->assertOk()
+        $r = $this->publier(0)->assertOk()
             ->assertJsonPath('data.published.version', 1)
             ->assertJsonPath('data.published.published_by', 'Responsable 1')
             ->assertJsonPath('data.has_unpublished_changes', false);
@@ -193,7 +201,7 @@ class StorefrontAdminTest extends TestCase
         $this->assertSame('Offre de Noël', $audit->payload['after']['banners'][0]['title']);
 
         // Double clic / deuxième administrateur : la base annoncée n'est plus la version courante → 409, rien d'écrit.
-        $stale = $this->api('POST', '/publish', ['base_version' => 0])->assertStatus(409);
+        $stale = $this->publier(0)->assertStatus(409);
         $this->assertStringContainsString('Une autre publication', $stale->json('message'));
         $this->assertSame(1, StorefrontVersion::query()->count());
     }
@@ -203,7 +211,7 @@ class StorefrontAdminTest extends TestCase
         $this->owner();
         // Valeur glissée hors du formulaire (base modifiée à la main) : la publication revalide tout.
         StorefrontSetting::query()->create(['branch_id' => 1, 'enabled' => true, 'theme' => ['text' => '#FFFFFF'] + config('storefront.default_theme')]);
-        $r = $this->api('POST', '/publish', ['base_version' => 0])->assertStatus(422);
+        $r = $this->publier(0)->assertStatus(422);
         $this->assertStringContainsString('Contraste insuffisant', $r->json('errors')['theme.text'][0]);
         $this->assertSame(0, StorefrontVersion::query()->count());
     }
@@ -213,11 +221,11 @@ class StorefrontAdminTest extends TestCase
         $this->owner();
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => config('storefront.default_theme')]);
         $this->api('POST', '/banners', $this->bannerPayload(['starts_at' => null]));
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk();
+        $this->publier(0)->assertOk();
         $this->publicGet()->assertJsonPath('enabled', true)->assertJsonCount(1, 'banners');
 
         $this->api('PUT', '/settings', ['enabled' => false, 'theme' => config('storefront.default_theme')])->assertOk();
-        $this->api('POST', '/publish', ['base_version' => 1])->assertOk();
+        $this->publier(1)->assertOk();
         $this->publicGet()->assertJsonPath('version', 2)->assertJsonPath('enabled', false)
             ->assertJsonPath('theme', null)->assertJsonPath('banners', []);
     }
@@ -227,11 +235,11 @@ class StorefrontAdminTest extends TestCase
         $this->owner();
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => config('storefront.default_theme')]);
         $a = $this->api('POST', '/banners', $this->bannerPayload(['title' => 'Version A', 'starts_at' => null]))->json('data.banners.0.id');
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk();
+        $this->publier(0)->assertOk();
 
         $this->api('PUT', "/banners/{$a}", $this->bannerPayload(['title' => 'Version B ratée', 'starts_at' => null]));
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => ['primary' => '#C2410C', 'on_primary' => '#FFFFFF'] + config('storefront.default_theme')])->assertOk();
-        $this->api('POST', '/publish', ['base_version' => 1])->assertOk();
+        $this->publier(1)->assertOk();
         $this->publicGet()->assertJsonPath('banners.0.title', 'Version B ratée')->assertJsonPath('theme.primary', '#C2410C');
 
         $r = $this->api('POST', '/rollback', ['base_version' => 2])->assertOk()
@@ -254,7 +262,7 @@ class StorefrontAdminTest extends TestCase
         $this->owner();
         $r = $this->api('POST', '/rollback', ['base_version' => 0])->assertStatus(422);
         $this->assertStringContainsString('Aucune version précédente', $r->json('message'));
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk();
+        $this->publier(0)->assertOk();
         $this->api('POST', '/rollback', ['base_version' => 1])->assertStatus(422);
     }
 
@@ -266,7 +274,7 @@ class StorefrontAdminTest extends TestCase
         $this->owner();
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => config('storefront.default_theme')]);
         $this->api('POST', '/banners', $this->bannerPayload(['starts_at' => null]));
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk();
+        $this->publier(0)->assertOk();
 
         $row = \Illuminate\Support\Facades\DB::table('storefront_versions')->where('version', 1)->first();
         $ksortDeep = function ($v) use (&$ksortDeep) {
@@ -293,7 +301,7 @@ class StorefrontAdminTest extends TestCase
         $this->owner(1);
         $id1 = $this->api('POST', '/banners', $this->bannerPayload(['title' => 'Cayenne', 'starts_at' => null]))->json('data.banners.0.id');
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null]);
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk();
+        $this->publier(0)->assertOk();
 
         $this->owner(2); // responsable d'une AUTRE branche, même droit
         $this->api('GET')->assertOk()->assertJsonPath('data.banners', [])->assertJsonPath('data.published.version', 0);
@@ -301,7 +309,7 @@ class StorefrontAdminTest extends TestCase
         $this->api('DELETE', "/banners/{$id1}")->assertNotFound();
         $this->api('POST', '/banners', $this->bannerPayload(['title' => 'Branche 2', 'starts_at' => null]))->assertCreated();
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null]);
-        $this->api('POST', '/publish', ['base_version' => 0])->assertOk()->assertJsonPath('data.published.version', 1);
+        $this->publier(0)->assertOk()->assertJsonPath('data.published.version', 1);
 
         $this->assertSame('Cayenne', StorefrontBanner::withoutGlobalScopes()->find($id1)->title);
         $this->publicGet()->assertJsonPath('banners.0.title', 'Cayenne')->assertJsonCount(1, 'banners'); // le site sert la branche 1
@@ -324,7 +332,7 @@ class StorefrontAdminTest extends TestCase
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => config('storefront.default_theme'), 'delivery_on_message' => 'Livraison lancée !']);
         $this->api('POST', '/banners', $this->bannerPayload(['starts_at' => null]));
         $preview = $this->api('GET')->assertOk()->json('data.preview');
-        $this->api('POST', '/publish', ['base_version' => 0]);
+        $this->publier(0);
         $public = $this->publicGet()->json();
 
         unset($preview['version'], $public['version'], $preview['published_at'], $public['published_at']);

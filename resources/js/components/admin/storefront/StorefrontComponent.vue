@@ -245,7 +245,7 @@ const PARIS = "Europe/Paris";
 const EMPTY_STATE = () => ({
     draft: { enabled: false, theme: null, delivery_on_message: null, delivery_off_message: null },
     banners: [], published: { version: 0, published_at: null, published_by: null }, history: [],
-    has_unpublished_changes: false, preview: { banners: [], delivery: { enabled: true, message: "" } }, delivery: { enabled: true },
+    has_unpublished_changes: false, draft_hash: null, preview: { banners: [], delivery: { enabled: true, message: "" } }, delivery: { enabled: true },
     meta: { tokens: [], contrast_pairs: [], min_contrast: 4.5, default_theme: {}, link_routes: [], max_banners: 20, delivery_messages: { on: "", off: "" }, timezone: PARIS },
 });
 
@@ -456,7 +456,9 @@ export default {
                     if (!this.contrastOk) { this.publishErrors = ["Les couleurs ne sont pas assez contrastées : corrigez-les (voir « Couleurs ») avant de publier."]; return; }
                     if (!(await this.saveSettings(true))) { this.publishErrors = [...this.settingsErrors]; return; }
                 }
-                const data = await this.call("post", "admin/storefront/publish", { base_version: this.state.published.version });
+                // [RED-W2a P2-2] l'empreinte du brouillon AFFICHÉ : si un autre administrateur l'a modifié entre-temps, le serveur
+                // refuse (409) et l'écran se recharge pour montrer ses changements avant toute publication.
+                const data = await this.call("post", "admin/storefront/publish", { base_version: this.state.published.version, draft_hash: this.state.draft_hash });
                 this.publishOk = true;
                 this.publishMsg = `Version ${data.published.version} publiée : l'application l'affichera à sa prochaine lecture (au plus tard dans 5 minutes).`;
                 alertService.success(`Vitrine publiée (version ${data.published.version}).`);

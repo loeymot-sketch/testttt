@@ -96,8 +96,14 @@ class StorefrontAdminController extends AdminController
     public function publish(Request $request): JsonResponse
     {
         $branch = $this->branch($request);
-        $data = Validator::make($request->all(), ['base_version' => ['required', 'integer', 'min:0']], $this->messages())->validate();
-        $this->storefront->publish($branch, (int) $request->user()->id, (int) $data['base_version']);
+        // [RED-W2a P2-2 2026-11-03] `base_version` n'empêche que deux PUBLICATIONS simultanées. Le brouillon est partagé : sans
+        // empreinte, un administrateur publiait les ajouts d'un autre sans les avoir vus. L'écran renvoie l'empreinte du
+        // brouillon qu'il affiche (`draft_hash` de l'état) ; le service la revérifie sous verrou → 409 si elle a changé.
+        $data = Validator::make($request->all(), [
+            'base_version' => ['required', 'integer', 'min:0'],
+            'draft_hash' => ['required', 'string', 'size:40'],
+        ], $this->messages(), $this->attributes())->validate();
+        $this->storefront->publish($branch, (int) $request->user()->id, (int) $data['base_version'], (string) $data['draft_hash']);
 
         return $this->state($branch);
     }
@@ -135,20 +141,43 @@ class StorefrontAdminController extends AdminController
                 }
             }],
             'coupon_code' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) {
-                if ($value !== null && ! Coupon::query()->whereRaw('UPPER(code) = ?', [mb_strtoupper(trim((string) $value))])->exists()) {
-                    $fail('Ce code promo n\'existe pas. Créez-le d\'abord dans « Coupons », puis revenez.');
-                }
-            }],
-            'starts_at' => ['nullable', 'date'],
-            'ends_at' => ['nullable', 'date', 'required_if:type,flash', function ($attr, $value, $fail) use ($request) {
                 if ($value === null) {
                     return;
                 }
-                $end = Carbon::parse($value, StorefrontService::TZ);
-                $start = $request->input('starts_at') ? Carbon::parse($request->input('starts_at'), StorefrontService::TZ) : null;
+                $coupon = Coupon::query()->whereRaw('UPPER(code) = ?', [mb_strtoupper(trim((string) $value))])->first();
+                if (! $coupon) {
+                    $fail('Ce code promo n\'existe pas. Créez-le d\'abord dans « Coupons », puis revenez.');
+
+                    return;
+                }
+                // [RED-W2a P3 2026-11-03] Un code coupé ou hors de ses dates ne doit pas être promis dans l'application.
+                $now = Carbon::now();
+                if ((int) $coupon->status !== \App\Enums\Status::ACTIVE
+                    || ($coupon->start_date && Carbon::parse($coupon->start_date)->greaterThan($now))
+                    || ($coupon->end_date && Carbon::parse($coupon->end_date)->lessThan($now))) {
+                    $fail('Ce code promo n\'est pas utilisable aujourd\'hui (désactivé ou hors de ses dates dans « Coupons »).');
+                }
+            }],
+            // [RED-W2a P2-1 2026-11-03] `bail` : une date illisible s'arrête au 422 de la règle `date`, sans atteindre l'analyse
+            // ci-dessous (qui levait une exception → 500). L'analyse reste en plus protégée.
+            'starts_at' => ['nullable', 'bail', 'date'],
+            'ends_at' => ['nullable', 'bail', 'date', 'required_if:type,flash', function ($attr, $value, $fail) use ($request) {
+                if ($value === null) {
+                    return;
+                }
+                try {
+                    $end = Carbon::parse($value, StorefrontService::TZ);
+                    $start = $request->input('starts_at') ? Carbon::parse($request->input('starts_at'), StorefrontService::TZ) : null;
+                } catch (\Throwable) {
+                    $fail('Date illisible : utilisez le sélecteur de date.');
+
+                    return;
+                }
+                // [RED-W2a P3] Un bandeau terminé doit rester DÉSACTIVABLE : la fin passée n'est refusée que s'il reste actif.
+                $actif = ! $request->has('active') || filter_var($request->input('active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false;
                 if ($start && $end->lessThanOrEqualTo($start)) {
                     $fail('La fin doit être après le début.');
-                } elseif ($end->lessThanOrEqualTo(Carbon::now())) {
+                } elseif ($actif && $end->lessThanOrEqualTo(Carbon::now())) {
                     $fail('La date de fin est déjà passée : ce bandeau ne s\'afficherait jamais.');
                 }
             }],
@@ -216,6 +245,8 @@ class StorefrontAdminController extends AdminController
                         'enabled' => (bool) ($v->snapshot['enabled'] ?? false),
                     ])->values()->all(),
                 'has_unpublished_changes' => $s->hasUnpublishedChanges($branch),
+                // [RED-W2a P2-2] Empreinte du brouillon affiché : à renvoyer telle quelle avec « Publier ».
+                'draft_hash' => $s->draftHash($branch),
                 'preview' => $s->payloadFromSnapshot($draft, (int) ($published?->version ?? 0), $published?->published_at),
                 'delivery' => ['enabled' => $this->delivery->isEnabled()],
                 'meta' => [
@@ -264,6 +295,8 @@ class StorefrontAdminController extends AdminController
             'date' => ':attribute n\'est pas une date valide.',
             'integer' => ':attribute doit être un nombre entier.',
             'string' => ':attribute doit être un texte.',
+            'draft_hash.required' => 'Rechargez la vitrine avant de publier (l\'écran n\'a pas envoyé l\'état du brouillon qu\'il affiche).',
+            'draft_hash.size' => 'Rechargez la vitrine avant de publier (état du brouillon illisible).',
         ];
     }
 
