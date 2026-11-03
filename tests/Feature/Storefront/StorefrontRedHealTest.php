@@ -159,7 +159,11 @@ class StorefrontRedHealTest extends TestCase
         Coupon::query()->forceCreate($base + ['name' => 'Borne', 'code' => 'BORNE', 'surfaces' => ['kiosk']]);
         $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'borne']))->assertStatus(422)->assertJsonValidationErrors('coupon_code');
 
-        $soir = Coupon::query()->forceCreate($base + ['name' => 'Soir', 'code' => 'SOIR', 'surfaces' => ['web', 'kiosk'], 'valid_hours_start' => '18:00', 'valid_hours_end' => '22:00']);
+        // Même un canal « web » explicite est refusé : le calcul des prix (zone gelée) ne relaie pas le canal à l'enregistrement.
+        Coupon::query()->forceCreate($base + ['name' => 'Web', 'code' => 'WEBSEUL', 'surfaces' => ['web']]);
+        $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'webseul']))->assertStatus(422)->assertJsonValidationErrors('coupon_code');
+
+        $soir = Coupon::query()->forceCreate($base + ['name' => 'Soir', 'code' => 'SOIR', 'valid_hours_start' => '18:00', 'valid_hours_end' => '22:00']);
         $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null])->assertOk();
         $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'soir']))->assertCreated();   // préparée le matin
         $h = $this->api('GET')->json('data.draft_hash');
@@ -173,8 +177,35 @@ class StorefrontRedHealTest extends TestCase
 
         $soir->forceFill(['surfaces' => ['kiosk']])->save();                  // réservé à la borne APRÈS publication
         $lire()->assertJsonPath('banners.0.coupon_code', null);
-        $soir->forceFill(['surfaces' => ['web']])->save();
+        $soir->forceFill(['surfaces' => ['web']])->save();                   // même « web » seul : refusé à l'enregistrement → non promis
+        $lire()->assertJsonPath('banners.0.coupon_code', null);
+        $soir->forceFill(['surfaces' => null])->save();
+        $lire()->assertJsonPath('banners.0.coupon_code', 'SOIR');
         config(['pos.coupon_codes_enabled' => false, 'pos.manual_discount_enabled' => false]);   // interrupteur général fermé
+        $lire()->assertJsonPath('banners.0.title', 'Bandeau')->assertJsonPath('banners.0.coupon_code', null);
+    }
+
+    /** [W6 cycle E · E1] Un code à quota ÉPUISÉ (utilisations réelles, comme au paiement) n'est plus promis ; une commande annulée ne compte pas. */
+    public function test_la_vitrine_ne_promet_pas_un_code_au_quota_epuise(): void
+    {
+        config(['pos.coupon_codes_enabled' => true]);
+        $u = $this->owner();
+        $quota = Coupon::query()->forceCreate(['discount' => 5, 'discount_type' => 10, 'minimum_order' => 0, 'maximum_discount' => 0,
+            'limit_per_user' => 1, 'status' => 5, 'start_date' => '2026-11-01 00:00:00', 'end_date' => '2027-01-31 23:59:59',
+            'name' => 'Quota', 'code' => 'QUOTA', 'max_uses_global' => 1]);
+        $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null])->assertOk();
+        $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'quota']))->assertCreated();
+        $h = $this->api('GET')->json('data.draft_hash');
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h])->assertOk();
+        $lire = fn () => $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/storefront');
+        $lire()->assertJsonPath('banners.0.coupon_code', 'QUOTA');
+
+        $annulee = \App\Models\Order::factory()->create(['status' => \App\Enums\OrderStatus::CANCELED]);
+        \App\Models\OrderCoupon::create(['order_id' => $annulee->id, 'coupon_id' => $quota->id, 'user_id' => $u->id, 'discount' => 1.0]);
+        $lire()->assertJsonPath('banners.0.coupon_code', 'QUOTA');            // une commande annulée ne consomme pas le quota
+
+        $vivante = \App\Models\Order::factory()->create(['status' => \App\Enums\OrderStatus::PENDING]);
+        \App\Models\OrderCoupon::create(['order_id' => $vivante->id, 'coupon_id' => $quota->id, 'user_id' => $u->id, 'discount' => 1.0]);
         $lire()->assertJsonPath('banners.0.title', 'Bandeau')->assertJsonPath('banners.0.coupon_code', null);
     }
 

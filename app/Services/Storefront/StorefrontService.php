@@ -198,7 +198,15 @@ class StorefrontService
                 $nextChange = $this->earliest($nextChange, $start);
                 continue;
             }
-            if (! $c->isUsableNow($branch, 'web', Carbon::instance($now))) {
+            // [W6 cycle E] Deux lectures, car la commande en fait deux : le contrôle du code au paiement (branche + canal 'web')
+            // ET le calcul des prix à l'enregistrement (zone gelée DiscountCalculator::couponDiscount → resolveCouponById SANS
+            // branche ni canal : un coupon restreint y est refusé — défaut connu, CouponSurfaceEnforcedAtCommitTest ignoré).
+            // La seconde lecture tombera d'elle-même le jour où le calcul des prix relaiera branche et canal.
+            if (! $c->isUsableNow($branch, 'web', Carbon::instance($now)) || ! $c->isUsableNow(null, null, Carbon::instance($now))) {
+                continue;
+            }
+            // [W6 cycle E · E1] Quota global compté comme au paiement (isUsableNow lit usage_count, jamais incrémentée).
+            if ((int) ($c->max_uses_global ?? 0) > 0 && app(\App\Services\CouponService::class)->liveRedemptions($c, true) >= (int) $c->max_uses_global) {
                 continue;
             }
             if ($end) {

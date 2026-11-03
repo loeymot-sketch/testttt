@@ -148,6 +148,10 @@ class OrderTrackingService
             // [E2E UBER 2026-10-24 · U1-001] Un coursier Uber livre : l'heure d'ARRIVÉE qu'Uber estime (HH:MM), à la place du départ
             // de notre tournée, qui ne concerne plus cette commande. null quand ce sont nos livreurs.
             'arrivee_estimee' => $this->arriveeUber($order),
+            // [W6 cycle E · E3 2026-11-03] Commande à emporter PROGRAMMÉE : instant où l'écran cuisine la reçoit
+            // (scheduled_at − kds.scheduled_lead_minutes, KitchenReleaseRule). Avant, l'application la disait « programmée »
+            // jusqu'à l'heure du créneau, alors que la cuisine la préparait déjà. null sans heure programmée à venir.
+            'en_cuisine_a' => $this->enCuisineA($order, $now),
             'server_time' => $now->toIso8601String(),
         ];
     }
@@ -275,6 +279,16 @@ class OrderTrackingService
      * [VG-2026-10-21 M2-102] Heure cible STRICTEMENT à venir : `scheduled_at` (retrait programmé),
      * à défaut le départ de la tournée d'une livraison (`delivery_slot_at`). null sinon.
      */
+    private function enCuisineA(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?string
+    {
+        $prevue = $order->scheduled_at ?? null;
+        if (! ($prevue instanceof \Carbon\CarbonInterface) || ! $prevue->greaterThan($now)) {
+            return null;
+        }
+
+        return $prevue->copy()->subMinutes(KitchenReleaseRule::scheduledLeadMinutes())->toIso8601String();
+    }
+
     private function heureCible(Order|FrontendOrder $order, \Illuminate\Support\Carbon $now): ?\Carbon\CarbonInterface
     {
         $prevue = $order->scheduled_at ?? null;

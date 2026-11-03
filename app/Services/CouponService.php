@@ -113,6 +113,25 @@ class CouponService
         }
     }
 
+    /**
+     * [W6 cycle E · E1 2026-11-03] Utilisations RÉELLES d'un coupon (commandes vivantes — annulées / refusées / retournées
+     * exclues, même filtre que limit_per_user). Source unique du quota global : lue au paiement ET par la vitrine distante,
+     * qui ne doit pas promettre un code épuisé. `Coupon::isUsableNow` lit `usage_count`, colonne jamais incrémentée.
+     * `$toutesBranches` : la vitrine est PUBLIQUE — elle compte comme le paiement d'un client (branche 0 → BranchScope
+     * inopérant), quel que soit le jeton qui l'interroge. Le paiement garde sa lecture inchangée (false).
+     */
+    public function liveRedemptions(Coupon $coupon, bool $toutesBranches = false): int
+    {
+        return OrderCoupon::where('coupon_id', $coupon->id)
+            ->whereHas('order', function ($o) use ($toutesBranches) {
+                if ($toutesBranches) {
+                    $o->withoutGlobalScope(\App\Models\Scopes\BranchScope::class);
+                }
+                $o->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+            })
+            ->count();
+    }
+
     private function sanitizeOrderColumn(string $requestedColumn): string
     {
         return in_array($requestedColumn, $this->allowedOrderColumns, true) ? $requestedColumn : 'id';
@@ -509,7 +528,7 @@ class CouponService
                     ->first();
             }
 
-            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->where($liveOrderCoupon)->count();
+            $globalUsed = $this->liveRedemptions($coupon);
             if ($globalUsed >= $maxUsesGlobal) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
             }

@@ -66,6 +66,17 @@ class OrderTrackingProgrammeeTest extends TestCase
         $this->assertSame('18:20', $suivi['prevue_pour']);
     }
 
+    /** @test [W6 cycle E · E3] l'instant où l'écran cuisine la reçoit est publié (créneau − kds.scheduled_lead_minutes) */
+    public function elle_publie_l_heure_ou_la_cuisine_la_recoit(): void
+    {
+        config(['kds.scheduled_lead_minutes' => 20]);
+        $suivi = app(OrderTrackingService::class)->forOrder($this->commande('18:20'));
+        $this->assertNotNull($suivi['en_cuisine_a']);
+        $this->assertSame('18:00', Carbon::parse($suivi['en_cuisine_a'])->timezone(config('app.timezone'))->format('H:i'));
+
+        $this->assertNull(app(OrderTrackingService::class)->forOrder($this->commande(null))['en_cuisine_a']);
+    }
+
     /** @test */
     public function ses_minutes_vont_jusqu_a_l_heure_programmee_et_non_10_15(): void
     {

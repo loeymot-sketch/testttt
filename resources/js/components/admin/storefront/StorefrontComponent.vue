@@ -212,6 +212,8 @@
                                         <p v-if="b.body" class="sf-phone-banner-body">{{ b.body }}</p>
                                         <p v-if="b.type === 'flash' && b.ends_at" class="sf-phone-banner-body">Jusqu'au {{ when(b.ends_at) }}</p>
                                         <p v-if="b.coupon_code" class="sf-phone-code">Code : {{ b.coupon_code }}</p>
+                                        <!-- [W6 cycle E · E4] Le code saisi n'est pas servi : on dit pourquoi, au lieu de le faire disparaître sans un mot. -->
+                                        <p v-else-if="codeSaisi(b)" class="sf-phone-code-off" data-testid="sf-phone-code-off">Code {{ codeSaisi(b) }} non proposé en ce moment : désactivé, hors de ses dates ou de ses heures, épuisé, limité à un canal ou à un restaurant, ou codes promo coupés dans les réglages.</p>
                                         <span v-if="b.button" class="sf-phone-btn">{{ b.button.label }}</span>
                                     </div>
                                     <p v-if="!state.preview.banners.length" class="sf-phone-off">Aucun bandeau affiché en ce moment.</p>
@@ -330,6 +332,10 @@ export default {
             if (!b.starts_at) return `jusqu'au ${this.when(b.ends_at)}`;
             if (!b.ends_at) return `à partir du ${this.when(b.starts_at)}`;
             return `du ${this.when(b.starts_at)} au ${this.when(b.ends_at)}`;
+        },
+        codeSaisi(previewBanner) {
+            const d = (this.state.banners || []).find((x) => x.id === previewBanner.id);
+            return d && d.coupon_code ? d.coupon_code : "";
         },
         stateLabel(s) { return { live: "En cours", scheduled: "Programmé", ended: "Terminé", off: "Désactivé" }[s] || s; },
         stateClass(s) { return { live: "sf-tag--ok", scheduled: "sf-tag--info", ended: "", off: "" }[s] || ""; },
@@ -564,6 +570,7 @@ export default {
 .sf-phone-banner-title { font-weight: 900; margin: 0; overflow-wrap: anywhere; }
 .sf-phone-banner-body { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
 .sf-phone-code { margin: 6px 0 0; font-weight: 800; font-family: ui-monospace, Menlo, monospace; }
+.sf-phone-code-off { margin: 6px 0 0; font-size: 12px; line-height: 1.4; opacity: .85; }
 .sf-phone-btn { display: inline-block; margin-top: 8px; padding: 6px 12px; border-radius: 999px; border: 2px solid currentColor; font-weight: 800; font-size: 13px; }
 .sf-phone-btn--primary { background: var(--p); color: var(--op); border-color: var(--p); }
 .sf-phone-off { font-size: 13px; opacity: .9; margin: 8px 0; }

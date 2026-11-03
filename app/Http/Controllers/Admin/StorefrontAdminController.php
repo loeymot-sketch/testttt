@@ -165,8 +165,10 @@ class StorefrontAdminController extends AdminController
                 // ne sert le code que pendant sa fenêtre.
                 $surfaces = is_array($coupon->surfaces) ? array_map('strtolower', $coupon->surfaces) : [];
                 $scope = is_array($coupon->branch_scope) ? array_map('intval', $coupon->branch_scope) : [];
-                if (($surfaces && ! in_array('web', $surfaces, true)) || ($scope && ! in_array($this->branch($request), $scope, true))) {
-                    $fail('Ce code promo est réservé à un autre canal ou à un autre restaurant dans « Coupons » : l\'application ne pourra pas l\'accepter.');
+                // [W6 cycle E] Tout code limité à un canal ou à un restaurant, même « web », est aujourd'hui refusé à
+                // l'enregistrement de la commande (calcul des prix en zone gelée, sans branche ni canal).
+                if ($surfaces || $scope) {
+                    $fail('Ce code promo est limité à un canal ou à un restaurant dans « Coupons » : la commande de l\'application ne peut pas encore l\'accepter. Choisissez un code sans limite de canal ni de restaurant.');
                 }
             }],
             // [RED-W2a P2-1 2026-11-03] `bail` : une date illisible s'arrête au 422 de la règle `date`, sans atteindre l'analyse
