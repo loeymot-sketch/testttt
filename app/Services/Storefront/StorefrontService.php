@@ -110,7 +110,7 @@ class StorefrontService
     }
 
     /** Ce que l'application reçoit. `$snapshot` null = rien de publié : vitrine éteinte, l'application garde son contenu embarqué. */
-    public function payloadFromSnapshot(?array $snapshot, int $version, ?CarbonInterface $publishedAt, ?CarbonInterface $now = null): array
+    public function payloadFromSnapshot(?array $snapshot, int $version, ?CarbonInterface $publishedAt, ?CarbonInterface $now = null, ?int $branch = null): array
     {
         $now = $now ?? Carbon::now(self::TZ);
         $enabled = (bool) ($snapshot['enabled'] ?? false);
@@ -138,7 +138,7 @@ class StorefrontService
                 $live[] = $b;
             }
             usort($live, fn ($a, $b) => [$b['priority'], $a['id']] <=> [$a['priority'], $b['id']]);
-            $live = $this->withUsableCoupons($live, $now, $nextChange);
+            $live = $this->withUsableCoupons($live, $now, $nextChange, $branch);
         }
 
         $custom = $enabled ? ($deliveryOn ? ($snapshot['delivery_on_message'] ?? null) : ($snapshot['delivery_off_message'] ?? null)) : null;
@@ -175,8 +175,12 @@ class StorefrontService
      * règle que la saisie admin : actif, dans ses dates). Avant, la validité n'était vérifiée qu'à l'enregistrement : un coupon
      * coupé ou expiré ensuite restait promis « pré-rempli au paiement » par l'application. Le bandeau reste, sans le code.
      * Les bornes du coupon entrent dans `next_change_at` pour que l'application relise au bon moment.
+     * [W6 cycle D · D1 + D3] « Utilisable » = EXACTEMENT ce que le paiement de l'application acceptera : l'interrupteur général
+     * des codes promo (miroir de Frontend\CouponController::couponChecking) puis `Coupon::isUsableNow($branch, 'web')` — la
+     * règle appliquée par CouponService au moment de payer (jours, heures, branche, canal, quota). Avant, un code réservé à
+     * la borne, hors de ses heures ou au quota épuisé était promis « pré-rempli au paiement » puis refusé.
      */
-    private function withUsableCoupons(array $live, CarbonInterface $now, ?CarbonInterface &$nextChange): array
+    private function withUsableCoupons(array $live, CarbonInterface $now, ?CarbonInterface &$nextChange, ?int $branch): array
     {
         $codes = array_values(array_unique(array_filter(array_map(
             fn ($b) => ! empty($b['coupon_code']) ? mb_strtoupper(trim((string) $b['coupon_code'])) : null,
@@ -186,18 +190,26 @@ class StorefrontService
             return $live;
         }
         $usable = [];
-        foreach (Coupon::query()->whereIn(DB::raw('UPPER(code)'), $codes)->get(['code', 'status', 'start_date', 'end_date']) as $c) {
+        $couponsAllowed = config('pos.coupon_codes_enabled') === true || config('pos.manual_discount_enabled') === true;
+        foreach ($couponsAllowed ? Coupon::query()->whereIn(DB::raw('UPPER(code)'), $codes)->get() : [] as $c) {
             $start = $c->start_date ? Carbon::parse($c->start_date) : null;
             $end = $c->end_date ? Carbon::parse($c->end_date) : null;
-            if ((int) $c->status !== Status::ACTIVE || ($end && $end->lessThan($now))) {
+            if ((int) $c->status === Status::ACTIVE && $start && $start->greaterThan($now) && ! ($end && $end->lessThan($now))) {
+                $nextChange = $this->earliest($nextChange, $start);
                 continue;
             }
-            if ($start && $start->greaterThan($now)) {
-                $nextChange = $this->earliest($nextChange, $start);
+            if (! $c->isUsableNow($branch, 'web', Carbon::instance($now))) {
                 continue;
             }
             if ($end) {
                 $nextChange = $this->earliest($nextChange, $end);
+            }
+            // Plage horaire / jours : relire quand la fenêtre du jour se ferme.
+            if (! empty($c->valid_hours_start) && ! empty($c->valid_hours_end)) {
+                $close = Carbon::instance($now)->setTimeFromTimeString((string) $c->valid_hours_end);
+                $nextChange = $this->earliest($nextChange, $close->lessThanOrEqualTo($now) ? $close->addDay() : $close);
+            } elseif (is_array($c->valid_days_of_week) && ! empty($c->valid_days_of_week)) {
+                $nextChange = $this->earliest($nextChange, Carbon::instance($now)->addDay()->startOfDay());
             }
             $usable[mb_strtoupper((string) $c->code)] = true;
         }
@@ -221,7 +233,7 @@ class StorefrontService
         $v = StorefrontVersion::query()->withoutGlobalScope(BranchScope::class)
             ->where('branch_id', $branch)->orderByDesc('version')->first();
 
-        return $this->payloadFromSnapshot($v?->snapshot, (int) ($v?->version ?? 0), $v?->published_at);
+        return $this->payloadFromSnapshot($v?->snapshot, (int) ($v?->version ?? 0), $v?->published_at, null, $branch);
     }
 
     public function hasUnpublishedChanges(int $branch): bool

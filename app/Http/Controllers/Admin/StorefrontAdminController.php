@@ -140,7 +140,7 @@ class StorefrontAdminController extends AdminController
                     $fail('Le lien doit mener à un écran interne de l\'application : #menu, #loyalty, #home ou #menu/<produit>. Aucune adresse web.');
                 }
             }],
-            'coupon_code' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) {
+            'coupon_code' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($request) {
                 if ($value === null) {
                     return;
                 }
@@ -156,6 +156,17 @@ class StorefrontAdminController extends AdminController
                     || ($coupon->start_date && Carbon::parse($coupon->start_date)->greaterThan($now))
                     || ($coupon->end_date && Carbon::parse($coupon->end_date)->lessThan($now))) {
                     $fail('Ce code promo n\'est pas utilisable aujourd\'hui (désactivé ou hors de ses dates dans « Coupons »).');
+
+                    return;
+                }
+                // [W6 cycle D · D1] Un code réservé à un autre canal (borne, caisse…) ou à une autre branche ne sera JAMAIS
+                // accepté au paiement de l'application (Coupon::isUsableNow($branch, 'web')) : ne pas le laisser promettre.
+                // Les jours / heures ne sont pas exigés ici (une offre du soir se prépare le matin) : la vitrine publique
+                // ne sert le code que pendant sa fenêtre.
+                $surfaces = is_array($coupon->surfaces) ? array_map('strtolower', $coupon->surfaces) : [];
+                $scope = is_array($coupon->branch_scope) ? array_map('intval', $coupon->branch_scope) : [];
+                if (($surfaces && ! in_array('web', $surfaces, true)) || ($scope && ! in_array($this->branch($request), $scope, true))) {
+                    $fail('Ce code promo est réservé à un autre canal ou à un autre restaurant dans « Coupons » : l\'application ne pourra pas l\'accepter.');
                 }
             }],
             // [RED-W2a P2-1 2026-11-03] `bail` : une date illisible s'arrête au 422 de la règle `date`, sans atteindre l'analyse
@@ -247,7 +258,7 @@ class StorefrontAdminController extends AdminController
                 'has_unpublished_changes' => $s->hasUnpublishedChanges($branch),
                 // [RED-W2a P2-2] Empreinte du brouillon affiché : à renvoyer telle quelle avec « Publier ».
                 'draft_hash' => $s->draftHash($branch),
-                'preview' => $s->payloadFromSnapshot($draft, (int) ($published?->version ?? 0), $published?->published_at),
+                'preview' => $s->payloadFromSnapshot($draft, (int) ($published?->version ?? 0), $published?->published_at, null, $branch),
                 'delivery' => ['enabled' => $this->delivery->isEnabled()],
                 'meta' => [
                     'tokens' => collect((array) config('storefront.theme_tokens'))->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values()->all(),
