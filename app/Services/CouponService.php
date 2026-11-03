@@ -462,7 +462,10 @@ class CouponService
 
         $now = Carbon::now();
         if ($coupon->start_date && $now->lt(Carbon::parse($coupon->start_date))) {
-            throw new Exception(trans('all.message.coupon_not_yet_active'), 422);
+            // [W6 cycle G · G1 2026-11-03] La phrase attend :date — sans elle, le client lisait « valide à partir du :date ».
+            throw new Exception(trans('all.message.coupon_not_yet_active', [
+                'date' => Carbon::parse($coupon->start_date)->timezone(config('app.timezone'))->format('d/m/Y à H:i'),
+            ]), 422);
         }
         if ($coupon->end_date && $now->gt(Carbon::parse($coupon->end_date))) {
             throw new Exception(trans('all.message.coupon_date_expired'), 422);
