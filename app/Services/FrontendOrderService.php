@@ -66,6 +66,13 @@ class FrontendOrderService
     public bool $loyaltyApplied = false;
 
     /**
+     * [TICKET PROMO 2026-11-03] Frais de livraison offerts par un coupon « livraison offerte » sur la
+     * commande en cours (null = aucun). Tracé dans `order_coupons.delivery_waived`, jamais dans
+     * `discount` : ce n'est pas une remise sur les articles.
+     */
+    private ?float $freeDeliveryWaived = null;
+
+    /**
      * [FIDÉLITÉ BORNE 2026-08-19] LE DÉBIT DES POINTS, EN ATTENTE DU SCEAU DU DEVIS.
      *
      * `sealForCommit` RECALCULE le devis à partir de la requête pour le comparer au total de la
@@ -155,6 +162,7 @@ class FrontendOrderService
     public function myOrderStore(OrderRequest $request): object
     {
         $this->loyaltyApplied = false;
+        $this->freeDeliveryWaived = null;
         $idempotencyLock = null;
         // [AUDIT-F-007] Resolve branch context for idempotency lock namespace.
         // Decision orchestrateur 2026-05-08: route /api/frontend/order is dual-purpose
@@ -674,7 +682,7 @@ class FrontendOrderService
                 // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
                 $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
 
-                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
+                $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey, $validatedCoupon): void {
                     $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                     $this->frontendOrder->total_tax = round($totalTax, 2);
                     $this->frontendOrder->subtotal = round($realSubtotal, 2);
@@ -689,6 +697,12 @@ class FrontendOrderService
                         && (float) $realSubtotal >= $freeAbove
                         && (float) $this->frontendOrder->delivery_charge > 0) {
                         $this->frontendOrder->delivery_charge = 0;
+                    }
+                    // [TICKET PROMO 2026-11-03 · propriétaire] Coupon « livraison offerte » du ticket
+                    // promo : même mécanisme que le seuil ci-dessus (hors PricingService gelé, sur la
+                    // distance et le prix RECALCULÉS serveur), avec refus explicite hors conditions.
+                    if ($validatedCoupon instanceof Coupon && $validatedCoupon->free_delivery) {
+                        $this->applyFreeDeliveryCoupon($validatedCoupon);
                     }
                     // [TTC-MODE] In TTC mode, $realSubtotal already contains tax.
                     if ((bool) config('pricing.tax_inclusive_prices', false)) {
@@ -713,7 +727,14 @@ class FrontendOrderService
                     if ($request->filled('expected_total')) {
                         $expectedTotal = round((float) $request->input('expected_total'), 2);
                         $serverTotal = (float) $this->frontendOrder->total;
-                        if (abs($serverTotal - $expectedTotal) > 0.01) {
+                        // [TICKET PROMO 2026-11-03] Un client qui ne connaît pas encore le code « livraison
+                        // offerte » (ancienne version du site, application déjà installée) annonce un total
+                        // FRAIS COMPRIS. L'écart vaut alors exactement les frais offerts, en faveur du client :
+                        // c'est le seul écart toléré — tout autre écart reste refusé.
+                        $ecartLivraisonOfferte = $this->freeDeliveryWaived !== null
+                            && $this->freeDeliveryWaived > 0
+                            && abs(($expectedTotal - $serverTotal) - $this->freeDeliveryWaived) <= 0.01;
+                        if (abs($serverTotal - $expectedTotal) > 0.01 && ! $ecartLivraisonOfferte) {
                             throw new HttpException(
                                 422,
                                 'Le total ne correspond pas au montant attendu — certaines options sont peut-être indisponibles. Merci de recommencer votre commande.'
@@ -806,7 +827,8 @@ class FrontendOrderService
                         'order_id' => $this->frontendOrder->id,
                         'coupon_id' => $validatedCoupon->id,
                         'user_id' => Auth::user()->id,
-                        'discount' => $calculatedDiscount
+                        'discount' => $calculatedDiscount,
+                        'delivery_waived' => $this->freeDeliveryWaived,
                     ]);
                 }
 
@@ -1189,6 +1211,45 @@ class FrontendOrderService
      *
      * Mirrors OrderService::assertDiscretionaryDiscountAllowed pour le coupon.
      */
+    /**
+     * [TICKET PROMO 2026-11-03 · propriétaire] Applique un coupon « livraison offerte ».
+     *
+     * Règles du propriétaire : livraison offerte dès 10 € (le minimum est déjà vérifié par
+     * `CouponService`, sur le sous-total serveur) et jusqu'à 7 km — au-delà, ce n'est plus notre
+     * livraison. Hors de ces conditions, on REFUSE la commande (422) au lieu de l'accepter
+     * sans rien offrir : le code est à usage unique, l'accepter le brûlerait pour rien.
+     * Le site n'envoie de toute façon pas le code quand les conditions ne sont pas remplies ;
+     * ce refus est la défense serveur contre une requête forgée.
+     */
+    private function applyFreeDeliveryCoupon(Coupon $coupon): void
+    {
+        // Même interrupteur que tout code promo : `assertDiscretionaryDiscountAllowed` ne le
+        // consulte que pour une remise > 0, et celle-ci vaut 0 € sur les articles.
+        if (config('pos.coupon_codes_enabled') !== true && config('pos.manual_discount_enabled') !== true) {
+            throw new HttpException(422, 'Les codes promo sont désactivés pour le moment.');
+        }
+
+        if ((int) $this->frontendOrder->order_type !== OrderType::DELIVERY) {
+            throw new HttpException(422, 'Ce code offre la livraison : choisissez « Livraison » pour en profiter.');
+        }
+
+        $maxKm = $coupon->free_delivery_max_km !== null
+            ? (float) $coupon->free_delivery_max_km
+            : (float) config('delivery.free_delivery_coupon_max_km', 7);
+        $km = $this->frontendOrder->delivery_distance_km;
+
+        if ($km === null || ! is_numeric($km) || (float) $km > $maxKm) {
+            $affiche = rtrim(rtrim(number_format($maxKm, 1, ',', ''), '0'), ',');
+            throw new HttpException(
+                422,
+                "Ce code offre la livraison jusqu'à {$affiche} km : il ne s'applique pas à cette adresse et reste valable."
+            );
+        }
+
+        $this->freeDeliveryWaived = round((float) $this->frontendOrder->delivery_charge, 2);
+        $this->frontendOrder->delivery_charge = 0;
+    }
+
     private function assertDiscretionaryDiscountAllowed(float $discount): void
     {
         if ($discount <= 0.0) {
