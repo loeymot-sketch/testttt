@@ -15,6 +15,9 @@ class AppConfigController extends Controller
 {
     public function show(): JsonResponse
     {
-        return response()->json(AppVersion::configuration());
+        // [GOAL APP HYBRIDE · W4 · 2026-11-03] + interrupteur du paiement dans l'application (faux par défaut).
+        return response()->json(AppVersion::configuration() + [
+            'online_payment_enabled' => (bool) config('app_mobile.online_payment_enabled', false),
+        ]);
     }
 }

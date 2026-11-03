@@ -28,4 +28,11 @@ return [
 
     // L'identifiant Android est connu d'avance (fr.lecayenne.app, app/capacitor.config.json).
     'android_url' => (string) env('APP_MOBILE_ANDROID_URL', 'https://play.google.com/store/apps/details?id=fr.lecayenne.app'),
+
+    // [GOAL APP HYBRIDE · W4 · 2026-11-03] Paiement DANS l'application (carte, Apple Pay, Google Pay sur la page
+    // Mollie hébergée, ouverte dans le navigateur du système). COUPÉ PAR DÉFAUT : c'est l'interrupteur à distance
+    // du propriétaire. Publié par /api/frontend/app/config (l'application ne propose « Payer maintenant » que s'il
+    // est vrai) ET appliqué par le serveur (MolliePaymentController refuse `client=app` s'il est faux) : une
+    // application installée qui l'ignorerait est refusée quand même. Le site web n'est pas concerné.
+    'online_payment_enabled' => filter_var(env('APP_MOBILE_ONLINE_PAYMENT', false), FILTER_VALIDATE_BOOLEAN),
 ];

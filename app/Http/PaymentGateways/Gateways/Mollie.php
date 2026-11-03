@@ -55,6 +55,12 @@ class Mollie extends PaymentAbstract
      */
     public const WALLET_METHODS = ['applepay', 'googlepay'];
 
+    /**
+     * [GOAL APP HYBRIDE · W4 · 2026-11-03] Origines de paiement acceptées — SOURCE UNIQUE, partagée avec le
+     * contrôleur. `web` = site (retour inchangé) ; `app` = application des stores (retour par /paiement/retour-app).
+     */
+    public const CLIENTS = ['web', 'app'];
+
     public function __construct()
     {
         $paymentService = new PaymentService();
@@ -106,11 +112,23 @@ class Mollie extends PaymentAbstract
      *                          feuille Apple Pay ouverte DANS notre page (`ApplePaySession`).
      *                          Avec lui, Mollie encaisse directement : aucune page intermédiaire,
      *                          aucune redirection. Exige `$walletMethod === 'applepay'`.
+     * @param string $client [GOAL APP HYBRIDE · W4 · 2026-11-03] `web` (défaut, site) | `app` (application des stores).
+     *                          Ne change QUE la page où Mollie renvoie le client : `app` = page HTTPS du serveur qui
+     *                          rouvre l'application par son lien profond. Montant, webhook, métadonnées et chemin
+     *                          fiscal sont identiques. `app` n'existe que pour la page hébergée (aucun jeton).
      */
-    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = '', string $applePayToken = '', string $googlePayToken = ''): array
+    public function createPayment(FrontendOrder $order, string $cardToken = '', string $walletMethod = '', string $applePayToken = '', string $googlePayToken = '', string $client = 'web'): array
     {
         if (!$this->isMollieConfigured()) {
             throw new RuntimeException('Mollie non configuré.');
+        }
+
+        // Défense en profondeur (méthode publique) : le contrôleur filtre déjà, la passerelle re-vérifie.
+        if (! in_array($client, self::CLIENTS, true)) {
+            throw new RuntimeException('Client de paiement inconnu.');
+        }
+        if ($client === 'app' && ($cardToken !== '' || $walletMethod !== '' || $applePayToken !== '' || $googlePayToken !== '')) {
+            throw new RuntimeException("Le paiement dans l'application passe par la page sécurisée.");
         }
 
         // Défense en profondeur : cette méthode est publique (appelée aussi par payment()), donc
@@ -148,6 +166,15 @@ class Mollie extends PaymentAbstract
         $redirectBase = (string) config('payment.mollie.redirect_url', '');
         if ($redirectBase === '') {
             $redirectBase = (string) config('app.url');
+        }
+        if ($client === 'app') {
+            // [GOAL APP HYBRIDE · W4] Le site (redirect_url) est une AUTRE origine que la vue web de l'application :
+            // y renvoyer le client le laisserait sur le site, dans le navigateur intégré, sans chemin de retour
+            // (app/PUBLICATION.md §9). La page /paiement/retour-app rouvre l'application ; elle ne paie rien.
+            $redirectBase = (string) config('payment.mollie.app_return_url', '');
+            if ($redirectBase === '') {
+                $redirectBase = rtrim((string) config('app.url'), '/') . '/paiement/retour-app';
+            }
         }
         $redirectUrl = $redirectBase
             . (str_contains($redirectBase, '?') ? '&' : '?')
@@ -228,6 +255,8 @@ class Mollie extends PaymentAbstract
             // Rail employé — permet à l'ops de distinguer, dans le journal fiscal, une vente
             // portefeuille d'une vente carte sans avoir à interroger le dashboard Mollie.
             'rail'       => $walletMethod !== '' ? $walletMethod : ($cardToken !== '' ? 'creditcard' : 'hosted'),
+            // [GOAL APP HYBRIDE · W4] Distingue au journal un paiement lancé depuis l'application (aucune donnée carte).
+            'client'     => $client,
         ]);
 
         $mollieStatus = (string) ($payload['status'] ?? '');

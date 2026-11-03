@@ -101,6 +101,28 @@ Route::get('/livreur/remise', function () {
     ]);
 })->middleware(['installed'])->name('livreur.remise');
 
+// [GOAL APP HYBRIDE · W4 · 2026-11-03] Retour de paiement de l'APPLICATION des stores (`client=app` au checkout Mollie).
+// Mollie y renvoie le client, dans le navigateur du système ouvert par l'application ; la page rouvre l'application par
+// `fr.lecayenne.app://paiement/retour?order=<id>` (+ bouton visible). Elle NE LIT PAS la base, NE PAIE RIEN, n'affiche
+// aucune donnée : seul le webhook fait foi. L'identifiant n'est recopié que s'il est fait de 1 à 10 chiffres.
+// Déclarée AVANT le catch-all. Test : tests/Feature/Payment/MollieAppReturnTest.php.
+Route::get('/paiement/retour-app', function (\Illuminate\Http\Request $request) {
+    $order = $request->query('order');
+    $lien = 'fr.lecayenne.app://paiement/retour';
+    if (is_string($order) && preg_match('/^[1-9][0-9]{0,9}$/', $order)) {
+        $lien .= '?order=' . $order;
+    }
+
+    return response()->view('paiement-retour-app', ['lienApplication' => $lien])->withHeaders([
+        'Cache-Control'   => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma'          => 'no-cache',
+        'Referrer-Policy' => 'no-referrer',
+        'X-Robots-Tag'    => 'noindex, nofollow, noarchive',
+        'X-Frame-Options' => 'DENY',
+        'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    ]);
+})->middleware(['installed', 'throttle:120,1,paiement-retour-app'])->name('paiement.retour-app');
+
 Route::prefix('m')->name('mobile-stock.')->middleware(['installed'])->group(function () {
     Route::get('/', function () {
         return view('mobile-stock');

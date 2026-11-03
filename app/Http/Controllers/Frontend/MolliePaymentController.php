@@ -111,6 +111,28 @@ class MolliePaymentController extends Controller
             ], 422);
         }
 
+        // [GOAL APP HYBRIDE · W4 · 2026-11-03] D'où vient le paiement : `web` (site, défaut) ou `app` (application
+        // des stores). Liste blanche STRICTE — la valeur choisit la page où Mollie renvoie le client, rien d'autre.
+        // Absent / null (ConvertEmptyStringsToNull) = site, octet pour octet comme avant.
+        $client = $request->input('client') ?? 'web';
+        if (! is_string($client) || ! in_array($client, Mollie::CLIENTS, true)) {
+            return response()->json(['status' => false, 'message' => 'Client de paiement inconnu.'], 422);
+        }
+        if ($client === 'app') {
+            // Interrupteur du propriétaire, appliqué ICI et pas seulement affiché : une application installée qui
+            // l'ignorerait (vieux paquet, défaut) est refusée avant tout appel Mollie.
+            if (! (bool) config('app_mobile.online_payment_enabled', false)) {
+                return response()->json(['status' => false, 'message' => "Le paiement dans l'application est désactivé."], 503);
+            }
+            // L'application n'a ni champs carte ni feuille Apple Pay JS (absente de la vue web) : elle passe par la
+            // page Mollie hébergée, où Mollie présente carte, Apple Pay et Google Pay. Un jeton ici = appel incohérent.
+            foreach (['card_token', 'method', 'apple_pay_token', 'google_pay_token'] as $champ) {
+                if ($request->filled($champ)) {
+                    return response()->json(['status' => false, 'message' => "Le paiement dans l'application passe par la page sécurisée."], 422);
+                }
+            }
+        }
+
         // [OWNER 2026-08-01 · PAIEMENT DANS LA PAGE] Token à usage unique produit par Mollie
         // Components : la carte est saisie SUR notre page, jamais sur un site tiers. Le token
         // n'est ni un numéro de carte ni un montant — le total reste scellé backend.
@@ -185,7 +207,7 @@ class MolliePaymentController extends Controller
         }
 
         try {
-            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken, $googlePayToken);
+            $created = $gateway->createPayment($frontendOrder, $cardToken, $walletMethod, $applePayToken, $googlePayToken, $client);
         } catch (Throwable $e) {
             return response()->json([
                 'status'  => false,
