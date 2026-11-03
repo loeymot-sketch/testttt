@@ -47,6 +47,14 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-03 — GOAL `plans/GOAL_APP_HYBRIDE_FINITION_2026-11-03.md` LANCÉ (app des stores hybride + vitrine distante + paiement
+> dans l'app).** Production backend = `327ac761` (ancêtre de `merge/livreur-caisse-split-2026-11-02` = `e92288317`, base de la
+> branche `feat/app-hybride-2026-11-03`, worktree sparse `../wt-app-hybride`). **W0 fermée** : PHPUnit App/Payment/Loyalty/Coupon/
+> Branch = 265 verts (1 ignoré), chaîne NF525 OK (7 branches), app candidate 26/26 contrôles + 9/9 portes (`LC_BABEL_ROOT`),
+> rapport `reports/test-e2e/app-hybride-2026-11/W0/baseline.md`. **W1** : 1re passe onboarding/fidélité livrée (site, branche
+> `app/hybride-onboarding-2026-11-03`, `6716f62`, 52/52 contrôles) — relecture adverse en cours. Gates G1-G9 PENDING (Mollie
+> wallets, Apple/Google, APP_REVIEW_*, lecture .env prod, deploy, textes). Rien poussé, rien déployé.
+
 > **2026-10-24 — HEAD `252276aa5` (branche `pos/category-first-caisse-2026-06-23`) ; PRODUCTION caisse = `c7b6bc907`
 > (livraison ACTIVE en prod, `delivery/status → enabled:true`) ; poussé = `b17ce2765` ; NON poussés : `4a7c7d9f8`, `252276aa5`.**
 > Audit `/brain` du 23 au soir (3 relecteurs adverses + porte de tests) : lot caisse à déployer = 7 fichiers / 109 lignes, 0 migration,
