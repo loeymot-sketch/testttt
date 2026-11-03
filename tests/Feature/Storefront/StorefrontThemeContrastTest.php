@@ -58,6 +58,25 @@ class StorefrontThemeContrastTest extends TestCase
         $this->assertSame('#FF5A1F', StorefrontSetting::query()->where('branch_id', 1)->first()->theme['primary']);
     }
 
+    /**
+     * [RED cycle 3 · P2-3 2026-11-03] Le site peint du texte BLANC fixe sur `primary` (boutons, récap du panier) et du texte
+     * `accent` sur fond NOIR (tuile de catégorie active, carte fidélité) : ces couples réels sont contrôlés, sinon un thème
+     * « fêtes » accepté rendait du texte illisible (mesuré 1,38:1 et 2,13:1).
+     */
+    public function test_primaire_trop_clair_pour_le_texte_blanc_du_site_refuse(): void
+    {
+        $r = $this->envoyer($this->theme(['primary' => '#FFD93D', 'on_primary' => '#0A0A0A']))->assertStatus(422);
+        $this->assertStringContainsString('blanc', mb_strtolower($r->json('errors')['theme.primary'][0]));
+        // l'orange actuel de la marque (3,11:1 avec le blanc) reste accepté : c'est le niveau du site aujourd'hui (seuil 3:1)
+        $this->envoyer($this->theme())->assertOk();
+    }
+
+    public function test_accent_trop_sombre_pour_le_fond_noir_du_site_refuse(): void
+    {
+        $r = $this->envoyer($this->theme(['accent' => '#8B1A1A']))->assertStatus(422);
+        $this->assertStringContainsString('noir', mb_strtolower($r->json('errors')['theme.accent'][0]));
+    }
+
     public function test_contraste_insuffisant_refuse_en_francais_avec_le_rapport_mesure(): void
     {
         // Blanc sur l'orange de la marque : 3,11:1 (tronqué, jamais arrondi vers le haut) — lisible pour beaucoup, mais sous le seuil AA.

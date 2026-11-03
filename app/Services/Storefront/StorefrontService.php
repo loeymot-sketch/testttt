@@ -231,6 +231,20 @@ class StorefrontService
                 );
             }
         }
+        // [RED cycle 3 · P2-3] couples contre une couleur FIXE des feuilles de style du site (config storefront.fixed_contrast)
+        foreach ((array) config('storefront.fixed_contrast') as [$token, $fixe, $seuil, $phrase]) {
+            if (isset($errors["theme.{$token}"]) || ! isset($theme[$token])) {
+                continue;
+            }
+            $ratio = Contrast::ratio($theme[$token], $fixe);
+            if ($ratio < (float) $seuil) {
+                $errors["theme.{$token}"] = sprintf(
+                    'Contraste insuffisant entre « %s » (%s) et %s (%s) : %s. Il faut au moins %s pour que le texte reste lisible.',
+                    $tokens[$token], strtoupper($theme[$token]), $phrase, $fixe === '#FFFFFF' ? 'blanc' : 'noir',
+                    Contrast::format($ratio), number_format((float) $seuil, 1, ',', '').':1'
+                );
+            }
+        }
 
         return $errors;
     }

@@ -36,6 +36,16 @@ return [
     ],
     'min_contrast' => 4.5,
 
+    // [RED cycle 3 · P2-3 2026-11-03] Couples RÉELS du site, contre une couleur FIXE de ses feuilles de style :
+    //   · texte BLANC fixe peint sur `primary` (boutons, récap du panier : styles-v4.css:108, styles.css:474…) — seuil 3:1,
+    //     niveau actuel de l'orange de la marque (3,11:1), sinon le préréglage lui-même serait refusé ;
+    //   · `accent` lu comme TEXTE sur fond noir (tuile de catégorie active, carte fidélité) — 4,5:1.
+    // [jeton, couleur fixe, seuil, phrase]
+    'fixed_contrast' => [
+        ['primary', '#FFFFFF', 3.0, 'le texte blanc que l\'application écrit sur cette couleur (boutons, récapitulatif du panier)'],
+        ['accent', '#0A0A0A', 4.5, 'le fond noir sur lequel l\'application écrit cette couleur (catégorie choisie, carte fidélité)'],
+    ],
+
     // Couleurs actuelles du site (styles.css : --orange, --ink, --yellow, --cream, --paper) — proposées en préréglage.
     'default_theme' => [
         'primary'     => '#FF5A1F',
