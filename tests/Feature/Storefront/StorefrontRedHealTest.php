@@ -118,6 +118,22 @@ class StorefrontRedHealTest extends TestCase
         $this->api('POST', '/banners', $this->banner(['type' => 'flash', 'coupon_code' => 'noel']))->assertCreated();
     }
 
+    /** [RED cycle 3 · P2-4] L'application n'affiche le message de livraison que s'il a été SAISI en admin (sinon son texte d'origine). */
+    public function test_le_message_de_livraison_dit_s_il_est_personnalise(): void
+    {
+        $this->owner();
+        $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null])->assertOk();
+        $h = $this->api('GET')->json('data.draft_hash');
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h])->assertOk();
+        $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/storefront')
+            ->assertJsonPath('delivery.custom', false)->assertJsonPath('delivery.message', 'Livraison disponible.');
+        $this->api('PUT', '/settings', ['enabled' => true, 'theme' => null, 'delivery_on_message' => 'Livraison offerte dès 25 € ce week-end.'])->assertOk();
+        $h = $this->api('GET')->json('data.draft_hash');
+        $this->api('POST', '/publish', ['base_version' => 1, 'draft_hash' => $h])->assertOk();
+        $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/storefront')
+            ->assertJsonPath('delivery.custom', true)->assertJsonPath('delivery.message', 'Livraison offerte dès 25 € ce week-end.');
+    }
+
     public function test_un_double_envoi_avec_la_meme_cle_ne_cree_qu_un_bandeau(): void
     {
         // Allumé comme en production (garde de démarrage AppServiceProvider : IDEMPOTENCY_MIDDLEWARE_ENABLED obligatoire).

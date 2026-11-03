@@ -159,6 +159,9 @@ class StorefrontService
             'delivery' => [
                 'enabled' => $deliveryOn,
                 'message' => $custom ?: (string) config('storefront.delivery_messages.'.($deliveryOn ? 'on' : 'off')),
+                // [RED cycle 3 · P2-4] vrai si le message a été SAISI en admin : l'application ne remplace son texte d'origine
+                // (« La livraison est lancée ! … ») que par un message choisi, jamais par le message générique.
+                'custom' => (bool) $custom,
             ],
             'next_change_at' => $this->iso($nextChange),
         ];
