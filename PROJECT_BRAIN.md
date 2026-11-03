@@ -47,6 +47,13 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-03 (fin de journée) — GOAL APP HYBRIDE : W0-W5 ✓, W6 cycle A convergé (0 P0/P1) + 5 constats soignés, cycle B en cours.**
+> Branche INTÉGRÉE site/app : `app/hybride-paiement-2026-11-03` (worktree `lecayenne-web-deploy/app-hybride-paiement-2026-11-03`, tête `ea954d0`)
+> = W1 + W2b + W3 + W4 (paiement dans l'app, interrupteur `APP_MOBILE_ONLINE_PAYMENT` FAUX par défaut) + W5 (PUBLICATION.md lignes A/B,
+> confidentialité, 10 visuels de fiche) + W6-A. Bancs : comportement 55, fidélité 24, suivi 10, photos 3, vitrine robustesse 13, vitrine
+> distante 16 (vrai backend), paiement 45 (faux Mollie, .env restauré à l'octet près), portes 9/9. Backend `feat/app-hybride-2026-11-03`
+> tête `1285352f3` (+ `79fd179f0` paiement app, vitrine 42 tests, Payment 103 tests, gel 0, NF525 OK). Rien poussé, rien déployé.
+> Reste : W6 cycle B ; W7 = « deploy » propriétaire + gates G1-G9 (voir reports/test-e2e/app-hybride-2026-11/W5/W5-conformite.md).
 > **2026-11-03 (suite) — GOAL APP HYBRIDE : W0 ✓, W1 ✓ (2 cycles RED soignés), W2a ✓ (+ RED soigné `829e6e752`), W2b ✓, W3 ✓.**
 > Site/app : branche `app/hybride-images-2026-11-03` (worktree `lecayenne-web-deploy/app-hybride-images-2026-11-03`, tête `cabe81b`)
 > = W1 + W3 + W2b ; bancs : comportement 53, fidélité hors ligne 24, suivi 10, photos 39/39, vitrine 16 (vrai backend), portes 9/9.
