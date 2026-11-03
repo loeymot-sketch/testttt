@@ -126,7 +126,10 @@ describe('V1 admin sidebar cleanup', () => {
         // (`/livreur`, page autonome, ancre externe) → 23 lignes. Compteur remonté DANS la session qui livre les entrées.
         expect(text).toContain('menu.livraisons');
         expect(text).toContain('menu.livreur_screen');
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(23);
+        // [APP HYBRIDE W2a 2026-11-03] +1 : « Vitrine de l'app » (menu.storefront, porte `settings`) → 24 lignes.
+        // Compteur remonté DANS la session qui livre l'entrée.
+        expect(text).toContain('menu.storefront');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(24);
 
         // La roue doit être une vraie ANCRE, ouverte dans un nouvel onglet — pas un
         // router-link. C'est ce qui distingue un lien qui marche d'un lien mort.

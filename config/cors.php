@@ -57,7 +57,9 @@ return [
     // la vraie fin de fenêtre, et ne savait pas distinguer un plafond passager d'un verrou long (connexion, code).
     // Les écrans de la caisse / cuisine / borne sont même origine : ils lisaient déjà l'en-tête. Valeurs publiques,
     // sans donnée sensible.
-    'exposed_headers' => ['Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+    // [APP HYBRIDE W2a 2026-11-03] + `ETag` : la vitrine distante (GET /api/frontend/storefront) répond 304 sur If-None-Match ;
+    // l'application (https://localhost) doit pouvoir LIRE l'ETag pour le renvoyer. Valeur publique (empreinte du document).
+    'exposed_headers' => ['Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'ETag'],
     'max_age' => 86400,
     'supports_credentials' => true,
 ];

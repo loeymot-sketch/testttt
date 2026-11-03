@@ -1057,6 +1057,19 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/item/{offer}/{offerItem}', [OfferItemController::class, 'destroy']);
     });
 
+    // [APP HYBRIDE W2a · 2026-11-03] Vitrine distante (bandeaux, offres flash, couleurs) : brouillon → « Publier » (version +1)
+    // → lue par l'application sans nouvelle version. Porte `permission:settings` (constructeur du contrôleur).
+    Route::prefix('storefront')->name('storefront.')->group(function () {
+        $c = \App\Http\Controllers\Admin\StorefrontAdminController::class;
+        Route::get('/', [$c, 'show'])->name('show');
+        Route::put('/settings', [$c, 'updateSettings'])->name('settings');
+        Route::post('/banners', [$c, 'storeBanner'])->name('banners.store');
+        Route::put('/banners/{banner}', [$c, 'updateBanner'])->where('banner', '[0-9]{1,18}')->name('banners.update');
+        Route::delete('/banners/{banner}', [$c, 'destroyBanner'])->where('banner', '[0-9]{1,18}')->name('banners.destroy');
+        Route::post('/publish', [$c, 'publish'])->name('publish');
+        Route::post('/rollback', [$c, 'rollback'])->name('rollback');
+    });
+
     Route::prefix('item')->name('item.')->group(function () {
 
         Route::get('/', [ItemController::class, 'index']);
@@ -2280,6 +2293,12 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     Route::get('app/config', [\App\Http\Controllers\Frontend\AppConfigController::class, 'show'])
         ->middleware('throttle:300,1,app-config') // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
         ->name('app.config');
+
+    // [APP HYBRIDE W2a · 2026-11-03] Vitrine distante — PUBLIC (lue au lancement, au retour au premier plan, toutes les
+    // ≤ 5 min), lecture seule, aucune donnée client, ETag + 304. Même plafond que app/config, compteur PROPRE.
+    Route::get('storefront', [\App\Http\Controllers\Frontend\StorefrontController::class, 'show'])
+        ->middleware('throttle:300,1,storefront')
+        ->name('storefront');
 
     // [T-C SUIVI-CLIENT 2026-08-16 · GOAL owner] Suivi public d'une commande par
     // tracking_token opaque — PUBLIC (lien envoyé/affiché au client, pas de

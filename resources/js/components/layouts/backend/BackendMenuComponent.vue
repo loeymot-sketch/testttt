@@ -187,6 +187,9 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     // cuisine. Même gate réutilisée (`pos-orders`) et même raison qu'au-dessus : une permission
     // neuve ne serait portée par aucun rôle, l'écran serait inaccessible à tout le monde.
     Object.freeze({ url: 'uber-photo', language: 'uber_photo', icon: 'fa-solid fa-camera' }),
+    // [APP HYBRIDE W2a · 2026-11-03] Vitrine de l'application (bandeaux, offres flash, couleurs) — réservée au responsable :
+    // même porte que l'API (`settings`, voir MENU_URL_TO_PERMISSION_URL), permission existante portée par le rôle Admin.
+    Object.freeze({ url: 'storefront', language: 'storefront', icon: 'fa-solid fa-store' }),
     /*
      * [ROUE 2026-08-13 · propriétaire : « accès admin caisse »] Les écrans de la roue existaient
      * et fonctionnaient, mais aucun lien n'y menait depuis le back-office.
@@ -229,6 +232,8 @@ const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     'promo-flyer/settings': 'pos-orders',
     // [UBER-PHOTO 2026-08-10] Même gate que la caisse — voir l'entrée de menu.
     'uber-photo': 'pos-orders',
+    // [APP HYBRIDE W2a · 2026-11-03] Même porte que l'API vitrine (`permission:settings`).
+    storefront: 'settings',
     // [ETIQUETTES 2026-10-16] Même gate que la caisse — voir l'entrée de menu.
     labels: 'pos-orders',
     'labels/orders': 'pos-orders',
