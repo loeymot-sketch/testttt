@@ -64,3 +64,23 @@ test('catalogue borne : prix à la française « 7,00 € », jamais « €7,00 
   expect(gauche).toEqual([]);
   expect(droite.length).toBeGreaterThan(0);
 });
+
+test('catalogue borne : « Mon compte » panier vide garde le client au catalogue et lui explique pourquoi', async ({ page, request }) => {
+  test.setTimeout(90_000);
+  await borne(page, request);
+  await page.locator('[data-testid="kiosk-order-type-takeaway"]').waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(1500);
+  // Toujours un délai sur ces clics : l'élément disparaît à la navigation, et sans délai Playwright attend
+  // indéfiniment (actionTimeout 0 dans ce dépôt).
+  await page.locator('[data-testid="kiosk-idle-touch-btn"]').click({ timeout: 8000, force: true }).catch(() => {});
+  await page.waitForTimeout(1000);
+  await page.locator('[data-testid="kiosk-order-type-takeaway"]').click({ timeout: 8000, force: true }).catch(() => {});
+  const compte = page.locator('[data-testid="kiosk-categories-top-account"]');
+  await compte.waitFor({ timeout: 20_000 });
+  await page.waitForTimeout(800);
+  const avant = page.url();
+  await compte.click({ timeout: 8000 });
+  await page.waitForTimeout(1200);
+  expect(page.url(), 'reste au catalogue').toBe(avant);
+  await expect(page.locator('.kiosk-toast-msg').filter({ hasText: /compte fidélité vous sera proposé au panier/ })).toBeVisible();
+});

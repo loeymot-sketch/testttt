@@ -2300,6 +2300,7 @@
             "nos": "Nos",
             "products_fallback": "Produits",
             "my_account": "Mon compte",
+            "my_account_empty_cart": "Choisissez d'abord vos articles : votre compte fidélité vous sera proposé au panier.",
             "cache_banner": "Menu hors ligne — prix indicatifs. Reconnexion automatique dès que possible.",
             "loading_menu": "Chargement du menu…",
             "load_error_title": "Impossible de charger le menu.",

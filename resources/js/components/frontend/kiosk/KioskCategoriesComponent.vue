@@ -587,6 +587,13 @@ export default {
     // approprié ici (on n'a rien scanné), on reste silencieux et on laisse
     // `KioskLoyaltyComponent` émettre ses events propres.
     openMyAccount() {
+      // [FINITION 2026-11-04] Panier vide : la route fidélité est gardée par `requireCart`, le client
+      // atterrissait sur « Votre panier est vide » sans comprendre pourquoi. On le garde au catalogue et
+      // on lui dit où se fera l'identification (au panier, « Avez-vous une carte fidélité ? »).
+      if (this.$store.getters['kioskCart/isEmpty']) {
+        this.showToast(this.$t('kiosk.catalog.my_account_empty_cart'), 'info', 4000);
+        return;
+      }
       try {
         this.$router.push({ name: 'kiosk.loyalty' });
       } catch (_) { /* navigation garde indisponible (tests) → no-op */ }
