@@ -157,9 +157,13 @@ class UberDirectClient
 
         try {
             $req = Http::withToken($token)->timeout($this->timeout())->acceptJson();
+            // [UBER-DIRECT 2026-11-04 · 1ᵉʳ essai réel contre le bac à sable d'Uber] Un POST SANS contenu (l'annulation) partait avec
+            // le corps `[]` : un TABLEAU JSON, que Uber refuse en 400 « Bad Request » (`{}` est accepté : course « canceled »). Le faux
+            // Uber de banc l'acceptait — l'annulation ne marchait donc qu'en test, et une course demandée ne pouvait plus être
+            // retirée. Un corps vide est toujours un OBJET JSON.
             $res = $method === 'GET'
                 ? $req->get($url, $body)
-                : $req->send($method, $url, ['json' => $body]);
+                : $req->send($method, $url, ['json' => $body === [] ? new \stdClass : $body]);
 
             $this->lastStatus = $res->status();
 

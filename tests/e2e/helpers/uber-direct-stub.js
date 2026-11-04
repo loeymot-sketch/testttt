@@ -120,6 +120,8 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, d);
   }
   if (kind === 'deliveries' && id && action === 'cancel' && req.method === 'POST') {
+    // [2026-11-04 · essai réel] Le vrai Uber refuse un corps TABLEAU (`[]`) en 400 « Bad Request » : seul un objet JSON passe.
+    if (Array.isArray(body)) return json(res, 400, { error: 'Bad Request' });
     const d = state.deliveries[id];
     if (!d) return json(res, 404, { code: 'not_found' });
     if (state.mode.cancel === 'refuse' || ['pickup_complete', 'dropoff', 'delivered'].includes(d.status)) return json(res, 400, { code: 'cannot_cancel', message: 'Delivery cannot be canceled at this stage.' });

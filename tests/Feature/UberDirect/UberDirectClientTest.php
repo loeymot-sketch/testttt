@@ -192,4 +192,23 @@ class UberDirectClientTest extends TestCase
             $this->assertStringNotContainsString('secret-test', $m, 'le secret ne doit jamais être journalisé');
         }
     }
+
+    /**
+     * [UBER-DIRECT 2026-11-04 · 1ᵉʳ essai réel contre le bac à sable d'Uber] L'annulation partait avec le corps `[]` (un TABLEAU JSON) :
+     * Uber répond 400 « Bad Request » — seul `{}` (un OBJET) passe. Une course demandée ne pouvait donc plus être retirée.
+     *
+     * @test
+     */
+    public function un_post_sans_contenu_part_avec_un_objet_json_et_jamais_un_tableau(): void
+    {
+        $this->armer();
+        Http::fake($this->faireJeton() + ['api.uber.com/*' => Http::response(['id' => 'del_1', 'status' => 'canceled'], 200)]);
+
+        $r = (new UberDirectClient)->cancelDelivery('del_1');
+
+        $this->assertSame('canceled', $r['status'] ?? null);
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/cancel') && $request->body() === '{}';
+        });
+    }
 }
