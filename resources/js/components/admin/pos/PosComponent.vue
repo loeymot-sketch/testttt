@@ -8545,7 +8545,9 @@ export default {
    le CTA « Commande téléphone » était clippé ~50px sous la ligne de flottaison.
    On compacte le pied d'actions pour qu'il tienne TOUJOURS à l'écran. */
 @media (max-height: 820px) {
-  .pos-phone-order-cta { padding: 5px 10px; }
+  /* [FINITION 2026-11-04] Sous-titre masqué ⇒ l'icône restait seule sur sa ligne (bouton de 60 px à
+     1366×768). Icône et libellé côte à côte : ~22 px rendus aux lignes de vente, libellé inchangé. */
+  .pos-phone-order-cta { padding: 5px 10px; flex-direction: row; justify-content: center; gap: 8px; }
   .pos-phone-order-cta__hint { display: none; }
   .pos-v4-action-pay { --posv5-btn-h-xl: 44px; }
 }
