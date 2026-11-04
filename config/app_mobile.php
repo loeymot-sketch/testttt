@@ -17,9 +17,11 @@ return [
     // MARKETING_VERSION iOS). 1.0.0 = la première version publiée : personne n'est bloqué.
     'min_version' => (string) env('APP_MOBILE_MIN_VERSION', '1.0.0'),
 
+    // [FINITION 2026-11-04] Vouvoiement (décision propriétaire du 2026-10-22 : site ET application) :
+    // la production renvoyait « Mets-la à jour », seule phrase tutoyée du parcours de commande.
     'message' => (string) env(
         'APP_MOBILE_UPDATE_MESSAGE',
-        "Une nouvelle version de l'application Le Cayenne est disponible. Mets-la à jour pour continuer à commander."
+        "Une nouvelle version de l'application Le Cayenne est disponible. Mettez-la à jour pour continuer à commander."
     ),
 
     // Lien de la fiche App Store : son identifiant numérique n'existe qu'une fois l'application

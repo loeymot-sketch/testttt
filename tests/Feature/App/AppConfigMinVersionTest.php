@@ -101,6 +101,18 @@ class AppConfigMinVersionTest extends TestCase
         $this->assertSame(0, \App\Models\Order::withoutGlobalScopes()->count(), 'Aucune commande ne doit naître.');
     }
 
+    /** [FINITION 2026-11-04] Le message par défaut vouvoie le client, comme tout le site et l'application. */
+    public function test_le_message_par_defaut_vouvoie_le_client(): void
+    {
+        $defaut = (require base_path('config/app_mobile.php'))['message'];
+
+        if (env('APP_MOBILE_UPDATE_MESSAGE') !== null) {
+            $this->markTestSkipped('APP_MOBILE_UPDATE_MESSAGE est défini dans l’environnement de test.');
+        }
+        $this->assertStringContainsString('Mettez-la à jour', $defaut);
+        $this->assertDoesNotMatchRegularExpression('/\\b(mets|ta|ton|tes|tu)\\b/iu', $defaut, 'Aucun tutoiement.');
+    }
+
     public function test_une_application_a_jour_passe_le_filtre(): void
     {
         config(['app_mobile.min_version' => '1.1.0']);
