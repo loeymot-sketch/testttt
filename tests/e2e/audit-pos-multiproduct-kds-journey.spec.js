@@ -373,8 +373,14 @@ async function configureTacosModal(page, instruction) {
 
   // [2026-11-04] Un tacos EXIGE une sauce : sans elle, la caisse refuse l'ajout et l'écrit en rouge en bas de
   // l'assistant (« Sélectionnez au moins une sauce », vérifié à l'écran). « Sans sauce » ne change aucun montant.
-  const sansSauce = page.locator('#item-variation-modal.active .sauce-chip').filter({ hasText: /sans sauce/i }).first();
-  if (await sansSauce.count()) await sansSauce.evaluate((el) => el.click());
+  // Le produit de test peut ne pas proposer « Sans sauce » : à défaut, la 1ʳᵉ sauce visible (mesuré : l'ajout du
+  // vrai Tacos L reste à 8,90 € avec n'importe quelle sauce incluse).
+  await page.evaluate(() => {
+    const puces = [...document.querySelectorAll('#item-variation-modal.active button.sauce-chip')].filter((e) => e.offsetParent);
+    const cible = puces.find((e) => /sans sauce/i.test(e.innerText || '')) || puces[0];
+    if (cible) cible.click();
+  });
+  await page.waitForTimeout(300);
 
   const note = page.locator('#item-variation-modal.active textarea:visible').first();
   await expect(note).toBeVisible({ timeout: 5000 });
