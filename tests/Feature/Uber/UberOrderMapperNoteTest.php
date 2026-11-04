@@ -79,9 +79,11 @@ class UberOrderMapperNoteTest extends TestCase
         // voulue. La règle anti-écho, elle, vaut toujours pour un ÉCHO de nom de produit en capitales :
         $this->assertSame(
             '',
-            $f->cleanInstruction('TACOS CAYENNE', 'Tacos M'),
-            'contrôle : un écho du nom de produit en MAJUSCULES, sans mot de consigne, reste retiré (règle anti-écho)'
+            $f->cleanInstruction('TACOS M', 'Tacos M'),
+            'contrôle : l\'écho du nom de produit en MAJUSCULES (pos-wizard) reste retiré (règle anti-écho)'
         );
+        // [2026-11-04 · « Garder toute consigne »] Une consigne en capitales SANS mot de la liste n'est plus perdue.
+        $this->assertSame('PEU DE SAUCE', $f->cleanInstruction('PEU DE SAUCE', 'Tacos M'));
         $this->assertSame(
             'SANS OIGNONS SVP',
             $f->cleanInstruction('SANS OIGNONS SVP', 'Tacos M'),

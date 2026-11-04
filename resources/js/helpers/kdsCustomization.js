@@ -283,6 +283,28 @@ function extractFormuleDrinkLines(raw) {
 // KitchenTicketSymbolicFormatter::MOT_CONSIGNE_RE.
 const MOT_CONSIGNE_RE = /(?<![\p{L}\p{N}])(sans|pas|no|without|allerg\p{L}*|gluten|arach\p{L}*|cacahu\p{L}*|lactos\p{L}*|soja|intol\p{L}*|extra|cuit|saignant|part|svp|merci|attention|urgent|ajout\p{L}*|enlev\p{L}*|retir\p{L}*)(?![\p{L}\p{N}])/iu;
 
+// Mots d'un TYPE de produit que l'écho du wizard peut porter en plus du nom. Jumeau STRICT :
+// KitchenTicketSymbolicFormatter::MOTS_TYPE_PRODUIT.
+const MOTS_TYPE_PRODUIT = new Set(['SANDWICH', 'SANDWICHS', 'TACOS', 'BURGER', 'BURGERS', 'GALETTE', 'GALETTES',
+    'BOL', 'BOLS', 'FRITE', 'FRITES', 'MENU', 'MENUS', 'ENFANT', 'DESSERT', 'DESSERTS', 'BOISSON', 'BOISSONS',
+    'LE', 'LA', 'LES', 'L']);
+
+function motsSansAccent(s) {
+    return String(s || '').normalize('NFD').replace(/\p{Mn}+/gu, '').toUpperCase()
+        .split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+}
+
+/**
+ * [CONSIGNES 2026-11-04] Vrai si TOUS les mots de la ligne appartiennent au nom du produit ou à MOTS_TYPE_PRODUIT :
+ * seule forme de l'écho du wizard (`lastItemData.name.toUpperCase()`). Jumeau STRICT :
+ * KitchenTicketSymbolicFormatter::estEchoDuProduit.
+ */
+export function estEchoDuProduit(ligne, itemName) {
+    const permis = new Set([...motsSansAccent(itemName), ...MOTS_TYPE_PRODUIT]);
+    const mots = motsSansAccent(ligne);
+    return mots.length > 0 && mots.every((m) => permis.has(m));
+}
+
 export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
     if (typeof raw !== 'string') {
         return '';
@@ -309,7 +331,11 @@ export function sanitizeKdsInstruction(raw, itemName, knownDrinks = []) {
         if (name && t.toUpperCase() === name) return false; // echoed product name (exact)
         // [KITCHEN 2026-06-30] Ligne 100% MAJUSCULES (sans chiffre) = écho du nom produit
         // écrit par le wizard (« TACOS », « SANDWICH CAYENNE ») → drop (la L1 le montre déjà).
-        if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t) && !MOT_CONSIGNE_RE.test(t)) return false;
+        // [CONSIGNES 2026-11-04 · décision propriétaire « Garder toute consigne »] Retirée SEULEMENT si c'est un
+        // écho du produit (tous les mots = nom du produit ou type) ; « PEU DE SAUCE », « DOUBLE FROMAGE » restent.
+        // Jumeau STRICT : KitchenTicketSymbolicFormatter::estEchoDuProduit.
+        if (!insideBracketNote && t.length >= 2 && /^[A-ZÀ-Ÿ][A-ZÀ-Ÿ '\-]*$/.test(t) && !MOT_CONSIGNE_RE.test(t)
+            && estEchoDuProduit(t, itemName)) return false;
         if (insideBracketNote) {                            // continuation d'une note libre multi-ligne → KEEP
             if (t.includes(']')) insideBracketNote = false;
             return true;

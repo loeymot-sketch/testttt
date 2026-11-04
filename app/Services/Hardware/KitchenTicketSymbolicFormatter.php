@@ -1068,6 +1068,41 @@ final class KitchenTicketSymbolicFormatter
      *         contient la ligne formule, la boisson sortait DEUX FOIS (ticket ET
      *         KDS). Jumeau STRICT : kdsCustomization.js sanitizeKdsInstruction.
      */
+    /** Mots d'un TYPE de produit que l'écho du wizard peut porter en plus du nom (« SANDWICH CAYENNE »). */
+    private const MOTS_TYPE_PRODUIT = ['SANDWICH', 'SANDWICHS', 'TACOS', 'BURGER', 'BURGERS', 'GALETTE', 'GALETTES',
+        'BOL', 'BOLS', 'FRITE', 'FRITES', 'MENU', 'MENUS', 'ENFANT', 'DESSERT', 'DESSERTS', 'BOISSON', 'BOISSONS',
+        'LE', 'LA', 'LES', 'L'];
+
+    /**
+     * [CONSIGNES 2026-11-04] Vrai si TOUS les mots de la ligne appartiennent au nom du produit ou à
+     * MOTS_TYPE_PRODUIT (comparaison sans accents ni casse) : c'est la seule forme de l'écho du wizard
+     * (`lastItemData.name.toUpperCase()`). Jumeau STRICT : kdsCustomization.js estEchoDuProduit.
+     */
+    public static function estEchoDuProduit(string $ligne, string $itemName): bool
+    {
+        $mots = static function (string $s): array {
+            if (class_exists(\Normalizer::class)) {
+                $s = \Normalizer::normalize($s, \Normalizer::FORM_D) ?: $s;
+            }
+            $s = mb_strtoupper($s);
+            $s = (string) preg_replace('/\p{Mn}+/u', '', $s);
+
+            return array_values(array_filter(preg_split('/[^\p{L}\p{N}]+/u', $s) ?: [], static fn ($m) => $m !== ''));
+        };
+        $permis = array_flip(array_merge($mots($itemName), self::MOTS_TYPE_PRODUIT));
+        $ligneMots = $mots($ligne);
+        if ($ligneMots === []) {
+            return false;
+        }
+        foreach ($ligneMots as $m) {
+            if (! isset($permis[$m])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function cleanInstruction(?string $raw, string $itemName, array $knownDrinks = []): string
     {
         if (! is_string($raw) || $raw === '') {
@@ -1107,8 +1142,13 @@ final class KitchenTicketSymbolicFormatter
             // [NOTES-EN-MAJUSCULES 2026-10-19 · revue adverse] … SAUF une note du client tapée en capitales
             // (« SANS OEUF », « ALLERGIE ARACHIDE ») : elle portait un mot de consigne et disparaissait du
             // ticket en silence. Jumeau STRICT : kdsCustomization.js MOT_CONSIGNE_RE.
+            // [CONSIGNES 2026-11-04 · décision propriétaire « Garder toute consigne »] Une ligne en capitales n'est
+            // retirée QUE si c'est un ÉCHO du produit : TOUS ses mots appartiennent au nom du produit ou à son type
+            // (« TACOS », « SANDWICH CAYENNE »). Avant, toute ligne en capitales sans mot de consigne partait :
+            // « PEU DE SAUCE », « DOUBLE FROMAGE » disparaissaient du ticket en silence. Jumeau STRICT :
+            // kdsCustomization.js estEchoDuProduit.
             if (! $insideBracket && preg_match('/^[\p{Lu}][\p{Lu}\s\'\-]*$/u', $t) && mb_strlen($t) >= 2
-                && ! preg_match(self::MOT_CONSIGNE_RE, $t)) {
+                && ! preg_match(self::MOT_CONSIGNE_RE, $t) && self::estEchoDuProduit($t, $itemName)) {
                 continue;
             }
             if ($insideBracket) {
