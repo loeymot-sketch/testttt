@@ -47,6 +47,11 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-04 06h — W7 cycles A et B corrigés : P0+P1 = 0 sur les deux vagues au cycle B ; mise en ligne PRÊTE (backend `0ab98956b`, site `site/deploy-2026-11-03`), toujours non lancée par le propriétaire.**
+> Cycle B : vague D (API) D-001/D-002/D-006 PASS, D-004 (500 via builders SMS/Push) + D-008 (route PUT message morte) + D-009 (téléphone réécrit) corrigés
+> en `5464a3f40` → fusion `0ab98956b` poussée en avance rapide sur `origin/pos/category-first-caisse-2026-06-23` ; vague A (pages client) GREEN, 11 PASS,
+> A-019 (CTA récap 3,11:1) + restes A-002/A-004 + P3 corrigés (commit site du cycle B, `site/deploy-2026-11-03` avancé, `site-copie` à jour).
+> Reste assumé : A-001 partiel (11 CSS bloquantes), A-012/13/17/18, D-007 (oracle `email-login` voulu). Convergence stricte (2 cycles identiques) non atteinte : un cycle C de confirmation est à lancer si le propriétaire le veut.
 > **2026-11-04 02h — W7 « finition et optimisation de chaque page client » cycle A corrigé, cycle B (confirmation) en cours ; mise en ligne PRÊTE, toujours non lancée par le propriétaire.**
 > Backend de mise en ligne : branche `deploy/hybride-et-promo-2026-11-03` tête `5b78ca291` = `fcc622b93` (hybride + ticket promo, ⊇ prod `327ac761c`)
 > + W7 `2c9e25217` (D-001 P0 fuite nom/téléphone par `receiver_id`, D-002 P1 X-Forwarded-For usurpable, D-003 P1 squat d'e-mail par
