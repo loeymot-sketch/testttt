@@ -9245,6 +9245,18 @@ export default {
     font-weight: 700;
     cursor: pointer;
 }
+/* [FINITION 2026-11-04] Dès qu'une commande est en cuisine, la phrase (« 1 en cuisine · la plus ancienne
+   depuis 42 min · vous serez le 2ᵉ ») passe sur 2 lignes à interligne normal (~42 px au lieu de 29) et, à
+   1024×600, poussait le champ « Nom du client » sous le pli de l'en-tête (sentinelle goal-caisse-fix2,
+   mesuré avec une commande réellement en cuisine). Écrans bas : interligne serré, les 2 lignes tiennent
+   dans la hauteur d'une seule, rien n'est tronqué (le rang reste lisible). */
+@media (max-height: 820px) {
+    .pos-v5-cart__cuisine {
+        line-height: 1.15;
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+}
 /* Jamais masqué à zéro : une ligne absente est ambiguë (rien en cuisine, ou bloc
    cassé ?). Elle passe en sourdine, elle ne disparaît pas. */
 .pos-v5-cart__cuisine--libre {

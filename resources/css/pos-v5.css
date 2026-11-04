@@ -987,6 +987,37 @@
     }
 }
 
+/* [FINITION 2026-11-04] LES PLANCHERS CI-DESSUS SONT EN `vh`, DONC RÉDUITS DE 10 % PAR LE ZOOM 0.9 DE LA
+   CAISSE (doctrine R-005 : toute hauteur en unités d'écran se divise par --caisse-zoom). Le « 20vh »
+   protégé par la sentinelle C3 ne faisait que 18 % de l'écran : 138 px à 1366×768 pour 154 attendus, et
+   le caissier ne voyait qu'UNE ligne de vente entière sur trois. Corrigé ici (lignes de vente présentes
+   seulement : la règle `:has(.pos-v5-cart__empty)` du 25/08 reste maîtresse du panier vide). */
+body[data-caisse-zoom] .pos-v5-cart .pos-v5-cart__body:not(:has(.pos-v5-cart__empty)) {
+    min-height: calc(28vh / var(--caisse-zoom, 1));
+}
+@media (max-height: 800px) {
+    body[data-caisse-zoom] .pos-v5-cart .pos-v5-cart__body:not(:has(.pos-v5-cart__empty)) {
+        min-height: calc(20vh / var(--caisse-zoom, 1));
+    }
+}
+/* … et sur les écrans bas, une ligne de vente perd ses marges internes (89 → 71 px), sans changer de
+   disposition ni de taille de boutons : nom, détail, prix et quantité restent lisibles et à la même place.
+   Mesuré : 2 lignes entières au lieu d'1 à 1024×768, 1280×800 et 1366×768 ; pied du ticket intact. */
+@media (max-height: 820px) {
+    /* Préfixe `.pos-v5-cart` : la section 7 (plus bas dans ce fichier) déclare ces propriétés et
+       l'emporterait à spécificité égale. */
+    .pos-v5-cart .pos-v5-cart-item {
+        padding: 4px 0;
+        row-gap: 2px;
+    }
+    .pos-v5-cart .pos-v5-cart-item__qty {
+        margin-top: 0;
+    }
+    .pos-v5-cart .pos-v5-cart-item__price {
+        padding-top: 0;
+    }
+}
+
 /* [GOAL CAISSE 2026-08-22] LE PLAFOND CI-DESSUS A ÉTÉ CALCULÉ CONTRE UN PIED QUI N'EXISTE PLUS.
    Le calcul du 2026-08-19 (bloc ci-dessus) dimensionnait le plafond de l'en-tête contre un pied
    « ≈ 394 px » incompressible. MESURÉ AU NAVIGATEUR LE 2026-08-22, aux 4 gabarits de comptoir :

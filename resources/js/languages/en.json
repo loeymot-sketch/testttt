@@ -2625,7 +2625,9 @@
                 }
             },
             "generic": {
-                "step_fallback": "Step"
+                "step_fallback": "Step",
+                "optional_badge": "Optional",
+                "optional_hint": "Tap “Next” to skip. Any addition shows in the total."
             }
         },
         "order_type_label": "Order type",

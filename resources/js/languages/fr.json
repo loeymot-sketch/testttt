@@ -2698,7 +2698,9 @@
                 }
             },
             "generic": {
-                "step_fallback": "Étape"
+                "step_fallback": "Étape",
+                "optional_badge": "Facultatif",
+                "optional_hint": "Touchez « Suivant » pour passer. Un ajout s’affiche dans le total."
             }
         },
         "order_type_label": "Type de commande",
