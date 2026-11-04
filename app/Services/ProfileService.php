@@ -40,8 +40,11 @@ class ProfileService
             $user               = User::find(auth()->user()->id);
             if (!blank($user)) {
                 $user->name         = $request->first_name . ' ' . $request->last_name;
-                $user->phone        = $request->get('phone');
-                $user->email        = $request->get('email');
+                // [W7-D D-009 · cycle B 2026-11-04] Un client garde son contact TEL QU'ENREGISTRÉ : « 06 99 88 00 01 » (toléré
+                // par la comparaison) ne doit pas réécrire « 0699880001 » avec des espaces — `guest-signup` ne le retrouverait plus.
+                $garde              = $this->estUnClient($user);
+                $user->phone        = $garde ? $user->phone : $request->get('phone');
+                $user->email        = $garde ? $user->email : $request->get('email');
                 $user->country_code = $request->get('country_code');
                 $user->save();
             }
@@ -68,10 +71,23 @@ class ProfileService
     {
         $emailDemande = mb_strtolower(trim((string) $request->get('email')));
         $emailActuel  = mb_strtolower(trim((string) $user->email));
-        $telDemande   = preg_replace('/\D+/', '', (string) $request->get('phone'));
-        $telActuel    = preg_replace('/\D+/', '', (string) $user->phone);
+        $telDemande   = $this->chiffresNationaux((string) $request->get('phone'));
+        $telActuel    = $this->chiffresNationaux((string) $user->phone);
 
         return $emailDemande !== $emailActuel || $telDemande !== $telActuel;
+    }
+
+    /** [W7-D D-009] « +33 6 99… », « 0033699… », « 06 99… » et « 0699… » désignent le même numéro français. */
+    private function chiffresNationaux(string $brut): string
+    {
+        $d = preg_replace('/\D+/', '', $brut);
+        if (str_starts_with($d, '0033')) {
+            $d = '0' . substr($d, 4);
+        } elseif (str_starts_with($d, '33') && strlen($d) === 11) {
+            $d = '0' . substr($d, 2);
+        }
+
+        return $d;
     }
 
     /**

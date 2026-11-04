@@ -2425,7 +2425,8 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendMessageController::class, 'index']);
         Route::get('/show/{message}', [FrontendMessageController::class, 'show']);
         Route::post('/', [FrontendMessageController::class, 'store']);
-        Route::match(['put', 'patch'], '/{message}', [FrontendMessageController::class, 'update']);
+        // [W7-D D-008 2026-11-04] `update` n'a jamais existé côté client (500 BadMethodCallException à chaque appel) : la route est
+        // retirée (404). Un client écrit dans son fil par POST avec `message_id` ; le personnel répond par /api/admin/message.
         Route::delete('/{message}', [FrontendMessageController::class, 'destroy']);
     });
 
