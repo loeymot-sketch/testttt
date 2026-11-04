@@ -2255,6 +2255,7 @@
             "nos": "Our",
             "products_fallback": "Products",
             "my_account": "My account",
+            "my_account_empty_cart": "Add an item first: your loyalty account will be offered in the cart.",
             "cache_banner": "Offline menu — prices are indicative. We will reconnect automatically when possible.",
             "loading_menu": "Loading menu…",
             "load_error_title": "Unable to load the menu.",
@@ -2641,7 +2642,9 @@
                 }
             },
             "generic": {
-                "step_fallback": "Step"
+                "step_fallback": "Step",
+                "optional_badge": "Optional",
+                "optional_hint": "Tap “Next” to skip. Any addition shows in the total."
             }
         },
         "order_type_label": "Order type",

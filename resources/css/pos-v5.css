@@ -728,6 +728,33 @@
     }
 }
 
+/* [FINITION 2026-11-04] Même défaut que R-005, mais en LARGEUR. `.fk-pos-v4.pos-v5-shell` est plafonné à
+   `max-width: 100vw` (PosComponent.vue) : sous le zoom 0.9, 100vw ne fait que 90 % de l'écran. La colonne
+   produits (`calc(100% - 376px)` de ce conteneur rétréci) s'arrêtait donc 94 à 158 px AVANT le ticket
+   (mesuré à 1280/1366/1440/1536/1920) : une bande vide, et une colonne de tuiles en moins.
+   Correctif : le conteneur et la colonne se calent sur la largeur RÉELLE de l'écran (÷ --caisse-zoom),
+   moins le ticket `fixed` (340/360/400 px + 12 px de marge droite), un espace de 14 px et l'entrée gauche
+   (20 px). Écart mesuré après : 12 px à toutes les largeurs, sans défilement horizontal.
+   Banc : tests/Playwright/finition-caisse-largeur-2026-11-04.spec.js. */
+@media (min-width: 768px) {
+    body[data-caisse-zoom] .fk-pos-v4.pos-v5-shell {
+        max-width: calc(100vw / var(--caisse-zoom, 1));
+    }
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 386px);
+    }
+}
+@media (min-width: 1024px) {
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 406px);
+    }
+}
+@media (min-width: 1280px) {
+    body[data-caisse-zoom] .pos-v4-main {
+        width: calc(100vw / var(--caisse-zoom, 1) - 446px);
+    }
+}
+
 .pos-v5-cart__head {
     flex-shrink: 0;
     padding: var(--pos-v5-space-4) var(--pos-v5-space-4) var(--pos-v5-space-3);
@@ -960,6 +987,37 @@
     }
 }
 
+/* [FINITION 2026-11-04] LES PLANCHERS CI-DESSUS SONT EN `vh`, DONC RÉDUITS DE 10 % PAR LE ZOOM 0.9 DE LA
+   CAISSE (doctrine R-005 : toute hauteur en unités d'écran se divise par --caisse-zoom). Le « 20vh »
+   protégé par la sentinelle C3 ne faisait que 18 % de l'écran : 138 px à 1366×768 pour 154 attendus, et
+   le caissier ne voyait qu'UNE ligne de vente entière sur trois. Corrigé ici (lignes de vente présentes
+   seulement : la règle `:has(.pos-v5-cart__empty)` du 25/08 reste maîtresse du panier vide). */
+body[data-caisse-zoom] .pos-v5-cart .pos-v5-cart__body:not(:has(.pos-v5-cart__empty)) {
+    min-height: calc(28vh / var(--caisse-zoom, 1));
+}
+@media (max-height: 800px) {
+    body[data-caisse-zoom] .pos-v5-cart .pos-v5-cart__body:not(:has(.pos-v5-cart__empty)) {
+        min-height: calc(20vh / var(--caisse-zoom, 1));
+    }
+}
+/* … et sur les écrans bas, une ligne de vente perd ses marges internes (89 → 71 px), sans changer de
+   disposition ni de taille de boutons : nom, détail, prix et quantité restent lisibles et à la même place.
+   Mesuré : 2 lignes entières au lieu d'1 à 1024×768, 1280×800 et 1366×768 ; pied du ticket intact. */
+@media (max-height: 820px) {
+    /* Préfixe `.pos-v5-cart` : la section 7 (plus bas dans ce fichier) déclare ces propriétés et
+       l'emporterait à spécificité égale. */
+    .pos-v5-cart .pos-v5-cart-item {
+        padding: 4px 0;
+        row-gap: 2px;
+    }
+    .pos-v5-cart .pos-v5-cart-item__qty {
+        margin-top: 0;
+    }
+    .pos-v5-cart .pos-v5-cart-item__price {
+        padding-top: 0;
+    }
+}
+
 /* [GOAL CAISSE 2026-08-22] LE PLAFOND CI-DESSUS A ÉTÉ CALCULÉ CONTRE UN PIED QUI N'EXISTE PLUS.
    Le calcul du 2026-08-19 (bloc ci-dessus) dimensionnait le plafond de l'en-tête contre un pied
    « ≈ 394 px » incompressible. MESURÉ AU NAVIGATEUR LE 2026-08-22, aux 4 gabarits de comptoir :
@@ -1049,7 +1107,11 @@
  * L'icône disparaît, les marges se resserrent : le bloc passe sous 32 px et la PHRASE
  * devient ce qu'on voit. Au-dessus de 700 px de haut, rien ne change.
  */
-@media (max-height: 700px) {
+/* [FINITION 2026-11-04] Même constat à 1366×768 (le gabarit de comptoir le plus courant) : le corps
+   vide dispose de ~94 px CSS, le bloc en réclame ~170 → la phrase était coupée à mi-hauteur
+   (« Aucun article. Sélectionnez un produit dans la… »). Seuil relevé de 700 à 820 px de haut,
+   le même que le pied d'actions compact (PosComponent.vue) : au-dessus, rien ne change. */
+@media (max-height: 820px) {
     .pos-v5-cart__empty {
         padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
         line-height: 1.25;
@@ -1937,4 +1999,31 @@ nav.pos-v5-payment-methods--4col .pos-v5-payment-method-label {
     overflow-wrap: normal;
     word-break: normal;
     hyphens: none;
+}
+
+/* [FINITION 2026-11-04] « ↓ N lignes en dessous » à côté du compte d'articles du ticket (PosComponent,
+   data-testid pos-cart-hidden-below). Dans l'en-tête, sur la MÊME rangée que la pastille « N Articles » :
+   aucune hauteur ajoutée, rien de recouvert (posée sur le corps, elle masquait la corbeille d'une ligne). */
+.pos-v5-cart .pos-v5-cart__compte {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    min-width: 0;
+}
+.pos-v5-cart .pos-v5-cart__plus-bas {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: #C0400F; /* braise-txt : blanc 5,2:1 (AA), le rouge CTA #F4501E ne fait que 3,4:1 */
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }

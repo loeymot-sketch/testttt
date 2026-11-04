@@ -66,7 +66,7 @@
       <button
         v-if="!submitting && !submitted"
         type="button"
-        class="kiosk-btn-confirm"
+        class="kiosk-btn-confirm kiosk-btn-confirm--seul"
         :disabled="!nameValid"
         :aria-disabled="!nameValid ? 'true' : 'false'"
         @click="confirmCounterRoute"
@@ -1548,6 +1548,11 @@ export default {
   cursor: not-allowed;
   box-shadow: none;
 }
+
+/* [FINITION 2026-11-04] « Confirmer ma commande » (paiement à la caisse) n'a qu'UN libellé : avec
+   `space-between` il restait collé à gauche d'un bouton de 680 px. Centré ; le bouton CB (libellé + montant)
+   garde sa répartition. */
+.kiosk-btn-confirm--seul { justify-content: center; text-align: center; }
 
 .kiosk-btn-confirm:not(:disabled):active {
   transform: scale(0.98);

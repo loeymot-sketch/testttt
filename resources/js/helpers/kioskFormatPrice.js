@@ -34,8 +34,10 @@ export function formatKioskPrice(value, options = {}) {
     // If we have a direct currency symbol (from settings), use manual formatting
     if (options.currencySymbol) {
         const formatted = num.toFixed(digits).replace('.', ',');
+        // Espace INSÉCABLE : « 7,00 € » ne se coupe jamais entre le nombre et le symbole (typographie
+        // française, même règle que appService.currencyFormat côté caisse).
         if (options.position === 'right') {
-            return `${formatted} ${options.currencySymbol}`;
+            return `${formatted}\u00A0${options.currencySymbol}`;
         }
         return `${options.currencySymbol}${formatted}`;
     }
@@ -55,6 +57,17 @@ export function formatKioskPrice(value, options = {}) {
 }
 
 /**
+ * [FINITION 2026-11-04] L'API des réglages sert la position en ENUM numérique (App\\Enums\\CurrencyPosition :
+ * 5 = gauche, 10 = droite), pas en texte. Comparée à 'right', la valeur 10 tombait à gauche : la borne
+ * affichait « €7,00 » alors que le restaurant est réglé « symbole à droite » (« 7,00 € », comme la caisse).
+ * Seule une gauche EXPLICITE (5 / 'left') place le symbole à gauche ; tout le reste → droite (défaut FR).
+ */
+export function normalizeCurrencyPosition(raw) {
+    const v = String(raw ?? '').trim().toLowerCase();
+    return (v === '5' || v === 'left') ? 'left' : 'right';
+}
+
+/**
  * Extract price formatting options from Vuex globalState.lists
  * @param {object} lists - globalState.lists from Vuex store
  * @returns {object} Options for formatKioskPrice
@@ -63,7 +76,7 @@ export function getPriceOptionsFromStore(lists) {
     if (!lists) return {};
     return {
         currencySymbol: lists.site_default_currency_symbol || '€',
-        position: lists.site_currency_position || 'right',
+        position: normalizeCurrencyPosition(lists.site_currency_position),
         digits: parseInt(lists.site_digit_after_decimal_point, 10) || 2,
     };
 }

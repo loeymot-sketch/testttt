@@ -1144,13 +1144,27 @@
                 <span v-else class="pos-v5-tabular">{{ phraseAttenteCuisine }}</span>
             </button>
             <div class="pos-v5-stack-3 mt-3">
-                <PosV5Pill
-                    v-if="totalItems() > 0"
-                    variant="brand"
-                    size="md"
-                >
-                    {{ totalItems() }} {{ totalItems() > 1 ? $t('label.items') : $t('label.item') }}
-                </PosV5Pill>
+                <!--
+                  [FINITION 2026-11-04] Sur un écran bas, le ticket montre 2 lignes entières : avec « 4 Articles »,
+                  deux lignes étaient cachées SANS AUCUN signe (mesuré à 1024×768 : le bas du corps tombait pile
+                  entre deux lignes). « ↓ N lignes en dessous » se lit à côté du compte d'articles, là où l'œil
+                  cherche déjà « combien » ; placée sur le corps, elle masquait une corbeille. Disparaît dès
+                  que tout est à l'écran (mesure : mesurerLignesCachees).
+                -->
+                <div v-if="totalItems() > 0" class="pos-v5-cart__compte">
+                    <PosV5Pill
+                        variant="brand"
+                        size="md"
+                    >
+                        {{ totalItems() }} {{ totalItems() > 1 ? $t('label.items') : $t('label.item') }}
+                    </PosV5Pill>
+                    <span
+                        v-if="lignesCacheesBas > 0"
+                        class="pos-v5-cart__plus-bas"
+                        data-testid="pos-cart-hidden-below"
+                        role="status"
+                    >↓ {{ lignesCacheesBas }} {{ lignesCacheesBas > 1 ? 'lignes' : 'ligne' }} en dessous</span>
+                </div>
 
                 <!-- Customer selector + add CTA -->
                 <div class="flex items-center w-full gap-2">
@@ -1635,7 +1649,7 @@
           is empty or mid-hydrate (list with no listitem). Region + item names
           keep screen-reader context via headings / buttons.
         -->
-        <div class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="region" :aria-label="$t('a11y.cart_region')">
+        <div ref="ticketCorps" class="pos-v5-cart__body flex-1 min-h-0 overflow-y-auto thin-scrolling" role="region" :aria-label="$t('a11y.cart_region')" @scroll.passive="mesurerLignesCachees">
             <article
                 v-for="(cart, index) in carts"
                 :key="`cart-${index}`"
@@ -2767,6 +2781,8 @@ export default {
     },
     data() {
         return {
+            // [FINITION 2026-11-04] Lignes du ticket entièrement sous le bas visible du corps (pastille « ↓ N lignes »).
+            lignesCacheesBas: 0,
             loading: {
                 isActive: false,
             },
@@ -3436,6 +3452,11 @@ export default {
                 rang: a.prochainRang === 1 ? '1ᵉʳ' : `${a.prochainRang}ᵉ`,
             });
         },
+        // [FINITION 2026-11-04] Empreinte scalaire « lignes:quantité totale » du ticket (observateur ticketEmpreinte).
+        ticketEmpreinte: function () {
+            const lignes = Array.isArray(this.carts) ? this.carts : [];
+            return `${lignes.length}:${this.cartTotalQuantity}`;
+        },
         cartTotalQuantity: function () {
             const lignes = Array.isArray(this.carts) ? this.carts : [];
 
@@ -3778,6 +3799,9 @@ export default {
         },
     },
     beforeUnmount() {
+        window.removeEventListener('resize', this._ticketSurRedimension);
+        if (this._ticketObservateur) this._ticketObservateur.disconnect();
+        clearTimeout(this._ticketRecompte);
         // [CAISSE-ZOOM 2026-06-25] Retire le zoom caisse pour ne pas rétrécir les
         // autres pages admin (dashboard, rapports, etc.) après navigation.
         clearCaisseZoom(document);
@@ -3888,6 +3912,18 @@ export default {
         }
     },
     mounted() {
+        // [FINITION 2026-11-04] La hauteur du ticket change avec la fenêtre : recompter les lignes cachées.
+        // Le corps rétrécit aussi sans que la fenêtre bouge (panneau remise déplié, en-tête qui grandit) :
+        // un ResizeObserver sur le corps lui-même, la fenêtre restant le secours.
+        this._ticketSurRedimension = () => this.mesurerLignesCachees();
+        window.addEventListener('resize', this._ticketSurRedimension, { passive: true });
+        this.$nextTick(() => {
+            this.mesurerLignesCachees();
+            if (typeof ResizeObserver === 'function' && this.$refs.ticketCorps) {
+                this._ticketObservateur = new ResizeObserver(() => this.mesurerLignesCachees());
+                this._ticketObservateur.observe(this.$refs.ticketCorps);
+            }
+        });
         // [CAISSE-ZOOM 2026-06-27] Affiche la caisse en ~90% (0.9) automatiquement
         // (catégories + produits + panier lisibles sur un écran 16"). Le 0.67 testé
         // initialement était trop petit. Surchargeable via localStorage.caisse_zoom.
@@ -4108,6 +4144,44 @@ export default {
 
     },
     methods: {
+        /**
+         * [FINITION 2026-11-04] Compte les lignes du ticket qui commencent sous le bas visible du corps.
+         * Mesure en offsetTop/offsetHeight/scrollTop/clientHeight — toutes dans le repère de l'élément,
+         * donc justes sous le zoom caisse 0.9 (des getBoundingClientRect mêlés à scrollTop ne le seraient pas).
+         */
+        mesurerLignesCachees() {
+            const corps = this.$refs.ticketCorps;
+            if (!corps) { this.lignesCacheesBas = 0; return; }
+            const basVisible = corps.scrollTop + corps.clientHeight;
+            const base = (el) => (el.offsetParent === corps ? 0 : corps.offsetTop);
+            let n = 0;
+            corps.querySelectorAll('.pos-v5-cart-item').forEach((ligne) => {
+                // « Cachée » = moins d'un tiers de la ligne à l'écran : une ligne coupée à mi-hauteur se voit déjà.
+                if (ligne.offsetTop - base(ligne) + ligne.offsetHeight / 3 > basVisible) n += 1;
+            });
+            this.lignesCacheesBas = n;
+        },
+        /**
+         * [FINITION 2026-11-04] Fait défiler le ticket (et lui seul — jamais la page) jusqu'à la ligne
+         * `index` si elle n'est pas entièrement visible. Mesuré avant : à 1366×768 et 1024×768, le 3ᵉ article
+         * ajouté arrivait 70 px sous le bas visible, sans défilement : le caissier ne pouvait relire ni sa
+         * viande ni sa sauce sans aller chercher la ligne à la main.
+         */
+        montrerLigneTicket(index) {
+            const corps = this.$refs.ticketCorps;
+            const ligne = corps ? corps.querySelectorAll('.pos-v5-cart-item')[index] : null;
+            if (!corps || !ligne) return;
+            const haut = ligne.offsetTop - (ligne.offsetParent === corps ? 0 : corps.offsetTop);
+            const bas = haut + ligne.offsetHeight;
+            let cible = null;
+            if (bas > corps.scrollTop + corps.clientHeight) cible = Math.min(haut, bas - corps.clientHeight + 4);
+            else if (haut < corps.scrollTop) cible = Math.max(0, haut - 4);
+            if (cible === null) return;
+            let doux = true;
+            try { doux = !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* défaut : doux */ }
+            if (typeof corps.scrollTo === 'function') corps.scrollTo({ top: cible, behavior: doux ? 'smooth' : 'auto' });
+            else corps.scrollTop = cible;
+        },
         onVoiceOrderCallSelected(call) {
             this.voiceOrderSelectedCallId = call?.order_id ? null : (call?.call_id || null);
         },
@@ -8094,6 +8168,29 @@ export default {
                 this.triggerTotalFlash();
             }
         },
+        // [FINITION 2026-11-04] La ligne qui vient de grandir (nouvelle ligne en fin de liste, ou quantité
+        // augmentée d'une ligne existante) est amenée à l'écran, puis on recompte les lignes cachées.
+        // Observateur À PART, sur une empreinte SCALAIRE (aucun observateur profond ajouté — cf.
+        // PERF-CAISSE 2026-08-19 : le getter `posCart/lists` mute ses propres lignes).
+        ticketEmpreinte(nouvelle, ancienne) {
+            const [, totalApres] = String(nouvelle || '0:0').split(':').map(Number);
+            const [, totalAvant] = String(ancienne || '0:0').split(':').map(Number);
+            const lignes = Array.isArray(this.carts) ? this.carts : [];
+            const avant = this._ticketQuantites || [];
+            let cible = -1;
+            if (totalApres > totalAvant) {
+                if (lignes.length > avant.length) cible = lignes.length - 1;
+                else cible = lignes.findIndex((l, i) => Number(l && l.quantity) > Number(avant[i] || 0));
+            }
+            this._ticketQuantites = lignes.map((l) => Number(l && l.quantity) || 0);
+            this.$nextTick(() => {
+                if (cible >= 0) this.montrerLigneTicket(cible);
+                this.mesurerLignesCachees();
+                // Le défilement doux dure ~300 ms : recompter une fois arrivé.
+                clearTimeout(this._ticketRecompte);
+                this._ticketRecompte = setTimeout(() => this.mesurerLignesCachees(), 450);
+            });
+        },
         carts: {
             handler(newCarts) {
                 if (!newCarts || newCarts.length === 0) {
@@ -8307,6 +8404,10 @@ export default {
 .pos-shortcuts {
   display: flex;
   flex-wrap: wrap;
+  /* [FINITION 2026-11-04] Un panneau VIDE ne s'étire plus à la hauteur du plus rempli (grand cadre
+     blanc qui repoussait la grille produits) et prend une base plus étroite : les 4 panneaux tiennent
+     sur une rangée dès 1440 px, la grille remonte de 100 à 270 px selon l'écran. Rien n'est masqué. */
+  align-items: flex-start;
   gap: 8px;
   padding: 8px 10px 0 10px;
   margin: 0;
@@ -8541,7 +8642,9 @@ export default {
    le CTA « Commande téléphone » était clippé ~50px sous la ligne de flottaison.
    On compacte le pied d'actions pour qu'il tienne TOUJOURS à l'écran. */
 @media (max-height: 820px) {
-  .pos-phone-order-cta { padding: 5px 10px; }
+  /* [FINITION 2026-11-04] Sous-titre masqué ⇒ l'icône restait seule sur sa ligne (bouton de 60 px à
+     1366×768). Icône et libellé côte à côte : ~22 px rendus aux lignes de vente, libellé inchangé. */
+  .pos-phone-order-cta { padding: 5px 10px; flex-direction: row; justify-content: center; gap: 8px; }
   .pos-phone-order-cta__hint { display: none; }
   .pos-v4-action-pay { --posv5-btn-h-xl: 44px; }
 }
@@ -8646,6 +8749,8 @@ export default {
 }
 .pos-shortcuts__panel--empty {
   border-left-color: var(--pos-v5-border, #eadfd2);
+  flex: 1 1 190px;
+  min-width: 180px;
 }
 
 @media (max-width: 640px) {
@@ -9236,6 +9341,18 @@ export default {
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+}
+/* [FINITION 2026-11-04] Dès qu'une commande est en cuisine, la phrase (« 1 en cuisine · la plus ancienne
+   depuis 42 min · vous serez le 2ᵉ ») passe sur 2 lignes à interligne normal (~42 px au lieu de 29) et, à
+   1024×600, poussait le champ « Nom du client » sous le pli de l'en-tête (sentinelle goal-caisse-fix2,
+   mesuré avec une commande réellement en cuisine). Écrans bas : interligne serré, les 2 lignes tiennent
+   dans la hauteur d'une seule, rien n'est tronqué (le rang reste lisible). */
+@media (max-height: 820px) {
+    .pos-v5-cart__cuisine {
+        line-height: 1.15;
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
 }
 /* Jamais masqué à zéro : une ligne absente est ambiguë (rien en cuisine, ou bloc
    cassé ?). Elle passe en sourdine, elle ne disparaît pas. */

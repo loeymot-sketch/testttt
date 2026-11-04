@@ -904,7 +904,7 @@
         "cash_session_manager_approval_required": "Approbation manager requise",
         "cash_session_expected_amount": "Montant attendu",
         "cash_session_opened_at": "Ouverte le",
-        "cash_session_movements_count": "Mouvements",
+        "cash_session_movements_count": "Nombre de mouvements",
         "cash_session_no_movements": "Aucun mouvement enregistré.",
         "cash_session_confirm_close": "Valider la clôture",
         "cash_session_view_movements": "Voir les mouvements",
@@ -2317,6 +2317,7 @@
             "nos": "Nos",
             "products_fallback": "Produits",
             "my_account": "Mon compte",
+            "my_account_empty_cart": "Choisissez d'abord vos articles : votre compte fidélité vous sera proposé au panier.",
             "cache_banner": "Menu hors ligne — prix indicatifs. Reconnexion automatique dès que possible.",
             "loading_menu": "Chargement du menu…",
             "load_error_title": "Impossible de charger le menu.",
@@ -2714,7 +2715,9 @@
                 }
             },
             "generic": {
-                "step_fallback": "Étape"
+                "step_fallback": "Étape",
+                "optional_badge": "Facultatif",
+                "optional_hint": "Touchez « Suivant » pour passer. Un ajout s’affiche dans le total."
             }
         },
         "order_type_label": "Type de commande",
