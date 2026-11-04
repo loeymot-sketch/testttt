@@ -257,7 +257,9 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
       await kdsPage.bringToFront();
       await waitForBodyText(kdsPage, marker, 15_000);
 
-      const instructionCells = kdsPage.locator('.kds-instruction').filter({ hasText: marker });
+      // [2026-11-04] L'écran cuisine actuel (KdsOrderLine) rend la consigne dans `.kds-line__instruction` ; l'ancienne
+      // classe `.kds-instruction` n'existe plus que pour ses variantes de couleur. Les deux sont acceptées.
+      const instructionCells = kdsPage.locator('.kds-line__instruction, .kds-instruction').filter({ hasText: marker });
       await expect(instructionCells.first()).toBeVisible({ timeout: 10_000 });
       expect(await instructionCells.count()).toBeGreaterThanOrEqual(1);
     } finally {
