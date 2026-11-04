@@ -16,7 +16,7 @@ class SettingService
             return $this->listeComplete();
         }
         $v = \Illuminate\Support\Facades\DB::table('settings')->selectRaw('count(*) as n, max(updated_at) as m')->first();
-        $cle = 'frontend.settings.liste.v1:' . (int) ($v->n ?? 0) . ':' . (string) ($v->m ?? '');
+        $cle = 'frontend.settings.liste.v1:' . (string) config('database.connections.' . config('database.default') . '.database') . ':' . (int) ($v->n ?? 0) . ':' . (string) ($v->m ?? '');
 
         return \Illuminate\Support\Facades\Cache::remember($cle, 300, fn () => $this->listeComplete());
     }

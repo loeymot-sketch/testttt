@@ -108,6 +108,24 @@ class MessageIdorTest extends TestCase
     }
 
     /**
+     * [W7-D D-008 · cycle B 2026-11-04] `PUT /api/frontend/message/{id}` pointait vers une méthode inexistante : 500 à chaque
+     * appel. La route est retirée : 404/405, jamais 500.
+     *
+     * @test
+     */
+    public function la_route_de_modification_cote_client_ne_repond_plus_500(): void
+    {
+        $branch = Branch::factory()->create();
+        $owner = User::factory()->create(['branch_id' => $branch->id, 'status' => 5]);
+        $message = $this->makeMessage($owner);
+        Sanctum::actingAs($owner, ['kiosk:order']);
+
+        $r = $this->withHeader('x-api-key', config('app.api_key'))
+            ->putJson("/api/frontend/message/{$message->id}", ['text' => 'x']);
+        $this->assertContains($r->getStatusCode(), [404, 405], 'ni 500 ni 200 sur une route qui n\'a jamais fonctionné');
+    }
+
+    /**
      * [W7-D D-001 2026-11-04] `message_id` d'un fil qui n'est pas à l'appelant → 404, rien d'écrit.
      *
      * @test

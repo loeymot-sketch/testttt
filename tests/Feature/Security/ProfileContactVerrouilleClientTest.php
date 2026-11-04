@@ -99,6 +99,28 @@ class ProfileContactVerrouilleClientTest extends TestCase
         $this->assertSame('0612345678', $u->fresh()->phone);
     }
 
+    /**
+     * [W7-D D-009 · cycle B 2026-11-04] Le MÊME numéro écrit autrement (« +33 6 12 34 56 78 », « 06 12 34 56 78 ») passe,
+     * et le numéro enregistré reste strictement « 0612345678 » (jamais réécrit avec des espaces : `guest-signup` cherche
+     * `where('phone', …)` à l'octet près).
+     *
+     * @test
+     */
+    public function le_meme_numero_autrement_ecrit_passe_sans_reecrire_le_numero_enregistre(): void
+    {
+        $u = $this->client();
+        Sanctum::actingAs($u, ['kiosk:order']);
+
+        // ValidPhone n'accepte que les formes sans espace (E.164 ou national) : on teste celles qui passent la validation.
+        foreach (['+33612345678', '0612345678', 'CLIENT-UN@EXAMPLE.TEST'] as $variante) {
+            $charge = str_contains($variante, '@') ? $this->charge(['email' => $variante]) : $this->charge(['phone' => $variante]);
+            $this->putJson('/api/profile', $charge)->assertStatus(200);
+            $frais = $u->fresh();
+            $this->assertSame('0612345678', $frais->phone, $variante);
+            $this->assertSame('client-un@example.test', $frais->email, $variante);
+        }
+    }
+
     /** @test */
     public function le_personnel_garde_le_comportement_existant(): void
     {

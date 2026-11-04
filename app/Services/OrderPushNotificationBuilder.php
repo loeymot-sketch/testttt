@@ -15,7 +15,8 @@ class OrderPushNotificationBuilder
 {
     public int $orderId;
     public mixed $status;
-    public object $order;
+    // [W7-D D-004 · cycle B 2026-11-04] Nullable : une commande introuvable ne doit plus faire exploser le post-commit en 500.
+    public ?object $order;
 
     public function __construct($orderId, $status)
     {
