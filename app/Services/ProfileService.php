@@ -45,7 +45,7 @@ class ProfileService
                 $garde              = $this->estUnClient($user);
                 $user->phone        = $garde ? $user->phone : $request->get('phone');
                 $user->email        = $garde ? $user->email : $request->get('email');
-                $user->country_code = $request->get('country_code');
+                $user->country_code = $garde ? $user->country_code : $request->get('country_code'); // [W7-D D-013] indicatif verrouillé comme le contact
                 $user->save();
             }
 
@@ -74,7 +74,12 @@ class ProfileService
         $telDemande   = $this->chiffresNationaux((string) $request->get('phone'));
         $telActuel    = $this->chiffresNationaux((string) $user->phone);
 
-        return $emailDemande !== $emailActuel || $telDemande !== $telActuel;
+        // [W7-D D-013 · cycle C] L'indicatif fait partie du contact (il pilote l'OTP) : « +32 » sur un « 0699… » = changement.
+        $indicatifDemande = ltrim(preg_replace('/\D+/', '', (string) $request->get('country_code')), '0'); // « +33 » = « 0033 »
+        $indicatifActuel  = ltrim(preg_replace('/\D+/', '', (string) $user->country_code), '0');
+        $indicatifChange  = $indicatifActuel !== '' && $indicatifDemande !== '' && $indicatifDemande !== $indicatifActuel;
+
+        return $emailDemande !== $emailActuel || $telDemande !== $telActuel || $indicatifChange;
     }
 
     /** [W7-D D-009] « +33 6 99… », « 0033699… », « 06 99… » et « 0699… » désignent le même numéro français. */

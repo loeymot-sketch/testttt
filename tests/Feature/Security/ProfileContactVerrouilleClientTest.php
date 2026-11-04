@@ -121,6 +121,23 @@ class ProfileContactVerrouilleClientTest extends TestCase
         }
     }
 
+    /**
+     * [W7-D D-013 · cycle C 2026-11-04] L'indicatif pilote l'OTP : un client ne le change pas plus que son numéro.
+     *
+     * @test
+     */
+    public function un_client_ne_change_pas_son_indicatif(): void
+    {
+        $u = $this->client();
+        Sanctum::actingAs($u, ['kiosk:order']);
+
+        $this->putJson('/api/profile', $this->charge(['country_code' => '+32']))->assertStatus(422);
+        $this->assertSame('+33', $u->fresh()->country_code);
+
+        $this->putJson('/api/profile', $this->charge(['country_code' => '0033']))->assertStatus(200);
+        $this->assertSame('+33', $u->fresh()->country_code);
+    }
+
     /** @test */
     public function le_personnel_garde_le_comportement_existant(): void
     {
