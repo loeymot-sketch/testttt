@@ -26,10 +26,58 @@ class AppLibrary
     // mis-set vs DB site_time_format="H:i") — corrected by setting .env TIME_FORMAT="H:i"
     // or re-saving Site settings (SiteService:54 re-propagates). These defaults guarantee a
     // valid FR format even when env is empty/null; they do not override a non-empty env.
+    /**
+     * [FINITION 2026-11-04] Formats d'affichage : le RÉGLAGE DU RESTAURANT EN BASE prime, le `.env` n'est plus
+     * qu'un secours. L'écart décrit ci-dessus (`.env` TIME_FORMAT « h:i A » ≠ base « H:i ») affichait encore
+     * « 02:04 AM » dans l'historique de la caisse le 2026-11-04 : documenter la cause ne suffisait pas, il
+     * fallait que la source de vérité soit celle qu'on lit. Un choix 12 h fait par le propriétaire en base reste
+     * respecté. Mémorisé le temps du processus (des centaines d'appels par liste) ; SiteService remet à zéro
+     * après un enregistrement.
+     *
+     * @var array<string, string>|null
+     */
+    private static ?array $formatsDuSite = null;
+
+    private static function formatDuSite(string $cle, string $envCle, string $defaut): string
+    {
+        if (self::$formatsDuSite === null) {
+            self::$formatsDuSite = [];
+        }
+        if (!array_key_exists($cle, self::$formatsDuSite)) {
+            $valeur = null;
+            try {
+                $valeur = Settings::group('site')->get($cle);
+            } catch (\Throwable $e) {
+                $valeur = null; // base indisponible (installation, tests sans table) → secours .env
+            }
+            if (!is_string($valeur) || trim($valeur) === '') {
+                $valeur = env($envCle) ?: $defaut;
+            }
+            self::$formatsDuSite[$cle] = $valeur;
+        }
+
+        return self::$formatsDuSite[$cle];
+    }
+
+    public static function resetFormatCache(): void
+    {
+        self::$formatsDuSite = null;
+    }
+
+    private static function formatDate(): string
+    {
+        return self::formatDuSite('site_date_format', 'DATE_FORMAT', 'd-m-Y');
+    }
+
+    private static function formatHeure(): string
+    {
+        return self::formatDuSite('site_time_format', 'TIME_FORMAT', 'H:i');
+    }
+
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
+            $pattern = self::formatDate();
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -37,7 +85,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT') ?: 'H:i';
+            $pattern = self::formatHeure();
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -45,7 +93,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = (env('TIME_FORMAT') ?: 'H:i') . ', ' . (env('DATE_FORMAT') ?: 'd-m-Y');
+            $pattern = self::formatHeure() . ', ' . self::formatDate();
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -56,7 +104,7 @@ class AppLibrary
             // [FR-DATE-SAFE 2026-06-27] jumeau de date()/datetime() : env() null après
             // config:cache → format(null) casse la date de livraison (KDSOrderDetailsResource
             // delivery_date). Défaut FR-safe d-m-Y.
-            $pattern = env('DATE_FORMAT') ?: 'd-m-Y';
+            $pattern = self::formatDate();
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -65,7 +113,7 @@ class AppLibrary
     {
         if (!$pattern) {
             // [FR-DATE-SAFE 2026-06-27] jumeau : créneau de livraison « HH:MM - HH:MM » 24h FR.
-            $pattern = env('TIME_FORMAT') ?: 'H:i';
+            $pattern = self::formatHeure();
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -538,7 +586,7 @@ class AppLibrary
             // into the KDS delivery slot after `config:cache` (env() returns its 2nd
             // arg when the cached config strips the var) — the documented env-null /
             // flatAmountFormat trap, an ADR-007 FR violation in prod.
-            $pattern = env('TIME_FORMAT') ?: 'H:i';
+            $pattern = self::formatHeure();
         }
         return Carbon::parse($m[1])->format($pattern) . ' - ' . Carbon::parse($m[2])->format($pattern);
     }

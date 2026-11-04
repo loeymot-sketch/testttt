@@ -54,6 +54,8 @@ class SiteService
                 'DATE_FORMAT'            => $request->site_date_format,
                 'TIME_FORMAT'            => $request->site_time_format
             ]);
+            // [FINITION 2026-11-04] Les formats d'affichage sont mémorisés par AppLibrary : on les relit.
+            \App\Libraries\AppLibrary::resetFormatCache();
 
             if (!$this->envService->getValue('DEMO')) {
                 $this->envService->addData([
