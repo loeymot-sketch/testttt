@@ -135,7 +135,9 @@ async function createPosOrderViaApi(page, fixture, label) {
         item_extras: [],
         instruction: `${prefix} ${label}`,
       }];
-      const token = `${prefix}-${label}-${Date.now()}`;
+      // La consigne peut contenir des espaces ; le jeton et la clé d'idempotence (8-64 caractères ASCII) non.
+      const slug = String(label).replace(/[^A-Za-z0-9]+/g, '-');
+      const token = `${prefix}-${slug}-${Date.now()}`;
       const basePayload = {
         branch_id: fixture.branch_id,
         customer_id: fixture.customer_id,
@@ -171,7 +173,7 @@ async function createPosOrderViaApi(page, fixture, label) {
         delivery_charge: quote.delivery_charge,
         total: quote.total_ttc,
       }, {
-        headers: { 'X-Idempotency-Key': `${prefix}-POS-${label}-${Date.now()}` },
+        headers: { 'X-Idempotency-Key': `${prefix}-POS-${slug}-${Date.now()}` },
       });
       const orderPayload = response.data?.data;
       if (!orderPayload?.id) {

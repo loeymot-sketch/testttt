@@ -753,9 +753,23 @@ test.describe('global POS + kiosk order trace audit', () => {
         addon_visible_ms: addonKdsMs,
       });
 
+      // [2026-11-04] On part de l'état RÉEL de chaque commande : une commande peut déjà être passée en préparation à
+      // son arrivée en cuisine (le banc supposait ACCEPT et le serveur répondait 409 « updated elsewhere », à bon
+      // droit). On ne joue que les transitions qui restent ; l'arrivée à PREPARED reste exigée.
       for (const orderId of [posCreated.order.id, kioskCreated.order.id]) {
-        await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.ACCEPT, orderStatusEnum.PREPARING);
-        await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.PREPARING, orderStatusEnum.PREPARED);
+        const etat = Number(parseArtisanJson(artisan(
+          `echo json_encode(['s' => (int) App\\Models\\Order::withoutGlobalScopes()->find(${Number(orderId)})->status]);`
+        )).s);
+        if (etat === orderStatusEnum.ACCEPT) {
+          await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.ACCEPT, orderStatusEnum.PREPARING);
+        }
+        if (etat === orderStatusEnum.ACCEPT || etat === orderStatusEnum.PREPARING) {
+          await kdsChangeStatus(kdsPage, orderId, orderStatusEnum.PREPARING, orderStatusEnum.PREPARED);
+        }
+        const fin = Number(parseArtisanJson(artisan(
+          `echo json_encode(['s' => (int) App\\Models\\Order::withoutGlobalScopes()->find(${Number(orderId)})->status]);`
+        )).s);
+        expect(fin, `commande ${orderId} (état de départ ${etat}) doit finir PREPARED`).toBe(orderStatusEnum.PREPARED);
       }
       mark('kds_marked_both_orders_prepared', {
         status: orderStatusEnum.PREPARED,
