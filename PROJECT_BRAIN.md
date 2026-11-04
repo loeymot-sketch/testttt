@@ -47,6 +47,9 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-04 19h — W7 cycles D et E (confirmation adverse, site + API) : P0+P1 = 0 pour la 4ᵉ fois consécutive (B, C, D, E), GO des deux superviseurs ; BACKEND `979a3085a` EN LIGNE (déployé par le script depuis le laptop, snapshot `predeploy-20261104-174258`, 0 migration, chaîne NF525 OK, healthz 200) ; `e62145bf5` (2 P3 : type « table » réservé à la borne, 3 messages anglais) poussé sur cette branche, à déployer ; SITE `d828747` (= `site/deploy-2026-11-03`, A-027 P2 + A-028/A-017/A-029) poussé, copie Vercel prête, `vercel --prod` refusé à l'agent → propriétaire. En ligne : backend `979a3085a`, site `3755de8` (déployés par la session testttt-59 à 16h34 puis moi à 17h43).**
+> Convergence stricte « deux cycles aux constats identiques » jamais atteinte : chaque cycle ferme tout et trouve 1 à 4 P3 neufs ; ouverts restants = choix documentés (A-001/A-002 pipeline CSS/images, A-012, A-018, D-005 réglages 11 SQL, D-007/D-010 oracles). Rapports `reports/test-e2e/app-hybride-2026-11/W7/cycle-{D,E}-{A,D}.md` + `cycle-A-correctifs.md` (arbre testttt, non commités).
+
 > **2026-11-04 11h — W7 cycle C (confirmation) mesuré et corrigé : P0+P1 = 0 sur les deux vagues ; mise en ligne PRÊTE (backend cette branche, site `site/deploy-2026-11-03` = `b0c9580`), toujours non lancée par le propriétaire.**
 > Vague D (API, `5464a3f40`) : D-003/D-008/D-009 PASS ; **D-004 encore FAIL** (3 constructeurs nullables sur 9, branche status 1 → 500 + commande 9604 orpheline)
 > → `6c4c5f70d` (règle `branch_id` = status 5 ou 1 selon `BranchFactory`, 9 constructeurs `?object`, test status 1 → 201 / status 3 → 422) ; P3 neufs
@@ -4951,6 +4954,11 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-04 19h — W7 cycles D et E : deux confirmations adverses de plus, 6 P2/P3 API et 4 site corrigés, backend `979a3085a` mis en ligne** (owner « continue et deploy tout après un test-e2e »).
+- Cycle D (sur `bcafc5d65` / `b0c9580`) : A-024 P1, A-025, A-026, D-004, D-011…D-013 confirmés fermés ; neufs **D-014 P2** (`offer/show/{slug}` → 500 pour tout slug : `null` passé à `OfferService::show(Offer)` hors catch → `firstOrFail` hors du try, 404 JSON), **D-015 P2** (`order_type`/`source` `numeric` sans borne : une commande web déclarée POS sortait de l'historique du client et comptait vente caisse → `in:`), D-016 (nom de profil assaini comme `pos_customer_name`), D-017 (`ModelNotFoundException` ≠ « Commande introuvable » : `NOT_FOUND` + clé fr/en/ar), D-005 (`LoyaltyRules` lit chaque réglage une fois par instance) → `979a3085a` ; **A-027 P2** (pendant la lecture du profil, « ★ Novice · Niveau 1/4 · 0 débloqués · Vos points : 0 → 0,00 € » sur un 0 de démarrage → palier/progression/trophées/réduction attendent le solde, « ★ — » et « calculé dès lecture du solde », banc F3 32/32 vs 30/32), A-028, A-017 → site `44c8946` ; A-013 reclassé décision (réserve 53 px documentée 2026-08-28).
+- Cycle E (sur `979a3085a` / `44c8946`) : tout confirmé fermé, GO/GO ; neufs P3 D-018 (type table 20 accepté d'un client sans table → réservé au jeton borne), D-019 (3 corps d'erreur anglais traduits) → `e62145bf5` ; A-029 (bannière pré-rendue sans insécables → générateur + index.html) → site `d828747`. 10 tests PHP ajoutés (Order 138, Security 243, Frontend 61, Loyalty 95 verts ; sentinelle F001 rouge = rapport absent de ce worktree). Bases absorbées : `379187a9d` (testttt-59) et `3755de8` (vouvoiement).
+- Mise en ligne : `bash tools/deploy-lecayenne.sh 979a3085a` passé depuis le laptop (le lancer SUR le VPS échoue en résolution d'hôte) ; le 2ᵉ (`e62145bf5`) et `vercel --prod` refusés par le classificateur → propriétaire. Scratchpad de la session : `site-copie` (= `d828747` + `app/www`, projet `site-lecayenne`), `verifier-mise-en-ligne.sh` (attend `e62145bf5` / `d828747`).
 
 **🆕 2026-11-04 11h — W7 cycle C : confirmation adverse des cycles A+B, D-004 réellement fermé, A-024 P1 neuf corrigé** (owner `/goal` « max finition… finis l'application »).
 - Deux superviseurs (A pages client, D API) relancés sur les arbres corrigés : D `5464a3f40` → P0+P1 = 0 mais D-004 toujours en 500 (mon correctif B ne couvrait que 3 constructeurs sur 9) ; A `cb3b430` → 1 P1 neuf (site muet sur un profil en 5xx, « 0 pts » faux).
