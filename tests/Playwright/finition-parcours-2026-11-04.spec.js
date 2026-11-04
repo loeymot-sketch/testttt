@@ -5,7 +5,7 @@
  *   FP_OUT=/chemin PLAYWRIGHT_BASE_URL=http://127.0.0.1:8766 PLAYWRIGHT_NO_WEB_SERVER=1 \
  *     npx playwright test tests/Playwright/finition-parcours-2026-11-04.spec.js --workers=1 --reporter=line
  */
-const { test } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const { loginAsPosOperator } = require('../e2e/helpers/login');
@@ -20,7 +20,13 @@ function journal(page, tag) {
   page.on('pageerror', (e) => errs.push(`pageerror ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') errs.push(`console ${m.text().slice(0, 200)}`); });
   page.on('response', (r) => { if (r.status() >= 400 && !/9100|favicon/.test(r.url())) errs.push(`${r.status()} ${r.url().replace(BASE, '')}`); });
-  return () => { fs.writeFileSync(path.join(OUT, `${tag}-erreurs.txt`), errs.join('\n')); console.log(`[${tag}] erreurs =`, errs.length, errs.slice(0, 12)); };
+  // Rend la liste : le parcours doit se dérouler sans AUCUNE erreur JavaScript de page (une exception non
+  // rattrapée = un écran figé pour le caissier ou le client). Les 4xx/5xx restent journalisés pour l'analyse.
+  return () => {
+    fs.writeFileSync(path.join(OUT, `${tag}-erreurs.txt`), errs.join('\n'));
+    console.log(`[${tag}] erreurs =`, errs.length, errs.slice(0, 12));
+    return errs;
+  };
 }
 
 for (const vp of [{ w: 1366, h: 768 }, { w: 1920, h: 1080 }]) {
@@ -44,7 +50,8 @@ for (const vp of [{ w: 1366, h: 768 }, { w: 1920, h: 1080 }]) {
     await page.keyboard.press('Escape').catch(() => {});
     await page.waitForTimeout(800);
     await shot('04-apres-fermeture');
-    fin();
+    const erreurs = fin();
+    expect(erreurs.filter((e) => e.startsWith('pageerror')), 'aucune exception JavaScript pendant le parcours caissier').toEqual([]);
   });
 }
 
@@ -121,5 +128,7 @@ test('borne 1080x1920 — parcours client', async ({ page, request }) => {
   await page.waitForTimeout(1200);
   await shot('09-paiement');
   console.log('URL finale', page.url());
-  fin();
+  const erreurs = fin();
+  expect(erreurs.filter((e) => e.startsWith('pageerror')), 'aucune exception JavaScript pendant le parcours client').toEqual([]);
+  expect(page.url(), 'le client arrive à l’écran de paiement').toMatch(/\/kiosk\/payment/);
 });
