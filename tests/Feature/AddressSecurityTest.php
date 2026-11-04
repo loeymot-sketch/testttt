@@ -82,6 +82,9 @@ class AddressSecurityTest extends TestCase
             ]);
         
         $response->assertStatus(403);
+        // [W7-D D-020] Le refus parle le français du dépôt, pas l'anglais du framework (« This action is unauthorized. »).
+        $this->assertSame(__('all.message.unauthorized'), $response->json('message'));
+        $this->assertStringNotContainsString('This action is unauthorized', (string) $response->getContent());
         
         // Vérifier que l'adresse n'a pas été modifiée
         $this->addressB->refresh();

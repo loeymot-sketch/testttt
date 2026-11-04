@@ -23,6 +23,16 @@ class AddressRequest extends FormRequest
     }
 
     /**
+     * [W7-D D-020 · cycle F 2026-11-04] Refuser l'adresse d'AUTRUI répondait « This action is unauthorized. » en anglais :
+     * `authorize()` coupe avant le contrôleur, donc le message français de `AddressController` n'était jamais atteint sur
+     * PUT/PATCH. Même code HTTP (403), mais le texte du dépôt (`all.message.unauthorized`).
+     */
+    protected function failedAuthorization(): void
+    {
+        throw new \Illuminate\Auth\Access\AuthorizationException(__('all.message.unauthorized'));
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
