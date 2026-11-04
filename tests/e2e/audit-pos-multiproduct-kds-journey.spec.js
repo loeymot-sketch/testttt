@@ -371,6 +371,11 @@ async function configureTacosModal(page, instruction) {
   await selectViande(page, /kefta/i);
   await selectExtra(page, /ketchup/i);
 
+  // [2026-11-04] Un tacos EXIGE une sauce : sans elle, la caisse refuse l'ajout et l'écrit en rouge en bas de
+  // l'assistant (« Sélectionnez au moins une sauce », vérifié à l'écran). « Sans sauce » ne change aucun montant.
+  const sansSauce = page.locator('#item-variation-modal.active .sauce-chip').filter({ hasText: /sans sauce/i }).first();
+  if (await sansSauce.count()) await sansSauce.evaluate((el) => el.click());
+
   const note = page.locator('#item-variation-modal.active textarea:visible').first();
   await expect(note).toBeVisible({ timeout: 5000 });
   await note.fill(instruction);
