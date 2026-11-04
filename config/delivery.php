@@ -60,7 +60,7 @@ return [
     // Au-delà : refus 422 « Départ possible à partir de HH:MM ». Un départ ferme la tournée de 30 min à toute
     // nouvelle commande : sans borne, la tournée du lendemain partait la veille (constat du 2026-10-22).
     // 45 = valeur prudente PROPOSÉE, À CONFIRMER PAR LE PROPRIÉTAIRE.
-    'depart_max_advance_minutes' => 45,
+    'depart_max_advance_minutes' => (int) env('DELIVERY_DEPART_MAX_ADVANCE_MINUTES', 45), // [E2E 2026-10-30] réglable : un banc nocturne ne peut pas attendre 17:15
 
     /*
      * [2026-10-23 · décision propriétaire] Durées de trajet ROUTIÈRES réelles (OSRM, service public sans clé).
