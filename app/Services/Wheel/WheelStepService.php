@@ -128,7 +128,7 @@ class WheelStepService
                 // Message qui ne culpabilise pas et qui donne le chiffre : un refus sans durée est
                 // vécu comme une panne.
                 throw new WheelException(
-                    'Encore ' . $reste . ' seconde' . ($reste > 1 ? 's' : '') . ' et c\'est à toi !',
+                    'Encore ' . $reste . ' seconde' . ($reste > 1 ? 's' : '') . ' et c\'est à vous !',
                     428,
                     $step
                 );
@@ -271,7 +271,7 @@ class WheelStepService
     private function messageManquant(string $step): string
     {
         return $step === self::REVIEW
-            ? 'Laisse d\'abord ton avis — le bouton se débloque juste après.'
-            : 'Dernière petite étape : abonne-toi, et c\'est à toi !';
+            ? 'Laissez d\'abord votre avis — le bouton se débloque juste après.'
+            : 'Dernière petite étape : abonnez-vous, et c\'est à vous !';
     }
 }

@@ -42,8 +42,8 @@ class GuestEmailLoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'first_name.required_with' => 'Indique ton prénom pour créer ton compte.',
-            'phone.required_with'      => 'Indique ton numéro de téléphone pour créer ton compte.',
+            'first_name.required_with' => 'Indiquez votre prénom pour créer votre compte.',
+            'phone.required_with'      => 'Indiquez votre numéro de téléphone pour créer votre compte.',
         ];
     }
 }

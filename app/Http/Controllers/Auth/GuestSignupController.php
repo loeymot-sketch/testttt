@@ -102,7 +102,7 @@ class GuestSignupController extends Controller
      * échec d'authentification Symfony y écrit l'identifiant du compte d'envoi — renvoyé à tout
      * anonyme. Le client lit une phrase générique ; le détail part au journal seulement.
      */
-    private const MESSAGE_ENVOI_IMPOSSIBLE = "Le code n'a pas pu être envoyé. Réessaie dans un instant.";
+    private const MESSAGE_ENVOI_IMPOSSIBLE = "Le code n'a pas pu être envoyé. Réessayez dans un instant.";
 
     private function echecEnvoiCode(\Throwable $exception, string $canal): \Illuminate\Http\Response
     {
@@ -210,7 +210,7 @@ class GuestSignupController extends Controller
                     'status'  => true,
                     'known'   => false,
                     'sent'    => false,
-                    'message' => 'Aucun compte avec cet e-mail. Indique ton prénom et ton numéro pour en créer un.',
+                    'message' => 'Aucun compte avec cet e-mail. Indiquez votre prénom et votre numéro pour en créer un.',
                 ]);
             }
 

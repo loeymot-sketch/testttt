@@ -313,7 +313,7 @@ class MolliePaymentController extends Controller
 
             return response()->json([
                 'status'  => false,
-                'message' => "Apple Pay n'a pas pu vérifier le site. Ta commande n'est pas envoyée ni débitée. Réessaie dans un instant ou choisis un autre moyen de paiement.",
+                'message' => "Apple Pay n'a pas pu vérifier le site. Votre commande n'est pas envoyée ni débitée. Réessayez dans un instant ou choisissez un autre moyen de paiement.",
             ], 502);
         }
 

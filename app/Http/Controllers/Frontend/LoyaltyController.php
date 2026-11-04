@@ -497,7 +497,7 @@ class LoyaltyController extends Controller
                     $minRedeem = 0;
                 }
                 if ($pointsToRedeem < $minRedeem) {
-                    return ['error' => "Minimum {$minRedeem} points requis pour utiliser tes points.", 'status' => 400];
+                    return ['error' => "Minimum {$minRedeem} points requis pour utiliser vos points.", 'status' => 400];
                 }
                 if ($user->loyalty_points < $pointsToRedeem) {
                     return ['error' => 'Points insuffisants', 'status' => 400];

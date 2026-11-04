@@ -19,7 +19,7 @@ return [
 
     'message' => (string) env(
         'APP_MOBILE_UPDATE_MESSAGE',
-        "Une nouvelle version de l'application Le Cayenne est disponible. Mets-la à jour pour continuer à commander."
+        "Une nouvelle version de l'application Le Cayenne est disponible. Mettez-la à jour pour continuer à commander."
     ),
 
     // Lien de la fiche App Store : son identifiant numérique n'existe qu'une fois l'application

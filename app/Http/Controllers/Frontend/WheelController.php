@@ -379,7 +379,7 @@ class WheelController extends Controller
         // Pas de jeton = pas de tour. On ne retombe JAMAIS sur un mode déclaratif : c'est
         // exactement la porte que le propriétaire refuse d'ouvrir.
         throw new WheelException(
-            'Montre ton avis et ton abonnement à l\'équipe : elle débloque ton tour en deux secondes.',
+            'Montrez votre avis et votre abonnement à l\'équipe : elle débloque votre tour en deux secondes.',
             403
         );
     }

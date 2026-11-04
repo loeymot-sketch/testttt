@@ -31,7 +31,7 @@ class ProfileService
         $courant = auth()->user();
         if ($courant && $this->estUnClient($courant) && $this->contactChange($courant, $request)) {
             throw new Exception(
-                'Pour modifier ton e-mail ou ton téléphone, demande en caisse : nous vérifions ton identité avant de changer un moyen de contact.',
+                'Pour modifier votre e-mail ou votre téléphone, demandez en caisse : nous vérifions votre identité avant de changer un moyen de contact.',
                 422
             );
         }

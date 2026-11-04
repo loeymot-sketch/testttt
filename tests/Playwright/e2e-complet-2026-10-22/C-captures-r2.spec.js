@@ -224,7 +224,7 @@ for (const vp of VIEWPORTS) {
     await page.locator('.lc-nav-btn-account').first().click(); await page.waitForTimeout(1200);
     await page.locator('input[type=email]').first().fill('e2e-app-1@example.invalid');
     await page.getByRole('button', { name: /Recevoir mon code/ }).click(); await page.waitForTimeout(2500);
-    await etat('07-compte-connu-erreur-envoi', { texte: [/Le code n'a pas pu être envoyé/, /Réessaie dans un instant/], cta: ['^Recevoir mon code'] });
+    await etat('07-compte-connu-erreur-envoi', { texte: [/Le code n'a pas pu être envoyé/, /Réessayez dans un instant/], cta: ['^Recevoir mon code'] });
     expect.soft(await page.evaluate(() => document.body.innerText), 'aucun fragment anglais « (and » à l\'écran (C-101)').not.toMatch(/\(and \d|more errors?\)/);
 
     // 8 fidélité / compte connecté

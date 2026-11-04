@@ -552,7 +552,7 @@ class WheelService
         }
 
         if ($this->alreadySpun($branchId, $tel)) {
-            throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+            throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
         }
 
         return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $segment, $unlock, $methode, $deviceId, $ipHash) {
@@ -584,7 +584,7 @@ class WheelService
                     // Deux contraintes peuvent avoir tranché : le téléphone ou l'adresse. On ne dit
                     // pas LAQUELLE — le message resterait le même pour le client honnête, et
                     // distinguer les deux apprendrait à un fraudeur quelle clé changer.
-                    throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+                    throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
                 }
                 throw $e;
             }

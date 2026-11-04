@@ -330,7 +330,7 @@ return [
         'flyer_settings_saved' => 'Réglages du ticket promo enregistrés.',
         'account_delete_success' => 'Compte supprimé avec succès.',
         'account_not_delete' => 'Vous ne pouvez pas supprimer votre compte si vous avez une commande active.',
-        'account_not_delete_kitchen' => "Impossible de supprimer ton compte pour l'instant : une commande est en préparation ou déjà réglée. Récupère-la (ou attends qu'elle soit terminée), puis réessaie.",
+        'account_not_delete_kitchen' => "Impossible de supprimer votre compte pour l'instant : une commande est en préparation ou déjà réglée. Récupérez-la (ou attendez qu'elle soit terminée), puis réessayez.",
         'invalid_api_key' => 'Clé API invalide.',
         'user_match' => 'Utilisateur non trouvé.',
         'something_wrong' => "Quelque chose s'est mal passé.",
@@ -353,7 +353,7 @@ return [
         // d'information sur QUEL cas s'applique) ; le message, lui, donne désormais TOUJOURS un
         // recours au client qui ne recevrait rien, sans jamais révéler s'il est dans ce cas ou
         // simplement en train d'attendre normalement.
-        'check_your_email_for_code_with_fallback' => 'Veuillez vérifier votre email pour le code. Si tu ne reçois rien dans quelques minutes (pense aussi aux spams), passe au comptoir avec ton numéro de téléphone : on peut lier ton compte directement.',
+        'check_your_email_for_code_with_fallback' => 'Veuillez vérifier votre email pour le code. Si vous ne recevez rien dans quelques minutes (pensez aussi aux spams), passez au comptoir avec votre numéro de téléphone : on peut lier votre compte directement.',
         'check_your_phone_for_code' => 'Veuillez vérifier votre téléphone pour le code.',
         'email_send' => 'Email envoyé avec succès.',
         // [ONB-09 2026-08-28] L'envoi aux abonnés annonçait « Email envoyé »
