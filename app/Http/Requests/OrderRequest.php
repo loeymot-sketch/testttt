@@ -137,13 +137,14 @@ class OrderRequest extends FormRequest
 
         return [
             // Kiosk branch_id is always server-resolved from KioskMachine; web/app legacy clients may still send it.
-            // [W7-D D-004 2026-11-04] La branche doit EXISTER (ni supprimée ni inactive) : sinon la commande était
+            // [W7-D D-004 2026-11-04] La branche doit EXISTER et être ACTIVE (status = 5) : sinon la commande était
             // persistée, orpheline, puis la requête finissait en 500 silencieux (OrderMailNotificationBuilder).
+            // [cycle C] « != INACTIVE » acceptait TOUT statut ; convention du dépôt (BranchFactory) : ACTIVE = 5 ou 1 (ancien seed).
             'branch_id' => array_merge(
                 ($isDelivery || $isKioskMachineOrder) ? ['nullable', 'numeric'] : ['required', 'numeric'],
                 [\Illuminate\Validation\Rule::exists('branches', 'id')
                     ->whereNull('deleted_at')
-                    ->where(fn ($q) => $q->where('status', '!=', Status::INACTIVE))]
+                    ->whereIn('status', [Status::ACTIVE, 1])]
             ),
             // [GAP-31-1] subtotal is recalculated server-side — nullable here, backend ignores client value
             // [P7] Reject negative client-sent amounts (symmetry with P5–P6).
