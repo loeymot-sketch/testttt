@@ -13,7 +13,9 @@
         <div v-if="!enabled" class="voice-assistant__disabled" role="status">
             <strong>Assistant désactivé en sécurité.</strong>
             <span>{{ disabledMessage }}</span>
-            <small>La commande téléphone manuelle de la caisse reste entièrement utilisable.</small>
+            <!-- [FINITION 2026-11-04] Le message du serveur le dit déjà (« …La commande téléphone manuelle reste
+                 disponible. ») : la même phrase n'est répétée que s'il ne le dit pas. -->
+            <small v-if="!/manuelle/i.test(disabledMessage || '')">La commande téléphone manuelle de la caisse reste entièrement utilisable.</small>
         </div>
 
         <template v-else>
