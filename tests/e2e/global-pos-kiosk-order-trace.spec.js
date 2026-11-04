@@ -522,8 +522,20 @@ async function kdsChangeStatus(page, orderId, expectedStatus, nextStatus) {
 async function openKioskCategoryAsCustomer(page, categoryId) {
   await loginAsKiosk(page);
   await page.goto('/kiosk/idle');
-  await expect(page.getByTestId('kiosk-order-type-dine-in')).toBeVisible({ timeout: 20_000 });
-  await page.getByTestId('kiosk-order-type-dine-in').click();
+  // [2026-11-04] « Sur place » n'est rendu que si le service est activé (`dineInEnabled`) ; il ne l'est pas au
+  // Cayenne. Le choix « À emporter » est toujours là : on prend « Sur place » s'il existe, sinon « À emporter ».
+  // Les cartes de l'accueil sont animées en continu (« element is not stable ») : mouvement réduit + clic forcé,
+  // avec délai explicite (actionTimeout vaut 0 dans ce dépôt).
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.getByTestId('kiosk-order-type-chooser')).toBeVisible({ timeout: 20_000 });
+  // Même séquence que les bancs borne verts (finition-borne-2026-11-04) : laisser la borne finir son démarrage,
+  // toucher « Touchez l'écran pour commander », puis le mode si l'accueil est encore là.
+  await page.waitForTimeout(1500);
+  await page.getByTestId('kiosk-idle-touch-btn').click({ force: true, timeout: 8_000 }).catch(() => {});
+  await page.waitForTimeout(1000);
+  const surPlace = page.getByTestId('kiosk-order-type-dine-in');
+  const mode = (await surPlace.count()) ? surPlace : page.getByTestId('kiosk-order-type-takeaway');
+  if (await mode.count()) await mode.click({ force: true, timeout: 8_000 }).catch(() => {});
   await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 20_000 });
   await page.goto(`/kiosk/categories?cat=${categoryId}`);
   await expect(page.getByTestId('kiosk-categories-root')).toBeVisible({ timeout: 20_000 });

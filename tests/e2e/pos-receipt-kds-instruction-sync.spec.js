@@ -230,13 +230,19 @@ test.describe('POS instruction ↔ KDS ↔ API (kitchen ticket data path)', () =
       await expectNoCriticalBrowserErrors(posPage, async () => {
         clearFoodKingRateLimits();
         await posPage.waitForTimeout(600);
-        orderResult = await createPosOrderViaApi(posPage, fixture, 'INST');
+        orderResult = await createPosOrderViaApi(posPage, fixture, 'Inst bien cuit');
       });
 
       expect(orderResult?.ok, JSON.stringify(orderResult)).toBe(true);
       const order = orderResult.data;
       expect(order?.id).toBeTruthy();
-      const marker = `${PREFIX} INST`;
+      // [2026-11-04] Consigne réaliste. « PW-RKS INST », tout en MAJUSCULES et sans mot de consigne, est retirée
+      // À BON DROIT par la règle anti-écho de KitchenTicketSymbolicFormatter (une ligne en capitales sans
+      // « sans/pas/cuit/… » = nom de produit répété par le pos-wizard) : le banc testait un texte qu'aucun
+      // caissier ne tape. Constat séparé, signalé au propriétaire : « PEU DE SAUCE » tapé en capitales serait
+      // retiré de la même façon (mots de consigne incomplets) — non modifié ici (pas de changement de règle cuisine
+      // sans décision du propriétaire).
+      const marker = `${PREFIX} Inst bien cuit`;
 
       const apiInstruction = await posPage.evaluate(async (orderId) => {
         const r = await window.axios.get(`admin/pos-order/show/${orderId}`);

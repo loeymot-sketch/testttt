@@ -957,6 +957,14 @@ test.describe('Audit borne multi-produits vers KDS', () => {
         await expect(kioskPage.getByTestId('kiosk-payment-confirm')).toBeEnabled({ timeout: 10_000 });
         await addOverlay(kioskPage, ['Paiement borne', 'Carte sélectionnée', `Total: ${paymentTotal}`]);
       } else {
+        // [2026-11-04] La borne exige le prénom du client avant « Confirmer » (« Écrivez un nom pour retrouver votre
+        // commande à la caisse ») ; le champ est en lecture seule et se remplit au clavier virtuel. Le banc
+        // l'ignorait et attendait un bouton qui reste — à bon droit — inactif.
+        await kioskPage.getByTestId('kiosk-payment-name-input').click({ timeout: 10_000 });
+        // testid = le caractère tel quel (safeTestid) ; la majuscule automatique repasse le clavier en minuscules après la 1ʳᵉ lettre.
+        for (const lettre of ['T', 'e', 's', 't']) {
+          await kioskPage.getByTestId(`kiosk-vkeyb-key-${lettre}`).click({ timeout: 5_000 });
+        }
         await expect(kioskPage.getByTestId('kiosk-payment-counter-confirm')).toBeEnabled({ timeout: 10_000 });
         await addOverlay(kioskPage, ['Paiement borne', 'Règlement différé au comptoir', `Total: ${paymentTotal}`]);
       }
