@@ -242,6 +242,7 @@
  */
 import axios from "axios";
 import alertService from "../../../services/alertService";
+import { buildIdempotencyHeaders } from "../../../helpers/idempotencyHeaders";
 
 const PARIS = "Europe/Paris";
 const EMPTY_STATE = () => ({
@@ -367,8 +368,11 @@ export default {
             if (d && d.errors) return [...new Set(Object.values(d.errors).flat())];
             return [(d && d.message) || fallback];
         },
-        async call(method, url, body, resetForm = false) {
-            const res = await axios({ method, url, data: body });
+        // [IDEMPOTENCE 2026-11-04] `cle` : X-Idempotency-Key des trois écritures qui portent l'intergiciel
+        // (bandeau créé, publication, retour arrière). Sans clé, l'intergiciel laissait tout passer : la
+        // protection « double envoi rejoué, pas recréé » annoncée dans routes/api.php était inerte.
+        async call(method, url, body, resetForm = false, cle = null) {
+            const res = await axios({ method, url, data: body, headers: cle ? { "X-Idempotency-Key": cle } : undefined });
             if (!this.isState(res)) { const err = new Error("Réponse inattendue"); err.unexpected = true; throw err; }
             this.adopt(res.data.data, resetForm);
             return res.data.data;
@@ -439,7 +443,10 @@ export default {
             };
             this.busy = "banner"; this.bannerErrors = [];
             try {
-                await this.call(e.id ? "put" : "post", e.id ? `admin/storefront/banners/${e.id}` : "admin/storefront/banners", body);
+                // Une clé par bandeau en cours de création, GARDÉE si l'envoi échoue : le second essai rejoue
+                // le premier au lieu de créer un doublon si la réponse s'était seulement perdue en route.
+                if (!e.id && !e.cleCreation) e.cleCreation = buildIdempotencyHeaders()["X-Idempotency-Key"];
+                await this.call(e.id ? "put" : "post", e.id ? `admin/storefront/banners/${e.id}` : "admin/storefront/banners", body, false, e.id ? null : `storefront-banner-${e.cleCreation}`);
                 this.editor = null;
                 alertService.success("Bandeau enregistré dans le brouillon.");
             } catch (err) {
@@ -464,7 +471,10 @@ export default {
                 }
                 // [RED-W2a P2-2] l'empreinte du brouillon AFFICHÉ : si un autre administrateur l'a modifié entre-temps, le serveur
                 // refuse (409) et l'écran se recharge pour montrer ses changements avant toute publication.
-                const data = await this.call("post", "admin/storefront/publish", { base_version: this.state.published.version, draft_hash: this.state.draft_hash });
+                const base = { base_version: this.state.published.version, draft_hash: this.state.draft_hash };
+                // Clé = ce qu'on publie (version de départ + empreinte du brouillon) : le même geste rejoué ne
+                // publie pas deux versions ; un autre brouillon a une autre clé.
+                const data = await this.call("post", "admin/storefront/publish", base, false, `storefront-publish-${base.base_version}-${base.draft_hash}`);
                 this.publishOk = true;
                 this.publishMsg = `Version ${data.published.version} publiée : l'application l'affichera à sa prochaine lecture (au plus tard dans 5 minutes).`;
                 alertService.success(`Vitrine publiée (version ${data.published.version}).`);
@@ -482,7 +492,8 @@ export default {
             if (!window.confirm(`Republier la version ${target} ? Le brouillon actuel sera remplacé par cette version.`)) return;
             this.busy = "rollback"; this.publishMsg = ""; this.publishErrors = [];
             try {
-                const data = await this.call("post", "admin/storefront/rollback", { base_version: this.state.published.version, version }, true);
+                const data = await this.call("post", "admin/storefront/rollback", { base_version: this.state.published.version, version }, true,
+                    `storefront-rollback-${this.state.published.version}-${version || "precedente"}`);
                 this.editor = null;
                 this.publishOk = true;
                 this.publishMsg = `Version ${target} republiée sous le numéro ${data.published.version}.`;

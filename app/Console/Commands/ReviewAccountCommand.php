@@ -37,7 +37,7 @@ class ReviewAccountCommand extends Command
             return 1;
         }
 
-        $user = User::withoutGlobalScopes()->withTrashed()->whereRaw('LOWER(email) = ?', [$email])->first();
+        $user = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->whereRaw('LOWER(email) = ?', [$email])->first();
 
         if ($this->option('remove')) {
             if (! $user) {
@@ -63,7 +63,7 @@ class ReviewAccountCommand extends Command
         }
 
         $phone = (string) $this->option('phone');
-        $clash = User::withoutGlobalScopes()->withTrashed()->where('phone', $phone)
+        $clash = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->withTrashed()->where('phone', $phone)
             ->when($user, fn ($q) => $q->where('id', '!=', $user->id))->exists();
         if ($clash) {
             $this->error("Le téléphone {$phone} est déjà pris par un autre compte : passez --phone=…");

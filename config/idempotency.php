@@ -32,6 +32,14 @@ return [
     'fail_open'           => (bool) env('IDEMPOTENCY_FAIL_OPEN', false),
 
     'required_routes' => [
+        // [IDEMPOTENCE 2026-11-04] Vitrine de l'application (admin) : création de bandeau, publication, retour
+        // arrière portaient l'intergiciel sans figurer ici — la clé restait facultative, l'écran n'en envoyait
+        // aucune, et la protection annoncée (« double envoi rejoué, pas recréé ») était inerte. L'écran
+        // (StorefrontComponent) envoie désormais une clé stable par geste ; la sentinelle
+        // IdempotencyRequiredRoutesCoverageTest a attrapé l'écart.
+        'api/admin/storefront/banners',
+        'api/admin/storefront/publish',
+        'api/admin/storefront/rollback',
         // [FIDÉLITÉ COMPTOIR 2026-08-12] Les deux écritures de fidélité au comptoir. Elles portaient
         // déjà l'intergiciel `idempotency`, mais SANS figurer ici la clé restait FACULTATIVE : un
         // client qui l'oublie passait quand même, et un double appui créait un second compte ou

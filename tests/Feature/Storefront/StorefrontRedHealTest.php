@@ -253,4 +253,25 @@ class StorefrontRedHealTest extends TestCase
         $this->api('POST', '/banners', $this->banner(), $h);
         $this->assertSame(1, StorefrontBanner::query()->count());
     }
+
+    /**
+     * [IDEMPOTENCE 2026-11-04] Les trois écritures de la vitrine EXIGENT la clé (config idempotency.required_routes) :
+     * sans elle, l'intergiciel laissait tout passer et la protection contre le double envoi était inerte. L'écran
+     * (StorefrontComponent) envoie désormais une clé stable par geste.
+     */
+    public function test_publier_sans_cle_est_refuse_avec_la_cle_de_l_ecran_passe(): void
+    {
+        config(['idempotency.enabled' => true]);
+        $this->owner();
+        $h = $this->api('GET')->json('data.draft_hash');
+
+        $sansCle = $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h]);
+        $this->assertContains($sansCle->status(), [400, 422, 428], 'publier sans X-Idempotency-Key doit être refusé');
+
+        $cle = ['X-Idempotency-Key' => "storefront-publish-0-{$h}"];
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h], $cle)->assertOk();
+        // Le même geste rejoué (même clé, même contenu) ne publie pas une seconde version.
+        $this->api('POST', '/publish', ['base_version' => 0, 'draft_hash' => $h], $cle)->assertOk();
+        $this->assertSame(1, (int) $this->api('GET')->json('data.published.version'));
+    }
 }

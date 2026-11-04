@@ -55,7 +55,9 @@ class LeJournalDActiviteDitLeStatutPasSaCleTest extends TestCase
      * s'afficherait brute et fait donc échouer ce banc immédiatement.
      */
     private const DETTE_CONNUE = [
-        'ar/all.php' => 88,
+        // 2026-11-04 : 88 → 87. 17 clés françaises arrivées depuis sans arabe (bilan de la caisse du livreur,
+        // recours « Si vous ne recevez rien ») faisaient monter le retard à 104 ; traduites, il tombe à 87.
+        'ar/all.php' => 87,
     ];
 
     private const STATUTS = [
