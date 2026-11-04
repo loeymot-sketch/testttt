@@ -464,6 +464,12 @@ async function createKioskCardOrderViaApi(page, fixture) {
       transaction_id: `${prefix}-TPE-SIM-${fixture.run}-${Date.now()}`,
       card_type: 'simulated-card',
       payment_method: paymentCard,
+      // Montant confirmé en centimes (garde anti-falsification du contrat payment-confirm) : le total serveur.
+      amount_cents: Math.round(Number(order.total ?? quote.total) * 100),
+    }, {
+      // [2026-11-04] Route exigée par config/idempotency.php (écriture d'argent) : la vraie borne envoie la clé
+      // (buildIdempotencyHeaders) ; sans elle le serveur répond 422 MISSING_IDEMPOTENCY_KEY, à bon droit.
+      headers: { 'X-Idempotency-Key': `${prefix}-confirm-${order.id}` },
     });
     return {
       quote,
@@ -478,7 +484,10 @@ async function createKioskCardOrderViaApi(page, fixture) {
     prefix: PREFIX,
     askNo: ASK_NO,
     sourceKiosk: SOURCE_KIOSK,
-    orderTypeKiosk: ORDER_TYPE_KIOSK,
+    // [2026-11-04] « Sur place » est désactivé en V1 : le serveur refuse (422 « les commandes borne doivent être à
+    // emporter ») un order_type KIOSK (25), traité comme sur place. La vraie borne envoie le mode CHOISI par le
+    // client (buildKioskQuotePayload → « À emporter », 10) : le banc fait de même.
+    orderTypeKiosk: ORDER_TYPE_TAKEAWAY,
     paymentCard: PAYMENT_CARD,
   });
 }
@@ -516,7 +525,8 @@ async function kdsChangeStatus(page, orderId, expectedStatus, nextStatus) {
       };
     }
   }, { orderId, expectedStatus, nextStatus });
-  expect(result).toMatchObject({ ok: true });
+  // Le message du serveur DANS l'échec : sans lui, « ok: false » ne dit pas pourquoi la cuisine a refusé.
+  expect(result, `change-status ${expectedStatus}→${nextStatus} : ${JSON.stringify(result)}`).toMatchObject({ ok: true });
 }
 
 async function openKioskCategoryAsCustomer(page, categoryId) {
