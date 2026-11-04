@@ -843,7 +843,9 @@ class ItemService
         // [PERF 2026-07-23 POS-instant-open] 'allergens' ajouté à l'eager-load : sinon
         // NormalItemResource::toArray fait un lazy `allergens()->get()` (1 requête N+1 par
         // ouverture de fiche). withPivot('is_trace') est préservé par le eager-load.
-        $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'extras', 'allergens');
+        // [W7-D D-005 2026-11-04] 'variations.media' : la ressource lit la photo de CHAQUE variation (14 requêtes N+1 sur
+        // une fiche à 14 sauces). Chargé en une seule requête avec le reste.
+        $item->load('media', 'category', 'tax', 'offer', 'addons', 'variations', 'variations.media', 'extras', 'allergens');
 
         // [F-DETAILS-BRANCH-AVAIL 2026-07-15 / P1] Aligner la dispo des DÉTAILS sur la LISTE
         // (branch-aware). Sans ça, une rupture PAR BRANCHE (ItemBranchAvailability, posée par le

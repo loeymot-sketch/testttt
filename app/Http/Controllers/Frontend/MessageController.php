@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use Exception;
 use App\Models\Message;
 use App\Services\MessageService;
-use App\Http\Requests\MessageRequest;
+use App\Http\Requests\FrontendMessageRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\MessageResource;
 use App\Http\Controllers\Controller;
@@ -46,8 +46,10 @@ class MessageController extends Controller
         }
     }
 
-    public function store(MessageRequest $request): \Illuminate\Http\Response | MessageResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    public function store(FrontendMessageRequest $request): \Illuminate\Http\Response | MessageResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [W7-D D-001 2026-11-04] `FrontendMessageRequest` force user_id/receiver_id = appelant et refuse (404) un
+        // message_id d'autrui : plus d'énumération nom + téléphone par receiver_id arbitraire.
         try {
             return new MessageResource($this->messageService->store($request));
         } catch (Exception $exception) {

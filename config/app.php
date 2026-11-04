@@ -72,6 +72,10 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
+    // [W7-D D-002 2026-11-04] Mandataires crus pour X-Forwarded-* (TrustProxies). Vide = loopback seul (nginx local) ;
+    // liste « ip1,ip2 » ; `*` = tous (ancien comportement, usurpable : réservé à un vrai réseau de mandataires).
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     // [SEC-FIX] API key for x-api-key header validation — use config() not env() in middleware
     // MIX_API_KEY is canonical (Mix + runtime Blade). API_KEY kept for backward compat with old .env copies.
     'api_key' => trim((string) (env('MIX_API_KEY') ?: env('API_KEY', ''))),
