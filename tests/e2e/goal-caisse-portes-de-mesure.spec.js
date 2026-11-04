@@ -98,7 +98,14 @@ async function mesurer(page) {
         const rect = (el) => (el ? el.getBoundingClientRect() : null);
         const rGrille = rect(grille);
         // Hauteur d'une tuile : la grille se réagence selon la largeur, on mesure le vrai enfant.
-        const tuile = grille ? grille.querySelector('[role="listitem"], li, button, a, div') : null;
+        // [FINITION 2026-11-04] Instrument corrigé : `querySelector('[role="listitem"], li, button, a, div')`
+        // rend le PREMIER élément du document qui correspond à l'un des sélecteurs — ici le conteneur
+        // `div.pos-v5-cat-grid` des 10 tuiles (313 px à 1366×768, 2 rangées), pas une tuile (151 px). La
+        // porte exigeait donc « toute la grille à l'écran » en croyant exiger « une rangée ». Mesuré :
+        // grille y=483, première rangée 483→634, entièrement visible, porte rouge. On vise la tuile.
+        const tuile = grille
+            ? (grille.querySelector('.pos-v5-cat-tile') || grille.querySelector('[role="listitem"], li, button, a'))
+            : null;
         const hTuile = tuile ? Math.round(tuile.getBoundingClientRect().height) : null;
 
         return {

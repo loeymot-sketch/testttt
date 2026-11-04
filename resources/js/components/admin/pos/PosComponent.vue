@@ -8312,6 +8312,16 @@ export default {
   align-items: center;
   gap: var(--pos-v5-space-2, 8px);
 }
+/* [FINITION 2026-11-04] Caisse ≤ 1100 px de large (vieux poste 1024×768) : les 5 boutons « Commandes »
+   (Encaissement · Assistant · Suivi commandes · Historique · Écran client) demandaient ~655 px pour 615 :
+   « Écran client » partait seul sur une 2ᵉ ligne (+43 px) et, avec une commande web en attente, la
+   1ʳᵉ rangée de catégories sortait de l'écran de 11 px. Marges internes 12 → 8 px, écart 8 → 4 px :
+   tout tient sur une ligne, sans toucher à la taille des boutons ni des textes. (Règle dans le style
+   scoped : celle de PosV5Button, scoped elle aussi, l'emportait sur une règle globale.) */
+@media (max-width: 1100px) {
+  .pos-op-cluster__row { gap: 4px; }
+  .pos-op-cluster__row > .pos-v5-btn { padding-left: 8px; padding-right: 8px; }
+}
 .pos-op-cluster__divider {
   align-self: stretch;
   width: 1px;
