@@ -17,7 +17,9 @@ class OrderMailNotificationBuilder
 {
     public int $orderId;
     public mixed $status;
-    public object $order;
+    // [W7-D D-004 2026-11-04] Nullable : une commande introuvable (hors périmètre de branche) ne doit plus faire
+    // exploser le post-commit en TypeError → 500 ; `send()` teste déjà `blank($this->order)`.
+    public ?object $order;
 
     public function __construct($orderId, $status)
     {
