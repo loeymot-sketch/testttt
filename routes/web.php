@@ -278,4 +278,7 @@ Route::middleware(['installed', 'wheel.access'])->group(function () {
 // servis par le serveur web avant Laravel, seuls les manquants arrivent ici).
 Route::get('/{any}', [RootController::class, 'index'])
     ->middleware(['installed'])
-    ->where(['any' => '^(?i)(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);
+    // [W7-D D-011 · cycle C 2026-11-04] Un chemin `/api/…` qui ne matche aucune route API (jeton de suivi mal formé,
+    // faute de frappe) répondait la coquille SPA en 200 text/html à un client JSON : il tombe désormais sur le
+    // repli JSON 404 de routes/api.php.
+    ->where(['any' => '^(?i)(?!api(?:/|$))(?!.*\.(?:js|mjs|css|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|json|txt)$).*$']);

@@ -641,7 +641,11 @@ class GuestSignupController extends Controller
                 $firstRole = $user->roles->first();
             }
 
-            $permission        = PermissionResource::collection($this->permissionService->permission($firstRole));
+            // [W7-D D-012 · cycle C 2026-11-04] Un compte client recevait le catalogue COMPLET des 89 permissions
+            // d'administration (toutes `access:false`, 9,3 Ko à chaque connexion) : seules les permissions ACCORDÉES
+            // partent (aucune pour un client). Même forme de réponse ; `defaultPermission` ne lisait que celles-là.
+            $accordees         = collect($this->permissionService->permission($firstRole))->filter(fn ($p) => (bool) $p->access)->values();
+            $permission        = PermissionResource::collection($accordees);
             $defaultPermission = AppLibrary::defaultPermission($permission);
 
             return new JsonResponse([

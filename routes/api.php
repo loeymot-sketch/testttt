@@ -2649,3 +2649,7 @@ Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'loca
         Route::post('/', [TableOrderController::class, 'store'])->middleware('throttle:120,1,table-order'); // [VG-2026-10-21 M1-002] compteur propre (un throttle nu partage le seau IP/compte)
     });
 });
+
+// [W7-D D-011 · cycle C 2026-11-04] Repli JSON pour tout chemin `/api/…` sans route (l'attrape-tout SPA de
+// routes/web.php exclut désormais `api/`). 404 sans corps HTML, sans requête en base.
+Route::fallback(fn () => response()->json(['status' => false, 'message' => 'Introuvable.'], 404));
