@@ -47,6 +47,13 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-04 02h — W7 « finition et optimisation de chaque page client » cycle A corrigé, cycle B (confirmation) en cours ; mise en ligne PRÊTE, toujours non lancée par le propriétaire.**
+> Backend de mise en ligne : branche `deploy/hybride-et-promo-2026-11-03` tête `5b78ca291` = `fcc622b93` (hybride + ticket promo, ⊇ prod `327ac761c`)
+> + W7 `2c9e25217` (D-001 P0 fuite nom/téléphone par `receiver_id`, D-002 P1 X-Forwarded-For usurpable, D-003 P1 squat d'e-mail par
+> `PUT /api/profile`, D-004 branche inexistante → 422, D-005 réglages 19 → 1 requête, D-006 ETag catalogue). Site : branche
+> `app/hybride-w7-finition-2026-11-04` tête `2ab84db` (⊇ `f91ae87`) : compilés minifiés 1 295 → 393 Ko, images, contrastes, hors-ligne
+> honnête, onglets fidélité, 401 explicite ; banc `finition-w7` 23/23 (7/23 avant), 29 bancs verts, portes 9/9, `app/www` 282.
+> Production mesurée à 00:31 : backend `327ac761`, site jetons `20261102app1` → RIEN de W6/W7 n'est encore servi.
 > **2026-11-03 (fin de journée) — GOAL APP HYBRIDE : W0-W5 ✓, W6 cycle A convergé (0 P0/P1) + 5 constats soignés, cycle B en cours.**
 > Branche INTÉGRÉE site/app : `app/hybride-paiement-2026-11-03` (worktree `lecayenne-web-deploy/app-hybride-paiement-2026-11-03`, tête `ea954d0`)
 > = W1 + W2b + W3 + W4 (paiement dans l'app, interrupteur `APP_MOBILE_ONLINE_PAYMENT` FAUX par défaut) + W5 (PUBLICATION.md lignes A/B,
@@ -4930,6 +4937,12 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-04 02h — W7 : finition de chaque page client, sécurité et performance de l'API frontend (cycle A corrigé)** (owner `/goal` : « max détails, sécurité, intelligence front et back, UI/UX, max optimise chaque page client, finis l'application »).
+- Deux superviseurs adverses à angles NEUFS (UI/UX/a11y/perf/sécu front ; sécu/perf API). Après 13 cycles W6 verts sur l'argent, l'API frontend avait encore **1 P0 + 2 P1** : `POST /api/frontend/message` renvoyait nom + téléphone en clair de n'importe quel `receiver_id` ; `TrustProxies='*'` laissait un client choisir son adresse (limiteurs par IP contournables) ; `PUT /api/profile` laissait un client pré-revendiquer l'e-mail/téléphone d'une future victime. Corrigés + 4 P2 (branche inexistante → 422 au lieu d'orphelin + 500 ; réglages 19 → 1 SQL ; médias de variations eager ; ETag/304 sur le catalogue). 7 tests neufs rouges-avant/verts-après, 295 tests des modules touchés verts, NF525 OK, gel 0. Backend `2c9e25217` (feat/app-hybride) → fusion `5b78ca291` sur la branche de mise en ligne.
+- Site/app `2ab84db` : 11 P2 + 4 P3 corrigés (minification terser des 12 compilés : 1 295 → 393 Ko bruts, 99 Ko gz ; images SEO et catégories allégées ; contrastes AA ; cibles ≥ 30 px ; « Mes commandes » hors-ligne ne dit plus « 0 commande » ; relecture sur `online` (solde, QR, historique) ; onglets fidélité sur 2 lignes ; 401 → message ; textes vrais). Banc `tests-e2e/finition-w7-2026-11.spec.js` 23/23 (7/23 sur `f91ae87`), 29 bancs verts, `release-gates --prod` 9/9, `app/www` 282. Choix laissés : D-007 (oracle `email-login` = parcours voulu), A-012 (mémoriser retrait/livraison), A-017/A-018.
+- Rapports `reports/test-e2e/app-hybride-2026-11/W7/` (PLAN, cycle-A-A, cycle-A-D, cycle-A-correctifs). Cycle B (confirmation) lancé.
+- À LANCER PAR LE PROPRIÉTAIRE (classificateur) : `ssh lecayenne 'cd /var/www/lecayenne && bash tools/deploy-lecayenne.sh 5b78ca291'` puis Vercel depuis la copie sans `.git` (`site-copie` = `2ab84db`).
 
 **🆕 2026-11-03 21h — App hybride W6 cycles J→M corrigés + mise en ligne PRÊTE (non servie : classificateur)** (owner : « deploy tout lors tu finis »).
 - Site (`lecayenne-web-deploy`) : J1 `15f7f2e`, K1 `39230c7`, K-obs1 `b66a61f`, L1 `77411d4`, fusion bancs `40686c0`, + « LIVRAISON OFFERTE » `30cbfd8` → `18e192d`, M1/M2 `f91ae87` (branche `site/deploy-2026-11-03`, poussée hors main). Toutes ces portes rendaient un 422 au dernier clic (remise périmée, points sur les frais, remise retenue par une commande impayée).
