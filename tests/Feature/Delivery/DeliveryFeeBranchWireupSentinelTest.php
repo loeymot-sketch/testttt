@@ -167,7 +167,7 @@ class DeliveryFeeBranchWireupSentinelTest extends TestCase
                 'customer_id' => $customer->id,
                 'address_id' => $address->id,
                 'order_type' => OrderType::DELIVERY,
-                'source' => 1,
+                'source' => 5,
                 'pos_payment_method' => PosPaymentMethod::CASH,
                 'items' => json_encode([[
                     'item_id' => $item->id,

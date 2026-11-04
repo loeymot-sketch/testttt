@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\Activity;
 use App\Enums\OrderType;
+use App\Enums\Source;
 use App\Enums\Status;
 use App\Exceptions\Delivery\GeocodeUnavailableException;
 use App\Http\Requests\Concerns\NormalizesAdvanceOrder;
@@ -170,7 +171,11 @@ class OrderRequest extends FormRequest
             // « drop de prix » web, DIAG reports/goal-drop-prix-2026-07-19). Absent →
             // aucune garde (rétro-compat, additif). Négatif rejeté (symétrie avec `total`).
             'expected_total' => ['nullable', 'numeric', 'min:0'],
-            'order_type' => ['required', 'numeric'],
+            // [W7-D D-015 2026-11-04] `numeric` seul laissait un client forger `order_type` 15 (POS), 99 ou n'importe
+            // quoi : la commande était persistée, ABSENTE de son historique (`FrontendOrderService` exclut POS),
+            // invisible à l'écran d'attente, mais suivie et cuisinée. Les seuls types qu'un client peut déclarer :
+            // livraison, à emporter, table, borne. Le POS a son propre point d'entrée (`PosOrderRequest`).
+            'order_type' => ['required', 'numeric', 'in:' . implode(',', [OrderType::DELIVERY, OrderType::TAKEAWAY, OrderType::DINING_TABLE, OrderType::KIOSK])],
             'is_advance_order' => ['required', 'numeric'],
             // [E4 SCHEDULED-INTAKE 2026-07-20] Créneau programmé OPTIONNEL (web/app).
             // NULL/absent = ASAP — comportement historique intact. Les gardes métier
@@ -202,7 +207,9 @@ class OrderRequest extends FormRequest
             'quote_signature' => $this->isKioskOrderToken()
                 ? ['required', 'string', 'size:64']
                 : ['nullable', 'string', 'size:64'],
-            'source' => ['required', 'numeric'],
+            // [W7-D D-015 2026-11-04] Même garde : `source` 15 faisait compter une commande web comme une vente POS au
+            // tableau de bord (`DashboardService`). Un client vient du site ou de l'application, rien d'autre.
+            'source' => ['required', 'numeric', 'in:' . implode(',', [Source::WEB, Source::APP])],
             // [SEC MISSION-16 2026-07-31] Défense-en-profondeur : seules les valeurs frontend LÉGITIMES
             // (CASH_ON_DELIVERY=1, CARD=4, TICKET_RESTAURANT=5 — ce que borne ET web envoient) sont
             // acceptées. Un payload forgé payment_method=99/2/3 créait une commande UNPAID sans marqueur

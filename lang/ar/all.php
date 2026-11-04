@@ -204,6 +204,7 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'             => 'الطلب غير موجود.',
+        'resource_not_found'          => 'المورد غير موجود.',
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
         'kds_recall_invalid_state'     => 'يمكن استرداد الطلبات الجاهزة فقط.',
         'kds_recall_window_expired'    => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق للإلغاء يدويًا.',

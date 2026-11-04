@@ -325,6 +325,7 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'      => 'Order not found.',
+        'resource_not_found'   => 'Resource not found.',
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
         'kds_recall_invalid_state'     => 'Only Ready orders can be recalled.',
         'kds_recall_window_expired'    => '60s window expired — contact cashier for manual cancellation.',

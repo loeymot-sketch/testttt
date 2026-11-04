@@ -301,6 +301,7 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'     => 'Commande introuvable.',
+        'resource_not_found'  => 'Ressource introuvable.',
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
         'kds_recall_invalid_state'     => 'Seules les commandes Prêt peuvent être rappelées.',
         'kds_recall_window_expired'    => 'Délai 60s dépassé — contacter le caissier pour annuler manuellement.',

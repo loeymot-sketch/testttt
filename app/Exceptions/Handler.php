@@ -100,11 +100,16 @@ class Handler extends ExceptionHandler
         // toasts. Translate via lang/{fr,en,ar}.all.message.order_not_found and
         // expose a stable error code for frontend mapping.
         if ($e instanceof ModelNotFoundException) {
+            // [W7-D D-017 2026-11-04] « Commande introuvable » était servi pour TOUT modèle absent (fiche produit,
+            // adresse, catégorie, offre) : trompeur pour le client et pour le support. Le code reste ORDER_NOT_FOUND
+            // pour une commande (contrat des surfaces caisse/KDS), NOT_FOUND générique sinon.
+            $commande = in_array(class_basename((string) $e->getModel()), ['Order', 'FrontendOrder', 'PosOrder'], true);
+
             return new JsonResponse(
                 [
                     'success' => false,
-                    'code'    => 'ORDER_NOT_FOUND',
-                    'message' => __('all.message.order_not_found'),
+                    'code'    => $commande ? 'ORDER_NOT_FOUND' : 'NOT_FOUND',
+                    'message' => __($commande ? 'all.message.order_not_found' : 'all.message.resource_not_found'),
                 ],
                 404
             );

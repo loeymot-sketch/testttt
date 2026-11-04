@@ -31,6 +31,14 @@ use Smartisan\Settings\Facades\Settings;
  */
 final class LoyaltyRules
 {
+    /**
+     * [W7-D D-005 2026-11-04] `loyalty/config` lisait CINQ fois le même réglage en base (taux relu par
+     * `effectiveFloor()`, puis par `euroValue()`…). Une instance = une requête HTTP : chaque clé est lue une fois.
+     *
+     * @var array<string, int>
+     */
+    private array $lus = [];
+
     /** Points gagnés par euro dépensé. */
     public function pointsPerEuro(): int
     {
@@ -112,12 +120,16 @@ final class LoyaltyRules
 
     private function reglage(string $cle, int $defaut): int
     {
+        if (array_key_exists($cle, $this->lus)) {
+            return $this->lus[$cle];
+        }
+
         $valeur = Settings::group('loyalty_setup')->get($cle, $defaut);
 
         // `get()` rend `null` si la ligne existe avec une charge nulle — un état que l'écran admin
         // ne peut pas produire (`LoyaltySetupRequest` impose `required|integer`), mais qu'une
         // migration ou une main sur la base peut laisser. On retombe alors sur le défaut du
         // logiciel plutôt que sur 0, qui désactiverait la règle en silence.
-        return $valeur === null || $valeur === '' ? $defaut : (int) $valeur;
+        return $this->lus[$cle] = ($valeur === null || $valeur === '' ? $defaut : (int) $valeur);
     }
 }
