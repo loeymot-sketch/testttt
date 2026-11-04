@@ -777,6 +777,27 @@ export default {
     font-size: 12px;
     padding: 3px 8px;
 }
+/* [FINITION 2026-11-04] La projection dans la barre est désactivée (crash moveTeleport, voir le
+   <Teleport>) : le sélecteur restait donc FLOTTANT à 8 px sous le haut de `.kds-v2`, c'est-à-dire
+   PAR-DESSUS le bandeau d'état (« SYNC · LOCAL » masqué) et le coin haut de la carte la plus à
+   droite (y 108→160 pour des cartes qui commencent à 142, mesuré à 1024/1366/1920).
+   Sans Teleport, on obtient le même rendu que « dans la barre » : on le remonte dans la rangée
+   d'outils (Rupture · Historique · Afficher les noms), vide à droite, au format compact de la barre
+   (boutons 34 px, cible tactile conservée). Mesuré après : y 62→100, sous l'en-tête (59), au-dessus
+   du bandeau (100), plus rien de recouvert. */
+.kds-cols-picker:not(.kds-cols-picker--dans-barre) {
+    top: -38px;
+    padding: 2px;
+}
+.kds-cols-picker:not(.kds-cols-picker--dans-barre) .kds-cols-picker__btn {
+    min-width: 34px;
+    min-height: 34px;
+    font-size: 15px;
+}
+.kds-cols-picker:not(.kds-cols-picker--dans-barre) .kds-cols-picker__waiting {
+    font-size: 12px;
+    padding: 3px 8px;
+}
 .kds-cols-picker__waiting {
     display: inline-flex;
     align-items: center;

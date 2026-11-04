@@ -73,6 +73,12 @@ test('borne 1080x1920 — parcours client', async ({ page, request }) => {
   await shot('03-catalogue');
   await page.evaluate(() => { const c = document.querySelector('.kiosk-product-card'); if (c) c.click(); });
   await page.waitForTimeout(2000);
+  // Ce qui occupe le bas de l'écran pendant l'assistant produit (bande sous la barre d'actions ?).
+  console.log('bas assistant =', JSON.stringify(await page.evaluate(() => [1700, 1760, 1810, 1860, 1910].map((y) => {
+    let e = document.elementFromPoint(540, y); const c = [];
+    while (e && c.length < 5) { const r = e.getBoundingClientRect(); c.push(`${e.tagName}.${String(e.className || '').split(' ')[0]}[${Math.round(r.top)}-${Math.round(r.bottom)}]`); e = e.parentElement; }
+    return `${y}: ${c.join(' < ')}`;
+  }))));
   for (let i = 0; i < 14; i++) {
     await shot(`04-etape-${String(i).padStart(2, '0')}`);
     const titre = (await page.evaluate(() => (document.querySelector('.kiosk-step-content .kiosk-step-title')?.innerText || '').toLowerCase())).trim();
