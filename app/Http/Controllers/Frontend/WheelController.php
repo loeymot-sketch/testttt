@@ -409,7 +409,7 @@ class WheelController extends Controller
     /** 404 et pas 403 : un 403 dit « ça existe » et donne envie de chercher. */
     private function porteFermee(): JsonResponse
     {
-        return response()->json(['status' => false, 'message' => 'Not found.'], 404);
+        return response()->json(['status' => false, 'message' => __('all.message.resource_not_found')], 404);
     }
 
     private function branchId(Request $request): int

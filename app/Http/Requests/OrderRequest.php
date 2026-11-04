@@ -278,6 +278,14 @@ class OrderRequest extends FormRequest
                 return;
             }
 
+            // [W7-D D-018 2026-11-04] Même invariant pour la TABLE (20) : un jeton client (site/application) sans table
+            // créait une commande « sur place » sans `dining_table_id`, invisible à l'écran d'attente. Le site n'envoie
+            // jamais 20 ; seule une borne (service sur place activé, garde ci-dessous) peut le déclarer.
+            if ($orderTypeInt === OrderType::DINING_TABLE && ! $isKioskToken) {
+                $validator->errors()->add('order_type', 'Le service à table se commande à la borne ou en caisse.');
+                return;
+            }
+
             if ($isKioskToken) {
                 $kiosk = $this->kioskMachineForToken();
                 if (! $kiosk) {

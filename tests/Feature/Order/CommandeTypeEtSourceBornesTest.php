@@ -74,6 +74,21 @@ class CommandeTypeEtSourceBornesTest extends TestCase
         $this->assertDatabaseMissing('orders', ['order_type' => 99]);
     }
 
+    /**
+     * [W7-D D-018 · cycle E] Le type « table » (20) d'un jeton client sans table créait une commande sur place sans
+     * `dining_table_id`, invisible à l'écran d'attente : réservé à la borne (et à la caisse par son propre point d'entrée).
+     *
+     * @test
+     */
+    public function le_type_table_est_refuse_a_un_client_sans_borne(): void
+    {
+        $this->postJson('/api/frontend/order', $this->charge(OrderType::DINING_TABLE, Source::WEB))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['order_type']);
+
+        $this->assertDatabaseMissing('orders', ['order_type' => OrderType::DINING_TABLE]);
+    }
+
     /** @test */
     public function une_source_pos_ou_inconnue_est_refusee_sans_commande(): void
     {
