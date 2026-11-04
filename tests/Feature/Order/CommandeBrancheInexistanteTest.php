@@ -96,4 +96,27 @@ class CommandeBrancheInexistanteTest extends TestCase
         $this->assertDatabaseMissing('orders', ['branch_id' => $supprimee->id]);
         $this->assertDatabaseMissing('orders', ['branch_id' => $inactive->id]);
     }
+
+    /**
+     * [W7-D D-004 · cycle C 2026-11-04] Une branche au statut 1 (ancien seed de production, convention `BranchFactory`)
+     * est commandable : la commande est persistée sur CETTE branche et la requête répond 201, jamais 500 — les neuf
+     * constructeurs de notification tolèrent désormais une commande relue hors périmètre de branche (`?object $order`).
+     * Un statut inconnu (ni 5 ni 1) est refusé sans commande orpheline.
+     *
+     * @test
+     */
+    public function une_branche_au_statut_historique_1_est_commandable_sans_500_et_un_statut_inconnu_est_refuse(): void
+    {
+        $ancienne = Branch::forceCreate(['name' => 'Ancienne', 'city' => 'X', 'state' => 'Y', 'zip_code' => '00000', 'address' => '-', 'status' => 1]);
+        $inconnue = Branch::forceCreate(['name' => 'Inconnue', 'city' => 'X', 'state' => 'Y', 'zip_code' => '00000', 'address' => '-', 'status' => 3]);
+        $this->client();
+
+        $this->postJson('/api/frontend/order', $this->charge($ancienne->id))->assertStatus(201);
+        $this->assertDatabaseHas('orders', ['branch_id' => $ancienne->id]);
+
+        $this->postJson('/api/frontend/order', $this->charge($inconnue->id))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['branch_id']);
+        $this->assertDatabaseMissing('orders', ['branch_id' => $inconnue->id]);
+    }
 }
