@@ -104,6 +104,12 @@ test('borne 1080x1920 — parcours client', async ({ page, request }) => {
   await page.evaluate(() => { const b = document.querySelector('[data-testid="kiosk-bottom-cart"], .kiosk-bottom-cart'); if (b) b.click(); });
   await page.waitForTimeout(1500);
   await shot('06-panier');
+  // Fidélité depuis le panier (aucune inscription : on regarde l'écran, puis on revient).
+  await page.locator('[data-testid="kiosk-cart-loyalty-btn"]').click({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+  await shot('06b-fidelite');
+  await page.goBack().catch(() => {});
+  await page.waitForTimeout(1500);
   await page.evaluate(() => { const b = document.querySelector('[data-testid="kiosk-cart-checkout"]'); if (b) b.click(); });
   await page.waitForTimeout(3000);
   await shot('07-apres-valider');
