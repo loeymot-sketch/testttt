@@ -47,6 +47,15 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-04 11h — W7 cycle C (confirmation) mesuré et corrigé : P0+P1 = 0 sur les deux vagues ; mise en ligne PRÊTE (backend cette branche, site `site/deploy-2026-11-03` = `b0c9580`), toujours non lancée par le propriétaire.**
+> Vague D (API, `5464a3f40`) : D-003/D-008/D-009 PASS ; **D-004 encore FAIL** (3 constructeurs nullables sur 9, branche status 1 → 500 + commande 9604 orpheline)
+> → `6c4c5f70d` (règle `branch_id` = status 5 ou 1 selon `BranchFactory`, 9 constructeurs `?object`, test status 1 → 201 / status 3 → 422) ; P3 neufs
+> D-011/D-012/D-013 → `bcafc5d65` (`/api/*` sans route → 404 JSON, `verify` sans catalogue admin, `country_code` client verrouillé) ; D-005 (11 SQL), D-007, D-010 assumés.
+> Vague A (site `cb3b430`) : 6 constats fermés ; **A-024 P1** (site : `/api/profile` 5xx → « 0 pts » muet) + A-025/A-026 → site `ff108d6` + `b0c9580`
+> (« — » / « Solde indisponible » / Réessayer, cas F2 du banc 28/28, 8/28 sur l'arbre d'avant ; srcset signature retiré ; cibles desktop ≥ 24 px).
+> Fusions `ab592579b` + `29e8eb316` poussées en avance rapide ; zones gelées 0 ligne ; Order 135, Security 241, Auth 146, Routes 7 verts.
+> Convergence stricte (ensembles identiques) NON atteinte : chaque cycle ferme des constats et en trouve de nouveaux (P3) — un cycle D ne
+> servirait qu'à confirmer ; décision propriétaire. Rapports `reports/test-e2e/app-hybride-2026-11/W7/cycle-C-{A,D}*`, `cycle-A-correctifs.md`.
 > **2026-11-04 06h — W7 cycles A et B corrigés : P0+P1 = 0 sur les deux vagues au cycle B ; mise en ligne PRÊTE (backend `0ab98956b`, site `site/deploy-2026-11-03`), toujours non lancée par le propriétaire.**
 > Cycle B : vague D (API) D-001/D-002/D-006 PASS, D-004 (500 via builders SMS/Push) + D-008 (route PUT message morte) + D-009 (téléphone réécrit) corrigés
 > en `5464a3f40` → fusion `0ab98956b` poussée en avance rapide sur `origin/pos/category-first-caisse-2026-06-23` ; vague A (pages client) GREEN, 11 PASS,
@@ -4942,6 +4951,12 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-04 11h — W7 cycle C : confirmation adverse des cycles A+B, D-004 réellement fermé, A-024 P1 neuf corrigé** (owner `/goal` « max finition… finis l'application »).
+- Deux superviseurs (A pages client, D API) relancés sur les arbres corrigés : D `5464a3f40` → P0+P1 = 0 mais D-004 toujours en 500 (mon correctif B ne couvrait que 3 constructeurs sur 9) ; A `cb3b430` → 1 P1 neuf (site muet sur un profil en 5xx, « 0 pts » faux).
+- Backend `6c4c5f70d` + `bcafc5d65` (fusions `ab592579b`, `29e8eb316` sur cette branche, poussées) ; site `ff108d6` + `b0c9580` (`site/deploy-2026-11-03`, `site-copie` à jour, `app/www` reconstruit, portes 9/9).
+- Leçon : « nullable sur les 3 builders qui ont explosé » n'était pas la cause racine (6 autres builders identiques) ; `grep` de la forme entière avant de déclarer fermé.
+- À LANCER PAR LE PROPRIÉTAIRE (classificateur) : `ssh lecayenne 'cd /var/www/lecayenne && bash tools/deploy-lecayenne.sh <HEAD de cette branche>'` puis Vercel depuis `site-copie` (= `b0c9580`).
 
 **🆕 2026-11-04 02h — W7 : finition de chaque page client, sécurité et performance de l'API frontend (cycle A corrigé)** (owner `/goal` : « max détails, sécurité, intelligence front et back, UI/UX, max optimise chaque page client, finis l'application »).
 - Deux superviseurs adverses à angles NEUFS (UI/UX/a11y/perf/sécu front ; sécu/perf API). Après 13 cycles W6 verts sur l'argent, l'API frontend avait encore **1 P0 + 2 P1** : `POST /api/frontend/message` renvoyait nom + téléphone en clair de n'importe quel `receiver_id` ; `TrustProxies='*'` laissait un client choisir son adresse (limiteurs par IP contournables) ; `PUT /api/profile` laissait un client pré-revendiquer l'e-mail/téléphone d'une future victime. Corrigés + 4 P2 (branche inexistante → 422 au lieu d'orphelin + 500 ; réglages 19 → 1 SQL ; médias de variations eager ; ETag/304 sur le catalogue). 7 tests neufs rouges-avant/verts-après, 295 tests des modules touchés verts, NF525 OK, gel 0. Backend `2c9e25217` (feat/app-hybride) → fusion `5b78ca291` sur la branche de mise en ligne.
