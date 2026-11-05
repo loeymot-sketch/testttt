@@ -406,7 +406,9 @@ class FrontendOrderService
                             $requestItems,
                             (int) $request->coupon_id,
                             (int) Auth::id(),
-                            (float) ($this->frontendOrder->delivery_charge ?? 0)
+                            (float) ($this->frontendOrder->delivery_charge ?? 0),
+                            // [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] surface réelle du code promo.
+                            $isKioskMachineOrder ? 'kiosk' : 'web'
                         ),
                         $this->couponService
                     );

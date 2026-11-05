@@ -9,12 +9,14 @@ use Smartisan\Settings\Facades\Settings;
 
 final class DiscountCalculator
 {
-    public function couponDiscount(CouponService $couponService, int $couponId, float $subtotal, int $customerUserId): float
+    // [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] Branche et surface transmises : un code limité à « web » ou à une
+    // branche était refusé au paiement (isUsableNow(null, null)) alors que « Appliquer » l'acceptait.
+    public function couponDiscount(CouponService $couponService, int $couponId, float $subtotal, int $customerUserId, ?int $branchId = null, ?string $surface = null): float
     {
         if ($couponId <= 0) {
             return 0.0;
         }
-        $coupon = $couponService->resolveCouponById($couponId, $subtotal, $customerUserId);
+        $coupon = $couponService->resolveCouponById($couponId, $subtotal, $customerUserId, $branchId, $surface);
 
         return (float) $couponService->calculateDiscountAmount($coupon, $subtotal);
     }

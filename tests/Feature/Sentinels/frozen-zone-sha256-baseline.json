@@ -4,7 +4,7 @@
         "created": "2026-05-29",
         "audit_session": "supervisor-audit-2026-05-29 / Round 1 + Round 2",
         "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc.",
-        "last_authorized_update": "2026-09-16 — docs/locks/LOCK_ORDER_INTEGRITY_KDS_LOYALTY_2026-09-16.md, fondé sur le gate propriétaire docs/gates/GATE_ORDER-INTEGRITY-KDS-LOYALTY-20260914_2026-09-14.md. Correctifs bornés : supplément libre fiscalisé côté serveur et round-trip POS multi-sauces."
+        "last_authorized_update": "2026-11-05 — docs/locks/LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05.md, accord du propriétaire du 2026-11-05 (audit final avant Apple). PricingService : branche + surface transmises à la validation du code promo (2 lignes d'arguments, aucun calcul de montant changé)."
     },
     "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "aeb0095fc11da9d19bdf927e73492397fd31b22097b0a193a1d6443de096a909",
     "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "b3afbf982b744e39e573b6d368ec63da788a4d374e67433a8f46956ac7be6dc1",
@@ -19,6 +19,6 @@
     "app/Services/Fiscal/AuditLogService.php": "0e57d0da91b9297ba8f21b2d0279295179009071f9dc07bf7ad841fc048d6d58",
     "app/Models/Scopes/BranchScope.php": "eff306115030b5d7ef8cd69f6d3da98567839e00ed1b2f086c0be2d6a6cd953c",
     "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0c25898a8150b021f4f787c7eb92d9d0fbbd8503cb863362a120c3c35206673b",
-    "app/Services/Pricing/PricingService.php": "d84902fd4d7a6f6e7e6d345c61170e078ef39d5402a7b530049c0a44a0280a61",
+    "app/Services/Pricing/PricingService.php": "3e41c4cd6ddd482b356d2fdf1963dd9c190d260a2d4ad772b91cd4ab4e6c0d54",
     "app/Domain/Order/OrderStateMachine.php": "2add313a915195733d71b4dcbc1b61e66ba4b95085e8daaeaa3a6d360921ea6b"
 }

@@ -173,6 +173,51 @@ class FrontendDiscountIntegrityTest extends TestCase
         ]);
     }
 
+    /**
+     * [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] Code promo limité à une SURFACE ou une BRANCHE : vérifié avec la
+     * surface et la branche réelles de la commande. Avant : accepté par « Appliquer » (coupon-checking), refusé à la commande
+     * (422) parce que le chemin SSOT validait avec isUsableNow(null, null). Prouvé mordant sur le code d'avant.
+     *
+     * @return array<string, array{0: array<string, mixed>, 1: int}>
+     */
+    public static function restrictionsDuCode(): array
+    {
+        return [
+            'limité au web'              => [['surfaces' => ['web']], 201],
+            'limité à la borne'          => [['surfaces' => ['kiosk']], 422],
+            'limité à la caisse'         => [['surfaces' => ['pos']], 422],
+            'limité à SA branche'        => [['branch_scope' => ['__branche__']], 201],
+            'limité à une autre branche' => [['branch_scope' => [999999]], 422],
+            'sans restriction'           => [[], 201],
+        ];
+    }
+
+    /** @dataProvider restrictionsDuCode */
+    public function test_code_limite_a_une_surface_ou_une_branche_est_verifie_avec_celles_de_la_commande(array $restriction, int $attendu): void
+    {
+        config(['pos.manual_discount_enabled' => true]);
+        if (isset($restriction['branch_scope'])) {
+            $restriction['branch_scope'] = array_map(fn ($b) => $b === '__branche__' ? $this->branch->id : $b, $restriction['branch_scope']);
+        }
+        $coupon = Coupon::forceCreate(array_merge([
+            'name' => 'SURF10', 'description' => '10 percent', 'code' => 'SURF10',
+            'discount' => 10, 'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(), 'end_date' => now()->addDay(),
+            'minimum_order' => 10, 'maximum_discount' => 5, 'limit_per_user' => 2,
+        ], $restriction));
+
+        $response = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload(['coupon_id' => $coupon->id]));
+
+        $response->assertStatus($attendu);
+        if ($attendu === 201) {
+            // Montant INCHANGÉ par le correctif : 10 % de 20,00 € = 2,00 €, identique au test du code sans restriction.
+            $this->assertDatabaseHas('orders', ['id' => $response->json('data.id'), 'discount' => 2.00]);
+        } else {
+            $this->assertSame(0, OrderCoupon::count(), 'aucune remise enregistrée pour un code refusé');
+        }
+    }
+
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
     {
         // [GOAL-GOLIVE-VAT10] Subject = anti-forgery (server ignores client totals),

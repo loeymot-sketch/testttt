@@ -347,7 +347,9 @@ final class PricingService
                 $couponService,
                 $req->couponId,
                 (float) $subtotalForDiscount,
-                $req->couponCustomerUserId
+                $req->couponCustomerUserId,
+                $req->branchId > 0 ? $req->branchId : null,
+                $req->couponSurface ?? (in_array($req->context, ['pos', 'kiosk', 'web'], true) ? $req->context : null)
             );
         } elseif ($req->manualDiscountRequest > 0.0 && in_array($req->context, ['pos', 'table'], true)) {
             $calculatedDiscount = $this->discountCalculator->manualDiscount(
