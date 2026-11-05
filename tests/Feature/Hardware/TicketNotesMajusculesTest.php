@@ -42,10 +42,20 @@ class TicketNotesMajusculesTest extends TestCase
 
     public function test_l_echo_du_nom_du_produit_en_majuscules_reste_supprime(): void
     {
+        // [CONSIGNES 2026-11-04 · « Garder toute consigne »] Le produit du banc s'appelle « Tacos M » : seule la ligne dont
+        // TOUS les mots appartiennent à son nom ou à son type (TACOS, TACOS M, SANDWICH…) est l'écho du wizard.
+        $b = $this->ticket("TACOS\nTACOS M");
+
+        $this->assertStringNotContainsString('** TACOS', $b);
+        $this->assertStringNotContainsString('** M', $b);
+    }
+
+    public function test_une_ligne_en_majuscules_qui_n_est_pas_l_echo_du_produit_est_gardee(): void
+    {
+        // « SANDWICH CAYENNE » n'est pas l'écho de « Tacos M » (CAYENNE n'appartient pas à son nom) : consigne, donc imprimée.
         $b = $this->ticket("TACOS\nSANDWICH CAYENNE");
 
-        $this->assertStringNotContainsString('SANDWICH CAYENNE', $b);
-        $this->assertStringNotContainsString('** TACOS', $b);
+        $this->assertStringContainsString('SANDWICH CAYENNE', $b);
     }
 
     public function test_les_notes_en_minuscules_ou_entre_crochets_sont_toujours_imprimees(): void
