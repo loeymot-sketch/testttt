@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Enums\Role as EnumRole;
 use App\Services\OtpManagerService;
+use App\Services\Auth\ReviewAccountService;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\VerifyPhoneRequest;
@@ -165,19 +166,24 @@ class GuestSignupController extends Controller
      * de ne rien demander d'autre à celui qui en a un. Mitigation : débit `otp-send` (5/min par
      * e-mail + 20/min global) ; un compte non-invité (staff) est TOUJOURS « inconnu » ici.
      *
-     * PAS de code fixe pour la revue App Store. J'en avais posé un (APP_REVIEW_EMAIL /
-     * APP_REVIEW_OTP) : `app/PUBLICATION.md §8` du dépôt tranche l'inverse, et a raison —
-     * « un code fixe pour une adresse connue est une porte qu'on oublie de refermer ». Le
-     * garde-fou habituel du projet (interdire en production) ne s'applique pas ici, puisque
-     * Apple examine l'application CONTRE la production. L'examinateur reçoit donc son code
-     * comme tout le monde, dans une boîte de démonstration dédiée dont les identifiants sont
-     * donnés en notes de revue (procédure : PUBLICATION.md §8).
+     * Revue App Store : code fixe pour UN e-mail exact, tant que la porte est ouverte (APP_REVIEW_EMAIL /
+     * APP_REVIEW_OTP / APP_REVIEW_UNTIL — décision propriétaire du 2026-10-15, voir codeDeRevuePour). Ce
+     * commentaire disait l'inverse (« PAS de code fixe ») : c'était l'état du 02/09, avant la réouverture.
      */
     public function emailLogin(GuestEmailLoginRequest $request
     ) : \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
             $email  = mb_strtolower(trim((string) $request->post('email')));
             $compte = $this->compteInviteParEmail($email);
+            // [AUDIT FINAL 2026-11-05 · D-P1-1] Compte de démonstration supprimé par l'examinateur (test 5.1.1(v)) : tant
+            // que la porte de revue est ouverte pour CET e-mail exact, un compte de démonstration NEUF est recréé — sinon
+            // l'examinateur suivant ne peut plus se connecter (rejet 2.1). L'ancien compte reste anonymisé.
+            if (! $compte && $this->porteDeRevue($email) !== null) {
+                $compte = app(ReviewAccountService::class)->assurer($email);
+                if ($compte) {
+                    Log::warning('app_review_login: compte de revue recréé', ['email' => $email, 'ip' => $request->ip()]);
+                }
+            }
 
             if ($compte) {
                 $cle = self::cleOtpDuCompte($compte, $email);
@@ -319,6 +325,23 @@ class GuestSignupController extends Controller
      */
     private function codeDeRevuePour(string $email, User $compte): ?string
     {
+        $code = $this->porteDeRevue($email);
+        if ($code === null) {
+            return null;
+        }
+        if ((int) $compte->is_guest !== Ask::YES) {
+            return null; // jamais un compte staff
+        }
+
+        return $code;
+    }
+
+    /**
+     * Code de revue si la porte est OUVERTE pour cet e-mail exact (e-mail configuré, code à 4 chiffres, date de fin
+     * non dépassée) ; null sinon. Ne regarde aucun compte : codeDeRevuePour ajoute la garde « invité seulement ».
+     */
+    private function porteDeRevue(string $email): ?string
+    {
         $emailRevue = mb_strtolower(trim((string) config('auth.app_review.email', '')));
         $code       = trim((string) config('auth.app_review.otp', ''));
         $jusqua     = trim((string) config('auth.app_review.until', ''));
@@ -331,9 +354,6 @@ class GuestSignupController extends Controller
             }
         } catch (\Throwable $e) {
             return null; // date illisible = porte fermée
-        }
-        if ((int) $compte->is_guest !== Ask::YES) {
-            return null; // jamais un compte staff
         }
 
         return $code;

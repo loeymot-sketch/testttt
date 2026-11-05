@@ -3,12 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Enums\Ask;
-use App\Enums\Role as EnumRole;
-use App\Enums\Status;
 use App\Models\User;
+use App\Services\Auth\ReviewAccountService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * Compte de démonstration pour l'examinateur App Store / Google Play (décision propriétaire
@@ -71,24 +68,11 @@ class ReviewAccountCommand extends Command
             return 1;
         }
 
-        if (! $user) {
-            $user = User::create([
-                'name'         => 'Revue Store',
-                'username'     => 'revue-'.Str::lower(Str::random(8)),
-                'email'        => $email,
-                'phone'        => $phone,
-                'country_code' => '+33',
-                'branch_id'    => 0,
-                'is_guest'     => Ask::YES,
-                'status'       => Status::ACTIVE,
-                'password'     => Hash::make(Str::random(40)),
-            ]);
-            $user->assignRole(EnumRole::CUSTOMER);
-        } else {
-            if ($user->trashed()) {
-                $user->restore();
-            }
-            $user->forceFill(['phone' => $phone, 'status' => Status::ACTIVE])->save();
+        // Même règle de création que la connexion e-mail (ReviewAccountService) : une seule source.
+        if (! app(ReviewAccountService::class)->assurer($email, $phone)) {
+            $this->error('Le compte de revue n\'a pas pu être préparé.');
+
+            return 1;
         }
 
         $this->info("Compte de revue prêt : {$email} (téléphone {$phone}).");

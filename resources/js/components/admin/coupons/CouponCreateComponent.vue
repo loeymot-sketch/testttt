@@ -359,15 +359,22 @@ export default {
                 if (this.props.form.valid_hours_end) {
                     fd.append('valid_hours_end', this.props.form.valid_hours_end);
                 }
-                if (Array.isArray(this.props.form.valid_days_of_week)) {
+                if (Array.isArray(this.props.form.valid_days_of_week) && this.props.form.valid_days_of_week.length) {
                     this.props.form.valid_days_of_week.forEach((d, i) => {
                         fd.append(`valid_days_of_week[${i}]`, d);
                     });
+                } else {
+                    // [AUDIT FINAL 2026-11-05 · C-P2-2] Même défaut que les canaux : tout décocher = tous les jours.
+                    fd.append('valid_days_of_week', '');
                 }
-                if (Array.isArray(this.props.form.surfaces)) {
+                if (Array.isArray(this.props.form.surfaces) && this.props.form.surfaces.length) {
                     this.props.form.surfaces.forEach((s, i) => {
                         fd.append(`surfaces[${i}]`, s);
                     });
+                } else {
+                    // [AUDIT FINAL 2026-11-05 · C-P2-2] Tout décocher = valable partout. Sans clé envoyée, le serveur gardait
+                    // l'ancienne restriction (« Web » seul) : le code restait limité sans que l'écran le montre.
+                    fd.append('surfaces', '');
                 }
                 // branch_scope: parse CSV "1,3" -> array of integers
                 const csv = (this.branchScopeCsv || '').trim();

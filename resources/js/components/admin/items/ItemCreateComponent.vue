@@ -566,11 +566,14 @@ export default {
                 // (i.e. hide on all surfaces), an admin currently needs API
                 // / tinker; UI "clear-to-empty-array" is V1.0.2 backlog.
                 const channels = Array.isArray(this.props.form.channels) ? this.props.form.channels : [];
-                channels.forEach((c) => {
-                    if (['kiosk', 'pos', 'web'].indexOf(c) !== -1) {
-                        fd.append('channels[]', c);
-                    }
-                });
+                const channelsValides = channels.filter((c) => ['kiosk', 'pos', 'web'].indexOf(c) !== -1);
+                channelsValides.forEach((c) => fd.append('channels[]', c));
+                // [AUDIT FINAL 2026-11-05 · C-P2-2] Toutes les cases décochées = « Laisser vide = visible partout » (texte
+                // de l'écran). Sans clé envoyée, le serveur GARDAIT l'ancienne restriction (« Web » seul…) sans un mot :
+                // le produit restait masqué de la borne et de la caisse. Un champ vide → null côté serveur = tous les canaux.
+                if (channelsValides.length === 0) {
+                    fd.append('channels', '');
+                }
 
                 /*
                  * [ONB 2026-08-28] Les allergènes, avec leur témoin.

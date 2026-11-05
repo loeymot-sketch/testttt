@@ -370,6 +370,54 @@ class EmailLoginFlowTest extends TestCase
         $this->assertNotSame('123456', $this->tokenFor('0699555012'));
     }
 
+    /**
+     * [AUDIT FINAL 2026-11-05 · D-P1-1] L'examinateur Apple SUPPRIME le compte de démonstration (règle 5.1.1(v)), puis un
+     * second examinateur (ou la soumission suivante) se reconnecte avec les MÊMES identifiants : il doit y arriver.
+     * Avant : la suppression efface l'e-mail, le code fixe n'était accordé qu'à un compte existant → « known:false »,
+     * plus aucune connexion possible → rejet 2.1. Parcours réel : connexion, suppression par la route du produit,
+     * reconnexion. L'ancien compte reste anonymisé (jamais ressuscité).
+     */
+    public function test_revue_le_compte_de_demonstration_survit_au_test_de_suppression(): void
+    {
+        Mail::fake();
+        $this->ouvrirPorteDeRevue(now()->addDays(14)->toDateString());
+        $ancien = $this->guest(['email' => 'revue@lecayenne.fr', 'phone' => '0600000042', 'name' => 'Revue Store', 'loyalty_points' => 0]);
+        // Rôle par son NOM : les identifiants de rôles du semis de test ne suivent pas ceux de la production
+        // (DeactivateController exige le rôle « Customer »).
+        $ancien->syncRoles(['Customer']);
+
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
+        $v = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(201);
+        $this->withHeader('Authorization', 'Bearer '.$v->json('token'))
+            ->postJson('/api/auth/delete-account')->assertSuccessful();
+        $this->app['auth']->forgetGuards();
+        $this->withHeaders(['Authorization' => '']);
+        $this->assertNull(User::withoutGlobalScopes()->withTrashed()->find($ancien->id)?->email, 'La suppression doit effacer l\'e-mail.');
+
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
+        Mail::assertNothingSent();
+        $v2 = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(201);
+        $this->assertNotEmpty($v2->json('token'));
+        $this->assertFalse((bool) $v2->json('phone_required'), 'Le compte recréé a un téléphone : aucun écran bloquant.');
+
+        $nouveau = User::withoutGlobalScopes()->whereRaw('LOWER(email) = ?', ['revue@lecayenne.fr'])->first();
+        $this->assertNotNull($nouveau);
+        $this->assertNotSame($ancien->id, $nouveau->id, 'Un compte NEUF : l\'ancien reste supprimé et anonymisé.');
+        $this->assertSame(Ask::YES, (int) $nouveau->is_guest);
+    }
+
+    /** Porte FERMÉE (ou autre e-mail) : un e-mail inconnu ne crée JAMAIS de compte, même celui de la revue. */
+    public function test_revue_porte_fermee_ne_recree_aucun_compte(): void
+    {
+        Mail::fake();
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', false);
+        $this->ouvrirPorteDeRevue(now()->subDay()->toDateString());
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', false);
+        $this->ouvrirPorteDeRevue(now()->addDays(14)->toDateString());
+        $this->emailLogin(['email' => 'autre@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', false);
+        $this->assertSame(0, User::withoutGlobalScopes()->withTrashed()->count());
+    }
+
     /** (8) verify sans téléphone NI e-mail → 422, jamais de token. */
     public function test_verify_requires_phone_or_email(): void
     {
