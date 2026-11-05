@@ -386,7 +386,8 @@ class EmailLoginFlowTest extends TestCase
         // (DeactivateController exige le rôle « Customer »).
         $ancien->syncRoles(['Customer']);
 
-        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true)
+            ->assertJsonMissingPath('nouveau'); // compte existant : « Compte retrouvé » est vrai
         $v = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(201);
         $this->withHeader('Authorization', 'Bearer '.$v->json('token'))
             ->postJson('/api/auth/delete-account')->assertSuccessful();
@@ -394,7 +395,8 @@ class EmailLoginFlowTest extends TestCase
         $this->withHeaders(['Authorization' => '']);
         $this->assertNull(User::withoutGlobalScopes()->withTrashed()->find($ancien->id)?->email, 'La suppression doit effacer l\'e-mail.');
 
-        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true);
+        $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true)
+            ->assertJsonPath('nouveau', true); // l'écran dit « Compte prêt », jamais « Compte retrouvé » (ADV3-002)
         Mail::assertNothingSent();
         $v2 = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(201);
         $this->assertNotEmpty($v2->json('token'));

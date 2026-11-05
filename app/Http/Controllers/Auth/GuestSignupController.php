@@ -178,8 +178,10 @@ class GuestSignupController extends Controller
             // [AUDIT FINAL 2026-11-05 · D-P1-1] Compte de démonstration supprimé par l'examinateur (test 5.1.1(v)) : tant
             // que la porte de revue est ouverte pour CET e-mail exact, un compte de démonstration NEUF est recréé — sinon
             // l'examinateur suivant ne peut plus se connecter (rejet 2.1). L'ancien compte reste anonymisé.
+            $compteRecree = false;
             if (! $compte && $this->porteDeRevue($email) !== null) {
                 $compte = app(ReviewAccountService::class)->assurer($email);
+                $compteRecree = (bool) $compte;
                 if ($compte) {
                     Log::warning('app_review_login: compte de revue recréé', ['email' => $email, 'ip' => $request->ip()]);
                 }
@@ -205,6 +207,11 @@ class GuestSignupController extends Controller
                 }
 
                 $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
+                // [AUDIT FINAL 2026-11-05 · ADV3-002] Compte de revue RECRÉÉ après une suppression : l'écran ne doit pas dire
+                // « Compte retrouvé · Content de vous revoir » à l'examinateur qui vient de vérifier la suppression (5.1.1(v)).
+                if ($compteRecree) {
+                    $payload['nouveau'] = true;
+                }
                 $this->ajouterCodeDev($payload, $cle);
 
                 return response($payload);
