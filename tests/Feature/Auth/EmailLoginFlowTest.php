@@ -353,7 +353,7 @@ class EmailLoginFlowTest extends TestCase
         $this->ouvrirPorteDeRevue(now()->addDays(14)->toDateString());
         $this->guest(); // un vrai client : sarah.dupont@example.com
 
-        $this->emailLogin(['email' => self::EMAIL])->assertStatus(200);
+        $this->emailLogin(['email' => self::EMAIL])->assertStatus(200)->assertJsonMissingPath('nouveau');
         $this->assertNotSame('2468', $this->tokenFor(self::PHONE), 'Un autre e-mail garde son code aléatoire.');
         Mail::assertSent(SignupOtpMail::class, fn (SignupOtpMail $m) => $m->hasTo(self::EMAIL));
 
@@ -387,7 +387,7 @@ class EmailLoginFlowTest extends TestCase
         $ancien->syncRoles(['Customer']);
 
         $this->emailLogin(['email' => 'revue@lecayenne.fr'])->assertStatus(200)->assertJsonPath('known', true)
-            ->assertJsonMissingPath('nouveau'); // compte existant : « Compte retrouvé » est vrai
+            ->assertJsonPath('nouveau', true); // compte de DÉMONSTRATION : toujours « Compte prêt » (ADV5-003)
         $v = $this->postJson('/api/auth/guest-signup/verify', ['email' => 'revue@lecayenne.fr', 'token' => '2468'])->assertStatus(201);
         $this->withHeader('Authorization', 'Bearer '.$v->json('token'))
             ->postJson('/api/auth/delete-account')->assertSuccessful();

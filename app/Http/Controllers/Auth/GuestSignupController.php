@@ -209,7 +209,9 @@ class GuestSignupController extends Controller
                 $payload = ['status' => true, 'known' => true, 'message' => trans('all.message.check_your_email_for_code')];
                 // [AUDIT FINAL 2026-11-05 · ADV3-002] Compte de revue RECRÉÉ après une suppression : l'écran ne doit pas dire
                 // « Compte retrouvé · Content de vous revoir » à l'examinateur qui vient de vérifier la suppression (5.1.1(v)).
-                if ($compteRecree) {
+                // [ADV5-003] Tout compte de revue (porte ouverte, code fixe) est un compte de démonstration : « Compte prêt » aussi
+                // après une relance de l'application (la mémoire de l'écran est perdue), jamais « Compte retrouvé ».
+                if ($compteRecree || $codeRevue !== null) {
                     $payload['nouveau'] = true;
                 }
                 $this->ajouterCodeDev($payload, $cle);
