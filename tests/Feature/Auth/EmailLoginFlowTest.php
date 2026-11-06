@@ -420,6 +420,26 @@ class EmailLoginFlowTest extends TestCase
         $this->assertSame(0, User::withoutGlobalScopes()->withTrashed()->count());
     }
 
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-3] Un seul client qui martèle l'envoi de codes est arrêté PAR SON ADRESSE ; les autres
+     * clients peuvent toujours se connecter (avant : seau global de 100/min vidé en 2,3 s → 429 pour tout le monde).
+     */
+    public function test_un_client_qui_martele_les_codes_ne_bloque_pas_les_autres(): void
+    {
+        Mail::fake();
+        $attaquant = fn (int $i) => $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.7'])
+            ->postJson('/api/auth/guest-signup/email-login', ['email' => "inconnu{$i}@example.test"]);
+        for ($i = 0; $i < 30; $i++) {
+            $attaquant($i)->assertStatus(200);
+        }
+        $attaquant(99)->assertStatus(429);
+
+        $this->guest();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->postJson('/api/auth/guest-signup/email-login', ['email' => self::EMAIL])
+            ->assertStatus(200)->assertJsonPath('known', true);
+    }
+
     /** (8) verify sans téléphone NI e-mail → 422, jamais de token. */
     public function test_verify_requires_phone_or_email(): void
     {

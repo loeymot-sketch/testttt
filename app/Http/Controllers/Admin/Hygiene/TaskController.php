@@ -136,7 +136,10 @@ class TaskController extends HygieneController
             // Verrou sur la fiche : deux validations « complètes » simultanées (double appui, deux tablettes) ne passent pas toutes les deux.
             $refused = DB::transaction(function () use ($t, $day, $row): bool {
                 HygieneTaskTemplate::query()->whereKey($t->id)->lockForUpdate()->first();
-                $already = HygieneTaskCompletion::query()->whereNull('voided_at')->where('template_id', $t->id)->whereDate('due_date', $day->toDateString())->where('complete', true)->exists();
+                // [AUDIT ABUSIF 2026-11-06 · W5-P1-2] Lecture VERROUILLANTE : la lecture ordinaire voyait l'instantané REPEATABLE READ
+                // ouvert AVANT le verrou (BranchScope lit default_access en construisant la requête) — 3 validations simultanées
+                // sur 4 passaient. Une lecture verrouillante voit toujours la dernière valeur validée.
+                $already = HygieneTaskCompletion::query()->whereNull('voided_at')->where('template_id', $t->id)->whereDate('due_date', $day->toDateString())->where('complete', true)->lockForUpdate()->exists();
                 if ($already) return true;
                 $row->save();
 

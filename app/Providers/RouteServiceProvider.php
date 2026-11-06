@@ -137,9 +137,14 @@ class RouteServiceProvider extends ServiceProvider
             $raw = $request->input('phone') ?: $request->input('email') ?: 'anon';
             $id = Str::lower(is_string($raw) ? $raw : 'anon');
 
+            // [AUDIT ABUSIF 2026-11-06 · W3-P1-3] UN client vidait le seau global (105 requêtes en 2,3 s) : plus personne ne
+            // recevait de code de connexion (429 pour tous). Un seau PAR ADRESSE IP l'arrête avant le global — l'adresse n'est
+            // plus usurpable depuis W7-D (TrustProxies ne croit que nginx local) ; 30/min reste large pour une adresse
+            // partagée (opérateur mobile). Le plafond global, relevé à 300/min, ne sert plus qu'à freiner une attaque répartie.
             $limits = [
                 Limit::perMinute(5)->by('otp-id:'.$id),
-                Limit::perMinute(100)->by('otp-send-global'),
+                Limit::perMinute(30)->by('otp-ip:'.$request->ip()),
+                Limit::perMinute(300)->by('otp-send-global'),
             ];
 
             // [P1-2 SÉCU 2026-08-04] Plafond DÉDIÉ PAR EMAIL. Le seau par-identifiant ci-dessus

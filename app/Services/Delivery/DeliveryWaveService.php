@@ -325,7 +325,8 @@ class DeliveryWaveService
             && $stops->every(fn (DeliveryStop $s) => $s->left_at === null && ! $s->slot_fixed)
             && $stops->count() < $max
             && $stops->min('created_at')->gte($now->copy()->subMinutes($this->waveMinutes()))
-            && DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $candidate)->count() === 0
+            // [AUDIT ABUSIF 2026-11-06 · W5-P1-2] même défaut : lecture verrouillante après le verrou, jamais l'instantané périmé.
+            && DeliveryStop::query()->where('branch_id', $branchId)->where('wave_at', $candidate)->lockForUpdate()->count() === 0
         ) {
             DeliveryStop::query()->whereIn('id', $stops->pluck('id'))->update(['wave_at' => $candidate]);
             Order::query()->whereIn('id', $stops->pluck('order_id'))->update(['delivery_slot_at' => $candidate]);
