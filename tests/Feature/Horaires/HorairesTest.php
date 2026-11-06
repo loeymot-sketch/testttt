@@ -155,6 +155,24 @@ class HorairesTest extends TestCase
         $this->assertSame([], $this->erreursCreneau('2026-12-23 19:30:00'), 'un jour ouvert reste accepté');
     }
 
+    /** [AUDIT ABUSIF W3-P2-1] Commande web IMMÉDIATE : retrait refusé restaurant fermé, toute commande refusée un jour de fermeture exceptionnelle. */
+    public function test_commande_immediate_refusee_quand_le_restaurant_ne_sert_pas(): void
+    {
+        config(['horaires.refuser_hors_service' => true]);
+        $erreurs = function (string $quand, int $type): array {
+            $m = \App\Http\Requests\OrderRequest::refusHorsService($type, $this->t($quand));
+
+            return $m === null ? [] : [$m];
+        };
+        $this->assertNotEmpty($erreurs('2026-11-05 15:00', \App\Enums\OrderType::TAKEAWAY), 'retrait immédiat à 15 h : fermé');
+        $this->assertSame([], $erreurs('2026-11-05 19:00', \App\Enums\OrderType::TAKEAWAY), 'retrait immédiat à 19 h : ouvert');
+        $this->assertSame([], $erreurs('2026-11-05 15:00', \App\Enums\OrderType::DELIVERY), 'livraison au plus tôt : prochaine tournée');
+        $this->h()->enregistrer($this->semaine(), [['du' => '2026-12-24', 'au' => '2026-12-24', 'message' => 'Fermé pour Noël']]);
+        $e = $erreurs('2026-12-24 19:00', \App\Enums\OrderType::DELIVERY);
+        $this->assertNotEmpty($e, 'fermeture exceptionnelle : même la livraison');
+        $this->assertStringContainsString('Fermé pour Noël', $e[0]);
+    }
+
     /** @return list<string> */
     private function erreursCreneau(string $quand): array
     {

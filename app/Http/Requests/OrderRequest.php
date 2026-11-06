@@ -286,6 +286,19 @@ class OrderRequest extends FormRequest
                 return;
             }
 
+            // [AUDIT ABUSIF 2026-11-06 · W3-P2-1 / W5-P2-1] Commande IMMÉDIATE (sans scheduled_at) venue du site / de l'app :
+            // le serveur ne protégeait pas les horaires, seul le site le faisait. Refusée (1) un jour de FERMETURE
+            // EXCEPTIONNELLE, quel que soit le mode — sinon elle partait des jours plus tard en silence ; (2) en RETRAIT quand
+            // le restaurant ne sert pas (la livraison « au plus tôt » reste acceptée : la prochaine tournée est annoncée).
+            // Borne : inchangée (machine physique dans le restaurant).
+            if (! $isKioskToken && blank($this->input('scheduled_at'))) {
+                $refus = self::refusHorsService($orderTypeInt, now());
+                if ($refus !== null) {
+                    $validator->errors()->add('order_type', $refus);
+                    return;
+                }
+            }
+
             if ($isKioskToken) {
                 $kiosk = $this->kioskMachineForToken();
                 if (! $kiosk) {
@@ -429,6 +442,32 @@ class OrderRequest extends FormRequest
      * Le format lui-même est déjà rejeté par la règle date_format — un parse
      * raté ici sort en silence pour ne pas doubler l'erreur.
      */
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P2-1] Message de refus d'une commande web IMMÉDIATE quand le restaurant ne sert pas, ou
+     * null. Refus : un jour de fermeture exceptionnelle (tout mode), ou un retrait hors service. La livraison « au plus tôt »
+     * hors service reste acceptée (prochaine tournée annoncée). Réglable : config horaires.refuser_hors_service.
+     */
+    public static function refusHorsService(int $orderType, \Carbon\CarbonInterface $maintenant): ?string
+    {
+        if (! (bool) config('horaires.refuser_hors_service', true)) {
+            return null;
+        }
+        $horaires = app(\App\Services\Horaires\HorairesService::class);
+        if ($horaires->estEnService($maintenant)) {
+            return null;
+        }
+        $fermeture = $horaires->fermetureDu($maintenant->toDateString());
+        if ($fermeture === null && $orderType !== OrderType::TAKEAWAY) {
+            return null;
+        }
+        $prochaine = $horaires->prochaineOuverture($maintenant);
+        $quand = $prochaine
+            ? ' Réouverture ' . \App\Services\Horaires\HorairesService::JOURS[(int) $prochaine['debut']->isoWeekday()] . ' à ' . $prochaine['debut']->format('H:i') . '.'
+            : '';
+
+        return ($fermeture && $fermeture['message'] !== '' ? $fermeture['message'] . '.' : 'Le restaurant est fermé pour le moment.') . $quand;
+    }
+
     private function validateScheduledAtAfter($validator): void
     {
         $raw = $this->input('scheduled_at');
