@@ -2068,7 +2068,11 @@ class FrontendOrderService
             $menuPaye = false;
             foreach ($addons as $a) {
                 $role = is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '');
-                if (str_starts_with($role, 'menu_')) {
+                $id = is_object($a) ? (int) ($a->id ?? 0) : (is_array($a) ? (int) ($a['id'] ?? 0) : 0);
+                // [AUDIT ABUSIF 2026-11-06 · ADV2-001] Seul un addon menu_* AVEC son identifiant est contrôlé (rôle
+                // menu_component exigé en base, ValidatesAddonRoles) et FACTURÉ (PricingService). `{role:"menu_full"}` sans id
+                // n'était ni l'un ni l'autre : il suffisait à faire annoncer un menu non payé en cuisine.
+                if ($id > 0 && str_starts_with(strtolower($role), 'menu_')) {
                     $menuPaye = true;
                     break;
                 }

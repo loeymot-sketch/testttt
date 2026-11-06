@@ -6589,6 +6589,24 @@ export default {
                 }
             }
         },
+        // [AUDIT ABUSIF 2026-11-06 · W1-P1-01 + ADV2] UNE clé d'idempotence par PANIER non encore enregistré, pour chaque voie
+        // d'envoi (encaissement, commande téléphone, livraison). Réponse perdue (vente créée et fiscalisée côté serveur, « réseau
+        // coupé » en caisse) puis nouvel essai : même clé → le serveur rejoue la première vente ou refuse le doublon (409) ;
+        // avant, une clé neuve à chaque essai créait une 2ᵉ vente. Empreinte = lignes + mode + table + client + voie, 15 min.
+        // Oubliée dès que le panier se vide (vente réussie ou abandon) : deux clients au même panier ne sont jamais confondus.
+        cleStablePourPanier: function (voie, branchId) {
+            const f = this.checkoutProps.form;
+            const empreinte = JSON.stringify([
+                voie,
+                (this.carts || []).map((c) => [c.item_id ?? c.id, c.quantity, c.item_variations, c.item_extras, c.item_addons, c.instruction, c.total_price ?? c.price]),
+                f.order_type, f.dining_table_id ?? null, f.customer_id ?? null,
+            ]);
+            const prec = this._cleEncaissement;
+            const reprise = prec && prec.empreinte === empreinte && (Date.now() - prec.at) < 15 * 60 * 1000;
+            const cle = reprise ? prec.cle : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${branchId}`;
+            this._cleEncaissement = { empreinte, cle, at: reprise ? prec.at : Date.now() };
+            return cle;
+        },
         resetCart: function () {
             // [UX-RESET-06 2026-07-22] Confirmation 2-taps (non bloquante) : vider tout le panier
             // d'un seul tap = perte destructive sans filet. 1er tap arme, 2e tap dans les 3s exécute.
@@ -7063,7 +7081,8 @@ export default {
                     // Signaux de différé côté serveur (double ceinture).
                     phone_order: true,
                     defer_to_counter: true,
-                    idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
+                    // [AUDIT ABUSIF 2026-11-06 · ADV2] même clé stable que l'encaissement (réponse perdue = jamais deux commandes)
+                    idempotency_key: this.cleStablePourPanier('telephone', _branchId),
                 };
 
                 const orderResponse = await this.$store.dispatch('posOrder/save', payload);
@@ -7191,7 +7210,8 @@ export default {
                     scheduled_at: this.checkoutProps.form.scheduled_at || null,
                     quote_token: quote.quote_token,
                     quote_signature: quote.signature,
-                    idempotency_key: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`,
+                    // [AUDIT ABUSIF 2026-11-06 · ADV2] même clé stable que l'encaissement (réponse perdue = jamais deux livraisons)
+                    idempotency_key: this.cleStablePourPanier('livraison', _branchId),
                 };
 
                 await this.$store.dispatch('posOrder/save', payload);
@@ -7300,17 +7320,7 @@ export default {
             // Même panier (mêmes lignes, même mode, même table, même client) dans les 15 min → même clé : le serveur rejoue la
             // première vente ou refuse le doublon (409). La clé est oubliée dès que le panier se vide (vente réussie ou
             // abandon) : deux clients successifs qui commandent la même chose ne sont jamais confondus.
-            {
-                const f = this.checkoutProps.form;
-                const empreinte = JSON.stringify([
-                    (this.carts || []).map((c) => [c.item_id ?? c.id, c.quantity, c.item_variations, c.item_extras, c.item_addons, c.instruction, c.total_price ?? c.price]),
-                    f.order_type, f.dining_table_id ?? null, f.customer_id ?? null,
-                ]);
-                const prec = this._cleEncaissement;
-                const reprise = prec && prec.empreinte === empreinte && (Date.now() - prec.at) < 15 * 60 * 1000;
-                f.idempotency_key = reprise ? prec.cle : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
-                this._cleEncaissement = { empreinte, cle: f.idempotency_key, at: reprise ? prec.at : Date.now() };
-            }
+            this.checkoutProps.form.idempotency_key = this.cleStablePourPanier('encaissement', _branchId);
 
             // [POS-OFFLINE-WIRE 2026-05-17] Pre-modal network gate. If the
             // browser reports offline (navigator.onLine === false), do NOT

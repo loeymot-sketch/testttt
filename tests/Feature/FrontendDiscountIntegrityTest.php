@@ -256,6 +256,16 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertSame("Viandes en plus : Poulet.\n[Note : sans oignon, allergie lait]", (string) $ligne->instruction);
         $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
         $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $ligne->instruction), 'aucun badge MENU');
+
+        // [ADV2-001] Un addon « menu_full » SANS identifiant (jamais facturé) ne vaut pas une formule payée.
+        $r2 = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [], 'item_addons' => [['role' => 'menu_full']], 'instruction' => $instruction]]),
+            ]));
+        $r2->assertStatus(201);
+        $ligne2 = \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r2->json('data.id'))->first();
+        $this->assertStringNotContainsString('Boisson menu', (string) $ligne2->instruction);
+        $this->assertStringNotContainsString('Menu (Frites', (string) $ligne2->instruction);
     }
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
