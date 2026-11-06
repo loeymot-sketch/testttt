@@ -68,7 +68,9 @@ final class DiscountCalculator
         // [RED-1 2026-08-04 · LOCK_FRONTENDORDER_REDEEM_REORDER] La barrière de solde ne s'applique
         // qu'au DÉBIT FRAIS. Le RATTACHEMENT d'un pré-rachat déjà débité doit obtenir la valeur de
         // remise SANS re-tester le solde (déjà à 0 après « j'utilise tous mes points ») → skipBalanceGate.
-        if (! $skipBalanceGate && $lockedLoyaltyUser->loyalty_points < $pointsRequired) {
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06 · relecture adverse P2-2] Le devis contrôle les points DÉPENSABLES, comme la
+        // création : sinon la borne annonçait une remise que la commande sautait (409 « le total a changé »).
+        if (! $skipBalanceGate && \App\Services\LoyaltyService::pointsDepensables((int) $lockedLoyaltyUser->id, (int) $lockedLoyaltyUser->loyalty_points) < $pointsRequired) {
             return ['discount' => 0.0, 'points' => 0];
         }
 

@@ -21,6 +21,17 @@
     <!-- Étape 1: Saisie du code -->
     <div v-if="step === 'input'" class="kiosk-loyalty-step">
       <div class="kiosk-loyalty-card">
+        <!-- [DÉCISION PROPRIÉTAIRE 2026-11-06 · « QR, téléphone, e-mail, plein de choix »] Trois façons de s'identifier. -->
+        <div class="kiosk-loyalty-modes" role="tablist" :aria-label="$t('kiosk.loyalty_screen.title')">
+          <button v-for="m in idModes" :key="m.id" type="button" role="tab" class="kiosk-loyalty-mode"
+            :class="{ 'is-on': idMode === m.id }" :aria-selected="idMode === m.id" :data-testid="'kiosk-loyalty-mode-' + m.id"
+            @click="setIdMode(m.id)">
+            <span class="kiosk-loyalty-mode-icon" aria-hidden="true">{{ m.icon }}</span>
+            <span>{{ $t('kiosk.loyalty_screen.' + m.label) }}</span>
+          </button>
+        </div>
+
+        <template v-if="idMode === 'tel'">
         <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.input_sub') }}</p>
 
         <div class="kiosk-loyalty-input-row">
@@ -55,12 +66,32 @@
             <template v-else>{{ key }}</template>
           </button>
         </div>
+        </template>
+
+        <!-- QR : le lecteur de la borne « tape » le contenu du QR suivi d'Entrée dans ce champ (aucune limite de 20). -->
+        <template v-else-if="idMode === 'qr'">
+          <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.qr_sub') }}</p>
+          <div class="kiosk-loyalty-qr-zone" aria-hidden="true">▣</div>
+          <input ref="qrInput" v-model="qrSaisie" type="text" class="kiosk-loyalty-input kiosk-loyalty-input--qr"
+            :placeholder="$t('kiosk.loyalty_screen.qr_placeholder')" autocomplete="off" autocapitalize="off" spellcheck="false"
+            data-testid="kiosk-loyalty-qr-input" @keyup.enter="checkLoyalty" />
+        </template>
+
+        <!-- E-mail : saisi au clavier virtuel de la borne. -->
+        <template v-else>
+          <p class="kiosk-loyalty-subtitle">{{ $t('kiosk.loyalty_screen.email_sub') }}</p>
+          <input ref="emailInput" v-model="loginEmail" type="email" inputmode="email" class="kiosk-loyalty-input"
+            :class="{ 'kiosk-loyalty-input--active': vkeybActiveField === 'loginEmail' }"
+            :placeholder="$t('kiosk.loyalty_screen.email_placeholder')" autocomplete="off" autocapitalize="off" spellcheck="false"
+            maxlength="120" data-testid="kiosk-loyalty-email-input"
+            @focus="vkeybActiveField = 'loginEmail'" @click="vkeybActiveField = 'loginEmail'" @keyup.enter="checkLoyalty" />
+        </template>
 
         <div v-if="error" class="kiosk-loyalty-error">{{ error }}</div>
 
         <button type="button"
           class="kiosk-btn-primary full"
-          :disabled="!code.trim() || loading"
+          :disabled="!saisieCourante.trim() || loading"
           @click="checkLoyalty"
         >
           <span v-if="!loading">{{ $t('kiosk.loyalty_screen.verify_btn') }}</span>
@@ -249,7 +280,8 @@
 
         <!-- [VG-2026-10-21 M5-101] « il en faut au moins N » seulement si N vient du serveur. -->
         <div v-else-if="!canRedeem && minRedeemPoints !== null" class="kiosk-loyalty-not-enough">
-          <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
+          <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: pointsDepensables, min: minRedeemPoints }) }}</p>
+          <p v-if="customer.points_pending > 0" data-testid="kiosk-loyalty-pending">{{ $t('kiosk.loyalty_screen.pending_note', { n: customer.points_pending }) }}</p>
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
 
@@ -397,10 +429,32 @@ export default {
       // est déjà connu (registerPhone), son champ est masqué, et il ne reste que
       // le prénom à saisir. false = entrée manuelle "S'inscrire" (formulaire complet).
       phoneCapturedFromCheck: false,
+      // [DÉCISION PROPRIÉTAIRE 2026-11-06] Mode d'identification choisi : 'tel' (code ou téléphone), 'qr', 'email'.
+      idMode: 'tel',
+      qrSaisie: '',
+      loginEmail: '',
     };
   },
 
   computed: {
+    idModes() {
+      return [
+        { id: 'tel', icon: '📱', label: 'mode_tel' },
+        { id: 'qr', icon: '▣', label: 'mode_qr' },
+        { id: 'email', icon: '✉', label: 'mode_email' },
+      ];
+    },
+    // Points DÉPENSABLES ; un client sans le champ (serveur ancien, objet restauré) retombe sur son solde (comportement d'avant).
+    pointsDepensables() {
+      const c = this.customer || {};
+      const d = Number(c.points_depensables);
+      return Number.isFinite(d) ? d : (parseInt(c.loyalty_point, 10) || 0);
+    },
+    saisieCourante() {
+      if (this.idMode === 'qr') return this.qrSaisie || '';
+      if (this.idMode === 'email') return this.loginEmail || '';
+      return this.code || '';
+    },
     ...mapGetters('kioskCart', ['total', 'upsellShown', 'items']),
     ...mapGetters('kioskMenu', ['categories']),
     shouldSkipKioskUpsell() {
@@ -415,7 +469,8 @@ export default {
     canRedeem() {
       // [VG-2026-10-21 M5-101] Seuil inconnu = pas de rachat proposé (une seule source : le serveur).
       if (!this.customer || this.minRedeemPoints === null) return false;
-      return this.customer.loyalty_point >= this.minRedeemPoints;
+      // [DÉCISION PROPRIÉTAIRE 2026-11-06] Seuls les points DÉPENSABLES (ceux d'une commande à distance pas encore remise attendent).
+      return this.pointsDepensables >= this.minRedeemPoints;
     },
     // [FIX P2 audit 2026-06-28] Même flag que le panier (window.foodkingConfig.
     // discountsEnabled = config pos.manual_discount_enabled, défaut false). Si OFF,
@@ -495,6 +550,7 @@ export default {
       if (f === 'registerName') return this.registerName;
       if (f === 'registerPhone') return this.registerPhone;
       if (f === 'registerEmail') return this.registerEmail;
+      if (f === 'loginEmail') return this.loginEmail;
       return '';
     },
     // Kiosk Phase 9.1.7 — interdit l'espace pour email (format RFC) et pour
@@ -510,6 +566,7 @@ export default {
       if (this.vkeybActiveField === 'registerName') return 60;
       if (this.vkeybActiveField === 'registerEmail') return 80;
       if (this.vkeybActiveField === 'registerPhone') return 20;
+      if (this.vkeybActiveField === 'loginEmail') return 120;
       return 200;
     },
   },
@@ -520,6 +577,16 @@ export default {
   },
 
   methods: {
+    setIdMode(mode) {
+      this.idMode = mode;
+      this.error = null;
+      this.vkeybActiveField = mode === 'email' ? 'loginEmail' : null;
+      this.$nextTick(() => {
+        if (mode === 'qr') this.$refs.qrInput?.focus();
+        else if (mode === 'email') this.$refs.emailInput?.focus();
+        else this.$refs.codeInput?.focus();
+      });
+    },
     ...mapActions('kioskCart', ['setLoyalty', 'markUpsellShown']),
 
     async loadConfig() {
@@ -576,6 +643,12 @@ export default {
       this[f] = next;
     },
     onVkeybSubmit() {
+      // Identification par e-mail : ✓ vérifie directement.
+      if (this.vkeybActiveField === 'loginEmail') {
+        this.vkeybActiveField = null;
+        if (this.loginEmail.trim() && !this.loading) this.checkLoyalty();
+        return;
+      }
       // La touche ✓ valide le formulaire si tout est rempli ; sinon elle
       // passe juste au champ suivant. Cela reproduit le comportement
       // attendu d'un clavier matériel avec "Enter".
@@ -626,11 +699,12 @@ export default {
     },
 
     async checkLoyalty() {
-      if (!this.code.trim()) return;
+      if (!this.saisieCourante.trim()) return;
       this.loading = true;
       this.error = null;
+      this.vkeybActiveField = null;
       const ms = this.$options.LOYALTY_HTTP_TIMEOUT_MS;
-      const typed = this.code.trim();
+      const typed = this.saisieCourante.trim();
       try {
         const res = await axios.post('frontend/loyalty/check', { code: typed }, { timeout: ms });
         const data = res.data?.data || res.data || {};
@@ -638,13 +712,16 @@ export default {
         this.customer = {
           ...data,
           loyalty_point: parseInt(data.loyalty_point ?? data.points ?? 0, 10),
+          // Serveur ancien sans le champ : tout le solde est dépensable (comportement d'avant).
+          points_depensables: parseInt(data.points_depensables ?? data.loyalty_point ?? data.points ?? 0, 10),
+          points_pending: Math.max(0, parseInt(data.points_pending ?? 0, 10) || 0),
         };
         this.discountValue = parseFloat(data.discount_value || 0);
         this.step = 'balance';
       } catch (err) {
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
           this.error = this.$t('kiosk.loyalty_screen.request_timeout');
-        } else if (err.response?.status === 404 && this.looksLikePhoneNumber(typed)) {
+        } else if (err.response?.status === 404 && this.idMode === 'tel' && this.looksLikePhoneNumber(typed)) {
           /*
            * [OPTIM SOUSCRIPTION 2026-09-25 · owner] « le client a du mal à créer un
            * compte directement lorsqu'il a mis son numéro ». Avant ce fix : numéro
@@ -667,7 +744,15 @@ export default {
           this.$nextTick(() => { this.vkeybActiveField = 'registerName'; });
         } else {
           const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
-          this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
+          if (err.response?.status === 404 && this.idMode === 'email') {
+            this.error = this.$t('kiosk.loyalty_screen.email_not_found');
+          } else if (err.response?.status === 404 || !msg) {
+            this.error = this.$t('kiosk.loyalty_screen.error_not_found');
+          } else {
+            this.error = msg;
+          }
+          // Un QR rejeté (expiré, déjà lu) : le champ se vide et reste prêt pour le scan suivant.
+          if (this.idMode === 'qr') { this.qrSaisie = ''; this.$nextTick(() => this.$refs.qrInput?.focus()); }
         }
       } finally {
         this.loading = false;
@@ -797,6 +882,8 @@ export default {
         this.customer = {
           name:          data.name || payload.name,
           loyalty_point: parseInt(data.points ?? 0, 10),
+          points_depensables: parseInt(data.points_depensables ?? data.points ?? 0, 10),
+          points_pending: Math.max(0, parseInt(data.points_pending ?? 0, 10) || 0),
           loyalty_code:  data.loyalty_code || '',
         };
         this.discountValue = 0;
@@ -950,6 +1037,46 @@ export default {
   text-align: center;
 }
 
+.kiosk-loyalty-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.kiosk-loyalty-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px 8px;
+  border: 2px solid #E5E5E5;
+  border-radius: 16px;
+  background: #fff;
+  color: #1A1A1A;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.kiosk-loyalty-mode.is-on {
+  border-color: #F4501E;
+  background: #FFF3EE;
+  color: #C23A0F;
+}
+.kiosk-loyalty-mode-icon { font-size: 24px; line-height: 1; }
+.kiosk-loyalty-qr-zone {
+  margin: 8px auto 14px;
+  width: 120px;
+  height: 120px;
+  border: 3px dashed #F4501E;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  color: #F4501E;
+}
+.kiosk-loyalty-input--qr { width: 100%; text-align: center; letter-spacing: 0; }
 .kiosk-loyalty-input-row {
   position: relative;
 }

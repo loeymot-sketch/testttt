@@ -52,13 +52,13 @@ class PointsBloquesJusquALaRemiseTest extends TestCase
         return $u;
     }
 
-    private function commandeCreditee(User $u, string $surface, float $total = 100.00): Order
+    private function commandeCreditee(User $u, string $surface, float $total = 100.00, array $extra = []): Order
     {
-        $o = Order::factory()->create([
+        $o = Order::factory()->create(array_merge([
             'branch_id' => $this->branch->id, 'user_id' => $u->id, 'order_type' => OrderType::TAKEAWAY,
             'source_surface' => $surface, 'payment_method' => PaymentGateway::CARD, 'payment_status' => PaymentStatus::PAID,
             'status' => OrderStatus::PENDING, 'total' => $total, 'subtotal' => $total,
-        ]);
+        ], $extra));
         DB::table('orders')->where('id', $o->id)->update(['status' => OrderStatus::ACCEPT]);
         (new AwardLoyaltyPointsOnDelivery())->handle(new OrderStatusChanged($o->fresh(), OrderStatus::PENDING, OrderStatus::ACCEPT));
 
@@ -128,5 +128,60 @@ class PointsBloquesJusquALaRemiseTest extends TestCase
         $this->assertSame(1500, $fiche['balance']);
         $this->assertSame(500, $fiche['usable_points'], 'la caisse ne propose que les points dépensables');
         $this->assertSame(1000, $fiche['pending_points']);
+    }
+
+    /** Relecture adverse P2-1 — commande PROGRAMMÉE : le filet part du créneau, pas du crédit. */
+    public function test_commande_programmee_reste_bloquee_jusqu_a_son_creneau(): void
+    {
+        $u = $this->client();
+        $o = $this->commandeCreditee($u, 'web', 100.00, ['scheduled_at' => now()->addDays(5)]);
+        DB::table('loyalty_transactions')->where('order_id', $o->id)->update(['created_at' => now()->subHours(30)]);
+
+        $this->assertSame(1000, LoyaltyService::pointsEnAttenteDeRemise($u->id), 'créditée il y a 30 h mais prévue dans 5 jours : toujours bloquée');
+    }
+
+    /** Relecture adverse P3-4 — payée SUR PLACE / À LA PORTE : le règlement est la remise. */
+    public function test_payee_sur_place_n_est_pas_bloquee(): void
+    {
+        $u = $this->client();
+        $this->commandeCreditee($u, 'delivery', 100.00, ['payment_method' => PaymentGateway::CASH_ON_DELIVERY]);
+
+        $this->assertSame(0, LoyaltyService::pointsEnAttenteDeRemise($u->id));
+    }
+
+    /** Relecture adverse P3-5 — une reprise déjà écrite ne bloque plus rien. */
+    public function test_une_reprise_deja_ecrite_ne_reste_pas_en_attente(): void
+    {
+        $u = $this->client();
+        $o = $this->commandeCreditee($u, 'web');
+        app(LoyaltyService::class)->clawbackEarnedPoints($u->id, 1000, (int) $o->id, 'Remboursement après clôture');
+
+        $this->assertSame(0, LoyaltyService::pointsEnAttenteDeRemise($u->id));
+    }
+
+    /** Relecture adverse P2-2 — le devis (DiscountCalculator) refuse aussi les points en attente. */
+    public function test_le_devis_ne_promet_pas_les_points_en_attente(): void
+    {
+        $u = $this->client();
+        $this->commandeCreditee($u, 'web');
+        $calc = app(\App\Services\Pricing\DiscountCalculator::class);
+
+        $avant = $calc->kioskLoyaltyRedemption(null, $u->loyalty_code, 10.0, 50.0, $u->fresh());
+        $this->assertSame(0, (int) $avant['points'], 'points en attente de remise : aucune remise au devis');
+
+        DB::table('orders')->where('user_id', $u->id)->update(['status' => OrderStatus::DELIVERED]);
+        $apres = $calc->kioskLoyaltyRedemption(null, $u->loyalty_code, 10.0, 50.0, $u->fresh());
+        $this->assertSame(1000, (int) $apres['points'], 'remise : la remise de 10 € est proposée');
+    }
+
+    /** Relecture adverse P3-2 — « dont N » jamais au-dessus du solde. */
+    public function test_l_attente_publiee_ne_depasse_jamais_le_solde(): void
+    {
+        $u = $this->client();
+        $this->commandeCreditee($u, 'web');
+        DB::table('users')->where('id', $u->id)->update(['loyalty_points' => 400]);
+
+        $profil = $this->actingAs($u->fresh(), 'sanctum')->getJson('/api/profile')->assertOk()->json('data');
+        $this->assertSame(400, (int) $profil['loyalty_points_pending']);
     }
 }

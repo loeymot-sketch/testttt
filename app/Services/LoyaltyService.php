@@ -243,14 +243,27 @@ class LoyaltyService
             return 0;
         }
 
-        return (int) DB::table('loyalty_transactions as lt')
+        $seuil = now()->subHours(self::ATTENTE_REMISE_MAX_HEURES);
+
+        return max(0, (int) DB::table('loyalty_transactions as lt')
             ->join('orders as o', 'o.id', '=', 'lt.order_id')
             ->where('lt.user_id', $userId)
-            ->where('lt.type', 'earn')
+            // Net de la commande : gain moins reprises déjà écrites (relecture adverse P3-5 : une reprise sans
+            // changement de statut ne doit pas bloquer d'autres points légitimes).
+            ->where(fn ($q) => $q->where('lt.type', 'earn')
+                ->orWhere(fn ($r) => $r->where('lt.type', 'manual_deduct')->where('lt.source_surface', 'refund')))
             ->whereIn('o.status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING, \App\Enums\OrderStatus::PREPARED, \App\Enums\OrderStatus::OUT_FOR_DELIVERY])
             ->whereIn('o.source_surface', self::SURFACES_A_DISTANCE)
-            ->where('lt.created_at', '>=', now()->subHours(self::ATTENTE_REMISE_MAX_HEURES))
-            ->sum('lt.points');
+            // [Relecture adverse P3-4] Payée SUR PLACE ou À LA PORTE : le règlement EST la remise — rien à bloquer.
+            // Seule une commande PRÉPAYÉE (remboursable avant d'être remise) porte l'abus visé.
+            ->where('o.payment_method', '!=', \App\Enums\PaymentGateway::CASH_ON_DELIVERY)
+            // [Relecture adverse P2-1] Filet de 24 h compté depuis le plus tardif du crédit et du CRÉNEAU programmé :
+            // une commande pour J+5 acceptée aujourd'hui garde ses points bloqués jusqu'à sa remise.
+            ->where(fn ($q) => $q->where('lt.created_at', '>=', $seuil)->orWhere('o.scheduled_at', '>=', $seuil))
+            // [Relecture adverse P3-1] Lecture verrouillée en partage : un crédit validé par une transaction concurrente
+            // n'échappe pas à l'instantané de la transaction de rachat.
+            ->sharedLock()
+            ->sum('lt.points'));
     }
 
     /** Points que le client peut DÉPENSER maintenant : solde moins les points en attente de remise. */

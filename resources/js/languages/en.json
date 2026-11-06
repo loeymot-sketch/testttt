@@ -2449,7 +2449,16 @@
             "quick_register_submit": "Create my loyalty account",
             "not_my_number": "That's not my number",
             "label_first_name": "First name *",
-            "placeholder_first_name": "Your first name"
+            "placeholder_first_name": "Your first name",
+            "mode_tel": "Phone or code",
+            "mode_qr": "QR code",
+            "mode_email": "Email",
+            "qr_sub": "Show the QR from your app (My account › Loyalty) to the scanner.",
+            "qr_placeholder": "Waiting for scan…",
+            "email_sub": "Enter the email address of your account.",
+            "email_placeholder": "firstname.lastname@example.com",
+            "email_not_found": "No account with this email. Check it or use your phone number.",
+            "pending_note": "including {n} points available once your current orders are handed over"
         },
         "app": {
             "init_loading": "Starting…",

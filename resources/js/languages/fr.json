@@ -2520,7 +2520,16 @@
             "quick_register_submit": "Créer mon compte fidélité",
             "not_my_number": "Ce n'est pas mon numéro",
             "label_first_name": "Prénom *",
-            "placeholder_first_name": "Votre prénom"
+            "placeholder_first_name": "Votre prénom",
+            "mode_tel": "Téléphone ou code",
+            "mode_qr": "QR code",
+            "mode_email": "E-mail",
+            "qr_sub": "Présentez le QR de votre application (Mon compte › Fidélité) devant le lecteur.",
+            "qr_placeholder": "En attente du scan…",
+            "email_sub": "Saisissez l'adresse e-mail de votre compte.",
+            "email_placeholder": "prenom.nom@exemple.fr",
+            "email_not_found": "Aucun compte avec cette adresse e-mail. Vérifiez-la ou utilisez votre téléphone.",
+            "pending_note": "dont {n} points disponibles dès la remise de vos commandes en cours"
         },
         "app": {
             "init_loading": "Démarrage en cours…",
