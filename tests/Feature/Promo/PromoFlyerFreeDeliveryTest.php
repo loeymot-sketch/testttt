@@ -115,6 +115,7 @@ class PromoFlyerFreeDeliveryTest extends TestCase
             'delivery_time' => 'ASAP', 'source' => Source::WEB,
             'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
             'coupon_id' => $couponId,
+            'coupon_code' => (string) \App\Models\Coupon::query()->whereKey($couponId)->value('code'), // [W3-P1-2] code tapé envoyé
             'items' => json_encode([['item_id' => $this->item->id, 'quantity' => $quantity, 'item_variations' => [], 'item_extras' => []]]),
         ];
         if ($orderType === OrderType::DELIVERY) {

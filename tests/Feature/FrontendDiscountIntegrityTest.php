@@ -155,7 +155,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
             ]));
 
         $response->assertStatus(201);
@@ -207,7 +207,7 @@ class FrontendDiscountIntegrityTest extends TestCase
         ], $restriction));
 
         $response = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order', $this->basePayload(['coupon_id' => $coupon->id]));
+            ->postJson('/api/frontend/order', $this->basePayload(['coupon_id' => $coupon->id, 'coupon_code' => $coupon->code]));
 
         $response->assertStatus($attendu);
         if ($attendu === 201) {
@@ -216,6 +216,28 @@ class FrontendDiscountIntegrityTest extends TestCase
         } else {
             $this->assertSame(0, OrderCoupon::count(), 'aucune remise enregistrée pour un code refusé');
         }
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-2] Un ticket promo NOMINATIF n'est protégé que par son code : la commande web qui
+     * présente seulement le numéro (séquentiel) du code, ou le numéro avec un autre code, est refusée et ne consomme rien.
+     */
+    public function test_le_numero_du_code_promo_sans_son_code_ne_suffit_pas(): void
+    {
+        config(['pos.manual_discount_enabled' => true]);
+        $coupon = Coupon::forceCreate([
+            'name' => 'TICKET', 'description' => 'nominatif', 'code' => 'SARAH-7K2P',
+            'discount' => 50, 'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(), 'end_date' => now()->addDay(),
+            'minimum_order' => 0, 'maximum_discount' => 0, 'limit_per_user' => 1,
+        ]);
+        $web = fn (array $extra) => $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload($extra));
+
+        $web(['coupon_id' => $coupon->id])->assertStatus(422);
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => 'AUTRE-CODE'])->assertStatus(422);
+        $this->assertSame(0, OrderCoupon::count(), 'le ticket n\'est pas consommé');
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => ' sarah-7k2p '])->assertStatus(201);
     }
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
@@ -241,7 +263,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
                 'subtotal' => 999.00,
                 'total' => 999.00,
                 'discount' => 900.00,
@@ -287,7 +309,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
                 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
                 'discount' => 3.00,
             ]));
@@ -360,7 +382,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
             ]));
 
         // The gate throws a ValidationException, but myOrderStore's catch(Exception)

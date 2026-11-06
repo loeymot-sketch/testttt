@@ -398,6 +398,18 @@ class FrontendOrderService
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
 
+                // [AUDIT ABUSIF 2026-11-06 · W3-P1-2] Un code promo NOMINATIF (ticket promo imprimé pour un client) n'est protégé que
+                // par son CODE. La commande web acceptait son seul numéro (coupon_id, séquentiel) : un inconnu consommait le ticket
+                // d'un autre client (−50 %), qui recevait ensuite « limite dépassée ». Le site envoie désormais le code tapé :
+                // sans lui, ou s'il ne correspond pas, la commande web est refusée. (Borne : chemin inchangé.)
+                if ((int) $request->coupon_id > 0 && ! $isKioskMachineOrder) {
+                    $codeSaisi = mb_strtolower(trim((string) $request->input('coupon_code', '')));
+                    $codeReel = mb_strtolower(trim((string) \App\Models\Coupon::query()->whereKey((int) $request->coupon_id)->value('code')));
+                    if ($codeSaisi === '' || $codeReel === '' || ! hash_equals($codeReel, $codeSaisi)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['coupon_id' => 'Ce code promo n\'est pas valable pour cette commande. Saisissez-le à nouveau.']);
+                    }
+                }
+
                 if (config('pricing.use_ssot_service', true)) {
                     $kioskSsot = $this->pricingService->calculateOrder(
                         PricingRequest::forKiosk(
