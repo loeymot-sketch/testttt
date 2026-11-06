@@ -1,0 +1,58 @@
+{
+ "round": 5,
+ "wave": "adv",
+ "head": "d7cd618ab",
+ "date": "2026-11-06",
+ "verdict": "P0=0 P1=0 P2=0 P3=3",
+ "findings": [
+  {
+   "id": "R5-ADV-001",
+   "severity": "P3",
+   "title": "Livraison avec créneau un jour de fermeture exceptionnelle : message « Ce créneau est trop proche » au lieu de « fermé ce jour-là »",
+   "files": [
+    "app/Services/Delivery/DeliveryWaveService.php:359",
+    "app/Services/Delivery/DeliveryWaveService.php:466"
+   ],
+   "detail": "earliestWave saute les jours fermés (nextInServiceWindow) ; un créneau du jour fermé est donc refusé comme « trop proche » avant d'arriver au contrôle inServiceWindow. Refus correct, motif trompeur.",
+   "repro": "Requête réelle :8792, fermeture de test 2026-11-06 : delivery_slot_at=2026-11-06 20:00:00 → 422 delivery_slot_at « Ce créneau est trop proche »."
+  },
+  {
+   "id": "R5-ADV-002",
+   "severity": "P3",
+   "title": "Ligne retirée par rupture de stock en direct (pruneUnavailable) après une réponse perdue : l'empreinte change, le nouvel essai part avec une clé neuve",
+   "files": [
+    "resources/js/components/admin/pos/PosComponent.vue:5029",
+    "resources/js/components/admin/pos/PosComponent.vue:6597"
+   ],
+   "detail": "Si la vente perdue a vendu la dernière unité d'un article suivi en stock, la diffusion « indisponible » retire la ligne ; le panier restant ne correspond plus à l'empreinte et une 2ᵉ vente des autres lignes est possible. Antérieur à d7cd618ab, non lié au watcher.",
+   "repro": "Hypothèse — non exécutée de bout en bout (diffusion de stock non reproduite)."
+  },
+  {
+   "id": "R5-ADV-003",
+   "severity": "P3",
+   "title": "setScope sans userId après restauration ferait tomber la quantité à 0 et effacerait la clé",
+   "files": [
+    "resources/js/store/modules/posCart.js:377",
+    "resources/js/components/admin/pos/PosComponent.vue:4625"
+   ],
+   "detail": "Prouvé sur le vrai store + vrais watchers (clé effacée, panier revenu ensuite à 2). Non atteignable aujourd'hui : applyPosBranchScope n'est appelé qu'au montage, avec le même userId issu du store auth ; garde-fou latent si un 3ᵉ appel apparaît.",
+   "repro": "Vitest jetable tests/js/zz-r5adv-cle.spec.js (supprimé) cas B : quantite apres scope null = 0, cle conservee = false."
+  }
+ ],
+ "attacked_without_finding": [
+  "(1) Retrait + delivery_slot_at forgé (web, app, order_type en chaîne, delivery_tier forgé, espace) restaurant fermé 13:53 : 5/5 → 422 order_type « Le restaurant est fermé… » — prepareForValidation (OrderRequest.php:124) remet le créneau à null hors livraison. Témoin sans créneau : même refus.",
+  "(1) Fermeture exceptionnelle de test (2026-11-06) : livraison sans créneau → refus order_type (témoin) ; créneau du jour, non aligné (20:07), passé, lointain (+6 j), tableau, ISO 'T', sans adresse, tier forgé → tous refusés par validatedChosenWave ou date_format ; validateDeliverySlotAfter est appelé avant tout retour anticipé. Seul le créneau du lendemain (2026-11-07 19:00) passe : commande programmée légitime, retenue en cuisine par KitchenReleaseRule.",
+  "(2) Vrai store posCart + vrais computed/watchers PosComponent : F5 + double setScope (bootstrap + defaultAccess) → clé gardée et réutilisée ; ajout optimiste + rollback + pruneUnavailable d'un article absent → clé gardée ; témoin décrément de la dernière ligne → clé effacée (le banc mord). cartQuantityUp ignore qty ≤ 0/NaN : pas de passage à 0 par la saisie.",
+  "(3) Survol 31a2401ea..d7cd618ab : Plan B payment-confirm et reconcile refusés avant écriture, reconcile limité aux commandes du compte borne ; coupon verrouillé (ligne coupon FOR UPDATE + comptage par jointure verrouillée) ; points non crédités sur impayé hors DELIVERED, exclusion borne/personnel.",
+  "(4) git diff --stat 31a2401ea..d7cd618ab sur les 13 zones gelées (dont kiosk/, pos-wizard, PosV5TrancheRow, PaymentComponent) : VIDE — aucun LOCK requis.",
+  "fiscal:verify-chain --all : CHAIN OK (7 branches)."
+ ],
+ "cleanup": [
+  "settings group=horaires restaurés, diff avant/après vide (ids 137/138)",
+  "jeton temporaire 19221 supprimé",
+  "aucune commande créée (items '[]' : les gardes after() s'exécutent sans création)",
+  "serveur :8792 arrêté",
+  "spec zz supprimée",
+  "EFFET DE BORD : Cache::flush() exécuté pendant la restauration (CACHE_DRIVER=redis) — cache de dev vidé (limiteurs, cache idempotence), aucune donnée DB touchée"
+ ]
+}

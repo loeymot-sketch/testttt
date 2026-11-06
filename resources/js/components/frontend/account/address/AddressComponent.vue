@@ -56,6 +56,7 @@ import appService from "../../../../services/appService";
 import labelEnum from "../../../../enums/modules/labelEnum";
 import LoadingComponent from "../../components/LoadingComponent";
 import ENV from "../../../../config/env";
+import { typeDAdresse } from "../../../../services/typeDAdresse";
 
 export default {
     name: "AddressComponent",
@@ -127,10 +128,10 @@ export default {
                     label: address.label,
 
                 };
-                if (this.address.form.label === this.$t("label.home")) {
+                if (typeDAdresse(this.address.form.label) === labelEnum.HOME) {
                     this.address.status = false;
                     this.address.switchLabel = labelEnum.HOME;
-                } else if (this.address.form.label === this.$t("label.work")) {
+                } else if (typeDAdresse(this.address.form.label) === labelEnum.WORK) {
                     this.address.status = false;
                     this.address.switchLabel = labelEnum.WORK;
                 } else {

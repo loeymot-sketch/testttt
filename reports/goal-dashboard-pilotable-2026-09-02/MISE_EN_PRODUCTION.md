@@ -51,8 +51,8 @@ ssh <utilisateur>@vps-418872ac.vps.ovh.net
 cd /var/www/foodking
 
 # 0. SAUVEGARDE D'ABORD — non négociable
-php8.2 artisan foodking:backup-daily
-php8.2 artisan fiscal:verify-chain --all        # doit dire CHAIN OK AVANT de commencer
+php8.1 artisan foodking:backup-daily
+php8.1 artisan fiscal:verify-chain --all        # doit dire CHAIN OK AVANT de commencer
 git rev-parse HEAD > /tmp/foodking-revision-precedente.txt   # pour le retour arrière
 
 # 1. Code
@@ -64,23 +64,23 @@ composer install --no-dev --optimize-autoloader
 npm ci && npm run production
 
 # 3. Base — les deux migrations de cette livraison
-php8.2 artisan migrate --force
+php8.1 artisan migrate --force
 #   2026_09_02_100000_create_wizard_pages_tables      (2 tables neuves + 1 colonne nullable)
 #   2026_09_02_110000_bootstrap_wizard_pages_library  (données seules, idempotente, rejouable)
 
 # 4. Caches + services
-php8.2 artisan config:cache && php8.2 artisan route:cache && php8.2 artisan view:cache
+php8.1 artisan config:cache && php8.1 artisan route:cache && php8.1 artisan view:cache
 sudo supervisorctl restart foodking-queue
-sudo systemctl reload php8.2-fpm nginx
+sudo systemctl reload php8.1-fpm nginx
 
 # 5. Contrôle : la bibliothèque s'est construite depuis VOTRE catalogue
-php8.2 artisan tinker --execute='echo \App\Models\WizardPage::count()." pages, ".\App\Models\WizardPageChoice::count()." choix";'
-php8.2 artisan composer:materialize --all --dry-run   # LIRE le plan en entier avant d'appliquer
+php8.1 artisan tinker --execute='echo \App\Models\WizardPage::count()." pages, ".\App\Models\WizardPageChoice::count()." choix";'
+php8.1 artisan composer:materialize --all --dry-run   # LIRE le plan en entier avant d'appliquer
 ```
 
 ### ⚠ L'étape suivante, elle, change la carte servie au client
 
-Une fois le plan lu et accepté : `php8.2 artisan composer:materialize --all`. Elle aligne **chaque produit** sur les pages de sa catégorie.
+Une fois le plan lu et accepté : `php8.1 artisan composer:materialize --all`. Elle aligne **chaque produit** sur les pages de sa catégorie.
 Sur la base de développement, ce passage n'a produit **que des créations** (306 lignes, `~0 −0` :
 aucun prix réécrit, aucune option retirée) — mais sur une base qui a divergé davantage, il peut
 **ramener un prix saisi à la main au prix de la page** et **retirer de la vente** une option ajoutée
@@ -95,11 +95,11 @@ demande confirmation dès qu'une ligne serait réécrite ou retirée.
 
 ```bash
 cd /var/www/foodking
-php8.2 artisan migrate:rollback --step=2    # supprime les 2 tables + la colonne nullable
+php8.1 artisan migrate:rollback --step=2    # supprime les 2 tables + la colonne nullable
 git checkout "$(cat /tmp/foodking-revision-precedente.txt)"
 composer install --no-dev --optimize-autoloader && npm ci && npm run production
-php8.2 artisan config:cache && php8.2 artisan route:cache && php8.2 artisan view:cache
-sudo supervisorctl restart foodking-queue && sudo systemctl reload php8.2-fpm nginx
+php8.1 artisan config:cache && php8.1 artisan route:cache && php8.1 artisan view:cache
+sudo supervisorctl restart foodking-queue && sudo systemctl reload php8.1-fpm nginx
 ```
 Les migrations sont réversibles par construction (deux tables neuves + une colonne nullable sur
 `item_wizard_steps`). Ce qui n'est PAS réversible automatiquement, ce sont les lignes écrites par
@@ -110,8 +110,8 @@ Les migrations sont réversibles par construction (deux tables neuves + une colo
 ## 4. Contrôles après bascule
 
 ```bash
-php8.2 artisan fiscal:verify-chain --all               # CHAIN OK sur chaque branche
-php8.2 artisan composer:materialize --all --dry-run    # doit dire « 0 changement »
+php8.1 artisan fiscal:verify-chain --all               # CHAIN OK sur chaque branche
+php8.1 artisan composer:materialize --all --dry-run    # doit dire « 0 changement »
 ```
 Puis, dans le navigateur, en tant qu'admin :
 - `/admin/wizard-pages` liste les pages avec leur nombre de choix ;

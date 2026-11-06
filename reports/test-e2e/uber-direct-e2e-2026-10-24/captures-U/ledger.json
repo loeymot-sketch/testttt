@@ -1,0 +1,3373 @@
+{
+  "tag": "E2E-UBER-R2",
+  "startedAt": "2026-10-24T15:12:24.249Z",
+  "bench": {
+    "base": "http://127.0.0.1:8766",
+    "stub": "http://127.0.0.1:8790",
+    "site": "http://127.0.0.1:8013",
+    "site_http": 200,
+    "chain_avant": {
+      "ok": true,
+      "tail": "  + branch=10 CHAIN OK |   + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+    },
+    "adresse": {
+      "id": 184,
+      "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+      "apartment": "E2E-UBER-R2 porte bleue",
+      "city": "Hénin-Beaumont",
+      "postal_code": "62110",
+      "allowed": true,
+      "fee": 3.9,
+      "tier": "home",
+      "suggest_uber_eats": false,
+      "distance_km": 1.04
+    },
+    "chain_apres_U3": {
+      "ok": true,
+      "tail": "  + branch=10 CHAIN OK |   + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+    },
+    "webhooks": [
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_142",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_142",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 401,
+        "body": "{\"status\":false}",
+        "signed_with_real_secret": false
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_153",
+        "status": "canceled",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "returned",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_165",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_165",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      }
+    ],
+    "chain_apres": {
+      "ok": true,
+      "tail": "  + branch=10 CHAIN OK |   + branch=13 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (7 total)"
+    },
+    "stub_mode_final": {
+      "quote": "ok",
+      "create": "ok",
+      "cancel": "ok"
+    },
+    "uber_log_final": [
+      {
+        "at": "2026-10-24T15:12:39.386Z",
+        "method": "POST",
+        "path": "/oauth/v2/token",
+        "auth": false,
+        "body": {
+          "grant_type": "client_credentials",
+          "scope": "eats.deliveries",
+          "client_id": "(présent)",
+          "client_secret": "(présent, non recopié)"
+        }
+      },
+      {
+        "at": "2026-10-24T15:12:39.388Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:12:48.488Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:12:48Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:12:49.247Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_134",
+          "idempotency_key": "lecayenne-order-9058",
+          "external_id": "order-9058",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:12:49Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269058",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9058",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269058",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:12:55.900Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:12:55.903Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_135",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:13:14.008Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:13:34.580Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:13:35.879Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:35Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:36.476Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_139",
+          "idempotency_key": "lecayenne-order-9059",
+          "external_id": "order-9059",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:36Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269059",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9059",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269059",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:37.484Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_140/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:13:43.829Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:13:43Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:44.456Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_141",
+          "idempotency_key": "lecayenne-order-9060",
+          "external_id": "order-9060",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:13:44Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269060",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9060",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269060",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:51.071Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:13:52.017Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:52Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:52.753Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:52Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:53.358Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_145",
+          "idempotency_key": "lecayenne-order-9061",
+          "external_id": "order-9061",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:53Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269061",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9061",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269061",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:55.474Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:55Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:55.524Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_146",
+          "idempotency_key": "lecayenne-order-9061",
+          "external_id": "order-9061",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:55Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269061",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9061",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269061",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:56.934Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:56Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:57.570Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:57Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:13:59.755Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:43:59Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:00.374Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_150",
+          "idempotency_key": "lecayenne-order-9063",
+          "external_id": "order-9063",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:00Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269063",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9063",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269063",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:01.390Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:01Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:01.989Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_152",
+          "idempotency_key": "lecayenne-order-9064",
+          "external_id": "order-9064",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:01Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269064",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9064",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269064",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:04.999Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:04Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:05.045Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_159",
+          "idempotency_key": "lecayenne-order-9064-after-del_mvmis1ex_153",
+          "external_id": "order-9064",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:05Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269064",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9064",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269064",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:06.805Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:06.807Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:06.811Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:08.450Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:08Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:09.075Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_162",
+          "idempotency_key": "lecayenne-order-9065",
+          "external_id": "order-9065",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:09Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269065",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9065",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269065",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:10.107Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_163/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:11.601Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:11.602Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:11.607Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:11.608Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:13.399Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:16.189Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:16Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:16.794Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_164",
+          "idempotency_key": "lecayenne-order-9066",
+          "external_id": "order-9066",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:44:16Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269066",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9066",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269066",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:14:22.338Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:22.340Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:22.344Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_165",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:40.424Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:40.426Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:14:40.431Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_165",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:04.913Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:04.915Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:04.920Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_165",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:22.307Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:22.308Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:23.294Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:23Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:23.904Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_168",
+          "idempotency_key": "lecayenne-order-9067",
+          "external_id": "order-9067",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:23Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269067",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9067",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269067",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:32.760Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:32Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:32.810Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_170",
+          "idempotency_key": "lecayenne-order-9067",
+          "external_id": "order-9067",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:32Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269067",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9067",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269067",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:35.601Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:35Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:37.553Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/delivery_quotes",
+        "auth": true,
+        "body": {
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:37Z",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:38.186Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries",
+        "auth": true,
+        "body": {
+          "quote_id": "dqt_mvmis1ex_172",
+          "idempotency_key": "lecayenne-order-9069",
+          "external_id": "order-9069",
+          "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+          "pickup_phone_number": "+33365678291",
+          "dropoff_phone_number": "+33698744249",
+          "pickup_ready_dt": "2026-10-24T15:45:38Z",
+          "manifest_items": [
+            {
+              "name": "Commande Le Cayenne #2410269069",
+              "quantity": 1,
+              "size": "medium"
+            }
+          ],
+          "manifest_reference": "order-9069",
+          "manifest_total_value": 490,
+          "external_store_id": "branch-1",
+          "pickup_name": "Le Cayenne (principal)",
+          "dropoff_name": "E2E-UBER Client",
+          "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269069",
+          "pickup_latitude": 50.4215667,
+          "pickup_longitude": 2.954906,
+          "dropoff_latitude": 50.418361,
+          "dropoff_longitude": 2.968711
+        }
+      },
+      {
+        "at": "2026-10-24T15:15:38.234Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:38.235Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:38.239Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_169",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:38.243Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:39.223Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:39.224Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:39.230Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:39.231Z",
+        "method": "GET",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:40.787Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:44.588Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_160/cancel",
+        "auth": true,
+        "body": {}
+      },
+      {
+        "at": "2026-10-24T15:15:44.776Z",
+        "method": "POST",
+        "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_169/cancel",
+        "auth": true,
+        "body": {}
+      }
+    ],
+    "webhooks_final": [
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_135",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_142",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_142",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 401,
+        "body": "{\"status\":false}",
+        "signed_with_real_secret": false
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "pickup",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_153",
+        "status": "canceled",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_151",
+        "status": "returned",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_165",
+        "status": "pickup_complete",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      },
+      {
+        "delivery_id": "del_mvmis1ex_165",
+        "status": "delivered",
+        "http": 200,
+        "body": "{\"status\":true}",
+        "signed_with_real_secret": true
+      }
+    ]
+  },
+  "scenarios": {
+    "U-1": {
+      "checks": [
+        {
+          "name": "écran : bouton « Confier à Uber » actif, sans raison de blocage, arrêt « Payé »",
+          "ok": true,
+          "detail": "#2410269058 · E2E-UBER Client Boulevard Albert Schweitzer 62110 Hénin-Beaumont 🛵 Nos livreurs 🚗 Confier à Uber Payé À partir"
+        }
+      ],
+      "steps": {
+        "board": {
+          "uber_enabled": true,
+          "A": {
+            "wave": "2026-10-24 18:00:00",
+            "courier_id": 10,
+            "id": 475,
+            "order_id": 9058,
+            "order_number": "2410269058",
+            "customer": "E2E-UBER Client",
+            "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+            "collect_method": "paid_online",
+            "amount_due": 0,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "has_photo": false,
+            "uber_attention": null,
+            "dispatch": "own",
+            "uber": null,
+            "uber_blocked": null
+          },
+          "D": {
+            "wave": "2026-10-24 19:00:00",
+            "courier_id": 10,
+            "id": 487,
+            "order_id": 9070,
+            "order_number": "2410269070",
+            "customer": "E2E-UBER Client",
+            "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+            "collect_method": "cash",
+            "amount_due": 4.9,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "has_photo": false,
+            "uber_attention": null,
+            "dispatch": "own",
+            "uber": null,
+            "uber_blocked": "À encaisser à la porte : Uber ne peut pas encaisser. Faites payer la commande avant de la confier à Uber."
+          }
+        },
+        "layout_1920": {
+          "debordeX": 0,
+          "dansEcran": true
+        }
+      }
+    },
+    "U-2": {
+      "checks": [
+        {
+          "name": "écran livreur : l’arrêt A est listé AVANT la bascule",
+          "ok": true,
+          "detail": {
+            "ecran": true,
+            "api": [
+              8853,
+              9058,
+              9059,
+              9060,
+              9061,
+              9062,
+              9063,
+              9064,
+              9065,
+              9066,
+              9067,
+              9068,
+              9069,
+              9070
+            ]
+          }
+        },
+        {
+          "name": "écran livreur : l’arrêt A n’est plus listé (écran + API delivery-run)",
+          "ok": true,
+          "detail": {
+            "ecran": false,
+            "api": [
+              8853,
+              9059,
+              9060,
+              9061,
+              9062,
+              9063,
+              9064,
+              9065,
+              9066,
+              9067,
+              9068,
+              9069,
+              9070
+            ]
+          }
+        }
+      ],
+      "steps": {
+        "quote": {
+          "http": 200,
+          "body": {
+            "status": true,
+            "ok": true,
+            "quote_id": "dqt_mvmis1ex_134",
+            "fee_cents": 742,
+            "fee": 7.42,
+            "eta_minutes": 25,
+            "expires_at": "2026-10-24T17:27:48+02:00"
+          }
+        },
+        "uber_calls_quote": [
+          {
+            "at": "2026-10-24T15:12:48.488Z",
+            "method": "POST",
+            "path": "/v1/customers/{customer}/delivery_quotes",
+            "auth": true,
+            "body": {
+              "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "pickup_phone_number": "+33365678291",
+              "dropoff_phone_number": "+33698744249",
+              "pickup_ready_dt": "2026-10-24T15:12:48Z",
+              "manifest_total_value": 490,
+              "external_store_id": "branch-1",
+              "pickup_latitude": 50.4215667,
+              "pickup_longitude": 2.954906,
+              "dropoff_latitude": 50.418361,
+              "dropoff_longitude": 2.968711
+            }
+          }
+        ],
+        "oauth": {
+          "at": "2026-10-24T15:12:39.386Z",
+          "method": "POST",
+          "path": "/oauth/v2/token",
+          "auth": false,
+          "body": {
+            "grant_type": "client_credentials",
+            "scope": "eats.deliveries",
+            "client_id": "(présent)",
+            "client_secret": "(présent, non recopié)"
+          }
+        },
+        "dispatch": {
+          "http": 200,
+          "body": {
+            "status": true,
+            "ok": true,
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-135"
+          }
+        },
+        "uber_calls_dispatch": [
+          {
+            "at": "2026-10-24T15:12:49.247Z",
+            "method": "POST",
+            "path": "/v1/customers/{customer}/deliveries",
+            "auth": true,
+            "body": {
+              "quote_id": "dqt_mvmis1ex_134",
+              "idempotency_key": "lecayenne-order-9058",
+              "external_id": "order-9058",
+              "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "pickup_phone_number": "+33365678291",
+              "dropoff_phone_number": "+33698744249",
+              "pickup_ready_dt": "2026-10-24T15:12:49Z",
+              "manifest_items": [
+                {
+                  "name": "Commande Le Cayenne #2410269058",
+                  "quantity": 1,
+                  "size": "medium"
+                }
+              ],
+              "manifest_reference": "order-9058",
+              "manifest_total_value": 490,
+              "external_store_id": "branch-1",
+              "pickup_name": "Le Cayenne (principal)",
+              "dropoff_name": "E2E-UBER Client",
+              "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269058",
+              "pickup_latitude": 50.4215667,
+              "pickup_longitude": 2.954906,
+              "dropoff_latitude": 50.418361,
+              "dropoff_longitude": 2.968711
+            }
+          }
+        ],
+        "base": {
+          "row": {
+            "id": "75",
+            "order_id": "9058",
+            "quote_id": "dqt_mvmis1ex_134",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:27:48",
+            "delivery_id": "del_mvmis1ex_135",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-135",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:12:49",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "475",
+            "order_id": "9058",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "1",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "ord": {
+            "id": "9058",
+            "order_serial_no": "2410269058",
+            "status": "8",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3320",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "audits": [
+            {
+              "id": "14832",
+              "action": "delivery.uber_dispatched",
+              "user_id": "3",
+              "payload": "{\"fee_cents\": 742, \"delivery_id\": \"del_mvmis1ex_135\"}"
+            }
+          ]
+        },
+        "livreur": {
+          "avant": {
+            "ecran": true,
+            "api": [
+              8853,
+              9058,
+              9059,
+              9060,
+              9061,
+              9062,
+              9063,
+              9064,
+              9065,
+              9066,
+              9067,
+              9068,
+              9069,
+              9070
+            ]
+          },
+          "apres": {
+            "ecran": false,
+            "api": [
+              8853,
+              9059,
+              9060,
+              9061,
+              9062,
+              9063,
+              9064,
+              9065,
+              9066,
+              9067,
+              9068,
+              9069,
+              9070
+            ]
+          }
+        }
+      }
+    },
+    "U-3": {
+      "checks": [],
+      "steps": {
+        "site_avant": {
+          "carte": "🧾 #2410269058 PRÊTE 1 article 05:12 PM, 24-10-2026 · Hénin-Beaumont POINTS FIDÉLITÉ EN ATTENTE DU RETRAITVoir tout le détail ↓ 4,90 € Suivre ma commande",
+          "texte": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande PRÊTE #2410269058 Arrivée estimée vers 17:37 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Confirmée 🍳 En préparation 3 En route 4 Livrée NUMÉRO 2410"
+        },
+        "webhook_pickup": {
+          "delivery_id": "del_mvmis1ex_135",
+          "status": "pickup",
+          "http": 200,
+          "body": "{\"status\":true}",
+          "signed_with_real_secret": true
+        },
+        "webhook_pickup_complete": {
+          "delivery_id": "del_mvmis1ex_135",
+          "status": "pickup_complete",
+          "http": 200,
+          "body": "{\"status\":true}",
+          "signed_with_real_secret": true
+        },
+        "base_en_route": {
+          "row": {
+            "id": "75",
+            "order_id": "9058",
+            "quote_id": "dqt_mvmis1ex_134",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:27:48",
+            "delivery_id": "del_mvmis1ex_135",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-135",
+            "status": "pickup_complete",
+            "status_updated_at": "2026-10-24 17:12:57",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "475",
+            "order_id": "9058",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "1",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": "2026-10-24 17:12:57",
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "ord": {
+            "id": "9058",
+            "order_serial_no": "2410269058",
+            "status": "10",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3320",
+            "order_type": "5",
+            "payment_method": "1"
+          }
+        },
+        "tournee_apres_sac_pris": {
+          "etat": "à venir",
+          "entete": "Départ 18:00 à venir Livreur : Livreur E2E Choisir… Livreur E2E Livreur B E2E TEST-LIVRAISON Kiki TEST-ADV courier2 1792543010 TEST-ADV courier0 VG-M4 Livreur ⏱ Tournée aller-retour ≈ 1 h 15 · retour "
+        },
+        "tracker_en_route": "🛵 EN LIVRAISON",
+        "site_en_route": {
+          "etapes": [
+            {
+              "l": "✓ Confirmée",
+              "c": "lcf-track-step is-done"
+            },
+            {
+              "l": "🍳 En préparation",
+              "c": "lcf-track-step is-done"
+            },
+            {
+              "l": "🛵 En route",
+              "c": "lcf-track-step is-current"
+            },
+            {
+              "l": "4 Livrée",
+              "c": "lcf-track-step"
+            }
+          ]
+        },
+        "webhook_delivered": {
+          "delivery_id": "del_mvmis1ex_135",
+          "status": "delivered",
+          "http": 200,
+          "body": "{\"status\":true}",
+          "signed_with_real_secret": true
+        },
+        "base_livree": {
+          "row": {
+            "id": "75",
+            "order_id": "9058",
+            "quote_id": "dqt_mvmis1ex_134",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:27:48",
+            "delivery_id": "del_mvmis1ex_135",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-135",
+            "status": "delivered",
+            "status_updated_at": "2026-10-24 17:13:13",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "475",
+            "order_id": "9058",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "1",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": "2026-10-24 17:12:57",
+            "arrived_at": "2026-10-24 17:13:13",
+            "delivered_at": "2026-10-24 17:13:13",
+            "amount_collected_cents": "0"
+          },
+          "ord": {
+            "id": "9058",
+            "order_serial_no": "2410269058",
+            "status": "13",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3320",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "audits": [
+            {
+              "id": "14832",
+              "action": "delivery.uber_dispatched",
+              "user_id": "3",
+              "payload": "{\"fee_cents\": 742, \"delivery_id\": \"del_mvmis1ex_135\"}"
+            }
+          ],
+          "fiscal_unique": "1"
+        },
+        "planche_livree": "#2410269058 · E2E-UBER Client Boulevard Albert Schweitzer 62110 Hénin-Beaumont Payé Remise 17:13",
+        "tracker_livree": "✅ LIVRÉS",
+        "site_livree": {
+          "etapes": [
+            {
+              "l": "✓ Confirmée",
+              "c": "lcf-track-step is-done"
+            },
+            {
+              "l": "🍳 En préparation",
+              "c": "lcf-track-step is-done"
+            },
+            {
+              "l": "🛵 En route",
+              "c": "lcf-track-step is-done"
+            },
+            {
+              "l": "✨ Livrée",
+              "c": "lcf-track-step is-current"
+            }
+          ]
+        }
+      }
+    },
+    "U-4": {
+      "checks": [],
+      "steps": {
+        "release": {
+          "http": 200,
+          "body": {
+            "status": true,
+            "ok": true
+          }
+        },
+        "uber_calls": [
+          {
+            "at": "2026-10-24T15:13:37.484Z",
+            "method": "POST",
+            "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_140/cancel",
+            "auth": true,
+            "body": {}
+          }
+        ],
+        "base": {
+          "row": {
+            "id": "76",
+            "order_id": "9059",
+            "quote_id": "dqt_mvmis1ex_139",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:35",
+            "delivery_id": "del_mvmis1ex_140",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-140",
+            "status": "canceled",
+            "status_updated_at": "2026-10-24 17:13:37",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "476",
+            "order_id": "9059",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "2",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "audits": [
+            {
+              "id": "14833",
+              "action": "delivery.uber_dispatched",
+              "user_id": "3",
+              "payload": "{\"fee_cents\": 742, \"delivery_id\": \"del_mvmis1ex_140\"}"
+            },
+            {
+              "id": "14834",
+              "action": "delivery.uber_released",
+              "user_id": "3",
+              "payload": "{\"delivery_id\": \"del_mvmis1ex_140\", \"order_closed\": false}"
+            }
+          ]
+        },
+        "livreur_apres_rendu": {
+          "delivery_boy_id": null
+        },
+        "livreur": {
+          "stop2": {
+            "id": "476",
+            "order_id": "9059",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "2",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": "10",
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "liv": {
+            "ecran": true,
+            "api": [
+              8853,
+              9059,
+              9060,
+              9061,
+              9062,
+              9063,
+              9064,
+              9065,
+              9066,
+              9067,
+              9068,
+              9069,
+              9070
+            ]
+          }
+        }
+      }
+    },
+    "U-5": {
+      "checks": [],
+      "steps": {
+        "raison_visible": {
+          "bouton": {
+            "x": 679,
+            "y": 385,
+            "w": 102,
+            "h": 29
+          },
+          "raison": {
+            "x": 364,
+            "y": 421,
+            "w": 191,
+            "h": 14
+          }
+        },
+        "release_api": {
+          "http": 422,
+          "body": {
+            "status": false,
+            "ok": false,
+            "message": "Le coursier Uber a déjà la commande : impossible de la reprendre."
+          }
+        },
+        "uber_calls": {
+          "calls": [],
+          "clics_bouton_grise": []
+        },
+        "assign_apres": {
+          "C": null,
+          "A": null
+        }
+      }
+    },
+    "U-6": {
+      "checks": [],
+      "steps": {
+        "mesures": {
+          "raison": "À encaisser à la porte : Uber ne peut pas encaisser. Faites payer la commande avant de la confier à Uber.",
+          "ligne": "#2410269070 · E2E-UBER Client Boulevard Albert Schweitzer 62110 Hénin-Beaumont 🛵 Nos livreurs 🚗 Confier à Uber À encaisser à la porte : Uber ne peut pas encaisser. Faites payer la commande avant de la confier à Uber. Espèces 4,90 € À partir",
+          "clics": [],
+          "api_quote": {
+            "http": 422,
+            "body": {
+              "status": false,
+              "ok": false,
+              "message": "À encaisser à la porte : Uber ne peut pas encaisser. Faites payer la commande avant de la confier à Uber."
+            }
+          },
+          "uber_calls": [],
+          "row": null
+        }
+      }
+    },
+    "U-7": {
+      "checks": [],
+      "steps": {
+        "a_uncovered": {
+          "http": 422,
+          "body": {
+            "status": false,
+            "ok": false,
+            "message": "Uber n'a pas donné de prix (indisponible ou adresse non couverte). La commande reste à nos livreurs."
+          }
+        },
+        "b_create_fail": {
+          "http": 422,
+          "body": {
+            "status": false,
+            "ok": false,
+            "message": "Uber n'a pas confirmé la course — elle a peut-être été créée. Vérifiez dans l'application Uber Direct avant de réessayer ; la commande reste à nos livreurs en attendant."
+          }
+        },
+        "b_base": {
+          "id": "78",
+          "order_id": "9061",
+          "quote_id": "dqt_mvmis1ex_145",
+          "quote_fee_cents": "742",
+          "eta_minutes": "25",
+          "quote_expires_at": "2026-10-24 17:28:52",
+          "delivery_id": null,
+          "tracking_url": null,
+          "status": null,
+          "status_updated_at": null,
+          "failure_code": "uber_unconfirmed",
+          "failure_message": "Uber n'a pas confirmé la course : elle a peut-être été créée. Vérifiez dans l'application Uber Direct avant de réessayer.",
+          "create_attempts": "1",
+          "dropoff_phone": null
+        },
+        "c_double": {
+          "d1": {
+            "http": 422,
+            "body": {
+              "status": false,
+              "ok": false,
+              "message": "Une demande Uber est déjà en cours pour cette commande."
+            }
+          },
+          "d2": {
+            "http": 200,
+            "body": {
+              "status": true,
+              "ok": true,
+              "tracking_url": "https://stub.uber.local/track/mvmis1ex-147"
+            }
+          },
+          "deliveries_posts": [
+            {
+              "at": "2026-10-24T15:13:55.524Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries",
+              "auth": true,
+              "body": {
+                "quote_id": "dqt_mvmis1ex_146",
+                "idempotency_key": "lecayenne-order-9061",
+                "external_id": "order-9061",
+                "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "pickup_phone_number": "+33365678291",
+                "dropoff_phone_number": "+33698744249",
+                "pickup_ready_dt": "2026-10-24T15:43:55Z",
+                "manifest_items": [
+                  {
+                    "name": "Commande Le Cayenne #2410269061",
+                    "quantity": 1,
+                    "size": "medium"
+                  }
+                ],
+                "manifest_reference": "order-9061",
+                "manifest_total_value": 490,
+                "external_store_id": "branch-1",
+                "pickup_name": "Le Cayenne (principal)",
+                "dropoff_name": "E2E-UBER Client",
+                "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269061",
+                "pickup_latitude": 50.4215667,
+                "pickup_longitude": 2.954906,
+                "dropoff_latitude": 50.418361,
+                "dropoff_longitude": 2.968711
+              }
+            }
+          ],
+          "row": {
+            "id": "78",
+            "order_id": "9061",
+            "quote_id": "dqt_mvmis1ex_146",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:55",
+            "delivery_id": "del_mvmis1ex_147",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-147",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:13:55",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "2",
+            "dropoff_phone": "+33698744249"
+          },
+          "lignes": "1"
+        },
+        "d_expired": {
+          "http": 409,
+          "body": {
+            "status": false,
+            "ok": false,
+            "code": "quote_changed",
+            "message": "Le devis a expiré : confirmez le nouveau prix.",
+            "quote": {
+              "ok": true,
+              "quote_id": "dqt_mvmis1ex_149",
+              "fee_cents": 742,
+              "fee": 7.42,
+              "eta_minutes": 25,
+              "expires_at": "2026-10-24T17:28:57+02:00"
+            }
+          }
+        },
+        "d_base": {
+          "calls": [
+            {
+              "at": "2026-10-24T15:13:57.570Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/delivery_quotes",
+              "auth": true,
+              "body": {
+                "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "pickup_phone_number": "+33365678291",
+                "dropoff_phone_number": "+33698744249",
+                "pickup_ready_dt": "2026-10-24T15:43:57Z",
+                "manifest_total_value": 490,
+                "external_store_id": "branch-1",
+                "pickup_latitude": 50.4215667,
+                "pickup_longitude": 2.954906,
+                "dropoff_latitude": 50.418361,
+                "dropoff_longitude": 2.968711
+              }
+            }
+          ],
+          "rowF": {
+            "id": "79",
+            "order_id": "9062",
+            "quote_id": "dqt_mvmis1ex_149",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:57",
+            "delivery_id": null,
+            "tracking_url": null,
+            "status": null,
+            "status_updated_at": null,
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "0",
+            "dropoff_phone": null
+          }
+        }
+      }
+    },
+    "U-8": {
+      "checks": [
+        {
+          "name": "écran : la raison affichée est celle du retour post-sac",
+          "ok": true,
+          "detail": {
+            "raisonTexte": "Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande.",
+            "titreG": "Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande."
+          }
+        }
+      ],
+      "steps": {
+        "a_signature": {
+          "faux": {
+            "delivery_id": "del_mvmis1ex_151",
+            "status": "pickup",
+            "http": 401,
+            "body": "{\"status\":false}",
+            "signed_with_real_secret": false
+          },
+          "sans_signature_http": 401,
+          "row": {
+            "id": "80",
+            "order_id": "9063",
+            "quote_id": "dqt_mvmis1ex_150",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:59",
+            "delivery_id": "del_mvmis1ex_151",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-151",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:14:00",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          }
+        },
+        "b_commande_acceptee_sac_pris": {
+          "statut_commande": "7",
+          "attendu_doc": 10,
+          "transition_journal": "1"
+        },
+        "b_rejeu": {
+          "row": {
+            "id": "80",
+            "order_id": "9063",
+            "quote_id": "dqt_mvmis1ex_150",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:59",
+            "delivery_id": "del_mvmis1ex_151",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-151",
+            "status": "pickup_complete",
+            "status_updated_at": "2026-10-24 17:14:03",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "480",
+            "order_id": "9063",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "6",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": "2026-10-24 17:14:03",
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          }
+        },
+        "c_canceled_avant_sac": {
+          "row": {
+            "id": "81",
+            "order_id": "9064",
+            "quote_id": "dqt_mvmis1ex_152",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:29:01",
+            "delivery_id": "del_mvmis1ex_153",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-153",
+            "status": "canceled",
+            "status_updated_at": "2026-10-24 17:14:03",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "481",
+            "order_id": "9064",
+            "wave_at": "2026-10-24 18:30:00",
+            "sequence": "1",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          }
+        },
+        "c2_redispatch_apres_annulation_uber": {
+          "quote": {
+            "http": 200,
+            "body": {
+              "status": true,
+              "ok": true,
+              "quote_id": "dqt_mvmis1ex_159",
+              "fee_cents": 742,
+              "fee": 7.42,
+              "eta_minutes": 25,
+              "expires_at": "2026-10-24T17:29:04+02:00"
+            }
+          },
+          "dispatch": {
+            "http": 200,
+            "body": {
+              "status": true,
+              "ok": true,
+              "tracking_url": "https://stub.uber.local/track/mvmis1ex-160"
+            }
+          },
+          "create": {
+            "at": "2026-10-24T15:14:05.045Z",
+            "method": "POST",
+            "path": "/v1/customers/{customer}/deliveries",
+            "auth": true,
+            "body": {
+              "quote_id": "dqt_mvmis1ex_159",
+              "idempotency_key": "lecayenne-order-9064-after-del_mvmis1ex_153",
+              "external_id": "order-9064",
+              "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+              "pickup_phone_number": "+33365678291",
+              "dropoff_phone_number": "+33698744249",
+              "pickup_ready_dt": "2026-10-24T15:44:05Z",
+              "manifest_items": [
+                {
+                  "name": "Commande Le Cayenne #2410269064",
+                  "quantity": 1,
+                  "size": "medium"
+                }
+              ],
+              "manifest_reference": "order-9064",
+              "manifest_total_value": 490,
+              "external_store_id": "branch-1",
+              "pickup_name": "Le Cayenne (principal)",
+              "dropoff_name": "E2E-UBER Client",
+              "dropoff_notes": "E2E-UBER-R2 porte bleue — Commande #2410269064",
+              "pickup_latitude": 50.4215667,
+              "pickup_longitude": 2.954906,
+              "dropoff_latitude": 50.418361,
+              "dropoff_longitude": 2.968711
+            }
+          },
+          "courses_chez_uber": [
+            {
+              "id": "del_mvmis1ex_153",
+              "status": "canceled",
+              "quote_id": "dqt_mvmis1ex_152"
+            },
+            {
+              "id": "del_mvmis1ex_160",
+              "status": "pending",
+              "quote_id": "dqt_mvmis1ex_159"
+            }
+          ],
+          "row": {
+            "id": "81",
+            "order_id": "9064",
+            "quote_id": "dqt_mvmis1ex_159",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:29:04",
+            "delivery_id": "del_mvmis1ex_160",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-160",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:14:05",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "2",
+            "dropoff_phone": "+33698744249"
+          },
+          "board": {
+            "wave": "2026-10-24 18:30:00",
+            "courier_id": 10,
+            "id": 481,
+            "order_id": 9064,
+            "order_number": "2410269064",
+            "customer": "E2E-UBER Client",
+            "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+            "collect_method": "paid_online",
+            "amount_due": 0,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "has_photo": false,
+            "uber_attention": null,
+            "dispatch": "uber",
+            "uber": {
+              "status": "pending",
+              "tracking_url": "https://stub.uber.local/track/mvmis1ex-160",
+              "fee": 7.42,
+              "courier_name": null,
+              "courier_phone": null,
+              "bag_taken": false,
+              "eta": "17:39",
+              "kitchen_pending": false
+            },
+            "uber_blocked": null
+          }
+        },
+        "d_returned_apres_sac": {
+          "row": {
+            "id": "80",
+            "order_id": "9063",
+            "quote_id": "dqt_mvmis1ex_150",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:59",
+            "delivery_id": "del_mvmis1ex_151",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-151",
+            "status": "returned",
+            "status_updated_at": "2026-10-24 17:14:05",
+            "failure_code": "uber_returned_after_pickup",
+            "failure_message": "Uber a ramené la commande au restaurant alors que le coursier avait le sac : la commande n'est pas livrée. À traiter avec le client.",
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "ord": {
+            "id": "9063",
+            "order_serial_no": "2410269063",
+            "status": "7",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3325",
+            "order_type": "5",
+            "payment_method": "1"
+          }
+        },
+        "d_board": {
+          "wave": "2026-10-24 18:00:00",
+          "courier_id": 10,
+          "id": 480,
+          "order_id": 9063,
+          "order_number": "2410269063",
+          "customer": "E2E-UBER Client",
+          "address": "Boulevard Albert Schweitzer 62110 Hénin-Beaumont",
+          "collect_method": "paid_online",
+          "amount_due": 0,
+          "left_at": "2026-10-24 17:14:03",
+          "arrived_at": null,
+          "delivered_at": null,
+          "has_photo": false,
+          "uber_attention": "Uber a ramené la commande au restaurant alors que le coursier avait le sac : la commande n'est pas livrée. À traiter avec le client.",
+          "dispatch": "own",
+          "uber": null,
+          "uber_blocked": "Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande.",
+          "raison_ecran": "Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande.",
+          "title_ecran": "Le coursier Uber avait le sac et la course a été annulée ou ramenée : la commande n'est pas livrée. À régler avec Uber et le client, puis clôturer ou annuler la commande."
+        }
+      }
+    },
+    "U-9": {
+      "checks": [],
+      "steps": {
+        "a_cancel_order": {
+          "http": 200,
+          "body": "{\"data\":{\"id\":9065,\"order_serial_no\":\"2410269065\",\"queue_number\":\"A0179\",\"token\":\"E2E-UBER-R2-I-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with"
+        },
+        "a_base": {
+          "calls": [
+            {
+              "at": "2026-10-24T15:14:10.107Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_163/cancel",
+              "auth": true,
+              "body": {}
+            }
+          ],
+          "row": {
+            "id": "82",
+            "order_id": "9065",
+            "quote_id": "dqt_mvmis1ex_162",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:29:08",
+            "delivery_id": "del_mvmis1ex_163",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-163",
+            "status": "canceled",
+            "status_updated_at": "2026-10-24 17:14:10",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": null,
+          "ord": {
+            "id": "9065",
+            "order_serial_no": "2410269065",
+            "status": "16",
+            "payment_status": "20",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3327",
+            "order_type": "5",
+            "payment_method": "1"
+          }
+        },
+        "b_refus": {
+          "calls": [
+            {
+              "at": "2026-10-24T15:14:11.601Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+              "auth": true,
+              "body": {}
+            },
+            {
+              "at": "2026-10-24T15:14:11.602Z",
+              "method": "GET",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147",
+              "auth": true,
+              "body": {}
+            },
+            {
+              "at": "2026-10-24T15:14:11.607Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+              "auth": true,
+              "body": {}
+            },
+            {
+              "at": "2026-10-24T15:14:11.608Z",
+              "method": "GET",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147",
+              "auth": true,
+              "body": {}
+            }
+          ],
+          "row": {
+            "id": "78",
+            "order_id": "9061",
+            "quote_id": "dqt_mvmis1ex_146",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:55",
+            "delivery_id": "del_mvmis1ex_147",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-147",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:14:06",
+            "failure_code": "order_closed_cancel_failed",
+            "failure_message": "Commande annulée mais Uber n'a pas confirmé l'annulation de la course : à annuler dans l'application Uber Direct.",
+            "create_attempts": "2",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "478",
+            "order_id": "9061",
+            "wave_at": "2026-10-24 18:00:00",
+            "sequence": "4",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "ord": {
+            "id": "9061",
+            "order_serial_no": "2410269061",
+            "status": "16",
+            "payment_status": "20",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3323",
+            "order_type": "5",
+            "payment_method": "1"
+          }
+        },
+        "c_rattrapage": {
+          "out": "0 commande(s) rattachée(s), 1 arrêt(s) libéré(s).",
+          "calls": [
+            {
+              "at": "2026-10-24T15:14:13.399Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_147/cancel",
+              "auth": true,
+              "body": {}
+            }
+          ],
+          "row": {
+            "id": "78",
+            "order_id": "9061",
+            "quote_id": "dqt_mvmis1ex_146",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:28:55",
+            "delivery_id": "del_mvmis1ex_147",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-147",
+            "status": "canceled",
+            "status_updated_at": "2026-10-24 17:14:13",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "2",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": null
+        }
+      }
+    },
+    "U-1bis": {
+      "checks": [
+        {
+          "name": "site : « Arrivée estimée vers HH:MM » (= dropoff_eta Uber, Paris) et plus « Départ de la livraison prévu »",
+          "ok": true,
+          "detail": {
+            "etaAttendue": "17:39"
+          }
+        }
+      ],
+      "steps": {
+        "course": {
+          "delivery_id": "del_mvmis1ex_165",
+          "dropoff_eta_uber": "2026-10-24T15:39:16.189Z",
+          "eta_attendue_paris": "17:39"
+        },
+        "board": {
+          "status": "pending",
+          "tracking_url": "https://stub.uber.local/track/mvmis1ex-165",
+          "fee": 7.42,
+          "courier_name": null,
+          "courier_phone": null,
+          "bag_taken": false,
+          "eta": "17:39",
+          "kitchen_pending": false
+        },
+        "site": {
+          "texte": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande EN PRÉPARATION #2410269066 Arrivée estimée vers 17:39 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Confirmée 🍳 En préparation 3 En route 4 Livrée NUMÉRO 2410269066 TOTAL 4,90 € TA COMMANDE 1× Eau Plate 50cl LIVRAISON Adresse : Boulevard Albert Schw",
+          "api": {
+            "arrivee_estimee": "17:39",
+            "prevue_pour": null,
+            "status": 7
+          }
+        }
+      }
+    },
+    "U1-003": {
+      "checks": [],
+      "steps": {
+        "releves": {
+          "duree_ms": 6527,
+          "rafraichissements": 5,
+          "releves_J": [
+            "2026-10-24T15:14:22.344Z"
+          ],
+          "tous_les_get": [
+            "2026-10-24T15:14:22.338Z /v1/customers/{customer}/deliveries/del_mvmis1ex_92",
+            "2026-10-24T15:14:22.340Z /v1/customers/{customer}/deliveries/del_mvmis1ex_160",
+            "2026-10-24T15:14:22.344Z /v1/customers/{customer}/deliveries/del_mvmis1ex_165"
+          ]
+        },
+        "releve_apres_fenetre": [
+          "2026-10-24T15:14:40.431Z"
+        ]
+      }
+    },
+    "U-3bis": {
+      "checks": [],
+      "steps": {
+        "sac_pris_cuisine_pas_finie": {
+          "ord": {
+            "id": "9066",
+            "order_serial_no": "2410269066",
+            "status": "7",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3328",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "stop": {
+            "id": "483",
+            "order_id": "9066",
+            "wave_at": "2026-10-24 18:30:00",
+            "sequence": "2",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": "2026-10-24 17:14:43",
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "row": {
+            "id": "83",
+            "order_id": "9066",
+            "quote_id": "dqt_mvmis1ex_164",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:29:16",
+            "delivery_id": "del_mvmis1ex_165",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-165",
+            "status": "pickup_complete",
+            "status_updated_at": "2026-10-24 17:14:43",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "journal_refus_transition": [
+            "[2026-10-24 17:14:43] local.WARNING: uber_direct.order_transition_refused {\"correlation_id\":\"45bf9d7b-5d51-464e-9543-eb736d5b93e2\",\"user_id\":null,\"branch_id\":null,\"order_id\":9066,\"from\":7,\"to\":10} "
+          ]
+        },
+        "planche_sac_pris": {
+          "ligne": "#2410269066 · E2E-UBER Client Boulevard Albert Schweitzer 62110 Hénin-Beaumont 🚗 Uber · Coursier a la commande · arrivée ~17:39 Suivi 🛵 Nos livreurs Le coursier Uber a déjà la commande ⚠ Le coursier Uber a le sac : marquez la commande prête en cuisine pour qu'elle passe « en route ». Payé En route",
+          "board": {
+            "status": "pickup_complete",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-165",
+            "fee": 7.42,
+            "courier_name": null,
+            "courier_phone": null,
+            "bag_taken": true,
+            "eta": "17:39",
+            "kitchen_pending": true
+          }
+        },
+        "site_entre_deux": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande EN PRÉPARATION #2410269066 Arrivée estimée vers 17:39 Votre commande est en préparation. Le statut se met à jour automatiquement. ✓ Confirmée 🍳 En préparation 3 En route 4 Livrée NU",
+        "cuisine_prete": {
+          "ord": {
+            "id": "9066",
+            "order_serial_no": "2410269066",
+            "status": "10",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3328",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "webhooks_J_avant": 0,
+          "webhooks_J_apres": 1,
+          "audits": [
+            {
+              "id": "14845",
+              "action": "delivery.uber_dispatched",
+              "user_id": "3",
+              "payload": "{\"fee_cents\": 742, \"delivery_id\": \"del_mvmis1ex_165\"}"
+            }
+          ]
+        },
+        "site_en_route": "Aller au contenu Commandes Fidélité Panier 👤 Mon compte Accueil Menu Avis Réseaux Itinéraire Suivi de votre commande 🛵 VOTRE COMMANDE EST EN ROUTE ! Le livreur est en chemin vers votre adresse. EN LIVRAISON #2410269066 Arrivée estimée vers 17:39 Le livreur est en route vers votre adresse. ✓ Confir",
+        "livree": {
+          "ord": {
+            "id": "9066",
+            "order_serial_no": "2410269066",
+            "status": "13",
+            "payment_status": "5",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3328",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "stop": {
+            "id": "483",
+            "order_id": "9066",
+            "wave_at": "2026-10-24 18:30:00",
+            "sequence": "2",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": "2026-10-24 17:14:43",
+            "arrived_at": "2026-10-24 17:15:21",
+            "delivered_at": "2026-10-24 17:15:21",
+            "amount_collected_cents": "0"
+          },
+          "row": {
+            "id": "83",
+            "order_id": "9066",
+            "quote_id": "dqt_mvmis1ex_164",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:29:16",
+            "delivery_id": "del_mvmis1ex_165",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-165",
+            "status": "delivered",
+            "status_updated_at": "2026-10-24 17:15:21",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          }
+        }
+      }
+    },
+    "U-7bis": {
+      "checks": [],
+      "steps": {
+        "a_lost": {
+          "d1": {
+            "http": 422,
+            "body": {
+              "status": false,
+              "ok": false,
+              "message": "Uber n'a pas confirmé la course — elle a peut-être été créée. Vérifiez dans l'application Uber Direct avant de réessayer ; la commande reste à nos livreurs en attendant."
+            }
+          },
+          "attente_ms": 8817
+        },
+        "a_base": {
+          "row": {
+            "id": "84",
+            "order_id": "9067",
+            "quote_id": "dqt_mvmis1ex_168",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:30:23",
+            "delivery_id": null,
+            "tracking_url": null,
+            "status": null,
+            "status_updated_at": null,
+            "failure_code": "uber_unconfirmed",
+            "failure_message": "Uber n'a pas confirmé la course : elle a peut-être été créée. Vérifiez dans l'application Uber Direct avant de réessayer.",
+            "create_attempts": "1",
+            "dropoff_phone": null
+          },
+          "courses_chez_uber": [
+            {
+              "id": "del_mvmis1ex_169",
+              "status": "pending",
+              "quote_id": "dqt_mvmis1ex_168"
+            }
+          ]
+        },
+        "b_409": {
+          "http": 409,
+          "body": {
+            "status": false,
+            "ok": false,
+            "code": "quote_changed",
+            "message": "Le devis a expiré : confirmez le nouveau prix.",
+            "quote": {
+              "ok": true,
+              "quote_id": "dqt_mvmis1ex_170",
+              "fee_cents": 742,
+              "fee": 7.42,
+              "eta_minutes": 25,
+              "expires_at": "2026-10-24T17:30:32+02:00"
+            }
+          }
+        },
+        "c_confirm": {
+          "http": 200,
+          "body": {
+            "status": true,
+            "ok": true,
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-169"
+          }
+        },
+        "c_preuves": {
+          "posts": [
+            {
+              "at": "2026-10-24T15:15:23.904Z",
+              "idempotency_key": "lecayenne-order-9067",
+              "quote_id": "dqt_mvmis1ex_168"
+            },
+            {
+              "at": "2026-10-24T15:15:32.810Z",
+              "idempotency_key": "lecayenne-order-9067",
+              "quote_id": "dqt_mvmis1ex_170"
+            }
+          ],
+          "courses_chez_uber": [
+            {
+              "id": "del_mvmis1ex_169",
+              "status": "pending",
+              "quote_id": "dqt_mvmis1ex_168"
+            }
+          ],
+          "row": {
+            "id": "84",
+            "order_id": "9067",
+            "quote_id": "dqt_mvmis1ex_170",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:30:32",
+            "delivery_id": "del_mvmis1ex_169",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-169",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:15:32",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "2",
+            "dropoff_phone": "+33698744249"
+          }
+        }
+      }
+    },
+    "U1-010": {
+      "checks": [],
+      "steps": {
+        "nofee": {
+          "q": {
+            "http": 422,
+            "body": {
+              "status": false,
+              "ok": false,
+              "message": "Uber n'a pas donné de prix (indisponible ou adresse non couverte). La commande reste à nos livreurs."
+            }
+          },
+          "calls": [
+            {
+              "at": "2026-10-24T15:15:35.601Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/delivery_quotes",
+              "auth": true,
+              "body": {
+                "pickup_address": "{\"street_address\":[\"437 Rue Élie Gruyelle, 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "dropoff_address": "{\"street_address\":[\"Boulevard Albert Schweitzer 62110 Hénin-Beaumont\"],\"city\":\"Hénin-Beaumont\",\"state\":\"\",\"zip_code\":\"62110\",\"country\":\"FR\"}",
+                "pickup_phone_number": "+33365678291",
+                "dropoff_phone_number": "+33698744249",
+                "pickup_ready_dt": "2026-10-24T15:45:35Z",
+                "manifest_total_value": 490,
+                "external_store_id": "branch-1",
+                "pickup_latitude": 50.4215667,
+                "pickup_longitude": 2.954906,
+                "dropoff_latitude": 50.418361,
+                "dropoff_longitude": 2.968711
+              }
+            }
+          ],
+          "row": null
+        }
+      }
+    },
+    "U-9bis": {
+      "checks": [],
+      "steps": {
+        "a_refus": {
+          "row": {
+            "id": "85",
+            "order_id": "9069",
+            "quote_id": "dqt_mvmis1ex_172",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:30:37",
+            "delivery_id": "del_mvmis1ex_173",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-173",
+            "status": "pending",
+            "status_updated_at": "2026-10-24 17:15:38",
+            "failure_code": "order_closed_cancel_failed",
+            "failure_message": "Commande annulée mais Uber n'a pas confirmé l'annulation de la course : à annuler dans l'application Uber Direct.",
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": {
+            "id": "486",
+            "order_id": "9069",
+            "wave_at": "2026-10-24 18:30:00",
+            "sequence": "5",
+            "collect_method": "paid_online",
+            "amount_due_cents": "0",
+            "delivery_boy_id": null,
+            "left_at": null,
+            "arrived_at": null,
+            "delivered_at": null,
+            "amount_collected_cents": null
+          },
+          "ord": {
+            "id": "9069",
+            "order_serial_no": "2410269069",
+            "status": "16",
+            "payment_status": "20",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3331",
+            "order_type": "5",
+            "payment_method": "1"
+          }
+        },
+        "a_ecran": "#2410269069 · E2E-UBER Client Boulevard Albert Schweitzer 62110 Hénin-Beaumont ⚠ Commande annulée mais Uber n'a pas confirmé l'annulation de la course : à annuler dans l'application Uber Direct. 🚗 Uber · Coursier en recherche · arrivée ~17:40 Suivi 🛵 Nos livreurs Payé À partir",
+        "b_retire": {
+          "rel": {
+            "http": 200,
+            "body": {
+              "status": true,
+              "ok": true,
+              "closed": true,
+              "message": "Course Uber annulée ; la commande étant annulée, l'arrêt est retiré de la tournée."
+            }
+          },
+          "calls": [
+            {
+              "at": "2026-10-24T15:15:40.787Z",
+              "method": "POST",
+              "path": "/v1/customers/{customer}/deliveries/del_mvmis1ex_173/cancel",
+              "auth": true,
+              "body": {}
+            }
+          ],
+          "row": {
+            "id": "85",
+            "order_id": "9069",
+            "quote_id": "dqt_mvmis1ex_172",
+            "quote_fee_cents": "742",
+            "eta_minutes": "25",
+            "quote_expires_at": "2026-10-24 17:30:37",
+            "delivery_id": "del_mvmis1ex_173",
+            "tracking_url": "https://stub.uber.local/track/mvmis1ex-173",
+            "status": "canceled",
+            "status_updated_at": "2026-10-24 17:15:40",
+            "failure_code": null,
+            "failure_message": null,
+            "create_attempts": "1",
+            "dropoff_phone": "+33698744249"
+          },
+          "stop": null,
+          "ord": {
+            "id": "9069",
+            "order_serial_no": "2410269069",
+            "status": "16",
+            "payment_status": "20",
+            "delivery_boy_id": null,
+            "total": "4.900000",
+            "fiscal_sequence_no": "3331",
+            "order_type": "5",
+            "payment_method": "1"
+          },
+          "audits": [
+            {
+              "id": "14850",
+              "action": "delivery.uber_released",
+              "user_id": "3",
+              "payload": "{\"delivery_id\": \"del_mvmis1ex_173\", \"order_closed\": true}"
+            }
+          ]
+        },
+        "livreur": {
+          "ecran": false,
+          "api": [
+            8853,
+            9059,
+            9062,
+            9068,
+            9070
+          ]
+        }
+      }
+    },
+    "U-R": {
+      "checks": [],
+      "steps": {
+        "prod_bloquees": []
+      }
+    }
+  },
+  "orders": {
+    "A": {
+      "id": 9058,
+      "serial": "2410269058",
+      "label": "A",
+      "stop": {
+        "id": "475",
+        "order_id": "9058",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "1",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9058",
+        "order_serial_no": "2410269058",
+        "status": "8",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3320",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_135"
+    },
+    "B": {
+      "id": 9059,
+      "serial": "2410269059",
+      "label": "B",
+      "stop": {
+        "id": "476",
+        "order_id": "9059",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "2",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9059",
+        "order_serial_no": "2410269059",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3321",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_140"
+    },
+    "C": {
+      "id": 9060,
+      "serial": "2410269060",
+      "label": "C",
+      "stop": {
+        "id": "477",
+        "order_id": "9060",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "3",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9060",
+        "order_serial_no": "2410269060",
+        "status": "8",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3322",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_142"
+    },
+    "E": {
+      "id": 9061,
+      "serial": "2410269061",
+      "label": "E",
+      "stop": {
+        "id": "478",
+        "order_id": "9061",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "4",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9061",
+        "order_serial_no": "2410269061",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3323",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_147"
+    },
+    "F": {
+      "id": 9062,
+      "serial": "2410269062",
+      "label": "F",
+      "stop": {
+        "id": "479",
+        "order_id": "9062",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "5",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9062",
+        "order_serial_no": "2410269062",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3324",
+        "order_type": "5",
+        "payment_method": "1"
+      }
+    },
+    "G": {
+      "id": 9063,
+      "serial": "2410269063",
+      "label": "G",
+      "stop": {
+        "id": "480",
+        "order_id": "9063",
+        "wave_at": "2026-10-24 18:00:00",
+        "sequence": "6",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9063",
+        "order_serial_no": "2410269063",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3325",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_151"
+    },
+    "H": {
+      "id": 9064,
+      "serial": "2410269064",
+      "label": "H",
+      "stop": {
+        "id": "481",
+        "order_id": "9064",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "1",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9064",
+        "order_serial_no": "2410269064",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3326",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_153",
+      "deliveryId2": "del_mvmis1ex_160"
+    },
+    "I": {
+      "id": 9065,
+      "serial": "2410269065",
+      "label": "I",
+      "stop": {
+        "id": "482",
+        "order_id": "9065",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "2",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9065",
+        "order_serial_no": "2410269065",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3327",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_163"
+    },
+    "J": {
+      "id": 9066,
+      "serial": "2410269066",
+      "label": "J",
+      "stop": {
+        "id": "483",
+        "order_id": "9066",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "3",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9066",
+        "order_serial_no": "2410269066",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3328",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_165"
+    },
+    "K": {
+      "id": 9067,
+      "serial": "2410269067",
+      "label": "K",
+      "stop": {
+        "id": "484",
+        "order_id": "9067",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "4",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9067",
+        "order_serial_no": "2410269067",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3329",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_169"
+    },
+    "L": {
+      "id": 9068,
+      "serial": "2410269068",
+      "label": "L",
+      "stop": {
+        "id": "485",
+        "order_id": "9068",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "5",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9068",
+        "order_serial_no": "2410269068",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3330",
+        "order_type": "5",
+        "payment_method": "1"
+      }
+    },
+    "M": {
+      "id": 9069,
+      "serial": "2410269069",
+      "label": "M",
+      "stop": {
+        "id": "486",
+        "order_id": "9069",
+        "wave_at": "2026-10-24 18:30:00",
+        "sequence": "6",
+        "collect_method": "paid_online",
+        "amount_due_cents": "0",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9069",
+        "order_serial_no": "2410269069",
+        "status": "7",
+        "payment_status": "5",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": "3331",
+        "order_type": "5",
+        "payment_method": "1"
+      },
+      "deliveryId": "del_mvmis1ex_173"
+    },
+    "D": {
+      "id": 9070,
+      "serial": "2410269070",
+      "label": "D",
+      "stop": {
+        "id": "487",
+        "order_id": "9070",
+        "wave_at": "2026-10-24 19:00:00",
+        "sequence": "1",
+        "collect_method": "cash",
+        "amount_due_cents": "490",
+        "delivery_boy_id": "10",
+        "left_at": null,
+        "arrived_at": null,
+        "delivered_at": null,
+        "amount_collected_cents": null
+      },
+      "order": {
+        "id": "9070",
+        "order_serial_no": "2410269070",
+        "status": "7",
+        "payment_status": "15",
+        "delivery_boy_id": null,
+        "total": "4.900000",
+        "fiscal_sequence_no": null,
+        "order_type": "5",
+        "payment_method": "1"
+      }
+    }
+  },
+  "prodBloquees": [],
+  "notes": [
+    "client invité 1009 (0698744249) créé, jeton site obtenu",
+    "adresse 184 (Boulevard Albert Schweitzer 62110 Hénin-Beaumont) frais 3.9 €",
+    "commandes : A=9058/2410269058 stop 475 @2026-10-24 18:00:00 paid_online boy=10 st=8 ; B=9059/2410269059 stop 476 @2026-10-24 18:00:00 paid_online boy=10 st=7 ; C=9060/2410269060 stop 477 @2026-10-24 18:00:00 paid_online boy=10 st=8 ; E=9061/2410269061 stop 478 @2026-10-24 18:00:00 paid_online boy=10 st=7 ; F=9062/2410269062 stop 479 @2026-10-24 18:00:00 paid_online boy=10 st=7 ; G=9063/2410269063 stop 480 @2026-10-24 18:00:00 paid_online boy=10 st=7 ; H=9064/2410269064 stop 481 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; I=9065/2410269065 stop 482 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; J=9066/2410269066 stop 483 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; K=9067/2410269067 stop 484 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; L=9068/2410269068 stop 485 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; M=9069/2410269069 stop 486 @2026-10-24 18:30:00 paid_online boy=10 st=7 ; D=9070/2410269070 stop 487 @2026-10-24 19:00:00 cash boy=10 st=7"
+  ],
+  "png": [
+    "U1-planche-avant",
+    "U2-prix-a-confirmer",
+    "U2-confie-uber",
+    "U3-en-route-planche",
+    "U3-site-en-route",
+    "U3-site-livree",
+    "U4-rendu",
+    "U5-refus-reprise",
+    "U6-grise-porte",
+    "U7-panne-devis",
+    "U8-alerte-rouge",
+    "U9-annulation-non-confirmee",
+    "U1bis-site-arrivee-estimee",
+    "U3bis-kitchen-pending",
+    "U7bis-premiere-course"
+  ],
+  "cleanup": {
+    "A": {
+      "skipped": "statut 13"
+    },
+    "B": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9059,\"order_serial_no\":\"2410269059\",\"queue_number\":\"A0173\",\"token\":\"E2E-UBER-R2-B-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    },
+    "C": {
+      "skipped": "statut 13"
+    },
+    "E": {
+      "skipped": "statut 16"
+    },
+    "F": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9062,\"order_serial_no\":\"2410269062\",\"queue_number\":\"A0176\",\"token\":\"E2E-UBER-R2-F-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    },
+    "G": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9063,\"order_serial_no\":\"2410269063\",\"queue_number\":\"A0177\",\"token\":\"E2E-UBER-R2-G-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": true
+    },
+    "H": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9064,\"order_serial_no\":\"2410269064\",\"queue_number\":\"A0178\",\"token\":\"E2E-UBER-R2-H-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    },
+    "I": {
+      "skipped": "statut 16"
+    },
+    "J": {
+      "skipped": "statut 13"
+    },
+    "K": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9067,\"order_serial_no\":\"2410269067\",\"queue_number\":\"A0181\",\"token\":\"E2E-UBER-R2-K-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    },
+    "L": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9068,\"order_serial_no\":\"2410269068\",\"queue_number\":\"A0182\",\"token\":\"E2E-UBER-R2-L-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    },
+    "M": {
+      "skipped": "statut 16"
+    },
+    "D": {
+      "http": 200,
+      "body": "{\"data\":{\"id\":9070,\"order_serial_no\":\"2410269070\",\"queue_number\":\"A0184\",\"token\":\"E2E-UBER-R2-D-1792854744249\",\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":1,\"discount\":0,\"total_tax\":0.09,\"total\":4.9,\"delivery_charge\":3.9,\"subtotal_currency_price\":\"1,00\\u00a0\\u20ac\",\"subtotal_with",
+      "statut_apres": "16",
+      "arret_restant": false
+    }
+  },
+  "finishedAt": "2026-10-24T15:15:46.260Z",
+  "pngUtilises": 15
+}

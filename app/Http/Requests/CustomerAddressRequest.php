@@ -26,8 +26,9 @@ class CustomerAddressRequest extends FormRequest
     {
         return [
             'label'     => ['required', 'string', 'max:190', Rule::unique("addresses", "label")->ignore($this->route('address.id'))->where('user_id', $this->route('customer.id'))],
-            'latitude'  => ['required', 'max:190'],
-            'longitude' => ['required', 'max:190'],
+            // [LIVRAISON 2026-10-20] Le serveur géocode l'adresse (cf. AddressNormalizer).
+            'latitude'  => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
+            'longitude' => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
             'address'   => ['required', 'string', 'max:500'],
             'apartment' => ['nullable', 'string', 'max:200'],
         ];

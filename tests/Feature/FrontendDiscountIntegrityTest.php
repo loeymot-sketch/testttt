@@ -155,7 +155,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
             ]));
 
         $response->assertStatus(201);
@@ -171,6 +171,268 @@ class FrontendDiscountIntegrityTest extends TestCase
             'coupon_id' => $coupon->id,
             'discount' => 2.00,
         ]);
+    }
+
+    /**
+     * [LOCK_COUPON_SURFACE_BRANCHE_AU_PAIEMENT_2026-11-05] Code promo limité à une SURFACE ou une BRANCHE : vérifié avec la
+     * surface et la branche réelles de la commande. Avant : accepté par « Appliquer » (coupon-checking), refusé à la commande
+     * (422) parce que le chemin SSOT validait avec isUsableNow(null, null). Prouvé mordant sur le code d'avant.
+     *
+     * @return array<string, array{0: array<string, mixed>, 1: int}>
+     */
+    public static function restrictionsDuCode(): array
+    {
+        return [
+            'limité au web'              => [['surfaces' => ['web']], 201],
+            'limité à la borne'          => [['surfaces' => ['kiosk']], 422],
+            'limité à la caisse'         => [['surfaces' => ['pos']], 422],
+            'limité à SA branche'        => [['branch_scope' => ['__branche__']], 201],
+            'limité à une autre branche' => [['branch_scope' => [999999]], 422],
+            'sans restriction'           => [[], 201],
+        ];
+    }
+
+    /** @dataProvider restrictionsDuCode */
+    public function test_code_limite_a_une_surface_ou_une_branche_est_verifie_avec_celles_de_la_commande(array $restriction, int $attendu): void
+    {
+        config(['pos.manual_discount_enabled' => true]);
+        if (isset($restriction['branch_scope'])) {
+            $restriction['branch_scope'] = array_map(fn ($b) => $b === '__branche__' ? $this->branch->id : $b, $restriction['branch_scope']);
+        }
+        $coupon = Coupon::forceCreate(array_merge([
+            'name' => 'SURF10', 'description' => '10 percent', 'code' => 'SURF10',
+            'discount' => 10, 'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(), 'end_date' => now()->addDay(),
+            'minimum_order' => 10, 'maximum_discount' => 5, 'limit_per_user' => 2,
+        ], $restriction));
+
+        $response = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload(['coupon_id' => $coupon->id, 'coupon_code' => $coupon->code]));
+
+        $response->assertStatus($attendu);
+        if ($attendu === 201) {
+            // Montant INCHANGÉ par le correctif : 10 % de 20,00 € = 2,00 €, identique au test du code sans restriction.
+            $this->assertDatabaseHas('orders', ['id' => $response->json('data.id'), 'discount' => 2.00]);
+        } else {
+            $this->assertSame(0, OrderCoupon::count(), 'aucune remise enregistrée pour un code refusé');
+        }
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-2] Un ticket promo NOMINATIF n'est protégé que par son code : la commande web qui
+     * présente seulement le numéro (séquentiel) du code, ou le numéro avec un autre code, est refusée et ne consomme rien.
+     */
+    public function test_le_numero_du_code_promo_sans_son_code_ne_suffit_pas(): void
+    {
+        config(['pos.manual_discount_enabled' => true]);
+        $coupon = Coupon::forceCreate([
+            'name' => 'TICKET', 'description' => 'nominatif', 'code' => 'SARAH-7K2P',
+            'discount' => 50, 'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(), 'end_date' => now()->addDay(),
+            'minimum_order' => 0, 'maximum_discount' => 0, 'limit_per_user' => 1,
+        ]);
+        $web = fn (array $extra) => $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload($extra));
+
+        $web(['coupon_id' => $coupon->id])->assertStatus(422);
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => 'AUTRE-CODE'])->assertStatus(422);
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => ['SARAH-7K2P']])->assertStatus(422)->assertJsonPath('message', 'Ce code promo n\'est pas valable pour cette commande. Saisissez-le à nouveau.'); // tour 3 : tableau forgé
+        $this->assertSame(0, OrderCoupon::count(), 'le ticket n\'est pas consommé');
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => ' sarah-7k2p '])->assertStatus(201);
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Une commande WEB sans formule payée ne peut pas faire annoncer un menu en cuisine
+     * par son instruction ; la note du client entre crochets reste intacte.
+     */
+    public function test_une_formule_non_payee_n_est_pas_annoncee_en_cuisine(): void
+    {
+        $instruction = "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise\n+ Menu (Frites + Boisson)\nFormule : Menu complet (Coca-Cola 33cl)\nMENU : MAY\nViandes en plus : Poulet.\n[Note : sans oignon, allergie lait]";
+        $r = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [], 'instruction' => $instruction]]),
+            ]));
+        $r->assertStatus(201);
+        $ligne = \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r->json('data.id'))->first();
+        // [tour 6] « Viandes en plus » sans extra viande payé n'est plus annoncé en cuisine.
+        $this->assertSame("[Note : sans oignon, allergie lait]", (string) $ligne->instruction);
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $ligne->instruction), 'aucun badge MENU');
+
+        // [ADV2-001] Un addon « menu_full » SANS identifiant (jamais facturé) ne vaut pas une formule payée.
+        $r2 = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [], 'item_addons' => [['role' => 'menu_full']], 'instruction' => $instruction]]),
+            ]));
+        $r2->assertStatus(201);
+        $ligne2 = \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r2->json('data.id'))->first();
+        $this->assertStringNotContainsString('Boisson menu', (string) $ligne2->instruction);
+        $this->assertStringNotContainsString('Menu (Frites', (string) $ligne2->instruction);
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 2] Contournements de la liste noire : espace de largeur nulle, accents, espace insécable,
+     * « + Drink », « Sauce frites : » DANS la note. Liste blanche : rien de cela n'annonce une formule non payée ; un vrai
+     * menu (addon menu_* avec identifiant) garde ses lignes.
+     */
+    public function test_contournements_de_formule_neutralises_par_liste_blanche(): void
+    {
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $forge = "+ Me\u{200B}nu (Frites + Boisson)\n+ Ménu (Frîtes + Boissön)\n\u{00A0}+ Menu complet\n+ Drink\nViandes en plus : Poulet.\n[Note commande : Sauce frites : Mayonnaise]";
+        $propre = \App\Services\FrontendOrderService::instructionWebAssainie($forge, false);
+        $this->assertSame("Viandes en plus : Poulet.\n[Note commande : Sauce frites - Mayonnaise]", $propre);
+        $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $propre));
+
+        $vraiMenu = "Frites: Frites cheddar\nBoisson menu: Coca-Cola 33cl\nViandes en plus : Viande Hachée.\nSauce frites : Mayonnaise\n[Note : bien cuit]";
+        $this->assertSame($vraiMenu, \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, true), 'un menu payé est intact');
+        $this->assertStringNotContainsString('Boisson menu', \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, false));
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-001] Formule PARTIELLE payée : « frites seules » ne fait pas servir de
+     * boisson, « boisson seule » ne fait pas servir de frites. Chaîne réelle : assainissement → ticket cuisine.
+     */
+    public function test_formule_partielle_ne_fait_pas_servir_l_autre_moitie(): void
+    {
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->boissonAuCatalogue('Coca-Cola 33cl');
+        $passe = function (string $role, string $instruction): string {
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => $role]]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+
+        $frites = $passe('menu_frites', "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise");
+        $this->assertSame("Sauce frites : Mayonnaise", $frites);
+        $this->assertStringNotContainsString('Coca', $f->cleanInstruction($frites, 'Sandwich Classique'));
+
+        $boisson = $passe('menu_boisson', "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise");
+        $this->assertSame('Boisson menu: Coca-Cola 33cl', $boisson);
+        $this->assertStringNotContainsString('Frites', $f->cleanInstruction($boisson, 'Sandwich Classique'));
+
+        // Témoin : la formule complète garde tout, allergie comprise.
+        $complet = "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise\n[Note commande : sans oignon, ALLERGIE arachide]";
+        $this->assertSame($complet, $passe('menu_full', $complet));
+    }
+
+    private function boissonAuCatalogue(string $nom, int $status = 5, bool $dispo = true): Item
+    {
+        $cat = ItemCategory::query()->where('slug', 'boissons')->first() ?? ItemCategory::forceCreate(['name' => 'Boissons', 'slug' => 'boissons', 'status' => 5]);
+
+        return Item::forceCreate(['name' => $nom, 'slug' => \Illuminate\Support\Str::slug($nom).'-'.uniqid(), 'price' => 2.00,
+            'status' => $status, 'is_available' => $dispo, 'item_category_id' => $cat->id]);
+    }
+
+    private function extra(string $nom, float $prix): \App\Models\ItemExtra
+    {
+        return \App\Models\ItemExtra::forceCreate(['item_id' => $this->item->id, 'name' => $nom, 'price' => $prix, 'status' => 5,
+            'group_label' => str_contains($nom, 'Sauce') ? 'sauce' : 'supplement']);
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 sauces gratuites] La cuisine imprime les sauces et viandes nommées dans
+     * l'instruction : jamais plus que les extras réellement facturés sur CET article. 1ʳᵉ sauce frites offerte.
+     * Chaîne réelle : POST /api/frontend/order → instruction scellée → ticket cuisine.
+     */
+    public function test_sauces_et_viandes_annoncees_bornees_aux_extras_payes(): void
+    {
+        $sauce = $this->extra('Sauce supplémentaire', 0.50);
+        $viande = $this->extra('Viande supplémentaire', 2.50);
+        $poste = function (array $extras, string $instruction): string {
+            $r = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+                ->postJson('/api/frontend/order', $this->basePayload([
+                    'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => $extras, 'instruction' => $instruction]]),
+                ]));
+            $r->assertStatus(201);
+
+            return (string) \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r->json('data.id'))->value('instruction');
+        };
+
+        // Commande 9926 : six sauces annoncées, AUCUNE payée → aucune imprimée.
+        $this->assertSame('', $poste([], 'Sauces en plus : Samouraï, Curry, Blanche, Harissa, Barbecue, Andalouse.'));
+        // Deux sauces payées, six annoncées → les deux premières seulement.
+        $this->assertSame('Sauces en plus : Samouraï, Curry.', $poste([['id' => $sauce->id, 'quantity' => 2]], 'Sauces en plus : Samouraï, Curry, Blanche, Harissa, Barbecue, Andalouse.'));
+        // Une viande payée, trois annoncées → une.
+        $this->assertSame('Viandes en plus : Poulet.', $poste([['id' => $viande->id, 'quantity' => 1]], 'Viandes en plus : Poulet, Tenders, Kebab.'));
+        // Quantité forgée (-5) : désormais REFUSÉE à la validation (ValidJsonOrder, test abusif final P3 · 05448beb3) —
+        // plus besoin de la borner à 1 : la commande n'est jamais créée.
+        $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [['id' => $sauce->id, 'quantity' => -5]], 'instruction' => 'Sauces en plus : Curry, Blanche.']]),
+            ]))->assertStatus(422);
+
+        // Commande 9925 : menu payé + cinq sauces frites, aucune en plus payée → la 1ʳᵉ (offerte) seulement.
+        $passe = function (array $extras, string $instruction): string {
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction, 'item_extras' => $extras,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => 'menu_full']]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+        $this->assertSame('Sauce frites : Ketchup', $passe([], 'Sauce frites : Ketchup, Mayonnaise, Samouraï, Curry, Blanche'));
+        // Parcours réel du site (api.js) : 2 sauces sandwich en plus + 2 sauces frites dont 1 offerte = 3 extras cumulés.
+        $site = "Sauces en plus : Curry, Blanche.\nSauce frites : Ketchup, Mayonnaise";
+        $this->assertSame($site, $passe([(object) ['id' => $sauce->id, 'quantity' => 3]], $site));
+        // Extra d'un AUTRE article : ne paie rien ici.
+        $autre = \App\Models\ItemExtra::forceCreate(['item_id' => $this->boissonAuCatalogue('Sprite 33cl')->id, 'name' => 'Sauce supplémentaire', 'price' => 0.5, 'status' => 5, 'group_label' => 'sauce']);
+        $this->assertSame('', $passe([(object) ['id' => $autre->id, 'quantity' => 4]], 'Sauces en plus : Curry, Blanche.'));
+
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->assertSame([], $f->extraSauceNames($poste([], 'Sauces en plus : Samouraï, Curry.')), 'le ticket cuisine ne nomme aucune sauce non payée');
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 contenu de formule] « Boisson menu » = UNE boisson active du catalogue
+     * (9949 : trois boissons ; 9948 : « Champagne Dom Perignon ») ; style de frites gratuit dans un menu (9949) retiré.
+     */
+    public function test_contenu_de_formule_borne_au_catalogue(): void
+    {
+        $this->boissonAuCatalogue('Fanta Orange 33cl');
+        $this->boissonAuCatalogue('Oasis Tropical 33cl', 5, false);
+        $formule = Item::forceCreate(['name' => 'Menu (Frites + Boisson)', 'slug' => 'menu-formule-tour6', 'price' => 2.50, 'status' => 5, 'item_category_id' => $this->item->item_category_id]);
+        $pivot = \App\Models\ItemAddon::create(['item_id' => $this->item->id, 'addon_item_id' => $formule->id, 'role' => 'menu_component']);
+        $poste = fn (string $instruction) => $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [],
+                    'item_addons' => [['id' => $pivot->id, 'quantity' => 1, 'role' => 'menu_full']], 'instruction' => $instruction]]),
+            ]));
+        $passe = function (string $instruction): string {
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => 'menu_full']]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', $passe('Boisson menu: fanta orange 33cl'), 'nom canonique du catalogue');
+        // Grandes frites cheddar offertes dans un menu : retirées (le produit commandé n'est pas ces frites).
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', $passe("Frites: Grande Frites Cheddar + Oignons frits\nBoisson menu: Fanta Orange 33cl"));
+
+        foreach (['Boisson menu: Fanta Orange 33cl, Sprite 33cl, Orangina 33cl', 'Boisson menu: Champagne Dom Perignon', 'Boisson menu: Discount Menu'] as $forge) {
+            try {
+                $passe($forge);
+                $this->fail('accepté : '.$forge);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                $this->assertStringContainsString('pas reconnue', $e->getMessage());
+            }
+        }
+        try {
+            $passe('Boisson menu: Oasis Tropical 33cl');
+            $this->fail('boisson en rupture acceptée');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('plus disponible', $e->getMessage());
+        }
+        // Chaîne HTTP réelle (commande 9948) : refus lisible, aucune commande créée.
+        $avant = \App\Models\FrontendOrder::query()->withoutGlobalScopes()->count();
+        $poste('Boisson menu: Champagne Dom Perignon')->assertStatus(422)
+            ->assertJsonPath('message', 'La boisson de votre menu n\'est pas reconnue. Modifiez l\'article pour en choisir une autre.');
+        $this->assertSame($avant, \App\Models\FrontendOrder::query()->withoutGlobalScopes()->count(), 'rien n\'est créé');
+        // Témoin : la même commande avec une vraie boisson passe (montant serveur : 20 + 2,50).
+        $ok = $poste('Boisson menu: Fanta Orange 33cl');
+        $ok->assertStatus(201);
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', (string) \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $ok->json('data.id'))->value('instruction'));
+        // Formule NON payée : la ligne est retirée, sans refus (comportement du tour 2).
+        $nonPayee = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => 'Boisson menu: Champagne Dom Perignon'];
+        $this->assertSame('', \App\Services\FrontendOrderService::sansFormuleNonPayee([$nonPayee])[0]->instruction);
     }
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
@@ -196,7 +458,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
                 'subtotal' => 999.00,
                 'total' => 999.00,
                 'discount' => 900.00,
@@ -242,7 +504,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
                 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
                 'discount' => 3.00,
             ]));
@@ -315,7 +577,7 @@ class FrontendDiscountIntegrityTest extends TestCase
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/frontend/order', $this->basePayload([
-                'coupon_id' => $coupon->id,
+                'coupon_id' => $coupon->id, 'coupon_code' => $coupon->code,
             ]));
 
         // The gate throws a ValidationException, but myOrderStore's catch(Exception)

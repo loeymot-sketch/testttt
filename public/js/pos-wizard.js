@@ -250,6 +250,9 @@
      * @param {boolean} isMicro - Small size
      * @param {boolean} forceEmoji - [S24] Force emoji-only mode (for sauces, garnitures)
      */
+    // [OWNER 2026-10-21] « (recommandé) » après le nom d'un supplément recommandé (rendu seul, jamais envoyé au serveur).
+    function recoTag(it) { return it && it.recommended ? ' <span class="option-reco">(recommandé)</span>' : ''; }
+
     function renderOptionIcon(thumb, emoji, isMicro, forceEmoji) {
         // [S24 FIX] For sauces and garnitures, always use emoji/pictogram
         if (forceEmoji) {
@@ -321,9 +324,39 @@
     /* ==============================
        HELPERS
        ============================== */
+    /*
+     * [AUDIT-SUPERVISEUR 2026-08-26 · AB-003 · GATE PROPRIETAIRE ACCORDEE]
+     *
+     * CE FICHIER EST EN ZONE GELEE (CLAUDE.md §7). Ce qui y est gele, c'est LE DESIGN :
+     * « design parfait selon owner ». Le format d'un NOMBRE n'est pas le design. Aucune
+     * couleur, aucune mise en page, aucun comportement n'est touche par ce commit — seule
+     * la chaine qui represente un montant.
+     *
+     * LE DEFAUT : l'assistant affichait « €7.40 » — point decimal, symbole DEVANT — dans la
+     * meme capture ou la fiche produit derriere lui affichait « 7,40 € » et le ticket
+     * caisse « 0,00 € ». Ce n'etait pas un artefact de locale du navigateur : la chaine
+     * etait construite en dur, donc identique partout, sur un produit dont la locale est
+     * IMMUABLE (ADR-007, FR).
+     *
+     * On reprend le patron canonique du reste du produit (CashOverviewComponent.formatMoney) :
+     * `Intl.NumberFormat` en EUR, avec le meme repli. Les deux surfaces s'accordent donc par
+     * construction, et non par recopie.
+     *
+     * La locale est ecrite en dur, et c'est voulu : ce fichier est du JavaScript a la main,
+     * hors bundle, sans acces a l'instance i18n — et V1 est mono-locale par mandat.
+     */
     function fmtPrice(val) {
         var num = parseFloat(val) || 0;
-        return '€' + num.toFixed(2);
+        try {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        } catch (e) {
+            return num.toFixed(2).replace('.', ',') + '\u00A0€';
+        }
     }
 
     /**
@@ -811,7 +844,9 @@
                     name: ex.name,
                     price: price,
                     currencyPrice: ex.currency_price || fmtPrice(price),
-                    thumb: ex.thumb || null
+                    thumb: ex.thumb || null,
+                    // [OWNER 2026-10-21] suppléments « recommandés » (config/menu_recommended_supplements.php) : mise en avant seule
+                    recommended: ex.is_recommended === true
                 };
                 if (price <= 0) {
                     freeExtras.push(obj);
@@ -819,6 +854,9 @@
                     paidExtras.push(obj);
                 }
             });
+            // Les recommandés en tête, ordre d'origine conservé dans chaque groupe.
+            paidExtras = paidExtras.filter(function (x) { return x.recommended; })
+                .concat(paidExtras.filter(function (x) { return !x.recommended; }));
         }
 
         // Prepare menu addons
@@ -841,7 +879,9 @@
                     itemId: ad.addon_item_id || ad.item_addon_id,
                     name: ad.addon_item_name,
                     price: unitPrice,
-                    currencyPrice: '€' + unitPrice.toFixed(2),
+                    // [AB-003] Passe par le formateur commun : une seconde fabrication en
+                    // dur, c'est un second endroit ou la locale peut deriver.
+                    currencyPrice: fmtPrice(unitPrice),
                     thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || ''),
                     groupLabel: groupLabel.toLowerCase()
                 };
@@ -1595,7 +1635,7 @@
             h += '<div class="wizard-option micro-opt' + sel + '" data-type="supplement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(SUPPLEMENT_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for supplements
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + item.name + recoTag(item) + '</span>';
             h += '<span class="option-price paid">+' + item.currencyPrice + '</span>';
             h += '</div>';
         });
@@ -1935,7 +1975,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -2021,7 +2061,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji);
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -2232,7 +2272,7 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
+                h += '<span class="option-name">' + s.name + recoTag(s) + '</span>';
                 h += '<span class="option-price">' + s.currencyPrice + '</span>';
                 h += '</div>';
             });
@@ -3092,6 +3132,21 @@
         }
         if (lastItemData && lastItemData.extras) {
             crudites = lastItemData.extras.filter(function (extra) {
+                // [LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05 — contresigné 2026-09-06]
+                // Le GROUPE fait autorité (SSOT `item_extras.group_label`), exactement
+                // comme sur la borne (`kioskExtrasPartition.js:118-121`, mandat
+                // propriétaire du 2026-08-05 : les crudités PAYANTES s'affichent à côté
+                // des crudités, avec leur badge de prix). L'ancienne règle exigeait
+                // prix == 0 ET un nom dans une liste blanche qui ne contient ni
+                // « cornichon » ni « olive » : 57 crudités sur 132 (Maïs, Olives,
+                // Poivrons cuits à 0,90 €, sur 19 produits) tombaient dans le bac
+                // « ➕ Suppléments ». Le nom et le prix ne restent qu'un REPLI, pour les
+                // extras SANS groupe — sans groupe, il n'y a pas de vérité à préférer.
+                // Aucun prix n'est modifié : ces articles restent facturés par le serveur
+                // et l'étape affiche toujours leur badge « +0,90 € ».
+                var groupe = String(extra.group_label || '').toLowerCase();
+                if (groupe === 'crudite') return true;
+                if (groupe !== '') return false;
                 return extra.convert_price === 0 && isCruditeName(extra.name);
             });
             hasCrudites = crudites.length > 0;
@@ -3122,6 +3177,9 @@
                 if (/viande\s*suppl/.test(nn)) return false;
                 return extra.convert_price > 0 || isSupplementName(extra.name);
             });
+            // [OWNER 2026-10-21] Les suppléments « recommandés » en tête (ordre d'origine conservé dans chaque groupe).
+            supplements = supplements.filter(function (x) { return x.is_recommended === true; })
+                .concat(supplements.filter(function (x) { return x.is_recommended !== true; }));
             hasSupplements = supplements.length > 0;
         }
 
@@ -3170,7 +3228,7 @@
                 sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
                 sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
-                sh += '<span class="option-name">' + sup.name + '</span>';
+                sh += '<span class="option-name">' + sup.name + recoTag({ recommended: sup.is_recommended === true }) + '</span>';
                 sh += '<span class="option-price paid">+' + price + '</span>';
                 sh += '</div>';
             });
@@ -4421,23 +4479,39 @@
             });
 
             // Collect viandes deduped by id AND name (same fix as renderSinglePage)
+            //
+            // [Root cause 2026-09-20, audit externe — commande POS #2009261353/A0057, TACOS XL
+            // à 6 viandes créée à 17,90 € au lieu de 20,40 €, une viande disparue] Le backend
+            // attribue un id de variation DISTINCT par attribut viande pour le MÊME nom (vérifié
+            // en base : Mexicanos = id 777 sous « Viande 1 », 784 sous « Viande 2 », 791 sous
+            // « Viande 3 »). Ce bloc déduplique les viandes PAR NOM pour peupler les dropdowns
+            // (un seul, ne garde que l'id de l'attribut 1) — mais la ligne suivante lisait le
+            // COMPTE (`selections.viandes[key]`) UNIQUEMENT sous CET id gardé. Si le clic/la
+            // sélection réelle du client avait incrémenté le compte sous l'id d'un AUTRE attribut
+            // portant le MÊME nom (Viande 2 ou Viande 3), ce compte était introuvable sous l'id
+            // gardé → lu comme 0 → cette viande disparaissait de `selectedViandes`, silencieusement,
+            // sans qu'aucune erreur ne le signale. Fixé en SOMMANT le compte sur TOUS les ids
+            // partageant le même nom normalisé, pas seulement l'id survivant de la déduplication —
+            // même principe que la sommation multi-clé déjà en place ailleurs dans ce fichier
+            // (buildWizardInstruction, L2629 : `selections.viandes['v_'+v.id] + selections.viandes[v.key]`).
             if (viandeAttrs.length > 0 && lastItemData.variations) {
-                var seenSyncIds = {};
                 var seenSyncNames = {};
                 var allSyncVariations = [];
+                var syncCountsByName = {};
                 viandeAttrs.forEach(function (attr) {
                     (lastItemData.variations[attr.id] || []).forEach(function (v) {
                         var normName = normalizeStr(v.name || '');
-                        if (!seenSyncIds[v.id] && !seenSyncNames[normName]) {
-                            seenSyncIds[v.id] = true;
+                        var thisCount = selections.viandes['v_' + v.id] || 0;
+                        syncCountsByName[normName] = (syncCountsByName[normName] || 0) + thisCount;
+                        if (!seenSyncNames[normName]) {
                             seenSyncNames[normName] = true;
                             allSyncVariations.push(v);
                         }
                     });
                 });
                 allSyncVariations.forEach(function (variation) {
-                    var key = 'v_' + variation.id;
-                    var count = selections.viandes[key] || 0;
+                    var normName = normalizeStr(variation.name || '');
+                    var count = syncCountsByName[normName] || 0;
                     for (var i = 0; i < count; i++) selectedViandes.push(variation.name);
                 });
             }
@@ -4674,7 +4748,14 @@
             modalRoot.dispatchEvent(new CustomEvent('wizard:add-to-cart', { bubbles: false }));
 
             // Close wizard after a short delay to let Vue process the cart update
+            // Keep this teardown scoped to the wizard session that submitted.
+            // A cashier can reopen the just-added line immediately; without these
+            // references, this delayed callback removes that new wizard, leaving
+            // the native fallback modal open and unable to submit its edit.
+            var submittingWizard = wizardEl;
+            var submittingOriginalBody = originalBody;
             setTimeout(function () {
+                if (wizardEl !== submittingWizard || originalBody !== submittingOriginalBody) return;
                 if (originalBody) originalBody.style.display = 'none';
                 closeWizard(true);
             }, 200);

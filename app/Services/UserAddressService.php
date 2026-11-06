@@ -57,11 +57,10 @@ class UserAddressService
                 // from the supplied lat/lng so the admin-side address writer never
                 // produces NULL rows that subsequently bypass the DeliveryQuoteService
                 // geocode gate.
-                $payload['geocode_status'] = AddressService::deriveGeocodeStatus(
-                    $payload['latitude'] ?? null,
-                    $payload['longitude'] ?? null
-                );
-                $this->address = Address::create($payload);
+                // [LIVRAISON 2026-10-20] Géocodage serveur + adresse enregistrée une seule fois.
+                $normalizer = app(\App\Services\Delivery\AddressNormalizer::class);
+                $payload = $normalizer->normalize($payload);
+                $this->address = $normalizer->findSamePlace((int) $user->id, $payload) ?? Address::create($payload);
             });
             return $this->address;
         } catch (Exception $exception) {
@@ -77,11 +76,7 @@ class UserAddressService
     {
         try {
             if ($user->id == $address->user_id) {
-                $payload = $request->validated();
-                $payload['geocode_status'] = AddressService::deriveGeocodeStatus(
-                    $payload['latitude'] ?? null,
-                    $payload['longitude'] ?? null
-                );
+                $payload = app(\App\Services\Delivery\AddressNormalizer::class)->normalize($request->validated());
                 return tap($address)->update($payload);
             } else {
                 throw new Exception(trans('all.user_match'), 422);

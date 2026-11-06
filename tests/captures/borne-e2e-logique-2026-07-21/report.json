@@ -10,19 +10,20 @@
     "body": {
       "order_type": 10,
       "loyalty_code": null,
+      "loyalty_redeem_points": 0,
       "kiosk_promo_code": null,
       "is_advance_order": 10,
       "source": 5,
       "payment_method": 0,
-      "items": "[{\"item_id\":103,\"instruction\":\"Pain : Pain\",\"quantity\":1,\"item_variations\":[{\"id\":457,\"name\":\"Mayonnaise\",\"variation_name\":\"Sauce (1ère Gratuite)\"},{\"id\":455,\"variation_name\":\"Type de Pain\"}],\"item_extras\":[{\"id\":332,\"name\":\"Tomate\"},{\"id\":333,\"name\":\"Oignon\"},{\"id\":334,\"name\":\"Oignons frits\"}]}]"
+      "items": "[{\"item_id\":103,\"instruction\":\"Viandes : Poulet mariné ×1, Viande Hachée ×1\",\"quantity\":1,\"item_variations\":[{\"id\":1005,\"name\":\"Poulet mariné\",\"variation_name\":\"Viande 1\"},{\"id\":1022,\"name\":\"Viande Hachée\",\"variation_name\":\"Viande 2\"},{\"id\":458,\"name\":\"Ketchup\",\"variation_name\":\"Sauce (1ère Gratuite)\"}],\"item_extras\":[{\"id\":331,\"name\":\"Salade\"},{\"id\":332,\"name\":\"Tomate\"},{\"id\":333,\"name\":\"Oignon\"},{\"id\":617,\"name\":\"Cornichon\"},{\"id\":334,\"name\":\"Oignons frits\"}]}]"
     },
     "response": {
       "status": true,
       "data": {
-        "quote_token": "c672a4c9-adbe-4030-af90-a8fe7dee30d1",
-        "signature": "bf5952fe654aeaa30071b92adaabbe0a93de84e884ad3b25892758607e688fac",
-        "expires_at": "2026-07-21T12:17:04+02:00",
-        "ttl_seconds": 201,
+        "quote_token": "535a5632-1d17-4a38-8a76-1f3180da60bb",
+        "signature": "7c7ddd02f8287b0e591fa194080362e13f2ce7470573e8919db397d8197af0a4",
+        "expires_at": "2026-09-25T16:47:43+02:00",
+        "ttl_seconds": 299,
         "subtotal": 7.9,
         "discount": 0,
         "total_tax": 0.72,
@@ -34,5 +35,5 @@
     }
   },
   "quote_total_scelle": 7.9,
-  "payload_nb_extras": 3
+  "payload_nb_extras": 5
 }

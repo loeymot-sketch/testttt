@@ -28,8 +28,13 @@ class SimpleOrderResource extends JsonResource
         // the cashier sees ONLY orders that genuinely require cash collection;
         // POS cash paid + Kiosk TPE paid + Stripe paid all fall through with
         // is_cash_pending=false → they skip directly to PRÉPARATION (Wave S-1).
+        // [E2E 2026-10-23 C1-003] Même règle que le comptoir (PaymentService::assertCounterDeferredOrder, CounterCollectQueue) :
+        // une commande d'origine `delivery` (« Commande livraison » de la caisse, livraison du site) s'encaisse À LA PORTE par
+        // le livreur et le comptoir la refuse (422). L'annoncer « à encaisser » affichait un bouton « Encaisser » voué à l'échec
+        // et faussait le compte du tiroir (18 pour 16 dans la file). Les autres origines restent alignées sur la file.
         $isCashPending = (int) $this->payment_status === PaymentStatus::PENDING_COUNTER
-            && (int) $this->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED;
+            && (int) $this->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED
+            && strtolower((string) $this->source_surface) !== 'delivery';
 
         return [
             'id'                           => $this->id,

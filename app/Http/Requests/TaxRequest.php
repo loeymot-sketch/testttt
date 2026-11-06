@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Enums\Status;
 use Illuminate\Validation\Rule;
 
 class TaxRequest extends FormRequest
@@ -39,8 +40,26 @@ class TaxRequest extends FormRequest
                 'max:20',
                 Rule::unique("taxes", "code")->ignore($this->route('tax.id'))
             ],
-            'tax_rate' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
-            'status'   => ['required', 'numeric', 'max:24'],
+            // [ONB-04 2026-08-28] Le plafond valait 9 999 999 999 999.
+            //
+            // Un commercant qui saisit « 2000 » en pensant « 20 % » obtenait un taux
+            // de 2000 %, accepte sans un mot et facture au client. Un taux de TVA
+            // au-dela de 100 % n'existe dans aucun regime : le borner n'enleve
+            // aucune possibilite reelle, et attrape la faute de frappe la plus
+            // naturelle qui soit.
+            'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            // `max:24` acceptait des valeurs qu'aucun code ne sait lire :
+            // `App\Enums\Status` ne definit que 5 (actif) et 10 (inactif).
+            'status'   => ['required', 'numeric', Rule::in([Status::ACTIVE, Status::INACTIVE])],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'tax_rate.max' => 'Un taux de TVA ne depasse pas 100 %. Saisissez 20 pour 20 %, pas 2000.',
+            'tax_rate.min' => 'Un taux de TVA ne peut pas etre negatif.',
+            'status.in'    => 'Statut inconnu : une taxe est active ou inactive.',
         ];
     }
 }

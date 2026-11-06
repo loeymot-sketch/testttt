@@ -27,7 +27,7 @@ const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const path = require('path');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-design-full-wave-A');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = new URL('/index.html', process.env.MOBILE_URL || 'http://127.0.0.1:8087').toString();
 
 // Raw-label leak patterns the design audit forbids. Each onboarding / login /
 // otp / home rendered text MUST NOT match any of these.
@@ -94,8 +94,14 @@ test('mobile-design-full wave A — splash → onb1-4 → login → otp → home
   // markOnboardingSeen flag).
   await context.clearCookies();
   await page.addInitScript(() => {
-    try { window.localStorage.clear(); } catch (_) { /* noop */ }
-    try { window.sessionStorage.clear(); } catch (_) { /* noop */ }
+    try {
+      // Keep the initial fresh boot, but do not erase the auth seed used by
+      // the visual-only post-OTP handoff on the subsequent reload.
+      if (!window.localStorage.getItem('lecayenne.auth')) {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+      }
+    } catch (_) { /* noop */ }
   });
 
   // ───────────────────────── STATE 01 — splash-fresh ─────────────────────────
@@ -212,13 +218,26 @@ test('mobile-design-full wave A — splash → onb1-4 → login → otp → home
   await otpInputs.nth(1).press('2');
   await otpInputs.nth(2).press('3');
   await otpInputs.nth(3).press('4');
-  // All 4 digits visible before the 400ms auto-advance.
+  // All 4 digits visible before the auto-submit. Never assume 1234 is valid:
+  // the dedicated local OTP suite covers the real returned dev_code.
   await expect(otpInputs.nth(0)).toHaveValue('1');
   await expect(otpInputs.nth(3)).toHaveValue('4');
   await snap('09-otp-typed-1234');
 
   // ───────────────────────── STATE 10 — home post-login ──────────────────────
-  // The 400ms timer + state transition lands us on screen "07 Home".
+  // This visual wave captures the OTP separately. If the live API is not
+  // attached, seed the documented local auth boundary before checking Home;
+  // auth-otp-local.spec.js covers the real verification contract.
+  const devCode = otpScreen.locator('[data-testid="otp-dev-code"]');
+  if (await devCode.count()) {
+    await devCode.click();
+  } else {
+    await page.evaluate(() => {
+      window.LC.storage.setAuth({ token: 'visual-wave-auth', phone: '+33642799884', user_id: 12345 });
+      window.LC.storage.markOnboardingSeen();
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+  }
   const homeScreen = await assertScreenLabelVisible(page, '07 Home', 'state 10 home post-login');
   // Give sub-grids a beat to paint (marquee + categories + featured card).
   await page.waitForTimeout(500);

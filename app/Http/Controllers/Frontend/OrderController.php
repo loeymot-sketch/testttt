@@ -239,6 +239,14 @@ class OrderController extends Controller
                 return response(['status' => false, 'message' => 'Unauthorized'], 403);
             }
 
+            // [AUDIT ABUSIF 2026-11-06 · W2-P1-1] Plan B (kiosk.payment_route_all_to_counter) : la borne n'a PAS de terminal de
+            // paiement, tout s'encaisse au comptoir. Aucune « confirmation carte » venant de la borne n'est donc légitime : avec le
+            // jeton de la borne et un numéro de transaction INVENTÉ, une commande carte passait PAYÉE et fiscalisée sans un euro
+            // encaissé, puis partait en cuisine. Refusée avant toute écriture.
+            if ((bool) config('kiosk.payment_route_all_to_counter', false)) {
+                return response(['status' => false, 'message' => 'Paiement par carte à la borne désactivé : la commande se règle au comptoir.'], 422);
+            }
+
             if ((int) $frontendOrder->user_id !== $authenticatedUserId) {
                 return response(['status' => false, 'message' => 'Unauthorized'], 403);
             }

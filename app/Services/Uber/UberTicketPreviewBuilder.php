@@ -41,6 +41,7 @@ final class UberTicketPreviewBuilder
             $instruction = (string) ($line['instruction'] ?? '');
 
             $boissons = $this->formatter->drinkLines($snapshot);
+            $supplements = $this->formatter->supplementLines($snapshot, $instruction);
 
             $lignes[] = [
                 'quantity' => max(1, (int) ($line['quantity'] ?? 1)),
@@ -50,12 +51,17 @@ final class UberTicketPreviewBuilder
                 // frites comprise. Un aperçu qui montrerait autre chose donnerait une fausse
                 // confiance à la personne qui valide.
                 'menu' => $this->formatter->menuBadge($snapshot, $nom, $instruction),
-                'supplements' => $this->formatter->supplementLines($snapshot, $instruction),
+                'supplements' => $supplements,
                 'boissons' => $boissons,
                 // La note passe par le MÊME nettoyeur que le ticket : ce qui n'y survivrait pas
                 // ne doit pas apparaître dans l'aperçu, sinon l'humain croit avoir transmis une
                 // consigne qui n'arrivera jamais en cuisine.
-                'note' => $this->formatter->cleanInstruction($instruction, $nom, $boissons),
+                // [GOAL REMARQUES 2026-10-03 · revue F6] … y compris les deux passes ajoutées au ticket :
+                // option déjà affichée en supplément, marqueur Uber (le titre EST la ligne produit).
+                'note' => $this->formatter->sansMarqueurUber($this->formatter->sansOptionsDejaAffichees(
+                    $this->formatter->cleanInstruction($instruction, $nom, $boissons),
+                    $supplements
+                )),
                 'non_mappe' => str_contains($instruction, '[UBER NON MAPPÉ'),
             ];
         }

@@ -1,6 +1,6 @@
 <template>
   <div :dir="direction">
-    <div v-if="theme === 'frontend'">
+    <div v-if="theme === 'frontend' && !isWallRoute">
       <FrontendNavbarComponent />
       <FrontendCartComponent v-if="!staffOnlyMode" />
       <router-view></router-view>
@@ -14,7 +14,7 @@
       <router-view></router-view>
     </div>
 
-    <div v-if="theme === 'backend' && !isKioskRoute">
+    <div v-if="theme === 'backend' && !isKioskRoute && !isWallRoute">
       <main class="db-main" v-if="logged">
         <BackendNavbarComponent />
         <BackendMenuComponent />
@@ -45,6 +45,27 @@
       <TableCartComponent />
       <router-view></router-view>
       <TableFooterComponent />
+    </div>
+
+    <!-- [AUDIT-SUPERVISEUR 2026-08-25 - E-005] MUR DE STATUT TOURNE VERS LA SALLE.
+         Aucun habillage : ni navbar admin, ni menu utilisateur, ni navbar vitrine. La page
+         compose son propre plein ecran.
+
+         Pourquoi une branche a part plutot que `tracking` : le suivi client est PUBLIC et
+         saute volontairement l'appel `authcheck`. Ce mur-ci, lui, reste une surface du
+         personnel (`auth: true`, `permissionUrl`) qu'un membre du staff installe sur une
+         tele - on garde donc son cycle d'authentification, on ne retire QUE l'habillage.
+         Il ne rebondit pas vers /login non plus : `app.js` classe deja ce chemin dans
+         `publicFriendlyPaths`, et la redirection de session expiree ne vise que les themes
+         « frontend » et « backend ». Un mur qui affiche un formulaire de connexion devant
+         des clients est exactement ce qu'on refuse.
+
+         `isWallRoute` lit `window.location`, PAS `$route` : au chargement a froid - le seul
+         chemin reel pour une tele de salle, qu'on allume sur une adresse directe - la route
+         n'est pas encore resolue et `theme` vaut sa valeur par defaut « frontend ». Sans
+         cette lecture synchrone, le mur montrerait brievement la navbar de la vitrine. -->
+    <div v-if="isWallRoute || theme === 'wall'">
+      <router-view></router-view>
     </div>
 
     <!-- [T-C SUIVI-CLIENT 2026-08-16] Page publique de suivi (téléphone client, lien/QR
@@ -114,6 +135,18 @@ export default {
     isKioskRoute: function () {
       const routePath = String(this.$route?.path || "");
       return this.$route?.meta?.isKiosk === true || routePath.startsWith("/kiosk");
+    },
+    // [AUDIT-SUPERVISEUR 2026-08-25 - E-005] Vrai des le premier rendu, AVANT que le router
+    // n'ait resolu quoi que ce soit : on lit l'adresse du navigateur, pas `$route`. Les deux
+    // chemins de la route sont couverts (le principal et son alias).
+    isWallRoute: function () {
+      if (this.$route?.meta?.isWall === true) {
+        return true;
+      }
+      const chemin = String(
+        (typeof window !== "undefined" && window.location && window.location.pathname) || ""
+      );
+      return chemin === "/admin/order-status-screen" || chemin === "/order-status-screen";
     },
   },
   created() {
@@ -199,6 +232,8 @@ export default {
         this.theme = "frontend";
       } else if (route?.meta?.isTable === true) {
         this.theme = "table";
+      } else if (route?.meta?.isWall === true) {
+        this.theme = "wall";
       } else if (route?.meta?.isTracking === true) {
         this.theme = "tracking";
       } else {

@@ -160,6 +160,22 @@ return [
         'no_repeat' => 'The :attribute attribute does not allow repeating the same variation.',
     ],
 
+
+    /*
+    | [ONB-02 2026-08-28] Messages de la regle App\Rules\IniAmount.
+    |
+    | Laravel ne traduit pas le message d'une regle-objet : il faut que la regle
+    | appelle trans() elle-meme. Sans ces cles, le commercant lisait des phrases
+    | hybrides du genre « This prix must be a number. » sur le champ Prix.
+    */
+    'ini_amount' => [
+        'pas_un_nombre' => "The :attribute field must be a number. Use a dot for cents, for example 8.50",
+        'negatif_interdit' => "The :attribute field cannot be negative.",
+        'doit_etre_positif' => "The :attribute field must be greater than 0.",
+        'trop_long' => "The :attribute field cannot exceed 12 digits.",
+        'format_invalide' => "The :attribute field is not a valid amount (at most 10 digits, and up to 6 decimals).",
+    ],
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

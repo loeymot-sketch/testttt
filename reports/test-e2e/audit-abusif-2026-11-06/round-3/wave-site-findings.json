@@ -1,0 +1,141 @@
+{
+  "wave": "SITE",
+  "round": 3,
+  "states_reviewed": 26,
+  "findings": [
+    {
+      "id": "S3-001",
+      "state_artifact": "site-captures/m04-code-autre-ticket-saisi-non-applique-390.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "evidence": "Code WEB10 appliqué puis champ vidé et code du ticket de Bruno tapé SANS « Appliquer » : le champ affiche « ABUSR3SBRUNO-C7EJ » à côté de « Confirmer ma commande 18,81 € » ; la ligne « ✓ ABUSR3S-WEB10 · −2,09 € appliqué » est sous le pli. POST envoie coupon_id 2427 + coupon_code ABUSR3S-WEB10 → 201 (commande 9825). Montants cohérents partout (page = POST = serveur = caisse = suivi = Mes commandes = 18,81 €), le ticket de Bruno reste inutilisé. Même chose si le champ est vidé (9823) ou modifié (9824). Le client peut croire avoir utilisé le ticket qu'il a tapé.",
+      "fix_hint": "funnel.jsx:1008-1009 (onChange ne touche que promoInput) et :1767 (couponCode = promoApplied || promoInput) : quand promoInput diffère de promoApplied, marquer le code comme « non appliqué » à côté du champ, ou retirer le coupon.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-002",
+      "state_artifact": "site-captures/m18-refus-horaires-dans-30-min-390.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "evidence": "Sur :8784 (refus serveur actif), si /order/wait-estimate ne répond pas (coupure simulée, abort), le tunnel propose « Dès que prêt / Dans 30 min / Dans 40 min ». Le serveur refuse avec un message lisible : 422 « Le restaurant est fermé pour le moment. Réouverture vendredi à 18:00. » (au plus tôt) et 422 « Horaire hors service — Tous les jours 18h – 00h30. » (+30 min). Mais le tunnel ne bascule pas sur « À l'ouverture 18:20 » après le refus : il faut recharger la page. Même cas pour une page de paiement restée ouverte au moment de la fermeture (l'estimation n'est lue qu'au montage).",
+      "fix_hint": "funnel.jsx:~528-544 (estimation lue une seule fois, ferme = est.service_ouvert===false) : relire waitEstimate/horaires après un 422 portant sur order_type/scheduled_at, ou à intervalle comme horaires() (api.js:1665).",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-003",
+      "state_artifact": "site-captures/m17-refus-horaires-au-plus-tot-390.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Vendredi 06 h 45 et 13 h 12 : « Réouverture vendredi à 18:00. » au lieu de « aujourd'hui à 18:00 » (l'accueil, lui, dit « OUVRE À 18H AUJOURD'HUI »).",
+      "fix_hint": "app/Http/Requests/OrderRequest.php refusHorsService() : utiliser prochaine_ouverture.aujourdhui (déjà calculé par HorairesService) pour dire « aujourd'hui ».",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-004",
+      "state_artifact": "site-captures/m09-suivi-hors-ligne-390.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "evidence": "Suivi ouvert, context.setOffline(true) pendant 15 s : le bandeau rouge dit « Pas de connexion — la carte reste consultable. Quand le réseau revient, appuyez à nouveau sur « Confirmer » » sur la page de SUIVI (aucun bouton Confirmer). Reprise correcte : 1 sondage échoué pendant la coupure, état figé sur PRÊTE sans erreur, points mis à jour 258 ms après le retour du réseau, aucun rechargement (window.__noReload conservé), aucune commande en double.",
+      "fix_hint": "app-native.js:186 : texte selon la page (suivi : « le suivi reprendra au retour du réseau »).",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-005",
+      "state_artifact": "scratchpad r3site/out/O-otp-D",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Le site/app n'envoie jamais X-Device-Id (0 occurrence dans api.js, app-native.js, compiled/, index.html). Le serveur se rabat sur hash(user-agent + IP) (personal_access_tokens.device_id = 'legacy-0bf51a37…'). Deux connexions du même compte avec le même navigateur et la même IP s'évincent : le jeton du client D (inscription) est passé en 401 après sa reconnexion dans un 2e contexte ; même chose pour E. Impact réel : deux téléphones identiques sur la même box partageant un compte. Le commentaire de DeviceTokenService (« nos propres surfaces envoient toutes l'en-tête ») est faux pour le site.",
+      "fix_hint": "api.js : générer un identifiant d'appareil en localStorage et l'envoyer en X-Device-Id sur guest-signup/verify et email-login ; ou corriger le commentaire app/Services/Auth/DeviceTokenService.php:~40-50.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-006",
+      "state_artifact": "scratchpad r3site/out/H5-horaires-affichage",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Accueil, pied de page du miroir ET de la coque Capacitor = « Tous les jours 18h – 00h30 » = API (resume). Mais horaires.html « de 18h à minuit » et index.html:29 (meta description) « Ouvert 7j/7 de 18h à minuit ». Reporté du tour 2 (P3-3), toujours ouvert.",
+      "fix_hint": "horaires.html, index.html:29/45/53 : 00h30.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "S3-007",
+      "state_artifact": "scratchpad r3site/out/L4-henin-qr-dora/livraison-ticket-client.txt",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Commande 9846 (livraison, ticket Dora « livraison offerte », espèces à la porte) : ticket client « REDUCTION : 0,00 € » sans ligne « Livraison offerte » et « ** A REGLER EN CAISSE ** ». Montants justes (20,90 €, frais 0, order_coupons.delivery_waived 3,90). Reporté du tour 2 (P3-5).",
+      "fix_hint": "Formateur du ticket client : ligne « Livraison offerte (−3,90 €) » et « À RÉGLER AU LIVREUR » pour une livraison.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "S3-008",
+      "state_artifact": "app/ios/App/App/public/api.js",
+      "category": "unexpected_4xx",
+      "severity": "P2",
+      "evidence": "ADV2-004 toujours vrai côté app : grep -c coupon_code → app/www/api.js 1, app/ios/App/App/public/api.js 0, app/android/app/src/main/assets/public/api.js 0. app/www est à jour (npm run check:www : 285 fichiers). Un build iOS/Android fait sans « cap sync » enverrait des commandes avec code promo SANS coupon_code → 422 « Ce code promo n'est pas valable » à chaque code.",
+      "fix_hint": "npx cap sync avant tout build store (PUBLICATION.md) ; ou compatibilité serveur temporaire.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "S3-009",
+      "state_artifact": "site-captures/m03-mes-commandes-390.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "390 px : la puce « Annulées » des filtres de Mes commandes est coupée au bord droit (rangée défilante sans indice). 1280 px (d06) : libellés NOVICE / LÉGENDE de « Ma progression » collés au bord de la carte. Icône de l'étape « Récupéré » à peine visible sur fond jaune (m10).",
+      "fix_hint": "orders.jsx (puces) : marge droite / dégradé de défilement ; loyalty-v2.jsx (barre de niveaux) : marge intérieure.",
+      "status": "open",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    },
+    {
+      "id": "S3-010",
+      "state_artifact": "site-captures/m10-suivi-remise-points-credites-390.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Retrait au comptoir 9836 : Mes commandes affiche « LIVRÉE », le suivi « LIVRÉE / RÉCUPÉRÉE ». Reporté du tour 2 (P3-6).",
+      "fix_hint": "orders.jsx : « Récupérée » quand order_type = retrait.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 9,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 9
+  },
+  "round_to_round_closures": {
+    "W3-P1-2": "PASS — le site envoie coupon_id + coupon_code (6 parcours 201) ; forgé : ticket déjà consommé → 422 « limite dépassée », numéro WEB + code de Dora → 422, coupon_code en tableau/objet → 422 lisible (HEAD 55f7bd3ad)",
+    "W3-P1-1": "PASS — instruction réelle du site conservée (« Boisson menu / Viandes en plus / Sauce frites / [Note commande : sans oignon, allergie arachide] », 9854) ; menu_boisson payé + revendication frites → lignes Frites et Sauce frites retirées, boisson et note gardées (9853)",
+    "W3-P2-1": "PASS — :8784 : retrait au plus tôt refusé 422 avec message lisible à l'écran ; livraison au plus tôt 201 (9844) ; chemin normal (créneau 18:20) 201 (9845)",
+    "P3-4": "PASS — coupon_code en tableau : 422 « Ce code promo n'est pas valable pour cette commande. Saisissez-le à nouveau. »",
+    "P3-3": "FAIL (S3-006)",
+    "P3-5": "FAIL (S3-007)",
+    "P3-6": "FAIL (S3-010)",
+    "ADV2-004": "FAIL (S3-008)",
+    "P3-1": "NON TESTÉ (QR appliqué par appui sur Appliquer dans mes parcours)",
+    "W3-P1-3": "NON TESTÉ (rotation /64 IPv6 hors périmètre site ; limite par e-mail vérifiée à l'écran)"
+  },
+  "verdict": "GREEN",
+  "notes": "Code mesuré : site 6208324 (miroirs rsync :8093→:8783, :8094→:8784, coque app/www :8095→:8783, seules api-base-url/api-key changées, empreintes identiques au dépôt hors index.html) ; backend testttt b6afaf015 puis 55f7bd3ad (929afba84), serveurs relancés et prouvés par lsof (cwd testttt/public, env HORAIRES_REFUSER_HORS_SERVICE=false sur :8783 seulement). Production : aucune requête. 1 Code promo FERMÉ : base, autre code saisi, effacé, modifié, autre ticket appliqué, panier sous le minimum (re-vérification 422 « minimum 15,00 € », code retiré, 11,90 € partout), double appui (dblclick + 2 clics : 1 POST, 1 clé d'idempotence, 1 commande) ; remise/total/frais forgés ignorés ou 422. QR ?promo= livraison offerte : Hénin 0,58 km → frais 0 page/POST/serveur/caisse/suivi/Mes commandes (9846) ; Carvin 7,97 km → code non appliqué, raison affichée, 26,80 €. 2 Livraison FERMÉ : Douai 10,87 km → message lisible + bouton désactivé (UI) et 422 « plus de 10 km » (API) ; Wingles limite (9,94 km allowed / 11,16 km refusé selon la rue) ; frais forgés 0/−5 → 3,90 recalculé ; GPS forgé ignoré. 3 Suivi FERMÉ : délais serveur→suivi 5,1 s / 0,76 / 0,76 / 0,25 s (acceptée/préparation/prête/remise), Mes commandes 13,9 / 14,7 / 14,4 / 4,8 s, sans rechargement ; annulation affichée en 0,5 s. 4 Fidélité FERMÉ : aucun « € dépensés » (seul le barème « 1 € dépensé = 10 points ») ; 184 pts affichés = grand livre earn:184 à l'encaissement ; annulation/remboursement → manual_deduct −184, solde 0, « Aucun point sur une commande annulée » en direct. 6 Compte FERMÉ : connexion e-mail + code 4 chiffres ; 6e demande → 429 (Retry-After 34) « Trop de tentatives. Patientez une minute avant de réessayer. » ; suppression par l'interface (D) et par l'API (A, B, E) → jetons 401 ; IDOR : show 403, order/{id} 404, tracking 404, annulation 422 « you do not own this order », routes admin 403. Instrument : 2 sessions parallèles partageaient le jeton chef@ (401 artefact) ; .env modifié par une autre session à 06:47 a fait tomber artisan serve (relancé --no-reload) ; le catalogue local contient des catégories de test « PW-RKS Category INST » (données d'autres sessions). Nettoyage : 22 commandes ; 19 annulées (16), 2 ventes scellées NF525 laissées : 9836 (remise, séq. 3602) et 9835 (remboursée 16/20, séq. 3604) ; 9805 (en attente, ticket Alice) a été SUPPRIMÉE LOGIQUEMENT par une autre session à 06:46:08 (lot 9783-9834) et n'est plus annulable par l'API. Tickets 243-246 révoqués, codes 2422-2427 et 2430 supprimés, comptes 1148/1150/1152/1157 supprimés (0 jeton, 0 adresse), jetons du personnel révoqués, serveurs :8783 :8784 :8093 :8094 :8095 arrêtés. fiscal:verify-chain --all → CHAIN OK (7 branches)."
+}

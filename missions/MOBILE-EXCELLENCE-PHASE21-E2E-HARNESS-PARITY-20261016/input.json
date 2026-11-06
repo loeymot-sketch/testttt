@@ -1,0 +1,6 @@
+{
+  "instruction": "Décrire ici le périmètre d’implémentation produit aligné sur le plan — sous-systèmes, critères d’acceptation, fichiers cibles. Les cycles de finition passent par GPT-5.5-pro avec effort xhigh.",
+  "plan_file": "plans/PLAN_<TASK_ID>_<date>.md",
+  "subsystems": [],
+  "acceptance": []
+}

@@ -30,6 +30,9 @@
 //   - database/seeders/OwnerMenuUpdate20260623Seeder.php (2026-06-23/24) — menu canon
 //   - DB tables: items, item_variations, item_extras, item_addons,
 //     item_wizard_profiles, item_wizard_steps
+//   - [OWNER TACOS-XL 2026-08-24] Tacos L 7,90 → 8,90 et NOUVEAU Tacos XL 10,90 (3 viandes au
+//     choix COMPRISES dans le prix, même photo). Appliqué en base par
+//     app/Console/Commands/EnsureTacosXl3ViandesCommand.php.
 //
 // Catégories visibles (9) : Sandwichs, Galette, Burgers, Tacos, Bols, Frites,
 //              Desserts, Boissons, Menu enfant.
@@ -53,7 +56,7 @@
     city: 'Hénin-Beaumont',
     zip: '62210',
     address: 'Le Cayenne, 62210 Hénin-Beaumont',
-    phone: '+33 6 51 30 00 00',
+    phone: '0365678291',
     is_open: true,
     hours: '11h — 00h',
     currency: '€',
@@ -66,26 +69,28 @@
   // -------------------------------------------------------------------------
   const ASSET_BASE = 'assets/menu/';
 
-  // Items → images ([MENU-CANON 2026-06-26] board photos réutilisées, fallback item-default)
+  // Items → images ([MENU-CANON 2026-10-16] PNG exactes du site/borne, fallback item-default)
   const ITEM_IMG = {
     // Sandwichs (cat 1)
     'cayenne':     'sandwich-cayenne.png',
-    'supreme':     'sandwich-classique.png',
-    'mega':        'sandwich-cayenne-maxi.png',
-    'terminator':  'sandwich-classique-maxi.png',
+    'supreme':     'sandwich-supreme.png',
+    'mega':        'sandwich-mega.png',
+    'terminator':  'sandwich-terminator.png',
     // Galette (cat 2)
     'galette-normale': 'galette.png',
     'galette-cayenne': 'galette.png',
     // Burgers (cat 4)
-    'chicken-burger': 'burger-cheese.png',
-    'cheese-burger':  'burger-cheese.png',
-    'double-cheese':  'burger-big.png',
-    'fish-burger':    'burger-cheese.png',
-    'big-burger':     'burger-big.png',
-    'grill-burger':   'burger-big.png',
+    'chicken-burger': 'chicken_burger.png',
+    'cheese-burger':  'cheese-burger.png',
+    'double-cheese':  'double-cheese.png',
+    'fish-burger':    'fish-burger.png',
+    'big-burger':     'big-burger.png',
+    'grill-burger':   'grill-burger.png',
     // Tacos (cat 5) — board deliberately shares one tacos photo
-    'tacos-m': 'tacos.png',
-    'tacos-l': 'tacos.png',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
+    // [OWNER 2026-08-24] Le tacos 3 viandes — même photo, comme ses aînés.
+    'tacos-xl': 'tacos-cayenne.png',
     // Bols (cat 6)
     'bol-frites': 'bol-frites.png',
     'bol-riz':    'bol-riz.png',
@@ -102,31 +107,39 @@
     'fanta': 'fanta-orange.png',
     'sprite': 'sprite.png',
     'oasis': 'oasis.png',
-    'orangina': 'tropico.png',
+    'orangina': 'item-default.svg',
     'eau-plate': 'eau.png',
     'capri-sun': 'capri-sun.png',
-    // [GOAL-SYNC 2026-07-08] +7 boissons canon — assets EXISTANTS vérifiés (ls assets/menu),
-    // fallback générique boisson.png quand aucun visuel dédié n'existe (jamais d'asset inventé).
-    'coca-cherry':   'coca.png',
+    // Phase 16 — drink asset parity: brand-specific assets only; no other
+    // brand/flavour may be used as a substitute. Site assets are copied byte
+    // for byte from public/images/menu and guarded by the catalog visual test.
+    // Cherry, Tropico, Lipton Pêche, Fanta Citron/Orange, Oasis, Sprite, Eau,
+    // Capri-Sun and Coca variants are available in the canonical packs.
+    // Exact packshots are still missing for Fuze Tea, Hawaï and Perrier; the
+    // neutral asset is intentional until the owner supplies the matching SKUs.
+    // Schweppes Agrumes, Oasis Cassis and Coca bouteille have no canonical
+    // mobile SKU/asset in this pack and must not be invented here.
+    'coca-cherry':   'coca-cherry.png',
     'tropico':       'tropico.png',
-    'ice-tea-peche': 'boisson.png',
-    'fanta-citron':  'fanta.png',
-    'fuze-tea':      'boisson.png',
-    'hawai':         'boisson.png',
-    'perrier':       'eau_gazeuse.png',
+    'ice-tea-peche': 'lipton-peche.png',
+    'fanta-citron':  'fanta-citron.png',
+    'fuze-tea':      'item-default.svg',
+    'hawai':         'item-default.svg',
+    'perrier':       'item-default.svg',
     // Menu enfant (cat 11)
     'menu-enfant-nuggets': 'nuggets.png',
-    'menu-enfant-burger':  'burger-cheese.png',
+    'menu-enfant-burger':  'chicken_burger.png',
   };
 
-  // Signature heroes (bg-removed)
+  // Canonical product heroes share the same public asset as their catalog image.
   const HERO_IMG = {
-    'cayenne': 'signature/cayenne-hero.png',
-    'mega': 'signature/cayenne-hero.png',
-    'terminator': 'signature/cayenne-hero.png',
-    'galette-cayenne': 'signature/cayenne-hero.png',
-    'tacos-m': 'signature/tacos-hero.png',
-    'tacos-l': 'signature/tacos-hero.png',
+    'cayenne': 'sandwich-cayenne.png',
+    'supreme': 'sandwich-supreme.png',
+    'mega': 'sandwich-mega.png',
+    'terminator': 'sandwich-terminator.png',
+    'tacos-m': 'tacos-cayenne.png',
+    'tacos-l': 'tacos-cayenne.png',
+    'tacos-xl': 'tacos-cayenne.png',
   };
 
   function imgFor(slug) {
@@ -256,21 +269,21 @@
 
   // Boissons formule menu — [GOAL-SYNC 2026-07-08] étendu 8→15 saveurs (canon boissons 33cl).
   const FORMULE_DRINKS = [
-    { id: 'd-coca',          name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca.png' },
-    { id: 'd-coca-zero',     name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca-zero.png' },
-    { id: 'd-fanta',         name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta-orange.png' },
-    { id: 'd-sprite',        name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
-    { id: 'd-oasis',         name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis.png' },
-    { id: 'd-orangina',      name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'tropico.png' },
-    { id: 'd-eau',           name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
-    { id: 'd-capri',         name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri-sun.png' },
-    { id: 'd-coca-cherry',   name: 'Coca Cherry 33cl',    emoji: '🥤', image: ASSET_BASE + 'coca.png' },
-    { id: 'd-tropico',       name: 'Tropico 33cl',        emoji: '🌴', image: ASSET_BASE + 'tropico.png' },
-    { id: 'd-ice-tea-peche', name: 'Ice Tea Pêche 33cl',  emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-fanta-citron',  name: 'Fanta Citron 33cl',   emoji: '🍋', image: ASSET_BASE + 'fanta.png' },
-    { id: 'd-fuze-tea',      name: 'Fuze Tea 33cl',       emoji: '🥤', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-hawai',         name: 'Hawaï 33cl',          emoji: '🌴', image: ASSET_BASE + 'boisson.png' },
-    { id: 'd-perrier',       name: 'Perrier 33cl',        emoji: '💧', image: ASSET_BASE + 'eau_gazeuse.png' },
+    { id: 'd-coca',          name: 'Coca-Cola 33cl',      emoji: '🥤', image: imgFor('coca') },
+    { id: 'd-coca-zero',     name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: imgFor('coca-zero') },
+    { id: 'd-fanta',         name: 'Fanta Orange 33cl',   emoji: '🍊', image: imgFor('fanta') },
+    { id: 'd-sprite',        name: 'Sprite 33cl',         emoji: '🍋', image: imgFor('sprite') },
+    { id: 'd-oasis',         name: 'Oasis Tropical 33cl', emoji: '🌴', image: imgFor('oasis') },
+    { id: 'd-orangina',      name: 'Orangina 33cl',       emoji: '🍊', image: imgFor('orangina') },
+    { id: 'd-eau',           name: 'Eau Plate 50cl',      emoji: '💧', image: imgFor('eau-plate') },
+    { id: 'd-capri',         name: 'Capri-Sun',           emoji: '🧃', image: imgFor('capri-sun') },
+    { id: 'd-coca-cherry',   name: 'Coca Cherry 33cl',    emoji: '🥤', image: imgFor('coca-cherry') },
+    { id: 'd-tropico',       name: 'Tropico 33cl',        emoji: '🌴', image: imgFor('tropico') },
+    { id: 'd-ice-tea-peche', name: 'Ice Tea Pêche 33cl',  emoji: '🥤', image: imgFor('ice-tea-peche') },
+    { id: 'd-fanta-citron',  name: 'Fanta Citron 33cl',   emoji: '🍋', image: imgFor('fanta-citron') },
+    { id: 'd-fuze-tea',      name: 'Fuze Tea 33cl',       emoji: '🥤', image: imgFor('fuze-tea') },
+    { id: 'd-hawai',         name: 'Hawaï 33cl',          emoji: '🌴', image: imgFor('hawai') },
+    { id: 'd-perrier',       name: 'Perrier 33cl',        emoji: '💧', image: imgFor('perrier') },
   ];
 
   // -------------------------------------------------------------------------
@@ -283,7 +296,7 @@
     { id: 1,  slug: 'sandwichs',    name: 'Sandwichs',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Cayenne, Suprême, Méga, Terminator — pain ou galette au choix',  image: ASSET_BASE + 'cat-sandwich-cayenne.png' },
     { id: 2,  slug: 'galette',      name: 'Galette',     icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 4,  slug: 'burgers',      name: 'Burgers',     icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Chicken, Cheese, Double Cheese, Fish, Big, Grill', image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande) ou Tacos L (2 viandes)',       image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 5,  slug: 'tacos',        name: 'Tacos',       icon: '🌮', sort: 4,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M (1 viande), Tacos L (2 viandes) ou Tacos XL (3 viandes)', image: ASSET_BASE + 'cat-tacos.png' },
     // [GOAL-SYNC 2026-07-08] wizard_template 'tacos'→'bol' (aligné web — sauces servies par BOL_SAUCES).
     { id: 6,  slug: 'bols',         name: 'Bols',        icon: '🥣', sort: 5,  wizard_template: 'bol',      has_menu: false, description: 'Bol Frites ou Bol Riz, viande au choix',          image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
@@ -459,7 +472,8 @@
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 12 }),
   ];
 
-  // ====== TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 7,90 (2 viandes).
+  // ====== TACOS (cat 5) — seeder : Tacos M 6,90 (1 viande) / Tacos L 8,90 (2 viandes) /
+  //   Tacos XL 10,90 (3 viandes) [OWNER 2026-08-24].
   //   Galette de blé · frites maison · sauce. Formule menu +2,50€.
   //   [GOAL-SYNC 2026-07-08] crudités RESTAURÉES (revert backend 05e5cacd0 2026-07-07 —
   //   fixture canon : extras group_label='crudite' ×4 sur items 26/97). ======
@@ -468,10 +482,16 @@
       'Galette de blé · 1 viande au choix · Frites maison · Sauce',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
-    mkItem(502, 'tacos-l', 5, 'Tacos L', 7.90,
+    mkItem(502, 'tacos-l', 5, 'Tacos L', 8.90,
       'Galette de blé · 2 viandes au choix · Frites maison · Sauce',
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),
+    // [OWNER 2026-08-24] Les TROIS viandes sont comprises dans les 10,90 € (`viandes: 3` pilote
+    // le compteur du wizard). La QUATRIÈME reste payante via `has_extra_meat` (+2,50).
+    mkItem(503, 'tacos-xl', 5, 'Tacos XL', 10.90,
+      'Galette de blé · 3 viandes au choix · Frites maison · Sauce',
+      { viandes: 3, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true,
+        is_featured: true, is_new: true, tags: ['NOUVEAU'], emoji: '🌮', time: 14 }),
   ];
 
   // ====== BOLS (cat 6) — seeder : 2 produits @ 7,90, viande au choix (parmi 7), sauce, suppléments.

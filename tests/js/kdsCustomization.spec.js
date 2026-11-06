@@ -140,6 +140,40 @@ describe('renderItem — supplements render as yellow-italic "+" lines', () => {
         expect(supps).toContain('+ Cheddar');
         expect(supps).toContain('+ Bacon ×2');
     });
+
+    /**
+     * [GOAL 2026-09-27 · owner « les sauces au bon endroit »] Les wizards facturent une
+     * sauce EN PLUS via l'ItemExtra GÉNÉRIQUE « Sauce supplémentaire » (SANS nom) — le
+     * nom réel ne vit que dans l'instruction libre (« Sauces en plus : Andalouse »).
+     * `renderItemSymbolic` (kdsSymbolic.js, plateau live) résout déjà ce nom ; ce
+     * renderer (kdsCustomization.js, tiroir historique KDS + surfaces qui l'importent)
+     * affichait la ligne générique brute — le cuisinier voyait « + Sauce supplémentaire »
+     * sans savoir laquelle, ni si elle allait sur le sandwich ou sur les frites. Root
+     * cause : deux moteurs de rendu KDS parallèles, un seul avait la résolution.
+     */
+    it('résout le nom réel d\'une sauce EN PLUS générique depuis l\'instruction (jamais anonyme)', () => {
+        const out = renderItem({
+            item_name: 'Cayenne',
+            quantity: 1,
+            item_extras: [{ name: 'Sauce supplémentaire', quantity: 1 }],
+            instruction: 'Sauces en plus : Andalouse',
+        });
+        const supps = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
+        expect(supps).toContain('+ Sauce supplémentaire : Andalouse');
+        expect(supps).not.toContain('+ Sauce supplémentaire');
+    });
+
+    it('résout le nom d\'une VIANDE supplémentaire générique depuis l\'instruction', () => {
+        const out = renderItem({
+            item_name: 'Tacos XL',
+            quantity: 1,
+            item_extras: [{ name: 'Viande supplémentaire', quantity: 1 }],
+            instruction: 'Viandes en plus : Poulet mariné',
+        });
+        const supps = out.lines.filter((l) => l.type === 'supplement').map((l) => l.label);
+        expect(supps).toContain('+ Viande supplémentaire : Poulet mariné');
+        expect(supps).not.toContain('+ Viande supplémentaire');
+    });
 });
 
 describe('renderItem — menu formule emits menu_child lines from role-tagged addons', () => {
@@ -355,5 +389,24 @@ describe('kdsVariationGroupValue / kdsVariationLine — shape-agnostic GROUP:VAL
         expect(kdsVariationLine(undefined)).toBe('');
         expect(kdsVariationLine({})).toBe('');
         expect(kdsVariationGroupValue(null)).toEqual({ group: '', value: '' });
+    });
+});
+
+
+// [REVUE ADVERSE 2026-10-19 · P0] Une note du client EN MAJUSCULES (verrouillage majuscules, commande du site)
+// était jetée comme « écho du nom du produit ». Jumeau PHP : TicketNotesMajusculesTest.
+describe('sanitizeKdsInstruction : notes en majuscules', () => {
+    it.each(['SANS OEUF', 'ALLERGIE ARACHIDES', 'PAS DE MAYONNAISE SVP', 'NO ONION', 'BIEN CUIT'])(
+        'garde la consigne « %s »', (note) => {
+            expect(sanitizeKdsInstruction(note, 'Tacos M')).toBe(note);
+        }
+    );
+    it("supprime toujours l'écho du nom du produit écrit par le wizard", () => {
+        expect(sanitizeKdsInstruction('TACOS', 'Tacos M')).toBe('');
+        expect(sanitizeKdsInstruction('SANDWICH CAYENNE', 'Cayenne')).toBe('');
+    });
+    it('les notes en minuscules ou entre crochets restent intactes', () => {
+        expect(sanitizeKdsInstruction('sans oeuf', 'Tacos M')).toBe('sans oeuf');
+        expect(sanitizeKdsInstruction('[SANS OEUF]', 'Tacos M')).toBe('[SANS OEUF]');
     });
 });

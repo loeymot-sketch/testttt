@@ -35,7 +35,7 @@ class AddressController extends Controller
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {
@@ -58,7 +58,7 @@ class AddressController extends Controller
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {
@@ -72,7 +72,7 @@ class AddressController extends Controller
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership
         if ($address->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access to this address');
+            abort(403, __('all.message.unauthorized'));
         }
         
         try {

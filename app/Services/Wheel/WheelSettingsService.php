@@ -152,7 +152,27 @@ class WheelSettingsService
         $connues = array_keys($this->defaults());
         $aEcrire = [];
         foreach ($data as $k => $v) {
-            if (in_array($k, $connues, true)) {
+            // [ONB-09 2026-08-28] La liste blanche ne contenait QUE les 9 cles de
+            // `defaults()` — aucune `prize_*`. Or le formulaire poste
+            // `prize_<lot>_weight` et `prize_<lot>_quantity` pour chaque lot
+            // (`reglages.blade.php:289-290`), et le controleur construit pour chacune
+            // une regle de validation et six messages d'erreur en francais
+            // (`WheelSettingsController.php:98-110`).
+            //
+            // Toutes etaient donc ecartees EN SILENCE, et l'ecran affichait quand meme
+            // « Reglages enregistres. ». `prizeOverrides()` ne trouvait jamais rien et
+            // `WheelService::segments()` servait `config/wheel.php` intact : le
+            // commercant plafonnait son budget cadeaux — « 10 burgers ce mois-ci »,
+            // « Terminator a zero » — lisait un succes, et rien n'etait garde. Seul un
+            // developpeur editant le fichier de configuration pouvait borner la depense.
+            //
+            // L'INTENTION DU FILTRE EST CONSERVEE : un formulaire ne doit pas pouvoir
+            // ecrire n'importe quelle cle de reglage. On accepte donc les cles `prize_*`
+            // par leur FORME EXACTE — la meme expression que celle que `prizeOverrides()`
+            // relit — et rien d'autre.
+            $estCleDeLot = (bool) preg_match('/^prize_(.+)_(weight|quantity)$/', (string) $k);
+
+            if (in_array($k, $connues, true) || $estCleDeLot) {
                 $aEcrire[$k] = is_bool($v) ? ($v ? '1' : '0') : (string) $v;
             }
         }
@@ -279,6 +299,24 @@ class WheelSettingsService
         return max(0, (int) $this->get('follow_dwell', 8));
     }
 
+    /**
+     * [ONB-05 2026-08-28] LE MINIMUM DE COMMANDE, UNE SEULE PORTE D'ENTRÉE.
+     *
+     * Cette méthode n'avait qu'UN appelant (`WheelPrizeController:242`), pendant que
+     * cinq autres endroits lisaient `config('wheel.min_order_amount')` en direct —
+     * dont `WheelController:332`, qui APPLIQUE la contrainte au client.
+     *
+     * L'exploitant réglait « minimum 15 € », l'écran de contrôle affichait 15 €, et
+     * la roue continuait d'appliquer la valeur du fichier. Un réglage qui ment coûte
+     * plus cher qu'un réglage absent : il donne la certitude fausse d'avoir agi.
+     *
+     * Les replis divergeaient en prime : 10 ici, 0 chez les lecteurs directs.
+     *
+     * C'est exactement ce que le docblock de `WheelService::segments()` interdit
+     * depuis août — « lire la config en direct ailleurs, ce serait ignorer les
+     * réglages du propriétaire sur une surface et pas sur l'autre ». Le principe
+     * était écrit et appliqué aux segments ; il ne l'était pas ici.
+     */
     public function minOrder(): float
     {
         return max(0, (float) $this->get('min_order', 10));

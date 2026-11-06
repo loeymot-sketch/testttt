@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class DeliveryQuoteService
 {
-    public function __construct(private readonly DeliveryFeeService $deliveryFeeService)
+    public function __construct(private readonly DeliveryTariff $tariff)
     {
     }
 
@@ -27,6 +27,19 @@ class DeliveryQuoteService
         }
 
         return $this->quoteForAddress($branchId, $address->toArray());
+    }
+
+    /**
+     * Devis pour la CAISSE : l'adresse appartient au client de la commande (`customer_id`), pas au
+     * caissier connecté. Branche = celle du payload, sinon celle du caissier, sinon la première.
+     *
+     * @return array<string, mixed>
+     */
+    public function quoteForPos(?int $payloadBranchId, ?int $cashierBranchId, int $addressId, int $customerId): array
+    {
+        $branchId = $payloadBranchId > 0 ? (int) $payloadBranchId : ($cashierBranchId > 0 ? (int) $cashierBranchId : (int) Branch::query()->orderBy('id')->value('id'));
+
+        return $this->quoteForSavedAddress($branchId, $addressId, $customerId);
     }
 
     public function quoteForAddress(int $branchId, array $address): array
@@ -68,22 +81,63 @@ class DeliveryQuoteService
         // reste de toute façon verrouillée serveur jusqu'au lancement). Risque résiduel
         // assumé : manipulation INTRA-zone — à fermer par re-géocodage serveur du texte
         // d'adresse au lancement (choix de provider = décision owner, cf. GOAL §G).
-        if (! $this->isInsideBranchZone($branch, $addressLat, $addressLng)) {
+        // [LIVRAISON 2026-10-20] Ce polygone (`branches.zone`) datait d'AVANT le géocodage serveur : il servait à contrer
+        // des coordonnées forgées par le navigateur. Les coordonnées viennent désormais du serveur, et la ZONE de livraison
+        // est celle du propriétaire : Hénin-Beaumont + rayon de 10 km (DeliveryTariff). Laisser le polygone actif
+        // contredisait la règle — constaté en navigateur : l'adresse du restaurant elle-même était refusée (polygone de
+        // test sur Paris), et même le polygone du seeder (boîte ≈ 6 × 5 km) aurait refusé Oignies, pourtant dans le rayon.
+        // Désactivé par défaut ; réactivable explicitement (`delivery.use_branch_zone_polygon`) pour une zone non circulaire.
+        if (config('delivery.use_branch_zone_polygon', false) && ! $this->isInsideBranchZone($branch, $addressLat, $addressLng)) {
             $this->logFailure($branchId, $address, 'outside_delivery_zone');
             throw new OutsideDeliveryZoneException();
         }
 
+        // [LIVRAISON 2026-10-20 · relecture adverse P1] Une adresse ENREGISTRÉE AVANT le géocodage serveur n'a ni
+        // commune ni code postal, et ses coordonnées venaient du navigateur (ou d'un pin « cosmétique » posé sur
+        // le restaurant) : la facturer revient à croire un client. Elle doit être ressaisie (donc re-géocodée).
+        if (config('delivery.geocoder.enabled', true) && blank($address['city'] ?? null) && blank($address['postal_code'] ?? null)) {
+            $this->logFailure($branchId, $address, 'address_not_server_verified');
+            throw new GeocodeUnavailableException();
+        }
+
+        // [LIVRAISON 2026-10-20] Le prix vient du barème propriétaire (commune + rayon), calculé sur
+        // la commune STRUCTURÉE posée par le géocodeur serveur — jamais sur du texte libre client.
+        $tariff = $this->tariff->quote($distanceKm, $address['city'] ?? null, $address['postal_code'] ?? null);
+        if (! $tariff['allowed']) {
+            $this->logFailure($branchId, $address, 'beyond_radius_' . $tariff['tier']);
+            throw new OutsideDeliveryZoneException(null, $tariff['suggest_uber_eats']);
+        }
+
         return [
-            'distance_km' => round($distanceKm, 3),
-            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-01 P0] DEL-5 wire-up.
-            // The loaded $branch (line 39) MUST flow into the fee calc so the
-            // per-branch delivery_fee_base / per_km / minimum columns added by
-            // migration 2026_05_18_100000 actually apply on the customer quote
-            // path. Without this argument the branch-aware code path was dead
-            // and every customer DELIVERY quote returned the legacy fallback.
-            // CLAUDE.md §9 SaaS multi-tenant invariant.
-            'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($distanceKm, $branch),
+            'distance_km'       => round($distanceKm, 3),
+            'delivery_charge'   => $tariff['fee'],
+            'delivery_tier'     => $tariff['tier'],
+            'city'              => $address['city'] ?? null,
+            'postal_code'       => $address['postal_code'] ?? null,
+            'travel_minutes'    => $this->travelMinutes($distanceKm),
+            'suggest_uber_eats' => false,
         ];
+    }
+
+    /** Distance à vol d'oiseau restaurant → point (km). */
+    public function distanceFromBranch(Branch $branch, float $lat, float $lng): float
+    {
+        $bLat = $this->coordinate($branch->latitude, -90, 90);
+        $bLng = $this->coordinate($branch->longitude, -180, 180);
+        if ($bLat === null || $bLng === null) {
+            throw new GeocodeUnavailableException();
+        }
+
+        return $this->distanceKm($bLat, $bLng, $lat, $lng);
+    }
+
+    /** Estimation de trajet (client) : distance / vitesse urbaine + marge fixe. La vraie durée = Waze côté livreur. */
+    public function travelMinutes(float $distanceKm): int
+    {
+        $speed = max(5.0, (float) config('delivery.average_speed_kmh', 28));
+
+        // Distance à vol d'oiseau × 1,3 ≈ distance routière urbaine.
+        return (int) ceil(($distanceKm * 1.3 / $speed) * 60 + (float) config('delivery.travel_buffer_minutes', 3));
     }
 
     private function coordinate(mixed $value, float $min, float $max): ?float

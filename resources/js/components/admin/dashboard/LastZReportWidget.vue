@@ -14,11 +14,16 @@
                     <p class="text-sm text-gray-800 font-medium mb-1">
                         {{ $t('label.last_z_report') }} #{{ resolvedReport.sequence_no }}
                     </p>
-                    <p class="text-xs text-gray-600 mb-1 capitalize">
-                        {{ resolvedReport.status }}
+                    <p class="text-xs text-gray-600 mb-1" data-testid="last-z-report-status">
+                        {{ statutLisible }}
                     </p>
                     <p class="text-sm text-gray-600 mb-3">
                         {{ formattedClosedAt }}
+                        <span
+                            v-if="ageTexte"
+                            :class="ageInquietant ? 'text-amber-700 font-semibold' : 'text-gray-500'"
+                            data-testid="last-z-report-age"
+                        >— {{ ageTexte }}</span>
                     </p>
                 </template>
                 <router-link :to="{ name: 'admin.transactions.list' }" class="text-sm font-medium text-orange-700"
@@ -49,6 +54,44 @@ export default {
         };
     },
     computed: {
+        /**
+         * [2026-09-03] Le statut sortait en anglais brut (« Closed ») dans une interface
+         * entièrement française. `capitalize` en CSS ne traduit rien : il met une majuscule.
+         */
+        statutLisible() {
+            const brut = String(this.resolvedReport?.status ?? '').toLowerCase();
+            const table = {
+                closed: 'Clôturé',
+                open: 'Ouvert',
+                pending: 'En attente',
+            };
+            // Repli sur la valeur brute : un statut inconnu doit rester lisible, pas disparaître.
+            return table[brut] || (brut ? brut.charAt(0).toUpperCase() + brut.slice(1) : '');
+        },
+        /**
+         * [2026-09-03] Un Z d'aujourd'hui et un Z de sept semaines s'affichaient à l'identique.
+         * Mesuré en production : le dernier datait de 47 jours, avec 81 commandes encaissées
+         * depuis. Le chiffre était juste ; c'est la seule information qui le rendrait
+         * actionnable qui manquait.
+         */
+        ageJours() {
+            const iso = this.resolvedReport?.closed_at || this.resolvedReport?.opened_at || null;
+            if (! iso) return null;
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return null;
+            return Math.floor((Date.now() - d.getTime()) / 86400000);
+        },
+        ageTexte() {
+            const j = this.ageJours;
+            if (j === null || j < 0) return '';
+            if (j === 0) return "aujourd'hui";
+            if (j === 1) return 'hier';
+            return `il y a ${j} jours`;
+        },
+        /** Au-delà de deux jours sans clôture, le gérant doit le voir sans le chercher. */
+        ageInquietant() {
+            return this.ageJours !== null && this.ageJours > 2;
+        },
         formattedClosedAt() {
             const row = this.resolvedReport;
             if (! row) return '';

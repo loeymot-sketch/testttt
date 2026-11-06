@@ -142,6 +142,8 @@
 </template>
 
 <script>
+import statusEnum from '../../../enums/modules/statusEnum';
+
 export default {
     name: 'AvailabilityTogglePanel',
     props: {
@@ -200,7 +202,23 @@ export default {
             this.choicesLoading = {};
             this.choicesError = {};
             this.choiceBusy = {};
-            const payload = { vuex: false, per_page: 500, order_column: 'name', order_type: 'asc' };
+            // [AUDIT-COMPTA 2026-10-04] Uniquement les articles ACTIFS — ceux qui se vendent.
+            //
+            // Depuis ONB-11, `admin/item` renvoie AUSSI les articles désactivés (sans quoi le
+            // commerçant ne pouvait plus jamais en réactiver un). Ce panneau l'appelait sans
+            // filtre de statut : mesuré à l'époque, « En rupture (53) » dont 52 sur des produits
+            // DÉSACTIVÉS — le cuisinier et le caissier voyaient 52 produits qu'ils ne peuvent pas
+            // vendre présentés comme des ruptures à traiter. Les données ont depuis été nettoyées
+            // (3 ruptures, toutes actives), mais la cause était structurelle : le moindre article
+            // désactivé en rupture reviendrait, et les désactivés polluent « disponibles ».
+            // Mettre en rupture un produit qui n'est pas au menu n'a aucun sens.
+            const payload = {
+                vuex: false,
+                per_page: 500,
+                order_column: 'name',
+                order_type: 'asc',
+                status: statusEnum.ACTIVE,
+            };
             if (this.branchId) payload.branch_id = this.branchId;
             this.$store.dispatch('item/lists', payload).then((res) => {
                 this.items = (res?.data?.data || []).map((it) => ({

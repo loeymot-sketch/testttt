@@ -50,6 +50,28 @@ class PosSystemHealthTest extends TestCase
         return $u;
     }
 
+    /**
+     * [P0-07 2026-09-30] Une caisse d'essai a une imprimante active.
+     *
+     * L'écran de santé contrôle désormais l'impression : sans imprimante il cesse — à
+     * raison — de dire « tout va bien » (RAPPORT_DEV_CAISSE_2026-09-24, P0-07/P0-08 :
+     * « État système : Tout va bien » avec la table Imprimantes VIDE en production).
+     * Les bancs qui affirment « une rupture stock ne dégrade PAS l'écran » doivent donc
+     * poser une imprimante, sinon ils virent à l'ambre pour une autre raison que celle
+     * qu'ils prétendent mesurer. L'invariant qu'ils protègent est inchangé.
+     * Aucune fabrique `Printer` n'existe : on écrit la ligne directement.
+     */
+    private function imprimanteActive(int $branchId = 1): void
+    {
+        DB::table('printers')->insert([
+            'branch_id' => $branchId,
+            'name' => 'Imprimante de test',
+            'status' => \App\Enums\Status::ACTIVE,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function insertStaleOutboxEvents(int $n, int $branchId = 1): void
     {
         for ($i = 0; $i < $n; $i++) {
@@ -166,7 +188,9 @@ class PosSystemHealthTest extends TestCase
     {
         $this->markUnavailable(201, 'stock_rupture');
         $this->markUnavailable(202, 'out_of_stock');
-        Sanctum::actingAs($this->cashier(), ['*']);
+        $caissier = $this->cashier();
+        $this->imprimanteActive($caissier->branch_id); // isole l'invariant : c'est la RUPTURE qu'on mesure
+        Sanctum::actingAs($caissier, ['*']);
 
         $res = $this->getJson('/api/admin/pos/system-health');
 
@@ -209,6 +233,7 @@ class PosSystemHealthTest extends TestCase
         $mk(OrderStatus::PENDING, 60 * 25);      // 25 h → hors fenêtre
         $mk(OrderStatus::PREPARING, 60 * 24 * 7); // 7 jours → hors fenêtre
 
+        $this->imprimanteActive($cashier->branch_id); // isole l'invariant : c'est le VIEILLISSEMENT qu'on mesure
         Sanctum::actingAs($cashier, ['*']);
         $res = $this->getJson('/api/admin/pos/system-health');
 

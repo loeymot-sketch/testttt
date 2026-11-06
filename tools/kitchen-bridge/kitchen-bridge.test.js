@@ -37,6 +37,8 @@ let workerResponds = true;
 let killCount = 0;
 let writeCount = 0;
 const spawnCalls = [];
+// [FILE-PERIMEE 2026-10-20] État simulé de l'imprimante + journal des lignes reçues par le worker.
+const fake = { status: 'online', purged: 0, tickResponds: true, lines: [] };
 function fakeSpawn(cmd, args, opts) {
   spawnCalls.push({ cmd, args, opts });
   const child = new EventEmitter();
@@ -56,7 +58,14 @@ function fakeSpawn(cmd, args, opts) {
     writable: true,
     write(line) {
       writeCount += 1;
-      const file = String(line).trim().split('|')[1];
+      const txt = String(line).trim();
+      fake.lines.push(txt);
+      if (txt.startsWith('#TICK|')) {
+        // Commande de contrôle : « OK tick <état> <supprimés> » (ou silence si worker figé).
+        if (fake.tickResponds) setTimeout(() => child.stdout.emit('data', 'OK tick ' + fake.status + ' ' + fake.purged + '\n'), 1);
+        return true;
+      }
+      const file = txt.split('|')[1];
       // Répond OK avec 40 ms de délai (impression simulée) — la réponse HTTP 202
       // doit partir AVANT. En mode figé, AUCUNE réponse (le pont doit timeout).
       if (workerResponds) setTimeout(() => child.stdout.emit('data', 'OK ' + file + '\n'), 40);
@@ -158,8 +167,67 @@ async function main() {
   assert.match(String(abortedResult.error || ''), /client_aborted/, 'un job abandonné doit indiquer client_aborted');
   assert.strictEqual(writeCount, writesBefore, 'un job abandonné ne doit PAS être envoyé au worker (anti-doublon head-of-line)');
 
+  // ── [FILE-PERIMEE 2026-10-20] Porte « imprimante hors ligne » + purge des tickets périmés ──
+  const jobsRecus = () => fake.lines.filter((l) => !l.startsWith('#TICK|')).length;
+  const ticks = () => fake.lines.filter((l) => l.startsWith('#TICK|'));
+
+  // 8. HORS LIGNE : 503 {ok:false, printer_offline} (le KDS réessaiera) et RIEN pour le spouleur.
+  fake.status = 'offline';
+  await bridge.tickPrinter(900);
+  assert.strictEqual(bridge._printerState.status, 'offline', 'le contrôle doit mémoriser « offline »');
+  const avant = jobsRecus();
+  const refus = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x70]));
+  assert.strictEqual(refus.status, 503, 'hors ligne : /raw doit répondre 503, reçu ' + refus.status);
+  assert.deepStrictEqual(JSON.parse(refus.body), { ok: false, error: 'printer_offline' });
+  await new Promise((r) => setTimeout(r, 100));
+  assert.strictEqual(jobsRecus(), avant, 'hors ligne : AUCUN octet ne doit atteindre le spouleur');
+
+  // 9. Imprimante REVENUE alors que l'état mémorisé dit « offline » : le contrôle en direct l'emporte.
+  fake.status = 'online';
+  const revenue = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x71]));
+  assert.strictEqual(revenue.status, 200, 'imprimante revenue : 200 (imprimé) attendu, reçu ' + revenue.status);
+  assert.strictEqual(jobsRecus(), avant + 1, 'le ticket doit atteindre le spouleur');
+
+  // 10. Statut INCONNU : la porte reste OUVERTE.
+  fake.status = 'unknown';
+  await bridge.tickPrinter(900);
+  const inconnu = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x72]));
+  assert.strictEqual(inconnu.status, 200, 'statut inconnu : on imprime quand même (porte ouverte)');
+
+  // 11. Purge : nom d'imprimante + âge max transmis ; nombre supprimé remonté.
+  fake.status = 'online'; fake.purged = 4;
+  const avantTicks = ticks().length;
+  await bridge.tickPrinter(900);
+  assert.strictEqual(bridge._printerState.purged, 4, 'le nombre de tickets supprimés doit remonter');
+  assert.strictEqual(ticks().length, avantTicks + 1);
+  assert.strictEqual(ticks()[ticks().length - 1], '#TICK|' + bridge.PRINTER + '|900', 'commande attendue');
+  fake.purged = 0;
+
+  // 12. Worker FIGÉ (ne répond plus à RIEN, ni contrôles ni tickets) alors que l'état mémorisé dit
+  //     « offline » : la porte ne suspend pas la réponse HTTP, elle laisse passer après ~3 s ; le ticket
+  //     part alors dans le circuit normal, qui échoue proprement (500 print_timeout → le KDS réessaiera)
+  //     et tue le worker figé. Jamais un blocage, jamais un faux « imprimé ».
+  fake.status = 'offline';
+  await bridge.tickPrinter(900);            // état mémorisé « offline »
+  fake.tickResponds = false; workerResponds = false;
+  const t1 = Date.now();
+  const fige = await request(port, 'POST', '/raw', Buffer.from([0x1b, 0x40, 0x73]));
+  const attente = Date.now() - t1;
+  assert.strictEqual(fige.status, 500, 'worker figé : 500 print_timeout attendu (pas 503, pas 200), reçu ' + fige.status);
+  assert.match(fige.body, /print_timeout/, 'worker figé : print_timeout attendu');
+  assert.ok(attente >= 2500 && attente < 5000, 'la porte doit attendre ~3 s puis laisser passer — mesuré ' + attente + ' ms');
+  await new Promise((r) => setTimeout(r, 60));
+  assert.strictEqual(bridge._workerState.pending.length, 0, 'plus aucune commande orpheline après la mort du worker');
+  fake.tickResponds = true; workerResponds = true; fake.status = 'online';
+
+  // 13. Périmètre PowerShell : seulement cette imprimante, seulement les jobs datés et périmés.
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'kitchen-bridge.js'), 'utf8');
+  assert.ok(/Get-PrintJob -PrinterName \$p/.test(src), 'la purge doit être bornée à l\'imprimante du pont');
+  assert.ok(/\$_\.SubmittedTime -and \$_\.SubmittedTime -lt \$lim/.test(src), 'jamais de suppression d\'un job sans date');
+  assert.ok(!/Get-PrintJob\s*\|/.test(src) && !/Get-PrintJob -ErrorAction/.test(src), 'jamais « tous les jobs de toutes les imprimantes »');
+
   await new Promise((r) => server.close(r));
-  console.log('kitchen-bridge.test.js — 7/7 groupes OK (200 résultat réel, compile unique, health, 400 vide, windowsHide, TIMEOUT worker-figé → 500+kill+relance, anti-doublon client-aborted sauté)');
+  console.log('kitchen-bridge.test.js — 13/13 groupes OK (200 résultat réel, compile unique, health, 400 vide, windowsHide, TIMEOUT worker-figé → 500+kill+relance, anti-doublon client-aborted sauté, porte hors ligne 503, imprimante revenue, fail-open, purge périmés, contrôle figé, périmètre PowerShell)');
   process.exit(0);
 }
 

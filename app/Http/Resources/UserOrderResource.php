@@ -19,6 +19,9 @@ class UserOrderResource extends JsonResource
         return [
             'id'                             => $this->id,
             'order_serial_no'                => $this->order_serial_no,
+            // [E2E stores · vague B · O-B6 · 2026-10-01] Numéro APPELÉ au comptoir et sur l'écran
+            // client (« N°A0051 ») : l'application l'affiche au suivi ouvert depuis « Mes commandes ».
+            'queue_number'                   => $this->queue_number,
             'user_id'                        => $this->user_id,
             'branch_id'                      => $this->branch_id,
             'branch_name'                    => optional($this->branch)->name,
@@ -38,6 +41,10 @@ class UserOrderResource extends JsonResource
             // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible programmée (NULL = ASAP)
             // — liste « mes commandes » côté client. Projection pure.
             'scheduled_at'                   => optional($this->scheduled_at)->toIso8601String(),
+            // [POINTS À LA VALIDATION 2026-11-06] Points RÉELLEMENT crédités pour cette commande (0 tant que rien
+            // ne l'est : en attente, annulée, crédit en cours). Le client voit ce que ses commandes lui ont
+            // rapporté — jamais un total de ce qu'il a dépensé.
+            'loyalty_points_awarded'         => \App\Services\LoyaltyService::pointsNetsCommande($this->resource), // net : crédit − reprises (relecture adverse tour 2 · P3)
             'status_name'                    => trans('orderStatus.' . $this->status)
         ];
     }

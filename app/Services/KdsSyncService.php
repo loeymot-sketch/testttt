@@ -123,6 +123,9 @@ class KdsSyncService
                     // l'affiche (admission = applyScheduledBoardFilter ci-dessous).
                     // NULL = ASAP inchangé. Sentinel : KdsScheduledOrderGateTest (J-1 sync).
                     ->orWhereNotNull('scheduled_at');
+                    // [VG-2026-10-21 M2-101] Livraison créée bien avant son départ (delivery_slot_at) :
+                    // même échappement que les programmées, borné à grace h après le départ.
+                    \App\Domain\Kds\KitchenReleaseRule::orWhereDeliverySlotActive($q, now(config('app.timezone')));
                 });
 
             // [ULTRA-AUDIT 2026-07-04 — P2 SSOT board-release] Applique le MÊME filtre de release que

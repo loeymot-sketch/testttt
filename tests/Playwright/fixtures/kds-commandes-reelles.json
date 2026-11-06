@@ -1,0 +1,974 @@
+{
+ "data": [
+  {
+   "id": 5164,
+   "order_serial_no": "2406265164",
+   "token": "30",
+   "order_type": 10,
+   "source_surface": "pos",
+   "created_at_iso": "2026-10-19T22:13:46+02:00",
+   "updated_at": "2026-10-19T22:13:46+02:00",
+   "order_datetime": "22:13, 19-10-2026",
+   "order_date": "19-10-2026",
+   "order_time": "22:13",
+   "delivery_date": "19-10-2026",
+   "delivery_time": "17:09 - 17:39",
+   "is_advance_order": 10,
+   "scheduled_at": null,
+   "scheduled_hm": null,
+   "kitchen_timer_anchor_iso": null,
+   "preparation_time": 30,
+   "accepted_at_iso": null,
+   "preparing_at_iso": null,
+   "prepared_at_iso": null,
+   "actual_prep_seconds": null,
+   "status": 7,
+   "status_name": "En préparation",
+   "payment_status": 5,
+   "payment_pending_counter": false,
+   "queue_number": "A0036",
+   "order_items": [
+    {
+     "id": 4920,
+     "order_id": 5164,
+     "branch_id": 1,
+     "item_id": 26,
+     "item_name": "Tacos M",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/tacos-cayenne.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "6,90 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 43,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 311,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Algérienne"
+      }
+     ],
+     "item_extras": [],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 1,
+        "variation_id": 43,
+        "attribute_name": "Viande 1",
+        "variation_name": "Poulet mariné"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 311,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Algérienne"
+       }
+      ],
+      "addons": [],
+      "extras": [],
+      "captured_at": "2026-06-24T17:09:34+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 6.9,
+     "total_convert_price": 6.9,
+     "total_currency_price": "6,90 €",
+     "instruction": "TACOS M\n↳ Sauce frites: Curry",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,63 €",
+     "total_without_tax_currency_price": "6,27 €"
+    },
+    {
+     "id": 4921,
+     "order_id": 5164,
+     "branch_id": 1,
+     "item_id": 98,
+     "item_name": "Cheese Burger",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/cheese-burger.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "6,00 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 390,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Mayonnaise"
+      }
+     ],
+     "item_extras": [
+      {
+       "extra_id": 269,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 270,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 271,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 390,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Mayonnaise"
+       }
+      ],
+      "addons": [],
+      "extras": [
+       {
+        "extra_id": 269,
+        "quantity": 1,
+        "extra_name": "Salade",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 270,
+        "quantity": 1,
+        "extra_name": "Tomate",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 271,
+        "quantity": 1,
+        "extra_name": "Oignon",
+        "line_total": 0,
+        "unit_price": 0
+       }
+      ],
+      "captured_at": "2026-06-24T17:09:34+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 6,
+     "total_convert_price": 6,
+     "total_currency_price": "6,00 €",
+     "instruction": "CHEESE BURGER\n- Salade, Tomate, Oignon\n↳ Sauce frites: Ketchup",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,55 €",
+     "total_without_tax_currency_price": "5,45 €"
+    },
+    {
+     "id": 4922,
+     "order_id": 5164,
+     "branch_id": 1,
+     "item_id": 41,
+     "item_name": "Bol Frites",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/bol-frites.webp?v=1790788423",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "7,90 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 8,
+       "variation_id": 202,
+       "attribute_name": "Sauce bol",
+       "variation_name": "Sauce fromagère maison"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 546,
+       "attribute_name": "Viande 1",
+       "variation_name": "Mexicanos"
+      }
+     ],
+     "item_extras": [],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 8,
+        "variation_id": 202,
+        "attribute_name": "Sauce bol",
+        "variation_name": "Sauce fromagère maison"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 1,
+        "variation_id": 546,
+        "attribute_name": "Viande 1",
+        "variation_name": "Mexicanos"
+       }
+      ],
+      "addons": [],
+      "extras": [],
+      "captured_at": "2026-06-24T17:09:34+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 7.9,
+     "total_convert_price": 7.9,
+     "total_currency_price": "7,90 €",
+     "instruction": "BOL FRITES\n↳ Sauce frites: Sauce spicy",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,72 €",
+     "total_without_tax_currency_price": "7,18 €"
+    }
+   ],
+   "table_name": null,
+   "order_address": null,
+   "customer": {
+    "name": "Client passage",
+    "phone": null
+   }
+  },
+  {
+   "id": 5368,
+   "order_serial_no": "0107265368",
+   "token": null,
+   "order_type": 10,
+   "source_surface": "kiosk",
+   "created_at_iso": "2026-10-19T22:08:46+02:00",
+   "updated_at": "2026-10-19T22:08:46+02:00",
+   "order_datetime": "22:08, 19-10-2026",
+   "order_date": "19-10-2026",
+   "order_time": "22:08",
+   "delivery_date": "19-10-2026",
+   "delivery_time": "",
+   "is_advance_order": 10,
+   "scheduled_at": null,
+   "scheduled_hm": null,
+   "kitchen_timer_anchor_iso": null,
+   "preparation_time": 30,
+   "accepted_at_iso": null,
+   "preparing_at_iso": null,
+   "prepared_at_iso": null,
+   "actual_prep_seconds": null,
+   "status": 7,
+   "status_name": "En préparation",
+   "payment_status": 5,
+   "payment_pending_counter": false,
+   "queue_number": "A0039",
+   "order_items": [
+    {
+     "id": 5126,
+     "order_id": 5368,
+     "branch_id": 1,
+     "item_id": 104,
+     "item_name": "Méga",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/sandwich-mega.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "8,00 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 469,
+       "attribute_name": "Viande 1",
+       "variation_name": "Mexicanos"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 2,
+       "variation_id": 477,
+       "attribute_name": "Viande 2",
+       "variation_name": "Cordon Bleu"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 485,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Mayonnaise"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 483,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      }
+     ],
+     "item_extras": [
+      {
+       "extra_id": 343,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 344,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 345,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "item_addons": [
+      {
+       "role": "menu_frites",
+       "addon_id": 75,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 1.5,
+       "unit_price": 1.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 1,
+        "variation_id": 469,
+        "attribute_name": "Viande 1",
+        "variation_name": "Mexicanos"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 2,
+        "variation_id": 477,
+        "attribute_name": "Viande 2",
+        "variation_name": "Cordon Bleu"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 485,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Mayonnaise"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 6,
+        "variation_id": 483,
+        "attribute_name": "Type de Pain",
+        "variation_name": "Pain"
+       }
+      ],
+      "addons": [
+       {
+        "role": "menu_frites",
+        "addon_id": 75,
+        "quantity": 1,
+        "addon_name": "Menu (Frites + Boisson)",
+        "line_total": 1.5,
+        "unit_price": 1.5,
+        "addon_item_id": 1,
+        "catalog_price": 2.5
+       }
+      ],
+      "extras": [
+       {
+        "extra_id": 343,
+        "quantity": 1,
+        "extra_name": "Salade",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 344,
+        "quantity": 1,
+        "extra_name": "Tomate",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 345,
+        "quantity": 1,
+        "extra_name": "Oignon",
+        "line_total": 0,
+        "unit_price": 0
+       }
+      ],
+      "captured_at": "2026-07-01T00:30:23+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 9.5,
+     "total_convert_price": 9.5,
+     "total_currency_price": "9,50 €",
+     "instruction": "Pain : Pain. Viandes : Mexicanos ×1, Cordon Bleu ×1. Formule : Avec frites. Sauce frites : Mayonnaise",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,86 €",
+     "total_without_tax_currency_price": "8,64 €"
+    },
+    {
+     "id": 5127,
+     "order_id": 5368,
+     "branch_id": 1,
+     "item_id": 97,
+     "item_name": "Tacos L",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/tacos-cayenne.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "7,90 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 361,
+       "attribute_name": "Viande 1",
+       "variation_name": "Mexicanos"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 2,
+       "variation_id": 369,
+       "attribute_name": "Viande 2",
+       "variation_name": "Cordon Bleu"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 375,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Mayonnaise"
+      }
+     ],
+     "item_extras": [],
+     "item_addons": [
+      {
+       "role": "menu_frites",
+       "addon_id": 96,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 1.5,
+       "unit_price": 1.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 1,
+        "variation_id": 361,
+        "attribute_name": "Viande 1",
+        "variation_name": "Mexicanos"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 2,
+        "variation_id": 369,
+        "attribute_name": "Viande 2",
+        "variation_name": "Cordon Bleu"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 375,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Mayonnaise"
+       }
+      ],
+      "addons": [
+       {
+        "role": "menu_frites",
+        "addon_id": 96,
+        "quantity": 1,
+        "addon_name": "Menu (Frites + Boisson)",
+        "line_total": 1.5,
+        "unit_price": 1.5,
+        "addon_item_id": 1,
+        "catalog_price": 2.5
+       }
+      ],
+      "extras": [],
+      "captured_at": "2026-07-01T00:30:23+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 9.4,
+     "total_convert_price": 9.4,
+     "total_currency_price": "9,40 €",
+     "instruction": "Viandes : Mexicanos ×1, Cordon Bleu ×1. Formule : Avec frites. Sauce frites : Mayonnaise",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,85 €",
+     "total_without_tax_currency_price": "8,55 €"
+    },
+    {
+     "id": 5128,
+     "order_id": 5368,
+     "branch_id": 1,
+     "item_id": 98,
+     "item_name": "Cheese Burger",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/cheese-burger.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "6,00 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 390,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Mayonnaise"
+      }
+     ],
+     "item_extras": [
+      {
+       "extra_id": 269,
+       "quantity": 1,
+       "extra_name": "Salade",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 270,
+       "quantity": 1,
+       "extra_name": "Tomate",
+       "line_total": 0,
+       "unit_price": 0
+      },
+      {
+       "extra_id": 271,
+       "quantity": 1,
+       "extra_name": "Oignon",
+       "line_total": 0,
+       "unit_price": 0
+      }
+     ],
+     "item_addons": [
+      {
+       "role": "menu_frites",
+       "addon_id": 81,
+       "quantity": 1,
+       "addon_name": "Menu (Frites + Boisson)",
+       "line_total": 1.5,
+       "unit_price": 1.5,
+       "addon_item_id": 1,
+       "catalog_price": 2.5
+      }
+     ],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 390,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Mayonnaise"
+       }
+      ],
+      "addons": [
+       {
+        "role": "menu_frites",
+        "addon_id": 81,
+        "quantity": 1,
+        "addon_name": "Menu (Frites + Boisson)",
+        "line_total": 1.5,
+        "unit_price": 1.5,
+        "addon_item_id": 1,
+        "catalog_price": 2.5
+       }
+      ],
+      "extras": [
+       {
+        "extra_id": 269,
+        "quantity": 1,
+        "extra_name": "Salade",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 270,
+        "quantity": 1,
+        "extra_name": "Tomate",
+        "line_total": 0,
+        "unit_price": 0
+       },
+       {
+        "extra_id": 271,
+        "quantity": 1,
+        "extra_name": "Oignon",
+        "line_total": 0,
+        "unit_price": 0
+       }
+      ],
+      "captured_at": "2026-07-01T00:30:23+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 7.5,
+     "total_convert_price": 7.5,
+     "total_currency_price": "7,50 €",
+     "instruction": "Formule : Avec frites. Sauce frites : Mayonnaise",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,68 €",
+     "total_without_tax_currency_price": "6,82 €"
+    },
+    {
+     "id": 5129,
+     "order_id": 5368,
+     "branch_id": 1,
+     "item_id": 52,
+     "item_name": "Coca-Cola 33cl",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/coca.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "1,90 €",
+     "item_variations": [],
+     "item_extras": [],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [],
+      "addons": [],
+      "extras": [],
+      "captured_at": "2026-07-01T00:30:23+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 1.9,
+     "total_convert_price": 1.9,
+     "total_currency_price": "1,90 €",
+     "instruction": "",
+     "kitchen_bumped_at": null,
+     "kds_station": "bar",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,17 €",
+     "total_without_tax_currency_price": "1,73 €"
+    },
+    {
+     "id": 5130,
+     "order_id": 5368,
+     "branch_id": 1,
+     "item_id": 49,
+     "item_name": "Glace",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/ben-jerrys.webp?v=1790788423",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "3,50 €",
+     "item_variations": [],
+     "item_extras": [],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [],
+      "addons": [],
+      "extras": [],
+      "captured_at": "2026-07-01T00:30:23+02:00",
+      "schema_version": 1
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,00 €",
+     "total_price": 3.5,
+     "total_convert_price": 3.5,
+     "total_currency_price": "3,50 €",
+     "instruction": "",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_froide",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,32 €",
+     "total_without_tax_currency_price": "3,18 €"
+    }
+   ],
+   "table_name": null,
+   "order_address": null,
+   "customer": null
+  },
+  {
+   "id": 7591,
+   "order_serial_no": "0410267591",
+   "token": "E2E-VISU-REMARQUES-1791092228105-693839",
+   "order_type": 10,
+   "source_surface": "kiosk",
+   "created_at_iso": "2026-10-19T22:18:46+02:00",
+   "updated_at": "2026-10-19T22:18:46+02:00",
+   "order_datetime": "22:18, 19-10-2026",
+   "order_date": "19-10-2026",
+   "order_time": "22:18",
+   "delivery_date": "19-10-2026",
+   "delivery_time": "",
+   "is_advance_order": 10,
+   "scheduled_at": null,
+   "scheduled_hm": null,
+   "kitchen_timer_anchor_iso": null,
+   "preparation_time": 30,
+   "accepted_at_iso": null,
+   "preparing_at_iso": null,
+   "prepared_at_iso": null,
+   "actual_prep_seconds": null,
+   "status": 4,
+   "status_name": "Acceptée",
+   "payment_status": 5,
+   "payment_pending_counter": false,
+   "queue_number": "A0040",
+   "order_items": [
+    {
+     "id": 7236,
+     "order_id": 7591,
+     "branch_id": 1,
+     "item_id": 22,
+     "item_name": "Cayenne",
+     "line_type": "catalog",
+     "manual_label": null,
+     "item_image": "http://127.0.0.1/images/menu/thumbs/sandwich-cayenne.webp?v=1788391475",
+     "quantity": 1,
+     "discount": "0,00 €",
+     "price": "7,40 €",
+     "item_variations": [
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 6,
+       "variation_id": 450,
+       "attribute_name": "Type de Pain",
+       "variation_name": "Pain"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 1,
+       "variation_id": 680,
+       "attribute_name": "Viande 1",
+       "variation_name": "Poulet mariné"
+      },
+      {
+       "quantity": 1,
+       "line_total": 0,
+       "unit_price": 0,
+       "attribute_id": 5,
+       "variation_id": 287,
+       "attribute_name": "Sauce (1ère Gratuite)",
+       "variation_name": "Ketchup"
+      }
+     ],
+     "item_extras": [
+      {
+       "extra_id": 56,
+       "quantity": 1,
+       "extra_name": "Œuf",
+       "line_total": 0.9,
+       "unit_price": 0.9
+      }
+     ],
+     "item_addons": [],
+     "composition_snapshot": {
+      "lines": [
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 6,
+        "variation_id": 450,
+        "attribute_name": "Type de Pain",
+        "variation_name": "Pain"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 1,
+        "variation_id": 680,
+        "attribute_name": "Viande 1",
+        "variation_name": "Poulet mariné"
+       },
+       {
+        "quantity": 1,
+        "line_total": 0,
+        "unit_price": 0,
+        "attribute_id": 5,
+        "variation_id": 287,
+        "attribute_name": "Sauce (1ère Gratuite)",
+        "variation_name": "Ketchup"
+       }
+      ],
+      "addons": [],
+      "extras": [
+       {
+        "extra_id": 56,
+        "quantity": 1,
+        "extra_name": "Œuf",
+        "line_total": 0.9,
+        "unit_price": 0.9
+       }
+      ],
+      "captured_at": "2026-10-04T07:37:08+02:00",
+      "schema_version": 1,
+      "sauce_destinations": {
+       "fries": [],
+       "product": []
+      }
+     },
+     "allergens_snapshot": [],
+     "item_variation_currency_total": "0,00 €",
+     "item_extra_currency_total": "0,90 €",
+     "total_price": 8.3,
+     "total_convert_price": 8.3,
+     "total_currency_price": "8,30 €",
+     "instruction": "E2E visuel",
+     "kitchen_bumped_at": null,
+     "kds_station": "cuisine_chaude",
+     "tax_type": "%",
+     "tax_rate": "10.000000",
+     "tax_currency_rate": "10.00",
+     "tax_name": "VAT",
+     "tax_currency_amount": "0,75 €",
+     "total_without_tax_currency_price": "7,55 €"
+    }
+   ],
+   "table_name": null,
+   "order_address": null,
+   "customer": null
+  }
+ ],
+ "meta": {
+  "overflow": false,
+  "limit": 50,
+  "scheduled_upcoming": [],
+  "recently_canceled": []
+ }
+}

@@ -392,7 +392,7 @@ function ScreenStepPain({ item, selections, setSelections, headingRef }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
                 {p.image
                   ? <img src={p.image} alt="" aria-hidden="true" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 26 }}>{p.id === 'pain-galette' ? '🌯' : '🥖'}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${p.name} — photo indisponible`} style={{ width: 44, height: 44, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{p.name}</span>
                 <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
               </div>
@@ -437,9 +437,14 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
             <ChoiceCard key={m.id} on={on} onPick={() => togglePush(m.id)} ariaRole="checkbox">
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Phase 6.A real-asset thumb (kiosk viande_*.png) */}
-                {m.image
-                  ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}/>
-                  : <span aria-hidden="true">{m.emoji}</span>}
+                {m.image && <img
+                  data-testid={`meat-choice-image-${m.id}`}
+                  className="lc-wizard-choice-image lc-wizard-choice-image--meat"
+                  src={m.image}
+                  alt=""
+                  aria-hidden="true"
+                  onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
+                />}
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
               </span>
               <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -497,8 +502,8 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
                 {/* Phase 6.A real-asset color swatch (kiosk generated sauce_*.svg) */}
                 {s.image
                   ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                  : (s.is_spicy && <span aria-hidden="true">🌶️</span>)}
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}{s.is_spicy && s.image ? ' 🌶️' : ''}</span>
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${s.name} — photo indisponible`} style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0 }} /> : null)}
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
               </span>
             </ChoiceCard>
           );
@@ -595,7 +600,7 @@ function ExtraMeatSection({ item, selections, setSelections }) {
             >
               {m.image
                 ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                : <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>{m.emoji}</span>}
+                : (window.NeutralAsset ? <window.NeutralAsset label={`${m.name} — photo indisponible`} style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0, marginRight: 10 }} /> : null)}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{m.name}</div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {priceLabel} €</div>
@@ -675,6 +680,12 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
 // ============================================================================
 // STEP 5 — Menu (radio: full/frites/boisson/none)
 // ============================================================================
+const FORMULA_CHOICE_IMAGES = {
+  full: 'assets/menu/menu_complet.png',
+  frites: 'assets/menu/frites.png',
+  boisson: 'assets/menu/boisson.png',
+};
+
 function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
   const choice = selections.menuChoice;
   const pick = (val) => {
@@ -702,10 +713,10 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
     return f ? f.price : fallback;
   };
   const options = [
-    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: formulePrice('f-menu', 2.50), emoji: '🍟🥤' },
-    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: formulePrice('f-frites', 1.50), emoji: '🍟' }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_frites +1,50 €
-    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: formulePrice('f-boisson', 1.00), emoji: '🥤' }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_boisson +1,00 €
-    { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    emoji: '🚫' },
+    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: formulePrice('f-menu', 2.50), image: FORMULA_CHOICE_IMAGES.full },
+    { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: formulePrice('f-frites', 1.50), image: FORMULA_CHOICE_IMAGES.frites }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_frites +1,50 €
+    { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: formulePrice('f-boisson', 1.00), image: FORMULA_CHOICE_IMAGES.boisson }, // [GOAL-SYNC-HEAL 2026-07-08] fallback aligné canon menu_boisson +1,00 €
+    { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    image: null },
   ];
   return (
     <div style={{ padding: '20px 20px 120px' }}>
@@ -718,7 +729,21 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
           return (
             <ChoiceCard key={o.id} on={on} onPick={() => pick(o.id)} ariaRole="radio">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                <span aria-hidden="true" style={{ fontSize: 22 }}>{o.emoji}</span>
+                {o.image
+                  ? <img
+                      data-testid={`formula-choice-image-${o.id}`}
+                      className="lc-wizard-choice-image"
+                      src={o.image}
+                      alt=""
+                      aria-hidden="true"
+                      onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}
+                    />
+                  : (window.NeutralAsset
+                    ? <window.NeutralAsset
+                        label="Sans formule — aucune formule sélectionnée"
+                        style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0 }}
+                      />
+                    : null)}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{o.name}</span>
                   <span style={{ fontSize: 11, color: 'var(--gray-4)' }}>{o.desc}</span>
@@ -761,7 +786,7 @@ function ScreenStepDrink({ item, selections, setSelections, headingRef }) {
                 {/* Phase 6.A real-asset thumb (kiosk drink png) */}
                 {d.image
                   ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${d.name} — photo indisponible`} style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
               </div>
             </ChoiceCard>
@@ -793,7 +818,7 @@ function ScreenStepFritesStyle({ item, selections, setSelections, headingRef }) 
                 {/* Phase 6.A real-asset thumb (kiosk frites/cheddar png) */}
                 {fs.image
                   ? <img src={fs.image} alt="" aria-hidden="true" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 24 }}>{fs.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${fs.name} — photo indisponible`} style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{fs.name}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -868,11 +893,7 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
               data-testid={`bol-supp-${s.id}`}
               style={{ outline: 'none' }}
             >
-              {s.image
-                ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, marginRight: 10, borderRadius: 8, objectFit: 'cover', background: 'var(--cream, #f5f0e8)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
-                : <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>
-                    {isGratine ? '🧀' : s.id === 'sb-oignon-frais' ? '🧅' : s.id === 'sb-jambon' ? '🥓' : '🍄'}
-                  </span>}
+              {s.image && <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, marginRight: 10, borderRadius: 8, objectFit: 'cover', background: 'var(--cream, #f5f0e8)' }} onError={(e) => { e.currentTarget.dataset.imageError = 'true'; }}/>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
                   {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}
@@ -912,7 +933,7 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
         {/* "Aucune boisson" option first */}
         <ChoiceCard on={bolDrinkId === null} onPick={() => pick(null)} ariaRole="radio">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
-            <span aria-hidden="true" style={{ fontSize: 28 }}>🚫</span>
+            {window.NeutralAsset && <window.NeutralAsset label="Aucune boisson — aucune boisson sélectionnée" style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0 }} />}
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>Aucune boisson</span>
           </div>
         </ChoiceCard>
@@ -924,7 +945,7 @@ function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
                 {d.image
                   ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
-                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
+                  : (window.NeutralAsset ? <window.NeutralAsset label={`${d.name} — photo indisponible`} style={{ width: 56, height: 56, borderRadius: 8, flexShrink: 0 }} /> : null)}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)', fontWeight: 700 }}>
                   +{price.toFixed(2).replace('.', ',')}€
@@ -1042,14 +1063,14 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
     <div style={{ padding: '20px 20px 210px' }}>
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: '14px 0 0', overflow: 'hidden' }}>
         <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span aria-hidden="true" style={{ fontSize: 28 }}>{item.kiosk_emoji || '🍽️'}</span>
+          <Slot id={`recap-${item.id}`} w={44} h={44} radius={10} placeholder={item.name} src={item.image} alt={item.name} fit="contain" />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
-          {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire.
-              [MASSIVE-LOGIC HEAL 2026-05-17] now uses aggregatedAllergens (item + supps + drinks)
-              instead of item.allergens only — full FIC disclosure per selection. */}
+          {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le récapitulatif.
+              [MASSIVE-LOGIC HEAL 2026-05-17] uses aggregatedAllergens (item + supps + drinks)
+              so every selected component remains covered by the legal disclosure. */}
           {window.AllergenBadge && <window.AllergenBadge allergens={aggregatedAllergens} size="lg"/>}
         </div>
         {/* [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled rows : base + viande fixed by item */}
@@ -1265,11 +1286,12 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   });
 
   const [stepIndex, setStepIndex] = useState_w(0);
+  const screenRef = useScreenScrollReset(`${itemId}:${stepIndex}`);
 
   // If item not found, render error early
   if (!item) {
     return (
-      <div data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
+      <div ref={screenRef} data-screen-label="09 Item Detail" style={{ position: 'absolute', inset: 0, background: '#fff', padding: 40, paddingTop: 100, textAlign: 'center' }}>
         <h2 className="lc-display" style={{ fontSize: 26, color: 'var(--ink)' }}>Plat introuvable.</h2>
         <button onClick={() => go('back')} className="lc-btn lc-btn--ink" style={{ marginTop: 20 }}>Retour</button>
       </div>
@@ -1357,8 +1379,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const stepTitle = STEP_LABELS[currentKey] || currentKey;
 
   return (
-    <div data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--paper)', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+    <div ref={screenRef} data-screen-label={`09 Item Wizard ${stepTitle}`} style={{ position: 'absolute', inset: 0, background: 'var(--paper)', overflow: 'hidden' }}>
+      <div data-screen-scroll style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
         <WizardHeader
           stepIndex={clampedIndex}
           stepTotal={activeSteps.length}
@@ -1367,7 +1389,7 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
           onClose={() => go('back')}
           headingRef={headingRef}
         />
-        {/* rdw-step keyed wrapper triggers slide-x entry animation on step change */}
+        {/* Keyed content resets each step; mobile navigation stays animation-free. */}
         <div key={currentKey} className="rdw-step">
           {body}
         </div>
@@ -1387,14 +1409,15 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
 // Direct-add view (cat 11 desserts, cat 12 boissons, cat 13 plain supplements)
 // ============================================================================
 function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart }) {
+  const screenRef = useScreenScrollReset(item.id);
   const qty = selections.qty || 1;
   const setQty = (q) => setSelections(s => ({ ...s, qty: Math.max(1, q) }));
   const total = item.price * qty;
   return (
-    <div data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
+    <div ref={screenRef} data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
       <div className="lc-screen" style={{ paddingBottom: 130 }}>
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
+          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name} fit="contain"/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={18}/></IconBtn>
@@ -1403,8 +1426,8 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         <div style={{ padding: '24px 20px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.95 }}>{item.name}</h1>
           <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
-          {/* [D4 EU FIC 1169/2011] AllergenBadge sur item detail */}
-          {window.AllergenBadge && <div style={{ marginTop: 12 }}><window.AllergenBadge allergens={item.allergens} size="lg"/></div>}
+          {/* [MOBILE-EXCELLENCE-PHASE13] Disclosure textuelle sur le détail produit. */}
+          {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
           <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

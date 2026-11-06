@@ -134,7 +134,7 @@
         >
           <!-- Image -->
           <div class="kiosk-cart-item-img" aria-hidden="true">
-            <img loading="lazy" decoding="async" v-if="item.image" :src="item.image" :alt="''" />
+            <img loading="lazy" decoding="async" v-if="cartLineImage(item)" :src="cartLineImage(item)" :alt="''" />
             <span v-else class="kiosk-cart-item-emoji">🍽️</span>
           </div>
 
@@ -142,7 +142,11 @@
           <div class="kiosk-cart-item-info">
             <div class="kiosk-cart-item-name-row">
               <h3 class="kiosk-cart-item-name" :data-testid="`kiosk-cart-item-name-${idx}`">{{ displayCartItemName(item) }}</h3>
-              <!-- Edit: retire l'article et rouvre le wizard pour le même produit -->
+              <!-- [OWNER 2026-08-25] Rouvre le produit sur SON RÉCAP, d'où chaque ligne
+                   peut être modifiée séparément. La ligne du panier n'est jamais
+                   supprimée : elle est remplacée à la validation, restaurée à l'abandon.
+                   Le libellé est écrit, et la cible fait 44 px : un crayon gris de 16 px
+                   dans un cercle de 34 px ne se voit pas et se rate au doigt. -->
               <button type="button"
                 v-if="item.item_id"
                 class="kiosk-cart-edit-btn"
@@ -153,6 +157,7 @@
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
+                <span class="kiosk-cart-edit-label">{{ $t('kiosk.wizard.summary.edit') }}</span>
               </button>
             </div>
             <!-- [GAP-22-2] Afficher les sélections wizard (variations, extras) -->
@@ -384,6 +389,7 @@ import focusTrap from '../../../mixins/focusTrap';
 import { shouldSkipKioskUpsellScreen } from '../../../helpers/kioskUpsellFlow';
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import { findVariationObjectById, findExtraObjectById } from '../../../helpers/kioskFilters';
+import { kioskLinePhoto, kioskVariationPool } from '../../../helpers/kioskMedia';
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 
 // [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
@@ -626,6 +632,13 @@ export default {
       return sanitizeKioskCustomerFacingText(item.instruction);
     },
 
+    // [PAIN-PHOTO 2026-10-29 · test-e2e] Ligne « Galette » → la photo de la GALETTE, pas celle du sandwich (« Pain : Galette »
+    // sous une photo de sandwich = la plainte d'origine). Repli silencieux sur la photo de la ligne.
+    cartLineImage(line) {
+      const cat = this.cartLineCatalogItem(line);
+      return kioskLinePhoto(cat, (line.item_variations || []).map((v) => v && v.id), this.allItems, line?.image || null);
+    },
+
     cartLineCatalogItem(line) {
       if (!line?.item_id || !Array.isArray(this.allItems)) return null;
       return this.allItems.find((i) => String(i.id) === String(line.item_id)) || null;
@@ -643,6 +656,11 @@ export default {
       return { variations: vars, extras: ext };
     },
 
+    catalogVariationName(line, id) {
+      const hit = kioskVariationPool(this.cartLineCatalogItem(line)).find((v) => Number(v.id) === Number(id));
+      return (hit && hit.name) || '';
+    },
+
     // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
     getItemSelectionSummary(item) {
       const parts = [];
@@ -650,7 +668,9 @@ export default {
 
       if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
         const bits = item.item_variations
-          .map((v) => clean(v.name || v.variation_name || ''))
+          // [test-e2e ADV-11] `name` est vide pour le pain (l'assistant, gelé, ne le renseigne pas) : sans repli on affichait le
+          // NOM DE L'ATTRIBUT (« Type de Pain ») à la place du choix. On lit le nom réel au catalogue avant ce repli.
+          .map((v) => clean(v.name || this.catalogVariationName(item, v.id) || v.variation_name || ''))
           .filter(Boolean);
         if (bits.length) parts.push(bits.join(', '));
       } else if (item.item_variations?.names) {
@@ -1031,17 +1051,31 @@ export default {
   gap: 0.4rem;
 }
 
+/* [OWNER 2026-08-25] Le point d'entrée de la modification. Il portait un crayon gris
+   de 16 px dans un cercle de 34 px, sans texte : sous le minimum tactile de 44 px, et
+   rien n'annonçait au client qu'il POUVAIT modifier son article. Désormais nommé. */
 .kiosk-cart-edit-btn {
   flex-shrink: 0;
-  background: var(--kiosk-surface-alt);
-  border: 1px solid var(--kiosk-border);
-  border-radius: 50%;
-  color: var(--kiosk-text-mute);
-  width: 34px; height: 34px;
-  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 2px solid var(--kiosk-primary-dark);
+  border-radius: 999px;
+  color: var(--kiosk-primary-dark);
+  min-height: 44px;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  padding: 0;
+}
+.kiosk-cart-edit-label {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.kiosk-cart-edit-btn:active {
+  background: var(--kiosk-primary-dark);
+  color: var(--kiosk-text-on-red, #fff);
 }
 .kiosk-cart-edit-btn:hover {
   background: var(--kiosk-primary-soft);
@@ -1085,9 +1119,11 @@ export default {
 
 /* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */
 .kiosk-cart-item-trash {
-  position: absolute;
-  top: -8px;
-  right: -8px;
+  /* [test-e2e 2026-10-29 · ADV-06] Dans le flux, sous le stepper : en absolu (-8/-8) il recouvrait 60 % du « + » et un tap
+     un peu en haut à droite supprimait la ligne au lieu d'ajouter une unité. */
+  position: static;
+  align-self: flex-end;
+  margin-top: 4px;
   width: 36px;
   height: 36px;
   border: 1px solid var(--kiosk-border, #E5E5E5);

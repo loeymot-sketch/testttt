@@ -1,7 +1,35 @@
 <?php
 
 return [
+    // [ONB-02 2026-08-28] راجع lang/en/all.php
+    'item_match' => 'هذا المنتج غير مطابق.',
+    'user_match' => 'المستخدم غير موجود.',
+
+    // [ONB-11 2026-08-28] راجع lang/fr/all.php
+    'order' => [
+        'status' => [
+            1 => 'قيد الانتظار',
+            4 => 'مقبول',
+            7 => 'قيد التحضير',
+            8 => 'جاهز',
+            10 => 'قيد التوصيل',
+            13 => 'تم التسليم',
+            16 => 'ملغى',
+            19 => 'مرفوض',
+            22 => 'مرتجع',
+        ],
+    ],
+
     'label'   => [
+        'oss_main_aria' => 'شاشة حالة الطلبات — الطلبات قيد التحضير والجاهزة',
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'fee_percent' => 'الرسوم (%)',
+        'fee_fixed' => 'رسوم ثابتة',
+        'serial_number' => 'الرقم التسلسلي',
+        'gateway' => 'البوابة',
+        'archived' => 'مؤرشف',
+        'no_data' => 'لا توجد بيانات',
+
         'name'              => 'الاسم',
         'email'             => 'البريد الإلكتروني',
         'phone'             => 'الهاتف',
@@ -132,6 +160,24 @@ return [
         'kds_reopen_success'           => 'Order put back in preparation.',
         'kds_recall_too_late'      => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق',
         'kds_recall_already_recalled' => 'تم استرداد هذا الطلب بالفعل',
+        // [2026-11-04] Bilan de la caisse du livreur (clés ajoutées en français sans arabe depuis le 28/08 :
+        // elles s'affichaient BRUTES en arabe). Sentinelle LeJournalDActiviteDitLeStatutPasSaCleTest.
+        'delivery_cash_by_mode'           => 'توزيع المبالغ المحصّلة عند الباب',
+        'delivery_cash_counted_cash'      => 'النقد المعدود',
+        'delivery_cash_deliveries_settled' => 'التوصيلات المدفوعة',
+        'delivery_cash_expected_cash'     => 'النقد المتوقع (الرصيد الافتتاحي + النقد)',
+        'delivery_cash_ledger_gap'        => 'فرق بين نقد الطلبات وسجل الصندوق',
+        'delivery_cash_mode_card'         => 'بطاقة',
+        'delivery_cash_mode_cash'         => 'نقدًا',
+        'delivery_cash_mode_meal_voucher' => 'قسائم الوجبات',
+        'delivery_cash_opening_float'     => 'الرصيد الافتتاحي',
+        'delivery_cash_orders'            => 'الطلبات المحصّلة',
+        'delivery_cash_paid_online'       => 'مدفوع عبر الإنترنت',
+        'delivery_cash_total_collected'   => 'إجمالي المحصّل',
+        'delivery_cash_variance_line'     => 'الفرق عند الإغلاق',
+        'delivery_cash_variance_ok'       => 'الحساب صحيح',
+        'delivery_cash_variance_over'     => 'يوجد مال زائد في حقيبة النقود',
+        'delivery_cash_variance_short'    => 'ينقص مال في حقيبة النقود',
     ],
     'studio' => [
         'eyebrow' => 'كتالوج مركزي',
@@ -151,9 +197,14 @@ return [
         'open_full_page' => 'فتح كصفحة كاملة',
     ],
     'message' => [
+        // [ONB-11 2026-08-28] Absentes ici : la cle brute s'affichait.
+        'kds_reopen_invalid_state' => 'يمكن إعادة الطلبات المعلّمة \"جاهز\" فقط إلى التحضير.',
+        'kds_reopen_success' => 'تمت إعادة الطلب إلى التحضير.',
+
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'             => 'الطلب غير موجود.',
+        'resource_not_found'          => 'المورد غير موجود.',
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
         'kds_recall_invalid_state'     => 'يمكن استرداد الطلبات الجاهزة فقط.',
         'kds_recall_window_expired'    => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق للإلغاء يدويًا.',
@@ -171,6 +222,7 @@ return [
         'logout_success'              => 'تم تسجيل الخروج بنجاح.',
         'account_delete_success'      => 'تم حذف الحساب بنجاح.',
         'account_not_delete'          => 'لا يمكنك حذف حسابك إذا كان لديك طلب نشط.',
+        'account_not_delete_kitchen'  => 'لا يمكن حذف حسابك حاليًا: هناك طلب قيد التحضير أو تم دفعه بالفعل. استلمه (أو انتظر حتى يكتمل)، ثم حاول مرة أخرى.',
         'invalid_api_key'             => 'مفتاح API غير صالح.',
         'user_match'                  => 'المستخدم غير متطابق.',
         'something_wrong'             => 'هناك خطأ ما.',
@@ -185,6 +237,7 @@ return [
         'code_is_expired'             => 'الرمز انتهت صلاحيته.',
         'you_can_reset_your_password' => 'الآن يمكنك إعادة تعيين كلمة المرور الخاصة بك.',
         'check_your_email_for_code'   => 'يرجى التحقق من بريدك الإلكتروني للحصول على الرمز.',
+        'check_your_email_for_code_with_fallback' => 'يرجى التحقق من بريدك الإلكتروني للحصول على الرمز. إذا لم يصلك شيء خلال بضع دقائق (تحقق أيضًا من الرسائل غير المرغوب فيها)، تفضّل إلى الشباك مع رقم هاتفك: يمكننا ربط حسابك مباشرة.',
         'check_your_phone_for_code'   => 'يرجى التحقق من هاتفك للحصول على الرمز.',
         'token_created_fail'          => 'فشل إنشاء الرمز.',
         'email_does_not_exist'        => 'هذا البريد الإلكتروني غير موجود.',

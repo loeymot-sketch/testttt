@@ -1,3 +1,22 @@
+<!--
+    ⚠️ COMPOSANT DORMANT — vérifié le 2026-09-03.
+
+    Ce composant n'est monté NULLE PART. Il n'apparaît dans aucun autre fichier de
+    `resources/js` que celui-ci, et le dépôt ne charge aucun composant automatiquement
+    (ni `require.context`, ni `import.meta.glob`). Aucun utilisateur ne le voit.
+
+    Sa route API (`top-customers`) existe pourtant, elle est gardée, testée et maintenue : le
+    coût backend est payé pour un écran que personne n'ouvre.
+
+    Trois issues, et c'est une décision PRODUIT, pas technique :
+      (a) le monter sur le tableau de bord — il faut alors lui écrire ses bancs, comme les
+          six autres widgets en ont reçu le 2026-09-03 (succès / vide / 403 / 500 / délai) ;
+      (b) le déplacer vers une page de rapports clients ;
+      (c) le supprimer, ET trancher séparément le sort de sa route.
+
+    Ne rien décider n'est pas neutre : la route continue d'être maintenue.
+    Signalé une première fois dans `plans/GOAL_ONB07_..._2026-08-26.md:143` sans être tranché.
+-->
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12 xl:col-6">

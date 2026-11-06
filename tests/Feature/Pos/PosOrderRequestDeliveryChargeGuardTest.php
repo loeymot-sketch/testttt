@@ -62,26 +62,24 @@ class PosOrderRequestDeliveryChargeGuardTest extends TestCase
     }
 
     /**
-     * @test — [S2-02 / P2-f 2026-07-18] une vraie DELIVERY sans distance N'UTILISE PAS
-     * le delivery_charge CLIENT : la garde le remplace par un fee SERVEUR autoritatif
-     * (config branche / legacy 5€), jamais la valeur du client. Cf.
-     * PosDeliveryChargeServerAuthoritativeTest pour la couverture complète (adresse, distance).
+     * @test — [S2-02 / P2-f 2026-07-18 · LIVRAISON 2026-10-20] une vraie DELIVERY SANS adresse
+     * enregistrée du client N'UTILISE PAS le delivery_charge CLIENT : la garde le neutralise à 0
+     * (la validation `address_id` refusera ensuite), jamais la valeur du client. Cf.
+     * PosDeliveryChargeServerAuthoritativeTest pour la couverture complète (adresse, barème, refus).
      */
-    public function real_delivery_without_distance_uses_server_fee_not_client_value(): void
+    public function real_delivery_without_address_never_uses_client_value(): void
     {
         $request = $this->prepared([
             'order_type'      => OrderType::DELIVERY,
             'delivery_charge' => 4, // valeur CLIENT — doit être ignorée
-            // pas de branch_id / address_id / distance → repli fee de config (legacy 5€)
+            // pas de customer_id / address_id → aucun montant ne survit
         ]);
 
-        $serverFee = app(\App\Services\Delivery\DeliveryFeeService::class)->fromDistanceKm(0, null);
-
         $this->assertEqualsWithDelta(
-            $serverFee,
+            0.0,
             (float) $request->input('delivery_charge'),
             0.001,
-            'Sans distance, une DELIVERY doit utiliser le fee SERVEUR (config), pas la valeur client.'
+            'Sans adresse enregistrée, une DELIVERY ne doit conserver aucun montant client.'
         );
         $this->assertNotSame(
             4,

@@ -98,6 +98,14 @@ class PaymentReconcileController extends Controller
             return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        // [AUDIT ABUSIF 2026-11-06 · tour 2, contournement de W2-P1-1] Même règle que payment-confirm : en Plan B
+        // (kiosk.payment_route_all_to_counter) la borne n'a pas de terminal, aucune transaction carte « en attente » ne peut
+        // exister. Avec le jeton de la borne, cette route passait une commande PAYÉE, fiscalisée et envoyée en cuisine sur un
+        // numéro de transaction inventé — y compris la commande carte impayée d'un CLIENT du site.
+        if ((bool) config('kiosk.payment_route_all_to_counter', false)) {
+            return response()->json(['status' => false, 'message' => 'Paiement par carte à la borne désactivé : la commande se règle au comptoir.'], 422);
+        }
+
         $branchId = (int) $kioskMachine->branch_id;
         $results = [];
 
@@ -156,6 +164,14 @@ class PaymentReconcileController extends Controller
                 'kiosk_branch' => $branchId,
                 'transaction_id' => $transactionId,
             ]);
+
+            return $base + ['status' => 'unauthorized'];
+        }
+
+        // [AUDIT ABUSIF 2026-11-06 · tour 2] Une borne ne rapproche que SES commandes (créées avec son compte), jamais celle
+        // d'un client du site ou d'une autre borne de la même branche.
+        if ((int) $order->user_id !== $userId) {
+            Log::warning('[AUDIT ABUSIF] reconcile sur la commande d\'un autre compte refusé', ['order_id' => $orderId, 'order_user' => $order->user_id, 'kiosk_user' => $userId]);
 
             return $base + ['status' => 'unauthorized'];
         }

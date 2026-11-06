@@ -3,11 +3,33 @@
 return [
     'item_match' => "L'article ne correspond pas.",
     'user_match' => 'Utilisateur non trouvé.',
+    // [ONB-11 2026-08-28] Les libelles de statut du JOURNAL D'ACTIVITE.
+    //
+    // Ce tableau etait VIDE — meme en francais. `OrderService:2650` ecrit
+    // « Nouveau statut: %s » dans `action_logs` avec trans('all.order.status.X'),
+    // et `trans()` rend la CLE quand elle manque. Mesure sur la base en service :
+    // 469 entrees de la forme « Nouveau statut: all.order.status.16 ».
+    //
+    // Le journal d'activite est ce que le commercant lit pour savoir qui a change
+    // quoi. Le rendre illisible revient a ne pas en avoir.
+    //
+    // Les libelles reprennent EXACTEMENT ceux que le caissier lit deja a l'ecran
+    // (PosOrdersTrackerComponent::staleStatusLabel) : deux mots pour un meme etat
+    // serait pire que pas de mot du tout.
     'order' => [
         'status' => [
-            '' => '',
+            1 => 'En attente',
+            4 => 'Acceptée',
+            7 => 'En préparation',
+            8 => 'Prête',
+            10 => 'En livraison',
+            13 => 'Livrée',
+            16 => 'Annulée',
+            19 => 'Refusée',
+            22 => 'Retournée',
         ],
     ],
+
     'label' => [
         // [ultra-goal A8 heal 2026-05-13] OSS (Order Status Screen) labels.
         'oss_main_aria' => 'Écran de statut des commandes — commandes en préparation et prêtes',
@@ -198,6 +220,22 @@ return [
         'delivery_cash_mvt_drawer_open' => 'Ouverture caisse',
         'delivery_cash_mvt_drawer_close' => 'Clôture caisse',
         'delivery_cash_mvt_adjustment' => 'Ajustement',
+        'delivery_cash_opening_float' => 'Fond de début',
+        'delivery_cash_by_mode' => 'Répartition des encaissements à la porte',
+        'delivery_cash_mode_cash' => 'Espèces',
+        'delivery_cash_mode_card' => 'Carte',
+        'delivery_cash_mode_meal_voucher' => 'Titres-restaurant',
+        'delivery_cash_total_collected' => 'Total encaissé',
+        'delivery_cash_deliveries_settled' => 'Livraisons réglées',
+        'delivery_cash_expected_cash' => 'Espèces attendues (fond + espèces)',
+        'delivery_cash_counted_cash' => 'Espèces comptées',
+        'delivery_cash_variance_line' => 'Écart à la clôture',
+        'delivery_cash_variance_short' => 'Il manque de l\'argent dans la sacoche',
+        'delivery_cash_variance_over' => 'Il y a de l\'argent en trop dans la sacoche',
+        'delivery_cash_variance_ok' => 'Le compte est bon',
+        'delivery_cash_orders' => 'Commandes encaissées',
+        'delivery_cash_paid_online' => 'Payée en ligne',
+        'delivery_cash_ledger_gap' => 'Écart entre les espèces des commandes et le livre de caisse',
         // [I18N-DASH-P1-01 heal 2026-05-30] Full audit 2026-05-29 i18n agent
         // caught dashboard AuditTrailComponent rendering audit_logs.action raw.
         // Translations for displayed NF525 audit event types.
@@ -231,9 +269,39 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        'matiere_dune_autre_branche' => "Cette matière appartient à un autre établissement.",
+        'matiere_encore_dans_une_recette' => "Cette matière est utilisée par :n recette(s). La retirer laisserait ces recettes sans matière, et le stock ne se déduirait plus. Retirez-la d'abord des recettes.",
+        'unite_non_modifiable_avec_stock' => "Cette matière a :stock en stock, comptés en « :unite ». Changer son unité ne convertirait pas ce nombre : il deviendrait faux. Ramenez d'abord le stock à zéro, puis changez l'unité.",
+        'unite_de_matiere_inconnue' => "Cette unité n'est pas reconnue par la conversion des factures d'achat. Choisissez-en une parmi : :unites",
+        'matiere_deja_declaree' => "Vous avez déjà une matière de ce nom. Ouvrez-la pour la modifier, plutôt que d'en créer une seconde.",
+        'extension_de_fichier_interdite' => "Ce type de fichier n'est pas accepté. Déposez une image (JPG, PNG) ou un tableur (XLSX, CSV) selon ce que l'écran vous demande.",
+        'taxe_encore_utilisee' => "Cette taxe est encore utilisée par :n produit(s), y compris désactivés ou supprimés. Changez d'abord leur taxe, sinon ils seraient facturés à 0 % sans que rien ne le signale.",
+        // [ONB-03/06 2026-08-28] Refus rendus tels quels au commercant, en anglais.
+        'wizard_introuvable' => "Ce parcours de personnalisation est introuvable. Rechargez la page ; s'il a été supprimé, recréez-le.",
+        'wizard_sans_etape' => "Impossible de publier : ce parcours n'a aucune étape active. Activez au moins une étape avant de publier.",
+        'role_non_supprimable' => "Ce rôle fait partie du socle de l'application : il ne peut pas être supprimé. Vous pouvez en revanche modifier ses autorisations.",
+        'role_propre_non_modifiable' => "Vous ne pouvez pas modifier les autorisations de votre propre rôle — c'est une protection contre l'élévation de privilèges. Demandez à un autre administrateur de le faire.",
+        // [ONB-05 2026-08-28] Le commercant desactive un mode de commande depuis son
+        // ecran, et c'est son CLIENT qui recevait la phrase — en anglais.
+        'type_de_commande_desactive' => "Ce mode de commande n'est pas disponible en ce moment. Choisissez-en un autre, ou contactez le restaurant.",
+        'sur_place_desactive' => "Le service sur place n'est pas activé pour cet établissement.",
+        // [ONB-11 2026-08-28] Quatre exceptions arrivaient en anglais dans un bandeau
+        // rouge, sans dire QUOI FAIRE. Chacune nomme desormais le geste qui debloque.
+        'langue_par_defaut' => "Cette langue est la langue par défaut : désignez-en une autre comme langue par défaut avant de la supprimer.",
+        'droit_fiscal_requis' => "Vous n'avez pas le droit « gestion fiscale de la caisse ». Demandez-le à un administrateur.",
+        'caisse_sans_etablissement' => "Votre compte n'est rattaché à aucun établissement. Un rapport fiscal appartient toujours à une caisse : demandez à un administrateur de vous rattacher.",
+        'declinaisons_illisibles' => "Les déclinaisons n'ont pas pu être enregistrées. Vérifiez que chaque ligne porte un nom ET un prix, puis réessayez.",
+        'duplication_incomplete' => "Le produit a été dupliqué mais n'a pas pu être rouvert. Fermez cette fenêtre et rafraîchissez la liste : la copie devrait s'y trouver.",
+        // [ONB-09 2026-08-28] Une notification ENREGISTREE n'est pas une notification RECUE.
+        'push_saved' => "Notification enregistrée.",
+        'push_no_device' => "Notification enregistrée, mais AUCUN appareil ne l'a reçue : personne n'a encore installé l'application ou autorisé les notifications.",
+        'push_all_failed' => "Notification enregistrée, mais AUCUN des :n appareils ne l'a reçue. Vérifiez la configuration Firebase dans les réglages.",
+        'push_partial' => "Envoyée à :ok appareil(s). :ko n'ont pas pu être atteints (jeton expiré ou appareil hors ligne).",
+        'push_sent' => "Envoyée à :n appareil(s).",
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'     => 'Commande introuvable.',
+        'resource_not_found'  => 'Ressource introuvable.',
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
         'kds_recall_invalid_state'     => 'Seules les commandes Prêt peuvent être rappelées.',
         'kds_recall_window_expired'    => 'Délai 60s dépassé — contacter le caissier pour annuler manuellement.',
@@ -263,6 +331,7 @@ return [
         'flyer_settings_saved' => 'Réglages du ticket promo enregistrés.',
         'account_delete_success' => 'Compte supprimé avec succès.',
         'account_not_delete' => 'Vous ne pouvez pas supprimer votre compte si vous avez une commande active.',
+        'account_not_delete_kitchen' => "Impossible de supprimer votre compte pour l'instant : une commande est en préparation ou déjà réglée. Récupérez-la (ou attendez qu'elle soit terminée), puis réessayez.",
         'invalid_api_key' => 'Clé API invalide.',
         'user_match' => 'Utilisateur non trouvé.',
         'something_wrong' => "Quelque chose s'est mal passé.",
@@ -277,8 +346,22 @@ return [
         'code_is_expired' => 'Le code a expiré.',
         'you_can_reset_your_password' => 'Vous pouvez maintenant réinitialiser votre mot de passe.',
         'check_your_email_for_code' => 'Veuillez vérifier votre email pour le code.',
+        // [Root cause 2026-09-19, propriétaire : « plusieurs personnes ne reçoivent jamais le
+        // code par e-mail »] Un numéro déjà rattaché à un compte AYANT DE LA VALEUR (points ou
+        // commandes) sans e-mail au dossier bloque volontairement l'envoi (anti-usurpation,
+        // GuestSignupController::envoyerCodeParEmail) — sans jamais le dire, la réponse
+        // affirmait quand même « code envoyé ». La sécurité reste identique (aucune fuite
+        // d'information sur QUEL cas s'applique) ; le message, lui, donne désormais TOUJOURS un
+        // recours au client qui ne recevrait rien, sans jamais révéler s'il est dans ce cas ou
+        // simplement en train d'attendre normalement.
+        'check_your_email_for_code_with_fallback' => 'Veuillez vérifier votre email pour le code. Si vous ne recevez rien dans quelques minutes (pensez aussi aux spams), passez au comptoir avec votre numéro de téléphone : on peut lier votre compte directement.',
         'check_your_phone_for_code' => 'Veuillez vérifier votre téléphone pour le code.',
         'email_send' => 'Email envoyé avec succès.',
+        // [ONB-09 2026-08-28] L'envoi aux abonnés annonçait « Email envoyé »
+        // même quand la liste était VIDE — le service sortait sans rien faire et
+        // le contrôleur répondait succès sans condition. On rend le compte.
+        'email_send_count' => 'Email envoyé à :count abonné(s).',
+        'email_no_subscriber' => "Aucun abonné : rien n'a été envoyé.",
         'token_created_fail' => 'Échec de création du token.',
         'email_does_not_exist' => "Cet email n'existe pas.",
         'phone_exist' => 'Ce numéro de téléphone existe déjà.',

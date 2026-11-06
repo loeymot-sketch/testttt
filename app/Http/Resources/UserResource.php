@@ -36,6 +36,10 @@ class UserResource extends JsonResource
                 ?? ($this->relationLoaded('orders') ? $this->orders->count() : $this->orders()->count()),
             "loyalty_code"     => $this->loyalty_code,
             "loyalty_points"   => (int) ($this->loyalty_points ?? 0),
+            // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points crédités mais pas encore dépensables (commande à distance validée,
+            // pas encore remise) : le site dit « dont N disponibles après la remise » au lieu de proposer une remise refusée.
+            // Plafonné au solde (relecture adverse P3-2) : jamais « dont 1000 » sur un solde de 500.
+            "loyalty_points_pending" => min(max(0, (int) ($this->loyalty_points ?? 0)), \App\Services\LoyaltyService::pointsEnAttenteDeRemise((int) $this->id)),
             'create_date'      => AppLibrary::date($this->created_at),
             'update_date'      => AppLibrary::date($this->updated_at),
 

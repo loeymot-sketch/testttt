@@ -53,7 +53,7 @@ class ConcurrentOrderTest extends TestCase
             'total' => 10,
             'delivery_charge' => 0,
             'is_advance_order' => 0,
-            'source' => 1,
+            'source' => 5,
             'items' => json_encode([['item_id' => $itemId, 'price' => 10, 'quantity' => 1]]),
         ];
     }

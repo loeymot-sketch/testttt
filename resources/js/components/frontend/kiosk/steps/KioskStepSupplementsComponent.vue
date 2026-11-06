@@ -46,6 +46,11 @@
           <span class="kiosk-supplement-emoji" v-else>{{ supplement.emoji }}</span>
         </div>
         <div class="kiosk-supplement-details">
+          <span
+            v-if="supplement.recommended"
+            class="kiosk-supplement-reco"
+            data-testid="kiosk-supplement-recommended"
+          >★ {{ $t('kiosk.wizard.supplement_recommended') }}</span>
           <span class="kiosk-supplement-name">{{ supplement.name }}</span>
           <span class="kiosk-supplement-desc">{{ supplement.description || $t('kiosk.wizard.supplement_default_desc') }}</span>
           <span
@@ -129,7 +134,9 @@ export default {
     // les extras "supplements" excluent automatiquement sauces, upgrades
     // frites (étape Formule) et viandes payantes (étape Viande).
     supplementList() {
-      return partitionKioskExtras(this.item).supplements.map(s => ({
+      // [OWNER 2026-10-21] Les suppléments « Recommandés » (config/menu_recommended_supplements.php, posés par le
+      // serveur dans `is_recommended`) passent en tête ; l'ordre d'origine est conservé au sein de chaque groupe.
+      const rows = partitionKioskExtras(this.item).supplements.map(s => ({
         id: s.id,
         name: s.name,
         price: s.price,
@@ -141,7 +148,9 @@ export default {
         // pass; we only block selection of this specific row.
         is_available: s.is_available !== false,
         unavailable_reason: s.unavailable_reason || null,
+        recommended: s.raw?.is_recommended === true,
       }));
+      return [...rows.filter(r => r.recommended), ...rows.filter(r => !r.recommended)];
     },
     totalPrice() {
       return this.supplementList.reduce((sum, s) => {
@@ -396,6 +405,19 @@ export default {
   flex-direction: column;
   gap: 2px;
   align-items: center;
+}
+
+.kiosk-supplement-reco {
+  align-self: center;
+  margin-bottom: 4px;
+  padding: 2px 10px;
+  border-radius: 50px;
+  background: var(--kiosk-accent, #FFB800);
+  color: #1A1A1A;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .kiosk-supplement-name {

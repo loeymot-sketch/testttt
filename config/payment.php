@@ -117,6 +117,10 @@ return [
         'api_base' => rtrim((string) env('MOLLIE_API_BASE', 'https://api.mollie.com/v2'), '/'),
         // Page de retour côté site web après le checkout Mollie (fallback APP_URL).
         'redirect_url' => (string) env('MOLLIE_REDIRECT_URL', ''),
+        // [GOAL APP HYBRIDE · W4 · 2026-11-03] Page de retour de l'APPLICATION des stores (client=app) : une page
+        // HTTPS du serveur qui rouvre l'application par son lien profond. Vide = APP_URL . '/paiement/retour-app'.
+        // Elle ne paie rien : seul le webhook fait foi.
+        'app_return_url' => (string) env('MOLLIE_APP_RETURN_URL', ''),
         // Apple Pay valide le domaine VISIBLE dans Safari, pas l'hôte de l'API.
         // Les appels partent du site www.lecayenne.fr vers le VPS, donc Request::getHost()
         // retournerait le VPS et ferait fermer la feuille après son ouverture. Cette valeur

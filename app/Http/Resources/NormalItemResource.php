@@ -9,6 +9,7 @@ use App\Models\KioskMachine;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Stock\ChoiceAvailabilityResolver;
+use App\Support\Menu\IncludedMeatCount;
 use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -91,19 +92,17 @@ class NormalItemResource extends JsonResource
             ? (bool) $effectiveAvailability
             : ($this->is_available === null ? true : (bool) $this->is_available);
 
-        // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir
-        // = nombre d'attributs « Viande N » distincts ayant des variations actives.
+        // [VIANDE-COUNT 2026-06-24] SSOT serveur du nombre de viandes à choisir.
         // KioskWizardComponent.detectViandeCount() (frozen) lit ce champ EN PRIORITÉ
         // (avant l'heuristique nom : « Méga »→4, « Terminator »/« Bol »→null = étape
-        // viande absente/fausse). Méga/Terminator=2, Tacos M/Bols=1, Tacos L=2.
-        $viandeCount = $filteredVariations
-            ->filter(function ($v): bool {
-                $n = mb_strtolower((string) optional($v->itemAttribute)->name);
-                return str_contains($n, 'viande') || str_contains($n, 'meat');
-            })
-            ->pluck('item_attribute_id')
-            ->unique()
-            ->count();
+        // viande absente/fausse) ; le site (wizard-v2.jsx) en tire ses viandes incluses.
+        // [VG-2026-10-21 M5-001b M3-101 M1-004] Viandes INCLUSES selon la règle du propriétaire, plus le nombre brut
+        // d'attributs « Viande N » (Tacos M=3, Cayenne=2) ; même calcul que KioskMenuService (borne).
+        $viandeCount = IncludedMeatCount::resolve(
+            (string) $this->name,
+            optional($this->category)->name,
+            $filteredVariations->map(fn ($v) => optional($v->itemAttribute)->name)
+        );
 
         return [
             "viande_count" => $viandeCount,

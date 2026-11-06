@@ -18,8 +18,8 @@ describe('KioskPayment — affiché == facturé (fallback avant quote)', () => {
         expect(source).toMatch(/this\.kioskPromoEnabled \? \(parseFloat\(this\.loyaltyDiscount\)/);
     });
 
-    it('cartTotal préfère la quote serveur puis le repli gaté (jamais le store `total` brut)', () => {
-        expect(source).toContain('cartTotal() { return this._lastQuote?.total_ttc ?? this.displayFallbackTotal; }');
+    it('cartTotal préfère la quote serveur du panier, puis le repli gaté (jamais le store `total` brut)', () => {
+        expect(source).toContain('cartTotal() { return this._lastQuote?.total_ttc ?? this.orderQuote?.total_ttc ?? this.displayFallbackTotal; }');
         expect(source).not.toContain('cartTotal() { return this._lastQuote?.total_ttc ?? this.total; }');
     });
 });

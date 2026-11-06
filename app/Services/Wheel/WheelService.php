@@ -552,7 +552,7 @@ class WheelService
         }
 
         if ($this->alreadySpun($branchId, $tel)) {
-            throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+            throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
         }
 
         return DB::transaction(function () use ($branchId, $tel, $mail, $customerName, $segment, $unlock, $methode, $deviceId, $ipHash) {
@@ -584,7 +584,7 @@ class WheelService
                     // Deux contraintes peuvent avoir tranché : le téléphone ou l'adresse. On ne dit
                     // pas LAQUELLE — le message resterait le même pour le client honnête, et
                     // distinguer les deux apprendrait à un fraudeur quelle clé changer.
-                    throw new WheelException('Tu as déjà tourné la roue pour cette opération.', 409);
+                    throw new WheelException('Vous avez déjà tourné la roue pour cette opération.', 409);
                 }
                 throw $e;
             }
@@ -782,7 +782,11 @@ class WheelService
             // MINIMUM D'ACHAT — « ils peuvent récupérer ça que avec une commande », plus un
             // plancher. C'est ce qui rend le jeu rentable : une remise sur une commande de 10 €
             // reste largement bénéficiaire, et personne ne vient chercher un cadeau sans acheter.
-            'minimum_order'   => (float) config('wheel.min_order_amount', 0),
+            // [ONB-05 2026-08-28] Le principe est écrit 300 lignes plus haut, dans
+            // le docblock de `segments()` : « lire la config en direct ailleurs, ce
+            // serait ignorer les réglages du propriétaire sur une surface et pas sur
+            // l'autre ». Il valait pour les segments ; il vaut pour le minimum.
+            'minimum_order'   => app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(),
             // PLAFOND EN EUROS — voir config/wheel.php. 0 = illimité côté moteur de coupons, ce
             // qui transformerait « -15 % » en cadeau à trois chiffres sur une grosse commande.
             'maximum_discount' => (float) ($segment['max_discount'] ?? 0),

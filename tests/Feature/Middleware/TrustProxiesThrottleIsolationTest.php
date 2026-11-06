@@ -97,6 +97,32 @@ class TrustProxiesThrottleIsolationTest extends TestCase
         );
     }
 
+    /**
+     * [W7-D D-002 2026-11-04] `$proxies = '*'` faisait croire N'IMPORTE QUEL en-tête `X-Forwarded-For`, y compris
+     * celui écrit par l'attaquant lui-même : `request()->ip()` prenait la valeur la plus à gauche, et tous les
+     * limiteurs « par IP » des routes publiques (livraison/géocodage payant, newsletter, codes promo, csp-report)
+     * se contournaient en changeant l'en-tête à chaque requête (prouvé : 429 puis 201 via XFF).
+     *
+     * Règle : seul le mandataire local (nginx sur le loopback, `TRUSTED_PROXIES` sinon) est cru. Depuis le loopback,
+     * la chaîne « usurpée, réelle » (nginx AJOUTE l'adresse réelle en dernier) donne l'adresse réelle ; depuis une
+     * adresse publique directe, l'en-tête est ignoré.
+     */
+    public function test_x_forwarded_for_n_est_cru_que_depuis_un_mandataire_de_confiance(): void
+    {
+        // Le vrai middleware du Kernel, appelé tel quel (l'attrape-tout SPA de routes/web.php capterait une route de test).
+        $ipVuePar = function (string $remote, string $xff): string {
+            $req = \Illuminate\Http\Request::create('/api/healthz', 'GET', [], [], [], [
+                'REMOTE_ADDR'          => $remote,
+                'HTTP_X_FORWARDED_FOR' => $xff,
+            ]);
+
+            return (new \App\Http\Middleware\TrustProxies())->handle($req, fn ($r) => $r->ip());
+        };
+
+        $this->assertSame('203.0.113.9', $ipVuePar('127.0.0.1', '1.2.3.4, 203.0.113.9'), 'derrière nginx, l\'adresse réelle est la dernière non fiable');
+        $this->assertSame('198.51.100.7', $ipVuePar('198.51.100.7', '1.2.3.4'), 'un client direct ne choisit pas son adresse');
+    }
+
     private function ensureInstalledFlag(): void
     {
         if (file_exists(storage_path('installed'))) {

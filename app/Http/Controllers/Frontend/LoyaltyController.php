@@ -61,20 +61,52 @@ class LoyaltyController extends Controller
     public function check(Request $request)
     {
         try {
-            $validator = $this->validateCode($request);
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Code invalide',
-                    'errors' => $validator->errors()
-                ], 422);
+            // [DÉCISION PROPRIÉTAIRE 2026-11-06 · borne « QR, téléphone, e-mail, plein de choix »] Trois façons de
+            // s'identifier : le QR SIGNÉ de l'application/du site (lqr.…, vérifié + à usage unique par LoyaltyQrSigner,
+            // comme /loyalty/scan), l'E-MAIL du compte, ou le code / le téléphone comme avant.
+            $brut = trim((string) $request->input('code'));
+            $user = null;
+            $parQr = app(LoyaltyQrSigner::class)->isSignedToken($brut);
+            $parEmail = ! $parQr && str_contains($brut, '@');
+            if ($parQr) {
+                try {
+                    $charge = app(LoyaltyQrSigner::class)->verifyAndConsume($brut, 'kiosk');
+                    $codeQr = strtoupper(trim((string) ($charge['code'] ?? '')));
+                    $user = $codeQr !== '' ? User::where('loyalty_code', $codeQr)->first() : null;
+                } catch (LoyaltyQrInvalidException $e) {
+                    Log::info('[loyalty.check.qr_reject] ' . $e->errorCode);
+
+                    return response()->json(['status' => false, 'message' => 'QR expiré ou déjà utilisé : affichez-le à nouveau dans votre application.', 'error_code' => $e->errorCode], 422);
+                } catch (\RuntimeException $e) {
+                    // Secret de signature absent (configuration) : refus propre, jamais un 500 à la borne.
+                    Log::error('[loyalty.check.qr_config] ' . $e->getMessage());
+
+                    return response()->json(['status' => false, 'message' => 'Lecture du QR indisponible : utilisez votre téléphone ou votre e-mail.', 'error_code' => 'qr_unavailable'], 422);
+                }
+            } elseif ($parEmail) {
+                $v = Validator::make(['code' => $brut], ['code' => ['required', 'email', 'max:120']]);
+                if ($v->fails()) {
+                    return response()->json(['status' => false, 'message' => 'Adresse e-mail invalide', 'errors' => $v->errors()], 422);
+                }
+                $user = User::whereRaw('LOWER(email) = ?', [mb_strtolower($brut)])->orderByDesc('loyalty_points')->first();
+            } else {
+                $validator = $this->validateCode($request);
+                if ($validator->fails()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Code invalide',
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
             }
 
-            $input = trim($request->input('code'));
+            $input = $brut;
 
             // Try by loyalty code first, then fall back to phone number
-            $user = User::where('loyalty_code', $input)->first();
-            if (!$user) {
+            if (! $user && ! $parQr && ! $parEmail) {
+                $user = User::where('loyalty_code', $input)->first();
+            }
+            if (!$user && ! $parQr && ! $parEmail) {
                 /*
                  * [FIDÉLITÉ 2026-08-19] « 06 … », « +33 6 … » et « 6 … » SONT LA MÊME PERSONNE.
                  *
@@ -96,6 +128,11 @@ class LoyaltyController extends Controller
                 }
             }
 
+            // [Audit abusif W2-P1-3/P1-4 · 2026-11-06] Le compte d'une BORNE ou de l'ÉQUIPE (qui n'est pas aussi client) ne
+            // s'ouvre pas comme un compte fidélité à la borne — sa cagnotte ne se dépense pas par son téléphone/e-mail.
+            if ($user && \App\Listeners\AwardLoyaltyPointsOnDelivery::estExcluDuCredit($user)) {
+                $user = null;
+            }
             if ($user && $this->isCustomerActive($user)) { // [FIX P3 audit] accepte status 1 OU ACTIVE(5) (cohérent avec le reste)
                 // [ULTRA-AUDIT V3 2026-07-02 — P2 IDOR JUMEAU] /check fuyait name+loyalty_code+points
                 // de N'IMPORTE QUEL code/téléphone à tout token Sanctum (reverse phone→nom + énumération
@@ -119,14 +156,19 @@ class LoyaltyController extends Controller
                     $user->save();
                 }
                 // [SPLASH] Return points + computed discount value so kiosk can display it
-                $discountValue = $this->pointsToDiscount($user->loyalty_points);
+                // [DÉCISION PROPRIÉTAIRE 2026-11-06] La remise proposée porte sur les points DÉPENSABLES (ceux d'une
+                // commande à distance pas encore remise attendent) : la borne n'annonce jamais une remise refusée ensuite.
+                $depensables = \App\Services\LoyaltyService::pointsDepensables((int) $user->id, (int) $user->loyalty_points);
+                $discountValue = $this->pointsToDiscount($depensables);
                 return response()->json([
                     'status' => true,
                     'data' => [
-                        'name'           => $user->name,
-                        'points'         => $user->loyalty_points,
-                        'discount_value' => $discountValue,
-                        'loyalty_code'   => $user->loyalty_code,
+                        'name'               => $user->name,
+                        'points'             => $user->loyalty_points,
+                        'points_depensables' => $depensables,
+                        'points_pending'     => (int) $user->loyalty_points - $depensables,
+                        'discount_value'     => $discountValue,
+                        'loyalty_code'       => $user->loyalty_code,
                     ]
                 ], 200);
             } else {
@@ -351,6 +393,13 @@ class LoyaltyController extends Controller
         if (!$caller || !$caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff'])) {
             return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
         }
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-2] Le compte qui POSSÈDE la borne est l'admin : le contrôle de rôle laissait passer le
+        // jeton de la borne (aptitude « kiosk:order » seule), qui créditait +10 000 points à n'importe quel client. Un crédit manuel
+        // est refusé à tout jeton limité à la borne (kiosk:order sans « * »).
+        $jeton = $caller->currentAccessToken();
+        if ($jeton instanceof \Laravel\Sanctum\PersonalAccessToken && $jeton->can('kiosk:order') && !$jeton->can('*')) {
+            return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
+        }
 
         try {
             $validator = $this->validatePoints($request);
@@ -497,10 +546,14 @@ class LoyaltyController extends Controller
                     $minRedeem = 0;
                 }
                 if ($pointsToRedeem < $minRedeem) {
-                    return ['error' => "Minimum {$minRedeem} points requis pour utiliser tes points.", 'status' => 400];
+                    return ['error' => "Minimum {$minRedeem} points requis pour utiliser vos points.", 'status' => 400];
                 }
                 if ($user->loyalty_points < $pointsToRedeem) {
                     return ['error' => 'Points insuffisants', 'status' => 400];
+                }
+                // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+                if (\App\Services\LoyaltyService::pointsDepensables((int) $user->id, (int) $user->loyalty_points) < $pointsToRedeem) {
+                    return ['error' => "Une partie de vos points attend la remise d'une commande en cours : ils seront utilisables dès qu'elle vous aura été remise.", 'status' => 400];
                 }
 
                 \Illuminate\Support\Facades\DB::table('users')

@@ -56,9 +56,12 @@ class ReceiptDataServiceWireInTest extends TestCase
             'branch_id' => $branch->id,
             'name' => 'Jane Operator',
         ]);
+        // `user_id` = le CLIENT ; `creator_id` = le caissier (« Jane Operator »). [E2E 2026-10-23]
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'name' => 'Client Dupont']);
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
-            'user_id' => $user->id,
+            'user_id' => $customer->id,
+            'creator_id' => $user->id,
             'order_type' => OrderType::POS,
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 50.00,
@@ -206,6 +209,7 @@ class ReceiptDataServiceWireInTest extends TestCase
             'order_serial_no' => 'F-Z-' . substr(uniqid(), -8),
             'branch_id'       => $branch->id,
             'user_id'         => $user->id,
+            'creator_id'      => $user->id,
             'order_type'      => OrderType::KIOSK,
             'status'          => OrderStatus::PENDING,
             'payment_status'  => PaymentStatus::UNPAID,
@@ -228,5 +232,30 @@ class ReceiptDataServiceWireInTest extends TestCase
         $this->assertSame('FR12345678901', $payload['pos_vat_intra']);
         $this->assertSame('Merci de votre visite.', $payload['pos_legal_footer']);
         $this->assertSame('Frontend Operator', $payload['operator_name']);
+    }
+
+    /**
+     * [E2E 2026-10-23] Le ticket imprimait « Caissier : <nom du client> » : `user` est le client.
+     * Le nom du client ne doit JAMAIS sortir comme caissier, et sans `creator_id` il n'y a pas de caissier.
+     */
+    public function test_operator_name_is_the_creator_never_the_customer(): void
+    {
+        [, , $order] = $this->makeOrderWithFiscalContext();
+
+        $payload = (new ReceiptDataService())->buildForOrderModel($order);
+
+        $this->assertSame('Jane Operator', $payload['operator_name']);
+        $this->assertNotSame('Client Dupont', $payload['operator_name']);
+    }
+
+    public function test_operator_name_is_null_without_creator_instead_of_the_customer_name(): void
+    {
+        [, , $order] = $this->makeOrderWithFiscalContext();
+        $order->forceFill(['creator_id' => null])->save();
+        $order->refresh()->load(['branch', 'user']);
+
+        $payload = (new ReceiptDataService())->buildForOrderModel($order);
+
+        $this->assertNull($payload['operator_name']);
     }
 }

@@ -108,7 +108,7 @@ function tinker(code) {
 }
 
 const API_KEY = 'b6d68vy2-m7g5-20r0-5275-h103w73453q120';
-const BASE = 'http://localhost:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 // API login (POST /api/auth/login → 201 + token in body.token)
 async function apiLogin(page, email, password = '123456') {

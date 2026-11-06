@@ -1,0 +1,206 @@
+{
+  "wave": "C1",
+  "round": 2,
+  "reviewer": "superviseur adverse C1, round 2 (lecture seule)",
+  "states_reviewed": 10,
+  "inputs_reviewed": [
+    "captures-C1/01..10 : PNG vus en entier, puis .dom.html, .console.json, .network.json ; comparés à round-1-captures/C1",
+    "captures-C1/C1-mesures.json (exécution 18:29:14Z, commandes 8872 vente et 8873 téléphone)",
+    "commits 9309bfb90 et 0e104e80e (C1-003), c66055af1 (refus téléphone qui focalise le champ, partagé avec C1-001), e0728f09b (C2-001)",
+    "app/Http/Resources/SimpleOrderResource.php:34-37, app/Services/Pos/CounterCollectQueue.php:54-90, app/Services/PaymentService.php:1029-1036, resources/js/support/filesControle.js:60-66",
+    "base foodking_e2e (tinker, lecture seule) : parité tiroir/file, numéros fiscaux"
+  ],
+  "findings": [
+    {
+      "id": "C1-001",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; captures-C1/10-mode-livraison-boutons.png ; captures-C2/02-refus-sans-telephone.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "PARTIEL. Corrigé : le refus « Commande livraison » sans téléphone amène maintenant au champ (focusDeliveryPhoneField, PosComponent.vue:7050 et 7707). Preuve visuelle en C2/02 : « Téléphone » à l'écran avec l'anneau de focus. Preuve technique : tests/js/posCommandeLivraison.spec.js:143 (activeElement = pos-delivery-phone). Inchangé : en 04 (1920×1080, 2 lignes), le sélecteur « À emporter / Livraison » est toujours coupé à mi-hauteur vers y≈413. Nom, Téléphone et Programmer restent hors de vue alors que le corps du panier garde environ 100 px vides sous « Fanta ». En 10, même chose : le segment est coupé et les champs du client sont cachés. La justification de l'orchestrateur (« arbitrage FIX-2/B-014 + sentinelle corps ≥ 20vh ») ne tient qu'à moitié. Le plancher actuel est 28vh (resources/css/pos-v5.css:913), alors que la sentinelle n'exige que 20vh (tests/e2e/goal-caisse-portes-de-mesure.spec.js:129). Il y a donc 8vh de marge sans casser la sentinelle : 86 px CSS, soit environ 77 px à l'écran à 1080. C'est assez pour afficher le segment en entier (il lui manque environ 25 px) et presque toute la rangée nom/téléphone. Par ailleurs, la sentinelle sœur « C2 — aucun contrôle de saisie coupé dans l'en-tête » (même fichier, :115) ne mesure que le panier vide. Elle ne peut donc pas voir ce défaut, qui apparaît avec des articles.",
+      "fix_hint": "pos-v5.css:913 : passer le plancher à 20vh, le minimum que la sentinelle garantit, ou le borner au contenu réel. Puis vérifier à 1920×1080 et 1280×720 avec 2 articles que le segment et la rangée nom/téléphone sont entiers. Étendre la sentinelle C2 au panier avec articles.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-002",
+      "state_artifact": "captures-C1/03-assistant-cayenne-sauce.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "OUVERT, identique au round 1. Les tuiles viande sont toujours écrasées en gélules d'environ 23 px. Les « +2,50 € » se peignent sur les noms : Cordon Bleu, Fricadelle, Mexicanos, Nuggets, Tenders, Poulet crispy, Poulet curry, Poulet tandoori. « Mixte (hachée +2,50 € poulet) » se chevauche. Le badge rouge « ✓1 » de la viande choisie (Poulet mariné) est dessiné à x≈573, collé à « Viande Hachée ». Justification de l'orchestrateur, jugée VALABLE pour la méthode : public/css/pos-wizard.css est une ZONE GELÉE (CLAUDE.md §7), il faut un LOCK et l'accord du propriétaire. Elle ne change pas la gravité : un caissier peut lire qu'il a choisi la mauvaise viande. Le défaut reste bloquant tant que le LOCK n'est pas signé.",
+      "fix_hint": "LOCK + porte propriétaire. Après pos-wizard.css:2160 : `.pos-wizard.single-page .wizard-viande-tile .viande-tile-add { width:100%; height:auto; border-radius:16px; }`.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-003",
+      "state_artifact": "captures-C1/07-telephone-dans-a-encaisser.png ; captures-C1/09-telephone-encaissee.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "FERMÉ. Écran : en 07, le tiroir affiche « 16 À encaisser » et la file « À ENCAISSER — COMPTOIR (16) » ; en 09, 15 et 15 (au round 1 : 18 contre 16, puis 17 contre 15). Les livraisons payées à la porte (8851, 8853, 8867, toutes source_surface 'delivery', PENDING_COUNTER) n'apparaissent plus avec un bouton « Encaisser ». Base, second moyen indépendant (tinker) : la règle du tiroir (SimpleOrderResource.php:34-37 = PENDING_COUNTER ∧ COUNTER_DEFERRED ∧ source ≠ delivery, hors annulées et supprimées) et CounterCollectQueue::query(1) donnent 151 contre 151 commandes. Écart nul dans les deux sens. Aucune commande PENDING_COUNTER sans le marqueur COUNTER_DEFERRED. Le premier correctif (9309bfb90, qui excluait tout order_type livraison) cassait la parité : 8 contre 16. Le second (0e104e80e) l'a rétablie. Les captures (20:29:24) sont postérieures à ce commit (20:29:06). Les anciennes livraisons d'origine 'phone' (A0106, A0114 « Départ prévu 20:30 ») restent dans les deux surfaces : elles sont encaissables, car PaymentService.php:1030 accepte 'phone'. Réserve, sans constat : la parité n'est garantie qu'au niveau des données. Les deux règles restent écrites deux fois. Seul un test (PosControlDrawerJourneeCompleteTest) les relie, sur trois cas.",
+      "fix_hint": "—",
+      "status": "closed",
+      "first_seen_round": 1,
+      "closed_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "C1-004",
+      "state_artifact": "captures-C1/C1-mesures.json (tel.delaiTiroirMs = 40154 ; trace 0 à 39 s puis 40 s:1)",
+      "category": "loading_state",
+      "severity": "P2",
+      "evidence": "OUVERT, inchangé (P2 laissé ouvert par l'orchestrateur). La commande téléphone 8873 est dans la file écran en 367 ms, mais dans le tiroir seulement après 40,2 s (« tiroirCompteOuverture » 15 alors que la file dit 16). « refresh KO … Timeout 5000ms » : le bouton « Actualiser » n'existe toujours pas tant que les données ne sont pas « figées ».",
+      "fix_hint": "PosComponent.vue, phoneOrderSubmit et deliveryOrderSubmit : rafraîchir aussi les panneaux du tiroir (_schedulePanelsRefresh) après création.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-005",
+      "state_artifact": "captures-C1/06-succes-apercu-ticket.png ; C1-mesures.json (aperçu contre escpos, vente 8872)",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "OUVERT, inchangé. L'aperçu écran affiche « 08:29 PM », des lignes HT (6,73 € et 1,73 €) sous « Prix » et « VAT (10.00 %) ». Le papier affiche « 20:29 », des lignes TTC 7,40 € et 1,90 €, et « TVA 10 % ». Arithmétique juste des deux côtés, total 9,30 €.",
+      "fix_hint": "Rendre l'aperçu à partir du même modèle que OrderReceiptEscPosRenderer.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-006",
+      "state_artifact": "captures-C1/08-telephone-fenetre-encaissement.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "OUVERT, inchangé. Le pied collant « Annuler / Confirmer l'encaissement » recouvre la rangée 7-8-9-C. La rangée 00-0-.-C reste visible sous le pied (y≈965). « 7 » et « 00 » se voient à travers la partie transparente à gauche d'« Annuler ».",
+      "fix_hint": "PosCounterCollectModal.vue:1093-1103 : fond opaque sur toute la largeur et aucun rembourrage défilant sous le pied.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-007",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; 10-mode-livraison-boutons.png ; captures-C2/01-04 (« Eau Plate 5… »)",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "OUVERT. Toujours « Fanta Oran… » à 1920 et « Eau Plate 5… » à 1280 (C2/01-04) : la contenance, seul attribut qui distingue les boissons, est coupée, sans attribut title.",
+      "fix_hint": "PosComponent.vue : `:title` sur le nom de ligne, ou line-clamp: 2.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-008",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; C1-mesures.json (panier.lignes[0].detail = \"Algérienne\")",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "OUVERT. La ligne Cayenne ne résume toujours que « Algérienne ». La viande (Poulet mariné) et les crudités ne sont lisibles qu'au ticket.",
+      "fix_hint": "Inclure la viande dans le résumé compact (posCartCompactDisplay / cart_display écrit par pos-wizard.js).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-009",
+      "state_artifact": "captures-C1/01-caisse-1280x720.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "OUVERT. À 1280×720, au chargement, aucune tuile catégorie ni produit n'est dans la fenêtre : on ne voit que l'en-tête de commandes et les files Prêt / À encaisser. Le spec continue de déclarer 10 tuiles « visibles » à partir de offsetParent (spec:190).",
+      "fix_hint": "Plier les files sous 800 px de haut ; mesurer l'intersection avec la fenêtre, pas offsetParent.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-010",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.network.json ; 07-telephone-dans-a-encaisser.network.json (+ .console.json)",
+      "category": "unexpected_http",
+      "severity": "P3",
+      "evidence": "OUVERT, inchangé. GET /api/admin/item/details/1?surface=pos&branch_id=1 renvoie 404 après l'ajout de Fanta. L'erreur est journalisée en console, sans effet visible. L'article 1 est rangé dans une catégorie interne.",
+      "fix_hint": "Ne jamais demander un article de catégorie interne, ou documenter ce 404 dans la liste blanche.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-011",
+      "state_artifact": "captures-C1/01, 02, 10",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "OUVERT. « la plus ancienne depuis 1226 min · vous serez le 72° » : la durée est donnée en minutes et le « ᵉ » se lit comme un degré.",
+      "fix_hint": "« 72e » ; durées au-delà de 90 min affichées en « h min ».",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-012",
+      "state_artifact": "captures-C1/05, 06, 08",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "OUVERT. Restent : « Suppléments: Salade,Tomate,Oignon » pour des crudités incluses, « Algérienne , », « VAT », les titres « Paiement De Commande » et « Encaisser La Commande » (capitalize), et le drapeau britannique devant « Français ».",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-013",
+      "state_artifact": "tests/Playwright/caisse-site-complet-2026-10-23/C1-caisse-vente.spec.js ; C1-mesures.json",
+      "category": "instrument_integrity",
+      "severity": "P2",
+      "evidence": "OUVERT. Le spec n'a pas été modifié au round 2 (horodatage 19:54). (a) C1-mesures.json déclare encore `rafraichissementManuel: true` alors que la même trace porte « refresh KO … Timeout 5000ms » : l'affirmation reste fabriquée. (b) offsetParent sert toujours de preuve de visibilité (spec:189-195). (c) Aucune assertion sur la visibilité réelle des champs de livraison avec un article au panier (C1-001). (d) Aucune assertion sur la composition affichée (C1-002, C1-008).",
+      "fix_hint": "Voir le round 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "C1-014",
+      "state_artifact": "captures-C1/04-panier-cayenne-fanta.png ; 05 ; 06 (comparer avec 10)",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "NOUVEAU, résidu du correctif C2-004. Seule la variante livraison est passée aux couleurs de la charte (.pos-delivery-order-cta, sombre #1A1A1A et jaune #FFB800, PosComponent.vue ~8533-8537). « Commande téléphone », juste en dessous de « Commande » en mode À emporter, reste indigo (.pos-phone-order-cta : #eef2ff / #3730a3 / #c7d2fe, PosComponent.vue:8515-8524). Or le constat C2-004 du round 1 visait la classe partagée. Deux boutons du même rôle (« commande à encaisser plus tard ») portent maintenant deux palettes, dont une hors charte.",
+      "fix_hint": "PosComponent.vue:8515-8524 : aligner .pos-phone-order-cta sur la charte (ou sur la variante livraison).",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "regression_check": {
+    "client comptoir après livraison (C2-001)": "AUCUNE RÉGRESSION — C2/05 : « Client passage » reposé dans le sélecteur juste après la Commande livraison. Non exercé : une vente comptoir dans la même session, juste après une livraison (C1 tourne dans une autre session). Les options de livraison mémorisées (deliveryCustomerOptions) restent dans le sélecteur pendant toute la session.",
+    "libellé « Commande livraison · paiement à la porte »": "AUCUN DÉBORDEMENT — tient sur une ligne à 1920 (C1/10, avec le sous-titre jaune), sur 2 lignes (emoji puis libellé) à 1280×720 (C2/01-05). Non mesuré à 1024 de large.",
+    "focus sur le téléphone": "AUCUN SAUT DE PAGE — seul l'en-tête défilant du ticket se déplace (C2/02) ; le catalogue et l'en-tête de l'application ne bougent pas.",
+    "parité tiroir/file": "Vérifiée par l'écran (16/16, 15/15) et par la base (151/151)."
+  },
+  "verified_team_claims": {
+    "vente 8872 = 9,30 partout, NF525 3194": "PROUVÉ — panier 9,30, paiement 9,30, ESC/POS 9,30, base 9.30 ; numéro fiscal 3194.",
+    "téléphone 8873 encaissé une fois, fiscal 3195": "PROUVÉ — base : payment_status 5, fiscal 3195.",
+    "chaîne fiscale": "PROUVÉ — branche 1 : 3180→3195 sans trou, 0 doublon (GROUP BY HAVING > 1 = 0). Remarque : C1 a tourné deux fois au round 2 (8870/8871 puis 8872/8873), conformément au message du commit 0e104e80e."
+  },
+  "summary": {
+    "P0": 0, "P1": 3, "P2": 7, "P3": 4,
+    "open_P0": 0, "open_P1": 2, "open_P2": 7, "open_P3": 4
+  },
+  "round_to_round_closures": {
+    "C1-001": "PARTIAL_PASS",
+    "C1-002": "FAIL",
+    "C1-003": "PASS",
+    "C1-004": "FAIL",
+    "C1-005": "FAIL",
+    "C1-006": "FAIL",
+    "C1-007": "FAIL",
+    "C1-008": "FAIL",
+    "C1-009": "FAIL",
+    "C1-010": "FAIL",
+    "C1-011": "FAIL",
+    "C1-012": "FAIL",
+    "C1-013": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": [
+    "P1 ouverts : C1-001 (partiel ; la justification « sentinelle » ne tient pas, car elle laisse 8vh de marge) et C1-002 (zone gelée ; la justification tient pour la méthode, mais le défaut reste bloquant tant que le propriétaire n'a pas signé le LOCK).",
+    "Console : seules erreurs restantes = pont d'impression :9100/:9101 (environnement) et le 404 item/details/1 (C1-010). Aucune erreur applicative.",
+    "Un seul constat fermé ce round (C1-003). Les P2/P3 laissés ouverts par l'orchestrateur sont confirmés présents, sans aggravation."
+  ]
+}

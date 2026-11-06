@@ -35,10 +35,12 @@ class RateLimiterConfigTest extends TestCase
         // against admin-CRUD abuse; generous enough to absorb owner manual-test
         // bursts on online-order/table-order Livré/Cancel CTAs. Local dev
         // overrides to 1000 in `.env`. NF525 chain UNAFFECTED.
-        'admin-mutation' => [60, true],
-        'pos-quote' => [120, true],
-        'pos-order-create' => [60, true],
-        'pos-order-update' => [120, true],
+        // [ANTI-429 2026-10-28] planchers relevés (config/app.php, config/pos.php) : un `.env` de production
+        // épinglé à l'ancienne valeur basse ne peut plus rétablir « trop de requêtes ».
+        'admin-mutation' => [600, true],
+        'pos-quote' => [600, true],
+        'pos-order-create' => [300, true],
+        'pos-order-update' => [600, true],
     ];
 
     /** @dataProvider namedLimiterProvider */
@@ -81,7 +83,7 @@ class RateLimiterConfigTest extends TestCase
         $quoteLimit = $resolver($quoteRequest);
         $this->assertInstanceOf(Limit::class, $quoteLimit);
         $this->assertSame(
-            120,
+            600,
             $quoteLimit->maxAttempts,
             'POS quote preview must not share the 30/min CRUD ceiling (E2E + busy checkout)'
         );
@@ -89,7 +91,7 @@ class RateLimiterConfigTest extends TestCase
         $counterRequest = Request::create('/api/admin/pos/counter-collect/1/confirm', 'POST');
         $counterLimit = $resolver($counterRequest);
         $this->assertInstanceOf(Limit::class, $counterLimit);
-        $this->assertSame(120, $counterLimit->maxAttempts);
+        $this->assertSame(600, $counterLimit->maxAttempts);
 
         $crudRequest = Request::create('/api/admin/items', 'POST');
         $crudLimit = $resolver($crudRequest);
@@ -119,9 +121,9 @@ class RateLimiterConfigTest extends TestCase
         $onlineOrderLimit = $resolver($onlineOrderReq);
         $this->assertInstanceOf(Limit::class, $onlineOrderLimit);
         $this->assertSame(
-            120,
+            600,
             $onlineOrderLimit->maxAttempts,
-            'online-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+            'online-order/change-status must be lifted to 600/min — owner rapid-CTA family'
         );
 
         // table-order/change-status — table service status flip
@@ -129,9 +131,9 @@ class RateLimiterConfigTest extends TestCase
         $tableOrderLimit = $resolver($tableOrderReq);
         $this->assertInstanceOf(Limit::class, $tableOrderLimit);
         $this->assertSame(
-            120,
+            600,
             $tableOrderLimit->maxAttempts,
-            'table-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+            'table-order/change-status must be lifted to 600/min — owner rapid-CTA family'
         );
     }
 

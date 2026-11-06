@@ -46,7 +46,20 @@ class PushNotificationTenantIsolationTest extends TestCase
         $mock->shouldReceive('sendNotification')
             ->andReturnUsing(function ($pushNotification, $tokens, $type) {
                 $this->capturedTokens[] = $tokens;
-                return null;
+
+                // [ONB-09 2026-08-28] Le double rendait `null`, ce que la signature
+                // `void` d'alors autorisait. `sendNotification()` rend desormais un
+                // COMPTE RENDU : sans lui, l'ecran ne pouvait pas savoir si la
+                // notification etait partie, et annoncait un succes inconditionnel.
+                // Le double doit honorer le nouveau contrat — ce banc-ci porte sur
+                // l'isolation par branche, pas sur le compte rendu, donc on rend une
+                // reussite complete pour les jetons recus.
+                return [
+                    'destinataires' => count($tokens),
+                    'envoyes'       => count($tokens),
+                    'echecs'        => 0,
+                    'erreur'        => null,
+                ];
             });
         $this->app->instance(FirebaseService::class, $mock);
     }

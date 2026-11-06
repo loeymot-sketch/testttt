@@ -257,6 +257,10 @@ class RefundWithCounterEntryService
             //      `expected = opening + Σ(signedAmount)` correctly
             //      subtracts the refund.
             //
+            // [VG-2026-10-21 M3-103] La sortie va désormais sur la session qui a reçu l'argent
+            // (sessionPourSortieEspeces), plus sur celle de celui qui rembourse. Sans aucune session
+            // ouverte, ce chemin post-Z reste best-effort (contrat ci-dessous, sentinelle dédiée) ; une
+            // session trouvée ouverte s'écrit en strict=true (close entre-temps → retour arrière).
             // Strict=false: graceful no-open-session case (cashier might
             // process a post-Z refund while their session is closed for
             // the day — drawer reconciliation gap surfaces in cron alerts
@@ -275,26 +279,10 @@ class RefundWithCounterEntryService
                 }
 
                 try {
-                    if (! Auth::check()) {
-                        Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no auth context', [
-                            'parent_order_id' => $parent->id,
-                            'mirror_order_id' => $mirror->id,
-                            'payment_id' => $payment->id,
-                        ]);
-
-                        continue;
-                    }
-
-                    $session = $cashService->findOpenSessionForUser($branchId, (int) Auth::id());
+                    // [VG-2026-10-21 M3-103] Tiroir qui a reçu l'argent (entrée de la vente d'origine, puis caissier
+                    // encaissant, puis celui qui rend) — plus la session de celui qui rembourse.
+                    $session = $this->sessionPourSortieEspeces($cashService, $branchId, $parent, $mirror);
                     if (! $session) {
-                        Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no open cash drawer session', [
-                            'parent_order_id' => $parent->id,
-                            'mirror_order_id' => $mirror->id,
-                            'payment_id' => $payment->id,
-                            'branch_id' => $branchId,
-                            'user_id' => Auth::id(),
-                        ]);
-
                         continue;
                     }
 
@@ -305,8 +293,12 @@ class RefundWithCounterEntryService
                         direction: CashMovement::DIRECTION_OUT,
                         orderId: (int) $mirror->id,
                         notes: 'RTN: refund counter-entry',
-                        strict: false,
+                        // [VG-2026-10-21 M3-103] Session close entre-temps : retour arrière, pas de sortie perdue.
+                        strict: true,
                     );
+                } catch (\Symfony\Component\HttpKernel\Exception\HttpException $refus) {
+                    // [VG-2026-10-21 M3-103] Session close entre-temps (strict) : toute la contre-écriture est annulée.
+                    throw $refus;
                 } catch (\Throwable $e) {
                     // Best-effort: cash_movement failure MUST NOT abort the
                     // counter-entry transaction. The Z chain still records the
@@ -335,15 +327,8 @@ class RefundWithCounterEntryService
             // d'un Z antérieur). Même discipline que 4-ter : strict=false, best-effort, attachée au miroir.
             if ($parentPayments->isEmpty() && (int) $parent->pos_payment_method === PosPaymentMethod::CASH) {
                 try {
-                    if (! Auth::check()) {
-                        Log::info('[SELF-AUDIT R2 P1] single-tender cashback OUT skipped — no auth context', [
-                            'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id,
-                        ]);
-                    } elseif (! ($session = $cashService->findOpenSessionForUser($branchId, (int) Auth::id()))) {
-                        Log::info('[SELF-AUDIT R2 P1] single-tender cashback OUT skipped — no open session', [
-                            'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id, 'branch_id' => $branchId,
-                        ]);
-                    } else {
+                    // [VG-2026-10-21 M3-103] Même règle que la boucle 4-ter : tiroir qui a reçu l'argent.
+                    if ($session = $this->sessionPourSortieEspeces($cashService, $branchId, $parent, $mirror)) {
                         $cashService->recordMovement(
                             sessionId: (int) $session->id,
                             type: CashMovement::TYPE_CASHBACK,
@@ -351,9 +336,11 @@ class RefundWithCounterEntryService
                             direction: CashMovement::DIRECTION_OUT,
                             orderId: (int) $mirror->id,
                             notes: 'RTN: refund counter-entry (single-tender cash)',
-                            strict: false,
+                            strict: true,
                         );
                     }
+                } catch (\Symfony\Component\HttpKernel\Exception\HttpException $refus) {
+                    throw $refus;
                 } catch (\Throwable $e) {
                     Log::warning('[SELF-AUDIT R2 P1] single-tender cashback OUT record failed', [
                         'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id, 'error' => $e->getMessage(),
@@ -466,5 +453,29 @@ class RefundWithCounterEntryService
 
             return $mirror->refresh();
         });
+    }
+
+    /**
+     * [VG-2026-10-21 M3-103] Session où poser la sortie d'espèces d'une contre-écriture : celle qui a reçu l'argent de
+     * la vente d'origine (CashDrawerService::findSessionForCashOut), plus celle de celui qui rembourse. Aucune session
+     * ouverte : on garde le contrat « best-effort » de ce chemin post-Z, verrouillé par
+     * RefundCashMovementRecordedSentinelTest::test_refund_succeeds_when_no_open_drawer_session (décision GOAL-K2-HEAL-07,
+     * non tranchée ici) — mais le trou est journalisé en AVERTISSEMENT, plus en simple info.
+     */
+    private function sessionPourSortieEspeces(CashDrawerService $cashService, int $branchId, Order $parent, Order $mirror): ?\App\Models\CashDrawerSession
+    {
+        $session = $cashService->findSessionForCashOut(
+            $branchId,
+            (int) $parent->id,
+            Auth::check() ? (int) Auth::id() : null,
+        );
+        if (! $session) {
+            Log::warning('[VG-2026-10-21 M3-103] counter-entry cash OUT NOT recorded — no open cash drawer session', [
+                'parent_order_id' => $parent->id, 'mirror_order_id' => $mirror->id, 'branch_id' => $branchId,
+                'user_id' => Auth::id(),
+            ]);
+        }
+
+        return $session;
     }
 }

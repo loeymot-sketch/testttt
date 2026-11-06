@@ -86,7 +86,10 @@ class WheelController extends Controller
             'steps' => $this->steps->publicSteps(),
             // Annoncé AVANT, jamais découvert après : une condition qu'on apprend au moment de
             // retirer son lot est vécue comme un piège.
-            'min_order' => (float) config('wheel.min_order_amount', 0),
+            // [ONB-05 2026-08-28] Le réglage de l'exploitant, pas le fichier.
+            // Voir `WheelSettingsService::minOrder()` : ce que la roue AFFICHE et
+            // ce qu'elle APPLIQUE doivent venir de la même porte.
+            'min_order' => app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(),
             'preview'        => ! $this->wheel->isOpenToPublic(),
             'already_spun'   => $deja !== null,
             'previous_prize' => $deja?->prize_label,
@@ -300,7 +303,10 @@ class WheelController extends Controller
             'requires_order' => $this->wheel->requiresOrder(),
             // Le minimum d'achat est RAPPELÉ sur l'écran de gain : le client doit le lire au moment
             // où il apprend son lot, pas le découvrir en caisse.
-            'min_order' => (float) config('wheel.min_order_amount', 0),
+            // [ONB-05 2026-08-28] Le réglage de l'exploitant, pas le fichier.
+            // Voir `WheelSettingsService::minOrder()` : ce que la roue AFFICHE et
+            // ce qu'elle APPLIQUE doivent venir de la même porte.
+            'min_order' => app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(),
             // L'ÉCHÉANCE. La page ne la disait nulle part : un lot sans date se remet à plus tard, et
             // plus tard ne revient jamais. Pour un produit offert (sans coupon) on calcule la même
             // validité que celle des codes — la promesse doit être identique quel que soit le lot,
@@ -329,7 +335,9 @@ class WheelController extends Controller
 
         try {
             Mail::to((string) $spin->email)->send(new WheelPrizeMail(
-                $spin, $code, (float) config('wheel.min_order_amount', 0), $echeance, $compteCree
+                // [ONB-05 2026-08-28] C'est ICI que le minimum est appliqué au client :
+                // le lire dans le fichier rendait le réglage de l'exploitant décoratif.
+                $spin, $code, app(\App\Services\Wheel\WheelSettingsService::class)->minOrder(), $echeance, $compteCree
             ));
 
             $spin->forceFill(['notified_at' => now()])->save();
@@ -371,7 +379,7 @@ class WheelController extends Controller
         // Pas de jeton = pas de tour. On ne retombe JAMAIS sur un mode déclaratif : c'est
         // exactement la porte que le propriétaire refuse d'ouvrir.
         throw new WheelException(
-            'Montre ton avis et ton abonnement à l\'équipe : elle débloque ton tour en deux secondes.',
+            'Montrez votre avis et votre abonnement à l\'équipe : elle débloque votre tour en deux secondes.',
             403
         );
     }
@@ -401,7 +409,7 @@ class WheelController extends Controller
     /** 404 et pas 403 : un 403 dit « ça existe » et donne envie de chercher. */
     private function porteFermee(): JsonResponse
     {
-        return response()->json(['status' => false, 'message' => 'Not found.'], 404);
+        return response()->json(['status' => false, 'message' => __('all.message.resource_not_found')], 404);
     }
 
     private function branchId(Request $request): int

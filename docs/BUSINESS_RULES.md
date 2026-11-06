@@ -159,9 +159,15 @@ L'email n'est que le canal de **vérification/login** (code EMAIL-OTP, 0 SMS).
 Chaîne canonique (verrouillée par `tests/Feature/Loyalty/EmailSignupLoyaltyLinkTest.php`) :
 1. Signup web `POST /auth/guest-signup/email-otp` (phone + email) → verify → le User
    porte **dès sa création** un `loyalty_code` (LOY-WEB-01, `GuestSignupController::register`).
-2. Commande livrée → `AwardLoyaltyPointsOnDelivery` crédite `floor(total × loyalty_points_per_euro)`
-   (défaut 10 pts/€). ⚠ **Sans `loyalty_code` le listener n'attribue RIEN** — c'est pourquoi
-   le maillon signup est sentinellisé.
+2. Commande **validée par le restaurant** → `AwardLoyaltyPointsOnDelivery` crédite `floor(total × loyalty_points_per_euro)`
+   (défaut 10 pts/€). **Décision propriétaire 2026-11-06** : le déclencheur est le PREMIER statut validé
+   (ACCEPT 4, PREPARING 7, PREPARED 8, OUT_FOR_DELIVERY 10, DELIVERED 13), pour tout type de commande ;
+   **jamais PENDING** (commande pas encore reçue). Vente de caisse : crédit aussi au paiement. Un seul crédit par
+   commande (sentinelle `orders.loyalty_points_awarded`) ; annulation/rejet/retour et purge des impayés reprennent
+   les points. Les ressources client (`UserOrderResource`, `OrderDetailsResource`) publient `loyalty_points_awarded`.
+   ⚠ **Sans `loyalty_code` le listener n'attribue RIEN** — c'est pourquoi le maillon signup est sentinellisé.
+   ⛔ **Affichage client** : JAMAIS de montant dépensé (total « € dépensés », « N points parce que vous avez
+   dépensé X € ») ; on montre les points et la valeur des points (ex. « 1 339 pts ≈ 13,39 € »).
 3. Lookup cross-surface **par téléphone** : `POST /frontend/loyalty/check` (fallback phone après
    loyalty_code) — même endpoint que l'écran Fidélité caisse et le scan borne.
 

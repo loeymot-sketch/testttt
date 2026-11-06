@@ -66,7 +66,7 @@ describe('kdsSymbolic — oignons cuits O̲ (OWNER8)', () => {
         expect(s.crudites).not.toContain('STO' + O_CUIT);
     });
 
-    it('ligne 1 complète : le slot crudités porte O̲ (ex. G | TAC | M | STO̲)', () => {
+    it('ligne 1 complète : le slot crudités porte O̲ (ex. Tacos | M | STO̲)', () => {
         const line = symbolicMainLine({
             item_name: 'Tacos M',
             quantity: 1,

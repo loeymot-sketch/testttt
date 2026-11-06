@@ -11,7 +11,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const BASE = 'http://127.0.0.1:8000';
+const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const SHOTS = 'tests/captures/cuisine-lisibilite-2026-08-10';
 
 /** Ticket au numéro unique : le serveur dédoublonne sur l'empreinte du contenu. */

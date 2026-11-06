@@ -1,0 +1,62 @@
+{
+  "wave": "E-W2-observability",
+  "base_url": "http://127.0.0.1:8766",
+  "landingUrl": "http://127.0.0.1:8766/admin/pos",
+  "states": [
+    {
+      "name": "landing",
+      "url": "http://127.0.0.1:8766/admin/pos",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/01-landing.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/01-landing.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/01-landing.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/01-landing.network.json",
+      "notes": "Logged in as pos@lecayenne.fr. Landing http://127.0.0.1:8766/admin/pos. No POS payment/wizard clicks."
+    },
+    {
+      "name": "observability-deeplink",
+      "url": "http://127.0.0.1:8766/admin/dashboard",
+      "png": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/02-observability.png",
+      "dom": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/02-observability.dom.html",
+      "console": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/02-observability.console.json",
+      "network": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/grok-dashboard-cockpit-10j/round-5/wave-E/02-observability.network.json",
+      "notes": "goto /admin/observability/system. finalUrl=http://127.0.0.1:8766/admin/dashboard. system-health exists=false visible=false. redirectedToDashboard=true. forcedPut.status=403. naturalPuts=1."
+    }
+  ],
+  "record": {
+    "final_url_after_deeplink": "http://127.0.0.1:8766/admin/dashboard",
+    "expected_dashboard_not_system_health": true,
+    "redirected_to_dashboard": true,
+    "still_on_observability": false,
+    "system_health_exists": false,
+    "system_health_visible": false,
+    "interrupteurs_present": false,
+    "sidebar_etat_du_systeme": false,
+    "forced_put": {
+      "url": "/api/admin/observability/interrupteurs/wheel",
+      "status": 403,
+      "body": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     ",
+      "hasToken": true,
+      "forced": true
+    },
+    "natural_put_interrupteur": [
+      {
+        "kind": "http",
+        "url": "http://127.0.0.1:8766/api/admin/observability/interrupteurs/wheel",
+        "method": "PUT",
+        "status": 403,
+        "resourceType": "fetch",
+        "ts": 1788286745398,
+        "bodySnippet": "{\n    \"message\": \"User does not have the right roles.\",\n    \"exception\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n    \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Exceptions/UnauthorizedException.php\",\n    \"line\": 21,\n    \"trace\": [\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/spatie/laravel-permission/src/Middlewares/RoleMiddleware.php\",\n            \"line\": 24,\n            \"function\": \"forRoles\",\n            \"class\": \"Spatie\\\\Permission\\\\Exceptions\\\\UnauthorizedException\",\n            \"type\": \"::\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n            \"class\": \"Spatie\\\\Permission\\\\Middlewares\\\\RoleMiddleware\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Middleware/localization.php\",\n            \"line\": 33,\n            \"function\": \"Illuminate\\\\Pipeline\\\\{closure}\",\n            \"class\": \"Illuminate\\\\Pipeline\\\\Pipeline\",\n            \"type\": \"->\"\n        },\n        {\n            \"file\": \"/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php\",\n            \"line\": 180,\n            \"function\": \"handle\",\n     "
+      }
+    ],
+    "wheel_before": {
+      "wheel": false
+    },
+    "wheel_after": {
+      "wheel": false
+    },
+    "mix_app_js_hash": "7af395861f8184d98e5a7fad8cad66a4",
+    "mix_admin_shell_hash": null
+  },
+  "blockers": []
+}

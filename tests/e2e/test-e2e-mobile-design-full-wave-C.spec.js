@@ -42,7 +42,7 @@ const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const path = require('path');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-design-full-wave-C');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = new URL('/index.html', process.env.MOBILE_URL || 'http://127.0.0.1:8087').toString();
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -142,11 +142,11 @@ async function openOrdersTab(page) {
 /** Add one Coca-Cola 33cl to the cart via the menu + direct-add screen. */
 async function addCocaToCart(page) {
   await openMenuTab(page);
-  const cocaCard = page.locator('[data-screen-label="08 Menu"]').getByText('Coca-Cola 33cl', { exact: true }).first();
+  const cocaCard = page.locator('[data-screen-label="08 Menu"]').getByRole('button', { name: /Voir Coca-Cola 33cl/i }).first();
   await cocaCard.click();
   await page.waitForSelector('[data-screen-label="09 Item Direct"]', { timeout: 6_000 });
-  // Direct-add wizard renders a single bottom CTA button.lc-btn.
-  const cta = page.locator('[data-screen-label="09 Item Direct"] button.lc-btn').last();
+  // Direct-add wizard renders a single bottom CTA button.rdw-cta.
+  const cta = page.locator('[data-screen-label="09 Item Direct"] button.rdw-cta').last();
   await cta.click();
   await page.waitForSelector('[data-screen-label="10 Cart"]', { timeout: 6_000 });
 }
@@ -371,7 +371,7 @@ test('wave C — pay choice + Stripe + confirm + orders + order detail (12 state
       // Top hero display shows the total ("1,50 €" etc.)
       const display = root.querySelector('.lc-display');
       // The Stripe CTA at the bottom: "Payer 1,50 €"
-      const ctaBtn = root.querySelectorAll('button.lc-btn');
+      const ctaBtn = root.querySelectorAll('button.rdw-cta');
       const ctaText = ctaBtn.length ? ctaBtn[ctaBtn.length - 1].textContent.trim() : null;
       return {
         hasCardNumber: /4242 4242 4242 4242/.test(txt),

@@ -31,6 +31,9 @@ class LoyaltyRulesTest extends TestCase
     private function reglage(string $cle, $valeur): void
     {
         Settings::group('loyalty_setup')->set([$cle => $valeur]);
+        // [W7-D D-005 2026-11-04] Une instance lit chaque réglage UNE fois (durée d'une requête) : un changement de
+        // réglage, c'est la requête suivante — on repart d'une instance neuve, comme le ferait le conteneur.
+        $this->regles = app(LoyaltyRules::class);
     }
 
     private function oublier(string $cle): void

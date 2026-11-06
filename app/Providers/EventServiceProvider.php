@@ -82,6 +82,8 @@ use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\PrintKioskOrderToCounter;
 use App\Listeners\PrintKioskKitchenTicketOnOrderCreated;
+use App\Listeners\AssignDeliveryWaveOnOrderCreated;
+use App\Listeners\ReleaseDeliveryStopOnOrderClosed;
 use App\Listeners\PrintFiscalReceiptAndOpenDrawerOnCounterPaid;
 use App\Listeners\SendFcmOnOrderStatusChange;
 use App\Listeners\SendOrderGotMailNotification;
@@ -155,6 +157,8 @@ class EventServiceProvider extends ServiceProvider
         // try/catch (defense in depth) so it never throws upward.
         OrderStatusChanged::class => [
             PersistOrderStatusChangedToOutbox::class,
+            // [LIVRAISON 2026-10-20] Commande refusée / annulée par changement de statut : libère son arrêt.
+            ReleaseDeliveryStopOnOrderClosed::class,
             // [KITCHEN-AUTOPRINT 2026-08-07 owner] Le ticket cuisine sort SEUL dès l'entrée en
             // cuisine, quelle que soit la surface (la caisse était la grande oubliée : elle
             // exigeait un clic). Doublon impossible — garde atomique en base.
@@ -162,6 +166,9 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+            // [E2E UBER 2026-10-24 · U2-001] EN DERNIER : la cuisine marque PRÊTE une commande dont le coursier Uber a déjà le sac →
+            // rattrapage EN ROUTE / LIVRÉE. Placé après les notifications de « prête » pour qu'elles partent AVANT celles de « en route ».
+            \App\Listeners\SyncUberCourseAfterKitchenReady::class,
         ],
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
         // Chef "↶ Annuler bump" within 60s of bump. Append-only — orders.status
@@ -182,6 +189,10 @@ class EventServiceProvider extends ServiceProvider
             DecrementItemAvailabilityOnOrder::class,
             DecrementStockOnOrderCreated::class,
             SendFcmOnOrderCreated::class,
+            // [LIVRAISON 2026-10-20] Rattache la commande de livraison à sa tournée de 30 minutes (best-effort).
+            // [VG-2026-10-21 M1-103] AVANT les impressions : printOnce relit delivery_slot_at en base ; posé après, une
+            // livraison « au plus tôt » sur une tournée lointaine passait pour libérée et s'imprimait à la création.
+            AssignDeliveryWaveOnOrderCreated::class,
             // [PRINT-SAGA 2026-06-24] Kiosk/borne order → print a COPY on the caisse printer.
             PrintKioskOrderToCounter::class,
             // [BORNE-KITCHEN 2026-06-28] + ticket CUISINE sur la station 'kitchen' (best-effort).
@@ -205,6 +216,8 @@ class EventServiceProvider extends ServiceProvider
         // [F-01 + NEW-05] Compensating release of stock counters on cancel / refund.
         // Idempotent via order_items.released_qty ledger inside AvailabilityService.
         OrderCanceled::class => [
+            // [LIVRAISON 2026-10-20] Libère la place de la tournée (hors nourriture déjà partie).
+            ReleaseDeliveryStopOnOrderClosed::class,
             ReleaseStockOnOrderCanceled::class,
             ReleaseAvailabilityOnOrderCanceled::class,
             // [ARCH_STOCK_INTELLIGENT_BOM B-1 2026-07-23] Reprise (rendu) du stock

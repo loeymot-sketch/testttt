@@ -3,7 +3,8 @@
     <div class="mb-9">
         <h4 class="font-semibold text-[22px] leading-[34px] mb-3">{{ $t("menu.overview") }}</h4>
         <div class="row">
-            <div class="col-12 sm:col-6 xl:col-4">
+            <!-- [VG-2026-10-21 M9-104] Tuile CA masquée sans permission commerciale (chef). -->
+            <div v-if="showSales" class="col-12 sm:col-6 xl:col-4">
                 <div class="p-4 rounded-lg flex items-center gap-4 bg-[#F4501E]">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center bg-white">
                         <i class="lab lab-total-sale lab-font-size-24 lab-color-pink"></i>
@@ -45,6 +46,10 @@ import LoadingComponent from "../components/LoadingComponent";
 export default {
     name: "OverviewComponent",
     components: { LoadingComponent },
+    // [VG-2026-10-21 M9-104] false = ni tuile ni appel au CA (le serveur répondrait 403).
+    props: {
+        showSales: { type: Boolean, default: true },
+    },
     data() {
         return {
             loading: {
@@ -59,7 +64,9 @@ export default {
         };
     },
     mounted() {
-        this.totalSales();
+        if (this.showSales) {
+            this.totalSales();
+        }
         this.totalOrders();
         this.totalMenuItems();
     },

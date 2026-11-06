@@ -4,6 +4,7 @@ namespace Tests\Feature\Kiosk;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use App\Http\Middleware\RememberKioskAutoLoginGrant;
 use Tests\TestCase;
 
 /**
@@ -149,6 +150,34 @@ class KioskAutoLoginGateTest extends TestCase
         $payload = isset($m[1]) ? json_decode($m[1], true) : null;
 
         $this->assertIsArray($payload, 'URL secret valide doit servir les identifiants depuis toute IP.');
+        $this->assertSame('kiosk-test-machine', $payload['username'] ?? null);
+    }
+
+    public function test_valid_machine_link_sets_an_encrypted_grant_that_survives_a_clean_reload(): void
+    {
+        Config::set('kiosk.auto_login_local_bypass', false);
+        Config::set('kiosk.auto_login_trusted_ips', []);
+        Config::set('kiosk.auto_login_secret', 'feat-secret-borne');
+
+        $priming = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42'])
+            ->get('/kiosk/idle?machine_key=feat-secret-borne');
+        $cookie = collect($priming->headers->getCookies())
+            ->first(fn ($value) => $value->getName() === RememberKioskAutoLoginGrant::COOKIE);
+
+        $this->assertNotNull($cookie, 'Le lien machine doit mémoriser un grant HttpOnly chiffré.');
+        $this->assertTrue($cookie->isSecure());
+        $this->assertTrue($cookie->isHttpOnly());
+        $this->assertSame('/kiosk', $cookie->getPath());
+
+        $reload = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.42'])
+            // The response value is already encrypted by EncryptCookies; replay
+            // it exactly as a browser would, without the test helper encrypting it twice.
+            ->withUnencryptedCookie(RememberKioskAutoLoginGrant::COOKIE, $cookie->getValue())
+            ->get('/kiosk/idle');
+        preg_match('/kioskAutoLogin\s*:\s*(null|\{[^}]*\})/u', (string) $reload->getContent(), $m);
+        $payload = isset($m[1]) ? json_decode($m[1], true) : null;
+
+        $this->assertIsArray($payload, 'Un rechargement sans machine_key doit rester auto-connectable sur cette borne.');
         $this->assertSame('kiosk-test-machine', $payload['username'] ?? null);
     }
 

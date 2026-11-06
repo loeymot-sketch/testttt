@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\AddressRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
+use App\Services\Delivery\AddressNormalizer;
 
 class AddressService
 {
@@ -51,13 +52,15 @@ class AddressService
     {
         try {
             $payload = $request->validated() + ['user_id' => Auth::user()->id];
-            // [Sprint 2B / DEL-1] Derive geocode_status from the supplied lat/lng pair
-            // so new writes never produce NULL rows that subsequently bypass the
-            // DeliveryQuoteService geocode gate.
-            $payload['geocode_status'] = self::deriveGeocodeStatus(
-                $payload['latitude'] ?? null,
-                $payload['longitude'] ?? null
-            );
+            // [LIVRAISON 2026-10-20] Géocodage SERVEUR : position + commune viennent de la Base
+            // Adresse Nationale, jamais du navigateur. Une panne du fournisseur refuse la sauvegarde.
+            $payload = $this->applyServerGeocoding($payload);
+
+            // « Enregistrée une seule fois » : même point + même complément = même adresse.
+            $existing = $this->findSamePlace((int) $payload['user_id'], $payload);
+            if ($existing) {
+                return $existing;
+            }
 
             return Address::create($payload);
         } catch (Exception $exception) {
@@ -72,17 +75,25 @@ class AddressService
     public function update(AddressRequest $request, Address $address)
     {
         try {
-            $payload = $request->validated();
-            $payload['geocode_status'] = self::deriveGeocodeStatus(
-                $payload['latitude'] ?? null,
-                $payload['longitude'] ?? null
-            );
+            $payload = $this->applyServerGeocoding($request->validated());
 
             return tap($address)->update($payload);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed> */
+    private function applyServerGeocoding(array $payload): array
+    {
+        return app(AddressNormalizer::class)->normalize($payload);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function findSamePlace(int $userId, array $payload): ?Address
+    {
+        return app(AddressNormalizer::class)->findSamePlace($userId, $payload);
     }
 
     /**

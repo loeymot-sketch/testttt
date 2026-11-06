@@ -52,6 +52,24 @@ final class ComposerProfileProjection
                 'addon_role' => $step->addon_role,
                 'choices' => $this->choices($step, $item, $surface, $choiceAvailability),
             ])
+            // [INCIDENT COMPOSEUR 2026-09-03/04] Une étape sans le moindre choix est une
+            // IMPASSE : l'écran affiche un titre et aucune tuile, et si l'étape est
+            // obligatoire le client ne peut plus avancer. Deux incidents réels en 24 h :
+            // les 45 viandes de Cayenne/Suprême/Classique éteintes d'un coup en laissant
+            // « Viande 1 » obligatoire (trois produits phares invendables), puis les six
+            // burgers affichant « Choisis ta viande » avec ZÉRO tuile après détachement
+            // de leurs variations alors que le profil publié gardait l'étape active.
+            // Les trois types de source construisent une vraie liste : une liste vide ne
+            // propose rien à cliquer, quel que soit le type. On ne projette donc pas.
+            // Une étape dont les choix existent mais sont en RUPTURE reste projetée :
+            // « indisponible » s'affiche et s'explique — ce n'est pas une impasse.
+            // ⚠️ Restreint aux types de source CONNUS. Un type non supporté produit lui
+            // aussi une liste vide, mais il doit continuer d'atteindre PricingService, qui
+            // le REFUSE (« type de source non supporté »). Le filtrer ici l'avalerait en
+            // silence — exactement le genre d'escamotage que la discipline NF525 interdit.
+            ->reject(fn (array $step): bool => $step['choices'] === []
+                && in_array($step['source_type'], ['item_attribute', 'extra_group', 'addon'], true))
+            ->values()
             ->all();
 
         return [

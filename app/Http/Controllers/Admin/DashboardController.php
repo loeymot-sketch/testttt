@@ -94,6 +94,21 @@ class DashboardController extends AdminController
             'channelStatistics',
             'auditTrail'
         );
+        // [VG-2026-10-21 M9-104] Données COMMERCIALES (argent, clients nommés, journal d'audit,
+        // répartition par canal) : `dashboard` ne suffit plus. Le rôle Chef détient `dashboard`
+        // (écran d'accueil) mais docs/AUTHZ_MATRIX.md le limite au KDS et à l'OSS : il lisait le
+        // CA, les meilleurs clients et l'audit. Il faut en plus l'accès caisse (`pos`) ou les
+        // rapports de vente (`sales-report`) — Admin, Branch Manager, POS Operator inchangés.
+        $this->middleware(['permission:pos|sales-report'])->only(
+            'totalSales',
+            'salesSummary',
+            'realtimeReport',
+            'topCustomers',
+            'customerStates',
+            'totalCustomers',
+            'auditTrail',
+            'channelStatistics'
+        );
         // [V102-08 HEAL-3 2026-05-26] EOD PDF recap requires fiscal-grade
         // permission because the output aggregates daily revenue (CA + TVA +
         // payment-method breakdown) — the same data scope as Z-report close.
@@ -249,7 +264,17 @@ class DashboardController extends AdminController
     public function slaAlerts()
     {
         try {
-            return response()->json(['data' => $this->dashboardService->slaAlerts()]);
+            // [2026-09-03] La fenêtre est publiée À CÔTÉ des alertes. « Aucune préparation
+            // hors délai » se lisait comme un fait absolu alors que le contrôle ne regarde que
+            // les dernières heures : 344 commandes étaient figées en préparation, la plus
+            // ancienne depuis le 10 juin, pendant que l'écran affichait « Dernier contrôle
+            // terminé avec succès ». Le chiffre était juste dans son périmètre ; c'est le
+            // périmètre qui n'était écrit nulle part. Le client ne lit que `data.data` : cette
+            // clé supplémentaire ne casse rien.
+            return response()->json([
+                'data' => $this->dashboardService->slaAlerts(),
+                'fenetre_heures' => (int) config('dashboard.sla_alerts_window_hours', 24),
+            ]);
         } catch (Exception $exception) {
             return $this->dashboardFailure($exception);
         }

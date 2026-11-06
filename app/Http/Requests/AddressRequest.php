@@ -23,6 +23,16 @@ class AddressRequest extends FormRequest
     }
 
     /**
+     * [W7-D D-020 · cycle F 2026-11-04] Refuser l'adresse d'AUTRUI répondait « This action is unauthorized. » en anglais :
+     * `authorize()` coupe avant le contrôleur, donc le message français de `AddressController` n'était jamais atteint sur
+     * PUT/PATCH. Même code HTTP (403), mais le texte du dépôt (`all.message.unauthorized`).
+     */
+    protected function failedAuthorization(): void
+    {
+        throw new \Illuminate\Auth\Access\AuthorizationException(__('all.message.unauthorized'));
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -31,8 +41,10 @@ class AddressRequest extends FormRequest
     {
         return [
             'label'     => ['required', 'string', 'max:190', Rule::unique("addresses", "label")->ignore(optional($this->route('address'))->id)->where('user_id', auth()->id())],
-            'latitude'  => ['required', 'max:190'],
-            'longitude' => ['required', 'max:190'],
+            // [LIVRAISON 2026-10-20] Le serveur géocode l'adresse : les coordonnées du navigateur ne
+            // sont plus exigées (et sont remplacées quand le géocodage serveur est actif).
+            'latitude'  => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
+            'longitude' => [config('delivery.geocoder.enabled', true) ? 'nullable' : 'required', 'max:190'],
             'address'   => ['required', 'string', 'max:500'],
             'apartment' => ['nullable', 'string', 'max:200'],
         ];

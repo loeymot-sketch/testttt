@@ -1,0 +1,185 @@
+======================================================================
+G4 — T4.5 : LA COMMANDE EXERCÉE POUR DE VRAI
+Date : 2026-09-03 02:09:07  HEAD : 23c2ef26c
+Base vive : foodking_e2e   Cache : redis
+======================================================================
+
+### 0. Contenu du dossier de sauvegardes
+total 16424
+drwxr-xr-x   8 1millnonstop  staff      256  3 sept. 02:08 .
+drwxr-xr-x@ 13 1millnonstop  staff      416 24 août  20:59 ..
+-rw-r--r--   1 1millnonstop  staff        0 21 mai   06:49 .gitkeep
+-rw-r--r--@  1 1millnonstop  staff    76330 28 mai   11:15 daily-2026-05-28.sql.gz
+-rw-r--r--@  1 1millnonstop  staff   169619 29 mai   00:51 daily-2026-05-29.sql.gz
+-rw-r--r--@  1 1millnonstop  staff  1676203  4 juin  02:05 daily-2026-06-04.sql.gz
+-rw-r--r--@  1 1millnonstop  staff  2815404 24 juin  23:25 daily-2026-06-24.sql.gz
+-rw-r--r--   1 1millnonstop  staff  3661529  5 août  02:34 pre-8axes-2026-08-05.sql.gz
+
+### 1. FILTRE — le fichier « not-sql.gz » de G7 doit être REJETÉ par *.sql.gz
+-rw-r--r--  1 1millnonstop  staff  19  3 sept. 02:09 storage/backups/db-daily/not-sql.gz
+glob *.sql.gz      (cockpit + /health/ready) : daily-2026-05-28.sql.gz, daily-2026-05-29.sql.gz, daily-2026-06-04.sql.gz, daily-2026-06-24.sql.gz, pre-8axes-2026-08-05.sql.gz
+glob daily-*.sql.gz (backup:verify-restore)  : daily-2026-05-28.sql.gz, daily-2026-05-29.sql.gz, daily-2026-06-04.sql.gz, daily-2026-06-24.sql.gz
+not-sql.gz retenu par *.sql.gz ? NON — rejete, comme attendu
+(fichier de test retire)
+
+### 2. DRILL RÉEL sur une vraie sauvegarde locale
+commande : php artisan backup:verify-restore
+----------------------------------------------------------------------
+[verify-restore] file=daily-2026-06-24.sql.gz (1682.7 h old, 2815404 bytes) scratch=foodking_e2e_restore_scratch live=foodking_e2e
+Backup is 1682.7 h old — verify the daily scheduler is running.
+  live counts: orders=3609 audit_logs=8693 z_reports=33
+  restoring dump into scratch …
+  tables: live=113 scratch=88
+  scratch counts: orders=2861 audit_logs=4620 z_reports=23
+  running fiscal:verify-chain --all on scratch (foodking_e2e_restore_scratch) …
+  + branch=1 CHAIN OK
+  + branch=7 CHAIN OK
+  + branch=8 CHAIN OK
+  + branch=9 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (4 total)
+
+==================== RESTORE DRILL: RED ======================
+  - restored schema has 88 tables but live has 113 (partial restore?)
+----------------------------------------------------------------------
+code de sortie : 0
+(note : le « code de sortie : 0 » ci-dessus est celui du echo, pas d'artisan — repris proprement ci-dessous)
+code de sortie réel de backup:verify-restore : 1
+
+### 2b. VERDICT PERSISTÉ après le drill réel (storage/app/backups/restore-drill-last.json)
+{
+    "status": "failed",
+    "verified_at": "2026-09-03T02:09:40+02:00",
+    "file": "daily-2026-06-24.sql.gz",
+    "sha256": "1580935ebd5263879510679dcf1f6ddc4cf5c5fc2e8e8cb7d3d839ced1804d43",
+    "duration_s": 6.3,
+    "reasons": [
+        "restored schema has 88 tables but live has 113 (partial restore?)"
+    ]
+}
+--- et le même verdict tel que le lisent le cockpit et /health/ready :
+Array
+(
+    [status] => failed
+    [verified_at] => 2026-09-03T02:09:40+02:00
+    [age_hours] => 0
+    [file] => daily-2026-06-24.sql.gz
+    [sha256] => 1580935ebd5263879510679dcf1f6ddc4cf5c5fc2e8e8cb7d3d839ced1804d43
+    [duration_s] => 6.3
+    [reasons] => Array
+        (
+            [0] => restored schema has 88 tables but live has 113 (partial restore?)
+        )
+
+    [max_age_hours] => 26
+)
+
+### 3. DRILL RÉEL sur un fichier VOLONTAIREMENT TRONQUÉ
+fabrication : head -c 120000 daily-2026-06-24.sql.gz (2 815 404 o) > daily-tronque-volontairement.sql.gz
+-rw-r--r--  1 1millnonstop  wheel  120000  3 sept. 02:09 /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/66a43679-043e-4539-b86c-4d43edc2376f/scratchpad/daily-tronque-volontairement.sql.gz
+commande : php artisan backup:verify-restore --file=<le fichier tronqué>
+----------------------------------------------------------------------
+[verify-restore] file=daily-tronque-volontairement.sql.gz (0.0 h old, 120000 bytes) scratch=foodking_e2e_restore_scratch live=foodking_e2e
+  live counts: orders=3609 audit_logs=8693 z_reports=33
+  restoring dump into scratch …
+[restore] gunzip: /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/66a43679-043e-4539-b86c-4d43edc2376f/scratchpad/daily-tronque-volontairement.sql.gz: unexpected end of file
+[restore] gunzip: /private/tmp/claude-501/-Users-1millnonstop-Downloads-projet-foodking-web-web-testttt/66a43679-043e-4539-b86c-4d43edc2376f/scratchpad/daily-tronque-volontairement.sql.gz: uncompress failed
+[restore] ERROR 1064 (42000) at line 261: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''faa9944e56609cb771' at line 1
+
+==================== RESTORE DRILL: RED ======================
+  - restore process exited non-zero
+----------------------------------------------------------------------
+code de sortie réel : 1
+
+### 3b. VERDICT PERSISTÉ après le drill tronqué
+{
+    "status": "failed",
+    "verified_at": "2026-09-03T02:09:55+02:00",
+    "file": "daily-tronque-volontairement.sql.gz",
+    "sha256": "1f184b3a301f646336a1ca05279e9118e42fc9ddcca9740fb442b2dec53202a9",
+    "duration_s": 0.3,
+    "reasons": [
+        "restore process exited non-zero"
+    ]
+}
+### 4. REMISE EN ÉTAT — on rejoue le drill sur la vraie sauvegarde, pour que le
+###    verdict persisté décrive l'état réel de cette machine et non un fichier de test.
+SWEEP COMPLETE — CHAIN OK on every active branch (4 total)
+
+==================== RESTORE DRILL: RED ======================
+  - restored schema has 88 tables but live has 113 (partial restore?)
+
+verdict final persisté :
+{
+    "status": "failed",
+    "verified_at": "2026-09-03T02:10:17+02:00",
+    "file": "daily-2026-06-24.sql.gz",
+    "sha256": "1580935ebd5263879510679dcf1f6ddc4cf5c5fc2e8e8cb7d3d839ced1804d43",
+    "duration_s": 6.1,
+    "reasons": [
+        "restored schema has 88 tables but live has 113 (partial restore?)"
+    ]
+}
+base jetable bien supprimée ?
+0
+(0 = supprimée)
+
+======================================================================
+CONSTAT OUVERT, non corrigé (hors périmètre nommé par le GOAL)
+======================================================================
+Les deux surfaces ne filtrent pas le MÊME motif de fichier :
+  - cockpit + /health/ready : glob « *.sql.gz »       -> pre-8axes-2026-08-05.sql.gz
+  - backup:verify-restore   : glob « daily-*.sql.gz » -> daily-2026-06-24.sql.gz
+Sur cette machine, le drill ne peut donc JAMAIS attester le fichier que le cockpit
+appelle « dernière sauvegarde » : le rapprochement de T4.1 y restera rouge en
+permanence. En production le dossier ne contient que des « daily-* », les deux
+motifs y désignent le même fichier et le rapprochement fonctionne. Mais un rouge
+permanent sur un poste est exactement ce qui apprend à ne plus regarder l'écran.
+À trancher par le propriétaire : aligner les deux motifs, ou exclure du dossier
+quotidien les instantanés faits à la main (pre-*).
+
+======================================================================
+### 5. PREUVE SUR LE SERVEUR RÉELLEMENT SERVI (127.0.0.1:8766)
+======================================================================
+Le correctif serveur ne demande aucune compilation : la sonde publique
+/api/health/ready l'exerce directement. Quatre états, mesurés à la suite.
+
+5a. État vrai de la machine (drill réel, RED) :
+    "restore_drill": {
+      "status": "degraded",
+      "detail": "restauration de vérification ÉCHOUÉE : restored schema has 88 tables but live has 113 (partial restore?)"
+    }
+    (et "backup_age": "newest backup 695.6h old (>26h)")
+
+5b. LE DÉFAUT V-08, rejoué : verdict VERT injecté sur « daily-2026-06-24.sql.gz »
+    alors que la dernière sauvegarde du dossier est « pre-8axes-2026-08-05.sql.gz ».
+    AVANT le correctif cet état répondait "ok". Maintenant :
+    {
+      "status": "degraded",
+      "detail": "la restauration vérifiée porte sur « daily-2026-06-24.sql.gz », pas sur la dernière sauvegarde « pre-8axes-2026-08-05.sql.gz »"
+    }
+
+5c. GARDE-FOU : verdict VERT injecté sur LE fichier courant, avec sa VRAIE empreinte
+    (642c782adfb4192a9076e82bc75cfcc857222778aff213d6a1e5e3cf8bc59e3d) :
+    {
+      "status": "ok",
+      "detail": "restore verified 3.0h ago (pre-8axes-2026-08-05.sql.gz)"
+    }
+    -> le correctif n'est pas « tout rouge » : un vert légitime reste vert.
+
+5d. Même nom, empreinte différente (fichier réécrit depuis le drill) :
+    {
+      "status": "degraded",
+      "detail": "« pre-8axes-2026-08-05.sql.gz » a été réécrit depuis la restauration vérifiée : empreinte SHA-256 différente"
+    }
+
+5e. État remis à la vérité : `php artisan backup:verify-restore` rejoué (code 1),
+    verdict persisté = failed sur daily-2026-06-24.sql.gz.
+
+NON FAIT : les captures d'écran du cockpit (/admin/observability/system).
+La moitié ÉCRAN du correctif vit dans un .vue, qui n'atteint le navigateur qu'après
+une compilation Mix. Cet arbre est PARTAGÉ et une autre session y exécutait Vitest
+pendant ce travail (processus `npx vitest run tests/js/sentinels/`, PID 39778, et
+public/mix-manifest.json réécrit à 02:10:26) : lancer une compilation aurait réécrit
+public/js/* sous cette session. Le comportement rendu du composant est en revanche
+prouvé par tests/js/systemHealthAgeSauvegardeNonArrondi.spec.js, qui monte le vrai
+composant et vérifie la couleur ET le texte réellement produits.
