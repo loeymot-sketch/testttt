@@ -254,7 +254,8 @@ class FrontendDiscountIntegrityTest extends TestCase
             ]));
         $r->assertStatus(201);
         $ligne = \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r->json('data.id'))->first();
-        $this->assertSame("Viandes en plus : Poulet.\n[Note : sans oignon, allergie lait]", (string) $ligne->instruction);
+        // [tour 6] « Viandes en plus » sans extra viande payé n'est plus annoncé en cuisine.
+        $this->assertSame("[Note : sans oignon, allergie lait]", (string) $ligne->instruction);
         $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
         $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $ligne->instruction), 'aucun badge MENU');
 
@@ -294,24 +295,140 @@ class FrontendDiscountIntegrityTest extends TestCase
     public function test_formule_partielle_ne_fait_pas_servir_l_autre_moitie(): void
     {
         $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->boissonAuCatalogue('Coca-Cola 33cl');
         $passe = function (string $role, string $instruction): string {
-            $ligne = (object) ['item_id' => 1, 'quantity' => 1, 'instruction' => $instruction,
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction,
                 'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => $role]]];
 
             return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
         };
 
-        $frites = $passe('menu_frites', "Frites: Classique\nBoisson menu: Coca-Cola\nSauce frites : Mayonnaise");
-        $this->assertSame("Frites: Classique\nSauce frites : Mayonnaise", $frites);
+        $frites = $passe('menu_frites', "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise");
+        $this->assertSame("Sauce frites : Mayonnaise", $frites);
         $this->assertStringNotContainsString('Coca', $f->cleanInstruction($frites, 'Sandwich Classique'));
 
-        $boisson = $passe('menu_boisson', "Boisson menu: Coca-Cola\nFrites: Classique\nSauce frites : Mayonnaise");
-        $this->assertSame('Boisson menu: Coca-Cola', $boisson);
+        $boisson = $passe('menu_boisson', "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise");
+        $this->assertSame('Boisson menu: Coca-Cola 33cl', $boisson);
         $this->assertStringNotContainsString('Frites', $f->cleanInstruction($boisson, 'Sandwich Classique'));
 
         // Témoin : la formule complète garde tout, allergie comprise.
-        $complet = "Frites: Classique\nBoisson menu: Coca-Cola\nSauce frites : Mayonnaise\n[Note commande : sans oignon, ALLERGIE arachide]";
+        $complet = "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise\n[Note commande : sans oignon, ALLERGIE arachide]";
         $this->assertSame($complet, $passe('menu_full', $complet));
+    }
+
+    private function boissonAuCatalogue(string $nom, int $status = 5, bool $dispo = true): Item
+    {
+        $cat = ItemCategory::query()->where('slug', 'boissons')->first() ?? ItemCategory::forceCreate(['name' => 'Boissons', 'slug' => 'boissons', 'status' => 5]);
+
+        return Item::forceCreate(['name' => $nom, 'slug' => \Illuminate\Support\Str::slug($nom).'-'.uniqid(), 'price' => 2.00,
+            'status' => $status, 'is_available' => $dispo, 'item_category_id' => $cat->id]);
+    }
+
+    private function extra(string $nom, float $prix): \App\Models\ItemExtra
+    {
+        return \App\Models\ItemExtra::forceCreate(['item_id' => $this->item->id, 'name' => $nom, 'price' => $prix, 'status' => 5,
+            'group_label' => str_contains($nom, 'Sauce') ? 'sauce' : 'supplement']);
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 sauces gratuites] La cuisine imprime les sauces et viandes nommées dans
+     * l'instruction : jamais plus que les extras réellement facturés sur CET article. 1ʳᵉ sauce frites offerte.
+     * Chaîne réelle : POST /api/frontend/order → instruction scellée → ticket cuisine.
+     */
+    public function test_sauces_et_viandes_annoncees_bornees_aux_extras_payes(): void
+    {
+        $sauce = $this->extra('Sauce supplémentaire', 0.50);
+        $viande = $this->extra('Viande supplémentaire', 2.50);
+        $poste = function (array $extras, string $instruction): string {
+            $r = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+                ->postJson('/api/frontend/order', $this->basePayload([
+                    'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => $extras, 'instruction' => $instruction]]),
+                ]));
+            $r->assertStatus(201);
+
+            return (string) \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r->json('data.id'))->value('instruction');
+        };
+
+        // Commande 9926 : six sauces annoncées, AUCUNE payée → aucune imprimée.
+        $this->assertSame('', $poste([], 'Sauces en plus : Samouraï, Curry, Blanche, Harissa, Barbecue, Andalouse.'));
+        // Deux sauces payées, six annoncées → les deux premières seulement.
+        $this->assertSame('Sauces en plus : Samouraï, Curry.', $poste([['id' => $sauce->id, 'quantity' => 2]], 'Sauces en plus : Samouraï, Curry, Blanche, Harissa, Barbecue, Andalouse.'));
+        // Une viande payée, trois annoncées → une.
+        $this->assertSame('Viandes en plus : Poulet.', $poste([['id' => $viande->id, 'quantity' => 1]], 'Viandes en plus : Poulet, Tenders, Kebab.'));
+        // Quantité forgée (-5) : facturée 1 par PricingService → bornée à 1.
+        $this->assertSame('Sauces en plus : Curry.', $poste([['id' => $sauce->id, 'quantity' => -5]], 'Sauces en plus : Curry, Blanche.'));
+
+        // Commande 9925 : menu payé + cinq sauces frites, aucune en plus payée → la 1ʳᵉ (offerte) seulement.
+        $passe = function (array $extras, string $instruction): string {
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction, 'item_extras' => $extras,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => 'menu_full']]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+        $this->assertSame('Sauce frites : Ketchup', $passe([], 'Sauce frites : Ketchup, Mayonnaise, Samouraï, Curry, Blanche'));
+        // Parcours réel du site (api.js) : 2 sauces sandwich en plus + 2 sauces frites dont 1 offerte = 3 extras cumulés.
+        $site = "Sauces en plus : Curry, Blanche.\nSauce frites : Ketchup, Mayonnaise";
+        $this->assertSame($site, $passe([(object) ['id' => $sauce->id, 'quantity' => 3]], $site));
+        // Extra d'un AUTRE article : ne paie rien ici.
+        $autre = \App\Models\ItemExtra::forceCreate(['item_id' => $this->boissonAuCatalogue('Sprite 33cl')->id, 'name' => 'Sauce supplémentaire', 'price' => 0.5, 'status' => 5, 'group_label' => 'sauce']);
+        $this->assertSame('', $passe([(object) ['id' => $autre->id, 'quantity' => 4]], 'Sauces en plus : Curry, Blanche.'));
+
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->assertSame([], $f->extraSauceNames($poste([], 'Sauces en plus : Samouraï, Curry.')), 'le ticket cuisine ne nomme aucune sauce non payée');
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 contenu de formule] « Boisson menu » = UNE boisson active du catalogue
+     * (9949 : trois boissons ; 9948 : « Champagne Dom Perignon ») ; style de frites gratuit dans un menu (9949) retiré.
+     */
+    public function test_contenu_de_formule_borne_au_catalogue(): void
+    {
+        $this->boissonAuCatalogue('Fanta Orange 33cl');
+        $this->boissonAuCatalogue('Oasis Tropical 33cl', 5, false);
+        $formule = Item::forceCreate(['name' => 'Menu (Frites + Boisson)', 'slug' => 'menu-formule-tour6', 'price' => 2.50, 'status' => 5, 'item_category_id' => $this->item->item_category_id]);
+        $pivot = \App\Models\ItemAddon::create(['item_id' => $this->item->id, 'addon_item_id' => $formule->id, 'role' => 'menu_component']);
+        $poste = fn (string $instruction) => $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [],
+                    'item_addons' => [['id' => $pivot->id, 'quantity' => 1, 'role' => 'menu_full']], 'instruction' => $instruction]]),
+            ]));
+        $passe = function (string $instruction): string {
+            $ligne = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => $instruction,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => 'menu_full']]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', $passe('Boisson menu: fanta orange 33cl'), 'nom canonique du catalogue');
+        // Grandes frites cheddar offertes dans un menu : retirées (le produit commandé n'est pas ces frites).
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', $passe("Frites: Grande Frites Cheddar + Oignons frits\nBoisson menu: Fanta Orange 33cl"));
+
+        foreach (['Boisson menu: Fanta Orange 33cl, Sprite 33cl, Orangina 33cl', 'Boisson menu: Champagne Dom Perignon', 'Boisson menu: Discount Menu'] as $forge) {
+            try {
+                $passe($forge);
+                $this->fail('accepté : '.$forge);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                $this->assertStringContainsString('pas reconnue', $e->getMessage());
+            }
+        }
+        try {
+            $passe('Boisson menu: Oasis Tropical 33cl');
+            $this->fail('boisson en rupture acceptée');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('plus disponible', $e->getMessage());
+        }
+        // Chaîne HTTP réelle (commande 9948) : refus lisible, aucune commande créée.
+        $avant = \App\Models\FrontendOrder::query()->withoutGlobalScopes()->count();
+        $poste('Boisson menu: Champagne Dom Perignon')->assertStatus(422)
+            ->assertJsonPath('message', 'La boisson de votre menu n\'est pas reconnue. Modifiez l\'article pour en choisir une autre.');
+        $this->assertSame($avant, \App\Models\FrontendOrder::query()->withoutGlobalScopes()->count(), 'rien n\'est créé');
+        // Témoin : la même commande avec une vraie boisson passe (montant serveur : 20 + 2,50).
+        $ok = $poste('Boisson menu: Fanta Orange 33cl');
+        $ok->assertStatus(201);
+        $this->assertSame('Boisson menu: Fanta Orange 33cl', (string) \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $ok->json('data.id'))->value('instruction'));
+        // Formule NON payée : la ligne est retirée, sans refus (comportement du tour 2).
+        $nonPayee = (object) ['item_id' => $this->item->id, 'quantity' => 1, 'instruction' => 'Boisson menu: Champagne Dom Perignon'];
+        $this->assertSame('', \App\Services\FrontendOrderService::sansFormuleNonPayee([$nonPayee])[0]->instruction);
     }
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void

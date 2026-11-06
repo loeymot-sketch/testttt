@@ -2070,6 +2070,7 @@ class FrontendOrderService
      */
     public static function sansFormuleNonPayee(array $items): array
     {
+        $bornes = self::bornesFacturees($items);
         foreach ($items as $item) {
             if (! is_object($item) || ! isset($item->instruction) || ! is_string($item->instruction) || $item->instruction === '') {
                 continue;
@@ -2092,19 +2093,135 @@ class FrontendOrderService
                     $boissonPayee = true;   // menu_full, menu_formule, menu_boisson
                 }
             }
-            $item->instruction = self::instructionWebAssainie($item->instruction, $fritesPayees, $boissonPayee);
+            $ligne = $bornes['lignes'][spl_object_id($item)] ?? ['sauces' => 0, 'viandes' => 0, 'nom' => ''];
+            $item->instruction = self::instructionWebAssainie($item->instruction, $fritesPayees, $boissonPayee, [
+                'sauces'  => $ligne['sauces'],
+                'viandes' => $ligne['viandes'],
+                'boisson' => $bornes['boisson'],
+                'frites'  => static fn (string $style): bool => $style !== '' && $ligne['nom'] !== ''
+                    && str_contains($ligne['nom'], self::cleCatalogue($style)),
+            ]);
         }
 
         return $items;
     }
 
     /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 6 · P1 sauces gratuites / contenu de formule] Ce que la ligne a réellement PAYÉ,
+     * relu au catalogue (jamais le nom envoyé par le client) :
+     *   - sauces en plus = quantités des extras « Sauce supplémentaire » de CET article (même règle que PricingService :
+     *     max(1, (int) quantité)) — le site y cumule les sauces du sandwich au-delà de la 1ʳᵉ et celles des frites au-delà
+     *     de la 1ʳᵉ (api.js) ;
+     *   - viandes en plus = quantités des extras « Viande supplémentaire » / « Viande en plus » de CET article ;
+     *   - boisson de formule = UN produit actif et disponible d'une catégorie Boissons, nommé exactement.
+     *
+     * @param  array<int, mixed>  $items
+     * @return array{lignes: array<int, array{sauces: int, viandes: int, nom: string}>, boisson: \Closure(string): string}
+     */
+    private static function bornesFacturees(array $items): array
+    {
+        $lire = static fn ($o, string $k) => is_object($o) ? ($o->{$k} ?? null) : (is_array($o) ? ($o[$k] ?? null) : null);
+        $idsExtras = [];
+        $idsArticles = [];
+        foreach ($items as $item) {
+            if (! is_object($item)) {
+                continue;
+            }
+            $idsArticles[] = (int) ($item->item_id ?? 0);
+            foreach ((isset($item->item_extras) && is_array($item->item_extras)) ? $item->item_extras : [] as $e) {
+                $idsExtras[] = (int) $lire($e, 'id');
+            }
+        }
+        $extras = array_filter($idsExtras) === [] ? collect() : \App\Models\ItemExtra::query()
+            ->whereIn('id', array_values(array_unique(array_filter($idsExtras))))->get(['id', 'item_id', 'name'])->keyBy('id');
+        $noms = array_filter($idsArticles) === [] ? collect() : Item::query()
+            ->whereIn('id', array_values(array_unique(array_filter($idsArticles))))->pluck('name', 'id');
+
+        $lignes = [];
+        foreach ($items as $item) {
+            if (! is_object($item)) {
+                continue;
+            }
+            $sauces = 0;
+            $viandes = 0;
+            foreach ((isset($item->item_extras) && is_array($item->item_extras)) ? $item->item_extras : [] as $e) {
+                $ext = $extras[(int) $lire($e, 'id')] ?? null;
+                if ($ext === null || (int) $ext->item_id !== (int) ($item->item_id ?? 0)) {
+                    continue;
+                }
+                $q = max(1, (int) ($lire($e, 'quantity') ?? 1));
+                $nom = self::cleCatalogue((string) $ext->name);
+                if (preg_match('/^sauces? suppl/u', $nom)) {
+                    $sauces += $q;
+                } elseif (preg_match('/^viandes? (suppl|en plus)/u', $nom)) {
+                    $viandes += $q;
+                }
+            }
+            $lignes[spl_object_id($item)] = [
+                'sauces'  => $sauces,
+                'viandes' => $viandes,
+                'nom'     => self::cleCatalogue((string) ($noms[(int) ($item->item_id ?? 0)] ?? '')),
+            ];
+        }
+
+        $boissons = null;
+        $boisson = static function (string $nom) use (&$boissons): string {
+            if ($boissons === null) {
+                $boissons = [];
+                $rows = Item::query()
+                    ->join('item_categories', 'item_categories.id', '=', 'items.item_category_id')
+                    ->whereNull('item_categories.deleted_at')
+                    ->get(['items.name', 'items.status', 'items.is_available', 'item_categories.name as categorie']);
+                foreach ($rows as $r) {
+                    if (str_contains(self::cleCatalogue((string) $r->categorie), 'boisson')) {
+                        $boissons[self::cleCatalogue((string) $r->name)] = [
+                            'nom'   => (string) $r->name,
+                            'dispo' => (int) $r->status === \App\Enums\Status::ACTIVE && (bool) $r->is_available,
+                        ];
+                    }
+                }
+            }
+            $trouvee = $boissons[self::cleCatalogue(rtrim(trim($nom), '.'))] ?? null;
+            if ($trouvee === null) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'La boisson de votre menu n\'est pas reconnue. Modifiez l\'article pour en choisir une autre.']);
+            }
+            if (! $trouvee['dispo']) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'La boisson « '.$trouvee['nom'].' » de votre menu n\'est plus disponible. Modifiez l\'article pour en choisir une autre.']);
+            }
+
+            return $trouvee['nom'];
+        };
+
+        return ['lignes' => $lignes, 'boisson' => $boisson];
+    }
+
+    private static function cleCatalogue(string $nom): string
+    {
+        return (string) preg_replace('/\s+/', ' ', trim(mb_strtolower(\Illuminate\Support\Str::ascii($nom))));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function listeDeNoms(string $contenu): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (string $n): string => trim(rtrim(trim($n), '.')),
+            explode(',', $contenu)
+        ), static fn (string $n): bool => $n !== ''));
+    }
+
+    /**
      * @param  bool  $fritesPayees  frites de la formule payées (« Frites: », « Sauce frites : » gardées)
      * @param  bool|null  $boissonPayee  boisson de la formule payée (« Boisson menu: » gardée) ; null = comme $fritesPayees
+     * @param  array{sauces?: int, viandes?: int, boisson?: \Closure(string): string, frites?: \Closure(string): bool}  $bornes
+     *         ce que la ligne a payé (sansFormuleNonPayee) ; clé absente = pas de borne (appel direct)
      */
-    public static function instructionWebAssainie(string $instruction, bool $fritesPayees, ?bool $boissonPayee = null): string
+    public static function instructionWebAssainie(string $instruction, bool $fritesPayees, ?bool $boissonPayee = null, array $bornes = []): string
     {
         $boissonPayee ??= $fritesPayees;
+        // Sauces payées : d'abord celles du produit (« Sauces en plus »), le reste aux frites (1ʳᵉ sauce frites offerte).
+        $saucesRestantes = $bornes['sauces'] ?? null;
         $gardees = [];
         foreach (preg_split('/\R/u', $instruction) ?: [] as $ligne) {
             $t = self::texteNormalise((string) $ligne);
@@ -2119,17 +2236,46 @@ class FrontendOrderService
                 continue;
             }
             if (preg_match('/^(Viandes en plus|Sauces en plus) : (.+)$/u', $t, $m)) {
-                $gardees[] = $m[1].' : '.self::contenuNeutre($m[2]);
+                $plafond = $m[1] === 'Viandes en plus' ? ($bornes['viandes'] ?? null) : $saucesRestantes;
+                if ($plafond === null) {
+                    $gardees[] = $m[1].' : '.self::contenuNeutre($m[2]);
+                    continue;
+                }
+                // Jamais plus de noms que d'extras payés : le surplus n'est pas annoncé en cuisine.
+                $noms = array_slice(self::listeDeNoms(self::contenuNeutre($m[2])), 0, max(0, (int) $plafond));
+                if ($m[1] === 'Sauces en plus') {
+                    $saucesRestantes = max(0, (int) $saucesRestantes - count($noms));
+                }
+                if ($noms !== []) {
+                    $gardees[] = $m[1].' : '.implode(', ', $noms).'.';
+                }
                 continue;
             }
             if (preg_match('/^(Frites|Boisson menu): (.+)$/u', $t, $m)) {
-                if ($m[1] === 'Frites' ? $fritesPayees : $boissonPayee) {
-                    $gardees[] = $m[1].': '.self::contenuNeutre($m[2]);
+                if ($m[1] === 'Boisson menu' && $boissonPayee) {
+                    // UNE boisson, produit actif du catalogue (sinon refus lisible) — jamais une liste ni un texte libre.
+                    $contenu = self::contenuNeutre($m[2]);
+                    $gardees[] = 'Boisson menu: '.(isset($bornes['boisson']) ? self::contenuNeutre(($bornes['boisson'])($contenu)) : $contenu);
+                } elseif ($m[1] === 'Frites' && $fritesPayees) {
+                    // Le site n'a plus d'étape « style de frites » dans la formule (facturé 1 € au comptoir) : le style n'est
+                    // gardé que s'il est celui du produit commandé lui-même (« Grande Frites Cheddar fondu »).
+                    $contenu = self::contenuNeutre($m[2]);
+                    if (! isset($bornes['frites']) || ($bornes['frites'])($contenu)) {
+                        $gardees[] = 'Frites: '.$contenu;
+                    }
                 }
                 continue;
             }
             if ($fritesPayees && preg_match('/^Sauce frites : (.+)$/u', $t, $m)) {
-                $gardees[] = 'Sauce frites : '.self::contenuNeutre($m[1]);
+                $contenu = self::contenuNeutre($m[1]);
+                if ($saucesRestantes !== null) {
+                    $noms = array_slice(self::listeDeNoms($contenu), 0, 1 + max(0, (int) $saucesRestantes));
+                    $saucesRestantes = max(0, (int) $saucesRestantes - max(0, count($noms) - 1));
+                    $contenu = implode(', ', $noms);
+                }
+                if ($contenu !== '') {
+                    $gardees[] = 'Sauce frites : '.$contenu;
+                }
             }
             // Toute autre ligne est retirée (le site ne la produit pas).
         }
