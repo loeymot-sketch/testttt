@@ -61,3 +61,17 @@ Tests : Vitest complet 674 fichiers / 5947 verts (après d7cd618ab) ; PHPUnit co
 Ventes de test scellées NF525 (non annulables) laissées : n° fiscaux 3596–3629 environ (commandes 9785–9934 listées dans les rapports de vague). Commande 9792 (session voisine) encaissée au tour 3. `Cache::flush()` du Redis de dev au tour 5 (13h55-14h00). Réglages `horaires` restaurés (aucune fermeture de test restante, vérifié).
 
 Rapports de vague : `round-3/`, `round-4/`, `round-5/` (`wave-*-findings.json`).
+
+## Tour 6 — test abusif final sur l'état mis en ligne (après b82bb5d1a)
+
+Session voisine, serveur privé :8781, base foodking_points, charges réelles de l'attaquant.
+- P1 sauces gratuites (9925/9926) et P1 contenu de formule (9948 champagne, 9949 trois boissons + grandes frites cheddar) → **a7dee05b5** : la cuisine n'annonce que ce que la ligne a payé ; boisson de menu = une boisson active du catalogue, sinon 422. Rejoué en réel : 4/4 attaques fermées.
+- P1 stock (session voisine) → **8cf08c98c** : une commande site/borne annulée en caisse rend son stock.
+- Gestion/horaires/caisse 45 attaques et fidélité 18 attaques : 0 P0/P1.
+- Ouverts, non bloquants :
+  - P2 : minimum de livraison contrôlé sur le subtotal ENVOYÉ (latent, aucun minimum posé) ;
+  - P2 : boisson de menu en rupture (items.is_available) acceptée à la caisse et à la borne ;
+  - P3 : produit channels ["pos"] commandable sur le web ;
+  - P3 : quantités d'extras négatives ou fractionnaires stockées telles quelles (facturées max(1,(int)q)) ;
+  - P3 : 24 GET /api/admin/* de réglages lisibles par un jeton client.
+- À mettre en ligne (par le propriétaire) : site b61d61f, puis `bash tools/deploy-lecayenne.sh a7dee05b5` ; puis resynchroniser l'app.
