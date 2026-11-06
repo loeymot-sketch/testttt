@@ -351,6 +351,13 @@ class LoyaltyController extends Controller
         if (!$caller || !$caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff'])) {
             return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
         }
+        // [AUDIT ABUSIF 2026-11-06 · W2-P1-2] Le compte qui POSSÈDE la borne est l'admin : le contrôle de rôle laissait passer le
+        // jeton de la borne (aptitude « kiosk:order » seule), qui créditait +10 000 points à n'importe quel client. Un crédit manuel
+        // est refusé à tout jeton limité à la borne (kiosk:order sans « * »).
+        $jeton = $caller->currentAccessToken();
+        if ($jeton instanceof \Laravel\Sanctum\PersonalAccessToken && $jeton->can('kiosk:order') && !$jeton->can('*')) {
+            return response()->json(['status' => false, 'message' => 'Non autorisé'], 403);
+        }
 
         try {
             $validator = $this->validatePoints($request);
