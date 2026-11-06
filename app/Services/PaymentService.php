@@ -538,6 +538,15 @@ class PaymentService
         if ($paid) {
             OrderPaidAtCounter::dispatch($order, $mode);
 
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P0-2] Encaissée au comptoir = validée ET payée :
+            // les points tombent maintenant (borne Plan B, retrait du site réglé sur place). Idempotent par la
+            // sentinelle `orders.loyalty_points_awarded` (un crédit déjà fait à l'acceptation n'est pas doublé).
+            try {
+                app(\App\Listeners\AwardLoyaltyPointsOnDelivery::class)->award($order);
+            } catch (\Throwable $e) {
+                Log::warning('[Loyalty] crédit à l\'encaissement comptoir échoué', ['order_id' => (int) $order->id, 'error' => $e->getMessage()]);
+            }
+
             // [SELF-AUDIT R2 P3 2026-07-05 — table dine-in jamais libérée en encaissement différé]
             // tryReleaseTableAfterPosOrderPaid n'était appelée QUE sur le chemin synchrone create-and-pay
             // (OrderService::posOrderStore) — no-op pour les commandes différées (PENDING_COUNTER). Une

@@ -156,6 +156,39 @@ class LoyaltyService
      * race conditions where partial redemptions / expirations might
      * have already drawn the balance below the awarded amount.
      */
+    /**
+     * [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P0-1/P1-3] Reprend les points GAGNÉS par une commande
+     * qu'on annule, en résolvant le client EXACTEMENT comme l'attribution (`AwardLoyaltyPointsOnDelivery::award`) :
+     * `loyalty_customer_code` d'abord, sinon le propriétaire de la commande s'il porte un `loyalty_code`.
+     *
+     * Depuis que les points tombent à la VALIDATION (et non plus à la remise), une commande acceptée puis annulée
+     * — purge des impayés, annulation par le client — porte des points gagnés : chaque chemin d'annulation doit
+     * les reprendre. Idempotent (NOOP si déjà repris) ; sans effet si rien n'a été crédité (sentinelle ≤ 0).
+     *
+     * @param \App\Models\Order|\App\Models\FrontendOrder $order
+     */
+    public function clawbackEarnedForOrder($order, string $reason): void
+    {
+        $awarded = (int) ($order->loyalty_points_awarded ?? 0);
+        if ($awarded <= 0) {
+            return;
+        }
+        $user = null;
+        if (! empty($order->loyalty_customer_code)) {
+            $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
+        }
+        if (! $user && $order->user_id) {
+            $candidate = User::find($order->user_id);
+            if ($candidate && $candidate->loyalty_code) {
+                $user = $candidate;
+            }
+        }
+        if (! $user) {
+            return;
+        }
+        $this->clawbackEarnedPoints((int) $user->id, $awarded, (int) $order->id, $reason);
+    }
+
     public function clawbackEarnedPoints(int $userId, int $amount, int $orderId, string $reason): void
     {
         if ($amount <= 0) {

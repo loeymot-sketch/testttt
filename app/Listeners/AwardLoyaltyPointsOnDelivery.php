@@ -49,7 +49,24 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
+        // [Relecture adverse P0-2] Une commande BORNE à régler au comptoir (Plan B) est passée en ACCEPT par le
+        // SYSTÈME dès sa création (FrontendOrderService, auto-accept) : ce n'est ni une validation par le restaurant
+        // ni un paiement. On ne crédite pas sur cet ACCEPT-là ; le crédit tombe à l'encaissement (ACCEPT → PREPARING
+        // émis par PaymentService::confirmCounterPayment) ou quand la cuisine prend la commande.
+        if ((int) $event->newStatus === OrderStatus::ACCEPT && $this->estBorneImpayee($order)) {
+            return;
+        }
+
         $this->award($order);
+    }
+
+    /** Commande de la borne pas encore payée (encaissement au comptoir à venir). */
+    private function estBorneImpayee($order): bool
+    {
+        $borne = (string) ($order->source_surface ?? '') === 'kiosk'
+            || (int) ($order->order_type ?? 0) === OrderType::KIOSK;
+
+        return $borne && (int) ($order->payment_status ?? 0) !== \App\Enums\PaymentStatus::PAID;
     }
 
     /**

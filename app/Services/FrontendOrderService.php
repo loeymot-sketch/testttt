@@ -1015,6 +1015,9 @@ class FrontendOrderService
                 );
             }
             app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P1-3] Une commande déjà ACCEPTÉE (encore annulable
+            // par le client pour un retrait) a gagné ses points à la validation : l'annulation les reprend.
+            app(LoyaltyService::class)->clawbackEarnedForOrder($locked, 'Clawback fidélité — commande annulée par le client');
             $oldStatus = $locked->status;
             // [AUDIT-F-004] raison → transition row (invariant ORDER_FLOW §49).
             if (is_string($cancelReason)) {

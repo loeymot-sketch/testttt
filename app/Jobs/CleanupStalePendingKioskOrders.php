@@ -386,6 +386,10 @@ class CleanupStalePendingKioskOrders
             // crédit sur un re-run du cron. Aucun audit log dédié : le chemin changeStatus
             // n'en émet pas non plus (refundPoints logue via Log::info).
             app(\App\Services\LoyaltyService::class)->refundPoints($locked, $refundSurface);
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse P0-1] refundPoints ne rend que les points
+            // DÉPENSÉS. Depuis que les points sont gagnés à la VALIDATION (ACCEPT/PREPARING), une commande impayée
+            // purgée ici en porte : on les reprend aussi, sinon le client garde des points pour une vente jamais payée.
+            app(\App\Services\LoyaltyService::class)->clawbackEarnedForOrder($locked, 'Clawback fidélité — commande impayée purgée');
 
             // From-status-aware terminal state, both legal per OrderStateMachine.allows()
             // with no frozen-zone edit :

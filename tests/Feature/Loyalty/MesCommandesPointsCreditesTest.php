@@ -39,6 +39,7 @@ class MesCommandesPointsCreditesTest extends TestCase
         $creditee = Order::factory()->create($base + ['status' => OrderStatus::ACCEPT, 'loyalty_points_awarded' => 124]);
         $enAttente = Order::factory()->create($base + ['status' => OrderStatus::PENDING, 'loyalty_points_awarded' => null]);
         $enCours = Order::factory()->create($base + ['status' => OrderStatus::PREPARING, 'loyalty_points_awarded' => -1]);
+        $retournee = Order::factory()->create($base + ['status' => OrderStatus::RETURNED, 'loyalty_points_awarded' => 300]);
 
         $rows = collect($this->actingAs($client)->withHeader('x-api-key', '123456')
             ->getJson('/api/frontend/order?limit=50')->assertOk()->json('data'))->keyBy('id');
@@ -47,5 +48,6 @@ class MesCommandesPointsCreditesTest extends TestCase
         $this->assertSame(0, $rows[$enAttente->id]['loyalty_points_awarded']);
         $this->assertSame(0, $rows[$enCours->id]['loyalty_points_awarded'], 'la sentinelle -1 ne sort jamais');
         $this->assertSame(OrderStatus::PENDING, (int) $rows[$enAttente->id]['status']);
+        $this->assertSame(0, $rows[$retournee->id]['loyalty_points_awarded'], 'retournée : points repris, aucun gain affiché');
     }
 }

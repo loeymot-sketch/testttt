@@ -44,7 +44,9 @@ class UserOrderResource extends JsonResource
             // [POINTS À LA VALIDATION 2026-11-06] Points RÉELLEMENT crédités pour cette commande (0 tant que rien
             // ne l'est : en attente, annulée, crédit en cours). Le client voit ce que ses commandes lui ont
             // rapporté — jamais un total de ce qu'il a dépensé.
-            'loyalty_points_awarded'         => max(0, (int) ($this->loyalty_points_awarded ?? 0)),
+            'loyalty_points_awarded'         => in_array((int) $this->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)
+                ? 0 // [relecture adverse P2-4] annulée/refusée/retournée : les points ont été repris, on n'affiche pas un gain fantôme
+                : max(0, (int) ($this->loyalty_points_awarded ?? 0)),
             'status_name'                    => trans('orderStatus.' . $this->status)
         ];
     }
