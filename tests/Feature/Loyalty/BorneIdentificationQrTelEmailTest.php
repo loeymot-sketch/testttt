@@ -102,7 +102,9 @@ class BorneIdentificationQrTelEmailTest extends TestCase
     {
         $c = $this->client(['loyalty_points' => 1500]);
         $o = \App\Models\Order::factory()->create(['user_id' => $c->id, 'branch_id' => Branch::query()->first()->id,
-            'source_surface' => 'web', 'status' => \App\Enums\OrderStatus::ACCEPT, 'payment_status' => \App\Enums\PaymentStatus::PAID, 'total' => 50]);
+            // PRÉPAYÉE en ligne : seule une commande prépayée bloque ses points jusqu'à la remise (payée sur place = remise).
+            'source_surface' => 'web', 'status' => \App\Enums\OrderStatus::ACCEPT, 'payment_status' => \App\Enums\PaymentStatus::PAID,
+            'payment_method' => \App\Enums\PaymentGateway::CARD, 'total' => 50]);
         DB::table('loyalty_transactions')->insert(['user_id' => $c->id, 'loyalty_code' => $c->loyalty_code, 'order_id' => $o->id,
             'type' => 'earn', 'points' => 500, 'balance_after' => 1500, 'source_surface' => 'web', 'created_at' => now(), 'updated_at' => now()]);
 
