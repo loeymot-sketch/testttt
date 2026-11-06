@@ -80,6 +80,20 @@ final class PosLoyaltyAttachService
             );
         }
 
+        // [Relecture adverse tour 2 · P2 · 2026-11-06] DÉJÀ CRÉDITÉE SANS CODE (le propriétaire de la commande a reçu
+        // ses points à la validation) : poser maintenant le code d'un AUTRE client ferait viser ce second client par
+        // toute reprise ultérieure (annulation), et le premier garderait des points d'une commande annulée.
+        if ($dejaRattache === '' && (int) ($order->loyalty_points_awarded ?? 0) > 0) {
+            $creditePour = (int) DB::table('loyalty_transactions')
+                ->where('order_id', $order->id)->where('type', 'earn')->value('user_id');
+            if ($creditePour !== 0 && $creditePour !== (int) ($client['id'] ?? 0)) {
+                return $this->refus(
+                    'ALREADY_CREDITED_OTHER',
+                    'Les points de cette commande sont déjà crédités à un autre client — un responsable doit intervenir.'
+                );
+            }
+        }
+
         DB::table('orders')->where('id', $order->id)
             ->update(['loyalty_customer_code' => $client['loyalty_code']]);
 

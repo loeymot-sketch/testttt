@@ -32,6 +32,7 @@ class PointsCreditesALaValidationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seedSpatieRoles();
         Settings::group('loyalty_setup')->set([
             'loyalty_points_per_euro'            => 10,
             'loyalty_points_for_1_euro_discount' => 100,
@@ -41,7 +42,10 @@ class PointsCreditesALaValidationTest extends TestCase
 
     private function client(): User
     {
-        return User::factory()->create(['loyalty_points' => 0, 'loyalty_code' => 'VAL' . strtoupper(substr(uniqid(), -6))]);
+        $u = User::factory()->create(['loyalty_points' => 0, 'loyalty_code' => 'VAL' . strtoupper(substr(uniqid(), -6))]);
+        $u->assignRole('Customer'); // [POINTS À LA VALIDATION 2026-11-06] un client inscrit porte le rôle « Customer » (CustomerAccount::isCustomer) : le repli par user_id ne crédite qu'un client
+
+        return $u;
     }
 
     private function commande(User $user, int $orderType, int $status = OrderStatus::PENDING): FrontendOrder

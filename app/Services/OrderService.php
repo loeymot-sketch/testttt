@@ -3464,6 +3464,19 @@ class OrderService
                 }
             }
 
+            // [POINTS À LA VALIDATION 2026-11-06 · relecture adverse tour 2 · P3] « Marquer payé » sur une commande déjà
+            // VALIDÉE : les points d'une commande impayée tombent au règlement (miroir de confirmCounterPayment). Sans
+            // cet appel, ils attendaient la transition suivante et le site affichait « Aucun point » entre-temps.
+            // Idempotent (sentinelle orders.loyalty_points_awarded) ; ne bloque jamais l'encaissement.
+            if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                && in_array((int) $order->status, \App\Listeners\AwardLoyaltyPointsOnDelivery::STATUTS_VALIDES, true)) {
+                try {
+                    app(\App\Listeners\AwardLoyaltyPointsOnDelivery::class)->award($order);
+                } catch (\Throwable $e) {
+                    Log::warning('[Loyalty] crédit au « marquer payé » échoué', ['order_id' => (int) $order->id, 'error' => $e->getMessage()]);
+                }
+            }
+
             // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
             if ($cacheKey !== null) {
                 Cache::put($cacheKey, $order->id, now()->addHours(24));

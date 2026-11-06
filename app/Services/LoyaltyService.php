@@ -173,6 +173,15 @@ class LoyaltyService
         if ($awarded <= 0) {
             return;
         }
+        // [Relecture adverse tour 2 · P2] Le client RÉELLEMENT crédité (ligne `earn` du registre) fait foi : un code
+        // rattaché APRÈS le crédit ne doit pas faire reprendre les points à quelqu'un d'autre.
+        $creditePour = (int) DB::table('loyalty_transactions')
+            ->where('order_id', $order->id)->where('type', 'earn')->value('user_id');
+        if ($creditePour > 0) {
+            $this->clawbackEarnedPoints($creditePour, $awarded, (int) $order->id, $reason);
+
+            return;
+        }
         $user = null;
         if (! empty($order->loyalty_customer_code)) {
             $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
@@ -187,6 +196,31 @@ class LoyaltyService
             return;
         }
         $this->clawbackEarnedPoints((int) $user->id, $awarded, (int) $order->id, $reason);
+    }
+
+    /**
+     * [Relecture adverse tour 2 · P3 · 2026-11-06] Points NETS qu'une commande rapporte encore au client, pour
+     * l'AFFICHAGE : crédit (`loyalty_points_awarded`) moins les reprises déjà écrites au registre pour cette commande
+     * (`manual_deduct`, source « refund »). Un remboursement après clôture laisse la commande payée et dans son statut :
+     * sans ce net, le client lisait « +X points crédités » pour des points repris. Commande annulée/refusée/retournée,
+     * ou sentinelle en cours (-1) : 0.
+     *
+     * @param \App\Models\Order|\App\Models\FrontendOrder $order
+     */
+    public static function pointsNetsCommande($order): int
+    {
+        if (in_array((int) $order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)) {
+            return 0;
+        }
+        $credite = (int) ($order->loyalty_points_awarded ?? 0);
+        if ($credite <= 0) {
+            return 0;
+        }
+        $repris = (int) DB::table('loyalty_transactions')
+            ->where('order_id', $order->id)->where('type', 'manual_deduct')->where('source_surface', 'refund')
+            ->sum('points'); // négatif
+
+        return max(0, $credite + $repris);
     }
 
     public function clawbackEarnedPoints(int $userId, int $amount, int $orderId, string $reason): void

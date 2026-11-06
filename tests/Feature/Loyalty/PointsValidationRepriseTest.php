@@ -56,7 +56,7 @@ class PointsValidationRepriseTest extends TestCase
             'branch_id' => $this->branch->id, 'status' => \App\Enums\Status::ACTIVE,
             'loyalty_points' => 0, 'loyalty_code' => 'REP' . strtoupper(substr(uniqid(), -6)),
         ]);
-        $u->assignRole(\App\Enums\Role::CUSTOMER);
+        $u->assignRole('Customer'); // par NOM : dans le harnais l'id 2 est « Chef » (CustomerAccount::isCustomer)
 
         return $u;
     }

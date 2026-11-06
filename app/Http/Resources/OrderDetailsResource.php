@@ -110,9 +110,7 @@ class OrderDetailsResource extends JsonResource
             'status_name' => trans('orderStatus.'.$this->status),
             // [POINTS À LA VALIDATION 2026-11-06] Points RÉELLEMENT crédités pour cette commande (0 tant que rien ne
             // l'est ; la sentinelle « crédit en cours » -1 ne sort jamais). Le suivi l'affiche dès la validation.
-            'loyalty_points_awarded' => in_array((int) $this->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED], true)
-                ? 0 // [relecture adverse P2-4] annulée/refusée/retournée : les points ont été repris, on n'affiche pas un gain fantôme
-                : max(0, (int) ($this->loyalty_points_awarded ?? 0)),
+            'loyalty_points_awarded' => \App\Services\LoyaltyService::pointsNetsCommande($this->resource), // net : crédit − reprises (relecture adverse tour 2 · P3)
             'reason' => $this->reason,
             // [SEC P3 + PERF P2 2026-07-22] Projection client LÉGÈRE orientée POS —
             // miroir de la minimisation delivery_boy ci-dessous. L'ancienne forme

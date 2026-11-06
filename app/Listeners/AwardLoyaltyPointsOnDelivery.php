@@ -232,13 +232,20 @@ class AwardLoyaltyPointsOnDelivery
         }
     }
 
-    /** Vrai pour un compte CLIENT : ni propriétaire d'une borne, ni porteur d'un rôle du personnel. */
+    /**
+     * Vrai pour un compte CLIENT au sens du projet (`CustomerAccount::isCustomer` : rôle « Customer » par NOM, ou
+     * invité fidélité), qui n'est pas propriétaire d'une borne. Critère POSITIF : un compte technique
+     * sans rôle (« uber-eats-system ») n'est pas un client [relecture adverse tour 2 · P2].
+     */
     public static function estUnClient(User $u): bool
     {
-        if (\App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists()) {
+        // `isCustomer` seul : un compte de l'équipe ou technique ne porte pas le rôle client. On n'ajoute PAS « et pas
+        // de l'équipe » : l'inscription attribue le rôle par IDENTIFIANT (2 = « Customer » en production, « Chef » dans
+        // le harnais) — la double condition écartait un vrai client inscrit.
+        if (! app(\App\Services\Identity\CustomerAccount::class)->isCustomer($u)) {
             return false;
         }
 
-        return ! $u->roles()->where('id', '!=', \App\Enums\Role::CUSTOMER)->exists();
+        return ! \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists();
     }
 }
