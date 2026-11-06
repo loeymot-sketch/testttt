@@ -147,6 +147,20 @@ class DeliveryRunTest extends TestCase
         $this->assertEquals(0.0, $board->json('data.0.cash.to_collect'));
     }
 
+    /** [AUDIT ABUSIF tour 3 · ECR-R3-004] Commande annulée pendant la tournée : la planche la marque annulée, rien à encaisser. */
+    public function test_an_order_cancelled_on_the_road_is_flagged_and_not_to_collect(): void
+    {
+        $stop = $this->readyDelivery(['payment_status' => PaymentStatus::UNPAID, 'payment_method' => PaymentGateway::CASH_ON_DELIVERY, 'total' => 9.6]);
+        $this->http()->postJson('/api/frontend/delivery-run/depart', ['wave_at' => '2026-10-20 19:30:00'])->assertOk();
+        \App\Models\FrontendOrder::query()->withoutGlobalScopes()->whereKey($stop->order_id)->update(['status' => \App\Enums\OrderStatus::CANCELED]);
+
+        $cashier = User::factory()->create(['branch_id' => $this->branch->id, 'status' => Status::ACTIVE]);
+        $cashier->givePermissionTo(\Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos', 'guard_name' => 'sanctum']));
+        $board = $this->actingAs($cashier, 'sanctum')->withHeader('x-api-key', 'test-api-key')->getJson('/api/admin/pos-delivery/board')->assertOk();
+        $this->assertTrue($board->json('data.0.stops.0.cancelled'));
+        $this->assertEquals(0.0, $board->json('data.0.cash.to_collect'));
+    }
+
     public function test_depart_leaves_orders_not_yet_prepared_behind_and_says_so(): void
     {
         $ready = $this->readyDelivery();

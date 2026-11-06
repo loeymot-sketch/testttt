@@ -242,6 +242,8 @@ class PosDeliveryController extends Controller
                 'collect_method' => $s->collect_method, 'amount_due' => round($s->amount_due_cents / 100, 2),
                 'left_at' => $s->left_at?->toDateTimeString(), 'arrived_at' => $s->arrived_at?->toDateTimeString(),
                 'delivered_at' => $s->delivered_at?->toDateTimeString(), 'has_photo' => (bool) $s->proof_photo_path,
+                // [AUDIT ABUSIF tour 3 · ECR-R3-004] Commande annulée en route : l'écran ne l'annonce plus « Espèces 9,60 € ».
+                'cancelled' => $annulee($s),
                 ...$this->uberView($s),
             ])->values()->all(),
         ])->values()->all();

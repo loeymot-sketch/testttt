@@ -8225,10 +8225,16 @@ export default {
             });
         },
         carts: {
-            handler(newCarts) {
+            handler(newCarts, oldCarts) {
                 if (!newCarts || newCarts.length === 0) {
-                    this._cleEncaissement = null; // [W1-P1-01] panier vidé = vente terminée ou abandonnée : clé oubliée
-                    try { window.localStorage.removeItem('pos.cle-encaissement'); } catch (_) { /* rien à faire */ }
+                    // [W1-P1-01] panier VIDÉ (il avait des lignes) = vente terminée ou abandonnée : clé oubliée.
+                    // [AUDIT ABUSIF tour 3 · ECR-R3-001] Jamais au premier appel (immediate) ni sur un panier déjà vide :
+                    // au chargement le panier est vide AVANT d'être réhydraté (posCart/setScope) — effacer ici perdait la
+                    // clé gardée pour un F5 après réponse perdue, et le nouvel essai créait une 2ᵉ vente fiscale.
+                    if (Array.isArray(oldCarts) && oldCarts.length > 0) {
+                        this._cleEncaissement = null;
+                        try { window.localStorage.removeItem('pos.cle-encaissement'); } catch (_) { /* rien à faire */ }
+                    }
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
                     this.discountReason = '';

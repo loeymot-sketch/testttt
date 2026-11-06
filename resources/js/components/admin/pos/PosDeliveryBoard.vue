@@ -81,7 +81,9 @@
                         <div class="text-right">
                             <!-- [VG-2026-10-21 R2-cuisine-livraison-003] Le vrai mode : un titre-restaurant n'est plus annoncé « Espèces ». -->
                             <!-- [E2E 2026-10-23 C2-002] Un arrêt REMIS a été encaissé : jamais « Espèces 6,80 € » en orange comme un dû. -->
-                            <div class="font-bold" :class="s.delivered_at || !(s.amount_due > 0) ? 'text-green-700' : 'text-[#9A3412]'">
+                            <!-- [AUDIT ABUSIF tour 3 · ECR-R3-004] Annulée en route : rien à encaisser (l'en-tête ne la compte pas non plus). -->
+                            <div v-if="s.cancelled" class="font-bold text-gray-500" data-testid="pos-delivery-stop-cancelled">Annulée · rien à encaisser</div>
+                            <div v-else class="font-bold" :class="s.delivered_at || !(s.amount_due > 0) ? 'text-green-700' : 'text-[#9A3412]'">
                                 {{ s.delivered_at
                                     ? (s.amount_due > 0 ? 'Encaissé ' + format(s.amount_due) + ' (' + collectLabel(s.collect_method).toLowerCase() + ')' : 'Payé')
                                     : (s.amount_due > 0 ? (collectLabel(s.collect_method) + ' ' + format(s.amount_due)) : 'Payé') }}
@@ -197,7 +199,8 @@ export default {
         // [VG-2026-10-21 R2-cuisine-livraison-003] Ce que le livreur rapporte, selon le mode renvoyé par le serveur
         // (DeliveryStop::COLLECT_* + DeliveryWaveService::COLLECT_MEAL_VOUCHER). Mode inconnu : jamais « Espèces » inventé.
         collectLabel(method) {
-            return { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant' }[method] || 'À encaisser';
+            // [AUDIT ABUSIF tour 3 · ECR-R3-003] « split » (plusieurs moyens à la porte, DeliveryRunController) : plus « (à encaisser) » une fois remis.
+            return { cash: 'Espèces', card: 'Carte', meal_voucher: 'Titre-restaurant', split: 'Plusieurs moyens' }[method] || 'À encaisser';
         },
         // [VG-2026-10-21 M4-005] Jour de la tournée renvoyé par le serveur (DeliveryWaveService::waveDay) ;
         // repli sur la date de wave_at (« Y-m-d H:i:s ») si le champ manque.

@@ -217,6 +217,8 @@
                                 <span>{{ $t("button.close") }}</span>
                             </button>
                         </div>
+                        <!-- [AUDIT ABUSIF tour 3 · ECR-R3-002] L'erreur s'affichait en haut du tiroir, hors de l'écran : rien près d'« Enregistrer ». -->
+                        <p v-if="saveError" role="alert" class="db-field-alert mt-2" data-testid="coupon-save-error">{{ saveError }}</p>
                     </div>
                 </div>
             </form>
@@ -258,6 +260,7 @@ export default {
             },
             image: "",
             errors: {},
+            saveError: '',
             // [PROMO-DASH-2026-05-06] Options scoping avancé
             dayOptions: [
                 { id: 'mon', name: this.$t('label.monday_short') || 'Mon' },
@@ -292,6 +295,7 @@ export default {
             appService.sideDrawerHide();
             this.$store.dispatch("coupon/reset").then().catch();
             this.errors = {};
+            this.saveError = '';
             this.$props.props.form = {
                 name: "",
                 description: "",
@@ -408,6 +412,7 @@ export default {
                     fd.append('branch_scope', ''); // [W4-P2] branche vidée = valable partout
                 }
                 const tempId = this.$store.getters["coupon/temp"].temp_id;
+                this.saveError = '';
                 this.loading.isActive = true;
                 this.$store
                     .dispatch("coupon/save", {
@@ -449,7 +454,11 @@ export default {
                     })
                     .catch((err) => {
                         this.loading.isActive = false;
-                        this.errors = err.response.data.errors;
+                        const data = (err && err.response && err.response.data) || {};
+                        this.errors = data.errors || {};
+                        this.saveError = Object.keys(this.errors).length > 0
+                            ? 'Le code promo n\'est pas enregistré : corrigez les champs signalés en rouge.'
+                            : (data.message || 'Le code promo n\'est pas enregistré. Vérifiez la connexion et réessayez.');
                     });
             } catch (err) {
                 this.loading.isActive = false;
