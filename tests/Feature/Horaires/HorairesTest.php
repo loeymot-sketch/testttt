@@ -131,6 +131,12 @@ class HorairesTest extends TestCase
         Sanctum::actingAs($admin, ['*']);
         $this->putJson('/api/admin/setting/horaires', ['semaine' => $this->semaine([2 => ['ouvert' => true, 'ouverture' => '18:00', 'fermeture' => '18:00']]), 'fermetures' => []])
             ->assertStatus(422);
+        // [AUDIT ABUSIF W4-P2] Clés « 01 » … « 07 » : refusées (elles fermaient les 7 jours sans erreur).
+        $forge = [];
+        foreach ($this->semaine() as $iso => $j) {
+            $forge['0' . $iso] = $j;
+        }
+        $this->putJson('/api/admin/setting/horaires', ['semaine' => $forge, 'fermetures' => []])->assertStatus(422);
         $this->putJson('/api/admin/setting/horaires', $payload)->assertStatus(200);
         $this->getJson('/api/admin/setting/horaires')->assertStatus(200)->assertJsonPath('data.fermetures.0.message', 'Réveillon');
 

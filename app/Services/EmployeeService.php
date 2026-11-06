@@ -145,6 +145,14 @@ class EmployeeService
                 if (!$this->callerMayGrantRole(auth()->user(), $request->role_id)) {
                     throw new Exception(trans('all.message.permission_denied'), 422);
                 }
+                // [AUDIT ABUSIF 2026-11-06 · W4-P1-2] Le rôle ACTUEL de la cible compte aussi (symétrie destroy) : un Branch
+                // Manager rétrogradait un PAIR en « Stuff » en changeant son e-mail et son mot de passe, puis se connectait
+                // à son compte. On ne modifie que quelqu'un dont on pourrait attribuer le rôle actuel.
+                if ((int) $employee->id !== (int) optional(auth()->user())->id
+                    && !$this->callerMayGrantRole(auth()->user(), optional($employee->roles[0])->id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
+                $identifiantsChanges = $request->password || mb_strtolower((string) $request->email) !== mb_strtolower((string) $employee->email);
                 DB::transaction(function () use ($employee, $request) {
                     $this->user               = $employee;
                     $this->user->name         = $request->name;
@@ -161,6 +169,11 @@ class EmployeeService
                     // the user update (was outside: a failed sync left the user mutated but role stale).
                     $this->user->syncRoles($request->role_id);
                 });
+                // [AUDIT ABUSIF 2026-11-06 · W4-P2] Mot de passe ou e-mail changé par un tiers : les sessions ouvertes du compte
+                // sont fermées (sinon l'ancien détenteur — ou celui qui a pris le compte — reste connecté jusqu'à 8 h).
+                if ($identifiantsChanges && (int) $employee->id !== (int) optional(auth()->user())->id) {
+                    $employee->tokens()->delete();
+                }
                 return $this->user;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);
@@ -205,6 +218,8 @@ class EmployeeService
                 if ($employee->hasRole(optional($employee->roles[0])->id)) {
                     DB::transaction(function () use ($employee) {
                         $employee->addresses()->delete();
+                        // [AUDIT ABUSIF 2026-11-06 · W4-P1-1] Un employé supprimé gardait ses jetons (accès admin 200 jusqu'à 8 h).
+                        $employee->tokens()->delete();
                         $employee->delete();
                     });
                 } else {

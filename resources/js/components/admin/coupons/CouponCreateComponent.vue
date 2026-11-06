@@ -171,9 +171,13 @@
                         <label class="db-field-title">{{ $t('label.valid_days_of_week') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="valid_days_of_week">
                             <label v-for="d in dayOptions" :key="d.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
-                                    :id="'day_' + d.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <!-- [AUDIT ABUSIF 2026-11-06 · W4-P1-3] Case DANS son conteneur relatif (.custom-checkbox) : sans lui, la case
+                                     invisible (absolute w-full h-full) couvrait tout le tiroir et captait le clic « Enregistrer ». -->
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
+                                        :id="'day_' + d.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ d.name }}</span>
                             </label>
                         </div>
@@ -183,9 +187,13 @@
                         <label class="db-field-title">{{ $t('label.surfaces') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="surfaces">
                             <label v-for="s in surfaceOptions" :key="s.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
-                                    :id="'surface_' + s.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <!-- [AUDIT ABUSIF 2026-11-06 · W4-P1-3] Case DANS son conteneur relatif (.custom-checkbox) : sans lui, la case
+                                     invisible (absolute w-full h-full) couvrait tout le tiroir et captait le clic « Enregistrer ». -->
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
+                                        :id="'surface_' + s.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ s.name }}</span>
                             </label>
                         </div>
@@ -228,6 +236,14 @@ export default {
     name: "CouponCreateComponent",
     components: { SmSidebarModalCreateComponent, LoadingComponent, Datepicker },
     props: ["props"],
+    // [AUDIT ABUSIF 2026-11-06 · W4-P2] À l'édition, le champ « branches » s'affichait VIDE alors que le code était limité à
+    // la branche 2 : la liste n'était jamais recopiée dans le champ texte. Elle l'est à chaque ouverture.
+    watch: {
+        'props.form.branch_scope': {
+            handler(v) { this.branchScopeCsv = Array.isArray(v) ? v.join(',') : ''; },
+            immediate: true,
+        },
+    },
     data() {
         return {
             loading: {
@@ -350,6 +366,11 @@ export default {
                 if (typeof this.props.form.status !== 'undefined' && this.props.form.status !== null && this.props.form.status !== '') {
                     fd.append('status', String(this.props.form.status));
                 }
+                // [AUDIT ABUSIF 2026-11-06 · W4-P2] Champ VIDÉ à l'édition = levée de la limite : on l'envoie vide (le serveur
+                // le met à null), sinon il gardait l'ancienne valeur malgré le message de succès.
+                if (!this.props.form.max_uses_global) fd.append('max_uses_global', '');
+                if (!this.props.form.valid_hours_start) fd.append('valid_hours_start', '');
+                if (!this.props.form.valid_hours_end) fd.append('valid_hours_end', '');
                 if (this.props.form.max_uses_global) {
                     fd.append('max_uses_global', String(this.props.form.max_uses_global));
                 }
@@ -383,6 +404,8 @@ export default {
                         .map((v) => v.trim())
                         .filter((v) => v !== '' && !isNaN(parseInt(v, 10)))
                         .forEach((v, i) => fd.append(`branch_scope[${i}]`, String(parseInt(v, 10))));
+                } else {
+                    fd.append('branch_scope', ''); // [W4-P2] branche vidée = valable partout
                 }
                 const tempId = this.$store.getters["coupon/temp"].temp_id;
                 this.loading.isActive = true;

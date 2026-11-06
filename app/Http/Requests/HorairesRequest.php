@@ -34,7 +34,9 @@ class HorairesRequest extends FormRequest
     {
         $validator->after(function ($v) {
             foreach ((array) $this->input('semaine', []) as $iso => $j) {
-                if (! in_array((int) $iso, [1, 2, 3, 4, 5, 6, 7], true)) {
+                // [AUDIT ABUSIF 2026-11-06 · W4-P2] « 01 » … « 07 » passaient ((int) « 01 » = 1) puis n'étaient lus par personne :
+                // les 7 jours devenaient fermés sans erreur. Clés EXACTES 1..7.
+                if (! in_array((string) $iso, ['1', '2', '3', '4', '5', '6', '7'], true)) {
                     $v->errors()->add('semaine', 'Jours attendus : 1 (lundi) à 7 (dimanche).');
                     break;
                 }

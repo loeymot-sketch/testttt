@@ -165,6 +165,19 @@ class CouponCrudTest extends TestCase
         $coupon->refresh();
         $this->assertNull($coupon->surfaces, 'Tout décoché = valable sur toutes les surfaces');
         $this->assertNull($coupon->valid_days_of_week, 'Tout décoché = tous les jours');
+
+        // [AUDIT ABUSIF W4-P2] Branche, plafond d'utilisations et heures VIDÉS à l'édition : la limite est levée.
+        $coupon->forceFill(['branch_scope' => [2], 'max_uses_global' => 50, 'valid_hours_start' => '11:00:00', 'valid_hours_end' => '14:00:00'])->save();
+        $payload = $this->validPayload(['code' => 'DECOCHE']);
+        foreach (['branch_scope', 'max_uses_global', 'valid_hours_start', 'valid_hours_end', 'surfaces', 'valid_days_of_week'] as $champ) {
+            $payload[$champ] = '';
+        }
+        $this->post('/api/admin/coupon/' . $coupon->id, $payload, ['Accept' => 'application/json'])->assertStatus(200);
+        $coupon->refresh();
+        $this->assertNull($coupon->branch_scope);
+        $this->assertNull($coupon->max_uses_global);
+        $this->assertNull($coupon->valid_hours_start);
+        $this->assertNull($coupon->valid_hours_end);
     }
 
     public function test_admin_can_delete_coupon(): void

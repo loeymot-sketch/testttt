@@ -429,6 +429,7 @@ export default {
                     valid_hours_end: coupon.valid_hours_end ? String(coupon.valid_hours_end).slice(0, 5) : "",
                     valid_days_of_week: Array.isArray(coupon.valid_days_of_week) ? coupon.valid_days_of_week : [],
                     surfaces: Array.isArray(coupon.surfaces) ? coupon.surfaces : [],
+                    branch_scope: Array.isArray(coupon.branch_scope) ? coupon.branch_scope : [],
                 };
             }).catch((err) => {
                 alertService.error(err.response.data.message);
