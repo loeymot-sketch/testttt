@@ -190,6 +190,28 @@ class DeliveryDoorSplitTest extends TestCase
         $this->assertNotNull($stop->delivered_at);
     }
 
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W5-P1-1] La planche « Tournées » de la caisse (espèces à récupérer auprès du livreur) lit la
+     * même source que le registre du livreur : un règlement carte + espèces y compte ses espèces ; un montant forgé
+     * (collected_cents=1) n'y entre jamais.
+     */
+    public function test_la_planche_de_la_caisse_compte_les_especes_reellement_encaissees(): void
+    {
+        $mixte = $this->road();
+        $this->deliver($mixte, ['payments' => [['mode' => 'card', 'amount' => 17.5], ['mode' => 'cash', 'amount' => 10]]])->assertOk();
+        $forge = $this->road();
+        $this->deliver($forge, ['collected_cents' => 1])->assertOk();
+        $this->assertSame((int) $forge->fresh()->amount_due_cents, (int) $forge->fresh()->amount_collected_cents, 'le chiffre du livreur est ignoré');
+
+        $this->app['auth']->forgetGuards();
+        $board = $this->actingAs($this->adminAccount, 'sanctum')
+            ->withHeaders(['x-api-key' => 'test-api-key', 'Accept' => 'application/json'])
+            ->getJson('/api/admin/pos-delivery/board')->assertOk();
+        $collecte = collect($board->json('data'))->sum(fn ($w) => $w['cash']['collected']);
+        $attendu = 10.0 + round($forge->fresh()->amount_due_cents / 100, 2);
+        $this->assertEqualsWithDelta($attendu, $collecte, 0.001, 'espèces de la planche = espèces réellement encaissées');
+    }
+
     public function test_three_means_cash_card_and_meal_voucher(): void
     {
         $stop = $this->road();

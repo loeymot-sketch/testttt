@@ -171,7 +171,9 @@ class DeliveryRunController extends Controller
         $stop->forceFill([
             'arrived_at'             => $stop->arrived_at ?? now(),
             'delivered_at'           => now(),
-            'amount_collected_cents' => $stop->amount_due_cents > 0 ? ($data['collected_cents'] ?? $stop->amount_due_cents) : 0,
+            // [AUDIT ABUSIF 2026-11-06 · W5-P1-1] Le montant encaissé est ce que le serveur a ENREGISTRÉ (le dû), jamais le chiffre
+            // envoyé par le livreur : collected_cents=1 était accepté et faussait la planche de la caisse.
+            'amount_collected_cents' => $stop->amount_due_cents > 0 ? $stop->amount_due_cents : 0,
         ]);
         if ($tranches !== null) { // le montant encaissé est la somme VÉRIFIÉE des tranches (jamais le champ client)
             $stop->forceFill([

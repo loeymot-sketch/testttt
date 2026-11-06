@@ -191,6 +191,27 @@ class PosDeliveryController extends Controller
         // de livreur disparaissait et l'en-tête disait « Aucun livreur » (le 1er arrêt était celui d'Uber, sans livreur à nous)
         // alors que cinq arrêts restaient à livrer par nous.
         $uberBag = DeliveryWaveService::uberBagTakenOrderIds()->pluck('order_id')->map(fn ($id) => (int) $id);
+        // [AUDIT ABUSIF 2026-11-06 · W5-P1-1] Espèces RÉELLEMENT encaissées par arrêt = même source que le registre de caisse du
+        // livreur : les lignes order_payments « livraison » en espèces (règlement en plusieurs moyens compris). Avant, la planche
+        // ne comptait que les arrêts 100 % espèces, au montant DÉCLARÉ par le livreur : 5 € carte + 4,60 € espèces faisaient
+        // disparaître 4,60 €, et collected_cents=1 affichait 0,01 € pour 9,60 € encaissés.
+        $especesParCommande = \App\Models\OrderPayment::query()->withoutGlobalScope(BranchScope::class)
+            ->whereIn('order_id', $stops->pluck('order_id')->filter()->unique()->values())
+            ->where('reference', 'livraison')->get(['order_id', 'mode', 'amount'])
+            ->groupBy('order_id')
+            ->map(fn ($rows) => [
+                'lignes' => true,
+                'cash'   => (int) round($rows->filter(fn ($p) => \App\Services\Delivery\DoorPaymentSplit::modeOfPosMethod((int) $p->mode) === \App\Services\Delivery\DoorPaymentSplit::CASH)->sum('amount') * 100),
+            ]);
+        $especesEncaissees = function ($s) use ($especesParCommande): int {
+            $e = $especesParCommande->get($s->order_id);
+            if ($e !== null) {
+                return $e['cash'];
+            }
+            // Chemin historique (un seul moyen, aucune ligne order_payments) : le dû de l'arrêt, jamais le chiffre envoyé par le livreur.
+            return $s->collect_method === DeliveryStop::COLLECT_CASH ? (int) $s->amount_due_cents : 0;
+        };
+        $annulee = fn ($s) => $s->order && in_array((int) $s->order->status, [\App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED], true);
         $ownLeft = fn ($s) => $s->left_at !== null && ! $uberBag->contains((int) $s->order_id);
         $waves = $stops->groupBy(fn ($s) => $s->wave_at->toDateTimeString())->map(fn ($g, $at) => [
             'wave_at' => $at,
@@ -211,8 +232,9 @@ class PosDeliveryController extends Controller
             // encaissées par le livreur (à lui réclamer au retour) et encore à encaisser. Avant, aucun écran ne disait « le
             // livreur X doit reverser Y € ». Les arrêts d'Uber sont payés en ligne : jamais comptés ici.
             'cash' => [
-                'collected' => round($g->filter(fn ($s) => $s->delivered_at !== null && $s->collect_method === 'cash')->sum('amount_collected_cents') / 100, 2),
-                'to_collect' => round($g->filter(fn ($s) => $s->delivered_at === null && $s->collect_method === 'cash')->sum('amount_due_cents') / 100, 2),
+                'collected' => round($g->filter(fn ($s) => $s->delivered_at !== null)->sum($especesEncaissees) / 100, 2),
+                // Une commande ANNULÉE en route n'est plus « à encaisser » (W5-P2-3).
+                'to_collect' => round($g->filter(fn ($s) => $s->delivered_at === null && $s->collect_method === 'cash' && ! $annulee($s))->sum('amount_due_cents') / 100, 2),
             ],
             'stops'   => $g->map(fn ($s) => [
                 'id' => $s->id, 'order_id' => $s->order_id, 'order_number' => $s->order?->order_serial_no,
