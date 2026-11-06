@@ -82,7 +82,7 @@
                             <!-- [VG-2026-10-21 R2-cuisine-livraison-003] Le vrai mode : un titre-restaurant n'est plus annoncé « Espèces ». -->
                             <!-- [E2E 2026-10-23 C2-002] Un arrêt REMIS a été encaissé : jamais « Espèces 6,80 € » en orange comme un dû. -->
                             <!-- [AUDIT ABUSIF tour 3 · ECR-R3-004] Annulée en route : rien à encaisser (l'en-tête ne la compte pas non plus). -->
-                            <div v-if="s.cancelled" class="font-bold text-gray-500" data-testid="pos-delivery-stop-cancelled">Annulée · rien à encaisser</div>
+                            <div v-if="s.cancelled && !s.delivered_at" class="font-bold text-gray-500" data-testid="pos-delivery-stop-cancelled">Annulée · rien à encaisser</div>
                             <div v-else class="font-bold" :class="s.delivered_at || !(s.amount_due > 0) ? 'text-green-700' : 'text-[#9A3412]'">
                                 {{ s.delivered_at
                                     ? (s.amount_due > 0 ? 'Encaissé ' + format(s.amount_due) + ' (' + collectLabel(s.collect_method).toLowerCase() + ')' : 'Payé')

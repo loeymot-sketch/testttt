@@ -291,7 +291,9 @@ class OrderRequest extends FormRequest
             // EXCEPTIONNELLE, quel que soit le mode — sinon elle partait des jours plus tard en silence ; (2) en RETRAIT quand
             // le restaurant ne sert pas (la livraison « au plus tôt » reste acceptée : la prochaine tournée est annoncée).
             // Borne : inchangée (machine physique dans le restaurant).
-            if (! $isKioskToken && blank($this->input('scheduled_at'))) {
+            // [tour 4 · R4-ADV-002] Une livraison avec CRÉNEAU de tournée choisi (delivery_slot_at) n'est pas « immédiate » :
+            // le créneau est contrôlé par les tournées (DeliveryWaveService, mêmes horaires et fermetures).
+            if (! $isKioskToken && blank($this->input('scheduled_at')) && blank($this->input('delivery_slot_at'))) {
                 $refus = self::refusHorsService($orderTypeInt, now());
                 if ($refus !== null) {
                     $validator->errors()->add('order_type', $refus);

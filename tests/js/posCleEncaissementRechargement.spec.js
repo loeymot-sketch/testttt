@@ -9,6 +9,7 @@ import PosComponent from '../../resources/js/components/admin/pos/PosComponent.v
  * Banc sur le VRAI handler du composant et la VRAIE méthode cleStablePourPanier (pas une copie).
  */
 const handler = PosComponent.watch.carts.handler;
+const quantite = PosComponent.watch.cartTotalQuantity;
 const cleStable = PosComponent.methods.cleStablePourPanier;
 
 function caisse(carts) {
@@ -46,5 +47,22 @@ describe('caisse — clé d\'encaissement après rechargement', () => {
         expect(window.localStorage.getItem('pos.cle-encaissement')).toBeNull();
         expect(c._cleEncaissement).toBeNull();
         expect(cleStable.call(caisse(panier), 'encaissement', 1)).not.toBe(cle);
+    });
+
+    it('[tour 4 · R4-ADV-001] lignes retirées une à une (panier vidé EN PLACE) : la clé est quand même oubliée', () => {
+        const c = { ...caisse(panier), triggerCartBump: () => {}, triggerTotalFlash: () => {} };
+        cleStable.call(c, 'encaissement', 1);
+        quantite.call(c, 1, 2);
+        expect(window.localStorage.getItem('pos.cle-encaissement')).not.toBeNull();
+        quantite.call(c, 0, 1);
+        expect(window.localStorage.getItem('pos.cle-encaissement')).toBeNull();
+        expect(c._cleEncaissement).toBeNull();
+    });
+
+    it('réhydratation (quantité 0 → 2) : la clé gardée reste', () => {
+        const c = { ...caisse(panier), triggerCartBump: () => {}, triggerTotalFlash: () => {} };
+        const cle = cleStable.call(c, 'encaissement', 1);
+        quantite.call(c, 2, 0);
+        expect(window.localStorage.getItem('pos.cle-encaissement')).toContain(cle);
     });
 });

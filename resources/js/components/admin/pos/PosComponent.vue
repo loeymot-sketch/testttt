@@ -8200,6 +8200,13 @@ export default {
                 this.triggerCartBump();
                 this.triggerTotalFlash();
             }
+            // [AUDIT ABUSIF tour 4 · R4-ADV-001] Lignes retirées une à une : le tableau du panier se vide EN PLACE, le
+            // watcher `carts` (non profond) ne le voit pas et la clé d'encaissement survivait. Quantité passée à zéro =
+            // panier vidé : clé oubliée (jamais au chargement, où la quantité MONTE de 0 à la réhydratation).
+            if (oldCount > 0 && Number(newCount) === 0) {
+                this._cleEncaissement = null;
+                try { window.localStorage.removeItem('pos.cle-encaissement'); } catch (_) { /* rien à faire */ }
+            }
         },
         // [FINITION 2026-11-04] La ligne qui vient de grandir (nouvelle ligne en fin de liste, ou quantité
         // augmentée d'une ligne existante) est amenée à l'écran, puis on recompte les lignes cachées.
