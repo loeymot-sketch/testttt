@@ -131,6 +131,11 @@ class AwardLoyaltyPointsOnDelivery
         $user = null;
         if (!empty($order->loyalty_customer_code)) {
             $user = User::where('loyalty_code', $order->loyalty_customer_code)->first();
+            // [Audit abusif tour 2 · P2 · 2026-11-06] Le code d'un compte de l'ÉQUIPE ou d'une BORNE (saisi à la borne
+            // par son téléphone, rattaché en caisse) ne reçoit pas les points des ventes des autres.
+            if ($user && self::estExcluDuCredit($user)) {
+                $user = null;
+            }
         }
         if (!$user && $order->user_id) {
             $candidate = User::find($order->user_id);
@@ -247,5 +252,21 @@ class AwardLoyaltyPointsOnDelivery
         }
 
         return ! \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists();
+    }
+
+    /**
+     * Compte qui ne reçoit JAMAIS de points par le code fidélité : propriétaire d'une borne, ou membre de l'équipe qui
+     * n'est pas AUSSI client. Règle d'EXCLUSION (et non critère positif) : un ancien client sans rôle ni statut
+     * invité reste crédité. « Équipe mais aussi client » reste crédité : l'inscription donne le rôle client par
+     * identifiant (2), qui se nomme « Chef » dans le harnais de test.
+     */
+    public static function estExcluDuCredit(User $u): bool
+    {
+        if (\App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists()) {
+            return true;
+        }
+        $comptes = app(\App\Services\Identity\CustomerAccount::class);
+
+        return $comptes->isStaff($u) && ! $comptes->isCustomer($u);
     }
 }

@@ -146,4 +146,33 @@ class PointsRelectureTour2Test extends TestCase
         $this->assertSame(PaymentStatus::PAID, (int) $o->fresh()->payment_status, 'pré-condition : payée');
         $this->assertSame(185, $this->solde($a), '« marquer payé » d\'une commande validée : les points tombent');
     }
+
+    /** Audit tour 2 · P2 — le code d'un compte de l'équipe (saisi à la borne / rattaché en caisse) ne reçoit rien. */
+    public function test_le_code_d_un_compte_de_l_equipe_ne_recoit_pas_les_points(): void
+    {
+        $admin = User::factory()->create(['branch_id' => $this->branch->id, 'loyalty_points' => 0, 'loyalty_code' => 'ADMINCOD']);
+        $admin->assignRole('Admin');
+        $client = $this->client('ACHETEUR');
+        $o = $this->commandePayee($client, ['loyalty_customer_code' => 'ADMINCOD']);
+
+        $this->valider($o);
+
+        $this->assertSame(0, $this->solde($admin), 'compte de l\'équipe : aucun point par le code');
+        $this->assertSame(185, $this->solde($client), 'repli sur le vrai client de la commande');
+    }
+
+    /** Un client créé au comptoir (invité fidélité, sans rôle) reste crédité par son code. */
+    public function test_un_client_du_comptoir_sans_role_reste_credite_par_son_code(): void
+    {
+        $invite = User::factory()->create(['branch_id' => 0, 'loyalty_points' => 0, 'loyalty_code' => 'INVITE01', 'is_guest' => \App\Enums\Ask::YES]);
+        $ancien = User::factory()->create(['branch_id' => 0, 'loyalty_points' => 0, 'loyalty_code' => 'ANCIEN01']); // sans rôle ni statut invité
+        $caissier = User::factory()->create(['branch_id' => $this->branch->id]);
+        $caissier->assignRole('POS Operator');
+
+        foreach ([$invite, $ancien] as $u) {
+            $o = $this->commandePayee($caissier, ['loyalty_customer_code' => $u->loyalty_code, 'source_surface' => 'pos', 'order_type' => OrderType::POS]);
+            $this->valider($o);
+            $this->assertSame(185, $this->solde($u), $u->loyalty_code . ' : client du comptoir crédité');
+        }
+    }
 }
