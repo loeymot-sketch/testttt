@@ -235,7 +235,7 @@ class AwardLoyaltyPointsOnDelivery
     /** Vrai pour un compte CLIENT : ni propriétaire d'une borne, ni porteur d'un rôle du personnel. */
     public static function estUnClient(User $u): bool
     {
-        if (\App\Models\KioskMachine::withoutGlobalScopes()->where('user_id', $u->id)->exists()) {
+        if (\App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)->where('user_id', $u->id)->exists()) {
             return false;
         }
 
