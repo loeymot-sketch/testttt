@@ -236,6 +236,10 @@ export const posOrder = {
                         // [RED-R1 P2 / Q-13-2] Idempotency-Key conflict — same key, different payload.
                         // Cashier-friendly toast: order may already be in ticker, do NOT retry blindly.
                         reject({ _idempotencyConflict: true, message: 'Commande déjà enregistrée — vérifier le ticker avant de relancer.' });
+                    } else if (!err?.response && err?.request) {
+                        // [AUDIT ABUSIF 2026-11-06 · W1-P1-01] Réponse PERDUE (réseau coupé après l'envoi) : la vente a pu être
+                        // enregistrée et fiscalisée. Avant : toast « Network Error » en anglais, et le caissier relançait.
+                        reject({ _networkLost: true, message: 'Connexion perdue pendant l\'envoi : la vente a peut-être été enregistrée. Vérifiez la liste des commandes avant de relancer (le même panier ne sera pas encaissé deux fois).' });
                     } else {
                         reject(err);
                     }

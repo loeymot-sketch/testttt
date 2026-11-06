@@ -54,6 +54,10 @@ class DeliveryPublicThrottleIsolationTest extends TestCase
     {
         // Plafond général aligné sur la production (l'environnement de test le fixe à 120, qui masquerait le seau du devis).
         config(['app.api_throttle_per_minute' => 2000]);
+        // [AUDIT ABUSIF 2026-11-06] Horloge FIGÉE : la fenêtre du limiteur dure 60 s à partir du 1er appel ; 300 devis
+        // prennent ~117 s sur cette machine (≈ 0,4 s chacun), la fenêtre expirait et le 301ᵉ repassait — artefact du banc,
+        // pas du produit. Figée, la mesure porte sur ce qu'elle annonce : 300 dans la minute, puis 429.
+        \Illuminate\Support\Carbon::setTestNow(now());
 
         for ($i = 0; $i < 300; $i++) {
             $this->api()->postJson('/api/frontend/delivery/quote', ['q' => '10 rue test henin beaumont'])->assertOk();
@@ -62,5 +66,6 @@ class DeliveryPublicThrottleIsolationTest extends TestCase
         $this->api()->postJson('/api/frontend/delivery/quote', ['q' => '10 rue test henin beaumont'])->assertStatus(429);
         // Le seau du devis plein ne bloque pas la lecture du statut.
         $this->api()->getJson('/api/frontend/delivery/status')->assertOk();
+        \Illuminate\Support\Carbon::setTestNow();
     }
 }

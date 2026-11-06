@@ -7294,7 +7294,23 @@ export default {
                 const msg = err?.response?.data?.message || err?.message || 'Impossible de confirmer le tarif serveur. Réessayez.';
                 return alertService.error(msg);
             }
-            this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
+            // [AUDIT ABUSIF 2026-11-06 · W1-P1-01] UNE clé par PANIER tant qu'il n'est pas encaissé. Avant : nouvelle clé à
+            // chaque ouverture du paiement. Réponse perdue (vente créée et fiscalisée côté serveur, « Network Error » en
+            // caisse), le caissier rouvrait le paiement : nouvelle clé → DEUXIÈME vente fiscale pour un seul client.
+            // Même panier (mêmes lignes, même mode, même table, même client) dans les 15 min → même clé : le serveur rejoue la
+            // première vente ou refuse le doublon (409). La clé est oubliée dès que le panier se vide (vente réussie ou
+            // abandon) : deux clients successifs qui commandent la même chose ne sont jamais confondus.
+            {
+                const f = this.checkoutProps.form;
+                const empreinte = JSON.stringify([
+                    (this.carts || []).map((c) => [c.item_id ?? c.id, c.quantity, c.item_variations, c.item_extras, c.item_addons, c.instruction, c.total_price ?? c.price]),
+                    f.order_type, f.dining_table_id ?? null, f.customer_id ?? null,
+                ]);
+                const prec = this._cleEncaissement;
+                const reprise = prec && prec.empreinte === empreinte && (Date.now() - prec.at) < 15 * 60 * 1000;
+                f.idempotency_key = reprise ? prec.cle : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
+                this._cleEncaissement = { empreinte, cle: f.idempotency_key, at: reprise ? prec.at : Date.now() };
+            }
 
             // [POS-OFFLINE-WIRE 2026-05-17] Pre-modal network gate. If the
             // browser reports offline (navigator.onLine === false), do NOT
@@ -8194,6 +8210,7 @@ export default {
         carts: {
             handler(newCarts) {
                 if (!newCarts || newCarts.length === 0) {
+                    this._cleEncaissement = null; // [W1-P1-01] panier vidé = vente terminée ou abandonnée : clé oubliée
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
                     this.discountReason = '';
