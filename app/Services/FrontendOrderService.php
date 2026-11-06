@@ -397,6 +397,11 @@ class FrontendOrderService
 
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
+                // [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Commande web : la cuisine ne lit une formule dans l'instruction que si
+                // elle est PAYÉE (addon menu_* facturé par le serveur). Sinon les revendications de formule sont retirées.
+                if (! $isKioskMachineOrder) {
+                    $requestItems = self::sansFormuleNonPayee($requestItems);
+                }
 
                 // [AUDIT ABUSIF 2026-11-06 · W3-P1-2] Un code promo NOMINATIF (ticket promo imprimé pour un client) n'est protégé que
                 // par son CODE. La commande web acceptait son seul numéro (coupon_id, séquentiel) : un inconnu consommait le ticket
@@ -2040,5 +2045,62 @@ class FrontendOrderService
         } catch (\Exception $e) {
             Log::warning('[Kiosk] OrderStatusChanged broadcast failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Un Tacos M facturé 6,90 € SANS menu sortait en cuisine avec « MENU : MAY » et
+     * « Boisson menu: Coca », exactement comme un vrai menu : la cuisine (KitchenTicketSymbolicFormatter::menuBadge /
+     * claimedFormuleBadge, écran cuisine) lit la formule REVENDIQUÉE par l'instruction — nécessaire pour la caisse, qui ne
+     * scelle pas l'addon dans le produit. Une commande WEB, elle, paie toujours sa formule par un addon menu_* : pour une ligne
+     * sans cet addon, les lignes qui revendiquent une formule (« + Menu… », « Formule : », « MENU : », « Boisson menu: »,
+     * « BOISSON: », « Sauce frites », « Frites: ») sont retirées. La note du client (entre crochets) n'est jamais touchée.
+     *
+     * @param  array<int, mixed>  $items
+     * @return array<int, mixed>
+     */
+    public static function sansFormuleNonPayee(array $items): array
+    {
+        foreach ($items as $item) {
+            if (! is_object($item) || ! isset($item->instruction) || ! is_string($item->instruction) || $item->instruction === '') {
+                continue;
+            }
+            $addons = isset($item->item_addons) && is_array($item->item_addons) ? $item->item_addons : [];
+            $menuPaye = false;
+            foreach ($addons as $a) {
+                $role = is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '');
+                if (str_starts_with($role, 'menu_')) {
+                    $menuPaye = true;
+                    break;
+                }
+            }
+            if ($menuPaye) {
+                continue;
+            }
+            $gardees = [];
+            $dansNote = false;
+            foreach (preg_split('/\R/u', $item->instruction) ?: [] as $ligne) {
+                $t = trim((string) $ligne);
+                if (str_starts_with($t, '[')) {
+                    $dansNote = ! str_contains($t, ']');
+                    $gardees[] = $ligne;
+                    continue;
+                }
+                if ($dansNote) {
+                    $dansNote = ! str_contains($t, ']');
+                    $gardees[] = $ligne;
+                    continue;
+                }
+                $revendication = (str_starts_with($t, '+') || str_starts_with($t, '↳'))
+                        && preg_match('/\b(menu|formule|frites?|boissons?)\b/iu', $t)
+                    || preg_match('/^(formule|menu|boissons?(\s+menu)?|frites)\s*:/iu', $t)
+                    || preg_match('/sauce\s*frites/iu', $t);
+                if (! $revendication) {
+                    $gardees[] = $ligne;
+                }
+            }
+            $item->instruction = implode("\n", $gardees);
+        }
+
+        return $items;
     }
 }

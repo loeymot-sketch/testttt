@@ -240,6 +240,24 @@ class FrontendDiscountIntegrityTest extends TestCase
         $web(['coupon_id' => $coupon->id, 'coupon_code' => ' sarah-7k2p '])->assertStatus(201);
     }
 
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Une commande WEB sans formule payée ne peut pas faire annoncer un menu en cuisine
+     * par son instruction ; la note du client entre crochets reste intacte.
+     */
+    public function test_une_formule_non_payee_n_est_pas_annoncee_en_cuisine(): void
+    {
+        $instruction = "Boisson menu: Coca-Cola 33cl\nSauce frites : Mayonnaise\n+ Menu (Frites + Boisson)\nFormule : Menu complet (Coca-Cola 33cl)\nMENU : MAY\nViandes en plus : Poulet.\n[Note : sans oignon, allergie lait]";
+        $r = $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [], 'instruction' => $instruction]]),
+            ]));
+        $r->assertStatus(201);
+        $ligne = \App\Models\OrderItem::query()->withoutGlobalScopes()->where('order_id', $r->json('data.id'))->first();
+        $this->assertSame("Viandes en plus : Poulet.\n[Note : sans oignon, allergie lait]", (string) $ligne->instruction);
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $ligne->instruction), 'aucun badge MENU');
+    }
+
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
     {
         // [GOAL-GOLIVE-VAT10] Subject = anti-forgery (server ignores client totals),
