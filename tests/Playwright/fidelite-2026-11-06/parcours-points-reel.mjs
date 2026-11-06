@@ -26,7 +26,9 @@ const solde = () => soldeBrut() - DEPART;
 
 const BURGER = { item_id: 101, quantity: 1, item_variations: [{ id: 427, quantity: 1 }, { id: 1149, quantity: 1 }], item_extras: [] };
 // Restaurant fermé à l'heure du banc : commande PROGRAMMÉE ce soir 19 h (même forme que le banc de l'audit).
-const corps = { branch_id: 1, order_type: 10, source: 5, is_advance_order: 5, scheduled_at: '2026-11-06 19:00:00', payment_method: 1, items: JSON.stringify([BURGER]) };
+// Créneau = demain 19:00 (une date figée devient un créneau passé le soir même → 422 « trop proche »).
+const CRENEAU = (() => { const d = new Date(Date.now() + 864e5), z = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} 19:00:00`; })();
+const corps = { branch_id: 1, order_type: 10, source: 5, is_advance_order: 5, scheduled_at: CRENEAU, payment_method: 1, items: JSON.stringify([BURGER]) };
 
 // ── 1. Le client commande (payer sur place) ────────────────────────────────────────────────
 const o = await api('POST', '/api/frontend/order', C.client_token, corps);
