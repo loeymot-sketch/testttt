@@ -1440,7 +1440,8 @@ class FrontendOrderService
         }
 
         // Débit FRAIS : ICI SEULEMENT on vérifie le solde (le pré-rachat, lui, a déjà payé).
-        if ((int) $loyaltyUser->loyalty_points < $pointsRequired) {
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+        if (\App\Services\LoyaltyService::pointsDepensables((int) $loyaltyUser->id, (int) $loyaltyUser->loyalty_points) < $pointsRequired) {
             Log::warning('[Loyalty] Solde insuffisant pour un débit frais — aucune remise', [
                 'user_id' => $loyaltyUser->id,
                 'order_id' => $this->frontendOrder->id,

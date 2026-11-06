@@ -4067,6 +4067,13 @@ class OrderService
                 422
             );
         }
+        // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+        if (\App\Services\LoyaltyService::pointsDepensables($clientId, $soldeReel) < $pointsDebites) {
+            throw new \InvalidArgumentException(
+                'Une partie des points du client attend la remise d\'une commande à distance — ils ne sont pas encore utilisables.',
+                422
+            );
+        }
 
         $soldeApres = $soldeReel - $pointsDebites;
 

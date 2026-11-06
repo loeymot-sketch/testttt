@@ -509,6 +509,10 @@ class LoyaltyController extends Controller
                 if ($user->loyalty_points < $pointsToRedeem) {
                     return ['error' => 'Points insuffisants', 'status' => 400];
                 }
+                // [DÉCISION PROPRIÉTAIRE 2026-11-06] Points d'une commande à distance pas encore remise : non dépensables.
+                if (\App\Services\LoyaltyService::pointsDepensables((int) $user->id, (int) $user->loyalty_points) < $pointsToRedeem) {
+                    return ['error' => "Une partie de vos points attend la remise d'une commande en cours : ils seront utilisables dès qu'elle vous aura été remise.", 'status' => 400];
+                }
 
                 \Illuminate\Support\Facades\DB::table('users')
                     ->where('id', $user->id)

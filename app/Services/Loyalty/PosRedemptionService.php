@@ -182,7 +182,8 @@ final class PosRedemptionService
                 throw new PosRedemptionException('CUSTOMER_NOT_FOUND', 'Code fidelite introuvable', 404);
             }
 
-            $available = (int) ($customer->loyalty_points ?? 0);
+            // [DÉCISION PROPRIÉTAIRE 2026-11-06] Disponible = solde moins les points d'une commande à distance pas encore remise.
+            $available = \App\Services\LoyaltyService::pointsDepensables((int) $customer->id, (int) ($customer->loyalty_points ?? 0));
             if ($available < $points) {
                 throw new PosRedemptionException(
                     'INSUFFICIENT_BALANCE',

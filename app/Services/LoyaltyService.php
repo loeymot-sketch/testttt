@@ -223,6 +223,42 @@ class LoyaltyService
         return max(0, $credite + $repris);
     }
 
+    /** Surfaces d'une commande À DISTANCE (site, application, livraison) : payée avant d'être remise. */
+    public const SURFACES_A_DISTANCE = ['web', 'delivery', 'mobile', 'app'];
+
+    /** Filet : une commande validée jamais marquée « remise » ne bloque pas ses points plus de 24 h. */
+    public const ATTENTE_REMISE_MAX_HEURES = 24;
+
+    /**
+     * [DÉCISION PROPRIÉTAIRE 2026-11-06 · « Bloquer jusqu'à la remise »] Points GAGNÉS par des commandes À DISTANCE
+     * déjà validées mais PAS ENCORE REMISES (acceptée, en préparation, prête, en livraison). Ils sont crédités et
+     * visibles dès la validation, mais pas dépensables avant la remise : sinon un client dépensait aussitôt les
+     * points d'une commande payée, puis en obtenait l'annulation + le remboursement (la reprise plafonnée au solde
+     * lui laissait la remise). Les ventes au comptoir (caisse, borne, téléphone) sont remises en même temps
+     * qu'elles sont réglées : non concernées. Filet de 24 h pour une commande jamais marquée remise.
+     */
+    public static function pointsEnAttenteDeRemise(int $userId): int
+    {
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        return (int) DB::table('loyalty_transactions as lt')
+            ->join('orders as o', 'o.id', '=', 'lt.order_id')
+            ->where('lt.user_id', $userId)
+            ->where('lt.type', 'earn')
+            ->whereIn('o.status', [\App\Enums\OrderStatus::ACCEPT, \App\Enums\OrderStatus::PREPARING, \App\Enums\OrderStatus::PREPARED, \App\Enums\OrderStatus::OUT_FOR_DELIVERY])
+            ->whereIn('o.source_surface', self::SURFACES_A_DISTANCE)
+            ->where('lt.created_at', '>=', now()->subHours(self::ATTENTE_REMISE_MAX_HEURES))
+            ->sum('lt.points');
+    }
+
+    /** Points que le client peut DÉPENSER maintenant : solde moins les points en attente de remise. */
+    public static function pointsDepensables(int $userId, int $solde): int
+    {
+        return max(0, $solde - self::pointsEnAttenteDeRemise($userId));
+    }
+
     public function clawbackEarnedPoints(int $userId, int $amount, int $orderId, string $reason): void
     {
         if ($amount <= 0) {
