@@ -261,7 +261,7 @@ export default [
                 },
             },
             {
-                // [HORAIRES 2026-11-05] Heures d'ouverture + fermetures exceptionnelles (source unique du site et de l'app).
+                // [HORAIRES 2026-11-05] Horaires du restaurant et fermetures exceptionnelles, source unique du site et de lapp. SANS apostrophe : tests/js/e2eSelecteursMorts.spec.js lit ce fichier et une apostrophe y ouvre une fausse chaine.
                 path: "horaires",
                 component: HorairesComponent,
                 name: "admin.settings.horaires",

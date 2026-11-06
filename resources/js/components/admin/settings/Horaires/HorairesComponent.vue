@@ -53,7 +53,7 @@
                         </table>
                     </div>
                     <button type="button" class="db-btn mt-3 normal-case text-primary bg-primary/5" @click="copierLundi">
-                        <i class="lab lab-copy"></i>
+                        <i class="lab lab-time-slots"></i>
                         <span>Appliquer les horaires du lundi à tous les jours</span>
                     </button>
                 </fieldset>
