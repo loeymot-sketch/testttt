@@ -2048,12 +2048,19 @@ class FrontendOrderService
     }
 
     /**
-     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1] Un Tacos M facturé 6,90 € SANS menu sortait en cuisine avec « MENU : MAY » et
-     * « Boisson menu: Coca », exactement comme un vrai menu : la cuisine (KitchenTicketSymbolicFormatter::menuBadge /
-     * claimedFormuleBadge, écran cuisine) lit la formule REVENDIQUÉE par l'instruction — nécessaire pour la caisse, qui ne
-     * scelle pas l'addon dans le produit. Une commande WEB, elle, paie toujours sa formule par un addon menu_* : pour une ligne
-     * sans cet addon, les lignes qui revendiquent une formule (« + Menu… », « Formule : », « MENU : », « Boisson menu: »,
-     * « BOISSON: », « Sauce frites », « Frites: ») sont retirées. La note du client (entre crochets) n'est jamais touchée.
+     * [AUDIT ABUSIF 2026-11-06 · W3-P1-1, tour 2] Instruction d'une commande WEB : LISTE BLANCHE.
+     *
+     * La cuisine (KitchenTicketSymbolicFormatter, KitchenBundledAddonCollapser, écran cuisine) lit la formule, la boisson et
+     * la sauce des frites dans le TEXTE de l'instruction — nécessaire pour la caisse. Une liste noire de motifs ne suffisait
+     * pas (tour 2 : « Me\u{200B}nu », « + Ménu (Frîtes + Boissön) », espace insécable, « + Drink », « [Note commande :
+     * Sauce frites : Mayonnaise] » faisaient encore annoncer une formule NON payée). Désormais, pour une commande web, seules
+     * les lignes que le site produit passent, normalisées (NFKC, caractères invisibles retirés, espaces simples) :
+     *   - « Viandes en plus : … », « Sauces en plus : … » (composition facturée) ;
+     *   - « Frites: … », « Boisson menu: … », « Sauce frites : … » SEULEMENT si la ligne porte un addon menu_* AVEC son
+     *     identifiant (contrôlé et facturé par le serveur) ;
+     *   - la note du client « [Note : …] » / « [Note commande : …] ».
+     * Le contenu de chaque ligne gardée est neutralisé comme le fait le site (aucun « : », crochets en parenthèses, « · • | »
+     * en virgules). Toute autre ligne est retirée.
      *
      * @param  array<int, mixed>  $items
      * @return array<int, mixed>
@@ -2064,47 +2071,74 @@ class FrontendOrderService
             if (! is_object($item) || ! isset($item->instruction) || ! is_string($item->instruction) || $item->instruction === '') {
                 continue;
             }
-            $addons = isset($item->item_addons) && is_array($item->item_addons) ? $item->item_addons : [];
             $menuPaye = false;
-            foreach ($addons as $a) {
+            foreach ((isset($item->item_addons) && is_array($item->item_addons)) ? $item->item_addons : [] as $a) {
                 $role = is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '');
                 $id = is_object($a) ? (int) ($a->id ?? 0) : (is_array($a) ? (int) ($a['id'] ?? 0) : 0);
-                // [AUDIT ABUSIF 2026-11-06 · ADV2-001] Seul un addon menu_* AVEC son identifiant est contrôlé (rôle
-                // menu_component exigé en base, ValidatesAddonRoles) et FACTURÉ (PricingService). `{role:"menu_full"}` sans id
-                // n'était ni l'un ni l'autre : il suffisait à faire annoncer un menu non payé en cuisine.
                 if ($id > 0 && str_starts_with(strtolower($role), 'menu_')) {
                     $menuPaye = true;
                     break;
                 }
             }
-            if ($menuPaye) {
-                continue;
-            }
-            $gardees = [];
-            $dansNote = false;
-            foreach (preg_split('/\R/u', $item->instruction) ?: [] as $ligne) {
-                $t = trim((string) $ligne);
-                if (str_starts_with($t, '[')) {
-                    $dansNote = ! str_contains($t, ']');
-                    $gardees[] = $ligne;
-                    continue;
-                }
-                if ($dansNote) {
-                    $dansNote = ! str_contains($t, ']');
-                    $gardees[] = $ligne;
-                    continue;
-                }
-                $revendication = (str_starts_with($t, '+') || str_starts_with($t, '↳'))
-                        && preg_match('/\b(menu|formule|frites?|boissons?)\b/iu', $t)
-                    || preg_match('/^(formule|menu|boissons?(\s+menu)?|frites)\s*:/iu', $t)
-                    || preg_match('/sauce\s*frites/iu', $t);
-                if (! $revendication) {
-                    $gardees[] = $ligne;
-                }
-            }
-            $item->instruction = implode("\n", $gardees);
+            $item->instruction = self::instructionWebAssainie($item->instruction, $menuPaye);
         }
 
         return $items;
+    }
+
+    public static function instructionWebAssainie(string $instruction, bool $menuPaye): string
+    {
+        $gardees = [];
+        foreach (preg_split('/\R/u', $instruction) ?: [] as $ligne) {
+            $t = self::texteNormalise((string) $ligne);
+            if ($t === '') {
+                continue;
+            }
+            if (preg_match('/^\[(Note|Note commande) : (.*)\]$/u', $t, $m)) {
+                $contenu = self::contenuNeutre($m[2]);
+                if ($contenu !== '') {
+                    $gardees[] = '['.$m[1].' : '.$contenu.']';
+                }
+                continue;
+            }
+            if (preg_match('/^(Viandes en plus|Sauces en plus) : (.+)$/u', $t, $m)) {
+                $gardees[] = $m[1].' : '.self::contenuNeutre($m[2]);
+                continue;
+            }
+            if ($menuPaye && preg_match('/^(Frites|Boisson menu): (.+)$/u', $t, $m)) {
+                $gardees[] = $m[1].': '.self::contenuNeutre($m[2]);
+                continue;
+            }
+            if ($menuPaye && preg_match('/^Sauce frites : (.+)$/u', $t, $m)) {
+                $gardees[] = 'Sauce frites : '.self::contenuNeutre($m[1]);
+            }
+            // Toute autre ligne est retirée (le site ne la produit pas).
+        }
+
+        return mb_substr(implode("\n", $gardees), 0, 500);
+    }
+
+    private static function texteNormalise(string $t): string
+    {
+        if (class_exists(\Normalizer::class)) {
+            $n = \Normalizer::normalize($t, \Normalizer::FORM_KC);
+            if (is_string($n)) {
+                $t = $n;
+            }
+        }
+        $t = (string) preg_replace('/[\p{Cf}\p{Cc}]+/u', '', $t);   // invisibles (U+200B, U+202E…) et contrôles
+        $t = (string) preg_replace('/[\p{Z}\s]+/u', ' ', $t);       // toutes les espaces Unicode → une espace
+
+        return trim($t);
+    }
+
+    private static function contenuNeutre(string $t): string
+    {
+        $t = self::texteNormalise($t);
+        $t = (string) preg_replace('/\s*[:：﹕]\s*/u', ' - ', $t);
+        $t = strtr($t, ['[' => '(', ']' => ')', '［' => '(', '］' => ')', '·' => ',', '•' => ',', '|' => ',']);
+        $t = (string) preg_replace('/\s+/u', ' ', $t);
+
+        return mb_substr(trim($t), 0, 300);
     }
 }

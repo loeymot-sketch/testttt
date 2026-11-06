@@ -434,6 +434,16 @@ class EmailLoginFlowTest extends TestCase
         }
         $attaquant(99)->assertStatus(429);
 
+        // [tour 2] IPv6 : 31 adresses du MÊME /64 partagent un seau (un abonné) ; un autre /64 n'est pas touché.
+        for ($i = 0; $i < 30; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:1:2::'.dechex($i + 1)])
+                ->postJson('/api/auth/guest-signup/email-login', ['email' => "v6-{$i}@example.test"])->assertStatus(200);
+        }
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:1:2::ffff'])
+            ->postJson('/api/auth/guest-signup/email-login', ['email' => 'v6-x@example.test'])->assertStatus(429);
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:9:9::1'])
+            ->postJson('/api/auth/guest-signup/email-login', ['email' => 'v6-y@example.test'])->assertStatus(200);
+
         $this->guest();
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
             ->postJson('/api/auth/guest-signup/email-login', ['email' => self::EMAIL])

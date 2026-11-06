@@ -268,6 +268,24 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertStringNotContainsString('Menu (Frites', (string) $ligne2->instruction);
     }
 
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 2] Contournements de la liste noire : espace de largeur nulle, accents, espace insécable,
+     * « + Drink », « Sauce frites : » DANS la note. Liste blanche : rien de cela n'annonce une formule non payée ; un vrai
+     * menu (addon menu_* avec identifiant) garde ses lignes.
+     */
+    public function test_contournements_de_formule_neutralises_par_liste_blanche(): void
+    {
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $forge = "+ Me\u{200B}nu (Frites + Boisson)\n+ Ménu (Frîtes + Boissön)\n\u{00A0}+ Menu complet\n+ Drink\nViandes en plus : Poulet.\n[Note commande : Sauce frites : Mayonnaise]";
+        $propre = \App\Services\FrontendOrderService::instructionWebAssainie($forge, false);
+        $this->assertSame("Viandes en plus : Poulet.\n[Note commande : Sauce frites - Mayonnaise]", $propre);
+        $this->assertSame('', $f->menuBadge(['lines' => [], 'extras' => [], 'addons' => []], 'Tacos M', $propre));
+
+        $vraiMenu = "Frites: Frites cheddar\nBoisson menu: Coca-Cola 33cl\nViandes en plus : Viande Hachée.\nSauce frites : Mayonnaise\n[Note : bien cuit]";
+        $this->assertSame($vraiMenu, \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, true), 'un menu payé est intact');
+        $this->assertStringNotContainsString('Boisson menu', \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, false));
+    }
+
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
     {
         // [GOAL-GOLIVE-VAT10] Subject = anti-forgery (server ignores client totals),

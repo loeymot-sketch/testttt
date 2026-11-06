@@ -141,10 +141,17 @@ class RouteServiceProvider extends ServiceProvider
             // recevait de code de connexion (429 pour tous). Un seau PAR ADRESSE IP l'arrête avant le global — l'adresse n'est
             // plus usurpable depuis W7-D (TrustProxies ne croit que nginx local) ; 30/min reste large pour une adresse
             // partagée (opérateur mobile). Le plafond global, relevé à 300/min, ne sert plus qu'à freiner une attaque répartie.
+            // [AUDIT ABUSIF tour 2] IPv6 : un abonné dispose d'un /64 entier ; 11 adresses du même /64 vidaient le global en
+            // 1,2 s. Le seau « par adresse » compte donc l'IPv6 par /64 (l'IPv4 telle quelle). Le global, relevé à 1200/min,
+            // n'est plus qu'une alarme contre une attaque très répartie (le seau par e-mail empêche déjà le harcèlement).
+            $ip = (string) $request->ip();
+            $cleIp = str_contains($ip, ':') && ($bin = @inet_pton($ip)) !== false
+                ? bin2hex(substr($bin, 0, 8)).'::/64'
+                : $ip;
             $limits = [
                 Limit::perMinute(5)->by('otp-id:'.$id),
-                Limit::perMinute(30)->by('otp-ip:'.$request->ip()),
-                Limit::perMinute(300)->by('otp-send-global'),
+                Limit::perMinute(30)->by('otp-ip:'.$cleIp),
+                Limit::perMinute(1200)->by('otp-send-global'),
             ];
 
             // [P1-2 SÉCU 2026-08-04] Plafond DÉDIÉ PAR EMAIL. Le seau par-identifiant ci-dessus
