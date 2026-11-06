@@ -74,4 +74,5 @@ Session voisine, serveur privé :8781, base foodking_points, charges réelles de
   - P3 : produit channels ["pos"] commandable sur le web ;
   - P3 : quantités d'extras négatives ou fractionnaires stockées telles quelles (facturées max(1,(int)q)) ;
   - P3 : 24 GET /api/admin/* de réglages lisibles par un jeton client.
-- À mettre en ligne (par le propriétaire) : site b61d61f, puis `bash tools/deploy-lecayenne.sh a7dee05b5` ; puis resynchroniser l'app.
+- **En ligne le 2026-11-06 au soir** : site b61d61f (Vercel, empreintes servies = copie), puis backend a7dee05b5 (PHPUnit complet 7601 verts ; HEAD a7dee05b, healthz 200, app.js id=4d501c8e, CORS 204, aucun fichier suivi modifié). App : check:www à jour, copies natives = www, aucun envoi store.
+- Incident : deux sessions ont lancé deploy-lecayenne.sh en même temps (~19h33) → build en échec, rollback automatique vers 30a89860 sans perte ; relancé seul ensuite. Règle : un seul déployeur, annoncé avant de lancer.
