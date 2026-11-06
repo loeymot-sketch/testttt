@@ -49,24 +49,18 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
-        // [Relecture adverse P0-2] Une commande BORNE à régler au comptoir (Plan B) est passée en ACCEPT par le
-        // SYSTÈME dès sa création (FrontendOrderService, auto-accept) : ce n'est ni une validation par le restaurant
-        // ni un paiement. On ne crédite pas sur cet ACCEPT-là ; le crédit tombe à l'encaissement (ACCEPT → PREPARING
-        // émis par PaymentService::confirmCounterPayment) ou quand la cuisine prend la commande.
-        if ((int) $event->newStatus === OrderStatus::ACCEPT && $this->estBorneImpayee($order)) {
+        // [Relecture adverse P0-2 + audit abusif W3-P1-4 · 2026-11-06] Une commande PAS ENCORE PAYÉE (« payer sur
+        // place » du site, borne Plan B passée en ACCEPT par le système) ne crédite RIEN sur un simple changement de
+        // statut : sinon le client dépensait les points d'une commande qu'il n'a jamais réglée, puis l'annulait (la
+        // reprise est plafonnée au solde → points gratuits). Ses points tombent à l'ENCAISSEMENT
+        // (PaymentService::confirmCounterPayment → award) ou, au plus tard, à la REMISE (livrée, comme avant).
+        // Une commande payée en ligne / en caisse crédite, elle, dès la validation.
+        if ((int) ($order->payment_status ?? 0) !== \App\Enums\PaymentStatus::PAID
+            && (int) $event->newStatus !== OrderStatus::DELIVERED) {
             return;
         }
 
         $this->award($order);
-    }
-
-    /** Commande de la borne pas encore payée (encaissement au comptoir à venir). */
-    private function estBorneImpayee($order): bool
-    {
-        $borne = (string) ($order->source_surface ?? '') === 'kiosk'
-            || (int) ($order->order_type ?? 0) === OrderType::KIOSK;
-
-        return $borne && (int) ($order->payment_status ?? 0) !== \App\Enums\PaymentStatus::PAID;
     }
 
     /**
@@ -140,7 +134,10 @@ class AwardLoyaltyPointsOnDelivery
         }
         if (!$user && $order->user_id) {
             $candidate = User::find($order->user_id);
-            if ($candidate && $candidate->loyalty_code) {
+            // [Audit abusif W2-P1-4 · 2026-11-06] Une commande borne ANONYME porte le compte propriétaire de la borne
+            // (l'administrateur) : ses points ne vont à PERSONNE. Seul un CLIENT est crédité par repli — jamais un
+            // compte de borne ni un compte du personnel (rôle autre que Client).
+            if ($candidate && $candidate->loyalty_code && self::estUnClient($candidate)) {
                 $user = $candidate;
             }
         }
@@ -233,5 +230,15 @@ class AwardLoyaltyPointsOnDelivery
             }
             Log::error('[Loyalty] AwardLoyaltyPointsOnDelivery: ' . $e->getMessage());
         }
+    }
+
+    /** Vrai pour un compte CLIENT : ni propriétaire d'une borne, ni porteur d'un rôle du personnel. */
+    public static function estUnClient(User $u): bool
+    {
+        if (\App\Models\KioskMachine::withoutGlobalScopes()->where('user_id', $u->id)->exists()) {
+            return false;
+        }
+
+        return ! $u->roles()->where('id', '!=', \App\Enums\Role::CUSTOMER)->exists();
     }
 }
