@@ -359,7 +359,9 @@ class OrderRequest extends FormRequest
             // require an off-site phone callback.
             if ($orderTypeInt === OrderType::DELIVERY) {
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
-                $this->validateDeliveryMinimumOrder($validator);
+                // [Test abusif final P2-1 · 2026-11-06] Le minimum de livraison n'est PLUS contrôlé ici sur le `subtotal`
+                // ENVOYÉ par le client (subtotal:999 le contournait ; un client qui ne l'envoie pas était bloqué) : il l'est
+                // dans FrontendOrderService, sur le sous-total RECALCULÉ par le serveur (PricingService).
 
                 // [VG-2026-10-21 L2 · décision propriétaire 2026-10-22] Titre-restaurant ACCEPTÉ en livraison. Le refus
                 // posé le 2026-10-21 (P0 : flip « non-espèces → PAYÉ » au départ du livreur, vente scellée sans paiement)

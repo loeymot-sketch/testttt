@@ -50,7 +50,7 @@ final class MenuFormulaChoiceAvailability
         }
 
         $catalogue = [];
-        foreach (Item::query()->get(['id', 'name', 'status']) as $product) {
+        foreach (Item::query()->get(['id', 'name', 'status', 'is_available']) as $product) {
             $catalogue[self::key((string) $product->name)][] = $product;
         }
 
@@ -69,7 +69,9 @@ final class MenuFormulaChoiceAvailability
         foreach ($choicesByIndex as $index => $choices) {
             foreach ($choices as [$rubrique, $name]) {
                 foreach ($catalogue[self::key($name)] ?? [] as $product) {
-                    $inactive = (int) $product->status !== Status::ACTIVE;
+                    // [Test abusif final P2-2 · 2026-11-06] La rupture GLOBALE (items.is_available = 0, posée par l'admin)
+                    // compte aussi : une boisson de menu en rupture n'était refusée que par branche (caisse, borne).
+                    $inactive = (int) $product->status !== Status::ACTIVE || ! (bool) ($product->is_available ?? true);
                     if ($inactive || isset($unavailableIds[(int) $product->id])) {
                         $failItem((int) $index, sprintf(
                             '%s du menu « %s » n\'est plus disponible — choisis-en un(e) autre ou retire la formule.',

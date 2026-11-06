@@ -416,6 +416,20 @@ class FrontendOrderService
                     }
                 }
 
+                // [Test abusif final P3 · 2026-11-06] Un produit RÉSERVÉ À LA CAISSE (channels non vide sans « web » ni
+                // « kiosk », ex. « Sauce Ketchup » ["pos"] à 0,50 €) ne se commande ni par le site ni par la borne
+                // (reproduit : commande 9898). Seuls les produits COMMANDÉS sont contrôlés, jamais les composants
+                // internes d'une formule. channels NULL = toutes surfaces (rétrocompatibilité V1).
+                $reservesCaisse = \App\Models\Item::query()->whereIn('id', collect($requestItems)->map(fn ($it) => (int) (is_object($it) ? ($it->item_id ?? 0) : ($it['item_id'] ?? 0)))->filter()->unique()->values()->all())
+                    ->whereNotNull('channels')->get(['id', 'name', 'channels'])
+                    ->filter(fn ($i) => ! $i->isVisibleOn('web') && ! $i->isVisibleOn('kiosk'));
+                if ($reservesCaisse->isNotEmpty()) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['items' => sprintf(
+                        '« %s » ne se commande qu\'au comptoir. Retirez-le du panier.',
+                        (string) $reservesCaisse->first()->name
+                    )]);
+                }
+
                 if (config('pricing.use_ssot_service', true)) {
                     $kioskSsot = $this->pricingService->calculateOrder(
                         PricingRequest::forKiosk(
@@ -701,6 +715,19 @@ class FrontendOrderService
                 // data. Refuse any non-zero discount until F1 is fixed under a
                 // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
                 $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+
+                // [Test abusif final P2-1 · 2026-11-06] Minimum de livraison contrôlé sur le sous-total RECALCULÉ par le
+                // serveur — jamais sur le `subtotal` envoyé par le client (subtotal:999 passait avec 7,40 € d'articles).
+                if ((int) ($validatedRequest['order_type'] ?? 0) === OrderType::DELIVERY) {
+                    $minimum = \App\Models\Branch::query()->whereKey((int) ($validatedRequest['branch_id'] ?? 0))->value('delivery_minimum_order');
+                    if ($minimum !== null && round((float) $realSubtotal, 2) < round((float) $minimum, 2)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['subtotal' => sprintf(
+                            'Le montant minimum pour la livraison est de %s € (votre panier : %s €).',
+                            number_format((float) $minimum, 2, ',', ' '),
+                            number_format((float) $realSubtotal, 2, ',', ' ')
+                        )]);
+                    }
+                }
 
                 $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey, $validatedCoupon): void {
                     $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;

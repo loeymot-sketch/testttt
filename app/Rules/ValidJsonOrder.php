@@ -118,6 +118,13 @@ class ValidJsonOrder implements Rule
                             $this->message = "Une quantité d'option de l'article à l'index {$index} dépasse le maximum autorisé (999).";
                             return false;
                         }
+                        // [Test abusif final P3 · 2026-11-06] Quantité d'option NÉGATIVE ou DÉCIMALE (-5, 0.4) : facturée ×1 par
+                        // PricingService mais stockée telle quelle dans item_extras (commandes 9893/9894) → refus lisible.
+                        if (is_array($sub) && isset($sub['quantity'])
+                            && (! is_numeric($sub['quantity']) || (float) $sub['quantity'] < 0 || floor((float) $sub['quantity']) != (float) $sub['quantity'])) {
+                            $this->message = "Une quantité d'option de l'article à l'index {$index} n'est pas un nombre entier positif.";
+                            return false;
+                        }
                     }
                 }
             }
