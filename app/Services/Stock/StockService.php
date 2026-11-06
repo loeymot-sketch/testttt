@@ -463,11 +463,11 @@ class StockService
     /**
      * @param array{stockable_type: class-string, stockable_id: int, quantity: int, line_uid: string} $row
      */
-    private function movementKey(string $reason, Model $order, array $row, ?string $seed): string
+    private function movementKey(string $reason, Model $order, array $row, ?string $seed, ?string $classe = null): string
     {
         $parts = [
             $reason,
-            $order::class,
+            $classe ?? $order::class,
             (int) $order->id,
             $row['line_uid'],
             $row['stockable_type'],
@@ -543,8 +543,19 @@ class StockService
                     continue;
                 }
 
-                $orderKey = $this->movementKey('order_created', $order, $row, null);
-                if (! StockMovement::query()->where('idempotency_key', $orderKey)->exists()) {
+                // [Audit abusif stock P1 · 2026-11-06] La MÊME commande vit sous deux classes Eloquent sur la table
+                // `orders` : le site et la borne la créent (et retirent son stock) en `FrontendOrder`, la caisse l'annule
+                // ou la rembourse en `Order`. La clé portant la classe, la recherche du retrait d'origine échouait en
+                // silence → stock JAMAIS rendu, alors que `released_qty` le croyait rendu. On cherche le retrait sous les
+                // deux classes et la remise prend la classe trouvée (domaine d'idempotence inchangé pour l'existant).
+                $classeDuRetrait = null;
+                foreach (array_unique([$order::class, \App\Models\FrontendOrder::class, \App\Models\Order::class]) as $classe) {
+                    if (StockMovement::query()->where('idempotency_key', $this->movementKey('order_created', $order, $row, null, $classe))->exists()) {
+                        $classeDuRetrait = $classe;
+                        break;
+                    }
+                }
+                if ($classeDuRetrait === null) {
                     continue;
                 }
 
@@ -552,7 +563,8 @@ class StockService
                     $reason,
                     $order,
                     $row,
-                    'released:' . (int) $orderItem->released_qty . ':delta:' . $deltaLineQty
+                    'released:' . (int) $orderItem->released_qty . ':delta:' . $deltaLineQty,
+                    $classeDuRetrait
                 );
                 if (StockMovement::query()->where('idempotency_key', $movementKey)->exists()) {
                     continue;
