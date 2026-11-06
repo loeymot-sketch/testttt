@@ -408,7 +408,8 @@ class FrontendOrderService
                 // d'un autre client (−50 %), qui recevait ensuite « limite dépassée ». Le site envoie désormais le code tapé :
                 // sans lui, ou s'il ne correspond pas, la commande web est refusée. (Borne : chemin inchangé.)
                 if ((int) $request->coupon_id > 0 && ! $isKioskMachineOrder) {
-                    $codeSaisi = mb_strtolower(trim((string) $request->input('coupon_code', '')));
+                    $brut = $request->input('coupon_code', '');
+                    $codeSaisi = is_scalar($brut) ? mb_strtolower(trim((string) $brut)) : '';   // tableau forgé → refus lisible (tour 3), pas d'erreur interne
                     $codeReel = mb_strtolower(trim((string) \App\Models\Coupon::query()->whereKey((int) $request->coupon_id)->value('code')));
                     if ($codeSaisi === '' || $codeReel === '' || ! hash_equals($codeReel, $codeSaisi)) {
                         throw \Illuminate\Validation\ValidationException::withMessages(['coupon_id' => 'Ce code promo n\'est pas valable pour cette commande. Saisissez-le à nouveau.']);
@@ -2057,7 +2058,8 @@ class FrontendOrderService
      * les lignes que le site produit passent, normalisées (NFKC, caractères invisibles retirés, espaces simples) :
      *   - « Viandes en plus : … », « Sauces en plus : … » (composition facturée) ;
      *   - « Frites: … », « Boisson menu: … », « Sauce frites : … » SEULEMENT si la ligne porte un addon menu_* AVEC son
-     *     identifiant (contrôlé et facturé par le serveur) ;
+     *     identifiant (contrôlé et facturé par le serveur), et selon le RÔLE payé (tour 3) : frites pour menu_full /
+     *     menu_frites, boisson pour menu_full / menu_boisson ;
      *   - la note du client « [Note : …] » / « [Note commande : …] ».
      * Le contenu de chaque ligne gardée est neutralisé comme le fait le site (aucun « : », crochets en parenthèses, « · • | »
      * en virgules). Toute autre ligne est retirée.
@@ -2071,23 +2073,37 @@ class FrontendOrderService
             if (! is_object($item) || ! isset($item->instruction) || ! is_string($item->instruction) || $item->instruction === '') {
                 continue;
             }
-            $menuPaye = false;
+            // [AUDIT ABUSIF tour 3 · R3-ADV-001] Chaque ligne suit le RÔLE payé (rôle lié au catalogue par
+            // ValidatesAddonRoles, ratio de prix appliqué par PricingService) : « frites seules » (menu_frites) ne
+            // donne pas droit à « Boisson menu », « boisson seule » (menu_boisson) ne donne pas droit aux frites.
+            $fritesPayees = false;
+            $boissonPayee = false;
             foreach ((isset($item->item_addons) && is_array($item->item_addons)) ? $item->item_addons : [] as $a) {
-                $role = is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '');
+                $role = strtolower(trim(is_object($a) ? (string) ($a->role ?? '') : (is_array($a) ? (string) ($a['role'] ?? '') : '')));
                 $id = is_object($a) ? (int) ($a->id ?? 0) : (is_array($a) ? (int) ($a['id'] ?? 0) : 0);
-                if ($id > 0 && str_starts_with(strtolower($role), 'menu_')) {
-                    $menuPaye = true;
-                    break;
+                if ($id <= 0 || ! str_starts_with($role, 'menu_')) {
+                    continue;
+                }
+                if ($role !== 'menu_boisson') {
+                    $fritesPayees = true;   // menu_full, menu_formule, menu_frites
+                }
+                if ($role !== 'menu_frites') {
+                    $boissonPayee = true;   // menu_full, menu_formule, menu_boisson
                 }
             }
-            $item->instruction = self::instructionWebAssainie($item->instruction, $menuPaye);
+            $item->instruction = self::instructionWebAssainie($item->instruction, $fritesPayees, $boissonPayee);
         }
 
         return $items;
     }
 
-    public static function instructionWebAssainie(string $instruction, bool $menuPaye): string
+    /**
+     * @param  bool  $fritesPayees  frites de la formule payées (« Frites: », « Sauce frites : » gardées)
+     * @param  bool|null  $boissonPayee  boisson de la formule payée (« Boisson menu: » gardée) ; null = comme $fritesPayees
+     */
+    public static function instructionWebAssainie(string $instruction, bool $fritesPayees, ?bool $boissonPayee = null): string
     {
+        $boissonPayee ??= $fritesPayees;
         $gardees = [];
         foreach (preg_split('/\R/u', $instruction) ?: [] as $ligne) {
             $t = self::texteNormalise((string) $ligne);
@@ -2105,11 +2121,13 @@ class FrontendOrderService
                 $gardees[] = $m[1].' : '.self::contenuNeutre($m[2]);
                 continue;
             }
-            if ($menuPaye && preg_match('/^(Frites|Boisson menu): (.+)$/u', $t, $m)) {
-                $gardees[] = $m[1].': '.self::contenuNeutre($m[2]);
+            if (preg_match('/^(Frites|Boisson menu): (.+)$/u', $t, $m)) {
+                if ($m[1] === 'Frites' ? $fritesPayees : $boissonPayee) {
+                    $gardees[] = $m[1].': '.self::contenuNeutre($m[2]);
+                }
                 continue;
             }
-            if ($menuPaye && preg_match('/^Sauce frites : (.+)$/u', $t, $m)) {
+            if ($fritesPayees && preg_match('/^Sauce frites : (.+)$/u', $t, $m)) {
                 $gardees[] = 'Sauce frites : '.self::contenuNeutre($m[1]);
             }
             // Toute autre ligne est retirée (le site ne la produit pas).

@@ -236,6 +236,7 @@ class FrontendDiscountIntegrityTest extends TestCase
 
         $web(['coupon_id' => $coupon->id])->assertStatus(422);
         $web(['coupon_id' => $coupon->id, 'coupon_code' => 'AUTRE-CODE'])->assertStatus(422);
+        $web(['coupon_id' => $coupon->id, 'coupon_code' => ['SARAH-7K2P']])->assertStatus(422)->assertJsonPath('message', 'Ce code promo n\'est pas valable pour cette commande. Saisissez-le à nouveau.'); // tour 3 : tableau forgé
         $this->assertSame(0, OrderCoupon::count(), 'le ticket n\'est pas consommé');
         $web(['coupon_id' => $coupon->id, 'coupon_code' => ' sarah-7k2p '])->assertStatus(201);
     }
@@ -284,6 +285,33 @@ class FrontendDiscountIntegrityTest extends TestCase
         $vraiMenu = "Frites: Frites cheddar\nBoisson menu: Coca-Cola 33cl\nViandes en plus : Viande Hachée.\nSauce frites : Mayonnaise\n[Note : bien cuit]";
         $this->assertSame($vraiMenu, \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, true), 'un menu payé est intact');
         $this->assertStringNotContainsString('Boisson menu', \App\Services\FrontendOrderService::instructionWebAssainie($vraiMenu, false));
+    }
+
+    /**
+     * [AUDIT ABUSIF 2026-11-06 · tour 3 · R3-ADV-001] Formule PARTIELLE payée : « frites seules » ne fait pas servir de
+     * boisson, « boisson seule » ne fait pas servir de frites. Chaîne réelle : assainissement → ticket cuisine.
+     */
+    public function test_formule_partielle_ne_fait_pas_servir_l_autre_moitie(): void
+    {
+        $f = app(\App\Services\Hardware\KitchenTicketSymbolicFormatter::class);
+        $passe = function (string $role, string $instruction): string {
+            $ligne = (object) ['item_id' => 1, 'quantity' => 1, 'instruction' => $instruction,
+                'item_addons' => [(object) ['id' => 5, 'quantity' => 1, 'role' => $role]]];
+
+            return \App\Services\FrontendOrderService::sansFormuleNonPayee([$ligne])[0]->instruction;
+        };
+
+        $frites = $passe('menu_frites', "Frites: Classique\nBoisson menu: Coca-Cola\nSauce frites : Mayonnaise");
+        $this->assertSame("Frites: Classique\nSauce frites : Mayonnaise", $frites);
+        $this->assertStringNotContainsString('Coca', $f->cleanInstruction($frites, 'Sandwich Classique'));
+
+        $boisson = $passe('menu_boisson', "Boisson menu: Coca-Cola\nFrites: Classique\nSauce frites : Mayonnaise");
+        $this->assertSame('Boisson menu: Coca-Cola', $boisson);
+        $this->assertStringNotContainsString('Frites', $f->cleanInstruction($boisson, 'Sandwich Classique'));
+
+        // Témoin : la formule complète garde tout, allergie comprise.
+        $complet = "Frites: Classique\nBoisson menu: Coca-Cola\nSauce frites : Mayonnaise\n[Note commande : sans oignon, ALLERGIE arachide]";
+        $this->assertSame($complet, $passe('menu_full', $complet));
     }
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
