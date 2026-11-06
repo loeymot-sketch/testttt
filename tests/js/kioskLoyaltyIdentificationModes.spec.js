@@ -12,6 +12,7 @@ import { createI18n } from 'vue-i18n';
 
 import KioskLoyaltyComponent from '../../resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue';
 import frMessages from '../../resources/js/languages/fr.json';
+import enMessages from '../../resources/js/languages/en.json';
 
 const i18n = createI18n({ legacy: false, locale: 'fr', fallbackLocale: 'fr', messages: { fr: frMessages } });
 
@@ -89,5 +90,23 @@ describe('Borne — identification par QR, téléphone ou e-mail', () => {
         const t = w.text();
         expect(t).toContain('900');
         expect(t).toMatch(/dès la remise de vos commandes en cours/);
+    });
+
+    it('(f) onglet e-mail : le texte indicatif s\'affiche avec son « @ » (un @ brut casse le rendu de toute la page en production)', async () => {
+        const { w } = await monter();
+        await w.find('[data-testid="kiosk-loyalty-mode-email"]').trigger('click');
+        const champ = w.find('[data-testid="kiosk-loyalty-email-input"]');
+        expect(champ.exists()).toBe(true);
+        expect(champ.attributes('placeholder')).toMatch(/@/);
+    });
+});
+
+describe('Traductions — aucun « @ » brut (lien vue-i18n : « Invalid linked format » plante le rendu)', () => {
+    const brut = (o, k = '') => typeof o === 'string'
+        ? (/@/.test(o.split("{'@'}").join('')) ? [k] : [])
+        : Object.entries(o || {}).flatMap(([kk, v]) => brut(v, k + '.' + kk));
+    it('fr.json et en.json', () => {
+        expect(brut(frMessages)).toEqual([]);
+        expect(brut(enMessages)).toEqual([]);
     });
 });
