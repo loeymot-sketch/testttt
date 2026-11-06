@@ -6601,10 +6601,17 @@ export default {
                 (this.carts || []).map((c) => [c.item_id ?? c.id, c.quantity, c.item_variations, c.item_extras, c.item_addons, c.instruction, c.total_price ?? c.price]),
                 f.order_type, f.dining_table_id ?? null, f.customer_id ?? null,
             ]);
-            const prec = this._cleEncaissement;
-            const reprise = prec && prec.empreinte === empreinte && (Date.now() - prec.at) < 15 * 60 * 1000;
+            // [AUDIT ABUSIF tour 2] Gardée aussi dans le stockage du navigateur, avec la MÊME durée que le panier (2 h,
+            // posCart.js) : après un rechargement (F5) suivant une coupure, la clé en mémoire était perdue alors que le
+            // panier revenait — une 2ᵉ vente fiscale passait. La fenêtre de 15 min (2ᵉ vente au-delà) est alignée aussi.
+            let prec = this._cleEncaissement;
+            if (!prec) {
+                try { prec = JSON.parse(window.localStorage.getItem('pos.cle-encaissement') || 'null'); } catch (_) { prec = null; }
+            }
+            const reprise = prec && prec.empreinte === empreinte && (Date.now() - prec.at) < 2 * 60 * 60 * 1000;
             const cle = reprise ? prec.cle : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${branchId}`;
             this._cleEncaissement = { empreinte, cle, at: reprise ? prec.at : Date.now() };
+            try { window.localStorage.setItem('pos.cle-encaissement', JSON.stringify(this._cleEncaissement)); } catch (_) { /* stockage plein ou interdit : la clé en mémoire suffit */ }
             return cle;
         },
         resetCart: function () {
@@ -8221,6 +8228,7 @@ export default {
             handler(newCarts) {
                 if (!newCarts || newCarts.length === 0) {
                     this._cleEncaissement = null; // [W1-P1-01] panier vidé = vente terminée ou abandonnée : clé oubliée
+                    try { window.localStorage.removeItem('pos.cle-encaissement'); } catch (_) { /* rien à faire */ }
                     this.discount = null;
                     this.discountType = discountTypeEnum.PERCENTAGE;
                     this.discountReason = '';
