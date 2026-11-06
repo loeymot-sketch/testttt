@@ -44,10 +44,17 @@ Tests : Vitest complet 674 fichiers / 5947 verts (après d7cd618ab) ; PHPUnit co
 - P3 site : autre code tapé après « Appliquer » ignoré ; « Réouverture vendredi » un vendredi ; bandeau hors ligne qui parle de « la carte » ; pas de X-Device-Id (deux onglets se déconnectent) ; horaires.html « 18h à minuit » ; suivi d'une commande remboursée ; ticket livraison « À RÉGLER EN CAISSE » ; retrait affiché « LIVRÉE ».
 - P3 admin : erreur coupon partiellement hors écran à 1280 ; Horaires « DU » décalé ; Hygiène « Déjà validée » sans rafraîchir la fiche ; KDS 1280 note coupée / pastille « EN LIGNE ».
 
-## Décisions propriétaire en attente
+## Décisions propriétaire (tranchées après l'audit, relayées par la session voisine)
 
-- Borne : utiliser des points fidélité avec un simple numéro de téléphone (preuve QR / code ?).
-- Reprise des points plafonnée au solde après remboursement (points non dépensables avant remise / dette / risque accepté).
+- Points d'une commande pas encore REMISE : visibles mais NON dépensables.
+- Borne : plusieurs moyens d'identification pour dépenser des points (QR, téléphone, e-mail), pas le téléphone seul.
+- Mise en œuvre : session voisine, lot séparé APRÈS la mise en ligne (KioskLoyaltyComponent, hors fichiers borne gelés).
+
+## Mise en ligne (feu vert propriétaire « après l'audit »)
+
+1. Site 6208324 : en ligne (session voisine, vercel --prod ; www.lecayenne.fr/api.js sert coupon_code, vérifié).
+2. Backend : PHPUnit complet relancé sur f60b64974 par la session voisine, déploiement par elle une fois vert.
+3. App : check:www à jour (285 fichiers) + cap sync iOS/Android dans le worktree site-deploy-2026-11-03 ; copies natives identiques à www, coupon_code présent. Aucun build store, aucun envoi.
 
 ## Effets de bord de l'audit (base de dev partagée foodking_e2e)
 
