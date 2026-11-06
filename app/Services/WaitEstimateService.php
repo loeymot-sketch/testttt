@@ -74,6 +74,8 @@ class WaitEstimateService
 
         [$low, $high] = self::DEFAULT_WAIT;
 
+        $horairesEtat = app(\App\Services\Horaires\HorairesService::class)->etatPublic($now);
+
         return [
             'queue_count' => $queueCount,
             // [T-C PLANCHER-JAMAIS-ZERO] Réservé à l'AFFICHAGE client (borne/suivi
@@ -83,13 +85,18 @@ class WaitEstimateService
             'wait_low' => $low,
             'wait_high' => $high,
             'closing_time' => $this->todayClosingTime($now),
+            // [HORAIRES 2026-11-05] Prochaine ouverture RÉELLE (jour compris) et fermeture exceptionnelle du jour : le tunnel
+            // ne propose un créneau d'ouverture que s'il est AUJOURD'HUI, sinon il dit quand le restaurant rouvre.
+            'prochaine_ouverture' => $horairesEtat['prochaine_ouverture'],
+            'fermeture_exceptionnelle' => $horairesEtat['fermeture_exceptionnelle'],
             'server_time' => $now->toIso8601String(),
             // [GOAL STORES 2026-10-01] Le restaurant SERT-il en ce moment ? Mesuré en production
             // à 02 h 35 : l'API répondait « 10-15 min », restaurant fermé, et le site affichait
             // « prête dans ~10-15 min » devant une porte close. La fourchette constante reste
             // (décision propriétaire 2026-09-23) ; on dit en plus si elle a un sens maintenant.
             'service_ouvert' => self::serviceOuvert($now),
-            'ouverture' => (string) config('kds.scheduled_window_open', '18:00'),
+            // Heure d'ouverture du PROCHAIN service (ou du service en cours) — avant : la valeur fixe du .env.
+            'ouverture' => $horairesEtat['prochaine_ouverture']['heure'] ?? ($horairesEtat['service']['ouverture'] ?? (string) config('kds.scheduled_window_open', '18:00')),
         ];
     }
 
@@ -101,13 +108,8 @@ class WaitEstimateService
      */
     public static function serviceOuvert(Carbon $maintenant): bool
     {
-        $ouverture = (string) config('kds.scheduled_window_open', '18:00');
-        $fermeture = (string) config('kds.scheduled_window_close', '00:30');
-        $hm = $maintenant->format('H:i');
-
-        return $ouverture <= $fermeture
-            ? ($hm >= $ouverture && $hm <= $fermeture)
-            : ($hm >= $ouverture || $hm <= $fermeture);
+        // [HORAIRES 2026-11-05] Réglage admin (HorairesService) — même règle que les commandes programmées.
+        return app(\App\Services\Horaires\HorairesService::class)->estEnService($maintenant);
     }
 
     /**
@@ -117,6 +119,11 @@ class WaitEstimateService
      */
     private function todayClosingTime(Carbon $now): ?string
     {
+        // [HORAIRES 2026-11-05] Fin du service en cours (réglage admin) ; à défaut, l'ancienne lecture time_slots.
+        $service = app(\App\Services\Horaires\HorairesService::class)->serviceA($now);
+        if ($service) {
+            return $service['fin']->format('H:i');
+        }
         $closing = TimeSlot::where('day', $now->dayOfWeek)
             ->orderByDesc('closing_time')
             ->value('closing_time');

@@ -456,14 +456,10 @@ class DeliveryWaveService
         return $rem === 0 ? $t : $t->addMinutes($step - $rem);
     }
 
-    /** Fenêtre de service (enjambe minuit : 18:00 → 00:30). */
+    /** Fenêtre de service — horaires du réglage admin (HorairesService), jour par jour, fermetures exceptionnelles comprises. */
     public function inServiceWindow(CarbonInterface $t): bool
     {
-        $open = (string) config('kds.scheduled_window_open', '18:00');
-        $close = (string) config('kds.scheduled_window_close', '00:30');
-        $hm = $t->format('H:i');
-
-        return $open <= $close ? ($hm >= $open && $hm <= $close) : ($hm >= $open || $hm <= $close);
+        return app(\App\Services\Horaires\HorairesService::class)->estEnService($t);
     }
 
     private function nextInServiceWindow(Carbon $t): Carbon

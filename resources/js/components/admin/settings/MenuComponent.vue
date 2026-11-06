@@ -80,6 +80,11 @@
                 <i class="lab lab-theme text-sm"></i>
                 {{ $t("menu.theme") }}
             </router-link>
+            <!-- [HORAIRES 2026-11-05] Horaires d'ouverture et fermetures exceptionnelles. -->
+            <router-link :to="{ name: 'admin.settings.horaires' }" class="db-tab-btn" data-testid="settings-tab-horaires">
+                <i class="lab lab-time-slots text-sm"></i>
+                Horaires
+            </router-link>
             <router-link v-if="!isSettingHidden('timeSlots')" :to="{ name: 'admin.settings.timeSlot' }" class="db-tab-btn">
                 <i class="lab lab-time-slots text-sm"></i>
                 {{ $t("menu.time_slots") }}

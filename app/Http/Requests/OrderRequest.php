@@ -450,16 +450,16 @@ class OrderRequest extends FormRequest
             );
         }
 
-        $open = (string) config('kds.scheduled_window_open', '18:00');
-        $close = (string) config('kds.scheduled_window_close', '00:30');
-        $hm = $target->format('H:i');
-        $inWindow = $open <= $close
-            ? ($hm >= $open && $hm <= $close)
-            : ($hm >= $open || $hm <= $close);
-        if (! $inWindow) {
+        // [HORAIRES 2026-11-05] Les horaires viennent du réglage admin (HorairesService : jour par jour, fermetures
+        // exceptionnelles) ; sans réglage, la même plage `kds.scheduled_window_*` qu'avant.
+        $horaires = app(\App\Services\Horaires\HorairesService::class);
+        if (! $horaires->estEnService($target)) {
+            $fermeture = $horaires->fermetureDu($target->toDateString());
             $validator->errors()->add(
                 'scheduled_at',
-                sprintf('Horaire hors service — les commandes programmées sont possibles entre %s et %s.', $open, $close)
+                $fermeture
+                    ? 'Le restaurant est fermé ce jour-là' . ($fermeture['message'] !== '' ? ' (' . $fermeture['message'] . ')' : '') . '. Choisissez un autre jour.'
+                    : 'Horaire hors service — ' . $horaires->resume() . '.'
             );
         }
 

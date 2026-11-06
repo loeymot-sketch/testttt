@@ -686,6 +686,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::match(['put', 'patch'], '/', [KioskSetupController::class, 'update']);
         });
 
+        // [HORAIRES 2026-11-05] Heures d'ouverture par jour + fermetures exceptionnelles (permission:settings).
+        Route::prefix('horaires')->name('horaires.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\HorairesController::class, 'index']);
+            Route::match(['put', 'patch'], '/', [\App\Http\Controllers\Admin\HorairesController::class, 'update']);
+        });
+
         Route::prefix('loyalty-setup')->name('loyalty-setup.')->group(function () {
             Route::get('/', [LoyaltySetupController::class, 'index']);
             Route::match(['put', 'patch'], '/', [LoyaltySetupController::class, 'update']);
@@ -2297,6 +2303,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // [APP HYBRIDE W2a · 2026-11-03] Vitrine distante — PUBLIC (lue au lancement, au retour au premier plan, toutes les
     // ≤ 5 min), lecture seule, aucune donnée client, ETag + 304. Même plafond que app/config, compteur PROPRE.
+    // [HORAIRES 2026-11-05] Horaires d'ouverture (lecture publique, réglage admin) — compteur propre.
+    Route::get('horaires', [\App\Http\Controllers\Frontend\HorairesController::class, 'show'])
+        ->middleware('throttle:300,1,horaires')
+        ->name('horaires');
     Route::get('storefront', [\App\Http\Controllers\Frontend\StorefrontController::class, 'show'])
         ->middleware('throttle:300,1,storefront')
         ->name('storefront');

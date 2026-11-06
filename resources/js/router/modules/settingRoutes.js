@@ -9,6 +9,7 @@ const ItemCategoryListComponent = () => import(/* webpackChunkName: "admin-shell
 const ItemCategoryComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemCategory/ItemCategoryComponent");
 const ItemAttributeComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemAttribute/ItemAttributeComponent");
 const ItemAttributeListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/ItemAttribute/ItemAttributeListComponent");
+const HorairesComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Horaires/HorairesComponent");
 const SliderComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Slider/SliderComponent");
 const SliderListComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Slider/SliderListComponent");
 const SliderShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/Slider/SliderShowComponent");
@@ -258,6 +259,18 @@ export default [
                     permissionUrl: "settings",
                     breadcrumb: "theme",
                 },
+            },
+            {
+                // [HORAIRES 2026-11-05] Heures d'ouverture + fermetures exceptionnelles (source unique du site et de l'app).
+                path: "horaires",
+                component: HorairesComponent,
+                name: "admin.settings.horaires",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "horaires",
+                }
             },
             {
                 path: "time-slots",
