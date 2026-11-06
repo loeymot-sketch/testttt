@@ -355,8 +355,12 @@ class FrontendDiscountIntegrityTest extends TestCase
         $this->assertSame('Sauces en plus : Samouraï, Curry.', $poste([['id' => $sauce->id, 'quantity' => 2]], 'Sauces en plus : Samouraï, Curry, Blanche, Harissa, Barbecue, Andalouse.'));
         // Une viande payée, trois annoncées → une.
         $this->assertSame('Viandes en plus : Poulet.', $poste([['id' => $viande->id, 'quantity' => 1]], 'Viandes en plus : Poulet, Tenders, Kebab.'));
-        // Quantité forgée (-5) : facturée 1 par PricingService → bornée à 1.
-        $this->assertSame('Sauces en plus : Curry.', $poste([['id' => $sauce->id, 'quantity' => -5]], 'Sauces en plus : Curry, Blanche.'));
+        // Quantité forgée (-5) : désormais REFUSÉE à la validation (ValidJsonOrder, test abusif final P3 · 05448beb3) —
+        // plus besoin de la borner à 1 : la commande n'est jamais créée.
+        $this->actingAs($this->orderUser, 'sanctum')->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'items' => json_encode([['item_id' => $this->item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => [['id' => $sauce->id, 'quantity' => -5]], 'instruction' => 'Sauces en plus : Curry, Blanche.']]),
+            ]))->assertStatus(422);
 
         // Commande 9925 : menu payé + cinq sauces frites, aucune en plus payée → la 1ʳᵉ (offerte) seulement.
         $passe = function (array $extras, string $instruction): string {

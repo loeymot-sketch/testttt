@@ -61,22 +61,21 @@ class DeliveryMinimumOrderTest extends TestCase
     /** @test */
     public function test_minimum_order_blocks_subtotal_below_threshold(): void
     {
-        $branch = Branch::factory()->create([
-            'status' => Status::ACTIVE,
-            'delivery_minimum_order' => 15.00,
-        ]);
-        $user = User::factory()->create([
-            'status' => Status::ACTIVE,
-            'phone' => '0612345678',
-            'branch_id' => $branch->id,
-        ]);
+        // [Test abusif final P2-1 · 2026-11-06] Le minimum n'est PLUS lu sur le `subtotal` ENVOYÉ par le client (un
+        // subtotal:999 forgé ouvrait la livraison sur un panier de 7,40 €) : il est contrôlé par FrontendOrderService sur
+        // le sous-total RECALCULÉ par PricingService. Ce test verrouille donc le contrat : la validation de la requête ne
+        // décide plus rien à partir du chiffre envoyé (ni 10 € ni 999 €), et le contrôle serveur existe.
+        $branch = Branch::factory()->create(['status' => Status::ACTIVE, 'delivery_minimum_order' => 15.00]);
+        $user = User::factory()->create(['status' => Status::ACTIVE, 'phone' => '0612345678', 'branch_id' => $branch->id]);
 
-        $response = $this->actingAs($user, 'sanctum')
-            ->postJson('/api/frontend/order', $this->makeRequest($branch, 10.00));
-
-        $errors = $response->json('errors.subtotal') ?? [];
-        $hasMinimumError = collect($errors)->contains(fn ($msg) => str_contains((string) $msg, 'montant minimum'));
-        $this->assertTrue($hasMinimumError, 'Minimum-order error MUST fire when subtotal < threshold');
+        foreach ([10.00, 999.00] as $envoye) {
+            $errors = $this->actingAs($user, 'sanctum')->postJson('/api/frontend/order', $this->makeRequest($branch, $envoye))->json('errors.subtotal') ?? [];
+            $this->assertFalse(collect($errors)->contains(fn ($m) => str_contains((string) $m, 'montant minimum')),
+                "le subtotal envoyé ({$envoye}) ne décide plus du minimum");
+        }
+        $service = file_get_contents(base_path('app/Services/FrontendOrderService.php'));
+        $this->assertStringContainsString("value('delivery_minimum_order')", $service, 'contrôle serveur sur le sous-total recalculé');
+        $this->assertStringContainsString('round((float) $realSubtotal, 2) < round((float) $minimum, 2)', $service);
     }
 
     /** @test */
