@@ -103,9 +103,10 @@ final class PosLoyaltyAttachService
     /**
      * Relance UNIQUEMENT l'auditeur des points, pour le statut courant de la commande.
      *
-     * Rien à faire si la commande n'a pas encore atteint son déclencheur : l'auditeur créditera tout
-     * seul le moment venu, par la voie normale. On ne le devance pas — devancer, ce serait créditer
-     * des points pour une commande qui peut encore être annulée en cuisine.
+     * Rien à faire si la commande n'a pas encore atteint son déclencheur (EN ATTENTE, pas encore
+     * validée) : l'auditeur créditera tout seul à sa validation, par la voie normale. Une commande
+     * déjà validée (en cuisine, prête, remise) est créditée tout de suite — décision propriétaire
+     * 2026-11-06 ; une annulation reprend les points.
      */
     private function crediterSiLeGuetteurEstDejaPasse(Order $order): int
     {

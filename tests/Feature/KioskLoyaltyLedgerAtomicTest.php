@@ -100,7 +100,7 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
         }
 
         $response->assertStatus(422);
-        $this->assertSame(500, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(500, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertSame(0, LoyaltyTransaction::count());
         $this->assertSame(0, Order::where('loyalty_customer_code', $this->loyaltyCustomer->loyalty_code)->count());
     }
@@ -114,7 +114,7 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
         $response->assertCreated();
         $orderId = (int) $response->json('data.id');
 
-        $this->assertSame(400, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(400, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count());
         $this->assertDatabaseHas('loyalty_transactions', [
             'user_id' => $this->loyaltyCustomer->id,
@@ -148,7 +148,7 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
         }
 
         $response->assertCreated();
-        $this->assertSame(400, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(400, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count());
     }
 
@@ -187,5 +187,15 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
                 return new \App\Models\OrderQuote();
             }
         });
+    }
+
+    /**
+     * [POINTS À LA VALIDATION 2026-11-06] Une commande borne envoyée en cuisine est VALIDÉE : elle crédite
+     * ses points tout de suite. Ce banc éprouve le RACHAT ; on compare donc le solde hors points gagnés.
+     */
+    private function soldeHorsGains(\App\Models\User $u): int
+    {
+        return (int) $u->fresh()->loyalty_points
+            - (int) \Illuminate\Support\Facades\DB::table('loyalty_transactions')->where('user_id', $u->id)->where('type', 'earn')->sum('points');
     }
 }

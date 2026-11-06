@@ -41,6 +41,10 @@ class UserOrderResource extends JsonResource
             // [E4 SCHEDULED-INTAKE 2026-07-20] Heure cible programmée (NULL = ASAP)
             // — liste « mes commandes » côté client. Projection pure.
             'scheduled_at'                   => optional($this->scheduled_at)->toIso8601String(),
+            // [POINTS À LA VALIDATION 2026-11-06] Points RÉELLEMENT crédités pour cette commande (0 tant que rien
+            // ne l'est : en attente, annulée, crédit en cours). Le client voit ce que ses commandes lui ont
+            // rapporté — jamais un total de ce qu'il a dépensé.
+            'loyalty_points_awarded'         => max(0, (int) ($this->loyalty_points_awarded ?? 0)),
             'status_name'                    => trans('orderStatus.' . $this->status)
         ];
     }

@@ -108,6 +108,9 @@ class OrderDetailsResource extends JsonResource
             'preparation_time' => $this->preparation_time,
             'status' => $this->status,
             'status_name' => trans('orderStatus.'.$this->status),
+            // [POINTS À LA VALIDATION 2026-11-06] Points RÉELLEMENT crédités pour cette commande (0 tant que rien ne
+            // l'est ; la sentinelle « crédit en cours » -1 ne sort jamais). Le suivi l'affiche dès la validation.
+            'loyalty_points_awarded' => max(0, (int) ($this->loyalty_points_awarded ?? 0)),
             'reason' => $this->reason,
             // [SEC P3 + PERF P2 2026-07-22] Projection client LÉGÈRE orientée POS —
             // miroir de la minimisation delivery_boy ci-dessous. L'ancienne forme

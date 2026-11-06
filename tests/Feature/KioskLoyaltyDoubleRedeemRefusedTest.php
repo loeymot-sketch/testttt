@@ -101,7 +101,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         $response->assertCreated();
         $orderId = (int) $response->json('data.id');
 
-        $this->assertSame(400, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(400, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count());
         $this->assertDatabaseHas('loyalty_transactions', [
             'user_id' => $this->loyaltyCustomer->id,
@@ -128,7 +128,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         $response->assertCreated();
         $orderId = (int) $response->json('data.id');
 
-        $this->assertSame(400, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(400, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertDatabaseHas('loyalty_transactions', [
             'user_id' => $this->loyaltyCustomer->id,
             'order_id' => $orderId,
@@ -151,7 +151,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
             'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
         ]))->assertStatus(422);
 
-        $this->assertSame(400, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
+        $this->assertSame(400, $this->soldeHorsGains($this->loyaltyCustomer));
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->whereNull('order_id')->count());
         $this->assertSame(0, Order::where('loyalty_customer_code', $this->loyaltyCustomer->loyalty_code)->count());
     }
@@ -174,7 +174,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         $this->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code, 'points' => 100,
         ])->assertOk();
-        $this->assertSame(0, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'débité au endpoint');
+        $this->assertSame(0, $this->soldeHorsGains($this->loyaltyCustomer), 'débité au endpoint');
 
         $response = $this->postJson('/api/frontend/order', $this->orderPayload([
             'discount' => 1.00, 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
@@ -186,7 +186,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         $this->assertDatabaseHas('orders', ['id' => $orderId, 'discount' => 1.00]);
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count(), 'un seul débit');
         $this->assertDatabaseHas('loyalty_transactions', ['order_id' => $orderId, 'type' => 'redeem', 'points' => -100]);
-        $this->assertSame(0, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'pas de double débit');
+        $this->assertSame(0, $this->soldeHorsGains($this->loyaltyCustomer), 'pas de double débit');
     }
 
     /**
@@ -234,7 +234,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
             'code' => $this->loyaltyCustomer->loyalty_code, 'points' => 40,
         ])->assertStatus(400);
 
-        $this->assertSame(100, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'aucun débit sous le min');
+        $this->assertSame(100, $this->soldeHorsGains($this->loyaltyCustomer), 'aucun débit sous le min');
         $this->assertSame(0, LoyaltyTransaction::where('type', 'redeem')->count());
     }
 
@@ -276,7 +276,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         ]);
         Sanctum::actingAs($guest, ['kiosk:order']);
 
-        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+        $before = $this->soldeHorsGains($this->loyaltyCustomer);
 
         $this->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code, // FOREIGN code
@@ -285,7 +285,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
 
         $this->assertSame(
             $before,
-            (int) $this->loyaltyCustomer->fresh()->loyalty_points,
+            $this->soldeHorsGains($this->loyaltyCustomer),
             'A guest (kiosk:order ability, no KioskMachine row) must NOT debit another user\'s loyalty points (IDOR).'
         );
     }
@@ -301,7 +301,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         config(['pos.loyalty_enabled' => false]);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+        $before = $this->soldeHorsGains($this->loyaltyCustomer);
 
         $this->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code,
@@ -309,7 +309,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         ])->assertStatus(422);
 
         // No points debited, no pending ledger written — refused at the source.
-        $this->assertSame($before, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'Refused pre-redeem must not debit points.');
+        $this->assertSame($before, $this->soldeHorsGains($this->loyaltyCustomer), 'Refused pre-redeem must not debit points.');
         $this->assertSame(0, LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused pre-redeem must not write a ledger entry.');
     }
 
@@ -324,7 +324,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         config(['pos.loyalty_enabled' => true]);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+        $before = $this->soldeHorsGains($this->loyaltyCustomer);
 
         $this->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code,
@@ -332,7 +332,7 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         ])->assertStatus(200);
 
         // La fidélité est active → le pre-redeem débite bien 100 points.
-        $this->assertSame($before - 100, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'Le pre-redeem doit débiter les points quand la fidélité est active.');
+        $this->assertSame($before - 100, $this->soldeHorsGains($this->loyaltyCustomer), 'Le pre-redeem doit débiter les points quand la fidélité est active.');
         $this->assertSame(1, LoyaltyTransaction::where('type', 'redeem')->count(), 'Un ledger de redeem doit être écrit.');
     }
 
@@ -344,5 +344,15 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
                 return new \App\Models\OrderQuote();
             }
         });
+    }
+
+    /**
+     * [POINTS À LA VALIDATION 2026-11-06] Une commande borne envoyée en cuisine est VALIDÉE : elle crédite
+     * ses points tout de suite. Ce banc éprouve le RACHAT ; on compare donc le solde hors points gagnés.
+     */
+    private function soldeHorsGains(\App\Models\User $u): int
+    {
+        return (int) $u->fresh()->loyalty_points
+            - (int) \Illuminate\Support\Facades\DB::table('loyalty_transactions')->where('user_id', $u->id)->where('type', 'earn')->sum('points');
     }
 }

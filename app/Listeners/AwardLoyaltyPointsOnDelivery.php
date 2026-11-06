@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 use Smartisan\Settings\Facades\Settings;
 
 /**
- * Auto-award loyalty points when an order is completed.
- * For normal orders: trigger on DELIVERED.
- * For kiosk/takeaway orders: trigger on PREPARED or DELIVERED
- *   (kiosk flow ends at PREPARED; POS cashier can skip directly to DELIVERED).
+ * Auto-award loyalty points when the restaurant VALIDATES an order (2026-11-06, owner decision):
+ * first status among ACCEPT / PREPARING / PREPARED / OUT_FOR_DELIVERY / DELIVERED, for every
+ * order type. Never on PENDING (order not yet received). POS counter sales are also credited at
+ * payment (OrderService → award()). Cancellation/rejection/return claws the points back.
  *
  * Idempotent: uses an atomic sentinel (-1) on orders.loyalty_points_awarded
  * to guarantee exactly-once execution even under concurrent events.
@@ -37,20 +37,33 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
-        $isKiosk = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
-
-        if ($isKiosk) {
-            $shouldTrigger = in_array($event->newStatus, [OrderStatus::PREPARED, OrderStatus::DELIVERED], true);
-        } else {
-            $shouldTrigger = ($event->newStatus === OrderStatus::DELIVERED);
-        }
-
-        if (!$shouldTrigger) {
+        // [POINTS À LA VALIDATION 2026-11-06 · décision propriétaire] « C'est validé lorsque la commande
+        // est en cours » : les points sont crédités dès que le restaurant VALIDE la commande (premier
+        // statut au-delà de « en attente »), et non plus seulement à la remise. Tant que la commande est
+        // EN ATTENTE (pas encore reçue par le restaurant), rien n'est crédité. Le premier statut validé
+        // l'emporte ; la sentinelle atomique `orders.loyalty_points_awarded` empêche tout double crédit
+        // quand la commande avance ensuite (en préparation → prête → livrée).
+        // Réversible : toute annulation/rejet/retour reprend les points gagnés (OrderService, chemin
+        // d'annulation, quel que soit le paiement) ; la purge des impayés des jours précédents aussi.
+        if (! in_array((int) $event->newStatus, self::STATUTS_VALIDES, true)) {
             return;
         }
 
         $this->award($order);
     }
+
+    /**
+     * Statuts où la commande est VALIDÉE par le restaurant : acceptée, en préparation, prête, partie
+     * en livraison, remise. PENDING (en attente) n'y est jamais : une commande pas encore reçue ne
+     * rapporte rien.
+     */
+    public const STATUTS_VALIDES = [
+        OrderStatus::ACCEPT,
+        OrderStatus::PREPARING,
+        OrderStatus::PREPARED,
+        OrderStatus::OUT_FOR_DELIVERY,
+        OrderStatus::DELIVERED,
+    ];
 
     /**
      * [FIDÉLITÉ 2026-08-19] LE CRÉDIT LUI-MÊME, APPELABLE SANS ÉVÉNEMENT.
