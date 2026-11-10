@@ -80,7 +80,12 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
     // Reprendre un cliquet annoncé plutôt que mesuré l'aurait laissé trop lâche de
     // deux crans, et le cliquet aurait cessé de mordre sur les deux prochaines
     // régressions.
-    private const RETURN_TRUE_BASELINE = 52;
+    //
+    // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-2.4.2] 52 → 46. Six requêtes des contrôleurs de ce
+    // GOAL (adresse livreur, adresse employé, attribut, import catégories, import produits, photo
+    // produit) reflètent désormais la permission exacte de leur route —
+    // `tests/Feature/Authz/FormRequestAuthorizeWaveLivraisonTest.php`. Mesuré avec ce regex.
+    private const RETURN_TRUE_BASELINE = 46;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {

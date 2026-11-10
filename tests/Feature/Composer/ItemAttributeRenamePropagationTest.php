@@ -31,6 +31,17 @@ class ItemAttributeRenamePropagationTest extends TestCase
 {
     use RefreshDatabase;
 
+    private \App\Models\User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedSpatieRoles();
+        \Spatie\Permission\Models\Permission::findOrCreate('settings', 'sanctum');
+        $this->admin = \App\Models\User::factory()->create(['branch_id' => 0]);
+        $this->admin->givePermissionTo('settings');
+    }
+
     public function test_renaming_an_attribute_updates_matching_wizard_step_source_ref(): void
     {
         $attribute = ItemAttribute::create(['name' => 'Sauce Bol', 'status' => 1]);
@@ -48,6 +59,8 @@ class ItemAttributeRenamePropagationTest extends TestCase
             'name' => 'Sauce (Nouvelle)',
             'status' => 1,
         ]));
+        // [T-2.4.2 2026-11-10] ItemAttributeRequest vérifie désormais `settings` lui-même : la requête porte un utilisateur.
+        $request->setUserResolver(fn () => $this->admin);
         $request->setContainer(app())->validateResolved();
 
         app(ItemAttributeService::class)->update($request, $attribute);
@@ -70,6 +83,8 @@ class ItemAttributeRenamePropagationTest extends TestCase
             'name' => 'Sauce (Nouvelle)',
             'status' => 1,
         ]));
+        // [T-2.4.2 2026-11-10] ItemAttributeRequest vérifie désormais `settings` lui-même : la requête porte un utilisateur.
+        $request->setUserResolver(fn () => $this->admin);
         $request->setContainer(app())->validateResolved();
 
         app(ItemAttributeService::class)->update($request, $attribute);

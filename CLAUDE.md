@@ -521,7 +521,9 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
 - FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
-  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 52`,
+  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 46`,
+  abaissé le 2026-11-10 (T-2.4.2, 52 → 46 : six requêtes livreur/employé/produits) ;
+  valeur précédente `52`,
   relu dans le code le 2026-10-01** (`tests/Feature/Sentinels/
   FormRequestAuthzDriftSentinelTest.php:83`). Historique : 77 initial
   Wave 8 → 74 post Wave 5H → 69 post BUILD-6 → 66 → 64 → **52**.
