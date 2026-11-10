@@ -362,38 +362,38 @@ Branche des stores : **UNIQUEMENT `app/catalogue-distant-2026-11-05`** (les autr
 interdit par le propriétaire).
 
 ### Sub 4.1 — Parité www ↔ site
-- T-4.1.1 `npm run check:www` → `build:www` → `cap sync` → `git restore` des deux fichiers natifs ; preuve par empreintes
+- T-4.1.1 ✅ 2026-11-10 (`check:www` : « app/www est à jour (285 fichiers) » sur `app/catalogue-distant-2026-11-05` = en ligne `b61d61f` ; aucun `build:www`/`cap sync` nécessaire, donc aucun fichier natif réécrit) `npm run check:www` → `build:www` → `cap sync` → `git restore` des deux fichiers natifs ; preuve par empreintes
   (285 fichiers identiques). • test : `check:www` (script existant) + `tools/verify-app-behaviour.mjs`.
-- T-4.1.2 Aucune chaîne « dépensé », aucune URL locale, API = production, jetons `?v=` cohérents (mémoire
+- T-4.1.2 ✅ 2026-11-10 (site `tests-e2e/app-www-parite-interdits.unit.mjs` 5/5 : aucun montant dépensé — le barème « 1 € dépensé = 10 points » reste permis par la règle du 2026-11-06 —, `api-base-url` = backend HTTPS, images embarquées, 36 ressources `?v=` toutes présentes, aucun script local ; la règle mord sur « 400 € dépensés » et « cumulés (100 € … »). Le seul `127.0.0.1:8766` du paquet est le repli de `api.js` quand la balise meta manque, avec bannière d'alerte) Aucune chaîne « dépensé », aucune URL locale, API = production, jetons `?v=` cohérents (mémoire
   `site-cache-buster`). • test : (TO BE CREATED site `tests-e2e/app-www-parite-interdits.unit.mjs`).
 **Acceptance** : empreintes égales, grep interdits vide, rapport dans `app/PUBLICATION.md`.
 
 ### Sub 4.2 — Qualité native
-- T-4.2.1 Clavier (`resize: native`), barre d'état, encoches, retour arrière Android, écran blanc impossible (garde
+- T-4.2.1 ⏸ 2026-11-10 BLOQUÉ par le disque du poste (4 Go libres, 100 %) : l'émulateur (partition de 6 Go) et `gradlew assembleDebug` ne sont pas lancés pour ne pas saturer la machine ; l'APK présent (6 nov. 02:46) est ANTÉRIEUR au dernier correctif du site (`b61d61f`, 6 nov. 17:01) → à reconstruire. Côté navigateur : `tools/verify-app-behaviour.mjs` 55/55 (pont Capacitor simulé). Clavier (`resize: native`), barre d'état, encoches, retour arrière Android, écran blanc impossible (garde
   « onglet périmé » morte au build, mémoire `garde-par-nom-de-fichier-meurt-au-build`). • anchor : `capacitor.config.json`,
   `app-native.js` • test : `tools/verify-app-device.py` (émulateur Android, DNS explicites).
-- T-4.2.2 Retour de paiement `fr.lecayenne.app://paiement/retour` et `online_payment_enabled` relu avant chaque paiement ;
+- T-4.2.2 ✅ rejoué 2026-11-10 (`abandon-paiement.spec.js` vert ; `MollieAppReturnTest` 14 verts ; `/app/config` désormais en ETag/304) Retour de paiement `fr.lecayenne.app://paiement/retour` et `online_payment_enabled` relu avant chaque paiement ;
   comptoir seul si désactivé. • anchor : `api.js:67-73`, `AppConfigController.php:20` • test : site
   `tests-e2e/abandon-paiement.spec.js` (existant).
-- T-4.2.3 Pont natif réel (`registerPlugin` absent du site, mémoire `pont-capacitor-sans-registerplugin`) : notifications
+- T-4.2.3 ⏸ émulateur (même blocage disque que T-4.2.1) ; navigateur : 55/55 Pont natif réel (`registerPlugin` absent du site, mémoire `pont-capacitor-sans-registerplugin`) : notifications
   locales, Preferences, SocialLogin Apple — chacun prouvé sur émulateur. • test : `tools/verify-app-device.py` (portes
   natives existantes) + `tools/verify-app-behaviour.mjs` ; livrable = captures émulateur lues (T-4.2.2 ≈ S3 du GOAL
   hybride : non-régression).
 **Acceptance** : 9/9 portes de `tools/verify-app-device.py` vertes, captures émulateur lues.
 
 ### Sub 4.3 — Parcours client complet (émulateur)
-- T-4.3.1 Premier lancement → onboarding → compte (e-mail OTP) → commande retrait « payer sur place » → suivi → points
+- T-4.3.1 ⏸ émulateur (blocage disque) ; les bancs navigateur existants (`fidelite-2026-11-06`, `site-livraison-paiement-2026-10-24`) ont été rejoués verts lors de l'audit abusif du 2026-11-06/08 (CONVERGENCE_FINAL) et le code du site n'a pas changé depuis Premier lancement → onboarding → compte (e-mail OTP) → commande retrait « payer sur place » → suivi → points
   crédités → code promo → livraison avec adresse → ticket côté caisse portant téléphone/adresse/règlement (lien avec §3).
   • bancs : `tests/Playwright/fidelite-2026-11-06/`, `tests/Playwright/site-livraison-paiement-2026-10-24/` (existants),
   backend privé (jamais la prod).
-- T-4.3.2 Vitrine : changer les couleurs en admin local → l'app les prend au retour au premier plan ; bandeau programmé
+- T-4.3.2 ✅ navigateur 2026-11-10 (`vitrine-distante-2026-11.spec.js` sur un MIROIR rebranché sur :8766 — 15/16 : couleurs et bandeau publiés visibles, nouvelle publication au retour au premier plan sans rechargement, 304, hors ligne conservé, vitrine éteinte → couleurs d'origine ; le 1/16 = instrument : le serveur :8766 tourne depuis le 3 nov. avec `POS_COUPON_CODES_ENABLED=true` dans son environnement alors que le `.env` actuel ne l'a plus, le banc lit le `.env`) ; capture émulateur ⏸ disque Vitrine : changer les couleurs en admin local → l'app les prend au retour au premier plan ; bandeau programmé
   apparaît/disparaît à l'heure. • bancs : `tests-e2e/vitrine-distante-2026-11.spec.js` + capture émulateur.
 **Acceptance** : parcours 100 % vert, 0 erreur console, captures lues, rapport `reports/test-e2e/livraison-tickets-admin-app-2026-11-10/`.
 
 ### Sub 4.4 — Dossiers stores (préparation, sans envoi) — NON-RÉGRESSION (≈ T-S5.x du GOAL hybride : relire, pas refaire)
-- T-4.4.1 Textes, captures, visuels, déclarations (PUBLICATION.md §6) relus contre le produit réel (pas de promesse de
+- T-4.4.1 ✅ relu 2026-11-10 (PUBLICATION.md §6 : « 1 € dépensé = 10 points » = barème permis, aucun total dépensé ; « livraison par le restaurant à Hénin-Beaumont et dans les communes… » sans promesse d'horaire ; §11 porte déjà le contrat « sans nouvelle version » — à compléter d'une ligne « thèmes programmés » lors du prochain build) Textes, captures, visuels, déclarations (PUBLICATION.md §6) relus contre le produit réel (pas de promesse de
   livraison si la livraison est suspendue, pas de « € dépensés »). • livrable : diff de `app/PUBLICATION.md`.
-- T-4.4.2 Android : APK de débogage compilé ici (JDK 21, SDK 36) et installé sur émulateur ; AAB signé = propriétaire
+- T-4.4.2 ⏸ 2026-11-10 (APK du 6 nov. périmé ; recompilation + installation différées : disque à 100 %) Android : APK de débogage compilé ici (JDK 21, SDK 36) et installé sur émulateur ; AAB signé = propriétaire
   (jamais avec la clé étiquettes `lecayenne-etiquettes.jks`). iOS : Xcode 26 = propriétaire. • test :
   `tools/verify-app-device.py` contre l'APK installé ; livrable = journal de build + empreinte de l'APK dans le rapport.
 **Acceptance** : APK installé et parcours T-4.3.1 rejoué dessus ; liste G4 à jour.
@@ -420,7 +420,7 @@ après chaque commit ; rapports sur disque `reports/test-e2e/livraison-tickets-a
 | W3 | Admin stock + produits (Sub 2.1 ✅, 2.2 ✅ — 2026-11-10 ; l'alerte stock bas existait déjà, flag e-mail actif en prod) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
 | W4 | Offres (Sub 2.3) — **bloquée par G1** | séquentiel | option codée, tests verts, capture admin + app | idem |
 | W5 | Vitrine & catalogue distants (Sub 3.1 ✅ thème programmé, 3.2 ✅ rejoué, 3.3 ✅, 3.4 ✅ + ETag app/config — 2026-11-10 ; reste : démonstration émulateur = W6) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |
-| W6 | App finition (Sub 4.1-4.4) | 4.1→4.2→4.3 ; 4.4 ∥ 4.3 | 9/9 portes émulateur, parcours complet vert, APK installé | idem |
+| W6 | App finition (Sub 4.1 ✅, 4.2.2 ✅, 4.4.1 ✅, 4.3.2 banc navigateur ; **émulateur/APK ⏸ disque à 100 %** — 2026-11-10) | 4.1→4.2→4.3 ; 4.4 ∥ 4.3 | 9/9 portes émulateur, parcours complet vert, APK installé | idem |
 | W7 | Convergence : PHPUnit complet, Vitest complet, Playwright livraison + fidélité + vitrine, diff gelé 0, CHAIN OK, 2 cycles RED identiques ; puis déploiement (G3) backend → site → `cap sync` | fan-out RED ∥ | CONVERGENCE_FINAL.md, tag `v1.0.x-livraison-tickets-admin-app` | — |
 
 Règles : W4 ne bloque pas W5/W6 (domaines disjoints) ; W7 ne démarre qu'avec W1-W3, W5, W6 closes (W4 close OU

@@ -154,10 +154,27 @@ G2 toujours ouverte (impression automatique à PRÊTE ou clic).
   (`AppConfigController`, test). P3 neuf : hors ligne, un thème programmé reste affiché après sa fin jusqu'à la prochaine
   lecture réussie.
 
+### W6 (même jour, soir) — application des stores, partie navigateur
+- Paquet : `check:www` « à jour (285 fichiers) » sur la branche des stores (= en ligne `b61d61f`) ; nouveau banc site
+  `tests-e2e/app-www-parite-interdits.unit.mjs` 5/5 (aucun montant dépensé — le barème « 1 € dépensé = 10 points » reste permis
+  et la règle mord sur « 400 € dépensés » —, `api-base-url` = backend HTTPS, images embarquées, 36 ressources `?v=` présentes,
+  aucun script local). Le seul `127.0.0.1:8766` du paquet est le repli de `api.js` quand la meta manque, avec bannière d'alerte.
+- Comportement application vs navigateur (`tools/verify-app-behaviour.mjs`, pont Capacitor simulé) : 55/55. Abandon de paiement
+  Mollie : banc vert ; `MollieAppReturnTest` 14 verts.
+- Vitrine distante dans l'application (`vitrine-distante-2026-11.spec.js`, miroir rebranché sur :8766) : 15/16 — couleurs et
+  bandeau publiés visibles, nouvelle publication prise au retour au premier plan sans rechargement, 304, hors ligne conservé,
+  vitrine éteinte → couleurs d'origine. Le 1/16 est un artefact : le serveur :8766 tourne depuis le 3 nov. avec
+  `POS_COUPON_CODES_ENABLED=true` dans son environnement, le `.env` actuel ne l'a plus, le banc lit le `.env`.
+  Deux passes perdues avant : miroir sans réécriture de la meta `api-key` (règle déjà dans la mémoire du dépôt).
+- Textes de fiche (PUBLICATION.md §6) relus : conformes ; §11 complété d'une ligne « thème de couleurs programmé ».
+- **Non fait, dit franchement** : émulateur Android, `gradlew assembleDebug`, installation et parcours sur l'APK, capture du
+  thème d'un jour dans l'app installée — **disque du poste à 100 % (4 Go libres)**, partition émulateur de 6 Go : lancer ferait
+  tomber la machine. L'APK présent (6 nov. 02:46) est antérieur au dernier correctif du site (`b61d61f`, 6 nov. 17:01) : à
+  reconstruire après libération d'espace (les 17 Go de `.claude/worktrees/` sont le gisement).
+- Site (branche `app/catalogue-distant-2026-11-05`, commits locaux non poussés) : `af6b5c6` banc thème, `4cfd7c2` banc paquet,
+  `1cb6671` PUBLICATION §11.
+
 ### Ouvert
 - G2 (impression automatique du ticket client d'une livraison) : décision propriétaire ; T-1.3.2 attend.
-- W4 offres : bloquée par G1. W6 app (émulateur, `cap sync`, APK) : à suivre ; la démonstration « thème d'un jour » dans
-  l'app installée y sera faite.
-- Site : la branche `app/catalogue-distant-2026-11-05` porte le banc étendu (commit local, non poussé) ; aucun code du site
-  n'a changé pour le thème programmé.
+- W4 offres : bloquée par G1. W6 émulateur/APK : bloqué disque. W7 convergence + déploiement : propriétaire.
 - Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur) ; comptes `d@p.test`… à purger.
