@@ -212,3 +212,9 @@ gelées : 0 ligne. `fiscal:verify-chain --all` : CHAIN OK (7). Mémoire du dép�
 ne saisit qu'une date). La matrice livreur compte un 404 de liaison de modèle comme un refus et ne sonde pas les préfixes hors
 `api/admin`. Le badge « En cours / Programmé » de l'écran admin se calcule en heure du navigateur. Émulateur et APK : toujours
 bloqués par le disque à 100 %. Suite PHPUnit complète APRÈS le lot : voir la ligne « convergence » ci-dessous.
+
+**Convergence W7 (après le lot, code commis `ac717e809`).** Suite PHPUnit complète rejouée sur le code corrigé : **7 661 tests,
+0 échec** (36 ignorés, 6 incomplets, 36 min 22 ; avant le lot : 7 641 / 0). Vitest complet 5 978 / 0. Playwright 7/7. Zones gelées 0.
+CHAIN OK 7. Deux cycles adverses : le second n'a trouvé que des P2/P3 sur le lot, tous corrigés ou documentés ; aucun P0/P1
+restant. **Prêt pour le déploiement par le propriétaire** (G3) : backend 18 commits locaux non poussés depuis `4c48695d2`,
+deux migrations légères (`scheduled_themes`, atterrissage livreur) ; site : rien à déployer.
