@@ -119,6 +119,23 @@ G2 toujours ouverte (impression automatique à PRÊTE ou clic).
   `ItemAttributeRequest` sans utilisateur (`ItemAttributeRenamePropagationTest`) porte désormais un admin `settings`.
 - T-2.4.1 : couvert par `tests/Feature/Authz/*` (rejoués verts) + la matrice livreur ; pas de nouvelle matrice croisée des autres rôles.
 
+### W3 (même jour) — stock et produits depuis l'admin
+- Stock : suite `tests/Feature/Stock` 27 fichiers / 93 verts (+ 1 fichier de 4 tests `skipped` préexistant) ; capture
+  `/admin/stock/rupture` lue (catégories, cartes, « EN STOCK », photos). **L'alerte stock bas existe déjà** : widget
+  `StockLowAlertsWidget` (tableau de bord et caisse) sur `admin/stock/low-alerts`, 3 tests existants ; l'e-mail/journal est
+  derrière `FK_CATALOG_STOCK_LOW_ALERT_ENABLED`, **actif en production** (lu via `config()`, lecture seule ; les autres
+  interrupteurs lus au passage : `kds.counter_auto_print=false`, `printing.auto_print_client_receipt=false`,
+  `delivery.handover.qr_print_enabled=false`).
+- Produits : suites Items/Catalog/Requests/Composer (59 fichiers, 229 verts) + Item (4 fichiers, 32 verts) ; captures
+  `/admin/items` et tableau de bord lues, 0 clé brute, 0 erreur console. Banc du site `catalogue-distant-2026-11-05.unit.mjs`
+  55/55 ; `verify-catalogue-distant.mjs --prod` (lecture seule) : 40 produits, 9 catégories, 13 hors carte à dessein, 0 erreur JS
+  → photo changée / produit caisse seule / rupture d'option restent couverts sans republication.
+- **Fiche produit, échec muet** (mémoire `formulaire-admin-echec-muet`) : le correctif de septembre était un toast + un
+  défilement ; ajouté un message **persistant** près d'« Enregistrer » (`item-save-error`, `role=alert`), même règle que le
+  formulaire de code promo. Preuves : `itemFormErreurVisible.spec.js` 3 verts ; banc réel (nom vidé → 422) :
+  `fiche-produit-erreur-visible.png` lue (toast en haut + message rouge au-dessus du bouton).
+
 ### Ouvert
 - G2 (impression automatique du ticket client d'une livraison) : décision propriétaire ; T-1.3.2 attend.
+- W4 offres : bloquée par G1. W5 vitrine/catalogue distants et W6 app : à suivre.
 - Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur) ; comptes `d@p.test`… à purger.

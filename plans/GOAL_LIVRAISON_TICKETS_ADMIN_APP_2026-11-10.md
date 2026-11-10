@@ -223,15 +223,15 @@ chaque produit (options, suppléments, tailles, photos, canaux, allergènes), le
 `EmployeeController.php`, `RoleController.php`, `PermissionController.php`, `DeliveryBoyController.php`.
 
 ### Sub 2.1 — Stock
-- T-2.1.1 Parcours admin : rupture manuelle, réassort, perte déclarée (bornée au stock réel depuis `05448beb3`), matière
+- T-2.1.1 ✅ 2026-11-10 (suite Stock 27 fichiers / 93 verts + `StockRuptureDashboardEndpointsTest` ; capture `/admin/stock/rupture` lue) Parcours admin : rupture manuelle, réassort, perte déclarée (bornée au stock réel depuis `05448beb3`), matière
   première ; effet immédiat sur caisse/borne/site (`/api/frontend/item` `is_available`). • tests :
   `tests/Feature/Stock/StockCrossSurfaceSyncTest.php`, `StockRuptureAvailabilitySyncTest.php`,
   `ManualEightySixStickyThroughRestockTest.php`, `tests/Feature/Admin/StockRuptureDashboardEndpointsTest.php` (existants)
   • visuel : `/admin/stock/rupture`, vue unifiée.
-- T-2.1.2 Alerte stock bas réellement visible (seuil, pastille, e-mail) — backlog MASTER-GAP-046 (BRAIN §5). • anchor :
+- T-2.1.2 ✅ relevé 2026-11-10 : DÉJÀ construit — widget `StockLowAlertsWidget.vue` (tableau de bord + caisse) sur `GET admin/stock/low-alerts` (3 tests existants verts : `StockRuptureDashboardLowAlertsN1Test`, `…RawMaterialAlertsTest`, `UnSeuilDAlerteStockPeutEnfinEtreSaisiTest`) ; e-mail/journal derrière `FK_CATALOG_STOCK_LOW_ALERT_ENABLED` = **true en production** (lu via `config()`, lecture seule). Pas de test à créer. Alerte stock bas réellement visible (seuil, pastille, e-mail) — backlog MASTER-GAP-046 (BRAIN §5). • anchor :
   `app/Listeners/NotifyStockLowOnStockLevelChanged*`, `tests/Feature/Stock/NotifyStockLowOnStockLevelChangedTest.php` •
   test : (TO BE CREATED `tests/Feature/Stock/StockLowAlertVisibleInAdminTest.php`).
-- T-2.1.3 Rupture d'une boisson de menu / d'un supplément → refusée sur TOUTES les surfaces (acquis `05448beb3` pour
+- T-2.1.3 ✅ 2026-11-10 (`WizardOptionStockSyncTest` vert dans la suite Stock ; site `catalogue-distant-2026-11-05.unit.mjs` 55/55 ; `verify-catalogue-distant.mjs --prod` : 40 produits, 9 catégories, 13 hors carte à dessein, 0 erreur JS) Rupture d'une boisson de menu / d'un supplément → refusée sur TOUTES les surfaces (acquis `05448beb3` pour
   caisse/borne ; vérifier site/app via catalogue distant). • tests : `tests/Feature/Stock/WizardOptionStockSyncTest.php`
   (existant) + site `tests-e2e/catalogue-distant-2026-11-05.unit.mjs` (existant).
 **Acceptance** : suite `tests/Feature/Stock` verte (26 fichiers), banc cross-surface vert, captures lues.
@@ -239,19 +239,19 @@ chaque produit (options, suppléments, tailles, photos, canaux, allergènes), le
 T-2.2.3/2.2.4) et le banc site `catalogue-distant-2026-11-05.unit.mjs` → un seul Implementer y touche, 2.1 PUIS 2.2.
 
 ### Sub 2.2 — Personnalisation des produits
-- T-2.2.1 Fiche produit complète depuis le studio : nom, prix, catégorie, canaux (caisse/borne/web), photo, allergènes,
+- T-2.2.1 ✅ 2026-11-10 (suites Items/Catalog/Requests/Composer 59 fichiers 229 verts + Item 4 fichiers 32 verts ; captures `/admin/items`, `/admin/stock/rupture`, tableau de bord lues, 0 clé brute, 0 erreur console) Fiche produit complète depuis le studio : nom, prix, catégorie, canaux (caisse/borne/web), photo, allergènes,
   options (viande, sauce, taille), suppléments, formule → visibles en caisse, borne, site, app. • anchor :
   `CatalogStudioComponent.vue`, `ItemController.php`, `ItemPhotoUpload.vue` • tests : `tests/Feature/Item/`,
   `tests/Feature/Items/`, `tests/Feature/Catalog/`, `ItemExtraManagementTest.php`, `ItemModifierPriceValidationTest.php`
   (existants) • visuel : `/admin/items`.
-- T-2.2.2 Formulaire admin « échec muet » (mémoire `formulaire-admin-echec-muet`) : l'erreur doit être visible près du
+- T-2.2.2 ✅ 2026-11-10 (message persistant `item-save-error` près d'« Enregistrer » en plus du toast + défilement de septembre ; `tests/js/itemFormErreurVisible.spec.js` 3 verts ; banc réel `fiche-produit-erreur-visible.spec.js` : nom vidé → 422 → message lu sur capture) Formulaire admin « échec muet » (mémoire `formulaire-admin-echec-muet`) : l'erreur doit être visible près du
   bouton Enregistrer ; 0 fiche non enregistrable sur le catalogue de PROD (fixtures
   `tests/Playwright/site-livraison-2026-10-23/fixtures-prod/items.json`). • test : (TO BE CREATED
   `tests/js/itemFormErreurVisible.spec.js`).
-- T-2.2.3 Photo changée en admin → site + app en < 5 min sans republication (règle « photo du serveur ≠ référence »).
+- T-2.2.3 ✅ vérifié 2026-11-10 (règle « photo du serveur ≠ référence » couverte par le banc site 55/55 ; lecture prod OK) Photo changée en admin → site + app en < 5 min sans republication (règle « photo du serveur ≠ référence »).
   • anchor : `data/catalogue-distant.js` règles photo, `ItemPhotoController.php` • test : site
   `tests-e2e/catalogue-distant-2026-11-05.unit.mjs` (existant) + `tools/verify-catalogue-distant.mjs --prod` (lecture).
-- T-2.2.4 Produit « caisse seule » (`channels=['pos']`) : masqué du site/app ET refusé au serveur (acquis `05448beb3`) ;
+- T-2.2.4 ✅ vérifié 2026-11-10 (même banc site + `FrontendDiscountIntegrityTest` rejoué) Produit « caisse seule » (`channels=['pos']`) : masqué du site/app ET refusé au serveur (acquis `05448beb3`) ;
   produit nouveau → carte construite depuis le serveur, options déductibles sinon non affiché + diagnostic. • test :
   idem T-2.2.3 + `tests/Feature/FrontendDiscountIntegrityTest.php` (existant).
 **Acceptance** : suites Item/Catalog vertes, banc catalogue distant vert, capture studio lue.
@@ -417,7 +417,7 @@ après chaque commit ; rapports sur disque `reports/test-e2e/livraison-tickets-a
 | W0 | Pré-vol : sauvegarde DB dev, branche `backup/pre-livraison-tickets-2026-11-10`, baselines (`phpunit` complet, `audit_logs` count + hash, `check:www`), reproduction T-1.1.1 rouge | lecture seule ∥ | baselines écrites dans BRAIN §2 | — |
 | W1 | **Tickets (Sub 1.1 ✅, 1.2 ✅, 1.3 ✅ hors T-1.3.2 qui attend G2 — 2026-11-10)** — le défaut signalé | séquentiel 1.1 → 1.2 → 1.3 (`PosDeliveryBoard.vue` et `TICKET_CONTRACT.md` partagés) | 3 tests créés verts, Hardware 33 verts, Vitest reçu vert, captures lues, TICKET_CONTRACT.md à jour | manifeste `INTERRUPT_W1_*.md` |
 | W2 | Accès livreur/admin (Sub 1.4 ✅ 2026-11-10 ; Sub 2.4 ✅ : 2.4.1 via tests existants + matrice livreur, 2.4.2 cliquet 52 → 46, 2.4.3 tests existants + captures) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
-| W3 | Admin stock + produits (Sub 2.1, 2.2) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
+| W3 | Admin stock + produits (Sub 2.1 ✅, 2.2 ✅ — 2026-11-10 ; l'alerte stock bas existait déjà, flag e-mail actif en prod) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
 | W4 | Offres (Sub 2.3) — **bloquée par G1** | séquentiel | option codée, tests verts, capture admin + app | idem |
 | W5 | Vitrine & catalogue distants (Sub 3.1-3.4) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |
 | W6 | App finition (Sub 4.1-4.4) | 4.1→4.2→4.3 ; 4.4 ∥ 4.3 | 9/9 portes émulateur, parcours complet vert, APK installé | idem |
