@@ -279,7 +279,7 @@ T-2.2.3/2.2.4) et le banc site `catalogue-distant-2026-11-05.unit.mjs` → un se
   `RoleTableSeeder.php:19-62`) : ce que chacun voit et peut muter ; écarts avec `docs/AUTHZ_MATRIX.md`. • tests :
   `tests/Feature/Authz/*`, `tests/Feature/Admin/{EmployeeRoleGrantEntitlementTest,EmployeePeerManagementGuardTest,
   PermissionControllerIndexAuthzTest}.php` (existants) + T-1.4.1.
-- T-2.4.2 Cliquet FormRequest `RETURN_TRUE_BASELINE` (52) : traiter les FormRequests des contrôleurs de ce GOAL
+- T-2.4.2 ✅ 2026-11-10 (52 → 46 : adresse livreur, adresse employé, attribut, import catégories, import produits, photo produit ; `FormRequestAuthorizeWaveLivraisonTest` ; coupons/items/catégories déjà durcies avant, `CouponCheckRequest` = route publique du site, laissée) Cliquet FormRequest `RETURN_TRUE_BASELINE` (52) : traiter les FormRequests des contrôleurs de ce GOAL
   (livreurs, stock, items, coupons, storefront) et resserrer la constante. • anchor :
   `tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php:83` • tests : un test `authorize()` par FormRequest
   resserrée (TO BE CREATED `tests/Feature/Authz/FormRequestAuthorizeWaveLivraisonTest.php`) + la sentinelle.
@@ -416,7 +416,7 @@ après chaque commit ; rapports sur disque `reports/test-e2e/livraison-tickets-a
 |---|---|---|---|---|
 | W0 | Pré-vol : sauvegarde DB dev, branche `backup/pre-livraison-tickets-2026-11-10`, baselines (`phpunit` complet, `audit_logs` count + hash, `check:www`), reproduction T-1.1.1 rouge | lecture seule ∥ | baselines écrites dans BRAIN §2 | — |
 | W1 | **Tickets (Sub 1.1 ✅, 1.2 ✅, 1.3 ✅ hors T-1.3.2 qui attend G2 — 2026-11-10)** — le défaut signalé | séquentiel 1.1 → 1.2 → 1.3 (`PosDeliveryBoard.vue` et `TICKET_CONTRACT.md` partagés) | 3 tests créés verts, Hardware 33 verts, Vitest reçu vert, captures lues, TICKET_CONTRACT.md à jour | manifeste `INTERRUPT_W1_*.md` |
-| W2 | Accès livreur/admin (Sub 1.4 : 1.4.1/1.4.2/1.4.3 ✅ 2026-11-10, reste 1.4.4 écran admin + 1.4.5 parité libellé ; Sub 2.4 à faire) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
+| W2 | Accès livreur/admin (Sub 1.4 ✅ 2026-11-10 ; Sub 2.4 ✅ : 2.4.1 via tests existants + matrice livreur, 2.4.2 cliquet 52 → 46, 2.4.3 tests existants + captures) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
 | W3 | Admin stock + produits (Sub 2.1, 2.2) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
 | W4 | Offres (Sub 2.3) — **bloquée par G1** | séquentiel | option codée, tests verts, capture admin + app | idem |
 | W5 | Vitrine & catalogue distants (Sub 3.1-3.4) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |

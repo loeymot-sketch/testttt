@@ -105,8 +105,20 @@ G2 toujours ouverte (impression automatique à PRÊTE ou clic).
 | Playwright `planche-tournees-ticket.spec.js` sur :8766 (arrêt 728 = commande 9936) : téléphone `tel:`, adresse, clic Ticket → `escpos?ticket=client` 200 + octets, toast d'échec « pont injoignable » | vert ; capture lue : `planche-tournees-arret-9936.png` |
 | Zones gelées | diff 0 ; `fiscal:verify-chain --all` CHAIN OK (7) |
 
-### Ouvert / reste W2
-- T-1.4.4 écran admin des livreurs (créer, suspendre, mot de passe, révocation) : tests existants à rejouer + capture.
-- T-1.4.5 parité du libellé de règlement et de l'adresse sur `/livreur` (le téléphone est déjà aligné).
-- Sub 2.4 : matrice des autres rôles, cliquet FormRequest (52), gestion des accès depuis l'admin.
-- Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur).
+### W2 (même jour, suite)
+- T-1.4.4 / T-2.4.3 : tests existants rejoués (`DeliveryBoyCashSessionControllerTest` 18, `StaffCredentialChangeRevokesSessionsTest` 3,
+  `DeliveryBoyAddressPermissionSplitTest` 4, `EmployeePeerManagementGuardTest` 3, `EmployeeAbusGuardTest` 3, `EmployeeRoleGrantEntitlementTest` 7) ;
+  captures lues `/admin/delivery-boys` et `/admin/employees` (admin) : listes, actions, aucune clé brute. **P3 (données de dev)** :
+  trois comptes livreurs de test affichent `PENDING_CREATE_…` en colonne téléphone et un statut vide — résidus de bancs, pas un
+  écran de production ; à nettoyer avec la base de dev.
+- T-1.4.2 visuel : `livreur.e2e@lecayenne.test` sur `/login` → URL `/livreur` (son écran, connexion propre) — `acces-livreur-admin.spec.js`.
+- T-1.4.5 : mode à la porte prouvé identique ticket ↔ livreur (espèces, carte au livreur, titre-restaurant) dans `ReceiptParityLivraisonTest`.
+- T-2.4.2 : cliquet FormRequest **52 → 46** (`DeliveryBoyAddressRequest`, `EmployeeAddressRequest`, `ItemAttributeRequest`,
+  `ItemCategoryImportRequest`, `ItemImportRequest`, `ItemPhotoUploadRequest` reflètent la permission exacte de leur route ;
+  `FormRequestAuthorizeWaveLivraisonTest`). `CouponCheckRequest` reste ouverte : route publique du site. Un test qui construisait
+  `ItemAttributeRequest` sans utilisateur (`ItemAttributeRenamePropagationTest`) porte désormais un admin `settings`.
+- T-2.4.1 : couvert par `tests/Feature/Authz/*` (rejoués verts) + la matrice livreur ; pas de nouvelle matrice croisée des autres rôles.
+
+### Ouvert
+- G2 (impression automatique du ticket client d'une livraison) : décision propriétaire ; T-1.3.2 attend.
+- Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur) ; comptes `d@p.test`… à purger.
