@@ -140,4 +140,22 @@ class AppConfigMinVersionTest extends TestCase
         $this->assertFalse(AppVersion::estAvant('1.0.0-beta', '2.0.0'), 'Version illisible : on ne bloque pas.');
         $this->assertFalse(AppVersion::estAvant('1.0.0', 'abc'), 'Minimum illisible : on ne bloque pas.');
     }
+
+    /** [GOAL LIVRAISON-TICKETS 2026-11-10 · T-3.4.1] ETag + 304 : une relecture sans changement ne coûte plus de corps ; un réglage changé = nouvel ETag. */
+    public function test_etag_et_304_puis_nouvel_etag_quand_un_reglage_change(): void
+    {
+        $r = $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/app/config')->assertOk();
+        $etag = $r->headers->get('ETag');
+        $this->assertMatchesRegularExpression('/^"cfg-[0-9a-f]{20}"$/', (string) $etag);
+        $this->assertStringContainsString('must-revalidate', (string) $r->headers->get('Cache-Control'));
+
+        $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $etag])->get('/api/frontend/app/config')
+            ->assertStatus(304)->assertHeader('ETag', $etag);
+        $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => 'W/'.$etag.', "autre"'])->get('/api/frontend/app/config')->assertStatus(304);
+
+        config(['app_mobile.online_payment_enabled' => true]);
+        $r2 = $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $etag])->getJson('/api/frontend/app/config')->assertOk()
+            ->assertJsonPath('online_payment_enabled', true);
+        $this->assertNotSame($etag, $r2->headers->get('ETag'));
+    }
 }

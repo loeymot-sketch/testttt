@@ -82,6 +82,67 @@
                             </template>
                         </section>
 
+                        <!-- 2bis. Thèmes programmés — [GOAL LIVRAISON-TICKETS 2026-11-10 · T-3.1.3] « design d'un jour » -->
+                        <section class="sf-block" aria-labelledby="sf-h-themes">
+                            <h4 id="sf-h-themes" class="sf-h">Thèmes programmés <small class="sf-muted">(fêtes, événements — {{ form.scheduled_themes.length }}/{{ meta.max_scheduled_themes }})</small></h4>
+                            <p class="sf-muted">Un thème programmé remplace les couleurs de l'application entre deux dates (heure de Paris), puis les couleurs habituelles reprennent seules. Il fait partie du brouillon : enregistrez, puis publiez.</p>
+                            <p v-if="!form.scheduled_themes.length && !themeEditor" class="sf-muted" data-testid="sf-themes-empty">Aucun thème programmé.</p>
+                            <ul v-if="form.scheduled_themes.length" class="sf-list" data-testid="sf-themes">
+                                <li v-for="t in form.scheduled_themes" :key="t.id" class="sf-item" data-testid="sf-theme-row">
+                                    <span class="sf-tag" :class="stateClass(themeState(t))">{{ stateLabel(themeState(t)) }}</span>
+                                    <span class="sf-item-main">
+                                        <b>{{ t.name }}</b>
+                                        <span class="sf-theme-dots" aria-hidden="true"><i v-for="k in ['primary', 'accent', 'background', 'banner_bg']" :key="k" :style="{ background: t.theme[k] }"></i></span>
+                                        <small class="sf-muted sf-item-sub">{{ period(t) }} · priorité {{ t.priority }}</small>
+                                    </span>
+                                    <span class="sf-item-actions">
+                                        <button type="button" class="sf-btn sf-btn--small" :disabled="busy !== ''" :aria-label="`Modifier le thème ${t.name}`" @click="editTheme(t)">Modifier</button>
+                                        <button type="button" class="sf-btn sf-btn--small sf-btn--ghost" :disabled="busy !== ''" :aria-label="`Retirer le thème ${t.name}`" @click="removeTheme(t)">Retirer</button>
+                                    </span>
+                                </li>
+                            </ul>
+                            <form v-if="themeEditor" class="sf-editor" data-testid="sf-theme-editor" @submit.prevent="applyThemeEditor">
+                                <div class="sf-row2">
+                                    <label class="sf-field"><span class="sf-label">Nom du thème</span>
+                                        <input v-model="themeEditor.name" maxlength="40" class="sf-input" placeholder="Noël" data-testid="sf-t-name" required /></label>
+                                    <label class="sf-field"><span class="sf-label">Priorité (0-100, la plus grande gagne)</span>
+                                        <input v-model.number="themeEditor.priority" type="number" min="0" max="100" class="sf-input" data-testid="sf-t-priority" /></label>
+                                </div>
+                                <div class="sf-row2">
+                                    <label class="sf-field"><span class="sf-label">Début (heure de Paris)</span>
+                                        <input v-model="themeEditor.starts_at" type="datetime-local" class="sf-input" data-testid="sf-t-start" required /></label>
+                                    <label class="sf-field"><span class="sf-label">Fin (les couleurs habituelles reprennent)</span>
+                                        <input v-model="themeEditor.ends_at" type="datetime-local" class="sf-input" data-testid="sf-t-end" required /></label>
+                                </div>
+                                <label class="sf-check"><input v-model="themeEditor.active" type="checkbox" data-testid="sf-t-active" /> Actif</label>
+                                <div class="sf-tokens" data-testid="sf-t-tokens">
+                                    <label v-for="t in meta.tokens" :key="t.key" class="sf-token">
+                                        <input type="color" :value="themeEditor.theme[t.key] || '#000000'" :aria-label="`${t.label} (thème programmé)`" class="sf-swatch" @input="setThemeColor(t.key, $event.target.value)" />
+                                        <span class="sf-token-text">
+                                            <span class="sf-label">{{ t.label }}</span>
+                                            <input :value="themeEditor.theme[t.key]" maxlength="7" spellcheck="false" class="sf-input sf-hex" :class="{ 'is-bad': !isHex(themeEditor.theme[t.key]) }"
+                                                   :data-testid="`sf-t-hex-${t.key}`" @input="setThemeColor(t.key, $event.target.value)" />
+                                        </span>
+                                    </label>
+                                </div>
+                                <ul class="sf-contrast" data-testid="sf-t-contrast">
+                                    <li v-for="p in contrastRowsFor(themeEditor.theme)" :key="p.fg + p.bg" :class="p.ok ? 'is-ok' : 'is-bad'">
+                                        <span class="sf-sample" :style="{ color: p.fgHex, background: p.bgHex }" aria-hidden="true">Aa</span>
+                                        <span>{{ p.label }} : <b>{{ p.text }}</b> {{ p.ok ? "— lisible" : `— trop faible, il faut au moins ${minText}` }}</span>
+                                    </li>
+                                </ul>
+                                <button type="button" class="sf-btn sf-btn--small" data-testid="sf-t-preset" @click="themeEditor.theme = { ...(customTheme ? form.theme : meta.default_theme) }">Partir des couleurs actuelles</button>
+                                <ul v-if="themeErrors.length" class="sf-errors" role="alert" data-testid="sf-theme-errors">
+                                    <li v-for="e in themeErrors" :key="e">{{ e }}</li>
+                                </ul>
+                                <div class="sf-editor-actions">
+                                    <button type="submit" class="sf-btn" data-testid="sf-t-apply">{{ themeEditor.id ? "Mettre à jour ce thème" : "Ajouter ce thème au brouillon" }}</button>
+                                    <button type="button" class="sf-btn sf-btn--ghost" data-testid="sf-t-cancel" @click="themeEditor = null; themeErrors = []">Annuler</button>
+                                </div>
+                            </form>
+                            <button v-else type="button" class="sf-btn" :disabled="busy !== '' || form.scheduled_themes.length >= meta.max_scheduled_themes" data-testid="sf-new-theme" @click="newTheme">Nouveau thème programmé</button>
+                        </section>
+
                         <div class="sf-bar">
                             <p v-if="settingsMsg" class="sf-msg" :class="settingsOk ? 'is-ok' : 'is-alert'" role="status" data-testid="sf-settings-msg">{{ settingsMsg }}</p>
                             <ul v-if="settingsErrors.length" class="sf-errors" role="alert" data-testid="sf-settings-errors">
@@ -206,7 +267,8 @@
                             <div class="sf-phone-screen">
                                 <p class="sf-phone-brand">Le Cayenne</p>
                                 <p v-if="!form.enabled" class="sf-phone-off" data-testid="sf-phone-off">Vitrine éteinte : contenu embarqué de l'application.</p>
-                                <template v-else>
+                                <p v-else-if="state.preview.theme_name" class="sf-phone-off" data-testid="sf-phone-theme">Thème « {{ state.preview.theme_name }} » en cours (brouillon enregistré).</p>
+                                <template v-if="form.enabled">
                                     <div v-for="b in state.preview.banners" :key="b.id" class="sf-phone-banner" data-testid="sf-phone-banner">
                                         <p class="sf-phone-banner-title">{{ b.title }}</p>
                                         <p v-if="b.body" class="sf-phone-banner-body">{{ b.body }}</p>
@@ -246,11 +308,13 @@ import { buildIdempotencyHeaders } from "../../../helpers/idempotencyHeaders";
 
 const PARIS = "Europe/Paris";
 const EMPTY_STATE = () => ({
-    draft: { enabled: false, theme: null, delivery_on_message: null, delivery_off_message: null },
+    draft: { enabled: false, theme: null, scheduled_themes: [], delivery_on_message: null, delivery_off_message: null },
     banners: [], published: { version: 0, published_at: null, published_by: null }, history: [],
-    has_unpublished_changes: false, draft_hash: null, preview: { banners: [], delivery: { enabled: true, message: "" } }, delivery: { enabled: true },
-    meta: { tokens: [], contrast_pairs: [], min_contrast: 4.5, default_theme: {}, link_routes: [], max_banners: 20, delivery_messages: { on: "", off: "" }, timezone: PARIS },
+    has_unpublished_changes: false, draft_hash: null, preview: { banners: [], delivery: { enabled: true, message: "" }, theme_name: null }, delivery: { enabled: true },
+    meta: { tokens: [], contrast_pairs: [], min_contrast: 4.5, default_theme: {}, link_routes: [], max_banners: 20, max_scheduled_themes: 12, delivery_messages: { on: "", off: "" }, timezone: PARIS },
 });
+// « 2026-12-24T18:00:00+01:00 » (serveur, heure de Paris) ou « 2026-12-24T18:00 » (saisie) → valeur du champ datetime-local.
+const localInput = (v) => (typeof v === "string" ? v.slice(0, 16) : "");
 
 function luminance(hex) {
     const c = [1, 3, 5].map((i) => {
@@ -272,10 +336,11 @@ export default {
         return {
             loaded: false, loadError: "", forbidden: false, busy: "",
             state: EMPTY_STATE(),
-            form: { enabled: false, theme: {}, delivery_on_message: "", delivery_off_message: "" },
+            form: { enabled: false, theme: {}, scheduled_themes: [], delivery_on_message: "", delivery_off_message: "" },
             customTheme: false, savedForm: "",
             settingsMsg: "", settingsOk: true, settingsErrors: [],
             editor: null, bannerErrors: [],
+            themeEditor: null, themeErrors: [], // [T-3.1.3] thème programmé en cours d'édition (brouillon local jusqu'à « Enregistrer »)
             publishMsg: "", publishOk: true, publishErrors: [],
         };
     },
@@ -286,17 +351,14 @@ export default {
         settingsDirty() { return this.loaded && this.formSnapshot !== this.savedForm; },
         hasChanges() { return this.settingsDirty || this.state.has_unpublished_changes; },
         labels() { return Object.fromEntries(this.meta.tokens.map((t) => [t.key, t.label])); },
-        contrastRows() {
-            return this.meta.contrast_pairs.map(([fg, bg]) => {
-                const fgHex = this.form.theme[fg], bgHex = this.form.theme[bg];
-                const valid = isHex(fgHex) && isHex(bgHex);
-                const r = valid ? contrastRatio(fgHex, bgHex) : 0;
-                return { fg, bg, fgHex, bgHex, label: `${this.labels[fg]} / ${this.labels[bg]}`, ok: valid && r >= this.meta.min_contrast, text: valid ? frRatio(r) : "couleur invalide" };
-            });
-        },
-        contrastOk() { return !this.customTheme || (this.contrastRows.every((r) => r.ok) && this.meta.tokens.every((t) => isHex(this.form.theme[t.key]))); },
+        contrastRows() { return this.contrastRowsFor(this.form.theme); },
+        baseThemeOk() { return !this.customTheme || this.themeValid(this.form.theme); },
+        // Le bouton « Enregistrer » exige des couleurs lisibles pour le thème de base ET pour chaque thème programmé.
+        contrastOk() { return this.baseThemeOk && this.form.scheduled_themes.every((t) => this.themeValid(t.theme)); },
         phoneTheme() {
-            return this.form.enabled && this.customTheme && this.contrastOk ? this.normalizedTheme() : this.meta.default_theme;
+            // Thème programmé en cours (calculé par le serveur sur le brouillon ENREGISTRÉ) : l'aperçu le montre tel que l'application le verra.
+            if (this.form.enabled && this.state.preview && this.state.preview.theme_name && this.state.preview.theme) return this.state.preview.theme;
+            return this.form.enabled && this.customTheme && this.baseThemeOk ? this.normalizedTheme() : this.meta.default_theme;
         },
         phoneStyle() {
             const t = this.phoneTheme || {};
@@ -316,23 +378,91 @@ export default {
             this.meta.tokens.forEach((t) => { out[t.key] = String((theme || {})[t.key] || "").toUpperCase(); });
             return out;
         },
+        contrastRowsFor(theme) {
+            const th = theme || {};
+            return this.meta.contrast_pairs.map(([fg, bg]) => {
+                const fgHex = th[fg], bgHex = th[bg];
+                const valid = isHex(fgHex) && isHex(bgHex);
+                const r = valid ? contrastRatio(fgHex, bgHex) : 0;
+                return { fg, bg, fgHex, bgHex, label: `${this.labels[fg]} / ${this.labels[bg]}`, ok: valid && r >= this.meta.min_contrast, text: valid ? frRatio(r) : "couleur invalide" };
+            });
+        },
+        themeValid(theme) {
+            return this.meta.tokens.every((t) => isHex((theme || {})[t.key])) && this.contrastRowsFor(theme).every((r) => r.ok);
+        },
+        // Forme envoyée au serveur et comparée pour « modifications non enregistrées » : dates en heure de Paris sans fuseau.
+        scheduledPayload(list) {
+            return (list || []).map((t) => ({
+                id: t.id, name: (t.name || "").trim(), starts_at: localInput(t.starts_at), ends_at: localInput(t.ends_at),
+                priority: Number.isFinite(t.priority) ? t.priority : 0, active: !!t.active, theme: this.normalizedTheme(t.theme),
+            }));
+        },
         snap(form, custom) {
             return JSON.stringify({
                 enabled: !!form.enabled,
                 theme: custom ? this.normalizedTheme(form.theme) : null,
+                scheduled: this.scheduledPayload(form.scheduled_themes),
                 on: (form.delivery_on_message || "").trim() || null,
                 off: (form.delivery_off_message || "").trim() || null,
             });
+        },
+        // ---- thèmes programmés (édition locale ; le serveur valide à « Enregistrer le brouillon »)
+        themeState(t) {
+            if (!t.active) return "off";
+            const now = Date.now();
+            const start = t.starts_at ? Date.parse(t.starts_at) : NaN;
+            const end = t.ends_at ? Date.parse(t.ends_at) : NaN;
+            if (!isNaN(end) && end <= now) return "ended";
+            if (!isNaN(start) && start > now) return "scheduled";
+            return "live";
+        },
+        newTheme() {
+            this.themeErrors = [];
+            this.themeEditor = { id: null, name: "", starts_at: "", ends_at: "", priority: 0, active: true, theme: { ...(this.customTheme ? this.form.theme : this.meta.default_theme) } };
+        },
+        editTheme(t) {
+            this.themeErrors = [];
+            this.themeEditor = { id: t.id, name: t.name, starts_at: localInput(t.starts_at), ends_at: localInput(t.ends_at), priority: t.priority, active: !!t.active, theme: { ...t.theme } };
+        },
+        setThemeColor(key, value) { this.themeEditor.theme = { ...this.themeEditor.theme, [key]: String(value).trim() }; },
+        applyThemeEditor() {
+            const e = this.themeEditor;
+            if (!e) return;
+            const errors = [];
+            if (!(e.name || "").trim()) errors.push("Donnez un nom au thème (par exemple « Noël »).");
+            if (!e.starts_at) errors.push("Indiquez le début du thème (date et heure).");
+            if (!e.ends_at) errors.push("Indiquez la fin du thème : il se défait seul à cette heure.");
+            if (e.starts_at && e.ends_at && Date.parse(e.ends_at) <= Date.parse(e.starts_at)) errors.push("La fin doit être après le début.");
+            if (!this.themeValid(e.theme)) errors.push(`Les couleurs de ce thème ne sont pas assez contrastées (il faut au moins ${this.minText}) : corrigez-les avant de l'ajouter.`);
+            this.themeErrors = errors;
+            if (errors.length) return;
+            const entry = { id: e.id || (Math.max(0, ...this.form.scheduled_themes.map((t) => Number(t.id) || 0)) + 1), name: e.name.trim(), starts_at: e.starts_at, ends_at: e.ends_at,
+                priority: Number.isFinite(e.priority) ? Math.min(100, Math.max(0, e.priority)) : 0, active: !!e.active, theme: this.normalizedTheme(e.theme) };
+            const list = [...this.form.scheduled_themes];
+            const at = list.findIndex((t) => t.id === entry.id);
+            if (at >= 0) list.splice(at, 1, entry); else list.push(entry);
+            this.form.scheduled_themes = list;
+            this.themeEditor = null;
+        },
+        removeTheme(t) {
+            if (!window.confirm(`Retirer le thème « ${t.name} » du brouillon ?`)) return;
+            this.form.scheduled_themes = this.form.scheduled_themes.filter((x) => x.id !== t.id);
+            if (this.themeEditor && this.themeEditor.id === t.id) this.themeEditor = null;
         },
         when(iso) {
             if (!iso) return "";
             try { return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: PARIS }).format(new Date(iso)); } catch (_) { return ""; }
         },
+        // Une date saisie (« 2026-12-24T18:00 », sans fuseau) s'affiche telle quelle ; une date du serveur passe par `when`.
+        whenAny(v) {
+            if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return `${v.slice(8, 10)}/${v.slice(5, 7)}/${v.slice(0, 4)} ${v.slice(11, 16)}`;
+            return this.when(v);
+        },
         period(b) {
             if (!b.starts_at && !b.ends_at) return "toujours";
-            if (!b.starts_at) return `jusqu'au ${this.when(b.ends_at)}`;
-            if (!b.ends_at) return `à partir du ${this.when(b.starts_at)}`;
-            return `du ${this.when(b.starts_at)} au ${this.when(b.ends_at)}`;
+            if (!b.starts_at) return `jusqu'au ${this.whenAny(b.ends_at)}`;
+            if (!b.ends_at) return `à partir du ${this.whenAny(b.starts_at)}`;
+            return `du ${this.whenAny(b.starts_at)} au ${this.whenAny(b.ends_at)}`;
         },
         codeSaisi(previewBanner) {
             const d = (this.state.banners || []).find((x) => x.id === previewBanner.id);
@@ -354,6 +484,7 @@ export default {
             const server = {
                 enabled: !!d.enabled,
                 theme: { ...(d.theme || data.meta.default_theme) },
+                scheduled_themes: (d.scheduled_themes || []).map((t) => ({ id: t.id, name: t.name, starts_at: t.starts_at, ends_at: t.ends_at, priority: t.priority, active: !!t.active, theme: { ...(t.theme || {}) } })),
                 delivery_on_message: d.delivery_on_message || "",
                 delivery_off_message: d.delivery_off_message || "",
             };
@@ -401,6 +532,7 @@ export default {
                 await this.call("put", "admin/storefront/settings", {
                     enabled: this.form.enabled,
                     theme: this.customTheme ? this.normalizedTheme() : null,
+                    scheduled_themes: this.scheduledPayload(this.form.scheduled_themes),
                     delivery_on_message: this.form.delivery_on_message || null,
                     delivery_off_message: this.form.delivery_off_message || null,
                 }, true);
@@ -540,6 +672,8 @@ export default {
 .sf-swatch { width: 44px; height: 44px; border: 1px solid #9CA3AF; border-radius: 8px; padding: 0; background: none; flex: none; cursor: pointer; }
 .sf-token-text { min-width: 0; flex: 1; }
 .sf-hex { font-family: ui-monospace, Menlo, monospace; text-transform: uppercase; }
+.sf-theme-dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.sf-theme-dots i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #D1D5DB; }
 .sf-contrast { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 6px; }
 .sf-contrast li { display: flex; gap: 10px; align-items: center; font-size: 14px; padding: 6px 8px; border-radius: 8px; }
 .sf-contrast li.is-ok { background: #F0FDF4; color: #14532D; }

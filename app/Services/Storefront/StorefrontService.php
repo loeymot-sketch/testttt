@@ -86,6 +86,8 @@ class StorefrontService
         return [
             'enabled' => (bool) ($s?->enabled ?? false),
             'theme' => $s?->theme ? $this->normalizeTheme($s->theme) : null,
+            // [T-3.1.1 2026-11-10] thèmes programmés (fêtes) : toujours une liste, jamais null, pour une empreinte stable
+            'scheduled_themes' => $this->normalizeScheduledThemes($s?->scheduled_themes),
             'delivery_on_message' => $s?->delivery_on_message,
             'delivery_off_message' => $s?->delivery_off_message,
             'banners' => $this->banners($branch)->map(fn (StorefrontBanner $b) => $this->bannerSnapshot($b))->values()->all(),
@@ -143,11 +145,21 @@ class StorefrontService
 
         $custom = $enabled ? ($deliveryOn ? ($snapshot['delivery_on_message'] ?? null) : ($snapshot['delivery_off_message'] ?? null)) : null;
 
+        // [T-3.1.1 2026-11-10] Thème programmé en cours (fêtes) : il remplace les couleurs de base entre ses deux dates,
+        // même si le restaurant garde par ailleurs les couleurs embarquées ; ses bornes entrent dans `next_change_at`
+        // pour que l'application relise exactement au début et à la fin, et le thème de base reprend seul.
+        $theme = $enabled && ! empty($snapshot['theme']) ? $this->normalizeTheme($snapshot['theme']) : null;
+        $actif = $enabled ? $this->activeScheduledTheme($snapshot['scheduled_themes'] ?? [], $now, $nextChange) : null;
+        if ($actif) {
+            $theme = $this->normalizeTheme($actif['theme']);
+        }
+
         return [
             'version' => $version,
             'enabled' => $enabled,
             'published_at' => $this->iso($publishedAt),
-            'theme' => $enabled && ! empty($snapshot['theme']) ? $this->normalizeTheme($snapshot['theme']) : null,
+            'theme' => $theme,
+            'theme_name' => $actif['name'] ?? null,
             'banners' => array_map(fn ($b) => [
                 'id' => (int) $b['id'],
                 'type' => $b['type'],
@@ -246,7 +258,9 @@ class StorefrontService
 
     public function hasUnpublishedChanges(int $branch): bool
     {
-        $published = $this->published($branch)?->snapshot ?? ['enabled' => false, 'theme' => null, 'delivery_on_message' => null, 'delivery_off_message' => null, 'banners' => []];
+        $published = $this->published($branch)?->snapshot ?? ['enabled' => false, 'theme' => null, 'scheduled_themes' => [], 'delivery_on_message' => null, 'delivery_off_message' => null, 'banners' => []];
+        // Une version publiée AVANT les thèmes programmés n'a pas la clé : même valeur qu'une liste vide.
+        $published += ['scheduled_themes' => []];
 
         return $this->comparable($this->draftSnapshot($branch)) !== $this->comparable($published);
     }
@@ -328,6 +342,144 @@ class StorefrontService
         return $out;
     }
 
+    // ------------------------------------------------------------ thèmes programmés (« design d'un jour »)
+
+    /**
+     * [T-3.1.1 2026-11-10] Liste normalisée (ce qui est stocké et publié) : identifiant entier, nom nettoyé, dates en ISO 8601
+     * (heure de Paris si la saisie n'a pas de fuseau), priorité 0-100, actif, couleurs passées par `normalizeTheme`.
+     * Une entrée illisible (pas un tableau) est ignorée ; une date illisible devient null et sera refusée par `scheduledThemeErrors`.
+     *
+     * @return list<array{id:int,name:string,starts_at:?string,ends_at:?string,priority:int,active:bool,theme:array<string,string>}>
+     */
+    public function normalizeScheduledThemes(mixed $list): array
+    {
+        if (! is_array($list)) {
+            return [];
+        }
+        $out = [];
+        $i = 0;
+        foreach (array_values($list) as $t) {
+            $i++;
+            if (! is_array($t)) {
+                continue;
+            }
+            $out[] = [
+                'id' => isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0 ? (int) $t['id'] : $i,
+                'name' => trim(strip_tags((string) ($t['name'] ?? ''))),
+                'starts_at' => $this->isoOrNull($t['starts_at'] ?? null),
+                'ends_at' => $this->isoOrNull($t['ends_at'] ?? null),
+                'priority' => max(0, min(100, (int) ($t['priority'] ?? 0))),
+                'active' => ! array_key_exists('active', $t) || filter_var($t['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false,
+                'theme' => is_array($t['theme'] ?? null) ? $this->normalizeTheme($t['theme']) : [],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Erreurs en français, clés `scheduled_themes.<i>.<champ>` (i = position affichée, à partir de 0) — même contrat que
+     * `themeErrors`. `$strict` (enregistrement du brouillon) refuse en plus un thème ACTIF déjà terminé ; la publication et le
+     * retour arrière ne le refusent pas (un thème passé publié ne s'affiche simplement jamais).
+     *
+     * @return array<string,string>
+     */
+    public function scheduledThemeErrors(mixed $list, bool $strict = false, ?CarbonInterface $now = null): array
+    {
+        if ($list === null) {
+            return [];
+        }
+        if (! is_array($list)) {
+            return ['scheduled_themes' => 'Les thèmes programmés doivent être une liste.'];
+        }
+        $max = (int) config('storefront.max_scheduled_themes', 12);
+        if (count($list) > $max) {
+            return ['scheduled_themes' => "{$max} thèmes programmés au plus : supprimez-en un avant d'en ajouter un autre."];
+        }
+        $now = $now ?? Carbon::now(self::TZ);
+        $errors = [];
+        foreach (array_values($list) as $i => $t) {
+            $k = "scheduled_themes.{$i}";
+            if (! is_array($t)) {
+                $errors[$k] = 'Thème illisible.';
+                continue;
+            }
+            $name = trim(strip_tags((string) ($t['name'] ?? '')));
+            if ($name === '') {
+                $errors["{$k}.name"] = 'Donnez un nom au thème (par exemple « Noël »).';
+            } elseif (mb_strlen($name) > 40) {
+                $errors["{$k}.name"] = 'Le nom du thème ne doit pas dépasser 40 caractères.';
+            }
+            $start = $this->isoOrNull($t['starts_at'] ?? null);
+            $end = $this->isoOrNull($t['ends_at'] ?? null);
+            if ($start === null) {
+                $errors["{$k}.starts_at"] = 'Indiquez le début du thème (date et heure).';
+            }
+            if ($end === null) {
+                $errors["{$k}.ends_at"] = 'Indiquez la fin du thème : il se défait seul à cette heure.';
+            } elseif ($start !== null && Carbon::parse($end)->lessThanOrEqualTo(Carbon::parse($start))) {
+                $errors["{$k}.ends_at"] = 'La fin doit être après le début.';
+            } elseif ($strict && (! array_key_exists('active', $t) || filter_var($t['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false)
+                && Carbon::parse($end)->lessThanOrEqualTo($now)) {
+                $errors["{$k}.ends_at"] = 'La date de fin est déjà passée : ce thème ne s\'afficherait jamais. Désactivez-le ou changez ses dates.';
+            }
+            $theme = $t['theme'] ?? null;
+            if (! is_array($theme) || $theme === []) {
+                $errors["{$k}.theme"] = 'Choisissez les couleurs du thème (toutes sont obligatoires).';
+            } else {
+                foreach ($this->themeErrors($theme) as $key => $message) {
+                    $errors["{$k}.{$key}"] = $message;
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Le thème programmé qui s'applique à `$now` : actif, commencé (début inclus), pas terminé (fin exclue) ; en cas de
+     * chevauchement, la plus grande priorité puis le début le plus récent puis le plus petit identifiant. Les bornes à venir
+     * (début d'un thème futur, fin d'un thème en cours) nourrissent `$nextChange`.
+     */
+    public function activeScheduledTheme(array $list, CarbonInterface $now, ?CarbonInterface &$nextChange): ?array
+    {
+        $candidats = [];
+        foreach ($this->normalizeScheduledThemes($list) as $t) {
+            if (! $t['active'] || $t['starts_at'] === null || $t['ends_at'] === null || $t['theme'] === []) {
+                continue;
+            }
+            $start = Carbon::parse($t['starts_at']);
+            $end = Carbon::parse($t['ends_at']);
+            if ($end->lessThanOrEqualTo($now)) {
+                continue;
+            }
+            if ($start->greaterThan($now)) {
+                $nextChange = $this->earliest($nextChange, $start);
+                continue;
+            }
+            $nextChange = $this->earliest($nextChange, $end);
+            $candidats[] = $t;
+        }
+        if (! $candidats) {
+            return null;
+        }
+        usort($candidats, fn ($a, $b) => [$b['priority'], $b['starts_at'], $a['id']] <=> [$a['priority'], $a['starts_at'], $b['id']]);
+
+        return $candidats[0];
+    }
+
+    private function isoOrNull(mixed $value): ?string
+    {
+        if ($value === null || $value === '' || ! is_scalar($value)) {
+            return null;
+        }
+        try {
+            return Carbon::parse((string) $value, self::TZ)->setTimezone(self::TZ)->toIso8601String();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     // ------------------------------------------------------------------ publication
 
     /**
@@ -377,7 +529,8 @@ class StorefrontService
             }
 
             $snapshot = $this->draftSnapshot($branch);
-            $errors = $this->themeErrors($snapshot['theme'] === null ? null : $settings->theme);
+            $errors = $this->themeErrors($snapshot['theme'] === null ? null : $settings->theme)
+                + $this->scheduledThemeErrors($snapshot['scheduled_themes']);
             if ($errors) {
                 throw ValidationException::withMessages($errors);
             }
@@ -407,6 +560,7 @@ class StorefrontService
         $settings->forceFill([
             'enabled' => (bool) ($snapshot['enabled'] ?? false),
             'theme' => $snapshot['theme'] ?? null,
+            'scheduled_themes' => $this->normalizeScheduledThemes($snapshot['scheduled_themes'] ?? []),
             'delivery_on_message' => $snapshot['delivery_on_message'] ?? null,
             'delivery_off_message' => $snapshot['delivery_off_message'] ?? null,
         ])->save();

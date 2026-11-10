@@ -68,6 +68,10 @@ return [
 
     'max_banners' => 20,
 
+    // [T-3.1.1 2026-11-10] Thèmes de couleurs programmés (« design d'un jour » : fêtes, Noël…). Chacun porte un début, une
+    // fin, une priorité et un jeu complet de couleurs soumis aux mêmes règles de contraste que le thème de base.
+    'max_scheduled_themes' => 12,
+
     // Messages de livraison par défaut (l'administrateur peut les remplacer dans la vitrine).
     'delivery_messages' => [
         'on'  => 'Livraison disponible.',

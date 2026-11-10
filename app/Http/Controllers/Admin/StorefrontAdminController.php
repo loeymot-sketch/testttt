@@ -42,11 +42,16 @@ class StorefrontAdminController extends AdminController
         $v = Validator::make($request->all(), [
             'enabled' => ['required', 'boolean'],
             'theme' => ['nullable'],
+            // [T-3.1.1 2026-11-10] thèmes programmés : liste validée par le service (nom, dates, priorité, contraste)
+            'scheduled_themes' => ['nullable', 'array'],
             'delivery_on_message' => ['nullable', 'string', 'max:140', $this->noTags()],
             'delivery_off_message' => ['nullable', 'string', 'max:140', $this->noTags()],
         ], $this->messages(), $this->attributes());
         $v->after(function ($validator) use ($request) {
             foreach ($this->storefront->themeErrors($request->input('theme')) as $key => $message) {
+                $validator->errors()->add($key, $message);
+            }
+            foreach ($this->storefront->scheduledThemeErrors($request->input('scheduled_themes'), true) as $key => $message) {
                 $validator->errors()->add($key, $message);
             }
         });
@@ -57,6 +62,9 @@ class StorefrontAdminController extends AdminController
             'branch_id' => $branch,
             'enabled' => (bool) $data['enabled'],
             'theme' => $request->input('theme') === null ? null : $this->storefront->normalizeTheme($request->input('theme')),
+            'scheduled_themes' => $request->has('scheduled_themes')
+                ? $this->storefront->normalizeScheduledThemes($request->input('scheduled_themes'))
+                : ($settings->scheduled_themes ?? []),
             'delivery_on_message' => $this->clean($data['delivery_on_message'] ?? null),
             'delivery_off_message' => $this->clean($data['delivery_off_message'] ?? null),
         ])->save();
@@ -238,6 +246,14 @@ class StorefrontAdminController extends AdminController
                 'draft' => [
                     'enabled' => $draft['enabled'],
                     'theme' => $settings?->theme ? $s->normalizeTheme($settings->theme) : null,
+                    // [T-3.1.1] thèmes programmés du brouillon, avec leur état maintenant (même règle que les bandeaux)
+                    'scheduled_themes' => array_map(function ($t) use ($now) {
+                        $start = $t['starts_at'] ? Carbon::parse($t['starts_at']) : null;
+                        $end = $t['ends_at'] ? Carbon::parse($t['ends_at']) : null;
+                        $t['state'] = ! $t['active'] ? 'off' : ($end && $end->lessThanOrEqualTo($now) ? 'ended' : ($start && $start->greaterThan($now) ? 'scheduled' : 'live'));
+
+                        return $t;
+                    }, $draft['scheduled_themes']),
                     'delivery_on_message' => $draft['delivery_on_message'],
                     'delivery_off_message' => $draft['delivery_off_message'],
                 ],
@@ -270,6 +286,7 @@ class StorefrontAdminController extends AdminController
                     'default_theme' => (array) config('storefront.default_theme'),
                     'link_routes' => collect((array) config('storefront.link_routes'))->map(fn ($label, $route) => ['route' => $route, 'link' => '#'.$route, 'label' => $label])->values()->all(),
                     'max_banners' => (int) config('storefront.max_banners', 20),
+                    'max_scheduled_themes' => (int) config('storefront.max_scheduled_themes', 12),
                     'delivery_messages' => (array) config('storefront.delivery_messages'),
                     'timezone' => StorefrontService::TZ,
                 ],

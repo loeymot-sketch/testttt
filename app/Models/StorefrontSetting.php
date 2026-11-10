@@ -10,7 +10,7 @@ class StorefrontSetting extends Model
 {
     protected $table = 'storefront_settings';
 
-    protected $fillable = ['branch_id', 'version', 'enabled', 'theme', 'delivery_on_message', 'delivery_off_message', 'published_by', 'published_at'];
+    protected $fillable = ['branch_id', 'version', 'enabled', 'theme', 'scheduled_themes', 'delivery_on_message', 'delivery_off_message', 'published_by', 'published_at'];
 
     protected $casts = [
         'id' => 'integer',
@@ -18,6 +18,7 @@ class StorefrontSetting extends Model
         'version' => 'integer',
         'enabled' => 'boolean',
         'theme' => 'array',
+        'scheduled_themes' => 'array', // [T-3.1.1 2026-11-10] thèmes programmés (fêtes), validés par StorefrontService
         'published_by' => 'integer',
         'published_at' => 'datetime',
     ];
