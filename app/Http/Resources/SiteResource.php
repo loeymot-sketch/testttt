@@ -41,6 +41,13 @@ class SiteResource extends JsonResource
      */
     public function toArray($request): array
     {
+        // [SUPERVISION 2026-11-10] La lecture de ce groupe est ouverte à tout compte connecté (le SPA le charge au démarrage
+        // pour la devise, la langue, le fuseau) — un livreur sans aucune permission la lit donc aussi. La clé Google Maps est
+        // facturable et le drapeau de débogage n'intéresse que l'écran Réglages : seuls les porteurs de `settings` les reçoivent,
+        // les autres lisent null. Sentinelle : `tests/Feature/Authz/DeliveryBoyAccessMatrixTest.php`.
+        $user = $request ? $request->user() : null;
+        $reglages = $user !== null && method_exists($user, 'can') && $user->can('settings');
+
         return [
             "site_date_format"               => $this->info['site_date_format'] ?? null,
             "site_time_format"               => $this->info['site_time_format'] ?? null,
@@ -54,9 +61,9 @@ class SiteResource extends JsonResource
             "site_phone_verification"        => $this->info['site_phone_verification'] ?? null,
             "site_default_language"          => $this->info['site_default_language'] ?? null,
             "site_language_switch"           => $this->info['site_language_switch'] ?? null,
-            "site_app_debug"                 => $this->info['site_app_debug'] ?? null,
+            "site_app_debug"                 => $reglages ? ($this->info['site_app_debug'] ?? null) : null,
             "site_auto_update"               => $this->info['site_auto_update'] ?? null,
-            "site_google_map_key"            => $this->info['site_google_map_key'] ?? null,
+            "site_google_map_key"            => $reglages ? ($this->info['site_google_map_key'] ?? null) : null,
             "site_android_app_link"          => $this->info['site_android_app_link'] ?? null,
             "site_ios_app_link"              => $this->info['site_ios_app_link'] ?? null,
             "site_copyright"                 => $this->info['site_copyright'] ?? null,

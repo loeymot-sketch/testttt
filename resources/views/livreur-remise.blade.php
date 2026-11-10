@@ -181,7 +181,10 @@
         var tel = String(s.customer_phone || '').replace(/[^0-9+]/g, '');
         var html = '<div class="card" data-testid="arret"><h2>Livraison #' + esc(s.order_number) + '</h2>'
             + '<div class="addr">' + esc(s.address || 'Adresse inconnue') + (s.apartment ? ' · ' + esc(s.apartment) : '') + '</div>'
-            + (s.postal_code || s.city ? '<div class="muted">' + esc(s.postal_code || '') + ' ' + esc(s.city || '') + '</div>' : '')
+            // [SUPERVISION 2026-11-10] ligne localité dédoublonnée par le serveur (même source que le ticket) ; repli : CP + ville bruts.
+            + (typeof s.locality === 'string'
+                ? (s.locality ? '<div class="muted">' + esc(s.locality) + '</div>' : '')
+                : (s.postal_code || s.city ? '<div class="muted">' + esc(s.postal_code || '') + ' ' + esc(s.city || '') + '</div>' : ''))
             + (waze ? '<div class="grid2"><a class="btn" href="' + esc(waze) + '" target="_blank" rel="noopener noreferrer">Waze</a>'
                 + (maps ? '<a class="btn sec" href="' + esc(maps) + '" target="_blank" rel="noopener noreferrer">Plans</a>' : '<span></span>') + '</div>' : '')
             + '<div>' + esc(s.customer_name || 'Client') + (tel ? ' · <a class="tel" href="tel:' + esc(tel) + '">' + esc(s.customer_phone) + '</a>' : '') + '</div></div>';

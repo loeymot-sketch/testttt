@@ -21,7 +21,9 @@ class EmployeeAddressRequest extends FormRequest
             return false;
         }
 
-        return $user->can('employees_create') || $user->can('employees_edit');
+        // Une adresse dans l'URL = modification (`employees_edit`), sinon création (`employees_create`) : la coupe exacte
+        // du contrôleur (store / update). Hors route (test unitaire), c'est la création qui est jugée.
+        return $this->route('address') !== null ? $user->can('employees_edit') : $user->can('employees_create');
     }
 
     /**

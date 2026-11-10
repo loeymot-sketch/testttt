@@ -25,10 +25,15 @@ class FormRequestAuthorizeWaveLivraisonTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** classe → permissions dont CHACUNE suffit (routes POST / PUT de la même requête). */
+    /**
+     * classe → permissions dont CHACUNE suffit HORS ROUTE (création). Les deux requêtes d'adresse coupent comme leur
+     * contrôleur : sans `{address}` dans l'URL = création (`_create`), avec = modification (`_edit`) —
+     * `test_une_adresse_dans_l_url_exige_la_permission_de_modification` (supervision 2026-11-10 : le OU des deux était
+     * plus lâche que la route).
+     */
     private const MIROIR = [
-        DeliveryBoyAddressRequest::class => ['delivery-boys_create', 'delivery-boys_edit'],
-        EmployeeAddressRequest::class => ['employees_create', 'employees_edit'],
+        DeliveryBoyAddressRequest::class => ['delivery-boys_create'],
+        EmployeeAddressRequest::class => ['employees_create'],
         ItemAttributeRequest::class => ['settings'],
         ItemCategoryImportRequest::class => ['settings'],
         ItemImportRequest::class => ['items_create'],
@@ -71,6 +76,33 @@ class FormRequestAuthorizeWaveLivraisonTest extends TestCase
                 $u->givePermissionTo($perm);
                 $this->assertTrue($this->autorise($classe, $u), "$classe : `$perm` doit suffire");
             }
+        }
+    }
+
+    /** Même requête sur la route PUT `…/{x}/{address}` : seule la permission de MODIFICATION passe, la création ne suffit plus. */
+    public function test_une_adresse_dans_l_url_exige_la_permission_de_modification(): void
+    {
+        Permission::findOrCreate('delivery-boys_edit', 'sanctum');
+        Permission::findOrCreate('employees_edit', 'sanctum');
+        foreach ([DeliveryBoyAddressRequest::class => 'delivery-boys', EmployeeAddressRequest::class => 'employees'] as $classe => $prefixe) {
+            $createur = User::factory()->create(['branch_id' => 1]);
+            $createur->givePermissionTo("{$prefixe}_create");
+            $editeur = User::factory()->create(['branch_id' => 1]);
+            $editeur->givePermissionTo("{$prefixe}_edit");
+
+            $route = new \Illuminate\Routing\Route(['PUT'], '/x/{owner}/{address}', fn () => null);
+            $route->bind(\Illuminate\Http\Request::create('/x/7/5', 'PUT'));
+            $surRoute = function (?User $u) use ($classe, $route): bool {
+                $r = new $classe();
+                $r->setUserResolver(fn () => $u);
+                $r->setRouteResolver(fn () => $route);
+
+                return $r->authorize();
+            };
+
+            $this->assertTrue($surRoute($editeur), "$classe : `{$prefixe}_edit` doit suffire pour modifier");
+            $this->assertFalse($surRoute($createur), "$classe : `{$prefixe}_create` ne doit pas suffire pour modifier");
+            $this->assertFalse($this->autorise($classe, $editeur), "$classe : `{$prefixe}_edit` ne doit pas suffire pour créer");
         }
     }
 }

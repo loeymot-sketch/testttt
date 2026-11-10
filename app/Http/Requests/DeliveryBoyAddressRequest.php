@@ -21,7 +21,9 @@ class DeliveryBoyAddressRequest extends FormRequest
             return false;
         }
 
-        return $user->can('delivery-boys_create') || $user->can('delivery-boys_edit');
+        // Une adresse dans l'URL = modification (`delivery-boys_edit`), sinon création (`delivery-boys_create`) : la coupe
+        // exacte du contrôleur (store / update). Hors route (test unitaire), c'est la création qui est jugée.
+        return $this->route('address') !== null ? $user->can('delivery-boys_edit') : $user->can('delivery-boys_create');
     }
 
     /**

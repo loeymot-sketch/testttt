@@ -217,6 +217,123 @@ class StorefrontThemePlanifieTest extends TestCase
         $this->assertFalse($service->hasUnpublishedChanges(1), 'après un retour, brouillon = version publiée');
     }
 
+    // ── Supervision 2026-11-10 : ce que la relecture adverse a trouvé ──────────────────────────────────────────────────────
+
+    /** Un Noël passé, déjà enregistré tel quel, ne bloque pas en janvier l'enregistrement d'un simple message de livraison. */
+    public function test_un_theme_termine_deja_enregistre_ne_bloque_pas_les_enregistrements_suivants(): void
+    {
+        $admin = $this->admin();
+        $base = ['enabled' => true, 'theme' => null, 'delivery_off_message' => null];
+        Carbon::setTestNow(Carbon::parse('2026-12-01 12:00:00', 'Europe/Paris'));
+        $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['delivery_on_message' => null, 'scheduled_themes' => [$this->theme()]])->assertOk();
+
+        Carbon::setTestNow(Carbon::parse('2027-01-03 12:00:00', 'Europe/Paris'));
+        // L'écran renvoie toujours la liste entière : le Noël terminé y est, inchangé.
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['delivery_on_message' => 'Bonne année !', 'scheduled_themes' => [$this->theme()]])->assertOk();
+        $this->assertSame('Bonne année !', $r->json('data.draft.delivery_on_message'));
+        $this->assertSame('ended', $r->json('data.draft.scheduled_themes.0.state'));
+
+        // Un NOUVEAU thème déjà terminé, ou un thème existant dont on recule la fin dans le passé : toujours refusés.
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['delivery_on_message' => null, 'scheduled_themes' => [
+            $this->theme(), $this->theme(['id' => 9, 'name' => 'Trop tard', 'starts_at' => '2026-11-01T00:00', 'ends_at' => '2026-11-02T00:00']),
+        ]])->assertStatus(422);
+        $this->assertArrayHasKey('scheduled_themes.1.ends_at', $r->json('errors'));
+        $this->assertArrayNotHasKey('scheduled_themes.0.ends_at', $r->json('errors'));
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['delivery_on_message' => null, 'scheduled_themes' => [
+            $this->theme(['ends_at' => '2026-12-25T00:00']),
+        ]])->assertStatus(422);
+        $this->assertArrayHasKey('scheduled_themes.0.ends_at', $r->json('errors'));
+    }
+
+    /** `null` ne vide pas la liste ; identifiants dupliqués renumérotés ; 13 thèmes et une couleur illisible refusés. */
+    public function test_null_garde_la_liste_doublons_renumerotes_plafond_et_hex_refuses(): void
+    {
+        $admin = $this->admin();
+        Carbon::setTestNow(Carbon::parse('2026-12-01 12:00:00', 'Europe/Paris'));
+        $base = ['enabled' => true, 'theme' => null, 'delivery_on_message' => null, 'delivery_off_message' => null];
+
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => [
+            $this->theme(['id' => 1, 'name' => 'A']), $this->theme(['id' => 1, 'name' => 'B']), $this->theme(['id' => 0, 'name' => 'C']),
+        ]])->assertOk();
+        $ids = array_column($r->json('data.draft.scheduled_themes'), 'id');
+        $this->assertCount(3, array_unique($ids), 'identifiants dupliqués conservés : l\'écran modifierait le mauvais thème');
+        $this->assertSame(['A', 'B', 'C'], array_column($r->json('data.draft.scheduled_themes'), 'name'));
+        // Relecture adverse cycle 2 : un doublon renuméroté ne doit pas retomber sur un numéro donné par position.
+        $service = app(StorefrontService::class);
+        foreach ([[1, null, 1], [1, null, null, 1], [null, 2, 2, null], [3, null, 1, 1]] as $forme) {
+            $liste = array_map(fn ($id) => $this->theme($id === null ? ['id' => null] : ['id' => $id]), $forme);
+            $sortie = array_column($service->normalizeScheduledThemes($liste), 'id');
+            $this->assertSame(count($forme), count(array_unique($sortie)), 'doublons après normalisation pour '.json_encode($forme).' → '.json_encode($sortie));
+        }
+
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => null])->assertOk();
+        $this->assertCount(3, $r->json('data.draft.scheduled_themes'), '`null` a effacé les thèmes programmés');
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base)->assertOk();
+        $this->assertCount(3, $r->json('data.draft.scheduled_themes'), 'clé absente a effacé les thèmes programmés');
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => []])->assertOk();
+        $this->assertSame([], $r->json('data.draft.scheduled_themes'), 'une liste vide, elle, vide bien la liste');
+
+        $treize = [];
+        for ($i = 1; $i <= 13; $i++) {
+            $treize[] = $this->theme(['id' => $i, 'name' => "T{$i}"]);
+        }
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => $treize])->assertStatus(422);
+        $this->assertStringContainsString('12 thèmes', $r->json('errors.scheduled_themes.0'));
+
+        $r = $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => [
+            $this->theme(['theme' => ['primary' => '#GGGGGG'] + self::NOEL]),
+        ]])->assertStatus(422);
+        $this->assertArrayHasKey('scheduled_themes.0.theme.primary', $r->json('errors'));
+
+        // Un nom qui n'est pas un texte : refusé proprement (422), pas une erreur serveur.
+        $this->enAdmin($admin)->putJson('/api/admin/storefront/settings', $base + ['scheduled_themes' => [$this->theme(['name' => ['x']])]])
+            ->assertStatus(422)->assertJsonValidationErrors(['scheduled_themes.0.name']);
+    }
+
+    /** L'ETag public change au basculement d'un thème, sans aucune écriture : un 304 ne peut pas servir les vieilles couleurs. */
+    public function test_l_etag_public_change_quand_le_theme_bascule_sans_ecriture(): void
+    {
+        StorefrontSetting::query()->create(['branch_id' => 1, 'enabled' => true, 'theme' => null, 'scheduled_themes' => [$this->theme()]]);
+        $this->publish();
+
+        Carbon::setTestNow(Carbon::parse('2026-12-23 12:00:00', 'Europe/Paris'));
+        $avant = $this->lire()->assertOk()->assertJsonPath('theme_name', null);
+        $etagAvant = $avant->headers->get('ETag');
+        $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $etagAvant])->getJson(self::URL)->assertStatus(304);
+
+        Carbon::setTestNow(Carbon::parse('2026-12-24 18:00:00', 'Europe/Paris'));
+        $pendant = $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $etagAvant])->getJson(self::URL)
+            ->assertOk()->assertJsonPath('theme_name', 'Noël')->assertJsonPath('theme.primary', '#B91C1C');
+        $this->assertNotSame($etagAvant, $pendant->headers->get('ETag'));
+        $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $pendant->headers->get('ETag')])->getJson(self::URL)->assertStatus(304);
+
+        Carbon::setTestNow(Carbon::parse('2026-12-26 00:00:00', 'Europe/Paris'));
+        $apres = $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $pendant->headers->get('ETag')])->getJson(self::URL)
+            ->assertOk()->assertJsonPath('theme_name', null);
+        $this->assertNotSame($pendant->headers->get('ETag'), $apres->headers->get('ETag'));
+    }
+
+    /** Un changement de la SEULE liste programmée rend le brouillon « à publier » ; même priorité → le dernier commencé gagne. */
+    public function test_la_liste_seule_rend_le_brouillon_a_publier_et_l_egalite_de_priorite_se_tranche(): void
+    {
+        StorefrontSetting::query()->create(['branch_id' => 1, 'enabled' => true, 'theme' => null, 'scheduled_themes' => [$this->theme()]]);
+        $this->publish();
+        $service = app(StorefrontService::class);
+        $this->assertFalse($service->hasUnpublishedChanges(1));
+
+        StorefrontSetting::query()->where('branch_id', 1)->update(['scheduled_themes' => json_encode([$this->theme(['priority' => 11])])]);
+        $this->assertTrue($service->hasUnpublishedChanges(1), 'une priorité changée doit se voir comme « à publier »');
+
+        $a = $this->theme(['id' => 1, 'name' => 'A', 'priority' => 5, 'starts_at' => '2026-12-20T00:00', 'ends_at' => '2026-12-31T00:00']);
+        $b = $this->theme(['id' => 2, 'name' => 'B', 'priority' => 5, 'starts_at' => '2026-12-24T00:00', 'ends_at' => '2026-12-31T00:00']);
+        StorefrontSetting::query()->where('branch_id', 1)->update(['scheduled_themes' => json_encode([$a, $b])]);
+        $this->publish();
+        Carbon::setTestNow(Carbon::parse('2026-12-25 12:00:00', 'Europe/Paris'));
+        $this->lire()->assertOk()->assertJsonPath('theme_name', 'B');
+        Carbon::setTestNow(Carbon::parse('2026-12-22 12:00:00', 'Europe/Paris'));
+        $this->lire()->assertOk()->assertJsonPath('theme_name', 'A')->assertJsonPath('next_change_at', '2026-12-24T00:00:00+01:00');
+    }
+
     public function test_une_version_publiee_avant_les_themes_programmes_reste_a_jour(): void
     {
         StorefrontSetting::query()->create(['branch_id' => 1, 'enabled' => true, 'theme' => config('storefront.default_theme')]);

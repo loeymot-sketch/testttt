@@ -347,11 +347,15 @@ class DeliveryHandoverService
         return [
             'order_number'     => $order->order_serial_no,
             'customer_name'    => $order->user?->name,
-            'customer_phone'   => $order->user?->phone,
+            // [SUPERVISION 2026-11-10] Même téléphone que le ticket, la caisse et la tournée (`CoordonneesClientTicket`) : un numéro
+            // saisi en caisse prime, un compte porteur « PENDING_… » n'est jamais montré brut ; le compte, sinon, comme avant.
+            'customer_phone'   => \App\Support\CoordonneesClientTicket::telephone($order) ?: ($order->user?->numeroJoignable() ?: null),
             'address'          => $addr?->address,
             'apartment'        => $addr?->apartment,
             'city'             => $addr?->city,
             'postal_code'      => $addr?->postal_code,
+            // Ligne « code postal commune » déjà dédoublonnée par la source unique ('' si la voie la porte) : la page l'affiche telle quelle.
+            'locality'         => \App\Support\CoordonneesClientTicket::ligneLocalite($order),
             'waze_url'         => $hasPoint ? sprintf('https://waze.com/ul?ll=%s,%s&navigate=yes&zoom=17', $addr->latitude, $addr->longitude) : null,
             'maps_url'         => $hasPoint ? sprintf('https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=driving', $addr->latitude, $addr->longitude) : null,
             'chosen_mode'      => $chosen,

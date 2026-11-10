@@ -66,4 +66,25 @@ describe('admin — fiche produit : l\'échec d\'enregistrement se voit près du
         await flushPromises();
         expect(w.find('[data-testid="item-save-error"]').text()).toBe('Vous n\'avez pas le droit de modifier ce produit.');
     });
+
+    it('fermer la fiche efface le message : la fiche suivante s\'ouvre sans le refus de la précédente', async () => {
+        const { w } = monter({ response: { status: 422, data: { message: 'x', errors: { name: ['Le nom est obligatoire.'] } } } });
+        await w.vm.save();
+        await flushPromises();
+        expect(w.find('[data-testid="item-save-error"]').exists()).toBe(true);
+        w.vm.reset(); // « Fermer »
+        await flushPromises();
+        expect(w.find('[data-testid="item-save-error"]').exists()).toBe(false);
+        // Ouverture d'une autre fiche : ItemListComponent.edit remplace `props.form` d'un bloc SANS passer par reset.
+        await w.vm.save();
+        await flushPromises();
+        expect(w.find('[data-testid="item-save-error"]').exists()).toBe(true);
+        await w.setProps({ props: { form: { ...w.props('props').form, name: 'Autre fiche' }, search: { keyword: '' } } });
+        await flushPromises();
+        expect(w.find('[data-testid="item-save-error"]').exists()).toBe(false);
+        w.vm.saveError = 'reste';
+        w.vm.addReset();
+        await flushPromises();
+        expect(w.find('[data-testid="item-save-error"]').exists()).toBe(false);
+    });
 });

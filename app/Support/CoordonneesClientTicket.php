@@ -67,14 +67,7 @@ final class CoordonneesClientTicket
         if ($complement !== '') {
             $lignes[] = $complement;
         }
-        $cp = trim((string) ($a->postal_code ?? ''));
-        $commune = trim((string) ($a->city ?? ''));
-        // La voie venue de la BAN porte souvent déjà « 62110 Hénin-Beaumont » : on n'imprime pas deux fois la commune.
-        // Saisie à la main, la voie peut porter la commune SANS le code postal : on n'ajoute alors que le code postal
-        // (T-1.2.3, 2026-11-10 : « 10 Rue Test, Hénin-Beaumont » sortait suivi de « 62110 Hénin-Beaumont »).
-        $voieAvecCommune = $voie !== '' && $commune !== '' && str_contains(self::cle($voie), self::cle($commune));
-        $voieAvecCp = $voie !== '' && $cp !== '' && str_contains($voie, $cp);
-        $ville = $voieAvecCommune ? ($voieAvecCp ? '' : $cp) : trim($cp.' '.$commune);
+        $ville = self::localite($voie, (string) ($a->postal_code ?? ''), (string) ($a->city ?? ''));
         if ($ville !== '') {
             $lignes[] = $ville;
         }
@@ -86,6 +79,49 @@ final class CoordonneesClientTicket
     public static function adresseLivraisonUneLigne(BroadcastableOrder $order): string
     {
         return implode(', ', self::lignesAdresseLivraison($order));
+    }
+
+    /**
+     * Ligne « code postal commune » à écrire SOUS la voie, ou '' si la voie la porte déjà — UNE règle pour le ticket, le
+     * reçu de la caisse, la planche Tournées, l'écran du livreur et la page de remise (jumeau JS : `ReceiptComponent.vue`
+     * `clientLines`, à garder identique).
+     *  - voie BAN « 20 Place de la République 62110 Hénin-Beaumont » → '' ;
+     *  - voie saisie « 10 Rue Test, Hénin-Beaumont » (commune sans code) → « 62110 » (T-1.2.3) ;
+     *  - voie « 10 Rue Test 62110 » (code sans commune) → « Hénin-Beaumont » (supervision 2026-11-10 : sortait « 62110 Hénin-Beaumont ») ;
+     *  - sinon « 62110 Hénin-Beaumont ».
+     * La commune est cherchée en MOT entier (« Ham » n'est pas dans « rue du Hameau »), sans accents, casse ni apostrophes
+     * typographiques ; le code postal en nombre entier (« 6211 » n'est pas « 62110 »).
+     */
+    public static function localite(string $voie, string $cp, string $commune): string
+    {
+        $voie = trim($voie);
+        $cp = trim($cp);
+        $commune = trim($commune);
+        $voieAvecCommune = $voie !== '' && $commune !== ''
+            && preg_match('/(?<![a-z0-9])'.preg_quote(self::cle($commune), '/').'(?![a-z0-9])/', self::cle($voie)) === 1;
+        $voieAvecCp = $voie !== '' && $cp !== '' && preg_match('/(?<!\d)'.preg_quote($cp, '/').'(?!\d)/', $voie) === 1;
+        if ($voieAvecCommune) {
+            return $voieAvecCp ? '' : $cp;
+        }
+        if ($voieAvecCp) {
+            return $commune;
+        }
+
+        return trim($cp.' '.$commune);
+    }
+
+    /** La ligne localité de LA livraison (écrans du livreur) ; '' si rien à ajouter ou si ce n'est pas une livraison de nos tournées. */
+    public static function ligneLocalite(BroadcastableOrder $order): string
+    {
+        if ((int) ($order->order_type ?? 0) !== OrderType::DELIVERY || self::estUber($order)) {
+            return '';
+        }
+        $a = self::adresse($order);
+        if (! $a) {
+            return '';
+        }
+
+        return self::localite((string) ($a->address ?? ''), (string) ($a->postal_code ?? ''), (string) ($a->city ?? ''));
     }
 
     /**
@@ -145,8 +181,9 @@ final class CoordonneesClientTicket
         }
     }
 
+    /** Forme de comparaison : sans accents (« œ » → « oe »), minuscules, apostrophes typographiques ramenées à l'apostrophe droite. */
     private static function cle(string $s): string
     {
-        return mb_strtolower(\Illuminate\Support\Str::ascii($s));
+        return mb_strtolower(\Illuminate\Support\Str::ascii(str_replace(['’', '‘', '`'], "'", $s)));
     }
 }

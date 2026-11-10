@@ -85,7 +85,12 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
     // GOAL (adresse livreur, adresse employé, attribut, import catégories, import produits, photo
     // produit) reflètent désormais la permission exacte de leur route —
     // `tests/Feature/Authz/FormRequestAuthorizeWaveLivraisonTest.php`. Mesuré avec ce regex.
-    private const RETURN_TRUE_BASELINE = 46;
+    //
+    // [SUPERVISION 2026-11-10] 46 → 47 : RECOMPTE, pas régression. Le regex ne voyait pas
+    // `return true; // commentaire` (Kiosk/LoyaltyOptInRequest, endpoint public assumé) — un
+    // commentaire suffisait donc à passer sous le cliquet. Le regex accepte désormais un
+    // commentaire de fin de ligne ; le vrai compte est 47 (il était 53, pas 52, avant T-2.4.2).
+    private const RETURN_TRUE_BASELINE = 47;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {
@@ -103,8 +108,9 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
             // Match the authorize() body shape exactly. Excludes commented
             // examples / docblock references / unrelated `return true;` in
             // other methods would still match — accepted noise budget.
-            if (preg_match('/public function authorize\(\)\s*:\s*bool\s*\{\s*return true;\s*\}/', $body)
-                || preg_match('/public function authorize\(\)\s*\{\s*return true;\s*\}/', $body)) {
+            // Rien entre `return true;` et l'accolade ne cache l'inconditionnel au cliquet : commentaire de fin de ligne,
+            // bloc `/* … */`, lignes vides (supervision 2026-11-10 ; relecture adverse cycle 2).
+            if (preg_match('/public function authorize\(\)(?:\s*:\s*bool)?\s*\{\s*return true;[^}]*\}/', $body)) {
                 $count++;
                 $files[] = basename($file->getPathname());
             }

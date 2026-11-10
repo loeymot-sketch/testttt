@@ -356,6 +356,17 @@ class StorefrontService
         if (! is_array($list)) {
             return [];
         }
+        // [SUPERVISION 2026-11-10] Identifiants UNIQUES quoi qu'envoie le client : un doublon (ou une position qui tombe sur
+        // un identifiant explicite) reçoit le premier numéro libre au-dessus du plus grand — sinon l'écran admin modifie le
+        // mauvais thème et « Retirer » en enlève deux.
+        $explicites = [];
+        foreach ($list as $t) {
+            if (is_array($t) && isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0) {
+                $explicites[(int) $t['id']] = true;
+            }
+        }
+        $suivant = ($explicites === [] ? 0 : max(array_keys($explicites))) + 1;
+        $pris = [];
         $out = [];
         $i = 0;
         foreach (array_values($list) as $t) {
@@ -363,9 +374,19 @@ class StorefrontService
             if (! is_array($t)) {
                 continue;
             }
+            $id = isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0 ? (int) $t['id'] : null;
+            if ($id === null && ! isset($explicites[$i]) && ! isset($pris[$i])) {
+                $id = $i; // sans identifiant : sa position, si elle est libre
+            } elseif ($id === null || isset($pris[$id])) {
+                while (isset($pris[$suivant]) || isset($explicites[$suivant])) {
+                    $suivant++; // jamais un numéro déjà donné par position ni réservé par un identifiant explicite à venir
+                }
+                $id = $suivant++;
+            }
+            $pris[$id] = true;
             $out[] = [
-                'id' => isset($t['id']) && is_numeric($t['id']) && (int) $t['id'] > 0 ? (int) $t['id'] : $i,
-                'name' => trim(strip_tags((string) ($t['name'] ?? ''))),
+                'id' => $id,
+                'name' => trim(strip_tags(is_scalar($t['name'] ?? null) ? (string) $t['name'] : '')),
                 'starts_at' => $this->isoOrNull($t['starts_at'] ?? null),
                 'ends_at' => $this->isoOrNull($t['ends_at'] ?? null),
                 'priority' => max(0, min(100, (int) ($t['priority'] ?? 0))),
@@ -379,13 +400,22 @@ class StorefrontService
 
     /**
      * Erreurs en français, clés `scheduled_themes.<i>.<champ>` (i = position affichée, à partir de 0) — même contrat que
-     * `themeErrors`. `$strict` (enregistrement du brouillon) refuse en plus un thème ACTIF déjà terminé ; la publication et le
-     * retour arrière ne le refusent pas (un thème passé publié ne s'affiche simplement jamais).
+     * `themeErrors`. `$strict` (enregistrement du brouillon) refuse en plus un thème ACTIF déjà terminé — sauf s'il est DÉJÀ
+     * stocké tel quel (`$existing`, même identifiant et même fin) : un Noël passé ne doit pas empêcher, en janvier, d'enregistrer
+     * un simple message de livraison (supervision 2026-11-10). La publication et le retour arrière ne le refusent pas (un thème
+     * passé publié ne s'affiche simplement jamais).
      *
+     * @param  array<int, array<string,mixed>>  $existing  liste déjà stockée (normalisée)
      * @return array<string,string>
      */
-    public function scheduledThemeErrors(mixed $list, bool $strict = false, ?CarbonInterface $now = null): array
+    public function scheduledThemeErrors(mixed $list, bool $strict = false, ?CarbonInterface $now = null, array $existing = []): array
     {
+        $dejaStockes = [];
+        foreach ($existing as $e) {
+            if (is_array($e) && isset($e['id']) && is_numeric($e['id'])) {
+                $dejaStockes[(int) $e['id']] = $this->isoOrNull($e['ends_at'] ?? null);
+            }
+        }
         if ($list === null) {
             return [];
         }
@@ -404,7 +434,7 @@ class StorefrontService
                 $errors[$k] = 'Thème illisible.';
                 continue;
             }
-            $name = trim(strip_tags((string) ($t['name'] ?? '')));
+            $name = trim(strip_tags(is_scalar($t['name'] ?? null) ? (string) $t['name'] : ''));
             if ($name === '') {
                 $errors["{$k}.name"] = 'Donnez un nom au thème (par exemple « Noël »).';
             } elseif (mb_strlen($name) > 40) {
@@ -420,7 +450,8 @@ class StorefrontService
             } elseif ($start !== null && Carbon::parse($end)->lessThanOrEqualTo(Carbon::parse($start))) {
                 $errors["{$k}.ends_at"] = 'La fin doit être après le début.';
             } elseif ($strict && (! array_key_exists('active', $t) || filter_var($t['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false)
-                && Carbon::parse($end)->lessThanOrEqualTo($now)) {
+                && Carbon::parse($end)->lessThanOrEqualTo($now)
+                && ! (isset($t['id']) && is_numeric($t['id']) && array_key_exists((int) $t['id'], $dejaStockes) && $dejaStockes[(int) $t['id']] === $end)) {
                 $errors["{$k}.ends_at"] = 'La date de fin est déjà passée : ce thème ne s\'afficherait jamais. Désactivez-le ou changez ses dates.';
             }
             $theme = $t['theme'] ?? null;

@@ -29,7 +29,10 @@ test('livreur : /login → /livreur', async ({ page }) => {
   await seConnecter(page, COURIER.email, COURIER.pass);
   await page.waitForURL(/\/livreur(\?|#|$)/, { timeout: 30_000 });
   expect(new URL(page.url()).pathname).toBe('/livreur');
-  await expect(page.locator('#login, #app').first()).toBeVisible();
+  // [SUPERVISION 2026-11-10] Le SPA tend son jeton à la page /livreur : le livreur arrive SUR SA TOURNÉE, pas sur un
+  // second formulaire e-mail + mot de passe (c'était le cas : deux magasins de jeton, aucune passerelle).
+  await expect(page.locator('#app')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#login')).toBeHidden();
   await page.screenshot({ path: path.join(DIR, 'acces-livreur-atterrissage.png') });
 });
 

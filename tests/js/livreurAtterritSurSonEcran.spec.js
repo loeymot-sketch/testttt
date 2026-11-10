@@ -25,7 +25,11 @@ describe('livreur : atterrissage sur /livreur', () => {
         expect(router).toContain('name: "admin.livreur"');
         expect(router).toContain('window.location.assign("/livreur")');
         // La garde interrompt la navigation : aucun composant admin n'est monté pour un livreur.
-        expect(router).toMatch(/beforeEnter:\s*\(\)\s*=>\s*\{\s*window\.location\.assign\("\/livreur"\);\s*return false;/);
+        expect(router).toMatch(/window\.location\.assign\("\/livreur"\);\s*return false;/);
+        // [SUPERVISION 2026-11-10] Et elle tend le jeton de la connexion à la page /livreur (clé `lc_livreur_token`,
+        // la même que dans resources/views/livreur.blade.php) : sinon, second formulaire de connexion.
+        expect(router).toMatch(/localStorage\.setItem\("lc_livreur_token",\s*jeton\)/);
+        expect(lire('resources/views/livreur.blade.php')).toContain("var KEY = 'lc_livreur_token';");
     });
 
     it('la connexion pousse `/admin/<landing>` tel quel (c\'est la route ci-dessus qui fait la sortie)', () => {

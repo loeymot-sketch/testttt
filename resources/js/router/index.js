@@ -208,6 +208,13 @@ const baseRoutes = [
         name: "admin.livreur",
         component: ExceptionComponent, // jamais rendu : la garde interrompt la navigation
         beforeEnter: () => {
+            // [SUPERVISION 2026-11-10] La page /livreur garde SON jeton sous `lc_livreur_token` : sans passage de relais, le
+            // livreur qui vient de se connecter retombait sur un second formulaire e-mail + mot de passe. On lui tend le jeton
+            // Sanctum de cette connexion (même compte, même API) ; la page le vérifie en chargeant la tournée (401 → elle redemande).
+            try {
+                const jeton = store.getters.authToken;
+                if (jeton) window.localStorage.setItem("lc_livreur_token", jeton);
+            } catch (e) { /* stockage indisponible : la page redemande simplement les identifiants */ }
             window.location.assign("/livreur");
             return false;
         },

@@ -170,6 +170,31 @@ class DeliveryBoyAccessMatrixTest extends TestCase
         $this->assertSame([], $aInspecter, "Routes atteintes par un livreur sans refus franc (422/5xx) :\n".implode("\n", $aInspecter));
     }
 
+    /**
+     * 1bis. [SUPERVISION 2026-11-10] `setting/site` est lisible par tout compte (le SPA le charge au démarrage), mais la clé
+     * Google Maps — facturable — et le drapeau de débogage ne sortent que pour un porteur de `settings`. Trouvé par la
+     * relecture adverse : la liste blanche ci-dessus avait rangé cette route en « référence sans argent » alors qu'elle
+     * livrait la clé.
+     */
+    public function test_un_livreur_lit_les_reglages_du_site_sans_la_cle_google_maps(): void
+    {
+        \Smartisan\Settings\Facades\Settings::group('site')->set('site_google_map_key', 'AIza-cle-de-test');
+        \Smartisan\Settings\Facades\Settings::group('site')->set('site_app_debug', 5);
+
+        $livreur = $this->enLivreur()->getJson('/api/admin/setting/site')->assertOk()->json();
+        $livreur = $livreur['data'] ?? $livreur;
+        $this->assertNull($livreur['site_google_map_key'] ?? null, 'la clé Google Maps est lisible par un livreur');
+        $this->assertNull($livreur['site_app_debug'] ?? null);
+        $this->assertArrayHasKey('site_default_currency', $livreur, 'les réglages d\'interface restent lisibles');
+
+        \Spatie\Permission\Models\Permission::findOrCreate('settings', 'sanctum');
+        $admin = User::factory()->create(['branch_id' => 0, 'status' => Status::ACTIVE]);
+        $admin->givePermissionTo('settings');
+        $vu = $this->enLivreur($admin)->getJson('/api/admin/setting/site')->assertOk()->json();
+        $vu = $vu['data'] ?? $vu;
+        $this->assertSame('AIza-cle-de-test', $vu['site_google_map_key'] ?? null, 'l\'écran Réglages doit toujours voir la clé');
+    }
+
     /** 2. Les octets ESC/POS, client comme cuisine, sont fermés au livreur (T-1.3.3). */
     public function test_un_livreur_ne_lit_aucun_ticket(): void
     {

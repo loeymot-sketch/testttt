@@ -69,3 +69,30 @@ describe('reçu caisse — commande du site', () => {
     expect(w.vm.doorPaymentLabel).toBeNull();
   });
 });
+
+// [SUPERVISION 2026-11-10] Même matrice que `tests/Feature/Receipt/CoordonneesLocaliteTest.php` (PHP) : si l'une des deux
+// règles bouge sans l'autre, le reçu de la caisse et le ticket thermique divergent.
+describe('reçu caisse — ligne localité : jumeau exact de CoordonneesClientTicket::localite', () => {
+  const localite = (address, postal_code, city) => {
+    const w = monter(livraisonWeb({ order_address: { address, apartment: '', city, postal_code } }));
+    const l = w.vm.clientLines.slice(2); // après « Client » et « Téléphone »
+    if (!address.trim()) return (l[0] || '').replace(/^Livrer à : /, ''); // voie vide : la localité porte le libellé
+    return l[1] || '';
+  };
+  it.each([
+    ['20 Place de la République 62110 Hénin-Beaumont', '62110', 'Hénin-Beaumont', ''],
+    ['20 Place de la République 62110 Hénin-Beaumont', '62110', 'HENIN-BEAUMONT', ''],
+    ['10 Rue Test, Hénin-Beaumont', '62110', 'Hénin-Beaumont', '62110'],
+    ['10 Rue Test 62110', '62110', 'Hénin-Beaumont', 'Hénin-Beaumont'],
+    ['10 Rue Test', '62110', 'Hénin-Beaumont', '62110 Hénin-Beaumont'],
+    ['10 Rue Test', '62110', '', '62110'],
+    ['10 Rue Test', '', 'Hénin-Beaumont', 'Hénin-Beaumont'],
+    ['12 rue du Hameau', '80400', 'Ham', '80400 Ham'],
+    ['3 impasse du 6211', '62110', 'Hénin-Beaumont', '62110 Hénin-Beaumont'],
+    ["4 rue X, L'Hay-les-Roses", '94240', 'L’Haÿ-les-Roses', '94240'],
+    ['2 rue Y 51480 Oeuilly', '51480', 'Œuilly', ''],
+    ['', '62110', 'Hénin-Beaumont', '62110 Hénin-Beaumont'],
+  ])('%s + %s %s → « %s »', (voie, cp, commune, attendu) => {
+    expect(localite(voie, cp, commune)).toBe(attendu);
+  });
+});

@@ -2,8 +2,13 @@
 // L'éditeur ajoute un thème au brouillon local (contrôles côté écran identiques au serveur : nom, dates, contraste), le brouillon
 // devient « à enregistrer », « Enregistrer » envoie la liste au serveur (dates en heure de Paris sans fuseau), et l'aperçu
 // téléphone montre le thème en cours tel que le serveur l'a calculé.
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+
+// [SUPERVISION 2026-11-10] Les états « Programmé / En cours / Terminé » se calculent sur l'horloge réelle du poste : sans date
+// figée, ce banc devenait rouge de lui-même le 24/12/2026 à 18 h. Seule `Date` est simulée (pas les minuteurs : flushPromises).
+beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-11-10T12:00:00+01:00')); });
+afterEach(() => { vi.useRealTimers(); });
 
 vi.mock('axios', () => ({ default: vi.fn() }));
 vi.mock('../../resources/js/services/alertService', () => ({ default: { success: vi.fn(), error: vi.fn() } }));

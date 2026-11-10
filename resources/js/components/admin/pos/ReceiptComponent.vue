@@ -548,19 +548,24 @@ export default {
             const phone = String(o.pos_customer_phone || '').trim();
             if (phone) lines.push(this.$t('label.phone') + ' : ' + phone);
             const a = o.order_address;
-            if (Number(o.order_type) === orderTypeEnum.DELIVERY && a && String(a.address || '').trim()) {
-                lines.push(this.$t('label.deliver_to') + ' : ' + String(a.address).trim());
+            const voie = a ? String(a.address || '').trim() : '';
+            if (Number(o.order_type) === orderTypeEnum.DELIVERY && a && (voie || String(a.postal_code || '').trim() || String(a.city || '').trim())) {
+                // Comme le PHP (`lignesAdresseLivraison`) : une voie vide n'efface pas « CP commune » (relecture adverse cycle 2).
+                if (voie) lines.push(this.$t('label.deliver_to') + ' : ' + voie);
                 if (String(a.apartment || '').trim()) lines.push(String(a.apartment).trim());
                 const cp = String(a.postal_code || '').trim();
                 const commune = String(a.city || '').trim();
-                // Même règle que CoordonneesClientTicket (PHP) : la voie venue de la BAN porte souvent déjà « 62110 Hénin-Beaumont » ;
-                // comparaison sans accents ni casse (la ville en base peut être « HENIN-BEAUMONT »). Saisie à la main, la voie peut
-                // porter la commune SANS le code postal : on n'ajoute alors que le code postal (jamais la commune deux fois).
-                const plat = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-                const voieAvecCommune = !!commune && plat(a.address).includes(plat(commune));
-                const voieAvecCp = !!cp && String(a.address).includes(cp);
-                const ville = voieAvecCommune ? (voieAvecCp ? '' : cp) : [cp, commune].filter(Boolean).join(' ');
-                if (ville) lines.push(ville);
+                // Même règle que CoordonneesClientTicket::localite (PHP — à garder IDENTIQUE) : la voie venue de la BAN porte souvent
+                // déjà « 62110 Hénin-Beaumont » ; comparaison sans accents (« œ » → « oe »), ni casse, ni apostrophes typographiques ;
+                // commune cherchée en MOT entier (« Ham » n'est pas dans « rue du Hameau »), code postal en nombre entier. Voie avec la
+                // commune sans le code → le code seul ; voie avec le code sans la commune → la commune seule ; sinon « CP commune ».
+                const plat = (s) => String(s || '').replace(/[’‘`]/g, "'").replace(/œ/gi, 'oe').replace(/æ/gi, 'ae')
+                    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+                const echap = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const voieAvecCommune = !!commune && new RegExp('(?:^|[^a-z0-9])' + echap(plat(commune)) + '(?![a-z0-9])').test(plat(a.address));
+                const voieAvecCp = !!cp && new RegExp('(?:^|\\D)' + echap(cp) + '(?!\\d)').test(String(a.address));
+                const ville = voieAvecCommune ? (voieAvecCp ? '' : cp) : (voieAvecCp ? commune : [cp, commune].filter(Boolean).join(' '));
+                if (ville) lines.push(voie ? ville : this.$t('label.deliver_to') + ' : ' + ville);
             }
             return lines;
         },

@@ -521,12 +521,14 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
 - FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
-  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 46`,
-  abaissé le 2026-11-10 (T-2.4.2, 52 → 46 : six requêtes livreur/employé/produits) ;
-  valeur précédente `52`,
-  relu dans le code le 2026-10-01** (`tests/Feature/Sentinels/
-  FormRequestAuthzDriftSentinelTest.php:83`). Historique : 77 initial
-  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 → 66 → 64 → **52**.
+  (baseline-lock — count GROWS = CI fails). **`RETURN_TRUE_BASELINE = 47`,
+  RECOMPTÉ le 2026-11-10 (supervision) : le regex du cliquet ne voyait pas
+  `return true; // commentaire` (Kiosk/LoyaltyOptInRequest, endpoint public assumé) —
+  un commentaire suffisait à passer sous le cliquet. Regex corrigé, vrai compte 47
+  (il était 53, pas 52, avant T-2.4.2 qui a durci six requêtes livreur/employé/produits).
+  Relire la constante dans** `tests/Feature/Sentinels/FormRequestAuthzDriftSentinelTest.php`.
+  Historique (ancien regex) : 77 initial
+  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 → 66 → 64 → 52 → 46 ; nouveau regex : **47**.
   V1.0.2 BACKLOG : continuer le chip-away par vague de commits et
   resserrer `RETURN_TRUE_BASELINE` à chaque fois.
   ⚠️ **Ce nombre avait dérivé : ce document annonçait 64 quand le code

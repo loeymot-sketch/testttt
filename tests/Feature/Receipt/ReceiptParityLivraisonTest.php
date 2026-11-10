@@ -103,6 +103,75 @@ class ReceiptParityLivraisonTest extends TestCase
         $this->assertStringContainsString('A REGLER A LA LIVRAISON : '.$ticket, $this->texte(app(OrderReceiptEscPosRenderer::class)->renderClientTicket($order)));
     }
 
+    /**
+     * [SUPERVISION 2026-11-10] La « source unique » s'arrêtait à la porte du client : l'écran de REMISE (QR) lisait
+     * `user->phone` brut. Les deux écrans du livreur (tournée et remise) disent désormais le téléphone du ticket — numéro saisi
+     * en caisse d'abord, jamais une sentinelle « PENDING_… » — et reçoivent la ligne localité déjà dédoublonnée.
+     */
+    public function test_la_tournee_et_la_remise_du_livreur_lisent_le_telephone_et_la_localite_de_la_source_unique(): void
+    {
+        // 1. Numéro SAISI en caisse (livraison prise au téléphone) : il prime sur le compte, partout.
+        $stop = $this->departed($this->delivery(['source_surface' => 'pos', 'pos_customer_phone' => '0700000001']));
+        $order = Order::query()->withoutGlobalScopes()->with(['user', 'address'])->findOrFail($stop->order_id);
+        $this->assertSame('0700000001', CoordonneesClientTicket::telephone($order));
+        $this->assertSame('62110', CoordonneesClientTicket::ligneLocalite($order), 'la voie porte la commune : code postal seul');
+
+        $tournee = $this->actingAs($this->courier, 'sanctum')->withHeader('x-api-key', 'test-api-key')->getJson('/api/frontend/delivery-run')->assertOk()->json();
+        $arret = $this->premierArret($tournee, $stop->id);
+        $this->assertSame('0700000001', $arret['customer_phone']);
+        $this->assertSame('62110', $arret['locality']);
+
+        $remise = $this->withHeaders($this->bearer($this->handoverLogin('livreur.a@test.fr')))
+            ->postJson('/api/frontend/delivery-handover/resolve', ['token' => $this->qrToken($stop)])->assertOk()->json();
+        $this->assertSame('0700000001', $this->valeur($remise, 'customer_phone'));
+        $this->assertSame('62110', $this->valeur($remise, 'locality'));
+
+        // 2. Compte web dont le téléphone est une sentinelle « PENDING_… » : rien à montrer, surtout pas la sentinelle.
+        $stop2 = $this->departed($this->delivery(['source_surface' => 'delivery']));
+        Order::query()->withoutGlobalScopes()->whereKey($stop2->order_id)->update(['pos_customer_phone' => null]);
+        \App\Models\User::query()->whereKey(Order::query()->withoutGlobalScopes()->findOrFail($stop2->order_id)->user_id)
+            ->update(['phone' => 'PENDING_CREATE_'.uniqid()]);
+        $order2 = Order::query()->withoutGlobalScopes()->with(['user', 'address'])->findOrFail($stop2->order_id);
+        $this->assertSame('', CoordonneesClientTicket::telephone($order2));
+
+        $tournee2 = $this->actingAs($this->courier, 'sanctum')->withHeader('x-api-key', 'test-api-key')->getJson('/api/frontend/delivery-run')->assertOk()->json();
+        $this->assertStringNotContainsString('PENDING_', json_encode($this->premierArret($tournee2, $stop2->id)));
+        $remise2 = $this->withHeaders($this->bearer($this->handoverLogin('livreur.a@test.fr')))
+            ->postJson('/api/frontend/delivery-handover/resolve', ['token' => $this->qrToken($stop2)])->assertOk()->json();
+        $this->assertStringNotContainsString('PENDING_', json_encode($remise2));
+    }
+
+    /** @param array<string,mixed> $tournee */
+    private function premierArret(array $tournee, int $stopId): array
+    {
+        foreach ($tournee['data'] ?? [] as $vague) {
+            foreach ($vague['stops'] ?? [] as $s) {
+                if ((int) ($s['id'] ?? 0) === $stopId) {
+                    return $s;
+                }
+            }
+        }
+        $this->fail("arrêt {$stopId} absent de la tournée du livreur");
+    }
+
+    /** Première valeur d'une clé, à n'importe quelle profondeur (la forme de la réponse n'est pas le sujet du test). */
+    private function valeur(array $json, string $cle): mixed
+    {
+        if (array_key_exists($cle, $json)) {
+            return $json[$cle];
+        }
+        foreach ($json as $v) {
+            if (is_array($v)) {
+                $t = $this->valeur($v, $cle);
+                if ($t !== '__absent__') {
+                    return $t;
+                }
+            }
+        }
+
+        return '__absent__';
+    }
+
     public static function modesALaPorte(): array
     {
         return [

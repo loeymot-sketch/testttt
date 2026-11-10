@@ -39,6 +39,8 @@ class StorefrontAdminController extends AdminController
     public function updateSettings(Request $request): JsonResponse
     {
         $branch = $this->branch($request);
+        $settings = $this->storefront->settings($branch) ?? new \App\Models\StorefrontSetting(['branch_id' => $branch]);
+        $dejaStockes = is_array($settings->scheduled_themes) ? $settings->scheduled_themes : [];
         $v = Validator::make($request->all(), [
             'enabled' => ['required', 'boolean'],
             'theme' => ['nullable'],
@@ -47,24 +49,25 @@ class StorefrontAdminController extends AdminController
             'delivery_on_message' => ['nullable', 'string', 'max:140', $this->noTags()],
             'delivery_off_message' => ['nullable', 'string', 'max:140', $this->noTags()],
         ], $this->messages(), $this->attributes());
-        $v->after(function ($validator) use ($request) {
+        $v->after(function ($validator) use ($request, $dejaStockes) {
             foreach ($this->storefront->themeErrors($request->input('theme')) as $key => $message) {
                 $validator->errors()->add($key, $message);
             }
-            foreach ($this->storefront->scheduledThemeErrors($request->input('scheduled_themes'), true) as $key => $message) {
+            foreach ($this->storefront->scheduledThemeErrors($request->input('scheduled_themes'), true, null, $dejaStockes) as $key => $message) {
                 $validator->errors()->add($key, $message);
             }
         });
         $data = $v->validate();
 
-        $settings = $this->storefront->settings($branch) ?? new \App\Models\StorefrontSetting(['branch_id' => $branch]);
         $settings->forceFill([
             'branch_id' => $branch,
             'enabled' => (bool) $data['enabled'],
             'theme' => $request->input('theme') === null ? null : $this->storefront->normalizeTheme($request->input('theme')),
-            'scheduled_themes' => $request->has('scheduled_themes')
+            // [SUPERVISION 2026-11-10] Clé absente OU `null` = « ne touche pas à la liste » ; seule une LISTE remplace (vide comprise).
+            // Avant, un `null` explicite effaçait tous les thèmes sans un mot.
+            'scheduled_themes' => is_array($request->input('scheduled_themes'))
                 ? $this->storefront->normalizeScheduledThemes($request->input('scheduled_themes'))
-                : ($settings->scheduled_themes ?? []),
+                : $dejaStockes,
             'delivery_on_message' => $this->clean($data['delivery_on_message'] ?? null),
             'delivery_off_message' => $this->clean($data['delivery_off_message'] ?? null),
         ])->save();

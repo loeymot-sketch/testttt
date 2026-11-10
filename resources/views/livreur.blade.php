@@ -169,6 +169,9 @@
     function hm(s) { return s ? s.slice(11, 16) : ''; }
     // [E2E 2026-10-23 C2-021] Code postal + ville seulement si le libellé d'adresse ne les contient pas déjà (libellé BAN).
     function villeSiAbsente(s) {
+        // [SUPERVISION 2026-11-10] Le serveur envoie la ligne déjà dédoublonnée par la source unique (CoordonneesClientTicket) :
+        // on l'affiche telle quelle ; l'ancienne règle locale ne sert que si un vieux serveur ne l'envoie pas.
+        if (typeof s.locality === 'string') return s.locality ? '<div class="muted">' + esc(s.locality) + '</div>' : '';
         var cp = String(s.postal_code || ''), ville = String(s.city || ''), adr = String(s.address || '');
         if ((!cp || adr.indexOf(cp) !== -1) && (!ville || adr.toLowerCase().indexOf(ville.toLowerCase()) !== -1)) return '';
         return '<div class="muted">' + esc(cp) + ' ' + esc(ville) + '</div>';
@@ -207,6 +210,9 @@
 
     function show(loggedIn) { $('login').classList.toggle('hidden', loggedIn); $('app').classList.toggle('hidden', !loggedIn); }
     function logout() {
+        // [SUPERVISION 2026-11-10] « Quitter » révoque aussi le jeton côté serveur (au mieux, sans attendre) : sur un téléphone
+        // partagé, la connexion ne survit plus dans l'autre magasin (SPA) une fois le livreur parti.
+        if (token) { try { api('POST', '/api/auth/logout', {}).catch(function () {}); } catch (e) {} }
         token = null; try { localStorage.removeItem(KEY); } catch (e) {} show(false);
         cash = null; justClosed = false; // la caisse d'un livreur ne reste jamais à l'écran pour le suivant
         ['pay-sheet', 'close-sheet'].forEach(function (id) { var el = $(id); if (el) el.classList.add('hidden'); });

@@ -482,6 +482,13 @@ export default {
 
         this.loading.isActive = false;
     },
+    watch: {
+        // [SUPERVISION 2026-11-10] La liste remplace `props.form` d'un bloc quand on ouvre une autre fiche (ItemListComponent.edit,
+        // sans passer par reset) : le refus de la fiche précédente ne doit pas l'accompagner.
+        'props.form': function () {
+            this.saveError = '';
+        },
+    },
     methods: {
         changeImage: function (e) {
             this.image = e.target.files[0];
@@ -490,6 +497,7 @@ export default {
             appService.sideDrawerHide();
             this.$store.dispatch('item/reset').then().catch();
             this.errors = {};
+            this.saveError = ''; // [SUPERVISION 2026-11-10] un refus de la fiche A ne doit pas s'afficher en ouvrant la fiche B
             this.$props.props.form = {
                 name: "",
                 price: "",
@@ -519,6 +527,7 @@ export default {
         addReset: function () {
             this.$store.dispatch('item/reset').then().catch();
             this.errors = {};
+            this.saveError = '';
             this.$props.props.form = {
                 name: "",
                 price: "",

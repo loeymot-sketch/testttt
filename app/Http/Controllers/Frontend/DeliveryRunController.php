@@ -278,12 +278,16 @@ class DeliveryRunController extends Controller
             'cancelled'      => $cancelled, // [VG-2026-10-21 M4-102]
             'customer_name'  => $order?->user?->name,
             // [LIVRAISON-TICKETS 2026-11-10 · T-1.4.5] Même téléphone que le ticket : un numéro SAISI en caisse (commande
-            // livraison prise au téléphone) prime sur celui du compte porteur ; sinon le compte, comme avant.
-            'customer_phone' => ($order ? \App\Support\CoordonneesClientTicket::telephone($order) : '') ?: $order?->user?->phone,
+            // livraison prise au téléphone) prime sur celui du compte porteur ; sinon le compte, comme avant — mais jamais une
+            // sentinelle « PENDING_… » brute (`numeroJoignable`, supervision 2026-11-10).
+            'customer_phone' => ($order ? \App\Support\CoordonneesClientTicket::telephone($order) : '') ?: ($order?->user?->numeroJoignable() ?: null),
             'address'        => $addr?->address,
             'apartment'      => $addr?->apartment,
             'city'           => $addr?->city,
             'postal_code'    => $addr?->postal_code,
+            // [SUPERVISION 2026-11-10] Ligne « code postal commune » dédoublonnée par la source unique ('' si la voie la porte déjà) :
+            // l'écran du livreur l'affiche telle quelle au lieu de refaire la règle à sa façon.
+            'locality'       => $order ? \App\Support\CoordonneesClientTicket::ligneLocalite($order) : '',
             // Waze affiche le temps de trajet RÉEL : on lui passe la main plutôt que de l'estimer.
             'waze_url'       => $hasPoint ? sprintf('https://waze.com/ul?ll=%s,%s&navigate=yes&zoom=17', $lat, $lng) : null,
             'maps_url'       => $hasPoint ? sprintf('https://www.google.com/maps/dir/?api=1&destination=%s,%s&travelmode=driving', $lat, $lng) : null,

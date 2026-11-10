@@ -12,6 +12,7 @@ const BOARD = {
             { id: 1, order_id: 9936, order_number: 'VIS1110021327', customer: 'Karim', address: '10 Rue Test, Apt 2B, 62110 Hénin-Beaumont', phone: '0612345678', collect_method: 'card', amount_due: 27.5, left_at: null, arrived_at: null, delivered_at: null, has_photo: false },
             { id: 2, order_id: 9937, order_number: '9937', customer: 'Sans tel', address: '2 rue B', phone: null, collect_method: 'cash', amount_due: 5.9, left_at: null, arrived_at: null, delivered_at: null, has_photo: false },
             { id: 3, order_id: 9938, order_number: '9938', customer: 'Remis', address: '3 rue C', phone: '0600000000', collect_method: 'cash', amount_due: 4.9, left_at: '2026-11-10 20:31:00', arrived_at: '2026-11-10 20:40:00', delivered_at: '2026-11-10 20:41:00', has_photo: false },
+            { id: 4, order_id: 9939, order_number: '9939', customer: 'Annulée', address: '4 rue D', phone: '0600000001', collect_method: 'cancelled', amount_due: 0, left_at: null, arrived_at: null, delivered_at: null, has_photo: false, cancelled: true },
         ],
     }],
 };
@@ -45,6 +46,7 @@ describe('caisse — planche « Tournées » : téléphone et ticket client de l
         const w = mount(PosDeliveryBoard);
         await flushPromises();
         expect(w.find('[data-testid="pos-delivery-ticket-3"]').exists()).toBe(false); // remis : plus de ticket à sortir
+        expect(w.find('[data-testid="pos-delivery-ticket-4"]').exists()).toBe(false); // annulée : rien à imprimer (supervision 2026-11-10)
         await w.find('[data-testid="pos-delivery-ticket-1"]').trigger('click');
         await flushPromises();
         expect(imprimer).toHaveBeenCalledTimes(1);
@@ -62,5 +64,19 @@ describe('caisse — planche « Tournées » : téléphone et ticket client de l
         expect(alertes.error).toHaveBeenCalledTimes(1);
         expect(String(alertes.error.mock.calls[0][0])).toMatch(/Pont d'impression/);
         expect(w.find('[data-testid="pos-delivery-ticket-2"]').attributes('disabled')).toBeUndefined();
+    });
+
+    it('un double clic n\'imprime qu\'une fois (bouton occupé pendant l\'envoi)', async () => {
+        let fin;
+        imprimer.mockImplementation(() => new Promise((r) => { fin = r; }));
+        const w = mount(PosDeliveryBoard);
+        await flushPromises();
+        const b = w.find('[data-testid="pos-delivery-ticket-1"]');
+        await b.trigger('click');
+        await b.trigger('click');
+        expect(imprimer).toHaveBeenCalledTimes(1);
+        fin({ ok: true });
+        await flushPromises();
+        expect(w.find('[data-testid="pos-delivery-ticket-1"]').attributes('disabled')).toBeUndefined();
     });
 });
