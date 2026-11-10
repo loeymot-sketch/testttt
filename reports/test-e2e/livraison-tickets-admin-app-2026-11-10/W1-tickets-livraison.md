@@ -135,7 +135,29 @@ G2 toujours ouverte (impression automatique à PRÊTE ou clic).
   formulaire de code promo. Preuves : `itemFormErreurVisible.spec.js` 3 verts ; banc réel (nom vidé → 422) :
   `fiche-produit-erreur-visible.png` lue (toast en haut + message rouge au-dessus du bouton).
 
+### W5 (même jour, soir) — vitrine et catalogue distants
+- **« Design d'un jour » construit** : thèmes de couleurs programmés (`storefront_settings.scheduled_themes`, migration
+  `2026_11_10_110000`). Un thème porte nom, début, fin (heure de Paris), priorité, actif, 8 couleurs soumises aux mêmes règles
+  de contraste que le thème de base. Le serveur sert ses couleurs dans `theme` (+ `theme_name`) entre début (inclus) et fin
+  (exclue), même si le restaurant garde les couleurs embarquées, et annonce début/fin dans `next_change_at` ; le thème de
+  base reprend seul ; priorité la plus grande en cas de chevauchement ; validé à l'enregistrement ET à la publication ;
+  restauré par « revenir à la version N ». Écran Vitrine : section « Thèmes programmés » (liste avec état, éditeur, contraste,
+  aperçu téléphone aux couleurs du thème en cours). Le site (`vitrine.js`) n'a rien à changer : il applique `theme` et relit à
+  `next_change_at`. Preuves : `StorefrontThemePlanifieTest` 9, suites Storefront 47 inchangées, Vitest 9, banc réel admin
+  (thème couvrant l'heure présente → « En cours » + aperçu, capture lue), banc site `vitrine-robustesse` 15/15 (dont les 2 cas
+  thème ajoutés : couleurs posées puis retirées à la relecture).
+- Catalogue distant : banc 55/55 ; référence identique au serveur (70/70) ; `check:www` à jour (285 fichiers) ; prod : 40
+  produits affichés, 0 ignoré. Règle de régénération déjà dans `app/PUBLICATION.md §11`.
+- Codes promo : fin d'offre INCLUSE à la seconde des deux côtés (paiement et vitrine), relecture programmée à la fin
+  (`CouponExpireALaMinuteTest`). ⚠️ Un coupon créé depuis l'admin finit toujours à 23:59:59 : l'heure fine vient du bandeau.
+- Robustesse : `/storefront` 304 mesuré ; `/app/config` répondait 200 à chaque relecture → ETag + 304 ajoutés
+  (`AppConfigController`, test). P3 neuf : hors ligne, un thème programmé reste affiché après sa fin jusqu'à la prochaine
+  lecture réussie.
+
 ### Ouvert
 - G2 (impression automatique du ticket client d'une livraison) : décision propriétaire ; T-1.3.2 attend.
-- W4 offres : bloquée par G1. W5 vitrine/catalogue distants et W6 app : à suivre.
+- W4 offres : bloquée par G1. W6 app (émulateur, `cap sync`, APK) : à suivre ; la démonstration « thème d'un jour » dans
+  l'app installée y sera faite.
+- Site : la branche `app/catalogue-distant-2026-11-05` porte le banc étendu (commit local, non poussé) ; aucun code du site
+  n'a changé pour le thème programmé.
 - Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur) ; comptes `d@p.test`… à purger.

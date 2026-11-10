@@ -304,44 +304,44 @@ RÉGLAGES, jamais du code.
 `data/catalogue-distant.js`, `AppConfigController.php` (`online_payment_enabled`), `routes/api.php:2300-2312`.
 
 ### Sub 3.1 — Vitrine : thème planifiable
-- T-3.1.1 Modèle : « thème saisonnier » (jeu de couleurs + bandeau + éventuel visuel d'accueil) avec `starts_at/ends_at`,
+- T-3.1.1 ✅ 2026-11-10 (`storefront_settings.scheduled_themes` JSON — migration `2026_11_10_110000` ; `StorefrontService::normalizeScheduledThemes / scheduledThemeErrors / activeScheduledTheme`, payload `theme` remplacé + `theme_name`, validé à l'enregistrement ET à la publication, restauré au retour arrière ; `StorefrontThemePlanifieTest` 9 verts ; pas de visuel d'accueil : couleurs + bandeaux existants suffisent, règle Apple 2.5.2) Modèle : « thème saisonnier » (jeu de couleurs + bandeau + éventuel visuel d'accueil) avec `starts_at/ends_at`,
   priorité, aperçu avant publication ; le thème de base reprend seul à `ends_at`. • anchor : `StorefrontSetting.theme`,
   `StorefrontService::publish`, contraste `config/storefront.php` (`min_contrast` 4.5, `fixed_contrast`) • test :
   (TO BE CREATED `tests/Feature/Storefront/StorefrontThemePlanifieTest.php`) + `StorefrontThemeContrastTest.php` (existant).
-- T-3.1.2 `next_change_at` inclut les bornes du thème ; le client relit à l'heure dite (déjà fait pour les bandeaux).
+- T-3.1.2 ✅ 2026-11-10 (`next_change_at` = début du prochain thème / fin du thème en cours, prouvé serveur ; site : banc `vitrine-robustesse-2026-11.spec.js` étendu — 15/15 : couleurs posées puis retirées à la relecture, `vitrine.js` inchangé) `next_change_at` inclut les bornes du thème ; le client relit à l'heure dite (déjà fait pour les bandeaux).
   • anchor : `StorefrontService.php:169-177`, `vitrine.js` minuterie • test : site `tests-e2e/vitrine-robustesse-2026-11.spec.js`
   (existant, étendre).
-- T-3.1.3 Admin : écran Vitrine avec calendrier des thèmes/bandeaux, « publier », « revenir à la version N », historique
+- T-3.1.3 ✅ 2026-11-10 (section « Thèmes programmés » de `StorefrontComponent.vue` : liste avec état En cours/Programmé/Terminé/Désactivé, éditeur nom/dates/priorité/couleurs + contraste, aperçu téléphone aux couleurs du thème en cours ; `storefrontThemePlanifie.spec.js` 3 verts ; banc réel `vitrine-theme-planifie.spec.js` : thème couvrant l'heure présente → « En cours » + aperçu, capture lue ; publier / revenir / historique existaient) Admin : écran Vitrine avec calendrier des thèmes/bandeaux, « publier », « revenir à la version N », historique
   15. • anchor : `StorefrontComponent.vue`, `StorefrontAdminController::publish/rollback` • tests :
   `StorefrontAdminTest.php` (15, existant) • visuel : `/admin/storefront`.
 **Acceptance** : 47 + nouveaux tests verts, démonstration locale « thème fêtes de 00h00 à 23h59 » vue dans l'app
 (émulateur) sans redémarrage, captures lues.
 
 ### Sub 3.2 — Catalogue distant (NON-RÉGRESSION : livré par `GOAL_APP_HYBRIDE_FINITION_2026-11-03.md` T-S4.x ; on rejoue, on ne reconstruit pas)
-- T-3.2.1 Rejouer les 7 règles du module (`data/catalogue-distant.js` en-tête) contre le catalogue de PROD en lecture :
+- T-3.2.1 ✅ 2026-11-10 (banc 55/55 ; `--prod` : 40 produits, 9 catégories, 13 hors carte à dessein, 0 ignoré, 0 erreur JS) Rejouer les 7 règles du module (`data/catalogue-distant.js` en-tête) contre le catalogue de PROD en lecture :
   nouveau produit, produit retiré, photo changée, prix changé, rupture, nouvelle catégorie, ordre. • test :
   `tests-e2e/catalogue-distant-2026-11-05.unit.mjs` (existant) + `tools/verify-catalogue-distant.mjs --prod`.
-- T-3.2.2 Référence périmée : `catalogue-reference.js` date du 2026-11-05 ; définir QUAND la régénérer (à chaque build
+- T-3.2.2 ✅ 2026-11-10 (règle déjà écrite dans `app/PUBLICATION.md §11` : « à chaque nouvelle version, `catalogue-reference.mjs --base` (diff) puis `--ajouter` » ; preuve du jour : « Référence du 2026-11-05 · 70 produits · serveur : 70 — ✓ référence identique au serveur » et `check:www` « app/www est à jour (285 fichiers) ») Référence périmée : `catalogue-reference.js` date du 2026-11-05 ; définir QUAND la régénérer (à chaque build
   store) et le prouver par `npm run check:www`. • anchor : `tools/catalogue-reference.mjs`, `app/PUBLICATION.md`
   • livrable = preuve capturée : sortie de `node tools/catalogue-reference.mjs` + `check:www` dans le rapport, règle écrite
   dans `app/PUBLICATION.md §4`.
-- T-3.2.3 Produits dont les options ne sont pas déductibles → compte-rendu lisible dans l'admin (pas seulement dans un
+- T-3.2.3 ✅ acceptation atteinte 2026-11-10 (0 produit de prod ignoré : la ligne « NON AFFICHÉ » du diagnostic est vide) ; l'écran admin de compte-rendu reste NON construit (différé : rien à montrer aujourd'hui, l'outil CLI `--prod` dit tout) Produits dont les options ne sont pas déductibles → compte-rendu lisible dans l'admin (pas seulement dans un
   outil CLI). • anchor : `etat().ignores` • test : (TO BE CREATED site `tests-e2e/catalogue-distant-ignores-admin.spec.js`).
 **Acceptance** : 0 produit de prod ignoré sans raison affichée ; banc vert ; capture app lue.
 
 ### Sub 3.3 — Codes promo et offres dans l'app
-- T-3.3.1 Bandeau `coupon_code` → code pré-rempli dans le tunnel → validé par le serveur → même remise que la caisse.
+- T-3.3.1 ✅ rejoué 2026-11-10 (`CouponCheckNegativeTotalTest`, `CouponPasEncoreActifMessageTest`, banc site 15/15 dont « Utiliser le code » pré-rempli) Bandeau `coupon_code` → code pré-rempli dans le tunnel → validé par le serveur → même remise que la caisse.
   • anchor : `vitrine.js`, `api.js:1929`, `FrontendCouponController` • tests : `tests-e2e/vitrine-distante-2026-11.spec.js`
   + `tests/Feature/CouponCheckNegativeTotalTest.php`, `tests/Feature/Coupon/CouponPasEncoreActifMessageTest.php` (existants).
-- T-3.3.2 Fin d'offre à l'heure : bandeau disparu, code refusé (422 FR lisible), aucun prix figé côté client. • test :
+- T-3.3.2 ✅ 2026-11-10 (`CouponExpireALaMinuteTest` 2 verts : fin INCLUSE à la seconde des deux côtés — paiement `now > end`, vitrine `end < now` — code encore promis et accepté à 18:00:00, retiré et refusé 422 FR à 18:00:01, relecture programmée à la fin ; ⚠️ un coupon créé depuis l'admin a toujours une fin à 23:59:59 (`CouponService` endOfDay) : l'heure fine vient du bandeau, pas du coupon) Fin d'offre à l'heure : bandeau disparu, code refusé (422 FR lisible), aucun prix figé côté client. • test :
   (TO BE CREATED `tests/Feature/Coupon/CouponExpireALaMinuteTest.php`).
 **Acceptance** : tests verts ; parcours réel émulateur avec code promo (banc `tools/verify-app-device.py`) capturé et lu.
 
 ### Sub 3.4 — Robustesse (hors ligne, cache, charge) — NON-RÉGRESSION (≈ T-S1.3.1 du GOAL hybride : rejouer, 0 nouvelle tâche sauf rouge)
-- T-3.4.1 ETag/304 sur `/storefront`, `/app/config`, `/item` ; plafonds par IP non bloquants pour une IP partagée
+- T-3.4.1 ✅ 2026-11-10 (mesuré sur :8766 : `/storefront` 304 ; `/app/config` répondait 200 sans ETag → ETag + 304 ajoutés dans `AppConfigController`, test dans `AppConfigMinVersionTest` ; `/item` : catalogue distant lu par `api.js` avec son propre cache, non modifié) ETag/304 sur `/storefront`, `/app/config`, `/item` ; plafonds par IP non bloquants pour une IP partagée
   (mémoire `site-option-caisse-seule-et-limites-par-ip`). • anchor : `routes/api.php:2305-2312` throttle 300/min •
   tests : `StorefrontApiTest.php` (existant) + `tests/Feature/Delivery/DeliveryPublicThrottleIsolationTest.php`.
-- T-3.4.2 Hors ligne : dernière vitrine/catalogue valides affichés, bandeau « hors connexion » correct (P3 ouvert : parle
+- T-3.4.2 ✅ rejoué 2026-11-10 (banc site 15/15 : 429 + Retry-After respecté, dernière vitrine conservée, pas de rafale) ; P3 « la carte » toujours ouvert ; P3 neuf : hors ligne, un thème programmé reste affiché après sa fin jusqu'à la prochaine lecture réussie (le client ne connaît pas le thème de base) Hors ligne : dernière vitrine/catalogue valides affichés, bandeau « hors connexion » correct (P3 ouvert : parle
   de « la carte »). • test : site `tests-e2e/vitrine-robustesse-2026-11.spec.js` (existant).
 **Acceptance** : tests verts ; réponse 304 mesurée ; capture hors ligne lue.
 
@@ -419,7 +419,7 @@ après chaque commit ; rapports sur disque `reports/test-e2e/livraison-tickets-a
 | W2 | Accès livreur/admin (Sub 1.4 ✅ 2026-11-10 ; Sub 2.4 ✅ : 2.4.1 via tests existants + matrice livreur, 2.4.2 cliquet 52 → 46, 2.4.3 tests existants + captures) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
 | W3 | Admin stock + produits (Sub 2.1 ✅, 2.2 ✅ — 2026-11-10 ; l'alerte stock bas existait déjà, flag e-mail actif en prod) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
 | W4 | Offres (Sub 2.3) — **bloquée par G1** | séquentiel | option codée, tests verts, capture admin + app | idem |
-| W5 | Vitrine & catalogue distants (Sub 3.1-3.4) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |
+| W5 | Vitrine & catalogue distants (Sub 3.1 ✅ thème programmé, 3.2 ✅ rejoué, 3.3 ✅, 3.4 ✅ + ETag app/config — 2026-11-10 ; reste : démonstration émulateur = W6) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |
 | W6 | App finition (Sub 4.1-4.4) | 4.1→4.2→4.3 ; 4.4 ∥ 4.3 | 9/9 portes émulateur, parcours complet vert, APK installé | idem |
 | W7 | Convergence : PHPUnit complet, Vitest complet, Playwright livraison + fidélité + vitrine, diff gelé 0, CHAIN OK, 2 cycles RED identiques ; puis déploiement (G3) backend → site → `cap sync` | fan-out RED ∥ | CONVERGENCE_FINAL.md, tag `v1.0.x-livraison-tickets-admin-app` | — |
 
