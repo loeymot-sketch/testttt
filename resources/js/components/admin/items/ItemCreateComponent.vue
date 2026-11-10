@@ -247,6 +247,9 @@
                     </div>
 
                     <div class="col-12">
+                        <!-- [GOAL LIVRAISON-TICKETS 2026-11-10 · T-2.2.2] L'échec reste écrit PRÈS d'« Enregistrer » (le toast passe,
+                             les erreurs de champ sont en haut du tiroir) — même règle que le formulaire de code promo. -->
+                        <p v-if="saveError" role="alert" class="db-field-alert mt-2" data-testid="item-save-error">{{ saveError }}</p>
                         <div class="flex flex-wrap gap-3 mt-4">
                             <button type="submit" class="db-btn py-2 text-white bg-primary" data-testid="admin-item-form-save">
                                 <i class="lab lab-save"></i>
@@ -353,6 +356,7 @@ export default {
             loading: {
                 isActive: false
             },
+            saveError: '', // [T-2.2.2] message d'échec persistant près du bouton Enregistrer
             enums: {
                 statusEnum: statusEnum,
                 itemTypeEnum: itemTypeEnum,
@@ -541,6 +545,7 @@ export default {
         },
         save: function () {
             try {
+                this.saveError = '';
                 const fd = new FormData();
                 fd.append('name', this.props.form.name);
                 fd.append('price', this.props.form.price);
@@ -657,9 +662,14 @@ export default {
                         if (premierMessage) {
                             alertService.error(premierMessage);
                         }
+                        this.saveError = 'Le produit n\'est pas enregistré : corrigez les champs signalés en rouge.';
                         this.$nextTick(() => this.defilerVersPremiereErreur());
                     } else {
-                        alertService.error((donnees && donnees.message) ? donnees.message : this.$t('error.something_wrong'));
+                        const message = (donnees && donnees.message) ? donnees.message : this.$t('error.something_wrong');
+                        alertService.error(message);
+                        this.saveError = (donnees && donnees.message)
+                            ? message
+                            : 'Le produit n\'est pas enregistré. Vérifiez la connexion et réessayez.';
                     }
                 })
             } catch (err) {
