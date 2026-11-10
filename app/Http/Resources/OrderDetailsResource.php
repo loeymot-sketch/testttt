@@ -162,12 +162,15 @@ class OrderDetailsResource extends JsonResource
             // CONFIRMER la commande (appeler = vérifier que c'est une vraie commande d'une vraie personne,
             // anti « commande nulle »). Un client consultant SA propre commande voit son propre contact
             // (aucune fuite). La saisie caisse explicite (téléphone/comptoir) reste prioritaire.
-            'pos_customer_name' => $this->pos_customer_name ?: (($this->source_surface === 'web') ? $this->user?->name : null),
+            // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.2] `source_surface` vaut 'delivery' (forcé par FrontendOrder::creating)
+            // pour toute livraison du site : le test « === 'web' » laissait la caisse AVEUGLE sur le cas le plus utile
+            // (appeler le client à livrer). Même périmètre que le ticket : CoordonneesClientTicket::SURFACES_CLIENT_ABSENT.
+            'pos_customer_name' => $this->pos_customer_name ?: (\App\Support\CoordonneesClientTicket::clientAbsent($this->resource) ? $this->user?->name : null),
             // [APPS 2026-08-19] `numeroJoignable()` : couvre le numéro déclaré des comptes
             // ouverts par connexion Apple/Google, ET cesse d'exposer au caissier la
             // sentinelle `PENDING_…` — qui s'affichait telle quelle ici, faute d'être
             // passée par le filtre d'affichage.
-            'pos_customer_phone' => $this->pos_customer_phone ?: (($this->source_surface === 'web') ? $this->user?->numeroJoignable() : null),
+            'pos_customer_phone' => \App\Support\CoordonneesClientTicket::telephone($this->resource) ?: null,
             'source' => $this->source,
             // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
             // unified /admin/encaissement queue badge (Borne='kiosk',

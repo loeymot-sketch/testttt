@@ -277,7 +277,9 @@ class DeliveryRunController extends Controller
             'order_status'   => $order ? (int) $order->status : null,
             'cancelled'      => $cancelled, // [VG-2026-10-21 M4-102]
             'customer_name'  => $order?->user?->name,
-            'customer_phone' => $order?->user?->phone,
+            // [LIVRAISON-TICKETS 2026-11-10 · T-1.4.5] Même téléphone que le ticket : un numéro SAISI en caisse (commande
+            // livraison prise au téléphone) prime sur celui du compte porteur ; sinon le compte, comme avant.
+            'customer_phone' => ($order ? \App\Support\CoordonneesClientTicket::telephone($order) : '') ?: $order?->user?->phone,
             'address'        => $addr?->address,
             'apartment'      => $addr?->apartment,
             'city'           => $addr?->city,

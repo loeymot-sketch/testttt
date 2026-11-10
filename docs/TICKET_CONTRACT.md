@@ -83,6 +83,18 @@ Par produit : `<qté>  <Nom> .......... <prix>` puis, en dessous, en toutes lett
 Puis les totaux, la TVA, le moyen de paiement, et les mentions fiscales (caisse) /
 « À régler en caisse » (borne Plan B).
 
+**Client à distance (site / application), depuis le 2026-11-10** — SSOT `App\Support\CoordonneesClientTicket`,
+même périmètre que le nom (par SURFACE `web` / `online` / `delivery`, jamais par type de commande ; la caisse et la
+borne n'empruntent rien à leur compte technique) :
+- `Tel : <numéro du compte>` à défaut de saisie caisse (`pos_customer_phone` prime) — client ET cuisine ;
+- LIVRAISON de nos tournées seulement (jamais retrait, borne, table, Uber) : bloc `LIVRER A :` (voie, complément,
+  CP ville sans répéter la commune déjà dans la voie) sur le ticket client, `Livrer : …` sur UNE ligne d'en-tête cuisine ;
+- livraison pas encore encaissée : `** A REGLER A LA LIVRAISON : ESPÈCES | CARTE AU LIVREUR | TITRE-RESTAURANT **`
+  selon `payment_method` (1/5) et `door_payment_mode='card'` — jamais « en caisse » ; payée en ligne → `*** PAYÉ ***`
+  inchangé ; carte en ligne en attente → règle habituelle.
+- L'écran caisse (`OrderDetailsResource`) lit le même SSOT (il ne repliait que sur `'web'`, donc jamais sur une livraison).
+Verrou : `tests/Feature/Hardware/ClientTicketLivraisonCoordonneesTest.php`.
+
 Exemple (caisse) :
 ```
 1  Méga                                14,80 EUR

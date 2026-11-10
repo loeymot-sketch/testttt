@@ -163,9 +163,20 @@ final class OrderReceiptEscPosRenderer
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone du client (commande téléphone
         // différée surtout) → rappeler/reconnaître le client au comptoir. Ligne propre
         // width-safe (textWrap ≤ $w) ; champ absent = aucune ligne (0 régression ticket normal).
-        $clientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.2] Une commande du SITE n'a pas de saisie caisse : le téléphone est
+        // celui du compte client (même périmètre que le nom, par surface). Le livreur doit pouvoir appeler.
+        $clientPhone = \App\Support\CoordonneesClientTicket::telephone($order);
         if ($clientPhone !== '') {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap('Tel : '.$clientPhone, $w).EscPosCommandBuilder::bold(false);
+        }
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.3] Adresse de livraison de nos tournées (jamais retrait/borne/Uber) :
+        // le ticket client part avec le livreur, c'est lui qui lit où aller.
+        $lignesAdresse = \App\Support\CoordonneesClientTicket::lignesAdresseLivraison($order);
+        if ($lignesAdresse !== []) {
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('LIVRER A :').EscPosCommandBuilder::bold(false);
+            foreach ($lignesAdresse as $ligne) {
+                $b .= EscPosCommandBuilder::textWrap($ligne, $w);
+            }
         }
         if ($counterCopy) {
             $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('*** COMMANDE BORNE - COPIE CAISSE ***').EscPosCommandBuilder::bold(false);
@@ -230,7 +241,11 @@ final class OrderReceiptEscPosRenderer
         } elseif ((float) ($order->total ?? 0) > 0) {
             $b .= EscPosCommandBuilder::lineKV('A REGLER TTC :', $this->money((float) $order->total), $w);
             $b .= EscPosCommandBuilder::alignCenter();
-            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textLine('** A REGLER EN CAISSE **').EscPosCommandBuilder::bold(false);
+            // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.4] Une livraison s'encaisse À LA PORTE, avec le moyen que le
+            // client a choisi sur le site (espèces / carte au livreur / titre-restaurant) — jamais « en caisse ».
+            $porte = \App\Support\CoordonneesClientTicket::reglementALaPorte($order);
+            $mention = $porte !== null ? '** A REGLER A LA LIVRAISON : '.$porte.' **' : '** A REGLER EN CAISSE **';
+            $b .= EscPosCommandBuilder::bold(true).EscPosCommandBuilder::textWrap($mention, $w).EscPosCommandBuilder::bold(false);
             $b .= EscPosCommandBuilder::alignLeft();
         }
 
@@ -380,9 +395,15 @@ final class OrderReceiptEscPosRenderer
         }
         // [C4-CAISSE-TELEPHONE FIX-3 2026-07-07] Téléphone client aussi en cuisine (rappel/
         // reconnaissance d'une commande téléphone). Width-safe ; absent = rien.
-        $kClientPhone = trim((string) ($order->pos_customer_phone ?? ''));
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.1.2/3] Même téléphone que le ticket client (compte du client du site à
+        // défaut de saisie caisse) ; adresse de livraison sur UNE ligne d'en-tête (le détail est sur le ticket client).
+        $kClientPhone = \App\Support\CoordonneesClientTicket::telephone($order);
         if ($kClientPhone !== '') {
             $b .= $headerLine('Tel : '.$kClientPhone);
+        }
+        $kAdresse = \App\Support\CoordonneesClientTicket::adresseLivraisonUneLigne($order);
+        if ($kAdresse !== '') {
+            $b .= $headerLine('Livrer : '.$kAdresse);
         }
         $dt = $order->order_datetime ?? $order->created_at;
         if ($dt) {

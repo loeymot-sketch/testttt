@@ -144,6 +144,13 @@
                             <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
                             <h5 class="text-sm font-normal">Tel: {{ receiptBranch.phone }}</h5>
                         </div>
+                        <!-- [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Bloc CLIENT : même vérité que le ticket thermique
+                             (CoordonneesClientTicket côté serveur, via OrderDetailsResource : pos_customer_name/phone déjà
+                             repliés sur le compte du client du site, order_address pour une livraison). -->
+                        <div v-if="clientLines.length" data-testid="receipt-client-block"
+                            class="text-xs text-left py-1.5 border-b border-dashed border-gray-400 text-heading">
+                            <p v-for="(line, idx) in clientLines" :key="'cli-' + idx" :class="idx === 0 ? 'font-bold' : ''">{{ line }}</p>
+                        </div>
 
                         <table class="w-full my-1.5">
                             <tbody>
@@ -295,6 +302,14 @@
                                             </td>
                                         </tr>
                                     </template>
+                                    <template v-else-if="paymentLines.length === 0 && doorPaymentLabel">
+                                        <!-- [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Livraison pas encore encaissée : le mode CHOISI
+                                             par le client sur le site, jamais « à régler en caisse ». -->
+                                        <tr>
+                                            <td colspan="2" class="pt-1 pb-1 pr-1 text-start font-semibold" data-testid="receipt-door-payment">
+                                                {{ $t('label.pay_at_delivery') }} : {{ doorPaymentLabel }}</td>
+                                        </tr>
+                                    </template>
                                     <template v-else-if="paymentLines.length > 1">
                                         <tr>
                                             <td colspan="2" class="pt-1 pb-0.5 text-start font-semibold">{{ $t('label.tendered_breakdown') }}</td>
@@ -400,6 +415,7 @@ import appService from "../../../services/appService";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
 import { sanitizeKdsInstruction } from "../../../helpers/kdsCustomization";
 import { renderItemSymbolic, extraDisplayName } from "../../../helpers/kdsSymbolic";
@@ -521,6 +537,39 @@ export default {
         },
         paymentLines: function () {
             return buildPaymentLines(this.order);
+        },
+        // [LIVRAISON-TICKETS 2026-11-10 · T-1.2.1] Lignes « client » du reçu : nom, téléphone, adresse de livraison.
+        // Le serveur a déjà fait le repli caisse → compte client (OrderDetailsResource) ; ici on n'invente rien.
+        clientLines: function () {
+            const o = this.order || {};
+            const lines = [];
+            const name = String(o.pos_customer_name || '').trim();
+            if (name) lines.push(this.$t('label.customer') + ' : ' + name);
+            const phone = String(o.pos_customer_phone || '').trim();
+            if (phone) lines.push(this.$t('label.phone') + ' : ' + phone);
+            const a = o.order_address;
+            if (Number(o.order_type) === orderTypeEnum.DELIVERY && a && String(a.address || '').trim()) {
+                lines.push(this.$t('label.deliver_to') + ' : ' + String(a.address).trim());
+                if (String(a.apartment || '').trim()) lines.push(String(a.apartment).trim());
+                const ville = [a.postal_code, a.city].map((x) => String(x || '').trim()).filter(Boolean).join(' ');
+                // Même règle que CoordonneesClientTicket (PHP) : la voie venue de la BAN porte souvent déjà « 62110 Hénin-Beaumont » ;
+                // comparaison sans accents ni casse (la ville en base peut être « HENIN-BEAUMONT »).
+                const plat = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+                const cityPlate = plat(a.city);
+                if (ville && !(cityPlate && plat(a.address).includes(cityPlate))) lines.push(ville);
+            }
+            return lines;
+        },
+        // Livraison à encaisser À LA PORTE : libellé du moyen choisi (espèces / carte au livreur / titre-restaurant) ;
+        // null si payée, si ce n'est pas une livraison, ou si un paiement en ligne est en cours (règle habituelle).
+        doorPaymentLabel: function () {
+            const o = this.order || {};
+            if (Number(o.order_type) !== orderTypeEnum.DELIVERY) return null;
+            if (Number(o.payment_status) === paymentStatusEnum.PAID) return null;
+            const m = Number(o.payment_method);
+            if (m === 5) return this.$t('label.ticket_restaurant');
+            if (m !== 1) return null;
+            return String(o.door_payment_mode || '') === 'card' ? this.$t('label.card_to_courier') : this.$t('label.cash');
         },
         nf525FooterLines: function () {
             return buildNf525Footer(this.order);
