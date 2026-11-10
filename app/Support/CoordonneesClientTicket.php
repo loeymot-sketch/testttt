@@ -67,9 +67,15 @@ final class CoordonneesClientTicket
         if ($complement !== '') {
             $lignes[] = $complement;
         }
-        $ville = trim(trim((string) ($a->postal_code ?? '')).' '.trim((string) ($a->city ?? '')));
-        // La voie venue de la BAN porte souvent déjà la commune : on n'imprime pas deux fois « Hénin-Beaumont ».
-        if ($ville !== '' && ($voie === '' || ! str_contains(self::cle($voie), self::cle($ville)))) {
+        $cp = trim((string) ($a->postal_code ?? ''));
+        $commune = trim((string) ($a->city ?? ''));
+        // La voie venue de la BAN porte souvent déjà « 62110 Hénin-Beaumont » : on n'imprime pas deux fois la commune.
+        // Saisie à la main, la voie peut porter la commune SANS le code postal : on n'ajoute alors que le code postal
+        // (T-1.2.3, 2026-11-10 : « 10 Rue Test, Hénin-Beaumont » sortait suivi de « 62110 Hénin-Beaumont »).
+        $voieAvecCommune = $voie !== '' && $commune !== '' && str_contains(self::cle($voie), self::cle($commune));
+        $voieAvecCp = $voie !== '' && $cp !== '' && str_contains($voie, $cp);
+        $ville = $voieAvecCommune ? ($voieAvecCp ? '' : $cp) : trim($cp.' '.$commune);
+        if ($ville !== '') {
             $lignes[] = $ville;
         }
 

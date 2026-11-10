@@ -35,7 +35,8 @@ const livraisonWeb = (over = {}) => ({
 describe('reçu caisse — commande du site', () => {
   it('livraison espèces : nom, téléphone, adresse (sans répéter la commune) et « Espèces » à la livraison', () => {
     const w = monter(livraisonWeb());
-    expect(w.vm.clientLines).toEqual(['Client : Karim Test', 'Téléphone : 0612345678', 'Livrer à : 10 Rue Test, Hénin-Beaumont', '2B']);
+    // La voie porte déjà la commune mais pas le code postal : le code postal seul, jamais « 62110 Hénin-Beaumont » en plus (même règle que le PHP).
+    expect(w.vm.clientLines).toEqual(['Client : Karim Test', 'Téléphone : 0612345678', 'Livrer à : 10 Rue Test, Hénin-Beaumont', '2B', '62110']);
     expect(w.vm.doorPaymentLabel).toBe('Espèces');
   });
 

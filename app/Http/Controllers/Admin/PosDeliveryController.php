@@ -238,7 +238,11 @@ class PosDeliveryController extends Controller
             ],
             'stops'   => $g->map(fn ($s) => [
                 'id' => $s->id, 'order_id' => $s->order_id, 'order_number' => $s->order?->order_serial_no,
-                'customer' => $s->order?->user?->name, 'address' => $s->order?->address?->address,
+                'customer' => $s->order?->user?->name,
+                // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-1.2.2] Même source que le ticket (CoordonneesClientTicket) : adresse
+                // complète (complément, CP ville) et téléphone — la planche disait la rue seule et jamais le numéro.
+                'address' => $s->order ? (\App\Support\CoordonneesClientTicket::adresseLivraisonUneLigne($s->order) ?: $s->order->address?->address) : null,
+                'phone' => $s->order ? (\App\Support\CoordonneesClientTicket::telephone($s->order) ?: null) : null,
                 'collect_method' => $s->collect_method, 'amount_due' => round($s->amount_due_cents / 100, 2),
                 'left_at' => $s->left_at?->toDateTimeString(), 'arrived_at' => $s->arrived_at?->toDateTimeString(),
                 'delivered_at' => $s->delivered_at?->toDateTimeString(), 'has_photo' => (bool) $s->proof_photo_path,

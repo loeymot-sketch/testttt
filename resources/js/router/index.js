@@ -200,6 +200,19 @@ const baseRoutes = [
         component: ExceptionComponent,
     },
     {
+        // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-1.4.2] L'écran du livreur est la page autonome `/livreur`
+        // (hors SPA : connexion propre, API delivery-run). Le rôle Livreur atterrit sur `livreur`
+        // (LeCayenneRoleLandingUrlSeeder) → LoginComponent pousse `/admin/livreur` → sortie dure vers `/livreur`.
+        // Avant : `delivery-boys`, une liste admin qu'il n'a pas le droit d'ouvrir → page « exception ».
+        path: "/admin/livreur",
+        name: "admin.livreur",
+        component: ExceptionComponent, // jamais rendu : la garde interrompt la navigation
+        beforeEnter: () => {
+            window.location.assign("/livreur");
+            return false;
+        },
+    },
+    {
         path: "/admin/dashboard",
         component: DashboardComponent,
         name: "admin.dashboard",

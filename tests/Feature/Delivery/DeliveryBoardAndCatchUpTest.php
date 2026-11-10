@@ -119,6 +119,23 @@ class DeliveryBoardAndCatchUpTest extends TestCase
         $this->assertCount(1, $r->json('data.0.stops'));
     }
 
+    /** [GOAL LIVRAISON-TICKETS 2026-11-10 · T-1.2.2] La planche dit le téléphone et l'adresse COMPLÈTE, depuis la même source que le ticket. */
+    public function test_board_shows_phone_and_full_address_from_the_ticket_source(): void
+    {
+        $this->courier('Kiki');
+        $c = User::factory()->create(['branch_id' => $this->branch->id, 'phone' => '0612345678']);
+        $o = Order::factory()->create([
+            'branch_id' => $this->branch->id, 'user_id' => $c->id, 'order_type' => OrderType::DELIVERY, 'source_surface' => 'delivery',
+            'status' => OrderStatus::PREPARED, 'payment_status' => PaymentStatus::UNPAID, 'payment_method' => PaymentGateway::CASH_ON_DELIVERY,
+        ]);
+        OrderAddress::query()->create(['order_id' => $o->id, 'user_id' => $c->id, 'label' => 'x', 'address' => '10 Rue Test', 'apartment' => 'Apt 2B', 'city' => 'Hénin-Beaumont', 'postal_code' => '62110', 'latitude' => '50.43', 'longitude' => '2.96']);
+        app(DeliveryWaveService::class)->assign($o->fresh());
+
+        $stop = $this->pos()->getJson('/api/admin/pos-delivery/board')->assertOk()->json('data.0.stops.0');
+        $this->assertSame('0612345678', $stop['phone']);
+        $this->assertSame('10 Rue Test, Apt 2B, 62110 Hénin-Beaumont', $stop['address']);
+    }
+
     /** [ÉTAT DES LIEUX 2026-10-23 P3] Un départ dont l'heure est passée sans être parti n'est plus « à venir » : `overdue`. */
     public function test_a_wave_past_its_hour_and_not_left_is_flagged_overdue(): void
     {

@@ -35,6 +35,7 @@ différentes — les confondre fait écrire des gardes qui ne s'appliquent à pe
 | **Borne Kiosk** | Sanctum (`kioskToken`, ability `kiosk:order`) | `/api/frontend/*` (création) | **Totalement interdit** : `/api/admin/*` (`BlockKioskTokenFromAdminRoutes`). Modifier infos compte |
 | **Chef (KDS)** | Sanctum + rôle `Chef` | `/api/admin/kds-order/*`, OSS | Voir une autre succursale. Rejeter un encaissement POS |
 | **Client / App** | Sanctum (normal) | `/api/frontend/order`, `/api/frontend/address` | Imposer un prix JSON. Marquer la commande `DELIVERED` |
+| **Livreur** | Sanctum + rôle `Delivery Boy` — **aucune permission Spatie** (relevé dev + prod 2026-11-10 ; prod : 0 compte) | `/api/frontend/delivery-run*` (SES arrêts : `delivery_boy_id === Auth::id()`), `/api/frontend/delivery-handover/*` (QR, jeton court), page `/livreur` (landing `livreur` depuis 2026-11-10) | Tout `/api/admin/*` qui touche commandes, clients, argent, tickets (`escpos` client ET cuisine → 403) ; les arrêts d'un collègue → 403 sans adresse ni téléphone. Seules lectures admin possibles : réglages d'interface sans client ni argent (devise, langue, fuseau, thème, succursale, société, tables, modèles de messages). Sentinelle : `tests/Feature/Authz/DeliveryBoyAccessMatrixTest.php` (toute route `api/admin/*` sans middleware de permission est sondée avec ce rôle). |
 | **Écran client (OSS)** | voir ci-dessous — **deux surfaces distinctes** | | |
 
 ### L'écran client a DEUX surfaces, à ne pas confondre

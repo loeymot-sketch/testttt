@@ -53,7 +53,12 @@
                         <div class="min-w-0">
                             <div class="font-bold">#{{ s.order_number || s.order_id }} · {{ s.customer || 'Client' }}</div>
                             <div class="truncate text-gray-600">{{ s.address }}</div>
+                            <!-- [GOAL LIVRAISON-TICKETS 2026-11-10 · T-1.2.2] Le téléphone du client (même source que le ticket), cliquable. -->
+                            <a v-if="s.phone" :href="'tel:' + s.phone" class="text-xs font-semibold text-gray-700 underline" :data-testid="'pos-delivery-phone-' + s.id">📞 {{ s.phone }}</a>
                         </div>
+                        <!-- [T-1.3.3] Ticket client de la livraison (téléphone, adresse, règlement à la porte, QR si activé) sur l'imprimante
+                             de la caisse : rien ne sort seul (décision propriétaire 2026-10-19), c'est ici qu'on le demande. -->
+                        <button v-if="!s.delivered_at && !s.cancelled" type="button" class="h-8 px-3 rounded-lg border border-[#D9DBE9] text-xs font-semibold disabled:opacity-40" :disabled="ticketBusy === s.id" :data-testid="'pos-delivery-ticket-' + s.id" @click="onTicket(s)">🧾 {{ ticketBusy === s.id ? 'Impression…' : 'Ticket' }}</button>
                         <p v-if="s.uber_attention" class="basis-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700" role="alert" data-testid="pos-delivery-uber-attention">⚠ {{ s.uber_attention }}</p>
                         <!-- [UBER-DIRECT 2026-10-22] Qui livre : nos livreurs ou un coursier Uber. Deux boutons, un seul actif à la fois. -->
                         <div v-if="!s.delivered_at" class="basis-full flex flex-wrap items-center gap-2" :data-testid="'pos-delivery-dispatch-' + s.id">
@@ -100,13 +105,15 @@
 <script>
 import axios from 'axios';
 import { fetchBoard, assignCourier, uberQuote, uberDispatch, uberRelease, uberStatusLabel } from '../../../helpers/posLivraison';
+import { imprimerTicketClient } from '../../../helpers/posImprimerTicketClient';
+import alertService from '../../../services/alertService';
 
 export default {
     name: 'PosDeliveryBoard',
     emits: ['close'],
     props: { page: { type: Boolean, default: false } },
     data() {
-        return { waves: [], couriers: [], loading: false, error: '', uberEnabled: false, busy: null, proposal: null };
+        return { waves: [], couriers: [], loading: false, error: '', uberEnabled: false, busy: null, proposal: null, ticketBusy: null };
     },
     mounted() {
         this.load();
@@ -186,6 +193,24 @@ export default {
                 this.error = e.message;
             } finally {
                 this.busy = null;
+            }
+        },
+        // [T-1.3.3] Même chemin que la caisse et le Suivi (posImprimerTicketClient) : le serveur rend le ticket, le pont
+        // local l'imprime ; aucun compteur fiscal touché. Un échec se DIT (pont absent, imprimante muette), jamais en silence.
+        async onTicket(s) {
+            if (this.ticketBusy) return;
+            this.ticketBusy = s.id;
+            try {
+                const r = await imprimerTicketClient(s.order_id);
+                if (r && r.ok) {
+                    alertService.success('Ticket de livraison envoyé à l\'imprimante.');
+                } else {
+                    alertService.error(r && r.raison === 'pont'
+                        ? 'Pont d\'impression injoignable sur ce poste : imprimez depuis le Suivi des commandes.'
+                        : 'Ticket indisponible pour cette commande.');
+                }
+            } finally {
+                this.ticketBusy = null;
             }
         },
         async onAssign(wave, courierId) {

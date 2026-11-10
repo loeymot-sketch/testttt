@@ -551,12 +551,16 @@ export default {
             if (Number(o.order_type) === orderTypeEnum.DELIVERY && a && String(a.address || '').trim()) {
                 lines.push(this.$t('label.deliver_to') + ' : ' + String(a.address).trim());
                 if (String(a.apartment || '').trim()) lines.push(String(a.apartment).trim());
-                const ville = [a.postal_code, a.city].map((x) => String(x || '').trim()).filter(Boolean).join(' ');
+                const cp = String(a.postal_code || '').trim();
+                const commune = String(a.city || '').trim();
                 // Même règle que CoordonneesClientTicket (PHP) : la voie venue de la BAN porte souvent déjà « 62110 Hénin-Beaumont » ;
-                // comparaison sans accents ni casse (la ville en base peut être « HENIN-BEAUMONT »).
+                // comparaison sans accents ni casse (la ville en base peut être « HENIN-BEAUMONT »). Saisie à la main, la voie peut
+                // porter la commune SANS le code postal : on n'ajoute alors que le code postal (jamais la commune deux fois).
                 const plat = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-                const cityPlate = plat(a.city);
-                if (ville && !(cityPlate && plat(a.address).includes(cityPlate))) lines.push(ville);
+                const voieAvecCommune = !!commune && plat(a.address).includes(plat(commune));
+                const voieAvecCp = !!cp && String(a.address).includes(cp);
+                const ville = voieAvecCommune ? (voieAvecCp ? '' : cp) : [cp, commune].filter(Boolean).join(' ');
+                if (ville) lines.push(ville);
             }
             return lines;
         },
