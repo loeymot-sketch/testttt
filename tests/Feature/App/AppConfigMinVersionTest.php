@@ -153,9 +153,32 @@ class AppConfigMinVersionTest extends TestCase
             ->assertStatus(304)->assertHeader('ETag', $etag);
         $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => 'W/'.$etag.', "autre"'])->get('/api/frontend/app/config')->assertStatus(304);
 
-        config(['app_mobile.online_payment_enabled' => true]);
+        config(['app_mobile.online_payment_enabled' => true, 'payment.mollie.enabled' => true, 'payment.mollie.api_key' => 'test_cle']);
         $r2 = $this->withHeaders(['x-api-key' => '123456', 'If-None-Match' => $etag])->getJson('/api/frontend/app/config')->assertOk()
             ->assertJsonPath('online_payment_enabled', true);
         $this->assertNotSame($etag, $r2->headers->get('ETag'));
+    }
+
+    /**
+     * [TEST APP + PAIEMENT · 2026-11-10] Constaté en production : « Passerelle de paiement en ligne » DÉSACTIVÉE, carte
+     * proposée quand même par le site → carte saisie, 503, renvoi vers « Payer sur place ». La configuration publique
+     * n'annonce plus un paiement en ligne qui ne peut pas aboutir.
+     */
+    public function test_le_paiement_en_ligne_n_est_annonce_que_s_il_peut_aboutir(): void
+    {
+        config(['app_mobile.online_payment_enabled' => true, 'payment.mollie.enabled' => true, 'payment.mollie.api_key' => 'test_cle']);
+        $lire = fn () => $this->withHeader('x-api-key', '123456')->getJson('/api/frontend/app/config')->assertOk();
+
+        $lire()->assertJsonPath('online_payment_enabled', true)->assertJsonPath('web_online_payment_enabled', true);
+
+        \Smartisan\Settings\Facades\Settings::group('site')->set(['site_online_payment_gateway' => \App\Enums\Activity::DISABLE]);
+        $lire()->assertJsonPath('online_payment_enabled', false)->assertJsonPath('web_online_payment_enabled', false);
+
+        \Smartisan\Settings\Facades\Settings::group('site')->set(['site_online_payment_gateway' => \App\Enums\Activity::ENABLE]);
+        config(['payment.mollie.api_key' => '']);
+        $lire()->assertJsonPath('online_payment_enabled', false)->assertJsonPath('web_online_payment_enabled', false);
+
+        config(['payment.mollie.api_key' => 'test_cle', 'app_mobile.online_payment_enabled' => false]);
+        $lire()->assertJsonPath('online_payment_enabled', false)->assertJsonPath('web_online_payment_enabled', true);
     }
 }

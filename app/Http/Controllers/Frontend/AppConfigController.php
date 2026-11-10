@@ -18,8 +18,20 @@ class AppConfigController extends Controller
     public function show(Request $request): JsonResponse|Response
     {
         // [GOAL APP HYBRIDE · W4 · 2026-11-03] + interrupteur du paiement dans l'application (faux par défaut).
+        // [TEST APP + PAIEMENT · 2026-11-10] On n'annonce un paiement en ligne que s'il peut ABOUTIR : mêmes conditions que
+        // le checkout (MolliePaymentController::checkout). Constaté en production : réglage « Passerelle de paiement en
+        // ligne » DÉSACTIVÉ alors que le site proposait la carte → le client saisissait sa carte, recevait un 503, et se
+        // voyait renvoyer vers « Payer sur place ». Le réglage du propriétaire pilote désormais ce que le client VOIT :
+        // `web_online_payment_enabled` pour le site, `online_payment_enabled` (en plus de son interrupteur) pour l'app.
+        // Mêmes deux conditions que Mollie::isMollieConfigured(), lues sans instancier la passerelle (son constructeur
+        // interroge la base) : cette route est relue à chaque retour de l'application au premier plan.
+        $passerelle = (bool) config('payment.mollie.enabled', false)
+            && (string) config('payment.mollie.api_key', '') !== ''
+            && (int) \Smartisan\Settings\Facades\Settings::group('site')
+                ->get('site_online_payment_gateway', \App\Enums\Activity::ENABLE) === \App\Enums\Activity::ENABLE;
         $payload = AppVersion::configuration() + [
-            'online_payment_enabled' => (bool) config('app_mobile.online_payment_enabled', false),
+            'online_payment_enabled'     => (bool) config('app_mobile.online_payment_enabled', false) && $passerelle,
+            'web_online_payment_enabled' => $passerelle,
         ];
 
         // [GOAL LIVRAISON-TICKETS 2026-11-10 · T-3.4.1] ETag + 304 comme la vitrine : l'application relit cette configuration
