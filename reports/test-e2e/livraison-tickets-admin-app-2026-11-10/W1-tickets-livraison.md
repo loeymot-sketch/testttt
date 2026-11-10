@@ -65,3 +65,48 @@ Cause : `OrderReceiptEscPosRenderer` ne lisait que `pos_customer_phone` (saisie 
 
 Effet de bord sur la base de dev `foodking_e2e` : commande 9936 (`VIS1110021327`, clone de 9933, statut acceptée,
 rattachée au client 1166) créée pour la capture ; à annuler ou laisser (aucun numéro fiscal).
+
+---
+
+## W1 suite + W2 début (2026-11-10, après-midi) — déclencheurs d'impression, planche, accès livreur
+
+### Cartographie (T-1.3.1 → `docs/TICKET_CONTRACT.md §2bis`)
+Le serveur n'imprime jamais (hébergeur) ; tout papier sort par les ponts des postes. Ticket cuisine : automatique à l'entrée
+en cuisine (réclamation `kitchen_ticket_claims`), copie caisse coupée depuis le 2026-10-19 (`kds.counter_auto_print=false`).
+Ticket client : question « Imprimer ? » après un encaissement au comptoir seulement. **Une livraison à régler à la porte n'a
+donc aucun ticket client sans clic** — et la planche Tournées n'avait aucun bouton pour le demander. Décision propriétaire
+G2 toujours ouverte (impression automatique à PRÊTE ou clic).
+
+### Fait
+- Planche Tournées (`PosDeliveryBoard.vue`, `PosDeliveryController::board`) : téléphone cliquable (`tel:`), adresse complète
+  (complément, CP ville) depuis `CoordonneesClientTicket`, bouton **« Ticket »** par arrêt non remis → `GET pos/orders/{id}/escpos?ticket=client`
+  → pont caisse ; échec annoncé (toast), jamais muet.
+- Parité (T-1.2.3, `tests/Feature/Receipt/ReceiptParityLivraisonTest.php`) : total, téléphone, adresse, règlement identiques
+  entre ticket thermique, ressource du reçu caisse, planche et livreur. **Défaut trouvé par ce test** : une adresse saisie à la
+  main (« 10 Rue Test, Hénin-Beaumont » + CP 62110 + ville) imprimait la commune deux fois ; corrigé (PHP + jumeau JS du reçu :
+  la voie porte la commune → on n'ajoute que le code postal).
+- Accès livreur (T-1.4.1/2/3, `tests/Feature/Authz/DeliveryBoyAccessMatrixTest.php`) : rôle « Delivery Boy » = **0 permission**
+  (dev et prod, lecture seule ; prod = 0 compte livreur, dev = 12). Sonde dynamique : les 74 routes `api/admin/*` sans middleware
+  de permission sont appelées avec ce rôle → 6 lectures de configuration d'interface sans client ni argent (succursale, société,
+  tables, modèles de messages, accès par défaut), **0 commande, 0 client, 0 ticket, 0 mutation** ; `menu-projection` (valide
+  avant d'autoriser) refusée avec paramètres valides. Arrêts/photo/départ d'un collègue → 403 sans adresse ni téléphone.
+- Atterrissage (T-1.4.2) : le livreur arrivait sur `delivery-boys` (liste admin interdite → page « exception »). Désormais
+  landing `livreur` (seeder + migration de données `2026_11_10_100000_delivery_boy_lands_on_livreur`, n'écrase pas un choix
+  fait depuis l'écran des rôles) → route SPA `admin.livreur` → sortie dure vers `/livreur`. `docs/AUTHZ_MATRIX.md` : ligne Livreur.
+
+### Preuves
+| Preuve | Résultat |
+|---|---|
+| `DeliveryBoyAccessMatrixTest` (4) | verts |
+| `ReceiptParityLivraisonTest` (1), `ClientTicketLivraisonCoordonneesTest` (8) | verts (après correction commune doublée) |
+| `DeliveryBoardAndCatchUpTest` (12, dont téléphone + adresse complète) | verts |
+| `AntiGravityLoginRedirectionTest` (5, dont livreur → `livreur` + migration idempotente) | verts |
+| Vitest `posTourneesTicketClient` (3), `receiptComponentLivraison` (6), planche (27), routeur/landing (31) | verts |
+| Playwright `planche-tournees-ticket.spec.js` sur :8766 (arrêt 728 = commande 9936) : téléphone `tel:`, adresse, clic Ticket → `escpos?ticket=client` 200 + octets, toast d'échec « pont injoignable » | vert ; capture lue : `planche-tournees-arret-9936.png` |
+| Zones gelées | diff 0 ; `fiscal:verify-chain --all` CHAIN OK (7) |
+
+### Ouvert / reste W2
+- T-1.4.4 écran admin des livreurs (créer, suspendre, mot de passe, révocation) : tests existants à rejouer + capture.
+- T-1.4.5 parité du libellé de règlement et de l'adresse sur `/livreur` (le téléphone est déjà aligné).
+- Sub 2.4 : matrice des autres rôles, cliquet FormRequest (52), gestion des accès depuis l'admin.
+- Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur).

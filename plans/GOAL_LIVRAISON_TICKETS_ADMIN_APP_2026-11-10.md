@@ -147,18 +147,18 @@ lue et analysée.
   • anchor : `ReceiptComponent.vue:140-150, :260-310` ; dépend de T-1.1.2 (`OrderDetailsResource.php` déjà aligné)
   • test : (TO BE CREATED `tests/js/receiptComponentLivraison.spec.js`) • visuel : `http://127.0.0.1:8766/admin/pos` →
   reçu d'une livraison web.
-- T-1.2.2 Planche Livraisons / file d'encaissement : vérifier que téléphone, adresse, mode à la porte sont visibles et
+- T-1.2.2 ✅ 2026-11-10 (planche : `phone` + adresse complète via le SSOT, `DeliveryBoardAndCatchUpTest`, `posTourneesTicketClient.spec.js`, capture lue) Planche Livraisons / file d'encaissement : vérifier que téléphone, adresse, mode à la porte sont visibles et
   identiques au ticket (même SSOT). • anchor : `PosDeliveryBoard.vue`, `PosDeliveryPage.vue`, `OrderDetailsResource:86-135`
   • test : `tests/Feature/Delivery/DeliveryBoardAndCatchUpTest.php` (existant) + cas « surface delivery » dans
   (TO BE CREATED `tests/Feature/Receipt/ReceiptParityLivraisonTest.php`) • visuel : `/admin/pos` onglet livraisons.
   ⚠️ `PosDeliveryBoard.vue` est aussi touché par T-1.3.3 : un seul Implementer, 1.2 PUIS 1.3.
-- T-1.2.3 Parité numérique ticket thermique = reçu HTML = écran = site (total, frais, règlement) sur une même commande.
+- T-1.2.3 ✅ 2026-11-10 (`ReceiptParityLivraisonTest` : total, téléphone, adresse, règlement identiques ticket / ressource caisse / planche / livreur ; a révélé et corrigé la commune imprimée deux fois sur une adresse saisie à la main — PHP et jumeau JS) Parité numérique ticket thermique = reçu HTML = écran = site (total, frais, règlement) sur une même commande.
   • test : (TO BE CREATED `tests/Feature/Receipt/ReceiptParityLivraisonTest.php`) + banc
   `tests/Playwright/livraison-parcours-complet.spec.js` (existant, à étendre d'une assertion sur le reçu).
 **Acceptance** : Vitest ciblé vert, PHPUnit Receipt vert, captures 1280/1920 lues, 0 `Label.X`.
 
 ### Sub 1.3 — Déclenchement de l'impression du ticket de livraison
-- T-1.3.1 Cartographier QUI imprime le ticket client d'une livraison web et QUAND : seul chemin automatique trouvé =
+- T-1.3.1 ✅ 2026-11-10 (`docs/TICKET_CONTRACT.md §2bis` ; confirmé : une livraison à la porte n'a AUCUN ticket client sans clic, le serveur n'imprime jamais, tout passe par les ponts des postes) Cartographier QUI imprime le ticket client d'une livraison web et QUAND : seul chemin automatique trouvé =
   encaissement au comptoir (`PrintFiscalReceiptAndOpenDrawerOnCounterPaid`) ; le ticket cuisine est automatique à
   l'acceptation (`AutoPrintKitchenTicketOnKitchenEntry`). Une livraison à encaisser à la porte n'a donc peut-être AUCUN
   ticket client imprimé sans clic. • anchor : les deux listeners, `PosTicketBytesController`, `PosOrdersTrackerComponent.vue`
@@ -168,24 +168,24 @@ lue et analysée.
   • anchor : `DeliveryWaveService.php` (départ), `OrderStateMachine` (GELÉ : on s'abonne à l'événement, on ne le modifie
   pas) • test : (TO BE CREATED `tests/Feature/Delivery/DeliveryTicketAutoPrintTest.php`) +
   `tests/Feature/Hardware/ClientTicketDeliveryQrTest.php`, `tests/Feature/Delivery/DeliveryHandoverQrPrintFlagTest.php`.
-- T-1.3.3 Réimpression depuis la planche Livraisons (bouton, duplicata marqué) + sentinelle : Chef et livreur → 403 sur
+- T-1.3.3 ✅ 2026-11-10 (bouton « Ticket » sur chaque arrêt non remis de la planche, même chemin que le Suivi ; pas de « duplicata » : aucune première impression n'existe pour une livraison à la porte ; livreur → 403 client ET cuisine dans `DeliveryBoyAccessMatrixTest`, Chef déjà couvert par `KdsKitchenTicketAuthzTest`) Réimpression depuis la planche Livraisons (bouton, duplicata marqué) + sentinelle : Chef et livreur → 403 sur
   `GET /pos/orders/{order}/escpos?ticket=client` (garde en contrôleur, pas en route — §0.5-8). • anchor :
   `PosTicketBytesController:26-69` (`duplicata`, `abort_unless can('pos')`) • test : `tests/Feature/Hardware/BorneEscposEndpointTest.php`
   (existant, étendre) • visuel : planche.
-- T-1.3.4 `docs/TICKET_CONTRACT.md` : §4 déjà mis à jour (2026-11-10) ; §2 (surface × événement × ticket) écrit EN FIN de
+- T-1.3.4 ✅ 2026-11-10 (§2bis écrit) `docs/TICKET_CONTRACT.md` : §4 déjà mis à jour (2026-11-10) ; §2 (surface × événement × ticket) écrit EN FIN de
   W1 par le dernier Implementer (fichier partagé par 1.1 et 1.3).
 **Acceptance** : tests verts ; une livraison web de bout en bout (banc Playwright existant) produit exactement 1 ticket
 cuisine + 1 ticket client, prouvé par le journal d'impression (`Printer`/logs) ; 0 double ticket.
 
 ### Sub 1.4 — Accès livreur et admin
-- T-1.4.1 MINI-DÉCOUVERTE : matrice réelle des droits du rôle `Delivery Boy` (permissions Spatie en base de dev, `landing_url`,
+- T-1.4.1 ✅ 2026-11-10 (relevé dev + prod lecture seule : rôle sans AUCUNE permission, prod = 0 compte livreur, dev = 12 ; sonde dynamique `DeliveryBoyAccessMatrixTest` : 74 routes admin sans middleware de permission → 6 lectures de configuration sans client ni argent, 0 commande, 0 mutation) MINI-DÉCOUVERTE : matrice réelle des droits du rôle `Delivery Boy` (permissions Spatie en base de dev, `landing_url`,
   routes `/api/frontend/delivery-run*`, `/api/admin/delivery-boy*`, `/livreur`, `/livreur/remise`) ; vérifier ce qu'un
   compte livreur peut lire dans l'admin SPA. • anchor : `LeCayenneRoleLandingUrlSeeder.php:31`, `routes/api.php:985-1030,
   2501-2520`, `DeliveryRunController.php:38,193,201` • test : (TO BE CREATED `tests/Feature/Authz/DeliveryBoyAccessMatrixTest.php`).
-- T-1.4.2 Atterrissage : un livreur qui se connecte arrive sur `/livreur`, pas sur la liste admin des livreurs ; un
+- T-1.4.2 ✅ 2026-11-10 (landing `livreur` : seeder + migration de données `2026_11_10_100000` + route SPA `admin.livreur` → sortie dure `/livreur` ; `AntiGravityLoginRedirectionTest`, `livreurAtterritSurSonEcran.spec.js`) Atterrissage : un livreur qui se connecte arrive sur `/livreur`, pas sur la liste admin des livreurs ; un
   caissier n'arrive jamais sur `/livreur`. • anchor : `LoginController.php:197`, seeder landing • test : matrice T-1.4.1 +
   `tests/Feature/Auth/MultiDeviceLoginTest.php` (existant, non régressé).
-- T-1.4.3 Isolation : un livreur ne voit que SES arrêts, ses photos, sa caisse ; un autre livreur / un client → 403/404
+- T-1.4.3 ✅ 2026-11-10 (arrêts/photo/départ d'un collègue → 403 sans adresse ni téléphone, dans la matrice ; caisse livreur déjà couverte par `DeliveryRunCashTest`) Isolation : un livreur ne voit que SES arrêts, ses photos, sa caisse ; un autre livreur / un client → 403/404
   sans fuite (adresse, nom, téléphone). • anchor : `DeliveryRunController:38-84, 189-201`, `DeliveryHandoverController`
   • tests : `tests/Feature/Delivery/DeliveryHandoverTokenTest.php`, `DeliveryRunCashTest.php` (existants) + cas adverses
   dans la matrice.
@@ -195,7 +195,8 @@ cuisine + 1 ticket client, prouvé par le journal d'impression (`Printer`/logs) 
   `tests/Feature/Admin/StaffCredentialChangeRevokesSessionsTest.php`, `tests/Feature/Delivery/DeliveryBoyAddressPermissionSplitTest.php`
   (existants) • visuel : `/admin/delivery-boys`.
 - T-1.4.5 (téléphone ✅ 2026-11-10 : `DeliveryRunController` lit `CoordonneesClientTicket::telephone` puis le compte ;
-  reste : parité du libellé de règlement et de l'adresse) Écran du LIVREUR `/livreur` et `/livreur/remise` : téléphone
+  mode à la porte ✅ prouvé identique ticket ↔ livreur sur les 3 modes dans `ReceiptParityLivraisonTest` ; reste : adresse
+  complète sur `/livreur` = champs séparés, à confronter au SSOT si l'écran change) Écran du LIVREUR `/livreur` et `/livreur/remise` : téléphone
   cliquable, adresse (+ Waze), mode de règlement choisi = même SSOT que le ticket (`DeliveryRunController:280-305`).
   • tests : `tests/Feature/Delivery/DeliveryRunTest.php`, `DeliveryHandoverConfirmTest.php` (existants, étendre d'une
   assertion de parité) • visuel : `/livreur` sur viewport téléphone.
@@ -414,8 +415,8 @@ après chaque commit ; rapports sur disque `reports/test-e2e/livraison-tickets-a
 | W | Portée | Parallélisme | Checkpoint (Axe 3, 6 points) | Reprise |
 |---|---|---|---|---|
 | W0 | Pré-vol : sauvegarde DB dev, branche `backup/pre-livraison-tickets-2026-11-10`, baselines (`phpunit` complet, `audit_logs` count + hash, `check:www`), reproduction T-1.1.1 rouge | lecture seule ∥ | baselines écrites dans BRAIN §2 | — |
-| W1 | **Tickets (Sub 1.1 ✅ 2026-11-10, 1.2, 1.3)** — le défaut signalé | séquentiel 1.1 → 1.2 → 1.3 (`PosDeliveryBoard.vue` et `TICKET_CONTRACT.md` partagés) | 3 tests créés verts, Hardware 33 verts, Vitest reçu vert, captures lues, TICKET_CONTRACT.md à jour | manifeste `INTERRUPT_W1_*.md` |
-| W2 | Accès livreur/admin (Sub 1.4, 2.4) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
+| W1 | **Tickets (Sub 1.1 ✅, 1.2 ✅, 1.3 ✅ hors T-1.3.2 qui attend G2 — 2026-11-10)** — le défaut signalé | séquentiel 1.1 → 1.2 → 1.3 (`PosDeliveryBoard.vue` et `TICKET_CONTRACT.md` partagés) | 3 tests créés verts, Hardware 33 verts, Vitest reçu vert, captures lues, TICKET_CONTRACT.md à jour | manifeste `INTERRUPT_W1_*.md` |
+| W2 | Accès livreur/admin (Sub 1.4 : 1.4.1/1.4.2/1.4.3 ✅ 2026-11-10, reste 1.4.4 écran admin + 1.4.5 parité libellé ; Sub 2.4 à faire) | séquentiel (seeders/permissions partagés) | matrices vertes, cliquet FormRequest resserré | idem |
 | W3 | Admin stock + produits (Sub 2.1, 2.2) | séquentiel 2.1 → 2.2 (`Frontend/ItemController` + banc catalogue distant partagés) | Stock 26 + Item/Catalog verts, bancs catalogue distant verts | idem |
 | W4 | Offres (Sub 2.3) — **bloquée par G1** | séquentiel | option codée, tests verts, capture admin + app | idem |
 | W5 | Vitrine & catalogue distants (Sub 3.1-3.4) | 3.1 ∥ 3.2 ; 3.3/3.4 après | Storefront 47+ verts, 304 mesuré, démonstration thème planifié | idem |
