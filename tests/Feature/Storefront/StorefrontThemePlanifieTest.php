@@ -334,6 +334,35 @@ class StorefrontThemePlanifieTest extends TestCase
         $this->lire()->assertOk()->assertJsonPath('theme_name', 'A')->assertJsonPath('next_change_at', '2026-12-24T00:00:00+01:00');
     }
 
+    /** Nuits de changement d'heure (Paris) : un thème qui enjambe 03:00 → 02:00 (octobre) ou 02:00 → 03:00 (mars) tient bon. */
+    public function test_les_nuits_de_changement_d_heure_ne_cassent_ni_le_theme_ni_la_prochaine_relecture(): void
+    {
+        $service = app(StorefrontService::class);
+        $automne = [$this->theme(['id' => 1, 'name' => 'Nuit d\'automne', 'starts_at' => '2026-10-24T20:00', 'ends_at' => '2026-10-25T04:00'])];
+        $liste = $service->normalizeScheduledThemes($automne);
+        $this->assertSame('2026-10-24T20:00:00+02:00', $liste[0]['starts_at']);
+        $this->assertSame('2026-10-25T04:00:00+01:00', $liste[0]['ends_at'], 'la fin tombe après le recul d\'horloge : +01:00');
+        foreach (['2026-10-25 02:30:00 +02:00', '2026-10-25 02:30:00 +01:00', '2026-10-25 03:59:59 +01:00'] as $instant) {
+            $next = null;
+            $actif = $service->activeScheduledTheme($liste, Carbon::parse($instant), $next);
+            $this->assertNotNull($actif, "thème absent à {$instant}");
+            $this->assertSame('2026-10-25T04:00:00+01:00', $next?->toIso8601String());
+        }
+        $next = null;
+        $this->assertNull($service->activeScheduledTheme($liste, Carbon::parse('2026-10-25 04:00:00 +01:00'), $next), 'fin exclue, heure d\'hiver');
+
+        $printemps = [$this->theme(['id' => 2, 'name' => 'Nuit de printemps', 'starts_at' => '2027-03-27T20:00', 'ends_at' => '2027-03-28T06:00'])];
+        $liste = $service->normalizeScheduledThemes($printemps);
+        $this->assertSame('2027-03-28T06:00:00+02:00', $liste[0]['ends_at'], 'la fin tombe après l\'avance d\'horloge : +02:00');
+        $next = null;
+        $this->assertNotNull($service->activeScheduledTheme($liste, Carbon::parse('2027-03-28 03:30:00 +02:00'), $next));
+        $this->assertSame('2027-03-28T06:00:00+02:00', $next?->toIso8601String());
+        // Une heure qui n'existe pas (02:30 le 28 mars) ne fait pas tomber la normalisation : elle donne un instant, jamais null.
+        $inexistant = $service->normalizeScheduledThemes([$this->theme(['id' => 3, 'starts_at' => '2027-03-28T02:30', 'ends_at' => '2027-03-28T08:00'])]);
+        $this->assertNotNull($inexistant[0]['starts_at']);
+        $this->assertSame([], $service->scheduledThemeErrors($inexistant, true, Carbon::parse('2027-03-01 12:00:00', 'Europe/Paris')));
+    }
+
     public function test_une_version_publiee_avant_les_themes_programmes_reste_a_jour(): void
     {
         StorefrontSetting::query()->create(['branch_id' => 1, 'enabled' => true, 'theme' => config('storefront.default_theme')]);

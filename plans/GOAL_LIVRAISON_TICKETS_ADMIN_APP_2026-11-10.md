@@ -468,8 +468,9 @@ correction en un lot. Chaque ligne : constat → correctif → preuve.
 - T-3.3.2 « fin d'offre à la seconde » : vrai pour le BANDEAU ; un coupon créé depuis l'admin finit à 23:59:59 (`CouponService` endOfDay,
   `CouponRequest` n'accepte qu'une date). La preuve à 18:00:01 porte une fixture hors chemin admin. Promesse produit = « le code
   disparaît du bandeau à l'heure ; le code reste valable jusqu'à la fin du jour ». Changer cela = champ heure dans l'admin (W4/G1).
-- Matrice livreur : un 404 de liaison de modèle compte comme refus (l'autorisation n'est pas exercée sur `fiscal/z-report/{id}`…),
-  et les préfixes hors `api/admin` (`frontend/order`, `loyalty`, `address`…) ne sont pas sondés. Documenté dans AUTHZ_MATRIX.
+- Matrice livreur : ~~un 404 de liaison de modèle comptait comme refus~~ → corrigé le soir même : modèles réels (Z, extra,
+  variation) créés, les six routes concernées répondent désormais 403, et toute nouvelle route non exercée fait échouer la
+  sonde (`NON_EXERCEES`). Reste vrai : les préfixes hors `api/admin` (`frontend/order`, `loyalty`, `address`…) ne sont pas sondés.
 - Preuves ETag/flip, égalité de priorité, liste seule « à publier » : ajoutées (`StorefrontThemePlanifieTest` 13 verts) — ce sont
   des preuves, pas des correctifs. Nuits de changement d'heure : non testées.
 - État « En cours / Programmé » du badge admin calculé en heure du NAVIGATEUR (serveur = Paris) : cosmétique hors Paris.

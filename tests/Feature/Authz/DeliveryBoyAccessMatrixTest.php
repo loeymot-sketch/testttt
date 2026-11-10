@@ -77,6 +77,13 @@ class DeliveryBoyAccessMatrixTest extends TestCase
         'api/admin/setting/branch/lat-long/{branch}',
     ];
 
+    /**
+     * [SUPERVISION 2026-11-10] Routes dont le modèle lié n'existe pas sous RefreshDatabase : elles répondent 404 AVANT toute
+     * autorisation, donc la sonde ne prouve rien sur elles. Liste tenue à la main : si elle grandit, il faut soit créer le
+     * modèle ci-dessous (la sonde exerce alors vraiment la garde), soit l'inscrire ici en connaissance de cause.
+     */
+    private const NON_EXERCEES = [];
+
     private Branch $branch;
     private User $livreur;
     private User $collegue;
@@ -122,15 +129,22 @@ class DeliveryBoyAccessMatrixTest extends TestCase
     public function test_un_livreur_ne_lit_ni_ne_mute_rien_dans_l_admin(): void
     {
         $item = Item::factory()->create();
+        // [SUPERVISION 2026-11-10] Modèles RÉELS pour les routes à liaison de modèle : sans eux, 404 avant toute autorisation
+        // et la sonde ne prouvait rien sur `fiscal/z-report/{zReport}` ni sur les images d'extras / variations.
+        $extra = \App\Models\ItemExtra::query()->create(['item_id' => $item->id, 'name' => 'Sauce', 'status' => 5, 'price' => 0.5]);
+        $attribut = \App\Models\ItemAttribute::factory()->create();
+        $variation = \App\Models\ItemVariation::query()->create(['item_id' => $item->id, 'item_attribute_id' => $attribut->id, 'name' => 'L', 'price' => 1, 'status' => 5]);
+        $z = \App\Models\ZReport::create(['branch_id' => $this->branch->id, 'sequence_no' => 1, 'opened_at' => now()->subDay(), 'closed_at' => now()->subHour(), 'status' => 'closed']);
         $params = [
             'order' => $this->order->id, 'item' => $item->id, 'branch' => $this->branch->id,
-            'zReport' => 1, 'country' => 1, 'language' => 1, 'menuTemplate' => 1, 'analytic' => 1,
-            'code' => 'X1', 'itemExtra' => 1, 'itemVariation' => 1, 'nom' => 'fidelite', 'flyer' => 1,
+            'zReport' => $z->id, 'country' => 1, 'language' => 1, 'menuTemplate' => 1, 'analytic' => 1,
+            'code' => 'X1', 'itemExtra' => $extra->id, 'itemVariation' => $variation->id, 'nom' => 'fidelite', 'flyer' => 1,
         ];
 
         $sondees = 0;
         $fuites = [];
         $aInspecter = [];
+        $nonExercees = [];
         foreach (Route::getRoutes() as $route) {
             $uri = $route->uri();
             if (! str_starts_with($uri, 'api/admin/') || $uri === 'api/admin/menu-projection') {
@@ -153,6 +167,10 @@ class DeliveryBoyAccessMatrixTest extends TestCase
             }
             if ($status >= 200 && $status < 300) {
                 $fuites[] = $libelle.' → '.$status.' '.Str::limit((string) $reponse->getContent(), 160);
+            } elseif ($status === 404 && str_contains($uri, '{')) {
+                // [SUPERVISION 2026-11-10] Un 404 de liaison de modèle n'exerce PAS l'autorisation : on ne le compte pas comme
+                // un refus prouvé. Ces routes sont listées à part (NON_EXERCEES) ; en ajouter une doit se voir.
+                $nonExercees[] = $libelle;
             } elseif (! in_array($status, [401, 403, 404, 405], true)) {
                 // 422 = la validation a tourné AVANT toute autorisation ; 500 = garde absente et code qui casse.
                 $aInspecter[] = $libelle.' → '.$status;
@@ -168,6 +186,10 @@ class DeliveryBoyAccessMatrixTest extends TestCase
         $this->assertGreaterThan(40, $sondees, 'La sonde n\'a presque rien trouvé : le filtre de routes est cassé.');
         $this->assertSame([], $fuites, "Un livreur sans permission obtient une réponse 2xx :\n".implode("\n", $fuites));
         $this->assertSame([], $aInspecter, "Routes atteintes par un livreur sans refus franc (422/5xx) :\n".implode("\n", $aInspecter));
+        sort($nonExercees);
+        $attendues = self::NON_EXERCEES;
+        sort($attendues);
+        $this->assertSame($attendues, $nonExercees, "Routes où l'autorisation n'a PAS été exercée (404 de liaison de modèle) — la liste a changé :\n".implode("\n", $nonExercees));
     }
 
     /**
