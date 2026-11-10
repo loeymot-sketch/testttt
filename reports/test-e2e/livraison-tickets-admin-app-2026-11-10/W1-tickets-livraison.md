@@ -178,3 +178,37 @@ G2 toujours ouverte (impression automatique à PRÊTE ou clic).
 - G2 (impression automatique du ticket client d'une livraison) : décision propriétaire ; T-1.3.2 attend.
 - W4 offres : bloquée par G1. W6 émulateur/APK : bloqué disque. W7 convergence + déploiement : propriétaire.
 - Dev DB : arrêt 728 créé pour la commande 9936 (tournée 18:00 du 2026-11-10, sans livreur) ; comptes `d@p.test`… à purger.
+
+### W7 (même jour, après-midi) — supervision : finition, test, validation (`/brain go`)
+**Méthode.** Diff `ad9e0910a..489906f8c` (21 fichiers de code) relu en parallèle, lecture seule, par quatre relecteurs
+(sécurité, architecture/DBA, testeur, RED) ; constats vérifiés file:line avant correction ; un seul lot de correction ; second
+cycle RED sur le lot lui-même ; convergence W7.
+
+**Ce que la relecture a trouvé dans mon propre travail (détail : plan §S, S1–S10).**
+- **2 P1** : la page de REMISE (QR) lisait `user->phone` brut — numéro de compte au lieu du numéro saisi en caisse, sentinelle
+  `PENDING_…` montrée telle quelle ; la « source unique » annoncée s'arrêtait à la porte du client. Et `GET setting/site`, route
+  sans garde, livrait la **clé Google Maps** (facturable) à un compte livreur : la matrice livreur l'avait rangée en « référence
+  sans argent » parce qu'elle avait été écrite à partir de ce qui répondait 200, pas de ce qui doit l'être.
+- **6 P2** : un thème programmé terminé bloquait pour toujours l'enregistrement du brouillon vitrine (visible en janvier) ;
+  `scheduled_themes: null` effaçait la liste ; identifiants de thèmes dupliqués ; code postal doublé sur « voie + CP sans
+  commune » et « Ham » trouvé dans « Hameau » ; refus de la fiche A affiché à l'ouverture de la fiche B ; livreur : `/login` puis un
+  SECOND formulaire sur `/livreur` (deux magasins de jeton) ; miroir FormRequest adresse = OU de deux permissions.
+- **3 P3** : cliquet contournable par `return true; // commentaire` (vrai compte **47**, pas 46 — 53, pas 52, avant T-2.4.2) ;
+  spec JS vitrine dépendant de l'horloge réelle (rouge seul le 24/12) ; jumeau JS de l'adresse divergeant du PHP sur « œ » et
+  l'apostrophe typographique.
+- **Cycle 2 (sur le lot)** : la renumérotation des identifiants pouvait encore produire un doublon (`[1, null, 1]`) → corrigée
+  (boucle sur les numéros déjà pris) ; `ItemListComponent.edit` contournait `reset` → observateur sur `props.form` ; jumeau JS
+  ignorait la localité quand la voie est vide → aligné ; regex du cliquet élargi à « rien entre `return true;` et `}` » ;
+  « Quitter » sur l'écran livreur révoque désormais le jeton côté serveur (téléphone partagé). Le reste du cycle 2 : RAS cité.
+
+**Preuves après le lot.** PHPUnit un fichier à la fois : 6 fichiers du lot 39 verts, 22 fichiers voisins 242 verts, relance
+cycle 2 : 55 verts ; sentinelle du cliquet exacte à 47 (compte relu par deux moyens). Vitest : 5 specs du lot + sentinelles 450
+verts, relance 32 verts ; suite complète avant le lot 5 978/0 (680 fichiers). Playwright : 7/7 rejoués après recompilation,
+captures lues — le livreur arrive sur « Mes livraisons » (plus de second formulaire), reçu caisse et planche inchangés. Zones
+gelées : 0 ligne. `fiscal:verify-chain --all` : CHAIN OK (7). Mémoire du dépôt : `AUTHZ_MATRIX.md` (ligne Livreur), CLAUDE.md §9
+(47), plan §S, BRAIN §2.
+
+**Dit franchement.** « Fin d'offre à la seconde » vaut pour le BANDEAU ; un coupon créé depuis l'admin finit à 23:59:59 (l'admin
+ne saisit qu'une date). La matrice livreur compte un 404 de liaison de modèle comme un refus et ne sonde pas les préfixes hors
+`api/admin`. Le badge « En cours / Programmé » de l'écran admin se calcule en heure du navigateur. Émulateur et APK : toujours
+bloqués par le disque à 100 %. Suite PHPUnit complète APRÈS le lot : voir la ligne « convergence » ci-dessous.

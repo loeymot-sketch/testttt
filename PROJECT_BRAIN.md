@@ -47,6 +47,11 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-10 après-midi — GOAL livraison/tickets : SUPERVISION (finition · test · validation) de W1–W6, `/brain go` (session testttt-80). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `4c48695d2`, site = `b61d61f`).
+> - Quatre relecteurs adverses (sécurité, architecture, testeur, RED) sur `ad9e0910a..489906f8c` → 2 P1 + 6 P2 + 3 P3 réels, tous corrigés en un lot (plan §S, S1–S10) : la page de REMISE lisait `user->phone` brut (hors source unique) ; `setting/site` livrait la clé Google Maps à un livreur ; un thème programmé terminé bloquait tout enregistrement vitrine ; `null` effaçait les thèmes ; code postal doublé sur « voie + CP sans commune » ; refus de fiche A affiché sur fiche B ; livreur = double connexion ; miroir FormRequest en OU ; cliquet contournable par un commentaire (vrai compte **47**) ; spec JS dépendant de l'horloge réelle.
+> - Preuves : PHPUnit ciblé 39 + 242 voisins (28 fichiers un par un), Vitest 450 (dont 5 specs touchés + sentinelles) puis complet 5 978/0 avant le lot, Playwright 7/7 rejoués après recompilation (le livreur arrive sur « Mes livraisons », capture lue), zones gelées 0, CHAIN OK 7. Second cycle RED sur le lot : voir §S / rapport W7.
+> - Dit franchement : « fin d'offre à la seconde » = bandeau ; un coupon admin finit à 23:59:59. Matrice livreur : 404 = refus, hors `api/admin` non sondé. Émulateur/APK toujours bloqués par le disque (100 %).
+>
 > **2026-11-10 12h — GOAL livraison/tickets : W1 close (hors T-1.3.2 ↔ porte G2), W2 entamée (session testttt-80). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `4c48695d2`, site = `b61d61f`).
 > - Cartographie des déclencheurs d'impression (`docs/TICKET_CONTRACT.md §2bis`) : le serveur n'imprime jamais, tout passe par les ponts des postes ; **une livraison à régler à la porte n'a aucun ticket client sans clic** et la planche Tournées n'avait aucun bouton → bouton « Ticket » par arrêt (`PosDeliveryBoard.vue`), téléphone cliquable + adresse complète depuis `CoordonneesClientTicket` (`PosDeliveryController::board`).
 > - Parité (`ReceiptParityLivraisonTest`) : total/téléphone/adresse/règlement identiques ticket thermique, ressource caisse, planche, livreur ; a trouvé et corrigé la commune imprimée deux fois sur une adresse saisie à la main (PHP + jumeau JS du reçu).

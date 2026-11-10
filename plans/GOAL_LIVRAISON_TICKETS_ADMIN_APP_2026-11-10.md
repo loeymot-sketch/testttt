@@ -446,6 +446,36 @@ Pendant qu'une porte est ouverte, l'orchestrateur exécute toutes les vagues qui
 
 ---
 
+## §S Supervision 2026-11-10 (finition · test · validation) — relecture adverse de W1–W6
+
+Quatre relecteurs en lecture seule (sécurité, architecture/DBA, testeur, RED) sur le diff `ad9e0910a..489906f8c`, puis
+correction en un lot. Chaque ligne : constat → correctif → preuve.
+
+| # | Gravité | Constat (file:line vérifié) | Correctif | Preuve |
+|---|---|---|---|---|
+| S1 | P1 | La page de REMISE (QR) lisait `user->phone` brut (`DeliveryHandoverService::present`) : numéro de compte au lieu du numéro saisi en caisse, sentinelle `PENDING_…` affichée telle quelle. La « source unique » s'arrêtait à la porte. | `telephone()` puis `numeroJoignable()` sur la remise ET la tournée ; champ `locality` (ligne CP + commune dédoublonnée par `CoordonneesClientTicket::localite`) consommé par `livreur.blade.php` et `livreur-remise.blade.php` (plus de 3e règle locale). | `ReceiptParityLivraisonTest::…tournee_et_la_remise…` (saisi caisse → les deux écrans ; `PENDING_` jamais) |
+| S2 | P1 | `GET api/admin/setting/site` sans garde livrait `site_google_map_key` (clé facturable) à un livreur sans permission ; la liste blanche de la matrice l'avait rangée en « référence sans argent ». | `SiteResource` : clé Google Maps + drapeau de débogage `null` sans `settings` (le SPA garde devise/langue/fuseau au démarrage). | `DeliveryBoyAccessMatrixTest::…sans_la_cle_google_maps` (livreur null, admin `settings` la voit) ; `docs/AUTHZ_MATRIX.md` corrigé |
+| S3 | P2 | Un thème programmé ACTIF déjà terminé bloquait, pour toujours, tout enregistrement du brouillon vitrine (l'écran renvoie la liste entière) — le propriétaire l'aurait rencontré en janvier. | `scheduledThemeErrors(…, $existing)` : un thème terminé déjà stocké à l'identique passe ; nouveau ou fin reculée → toujours refusé. | `StorefrontThemePlanifieTest::…termine_deja_enregistre…` |
+| S4 | P2 | `scheduled_themes: null` effaçait la liste sans un mot ; identifiants dupliqués conservés (écran modifie le mauvais, « Retirer » en enlève deux) ; nom non-texte → 500. | `null`/clé absente = liste inchangée, `[]` vide ; identifiants renumérotés au-dessus du plus grand ; `is_scalar` sur le nom. | `…null_garde_la_liste_doublons_renumerotes_plafond_et_hex_refuses` (+ 13 thèmes → 422, `#GGGGGG` → 422) |
+| S5 | P2 | Ligne localité : « 10 Rue Test 62110 » + commune absente sortait « 62110 Hénin-Beaumont » (code doublé) ; « Ham » trouvé dans « Hameau » ; jumeau JS (« œ », apostrophe typographique) divergeait du PHP. | `CoordonneesClientTicket::localite()` (mot entier, nombre entier, apostrophes/« œ » normalisés) ; jumeau JS identique. | `CoordonneesLocaliteTest` 12 cas = `receiptComponentLivraison.spec.js` 11 cas (même matrice) |
+| S6 | P2 | Fiche produit : le refus de la fiche A restait affiché en ouvrant la fiche B (`reset`/`addReset` ne vidaient pas `saveError`). | vidé dans les deux. | `itemFormErreurVisible.spec.js` (échec → fermer → plus de message) |
+| S7 | P2 | Livreur : `/login` → `/livreur` = second formulaire (deux magasins de jeton, aucune passerelle). | la garde `/admin/livreur` tend le jeton Sanctum à la page (`lc_livreur_token`) avant de sortir ; la page le vérifie en chargeant la tournée. | `acces-livreur-admin.spec.js` exige `#app` visible et `#login` caché ; capture « Mes livraisons » lue |
+| S8 | P2 | Miroir FormRequest adresse livreur/employé = OU de `_create`/`_edit`, plus lâche que la route. | coupe par `$this->route('address')` : avec adresse = `_edit`, sans = `_create`. | `FormRequestAuthorizeWaveLivraisonTest::…exige_la_permission_de_modification` |
+| S9 | P3 | Cliquet : `return true; // commentaire` échappait au regex (Kiosk/LoyaltyOptInRequest, endpoint public). Vrai compte 47, pas 46 (53, pas 52, avant T-2.4.2). | regex tolère le commentaire ; `RETURN_TRUE_BASELINE = 47` (recompte, pas régression) ; CLAUDE.md §9 à jour. | sentinelle verte à 47 exactement (compte relu à la main) |
+| S10 | P3 | `storefrontThemePlanifie.spec.js` dépendait de l'horloge réelle (rouge seul le 24/12 18 h). | `vi.setSystemTime` (Date seule). | spec vert |
+
+**Dit franchement, non corrigé (dette de test ou promesse à reformuler)** :
+- T-3.3.2 « fin d'offre à la seconde » : vrai pour le BANDEAU ; un coupon créé depuis l'admin finit à 23:59:59 (`CouponService` endOfDay,
+  `CouponRequest` n'accepte qu'une date). La preuve à 18:00:01 porte une fixture hors chemin admin. Promesse produit = « le code
+  disparaît du bandeau à l'heure ; le code reste valable jusqu'à la fin du jour ». Changer cela = champ heure dans l'admin (W4/G1).
+- Matrice livreur : un 404 de liaison de modèle compte comme refus (l'autorisation n'est pas exercée sur `fiscal/z-report/{id}`…),
+  et les préfixes hors `api/admin` (`frontend/order`, `loyalty`, `address`…) ne sont pas sondés. Documenté dans AUTHZ_MATRIX.
+- Preuves ETag/flip, égalité de priorité, liste seule « à publier » : ajoutées (`StorefrontThemePlanifieTest` 13 verts) — ce sont
+  des preuves, pas des correctifs. Nuits de changement d'heure : non testées.
+- État « En cours / Programmé » du badge admin calculé en heure du NAVIGATEUR (serveur = Paris) : cosmétique hors Paris.
+
+---
+
 ## §R Références
 - Skills : `ultra-audit-profond`, `superpower-gstack`, `test-e2e`, `lock-plan`, `superpowers:dispatching-parallel-agents`.
 - Docs : `docs/TICKET_CONTRACT.md`, `docs/LIVRAISON.md` (§3, §3sexies, §8, §9), `docs/AUTHZ_MATRIX.md`, `docs/BUSINESS_RULES.md`,
