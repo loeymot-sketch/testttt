@@ -148,6 +148,46 @@ class OwnerCatalog20261111CommandTest extends TestCase
         $this->assertSame(0, DB::table('item_variations')->where('item_id', $this->classique->id)->where('item_attribute_id', $this->viande2->id)->count());
     }
 
+    public function test_sandwich_deux_viandes_propose_les_viandes_du_terminator_en_ligne(): void
+    {
+        // Le Classique : poulet en ligne, Viande Hachée et Mixte réservées à la caisse (comme en production).
+        DB::table('item_variations')->where('item_id', $this->classique->id)->where('item_attribute_id', $this->viande1->id)
+            ->where('name', 'Viande Hachée')->update(['visible_on' => json_encode(['pos'])]);
+        // La référence à deux viandes : toutes les viandes partout, Mixte en caisse.
+        foreach ([$this->viande1, $this->viande2] as $attr) {
+            foreach (['Poulet mariné', 'Viande Hachée', 'Cordon Bleu', 'Mexicanos', 'Tenders'] as $meat) {
+                $this->variation($this->terminator->id, $attr->id, $meat);
+            }
+        }
+        DB::table('item_variations')->insert([
+            'item_id' => $this->terminator->id, 'item_attribute_id' => $this->viande1->id, 'name' => 'Mixte (hachée + poulet)',
+            'price' => 0, 'status' => Status::ACTIVE, 'visible_on' => json_encode(['pos']), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->artisan('menu:owner-2026-11-11')->assertSuccessful();
+
+        $s2 = Item::where('slug', Sync::SANDWICH2_SLUG)->firstOrFail();
+        foreach ([$this->viande1->id, $this->viande2->id] as $attr) {
+            $enLigne = DB::table('item_variations')->where('item_id', $s2->id)->where('item_attribute_id', $attr)
+                ->where('status', Status::ACTIVE)->whereNull('deleted_at')
+                ->where(fn ($q) => $q->whereNull('visible_on')->orWhere('visible_on', 'not like', '%"pos"]%'))
+                ->pluck('name')->all();
+            // Deux viandes DIFFÉRENTES choisissables en ligne et à la borne, dont la Viande Hachée.
+            $this->assertContains('Viande Hachée', $enLigne);
+            $this->assertContains('Cordon Bleu', $enLigne);
+            $this->assertGreaterThanOrEqual(5, count($enLigne));
+            $this->assertSame(0.0, (float) DB::table('item_variations')->where('item_id', $s2->id)->where('item_attribute_id', $attr)->sum('price'));
+        }
+        // Mixte reste réservé à la caisse, comme sur la référence.
+        $mixte = DB::table('item_variations')->where('item_id', $s2->id)->where('item_attribute_id', $this->viande1->id)
+            ->where('name', 'Mixte (hachée + poulet)')->value('visible_on');
+        $this->assertNotNull($mixte);
+        $this->assertStringContainsString('pos', (string) $mixte);
+        // Le Classique n'est pas touché : la Viande Hachée y reste réservée à la caisse.
+        $this->assertStringContainsString('pos', (string) DB::table('item_variations')->where('item_id', $this->classique->id)
+            ->where('item_attribute_id', $this->viande1->id)->where('name', 'Viande Hachée')->value('visible_on'));
+    }
+
     public function test_facon_cayenne_un_euro_cinquante_sur_les_sandwichs_sauf_le_cayenne(): void
     {
         $this->artisan('menu:owner-2026-11-11')->assertSuccessful();

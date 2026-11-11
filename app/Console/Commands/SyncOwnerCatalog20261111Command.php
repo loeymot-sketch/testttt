@@ -73,6 +73,9 @@ class SyncOwnerCatalog20261111Command extends Command
 
     public const SANDWICH2_PRICE = 9.00;
 
+    /** Sandwich de référence à deux viandes : ses viandes sont celles du Sandwich 2 Viandes. */
+    public const SANDWICH2_MEATS_REFERENCE_SLUG = 'terminator';
+
     /** « 2 viandes au choix » : la caisse (gelée) lit ce nombre dans la description, comme pour le Méga. */
     public const SANDWICH2_DESCRIPTION = '2 viandes au choix, crudités et sauces au choix.';
 
@@ -379,9 +382,50 @@ class SyncOwnerCatalog20261111Command extends Command
             $stats['variations'] += self::ensureVariation((int) $target->id, (int) $row->item_attribute_id, $row, $dryRun);
         }
 
+        $stats['variations'] += self::ensureMeatsFromReference((int) $target->id, $viande1, $viande2, $dryRun, $stats);
+
         $stats['extras'] += self::cloneExtras((int) $source->id, (int) $target->id, $dryRun);
         $stats['addons'] += self::cloneAddons((int) $source->id, (int) $target->id, $dryRun);
         $stats['recipe_lines'] += self::cloneRecipeLines((int) $source->id, (int) $target->id, $dryRun);
+    }
+
+    /**
+     * [OWNER 2026-11-11 · correctif du soir] Les viandes du Sandwich 2 Viandes = celles du sandwich de référence à deux
+     * viandes (Terminator, 9,00 € aussi). Copié sur le Sandwich Classique, le produit n'offrait en ligne et à la borne
+     * QUE « Poulet mariné » (le Classique est un sandwich au poulet ; Viande Hachée et Mixte y sont réservées à la
+     * caisse) : deux viandes exigées, une seule proposée → impossible à commander sur l'application.
+     *
+     * AJOUT SEUL : aucune variation n'est supprimée (commandes passées). Une viande déjà présente mais réservée à la caisse
+     * prend la visibilité qu'elle a sur la référence (Viande Hachée : partout ; Mixte : caisse, comme sur le Terminator).
+     */
+    private static function ensureMeatsFromReference(int $targetId, ItemAttribute $viande1, ItemAttribute $viande2, bool $dryRun, array &$stats): int
+    {
+        $reference = Item::query()->where('slug', self::SANDWICH2_MEATS_REFERENCE_SLUG)->whereNull('deleted_at')->first();
+        if (! $reference) {
+            $stats['notes'][] = 'Sandwich 2 Viandes : référence « '.self::SANDWICH2_MEATS_REFERENCE_SLUG.' » introuvable — viandes du Classique gardées.';
+
+            return 0;
+        }
+
+        $count = 0;
+        foreach ([$viande1, $viande2] as $attribute) {
+            $meats = ItemVariation::query()
+                ->where('item_id', $reference->id)->where('item_attribute_id', $attribute->id)
+                ->where('status', Status::ACTIVE)->whereNull('deleted_at')->orderBy('id')->get();
+            foreach ($meats as $row) {
+                $count += self::ensureVariation($targetId, (int) $attribute->id, $row, $dryRun);
+
+                $mine = ItemVariation::query()
+                    ->where('item_id', $targetId)->where('item_attribute_id', $attribute->id)
+                    ->where('name', $row->name)->whereNull('deleted_at')->first();
+                if ($mine && ! $dryRun && json_encode($mine->visible_on) !== json_encode($row->visible_on)) {
+                    $mine->forceFill(['visible_on' => $row->visible_on])->save();
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
     }
 
     private static function ensureVariation(int $itemId, int $attributeId, ItemVariation $row, bool $dryRun): int
