@@ -485,17 +485,6 @@ image-slot {
   font-size: 32px;
   line-height: .86;
 }
-.lc-home__hero-copy p {
-  max-width: 160px;
-  margin: 0;
-  color: rgba(255,255,255,.82);
-  font-size: 10.5px;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 .lc-home__hero-cta {
   min-height: 40px;
   display: inline-flex;
@@ -606,9 +595,9 @@ image-slot {
 .lc-home__category:active img { transform: scale(1.05); }
 .lc-home__category > span { display: block; overflow: hidden; margin: 8px 2px 0; font-size: 10px; font-weight: 800; letter-spacing: .045em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .lc-home__category > svg { position: absolute; right: 8px; bottom: 9px; color: var(--orange-text); }
-.lc-home__rail { display: flex; gap: 12px; overflow-x: auto; padding: 0 20px 4px; scrollbar-width: none; }
+.lc-home__rail { display: flex; gap: 12px; overflow-x: auto; padding: 0 20px 10px; scrollbar-width: none; scroll-snap-type: x proximity; scroll-padding-inline: 20px; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 .lc-home__rail::-webkit-scrollbar { display: none; }
-.lc-home__product { flex: 0 0 156px; cursor: pointer; }
+.lc-home__product { flex: 0 0 156px; cursor: pointer; scroll-snap-align: start; }
 .lc-home__product { padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; font: inherit; }
 .lc-home__product-art {
   position: relative;
@@ -652,8 +641,10 @@ image-slot {
 
 @media (max-width: 360px) {
   .lc-home__hero-copy h2 { font-size: 28px; }
-  .lc-home__hero-copy p { max-width: 145px; }
   .lc-home__product { flex-basis: 145px; }
   .lc-home__product-art { height: 145px; }
   .lc-home__new-art { height: 142px; }
 }
+
+/* [OWNER 2026-11-11] « Tacos XL pour les gourmands » dans les meilleures ventes. */
+.lc-home__product-note { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: var(--orange); }

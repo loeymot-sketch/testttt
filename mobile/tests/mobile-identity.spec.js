@@ -24,7 +24,8 @@ assert.ok(menu, 'mobile catalog is available');
 assert.equal(menu.branch.phone, '0365678291', 'canonical branch phone is stored in menu data');
 assert.equal(
   sha256(JSON.stringify(menu, (key, value) => ['image', 'hero', 'phone'].includes(key) ? undefined : value)),
-  'dba1d13ba410398c0429ad164d937e28cffb91336cf176b0d384c20b313ae91d',
+  // [OWNER 2026-11-11] carte mise à jour : 5 Tenders, Sandwich 2 Viandes, libellés « frais » / « base fromage ».
+  '785aa5dc4ff1ab13e5a8dabcd0baad6b12c403cf907013456b591e31ec729edb',
   'catalog business data is unchanged apart from visual paths and branch phone',
 );
 

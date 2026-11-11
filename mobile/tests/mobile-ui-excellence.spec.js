@@ -10,6 +10,7 @@ const itemStepsSource = fs.readFileSync(path.join(root, 'screens-item-steps.jsx'
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 const menu = fs.readFileSync(path.join(root, 'data/menu.js'), 'utf8');
+const onboarding = fs.readFileSync(path.join(root, 'screens-onboarding.jsx'), 'utf8');
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const homeStart = homeSource.indexOf('function ScreenHome');
 const homeEnd = homeSource.indexOf('// MENU', homeStart);
@@ -42,6 +43,18 @@ assert.match(home, /it\.price\.toFixed/, 'card prices come from catalog data');
 assert.match(home, /onClick=\{\(\) => go\('menu'/, 'category and see-all navigation remains wired');
 assert.match(home, /href=\{branchPhoneInfo\(\)\.href/, 'branch phone remains callable');
 assert.match(home, /const currentItems = window\.LC\.menu\.items \|\| \[\]/, 'home reads the current catalog instead of the legacy copy');
+assert.match(homeSource, /const OWNER_BESTSELLER_SLUGS = Object\.freeze\(\[\s*'cayenne',\s*'tacos-l',\s*'terminator',\s*'grill-burger',\s*'big-burger',\s*'bol-frites',\s*'tacos-xl',\s*\]\)/, 'owner bestseller order is explicit and stable');
+assert.match(home, /const featured = currentItems\.find\(item => item\.slug === 'cayenne'\)/, 'Cayenne is the home hero when published');
+assert.match(home, /OWNER_BESTSELLER_SLUGS[\s\S]*?\.map\(slug => currentItems\.find\(item => item\.slug === slug\)\)[\s\S]*?\.filter\(Boolean\)/, 'bestseller rail only renders catalog-published products in owner order');
+assert.doesNotMatch(home, /<p>\{featured\.description\}<\/p>/, 'hero product card does not show a description');
+assert.match(home, /className="lc-home__rail" role="list" aria-label="Meilleures ventes"/, 'bestseller rail has an accessible list label');
+assert.match(styles, /\.lc-home__rail\s*\{[^}]*scroll-snap-type:\s*x proximity;[^}]*-webkit-overflow-scrolling:\s*touch;/, 'bestseller rail stays tactile and scroll-snapped');
+for (const asset of ['onboarding-lecayenne-source-20261111.png', 'tenders-5-20261111.png']) {
+  assert.ok(fs.existsSync(path.join(root, 'assets/menu', asset)), `generated mobile asset exists: ${asset}`);
+}
+assert.match(onboarding, /assets\/menu\/onboarding-lecayenne-source-20261111\.png/g, 'all onboarding teasers use the owner-supplied Le Cayenne food source');
+assert.doesNotMatch(onboarding, /onboarding-cayenne-20261111|onboarding-tacos-l-20261111|onboarding-pickup-20261111|onboarding-loyalty-20261111/, 'rejected generated food imagery is not wired into onboarding');
+assert.doesNotMatch(onboarding, /5 Tenders|5,00\s*€|2 viandes incluses|347\s*PTS|500\s*pts|1000\s*pts|#FK-12345/, 'onboarding introduces no catalog rule or invented loyalty data');
 assert.match(home, /const newItems = \[[\s\S]*currentItems\.filter\(i => i\.is_new \|\| \(i\.tags \|\| \[\]\)\.includes\('NOUVEAU'\)\)[\s\S]*currentItems\.filter\(i => \(i\.tags \|\| \[\]\)\.includes\('TOP'\)\)[\s\S]*\.slice\(0, 4\)/, 'Nouveautés prioritizes is_new/NOUVEAU and keeps TOP fallback capped at four');
 assert.match(menu, /mkItem\(503,\s*'tacos-xl'[\s\S]*?is_new:\s*true/, 'catalog marks Tacos XL as a new arrival');
 

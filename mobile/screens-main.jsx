@@ -154,6 +154,19 @@ function AllergenDisclosure({ allergens, size = 'sm' }) {
 const AllergenBadge = AllergenDisclosure;
 
 // HOME
+// The owner-curated presentation order is deliberately a slug list: it only
+// orders products already published by the loaded catalogue and never creates
+// a mobile-only product, price, option, or composition rule.
+const OWNER_BESTSELLER_SLUGS = Object.freeze([
+  'cayenne',
+  'tacos-l',
+  'terminator',
+  'grill-burger',
+  'big-burger',
+  'bol-frites',
+  'tacos-xl',
+]);
+
 // [GOAL-SYNC 2026-07-08] Plus de « Ikyes B. » hardcodé : avatar + aria-label dérivés du prop
 // name (posé par index.html depuis le profil réel / storage). Fallback neutre FR si absent.
 function ScreenHome({ go, name = '' }) {
@@ -162,11 +175,13 @@ function ScreenHome({ go, name = '' }) {
   const avatarInitial = (safeName ? safeName.charAt(0) : 'C').toUpperCase();
   const greeting = (new Date().getHours() < 20 && new Date().getHours() >= 5) ? 'Bonjour' : 'Bonsoir';
   const currentItems = window.LC.menu.items || [];
-  const featured = currentItems.find(item => item.slug === 'tacos-l') || currentItems[0];
+  const featured = currentItems.find(item => item.slug === 'cayenne') || currentItems[0];
   const featuredLines = featured ? featured.name.toUpperCase().split(' ') : ['LE', 'CAYENNE'];
   const featuredTop = featuredLines.slice(0, 2).join(' ');
   const featuredBottom = featuredLines.slice(2).join(' ');
-  const featuredItems = currentItems.filter(i => i.is_featured).slice(0, 4);
+  const featuredItems = OWNER_BESTSELLER_SLUGS
+    .map(slug => currentItems.find(item => item.slug === slug))
+    .filter(Boolean);
   const newItems = [
     ...currentItems.filter(i => i.is_new || (i.tags || []).includes('NOUVEAU')),
     ...currentItems.filter(i => (i.tags || []).includes('TOP')),
@@ -199,7 +214,6 @@ function ScreenHome({ go, name = '' }) {
               <div className="lc-home__hero-copy">
                 <span className="lc-pill lc-pill--yellow">Signature du Cayenne</span>
                 <h2 className="lc-display">{featuredTop}<br/>{featuredBottom}</h2>
-                <p>{featured.description}</p>
                 <span className="lc-home__hero-cta">Commander <I.Arrow size={15} stroke="var(--yellow)"/></span>
               </div>
               <div className="lc-home__hero-art">
@@ -225,12 +239,12 @@ function ScreenHome({ go, name = '' }) {
         </section>
 
         <section className="lc-home__section" aria-labelledby="favourites-title">
-          <div className="lc-home__section-head"><div><p className="lc-eyebrow">Sélection de la semaine</p><h2 id="favourites-title" className="lc-display">Les envies du moment</h2></div><button type="button" onClick={() => go('menu')} className="lc-home__see-all">Voir tout <I.Arrow size={13}/></button></div>
-          <div className="lc-home__rail">
+          <div className="lc-home__section-head"><div><p className="lc-eyebrow">Les préférés de nos clients</p><h2 id="favourites-title" className="lc-display">Nos meilleures ventes</h2></div><button type="button" onClick={() => go('menu')} className="lc-home__see-all">Voir tout <I.Arrow size={13}/></button></div>
+          <div className="lc-home__rail" role="list" aria-label="Meilleures ventes">
             {featuredItems.map(it => (
-              <button type="button" key={it.id} aria-label={`Voir ${it.name}`} className="lc-home__product lc-tap" onClick={() => go('item', it.id)}>
+              <button type="button" key={it.id} role="listitem" aria-label={`Voir ${it.name}`} className="lc-home__product lc-tap" onClick={() => go('item', it.id)}>
                 <div className="lc-home__product-art"><Slot id={it.thumb} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>{it.tags[0] && <Tag t={it.tags[0]}/>}</div>
-                <div className="lc-home__product-meta"><strong>{it.name}</strong><span>{it.price.toFixed(2).replace('.', ',')} €</span></div>
+                <div className="lc-home__product-meta"><strong>{it.name}</strong>{it.slug === 'tacos-xl' && <em className="lc-home__product-note">Pour les gourmands</em>}<span>{it.price.toFixed(2).replace('.', ',')} €</span></div>
               </button>
             ))}
           </div>

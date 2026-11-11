@@ -72,8 +72,9 @@ function verify(label, file) {
   check(!!bouleG && bouleG.galette_only === true, 'Boule gratinée galette_only');
   // Canon owner 2026-08-24 adds Tacos XL: 17 items with extra meat.
   const sandwichs = items.filter(i => i.category_id === 1);
-  check(sandwichs.length === 4 && sandwichs.every(s => s.has_pain_choice === true), '4 sandwichs has_pain_choice');
-  check(items.filter(i => i.has_extra_meat === true).length === 17, '17 items has_extra_meat (4 sandwichs + 2 galettes + 6 burgers + 3 tacos + 2 bols)');
+  // [OWNER 2026-11-11] + Sandwich 2 Viandes (9 €) : 5 sandwichs, 18 produits à viande en plus, 41 produits, 10 catégories (Tenders).
+  check(sandwichs.length === 5 && sandwichs.every(s => s.has_pain_choice === true), '5 sandwichs has_pain_choice');
+  check(items.filter(i => i.has_extra_meat === true).length === 18, '18 items has_extra_meat (5 sandwichs + 2 galettes + 6 burgers + 3 tacos + 2 bols)');
   // Tacos M/L : crudités restaurées (REVERT 05e5cacd0)
   check(byName('Tacos M') && byName('Tacos M').has_crudites === true, 'Tacos M has_crudites (revert crudités)');
   check(byName('Tacos L') && byName('Tacos L').has_crudites === true, 'Tacos L has_crudites (revert crudités)');
@@ -184,8 +185,8 @@ function verify(label, file) {
   check(typeof M.priceForDrinkAddon === 'function' && M.priceForDrinkAddon('d-coca') === 1.90, 'priceForDrinkAddon coca = 1,90€');
 
   // 38 historical mirror items + owner-approved Tacos XL (2026-08-24).
-  check(items.length === 39, '39 items mirror (got ' + items.length + ')');
-  check(M.categories.length === 9, '9 catégories (got ' + M.categories.length + ')');
+  check(items.length === 41, '41 items mirror (got ' + items.length + ')');
+  check(M.categories.length === 10, '10 catégories (got ' + M.categories.length + ')');
 
   console.log('  -> ' + items.length + ' produits, ' + M.categories.length + ' catégories');
 }

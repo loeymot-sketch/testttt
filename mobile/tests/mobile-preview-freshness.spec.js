@@ -9,12 +9,14 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 // from the production resource manifest below.
 const productionHtml = html.replace(/document\.write\('[\s\S]*?'\);/, '');
 const VERSION = 'v=20261016';
+// [OWNER 2026-11-11] accueil (meilleures ventes), onboarding et carte (5 Tenders, Sandwich 2 Viandes) re-versionnés.
 const VERSION_BY_RESOURCE = new Map([
-  ['styles.css', 'v=20261018-r1'],
+  ['screens-onboarding.jsx', 'v=20261111-r1'],
+  ['styles.css', 'v=20261111-r1'],
   ['redesigns-styles.css', 'v=20261016-r2'],
   ['api/client.js', 'v=20261016-r1'],
-  ['data/menu.js', 'v=20261018-r1'],
-  ['screens-main.jsx', 'v=20261018-r1'],
+  ['data/menu.js', 'v=20261111-r1'],
+  ['screens-main.jsx', 'v=20261111-r1'],
   ['screens-item-steps.jsx', 'v=20261018-r1'],
   ['screens-modals.jsx', 'v=20261016-r1'],
 ]);

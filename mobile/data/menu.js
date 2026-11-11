@@ -76,6 +76,9 @@
     'supreme':     'sandwich-supreme.png',
     'mega':        'sandwich-mega.png',
     'terminator':  'sandwich-terminator.png',
+    // [OWNER 2026-11-11] nouveaux produits de la carte (backend : php artisan menu:owner-2026-11-11)
+    'sandwich-2-viandes': 'sandwich-classique.png',
+    'tenders-5':   'tenders-5-20261111.png',
     // Galette (cat 2)
     'galette-normale': 'galette.png',
     'galette-cayenne': 'galette.png',
@@ -302,6 +305,8 @@
     { id: 7,  slug: 'frites',       name: 'Frites',      icon: '🍟', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
     { id: 9,  slug: 'desserts',     name: 'Desserts',    icon: '🍰', sort: 7,  wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands',                             image: ASSET_BASE + 'cat-desserts.png' },
     { id: 10, slug: 'boissons',     name: 'Boissons',    icon: '🥤', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches',                              image: ASSET_BASE + 'cat-boissons.png' },
+    // [OWNER 2026-11-11] Catégorie « Tenders » (5 Tenders à 5 €), comme sur la caisse, la borne et le site.
+    { id: 12, slug: 'tenders',      name: 'Tenders',     icon: '🍗', sort: 7,  wizard_template: 'simple',   has_menu: false, description: 'Tenders de poulet croustillants', image: ASSET_BASE + 'tenders-5-20261111.png' },
     { id: 11, slug: 'menu-enfant',  name: 'Menu enfant', icon: '🧒', sort: 9,  wizard_template: 'simple',   has_menu: false, description: 'Menu enfant : Nuggets ou Burger + frites + Capri-Sun', image: ASSET_BASE + 'cat-menu-enfant.png' },
   ];
 
@@ -418,12 +423,12 @@
   //   maison » (sauce_default, canon attr 5 complet) — sauce_locked retiré ; is_spicy:false (canon). ======
   const SANDWICHS = [
     mkItem(101, 'cayenne', 1, 'Cayenne', 7.40,
-      'Poulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Sauce fromagère maison',
+      'Poulet mariné · Cheddar · Jambon · Oignons rouges · Tomates · Salade · Base fromage et crème fraîche',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
         sauce_default: 'Sauce fromagère maison', has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', time: 10 }),
     mkItem(102, 'supreme', 1, 'Suprême', 7.00,
-      'Steak haché · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix',
+      'Steak haché frais · Cordon bleu · Cheddar · Oignons rouges · Tomates · Salade · Sauce au choix',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true,
         has_pain_choice: true, has_extra_meat: true, time: 10, emoji: '🥖' }),
     mkItem(103, 'mega', 1, 'Méga', 8.00,
@@ -436,6 +441,12 @@
       { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
         has_pain_choice: true, has_extra_meat: true,
         is_featured: true, tags: ['XL'], time: 12, emoji: '🥖' }),
+    // [OWNER 2026-11-11] « le sandwich classique … en deux viandes, 9 euros » — deux viandes comprises.
+    mkItem(105, 'sandwich-2-viandes', 1, 'Sandwich 2 Viandes', 9.00,
+      '2 viandes au choix · Crudités · Sauces au choix',
+      { viandes: 2, has_crudites: true, has_menu_addon: true, has_sauce: true,
+        has_pain_choice: true, has_extra_meat: true, is_new: true,
+        tags: ['NOUVEAU'], time: 10, emoji: '🥖' }),
   ];
 
   // ====== GALETTE (cat 2) — conservée (gate owner) ; 7 viandes + 12 sauces (pools partagés). ======
@@ -456,19 +467,19 @@
       'Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 10 }),
     mkItem(402, 'cheese-burger', 4, 'Cheese Burger', 6.00,
-      'Steak · Cheddar · Salade · Tomate · Oignon · Sauce',
+      'Steak haché frais · Cheddar · Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 10 }),
     mkItem(403, 'double-cheese', 4, 'Double Cheese', 7.00,
-      '2 steaks · 2 cheddars · Salade · Tomate · Oignon · Sauce',
+      '2 steaks hachés frais · 2 cheddars · Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, is_featured: true, emoji: '🍔', time: 11 }),
     mkItem(404, 'fish-burger', 4, 'Fish Burger', 6.00,
       'Poisson pané · Cheddar · Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🐟', time: 10 }),
     mkItem(405, 'big-burger', 4, 'Big Burger', 9.00,
-      '3 steaks · 3 cheddars · 2 jambons de dinde · Salade · Tomate · Oignon · Sauce',
+      '3 steaks hachés frais · 3 cheddars · 2 jambons de dinde · Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, is_featured: true, tags: ['XL'], emoji: '🍔', time: 13 }),
     mkItem(406, 'grill-burger', 4, 'Grill Burger', 8.00,
-      '2 steaks · 2 cheddars · Jambon de dinde · Salade · Tomate · Oignon · Sauce',
+      '2 steaks hachés frais · 2 cheddars · Jambon de dinde · Salade · Tomate · Oignon · Sauce',
       { viandes: 0, has_crudites: true, has_menu_addon: true, has_sauce: true, has_extra_meat: true, emoji: '🍔', time: 12 }),
   ];
 
@@ -565,9 +576,16 @@
   //   « Frites Cheddar » canoniques restent servis par le wizard frites_style —
   //   divergence STRUCTURELLE ACCEPTÉE, prix atteignables au centime, cf. CONTRACTS.md §5)
   // -------------------------------------------------------------------------
+  // [OWNER 2026-11-11] « 5 Tenders pour 5 euros … juste les tenders » : ni sauce, ni accompagnement.
+  const TENDERS = [
+    mkItem(1201, 'tenders-5', 12, '5 Tenders', 5.00, '5 tenders de poulet croustillants',
+      { has_sauce: false, has_crudites: false, has_supplements: false, has_menu_addon: false, is_new: true,
+        tags: ['NOUVEAU'], time: 6, emoji: '🍗' }),
+  ];
+
   const ITEMS = [
     ...SANDWICHS, ...GALETTE, ...BURGERS, ...TACOS,
-    ...BOLS, ...FRITES, ...DESSERTS, ...DRINKS, ...MENU_ENFANT,
+    ...BOLS, ...FRITES, ...TENDERS, ...DESSERTS, ...DRINKS, ...MENU_ENFANT,
   ];
 
   // -------------------------------------------------------------------------
