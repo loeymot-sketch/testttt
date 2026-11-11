@@ -3,8 +3,9 @@
     <h3 class="kiosk-step-title">{{ $t('kiosk.wizard.step.sauce.title') }}</h3>
 
     <div class="kiosk-sauce-info">
-      <span class="kiosk-sauce-badge">{{ $t('kiosk.wizard.step.sauce.first_free') }}</span>
-      <span v-if="selectedCount > 1" class="kiosk-sauce-extra">
+      <span class="kiosk-sauce-badge">{{ includedBadgeLabel }}</span>
+      <!-- [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] au-delà des sauces offertes -->
+      <span v-if="selectedCount > includedSauceCount" class="kiosk-sauce-extra">
         {{ sauceExtraLine }}
       </span>
     </div>
@@ -73,7 +74,7 @@ import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
 // [QA 2026-09-28 P1-11/P1-65] « Sans sauce » exclusive — voir helpers/sauceExclusive.js.
 import { sauceEntryIsNoSauceOption } from '../../../../helpers/sauceExclusive';
 import { kioskPriceMixin } from '../../../../helpers/kioskFormatPrice';
-import { getKioskExtraSauceUnitPrice } from '../../../../helpers/kioskPricing';
+import { getKioskExtraSauceUnitPrice, getKioskIncludedSauceCount } from '../../../../helpers/kioskPricing';
 import { isVariationAllowedByFilters } from '../../../../helpers/kioskFilters';
 
 export default {
@@ -112,8 +113,18 @@ export default {
     extraSaucePriceLabel() {
       return this.formatPrice(this.extraSaucePrice);
     },
+    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Sauces offertes publiées par le
+    // serveur (`sauce_included`, sandwichs = 2, défaut 1) — même règle que le total et le payload.
+    includedSauceCount() {
+      return getKioskIncludedSauceCount(this.item);
+    },
+    includedBadgeLabel() {
+      const n = this.includedSauceCount;
+      const key = 'kiosk.wizard.step.sauce.included_many';
+      return n > 1 && typeof this.$te === 'function' && this.$te(key) ? this.$t(key, { n }) : this.$t('kiosk.wizard.step.sauce.first_free');
+    },
     sauceExtraLine() {
-      const n = this.selectedCount - 1;
+      const n = this.selectedCount - this.includedSauceCount;
       const price = this.extraSaucePriceLabel;
       return n === 1
         ? this.$t('kiosk.wizard.step.sauce.extra_one', { n, price })
@@ -190,7 +201,8 @@ export default {
     sauceUnitPriceLabel(sauce) {
       const order = this.getSauceOrder(this.sauceKey(sauce));
       if (order <= 0) return '';
-      return order > 1 ? `+${this.extraSaucePriceLabel}` : this.$t('kiosk.wizard.summary.free');
+      // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] positions ≤ sauces offertes → gratuite.
+      return order > this.includedSauceCount ? `+${this.extraSaucePriceLabel}` : this.$t('kiosk.wizard.summary.free');
     },
     selectionKey(sauce) {
       return String(this.sauceKey(sauce));

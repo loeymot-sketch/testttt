@@ -260,6 +260,7 @@ import {
 import { sanitizeKioskCustomerFacingText } from '../../../helpers/kioskDisplayText';
 import {
   calculateKioskRunningTotal,
+  getKioskBilledSauceCount, // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11]
   getKioskMenuAddonPrice,
   normalizeKioskSelectionCount,
 } from '../../../helpers/kioskPricing';
@@ -1997,7 +1998,9 @@ export default {
       // composition_snapshot sous-facturé (risque NF525). Items sans cet extra (frites/bols) →
       // sauce en plus GRATUITE (aucun mécanisme backend) donc display == sealed.
       // @pricing-allowed-block start — signed-off: owner — date: 2026-07-15 (déblocage frozen compo)
-      const extraSauceN = Math.max(0, this.selections.sauceOrder.length - 1);
+      // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] max(0, N − sauce_included) :
+      // « deux sauces offertes » pour les sandwichs (serveur : IncludedSauceCount), 1 ailleurs.
+      const extraSauceN = getKioskBilledSauceCount(item, this.selections.sauceOrder);
       if (extraSauceN > 0) {
         const ssExtra = (item.extras || []).find(e =>
           e && String(e.group_label || '').toLowerCase() === 'sauce' && /suppl/i.test(String(e.name || ''))

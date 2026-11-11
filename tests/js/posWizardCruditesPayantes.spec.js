@@ -29,9 +29,16 @@ function boutonGarniture(wizard, extraId) {
     return wizard.querySelector('.garniture-toggle-btn[data-garniture="c_' + extraId + '"]');
 }
 
-/** Vrai si l'extra apparaît quelque part dans le bac « Suppléments ». */
+/**
+ * Vrai si l'extra apparaît quelque part dans le bac « Suppléments ».
+ * [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] L'ancien sélecteur
+ * `[data-supplement=…]` ne correspondait à AUCUN nœud (le bloc rend
+ * `.supplement-opt[data-type="supplement"][data-key="p_<id>"]`) : ces assertions étaient vertes
+ * par construction, même quand Maïs s'affichait en supplément. Le sélecteur vise désormais le
+ * vrai rendu, et le garde-fou ci-dessous prouve qu'il voit un supplément réel (Cheddar).
+ */
 function estDansSupplements(wizard, extraId) {
-    return Boolean(wizard.querySelector('[data-supplement="p_' + extraId + '"], [data-supplement="' + extraId + '"]'));
+    return Boolean(wizard.querySelector('.supplements-section [data-type="supplement"][data-key="p_' + extraId + '"]'));
 }
 
 function itemAvecCrudites() {
@@ -89,6 +96,19 @@ describe('caisse — les crudités payantes restent des crudités (le groupe fai
         await tick(10);
 
         expect(boutonGarniture(wizard, 80), 'Cheddar (groupe supplement) n\'est pas une crudité').toBeFalsy();
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] l'instrument voit un VRAI supplément
+        // (sinon « absent des suppléments » ne prouverait rien).
+        expect(estDansSupplements(wizard, 80), 'Cheddar est bien rendu dans les suppléments').toBe(true);
+    });
+
+    it('[OWNER 2026-11-11] une crudité payante n\'est pas cochée par défaut et affiche son prix', async () => {
+        const { wizard } = await mountPosWizard({ itemData: itemAvecCrudites() });
+        await tick(10);
+
+        const mais = boutonGarniture(wizard, 70);
+        expect(mais.textContent, 'pas de « ✓ » fantôme (jamais transmis)').not.toMatch(/✓/);
+        expect(mais.textContent).toMatch(/\+0[.,]90/);
+        expect(boutonGarniture(wizard, 52).textContent, 'Salade gratuite reste incluse').toMatch(/✓/);
     });
 
     it('les crudités GRATUITES restent affichées comme avant (non-régression)', async () => {

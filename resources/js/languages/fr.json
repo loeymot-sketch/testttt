@@ -2708,6 +2708,7 @@
                 "sauce": {
                     "title": "Quelle sauce ?",
                     "first_free": "1re sauce gratuite",
+                    "included_many": "{n} sauces offertes",
                     "extra_one": "+{n} sauce supplémentaire ({price})",
                     "extra_many": "+{n} sauces supplémentaires ({price})",
                     "hint": "Sélectionnez au moins une sauce",

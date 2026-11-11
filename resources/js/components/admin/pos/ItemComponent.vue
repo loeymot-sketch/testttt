@@ -1135,9 +1135,14 @@ export default {
                     // frites) et le wizard le reconstruit depuis les sauces NOMMÉES de l'instruction (même règle que
                     // la restauration plus bas). Rechargé, il s'ajoutait à la reconstruction : « Modifier → Valider »
                     // sans rien changer facturait une sauce de plus à chaque fois (10,40 → 10,90 → 11,40).
+                    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Idem pour l'extra GÉNÉRIQUE « Viande supplémentaire » :
+                    // rechargé, sa case du pont partait cochée à l'ANCIENNE quantité ; le wizard ne la re-clique
+                    // que si l'état coché change, donc passer de N à M viandes en plus ne déclenchait jamais
+                    // onWizardBridgeExtra → le serveur facturait N alors que l'écran affichait M. Le wizard la
+                    // reconstruit depuis restore.viandeSupplItems (buildWizardRestorePayload).
                     this.temp.item_extras = normalizeExtraEntries(cartLine.item_extras).filter((e) => {
                         const nom = String(e.name || (this.findExtraById(e.id) || {}).name || '').toLowerCase();
-                        return !nom.includes('sauce suppl');
+                        return !nom.includes('sauce suppl') && !/viande\s*suppl/i.test(nom);
                     });
 
                     _.forEach(cartLine.pos_line_addons || [], (b) => {
@@ -1611,6 +1616,12 @@ export default {
                     if (extraLower.includes('sauce suppl')) {
                         return;
                     }
+                    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] « Viande supplémentaire » n'est pas un supplément à tuile
+                    // (le wizard l'exclut du bloc Suppléments) : restauré en `p_<id>` il était facturé sans
+                    // être visible. Les viandes en plus NOMMÉES sont reconstruites depuis l'instruction plus bas.
+                    if (/viande\s*suppl/i.test(extraLower)) {
+                        return;
+                    }
 
                     // Sauce frites (menu)
                     if (extraLower.includes('sauce') && (extraLower.includes('frites') || extraLower.includes('frite'))) {
@@ -1660,7 +1671,10 @@ export default {
                         }
                     }
                     // Garnitures gratuites (tomate, oignon, salade, etc.)
-                    else if (isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon')) {
+                    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] + crudités PAYANTES (groupe 'crudite', ex. Maïs 0,90 €) :
+                    // le wizard les rend dans le bloc Crudités (opt-in) — restaurées en `p_<id>` elles étaient
+                    // facturées mais invisibles, et les recocher les aurait facturées deux fois.
+                    else if (isFree || String(extra.group_label || '').toLowerCase() === 'crudite' || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon')) {
                         restore.garnitures['c_' + extra.id] = true;
                     }
                     // Supplément payant
@@ -1708,7 +1722,8 @@ export default {
                     // exactement ce qui a produit le défaut de facturation d'origine.
                     if (extraLower.includes('cheddar') && extraLower.includes('fondu')) return;
                     if (extraLower.includes('sauce')) return;
-                    const isGarniture = isFree || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon');
+                    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] miroir exact du classement ci-dessus (groupe 'crudite').
+                    const isGarniture = isFree || String(extra.group_label || '').toLowerCase() === 'crudite' || extraLower.includes('tomate') || extraLower.includes('oignon') || extraLower.includes('salade') || extraLower.includes('cornichon');
                     if (!isGarniture) return; // paid supplement not selected — leave unset, not our concern here
                     restore.garnitures[key] = false;
                 });
@@ -1756,6 +1771,37 @@ export default {
                     if (!restore.sauceSingle && restore.sauceOrder.length > 0) {
                         restore.sauceSingle = Number(String(restore.sauceOrder[0]).replace(/^s_/, ''));
                     }
+                }
+            }
+
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Viandes EN PLUS : l'extra générique « Viande supplémentaire »
+            // ne porte que la quantité, pas les viandes. L'instruction immuable a la ligne nommée
+            // « Viandes en plus : 2× Kefta, Poulet mariné » (pos-wizard.js, buildTicketInstruction) :
+            // on reconstruit `viandeSupplItems` = { 'v_<id canonique>': n } — la forme que lit le wizard
+            // (tuiles viande dédoublonnées par nom, cf. posViandeCanonique). Sans cela, rouvrir une ligne
+            // perdait les viandes en plus (ou les facturait à l'ancienne quantité).
+            if (cartLine.instruction) {
+                const viandesEnPlus = String(cartLine.instruction).match(/Viandes en plus\s*:\s*([^\n]+)/i);
+                if (viandesEnPlus) {
+                    const nomsViande = {};
+                    (item.itemAttributes || []).forEach((attribute) => {
+                        const n = String((attribute && attribute.name) || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                        if (!(n.includes('viande') || n.includes('meat'))) return;
+                        ((item.variations && item.variations[attribute.id]) || []).forEach((variation) => {
+                            const cle = String((variation && variation.name) || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                            if (cle && !nomsViande[cle]) nomsViande[cle] = variation;
+                        });
+                    });
+                    viandesEnPlus[1].split(',').map((part) => part.trim()).filter(Boolean).forEach((part) => {
+                        const m = part.match(/^(\d+)\s*[×x]\s*(.+)$/i);
+                        const quantite = m ? parseInt(m[1], 10) : 1;
+                        const nom = (m ? m[2] : part).trim();
+                        const cle = nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                        const variation = nomsViande[cle];
+                        if (!variation || !(quantite > 0)) return;
+                        const key = 'v_' + idViandeCanonique(item, variation.name, variation.id);
+                        restore.viandeSupplItems[key] = (restore.viandeSupplItems[key] || 0) + quantite;
+                    });
                 }
             }
 
@@ -1916,6 +1962,24 @@ export default {
             }
             var mainLineTotal = Math.max(0, effectiveLineTotal - addonTotal * (addonsParUnite ? quantity : 1)) + surchargeSaucesFrites;
             var mainUnitTotal = quantity > 0 ? (mainLineTotal / quantity) : 0;
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Un extra DEMANDÉ (quantité > 0)
+            // mais indisponible (rupture survenue pendant la saisie) était retiré EN SILENCE plus bas : le
+            // caissier croyait l'avoir vendu, la cuisine ne le recevait pas. Il reste retiré (on ne vend pas
+            // une rupture) mais le caissier est prévenu, nommément.
+            var extrasRetires = normalizeExtraEntries(this.temp.item_extras)
+                .filter((entry) => normalizeQuantity(entry.quantity, 1) > 0)
+                .filter((entry) => {
+                    const extra = this.findExtraById(entry.id);
+                    return !extra || this.isModifierUnavailable(extra);
+                })
+                .map((entry) => entry.name || ((this.findExtraById(entry.id) || {}).name) || ('#' + entry.id));
+            if (extrasRetires.length > 0) {
+                try {
+                    alertService.error('Indisponible, retiré de la ligne : ' + extrasRetires.join(', ') + '. Vérifiez le total.');
+                } catch (e) {
+                    console.warn('[POS] extras indisponibles retirés :', extrasRetires);
+                }
+            }
             var adjustedBaseConvertPrice = Math.max(
                 0,
                 mainUnitTotal - (parseFloat(this.temp.item_variation_total) || 0) - (parseFloat(this.temp.item_extra_total) || 0)

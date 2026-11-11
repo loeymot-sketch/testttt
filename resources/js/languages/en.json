@@ -2635,6 +2635,7 @@
                 "sauce": {
                     "title": "Choose your sauce",
                     "first_free": "1st sauce free",
+                    "included_many": "{n} sauces included",
                     "extra_one": "+{n} extra sauce ({price})",
                     "extra_many": "+{n} extra sauces ({price})",
                     "hint": "Select at least one sauce",

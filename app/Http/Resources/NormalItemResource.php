@@ -10,6 +10,7 @@ use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Stock\ChoiceAvailabilityResolver;
 use App\Support\Menu\IncludedMeatCount;
+use App\Support\Menu\IncludedSauceCount;
 use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -106,6 +107,8 @@ class NormalItemResource extends JsonResource
 
         return [
             "viande_count" => $viandeCount,
+            // [OWNER 2026-11-11] Sauces offertes (sandwichs : 2). Voir IncludedSauceCount.
+            "sauce_included" => IncludedSauceCount::forItem($this->resource),
             "id" => $this->id,
             "name" => $this->name,
             "category_name" => optional($this->category)->name,

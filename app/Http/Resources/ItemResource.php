@@ -12,6 +12,7 @@ use App\Services\Stock\ChoiceAvailabilityResolver;
 use App\Support\Menu\SauceCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Support\Menu\IncludedSauceCount;
 
 class ItemResource extends JsonResource
 {
@@ -78,6 +79,8 @@ class ItemResource extends JsonResource
             "id"               => $this->id,
             "name"             => $this->name,
             "slug"             => $this->slug,
+            // [OWNER 2026-11-11] Sauces offertes (sandwichs : 2) — lu par le wizard caisse. Voir IncludedSauceCount.
+            "sauce_included"   => IncludedSauceCount::forItem($this->resource),
             "item_category_id" => $this->item_category_id,
             "tax_id"           => $this->tax_id,
             "flat_price"       => AppLibrary::flatAmountFormat($this->price),

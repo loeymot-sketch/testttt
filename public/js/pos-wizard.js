@@ -94,6 +94,21 @@
     var _cfg = window.POS_WIZARD_CONFIG || {};
     var SAUCE_EXTRA_PRICE    = typeof _cfg.sauceExtraPrice   === 'number' ? _cfg.sauceExtraPrice   : 0.50;
 
+    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] « Deux sauces offertes » sur un
+    // sandwich : le nombre de sauces PRODUIT offertes vient du serveur (`sauce_included`, publié par
+    // ItemResource depuis config/pos_sauces.php 'included' — 2 pour « Sandwichs », 1 ailleurs). Absent
+    // ou invalide → 1 (l'ancienne règle « 1ère gratuite »). Les sauces FRITES ne sont pas concernées :
+    // elles gardent 1 offerte puis payantes. Seules les sauces au-delà des offertes passent par l'extra
+    // « Sauce supplémentaire » (prix de la base, facturé par le serveur).
+    function sauceIncludedCount() {
+        var n = Number(lastItemData && lastItemData.sauce_included);
+        return (Number.isInteger(n) && n >= 1) ? n : 1;
+    }
+    /** Nombre de sauces PRODUIT facturées pour `count` sauces choisies : max(0, count − offertes). */
+    function sauceExtraCount(count) {
+        return Math.max(0, (parseInt(count, 10) || 0) - sauceIncludedCount());
+    }
+
     /* ==============================
        CATALOGUE SAUCES — couleur + emoji (SSOT serveur)
        ==============================
@@ -185,8 +200,11 @@
         h += '<span class="sauce-chip__label">' + sauce.name + '</span>';
         // Les deux pastilles sont TOUJOURS présentes dans le DOM : updateSinglePageState
         // se contente de basculer leur `display`, il ne sait pas les créer.
-        h += '<span class="chip-free"' + (idx === 0 ? '' : ' style="display:none"') + '>offerte</span>';
-        h += '<span class="chip-paid"' + (idx > 0 ? '' : ' style="display:none"') + '>+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>';
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] sauces produit : les
+        // `sauceIncludedCount()` premières sont offertes ; sauces frites : la 1ère seule.
+        var freeSlots = type === 'sauce' ? sauceIncludedCount() : 1;
+        h += '<span class="chip-free"' + (idx >= 0 && idx < freeSlots ? '' : ' style="display:none"') + '>offerte</span>';
+        h += '<span class="chip-paid"' + (idx >= freeSlots ? '' : ' style="display:none"') + '>+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>';
         h += '</button>';
         return h;
     }
@@ -1459,13 +1477,15 @@
         var count = selections.sauceOrder ? selections.sauceOrder.length : 0;
 
         h += '<div class="wizard-sauce-info">';
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] sauces offertes = sauceIncludedCount()
+        var stepFree = sauceIncludedCount();
         if (count === 0) {
             h += '<span class="sauce-badge free">Sélectionnez votre 1ère sauce (gratuite)</span>';
-        } else if (count === 1) {
-            h += '<span class="sauce-badge free">✅ 1 sauce sélectionnée (gratuite)</span>';
+        } else if (count <= stepFree) {
+            h += '<span class="sauce-badge free">✅ ' + count + ' sauce' + (count > 1 ? 's' : '') + ' sélectionnée' + (count > 1 ? 's (offertes)' : ' (gratuite)') + '</span>';
         } else {
-            var extraCost = (count - 1) * SAUCE_EXTRA_PRICE;
-            h += '<span class="sauce-badge paid">' + count + ' sauces — ' + (count - 1) + ' supplém. = +' + fmtPrice(extraCost) + '</span>';
+            var extraCost = sauceExtraCount(count) * SAUCE_EXTRA_PRICE;
+            h += '<span class="sauce-badge paid">' + count + ' sauces — ' + sauceExtraCount(count) + ' supplém. = +' + fmtPrice(extraCost) + '</span>';
         }
         h += '</div>';
 
@@ -1479,12 +1499,13 @@
             var sel = selections.sauces && selections.sauces[sauce.id] ? ' selected' : '';
             var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(sauce.id) : -1;
             var priceLabel = '';
-            if (idx === 0) {
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] rang < offertes → gratuit ; au-delà → +0,50 €
+            if (idx >= 0 && idx < stepFree) {
                 priceLabel = '<span class="option-price free">Gratuit</span>';
-            } else if (idx > 0) {
+            } else if (idx >= stepFree) {
                 priceLabel = '<span class="option-price paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>';
             } else {
-                priceLabel = '<span class="option-price">' + (count === 0 ? 'Gratuit' : '+' + fmtPrice(SAUCE_EXTRA_PRICE)) + '</span>';
+                priceLabel = '<span class="option-price">' + (count < stepFree ? 'Gratuit' : '+' + fmtPrice(SAUCE_EXTRA_PRICE)) + '</span>';
             }
 
             var hiddenClass = (hasMoreSauces && index >= limit) ? ' hidden-opt' : '';
@@ -1514,15 +1535,28 @@
                 : parseFloat(lastItemData.convert_price) || 0;
         }
         var extra = 0;
-        // Extra sauces (+€0.50 each after 1st)
-        if (selections.sauceOrder && selections.sauceOrder.length > 1) {
-            extra += (selections.sauceOrder.length - 1) * SAUCE_EXTRA_PRICE;
+        // Extra sauces (+€0.50 each after the included ones)
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] max(0, N − sauceIncludedCount()) : 2 offertes sur un sandwich.
+        if (selections.sauceOrder && selections.sauceOrder.length > 0) {
+            extra += sauceExtraCount(selections.sauceOrder.length) * SAUCE_EXTRA_PRICE;
         }
         // Supplements — [S25] Use 'p_' + extra.id key format from lastItemData.extras
         if (selections.supplements && lastItemData && lastItemData.extras) {
             lastItemData.extras.forEach(function (extra_item) {
                 var key = 'p_' + extra_item.id;
                 if (selections.supplements[key]) {
+                    extra += parseFloat(extra_item.convert_price) || 0;
+                }
+            });
+        }
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Crudités PAYANTES (groupe
+        // 'crudite', ex. Maïs/Olives/Poivrons cuits 0,90 €) : opt-in, comptées seulement si cochées —
+        // exactement ce que syncAndSubmit transmet (le serveur les facture au même prix).
+        if (selections.garnitures && lastItemData && lastItemData.extras) {
+            lastItemData.extras.forEach(function (extra_item) {
+                if (!isPaidCruditeExtra(extra_item)) return;
+                if (selections.supplements && selections.supplements['p_' + extra_item.id]) return; // déjà compté
+                if (selections.garnitures['c_' + extra_item.id] === true) {
                     extra += parseFloat(extra_item.convert_price) || 0;
                 }
             });
@@ -2993,6 +3027,15 @@
                 if (cVal === false || numVal === false) garnExcluded.push(g.name);
                 else garnIncluded.push(g.name);
             });
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] crudités PAYANTES cochées
+            // (absentes des freeItems des étapes) : listées comme les autres au panier.
+            if (lastItemData && Array.isArray(lastItemData.extras)) {
+                lastItemData.extras.forEach(function (e) {
+                    if (!isPaidCruditeExtra(e)) return;
+                    if (allGarnItems.find(function (x) { return x.id === e.id; })) return;
+                    if (selections.garnitures['c_' + e.id] === true) garnIncluded.push(e.name);
+                });
+            }
             if (garnExcluded.length > 0) lines.push('Sans: ' + garnExcluded.join(', '));
             if (garnIncluded.length > 0) lines.push('Crudités: ' + garnIncluded.join(', '));
         }
@@ -3144,10 +3187,9 @@
                 // extras SANS groupe — sans groupe, il n'y a pas de vérité à préférer.
                 // Aucun prix n'est modifié : ces articles restent facturés par le serveur
                 // et l'étape affiche toujours leur badge « +0,90 € ».
-                var groupe = String(extra.group_label || '').toLowerCase();
-                if (groupe === 'crudite') return true;
-                if (groupe !== '') return false;
-                return extra.convert_price === 0 && isCruditeName(extra.name);
+                // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] règle factorisée dans isCruditeExtra (même
+                // prédicat partout : rendu, défaut, total, sérialisation, ligne cuisine).
+                return isCruditeExtra(extra);
             });
             hasCrudites = crudites.length > 0;
         }
@@ -3175,6 +3217,9 @@
                 // générique : elle est gérée par les tuiles viande (clic au-delà de l'inclus). Évite
                 // la double exposition + le supplément viande anonyme.
                 if (/viande\s*suppl/.test(nn)) return false;
+                // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] une crudité PAYANTE (groupe 'crudite') est rendue
+                // dans le bloc Crudités avec son prix : jamais une 2e fois en « Suppléments ».
+                if (isCruditeExtra(extra)) return false;
                 return extra.convert_price > 0 || isSupplementName(extra.name);
             });
             // [OWNER 2026-10-21] Les suppléments « recommandés » en tête (ordre d'origine conservé dans chaque groupe).
@@ -3189,12 +3234,14 @@
             var sh = '<div class="wizard-2col-block sauce-section">';
             sh += '<div class="section-header">';
             sh += '<h4>🥄 Sauce</h4>';
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] badge selon les sauces OFFERTES (2 sur un sandwich).
+            var sauceFree = sauceIncludedCount();
             if (sauceCount === 0) {
-                sh += '<span class="sauce-badge free">1ère gratuite</span>';
-            } else if (sauceCount === 1) {
-                sh += '<span class="sauce-badge free">✅ Gratuite</span>';
+                sh += '<span class="sauce-badge free">' + (sauceFree > 1 ? sauceFree + ' sauces offertes' : '1ère gratuite') + '</span>';
+            } else if (sauceCount <= sauceFree) {
+                sh += '<span class="sauce-badge free">✅ ' + (sauceFree > 1 ? 'Offerte' + (sauceCount > 1 ? 's' : '') : 'Gratuite') + '</span>';
             } else {
-                var extraCost = (sauceCount - 1) * SAUCE_EXTRA_PRICE;
+                var extraCost = sauceExtraCount(sauceCount) * SAUCE_EXTRA_PRICE;
                 sh += '<span class="sauce-badge paid">+' + fmtPrice(extraCost) + '</span>';
             }
             sh += '</div>';
@@ -3352,12 +3399,12 @@
                     // [LOCK_POSWIZARD_KIOSKWIZARD_OWNER8] non-initialisée → défaut name-aware
                     // (crudités classiques incluses, « Oignons cuits » NON inclus)
                     if (!selections.garnitures || selections.garnitures[key] === undefined) {
-                        isIncluded = cruditeDefaultIncluded(c.name);
+                        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] l'extra (pas le nom) : payante → opt-in
+                        isIncluded = cruditeDefaultIncluded(c);
                     }
-                    var stateClass = isIncluded ? ' included' : ' removed';
-                    var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
+                    var stateClass = ' ' + cruditeStateClass(c, isIncluded); // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11]
                     var emoji = getEmoji(GARNITURE_EMOJIS, c.name);
-                    h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + label + '</button>';
+                    h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + cruditeToggleLabel(c, c.name, isIncluded) + '</button>';
                 });
                 h += '</div>';
                 h += '</div>'; // .wizard-2col-block crudites
@@ -3546,20 +3593,71 @@
         return n.includes('oignon') && n.includes('cuit');
     }
 
-    /** true = incluse par défaut (crudités classiques) ; false = opt-in (oignons cuits). */
-    function cruditeDefaultIncluded(name) {
-        return !isCruditeCuitName(name);
+    /**
+     * [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] UNE seule règle « est une
+     * crudité », la même que le bloc Crudités (LOCK_CAISSE_CRUDITES_PAYANTES_2026-09-05) : le GROUPE
+     * `group_label` fait autorité ; le repli prix 0 + nom ne vaut que pour les extras SANS groupe.
+     * Avant, le rendu suivait le groupe mais la sérialisation, la ligne cuisine et le défaut de clic
+     * suivaient encore l'ancienne règle : Maïs/Olives/Poivrons cuits (0,90 €) s'affichaient « ✓ »
+     * sans jamais partir ni s'imprimer.
+     */
+    function isCruditeExtra(extra) {
+        if (!extra) return false;
+        var groupe = String(extra.group_label || '').toLowerCase();
+        if (groupe === 'crudite') return true;
+        if (groupe !== '') return false;
+        return extra.convert_price === 0 && isCruditeName(extra.name);
     }
 
-    /** Variante par clé 'c_<id>' / id : résout le nom depuis lastItemData.extras. */
+    /** Crudité PAYANTE (ex. Maïs 0,90 €) : opt-in, jamais incluse par défaut. */
+    function isPaidCruditeExtra(extra) {
+        return isCruditeExtra(extra) && (parseFloat(extra.convert_price) || 0) > 0;
+    }
+
+    /**
+     * true = incluse par défaut (crudités classiques) ; false = opt-in (oignons cuits, crudités payantes).
+     * [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] accepte le NOM (ancien appel) ou
+     * l'EXTRA (objet) : seul l'objet permet de savoir qu'une crudité est payante.
+     */
+    function cruditeDefaultIncluded(nameOrExtra) {
+        if (nameOrExtra && typeof nameOrExtra === 'object') {
+            if (isPaidCruditeExtra(nameOrExtra)) return false;
+            return !isCruditeCuitName(nameOrExtra.name);
+        }
+        return !isCruditeCuitName(nameOrExtra);
+    }
+
+    /** Variante par clé 'c_<id>' / id : résout l'extra depuis lastItemData.extras. */
     function cruditeDefaultIncludedByKey(garnKey) {
         var m = String(garnKey).match(/(\d+)$/);
         var gid = m ? parseInt(m[1]) : NaN;
         if (!isNaN(gid) && lastItemData && lastItemData.extras) {
             var ex = lastItemData.extras.find(function (e) { return e && e.id === gid; });
-            if (ex) return cruditeDefaultIncluded(ex.name);
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] l'objet, pas le nom
+            if (ex) return cruditeDefaultIncluded(ex);
         }
         return true;
+    }
+
+    /**
+     * [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Libellé d'un bouton crudité. Gratuite : « ✓ Salade » /
+     * « ✕ Sans Salade » (inchangé). Payante : « + Maïs +0,90 € » tant qu'elle n'est pas cochée,
+     * « ✓ Maïs +0,90 € » une fois cochée — le prix est TOUJOURS visible sur le bouton.
+     */
+    function cruditeToggleLabel(extra, name, isIncluded) {
+        if (extra && isPaidCruditeExtra(extra)) {
+            return (isIncluded ? '✓ ' : '+ ') + name
+                + ' <span class="garniture-price">+' + fmtPrice(parseFloat(extra.convert_price) || 0) + '</span>';
+        }
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] crudité au choix (oignons cuits) non choisie : « + Oignons cuits », pas « ✕ Sans … ».
+        if (!isIncluded && extra && !cruditeDefaultIncluded(extra)) return '+ ' + name;
+        return isIncluded ? ('✓ ' + name) : ('✕ Sans ' + name);
+    }
+
+    /** [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Classe d'état d'un bouton crudité : included / optin (au choix, non choisie) / removed. */
+    function cruditeStateClass(extra, isIncluded) {
+        if (isIncluded) return 'included';
+        return (extra && !cruditeDefaultIncluded(extra)) ? 'optin' : 'removed';
     }
 
     /**
@@ -3705,10 +3803,11 @@
             var garnId = btn.getAttribute('data-garniture');
             // Get the crudite name from lastItemData.extras using the 'c_123' key
             var displayName = garnId;
+            var garnExtra = null; // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] l'extra résolu sert au défaut + au prix
             if (lastItemData && lastItemData.extras) {
                 var garnMatch = garnId.match(/_(\d+)$/);
                 if (garnMatch) {
-                    var garnExtra = lastItemData.extras.find(function (e) { return e.id === parseInt(garnMatch[1]); });
+                    garnExtra = lastItemData.extras.find(function (e) { return e.id === parseInt(garnMatch[1]); }) || null;
                     if (garnExtra) displayName = garnExtra.name;
                 }
             }
@@ -3716,28 +3815,32 @@
             // (crudités classiques incluses par défaut ; « Oignons cuits » = opt-in)
             var storedGarn = selections.garnitures ? selections.garnitures[garnId] : undefined;
             var isIncluded = storedGarn === undefined
-                ? cruditeDefaultIncluded(displayName)
+                ? cruditeDefaultIncluded(garnExtra || displayName)
                 : storedGarn !== false;
-            btn.className = 'garniture-toggle-btn ' + (isIncluded ? 'included' : 'removed');
+            btn.className = 'garniture-toggle-btn ' + cruditeStateClass(garnExtra, isIncluded); // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11]
             // [V6 FIX] Use spread to extract first grapheme cluster — charAt(0) returns only the
             // first UTF-16 code unit, leaving a lone surrogate for multi-unit emojis (🥬, 🧅, etc.)
             var emojiChars = Array.from(btn.textContent.trim());
             var emoji = emojiChars.length > 0 ? emojiChars[0] : '';
-            btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + displayName : '✕ Sans ' + displayName);
+            btn.innerHTML = emoji + ' ' + cruditeToggleLabel(garnExtra, displayName, isIncluded);
         });
 
         // Update sauce badges
         var sauceCount = selections.sauceOrder ? selections.sauceOrder.length : 0;
         var sauceBadge = wizardEl.querySelector('.sauce-section .sauce-badge');
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] badge selon les sauces offertes (2 sur un sandwich)
+        var sauceFreeUi = sauceIncludedCount();
         if (sauceBadge) {
             if (sauceCount === 0) {
-                sauceBadge.textContent = '1ère gratuite';
+                sauceBadge.textContent = sauceFreeUi > 1 ? sauceFreeUi + ' sauces offertes' : '1ère gratuite';
                 sauceBadge.className = 'sauce-badge free';
-            } else if (sauceCount === 1) {
-                sauceBadge.textContent = '✅ 1 sauce gratuite';
+            } else if (sauceCount <= sauceFreeUi) {
+                sauceBadge.textContent = sauceFreeUi > 1
+                    ? '✅ ' + sauceCount + ' sauce' + (sauceCount > 1 ? 's offertes' : ' offerte')
+                    : '✅ 1 sauce gratuite';
                 sauceBadge.className = 'sauce-badge free';
             } else {
-                var extraCost = (sauceCount - 1) * SAUCE_EXTRA_PRICE;
+                var extraCost = sauceExtraCount(sauceCount) * SAUCE_EXTRA_PRICE;
                 sauceBadge.textContent = sauceCount + ' sauces = +' + fmtPrice(extraCost);
                 sauceBadge.className = 'sauce-badge paid';
             }
@@ -3756,18 +3859,21 @@
             var priceLabel = opt.querySelector('.option-price');
             if (priceLabel) {
                 var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(sauceId) : -1;
-                if (idx === 0) priceLabel.textContent = 'Gratuit';
-                else if (idx > 0) priceLabel.textContent = '+' + fmtPrice(SAUCE_EXTRA_PRICE);
-                else priceLabel.textContent = sauceCount === 0 ? 'Gratuit' : '+' + fmtPrice(SAUCE_EXTRA_PRICE);
-                priceLabel.className = 'option-price ' + (idx === 0 ? 'free' : (idx > 0 ? 'paid' : ''));
+                // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] rang < offertes → gratuit
+                var isFreeIdx = idx >= 0 && idx < sauceFreeUi;
+                if (isFreeIdx) priceLabel.textContent = 'Gratuit';
+                else if (idx >= sauceFreeUi) priceLabel.textContent = '+' + fmtPrice(SAUCE_EXTRA_PRICE);
+                else priceLabel.textContent = sauceCount < sauceFreeUi ? 'Gratuit' : '+' + fmtPrice(SAUCE_EXTRA_PRICE);
+                priceLabel.className = 'option-price ' + (isFreeIdx ? 'free' : (idx >= sauceFreeUi ? 'paid' : ''));
             }
             // For chips: update inline badge
             var chipPaid = opt.querySelector('.chip-paid');
             var chipFree = opt.querySelector('.chip-free');
             if (chipPaid || chipFree) {
                 var idx2 = selections.sauceOrder ? selections.sauceOrder.indexOf(sauceId) : -1;
-                if (chipPaid) chipPaid.style.display = (idx2 > 0) ? 'inline' : 'none';
-                if (chipFree) chipFree.style.display = (idx2 === 0) ? 'inline' : 'none';
+                // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] les `sauceFreeUi` premières sont « offerte »
+                if (chipPaid) chipPaid.style.display = (idx2 >= sauceFreeUi) ? 'inline' : 'none';
+                if (chipFree) chipFree.style.display = (idx2 >= 0 && idx2 < sauceFreeUi) ? 'inline' : 'none';
             }
         });
 
@@ -3982,8 +4088,10 @@
 
         // Crudités: full names of INCLUDED items (default = all included unless explicitly false)
         if (lastItemData && lastItemData.extras) {
+            // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] même prédicat que le bloc : une crudité payante
+            // cochée (Maïs…) part en cuisine comme les autres.
             var cruditesTkt = lastItemData.extras.filter(function (e) {
-                return e.convert_price === 0 && isCruditeName(e.name);
+                return isCruditeExtra(e);
             });
             if (cruditesTkt.length > 0) {
                 var cruditeNames = [];
@@ -3993,7 +4101,7 @@
                     // (« Oignons cuits » = OFF tant que non coché → jamais listé par défaut)
                     var storedTkt = selections.garnitures ? selections.garnitures[key] : undefined;
                     var isIncluded = storedTkt === undefined
-                        ? cruditeDefaultIncluded(c.name)
+                        ? cruditeDefaultIncluded(c)
                         : storedTkt !== false;
                     if (isIncluded) {
                         cruditeNames.push(c.name);
@@ -4001,7 +4109,9 @@
                 });
                 if (cruditeNames.length > 0) {
                     line1Parts.push('- ' + cruditeNames.join(', '));
-                } else {
+                } else if (cruditesTkt.some(function (c) { return !isPaidCruditeExtra(c); })) {
+                    // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] « Sans crudités » seulement s'il existait des
+                    // crudités offertes à retirer (une crudité payante non cochée n'est pas un retrait).
                     line1Parts.push('- Sans crudités');
                 }
             }
@@ -4235,8 +4345,11 @@
         var extraSauceCheckedIds = {};
         var sauceSupplExtraId = null;
         var sauceSupplQty = 0;
-        if (selections.sauceOrder && selections.sauceOrder.length > 1) {
-            sauceSupplQty = selections.sauceOrder.length - 1;
+        // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] quantité = max(0, N − offertes) :
+        // 2 sauces sur un sandwich (2 offertes) → 0 « Sauce supplémentaire » ; 3 → 1. Les sauces FRITES
+        // d'une formule s'ajoutent côté Vue (ItemComponent.withFritesSauceSupplements, M − 1).
+        if (selections.sauceOrder && sauceExtraCount(selections.sauceOrder.length) > 0) {
+            sauceSupplQty = sauceExtraCount(selections.sauceOrder.length);
             if (lastItemData && Array.isArray(lastItemData.extras)) {
                 var ssExtra = lastItemData.extras.find(function (e) {
                     return e && /sauce\s*suppl/i.test(e.name || '');
@@ -4260,7 +4373,8 @@
         var allCruditeIds = [];
         if (lastItemData && lastItemData.extras) {
             lastItemData.extras.forEach(function (e) {
-                if (e.convert_price === 0 && isCruditeName(e.name)) {
+                // [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] même prédicat que le bloc rendu (groupe d'abord)
+                if (isCruditeExtra(e)) {
                     allCrudites.push(e);
                     allCruditeIds.push(e.id);
                 }
@@ -4282,7 +4396,7 @@
             var key = 'c_' + ce.id;
             var storedSer = selections.garnitures ? selections.garnitures[key] : undefined;
             var isIncluded = storedSer === undefined
-                ? cruditeDefaultIncluded(ce.name)
+                ? cruditeDefaultIncluded(ce)
                 : storedSer !== false;
             if (isIncluded) {
                 allSelectedExtras[ce.id] = true;
@@ -4836,6 +4950,10 @@
                 .garniture-toggle-btn:hover { border-color: #D0D0E0; }
                 .garniture-toggle-btn.included { background: #43C6AC; border-color: #43C6AC; color: white; }
                 .garniture-toggle-btn.removed { background: #E93C3C; border-color: #E93C3C; color: white; }
+                /* [OWNER 2026-11-11 LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11] Crudité AU CHOIX non choisie (oignons cuits, maïs, olives, poivrons cuits) :
+                   neutre, jamais rouge plein — le rouge se lisait « déjà cochée » alors que rien ne partait. */
+                .garniture-toggle-btn.optin { background: white; border: 2px dashed #C9C2B8; color: #1A1A1A; }
+                .garniture-toggle-btn.optin .garniture-price { color: #F4501E; }
 
                 /* [Sprint 25] Viandes supplémentaires — bouton toggle + liste dépliable */
                 .viande-suppl-toggle { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 10px; padding: 9px 14px; border: 2px dashed #E93C3C; border-radius: 10px; background: #FFF5F5; color: #E93C3C; font-size: 13px; font-weight: 700; font-family: 'Rubik', sans-serif; cursor: pointer; transition: all 0.2s; }

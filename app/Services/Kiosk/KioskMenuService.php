@@ -15,6 +15,7 @@ use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Menu\MenuSnapshot;
 use App\Services\Stock\ChoiceAvailabilityResolver;
 use App\Support\Menu\IncludedMeatCount;
+use App\Support\Menu\IncludedSauceCount;
 use App\Support\Menu\RecommendedSupplements;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -348,6 +349,8 @@ final class KioskMenuService
 
             return [
                 'viande_count'       => $viandeCount,
+                // [OWNER 2026-11-11] Sauces offertes (sandwichs : 2). Voir IncludedSauceCount.
+                'sauce_included'     => IncludedSauceCount::resolve((string) $item->name, $categoryNames[(int) $item->item_category_id] ?? null),
                 'id'                 => (int) $item->id,
                 'category_id'        => (int) $item->item_category_id,
                 'item_category_id'   => (int) $item->item_category_id,
