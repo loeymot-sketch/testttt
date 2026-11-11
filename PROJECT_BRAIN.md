@@ -47,6 +47,12 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-11 nuit — CATALOGUE PROPRIÉTAIRE + CAISSE/BORNE/SITE (reprise du travail Codex `wt-app-hybride`). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `0c46978bb`, site = `e6fcaaf`).
+> - Backend (branche `pos/category-first-caisse-2026-06-23`) : `b4f6ef6ca` LOCK `docs/locks/LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11.md` → `e3d4af2d5` (2 sauces offertes sandwichs via `sauce_included` ; crudités payantes fantômes de la caisse ; viande en plus à la modification ; zones gelées pos-wizard.js + KioskWizardComponent.vue, baseline SHA mise à jour) → `cb33cb507` (catalogue : 5 Tenders 5 €, Sandwich 2 Viandes 9 €, Façon Cayenne 1,50 €, libellés ; migration `2026_11_11_040000`).
+> - Site/app : `3a016fa` sur `app/catalogue-distant-2026-11-05` (meilleures ventes, cartes sans description, 2 sauces offertes, Façon Cayenne) ; portes 6/6, unitaires 58/58, `app/www` reconstruit. Prototype `mobile/` : commit sur `feat/app-hybride-2026-11-03`.
+> - Preuves : commande locale 9939 écran 10,80 € = scellé 10,80 €, ticket « MAY KTP / + Viande supplémentaire : Tenders / + Maïs » ; Vitest 6 015 verts ; PHPUnit ciblé 2 284 OK ; CHAIN OK ; captures caisse, borne, site lues.
+> - Ordre de mise en ligne : backend d'abord (migration = Façon Cayenne en base), puis site Vercel, puis nouvelle version store (l'ancienne app facture encore la 2ᵉ sauce d'un sandwich, sans erreur).
+
 > **2026-11-10 soir — EN LIGNE : backend `0c46978bb` (snapshot predeploy-20261110-164718, 2 migrations, CHAIN OK, surfaces 200, `web_online_payment_enabled:false`) + site `e6fcaaf` sur www.lecayenne.fr (`?v=20261110paie`, vérifié en ligne : seul « Payer sur place » tant que la passerelle est désactivée).** Kit de test local pour Codex : scratchpad `app-paiement/CODEX-TEST-APP.md` + `lancer-local.sh`.
 > - Contre-vérification lecture seule par testttt-80 après la mise en ligne : prod HEAD `0c46978b` (7e3fa8eae ancêtre), migrations `2026_11_10_100000` et `_110000` « Ran », colonne `scheduled_themes` présente, vitrine publique version 0 désactivée (aucun thème publié : l'app garde ses couleurs), rôle Livreur landing `livreur` / 0 permission / 0 compte, `kds.counter_auto_print=false`, CHAIN OK. **GOAL livraison/tickets : W1–W3, W5, W6 (navigateur) et W7 en ligne ; G3 close.** Restent G1 (offres), G2 (impression auto), G5/G7/G8 (papier), émulateur/APK (disque).
 > **Avant — TEST APP + PAIEMENT + SUPPRESSION DE COMPTE (session testttt-59).**
@@ -5001,6 +5007,8 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-11 nuit — Catalogue propriétaire sur toutes les surfaces** : 5 Tenders, Sandwich 2 Viandes, Façon Cayenne, deux sauces offertes sur les sandwichs, crudités payantes réellement servies en caisse, meilleures ventes sur le site/app. Détail §2 ; commits `b4f6ef6ca`, `e3d4af2d5`, `cb33cb507` (backend), `3a016fa` (site). Non déployé.
 
 **🆕 2026-11-04 19h — W7 cycles D et E : deux confirmations adverses de plus, 6 P2/P3 API et 4 site corrigés, backend `979a3085a` mis en ligne** (owner « continue et deploy tout après un test-e2e »).
 - Cycle D (sur `bcafc5d65` / `b0c9580`) : A-024 P1, A-025, A-026, D-004, D-011…D-013 confirmés fermés ; neufs **D-014 P2** (`offer/show/{slug}` → 500 pour tout slug : `null` passé à `OfferService::show(Offer)` hors catch → `firstOrFail` hors du try, 404 JSON), **D-015 P2** (`order_type`/`source` `numeric` sans borne : une commande web déclarée POS sortait de l'historique du client et comptait vente caisse → `in:`), D-016 (nom de profil assaini comme `pos_customer_name`), D-017 (`ModelNotFoundException` ≠ « Commande introuvable » : `NOT_FOUND` + clé fr/en/ar), D-005 (`LoyaltyRules` lit chaque réglage une fois par instance) → `979a3085a` ; **A-027 P2** (pendant la lecture du profil, « ★ Novice · Niveau 1/4 · 0 débloqués · Vos points : 0 → 0,00 € » sur un 0 de démarrage → palier/progression/trophées/réduction attendent le solde, « ★ — » et « calculé dès lecture du solde », banc F3 32/32 vs 30/32), A-028, A-017 → site `44c8946` ; A-013 reclassé décision (réserve 53 px documentée 2026-08-28).
