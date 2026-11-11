@@ -36,6 +36,9 @@ return [
         'Terminator'         => 2,
         'Cayenne'            => 1,
         'Sandwich Classique' => 1,
+        // [OWNER 2026-11-11] « le sandwich classique ... en deux viandes, 9 euros » : produit à part,
+        // deux viandes comprises (menu:owner-2026-11-11). Une 3e viande passe par l'extra payant.
+        'Sandwich 2 Viandes' => 2,
         'Suprême'            => 2,
     ],
 

@@ -52,6 +52,8 @@ return [
         // cat 1 « Sandwich Cayenne » → « Sandwichs » (slug sandwichs) ; cat 6
         // « Bols Gourmands » → « Bols » (slug bols). Sans ces entrées → item-default.
         'sandwichs'          => 'cat-sandwich-cayenne.png',
+        // [OWNER 2026-11-11] Catégorie des 5 Tenders.
+        'tenders'            => 'tenders-5.png',
         'bols'               => 'cat-bols-gourmands.png',
 
         // Legacy V0 slugs (back-compat for fixtures / archived orders).
@@ -225,6 +227,10 @@ return [
         // tacos, seule la garniture change. Sans cette ligne, le nouveau produit tomberait sur
         // `item-default.svg` et sortirait en gris sur la borne, la caisse et le web.
         'tacos-xl'       => 'tacos-cayenne.png',
+        // [OWNER 2026-11-11] Nouveaux produits (menu:owner-2026-11-11). Le Sandwich 2 Viandes est le
+        // Sandwich Classique en deux viandes : même photo. Les 5 Tenders ont leur photo dédiée.
+        'sandwich-2-viandes' => 'sandwich-classique.png',
+        'tenders-5'          => 'tenders-5.png',
         'chicken-burger' => 'chicken_burger.png',
         'cheese-burger'  => 'cheese-burger.png',
         'double-cheese'  => 'double-cheese.png',
@@ -334,6 +340,8 @@ return [
         // [IMG-HEAL 2026-06-27] Live extras that resolved to item-default.svg (placeholder)
         // — now keyed to the matching NEW asset so borne+caisse show a real image.
         'Viande supplémentaire'   => 'viande-marine.png',
+        // [OWNER 2026-11-11] Supplément « Façon Cayenne » : base fromage et crème fraîche.
+        'Façon Cayenne'           => 'sauce-fromagere-maison.png',
         'Option Gratiné'          => 'bol-frites-gratine.png',
         'Cheddar Fondu'           => 'cheddar.png',
         'Cheddar fondu'           => 'cheddar.png',

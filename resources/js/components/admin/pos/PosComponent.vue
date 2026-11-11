@@ -1974,7 +1974,7 @@
                     class="w-full text-left text-xs font-bold text-[var(--pos-v5-ink)]"
                     data-testid="pos-manual-supplement-toggle"
                     @click="manualSupplement.open = !manualSupplement.open"
-                >+ Supplément libre</button>
+                >+ Article ou supplément au prix libre</button>
                 <div v-if="manualSupplement.open" class="mt-2 grid grid-cols-[1fr_86px_auto] gap-2">
                     <label class="sr-only" for="pos-manual-supplement-label">Libellé du supplément</label>
                     <input
@@ -1982,7 +1982,7 @@
                         v-model="manualSupplement.label"
                         maxlength="80"
                         type="text"
-                        placeholder="Ex. olives, maïs (facultatif)"
+                        placeholder="Ex. assiette, Cayenne double viande"
                         data-testid="pos-manual-supplement-label"
                         class="h-9 min-w-0 rounded-md border border-[var(--pos-v5-border)] bg-white px-2 text-xs"
                     />
@@ -2001,7 +2001,9 @@
                     <button type="button" class="h-9 rounded-md bg-[var(--pos-v5-info)] px-3 text-xs font-bold text-white" data-testid="pos-manual-supplement-save" @click="saveManualSupplement">{{ manualSupplement.editIndex === null ? 'Ajouter' : 'Modifier' }}</button>
                 </div>
                 <p v-if="manualSupplement.error" class="mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]" role="alert">{{ manualSupplement.error }}</p>
-                <p v-else-if="manualSupplement.open" class="mt-1 text-[10px] text-[var(--pos-v5-ink-muted)]">Montant TTC contrôlé par le serveur, imprimé sur le ticket.</p>
+                <!-- [OWNER 2026-11-11] « une facturation spéciale … un produit juste pour la commande » : c'est cette ligne.
+                     Le libellé part tel quel en cuisine et sur le ticket (« Supplément — Assiette »). -->
+                <p v-else-if="manualSupplement.open" class="mt-1 text-[10px] text-[var(--pos-v5-ink-muted)]">Pour un article hors carte ou une demande spéciale : le libellé part en cuisine et sur le ticket, montant TTC contrôlé par le serveur.</p>
             </section>
 
             <!-- Action CTAs -->
