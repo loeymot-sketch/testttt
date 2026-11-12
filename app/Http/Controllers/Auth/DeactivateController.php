@@ -98,6 +98,13 @@ class DeactivateController extends Controller
                  * pendant six ans (NF525), et le RGPD prévoit explicitement ce cas. On efface
                  * le PROFIL, pas la comptabilité.
                  */
+                // [PROFIL APP 2026-11-12] Abonnement « offres par e-mail » (profil) : l'adresse quitte la liste des abonnés
+                // AVANT d'être effacée — sinon un compte supprimé continuerait de recevoir les e-mails du restaurant.
+                $emailAvant = mb_strtolower(trim((string) $user->email));
+                if ($emailAvant !== '') {
+                    \App\Models\Subscriber::query()->whereRaw('LOWER(email) = ?', [$emailAvant])->delete();
+                }
+
                 $user->name = 'Compte supprimé';
                 $user->email = null;
                 // `users.phone` est NOT NULL (migration 2026_05_16_140100) : on ne peut pas y

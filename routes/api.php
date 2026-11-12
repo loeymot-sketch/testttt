@@ -2241,6 +2241,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/', [FrontendAddressController::class, 'store']);
         Route::match(['put', 'patch'], '/{address}', [FrontendAddressController::class, 'update']);
         Route::delete('/{address}', [FrontendAddressController::class, 'destroy']);
+        // [PROFIL APP 2026-11-12] Adresse par défaut du carnet (proposée en premier au paiement en livraison).
+        Route::post('/{address}/default', [FrontendAddressController::class, 'setDefault'])->middleware('throttle:30,1,address-default');
+    });
+
+    // [PROFIL APP 2026-11-12] Consentement « offres par e-mail » du client connecté — inscrit / retire l'e-mail du compte de
+    // la liste `subscribers` (celle de l'écran admin « Abonnés › Envoyer un e-mail »).
+    Route::prefix('newsletter-consent')->name('newsletter-consent.')->middleware(['auth:sanctum', 'block_kiosk_machine'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Frontend\NewsletterConsentController::class, 'show']);
+        Route::put('/', [\App\Http\Controllers\Frontend\NewsletterConsentController::class, 'update'])->middleware('throttle:20,1,newsletter-consent');
     });
 
     Route::prefix('branch')->name('branch.')->group(function () {
@@ -2354,6 +2363,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // [TICKET-UNIFY 2026-07-01] Octets ESC/POS du ticket borne (client|cuisine) — MÊME
         // renderer serveur que la caisse → ticket papier identique. Garde de propriété + token borne.
         Route::get('/show/{frontendOrder}/escpos', [FrontendOrderController::class, 'escpos'])->name('escpos-bytes');
+        // [PROFIL APP 2026-11-12] « Recommander » : composition d'une ancienne commande DU CLIENT + prix d'aujourd'hui (serveur).
+        Route::get('/{frontendOrder}/reorder', [\App\Http\Controllers\Frontend\ReorderController::class, 'show'])
+            ->middleware(['block_kiosk_machine', 'throttle:30,1,order-reorder'])->name('reorder');
         // [RATE-FIX 2026-07-10] quote = bucket dédié « kiosk-quote » (aperçu prix, lecture seule) :
         // ne consomme plus le budget de création de commandes → fin des 429 « Trop de requêtes »
         // quand on compose/enchaîne des commandes.

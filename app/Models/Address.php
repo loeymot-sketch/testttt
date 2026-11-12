@@ -13,7 +13,8 @@ class Address extends Model
     // [Sprint 2B / DEL-1] geocode_status added — populated by AddressService::store
     // from the autocomplete/geocoding callback response. Read by
     // DeliveryQuoteService::quoteForAddress to gate DELIVERY quotes.
-    protected $fillable    = ['label', 'address', 'user_id', 'apartment', 'latitude', 'longitude', 'geocode_status', 'city', 'postal_code'];
+    // [PROFIL APP 2026-11-12] `is_default` : l'adresse proposée en premier au paiement en livraison (une seule par client).
+    protected $fillable    = ['label', 'address', 'user_id', 'apartment', 'latitude', 'longitude', 'geocode_status', 'city', 'postal_code', 'is_default'];
     protected $casts = [
         'id'             => 'integer',
         'label'          => 'string',
@@ -25,6 +26,7 @@ class Address extends Model
         'geocode_status' => 'string',
         'city'           => 'string',
         'postal_code'    => 'string',
+        'is_default'     => 'boolean',
     ];
 
     public function user()

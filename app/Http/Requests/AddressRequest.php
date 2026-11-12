@@ -51,6 +51,22 @@ class AddressRequest extends FormRequest
     }
 
     /**
+     * [PROFIL APP 2026-11-12] Messages en français, lisibles par le client (le carnet d'adresses du profil les affiche
+     * tels quels) : « The label has already been taken. » ne disait rien à personne.
+     */
+    public function messages(): array
+    {
+        return [
+            'label.required'   => 'Donnez un nom à cette adresse (par exemple Maison ou Travail).',
+            'label.max'        => 'Ce nom est trop long (190 caractères au plus).',
+            'label.unique'     => 'Vous avez déjà une adresse portant ce nom. Choisissez-en un autre.',
+            'address.required' => 'Saisissez l\'adresse : numéro, rue, code postal et ville.',
+            'address.max'      => 'Cette adresse est trop longue (500 caractères au plus).',
+            'apartment.max'    => 'Le complément est trop long (200 caractères au plus).',
+        ];
+    }
+
+    /**
      * [Sprint 2B / DEL-4] Reject address creation / update when the buyer has
      * no usable phone on file. An address-without-phone is a hard blocker for
      * the downstream DELIVERY flow (delivery boy dispatch, SMS callback).
@@ -71,7 +87,14 @@ class AddressRequest extends FormRequest
                 return;
             }
 
+            // [PROFIL APP 2026-11-12] Le numéro JOIGNABLE du compte (téléphone, ou numéro déclaré d'un compte ouvert par
+            // Apple / Google — `contact_phone`), comme la garde de commande `require_customer_phone`. Avant, seul
+            // `users.phone` comptait : un client venu par Apple, qui avait pourtant donné son numéro, ne pouvait
+            // enregistrer AUCUNE adresse — ni dans son profil, ni au paiement en livraison.
             $phone = (string) ($user->phone ?? '');
+            if (($phone === '' || str_starts_with($phone, 'PENDING_')) && method_exists($user, 'numeroJoignable')) {
+                $phone = (string) ($user->numeroJoignable() ?? '');
+            }
             if ($phone === '' || str_starts_with($phone, 'PENDING_')) {
                 $validator->errors()->add(
                     'phone',

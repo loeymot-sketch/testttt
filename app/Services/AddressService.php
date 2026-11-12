@@ -29,13 +29,19 @@ class AddressService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return Address::where('user_id', auth()->user()->id)->where(function ($query) use ($requests) {
+            $query = Address::where('user_id', auth()->user()->id)->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->addressFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
                     }
                 }
-            })->orderBy($orderColumn, $orderType)->$method(
+            });
+            // [PROFIL APP 2026-11-12] Sans tri demandé, l'adresse PAR DÉFAUT vient en tête (carnet du profil, choix au paiement).
+            if (! $request->filled('order_column') && self::aLaColonneParDefaut()) {
+                $query->orderByDesc('is_default');
+            }
+
+            return $query->orderBy($orderColumn, $orderType)->$method(
                 $methodValue
             );
         } catch (Exception $exception) {
@@ -62,7 +68,14 @@ class AddressService
                 return $existing;
             }
 
-            return Address::create($payload);
+            $address = Address::create($payload);
+            // [PROFIL APP 2026-11-12] La PREMIÈRE adresse d'un client devient son adresse par défaut (il pourra en changer).
+            if (self::aLaColonneParDefaut()
+                && ! Address::where('user_id', $address->user_id)->where('is_default', true)->exists()) {
+                $address->forceFill(['is_default' => true])->save();
+            }
+
+            return $address;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -75,7 +88,19 @@ class AddressService
     public function update(AddressRequest $request, Address $address)
     {
         try {
-            $payload = $this->applyServerGeocoding($request->validated());
+            $valide = $request->validated();
+            // [PROFIL APP 2026-11-12] Renommer (« Maison », « Travail »…) sans toucher au texte de l'adresse ni au complément
+            // ne rappelle PAS le géocodeur : la position déjà chiffrée reste celle facturée, et une panne du service
+            // d'adresses n'empêche pas de renommer. Les coordonnées éventuellement envoyées par le client sont ignorées.
+            $memeAdresse = trim((string) ($valide['address'] ?? '')) === trim((string) $address->address)
+                && trim((string) ($valide['apartment'] ?? '')) === trim((string) $address->apartment);
+            if ($memeAdresse && $address->latitude !== null && $address->latitude !== '') {
+                unset($valide['latitude'], $valide['longitude'], $valide['city'], $valide['postal_code']);
+
+                return tap($address)->update($valide);
+            }
+
+            $payload = $this->applyServerGeocoding($valide);
 
             return tap($address)->update($payload);
         } catch (Exception $exception) {
@@ -131,12 +156,58 @@ class AddressService
     }
 
     /**
+     * [PROFIL APP 2026-11-12] Choisit l'adresse par défaut du client : une seule à la fois, dans une transaction (deux
+     * appuis rapprochés ne laissent jamais deux adresses « par défaut »). La propriété est vérifiée par le contrôleur.
+     *
+     * @throws Exception
+     */
+    public function setDefault(Address $address): Address
+    {
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
+                Address::where('user_id', $address->user_id)->lockForUpdate()->get(['id']);
+                Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->update(['is_default' => false]);
+                $address->forceFill(['is_default' => true])->save();
+            });
+
+            return $address->refresh();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /** [PROFIL APP 2026-11-12] Vrai quand la migration `is_default` est passée (serveur pas encore migré : rien ne casse). */
+    public static function aLaColonneParDefaut(): bool
+    {
+        static $connu = null;
+        if ($connu === null) {
+            try {
+                $connu = \Illuminate\Support\Facades\Schema::hasColumn('addresses', 'is_default');
+            } catch (\Throwable) {
+                $connu = false;
+            }
+        }
+
+        return $connu;
+    }
+
+    /**
      * @throws Exception
      */
     public function destroy(Address $address): void
     {
         try {
+            $etaitParDefaut = self::aLaColonneParDefaut() && (bool) $address->is_default;
+            $userId = (int) $address->user_id;
             $address->delete();
+            // [PROFIL APP 2026-11-12] L'adresse par défaut supprimée : la plus récente qui reste prend le relais.
+            if ($etaitParDefaut) {
+                $suivante = Address::where('user_id', $userId)->orderByDesc('id')->first();
+                if ($suivante) {
+                    $suivante->forceFill(['is_default' => true])->save();
+                }
+            }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

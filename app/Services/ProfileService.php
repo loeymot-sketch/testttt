@@ -59,6 +59,15 @@ class ProfileService
     /** [W7-D D-003] Compte client = invité (`is_guest`) ou rôle Client ; le personnel n'est jamais concerné. */
     private function estUnClient($user): bool
     {
+        return self::compteClient($user);
+    }
+
+    /** [PROFIL APP 2026-11-12] Même règle, lisible par ProfileRequest (le contact d'un client est facultatif dans la requête). */
+    public static function compteClient($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
         if ((int) $user->is_guest === Ask::YES) {
             return true;
         }
@@ -69,9 +78,12 @@ class ProfileService
     /** [W7-D D-003] Comparaison tolérante (casse de l'e-mail, mise en forme du numéro) : seul un VRAI changement est refusé. */
     private function contactChange($user, ProfileRequest $request): bool
     {
-        $emailDemande = mb_strtolower(trim((string) $request->get('email')));
+        // [PROFIL APP 2026-11-12] Un champ de contact ABSENT de la requête n'est pas un changement : le profil de l'application
+        // n'envoie que le prénom et le nom (un compte ouvert par Apple n'a ni téléphone ni, parfois, d'e-mail à renvoyer).
+        // Un champ PRÉSENT est comparé comme avant : la revendication d'un contact reste refusée.
+        $emailDemande = $request->has('email') ? mb_strtolower(trim((string) $request->get('email'))) : mb_strtolower(trim((string) $user->email));
         $emailActuel  = mb_strtolower(trim((string) $user->email));
-        $telDemande   = $this->chiffresNationaux((string) $request->get('phone'));
+        $telDemande   = $request->has('phone') ? $this->chiffresNationaux((string) $request->get('phone')) : $this->chiffresNationaux((string) $user->phone);
         $telActuel    = $this->chiffresNationaux((string) $user->phone);
 
         // [W7-D D-013 · cycle C] L'indicatif fait partie du contact (il pilote l'OTP) : « +32 » sur un « 0699… » = changement.

@@ -68,6 +68,23 @@ class AddressController extends Controller
         }
     }
 
+    /**
+     * [PROFIL APP 2026-11-12] `POST /api/frontend/address/{address}/default` — l'adresse proposée en premier au paiement
+     * en livraison. Un client ne peut désigner QUE l'une de ses adresses (403 sinon, même message que show/update).
+     */
+    public function setDefault(Address $address)
+    {
+        if ((int) $address->user_id !== (int) auth()->id()) {
+            abort(403, __('all.message.unauthorized'));
+        }
+
+        try {
+            return new AddressResource($this->addressService->setDefault($address));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
     public function destroy(Address $address)
     {
         // [SECURITY FIX] IDOR Prevention - Verify ownership

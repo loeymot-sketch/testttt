@@ -43,8 +43,32 @@ class ProfileRequest extends FormRequest
         }
     }
 
+    public function messages(): array
+    {
+        return [
+            'first_name.required' => 'Indiquez votre prénom.',
+            'last_name.required'  => 'Indiquez votre nom.',
+            'first_name.max'      => 'Ce prénom est trop long.',
+            'last_name.max'       => 'Ce nom est trop long.',
+        ];
+    }
+
     public function rules()
     {
+        // [PROFIL APP 2026-11-12] Pour un CLIENT, e-mail, téléphone et indicatif ne sont jamais modifiés ici (ProfileService
+        // les garde tels qu'enregistrés et refuse tout changement) : ils deviennent facultatifs, pour qu'un client puisse
+        // corriger son prénom et son nom depuis son profil — y compris un compte Apple sans téléphone, à qui `required`
+        // + `ValidPhone` interdisaient jusqu'ici toute modification. Le personnel garde les règles complètes.
+        if (\App\Services\ProfileService::compteClient(auth()->user())) {
+            return [
+                'first_name'   => ['required', 'string', 'max:190'],
+                'last_name'    => ['required', 'string', 'max:190'],
+                'email'        => ['sometimes', 'nullable', 'string', 'max:190'],
+                'phone'        => ['sometimes', 'nullable', 'string', 'max:30'],
+                'country_code' => ['sometimes', 'nullable', 'string', 'max:20'],
+            ];
+        }
+
         return [
             'first_name'   => ['required', 'string', 'max:190'],
             'last_name'    => ['required', 'string', 'max:190'],
