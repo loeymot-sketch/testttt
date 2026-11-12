@@ -149,6 +149,27 @@ class AccountDeletionTest extends TestCase
     }
 
     /** @test */
+    public function le_complement_d_adresse_des_commandes_passees_est_efface(): void
+    {
+        // [test-e2e stores F9-004] « 2e étage, code 1234 » restait attaché à la commande après la suppression du compte.
+        $user = $this->client();
+        $commande = Order::factory()->create(['user_id' => $user->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $id = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $user->id, 'label' => 'Maison',
+            'address' => '10 Place Jean Jaurès 62110 Hénin-Beaumont', 'apartment' => '2e étage, code 1234',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($user))
+            ->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('order_addresses')->find($id);
+        $this->assertNull($ligne->apartment, 'Le code d\'entrée doit avoir disparu.');
+        $this->assertSame('Livraison', $ligne->label, 'Le libellé personnel doit avoir disparu.');
+        $this->assertSame('10 Place Jean Jaurès 62110 Hénin-Beaumont', $ligne->address, 'L\'adresse de livraison de la commande reste (tournée, conservation).');
+    }
+
+    /** @test */
     public function un_compte_supprime_ne_peut_plus_etre_ressuscite_par_son_telephone(): void
     {
         // Le parcours d'inscription cherche un compte invité par TÉLÉPHONE, y compris

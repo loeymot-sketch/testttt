@@ -76,6 +76,13 @@ class DeactivateController extends Controller
 
                 $user->addresses()->delete();
 
+                // [test-e2e stores F9-004 · 2026-11-12] Les commandes sont conservées (obligation de conservation), mais le
+                // COMPLÉMENT de leur adresse (étage, bâtiment, code d'entrée) et son libellé personnel (« Maison ») sont des
+                // données personnelles sans aucune valeur comptable : effacés. Rue, commune, code postal et coordonnées
+                // restent, car la commande et sa tournée de livraison en dépendent.
+                \App\Models\OrderAddress::withoutGlobalScopes()->where('user_id', $user->id)
+                    ->update(['apartment' => null, 'label' => 'Livraison']);
+
                 /**
                  * [APPS 2026-08-19] EFFACEMENT RÉEL DES DONNÉES PERSONNELLES.
                  *
