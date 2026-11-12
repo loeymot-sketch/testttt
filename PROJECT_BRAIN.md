@@ -47,6 +47,11 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-12 matin — APP STORES : audit e2e complet CONVERGÉ (tours 4 et 5 à 0 P0 / 0 P1) + parité borne de l'assistant. RIEN POUSSÉ NI DÉPLOYÉ après `cb693313a` / `3a016fa`** (le classificateur a refusé push et déploiement à l'agent). Prod = backend `cb693313a`, site `3a016fa`.
+> - Backend à déployer : `da8902257` (Sandwich 2 Viandes = viandes du Terminator `6f103bd2c` + migration `2026_11_11_220000` ; révocation Sign in with Apple `5dc97adf6`/`da8902257` + migration `2026_11_12_090000_add_apple_refresh_token` — INACTIVE sans `APPLE_TEAM_ID/KEY_ID/PRIVATE_KEY` ; panne service d'adresses = code `GEOCODE_SERVICE_DOWN` `51f993177` ; `order_items_quantity`).
+> - Site/app à déployer : `18420b0` (branche `app/catalogue-distant-2026-11-05`) — assistant = fiche serveur (options, prix, maximums, budget de groupe, viande « en plus seulement », capacité par viande, ×2), oracle devis 147/148, verify-app-behaviour 55/55, portes 9/9, `app/www` reconstruit, AAB/APK `…-2026-11-12-18420b0` (build 2).
+> - Rapports : `reports/test-e2e/app-stores-complet-2026-11-12/CONVERGENCE_FINAL.md`, `reports/test-e2e/app-parite-borne-2026-11-11/`.
+
 > **2026-11-11 nuit — CATALOGUE PROPRIÉTAIRE + CAISSE/BORNE/SITE (reprise du travail Codex `wt-app-hybride`). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `0c46978bb`, site = `e6fcaaf`).
 > - Backend (branche `pos/category-first-caisse-2026-06-23`) : `b4f6ef6ca` LOCK `docs/locks/LOCK_POS_KIOSK_SAUCES_CRUDITES_2026-11-11.md` → `e3d4af2d5` (2 sauces offertes sandwichs via `sauce_included` ; crudités payantes fantômes de la caisse ; viande en plus à la modification ; zones gelées pos-wizard.js + KioskWizardComponent.vue, baseline SHA mise à jour) → `cb33cb507` (catalogue : 5 Tenders 5 €, Sandwich 2 Viandes 9 €, Façon Cayenne 1,50 €, libellés ; migration `2026_11_11_040000`).
 > - Site/app : `3a016fa` sur `app/catalogue-distant-2026-11-05` (meilleures ventes, cartes sans description, 2 sauces offertes, Façon Cayenne) ; portes 6/6, unitaires 58/58, `app/www` reconstruit. Prototype `mobile/` : commit sur `feat/app-hybride-2026-11-03`.
@@ -5007,6 +5012,8 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-12 — Audit stores complet + parité borne de l'assistant** : 9 tours adverses (4 parité, 5 stores), oracle « app ↔ devis serveur » versionné (`tools/oracle-app-vs-serveur.mjs` du site), révocation Apple 5.1.1(v), panne d'adresses distinguée, permissions Android inutiles retirées, encoche / retour Android / hors ligne / zones de toucher corrigés. Défauts BORNE relevés (zone gelée, non corrigés) : suppléments répétables ×9, 2 viandes en plus sur bol, Mixte ×2 → refus serveur.
 
 **🆕 2026-11-11 nuit — Catalogue propriétaire sur toutes les surfaces** : 5 Tenders, Sandwich 2 Viandes, Façon Cayenne, deux sauces offertes sur les sandwichs, crudités payantes réellement servies en caisse, meilleures ventes sur le site/app. Détail §2 ; commits `b4f6ef6ca`, `e3d4af2d5`, `cb33cb507` (backend), `3a016fa` (site). Non déployé.
 
