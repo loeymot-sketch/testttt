@@ -117,5 +117,29 @@ class DeliveryPublicApiTest extends TestCase
 
         $r = $this->api()->getJson('/api/frontend/delivery/suggest?q=10 rue test')->assertOk();
         $this->assertSame('Hénin-Beaumont', $r->json('data.0.city'));
+        $this->assertNull($r->json('code'));
+    }
+
+    /** [test-e2e stores F-004] Service d'adresses en panne : liste vide ET la raison (200 gardé pour les applications installées). */
+    public function test_suggest_says_when_the_address_service_is_down(): void
+    {
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response('down', 503)]);
+
+        $r = $this->api()->getJson('/api/frontend/delivery/suggest?q=8 rue de lens')->assertOk();
+
+        $this->assertSame([], $r->json('data'));
+        $this->assertSame('GEOCODE_SERVICE_DOWN', $r->json('code'));
+        $this->assertStringContainsString('momentanément indisponible', (string) $r->json('message'));
+    }
+
+    /** Aucune adresse ne correspond (service en ordre) : liste vide SANS code de panne. */
+    public function test_suggest_with_no_match_is_not_reported_as_an_outage(): void
+    {
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response(['features' => []])]);
+
+        $r = $this->api()->getJson('/api/frontend/delivery/suggest?q=zzzz introuvable')->assertOk();
+
+        $this->assertSame([], $r->json('data'));
+        $this->assertNull($r->json('code'));
     }
 }

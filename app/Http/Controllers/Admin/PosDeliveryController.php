@@ -161,7 +161,13 @@ class PosDeliveryController extends Controller
     {
         $data = Validator::make($request->query(), ['q' => ['required', 'string', 'min:3', 'max:200']])->validate();
 
-        return response()->json(['status' => true, 'data' => app(\App\Services\Delivery\AddressGeocoder::class)->search($data['q'])]);
+        $r = app(\App\Services\Delivery\AddressGeocoder::class)->suggestions($data['q']);
+
+        // [test-e2e stores F-004] Même contrat que le site : liste vide + code/message quand le service d'adresses est en panne.
+        return response()->json(['status' => true, 'data' => $r['data']] + ($r['panne'] ? [
+            'code'    => \App\Exceptions\Delivery\GeocodeUnavailableException::SERVICE_DOWN_CODE,
+            'message' => \App\Exceptions\Delivery\GeocodeUnavailableException::SERVICE_DOWN_MESSAGE,
+        ] : []));
     }
 
     /** Devis pour une adresse choisie : prix, commune, distance, trajet estimé. */

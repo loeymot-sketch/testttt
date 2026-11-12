@@ -42,7 +42,14 @@ class DeliveryController extends Controller
     {
         $request->validate(['q' => ['required', 'string', 'min:3', 'max:200']]);
 
-        return response()->json(['status' => true, 'data' => $this->geocoder->search((string) $request->query('q'))]);
+        $r = $this->geocoder->suggestions((string) $request->query('q'));
+
+        // [test-e2e stores F-004] Panne du service d'adresses : 200 conservé (les applications déjà installées lisent `data`),
+        // mais le code et le message disent pourquoi la liste est vide.
+        return response()->json(['status' => true, 'data' => $r['data']] + ($r['panne'] ? [
+            'code'    => \App\Exceptions\Delivery\GeocodeUnavailableException::SERVICE_DOWN_CODE,
+            'message' => \App\Exceptions\Delivery\GeocodeUnavailableException::SERVICE_DOWN_MESSAGE,
+        ] : []));
     }
 
     /** Devis pour une adresse saisie : prix, palier, estimation, et créneaux si livrable. */

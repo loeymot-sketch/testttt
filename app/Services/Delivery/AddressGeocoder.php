@@ -24,17 +24,29 @@ class AddressGeocoder
      */
     public function search(string $query, int $limit = 5): array
     {
+        return $this->suggestions($query, $limit)['data'];
+    }
+
+    /**
+     * [test-e2e stores F-004 · 2026-11-12] Comme search(), mais dit si le service d'adresses est EN PANNE : une liste vide
+     * ne distinguait pas « aucune adresse ne correspond » de « le service ne répond pas » (api-adresse en 503 / redirigé),
+     * et le client restait sans aucune explication sous le champ.
+     *
+     * @return array{data: array<int, array<string, mixed>>, panne: bool}
+     */
+    public function suggestions(string $query, int $limit = 5): array
+    {
         $query = trim($query);
         if (mb_strlen($query) < 3) {
-            return [];
+            return ['data' => [], 'panne' => false];
         }
 
         try {
             // [V-03] La caisse et le site enregistrent le LIBELLÉ de la suggestion choisie : le numéro tapé doit déjà y figurer,
             // sinon il est perdu avant même le devis (la BAN ne connaît pas toujours chaque numéro).
-            return array_map(fn (array $r) => $this->keepTypedHouseNumber($query, $r), $this->fetch($query, $limit, true));
-        } catch (GeocodeUnavailableException) {
-            return [];
+            return ['data' => array_map(fn (array $r) => $this->keepTypedHouseNumber($query, $r), $this->fetch($query, $limit, true)), 'panne' => false];
+        } catch (GeocodeUnavailableException $e) {
+            return ['data' => [], 'panne' => $e->panne];
         }
     }
 
