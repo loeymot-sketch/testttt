@@ -18,6 +18,14 @@ class DeactivateController extends Controller
 
     function deleteAccount(Request $request): \Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory
     {
+        // [test-e2e stores F-005] Jeton Apple lu AVANT la transaction et révoqué APRÈS sa validation : un appel réseau ne tient
+        // plus la transaction ouverte, et une suppression refusée (commande en cuisine…) ne révoque rien chez Apple.
+        $jetonApple = null;
+        try {
+            $jetonApple = $request->user()?->apple_refresh_token;
+        } catch (\Throwable) {
+            $jetonApple = null;   // jeton illisible (clé de chiffrement changée) : rien à révoquer
+        }
         try {
             DB::transaction(function () use ($request) {
                 $user = $request->user();
@@ -104,12 +112,7 @@ class DeactivateController extends Controller
                 // suppression annoncée comme définitive.
                 $user->contact_phone = null;
                 $user->username = 'supprime-' . Str::random(12);
-                // [STORES 2026-11-12 · Apple 5.1.1(v)] Révocation des jetons « Se connecter avec Apple » chez Apple, comme
-                // Apple l'exige pour une suppression de compte. Non bloquante : un refus d'Apple est journalisé, la
-                // suppression du compte chez nous a lieu quand même (le client l'a demandée).
-                if (filled($user->apple_refresh_token)) {
-                    app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $user->apple_refresh_token);
-                }
+                // [STORES 2026-11-12 · Apple 5.1.1(v)] Jeton Apple effacé ici ; révoqué chez Apple après la transaction.
                 $user->apple_refresh_token = null;
                 $user->apple_sub = null;
                 $user->google_sub = null;
@@ -130,6 +133,12 @@ class DeactivateController extends Controller
 
                 session()->flush();
             });
+
+            // [STORES 2026-11-12 · Apple 5.1.1(v)] Révocation chez Apple, comme Apple l'exige pour une suppression de compte.
+            // Non bloquante : un refus d'Apple est journalisé, la suppression chez nous est faite (le client l'a demandée).
+            if (filled($jetonApple)) {
+                app(\App\Services\Auth\AppleTokenRevoker::class)->revoquer((string) $jetonApple);
+            }
 
             return response(['status' => true, 'message' => trans("all.message.account_delete_success")]);
         } catch (Exception $exception) {

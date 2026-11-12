@@ -26,6 +26,8 @@ class UserOrderResource extends JsonResource
             'branch_id'                      => $this->branch_id,
             'branch_name'                    => optional($this->branch)->name,
             'order_items'                    => optional($this->orderItems)->count(),
+            // [test-e2e stores F-002] Nombre d'ARTICLES (quantités), comme le panier : « 3 articles », pas « 2 lignes ».
+            'order_items_quantity'           => (int) optional($this->orderItems)->sum('quantity'),
             "total_currency_price"           => AppLibrary::currencyAmountFormat($this->total),
             "total_tax_currency_price"       => AppLibrary::currencyAmountFormat($this->total_tax),
             "total_amount_price"             => AppLibrary::flatAmountFormat($this->total),
