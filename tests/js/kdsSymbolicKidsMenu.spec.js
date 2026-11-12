@@ -50,6 +50,8 @@ describe('KDS symbolique — menu enfant distinguable (F-01)', () => {
         expect(produit('Double Cheese')).toBe('DOUBLE CHEESE');
         expect(produit('Menu Enfant Chicken Burger')).toBe('MENU ENFANT CHICKEN BURGER');
         expect(produit('Menu Enfant Nuggets')).toBe('MENU ENFANT NUGGETS');
+        // [OWNER 2026-11-12] « là ça s'écrit que TEN »
+        expect(produit('5 Tenders')).toBe('5 TENDERS');
 
         const rendus = ['Cheese Burger', 'Chicken Burger', 'Double Cheese', 'Cheddar',
             'Menu Enfant Chicken Burger', 'Menu Enfant Nuggets'].map(produit);

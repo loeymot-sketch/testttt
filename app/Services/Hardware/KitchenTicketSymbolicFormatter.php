@@ -1283,7 +1283,8 @@ final class KitchenTicketSymbolicFormatter
      *
      * @var array<int, string> motifs cherchés dans le nom NORMALISÉ (sans accent, minuscule)
      */
-    private const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant'];
+    // [OWNER 2026-11-12] « 5 Tenders » s'écrivait « TEN » (le « 5 » sauté comme une quantité) : écrit en entier « 5 TENDERS ».
+    private const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant', 'tenders'];
 
     // [F-KITCHEN-BOL-BASE 2026-07-15] Mots-catégorie dont la BASE distinctive suit dans le nom
     // (« Bol Frites » vs « Bol Riz » — sans variation « base », le nom est le seul porteur).

@@ -367,7 +367,9 @@ const CODE_BASE_WORDS = ['bol', 'galette'];
  * 3 lettres. Jumeau STRICT : KitchenTicketSymbolicFormatter::CODE_ECRIT_EN_ENTIER (même liste,
  * même ordre, même comparaison sur le nom normalisé).
  */
-const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant'];
+// [OWNER 2026-11-12 · « pour les cinq tenders, écris-le en complet, là ça s'écrit que TEN »] « 5 Tenders » : le « 5 »
+// était sauté comme une quantité et il ne restait que « TEN ». Écrit en entier : « 5 TENDERS ».
+const CODE_ECRIT_EN_ENTIER = ['cheese', 'chicken', 'menu enfant', 'tenders'];
 
 /**
  * [OWNER SANDWICH-CLASSIQUE 2026-08-12] « Sandwich Classique » / « Galette Classique » ne portent
