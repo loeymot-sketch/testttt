@@ -83,6 +83,21 @@ class DeactivateController extends Controller
                 \App\Models\OrderAddress::withoutGlobalScopes()->where('user_id', $user->id)
                     ->update(['apartment' => null, 'label' => 'Livraison']);
 
+                // [test-e2e stores P-012] Même règle pour les courses Uber Direct de ses commandes : téléphone, consignes et nom
+                // du destinataire effacés (colonnes ET réponse brute d'Uber) ; prix, statut et suivi de la course restent.
+                $idsCommandes = Order::withoutGlobalScopes()->where('user_id', $user->id)->pluck('id');
+                if ($idsCommandes->isNotEmpty()) {
+                    \App\Models\UberDirectDelivery::withoutGlobalScopes()->whereIn('order_id', $idsCommandes)->get()
+                        ->each(function ($course) {
+                            $brut = (array) ($course->delivery_payload ?? []);
+                            if (isset($brut['dropoff']) && is_array($brut['dropoff'])) {
+                                unset($brut['dropoff']['name'], $brut['dropoff']['phone_number'], $brut['dropoff']['notes']);
+                            }
+                            unset($brut['dropoff_name'], $brut['dropoff_phone_number'], $brut['dropoff_notes']);
+                            $course->forceFill(['dropoff_phone' => null, 'dropoff_instructions' => null, 'delivery_payload' => $brut ?: null])->saveQuietly();
+                        });
+                }
+
                 /**
                  * [APPS 2026-08-19] EFFACEMENT RÉEL DES DONNÉES PERSONNELLES.
                  *

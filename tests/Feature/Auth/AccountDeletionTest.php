@@ -170,6 +170,33 @@ class AccountDeletionTest extends TestCase
     }
 
     /** @test */
+    public function les_courses_uber_direct_perdent_telephone_nom_et_consignes(): void
+    {
+        // [test-e2e stores P-012] La course gardait téléphone, nom et code d'entrée du destinataire après la suppression.
+        $user = $this->client();
+        $commande = Order::factory()->create(['user_id' => $user->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $id = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 742,
+            'dropoff_phone' => '+33612345678', 'dropoff_instructions' => '2e étage, code 1234',
+            'delivery_payload' => json_encode(['id' => 'del_1', 'dropoff' => ['name' => 'Kossay B.', 'phone_number' => '+33612345678', 'notes' => '2e étage, code 1234', 'address' => '10 Place Jean Jaurès']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($user))
+            ->postJson('/api/auth/delete-account')->assertStatus(200);
+
+        $ligne = DB::table('uber_direct_deliveries')->find($id);
+        $brut = json_decode($ligne->delivery_payload, true);
+        $this->assertNull($ligne->dropoff_phone);
+        $this->assertNull($ligne->dropoff_instructions);
+        $this->assertArrayNotHasKey('phone_number', $brut['dropoff']);
+        $this->assertArrayNotHasKey('name', $brut['dropoff']);
+        $this->assertArrayNotHasKey('notes', $brut['dropoff']);
+        $this->assertSame(742, (int) $ligne->quote_fee_cents, 'Le prix de la course reste.');
+        $this->assertSame('del_1', $brut['id'], 'Le suivi de la course reste.');
+    }
+
+    /** @test */
     public function un_compte_supprime_ne_peut_plus_etre_ressuscite_par_son_telephone(): void
     {
         // Le parcours d'inscription cherche un compte invité par TÉLÉPHONE, y compris
