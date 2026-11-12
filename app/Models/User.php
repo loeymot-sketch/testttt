@@ -68,6 +68,8 @@ class User extends Authenticatable implements HasMedia
         'is_guest'          => 'integer',
         'status'            => 'integer',
         'email_verified_at' => 'datetime',
+        // [STORES 2026-11-12 · Apple 5.1.1(v)] Jeton Apple chiffré au repos (révoqué à la suppression du compte).
+        'apple_refresh_token' => 'encrypted',
     ];
 
     /**
@@ -78,6 +80,7 @@ class User extends Authenticatable implements HasMedia
     protected $hidden = [
         'password',
         'remember_token',
+        'apple_refresh_token',
     ];
 
 

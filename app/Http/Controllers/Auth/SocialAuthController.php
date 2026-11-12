@@ -185,6 +185,19 @@ class SocialAuthController extends Controller
             $user->loyalty_code = strtoupper(substr(md5(uniqid('', true)), 0, 8));
         }
 
+        // [STORES 2026-11-12 · Apple 5.1.1(v)] Code d'autorisation Apple (envoyé par l'application) → jeton de
+        // rafraîchissement, conservé chiffré pour pouvoir le RÉVOQUER à la suppression du compte. Facultatif et
+        // non bloquant : sans clé Apple configurée, ou si Apple ne répond pas, la connexion réussit comme avant.
+        if ($provider === 'apple' && is_string($request->post('authorization_code')) && $request->post('authorization_code') !== '') {
+            $revoker = app(\App\Services\Auth\AppleTokenRevoker::class);
+            if ($revoker->actif()) {
+                $jeton = $revoker->echangerCode(mb_substr((string) $request->post('authorization_code'), 0, 2048));
+                if ($jeton !== null) {
+                    $user->apple_refresh_token = $jeton;
+                }
+            }
+        }
+
         $user->save();
 
         return $this->reponseSession($user, trans('all.message.login_success'));

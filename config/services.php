@@ -112,6 +112,12 @@ return [
     */
     'apple' => [
         'audiences' => array_filter(array_map('trim', explode(',', (string) env('APPLE_AUDIENCES', 'fr.lecayenne.app')))),
+        // [STORES 2026-11-12 · Apple 5.1.1(v)] Révocation à la suppression du compte (App\Services\Auth\AppleTokenRevoker).
+        // Clé « Sign in with Apple » (.p8) du compte développeur : vide = révocation inactive, rien d'autre ne change.
+        'team_id' => env('APPLE_TEAM_ID'),
+        'key_id' => env('APPLE_KEY_ID'),
+        'private_key' => env('APPLE_PRIVATE_KEY'),
+        'client_id' => env('APPLE_CLIENT_ID', 'fr.lecayenne.app'),
     ],
 
     'google' => [
