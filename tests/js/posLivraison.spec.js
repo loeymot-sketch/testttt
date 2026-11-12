@@ -15,6 +15,11 @@ describe('posLivraison — appels serveur', () => {
         expect(list).toEqual([{ place_id: '10 Rue Test 62110 Hénin-Beaumont', description: '10 Rue Test 62110 Hénin-Beaumont', city: 'Hénin-Beaumont', postal_code: '62110' }]);
     });
 
+    it('suggestAddresses lève quand le service d\'adresses est en panne (jamais « Aucune adresse trouvée »)', async () => {
+        const h = http({ get: vi.fn().mockResolvedValue({ data: { status: true, data: [], code: 'GEOCODE_SERVICE_DOWN', message: 'Service momentanément indisponible.' } }) });
+        await expect(suggestAddresses(h, '8 rue de lens')).rejects.toThrow('momentanément indisponible');
+    });
+
     it('quoteAddress envoie le TEXTE seulement : jamais de coordonnées ni de distance', async () => {
         const h = http({ post: vi.fn().mockResolvedValue({ data: { allowed: true, fee: 3.9 } }) });
         await quoteAddress(h, '10 rue test');

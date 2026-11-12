@@ -139,6 +139,13 @@ class AddressGeocoder
             Log::warning('delivery.geocoder.http_error', ['status' => $response->status()]);
             throw new GeocodeUnavailableException(null, true);
         }
+        // [test-e2e stores F6-002 · 2026-11-12] Une page de maintenance en 200 (HTML, ou redirection suivie vers une page 200) n'est
+        // pas « aucune adresse » : sans corps JSON portant `features`, c'est une panne du service.
+        $corps = $response->json();
+        if (! is_array($corps) || ! array_key_exists('features', $corps)) {
+            Log::warning('delivery.geocoder.bad_body', ['status' => $response->status()]);
+            throw new GeocodeUnavailableException(null, true);
+        }
 
         $out = [];
         foreach ((array) $response->json('features', []) as $feature) {

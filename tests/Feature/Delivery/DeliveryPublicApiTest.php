@@ -132,6 +132,17 @@ class DeliveryPublicApiTest extends TestCase
         $this->assertStringContainsString('momentanément indisponible', (string) $r->json('message'));
     }
 
+    /** [F6-002] Page de maintenance servie en 200 (HTML) : c'est une panne, pas « aucune adresse ». */
+    public function test_suggest_treats_an_html_maintenance_page_as_an_outage(): void
+    {
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response('<html><body>Maintenance</body></html>', 200, ['Content-Type' => 'text/html'])]);
+
+        $r = $this->api()->getJson('/api/frontend/delivery/suggest?q=8 rue de lens')->assertOk();
+
+        $this->assertSame([], $r->json('data'));
+        $this->assertSame('GEOCODE_SERVICE_DOWN', $r->json('code'));
+    }
+
     /** Aucune adresse ne correspond (service en ordre) : liste vide SANS code de panne. */
     public function test_suggest_with_no_match_is_not_reported_as_an_outage(): void
     {

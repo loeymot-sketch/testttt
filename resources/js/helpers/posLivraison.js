@@ -7,6 +7,11 @@ const errMsg = (e, fallback) => e?.response?.data?.message || e?.message || fall
 /** Suggestions d'adresse (Base Adresse Nationale via le serveur, route authentifiée de la caisse). */
 export async function suggestAddresses(http, q) {
     const res = await http.get('/admin/pos-delivery/suggest', { params: { q } });
+    // [test-e2e stores F-004 / F6-002 · 2026-11-12] Service d'adresses en panne : le serveur le dit (code). On lève, pour que la
+    // caisse affiche « momentanément indisponible » au lieu de « Aucune adresse trouvée » (le caissier retapait une adresse juste).
+    if (res.data?.code === 'GEOCODE_SERVICE_DOWN') {
+        throw new Error(res.data.message || 'Le service de vérification des adresses est momentanément indisponible.');
+    }
     return (res.data?.data || []).map((s) => ({ place_id: s.label, description: s.label, city: s.city, postal_code: s.postal_code }));
 }
 
