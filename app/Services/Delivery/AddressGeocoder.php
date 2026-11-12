@@ -53,10 +53,12 @@ class AddressGeocoder
 
         $key = 'delivery.geocode.' . sha1($this->fold($text));
 
-        $hit = Cache::remember($key, now()->addMinutes((int) config('delivery.geocoder.cache_minutes', 1440)), function () use ($text) {
+        $panne = false;
+        $hit = Cache::remember($key, now()->addMinutes((int) config('delivery.geocoder.cache_minutes', 1440)), function () use ($text, &$panne) {
             try {
                 $results = $this->fetch($text, 1, false);
-            } catch (GeocodeUnavailableException) {
+            } catch (GeocodeUnavailableException $e) {
+                $panne = $e->panne;
                 return null; // pas de mise en cache d'une panne : Cache::remember ne stocke pas null
             }
 
@@ -71,7 +73,7 @@ class AddressGeocoder
         });
 
         if (! is_array($hit)) {
-            throw new GeocodeUnavailableException();
+            throw new GeocodeUnavailableException(null, $panne);
         }
 
         return $hit;
@@ -118,12 +120,12 @@ class AddressGeocoder
                 ]);
         } catch (\Throwable $e) {
             Log::warning('delivery.geocoder.unreachable', ['error' => $e->getMessage()]);
-            throw new GeocodeUnavailableException();
+            throw new GeocodeUnavailableException($e, true);
         }
 
         if (! $response->successful()) {
             Log::warning('delivery.geocoder.http_error', ['status' => $response->status()]);
-            throw new GeocodeUnavailableException();
+            throw new GeocodeUnavailableException(null, true);
         }
 
         $out = [];

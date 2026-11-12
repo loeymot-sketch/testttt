@@ -128,7 +128,7 @@ class OrderController extends Controller
         } catch (GeocodeUnavailableException $exception) {
             return response([
                 'status' => false,
-                'code' => GeocodeUnavailableException::ERROR_CODE,
+                'code' => $exception->code(),
                 'message' => $exception->getMessage(),
             ], $exception->getStatusCode());
         } catch (HttpException $exception) {

@@ -835,7 +835,14 @@ export default {
             this.focusDeliveryAddressField();
         },
         handleGeocodeFailure: function (err) {
-            if (err?.response?.data?.code !== 'GEOCODE_FAILED') {
+            const code = err?.response?.data?.code;
+            // [test-e2e stores S3-02 · 2026-11-12] Service d'adresses en panne : ce n'est pas l'adresse qui est fausse —
+            //   on affiche le message du serveur (« réessayez / à emporter ») sans marquer le champ en erreur.
+            if (code === 'GEOCODE_SERVICE_DOWN') {
+                alertService.error(err.response.data.message);
+                return true;
+            }
+            if (code !== 'GEOCODE_FAILED') {
                 return false;
             }
 

@@ -107,7 +107,8 @@ class DeliveryPublicApiTest extends TestCase
 
         $this->api()->postJson('/api/frontend/delivery/quote', ['q' => '10 rue test henin beaumont'])
             ->assertStatus(422)
-            ->assertJsonPath('code', 'GEOCODE_FAILED');
+            // [test-e2e stores S3-02] Fournisseur en panne (503 simulé) : dit comme une panne, pas « Adresse invalide ».
+            ->assertJsonPath('code', 'GEOCODE_SERVICE_DOWN');
     }
 
     public function test_suggest_returns_candidates(): void

@@ -76,6 +76,39 @@ class AddressGeocoderTest extends TestCase
         app(AddressGeocoder::class)->geocode('437 rue elie gruyelle');
     }
 
+    /** [test-e2e stores S3-02] Panne du fournisseur ≠ adresse introuvable : code, message et statut distincts. */
+    public function test_provider_down_is_reported_as_an_outage_not_as_a_wrong_address(): void
+    {
+        foreach ([
+            fn () => Http::response('boom', 503),
+            fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'),
+        ] as $i => $reponse) {
+            Cache::flush();
+            Http::fake(['api-adresse.data.gouv.fr/*' => $reponse]);
+            try {
+                app(AddressGeocoder::class)->geocode('437 rue elie gruyelle ' . $i);
+                $this->fail('Une panne doit lever une exception.');
+            } catch (GeocodeUnavailableException $e) {
+                $this->assertTrue($e->panne);
+                $this->assertSame(422, $e->getStatusCode());
+                $this->assertSame(GeocodeUnavailableException::SERVICE_DOWN_CODE, $e->code());
+                $this->assertStringNotContainsString('Adresse invalide', $e->getMessage());
+            }
+        }
+
+        Cache::flush();
+        Http::swap(new \Illuminate\Http\Client\Factory());   // oublie les réponses de panne ci-dessus
+        Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([]))]);
+        try {
+            app(AddressGeocoder::class)->geocode('zzzzzz');
+            $this->fail('Une adresse introuvable doit lever une exception.');
+        } catch (GeocodeUnavailableException $e) {
+            $this->assertFalse($e->panne);
+            $this->assertSame(422, $e->getStatusCode());
+            $this->assertSame(GeocodeUnavailableException::ERROR_CODE, $e->code());
+        }
+    }
+
     public function test_search_returns_suggestions_for_autocomplete(): void
     {
         Http::fake(['api-adresse.data.gouv.fr/*' => Http::response($this->banPayload([
