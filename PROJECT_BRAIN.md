@@ -47,6 +47,12 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-12 soir — APP STORES : « Mon profil » complet + audit CONVERGÉ (tours 11 et 12 à 0 P0 / 0 P1, trois vagues F/B/P). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `cb693313a`, site = `3a016fa`).
+> - Backend à déployer EN PREMIER : `1319bdc86` (inclut `da8902257` ; profil/adresses/recommander/offres `3324c427e` + migration `is_default` ; panne service d'adresses `cd0201f11`/`be9ced89f` ; « 5 TENDERS » cuisine `1da751184` ; suppression de compte : complément d'adresse des commandes `a55862962` et Uber Direct `1319bdc86`).
+> - Site/app à déployer ENSUITE : `dc3b057` (branche `app/catalogue-distant-2026-11-05`, copie Vercel `lecayenne-web-deploy/site-copie-dc3b057`). Android non signé `…-2026-11-12-dc3b057.aab/.apk`.
+> - Rapports : `reports/test-e2e/app-stores-complet-2026-11-12/CONVERGENCE_FINAL_TOUR12.md`, `reports/test-e2e/app-profil-complet-2026-11-12/RAPPORT_DEV.md` (activation Apple Pay / Google Pay §3).
+> - Décisions propriétaire ouvertes : fermeture « minuit » ou « 00h30 » (pages statiques vs admin) ; note de commande à effacer ou non à la suppression du compte ; clé `.p8` Sign in with Apple.
+
 > **2026-11-12 matin — APP STORES : audit e2e complet CONVERGÉ (tours 4 et 5 à 0 P0 / 0 P1) + parité borne de l'assistant. RIEN POUSSÉ NI DÉPLOYÉ après `cb693313a` / `3a016fa`** (le classificateur a refusé push et déploiement à l'agent). Prod = backend `cb693313a`, site `3a016fa`.
 > - Backend à déployer : `da8902257` (Sandwich 2 Viandes = viandes du Terminator `6f103bd2c` + migration `2026_11_11_220000` ; révocation Sign in with Apple `5dc97adf6`/`da8902257` + migration `2026_11_12_090000_add_apple_refresh_token` — INACTIVE sans `APPLE_TEAM_ID/KEY_ID/PRIVATE_KEY` ; panne service d'adresses = code `GEOCODE_SERVICE_DOWN` `51f993177` ; `order_items_quantity`).
 > - Site/app à déployer : `18420b0` (branche `app/catalogue-distant-2026-11-05`) — assistant = fiche serveur (options, prix, maximums, budget de groupe, viande « en plus seulement », capacité par viande, ×2), oracle devis 147/148, verify-app-behaviour 55/55, portes 9/9, `app/www` reconstruit, AAB/APK `…-2026-11-12-18420b0` (build 2).
@@ -5012,6 +5018,8 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-12 soir — Profil complet de l'app + audit stores tours 6-12** : hub « Mon profil » sur la structure du précode `mobile/` (adresses, notifications réelles, paiement dit vrai, recommander au prix serveur), filets d'erreur pages/fenêtres, arrière-plan inerte, encoche, cuisine « 5 TENDERS ». Trois vagues adverses par tour ; P0 trouvés et corrigés en route (page de paiement vide `59948a4`, recommander recalculé au prix de base `1954b41`). Convergence tours 11-12. Banc profil 82/82, app 55/55 + 66/66, site 63/63, portes 9/9.
 
 **🆕 2026-11-12 — Audit stores complet + parité borne de l'assistant** : 9 tours adverses (4 parité, 5 stores), oracle « app ↔ devis serveur » versionné (`tools/oracle-app-vs-serveur.mjs` du site), révocation Apple 5.1.1(v), panne d'adresses distinguée, permissions Android inutiles retirées, encoche / retour Android / hors ligne / zones de toucher corrigés. Défauts BORNE relevés (zone gelée, non corrigés) : suppléments répétables ×9, 2 viandes en plus sur bol, Mixte ×2 → refus serveur.
 
