@@ -321,6 +321,7 @@ return [
         // sous sa forme technique.
         'email_send' => 'Email sent successfully.',
         'email_send_count' => 'Email sent to :count subscriber(s).',
+        'email_send_partial' => 'Email sent to :count subscriber(s); :failed address(es) rejected by the mail server (see the log).',
         'email_no_subscriber' => 'No subscribers: nothing was sent.',
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.

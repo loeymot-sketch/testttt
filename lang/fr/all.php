@@ -361,6 +361,7 @@ return [
         // même quand la liste était VIDE — le service sortait sans rien faire et
         // le contrôleur répondait succès sans condition. On rend le compte.
         'email_send_count' => 'Email envoyé à :count abonné(s).',
+        'email_send_partial' => "Email envoyé à :count abonné(s) ; :failed adresse(s) refusée(s) par le serveur d'envoi (détail dans le journal).",
         'email_no_subscriber' => "Aucun abonné : rien n'a été envoyé.",
         'token_created_fail' => 'Échec de création du token.',
         'email_does_not_exist' => "Cet email n'existe pas.",

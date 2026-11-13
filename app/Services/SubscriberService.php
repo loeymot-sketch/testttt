@@ -16,6 +16,14 @@ use App\Http\Requests\SubscriberEmailRequest;
 
 class SubscriberService
 {
+    /** [SUPERVISION 2026-11-13] Nombre d'adresses refusées par le serveur d'envoi lors du dernier sendEmail(). */
+    private int $dernierEnvoiRefuses = 0;
+
+    public function dernierEnvoiRefuses(): int
+    {
+        return $this->dernierEnvoiRefuses;
+    }
+
 
     protected array $subscriberCateFilter = [
         'email',
@@ -126,12 +134,30 @@ class SubscriberService
 
             // [S13-04 · 2026-11-13] Un e-mail PAR destinataire (au lieu d'une copie cachée commune) : chacun porte SON lien
             // de désinscription signé — obligatoire pour un e-mail d'offre.
+            // [SUPERVISION 2026-11-13] Chaque destinataire est ISOLÉ : une adresse refusée par le serveur d'envoi (550…)
+            // interrompait la boucle — les abonnés suivants ne recevaient rien, l'admin voyait une erreur, et une relance
+            // renvoyait l'offre à ceux d'avant. Les refus sont comptés (dernierEnvoiRefuses()) et journalisés.
+            $this->dernierEnvoiRefuses = 0;
+            $envoyes = 0;
+            $derniereErreur = null;
             foreach ($subscribers as $email) {
-                $lien = \Illuminate\Support\Facades\URL::signedRoute('newsletter.desinscription', ['email' => $email]);
-                Mail::to($email)->send(new SubscriberMail($request->subject, $request->message, $lien));
+                try {
+                    $lien = \Illuminate\Support\Facades\URL::signedRoute('newsletter.desinscription', ['email' => $email]);
+                    Mail::to($email)->send(new SubscriberMail($request->subject, $request->message, $lien));
+                    $envoyes++;
+                } catch (\Throwable $refus) {
+                    $this->dernierEnvoiRefuses++;
+                    $derniereErreur = $refus;
+                    Log::warning('Offre par e-mail : destinataire refusé', ['subscriber' => $email, 'erreur' => $refus->getMessage()]);
+                }
             }
 
-            return $subscribers->count();
+            // Personne n'a reçu le message : c'est une panne d'envoi, pas une information — l'admin doit le savoir.
+            if ($envoyes === 0 && $derniereErreur !== null) {
+                throw $derniereErreur instanceof Exception ? $derniereErreur : new Exception($derniereErreur->getMessage());
+            }
+
+            return $envoyes;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

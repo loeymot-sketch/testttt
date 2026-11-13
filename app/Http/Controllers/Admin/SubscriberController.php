@@ -64,13 +64,18 @@ class SubscriberController extends AdminController
             // message est parti, et on le dit franchement quand il n'est parti à
             // personne. Zéro n'est pas une erreur, c'est une information.
             $destinataires = $this->subscriberService->sendEmail($request);
+            // [SUPERVISION 2026-11-13] Envoi partiel : on dit combien d'adresses le serveur d'envoi a refusées.
+            $refuses = $this->subscriberService->dernierEnvoiRefuses();
 
             return response([
                 'status'  => true,
                 'message' => $destinataires === 0
                     ? trans('all.message.email_no_subscriber')
-                    : trans('all.message.email_send_count', ['count' => $destinataires]),
+                    : ($refuses > 0
+                        ? trans('all.message.email_send_partial', ['count' => $destinataires, 'failed' => $refuses])
+                        : trans('all.message.email_send_count', ['count' => $destinataires])),
                 'count'   => $destinataires,
+                'failed'  => $refuses,
             ], 200);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
