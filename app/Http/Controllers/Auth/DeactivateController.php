@@ -52,7 +52,9 @@ class DeactivateController extends Controller
                  * d'exploitation ne puisse pas se supprimer par cette porte.
                  */
                 $premierRole = $user->roles->first();
-                $estClient = $premierRole && $premierRole->name === 'Customer';
+                // [test-e2e stores P20-001 · 2026-11-13] TOUS les rôles doivent être « Customer » (comme l'admin et le rattrapage) :
+                //   un compte qui porte aussi un rôle d'exploitation ne s'efface pas par cette porte.
+                $estClient = $premierRole && $premierRole->name === 'Customer' && $user->roles->every(fn ($r) => $r->name === 'Customer');
 
                 // [GOAL STORES T-3.1.3 · 2026-09-30] Ce que le client aurait pu annuler lui-même
                 // (jamais commencé par la cuisine, jamais payé) est annulé par le chemin

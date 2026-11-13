@@ -35,7 +35,8 @@ class RattraperSuppressionsComptesCommand extends Command
             ->chunkById(200, function ($comptes) use ($anonymisation, $appliquer, &$bilan) {
                 foreach ($comptes as $compte) {
                     $premier = $compte->roles->first();
-                    if (! $premier || $premier->name !== 'Customer') {
+                    // [P20-001] TOUS les rôles « Customer » — même règle que la suppression client et admin.
+                    if (! $premier || $premier->name !== 'Customer' || ! $compte->roles->every(fn ($r) => $r->name === 'Customer')) {
                         $bilan['ignores_non_clients']++;
                         continue;
                     }

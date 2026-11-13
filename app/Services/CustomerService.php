@@ -170,12 +170,6 @@ class CustomerService
                 if ($seulementClient) {
                     // [P19-003] Même règle que la suppression faite par le client : une commande encore en cours (livraison en route,
                     //   cuisine…) bloque — sinon le code d'entrée et le téléphone disparaissaient pendant la livraison.
-                    $enCours = \App\Models\Order::withoutGlobalScopes()->where('user_id', $customer->id)
-                        ->whereNotIn('status', [\App\Enums\OrderStatus::DELIVERED, \App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
-                        ->exists();
-                    if ($enCours) {
-                        throw new Exception(trans('all.message.account_not_delete_kitchen'), 422);
-                    }
                     // [P19-002 / S19-001] Jeton Apple lu AVANT la transaction, révoqué chez Apple APRÈS — comme DeactivateController.
                     $jetonApple = null;
                     try { $jetonApple = $customer->apple_refresh_token; } catch (\Throwable) { $jetonApple = null; }
@@ -183,7 +177,20 @@ class CustomerService
                     //   rgpd@…) EFFACE réellement ses données, comme la suppression faite par le client lui-même : avant, une simple
                     //   suppression douce laissait nom, e-mail, téléphone, identifiants Apple/Google et abonnement aux offres — et la
                     //   connexion invité suivante le « ressuscitait ». Même service que DeactivateController : les deux ne divergent plus.
+                    // [P20-002] Annulations et contrôle DANS la transaction : un refus annule aussi les annulations.
                     DB::transaction(function () use ($customer) {
+                        // [P20-002] Comme pour le client : ce qu'il aurait pu annuler lui-même (jamais commencé, jamais payé) est annulé
+                        //   d'abord ; seule une commande réellement en cours (commencée ou réglée) bloque.
+                        app(\App\Services\FrontendOrderService::class)->cancelAllOwnCancellableForAccountDeletion(
+                            (int) $customer->id,
+                            'Suppression du compte par l\'administration'
+                        );
+                        $enCours = \App\Models\Order::withoutGlobalScopes()->where('user_id', $customer->id)
+                            ->whereNotIn('status', [\App\Enums\OrderStatus::DELIVERED, \App\Enums\OrderStatus::CANCELED, \App\Enums\OrderStatus::REJECTED, \App\Enums\OrderStatus::RETURNED])
+                            ->exists();
+                        if ($enCours) {
+                            throw new Exception('Ce client a une commande en cours (en préparation ou déjà réglée) : supprimez son compte une fois la commande remise.', 422);
+                        }
                         $customer->addresses()->delete();
                         $anonymisation = app(\App\Services\Account\AnonymisationCompte::class);
                         $anonymisation->effacerResidus((int) $customer->id);

@@ -308,6 +308,26 @@ class AccountDeletionTest extends TestCase
         $this->assertSame(['jeton-apple-test'], $espion->appels, 'Le jeton Apple est révoqué chez Apple.');
     }
 
+    /** @test [P20-001/002] Les trois chemins suivent la même règle : un compte qui porte aussi un rôle d'exploitation ne s'efface
+     *  pas par la suppression client ; côté admin, une commande jamais commencée ni payée est annulée au lieu de bloquer. */
+    public function les_chemins_client_et_admin_suivent_la_meme_regle(): void
+    {
+        $mixte = $this->client(['email' => 'mixte2@example.test', 'phone' => '0612000001']);
+        $mixte->assignRole('POS Operator');
+        $mixte->forceFill(['apple_sub' => null, 'google_sub' => null, 'loyalty_code' => null])->save();
+        $this->withHeader('Authorization', 'Bearer ' . $this->jeton($mixte))->postJson('/api/auth/delete-account')->assertStatus(422);
+        $this->assertSame('mixte2@example.test', User::withTrashed()->find($mixte->id)->email, 'Rôle d\'exploitation : rien n\'est effacé.');
+
+        User::factory()->create();   // l'id 2 est le client par défaut, jamais supprimable (CustomerService) : on ne tombe pas dessus
+        $client = $this->client(['email' => 'attente@example.test', 'phone' => '0612000002']);
+        $commande = Order::factory()->create(['user_id' => $client->id, 'branch_id' => $this->branch->id,
+            'status' => OrderStatus::PENDING, 'payment_status' => \App\Enums\PaymentStatus::UNPAID,
+            'order_type' => \App\Enums\OrderType::TAKEAWAY]);
+        app(\App\Services\CustomerService::class)->destroy($client);
+        $this->assertNull(User::withTrashed()->find($client->id)->email, 'L\'admin efface : la commande en attente ne bloque plus.');
+        $this->assertSame(OrderStatus::CANCELED, (int) DB::table('orders')->find($commande->id)->status, 'Elle est annulée, comme côté client.');
+    }
+
     /** @test [S20-001] Une commande prise par téléphone en caisse perd le nom et le numéro recopiés, à la suppression et au rattrapage. */
     public function les_commandes_caisse_perdent_nom_et_numero_du_client(): void
     {
