@@ -76,27 +76,7 @@ class DeactivateController extends Controller
 
                 $user->addresses()->delete();
 
-                // [test-e2e stores F9-004 · 2026-11-12] Les commandes sont conservées (obligation de conservation), mais le
-                // COMPLÉMENT de leur adresse (étage, bâtiment, code d'entrée) et son libellé personnel (« Maison ») sont des
-                // données personnelles sans aucune valeur comptable : effacés. Rue, commune, code postal et coordonnées
-                // restent, car la commande et sa tournée de livraison en dépendent.
-                \App\Models\OrderAddress::withoutGlobalScopes()->where('user_id', $user->id)
-                    ->update(['apartment' => null, 'label' => 'Livraison']);
-
-                // [test-e2e stores P-012] Même règle pour les courses Uber Direct de ses commandes : téléphone, consignes et nom
-                // du destinataire effacés (colonnes ET réponse brute d'Uber) ; prix, statut et suivi de la course restent.
-                $idsCommandes = Order::withoutGlobalScopes()->where('user_id', $user->id)->pluck('id');
-                if ($idsCommandes->isNotEmpty()) {
-                    \App\Models\UberDirectDelivery::withoutGlobalScopes()->whereIn('order_id', $idsCommandes)->get()
-                        ->each(function ($course) {
-                            $brut = (array) ($course->delivery_payload ?? []);
-                            if (isset($brut['dropoff']) && is_array($brut['dropoff'])) {
-                                unset($brut['dropoff']['name'], $brut['dropoff']['phone_number'], $brut['dropoff']['notes']);
-                            }
-                            unset($brut['dropoff_name'], $brut['dropoff_phone_number'], $brut['dropoff_notes']);
-                            $course->forceFill(['dropoff_phone' => null, 'dropoff_instructions' => null, 'delivery_payload' => $brut ?: null])->saveQuietly();
-                        });
-                }
+                app(\App\Services\Account\AnonymisationCompte::class)->effacerResidus((int) $user->id);
 
                 /**
                  * [APPS 2026-08-19] EFFACEMENT RÉEL DES DONNÉES PERSONNELLES.
@@ -120,35 +100,7 @@ class DeactivateController extends Controller
                  * pendant six ans (NF525), et le RGPD prévoit explicitement ce cas. On efface
                  * le PROFIL, pas la comptabilité.
                  */
-                // [PROFIL APP 2026-11-12] Abonnement « offres par e-mail » (profil) : l'adresse quitte la liste des abonnés
-                // AVANT d'être effacée — sinon un compte supprimé continuerait de recevoir les e-mails du restaurant.
-                $emailAvant = mb_strtolower(trim((string) $user->email));
-                if ($emailAvant !== '') {
-                    \App\Models\Subscriber::query()->whereRaw('LOWER(email) = ?', [$emailAvant])->delete();
-                }
-
-                $user->name = 'Compte supprimé';
-                $user->email = null;
-                // `users.phone` est NOT NULL (migration 2026_05_16_140100) : on ne peut pas y
-                // écrire null. Le préfixe `PENDING_` est la convention déjà en place pour
-                // « ce n'est pas un vrai numéro » — `PhoneDisplay::safe()` le masque à
-                // l'affichage et `ValidPhone` le refuse. Réutiliser cette convention évite
-                // d'introduire un second vocabulaire que les gardes existantes ignoreraient.
-                $user->phone = 'PENDING_DELETED_' . bin2hex(random_bytes(6));
-                // [APPS 2026-08-19] Le numéro DÉCLARÉ (comptes ouverts par connexion
-                // Apple/Google) est une donnée personnelle au même titre que l'autre :
-                // l'oublier ici aurait laissé un numéro de téléphone en base après une
-                // suppression annoncée comme définitive.
-                $user->contact_phone = null;
-                $user->username = 'supprime-' . Str::random(12);
-                // [STORES 2026-11-12 · Apple 5.1.1(v)] Jeton Apple effacé ici ; révoqué chez Apple après la transaction.
-                $user->apple_refresh_token = null;
-                $user->apple_sub = null;
-                $user->google_sub = null;
-                $user->loyalty_code = null;
-                $user->device_token = null;
-                $user->web_token = null;
-                $user->save();
+                app(\App\Services\Account\AnonymisationCompte::class)->anonymiserIdentite($user);
 
                 // TOUS les jetons, pas seulement celui de l'appareil courant : un client qui
                 // supprime son compte depuis son téléphone ne doit pas laisser une session

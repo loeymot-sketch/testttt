@@ -196,6 +196,55 @@ class AccountDeletionTest extends TestCase
         $this->assertSame('del_1', $brut['id'], 'Le suivi de la course reste.');
     }
 
+    /**
+     * @test
+     * [test-e2e stores S17-003 · 2026-11-13] Un compte client supprimé AVANT les correctifs (simple suppression douce : nom,
+     * e-mail, téléphone intacts ; complément d'adresse et téléphone de course encore là) est rattrapé par la commande — en
+     * simulation rien ne bouge ; avec --appliquer tout est effacé ; un compte d'exploitation supprimé n'est jamais touché.
+     */
+    public function la_commande_de_rattrapage_efface_les_anciens_comptes_supprimes_et_seulement_eux(): void
+    {
+        $ancien = $this->client(['email' => 'ancien@example.test', 'phone' => '0611111111', 'name' => 'Ancien Client']);
+        $commande = Order::factory()->create(['user_id' => $ancien->id, 'branch_id' => $this->branch->id, 'status' => OrderStatus::DELIVERED]);
+        $adresse = DB::table('order_addresses')->insertGetId([
+            'order_id' => $commande->id, 'user_id' => $ancien->id, 'label' => 'Maison',
+            'address' => '10 Place Jean Jaurès 62110 Hénin-Beaumont', 'apartment' => 'code 1234',
+            'latitude' => '50.42', 'longitude' => '2.95', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $course = DB::table('uber_direct_deliveries')->insertGetId([
+            'branch_id' => $this->branch->id, 'order_id' => $commande->id, 'status' => 'delivered', 'quote_fee_cents' => 742,
+            'dropoff_phone' => '+33611111111', 'dropoff_instructions' => 'code 1234',
+            'delivery_payload' => json_encode(['id' => 'del_9', 'dropoff' => ['name' => 'Ancien', 'phone_number' => '+33611111111']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $ancien->delete();   // l'ancienne suppression : douce, sans effacement
+
+        $employe = User::factory()->create(['branch_id' => $this->branch->id, 'name' => 'Employé Gardé', 'email' => 'staff@example.test', 'phone' => '0622222222']);
+        $employe->assignRole('POS Operator');
+        $employe->delete();
+
+        $this->artisan('comptes:rattraper-suppressions')->assertSuccessful();
+        $this->assertSame('ancien@example.test', User::withTrashed()->find($ancien->id)->email, 'Simulation : rien n\'est écrit.');
+        $this->assertSame('code 1234', DB::table('order_addresses')->find($adresse)->apartment);
+
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $apres = User::withTrashed()->find($ancien->id);
+        $this->assertNull($apres->email);
+        $this->assertSame('Compte supprimé', $apres->name);
+        $this->assertStringStartsWith('PENDING_DELETED_', (string) $apres->phone);
+        $this->assertNull(DB::table('order_addresses')->find($adresse)->apartment);
+        $this->assertSame('10 Place Jean Jaurès 62110 Hénin-Beaumont', DB::table('order_addresses')->find($adresse)->address, 'L\'adresse de la commande reste.');
+        $ligne = DB::table('uber_direct_deliveries')->find($course);
+        $this->assertNull($ligne->dropoff_phone);
+        $this->assertArrayNotHasKey('phone_number', json_decode($ligne->delivery_payload, true)['dropoff']);
+        $this->assertSame('staff@example.test', User::withTrashed()->find($employe->id)->email, 'Un compte d\'exploitation n\'est jamais touché.');
+
+        // Rejouable sans effet.
+        $telephone = $apres->phone;
+        $this->artisan('comptes:rattraper-suppressions --appliquer')->assertSuccessful();
+        $this->assertSame($telephone, User::withTrashed()->find($ancien->id)->phone);
+    }
+
     /** @test */
     public function un_compte_supprime_ne_peut_plus_etre_ressuscite_par_son_telephone(): void
     {
