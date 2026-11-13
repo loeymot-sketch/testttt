@@ -47,6 +47,13 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-13 — APP STORES : audit test-e2e tours 14 → 19 CONVERGÉ (tours 18 ET 19 à 0 P0 / 0 P1 sur six vagues F/B/P/O/A/S). RIEN POUSSÉ NI DÉPLOYÉ.**
+> - Backend à déployer EN PREMIER : `5f2b6dba1` (effacement de compte partagé client/admin `AnonymisationCompte`, tours de roue, jeton Apple révoqué, refus admin si commande en cours ou rôle d'exploitation ; adresses relues sous verrou `febd4b023`). Juste après : `php artisan comptes:rattraper-suppressions` (simulation) puis `--appliquer`.
+> - Site/app à déployer ENSUITE : `0fee3ad` (branche `app/catalogue-distant-2026-11-05`, copie Vercel `lecayenne-web-deploy/site-copie-0fee3ad`). Android non signé construit sur `0fee3ad` (`app/android/app/build/outputs/bundle/release/app-release.aab`, apk debug).
+> - Portes `release-gates --prod` 11/13 (les 2 rouges = déploiement) ; verify-app-behaviour 55/55, natif 66/66, unitaires 63/63.
+> - Rapport : `reports/test-e2e/app-stores-complet-2026-11-12/CONVERGENCE_FINAL_TOUR19.md`.
+> - Décisions propriétaire ouvertes : qui paie la course Uber Direct (code = le restaurant) ; v512 en DPR 3 ; poids du paquet (23,64 Mo).
+
 > **2026-11-12 soir — APP STORES : « Mon profil » complet + audit CONVERGÉ (tours 11 et 12 à 0 P0 / 0 P1, trois vagues F/B/P). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `cb693313a`, site = `3a016fa`).
 > - Backend à déployer EN PREMIER : `1319bdc86` (inclut `da8902257` ; profil/adresses/recommander/offres `3324c427e` + migration `is_default` ; panne service d'adresses `cd0201f11`/`be9ced89f` ; « 5 TENDERS » cuisine `1da751184` ; suppression de compte : complément d'adresse des commandes `a55862962` et Uber Direct `1319bdc86`).
 > - Site/app à déployer ENSUITE : `dc3b057` (branche `app/catalogue-distant-2026-11-05`, copie Vercel `lecayenne-web-deploy/site-copie-dc3b057`). Android non signé `…-2026-11-12-dc3b057.aab/.apk`.
@@ -5018,6 +5025,8 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 2026-11-13 — Audit stores tours 14 → 19 convergé** : assistant (2ᵉ produit), carte (cartes invisibles — `Reveal` retiré de la grille ; tablette ; retour de liste au toucher/filtre/clavier/paysage/ordinateur ; colonne latérale), images (v384→v768 + `sizes` dessinés), carnet d'adresses, RGPD (effacement réel client ET admin + rattrapage), textes légaux/stores alignés sur le code. Détail §2 et `CONVERGENCE_FINAL_TOUR19.md`.
 
 **🆕 2026-11-12 soir — Profil complet de l'app + audit stores tours 6-12** : hub « Mon profil » sur la structure du précode `mobile/` (adresses, notifications réelles, paiement dit vrai, recommander au prix serveur), filets d'erreur pages/fenêtres, arrière-plan inerte, encoche, cuisine « 5 TENDERS ». Trois vagues adverses par tour ; P0 trouvés et corrigés en route (page de paiement vide `59948a4`, recommander recalculé au prix de base `1954b41`). Convergence tours 11-12. Banc profil 82/82, app 55/55 + 66/66, site 63/63, portes 9/9.
 
