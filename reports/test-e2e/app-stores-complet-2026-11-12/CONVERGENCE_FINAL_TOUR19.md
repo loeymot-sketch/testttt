@@ -21,14 +21,14 @@ Les P2/P3 des tours 18 et 19 sont tous corrigés (sauf ceux listés « ouverts �
 ## Versions finales
 
 - **Site / application** : dépôt `lecayenne-web-deploy/site-deploy-2026-11-03`, branche `app/catalogue-distant-2026-11-05`,
-  **HEAD `4e602d5`**. Copie Vercel prête : `lecayenne-web-deploy/site-copie-4e602d5` (sans `.git`, `.vercel` copié ;
+  **HEAD `3eb0ae2`**. Copie Vercel prête : `lecayenne-web-deploy/site-copie-3eb0ae2` (sans `.git`, `.vercel` copié ;
   `app/` et `tests-e2e/` exclus par `.vercelignore`).
 - **Backend** : `testttt`, branche `pos/category-first-caisse-2026-06-23`, **HEAD code `423b1c304`** (effacement aligné client/admin/rattrapage, commandes caisse `e75739b19`).
 - Paquet `app/www` : 699 fichiers, 23,64 Mo. Budgets : JS 574 Ko (≤ 650), CSS 406 Ko (≤ 450).
 
-## Contrôles finaux (sur `4e602d5`)
+## Contrôles finaux (sur `3eb0ae2`)
 
-- Android reconstruit sur `4e602d5` : AAB 27,6 Mo (non signé) et APK debug ; `compiled/screens.js` de l'AAB = dépôt (empreinte identique).
+- Android reconstruit sur `3eb0ae2` : AAB 27,6 Mo (non signé) et APK debug ; `compiled/screens.js` de l'AAB = dépôt (empreinte identique).
 
 - `tools/release-gates.mjs --prod` : **11/13** — les 2 rouges sont celles du déploiement (pages légales en ligne ≠ dépôt ;
   routes `newsletter-consent` / `reorder` absentes en ligne). Elles passent au vert après déploiement.
@@ -62,7 +62,7 @@ Les P2/P3 des tours 18 et 19 sont tous corrigés (sauf ceux listés « ouverts �
 1. Déployer le **backend `423b1c304`** sur le VPS.
 2. Juste après : `php artisan comptes:rattraper-suppressions` (simulation, lire le bilan), puis
    `php artisan comptes:rattraper-suppressions --appliquer`.
-3. Déployer le **site `4e602d5`** (copie `site-copie-4e602d5`, Vercel `--archive=tgz`).
+3. Déployer le **site `3eb0ae2`** (copie `site-copie-3eb0ae2`, Vercel `--archive=tgz`).
 4. Relancer `node tools/release-gates.mjs --prod` : attendu **13/13**.
 5. Stores : compte de démonstration (notes d'examen), archive iOS + TestFlight (Xcode), signature de l'AAB, statut « trader »
    (DSA), clé `.p8` Sign in with Apple, URL `…/legal/privacy.html#suppression-compte` dans la Play Console, Apple Pay /
