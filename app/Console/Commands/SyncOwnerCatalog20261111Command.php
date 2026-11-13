@@ -209,6 +209,41 @@ class SyncOwnerCatalog20261111Command extends Command
         return $stats;
     }
 
+    /**
+     * [SUPERVISION 2026-11-13] Étape « viandes du Terminator » SEULE, pour la migration 2026_11_11_220000. Rejouer
+     * {@see ensure()} en entier, là où la 040000 a déjà tourné (production), réimposait prix, statut et disponibilité du
+     * Sandwich 2 Viandes et des 5 Tenders, le prix du supplément Façon Cayenne, et désactivait les options ajoutées à la
+     * main : le déploiement aurait écrasé les retouches faites en admin depuis le 11/11. Ici : AJOUT de viandes (et
+     * visibilité alignée sur la référence) uniquement — aucun champ produit n'est écrit.
+     *
+     * @return array{variations:int, sandwich2_id:?int, notes:array<int,string>}
+     */
+    public static function ensureSandwich2ViandesMeats(bool $dryRun = false): array
+    {
+        $stats = ['variations' => 0, 'sandwich2_id' => null, 'notes' => [], 'touched' => []];
+
+        $target = Item::query()->where('slug', self::SANDWICH2_SLUG)->whereNull('deleted_at')->first();
+        $viande1 = ItemAttribute::where('name', 'Viande 1')->first();
+        $viande2 = ItemAttribute::where('name', 'Viande 2')->first();
+        if (! $target || ! $viande1 || ! $viande2) {
+            $stats['notes'][] = 'Sandwich 2 Viandes ou attributs « Viande 1 » / « Viande 2 » absents — rien fait.';
+
+            return $stats;
+        }
+        $stats['sandwich2_id'] = (int) $target->id;
+
+        $run = function () use ($target, $viande1, $viande2, $dryRun, &$stats): void {
+            $stats['variations'] = self::ensureMeatsFromReference((int) $target->id, $viande1, $viande2, $dryRun, $stats);
+        };
+        $dryRun ? $run() : DB::transaction($run);
+
+        if (! $dryRun && $stats['variations'] > 0) {
+            CatalogChanged::dispatch('item', (int) $target->id, 'updated');
+        }
+
+        return $stats;
+    }
+
     // ─── 1. 5 Tenders ────────────────────────────────────────────────────────────────────────
 
     private static function ensureTenders(bool $dryRun, array &$stats): void
