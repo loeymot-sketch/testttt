@@ -47,6 +47,11 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+> **2026-11-13 soir — GO FINAL SUPERVISEUR : backend `1c8d4d5ba` (code) + site `3eb0ae2`. RIEN POUSSÉ NI DÉPLOYÉ (prod backend = `cb693313a`).**
+> - Preuves sur `1c8d4d5ba` : PHPUnit complet 7720 tests, 0 échec ; bancs e2e API 50/50, app iOS simulée 24/24, réglage passerelle 13/13 ; zones gelées 0 ligne ; chaîne NF525 OK.
+> - Au déploiement : 4 migrations (220000 = viandes SEULES ; apple_refresh_token ; is_default) ; recompiler le paquet caisse (pos-shell non suivi par git — le script le fait) ; puis `comptes:rattraper-suppressions` (simulation, puis `--appliquer`) ; puis le site `site-copie-3eb0ae2`.
+> - Hors code : P3 latent GuestSignup (SMS) ; révocation Apple des comptes antérieurs au déploiement (pas de jeton stocké).
+
 > **2026-11-13 — APP STORES : audit test-e2e tours 14 → 20 CONVERGÉ (tours 18, 19 ET 20 à 0 P0 / 0 P1 sur six vagues F/B/P/O/A/S). RIEN POUSSÉ NI DÉPLOYÉ.**
 > - Backend à déployer EN PREMIER : `423b1c304` (puis `e75739b19`/`5f2b6dba1` inclus) (effacement de compte partagé client/admin `AnonymisationCompte`, tours de roue, jeton Apple révoqué, refus admin si commande en cours ou rôle d'exploitation ; adresses relues sous verrou `febd4b023`). Juste après : `php artisan comptes:rattraper-suppressions` (simulation) puis `--appliquer`.
 > - Site/app à déployer ENSUITE : `3eb0ae2` (branche `app/catalogue-distant-2026-11-05`, copie Vercel `lecayenne-web-deploy/site-copie-3eb0ae2`). Android non signé construit sur `3eb0ae2` (`app/android/app/build/outputs/bundle/release/app-release.aab`, apk debug).
