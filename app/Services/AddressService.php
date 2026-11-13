@@ -68,14 +68,19 @@ class AddressService
                 return $existing;
             }
 
-            $address = Address::create($payload);
             // [PROFIL APP 2026-11-12] La PREMIÈRE adresse d'un client devient son adresse par défaut (il pourra en changer).
-            if (self::aLaColonneParDefaut()
-                && ! Address::where('user_id', $address->user_id)->where('is_default', true)->exists()) {
-                $address->forceFill(['is_default' => true])->save();
-            }
+            // [test-e2e stores P-021 · 2026-11-13] Sous verrou de la ligne du CLIENT : deux ajouts simultanés donnaient deux
+            // adresses « par défaut » (6 essais sur 8).
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($payload) {
+                \App\Models\User::withoutGlobalScopes()->whereKey($payload['user_id'])->lockForUpdate()->first(['id']);
+                $address = Address::create($payload);
+                if (self::aLaColonneParDefaut()
+                    && ! Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->where('is_default', true)->exists()) {
+                    $address->forceFill(['is_default' => true])->save();
+                }
 
-            return $address;
+                return $address;
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -165,6 +170,8 @@ class AddressService
     {
         try {
             \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
+                // [P-021] Même verrou que l'ajout : la ligne du client sérialise ajout, choix par défaut et suppression.
+                \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
                 Address::where('user_id', $address->user_id)->lockForUpdate()->get(['id']);
                 Address::where('user_id', $address->user_id)->where('id', '!=', $address->id)->update(['is_default' => false]);
                 $address->forceFill(['is_default' => true])->save();

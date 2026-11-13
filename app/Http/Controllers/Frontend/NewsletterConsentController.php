@@ -44,8 +44,16 @@ class NewsletterConsentController extends Controller
         }
 
         if ($request->boolean('subscribed')) {
+            // [test-e2e stores P-021 · 2026-11-13] Trois appuis simultanés : le 2e et le 3e heurtaient l'unicité de l'e-mail
+            // (422 « erreur de base de données »). Déjà abonné par un appui concurrent = succès.
             if (! $this->abonnes($email)->exists()) {
-                Subscriber::create(['email' => $email]);
+                try {
+                    Subscriber::create(['email' => $email]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if (! $this->abonnes($email)->exists()) {
+                        throw $e;
+                    }
+                }
             }
         } else {
             $this->abonnes($email)->delete();
