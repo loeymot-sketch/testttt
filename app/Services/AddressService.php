@@ -205,16 +205,21 @@ class AddressService
     public function destroy(Address $address): void
     {
         try {
-            $etaitParDefaut = self::aLaColonneParDefaut() && (bool) $address->is_default;
-            $userId = (int) $address->user_id;
-            $address->delete();
-            // [PROFIL APP 2026-11-12] L'adresse par défaut supprimée : la plus récente qui reste prend le relais.
-            if ($etaitParDefaut) {
-                $suivante = Address::where('user_id', $userId)->orderByDesc('id')->first();
-                if ($suivante) {
-                    $suivante->forceFill(['is_default' => true])->save();
+            // [test-e2e stores P-024 · 2026-11-13] Même verrou (ligne du client) que l'ajout et le choix par défaut : trois actions
+            // simultanées provoquaient un interblocage (422 « erreur de base de données »).
+            \Illuminate\Support\Facades\DB::transaction(function () use ($address) {
+                \App\Models\User::withoutGlobalScopes()->whereKey($address->user_id)->lockForUpdate()->first(['id']);
+                $etaitParDefaut = self::aLaColonneParDefaut() && (bool) $address->is_default;
+                $userId = (int) $address->user_id;
+                $address->delete();
+                // [PROFIL APP 2026-11-12] L'adresse par défaut supprimée : la plus récente qui reste prend le relais.
+                if ($etaitParDefaut) {
+                    $suivante = Address::where('user_id', $userId)->orderByDesc('id')->first();
+                    if ($suivante) {
+                        $suivante->forceFill(['is_default' => true])->save();
+                    }
                 }
-            }
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

@@ -74,6 +74,7 @@ class DesinscriptionOffresTest extends TestCase
         $this->assertStringNotContainsString('<pre>', $html);
         $this->assertStringContainsString('Découvrez la carte.', $html);
         $this->assertStringContainsString('Se désinscrire', $html);
+        $this->assertStringNotContainsString('All rights reserved', $html); // [P-026] pied de page en français
     }
 
     public function test_une_url_forgee_ne_desinscrit_personne(): void
@@ -82,6 +83,8 @@ class DesinscriptionOffresTest extends TestCase
 
         $this->get('/desinscription-offres?email=client@example.test')->assertStatus(403);
         $this->get('/desinscription-offres?email=client@example.test&signature=faux')->assertStatus(403);
+        // [P-026] La page de refus est en français (plus « 403 | INVALID SIGNATURE. »).
+        $this->get('/desinscription-offres?email=client@example.test&signature=faux')->assertSee('Lien de désinscription invalide', false);
         $this->post('/desinscription-offres?email=client@example.test&signature=faux')->assertStatus(403);
         $this->assertSame(1, Subscriber::query()->where('email', 'client@example.test')->count());
     }

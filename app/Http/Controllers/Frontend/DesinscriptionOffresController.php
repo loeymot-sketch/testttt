@@ -17,6 +17,13 @@ class DesinscriptionOffresController extends Controller
 {
     public function __invoke(Request $request): Response
     {
+        // [P-026] Signature vérifiée ICI (et non par le middleware `signed`) : un lien abîmé ou ancien affiche une page en
+        // français, au lieu de « 403 | INVALID SIGNATURE. ».
+        if (! $request->hasValidSignature()) {
+            return $this->page('Lien de désinscription invalide',
+                'Ce lien est incomplet ou n\'est plus valable. Vous pouvez arrêter les offres à tout moment dans l\'application, rubrique « Notifications » de votre profil.')
+                ->setStatusCode(403);
+        }
         $email = mb_strtolower(trim((string) $request->query('email', '')));
 
         if ($request->isMethod('post')) {
