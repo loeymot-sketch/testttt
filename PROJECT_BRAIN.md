@@ -52,7 +52,8 @@ Plateforme restaurant fast-food complète :
 > - Site/app à déployer ENSUITE : `3eb0ae2` (branche `app/catalogue-distant-2026-11-05`, copie Vercel `lecayenne-web-deploy/site-copie-3eb0ae2`). Android non signé construit sur `3eb0ae2` (`app/android/app/build/outputs/bundle/release/app-release.aab`, apk debug).
 > - Portes `release-gates --prod` 11/13 (les 2 rouges = déploiement) ; verify-app-behaviour 55/55, natif 66/66, unitaires 63/63.
 > - Rapport : `reports/test-e2e/app-stores-complet-2026-11-12/CONVERGENCE_FINAL_TOUR19.md`.
-> - Décisions propriétaire ouvertes : qui paie la course Uber Direct (code = le restaurant) ; v512 en DPR 3 ; poids du paquet (23,64 Mo).
+> - Décision propriétaire 2026-11-13 : le RESTAURANT paie la course Uber Direct (client = barème maison). Ouvertes : v512 en DPR 3 ; poids du paquet (23,64 Mo).
+> - Relecture adverse SUPERVISEUR (session testttt-59) intégrée : migration 220000 qui écrasait les retouches admin (`baf3f49fe`, P1), offres `3da5da78b`, géocodage `5705ad9af`, Recommander/boisson `f3ff1437b`, Uber après suppression `41a8c4f78`, adresses `eb291be68`, suppression D1/D3/D4 `dabcc2bea`. **P3 LATENT** : `GuestSignupController.php:121` — un e-mail posté à la vérification SMS est enregistré vérifié sans preuve ; inoffensif tant qu'aucune passerelle SMS n'est branchée, À CORRIGER le jour où elle l'est.
 
 > **2026-11-12 soir — APP STORES : « Mon profil » complet + audit CONVERGÉ (tours 11 et 12 à 0 P0 / 0 P1, trois vagues F/B/P). RIEN POUSSÉ NI DÉPLOYÉ** (prod backend = `cb693313a`, site = `3a016fa`).
 > - Backend à déployer EN PREMIER : `1319bdc86` (inclut `da8902257` ; profil/adresses/recommander/offres `3324c427e` + migration `is_default` ; panne service d'adresses `cd0201f11`/`be9ced89f` ; « 5 TENDERS » cuisine `1da751184` ; suppression de compte : complément d'adresse des commandes `a55862962` et Uber Direct `1319bdc86`).
